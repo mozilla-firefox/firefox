@@ -12,6 +12,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.mockk
+import java.security.cert.X509Certificate
 import mozilla.components.compose.base.theme.Theme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -41,6 +43,9 @@ class ProtectionPanelTest {
             count,
             count,
         )
+
+    private val qwacStatement
+        get() = resources.getString(R.string.connection_security_panel_qualified_certificate)
 
     private fun gradientBannerContentDescription(count: Int): String =
         "$protectedOnGuardTitle. ${blockedTrackersDescription(count)}"
@@ -105,10 +110,25 @@ class ProtectionPanelTest {
             .assertExists()
     }
 
+    @Test
+    fun `GIVEN QWAC certificate data THEN the QWAC statement is shown`() {
+        setProtectionPanel(numberOfTrackersBlocked = 0, qwac = mockk(relaxed = true))
+
+        composeTestRule.onNodeWithText(qwacStatement, substring = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `GIVEN no QWAC certificate data THEN the QWAC statement is not shown`() {
+        setProtectionPanel(numberOfTrackersBlocked = 0)
+
+        composeTestRule.onNodeWithText(qwacStatement, substring = true, useUnmergedTree = true).assertDoesNotExist()
+    }
+
     private fun setProtectionPanel(
         numberOfTrackersBlocked: Int,
         isPrivate: Boolean = false,
         onTrackerBlockedMenuClick: () -> Unit = {},
+        qwac: X509Certificate? = null,
     ) {
         composeTestRule.setContent {
             FirefoxTheme(theme = Theme.Light) {
@@ -119,6 +139,7 @@ class ProtectionPanelTest {
                             websiteUrl = "https://www.mozilla.org",
                             websiteTitle = "Mozilla",
                             certificate = null,
+                            qwac = qwac,
                         ),
                     ipProtectionMenuState = IPProtectionMenuState(),
                     icon = null,

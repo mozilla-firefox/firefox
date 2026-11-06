@@ -492,6 +492,41 @@ class TrustPanelStoreTest {
         assertNull(store.state.websiteInfoState.qwac)
     }
 
+    @Test
+    fun `GIVEN no QWAC certificate data WHEN the QWAC status is updated without a QWAC THEN isQwac is false`() =
+        runTest {
+            val store = TrustPanelStore(initialState = TrustPanelState(websiteInfoState = WebsiteInfoState()))
+
+            store.dispatch(
+                TrustPanelAction.UpdateQWAC(qwac = null, forCertificate = store.state.websiteInfoState.certificate)
+            )
+
+            assertFalse(store.state.websiteInfoState.isQwac)
+        }
+
+    @Test
+    fun `GIVEN QWAC certificate data WHEN the QWAC status is updated without a QWAC THEN isQwac is false`() = runTest {
+        val store = TrustPanelStore(initialState = TrustPanelState(websiteInfoState = WebsiteInfoState(qwac = mockk())))
+
+        store.dispatch(
+            TrustPanelAction.UpdateQWAC(qwac = null, forCertificate = store.state.websiteInfoState.certificate)
+        )
+
+        assertFalse(store.state.websiteInfoState.isQwac)
+    }
+
+    @Test
+    fun `GIVEN no QWAC certificate data yet WHEN QWAC certificate data arrives later THEN isQwac is true`() = runTest {
+        val store = TrustPanelStore(initialState = TrustPanelState(websiteInfoState = WebsiteInfoState()))
+        assertFalse(store.state.websiteInfoState.isQwac)
+
+        store.dispatch(
+            TrustPanelAction.UpdateQWAC(qwac = mockk(), forCertificate = store.state.websiteInfoState.certificate)
+        )
+
+        assertTrue(store.state.websiteInfoState.isQwac)
+    }
+
     private fun initializeSitePermissions(sitePermissions: SitePermissions) {
         every { sitePermissions.camera } returns SitePermissions.Status.NO_DECISION
         every { sitePermissions.microphone } returns SitePermissions.Status.NO_DECISION

@@ -258,12 +258,12 @@ private fun ConnectionSecurityMenuGroup(
                     ),
                 onClick = onViewCertificateClick,
             )
-            websiteInfoState.qwac?.let {
+            if (websiteInfoState.isQwac) {
                 MenuTextItem(
                     label =
                         stringResource(
                             id = R.string.connection_security_panel_issued_to,
-                            CertificateUtils.subjectOrganization(it) ?: "",
+                            CertificateUtils.subjectOrganization(websiteInfoState.qwac) ?: "",
                         ),
                     description = stringResource(id = R.string.connection_security_panel_qualified_certificate),
                     onClick = onViewQWACClick,
