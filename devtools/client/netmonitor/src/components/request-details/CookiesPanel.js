@@ -217,6 +217,7 @@ class CookiesPanel extends Component {
         SearchBox({
           delay: FILTER_SEARCH_DELAY,
           type: "filter",
+          initialValue: filterText,
           onChange: text => this.setState({ filterText: text }),
           placeholder: COOKIES_FILTER_TEXT,
         })
