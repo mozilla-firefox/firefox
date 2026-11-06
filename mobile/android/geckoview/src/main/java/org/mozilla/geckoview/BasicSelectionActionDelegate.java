@@ -600,8 +600,10 @@ public class BasicSelectionActionDelegate
 
     @Override
     public boolean onActionItemClicked(final ActionMode actionMode, final MenuItem menuItem) {
-      mResult.complete(AllowOrDeny.ALLOW);
-      mResult = null;
+      if (mResult != null) {
+        mResult.complete(AllowOrDeny.ALLOW);
+        mResult = null;
+      }
       actionMode.finish();
       return true;
     }
@@ -610,6 +612,7 @@ public class BasicSelectionActionDelegate
     public void onDestroyActionMode(final ActionMode actionMode) {
       if (mResult != null) {
         mResult.complete(AllowOrDeny.DENY);
+        mResult = null;
       }
       BasicSelectionActionDelegate.this.onDestroyActionModeForClipboardPermission(actionMode);
     }
