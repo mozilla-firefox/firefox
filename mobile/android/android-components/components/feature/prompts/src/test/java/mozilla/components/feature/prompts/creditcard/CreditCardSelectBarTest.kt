@@ -46,6 +46,7 @@ class CreditCardSelectBarTest {
             expiryMonth = "5",
             expiryYear = "2030",
             cardType = "",
+            cardCvv = null,
         )
 
     @Before

@@ -37,6 +37,7 @@ class CreditCardItemViewHolderTest {
             expiryMonth = "5",
             expiryYear = "2030",
             cardType = CreditCardNetworkType.VISA.cardName,
+            cardCvv = null,
         )
 
     @Before

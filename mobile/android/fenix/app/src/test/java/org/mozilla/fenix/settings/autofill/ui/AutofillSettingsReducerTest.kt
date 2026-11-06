@@ -62,6 +62,7 @@ class AutofillSettingsReducerTest {
                     timeLastUsed = System.currentTimeMillis(),
                     timeLastModified = System.currentTimeMillis(),
                     timesUsed = 1L,
+                    cardCvv = null,
                 )
             }
 
@@ -122,6 +123,7 @@ class AutofillSettingsReducerTest {
                     timeLastUsed = System.currentTimeMillis(),
                     timeLastModified = System.currentTimeMillis(),
                     timesUsed = 1L,
+                    cardCvv = null,
                 )
             }
 

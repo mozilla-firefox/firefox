@@ -76,6 +76,7 @@ class GeckoCreditCardsAddressesStorageDelegate(
                         expiryMonth = creditCard.expiryMonth.toLong(),
                         expiryYear = creditCard.expiryYear.toLong(),
                         cardType = creditCard.cardType,
+                        cardCvv = creditCard.cardCvv,
                     )
                 )
             }
@@ -89,6 +90,7 @@ class GeckoCreditCardsAddressesStorageDelegate(
                             expiryMonth = creditCard.expiryMonth.toLong(),
                             expiryYear = creditCard.expiryYear.toLong(),
                             cardType = creditCard.cardType,
+                            cardCvv = creditCard.cardCvv,
                         ),
                 )
             }

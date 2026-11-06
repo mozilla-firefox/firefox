@@ -45,6 +45,7 @@ class CreditCardSaveDialogFragmentTest {
             expiryMonth = "5",
             expiryYear = "2030",
             cardType = "amex",
+            cardCvv = null,
         )
     private val sessionId = "sessionId"
     private val promptRequestUID = "uid"

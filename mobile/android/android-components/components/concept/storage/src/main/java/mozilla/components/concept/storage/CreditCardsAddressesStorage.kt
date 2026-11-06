@@ -183,7 +183,7 @@ data class CreditCard(
     val timeLastUsed: Long? = 0L,
     val timeLastModified: Long = 0L,
     val timesUsed: Long = 0L,
-    val cardCvv: String? = null,
+    val cardCvv: String?,
 ) : Parcelable {
     val obfuscatedCardNumber: String
         get() = ELLIPSES_START + ELLIPSIS + ELLIPSIS + ELLIPSIS + ELLIPSIS + cardNumberLast4 + ELLIPSES_END
@@ -211,6 +211,7 @@ data class CreditCard(
  * @property expiryMonth The credit card expiry month.
  * @property expiryYear The credit card expiry year.
  * @property cardType The credit card network ID.
+ * @property cardCvv The credit card security code, or null if there is none.
  */
 @Parcelize
 data class CreditCardEntry(
@@ -220,6 +221,7 @@ data class CreditCardEntry(
     val expiryMonth: String,
     val expiryYear: String,
     val cardType: String,
+    val cardCvv: String?,
 ) : Parcelable {
     val obfuscatedCardNumber: String
         get() = ELLIPSES_START + ELLIPSIS + ELLIPSIS + ELLIPSIS + ELLIPSIS + number.last4Digits() + ELLIPSES_END
@@ -272,7 +274,7 @@ data class NewCreditCardFields(
     val expiryMonth: Long,
     val expiryYear: Long,
     val cardType: String,
-    val cardCvv: String? = null,
+    val cardCvv: String?,
 )
 
 /**
@@ -293,7 +295,7 @@ data class UpdatableCreditCardFields(
     val expiryMonth: Long,
     val expiryYear: Long,
     val cardType: String,
-    val cardCvv: String? = null,
+    val cardCvv: String?,
 )
 
 /**

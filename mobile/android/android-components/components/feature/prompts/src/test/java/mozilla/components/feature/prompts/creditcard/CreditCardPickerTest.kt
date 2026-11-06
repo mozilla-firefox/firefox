@@ -38,6 +38,7 @@ class CreditCardPickerTest {
             expiryMonth = "5",
             expiryYear = "2030",
             cardType = "",
+            cardCvv = null,
         )
     var onDismissCalled = false
     var confirmedCreditCard: CreditCardEntry? = null

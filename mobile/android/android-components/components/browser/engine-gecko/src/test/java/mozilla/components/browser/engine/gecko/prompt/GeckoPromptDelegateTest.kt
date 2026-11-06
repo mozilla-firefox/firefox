@@ -1249,6 +1249,7 @@ class GeckoPromptDelegateTest {
                 expiryMonth = "5",
                 expiryYear = "2030",
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCardSaveOption = Autocomplete.CreditCardSaveOption(creditCard.toAutocompleteCreditCard())
 
@@ -1307,6 +1308,7 @@ class GeckoPromptDelegateTest {
                 expiryMonth = "5",
                 expiryYear = "2030",
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCardSaveOption = Autocomplete.CreditCardSaveOption(creditCard.toAutocompleteCreditCard())
         val geckoPrompt = geckoCreditCardSavePrompt(arrayOf(creditCardSaveOption))
@@ -1447,6 +1449,7 @@ class GeckoPromptDelegateTest {
                 expiryMonth = "5",
                 expiryYear = "2030",
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCardSelectOption1 = Autocomplete.CreditCardSelectOption(creditCard1.toAutocompleteCreditCard())
 
@@ -1458,6 +1461,7 @@ class GeckoPromptDelegateTest {
                 expiryMonth = "1",
                 expiryYear = "2040",
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCardSelectOption2 = Autocomplete.CreditCardSelectOption(creditCard2.toAutocompleteCreditCard())
 
@@ -1511,6 +1515,7 @@ class GeckoPromptDelegateTest {
                 expiryMonth = "5",
                 expiryYear = "2030",
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCardSelectOption = Autocomplete.CreditCardSelectOption(creditCard.toAutocompleteCreditCard())
         val creditCardSelectPrompt = geckoSelectCreditCardPrompt(arrayOf(creditCardSelectOption))

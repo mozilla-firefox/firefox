@@ -103,6 +103,7 @@ internal class CreditCardEditorMiddleware(
                     expiryMonth = state.selectedExpiryMonthIndex + 1L,
                     expiryYear = state.expiryYears[state.selectedExpiryYearIndex].toLong(),
                     cardType = state.cardNumber.creditCardIIN()?.creditCardIssuerNetwork?.name ?: "",
+                    cardCvv = null,
                 )
 
             storage.updateCreditCard(state.guid, fields)
@@ -123,6 +124,7 @@ internal class CreditCardEditorMiddleware(
                     expiryMonth = state.selectedExpiryMonthIndex + 1L,
                     expiryYear = state.expiryYears[state.selectedExpiryYearIndex].toLong(),
                     cardType = state.cardNumber.creditCardIIN()?.creditCardIssuerNetwork?.name ?: "",
+                    cardCvv = null,
                 )
 
             storage.addCreditCard(fields)

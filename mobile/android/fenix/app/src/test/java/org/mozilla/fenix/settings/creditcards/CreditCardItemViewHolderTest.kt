@@ -40,6 +40,7 @@ class CreditCardItemViewHolderTest {
             timeLastUsed = 1L,
             timeLastModified = 1L,
             timesUsed = 1L,
+            cardCvv = null,
         )
 
     @Before

@@ -30,7 +30,11 @@ permalink: /changelog/
     * **Behavior change**: `DefaultTopSitesStorage.getTopSites` now returns all the pinned sites, even beyond `targetSitesCount`. The provided, frecent and default top sites still only fill the slots left within `targetSitesCount`, so the returned list can be longer than `targetSitesCount`. [Bug 2075033](https://bugzilla.mozilla.org/show_bug.cgi?id=2075033)
 * **concept-storage**
     * Added `cardCvv`, the credit card security code, to `CreditCard`, `NewCreditCardFields` and `UpdatableCreditCardFields`. When `UpdatableCreditCardFields.cardCvv` is null, `CreditCardsAddressesStorage.updateCreditCard` keeps the stored security code, and an empty string removes it. [Bug 2085145](https://bugzilla.mozilla.org/show_bug.cgi?id=2085145)
+    * **Breaking change**: `cardCvv` no longer has a default value in `CreditCard`, `NewCreditCardFields` and `UpdatableCreditCardFields`. Added a required `cardCvv` to `CreditCardEntry`. [Bug 2089057](https://bugzilla.mozilla.org/show_bug.cgi?id=2089057)
+* **browser-engine-gecko**
+    * The credit card security code now passes between GeckoView and `CreditCardEntry`, and the stored security code goes to GeckoView when it fetches credit cards. [Bug 2089057](https://bugzilla.mozilla.org/show_bug.cgi?id=2089057)
 * **service-sync-autofill**
+    * `GeckoCreditCardsAddressesStorageDelegate` saves the security code from `CreditCardEntry`. [Bug 2089057](https://bugzilla.mozilla.org/show_bug.cgi?id=2089057)
     * `AutofillCreditCardsAddressesStorage` stores and returns the credit card security code. `updateCreditCard` no longer removes a stored security code that the caller did not set. [Bug 2085145](https://bugzilla.mozilla.org/show_bug.cgi?id=2085145)
 
 # 160.0

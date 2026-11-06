@@ -21,6 +21,7 @@ class CreditCardsAdapterTest {
                 expiryMonth = "5",
                 expiryYear = "2030",
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCard2 = creditCard1.copy()
 
@@ -35,6 +36,7 @@ class CreditCardsAdapterTest {
                 expiryMonth = "1",
                 expiryYear = "2030",
                 cardType = "amex",
+                cardCvv = null,
             )
 
         assertFalse(CreditCardsAdapter.DiffCallback.areItemsTheSame(creditCard1, creditCard3))

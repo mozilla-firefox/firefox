@@ -52,6 +52,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 12,
                 expiryYear = 2028,
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCard = storage.addCreditCard(creditCardFields)
 
@@ -84,6 +85,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 12,
                 expiryYear = 2028,
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCard = storage.addCreditCard(creditCardFields)
 
@@ -104,6 +106,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 12,
                 expiryYear = 2028,
                 cardType = "mastercard",
+                cardCvv = null,
             )
         val creditCardFields2 =
             NewCreditCardFields(
@@ -112,6 +115,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 1,
                 expiryYear = 2030,
                 cardType = "visa",
+                cardCvv = null,
             )
         val creditCardFields3 =
             NewCreditCardFields(
@@ -120,6 +124,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 2,
                 expiryYear = 2028,
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCard1 = storage.addCreditCard(creditCardFields1)
         val creditCard2 = storage.addCreditCard(creditCardFields2)
@@ -151,6 +156,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 12,
                 expiryYear = 2028,
                 cardType = "visa",
+                cardCvv = null,
             )
 
         var creditCard = storage.addCreditCard(creditCardFields)
@@ -163,6 +169,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 12,
                 expiryYear = 2038,
                 cardType = "diners",
+                cardCvv = null,
             )
 
         storage.updateCreditCard(creditCard.guid, newCreditCardFields)
@@ -184,6 +191,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 12,
                 expiryYear = 2038,
                 cardType = "diners",
+                cardCvv = null,
             )
 
         storage.updateCreditCard(creditCard.guid, newCreditCardFields)
@@ -275,6 +283,7 @@ class AutofillCreditCardsAddressesStorageTest {
                 expiryMonth = 12,
                 expiryYear = 2028,
                 cardType = "diners",
+                cardCvv = null,
             )
 
         val creditCard = storage.addCreditCard(creditCardFields)

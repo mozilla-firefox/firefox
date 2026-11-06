@@ -124,6 +124,7 @@ class CreditCardEditorStoreTest {
                     expiryMonth = 1,
                     expiryYear = 2026L,
                     cardType = "mastercard",
+                    cardCvv = null,
                 ),
                 updatedCardFields,
             )
@@ -158,6 +159,7 @@ class CreditCardEditorStoreTest {
                     expiryMonth = 1,
                     expiryYear = 2026L,
                     cardType = "mastercard",
+                    cardCvv = null,
                 ),
                 creditCardsStorage.newAddedCard,
             )
@@ -314,6 +316,7 @@ class CreditCardEditorStoreTest {
                     timeLastUsed = 1L,
                     timeLastModified = 1L,
                     timesUsed = 1L,
+                    cardCvv = null,
                 )
 
             val store = makeStore(state = CreditCardEditorState.Default, scope = this)

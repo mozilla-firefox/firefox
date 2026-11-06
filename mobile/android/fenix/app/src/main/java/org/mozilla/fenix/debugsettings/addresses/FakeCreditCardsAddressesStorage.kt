@@ -192,6 +192,7 @@ internal class FakeCreditCardsAddressesStorage : CreditCardsAddressesStorage {
                     expiryMonth = (1L..12L).random(),
                     expiryYear = (2026L..2032L).random(),
                     cardType = randomCardTypes.random(),
+                    cardCvv = null,
                 )
             }
 
@@ -204,6 +205,7 @@ internal class FakeCreditCardsAddressesStorage : CreditCardsAddressesStorage {
                 expiryMonth = expiryMonth,
                 expiryYear = expiryYear,
                 cardType = cardType,
+                cardCvv = cardCvv,
             )
 
         fun UpdatableAddressFields.toAddress() =

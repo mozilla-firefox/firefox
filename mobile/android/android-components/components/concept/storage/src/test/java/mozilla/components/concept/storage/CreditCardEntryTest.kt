@@ -22,6 +22,7 @@ class CreditCardEntryTest {
             expiryMonth = "5",
             expiryYear = "2030",
             cardType = "amex",
+            cardCvv = null,
         )
 
     @Test
@@ -47,6 +48,7 @@ class CreditCardEntryTest {
                 expiryMonth = "5",
                 expiryYear = "",
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCardWithoutMonth =
             CreditCardEntry(
@@ -56,6 +58,7 @@ class CreditCardEntryTest {
                 expiryMonth = "",
                 expiryYear = "2030",
                 cardType = "amex",
+                cardCvv = null,
             )
         val creditCardWithoutFullDate =
             CreditCardEntry(
@@ -65,6 +68,7 @@ class CreditCardEntryTest {
                 expiryMonth = "",
                 expiryYear = "",
                 cardType = "amex",
+                cardCvv = null,
             )
 
         assertEquals("", creditCardWithoutYear.expiryDate)

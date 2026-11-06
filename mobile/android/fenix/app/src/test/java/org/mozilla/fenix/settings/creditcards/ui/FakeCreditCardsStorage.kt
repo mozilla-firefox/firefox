@@ -30,6 +30,7 @@ class FakeCreditCardsStorage(
             expiryMonth = creditCardFields.expiryMonth,
             expiryYear = creditCardFields.expiryYear,
             cardType = creditCardFields.cardType,
+            cardCvv = creditCardFields.cardCvv,
         )
     }
 

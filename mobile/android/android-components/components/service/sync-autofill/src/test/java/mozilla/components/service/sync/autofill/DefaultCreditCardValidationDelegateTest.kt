@@ -51,6 +51,7 @@ class DefaultCreditCardValidationDelegateTest {
                     expiryMonth = 12,
                     expiryYear = 2028,
                     cardType = "visa",
+                    cardCvv = null,
                 )
             val creditCard = storage.addCreditCard(creditCardFields)
             val newCreditCard = createCreditCardEntry(guid = creditCard.guid)
@@ -68,6 +69,7 @@ class DefaultCreditCardValidationDelegateTest {
                 expiryMonth = 12,
                 expiryYear = 2028,
                 cardType = "visa",
+                cardCvv = null,
             )
         val creditCard = storage.addCreditCard(creditCardFields)
         val newCreditCard = createCreditCardEntry(guid = creditCard.guid)
@@ -86,6 +88,7 @@ class DefaultCreditCardValidationDelegateTest {
                     expiryMonth = 12,
                     expiryYear = 2028,
                     cardType = "visa",
+                    cardCvv = null,
                 )
             val creditCard = storage.addCreditCard(creditCardFields)
             val newCreditCard = createCreditCardEntry(cardNumber = "4111111111111111")
@@ -105,6 +108,7 @@ class DefaultCreditCardValidationDelegateTest {
                     expiryMonth = 12,
                     expiryYear = 2028,
                     cardType = "visa",
+                    cardCvv = null,
                 )
             storage.addCreditCard(creditCardFields)
 
@@ -129,4 +133,5 @@ fun createCreditCardEntry(
         expiryMonth = expiryMonth,
         expiryYear = expiryYear,
         cardType = cardType,
+        cardCvv = null,
     )

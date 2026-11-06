@@ -332,6 +332,7 @@ class PromptRequestTest {
                 expiryMonth = "5",
                 expiryYear = "2030",
                 cardType = "amex",
+                cardCvv = null,
             )
         var onDismissCalled = false
         var onConfirmCalled = false

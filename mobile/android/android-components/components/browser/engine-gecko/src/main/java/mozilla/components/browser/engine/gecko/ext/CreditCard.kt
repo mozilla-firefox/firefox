@@ -17,6 +17,7 @@ fun Autocomplete.CreditCard.toCreditCardEntry() =
         expiryMonth = expirationMonth,
         expiryYear = expirationYear,
         cardType = number.creditCardIIN()?.creditCardIssuerNetwork?.name ?: "",
+        cardCvv = securityCode.ifEmpty { null },
     )
 
 /** Converts an Android Components [CreditCardEntry] to a GeckoView [Autocomplete.CreditCard]. */
@@ -27,4 +28,5 @@ fun CreditCardEntry.toAutocompleteCreditCard() =
         .number(number)
         .expirationMonth(expiryMonth)
         .expirationYear(expiryYear)
+        .securityCode(cardCvv)
         .build()

@@ -64,6 +64,7 @@ class GeckoAutocompleteStorageDelegate(
                             .number(it.cardNumber)
                             .expirationMonth(it.expiryMonth.toString())
                             .expirationYear(it.expiryYear.toString())
+                            .securityCode(it.cardCvv)
                             .build()
                     }
                     .toTypedArray()
