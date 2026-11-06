@@ -84,13 +84,7 @@ RUN case "$(grep VERSION_CODENAME= /etc/os-release)" in \
   *) \
     ;; \
   esac; \
-  if [ -f /tmp/ca-certificates.deb ]; then \
-    dpkg -i /tmp/ca-certificates.deb && \
-    ( echo 'Package: ca-certificates'; \
-      echo "Pin: version $(dpkg-query -W -f='${Version}' ca-certificates)"; \
-      echo 'Pin-Priority: 1002'; \
-    ) > /etc/apt/preferences.d/99ca-certificates; \
-  fi
+  if [ -f /tmp/ca-certificates.deb ]; then dpkg -i /tmp/ca-certificates.deb; apt-mark hold ca-certificates; fi
 
 RUN apt-get update && \
     if grep -q snapshot.debian.org /etc/apt/sources.list; then \
