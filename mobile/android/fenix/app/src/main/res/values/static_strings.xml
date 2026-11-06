@@ -459,4 +459,6 @@
 
     <!--  Proper name for the Wrexham wallpaper section title. As it is a brand name we do not want it translated.-->
     <string name="wallpaper_wrexham_title" translatable="false">Wrexham A.F.C.</string>
+    <!-- Proper name of the team shown in the Wrexham widget header. As it is a brand name we do not want it translated. -->
+    <string name="wrex_widget_team_name" translatable="false">Wrexham AFC</string>
 </resources>
