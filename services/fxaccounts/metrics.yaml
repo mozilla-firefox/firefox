@@ -323,3 +323,57 @@ sync_settings:
         description: |
           A comma-delimited list of engines that were disabled by the user.
         type: string
+
+  cwts_upgrade_notice_shown:
+    type: event
+    description: |
+      Records when the user is shown the upgrade notice informing them of per device syncing.
+    bugs:
+      - https://bugzil.la/2087259
+    data_reviews:
+      - https://bugzil.la/2087259
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    extra_keys:
+      surface:
+        description: |
+          Which surface the notification was shown on. Value is settingsPage or cwtsDialog.
+        type: string
+
+  cwts_upgrade_notice_link_clicked:
+    type: event
+    description: |
+      Records when the user clicks the "Learn More" link on the upgrade notice informing them of
+      per device syncing.
+    bugs:
+      - https://bugzil.la/2087259
+    data_reviews:
+      - https://bugzil.la/2087259
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    extra_keys:
+      surface:
+        description: |
+          Which surface the notification was shown on. Value is settingsPage or cwtsDialog.
+        type: string
+
+  cwts_upgrade_notice_dismissed:
+    type: event
+    description: |
+      Records when the user dismisses the upgrade notice informing them of per device syncing.
+      Note that only the settings page's notice can be dismissed, not the one on the CWTS Dialog.
+    bugs:
+      - https://bugzil.la/2087259
+    data_reviews:
+      - https://bugzil.la/2087259
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never

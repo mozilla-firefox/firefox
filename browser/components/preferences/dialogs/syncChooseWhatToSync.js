@@ -34,6 +34,11 @@ if (Services.prefs.getBoolPref("services.sync.perDeviceEngineChoices", false)) {
 
 let gSyncChooseWhatToSync = {
   init() {
+    this.perDeviceSyncEnabled = Services.prefs.getBoolPref(
+      "services.sync.perDeviceEngineChoices",
+      false
+    );
+
     this._setupEventListeners();
     this._adjustForPrefs();
 
@@ -75,11 +80,11 @@ let gSyncChooseWhatToSync = {
       }
     }
 
-    const perDeviceSyncEnabled = Services.prefs.getBoolPref(
-      "services.sync.perDeviceEngineChoices",
-      false
-    );
-    if (!perDeviceSyncEnabled) {
+    if (this.perDeviceSyncEnabled) {
+      Glean.syncSettings.cwtsUpgradeNoticeShown.record({
+        surface: "cwtsDialog",
+      });
+    } else {
       document
         .getElementById("syncCwtsMigrationNotificationContainer")
         .remove();
@@ -93,6 +98,17 @@ let gSyncChooseWhatToSync = {
         console.error("Failed to record save sync settings event", err);
       });
     });
+
+    if (this.perDeviceSyncEnabled) {
+      const learnMoreLink = document.getElementById(
+        "syncCwtsMigrationNotificationLearnMore"
+      );
+      learnMoreLink?.addEventListener("click", () => {
+        Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.record({
+          surface: "cwtsDialog",
+        });
+      });
+    }
   },
   _getSyncEngineEnablementChanges() {
     let engines = [

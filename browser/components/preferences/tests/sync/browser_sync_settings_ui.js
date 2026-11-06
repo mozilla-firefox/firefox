@@ -191,6 +191,86 @@ add_task(async function testSyncFxaSignedInSyncingOff() {
             BrowserTestUtils.isHidden(syncNoFxaSignIn),
           "All other sync sections are hidden."
         );
+
+        const cwtsMigrationNotice = doc.getElementById(
+          "syncCwtsMigrationNotification"
+        );
+        if (testCase.isPerDeviceSyncEnabled) {
+          ok(
+            !!cwtsMigrationNotice && !cwtsMigrationNotice.hidden,
+            "CWTS Migration Message should be shown"
+          );
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeShown.testGetValue()?.length,
+            1,
+            "Should be 1 telemetry event for CWTS Migration message being shown"
+          );
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeShown.testGetValue()[0].extra
+              .surface,
+            "settingsPage",
+            "CWTS Migration message shown telemetry should describe the right surface"
+          );
+
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.testGetValue(),
+            null,
+            "Should not be telemetry for CWTS Migration message link being clicked"
+          );
+          const learnMoreLink = cwtsMigrationNotice.shadowRoot.querySelector(
+            "[is='moz-support-link']"
+          );
+          // We would rather this link not go anywhere so we don't have to deal
+          // with the new tab
+          learnMoreLink.href = "";
+          learnMoreLink.target = "";
+          learnMoreLink.click();
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.testGetValue()
+              ?.length,
+            1,
+            "Should be 1 telemetry event for CWTS Migration message link being clicked"
+          );
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.testGetValue()[0]
+              .extra.surface,
+            "settingsPage",
+            "CWTS Migration message link clicked telemetry should describe the right surface"
+          );
+
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeDismissed.testGetValue(),
+            null,
+            "Should not be telemetry for CWTS Migration message being dismissed"
+          );
+          cwtsMigrationNotice.shadowRoot.querySelector(".close").click();
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeDismissed.testGetValue()
+              ?.length,
+            1,
+            "Should be 1 telemetry event for CWTS Migration message being dismissed"
+          );
+        } else {
+          ok(
+            !cwtsMigrationNotice || cwtsMigrationNotice.hidden,
+            "CWTS Migration Message shouldn't be shown"
+          );
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeShown.testGetValue(),
+            null,
+            "Should not be telemetry for CWTS Migration message being shown"
+          );
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.testGetValue(),
+            null,
+            "Should not be telemetry for CWTS Migration message link being clicked"
+          );
+          Assert.equal(
+            Glean.syncSettings.cwtsUpgradeNoticeDismissed.testGetValue(),
+            null,
+            "Should not be telemetry for CWTS Migration message being dismissed"
+          );
+        }
       },
       testCase.isPerDeviceSyncEnabled
     );

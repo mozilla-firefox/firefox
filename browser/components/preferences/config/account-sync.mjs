@@ -529,9 +529,30 @@ Preferences.addSetting({
   id: "syncCwtsMigrationNotification",
   pref: "services.sync.cwtsMigrationNotification.dismissed",
   deps: ["uiStateUpdate"],
-  visible: (_deps, setting) => perDeviceSyncEnabled && !setting.value,
+  _shownTelemetrySent: false,
+  visible(_deps, setting) {
+    const visible = perDeviceSyncEnabled && !setting.value;
+    if (visible && !this._shownTelemetrySent) {
+      this._shownTelemetrySent = true;
+      Glean.syncSettings.cwtsUpgradeNoticeShown.record({
+        surface: "settingsPage",
+      });
+    }
+    return visible;
+  },
+  onUserClick: event => {
+    const learnMoreLink = event?.target?.shadowRoot?.querySelector(
+      "[is='moz-support-link']"
+    );
+    if (learnMoreLink?.contains(event?.originalTarget)) {
+      Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.record({
+        surface: "settingsPage",
+      });
+    }
+  },
   onMessageBarDismiss: (_event, _deps, setting) => {
     setting.value = true;
+    Glean.syncSettings.cwtsUpgradeNoticeDismissed.record();
   },
 });
 

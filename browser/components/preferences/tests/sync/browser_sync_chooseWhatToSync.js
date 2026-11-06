@@ -454,6 +454,91 @@ add_task(async function testTelemetrySentOnDialogAccept() {
   await SpecialPowers.popPrefEnv();
 });
 
+add_task(async function testCwtsNoMigrationNotice() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["identity.fxaccounts.enabled", true],
+      ["services.sync.perDeviceEngineChoices", false],
+    ],
+  });
+  Services.fog.testResetFOG();
+
+  await runWithCWTSDialog(async win => {
+    const doc = win.document;
+    const migrationNotice = doc.getElementById("syncCwtsMigrationNotification");
+    Assert.ok(!migrationNotice, "Should be no migration notice");
+    Assert.equal(
+      Glean.syncSettings.cwtsUpgradeNoticeShown.testGetValue(),
+      null,
+      "Should not be telemetry for CWTS Migration message being shown"
+    );
+    Assert.equal(
+      Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.testGetValue(),
+      null,
+      "Should not be telemetry for CWTS Migration message link being clicked"
+    );
+  });
+
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function testCwtsMigrationNotice() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["identity.fxaccounts.enabled", true],
+      ["services.sync.perDeviceEngineChoices", true],
+      // Set the settings page notification to dismissed so it doesn't send a
+      // `cwtsUpgradeNoticeShown` event.
+      ["services.sync.cwtsMigrationNotification.dismissed", true],
+    ],
+  });
+  Services.fog.testResetFOG();
+
+  await runWithCWTSDialog(async win => {
+    const doc = win.document;
+    const migrationNotice = doc.getElementById("syncCwtsMigrationNotification");
+    Assert.ok(!!migrationNotice, "Migration notice should exist");
+
+    Assert.equal(
+      Glean.syncSettings.cwtsUpgradeNoticeShown.testGetValue()?.length,
+      1,
+      "Should be 1 telemetry event for CWTS Migration message being shown"
+    );
+    Assert.equal(
+      Glean.syncSettings.cwtsUpgradeNoticeShown.testGetValue()[0].extra.surface,
+      "cwtsDialog",
+      "CWTS Migration message shown telemetry should describe the right surface"
+    );
+
+    Assert.equal(
+      Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.testGetValue(),
+      null,
+      "Should not be telemetry for CWTS Migration message link being clicked"
+    );
+    const learnMoreLink = doc.getElementById(
+      "syncCwtsMigrationNotificationLearnMore"
+    );
+    // We would rather this link not go anywhere so we don't have to deal with
+    // the new tab
+    learnMoreLink.href = "";
+    learnMoreLink.target = "";
+    learnMoreLink.click();
+    Assert.equal(
+      Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.testGetValue()?.length,
+      1,
+      "Should be 1 telemetry event for CWTS Migration message link being clicked"
+    );
+    Assert.equal(
+      Glean.syncSettings.cwtsUpgradeNoticeLinkClicked.testGetValue()[0].extra
+        .surface,
+      "cwtsDialog",
+      "CWTS Migration message link clicked telemetry should describe the right surface"
+    );
+  });
+
+  await SpecialPowers.popPrefEnv();
+});
+
 async function runWithCWTSDialog(test) {
   await openPreferencesViaOpenPreferencesAPI("paneSync", { leaveOpen: true });
 

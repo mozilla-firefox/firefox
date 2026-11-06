@@ -29,11 +29,16 @@ async function runSyncPaneTest(
   );
 
   await SpecialPowers.pushPrefEnv({
-    set: [["services.sync.perDeviceEngineChoices", isPerDeviceSyncEnabled]],
+    set: [
+      ["services.sync.perDeviceEngineChoices", isPerDeviceSyncEnabled],
+      ["services.sync.cwtsMigrationNotification.dismissed", false],
+    ],
   });
 
   const oldUIState = UIState.get;
   UIState.get = () => uiStateData;
+
+  Services.fog.testResetFOG();
 
   await openPreferencesViaOpenPreferencesAPI("paneSync", {
     leaveOpen: true,
