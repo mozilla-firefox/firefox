@@ -1331,37 +1331,6 @@ class nsCycleCollector : public nsIMemoryReporter {
 
 NS_IMPL_ISUPPORTS(nsCycleCollector, nsIMemoryReporter)
 
-/**
- * GraphWalker is templatized over a Visitor class that must provide
- * the following two methods:
- *
- * bool ShouldVisitNode(PtrInfo const *pi);
- * void VisitNode(PtrInfo *pi);
- */
-template <class Visitor>
-class GraphWalker {
- private:
-  Visitor mVisitor;
-
-  void DoWalk(nsDeque<PtrInfo>& aQueue);
-
-  void CheckedPush(nsDeque<PtrInfo>& aQueue, PtrInfo* aPi) {
-    if (!aPi) {
-      MOZ_CRASH();
-    }
-    if (!aQueue.Push(aPi, fallible)) {
-      mVisitor.Failed();
-    }
-  }
-
- public:
-  void Walk(PtrInfo* aPi);
-  void WalkFromRoots(CCGraph& aGraph);
-  // copy-constructing the visitor should be cheap, and less
-  // indirection than using a reference
-  explicit GraphWalker(const Visitor aVisitor) : mVisitor(aVisitor) {}
-};
-
 ////////////////////////////////////////////////////////////////////////
 // The static collector struct
 ////////////////////////////////////////////////////////////////////////
@@ -1510,41 +1479,6 @@ static void ToParticipant(void* aParti, nsCycleCollectionParticipant** aCp) {
     nsXPCOMCycleCollectionParticipant* xcp;
     ToParticipant(nsparti, &xcp);
     *aCp = xcp;
-  }
-}
-
-template <class Visitor>
-MOZ_NEVER_INLINE void GraphWalker<Visitor>::Walk(PtrInfo* aPi) {
-  nsDeque<PtrInfo> queue;
-  CheckedPush(queue, aPi);
-  DoWalk(queue);
-}
-
-template <class Visitor>
-MOZ_NEVER_INLINE void GraphWalker<Visitor>::WalkFromRoots(CCGraph& aGraph) {
-  nsDeque<PtrInfo> queue;
-  NodePool::Enumerator etor(aGraph.mNodes);
-  for (uint32_t i = 0; i < aGraph.mRootCount; ++i) {
-    CheckedPush(queue, etor.GetNext());
-  }
-  DoWalk(queue);
-}
-
-template <class Visitor>
-MOZ_NEVER_INLINE void GraphWalker<Visitor>::DoWalk(nsDeque<PtrInfo>& aQueue) {
-  // Use a aQueue to match the breadth-first traversal used when we
-  // built the graph, for hopefully-better locality.
-  while (aQueue.GetSize() > 0) {
-    PtrInfo* pi = aQueue.PopFront();
-
-    if (pi->WasTraversed() && mVisitor.ShouldVisitNode(pi)) {
-      mVisitor.VisitNode(pi);
-      for (EdgePool::Iterator child = pi->FirstChild(),
-                              child_end = pi->LastChild();
-           child != child_end; ++child) {
-        CheckedPush(aQueue, *child);
-      }
-    }
   }
 }
 
@@ -3022,30 +2956,35 @@ MOZ_NEVER_INLINE void nsCycleCollector::MarkRoots(SliceBudget& aBudget) {
 // Bacon & Rajan's |ScanRoots| routine.
 ////////////////////////////////////////////////////////////////////////
 
-struct ScanBlackVisitor {
-  ScanBlackVisitor(uint32_t& aWhiteNodeCount, bool& aFailed)
-      : mWhiteNodeCount(aWhiteNodeCount), mFailed(aFailed) {}
-
-  bool ShouldVisitNode(PtrInfo const* aPi) { return aPi->mColor != black; }
-
-  MOZ_NEVER_INLINE void VisitNode(PtrInfo* aPi) {
-    if (aPi->mColor == white) {
-      --mWhiteNodeCount;
-    }
-    aPi->mColor = black;
+MOZ_NEVER_INLINE static void FloodBlackNode(uint32_t& aWhiteNodeCount,
+                                            bool& aFailed, PtrInfo* aPi) {
+  nsDeque<PtrInfo> queue;
+  MOZ_RELEASE_ASSERT(aPi);
+  if (!queue.Push(aPi, fallible)) {
+    aFailed = true;
   }
 
-  void Failed() { mFailed = true; }
+  // Use a queue to match the breadth-first traversal used when we
+  // built the graph, for hopefully-better locality.
+  while (queue.GetSize() > 0) {
+    PtrInfo* pi = queue.PopFront();
 
- private:
-  uint32_t& mWhiteNodeCount;
-  bool& mFailed;
-};
+    if (pi->WasTraversed() && pi->mColor != black) {
+      if (pi->mColor == white) {
+        --aWhiteNodeCount;
+      }
+      pi->mColor = black;
+      for (EdgePool::Iterator child = pi->FirstChild(),
+                              child_end = pi->LastChild();
+           child != child_end; ++child) {
+        MOZ_RELEASE_ASSERT(*child);
+        if (!queue.Push(*child, fallible)) {
+          aFailed = true;
+        }
+      }
+    }
+  }
 
-static void FloodBlackNode(uint32_t& aWhiteNodeCount, bool& aFailed,
-                           PtrInfo* aPi) {
-  GraphWalker<ScanBlackVisitor>(ScanBlackVisitor(aWhiteNodeCount, aFailed))
-      .Walk(aPi);
   MOZ_ASSERT(aPi->mColor == black || !aPi->WasTraversed(),
              "FloodBlackNode should make aPi black");
 }
