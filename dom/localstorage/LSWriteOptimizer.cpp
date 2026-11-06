@@ -4,7 +4,6 @@
 
 #include "LSWriteOptimizer.h"
 
-#include <new>
 #include <utility>
 
 #include "nsBaseHashtable.h"

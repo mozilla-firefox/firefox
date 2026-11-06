@@ -133,6 +133,15 @@ class LSWriteOptimizer : public LSWriteOptimizerBase {
   void InsertItem(const nsAString& aKey, const T& aValue, int64_t aDelta = 0);
 
   void UpdateItem(const nsAString& aKey, const T& aValue, int64_t aDelta = 0);
+
+  // Merges aOlder's writes into this instance, treating aOlder as
+  // chronologically earlier. If this instance already has its own truncate,
+  // aOlder is superseded entirely and dropped. Otherwise, aOlder's truncate
+  // (if any) is adopted, and its per-key writes are taken only for keys this
+  // instance doesn't already have a newer write for. A newer insert of a key
+  // deleted by aOlder becomes an update, since the key still exists in the
+  // database.
+  void MergeFrom(LSWriteOptimizer&& aOlder);
 };
 
 /**

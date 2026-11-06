@@ -4,6 +4,7 @@
 
 UNIFIED_SOURCES = [
     "TestLocalStorage.cpp",
+    "TestLSWriteOptimizer.cpp",
 ]
 
 include("/ipc/chromium/chromium-config.mozbuild")

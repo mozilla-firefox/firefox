@@ -55,6 +55,13 @@ skip-if = [
 
 ["test_eviction.js"]
 
+["test_flushFailure.js"]
+# Checks persistence across a reset, but private browsing data under
+# storage/private is cleared at reset.
+skip-if = [
+  "privateBrowsing"
+]
+
 ["test_flushing.js"]
 # Hard-codes the non-PB on-disk path (storage/default/http+++example1.com/...);
 # PB origin directories live under storage/private/uuid+++<UUID>/.

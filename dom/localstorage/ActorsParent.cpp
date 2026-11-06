@@ -72,6 +72,7 @@
 #include "mozilla/dom/StorageDBUpdater.h"
 #include "mozilla/dom/StorageUtils.h"
 #include "mozilla/dom/ipc/IdType.h"
+#include "mozilla/dom/quota/ArtificialFailure.h"
 #include "mozilla/dom/quota/AssertionsImpl.h"
 #include "mozilla/dom/quota/CachingDatabaseConnection.h"
 #include "mozilla/dom/quota/CheckedUnsafePtr.h"
@@ -1253,6 +1254,9 @@ class Connection final : public CachingDatabaseConnection {
   RefPtr<ConnectionThread> mConnectionThread;
   RefPtr<QuotaClient> mQuotaClient;
   nsCOMPtr<nsITimer> mFlushTimer;
+  // Set when Close is called while a flush is in progress. The close is then
+  // deferred until the flush finishes.
+  nsCOMPtr<nsIRunnable> mPendingCloseCallback;
   ConnectionWriteOptimizer mWriteOptimizer;
   // XXX Consider changing this to ClientMetadata.
   const OriginMetadata mOriginMetadata;
@@ -1269,6 +1273,7 @@ class Connection final : public CachingDatabaseConnection {
   const bool mDatabaseWasNotAvailable;
   bool mHasCreatedDatabase;
   bool mFlushScheduled;
+  bool mFlushInProgress;
 #ifdef DEBUG
   bool mInUpdateBatch;
   bool mFinished;
@@ -1346,6 +1351,12 @@ class Connection final : public CachingDatabaseConnection {
 
   void Flush();
 
+  void DispatchFlush();
+
+  void FlushAndClose(nsIRunnable* aCallback);
+
+  void OnFlushFinished();
+
   static void FlushTimerCallback(nsITimer* aTimer, void* aClosure);
 };
 
@@ -1398,6 +1409,8 @@ class Connection::FlushOp final : public ConnectionDatastoreOperationBase {
 
  private:
   nsresult DoDatastoreWork() override;
+
+  void OnFailure(nsresult aResultCode) override;
 
   void Cleanup() override;
 };
@@ -3888,7 +3901,8 @@ Connection::Connection(ConnectionThread* aConnectionThread,
       mMaybeCipherKey(aMaybeCipherKey),
       mDatabaseWasNotAvailable(aDatabaseWasNotAvailable),
       mHasCreatedDatabase(false),
-      mFlushScheduled(false)
+      mFlushScheduled(false),
+      mFlushInProgress(false)
 #ifdef DEBUG
       ,
       mInUpdateBatch(false),
@@ -3903,6 +3917,8 @@ Connection::Connection(ConnectionThread* aConnectionThread,
 Connection::~Connection() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(!mFlushScheduled);
+  MOZ_ASSERT(!mFlushInProgress);
+  MOZ_ASSERT(!mPendingCloseCallback);
   MOZ_ASSERT(!mInUpdateBatch);
   MOZ_ASSERT(mFinished);
 }
@@ -3918,19 +3934,23 @@ void Connection::Dispatch(ConnectionDatastoreOperationBase* aOp) {
 void Connection::Close(nsIRunnable* aCallback) {
   AssertIsOnOwningThread();
   MOZ_ASSERT(aCallback);
+  MOZ_ASSERT(!mPendingCloseCallback);
 
   if (mFlushScheduled) {
     MOZ_ASSERT(mFlushTimer);
     MOZ_ALWAYS_SUCCEEDS(mFlushTimer->Cancel());
 
-    Flush();
-
-    mFlushTimer = nullptr;
+    mFlushScheduled = false;
   }
 
-  RefPtr<CloseOp> op = new CloseOp(this, aCallback);
+  mFlushTimer = nullptr;
 
-  Dispatch(op);
+  if (mFlushInProgress) {
+    mPendingCloseCallback = aCallback;
+    return;
+  }
+
+  FlushAndClose(aCallback);
 }
 
 void Connection::SetItem(const nsString& aKey, const LSValue& aValue,
@@ -4146,13 +4166,58 @@ void Connection::Flush() {
   AssertIsOnOwningThread();
   MOZ_ASSERT(mFlushScheduled);
 
-  if (mWriteOptimizer.HasWrites()) {
-    RefPtr<FlushOp> op = new FlushOp(this, std::move(mWriteOptimizer));
+  mFlushScheduled = false;
 
-    Dispatch(op);
+  if (!mWriteOptimizer.HasWrites()) {
+    return;
   }
 
-  mFlushScheduled = false;
+  if (mFlushInProgress) {
+    ScheduleFlush();
+    return;
+  }
+
+  DispatchFlush();
+}
+
+void Connection::DispatchFlush() {
+  AssertIsOnOwningThread();
+  MOZ_ASSERT(mWriteOptimizer.HasWrites());
+  MOZ_ASSERT(!mFlushInProgress);
+
+  RefPtr<FlushOp> op = new FlushOp(this, std::move(mWriteOptimizer));
+
+  mFlushInProgress = true;
+
+  Dispatch(op);
+}
+
+void Connection::FlushAndClose(nsIRunnable* aCallback) {
+  AssertIsOnOwningThread();
+  MOZ_ASSERT(aCallback);
+  MOZ_ASSERT(!mFlushScheduled);
+  MOZ_ASSERT(!mFlushInProgress);
+
+  if (mWriteOptimizer.HasWrites()) {
+    DispatchFlush();
+  }
+
+  RefPtr<CloseOp> op = new CloseOp(this, aCallback);
+
+  Dispatch(op);
+}
+
+void Connection::OnFlushFinished() {
+  AssertIsOnOwningThread();
+  MOZ_ASSERT(mFlushInProgress);
+
+  mFlushInProgress = false;
+
+  if (mPendingCloseCallback) {
+    nsCOMPtr<nsIRunnable> callback = std::move(mPendingCloseCallback);
+
+    FlushAndClose(callback);
+  }
 }
 
 // static
@@ -4246,12 +4311,29 @@ nsresult Connection::FlushOp::DoDatastoreWork() {
 
     QM_TRY(MOZ_TO_RESULT(UpdateUsageFile(usageFile, usageJournalFile, usage)));
 
+    // For testing purposes only
+    QM_TRY(ArtificialFailure(
+        nsIQuotaArtificialFailure::CATEGORY_LOCAL_STORAGE_FLUSH));
+
     QM_TRY(MOZ_TO_RESULT(autoWriteTransaction.Commit()));
 
-    QM_TRY(MOZ_TO_RESULT(usageJournalFile->Remove(false)));
+    // The writes are committed at this point, so failing here would make
+    // OnFailure merge them back and apply their delta a second time.
+    // A leftover journal only causes a usage rescan in QuotaClient::InitOrigin,
+    // so it's safe to only warn here.
+    QM_WARNONLY_TRY(QM_TO_RESULT(usageJournalFile->Remove(false)));
   }
 
   return NS_OK;
+}
+
+void Connection::FlushOp::OnFailure(nsresult aResultCode) {
+  ConnectionDatastoreOperationBase::OnFailure(aResultCode);
+
+  // If flush failed, merge back the failing operations back to the current
+  // connection so they are not lost, and will be executed as part of the next
+  // flush.
+  mConnection->mWriteOptimizer.MergeFrom(std::move(mWriteOptimizer));
 }
 
 void Connection::FlushOp::Cleanup() {
@@ -4260,6 +4342,8 @@ void Connection::FlushOp::Cleanup() {
   mWriteOptimizer.Reset();
 
   MOZ_ASSERT(!mWriteOptimizer.HasWrites());
+
+  mConnection->OnFlushFinished();
 
   ConnectionDatastoreOperationBase::Cleanup();
 }
