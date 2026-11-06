@@ -318,6 +318,7 @@ static char* xdg_user_dir_lookup(const char* aType) {
     }
 
     if (relative) {
+      free(user_dir);
       user_dir = (char*)malloc(strlen(home_dir) + 1 + strlen(p) + 1);
       if (!user_dir) {
         goto error2;
@@ -326,6 +327,7 @@ static char* xdg_user_dir_lookup(const char* aType) {
       strcpy(user_dir, home_dir);
       strcat(user_dir, "/");
     } else {
+      free(user_dir);
       user_dir = (char*)malloc(strlen(p) + 1);
       if (!user_dir) {
         goto error2;
