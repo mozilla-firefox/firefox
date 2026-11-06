@@ -34,6 +34,18 @@ void BoundStorageKeyChild::ClearListener() {
 void BoundStorageKeyChild::StartDestroyFromListener() {
   NS_ASSERT_OWNINGTHREAD(BoundStorageKeyChild);
 
+  // The listener is being destroyed now. Managed actors (CacheStorageChild,
+  // CacheChild, CacheStreamControlChild) tear down asynchronously and none of
+  // them keeps the listener alive, so StartDestroy() usually takes the delayed
+  // path; sever the listener here or DestroyInternal() would later call into
+  // freed memory.
+  BoundStorageKeyChildListener* listener = mListener;
+  if (listener) {
+    listener->OnActorDestroy(this);
+    // listener should call ClearListener() in OnActorDestroy()
+    MOZ_DIAGNOSTIC_ASSERT(!mListener);
+  }
+
   StartDestroy();
 }
 
