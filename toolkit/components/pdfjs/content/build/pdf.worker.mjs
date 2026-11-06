@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 6.5.447
- * pdfjsBuild = c7ca8a32e
+ * pdfjsVersion = 6.5.472
+ * pdfjsBuild = 1c3fdc259
  */
 
 ;// ./src/shared/util.js
@@ -5144,7 +5144,7 @@ class JpegImage {
     const scaleX = this.width / width,
       scaleY = this.height / height;
     let component, componentScaleX, componentScaleY, blocksPerScanline;
-    let x, y, i, j, k;
+    let x, y, i, j;
     let offset = 0;
     const numComponents = this.components.length;
     const dataLength = width * height * numComponents;
@@ -8814,10 +8814,8 @@ class WasmImage {
       instance.#modulePromise = null;
     }
   }
-  constructor(trackInstance = false) {
-    if (trackInstance) {
-      WasmImage.#instances.add(this);
-    }
+  constructor() {
+    WasmImage.#instances.add(this);
   }
   async #instantiateWasm(failureCallback, imports, successCallback) {
     const loaded = await WasmLoader.load({
@@ -8861,7 +8859,7 @@ class JBig2CCITTFaxImage extends WasmImage {
   _filename = "jbig2.wasm";
   _noWasmFilename = "jbig2_nowasm_fallback.js";
   static get instance() {
-    return shadow(this, "instance", new JBig2CCITTFaxImage(true));
+    return shadow(this, "instance", new JBig2CCITTFaxImage());
   }
   async decode(bytes, width, height, globals, CCITTOptions) {
     const module = await this._getModule(jbig2);
@@ -9579,7 +9577,6 @@ async function OpenJPEG(moduleArg = {}) {
 
 
 
-
 class JpxError extends BaseException {
   constructor(msg) {
     super(msg, "JpxError");
@@ -9589,7 +9586,7 @@ class JpxImage extends WasmImage {
   _filename = "openjpeg.wasm";
   _noWasmFilename = "openjpeg_nowasm_fallback.js";
   static get instance() {
-    return shadow(this, "instance", new JpxImage(true));
+    return shadow(this, "instance", new JpxImage());
   }
   async decode(bytes, {
     numComponents,
@@ -16063,8 +16060,10 @@ const getSpecialPUASymbols = getLookupTableFactory(function (t) {
   t[63194] = 0x00ae;
   t[63722] = 0x2122;
   t[63195] = 0x2122;
+  t[63717] = 0x203e;
   t[63718] = 0x23d0;
   t[63719] = 0x23af;
+  t[63732] = 0x23aa;
   t[63733] = 0x23ae;
   t[63729] = 0x23a7;
   t[63730] = 0x23a8;
@@ -16209,9 +16208,7 @@ function buildMapping(baseEncoding, glyphNames) {
 }
 function type1FontGlyphMapping(properties, builtInEncoding, glyphNames) {
   let charCodeToGlyphId, glyphsUnicodeMap;
-  if (properties.isInternalFont) {
-    charCodeToGlyphId = buildMapping(builtInEncoding, glyphNames);
-  } else if (properties.baseEncodingName) {
+  if (properties.baseEncodingName) {
     charCodeToGlyphId = buildMapping(getEncoding(properties.baseEncodingName), glyphNames);
   } else if (properties.flags & FontFlags.Symbolic) {
     charCodeToGlyphId = new Map();
@@ -18176,26 +18173,6 @@ const getStdFontMap = getLookupTableFactory(function (t) {
   t["TimesNewRomanPSMT-BoldItalic"] = "Times-BoldItalic";
   t["TimesNewRomanPSMT-Italic"] = "Times-Italic";
 });
-const getFontNameToFileMap = getLookupTableFactory(function (t) {
-  t.Courier = "FoxitFixed.pfb";
-  t["Courier-Bold"] = "FoxitFixedBold.pfb";
-  t["Courier-BoldOblique"] = "FoxitFixedBoldItalic.pfb";
-  t["Courier-Oblique"] = "FoxitFixedItalic.pfb";
-  t.Helvetica = "LiberationSans-Regular.ttf";
-  t["Helvetica-Bold"] = "LiberationSans-Bold.ttf";
-  t["Helvetica-BoldOblique"] = "LiberationSans-BoldItalic.ttf";
-  t["Helvetica-Oblique"] = "LiberationSans-Italic.ttf";
-  t["Times-Roman"] = "FoxitSerif.pfb";
-  t["Times-Bold"] = "FoxitSerifBold.pfb";
-  t["Times-BoldItalic"] = "FoxitSerifBoldItalic.pfb";
-  t["Times-Italic"] = "FoxitSerifItalic.pfb";
-  t.Symbol = "FoxitSymbol.pfb";
-  t.ZapfDingbats = "FoxitDingbats.pfb";
-  t["LiberationSans-Regular"] = "LiberationSans-Regular.ttf";
-  t["LiberationSans-Bold"] = "LiberationSans-Bold.ttf";
-  t["LiberationSans-Italic"] = "LiberationSans-Italic.ttf";
-  t["LiberationSans-BoldItalic"] = "LiberationSans-BoldItalic.ttf";
-});
 const getNonStdFontMap = getLookupTableFactory(function (t) {
   t.Calibri = "Helvetica";
   t["Calibri-Bold"] = "Helvetica-Bold";
@@ -19111,644 +19088,6 @@ function isKnownFontName(name) {
   return !!(getStdFontMap()[fontName] || getNonStdFontMap()[fontName] || getSerifFonts()[fontName] || getSymbolsFonts()[fontName]);
 }
 
-;// ./src/core/glyf.js
-
-const ON_CURVE_POINT = 1 << 0;
-const X_SHORT_VECTOR = 1 << 1;
-const Y_SHORT_VECTOR = 1 << 2;
-const REPEAT_FLAG = 1 << 3;
-const X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR = 1 << 4;
-const Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR = 1 << 5;
-const OVERLAP_SIMPLE = 1 << 6;
-const ARG_1_AND_2_ARE_WORDS = 1 << 0;
-const ARGS_ARE_XY_VALUES = 1 << 1;
-const WE_HAVE_A_SCALE = 1 << 3;
-const MORE_COMPONENTS = 1 << 5;
-const WE_HAVE_AN_X_AND_Y_SCALE = 1 << 6;
-const WE_HAVE_A_TWO_BY_TWO = 1 << 7;
-const WE_HAVE_INSTRUCTIONS = 1 << 8;
-const GLYPH_HEADER_SIZE = 10;
-class GlyfTable {
-  constructor({
-    glyfTable,
-    isGlyphLocationsLong,
-    locaTable,
-    numGlyphs
-  }) {
-    this.glyphs = [];
-    const loca = new DataView(locaTable.buffer, locaTable.byteOffset, locaTable.byteLength);
-    const glyf = new DataView(glyfTable.buffer, glyfTable.byteOffset, glyfTable.byteLength);
-    const offsetSize = isGlyphLocationsLong ? 4 : 2;
-    let prev = isGlyphLocationsLong ? loca.getUint32(0) : 2 * loca.getUint16(0);
-    let pos = 0;
-    for (let i = 0; i < numGlyphs; i++) {
-      pos += offsetSize;
-      const next = isGlyphLocationsLong ? loca.getUint32(pos) : 2 * loca.getUint16(pos);
-      if (next === prev) {
-        this.glyphs.push(new Glyph({}));
-        continue;
-      }
-      const glyph = Glyph.parse(prev, glyf);
-      this.glyphs.push(glyph);
-      prev = next;
-    }
-  }
-  getSize() {
-    return Math.sumPrecise(this.glyphs.map(g => g.getSize() + 3 & ~3));
-  }
-  write() {
-    const totalSize = this.getSize();
-    const glyfTable = new DataView(new ArrayBuffer(totalSize));
-    const isLocationLong = totalSize > 0x1fffe;
-    const offsetSize = isLocationLong ? 4 : 2;
-    const locaTable = new DataView(new ArrayBuffer((this.glyphs.length + 1) * offsetSize));
-    if (isLocationLong) {
-      locaTable.setUint32(0, 0);
-    } else {
-      locaTable.setUint16(0, 0);
-    }
-    let pos = 0;
-    let locaIndex = 0;
-    for (const glyph of this.glyphs) {
-      pos += glyph.write(pos, glyfTable);
-      pos = pos + 3 & ~3;
-      locaIndex += offsetSize;
-      if (isLocationLong) {
-        locaTable.setUint32(locaIndex, pos);
-      } else {
-        locaTable.setUint16(locaIndex, pos >> 1);
-      }
-    }
-    return {
-      isLocationLong,
-      loca: new Uint8Array(locaTable.buffer),
-      glyf: new Uint8Array(glyfTable.buffer)
-    };
-  }
-  scale(factors) {
-    for (let i = 0, ii = this.glyphs.length; i < ii; i++) {
-      this.glyphs[i].scale(factors[i]);
-    }
-  }
-}
-class Glyph {
-  constructor({
-    header = null,
-    simple = null,
-    composites = null
-  }) {
-    this.header = header;
-    this.simple = simple;
-    this.composites = composites;
-  }
-  static parse(pos, glyf) {
-    const [read, header] = GlyphHeader.parse(pos, glyf);
-    pos += read;
-    if (header.numberOfContours < 0) {
-      const composites = [];
-      while (true) {
-        const [n, composite] = CompositeGlyph.parse(pos, glyf);
-        pos += n;
-        composites.push(composite);
-        if (!(composite.flags & MORE_COMPONENTS)) {
-          break;
-        }
-      }
-      return new Glyph({
-        header,
-        composites
-      });
-    }
-    const simple = SimpleGlyph.parse(pos, glyf, header.numberOfContours);
-    return new Glyph({
-      header,
-      simple
-    });
-  }
-  getSize() {
-    if (!this.header) {
-      return 0;
-    }
-    const size = this.simple ? this.simple.getSize() : Math.sumPrecise(this.composites.map(c => c.getSize()));
-    return this.header.getSize() + size;
-  }
-  write(pos, buf) {
-    if (!this.header) {
-      return 0;
-    }
-    const spos = pos;
-    pos += this.header.write(pos, buf);
-    if (this.simple) {
-      pos += this.simple.write(pos, buf);
-    } else {
-      for (const composite of this.composites) {
-        pos += composite.write(pos, buf);
-      }
-    }
-    return pos - spos;
-  }
-  scale(factor) {
-    if (!this.header) {
-      return;
-    }
-    const xMiddle = (this.header.xMin + this.header.xMax) / 2;
-    this.header.scale(xMiddle, factor);
-    if (this.simple) {
-      this.simple.scale(xMiddle, factor);
-    } else {
-      for (const composite of this.composites) {
-        composite.scale(xMiddle, factor);
-      }
-    }
-  }
-}
-class GlyphHeader {
-  constructor({
-    numberOfContours,
-    xMin,
-    yMin,
-    xMax,
-    yMax
-  }) {
-    this.numberOfContours = numberOfContours;
-    this.xMin = xMin;
-    this.yMin = yMin;
-    this.xMax = xMax;
-    this.yMax = yMax;
-  }
-  static parse(pos, glyf) {
-    return [GLYPH_HEADER_SIZE, new GlyphHeader({
-      numberOfContours: glyf.getInt16(pos),
-      xMin: glyf.getInt16(pos + 2),
-      yMin: glyf.getInt16(pos + 4),
-      xMax: glyf.getInt16(pos + 6),
-      yMax: glyf.getInt16(pos + 8)
-    })];
-  }
-  getSize() {
-    return GLYPH_HEADER_SIZE;
-  }
-  write(pos, buf) {
-    buf.setInt16(pos, this.numberOfContours);
-    buf.setInt16(pos + 2, this.xMin);
-    buf.setInt16(pos + 4, this.yMin);
-    buf.setInt16(pos + 6, this.xMax);
-    buf.setInt16(pos + 8, this.yMax);
-    return GLYPH_HEADER_SIZE;
-  }
-  scale(x, factor) {
-    this.xMin = Math.round(x + (this.xMin - x) * factor);
-    this.xMax = Math.round(x + (this.xMax - x) * factor);
-  }
-}
-class Contour {
-  constructor({
-    flags,
-    xCoordinates,
-    yCoordinates
-  }) {
-    this.xCoordinates = xCoordinates;
-    this.yCoordinates = yCoordinates;
-    this.flags = flags;
-  }
-}
-class SimpleGlyph {
-  constructor({
-    contours,
-    instructions
-  }) {
-    this.contours = contours;
-    this.instructions = instructions;
-  }
-  static parse(pos, glyf, numberOfContours) {
-    const endPtsOfContours = [];
-    for (let i = 0; i < numberOfContours; i++) {
-      const endPt = glyf.getUint16(pos);
-      pos += 2;
-      endPtsOfContours.push(endPt);
-    }
-    const numberOfPt = endPtsOfContours[numberOfContours - 1] + 1;
-    const instructionLength = glyf.getUint16(pos);
-    pos += 2;
-    const instructions = new Uint8Array(glyf).slice(pos, pos + instructionLength);
-    pos += instructionLength;
-    const flags = [];
-    for (let i = 0; i < numberOfPt; pos++, i++) {
-      let flag = glyf.getUint8(pos);
-      flags.push(flag);
-      if (flag & REPEAT_FLAG) {
-        const count = glyf.getUint8(++pos);
-        flag ^= REPEAT_FLAG;
-        for (let m = 0; m < count; m++) {
-          flags.push(flag);
-        }
-        i += count;
-      }
-    }
-    const allXCoordinates = [];
-    let xCoordinates = [];
-    let yCoordinates = [];
-    let pointFlags = [];
-    const contours = [];
-    let endPtsOfContoursIndex = 0;
-    let lastCoordinate = 0;
-    for (let i = 0; i < numberOfPt; i++) {
-      const flag = flags[i];
-      if (flag & X_SHORT_VECTOR) {
-        const x = glyf.getUint8(pos++);
-        lastCoordinate += flag & X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR ? x : -x;
-        xCoordinates.push(lastCoordinate);
-      } else if (flag & X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR) {
-        xCoordinates.push(lastCoordinate);
-      } else {
-        lastCoordinate += glyf.getInt16(pos);
-        pos += 2;
-        xCoordinates.push(lastCoordinate);
-      }
-      if (endPtsOfContours[endPtsOfContoursIndex] === i) {
-        endPtsOfContoursIndex++;
-        allXCoordinates.push(xCoordinates);
-        xCoordinates = [];
-      }
-    }
-    lastCoordinate = 0;
-    endPtsOfContoursIndex = 0;
-    for (let i = 0; i < numberOfPt; i++) {
-      const flag = flags[i];
-      if (flag & Y_SHORT_VECTOR) {
-        const y = glyf.getUint8(pos++);
-        lastCoordinate += flag & Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR ? y : -y;
-        yCoordinates.push(lastCoordinate);
-      } else if (flag & Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR) {
-        yCoordinates.push(lastCoordinate);
-      } else {
-        lastCoordinate += glyf.getInt16(pos);
-        pos += 2;
-        yCoordinates.push(lastCoordinate);
-      }
-      pointFlags.push(flag & ON_CURVE_POINT | flag & OVERLAP_SIMPLE);
-      if (endPtsOfContours[endPtsOfContoursIndex] === i) {
-        xCoordinates = allXCoordinates[endPtsOfContoursIndex];
-        endPtsOfContoursIndex++;
-        contours.push(new Contour({
-          flags: pointFlags,
-          xCoordinates,
-          yCoordinates
-        }));
-        yCoordinates = [];
-        pointFlags = [];
-      }
-    }
-    return new SimpleGlyph({
-      contours,
-      instructions
-    });
-  }
-  getSize() {
-    let size = this.contours.length * 2 + 2 + this.instructions.length;
-    let lastX = 0;
-    let lastY = 0;
-    for (const contour of this.contours) {
-      size += contour.flags.length;
-      for (let i = 0, ii = contour.xCoordinates.length; i < ii; i++) {
-        const x = contour.xCoordinates[i];
-        const y = contour.yCoordinates[i];
-        let abs = Math.abs(x - lastX);
-        if (abs > 255) {
-          size += 2;
-        } else if (abs > 0) {
-          size += 1;
-        }
-        lastX = x;
-        abs = Math.abs(y - lastY);
-        if (abs > 255) {
-          size += 2;
-        } else if (abs > 0) {
-          size += 1;
-        }
-        lastY = y;
-      }
-    }
-    return size;
-  }
-  write(pos, buf) {
-    const spos = pos;
-    const xCoordinates = [];
-    const yCoordinates = [];
-    const flags = [];
-    let lastX = 0;
-    let lastY = 0;
-    for (const contour of this.contours) {
-      for (let i = 0, ii = contour.xCoordinates.length; i < ii; i++) {
-        let flag = contour.flags[i];
-        const x = contour.xCoordinates[i];
-        let delta = x - lastX;
-        if (delta === 0) {
-          flag |= X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR;
-          xCoordinates.push(0);
-        } else {
-          const abs = Math.abs(delta);
-          if (abs <= 255) {
-            flag |= delta >= 0 ? X_SHORT_VECTOR | X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR : X_SHORT_VECTOR;
-            xCoordinates.push(abs);
-          } else {
-            xCoordinates.push(delta);
-          }
-        }
-        lastX = x;
-        const y = contour.yCoordinates[i];
-        delta = y - lastY;
-        if (delta === 0) {
-          flag |= Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR;
-          yCoordinates.push(0);
-        } else {
-          const abs = Math.abs(delta);
-          if (abs <= 255) {
-            flag |= delta >= 0 ? Y_SHORT_VECTOR | Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR : Y_SHORT_VECTOR;
-            yCoordinates.push(abs);
-          } else {
-            yCoordinates.push(delta);
-          }
-        }
-        lastY = y;
-        flags.push(flag);
-      }
-      buf.setUint16(pos, xCoordinates.length - 1);
-      pos += 2;
-    }
-    buf.setUint16(pos, this.instructions.length);
-    pos += 2;
-    if (this.instructions.length) {
-      new Uint8Array(buf.buffer, 0, buf.buffer.byteLength).set(this.instructions, pos);
-      pos += this.instructions.length;
-    }
-    for (const flag of flags) {
-      buf.setUint8(pos++, flag);
-    }
-    for (let i = 0, ii = xCoordinates.length; i < ii; i++) {
-      const x = xCoordinates[i];
-      const flag = flags[i];
-      if (flag & X_SHORT_VECTOR) {
-        buf.setUint8(pos++, x);
-      } else if (!(flag & X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR)) {
-        buf.setInt16(pos, x);
-        pos += 2;
-      }
-    }
-    for (let i = 0, ii = yCoordinates.length; i < ii; i++) {
-      const y = yCoordinates[i];
-      const flag = flags[i];
-      if (flag & Y_SHORT_VECTOR) {
-        buf.setUint8(pos++, y);
-      } else if (!(flag & Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR)) {
-        buf.setInt16(pos, y);
-        pos += 2;
-      }
-    }
-    return pos - spos;
-  }
-  scale(x, factor) {
-    for (const contour of this.contours) {
-      if (contour.xCoordinates.length === 0) {
-        continue;
-      }
-      for (let i = 0, ii = contour.xCoordinates.length; i < ii; i++) {
-        contour.xCoordinates[i] = Math.round(x + (contour.xCoordinates[i] - x) * factor);
-      }
-    }
-  }
-}
-class CompositeGlyph {
-  constructor({
-    flags,
-    glyphIndex,
-    argument1,
-    argument2,
-    transf,
-    instructions
-  }) {
-    this.flags = flags;
-    this.glyphIndex = glyphIndex;
-    this.argument1 = argument1;
-    this.argument2 = argument2;
-    this.transf = transf;
-    this.instructions = instructions;
-  }
-  static parse(pos, glyf) {
-    const spos = pos;
-    const transf = [];
-    let flags = glyf.getUint16(pos);
-    const glyphIndex = glyf.getUint16(pos + 2);
-    pos += 4;
-    let argument1, argument2;
-    if (flags & ARG_1_AND_2_ARE_WORDS) {
-      if (flags & ARGS_ARE_XY_VALUES) {
-        argument1 = glyf.getInt16(pos);
-        argument2 = glyf.getInt16(pos + 2);
-      } else {
-        argument1 = glyf.getUint16(pos);
-        argument2 = glyf.getUint16(pos + 2);
-      }
-      pos += 4;
-      flags ^= ARG_1_AND_2_ARE_WORDS;
-    } else {
-      if (flags & ARGS_ARE_XY_VALUES) {
-        argument1 = glyf.getInt8(pos);
-        argument2 = glyf.getInt8(pos + 1);
-      } else {
-        argument1 = glyf.getUint8(pos);
-        argument2 = glyf.getUint8(pos + 1);
-      }
-      pos += 2;
-    }
-    if (flags & WE_HAVE_A_SCALE) {
-      transf.push(glyf.getUint16(pos));
-      pos += 2;
-    } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
-      transf.push(glyf.getUint16(pos), glyf.getUint16(pos + 2));
-      pos += 4;
-    } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
-      transf.push(glyf.getUint16(pos), glyf.getUint16(pos + 2), glyf.getUint16(pos + 4), glyf.getUint16(pos + 6));
-      pos += 8;
-    }
-    let instructions = null;
-    if (flags & WE_HAVE_INSTRUCTIONS) {
-      const instructionLength = glyf.getUint16(pos);
-      pos += 2;
-      instructions = new Uint8Array(glyf).slice(pos, pos + instructionLength);
-      pos += instructionLength;
-    }
-    return [pos - spos, new CompositeGlyph({
-      flags,
-      glyphIndex,
-      argument1,
-      argument2,
-      transf,
-      instructions
-    })];
-  }
-  getSize() {
-    let size = 2 + 2 + this.transf.length * 2;
-    if (this.flags & WE_HAVE_INSTRUCTIONS) {
-      size += 2 + this.instructions.length;
-    }
-    size += 2;
-    if (this.flags & 2) {
-      if (!(this.argument1 >= -128 && this.argument1 <= 127 && this.argument2 >= -128 && this.argument2 <= 127)) {
-        size += 2;
-      }
-    } else if (!(this.argument1 >= 0 && this.argument1 <= 255 && this.argument2 >= 0 && this.argument2 <= 255)) {
-      size += 2;
-    }
-    return size;
-  }
-  write(pos, buf) {
-    const spos = pos;
-    if (this.flags & ARGS_ARE_XY_VALUES) {
-      if (!(this.argument1 >= -128 && this.argument1 <= 127 && this.argument2 >= -128 && this.argument2 <= 127)) {
-        this.flags |= ARG_1_AND_2_ARE_WORDS;
-      }
-    } else if (!(this.argument1 >= 0 && this.argument1 <= 255 && this.argument2 >= 0 && this.argument2 <= 255)) {
-      this.flags |= ARG_1_AND_2_ARE_WORDS;
-    }
-    buf.setUint16(pos, this.flags);
-    buf.setUint16(pos + 2, this.glyphIndex);
-    pos += 4;
-    if (this.flags & ARG_1_AND_2_ARE_WORDS) {
-      if (this.flags & ARGS_ARE_XY_VALUES) {
-        buf.setInt16(pos, this.argument1);
-        buf.setInt16(pos + 2, this.argument2);
-      } else {
-        buf.setUint16(pos, this.argument1);
-        buf.setUint16(pos + 2, this.argument2);
-      }
-      pos += 4;
-    } else {
-      buf.setUint8(pos, this.argument1);
-      buf.setUint8(pos + 1, this.argument2);
-      pos += 2;
-    }
-    if (this.flags & WE_HAVE_INSTRUCTIONS) {
-      buf.setUint16(pos, this.instructions.length);
-      pos += 2;
-      if (this.instructions.length) {
-        new Uint8Array(buf.buffer, 0, buf.buffer.byteLength).set(this.instructions, pos);
-        pos += this.instructions.length;
-      }
-    }
-    return pos - spos;
-  }
-  scale(x, factor) {}
-}
-function pruneCompositeGlyphCycles(glyfTable, locaEntries, numGlyphs) {
-  const glyf = new DataView(glyfTable.buffer, glyfTable.byteOffset, glyfTable.byteLength);
-  const components = new Array(numGlyphs);
-  for (let i = 0; i < numGlyphs; i++) {
-    const offset = locaEntries[i].offset;
-    const endOffset = Math.min(locaEntries[i].endOffset, glyf.byteLength);
-    if (endOffset - offset <= GLYPH_HEADER_SIZE || glyf.getInt16(offset) >= 0) {
-      continue;
-    }
-    const comps = [];
-    let p = offset + GLYPH_HEADER_SIZE;
-    while (p + 4 <= endOffset) {
-      const flags = glyf.getUint16(p);
-      const gid = glyf.getUint16(p + 2);
-      let size = 4 + (flags & ARG_1_AND_2_ARE_WORDS ? 4 : 2);
-      if (flags & WE_HAVE_A_SCALE) {
-        size += 2;
-      } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
-        size += 4;
-      } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
-        size += 8;
-      }
-      comps.push({
-        gid,
-        offset: p,
-        size,
-        flags
-      });
-      p += size;
-      if (!(flags & MORE_COMPONENTS)) {
-        break;
-      }
-    }
-    if (comps.length) {
-      components[i] = comps;
-    }
-  }
-  const WHITE = 0,
-    GRAY = 1,
-    BLACK = 2;
-  const state = new Uint8Array(numGlyphs);
-  const backEdges = new Map();
-  for (let start = 0; start < numGlyphs; start++) {
-    if (state[start] !== WHITE || !components[start]) {
-      continue;
-    }
-    const stack = [{
-      node: start,
-      idx: 0
-    }];
-    state[start] = GRAY;
-    while (stack.length > 0) {
-      const top = stack.at(-1);
-      const comps = components[top.node];
-      if (!comps || top.idx >= comps.length) {
-        state[top.node] = BLACK;
-        stack.pop();
-        continue;
-      }
-      const compIdx = top.idx++;
-      const next = comps[compIdx].gid;
-      if (next >= numGlyphs || state[next] === BLACK) {
-        continue;
-      }
-      if (state[next] === WHITE) {
-        state[next] = GRAY;
-        stack.push({
-          node: next,
-          idx: 0
-        });
-        continue;
-      }
-      backEdges.getOrInsertComputed(top.node, makeSet).add(compIdx);
-    }
-  }
-  const droppedGlyphs = new Set();
-  for (const [gIdx, removeSet] of backEdges) {
-    const comps = components[gIdx];
-    const remaining = [];
-    for (let ci = 0; ci < comps.length; ci++) {
-      if (!removeSet.has(ci)) {
-        remaining.push(comps[ci]);
-      }
-    }
-    if (remaining.length === 0) {
-      droppedGlyphs.add(gIdx);
-      continue;
-    }
-    const start = locaEntries[gIdx].offset;
-    const endOffset = Math.min(locaEntries[gIdx].endOffset, glyf.byteLength);
-    let writePos = start + GLYPH_HEADER_SIZE;
-    for (let ci = 0; ci < remaining.length; ci++) {
-      const c = remaining[ci];
-      const isLast = ci === remaining.length - 1;
-      let newFlags = c.flags & ~WE_HAVE_INSTRUCTIONS;
-      newFlags = isLast ? newFlags & ~MORE_COMPONENTS : newFlags | MORE_COMPONENTS;
-      if (writePos !== c.offset) {
-        glyfTable.copyWithin(writePos, c.offset, c.offset + c.size);
-      }
-      glyf.setUint16(writePos, newFlags);
-      writePos += c.size;
-    }
-    if (writePos < endOffset) {
-      glyfTable.fill(0, writePos, endOffset);
-    }
-  }
-  return droppedGlyphs;
-}
-
 ;// ./src/core/to_unicode_map.js
 
 
@@ -19876,10 +19215,7 @@ class CFFFont {
       }
       return charCodeToGlyphId;
     }
-    let encoding = cff.encoding ? cff.encoding.encoding : null;
-    if (properties.isInternalFont) {
-      encoding = properties.defaultEncoding;
-    }
+    const encoding = cff.encoding ? cff.encoding.encoding : null;
     return type1FontGlyphMapping(properties, encoding, charsets);
   }
   hasGlyphId(id) {
@@ -19921,7 +19257,7 @@ class SYSTEM_FONT_INFO {
 }
 class FONT_INFO {
   static bools = ["black", "bold", "disableFontFace", "fontExtraProperties", "isInvalidPDFjsFont", "isType3Font", "italic", "missingFile", "remeasure", "vertical"];
-  static strings = ["fallbackName", "loadedName"];
+  static strings = ["fallbackName", "generatedFontName", "loadedName"];
   static OFFSET_BBOX = Math.ceil(this.bools.length * 2 / 8);
   static OFFSET_FONT_MATRIX = this.OFFSET_BBOX + 1 + 2 * 4;
   static OFFSET_STRINGS = this.OFFSET_FONT_MATRIX + 1 + 8 * 6;
@@ -24056,6 +23392,124 @@ class OpenTypeFileBuilder {
   }
 }
 
+;// ./src/core/glyf.js
+
+const ARG_1_AND_2_ARE_WORDS = 1 << 0;
+const WE_HAVE_A_SCALE = 1 << 3;
+const MORE_COMPONENTS = 1 << 5;
+const WE_HAVE_AN_X_AND_Y_SCALE = 1 << 6;
+const WE_HAVE_A_TWO_BY_TWO = 1 << 7;
+const WE_HAVE_INSTRUCTIONS = 1 << 8;
+const GLYPH_HEADER_SIZE = 10;
+function pruneCompositeGlyphCycles(glyfTable, locaEntries, numGlyphs) {
+  const glyf = new DataView(glyfTable.buffer, glyfTable.byteOffset, glyfTable.byteLength);
+  const components = new Array(numGlyphs);
+  for (let i = 0; i < numGlyphs; i++) {
+    const offset = locaEntries[i].offset;
+    const endOffset = Math.min(locaEntries[i].endOffset, glyf.byteLength);
+    if (endOffset - offset <= GLYPH_HEADER_SIZE || glyf.getInt16(offset) >= 0) {
+      continue;
+    }
+    const comps = [];
+    let p = offset + GLYPH_HEADER_SIZE;
+    while (p + 4 <= endOffset) {
+      const flags = glyf.getUint16(p);
+      const gid = glyf.getUint16(p + 2);
+      let size = 4 + (flags & ARG_1_AND_2_ARE_WORDS ? 4 : 2);
+      if (flags & WE_HAVE_A_SCALE) {
+        size += 2;
+      } else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) {
+        size += 4;
+      } else if (flags & WE_HAVE_A_TWO_BY_TWO) {
+        size += 8;
+      }
+      comps.push({
+        gid,
+        offset: p,
+        size,
+        flags
+      });
+      p += size;
+      if (!(flags & MORE_COMPONENTS)) {
+        break;
+      }
+    }
+    if (comps.length) {
+      components[i] = comps;
+    }
+  }
+  const WHITE = 0,
+    GRAY = 1,
+    BLACK = 2;
+  const state = new Uint8Array(numGlyphs);
+  const backEdges = new Map();
+  for (let start = 0; start < numGlyphs; start++) {
+    if (state[start] !== WHITE || !components[start]) {
+      continue;
+    }
+    const stack = [{
+      node: start,
+      idx: 0
+    }];
+    state[start] = GRAY;
+    while (stack.length > 0) {
+      const top = stack.at(-1);
+      const comps = components[top.node];
+      if (!comps || top.idx >= comps.length) {
+        state[top.node] = BLACK;
+        stack.pop();
+        continue;
+      }
+      const compIdx = top.idx++;
+      const next = comps[compIdx].gid;
+      if (next >= numGlyphs || state[next] === BLACK) {
+        continue;
+      }
+      if (state[next] === WHITE) {
+        state[next] = GRAY;
+        stack.push({
+          node: next,
+          idx: 0
+        });
+        continue;
+      }
+      backEdges.getOrInsertComputed(top.node, makeSet).add(compIdx);
+    }
+  }
+  const droppedGlyphs = new Set();
+  for (const [gIdx, removeSet] of backEdges) {
+    const comps = components[gIdx];
+    const remaining = [];
+    for (let ci = 0; ci < comps.length; ci++) {
+      if (!removeSet.has(ci)) {
+        remaining.push(comps[ci]);
+      }
+    }
+    if (remaining.length === 0) {
+      droppedGlyphs.add(gIdx);
+      continue;
+    }
+    const start = locaEntries[gIdx].offset;
+    const endOffset = Math.min(locaEntries[gIdx].endOffset, glyf.byteLength);
+    let writePos = start + GLYPH_HEADER_SIZE;
+    for (let ci = 0; ci < remaining.length; ci++) {
+      const c = remaining[ci];
+      const isLast = ci === remaining.length - 1;
+      let newFlags = c.flags & ~WE_HAVE_INSTRUCTIONS;
+      newFlags = isLast ? newFlags & ~MORE_COMPONENTS : newFlags | MORE_COMPONENTS;
+      if (writePos !== c.offset) {
+        glyfTable.copyWithin(writePos, c.offset, c.offset + c.size);
+      }
+      glyf.setUint16(writePos, newFlags);
+      writePos += c.size;
+    }
+    if (writePos < endOffset) {
+      glyfTable.fill(0, writePos, endOffset);
+    }
+  }
+  return droppedGlyphs;
+}
+
 ;// ./src/core/type1_parser.js
 
 
@@ -25174,7 +24628,7 @@ class Type1Font {
 
 const PRIVATE_USE_AREAS = [[0xe000, 0xf8ff], [0x100000, 0x10fffd]];
 const PDF_GLYPH_SPACE_UNITS = 1000;
-const EXPORT_DATA_PROPERTIES = ["bbox", "black", "bold", "cssFontInfo", "data", "disableFontFace", "fallbackName", "fontExtraProperties", "fontMatrix", "isInvalidPDFjsFont", "isType3Font", "italic", "loadedName", "missingFile", "remeasure", "systemFontInfo", "vertical"];
+const EXPORT_DATA_PROPERTIES = ["bbox", "black", "bold", "cssFontInfo", "data", "disableFontFace", "fallbackName", "fontExtraProperties", "fontMatrix", "generatedFontName", "isInvalidPDFjsFont", "isType3Font", "italic", "loadedName", "missingFile", "remeasure", "systemFontInfo", "vertical"];
 const EXPORT_DATA_EXTRA_PROPERTIES = ["ascent", "composite", "defaultEncoding", "defaultVMetrics", "defaultWidth", "descent", "differences", "isMonospace", "isSerifFont", "isSymbolicFont", "name", "seacMap", "subtype", "toFontChar", "type", "vmetrics", "widths"];
 function adjustWidths(properties) {
   if (!properties.fontMatrix || properties.fontMatrix[0] === FONT_IDENTITY_MATRIX[0]) {
@@ -25188,9 +24642,6 @@ function adjustWidths(properties) {
   properties.defaultWidth *= scale;
 }
 function adjustTrueTypeToUnicode(properties, isSymbolicFont, nameRecords) {
-  if (properties.isInternalFont) {
-    return;
-  }
   if (properties.hasIncludedToUnicodeMap) {
     return;
   }
@@ -25231,9 +24682,6 @@ function adjustTrueTypeToUnicode(properties, isSymbolicFont, nameRecords) {
   properties.toUnicode.amend(toUnicode);
 }
 function adjustType1ToUnicode(properties, builtInEncoding) {
-  if (properties.isInternalFont) {
-    return;
-  }
   if (properties.hasIncludedToUnicodeMap) {
     return;
   }
@@ -25272,7 +24720,7 @@ function amendFallbackToUnicode(properties) {
   });
   properties.toUnicode.amend(toUnicode);
 }
-class fonts_Glyph {
+class Glyph {
   constructor(fontExtraProperties, originalCharCode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont, isRotated) {
     if (fontExtraProperties) {
       this.originalCharCode = originalCharCode;
@@ -25867,14 +25315,18 @@ function createNameTable(name, proto) {
 class Font {
   #charsCache = new Map();
   #glyphCache = new Map();
+  #generatedCodePoints = null;
+  #id = null;
+  #withoutFile = false;
   charProcOperatorList;
+  standardFontName = null;
   toFontChar = new Map();
   constructor(name, file, properties, evaluatorOptions) {
     this.name = name;
     this.psName = null;
     this.disableFontFace = evaluatorOptions.disableFontFace;
     this.fontExtraProperties = evaluatorOptions.fontExtraProperties;
-    this.loadedName = properties.loadedName;
+    this.loadedName = this.#id = properties.loadedName;
     this.isType3Font = properties.isType3Font;
     this.missingFile = false;
     this.cssFontInfo = properties.cssFontInfo;
@@ -26014,7 +25466,7 @@ class Font {
     };
   }
   fallbackToSystemFont(properties) {
-    this.missingFile = true;
+    this.missingFile = this.#withoutFile = true;
     const {
       name,
       type
@@ -26025,6 +25477,9 @@ class Font {
     const isStandardFont = !!stdFontMap[fontName];
     const isMappedToStandardFont = !!(nonStdFontMap[fontName] && stdFontMap[nonStdFontMap[fontName]]);
     fontName = stdFontMap[fontName] || nonStdFontMap[fontName] || fontName;
+    if (isStandardFont || isMappedToStandardFont) {
+      this.standardFontName = stdFontMap[fontName];
+    }
     const fontBasicMetricsMap = getFontBasicMetrics();
     const metrics = fontBasicMetricsMap[fontName];
     if (metrics) {
@@ -26117,6 +25572,78 @@ class Font {
     }
     amendFallbackToUnicode(properties);
     this.loadedName = fontName.split("-", 1)[0];
+  }
+  getMissingFileGlyphs(distinctWidths) {
+    const charCodes = new Set(this.toFontChar.keys());
+    const isIdentity = this.composite && this.cidEncoding.startsWith("Identity-");
+    if (!this.composite || isIdentity) {
+      for (const charCode of Object.keys(this.widths || {})) {
+        charCodes.add(+charCode);
+      }
+    }
+    if (isIdentity) {
+      const glyphsUnicode = getGlyphsUnicode();
+      for (const encoding of [StandardEncoding, WinAnsiEncoding, MacRomanEncoding]) {
+        for (const glyphName of encoding) {
+          const codePoint = glyphsUnicode[glyphName];
+          if (codePoint !== undefined) {
+            charCodes.add(codePoint);
+          }
+        }
+      }
+    }
+    const glyphs = new Map();
+    for (const charCode of charCodes) {
+      const {
+        fontChar,
+        width
+      } = this._charToGlyph(charCode);
+      const codePoint = fontChar.codePointAt(0);
+      if (codePoint === undefined) {
+        continue;
+      }
+      const key = distinctWidths ? `${codePoint}_${width}` : codePoint;
+      let glyph = glyphs.get(key);
+      if (!glyph) {
+        glyph = {
+          codePoint,
+          width,
+          charCodes: []
+        };
+        glyphs.set(key, glyph);
+      } else if (!distinctWidths && !Object.is(glyph.width, width)) {
+        glyph.width = NaN;
+      }
+      glyph.charCodes.push(charCode);
+    }
+    return Array.from(glyphs.values());
+  }
+  setGeneratedFont({
+    data,
+    codePoints,
+    toFontChar
+  }, replacesFont) {
+    const name = `${this.#id}_generated`;
+    this.data = data;
+    this.generatedFontName = name;
+    this.#generatedCodePoints = new Set(codePoints);
+    for (const [charCode, fontCharCode] of toFontChar) {
+      this.toFontChar.set(charCode, fontCharCode);
+    }
+    this.#glyphCache.clear();
+    if (replacesFont) {
+      this.systemFontInfo = null;
+      this.loadedName = name;
+      this.missingFile = false;
+      this.remeasure = false;
+      return;
+    }
+    const families = this.systemFontInfo.css.split(",");
+    families.splice(2, 0, `"${name}"`);
+    this.systemFontInfo = {
+      ...this.systemFontInfo,
+      css: families.join(",")
+    };
   }
   checkAndRepair(name, font, properties) {
     const VALID_TABLES = ["OS/2", "cmap", "head", "hhea", "hmtx", "maxp", "name", "post", "loca", "glyf", "fpgm", "prep", "cvt ", "CFF "];
@@ -27203,7 +26730,7 @@ class Font {
       }
       writeUint32(tables.maxp.data, 0, version);
     }
-    let isGlyphLocationsLong = int16(tables.head.data[50], tables.head.data[51]);
+    const isGlyphLocationsLong = int16(tables.head.data[50], tables.head.data[51]);
     if (tables.loca) {
       const locaLength = isGlyphLocationsLong ? (numGlyphs + 1) * 4 : (numGlyphs + 1) * 2;
       if (tables.loca.length !== locaLength) {
@@ -27219,38 +26746,6 @@ class Font {
           tables.loca.length = locaLength;
           font.pos = previousPos;
         }
-      }
-    }
-    if (properties.scaleFactors?.length === numGlyphs && isTrueType) {
-      const {
-        scaleFactors
-      } = properties;
-      const glyphs = new GlyfTable({
-        glyfTable: tables.glyf.data,
-        isGlyphLocationsLong,
-        locaTable: tables.loca.data,
-        numGlyphs
-      });
-      glyphs.scale(scaleFactors);
-      const {
-        glyf,
-        loca,
-        isLocationLong
-      } = glyphs.write();
-      tables.glyf.data = glyf;
-      tables.loca.data = loca;
-      if (isLocationLong !== !!isGlyphLocationsLong) {
-        tables.head.data[50] = 0;
-        isGlyphLocationsLong = tables.head.data[51] = isLocationLong ? 1 : 0;
-      }
-      const metrics = tables.hmtx.data;
-      for (let i = 0; i < numGlyphs; i++) {
-        const j = 4 * i;
-        const advanceWidth = Math.round(scaleFactors[i] * int16(metrics[j], metrics[j + 1]));
-        metrics[j] = advanceWidth >> 8 & 0xff;
-        metrics[j + 1] = advanceWidth & 0xff;
-        const lsb = Math.round(scaleFactors[i] * signedInt16(metrics[j + 2], metrics[j + 3]));
-        writeSignedInt16(metrics, j + 2, lsb);
       }
     }
     let numGlyphsOut = numGlyphs + 1;
@@ -27445,7 +26940,7 @@ class Font {
           }
         }
       }
-      if (!properties.isInternalFont && !charCodeToGlyphId.has(0) && hasGlyph(0)) {
+      if (!charCodeToGlyphId.has(0) && hasGlyph(0)) {
         charCodeToGlyphId.set(0, 0);
       }
     }
@@ -27694,7 +27189,7 @@ class Font {
     }
     let isInFont = this.toFontChar.has(charcode);
     fontCharCode = this.toFontChar.get(charcode) || charcode;
-    if (this.missingFile) {
+    if (this.#withoutFile) {
       const glyphName = this.differences.get(charcode) || this.defaultEncoding[charcode];
       if ((glyphName === ".notdef" || glyphName === "") && this.type === "Type1") {
         fontCharCode = 0x20;
@@ -27728,8 +27223,11 @@ class Font {
         warn(`charToGlyph - invalid fontCharCode: ${fontCharCode}`);
       }
     }
+    if (this.#generatedCodePoints?.has(fontChar.codePointAt(0))) {
+      isInFont = true;
+    }
     let isRotated = false;
-    if (this.missingFile && this.vertical && fontChar.length === 1 && this.#hasVerticalVariant(charcode)) {
+    if (this.#withoutFile && this.vertical && fontChar.length === 1 && this.#hasVerticalVariant(charcode)) {
       const charCode = fontChar.charCodeAt(0);
       const vertical = getVerticalPresentationForm()[charCode];
       if (vertical) {
@@ -27738,7 +27236,7 @@ class Font {
         isRotated = VERTICAL_ROTATED_CHARS.has(charCode);
       }
     }
-    glyph = new fonts_Glyph(this.fontExtraProperties, charcode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont, isRotated);
+    glyph = new Glyph(this.fontExtraProperties, charcode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont, isRotated);
     this.#glyphCache.set(charcode, glyph);
     return glyph;
   }
@@ -28815,292 +28313,95 @@ function getTilingPatternIR(operatorList, dict, color, needsIsolation = true) {
   return ["TilingPattern", color, operatorList, matrix, bbox, xstep, ystep, paintType, tilingType, needsIsolation];
 }
 
-;// ./src/core/calibri_factors.js
-const CalibriBoldFactors = [1.3877, 1, 1, 1, 0.97801, 0.92482, 0.89552, 0.91133, 0.81988, 0.97566, 0.98152, 0.93548, 0.93548, 1.2798, 0.85284, 0.92794, 1, 0.96134, 1.54657, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.82845, 0.82845, 0.85284, 0.85284, 0.85284, 0.75859, 0.92138, 0.83908, 0.7762, 0.73293, 0.87289, 0.73133, 0.7514, 0.81921, 0.87356, 0.95958, 0.59526, 0.75727, 0.69225, 1.04924, 0.9121, 0.86943, 0.79795, 0.88198, 0.77958, 0.70864, 0.81055, 0.90399, 0.88653, 0.96017, 0.82577, 0.77892, 0.78257, 0.97507, 1.54657, 0.97507, 0.85284, 0.89552, 0.90176, 0.88762, 0.8785, 0.75241, 0.8785, 0.90518, 0.95015, 0.77618, 0.8785, 0.88401, 0.91916, 0.86304, 0.88401, 0.91488, 0.8785, 0.8801, 0.8785, 0.8785, 0.91343, 0.7173, 1.04106, 0.8785, 0.85075, 0.95794, 0.82616, 0.85162, 0.79492, 0.88331, 1.69808, 0.88331, 0.85284, 0.97801, 0.89552, 0.91133, 0.89552, 0.91133, 1.7801, 0.89552, 1.24487, 1.13254, 1.12401, 0.96839, 0.85284, 0.68787, 0.70645, 0.85592, 0.90747, 1.01466, 1.0088, 0.90323, 1, 1.07463, 1, 0.91056, 0.75806, 1.19118, 0.96839, 0.78864, 0.82845, 0.84133, 0.75859, 0.83908, 0.83908, 0.83908, 0.83908, 0.83908, 0.83908, 0.77539, 0.73293, 0.73133, 0.73133, 0.73133, 0.73133, 0.95958, 0.95958, 0.95958, 0.95958, 0.88506, 0.9121, 0.86943, 0.86943, 0.86943, 0.86943, 0.86943, 0.85284, 0.87508, 0.90399, 0.90399, 0.90399, 0.90399, 0.77892, 0.79795, 0.90807, 0.88762, 0.88762, 0.88762, 0.88762, 0.88762, 0.88762, 0.8715, 0.75241, 0.90518, 0.90518, 0.90518, 0.90518, 0.88401, 0.88401, 0.88401, 0.88401, 0.8785, 0.8785, 0.8801, 0.8801, 0.8801, 0.8801, 0.8801, 0.90747, 0.89049, 0.8785, 0.8785, 0.8785, 0.8785, 0.85162, 0.8785, 0.85162, 0.83908, 0.88762, 0.83908, 0.88762, 0.83908, 0.88762, 0.73293, 0.75241, 0.73293, 0.75241, 0.73293, 0.75241, 0.73293, 0.75241, 0.87289, 0.83016, 0.88506, 0.93125, 0.73133, 0.90518, 0.73133, 0.90518, 0.73133, 0.90518, 0.73133, 0.90518, 0.73133, 0.90518, 0.81921, 0.77618, 0.81921, 0.77618, 0.81921, 0.77618, 1, 1, 0.87356, 0.8785, 0.91075, 0.89608, 0.95958, 0.88401, 0.95958, 0.88401, 0.95958, 0.88401, 0.95958, 0.88401, 0.95958, 0.88401, 0.76229, 0.90167, 0.59526, 0.91916, 1, 1, 0.86304, 0.69225, 0.88401, 1, 1, 0.70424, 0.79468, 0.91926, 0.88175, 0.70823, 0.94903, 0.9121, 0.8785, 1, 1, 0.9121, 0.8785, 0.87802, 0.88656, 0.8785, 0.86943, 0.8801, 0.86943, 0.8801, 0.86943, 0.8801, 0.87402, 0.89291, 0.77958, 0.91343, 1, 1, 0.77958, 0.91343, 0.70864, 0.7173, 0.70864, 0.7173, 0.70864, 0.7173, 0.70864, 0.7173, 1, 1, 0.81055, 0.75841, 0.81055, 1.06452, 0.90399, 0.8785, 0.90399, 0.8785, 0.90399, 0.8785, 0.90399, 0.8785, 0.90399, 0.8785, 0.90399, 0.8785, 0.96017, 0.95794, 0.77892, 0.85162, 0.77892, 0.78257, 0.79492, 0.78257, 0.79492, 0.78257, 0.79492, 0.9297, 0.56892, 0.83908, 0.88762, 0.77539, 0.8715, 0.87508, 0.89049, 1, 1, 0.81055, 1.04106, 1.20528, 1.20528, 1, 1.15543, 0.70674, 0.98387, 0.94721, 1.33431, 1.45894, 0.95161, 1.06303, 0.83908, 0.80352, 0.57184, 0.6965, 0.56289, 0.82001, 0.56029, 0.81235, 1.02988, 0.83908, 0.7762, 0.68156, 0.80367, 0.73133, 0.78257, 0.87356, 0.86943, 0.95958, 0.75727, 0.89019, 1.04924, 0.9121, 0.7648, 0.86943, 0.87356, 0.79795, 0.78275, 0.81055, 0.77892, 0.9762, 0.82577, 0.99819, 0.84896, 0.95958, 0.77892, 0.96108, 1.01407, 0.89049, 1.02988, 0.94211, 0.96108, 0.8936, 0.84021, 0.87842, 0.96399, 0.79109, 0.89049, 1.00813, 1.02988, 0.86077, 0.87445, 0.92099, 0.84723, 0.86513, 0.8801, 0.75638, 0.85714, 0.78216, 0.79586, 0.87965, 0.94211, 0.97747, 0.78287, 0.97926, 0.84971, 1.02988, 0.94211, 0.8801, 0.94211, 0.84971, 0.73133, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.90264, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.90518, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.90548, 1, 1, 1, 1, 1, 1, 0.96017, 0.95794, 0.96017, 0.95794, 0.96017, 0.95794, 0.77892, 0.85162, 1, 1, 0.89552, 0.90527, 1, 0.90363, 0.92794, 0.92794, 0.92794, 0.92794, 0.87012, 0.87012, 0.87012, 0.89552, 0.89552, 1.42259, 0.71143, 1.06152, 1, 1, 1.03372, 1.03372, 0.97171, 1.4956, 2.2807, 0.93835, 0.83406, 0.91133, 0.84107, 0.91133, 1, 1, 1, 0.72021, 1, 1.23108, 0.83489, 0.88525, 0.88525, 0.81499, 0.90527, 1.81055, 0.90527, 1.81055, 1.31006, 1.53711, 0.94434, 1.08696, 1, 0.95018, 0.77192, 0.85284, 0.90747, 1.17534, 0.69825, 0.9716, 1.37077, 0.90747, 0.90747, 0.85356, 0.90747, 0.90747, 1.44947, 0.85284, 0.8941, 0.8941, 0.70572, 0.8, 0.70572, 0.70572, 0.70572, 0.70572, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.99862, 0.99862, 1, 1, 1, 1, 1, 1.08004, 0.91027, 1, 1, 1, 0.99862, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.90727, 0.90727, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const CalibriBoldMetrics = {
-  lineHeight: 1.2207,
-  lineGap: 0.2207
-};
-const CalibriBoldItalicFactors = [1.3877, 1, 1, 1, 0.97801, 0.92482, 0.89552, 0.91133, 0.81988, 0.97566, 0.98152, 0.93548, 0.93548, 1.2798, 0.85284, 0.92794, 1, 0.96134, 1.56239, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.82845, 0.82845, 0.85284, 0.85284, 0.85284, 0.75859, 0.92138, 0.83908, 0.7762, 0.71805, 0.87289, 0.73133, 0.7514, 0.81921, 0.87356, 0.95958, 0.59526, 0.75727, 0.69225, 1.04924, 0.90872, 0.85938, 0.79795, 0.87068, 0.77958, 0.69766, 0.81055, 0.90399, 0.88653, 0.96068, 0.82577, 0.77892, 0.78257, 0.97507, 1.529, 0.97507, 0.85284, 0.89552, 0.90176, 0.94908, 0.86411, 0.74012, 0.86411, 0.88323, 0.95015, 0.86411, 0.86331, 0.88401, 0.91916, 0.86304, 0.88401, 0.9039, 0.86331, 0.86331, 0.86411, 0.86411, 0.90464, 0.70852, 1.04106, 0.86331, 0.84372, 0.95794, 0.82616, 0.84548, 0.79492, 0.88331, 1.69808, 0.88331, 0.85284, 0.97801, 0.89552, 0.91133, 0.89552, 0.91133, 1.7801, 0.89552, 1.24487, 1.13254, 1.19129, 0.96839, 0.85284, 0.68787, 0.70645, 0.85592, 0.90747, 1.01466, 1.0088, 0.90323, 1, 1.07463, 1, 0.91056, 0.75806, 1.19118, 0.96839, 0.78864, 0.82845, 0.84133, 0.75859, 0.83908, 0.83908, 0.83908, 0.83908, 0.83908, 0.83908, 0.77539, 0.71805, 0.73133, 0.73133, 0.73133, 0.73133, 0.95958, 0.95958, 0.95958, 0.95958, 0.88506, 0.90872, 0.85938, 0.85938, 0.85938, 0.85938, 0.85938, 0.85284, 0.87068, 0.90399, 0.90399, 0.90399, 0.90399, 0.77892, 0.79795, 0.90807, 0.94908, 0.94908, 0.94908, 0.94908, 0.94908, 0.94908, 0.85887, 0.74012, 0.88323, 0.88323, 0.88323, 0.88323, 0.88401, 0.88401, 0.88401, 0.88401, 0.8785, 0.86331, 0.86331, 0.86331, 0.86331, 0.86331, 0.86331, 0.90747, 0.89049, 0.86331, 0.86331, 0.86331, 0.86331, 0.84548, 0.86411, 0.84548, 0.83908, 0.94908, 0.83908, 0.94908, 0.83908, 0.94908, 0.71805, 0.74012, 0.71805, 0.74012, 0.71805, 0.74012, 0.71805, 0.74012, 0.87289, 0.79538, 0.88506, 0.92726, 0.73133, 0.88323, 0.73133, 0.88323, 0.73133, 0.88323, 0.73133, 0.88323, 0.73133, 0.88323, 0.81921, 0.86411, 0.81921, 0.86411, 0.81921, 0.86411, 1, 1, 0.87356, 0.86331, 0.91075, 0.8777, 0.95958, 0.88401, 0.95958, 0.88401, 0.95958, 0.88401, 0.95958, 0.88401, 0.95958, 0.88401, 0.76467, 0.90167, 0.59526, 0.91916, 1, 1, 0.86304, 0.69225, 0.88401, 1, 1, 0.70424, 0.77312, 0.91926, 0.88175, 0.70823, 0.94903, 0.90872, 0.86331, 1, 1, 0.90872, 0.86331, 0.86906, 0.88116, 0.86331, 0.85938, 0.86331, 0.85938, 0.86331, 0.85938, 0.86331, 0.87402, 0.86549, 0.77958, 0.90464, 1, 1, 0.77958, 0.90464, 0.69766, 0.70852, 0.69766, 0.70852, 0.69766, 0.70852, 0.69766, 0.70852, 1, 1, 0.81055, 0.75841, 0.81055, 1.06452, 0.90399, 0.86331, 0.90399, 0.86331, 0.90399, 0.86331, 0.90399, 0.86331, 0.90399, 0.86331, 0.90399, 0.86331, 0.96068, 0.95794, 0.77892, 0.84548, 0.77892, 0.78257, 0.79492, 0.78257, 0.79492, 0.78257, 0.79492, 0.9297, 0.56892, 0.83908, 0.94908, 0.77539, 0.85887, 0.87068, 0.89049, 1, 1, 0.81055, 1.04106, 1.20528, 1.20528, 1, 1.15543, 0.70088, 0.98387, 0.94721, 1.33431, 1.45894, 0.95161, 1.48387, 0.83908, 0.80352, 0.57118, 0.6965, 0.56347, 0.79179, 0.55853, 0.80346, 1.02988, 0.83908, 0.7762, 0.67174, 0.86036, 0.73133, 0.78257, 0.87356, 0.86441, 0.95958, 0.75727, 0.89019, 1.04924, 0.90872, 0.74889, 0.85938, 0.87891, 0.79795, 0.7957, 0.81055, 0.77892, 0.97447, 0.82577, 0.97466, 0.87179, 0.95958, 0.77892, 0.94252, 0.95612, 0.8753, 1.02988, 0.92733, 0.94252, 0.87411, 0.84021, 0.8728, 0.95612, 0.74081, 0.8753, 1.02189, 1.02988, 0.84814, 0.87445, 0.91822, 0.84723, 0.85668, 0.86331, 0.81344, 0.87581, 0.76422, 0.82046, 0.96057, 0.92733, 0.99375, 0.78022, 0.95452, 0.86015, 1.02988, 0.92733, 0.86331, 0.92733, 0.86015, 0.73133, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.90631, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.88323, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.85174, 1, 1, 1, 1, 1, 1, 0.96068, 0.95794, 0.96068, 0.95794, 0.96068, 0.95794, 0.77892, 0.84548, 1, 1, 0.89552, 0.90527, 1, 0.90363, 0.92794, 0.92794, 0.92794, 0.89807, 0.87012, 0.87012, 0.87012, 0.89552, 0.89552, 1.42259, 0.71094, 1.06152, 1, 1, 1.03372, 1.03372, 0.97171, 1.4956, 2.2807, 0.92972, 0.83406, 0.91133, 0.83326, 0.91133, 1, 1, 1, 0.72021, 1, 1.23108, 0.83489, 0.88525, 0.88525, 0.81499, 0.90616, 1.81055, 0.90527, 1.81055, 1.3107, 1.53711, 0.94434, 1.08696, 1, 0.95018, 0.77192, 0.85284, 0.90747, 1.17534, 0.69825, 0.9716, 1.37077, 0.90747, 0.90747, 0.85356, 0.90747, 0.90747, 1.44947, 0.85284, 0.8941, 0.8941, 0.70572, 0.8, 0.70572, 0.70572, 0.70572, 0.70572, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.99862, 0.99862, 1, 1, 1, 1, 1, 1.08004, 0.91027, 1, 1, 1, 0.99862, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.90727, 0.90727, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const CalibriBoldItalicMetrics = {
-  lineHeight: 1.2207,
-  lineGap: 0.2207
-};
-const CalibriItalicFactors = [1.3877, 1, 1, 1, 1.17223, 1.1293, 0.89552, 0.91133, 0.80395, 1.02269, 1.15601, 0.91056, 0.91056, 1.2798, 0.85284, 0.89807, 1, 0.90861, 1.39543, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.96309, 0.96309, 0.85284, 0.85284, 0.85284, 0.83319, 0.88071, 0.8675, 0.81552, 0.72346, 0.85193, 0.73206, 0.7522, 0.81105, 0.86275, 0.90685, 0.6377, 0.77892, 0.75593, 1.02638, 0.89249, 0.84118, 0.77452, 0.85374, 0.75186, 0.67789, 0.79776, 0.88844, 0.85066, 0.94309, 0.77818, 0.7306, 0.76659, 1.10369, 1.38313, 1.10369, 1.06139, 0.89552, 0.8739, 0.9245, 0.9245, 0.83203, 0.9245, 0.85865, 1.09842, 0.9245, 0.9245, 1.03297, 1.07692, 0.90918, 1.03297, 0.94959, 0.9245, 0.92274, 0.9245, 0.9245, 1.02933, 0.77832, 1.20562, 0.9245, 0.8916, 0.98986, 0.86621, 0.89453, 0.79004, 0.94152, 1.77256, 0.94152, 0.85284, 0.97801, 0.89552, 0.91133, 0.89552, 0.91133, 1.91729, 0.89552, 1.17889, 1.13254, 1.16359, 0.92098, 0.85284, 0.68787, 0.71353, 0.84737, 0.90747, 1.0088, 1.0044, 0.87683, 1, 1.09091, 1, 0.92229, 0.739, 1.15642, 0.92098, 0.76288, 0.80504, 0.80972, 0.75859, 0.8675, 0.8675, 0.8675, 0.8675, 0.8675, 0.8675, 0.76318, 0.72346, 0.73206, 0.73206, 0.73206, 0.73206, 0.90685, 0.90685, 0.90685, 0.90685, 0.86477, 0.89249, 0.84118, 0.84118, 0.84118, 0.84118, 0.84118, 0.85284, 0.84557, 0.88844, 0.88844, 0.88844, 0.88844, 0.7306, 0.77452, 0.86331, 0.9245, 0.9245, 0.9245, 0.9245, 0.9245, 0.9245, 0.84843, 0.83203, 0.85865, 0.85865, 0.85865, 0.85865, 0.82601, 0.82601, 0.82601, 0.82601, 0.94469, 0.9245, 0.92274, 0.92274, 0.92274, 0.92274, 0.92274, 0.90747, 0.86651, 0.9245, 0.9245, 0.9245, 0.9245, 0.89453, 0.9245, 0.89453, 0.8675, 0.9245, 0.8675, 0.9245, 0.8675, 0.9245, 0.72346, 0.83203, 0.72346, 0.83203, 0.72346, 0.83203, 0.72346, 0.83203, 0.85193, 0.8875, 0.86477, 0.99034, 0.73206, 0.85865, 0.73206, 0.85865, 0.73206, 0.85865, 0.73206, 0.85865, 0.73206, 0.85865, 0.81105, 0.9245, 0.81105, 0.9245, 0.81105, 0.9245, 1, 1, 0.86275, 0.9245, 0.90872, 0.93591, 0.90685, 0.82601, 0.90685, 0.82601, 0.90685, 0.82601, 0.90685, 1.03297, 0.90685, 0.82601, 0.77896, 1.05611, 0.6377, 1.07692, 1, 1, 0.90918, 0.75593, 1.03297, 1, 1, 0.76032, 0.9375, 0.98156, 0.93407, 0.77261, 1.11429, 0.89249, 0.9245, 1, 1, 0.89249, 0.9245, 0.92534, 0.86698, 0.9245, 0.84118, 0.92274, 0.84118, 0.92274, 0.84118, 0.92274, 0.8667, 0.86291, 0.75186, 1.02933, 1, 1, 0.75186, 1.02933, 0.67789, 0.77832, 0.67789, 0.77832, 0.67789, 0.77832, 0.67789, 0.77832, 1, 1, 0.79776, 0.97655, 0.79776, 1.23023, 0.88844, 0.9245, 0.88844, 0.9245, 0.88844, 0.9245, 0.88844, 0.9245, 0.88844, 0.9245, 0.88844, 0.9245, 0.94309, 0.98986, 0.7306, 0.89453, 0.7306, 0.76659, 0.79004, 0.76659, 0.79004, 0.76659, 0.79004, 1.09231, 0.54873, 0.8675, 0.9245, 0.76318, 0.84843, 0.84557, 0.86651, 1, 1, 0.79776, 1.20562, 1.18622, 1.18622, 1, 1.1437, 0.67009, 0.96334, 0.93695, 1.35191, 1.40909, 0.95161, 1.48387, 0.8675, 0.90861, 0.6192, 0.7363, 0.64824, 0.82411, 0.56321, 0.85696, 1.23516, 0.8675, 0.81552, 0.7286, 0.84134, 0.73206, 0.76659, 0.86275, 0.84369, 0.90685, 0.77892, 0.85871, 1.02638, 0.89249, 0.75828, 0.84118, 0.85984, 0.77452, 0.76466, 0.79776, 0.7306, 0.90782, 0.77818, 0.903, 0.87291, 0.90685, 0.7306, 0.99058, 1.03667, 0.94635, 1.23516, 0.9849, 0.99058, 0.92393, 0.8916, 0.942, 1.03667, 0.75026, 0.94635, 1.0297, 1.23516, 0.90918, 0.94048, 0.98217, 0.89746, 0.84153, 0.92274, 0.82507, 0.88832, 0.84438, 0.88178, 1.03525, 0.9849, 1.00225, 0.78086, 0.97248, 0.89404, 1.23516, 0.9849, 0.92274, 0.9849, 0.89404, 0.73206, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.89693, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.85865, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.90933, 1, 1, 1, 1, 1, 1, 0.94309, 0.98986, 0.94309, 0.98986, 0.94309, 0.98986, 0.7306, 0.89453, 1, 1, 0.89552, 0.90527, 1, 0.90186, 1.12308, 1.12308, 1.12308, 1.12308, 1.2566, 1.2566, 1.2566, 0.89552, 0.89552, 1.42259, 0.68994, 1.03809, 1, 1, 1.0176, 1.0176, 1.11523, 1.4956, 2.01462, 0.97858, 0.82616, 0.91133, 0.83437, 0.91133, 1, 1, 1, 0.70508, 1, 1.23108, 0.79801, 0.84426, 0.84426, 0.774, 0.90572, 1.81055, 0.90749, 1.81055, 1.28809, 1.55469, 0.94434, 1.07806, 1, 0.97094, 0.7589, 0.85284, 0.90747, 1.19658, 0.69825, 0.97622, 1.33512, 0.90747, 0.90747, 0.85284, 0.90747, 0.90747, 1.44947, 0.85284, 0.8941, 0.8941, 0.70572, 0.8, 0.70572, 0.70572, 0.70572, 0.70572, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.99862, 0.99862, 1, 1, 1, 1, 1, 1.0336, 0.91027, 1, 1, 1, 0.99862, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.05859, 1.05859, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const CalibriItalicMetrics = {
-  lineHeight: 1.2207,
-  lineGap: 0.2207
-};
-const CalibriRegularFactors = [1.3877, 1, 1, 1, 1.17223, 1.1293, 0.89552, 0.91133, 0.80395, 1.02269, 1.15601, 0.91056, 0.91056, 1.2798, 0.85284, 0.89807, 1, 0.90861, 1.39016, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.91133, 0.96309, 0.96309, 0.85284, 0.85284, 0.85284, 0.83319, 0.88071, 0.8675, 0.81552, 0.73834, 0.85193, 0.73206, 0.7522, 0.81105, 0.86275, 0.90685, 0.6377, 0.77892, 0.75593, 1.02638, 0.89385, 0.85122, 0.77452, 0.86503, 0.75186, 0.68887, 0.79776, 0.88844, 0.85066, 0.94258, 0.77818, 0.7306, 0.76659, 1.10369, 1.39016, 1.10369, 1.06139, 0.89552, 0.8739, 0.86128, 0.94469, 0.8457, 0.94469, 0.89464, 1.09842, 0.84636, 0.94469, 1.03297, 1.07692, 0.90918, 1.03297, 0.95897, 0.94469, 0.9482, 0.94469, 0.94469, 1.04692, 0.78223, 1.20562, 0.94469, 0.90332, 0.98986, 0.86621, 0.90527, 0.79004, 0.94152, 1.77256, 0.94152, 0.85284, 0.97801, 0.89552, 0.91133, 0.89552, 0.91133, 1.91729, 0.89552, 1.17889, 1.13254, 1.08707, 0.92098, 0.85284, 0.68787, 0.71353, 0.84737, 0.90747, 1.0088, 1.0044, 0.87683, 1, 1.09091, 1, 0.92229, 0.739, 1.15642, 0.92098, 0.76288, 0.80504, 0.80972, 0.75859, 0.8675, 0.8675, 0.8675, 0.8675, 0.8675, 0.8675, 0.76318, 0.73834, 0.73206, 0.73206, 0.73206, 0.73206, 0.90685, 0.90685, 0.90685, 0.90685, 0.86477, 0.89385, 0.85122, 0.85122, 0.85122, 0.85122, 0.85122, 0.85284, 0.85311, 0.88844, 0.88844, 0.88844, 0.88844, 0.7306, 0.77452, 0.86331, 0.86128, 0.86128, 0.86128, 0.86128, 0.86128, 0.86128, 0.8693, 0.8457, 0.89464, 0.89464, 0.89464, 0.89464, 0.82601, 0.82601, 0.82601, 0.82601, 0.94469, 0.94469, 0.9482, 0.9482, 0.9482, 0.9482, 0.9482, 0.90747, 0.86651, 0.94469, 0.94469, 0.94469, 0.94469, 0.90527, 0.94469, 0.90527, 0.8675, 0.86128, 0.8675, 0.86128, 0.8675, 0.86128, 0.73834, 0.8457, 0.73834, 0.8457, 0.73834, 0.8457, 0.73834, 0.8457, 0.85193, 0.92454, 0.86477, 0.9921, 0.73206, 0.89464, 0.73206, 0.89464, 0.73206, 0.89464, 0.73206, 0.89464, 0.73206, 0.89464, 0.81105, 0.84636, 0.81105, 0.84636, 0.81105, 0.84636, 1, 1, 0.86275, 0.94469, 0.90872, 0.95786, 0.90685, 0.82601, 0.90685, 0.82601, 0.90685, 0.82601, 0.90685, 1.03297, 0.90685, 0.82601, 0.77741, 1.05611, 0.6377, 1.07692, 1, 1, 0.90918, 0.75593, 1.03297, 1, 1, 0.76032, 0.90452, 0.98156, 1.11842, 0.77261, 1.11429, 0.89385, 0.94469, 1, 1, 0.89385, 0.94469, 0.95877, 0.86901, 0.94469, 0.85122, 0.9482, 0.85122, 0.9482, 0.85122, 0.9482, 0.8667, 0.90016, 0.75186, 1.04692, 1, 1, 0.75186, 1.04692, 0.68887, 0.78223, 0.68887, 0.78223, 0.68887, 0.78223, 0.68887, 0.78223, 1, 1, 0.79776, 0.92188, 0.79776, 1.23023, 0.88844, 0.94469, 0.88844, 0.94469, 0.88844, 0.94469, 0.88844, 0.94469, 0.88844, 0.94469, 0.88844, 0.94469, 0.94258, 0.98986, 0.7306, 0.90527, 0.7306, 0.76659, 0.79004, 0.76659, 0.79004, 0.76659, 0.79004, 1.09231, 0.54873, 0.8675, 0.86128, 0.76318, 0.8693, 0.85311, 0.86651, 1, 1, 0.79776, 1.20562, 1.18622, 1.18622, 1, 1.1437, 0.67742, 0.96334, 0.93695, 1.35191, 1.40909, 0.95161, 1.48387, 0.86686, 0.90861, 0.62267, 0.74359, 0.65649, 0.85498, 0.56963, 0.88254, 1.23516, 0.8675, 0.81552, 0.75443, 0.84503, 0.73206, 0.76659, 0.86275, 0.85122, 0.90685, 0.77892, 0.85746, 1.02638, 0.89385, 0.75657, 0.85122, 0.86275, 0.77452, 0.74171, 0.79776, 0.7306, 0.95165, 0.77818, 0.89772, 0.88831, 0.90685, 0.7306, 0.98142, 1.02191, 0.96576, 1.23516, 0.99018, 0.98142, 0.9236, 0.89258, 0.94035, 1.02191, 0.78848, 0.96576, 0.9561, 1.23516, 0.90918, 0.92578, 0.95424, 0.89746, 0.83969, 0.9482, 0.80113, 0.89442, 0.85208, 0.86155, 0.98022, 0.99018, 1.00452, 0.81209, 0.99247, 0.89181, 1.23516, 0.99018, 0.9482, 0.99018, 0.89181, 0.73206, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.88844, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.89464, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.96766, 1, 1, 1, 1, 1, 1, 0.94258, 0.98986, 0.94258, 0.98986, 0.94258, 0.98986, 0.7306, 0.90527, 1, 1, 0.89552, 0.90527, 1, 0.90186, 1.12308, 1.12308, 1.12308, 1.12308, 1.2566, 1.2566, 1.2566, 0.89552, 0.89552, 1.42259, 0.69043, 1.03809, 1, 1, 1.0176, 1.0176, 1.11523, 1.4956, 2.01462, 0.99331, 0.82616, 0.91133, 0.84286, 0.91133, 1, 1, 1, 0.70508, 1, 1.23108, 0.79801, 0.84426, 0.84426, 0.774, 0.90527, 1.81055, 0.90527, 1.81055, 1.28809, 1.55469, 0.94434, 1.07806, 1, 0.97094, 0.7589, 0.85284, 0.90747, 1.19658, 0.69825, 0.97622, 1.33512, 0.90747, 0.90747, 0.85356, 0.90747, 0.90747, 1.44947, 0.85284, 0.8941, 0.8941, 0.70572, 0.8, 0.70572, 0.70572, 0.70572, 0.70572, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.99862, 0.99862, 1, 1, 1, 1, 1, 1.0336, 0.91027, 1, 1, 1, 0.99862, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.05859, 1.05859, 1, 1, 1, 1.07185, 0.99413, 0.96334, 1.08065, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const CalibriRegularMetrics = {
-  lineHeight: 1.2207,
-  lineGap: 0.2207
-};
-
-;// ./src/core/helvetica_factors.js
-const HelveticaBoldFactors = [0.76116, 1, 1, 1.0006, 0.99998, 0.99974, 0.99973, 0.99973, 0.99982, 0.99977, 1.00087, 0.99998, 0.99998, 0.99959, 1.00003, 1.0006, 0.99998, 1.0006, 1.0006, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99998, 1, 1.00003, 1.00003, 1.00003, 1.00026, 0.9999, 0.99977, 0.99977, 0.99977, 0.99977, 1.00001, 1.00026, 1.00022, 0.99977, 1.0006, 0.99973, 0.99977, 1.00026, 0.99999, 0.99977, 1.00022, 1.00001, 1.00022, 0.99977, 1.00001, 1.00026, 0.99977, 1.00001, 1.00016, 1.00001, 1.00001, 1.00026, 0.99998, 1.0006, 0.99998, 1.00003, 0.99973, 0.99998, 0.99973, 1.00026, 0.99973, 1.00026, 0.99973, 0.99998, 1.00026, 1.00026, 1.0006, 1.0006, 0.99973, 1.0006, 0.99982, 1.00026, 1.00026, 1.00026, 1.00026, 0.99959, 0.99973, 0.99998, 1.00026, 0.99973, 1.00022, 0.99973, 0.99973, 1, 0.99959, 1.00077, 0.99959, 1.00003, 0.99998, 0.99973, 0.99973, 0.99973, 0.99973, 1.00077, 0.99973, 0.99998, 1.00025, 0.99968, 0.99973, 1.00003, 1.00025, 0.60299, 1.00024, 1.06409, 1, 1, 0.99998, 1, 0.99973, 1.0006, 0.99998, 1, 0.99936, 0.99973, 1.00002, 1.00002, 1.00002, 1.00026, 0.99977, 0.99977, 0.99977, 0.99977, 0.99977, 0.99977, 1, 0.99977, 1.00001, 1.00001, 1.00001, 1.00001, 1.0006, 1.0006, 1.0006, 1.0006, 0.99977, 0.99977, 1.00022, 1.00022, 1.00022, 1.00022, 1.00022, 1.00003, 1.00022, 0.99977, 0.99977, 0.99977, 0.99977, 1.00001, 1.00001, 1.00026, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99982, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 1.0006, 1.0006, 1.0006, 1.0006, 1.00026, 1.00026, 1.00026, 1.00026, 1.00026, 1.00026, 1.00026, 1.06409, 1.00026, 1.00026, 1.00026, 1.00026, 1.00026, 0.99973, 1.00026, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 1.03374, 0.99977, 1.00026, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00022, 1.00026, 1.00022, 1.00026, 1.00022, 1.00026, 1.00022, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.00042, 0.99973, 0.99973, 1.0006, 0.99977, 0.99973, 0.99973, 1.00026, 1.0006, 1.00026, 1.0006, 1.00026, 1.03828, 1.00026, 0.99999, 1.00026, 1.0006, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 0.9993, 0.9998, 1.00026, 1.00022, 1.00026, 1.00022, 1.00026, 1.00022, 1.00026, 1, 1.00016, 0.99977, 0.99959, 0.99977, 0.99959, 0.99977, 0.99959, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00026, 0.99998, 1.00026, 0.8121, 1.00026, 0.99998, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 1.00016, 1.00022, 1.00001, 0.99973, 1.00001, 1.00026, 1, 1.00026, 1, 1.00026, 1, 1.0006, 0.99973, 0.99977, 0.99973, 1, 0.99982, 1.00022, 1.00026, 1.00001, 0.99973, 1.00026, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 1.00034, 0.99977, 1, 0.99997, 1.00026, 1.00078, 1.00036, 0.99973, 1.00013, 1.0006, 0.99977, 0.99977, 0.99988, 0.85148, 1.00001, 1.00026, 0.99977, 1.00022, 1.0006, 0.99977, 1.00001, 0.99999, 0.99977, 1.00069, 1.00022, 0.99977, 1.00001, 0.99984, 1.00026, 1.00001, 1.00024, 1.00001, 0.9999, 1, 1.0006, 1.00001, 1.00041, 0.99962, 1.00026, 1.0006, 0.99995, 1.00041, 0.99942, 0.99973, 0.99927, 1.00082, 0.99902, 1.00026, 1.00087, 1.0006, 1.00069, 0.99973, 0.99867, 0.99973, 0.9993, 1.00026, 1.00049, 1.00056, 1, 0.99988, 0.99935, 0.99995, 0.99954, 1.00055, 0.99945, 1.00032, 1.0006, 0.99995, 1.00026, 0.99995, 1.00032, 1.00001, 1.00008, 0.99971, 1.00019, 0.9994, 1.00001, 1.0006, 1.00044, 0.99973, 1.00023, 1.00047, 1, 0.99942, 0.99561, 0.99989, 1.00035, 0.99977, 1.00035, 0.99977, 1.00019, 0.99944, 1.00001, 1.00021, 0.99926, 1.00035, 1.00035, 0.99942, 1.00048, 0.99999, 0.99977, 1.00022, 1.00035, 1.00001, 0.99977, 1.00026, 0.99989, 1.00057, 1.00001, 0.99936, 1.00052, 1.00012, 0.99996, 1.00043, 1, 1.00035, 0.9994, 0.99976, 1.00035, 0.99973, 1.00052, 1.00041, 1.00119, 1.00037, 0.99973, 1.00002, 0.99986, 1.00041, 1.00041, 0.99902, 0.9996, 1.00034, 0.99999, 1.00026, 0.99999, 1.00026, 0.99973, 1.00052, 0.99973, 1, 0.99973, 1.00041, 1.00075, 0.9994, 1.0003, 0.99999, 1, 1.00041, 0.99955, 1, 0.99915, 0.99973, 0.99973, 1.00026, 1.00119, 0.99955, 0.99973, 1.0006, 0.99911, 1.0006, 1.00026, 0.99972, 1.00026, 0.99902, 1.00041, 0.99973, 0.99999, 1, 1, 1.00038, 1.0005, 1.00016, 1.00022, 1.00016, 1.00022, 1.00016, 1.00022, 1.00001, 0.99973, 1, 1, 0.99973, 1, 1, 0.99955, 1.0006, 1.0006, 1.0006, 1.0006, 1, 1, 1, 0.99973, 0.99973, 0.99972, 1, 1, 1.00106, 0.99999, 0.99998, 0.99998, 0.99999, 0.99998, 1.66475, 1, 0.99973, 0.99973, 1.00023, 0.99973, 0.99971, 1.00047, 1.00023, 1, 0.99991, 0.99984, 1.00002, 1.00002, 1.00002, 1.00002, 1, 1, 1, 1, 1, 1, 1, 0.99972, 1, 1.20985, 1.39713, 1.00003, 1.00031, 1.00015, 1, 0.99561, 1.00027, 1.00031, 1.00031, 0.99915, 1.00031, 1.00031, 0.99999, 1.00003, 0.99999, 0.99999, 1.41144, 1.6, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.40579, 1.40579, 1.36625, 0.99999, 1, 0.99861, 0.99861, 1, 1.00026, 1.00026, 1.00026, 1.00026, 0.99972, 0.99999, 0.99999, 0.99999, 0.99999, 1.40483, 1, 0.99977, 1.00054, 1, 1, 0.99953, 0.99962, 1.00042, 0.9995, 1, 1, 1, 1, 1, 1, 1, 1, 0.99998, 0.99998, 0.99998, 0.99998, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const HelveticaBoldMetrics = {
-  lineHeight: 1.2,
-  lineGap: 0.2
-};
-const HelveticaBoldItalicFactors = [0.76116, 1, 1, 1.0006, 0.99998, 0.99974, 0.99973, 0.99973, 0.99982, 0.99977, 1.00087, 0.99998, 0.99998, 0.99959, 1.00003, 1.0006, 0.99998, 1.0006, 1.0006, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99998, 1, 1.00003, 1.00003, 1.00003, 1.00026, 0.9999, 0.99977, 0.99977, 0.99977, 0.99977, 1.00001, 1.00026, 1.00022, 0.99977, 1.0006, 0.99973, 0.99977, 1.00026, 0.99999, 0.99977, 1.00022, 1.00001, 1.00022, 0.99977, 1.00001, 1.00026, 0.99977, 1.00001, 1.00016, 1.00001, 1.00001, 1.00026, 0.99998, 1.0006, 0.99998, 1.00003, 0.99973, 0.99998, 0.99973, 1.00026, 0.99973, 1.00026, 0.99973, 0.99998, 1.00026, 1.00026, 1.0006, 1.0006, 0.99973, 1.0006, 0.99982, 1.00026, 1.00026, 1.00026, 1.00026, 0.99959, 0.99973, 0.99998, 1.00026, 0.99973, 1.00022, 0.99973, 0.99973, 1, 0.99959, 1.00077, 0.99959, 1.00003, 0.99998, 0.99973, 0.99973, 0.99973, 0.99973, 1.00077, 0.99973, 0.99998, 1.00025, 0.99968, 0.99973, 1.00003, 1.00025, 0.60299, 1.00024, 1.06409, 1, 1, 0.99998, 1, 0.99973, 1.0006, 0.99998, 1, 0.99936, 0.99973, 1.00002, 1.00002, 1.00002, 1.00026, 0.99977, 0.99977, 0.99977, 0.99977, 0.99977, 0.99977, 1, 0.99977, 1.00001, 1.00001, 1.00001, 1.00001, 1.0006, 1.0006, 1.0006, 1.0006, 0.99977, 0.99977, 1.00022, 1.00022, 1.00022, 1.00022, 1.00022, 1.00003, 1.00022, 0.99977, 0.99977, 0.99977, 0.99977, 1.00001, 1.00001, 1.00026, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99982, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 1.0006, 1.0006, 1.0006, 1.0006, 1.00026, 1.00026, 1.00026, 1.00026, 1.00026, 1.00026, 1.00026, 1.06409, 1.00026, 1.00026, 1.00026, 1.00026, 1.00026, 0.99973, 1.00026, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 1.0044, 0.99977, 1.00026, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00022, 1.00026, 1.00022, 1.00026, 1.00022, 1.00026, 1.00022, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 0.99971, 0.99973, 0.99973, 1.0006, 0.99977, 0.99973, 0.99973, 1.00026, 1.0006, 1.00026, 1.0006, 1.00026, 1.01011, 1.00026, 0.99999, 1.00026, 1.0006, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 0.9993, 0.9998, 1.00026, 1.00022, 1.00026, 1.00022, 1.00026, 1.00022, 1.00026, 1, 1.00016, 0.99977, 0.99959, 0.99977, 0.99959, 0.99977, 0.99959, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00026, 0.99998, 1.00026, 0.8121, 1.00026, 0.99998, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 0.99977, 1.00026, 1.00016, 1.00022, 1.00001, 0.99973, 1.00001, 1.00026, 1, 1.00026, 1, 1.00026, 1, 1.0006, 0.99973, 0.99977, 0.99973, 1, 0.99982, 1.00022, 1.00026, 1.00001, 0.99973, 1.00026, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99977, 1, 1, 1.00026, 0.99969, 0.99972, 0.99981, 0.9998, 1.0006, 0.99977, 0.99977, 1.00022, 0.91155, 1.00001, 1.00026, 0.99977, 1.00022, 1.0006, 0.99977, 1.00001, 0.99999, 0.99977, 0.99966, 1.00022, 1.00032, 1.00001, 0.99944, 1.00026, 1.00001, 0.99968, 1.00001, 1.00047, 1, 1.0006, 1.00001, 0.99981, 1.00101, 1.00026, 1.0006, 0.99948, 0.99981, 1.00064, 0.99973, 0.99942, 1.00101, 1.00061, 1.00026, 1.00069, 1.0006, 1.00014, 0.99973, 1.01322, 0.99973, 1.00065, 1.00026, 1.00012, 0.99923, 1, 1.00064, 1.00076, 0.99948, 1.00055, 1.00063, 1.00007, 0.99943, 1.0006, 0.99948, 1.00026, 0.99948, 0.99943, 1.00001, 1.00001, 1.00029, 1.00038, 1.00035, 1.00001, 1.0006, 1.0006, 0.99973, 0.99978, 1.00001, 1.00057, 0.99989, 0.99967, 0.99964, 0.99967, 0.99977, 0.99999, 0.99977, 1.00038, 0.99977, 1.00001, 0.99973, 1.00066, 0.99967, 0.99967, 1.00041, 0.99998, 0.99999, 0.99977, 1.00022, 0.99967, 1.00001, 0.99977, 1.00026, 0.99964, 1.00031, 1.00001, 0.99999, 0.99999, 1, 1.00023, 1, 1, 0.99999, 1.00035, 1.00001, 0.99999, 0.99973, 0.99977, 0.99999, 1.00058, 0.99973, 0.99973, 0.99955, 0.9995, 1.00026, 1.00026, 1.00032, 0.99989, 1.00034, 0.99999, 1.00026, 1.00026, 1.00026, 0.99973, 0.45998, 0.99973, 1.00026, 0.99973, 1.00001, 0.99999, 0.99982, 0.99994, 0.99996, 1, 1.00042, 1.00044, 1.00029, 1.00023, 0.99973, 0.99973, 1.00026, 0.99949, 1.00002, 0.99973, 1.0006, 1.0006, 1.0006, 0.99975, 1.00026, 1.00026, 1.00032, 0.98685, 0.99973, 1.00026, 1, 1, 0.99966, 1.00044, 1.00016, 1.00022, 1.00016, 1.00022, 1.00016, 1.00022, 1.00001, 0.99973, 1, 1, 0.99973, 1, 1, 0.99955, 1.0006, 1.0006, 1.0006, 1.0006, 1, 1, 1, 0.99973, 0.99973, 0.99972, 1, 1, 1.00106, 0.99999, 0.99998, 0.99998, 0.99999, 0.99998, 1.66475, 1, 0.99973, 0.99973, 1, 0.99973, 0.99971, 0.99978, 1, 1, 0.99991, 0.99984, 1.00002, 1.00002, 1.00002, 1.00002, 1.00098, 1, 1, 1, 1.00049, 1, 1, 0.99972, 1, 1.20985, 1.39713, 1.00003, 1.00031, 1.00015, 1, 0.99561, 1.00027, 1.00031, 1.00031, 0.99915, 1.00031, 1.00031, 0.99999, 1.00003, 0.99999, 0.99999, 1.41144, 1.6, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.40579, 1.40579, 1.36625, 0.99999, 1, 0.99861, 0.99861, 1, 1.00026, 1.00026, 1.00026, 1.00026, 0.99972, 0.99999, 0.99999, 0.99999, 0.99999, 1.40483, 1, 0.99977, 1.00054, 1, 1, 0.99953, 0.99962, 1.00042, 0.9995, 1, 1, 1, 1, 1, 1, 1, 1, 0.99998, 0.99998, 0.99998, 0.99998, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const HelveticaBoldItalicMetrics = {
-  lineHeight: 1.35,
-  lineGap: 0.2
-};
-const HelveticaItalicFactors = [0.76116, 1, 1, 1.0006, 1.0006, 1.00006, 0.99973, 0.99973, 0.99982, 1.00001, 1.00043, 0.99998, 0.99998, 0.99959, 1.00003, 1.0006, 0.99998, 1.0006, 1.0006, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 1.0006, 1, 1.00003, 1.00003, 1.00003, 0.99973, 0.99987, 1.00001, 1.00001, 0.99977, 0.99977, 1.00001, 1.00026, 1.00022, 0.99977, 1.0006, 1, 1.00001, 0.99973, 0.99999, 0.99977, 1.00022, 1.00001, 1.00022, 0.99977, 1.00001, 1.00026, 0.99977, 1.00001, 1.00016, 1.00001, 1.00001, 1.00026, 1.0006, 1.0006, 1.0006, 0.99949, 0.99973, 0.99998, 0.99973, 0.99973, 1, 0.99973, 0.99973, 1.0006, 0.99973, 0.99973, 0.99924, 0.99924, 1, 0.99924, 0.99999, 0.99973, 0.99973, 0.99973, 0.99973, 0.99998, 1, 1.0006, 0.99973, 1, 0.99977, 1, 1, 1, 1.00005, 1.0009, 1.00005, 1.00003, 0.99998, 0.99973, 0.99973, 0.99973, 0.99973, 1.0009, 0.99973, 0.99998, 1.00025, 0.99968, 0.99973, 1.00003, 1.00025, 0.60299, 1.00024, 1.06409, 1, 1, 0.99998, 1, 0.9998, 1.0006, 0.99998, 1, 0.99936, 0.99973, 1.00002, 1.00002, 1.00002, 1.00026, 1.00001, 1.00001, 1.00001, 1.00001, 1.00001, 1.00001, 1, 0.99977, 1.00001, 1.00001, 1.00001, 1.00001, 1.0006, 1.0006, 1.0006, 1.0006, 0.99977, 0.99977, 1.00022, 1.00022, 1.00022, 1.00022, 1.00022, 1.00003, 1.00022, 0.99977, 0.99977, 0.99977, 0.99977, 1.00001, 1.00001, 1.00026, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99982, 1, 0.99973, 0.99973, 0.99973, 0.99973, 1.0006, 1.0006, 1.0006, 1.0006, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 1.06409, 1.00026, 0.99973, 0.99973, 0.99973, 0.99973, 1, 0.99973, 1, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 0.99977, 1, 0.99977, 1, 0.99977, 1, 0.99977, 1, 0.99977, 1.0288, 0.99977, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 0.99924, 1.0006, 1.0006, 0.99946, 1.00034, 1, 0.99924, 1.00001, 1, 1, 0.99973, 0.99924, 0.99973, 0.99924, 0.99973, 1.06311, 0.99973, 1.00024, 0.99973, 0.99924, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 1.00041, 0.9998, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 1, 1.00016, 0.99977, 0.99998, 0.99977, 0.99998, 0.99977, 0.99998, 1.00001, 1, 1.00001, 1, 1.00001, 1, 1.00001, 1, 1.00026, 1.0006, 1.00026, 0.89547, 1.00026, 1.0006, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 1.00016, 0.99977, 1.00001, 1, 1.00001, 1.00026, 1, 1.00026, 1, 1.00026, 1, 0.99924, 0.99973, 1.00001, 0.99973, 1, 0.99982, 1.00022, 1.00026, 1.00001, 1, 1.00026, 1.0006, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 1.00001, 1, 1.00054, 0.99977, 1.00084, 1.00007, 0.99973, 1.00013, 0.99924, 1.00001, 1.00001, 0.99945, 0.91221, 1.00001, 1.00026, 0.99977, 1.00022, 1.0006, 1.00001, 1.00001, 0.99999, 0.99977, 0.99933, 1.00022, 1.00054, 1.00001, 1.00065, 1.00026, 1.00001, 1.0001, 1.00001, 1.00052, 1, 1.0006, 1.00001, 0.99945, 0.99897, 0.99968, 0.99924, 1.00036, 0.99945, 0.99949, 1, 1.0006, 0.99897, 0.99918, 0.99968, 0.99911, 0.99924, 1, 0.99962, 1.01487, 1, 1.0005, 0.99973, 1.00012, 1.00043, 1, 0.99995, 0.99994, 1.00036, 0.99947, 1.00019, 1.00063, 1.00025, 0.99924, 1.00036, 0.99973, 1.00036, 1.00025, 1.00001, 1.00001, 1.00027, 1.0001, 1.00068, 1.00001, 1.0006, 1.0006, 1, 1.00008, 0.99957, 0.99972, 0.9994, 0.99954, 0.99975, 1.00051, 1.00001, 1.00019, 1.00001, 1.0001, 0.99986, 1.00001, 1.00001, 1.00038, 0.99954, 0.99954, 0.9994, 1.00066, 0.99999, 0.99977, 1.00022, 1.00054, 1.00001, 0.99977, 1.00026, 0.99975, 1.0001, 1.00001, 0.99993, 0.9995, 0.99955, 1.00016, 0.99978, 0.99974, 1.00019, 1.00022, 0.99955, 1.00053, 0.99973, 1.00089, 1.00005, 0.99967, 1.00048, 0.99973, 1.00002, 1.00034, 0.99973, 0.99973, 0.99964, 1.00006, 1.00066, 0.99947, 0.99973, 0.98894, 0.99973, 1, 0.44898, 1, 0.99946, 1, 1.00039, 1.00082, 0.99991, 0.99991, 0.99985, 1.00022, 1.00023, 1.00061, 1.00006, 0.99966, 0.99973, 0.99973, 0.99973, 1.00019, 1.0008, 1, 0.99924, 0.99924, 0.99924, 0.99983, 1.00044, 0.99973, 0.99964, 0.98332, 1, 0.99973, 1, 1, 0.99962, 0.99895, 1.00016, 0.99977, 1.00016, 0.99977, 1.00016, 0.99977, 1.00001, 1, 1, 1, 0.99973, 1, 1, 0.99955, 0.99924, 0.99924, 0.99924, 0.99924, 0.99998, 0.99998, 0.99998, 0.99973, 0.99973, 0.99972, 1, 1, 1.00267, 0.99999, 0.99998, 0.99998, 1, 0.99998, 1.66475, 1, 0.99973, 0.99973, 1.00023, 0.99973, 1.00423, 0.99925, 0.99999, 1, 0.99991, 0.99984, 1.00002, 1.00002, 1.00002, 1.00002, 1.00049, 1, 1.00245, 1, 1, 1, 1, 0.96329, 1, 1.20985, 1.39713, 1.00003, 0.8254, 1.00015, 1, 1.00035, 1.00027, 1.00031, 1.00031, 1.00003, 1.00031, 1.00031, 0.99999, 1.00003, 0.99999, 0.99999, 1.41144, 1.6, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.40579, 1.40579, 1.36625, 0.99999, 1, 0.99861, 0.99861, 1, 1.00026, 1.00026, 1.00026, 1.00026, 0.95317, 0.99999, 0.99999, 0.99999, 0.99999, 1.40483, 1, 0.99977, 1.00054, 1, 1, 0.99953, 0.99962, 1.00042, 0.9995, 1, 1, 1, 1, 1, 1, 1, 1, 0.99998, 0.99998, 0.99998, 0.99998, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const HelveticaItalicMetrics = {
-  lineHeight: 1.35,
-  lineGap: 0.2
-};
-const HelveticaRegularFactors = [0.76116, 1, 1, 1.0006, 1.0006, 1.00006, 0.99973, 0.99973, 0.99982, 1.00001, 1.00043, 0.99998, 0.99998, 0.99959, 1.00003, 1.0006, 0.99998, 1.0006, 1.0006, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 1.0006, 1, 1.00003, 1.00003, 1.00003, 0.99973, 0.99987, 1.00001, 1.00001, 0.99977, 0.99977, 1.00001, 1.00026, 1.00022, 0.99977, 1.0006, 1, 1.00001, 0.99973, 0.99999, 0.99977, 1.00022, 1.00001, 1.00022, 0.99977, 1.00001, 1.00026, 0.99977, 1.00001, 1.00016, 1.00001, 1.00001, 1.00026, 1.0006, 1.0006, 1.0006, 0.99949, 0.99973, 0.99998, 0.99973, 0.99973, 1, 0.99973, 0.99973, 1.0006, 0.99973, 0.99973, 0.99924, 0.99924, 1, 0.99924, 0.99999, 0.99973, 0.99973, 0.99973, 0.99973, 0.99998, 1, 1.0006, 0.99973, 1, 0.99977, 1, 1, 1, 1.00005, 1.0009, 1.00005, 1.00003, 0.99998, 0.99973, 0.99973, 0.99973, 0.99973, 1.0009, 0.99973, 0.99998, 1.00025, 0.99968, 0.99973, 1.00003, 1.00025, 0.60299, 1.00024, 1.06409, 1, 1, 0.99998, 1, 0.9998, 1.0006, 0.99998, 1, 0.99936, 0.99973, 1.00002, 1.00002, 1.00002, 1.00026, 1.00001, 1.00001, 1.00001, 1.00001, 1.00001, 1.00001, 1, 0.99977, 1.00001, 1.00001, 1.00001, 1.00001, 1.0006, 1.0006, 1.0006, 1.0006, 0.99977, 0.99977, 1.00022, 1.00022, 1.00022, 1.00022, 1.00022, 1.00003, 1.00022, 0.99977, 0.99977, 0.99977, 0.99977, 1.00001, 1.00001, 1.00026, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99982, 1, 0.99973, 0.99973, 0.99973, 0.99973, 1.0006, 1.0006, 1.0006, 1.0006, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 0.99973, 1.06409, 1.00026, 0.99973, 0.99973, 0.99973, 0.99973, 1, 0.99973, 1, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 0.99977, 1, 0.99977, 1, 0.99977, 1, 0.99977, 1, 0.99977, 1.04596, 0.99977, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00001, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 1.0006, 0.99924, 1.0006, 1.0006, 1.00019, 1.00034, 1, 0.99924, 1.00001, 1, 1, 0.99973, 0.99924, 0.99973, 0.99924, 0.99973, 1.02572, 0.99973, 1.00005, 0.99973, 0.99924, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99999, 0.9998, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 1.00022, 0.99973, 1, 1.00016, 0.99977, 0.99998, 0.99977, 0.99998, 0.99977, 0.99998, 1.00001, 1, 1.00001, 1, 1.00001, 1, 1.00001, 1, 1.00026, 1.0006, 1.00026, 0.84533, 1.00026, 1.0006, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 0.99977, 0.99973, 1.00016, 0.99977, 1.00001, 1, 1.00001, 1.00026, 1, 1.00026, 1, 1.00026, 1, 0.99924, 0.99973, 1.00001, 0.99973, 1, 0.99982, 1.00022, 1.00026, 1.00001, 1, 1.00026, 1.0006, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99998, 0.99928, 1, 0.99977, 1.00013, 1.00055, 0.99947, 0.99945, 0.99941, 0.99924, 1.00001, 1.00001, 1.0004, 0.91621, 1.00001, 1.00026, 0.99977, 1.00022, 1.0006, 1.00001, 1.00005, 0.99999, 0.99977, 1.00015, 1.00022, 0.99977, 1.00001, 0.99973, 1.00026, 1.00001, 1.00019, 1.00001, 0.99946, 1, 1.0006, 1.00001, 0.99978, 1.00045, 0.99973, 0.99924, 1.00023, 0.99978, 0.99966, 1, 1.00065, 1.00045, 1.00019, 0.99973, 0.99973, 0.99924, 1, 1, 0.96499, 1, 1.00055, 0.99973, 1.00008, 1.00027, 1, 0.9997, 0.99995, 1.00023, 0.99933, 1.00019, 1.00015, 1.00031, 0.99924, 1.00023, 0.99973, 1.00023, 1.00031, 1.00001, 0.99928, 1.00029, 1.00092, 1.00035, 1.00001, 1.0006, 1.0006, 1, 0.99988, 0.99975, 1, 1.00082, 0.99561, 0.9996, 1.00035, 1.00001, 0.99962, 1.00001, 1.00092, 0.99964, 1.00001, 0.99963, 0.99999, 1.00035, 1.00035, 1.00082, 0.99962, 0.99999, 0.99977, 1.00022, 1.00035, 1.00001, 0.99977, 1.00026, 0.9996, 0.99967, 1.00001, 1.00034, 1.00074, 1.00054, 1.00053, 1.00063, 0.99971, 0.99962, 1.00035, 0.99975, 0.99977, 0.99973, 1.00043, 0.99953, 1.0007, 0.99915, 0.99973, 1.00008, 0.99892, 1.00073, 1.00073, 1.00114, 0.99915, 1.00073, 0.99955, 0.99973, 1.00092, 0.99973, 1, 0.99998, 1, 1.0003, 1, 1.00043, 1.00001, 0.99969, 1.0003, 1, 1.00035, 1.00001, 0.9995, 1, 1.00092, 0.99973, 0.99973, 0.99973, 1.0007, 0.9995, 1, 0.99924, 1.0006, 0.99924, 0.99972, 1.00062, 0.99973, 1.00114, 1.00073, 1, 0.99955, 1, 1, 1.00047, 0.99968, 1.00016, 0.99977, 1.00016, 0.99977, 1.00016, 0.99977, 1.00001, 1, 1, 1, 0.99973, 1, 1, 0.99955, 0.99924, 0.99924, 0.99924, 0.99924, 0.99998, 0.99998, 0.99998, 0.99973, 0.99973, 0.99972, 1, 1, 1.00267, 0.99999, 0.99998, 0.99998, 1, 0.99998, 1.66475, 1, 0.99973, 0.99973, 1.00023, 0.99973, 0.99971, 0.99925, 1.00023, 1, 0.99991, 0.99984, 1.00002, 1.00002, 1.00002, 1.00002, 1, 1, 1, 1, 1, 1, 1, 0.96329, 1, 1.20985, 1.39713, 1.00003, 0.8254, 1.00015, 1, 1.00035, 1.00027, 1.00031, 1.00031, 0.99915, 1.00031, 1.00031, 0.99999, 1.00003, 0.99999, 0.99999, 1.41144, 1.6, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.41144, 1.40579, 1.40579, 1.36625, 0.99999, 1, 0.99861, 0.99861, 1, 1.00026, 1.00026, 1.00026, 1.00026, 0.95317, 0.99999, 0.99999, 0.99999, 0.99999, 1.40483, 1, 0.99977, 1.00054, 1, 1, 0.99953, 0.99962, 1.00042, 0.9995, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const HelveticaRegularMetrics = {
-  lineHeight: 1.2,
-  lineGap: 0.2
-};
-
-;// ./src/core/liberationsans_widths.js
-const LiberationSansBoldWidths = [365, 0, 333, 278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584, 333, 556, 556, 556, 556, 280, 556, 333, 737, 370, 556, 584, 737, 552, 400, 549, 333, 333, 333, 576, 556, 278, 333, 333, 365, 556, 834, 834, 834, 611, 722, 722, 722, 722, 722, 722, 1000, 722, 667, 667, 667, 667, 278, 278, 278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556, 556, 889, 556, 556, 556, 556, 556, 278, 278, 278, 278, 611, 611, 611, 611, 611, 611, 611, 549, 611, 611, 611, 611, 611, 556, 611, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 719, 722, 611, 667, 556, 667, 556, 667, 556, 667, 556, 667, 556, 778, 611, 778, 611, 778, 611, 778, 611, 722, 611, 722, 611, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 785, 556, 556, 278, 722, 556, 556, 611, 278, 611, 278, 611, 385, 611, 479, 611, 278, 722, 611, 722, 611, 722, 611, 708, 723, 611, 778, 611, 778, 611, 778, 611, 1000, 944, 722, 389, 722, 389, 722, 389, 667, 556, 667, 556, 667, 556, 667, 556, 611, 333, 611, 479, 611, 333, 722, 611, 722, 611, 722, 611, 722, 611, 722, 611, 722, 611, 944, 778, 667, 556, 667, 611, 500, 611, 500, 611, 500, 278, 556, 722, 556, 1000, 889, 778, 611, 667, 556, 611, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 465, 722, 333, 853, 906, 474, 825, 927, 838, 278, 722, 722, 601, 719, 667, 611, 722, 778, 278, 722, 667, 833, 722, 644, 778, 722, 667, 600, 611, 667, 821, 667, 809, 802, 278, 667, 615, 451, 611, 278, 582, 615, 610, 556, 606, 475, 460, 611, 541, 278, 558, 556, 612, 556, 445, 611, 766, 619, 520, 684, 446, 582, 715, 576, 753, 845, 278, 582, 611, 582, 845, 667, 669, 885, 567, 711, 667, 278, 276, 556, 1094, 1062, 875, 610, 722, 622, 719, 722, 719, 722, 567, 712, 667, 904, 626, 719, 719, 610, 702, 833, 722, 778, 719, 667, 722, 611, 622, 854, 667, 730, 703, 1005, 1019, 870, 979, 719, 711, 1031, 719, 556, 618, 615, 417, 635, 556, 709, 497, 615, 615, 500, 635, 740, 604, 611, 604, 611, 556, 490, 556, 875, 556, 615, 581, 833, 844, 729, 854, 615, 552, 854, 583, 556, 556, 611, 417, 552, 556, 278, 281, 278, 969, 906, 611, 500, 615, 556, 604, 778, 611, 487, 447, 944, 778, 944, 778, 944, 778, 667, 556, 333, 333, 556, 1000, 1000, 552, 278, 278, 278, 278, 500, 500, 500, 556, 556, 350, 1000, 1000, 240, 479, 333, 333, 604, 333, 167, 396, 556, 556, 1094, 556, 885, 489, 1115, 1000, 768, 600, 834, 834, 834, 834, 1000, 500, 1000, 500, 1000, 500, 500, 494, 612, 823, 713, 584, 549, 713, 979, 722, 274, 549, 549, 583, 549, 549, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 494, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 611, 611, 333, 333, 333, 333, 333, 333, 333, 333, 222, 222, 333, 333, 333, 333, 333, 333, 333, 333];
-const LiberationSansBoldMapping = [-1, -1, -1, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 402, 506, 507, 508, 509, 510, 511, 536, 537, 538, 539, 710, 711, 713, 728, 729, 730, 731, 732, 733, 900, 901, 902, 903, 904, 905, 906, 908, 910, 911, 912, 913, 914, 915, 916, 917, 918, 919, 920, 921, 922, 923, 924, 925, 926, 927, 928, 929, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949, 950, 951, 952, 953, 954, 955, 956, 957, 958, 959, 960, 961, 962, 963, 964, 965, 966, 967, 968, 969, 970, 971, 972, 973, 974, 1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050, 1051, 1052, 1053, 1054, 1055, 1056, 1057, 1058, 1059, 1060, 1061, 1062, 1063, 1064, 1065, 1066, 1067, 1068, 1069, 1070, 1071, 1072, 1073, 1074, 1075, 1076, 1077, 1078, 1079, 1080, 1081, 1082, 1083, 1084, 1085, 1086, 1087, 1088, 1089, 1090, 1091, 1092, 1093, 1094, 1095, 1096, 1097, 1098, 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1110, 1111, 1112, 1113, 1114, 1115, 1116, 1117, 1118, 1119, 1138, 1139, 1168, 1169, 7808, 7809, 7810, 7811, 7812, 7813, 7922, 7923, 8208, 8209, 8211, 8212, 8213, 8215, 8216, 8217, 8218, 8219, 8220, 8221, 8222, 8224, 8225, 8226, 8230, 8240, 8242, 8243, 8249, 8250, 8252, 8254, 8260, 8319, 8355, 8356, 8359, 8364, 8453, 8467, 8470, 8482, 8486, 8494, 8539, 8540, 8541, 8542, 8592, 8593, 8594, 8595, 8596, 8597, 8616, 8706, 8710, 8719, 8721, 8722, 8730, 8734, 8735, 8745, 8747, 8776, 8800, 8801, 8804, 8805, 8962, 8976, 8992, 8993, 9472, 9474, 9484, 9488, 9492, 9496, 9500, 9508, 9516, 9524, 9532, 9552, 9553, 9554, 9555, 9556, 9557, 9558, 9559, 9560, 9561, 9562, 9563, 9564, 9565, 9566, 9567, 9568, 9569, 9570, 9571, 9572, 9573, 9574, 9575, 9576, 9577, 9578, 9579, 9580, 9600, 9604, 9608, 9612, 9616, 9617, 9618, 9619, 9632, 9633, 9642, 9643, 9644, 9650, 9658, 9660, 9668, 9674, 9675, 9679, 9688, 9689, 9702, 9786, 9787, 9788, 9792, 9794, 9824, 9827, 9829, 9830, 9834, 9835, 9836, 61441, 61442, 61445, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
-const LiberationSansBoldItalicWidths = [365, 0, 333, 278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584, 333, 556, 556, 556, 556, 280, 556, 333, 737, 370, 556, 584, 737, 552, 400, 549, 333, 333, 333, 576, 556, 278, 333, 333, 365, 556, 834, 834, 834, 611, 722, 722, 722, 722, 722, 722, 1000, 722, 667, 667, 667, 667, 278, 278, 278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556, 556, 889, 556, 556, 556, 556, 556, 278, 278, 278, 278, 611, 611, 611, 611, 611, 611, 611, 549, 611, 611, 611, 611, 611, 556, 611, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 740, 722, 611, 667, 556, 667, 556, 667, 556, 667, 556, 667, 556, 778, 611, 778, 611, 778, 611, 778, 611, 722, 611, 722, 611, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 782, 556, 556, 278, 722, 556, 556, 611, 278, 611, 278, 611, 396, 611, 479, 611, 278, 722, 611, 722, 611, 722, 611, 708, 723, 611, 778, 611, 778, 611, 778, 611, 1000, 944, 722, 389, 722, 389, 722, 389, 667, 556, 667, 556, 667, 556, 667, 556, 611, 333, 611, 479, 611, 333, 722, 611, 722, 611, 722, 611, 722, 611, 722, 611, 722, 611, 944, 778, 667, 556, 667, 611, 500, 611, 500, 611, 500, 278, 556, 722, 556, 1000, 889, 778, 611, 667, 556, 611, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 722, 333, 854, 906, 473, 844, 930, 847, 278, 722, 722, 610, 671, 667, 611, 722, 778, 278, 722, 667, 833, 722, 657, 778, 718, 667, 590, 611, 667, 822, 667, 829, 781, 278, 667, 620, 479, 611, 278, 591, 620, 621, 556, 610, 479, 492, 611, 558, 278, 566, 556, 603, 556, 450, 611, 712, 605, 532, 664, 409, 591, 704, 578, 773, 834, 278, 591, 611, 591, 834, 667, 667, 886, 614, 719, 667, 278, 278, 556, 1094, 1042, 854, 622, 719, 677, 719, 722, 708, 722, 614, 722, 667, 927, 643, 719, 719, 615, 687, 833, 722, 778, 719, 667, 722, 611, 677, 781, 667, 729, 708, 979, 989, 854, 1000, 708, 719, 1042, 729, 556, 619, 604, 534, 618, 556, 736, 510, 611, 611, 507, 622, 740, 604, 611, 611, 611, 556, 889, 556, 885, 556, 646, 583, 889, 935, 707, 854, 594, 552, 865, 589, 556, 556, 611, 469, 563, 556, 278, 278, 278, 969, 906, 611, 507, 619, 556, 611, 778, 611, 575, 467, 944, 778, 944, 778, 944, 778, 667, 556, 333, 333, 556, 1000, 1000, 552, 278, 278, 278, 278, 500, 500, 500, 556, 556, 350, 1000, 1000, 240, 479, 333, 333, 604, 333, 167, 396, 556, 556, 1104, 556, 885, 516, 1146, 1000, 768, 600, 834, 834, 834, 834, 999, 500, 1000, 500, 1000, 500, 500, 494, 612, 823, 713, 584, 549, 713, 979, 722, 274, 549, 549, 583, 549, 549, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 494, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 611, 611, 333, 333, 333, 333, 333, 333, 333, 333, 222, 222, 333, 333, 333, 333, 333, 333, 333, 333];
-const LiberationSansBoldItalicMapping = [-1, -1, -1, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 402, 506, 507, 508, 509, 510, 511, 536, 537, 538, 539, 710, 711, 713, 728, 729, 730, 731, 732, 733, 900, 901, 902, 903, 904, 905, 906, 908, 910, 911, 912, 913, 914, 915, 916, 917, 918, 919, 920, 921, 922, 923, 924, 925, 926, 927, 928, 929, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949, 950, 951, 952, 953, 954, 955, 956, 957, 958, 959, 960, 961, 962, 963, 964, 965, 966, 967, 968, 969, 970, 971, 972, 973, 974, 1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050, 1051, 1052, 1053, 1054, 1055, 1056, 1057, 1058, 1059, 1060, 1061, 1062, 1063, 1064, 1065, 1066, 1067, 1068, 1069, 1070, 1071, 1072, 1073, 1074, 1075, 1076, 1077, 1078, 1079, 1080, 1081, 1082, 1083, 1084, 1085, 1086, 1087, 1088, 1089, 1090, 1091, 1092, 1093, 1094, 1095, 1096, 1097, 1098, 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1110, 1111, 1112, 1113, 1114, 1115, 1116, 1117, 1118, 1119, 1138, 1139, 1168, 1169, 7808, 7809, 7810, 7811, 7812, 7813, 7922, 7923, 8208, 8209, 8211, 8212, 8213, 8215, 8216, 8217, 8218, 8219, 8220, 8221, 8222, 8224, 8225, 8226, 8230, 8240, 8242, 8243, 8249, 8250, 8252, 8254, 8260, 8319, 8355, 8356, 8359, 8364, 8453, 8467, 8470, 8482, 8486, 8494, 8539, 8540, 8541, 8542, 8592, 8593, 8594, 8595, 8596, 8597, 8616, 8706, 8710, 8719, 8721, 8722, 8730, 8734, 8735, 8745, 8747, 8776, 8800, 8801, 8804, 8805, 8962, 8976, 8992, 8993, 9472, 9474, 9484, 9488, 9492, 9496, 9500, 9508, 9516, 9524, 9532, 9552, 9553, 9554, 9555, 9556, 9557, 9558, 9559, 9560, 9561, 9562, 9563, 9564, 9565, 9566, 9567, 9568, 9569, 9570, 9571, 9572, 9573, 9574, 9575, 9576, 9577, 9578, 9579, 9580, 9600, 9604, 9608, 9612, 9616, 9617, 9618, 9619, 9632, 9633, 9642, 9643, 9644, 9650, 9658, 9660, 9668, 9674, 9675, 9679, 9688, 9689, 9702, 9786, 9787, 9788, 9792, 9794, 9824, 9827, 9829, 9830, 9834, 9835, 9836, 61441, 61442, 61445, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
-const LiberationSansItalicWidths = [365, 0, 333, 278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584, 333, 556, 556, 556, 556, 260, 556, 333, 737, 370, 556, 584, 737, 552, 400, 549, 333, 333, 333, 576, 537, 278, 333, 333, 365, 556, 834, 834, 834, 611, 667, 667, 667, 667, 667, 667, 1000, 722, 667, 667, 667, 667, 278, 278, 278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556, 556, 889, 500, 556, 556, 556, 556, 278, 278, 278, 278, 556, 556, 556, 556, 556, 556, 556, 549, 611, 556, 556, 556, 556, 500, 556, 500, 667, 556, 667, 556, 667, 556, 722, 500, 722, 500, 722, 500, 722, 500, 722, 625, 722, 556, 667, 556, 667, 556, 667, 556, 667, 556, 667, 556, 778, 556, 778, 556, 778, 556, 778, 556, 722, 556, 722, 556, 278, 278, 278, 278, 278, 278, 278, 222, 278, 278, 733, 444, 500, 222, 667, 500, 500, 556, 222, 556, 222, 556, 281, 556, 400, 556, 222, 722, 556, 722, 556, 722, 556, 615, 723, 556, 778, 556, 778, 556, 778, 556, 1000, 944, 722, 333, 722, 333, 722, 333, 667, 500, 667, 500, 667, 500, 667, 500, 611, 278, 611, 354, 611, 278, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 944, 722, 667, 500, 667, 611, 500, 611, 500, 611, 500, 222, 556, 667, 556, 1000, 889, 778, 611, 667, 500, 611, 278, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 667, 278, 789, 846, 389, 794, 865, 775, 222, 667, 667, 570, 671, 667, 611, 722, 778, 278, 667, 667, 833, 722, 648, 778, 725, 667, 600, 611, 667, 837, 667, 831, 761, 278, 667, 570, 439, 555, 222, 550, 570, 571, 500, 556, 439, 463, 555, 542, 222, 500, 492, 548, 500, 447, 556, 670, 573, 486, 603, 374, 550, 652, 546, 728, 779, 222, 550, 556, 550, 779, 667, 667, 843, 544, 708, 667, 278, 278, 500, 1066, 982, 844, 589, 715, 639, 724, 667, 651, 667, 544, 704, 667, 917, 614, 715, 715, 589, 686, 833, 722, 778, 725, 667, 722, 611, 639, 795, 667, 727, 673, 920, 923, 805, 886, 651, 694, 1022, 682, 556, 562, 522, 493, 553, 556, 688, 465, 556, 556, 472, 564, 686, 550, 556, 556, 556, 500, 833, 500, 835, 500, 572, 518, 830, 851, 621, 736, 526, 492, 752, 534, 556, 556, 556, 378, 496, 500, 222, 222, 222, 910, 828, 556, 472, 565, 500, 556, 778, 556, 492, 339, 944, 722, 944, 722, 944, 722, 667, 500, 333, 333, 556, 1000, 1000, 552, 222, 222, 222, 222, 333, 333, 333, 556, 556, 350, 1000, 1000, 188, 354, 333, 333, 500, 333, 167, 365, 556, 556, 1094, 556, 885, 323, 1083, 1000, 768, 600, 834, 834, 834, 834, 1000, 500, 998, 500, 1000, 500, 500, 494, 612, 823, 713, 584, 549, 713, 979, 719, 274, 549, 549, 584, 549, 549, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 494, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 500, 500, 333, 333, 333, 333, 333, 333, 333, 333, 222, 222, 294, 294, 324, 324, 316, 328, 398, 285];
-const LiberationSansItalicMapping = [-1, -1, -1, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 402, 506, 507, 508, 509, 510, 511, 536, 537, 538, 539, 710, 711, 713, 728, 729, 730, 731, 732, 733, 900, 901, 902, 903, 904, 905, 906, 908, 910, 911, 912, 913, 914, 915, 916, 917, 918, 919, 920, 921, 922, 923, 924, 925, 926, 927, 928, 929, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949, 950, 951, 952, 953, 954, 955, 956, 957, 958, 959, 960, 961, 962, 963, 964, 965, 966, 967, 968, 969, 970, 971, 972, 973, 974, 1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050, 1051, 1052, 1053, 1054, 1055, 1056, 1057, 1058, 1059, 1060, 1061, 1062, 1063, 1064, 1065, 1066, 1067, 1068, 1069, 1070, 1071, 1072, 1073, 1074, 1075, 1076, 1077, 1078, 1079, 1080, 1081, 1082, 1083, 1084, 1085, 1086, 1087, 1088, 1089, 1090, 1091, 1092, 1093, 1094, 1095, 1096, 1097, 1098, 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1110, 1111, 1112, 1113, 1114, 1115, 1116, 1117, 1118, 1119, 1138, 1139, 1168, 1169, 7808, 7809, 7810, 7811, 7812, 7813, 7922, 7923, 8208, 8209, 8211, 8212, 8213, 8215, 8216, 8217, 8218, 8219, 8220, 8221, 8222, 8224, 8225, 8226, 8230, 8240, 8242, 8243, 8249, 8250, 8252, 8254, 8260, 8319, 8355, 8356, 8359, 8364, 8453, 8467, 8470, 8482, 8486, 8494, 8539, 8540, 8541, 8542, 8592, 8593, 8594, 8595, 8596, 8597, 8616, 8706, 8710, 8719, 8721, 8722, 8730, 8734, 8735, 8745, 8747, 8776, 8800, 8801, 8804, 8805, 8962, 8976, 8992, 8993, 9472, 9474, 9484, 9488, 9492, 9496, 9500, 9508, 9516, 9524, 9532, 9552, 9553, 9554, 9555, 9556, 9557, 9558, 9559, 9560, 9561, 9562, 9563, 9564, 9565, 9566, 9567, 9568, 9569, 9570, 9571, 9572, 9573, 9574, 9575, 9576, 9577, 9578, 9579, 9580, 9600, 9604, 9608, 9612, 9616, 9617, 9618, 9619, 9632, 9633, 9642, 9643, 9644, 9650, 9658, 9660, 9668, 9674, 9675, 9679, 9688, 9689, 9702, 9786, 9787, 9788, 9792, 9794, 9824, 9827, 9829, 9830, 9834, 9835, 9836, 61441, 61442, 61445, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
-const LiberationSansRegularWidths = [365, 0, 333, 278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584, 333, 556, 556, 556, 556, 260, 556, 333, 737, 370, 556, 584, 737, 552, 400, 549, 333, 333, 333, 576, 537, 278, 333, 333, 365, 556, 834, 834, 834, 611, 667, 667, 667, 667, 667, 667, 1000, 722, 667, 667, 667, 667, 278, 278, 278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556, 556, 889, 500, 556, 556, 556, 556, 278, 278, 278, 278, 556, 556, 556, 556, 556, 556, 556, 549, 611, 556, 556, 556, 556, 500, 556, 500, 667, 556, 667, 556, 667, 556, 722, 500, 722, 500, 722, 500, 722, 500, 722, 615, 722, 556, 667, 556, 667, 556, 667, 556, 667, 556, 667, 556, 778, 556, 778, 556, 778, 556, 778, 556, 722, 556, 722, 556, 278, 278, 278, 278, 278, 278, 278, 222, 278, 278, 735, 444, 500, 222, 667, 500, 500, 556, 222, 556, 222, 556, 292, 556, 334, 556, 222, 722, 556, 722, 556, 722, 556, 604, 723, 556, 778, 556, 778, 556, 778, 556, 1000, 944, 722, 333, 722, 333, 722, 333, 667, 500, 667, 500, 667, 500, 667, 500, 611, 278, 611, 375, 611, 278, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 944, 722, 667, 500, 667, 611, 500, 611, 500, 611, 500, 222, 556, 667, 556, 1000, 889, 778, 611, 667, 500, 611, 278, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 667, 278, 784, 838, 384, 774, 855, 752, 222, 667, 667, 551, 668, 667, 611, 722, 778, 278, 667, 668, 833, 722, 650, 778, 722, 667, 618, 611, 667, 798, 667, 835, 748, 278, 667, 578, 446, 556, 222, 547, 578, 575, 500, 557, 446, 441, 556, 556, 222, 500, 500, 576, 500, 448, 556, 690, 569, 482, 617, 395, 547, 648, 525, 713, 781, 222, 547, 556, 547, 781, 667, 667, 865, 542, 719, 667, 278, 278, 500, 1057, 1010, 854, 583, 722, 635, 719, 667, 656, 667, 542, 677, 667, 923, 604, 719, 719, 583, 656, 833, 722, 778, 719, 667, 722, 611, 635, 760, 667, 740, 667, 917, 938, 792, 885, 656, 719, 1010, 722, 556, 573, 531, 365, 583, 556, 669, 458, 559, 559, 438, 583, 688, 552, 556, 542, 556, 500, 458, 500, 823, 500, 573, 521, 802, 823, 625, 719, 521, 510, 750, 542, 556, 556, 556, 365, 510, 500, 222, 278, 222, 906, 812, 556, 438, 559, 500, 552, 778, 556, 489, 411, 944, 722, 944, 722, 944, 722, 667, 500, 333, 333, 556, 1000, 1000, 552, 222, 222, 222, 222, 333, 333, 333, 556, 556, 350, 1000, 1000, 188, 354, 333, 333, 500, 333, 167, 365, 556, 556, 1094, 556, 885, 323, 1073, 1000, 768, 600, 834, 834, 834, 834, 1000, 500, 1000, 500, 1000, 500, 500, 494, 612, 823, 713, 584, 549, 713, 979, 719, 274, 549, 549, 583, 549, 549, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 494, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 500, 500, 333, 333, 333, 333, 333, 333, 333, 333, 222, 222, 294, 294, 324, 324, 316, 328, 398, 285];
-const LiberationSansRegularMapping = [-1, -1, -1, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 383, 402, 506, 507, 508, 509, 510, 511, 536, 537, 538, 539, 710, 711, 713, 728, 729, 730, 731, 732, 733, 900, 901, 902, 903, 904, 905, 906, 908, 910, 911, 912, 913, 914, 915, 916, 917, 918, 919, 920, 921, 922, 923, 924, 925, 926, 927, 928, 929, 931, 932, 933, 934, 935, 936, 937, 938, 939, 940, 941, 942, 943, 944, 945, 946, 947, 948, 949, 950, 951, 952, 953, 954, 955, 956, 957, 958, 959, 960, 961, 962, 963, 964, 965, 966, 967, 968, 969, 970, 971, 972, 973, 974, 1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039, 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050, 1051, 1052, 1053, 1054, 1055, 1056, 1057, 1058, 1059, 1060, 1061, 1062, 1063, 1064, 1065, 1066, 1067, 1068, 1069, 1070, 1071, 1072, 1073, 1074, 1075, 1076, 1077, 1078, 1079, 1080, 1081, 1082, 1083, 1084, 1085, 1086, 1087, 1088, 1089, 1090, 1091, 1092, 1093, 1094, 1095, 1096, 1097, 1098, 1099, 1100, 1101, 1102, 1103, 1104, 1105, 1106, 1107, 1108, 1109, 1110, 1111, 1112, 1113, 1114, 1115, 1116, 1117, 1118, 1119, 1138, 1139, 1168, 1169, 7808, 7809, 7810, 7811, 7812, 7813, 7922, 7923, 8208, 8209, 8211, 8212, 8213, 8215, 8216, 8217, 8218, 8219, 8220, 8221, 8222, 8224, 8225, 8226, 8230, 8240, 8242, 8243, 8249, 8250, 8252, 8254, 8260, 8319, 8355, 8356, 8359, 8364, 8453, 8467, 8470, 8482, 8486, 8494, 8539, 8540, 8541, 8542, 8592, 8593, 8594, 8595, 8596, 8597, 8616, 8706, 8710, 8719, 8721, 8722, 8730, 8734, 8735, 8745, 8747, 8776, 8800, 8801, 8804, 8805, 8962, 8976, 8992, 8993, 9472, 9474, 9484, 9488, 9492, 9496, 9500, 9508, 9516, 9524, 9532, 9552, 9553, 9554, 9555, 9556, 9557, 9558, 9559, 9560, 9561, 9562, 9563, 9564, 9565, 9566, 9567, 9568, 9569, 9570, 9571, 9572, 9573, 9574, 9575, 9576, 9577, 9578, 9579, 9580, 9600, 9604, 9608, 9612, 9616, 9617, 9618, 9619, 9632, 9633, 9642, 9643, 9644, 9650, 9658, 9660, 9668, 9674, 9675, 9679, 9688, 9689, 9702, 9786, 9787, 9788, 9792, 9794, 9824, 9827, 9829, 9830, 9834, 9835, 9836, 61441, 61442, 61445, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1];
-
-;// ./src/core/myriadpro_factors.js
-const MyriadProBoldFactors = [1.36898, 1, 1, 0.72706, 0.80479, 0.83734, 0.98894, 0.99793, 0.9897, 0.93884, 0.86209, 0.94292, 0.94292, 1.16661, 1.02058, 0.93582, 0.96694, 0.93582, 1.19137, 0.99793, 0.99793, 0.99793, 0.99793, 0.99793, 0.99793, 0.99793, 0.99793, 0.99793, 0.99793, 0.78076, 0.78076, 1.02058, 1.02058, 1.02058, 0.72851, 0.78966, 0.90838, 0.83637, 0.82391, 0.96376, 0.80061, 0.86275, 0.8768, 0.95407, 1.0258, 0.73901, 0.85022, 0.83655, 1.0156, 0.95546, 0.92179, 0.87107, 0.92179, 0.82114, 0.8096, 0.89713, 0.94438, 0.95353, 0.94083, 0.91905, 0.90406, 0.9446, 0.94292, 1.18777, 0.94292, 1.02058, 0.89903, 0.90088, 0.94938, 0.97898, 0.81093, 0.97571, 0.94938, 1.024, 0.9577, 0.95933, 0.98621, 1.0474, 0.97455, 0.98981, 0.9672, 0.95933, 0.9446, 0.97898, 0.97407, 0.97646, 0.78036, 1.10208, 0.95442, 0.95298, 0.97579, 0.9332, 0.94039, 0.938, 0.80687, 1.01149, 0.80687, 1.02058, 0.80479, 0.99793, 0.99793, 0.99793, 0.99793, 1.01149, 1.00872, 0.90088, 0.91882, 1.0213, 0.8361, 1.02058, 0.62295, 0.54324, 0.89022, 1.08595, 1, 1, 0.90088, 1, 0.97455, 0.93582, 0.90088, 1, 1.05686, 0.8361, 0.99642, 0.99642, 0.99642, 0.72851, 0.90838, 0.90838, 0.90838, 0.90838, 0.90838, 0.90838, 0.868, 0.82391, 0.80061, 0.80061, 0.80061, 0.80061, 1.0258, 1.0258, 1.0258, 1.0258, 0.97484, 0.95546, 0.92179, 0.92179, 0.92179, 0.92179, 0.92179, 1.02058, 0.92179, 0.94438, 0.94438, 0.94438, 0.94438, 0.90406, 0.86958, 0.98225, 0.94938, 0.94938, 0.94938, 0.94938, 0.94938, 0.94938, 0.9031, 0.81093, 0.94938, 0.94938, 0.94938, 0.94938, 0.98621, 0.98621, 0.98621, 0.98621, 0.93969, 0.95933, 0.9446, 0.9446, 0.9446, 0.9446, 0.9446, 1.08595, 0.9446, 0.95442, 0.95442, 0.95442, 0.95442, 0.94039, 0.97898, 0.94039, 0.90838, 0.94938, 0.90838, 0.94938, 0.90838, 0.94938, 0.82391, 0.81093, 0.82391, 0.81093, 0.82391, 0.81093, 0.82391, 0.81093, 0.96376, 0.84313, 0.97484, 0.97571, 0.80061, 0.94938, 0.80061, 0.94938, 0.80061, 0.94938, 0.80061, 0.94938, 0.80061, 0.94938, 0.8768, 0.9577, 0.8768, 0.9577, 0.8768, 0.9577, 1, 1, 0.95407, 0.95933, 0.97069, 0.95933, 1.0258, 0.98621, 1.0258, 0.98621, 1.0258, 0.98621, 1.0258, 0.98621, 1.0258, 0.98621, 0.887, 1.01591, 0.73901, 1.0474, 1, 1, 0.97455, 0.83655, 0.98981, 1, 1, 0.83655, 0.73977, 0.83655, 0.73903, 0.84638, 1.033, 0.95546, 0.95933, 1, 1, 0.95546, 0.95933, 0.8271, 0.95417, 0.95933, 0.92179, 0.9446, 0.92179, 0.9446, 0.92179, 0.9446, 0.936, 0.91964, 0.82114, 0.97646, 1, 1, 0.82114, 0.97646, 0.8096, 0.78036, 0.8096, 0.78036, 1, 1, 0.8096, 0.78036, 1, 1, 0.89713, 0.77452, 0.89713, 1.10208, 0.94438, 0.95442, 0.94438, 0.95442, 0.94438, 0.95442, 0.94438, 0.95442, 0.94438, 0.95442, 0.94438, 0.95442, 0.94083, 0.97579, 0.90406, 0.94039, 0.90406, 0.9446, 0.938, 0.9446, 0.938, 0.9446, 0.938, 1, 0.99793, 0.90838, 0.94938, 0.868, 0.9031, 0.92179, 0.9446, 1, 1, 0.89713, 1.10208, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90989, 0.9358, 0.91945, 0.83181, 0.75261, 0.87992, 0.82976, 0.96034, 0.83689, 0.97268, 1.0078, 0.90838, 0.83637, 0.8019, 0.90157, 0.80061, 0.9446, 0.95407, 0.92436, 1.0258, 0.85022, 0.97153, 1.0156, 0.95546, 0.89192, 0.92179, 0.92361, 0.87107, 0.96318, 0.89713, 0.93704, 0.95638, 0.91905, 0.91709, 0.92796, 1.0258, 0.93704, 0.94836, 1.0373, 0.95933, 1.0078, 0.95871, 0.94836, 0.96174, 0.92601, 0.9498, 0.98607, 0.95776, 0.95933, 1.05453, 1.0078, 0.98275, 0.9314, 0.95617, 0.91701, 1.05993, 0.9446, 0.78367, 0.9553, 1, 0.86832, 1.0128, 0.95871, 0.99394, 0.87548, 0.96361, 0.86774, 1.0078, 0.95871, 0.9446, 0.95871, 0.86774, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.94083, 0.97579, 0.94083, 0.97579, 0.94083, 0.97579, 0.90406, 0.94039, 0.96694, 1, 0.89903, 1, 1, 1, 0.93582, 0.93582, 0.93582, 1, 0.908, 0.908, 0.918, 0.94219, 0.94219, 0.96544, 1, 1.285, 1, 1, 0.81079, 0.81079, 1, 1, 0.74854, 1, 1, 1, 1, 0.99793, 1, 1, 1, 0.65, 1, 1.36145, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.17173, 1, 0.80535, 0.76169, 1.02058, 1.0732, 1.05486, 1, 1, 1.30692, 1.08595, 1.08595, 1, 1.08595, 1.08595, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.16161, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const MyriadProBoldMetrics = {
-  lineHeight: 1.2,
-  lineGap: 0.2
-};
-const MyriadProBoldItalicFactors = [1.36898, 1, 1, 0.66227, 0.80779, 0.81625, 0.97276, 0.97276, 0.97733, 0.92222, 0.83266, 0.94292, 0.94292, 1.16148, 1.02058, 0.93582, 0.96694, 0.93582, 1.17337, 0.97276, 0.97276, 0.97276, 0.97276, 0.97276, 0.97276, 0.97276, 0.97276, 0.97276, 0.97276, 0.78076, 0.78076, 1.02058, 1.02058, 1.02058, 0.71541, 0.76813, 0.85576, 0.80591, 0.80729, 0.94299, 0.77512, 0.83655, 0.86523, 0.92222, 0.98621, 0.71743, 0.81698, 0.79726, 0.98558, 0.92222, 0.90637, 0.83809, 0.90637, 0.80729, 0.76463, 0.86275, 0.90699, 0.91605, 0.9154, 0.85308, 0.85458, 0.90531, 0.94292, 1.21296, 0.94292, 1.02058, 0.89903, 1.18616, 0.99613, 0.91677, 0.78216, 0.91677, 0.90083, 0.98796, 0.9135, 0.92168, 0.95381, 0.98981, 0.95298, 0.95381, 0.93459, 0.92168, 0.91513, 0.92004, 0.91677, 0.95077, 0.748, 1.04502, 0.91677, 0.92061, 0.94236, 0.89544, 0.89364, 0.9, 0.80687, 0.8578, 0.80687, 1.02058, 0.80779, 0.97276, 0.97276, 0.97276, 0.97276, 0.8578, 0.99973, 1.18616, 0.91339, 1.08074, 0.82891, 1.02058, 0.55509, 0.71526, 0.89022, 1.08595, 1, 1, 1.18616, 1, 0.96736, 0.93582, 1.18616, 1, 1.04864, 0.82711, 0.99043, 0.99043, 0.99043, 0.71541, 0.85576, 0.85576, 0.85576, 0.85576, 0.85576, 0.85576, 0.845, 0.80729, 0.77512, 0.77512, 0.77512, 0.77512, 0.98621, 0.98621, 0.98621, 0.98621, 0.95961, 0.92222, 0.90637, 0.90637, 0.90637, 0.90637, 0.90637, 1.02058, 0.90251, 0.90699, 0.90699, 0.90699, 0.90699, 0.85458, 0.83659, 0.94951, 0.99613, 0.99613, 0.99613, 0.99613, 0.99613, 0.99613, 0.85811, 0.78216, 0.90083, 0.90083, 0.90083, 0.90083, 0.95381, 0.95381, 0.95381, 0.95381, 0.9135, 0.92168, 0.91513, 0.91513, 0.91513, 0.91513, 0.91513, 1.08595, 0.91677, 0.91677, 0.91677, 0.91677, 0.91677, 0.89364, 0.92332, 0.89364, 0.85576, 0.99613, 0.85576, 0.99613, 0.85576, 0.99613, 0.80729, 0.78216, 0.80729, 0.78216, 0.80729, 0.78216, 0.80729, 0.78216, 0.94299, 0.76783, 0.95961, 0.91677, 0.77512, 0.90083, 0.77512, 0.90083, 0.77512, 0.90083, 0.77512, 0.90083, 0.77512, 0.90083, 0.86523, 0.9135, 0.86523, 0.9135, 0.86523, 0.9135, 1, 1, 0.92222, 0.92168, 0.92222, 0.92168, 0.98621, 0.95381, 0.98621, 0.95381, 0.98621, 0.95381, 0.98621, 0.95381, 0.98621, 0.95381, 0.86036, 0.97096, 0.71743, 0.98981, 1, 1, 0.95298, 0.79726, 0.95381, 1, 1, 0.79726, 0.6894, 0.79726, 0.74321, 0.81691, 1.0006, 0.92222, 0.92168, 1, 1, 0.92222, 0.92168, 0.79464, 0.92098, 0.92168, 0.90637, 0.91513, 0.90637, 0.91513, 0.90637, 0.91513, 0.909, 0.87514, 0.80729, 0.95077, 1, 1, 0.80729, 0.95077, 0.76463, 0.748, 0.76463, 0.748, 1, 1, 0.76463, 0.748, 1, 1, 0.86275, 0.72651, 0.86275, 1.04502, 0.90699, 0.91677, 0.90699, 0.91677, 0.90699, 0.91677, 0.90699, 0.91677, 0.90699, 0.91677, 0.90699, 0.91677, 0.9154, 0.94236, 0.85458, 0.89364, 0.85458, 0.90531, 0.9, 0.90531, 0.9, 0.90531, 0.9, 1, 0.97276, 0.85576, 0.99613, 0.845, 0.85811, 0.90251, 0.91677, 1, 1, 0.86275, 1.04502, 1.18616, 1.18616, 1.18616, 1.18616, 1.18616, 1.18616, 1.18616, 1.18616, 1.18616, 1.00899, 1.30628, 0.85576, 0.80178, 0.66862, 0.7927, 0.69323, 0.88127, 0.72459, 0.89711, 0.95381, 0.85576, 0.80591, 0.7805, 0.94729, 0.77512, 0.90531, 0.92222, 0.90637, 0.98621, 0.81698, 0.92655, 0.98558, 0.92222, 0.85359, 0.90637, 0.90976, 0.83809, 0.94523, 0.86275, 0.83509, 0.93157, 0.85308, 0.83392, 0.92346, 0.98621, 0.83509, 0.92886, 0.91324, 0.92168, 0.95381, 0.90646, 0.92886, 0.90557, 0.86847, 0.90276, 0.91324, 0.86842, 0.92168, 0.99531, 0.95381, 0.9224, 0.85408, 0.92699, 0.86847, 1.0051, 0.91513, 0.80487, 0.93481, 1, 0.88159, 1.05214, 0.90646, 0.97355, 0.81539, 0.89398, 0.85923, 0.95381, 0.90646, 0.91513, 0.90646, 0.85923, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.9154, 0.94236, 0.9154, 0.94236, 0.9154, 0.94236, 0.85458, 0.89364, 0.96694, 1, 0.89903, 1, 1, 1, 0.91782, 0.91782, 0.91782, 1, 0.896, 0.896, 0.896, 0.9332, 0.9332, 0.95973, 1, 1.26, 1, 1, 0.80479, 0.80178, 1, 1, 0.85633, 1, 1, 1, 1, 0.97276, 1, 1, 1, 0.698, 1, 1.36145, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.14542, 1, 0.79199, 0.78694, 1.02058, 1.03493, 1.05486, 1, 1, 1.23026, 1.08595, 1.08595, 1, 1.08595, 1.08595, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.20006, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const MyriadProBoldItalicMetrics = {
-  lineHeight: 1.2,
-  lineGap: 0.2
-};
-const MyriadProItalicFactors = [1.36898, 1, 1, 0.65507, 0.84943, 0.85639, 0.88465, 0.88465, 0.86936, 0.88307, 0.86948, 0.85283, 0.85283, 1.06383, 1.02058, 0.75945, 0.9219, 0.75945, 1.17337, 0.88465, 0.88465, 0.88465, 0.88465, 0.88465, 0.88465, 0.88465, 0.88465, 0.88465, 0.88465, 0.75945, 0.75945, 1.02058, 1.02058, 1.02058, 0.69046, 0.70926, 0.85158, 0.77812, 0.76852, 0.89591, 0.70466, 0.76125, 0.80094, 0.86822, 0.83864, 0.728, 0.77212, 0.79475, 0.93637, 0.87514, 0.8588, 0.76013, 0.8588, 0.72421, 0.69866, 0.77598, 0.85991, 0.80811, 0.87832, 0.78112, 0.77512, 0.8562, 1.0222, 1.18417, 1.0222, 1.27014, 0.89903, 1.15012, 0.93859, 0.94399, 0.846, 0.94399, 0.81453, 1.0186, 0.94219, 0.96017, 1.03075, 1.02175, 0.912, 1.03075, 0.96998, 0.96017, 0.93859, 0.94399, 0.94399, 0.95493, 0.746, 1.12658, 0.94578, 0.91, 0.979, 0.882, 0.882, 0.83, 0.85034, 0.83537, 0.85034, 1.02058, 0.70869, 0.88465, 0.88465, 0.88465, 0.88465, 0.83537, 0.90083, 1.15012, 0.9161, 0.94565, 0.73541, 1.02058, 0.53609, 0.69353, 0.79519, 1.08595, 1, 1, 1.15012, 1, 0.91974, 0.75945, 1.15012, 1, 0.9446, 0.73361, 0.9005, 0.9005, 0.9005, 0.62864, 0.85158, 0.85158, 0.85158, 0.85158, 0.85158, 0.85158, 0.773, 0.76852, 0.70466, 0.70466, 0.70466, 0.70466, 0.83864, 0.83864, 0.83864, 0.83864, 0.90561, 0.87514, 0.8588, 0.8588, 0.8588, 0.8588, 0.8588, 1.02058, 0.85751, 0.85991, 0.85991, 0.85991, 0.85991, 0.77512, 0.76013, 0.88075, 0.93859, 0.93859, 0.93859, 0.93859, 0.93859, 0.93859, 0.8075, 0.846, 0.81453, 0.81453, 0.81453, 0.81453, 0.82424, 0.82424, 0.82424, 0.82424, 0.9278, 0.96017, 0.93859, 0.93859, 0.93859, 0.93859, 0.93859, 1.08595, 0.8562, 0.94578, 0.94578, 0.94578, 0.94578, 0.882, 0.94578, 0.882, 0.85158, 0.93859, 0.85158, 0.93859, 0.85158, 0.93859, 0.76852, 0.846, 0.76852, 0.846, 0.76852, 0.846, 0.76852, 0.846, 0.89591, 0.8544, 0.90561, 0.94399, 0.70466, 0.81453, 0.70466, 0.81453, 0.70466, 0.81453, 0.70466, 0.81453, 0.70466, 0.81453, 0.80094, 0.94219, 0.80094, 0.94219, 0.80094, 0.94219, 1, 1, 0.86822, 0.96017, 0.86822, 0.96017, 0.83864, 0.82424, 0.83864, 0.82424, 0.83864, 0.82424, 0.83864, 1.03075, 0.83864, 0.82424, 0.81402, 1.02738, 0.728, 1.02175, 1, 1, 0.912, 0.79475, 1.03075, 1, 1, 0.79475, 0.83911, 0.79475, 0.66266, 0.80553, 1.06676, 0.87514, 0.96017, 1, 1, 0.87514, 0.96017, 0.86865, 0.87396, 0.96017, 0.8588, 0.93859, 0.8588, 0.93859, 0.8588, 0.93859, 0.867, 0.84759, 0.72421, 0.95493, 1, 1, 0.72421, 0.95493, 0.69866, 0.746, 0.69866, 0.746, 1, 1, 0.69866, 0.746, 1, 1, 0.77598, 0.88417, 0.77598, 1.12658, 0.85991, 0.94578, 0.85991, 0.94578, 0.85991, 0.94578, 0.85991, 0.94578, 0.85991, 0.94578, 0.85991, 0.94578, 0.87832, 0.979, 0.77512, 0.882, 0.77512, 0.8562, 0.83, 0.8562, 0.83, 0.8562, 0.83, 1, 0.88465, 0.85158, 0.93859, 0.773, 0.8075, 0.85751, 0.8562, 1, 1, 0.77598, 1.12658, 1.15012, 1.15012, 1.15012, 1.15012, 1.15012, 1.15313, 1.15012, 1.15012, 1.15012, 1.08106, 1.03901, 0.85158, 0.77025, 0.62264, 0.7646, 0.65351, 0.86026, 0.69461, 0.89947, 1.03075, 0.85158, 0.77812, 0.76449, 0.88836, 0.70466, 0.8562, 0.86822, 0.8588, 0.83864, 0.77212, 0.85308, 0.93637, 0.87514, 0.82352, 0.8588, 0.85701, 0.76013, 0.89058, 0.77598, 0.8156, 0.82565, 0.78112, 0.77899, 0.89386, 0.83864, 0.8156, 0.9486, 0.92388, 0.96186, 1.03075, 0.91123, 0.9486, 0.93298, 0.878, 0.93942, 0.92388, 0.84596, 0.96186, 0.95119, 1.03075, 0.922, 0.88787, 0.95829, 0.88, 0.93559, 0.93859, 0.78815, 0.93758, 1, 0.89217, 1.03737, 0.91123, 0.93969, 0.77487, 0.85769, 0.86799, 1.03075, 0.91123, 0.93859, 0.91123, 0.86799, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.87832, 0.979, 0.87832, 0.979, 0.87832, 0.979, 0.77512, 0.882, 0.9219, 1, 0.89903, 1, 1, 1, 0.87321, 0.87321, 0.87321, 1, 1.027, 1.027, 1.027, 0.86847, 0.86847, 0.79121, 1, 1.124, 1, 1, 0.73572, 0.73572, 1, 1, 0.85034, 1, 1, 1, 1, 0.88465, 1, 1, 1, 0.669, 1, 1.36145, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.04828, 1, 0.74948, 0.75187, 1.02058, 0.98391, 1.02119, 1, 1, 1.06233, 1.08595, 1.08595, 1, 1.08595, 1.08595, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.05233, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const MyriadProItalicMetrics = {
-  lineHeight: 1.2,
-  lineGap: 0.2
-};
-const MyriadProRegularFactors = [1.36898, 1, 1, 0.76305, 0.82784, 0.94935, 0.89364, 0.92241, 0.89073, 0.90706, 0.98472, 0.85283, 0.85283, 1.0664, 1.02058, 0.74505, 0.9219, 0.74505, 1.23456, 0.92241, 0.92241, 0.92241, 0.92241, 0.92241, 0.92241, 0.92241, 0.92241, 0.92241, 0.92241, 0.74505, 0.74505, 1.02058, 1.02058, 1.02058, 0.73002, 0.72601, 0.91755, 0.8126, 0.80314, 0.92222, 0.73764, 0.79726, 0.83051, 0.90284, 0.86023, 0.74, 0.8126, 0.84869, 0.96518, 0.91115, 0.8858, 0.79761, 0.8858, 0.74498, 0.73914, 0.81363, 0.89591, 0.83659, 0.89633, 0.85608, 0.8111, 0.90531, 1.0222, 1.22736, 1.0222, 1.27014, 0.89903, 0.90088, 0.86667, 1.0231, 0.896, 1.01411, 0.90083, 1.05099, 1.00512, 0.99793, 1.05326, 1.09377, 0.938, 1.06226, 1.00119, 0.99793, 0.98714, 1.0231, 1.01231, 0.98196, 0.792, 1.19137, 0.99074, 0.962, 1.01915, 0.926, 0.942, 0.856, 0.85034, 0.92006, 0.85034, 1.02058, 0.69067, 0.92241, 0.92241, 0.92241, 0.92241, 0.92006, 0.9332, 0.90088, 0.91882, 0.93484, 0.75339, 1.02058, 0.56866, 0.54324, 0.79519, 1.08595, 1, 1, 0.90088, 1, 0.95325, 0.74505, 0.90088, 1, 0.97198, 0.75339, 0.91009, 0.91009, 0.91009, 0.66466, 0.91755, 0.91755, 0.91755, 0.91755, 0.91755, 0.91755, 0.788, 0.80314, 0.73764, 0.73764, 0.73764, 0.73764, 0.86023, 0.86023, 0.86023, 0.86023, 0.92915, 0.91115, 0.8858, 0.8858, 0.8858, 0.8858, 0.8858, 1.02058, 0.8858, 0.89591, 0.89591, 0.89591, 0.89591, 0.8111, 0.79611, 0.89713, 0.86667, 0.86667, 0.86667, 0.86667, 0.86667, 0.86667, 0.86936, 0.896, 0.90083, 0.90083, 0.90083, 0.90083, 0.84224, 0.84224, 0.84224, 0.84224, 0.97276, 0.99793, 0.98714, 0.98714, 0.98714, 0.98714, 0.98714, 1.08595, 0.89876, 0.99074, 0.99074, 0.99074, 0.99074, 0.942, 1.0231, 0.942, 0.91755, 0.86667, 0.91755, 0.86667, 0.91755, 0.86667, 0.80314, 0.896, 0.80314, 0.896, 0.80314, 0.896, 0.80314, 0.896, 0.92222, 0.93372, 0.92915, 1.01411, 0.73764, 0.90083, 0.73764, 0.90083, 0.73764, 0.90083, 0.73764, 0.90083, 0.73764, 0.90083, 0.83051, 1.00512, 0.83051, 1.00512, 0.83051, 1.00512, 1, 1, 0.90284, 0.99793, 0.90976, 0.99793, 0.86023, 0.84224, 0.86023, 0.84224, 0.86023, 0.84224, 0.86023, 1.05326, 0.86023, 0.84224, 0.82873, 1.07469, 0.74, 1.09377, 1, 1, 0.938, 0.84869, 1.06226, 1, 1, 0.84869, 0.83704, 0.84869, 0.81441, 0.85588, 1.08927, 0.91115, 0.99793, 1, 1, 0.91115, 0.99793, 0.91887, 0.90991, 0.99793, 0.8858, 0.98714, 0.8858, 0.98714, 0.8858, 0.98714, 0.894, 0.91434, 0.74498, 0.98196, 1, 1, 0.74498, 0.98196, 0.73914, 0.792, 0.73914, 0.792, 1, 1, 0.73914, 0.792, 1, 1, 0.81363, 0.904, 0.81363, 1.19137, 0.89591, 0.99074, 0.89591, 0.99074, 0.89591, 0.99074, 0.89591, 0.99074, 0.89591, 0.99074, 0.89591, 0.99074, 0.89633, 1.01915, 0.8111, 0.942, 0.8111, 0.90531, 0.856, 0.90531, 0.856, 0.90531, 0.856, 1, 0.92241, 0.91755, 0.86667, 0.788, 0.86936, 0.8858, 0.89876, 1, 1, 0.81363, 1.19137, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90088, 0.90388, 1.03901, 0.92138, 0.78105, 0.7154, 0.86169, 0.80513, 0.94007, 0.82528, 0.98612, 1.06226, 0.91755, 0.8126, 0.81884, 0.92819, 0.73764, 0.90531, 0.90284, 0.8858, 0.86023, 0.8126, 0.91172, 0.96518, 0.91115, 0.83089, 0.8858, 0.87791, 0.79761, 0.89297, 0.81363, 0.88157, 0.89992, 0.85608, 0.81992, 0.94307, 0.86023, 0.88157, 0.95308, 0.98699, 0.99793, 1.06226, 0.95817, 0.95308, 0.97358, 0.928, 0.98088, 0.98699, 0.92761, 0.99793, 0.96017, 1.06226, 0.986, 0.944, 0.95978, 0.938, 0.96705, 0.98714, 0.80442, 0.98972, 1, 0.89762, 1.04552, 0.95817, 0.99007, 0.87064, 0.91879, 0.88888, 1.06226, 0.95817, 0.98714, 0.95817, 0.88888, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.89633, 1.01915, 0.89633, 1.01915, 0.89633, 1.01915, 0.8111, 0.942, 0.9219, 1, 0.89903, 1, 1, 1, 0.93173, 0.93173, 0.93173, 1, 1.06304, 1.06304, 1.06904, 0.89903, 0.89903, 0.80549, 1, 1.156, 1, 1, 0.76575, 0.76575, 1, 1, 0.72458, 1, 1, 1, 1, 0.92241, 1, 1, 1, 0.619, 1, 1.36145, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.07257, 1, 0.74705, 0.71119, 1.02058, 1.024, 1.02119, 1, 1, 1.1536, 1.08595, 1.08595, 1, 1.08595, 1.08595, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.05638, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const MyriadProRegularMetrics = {
-  lineHeight: 1.2,
-  lineGap: 0.2
-};
-
-;// ./src/core/segoeui_factors.js
-const SegoeuiBoldFactors = [1.76738, 1, 1, 0.99297, 0.9824, 1.04016, 1.06497, 1.03424, 0.97529, 1.17647, 1.23203, 1.1085, 1.1085, 1.16939, 1.2107, 0.9754, 1.21408, 0.9754, 1.59578, 1.03424, 1.03424, 1.03424, 1.03424, 1.03424, 1.03424, 1.03424, 1.03424, 1.03424, 1.03424, 0.81378, 0.81378, 1.2107, 1.2107, 1.2107, 0.71703, 0.97847, 0.97363, 0.88776, 0.8641, 1.02096, 0.79795, 0.85132, 0.914, 1.06085, 1.1406, 0.8007, 0.89858, 0.83693, 1.14889, 1.09398, 0.97489, 0.92094, 0.97489, 0.90399, 0.84041, 0.95923, 1.00135, 1, 1.06467, 0.98243, 0.90996, 0.99361, 1.1085, 1.56942, 1.1085, 1.2107, 0.74627, 0.94282, 0.96752, 1.01519, 0.86304, 1.01359, 0.97278, 1.15103, 1.01359, 0.98561, 1.02285, 1.02285, 1.00527, 1.02285, 1.0302, 0.99041, 1.0008, 1.01519, 1.01359, 1.02258, 0.79104, 1.16862, 0.99041, 0.97454, 1.02511, 0.99298, 0.96752, 0.95801, 0.94856, 1.16579, 0.94856, 1.2107, 0.9824, 1.03424, 1.03424, 1, 1.03424, 1.16579, 0.8727, 1.3871, 1.18622, 1.10818, 1.04478, 1.2107, 1.18622, 0.75155, 0.94994, 1.28826, 1.21408, 1.21408, 0.91056, 1, 0.91572, 0.9754, 0.64663, 1.18328, 1.24866, 1.04478, 1.14169, 1.15749, 1.17389, 0.71703, 0.97363, 0.97363, 0.97363, 0.97363, 0.97363, 0.97363, 0.93506, 0.8641, 0.79795, 0.79795, 0.79795, 0.79795, 1.1406, 1.1406, 1.1406, 1.1406, 1.02096, 1.09398, 0.97426, 0.97426, 0.97426, 0.97426, 0.97426, 1.2107, 0.97489, 1.00135, 1.00135, 1.00135, 1.00135, 0.90996, 0.92094, 1.02798, 0.96752, 0.96752, 0.96752, 0.96752, 0.96752, 0.96752, 0.93136, 0.86304, 0.97278, 0.97278, 0.97278, 0.97278, 1.02285, 1.02285, 1.02285, 1.02285, 0.97122, 0.99041, 1, 1, 1, 1, 1, 1.28826, 1.0008, 0.99041, 0.99041, 0.99041, 0.99041, 0.96752, 1.01519, 0.96752, 0.97363, 0.96752, 0.97363, 0.96752, 0.97363, 0.96752, 0.8641, 0.86304, 0.8641, 0.86304, 0.8641, 0.86304, 0.8641, 0.86304, 1.02096, 1.03057, 1.02096, 1.03517, 0.79795, 0.97278, 0.79795, 0.97278, 0.79795, 0.97278, 0.79795, 0.97278, 0.79795, 0.97278, 0.914, 1.01359, 0.914, 1.01359, 0.914, 1.01359, 1, 1, 1.06085, 0.98561, 1.06085, 1.00879, 1.1406, 1.02285, 1.1406, 1.02285, 1.1406, 1.02285, 1.1406, 1.02285, 1.1406, 1.02285, 0.97138, 1.08692, 0.8007, 1.02285, 1, 1, 1.00527, 0.83693, 1.02285, 1, 1, 0.83693, 0.9455, 0.83693, 0.90418, 0.83693, 1.13005, 1.09398, 0.99041, 1, 1, 1.09398, 0.99041, 0.96692, 1.09251, 0.99041, 0.97489, 1.0008, 0.97489, 1.0008, 0.97489, 1.0008, 0.93994, 0.97931, 0.90399, 1.02258, 1, 1, 0.90399, 1.02258, 0.84041, 0.79104, 0.84041, 0.79104, 0.84041, 0.79104, 0.84041, 0.79104, 1, 1, 0.95923, 1.07034, 0.95923, 1.16862, 1.00135, 0.99041, 1.00135, 0.99041, 1.00135, 0.99041, 1.00135, 0.99041, 1.00135, 0.99041, 1.00135, 0.99041, 1.06467, 1.02511, 0.90996, 0.96752, 0.90996, 0.99361, 0.95801, 0.99361, 0.95801, 0.99361, 0.95801, 1.07733, 1.03424, 0.97363, 0.96752, 0.93506, 0.93136, 0.97489, 1.0008, 1, 1, 0.95923, 1.16862, 1.15103, 1.15103, 1.01173, 1.03959, 0.75953, 0.81378, 0.79912, 1.15103, 1.21994, 0.95161, 0.87815, 1.01149, 0.81525, 0.7676, 0.98167, 1.01134, 1.02546, 0.84097, 1.03089, 1.18102, 0.97363, 0.88776, 0.85134, 0.97826, 0.79795, 0.99361, 1.06085, 0.97489, 1.1406, 0.89858, 1.0388, 1.14889, 1.09398, 0.86039, 0.97489, 1.0595, 0.92094, 0.94793, 0.95923, 0.90996, 0.99346, 0.98243, 1.02112, 0.95493, 1.1406, 0.90996, 1.03574, 1.02597, 1.0008, 1.18102, 1.06628, 1.03574, 1.0192, 1.01932, 1.00886, 0.97531, 1.0106, 1.0008, 1.13189, 1.18102, 1.02277, 0.98683, 1.0016, 0.99561, 1.07237, 1.0008, 0.90434, 0.99921, 0.93803, 0.8965, 1.23085, 1.06628, 1.04983, 0.96268, 1.0499, 0.98439, 1.18102, 1.06628, 1.0008, 1.06628, 0.98439, 0.79795, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.09466, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.97278, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.02065, 1, 1, 1, 1, 1, 1, 1.06467, 1.02511, 1.06467, 1.02511, 1.06467, 1.02511, 0.90996, 0.96752, 1, 1.21408, 0.89903, 1, 1, 0.75155, 1.04394, 1.04394, 1.04394, 1.04394, 0.98633, 0.98633, 0.98633, 0.73047, 0.73047, 1.20642, 0.91211, 1.25635, 1.222, 1.02956, 1.03372, 1.03372, 0.96039, 1.24633, 1, 1.12454, 0.93503, 1.03424, 1.19687, 1.03424, 1, 1, 1, 0.771, 1, 1, 1.15749, 1.15749, 1.15749, 1.10948, 0.86279, 0.94434, 0.86279, 0.94434, 0.86182, 1, 1, 1.16897, 1, 0.96085, 0.90137, 1.2107, 1.18416, 1.13973, 0.69825, 0.9716, 2.10339, 1.29004, 1.29004, 1.21172, 1.29004, 1.29004, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.42603, 1, 0.99862, 0.99862, 1, 0.87025, 0.87025, 0.87025, 0.87025, 1.18874, 1.42603, 1, 1.42603, 1.42603, 0.99862, 1, 1, 1, 1, 1, 1.2886, 1.04315, 1.15296, 1.34163, 1, 1, 1, 1.09193, 1.09193, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const SegoeuiBoldMetrics = {
-  lineHeight: 1.33008,
-  lineGap: 0
-};
-const SegoeuiBoldItalicFactors = [1.76738, 1, 1, 0.98946, 1.03959, 1.04016, 1.02809, 1.036, 0.97639, 1.10953, 1.23203, 1.11144, 1.11144, 1.16939, 1.21237, 0.9754, 1.21261, 0.9754, 1.59754, 1.036, 1.036, 1.036, 1.036, 1.036, 1.036, 1.036, 1.036, 1.036, 1.036, 0.81378, 0.81378, 1.21237, 1.21237, 1.21237, 0.73541, 0.97847, 0.97363, 0.89723, 0.87897, 1.0426, 0.79429, 0.85292, 0.91149, 1.05815, 1.1406, 0.79631, 0.90128, 0.83853, 1.04396, 1.10615, 0.97552, 0.94436, 0.97552, 0.88641, 0.80527, 0.96083, 1.00135, 1, 1.06777, 0.9817, 0.91142, 0.99361, 1.11144, 1.57293, 1.11144, 1.21237, 0.74627, 1.31818, 1.06585, 0.97042, 0.83055, 0.97042, 0.93503, 1.1261, 0.97042, 0.97922, 1.14236, 0.94552, 1.01054, 1.14236, 1.02471, 0.97922, 0.94165, 0.97042, 0.97042, 1.0276, 0.78929, 1.1261, 0.97922, 0.95874, 1.02197, 0.98507, 0.96752, 0.97168, 0.95107, 1.16579, 0.95107, 1.21237, 1.03959, 1.036, 1.036, 1, 1.036, 1.16579, 0.87357, 1.31818, 1.18754, 1.26781, 1.05356, 1.21237, 1.18622, 0.79487, 0.94994, 1.29004, 1.24047, 1.24047, 1.31818, 1, 0.91484, 0.9754, 1.31818, 1.1349, 1.24866, 1.05356, 1.13934, 1.15574, 1.17389, 0.73541, 0.97363, 0.97363, 0.97363, 0.97363, 0.97363, 0.97363, 0.94385, 0.87897, 0.79429, 0.79429, 0.79429, 0.79429, 1.1406, 1.1406, 1.1406, 1.1406, 1.0426, 1.10615, 0.97552, 0.97552, 0.97552, 0.97552, 0.97552, 1.21237, 0.97552, 1.00135, 1.00135, 1.00135, 1.00135, 0.91142, 0.94436, 0.98721, 1.06585, 1.06585, 1.06585, 1.06585, 1.06585, 1.06585, 0.96705, 0.83055, 0.93503, 0.93503, 0.93503, 0.93503, 1.14236, 1.14236, 1.14236, 1.14236, 0.93125, 0.97922, 0.94165, 0.94165, 0.94165, 0.94165, 0.94165, 1.29004, 0.94165, 0.97922, 0.97922, 0.97922, 0.97922, 0.96752, 0.97042, 0.96752, 0.97363, 1.06585, 0.97363, 1.06585, 0.97363, 1.06585, 0.87897, 0.83055, 0.87897, 0.83055, 0.87897, 0.83055, 0.87897, 0.83055, 1.0426, 1.0033, 1.0426, 0.97042, 0.79429, 0.93503, 0.79429, 0.93503, 0.79429, 0.93503, 0.79429, 0.93503, 0.79429, 0.93503, 0.91149, 0.97042, 0.91149, 0.97042, 0.91149, 0.97042, 1, 1, 1.05815, 0.97922, 1.05815, 0.97922, 1.1406, 1.14236, 1.1406, 1.14236, 1.1406, 1.14236, 1.1406, 1.14236, 1.1406, 1.14236, 0.97441, 1.04302, 0.79631, 1.01582, 1, 1, 1.01054, 0.83853, 1.14236, 1, 1, 0.83853, 1.09125, 0.83853, 0.90418, 0.83853, 1.19508, 1.10615, 0.97922, 1, 1, 1.10615, 0.97922, 1.01034, 1.10466, 0.97922, 0.97552, 0.94165, 0.97552, 0.94165, 0.97552, 0.94165, 0.91602, 0.91981, 0.88641, 1.0276, 1, 1, 0.88641, 1.0276, 0.80527, 0.78929, 0.80527, 0.78929, 0.80527, 0.78929, 0.80527, 0.78929, 1, 1, 0.96083, 1.05403, 0.95923, 1.16862, 1.00135, 0.97922, 1.00135, 0.97922, 1.00135, 0.97922, 1.00135, 0.97922, 1.00135, 0.97922, 1.00135, 0.97922, 1.06777, 1.02197, 0.91142, 0.96752, 0.91142, 0.99361, 0.97168, 0.99361, 0.97168, 0.99361, 0.97168, 1.23199, 1.036, 0.97363, 1.06585, 0.94385, 0.96705, 0.97552, 0.94165, 1, 1, 0.96083, 1.1261, 1.31818, 1.31818, 1.31818, 1.31818, 1.31818, 1.31818, 1.31818, 1.31818, 1.31818, 0.95161, 1.27126, 1.00811, 0.83284, 0.77702, 0.99137, 0.95253, 1.0347, 0.86142, 1.07205, 1.14236, 0.97363, 0.89723, 0.86869, 1.09818, 0.79429, 0.99361, 1.05815, 0.97552, 1.1406, 0.90128, 1.06662, 1.04396, 1.10615, 0.84918, 0.97552, 1.04694, 0.94436, 0.98015, 0.96083, 0.91142, 1.00356, 0.9817, 1.01945, 0.98999, 1.1406, 0.91142, 1.04961, 0.9898, 1.00639, 1.14236, 1.07514, 1.04961, 0.99607, 1.02897, 1.008, 0.9898, 0.95134, 1.00639, 1.11121, 1.14236, 1.00518, 0.97981, 1.02186, 1, 1.08578, 0.94165, 0.99314, 0.98387, 0.93028, 0.93377, 1.35125, 1.07514, 1.10687, 0.93491, 1.04232, 1.00351, 1.14236, 1.07514, 0.94165, 1.07514, 1.00351, 0.79429, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.09097, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.93503, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.96609, 1, 1, 1, 1, 1, 1, 1.06777, 1.02197, 1.06777, 1.02197, 1.06777, 1.02197, 0.91142, 0.96752, 1, 1.21261, 0.89903, 1, 1, 0.75155, 1.04745, 1.04745, 1.04745, 1.04394, 0.98633, 0.98633, 0.98633, 0.72959, 0.72959, 1.20502, 0.91406, 1.26514, 1.222, 1.02956, 1.03372, 1.03372, 0.96039, 1.24633, 1, 1.09125, 0.93327, 1.03336, 1.16541, 1.036, 1, 1, 1, 0.771, 1, 1, 1.15574, 1.15574, 1.15574, 1.15574, 0.86364, 0.94434, 0.86279, 0.94434, 0.86224, 1, 1, 1.16798, 1, 0.96085, 0.90068, 1.21237, 1.18416, 1.13904, 0.69825, 0.9716, 2.10339, 1.29004, 1.29004, 1.21339, 1.29004, 1.29004, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.42603, 1, 0.99862, 0.99862, 1, 0.87025, 0.87025, 0.87025, 0.87025, 1.18775, 1.42603, 1, 1.42603, 1.42603, 0.99862, 1, 1, 1, 1, 1, 1.2886, 1.04315, 1.15296, 1.34163, 1, 1, 1, 1.13269, 1.13269, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const SegoeuiBoldItalicMetrics = {
-  lineHeight: 1.33008,
-  lineGap: 0
-};
-const SegoeuiItalicFactors = [1.76738, 1, 1, 0.98946, 1.14763, 1.05365, 1.06234, 0.96927, 0.92586, 1.15373, 1.18414, 0.91349, 0.91349, 1.07403, 1.17308, 0.78383, 1.20088, 0.78383, 1.42531, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.78383, 0.78383, 1.17308, 1.17308, 1.17308, 0.77349, 0.94565, 0.94729, 0.85944, 0.88506, 0.9858, 0.74817, 0.80016, 0.88449, 0.98039, 0.95782, 0.69238, 0.89898, 0.83231, 0.98183, 1.03989, 0.96924, 0.86237, 0.96924, 0.80595, 0.74524, 0.86091, 0.95402, 0.94143, 0.98448, 0.8858, 0.83089, 0.93285, 1.0949, 1.39016, 1.0949, 1.45994, 0.74627, 1.04839, 0.97454, 0.97454, 0.87207, 0.97454, 0.87533, 1.06151, 0.97454, 1.00176, 1.16484, 1.08132, 0.98047, 1.16484, 1.02989, 1.01054, 0.96225, 0.97454, 0.97454, 1.06598, 0.79004, 1.16344, 1.00351, 0.94629, 0.9973, 0.91016, 0.96777, 0.9043, 0.91082, 0.92481, 0.91082, 1.17308, 0.95748, 0.96927, 0.96927, 1, 0.96927, 0.92481, 0.80597, 1.04839, 1.23393, 1.1781, 0.9245, 1.17308, 1.20808, 0.63218, 0.94261, 1.24822, 1.09971, 1.09971, 1.04839, 1, 0.85273, 0.78032, 1.04839, 1.09971, 1.22326, 0.9245, 1.09836, 1.13525, 1.15222, 0.70424, 0.94729, 0.94729, 0.94729, 0.94729, 0.94729, 0.94729, 0.85498, 0.88506, 0.74817, 0.74817, 0.74817, 0.74817, 0.95782, 0.95782, 0.95782, 0.95782, 0.9858, 1.03989, 0.96924, 0.96924, 0.96924, 0.96924, 0.96924, 1.17308, 0.96924, 0.95402, 0.95402, 0.95402, 0.95402, 0.83089, 0.86237, 0.88409, 0.97454, 0.97454, 0.97454, 0.97454, 0.97454, 0.97454, 0.92916, 0.87207, 0.87533, 0.87533, 0.87533, 0.87533, 0.93146, 0.93146, 0.93146, 0.93146, 0.93854, 1.01054, 0.96225, 0.96225, 0.96225, 0.96225, 0.96225, 1.24822, 0.8761, 1.00351, 1.00351, 1.00351, 1.00351, 0.96777, 0.97454, 0.96777, 0.94729, 0.97454, 0.94729, 0.97454, 0.94729, 0.97454, 0.88506, 0.87207, 0.88506, 0.87207, 0.88506, 0.87207, 0.88506, 0.87207, 0.9858, 0.95391, 0.9858, 0.97454, 0.74817, 0.87533, 0.74817, 0.87533, 0.74817, 0.87533, 0.74817, 0.87533, 0.74817, 0.87533, 0.88449, 0.97454, 0.88449, 0.97454, 0.88449, 0.97454, 1, 1, 0.98039, 1.00176, 0.98039, 1.00176, 0.95782, 0.93146, 0.95782, 0.93146, 0.95782, 0.93146, 0.95782, 1.16484, 0.95782, 0.93146, 0.84421, 1.12761, 0.69238, 1.08132, 1, 1, 0.98047, 0.83231, 1.16484, 1, 1, 0.84723, 1.04861, 0.84723, 0.78755, 0.83231, 1.23736, 1.03989, 1.01054, 1, 1, 1.03989, 1.01054, 0.9857, 1.03849, 1.01054, 0.96924, 0.96225, 0.96924, 0.96225, 0.96924, 0.96225, 0.92383, 0.90171, 0.80595, 1.06598, 1, 1, 0.80595, 1.06598, 0.74524, 0.79004, 0.74524, 0.79004, 0.74524, 0.79004, 0.74524, 0.79004, 1, 1, 0.86091, 1.02759, 0.85771, 1.16344, 0.95402, 1.00351, 0.95402, 1.00351, 0.95402, 1.00351, 0.95402, 1.00351, 0.95402, 1.00351, 0.95402, 1.00351, 0.98448, 0.9973, 0.83089, 0.96777, 0.83089, 0.93285, 0.9043, 0.93285, 0.9043, 0.93285, 0.9043, 1.31868, 0.96927, 0.94729, 0.97454, 0.85498, 0.92916, 0.96924, 0.8761, 1, 1, 0.86091, 1.16344, 1.04839, 1.04839, 1.04839, 1.04839, 1.04839, 1.04839, 1.04839, 1.04839, 1.04839, 0.81965, 0.81965, 0.94729, 0.78032, 0.71022, 0.90883, 0.84171, 0.99877, 0.77596, 1.05734, 1.2, 0.94729, 0.85944, 0.82791, 0.9607, 0.74817, 0.93285, 0.98039, 0.96924, 0.95782, 0.89898, 0.98316, 0.98183, 1.03989, 0.78614, 0.96924, 0.97642, 0.86237, 0.86075, 0.86091, 0.83089, 0.90082, 0.8858, 0.97296, 1.01284, 0.95782, 0.83089, 1.0976, 1.04, 1.03342, 1.2, 1.0675, 1.0976, 0.98205, 1.03809, 1.05097, 1.04, 0.95364, 1.03342, 1.05401, 1.2, 1.02148, 1.0119, 1.04724, 1.0127, 1.02732, 0.96225, 0.8965, 0.97783, 0.93574, 0.94818, 1.30679, 1.0675, 1.11826, 0.99821, 1.0557, 1.0326, 1.2, 1.0675, 0.96225, 1.0675, 1.0326, 0.74817, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.03754, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.87533, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.98705, 1, 1, 1, 1, 1, 1, 0.98448, 0.9973, 0.98448, 0.9973, 0.98448, 0.9973, 0.83089, 0.96777, 1, 1.20088, 0.89903, 1, 1, 0.75155, 0.94945, 0.94945, 0.94945, 0.94945, 1.12317, 1.12317, 1.12317, 0.67603, 0.67603, 1.15621, 0.73584, 1.21191, 1.22135, 1.06483, 0.94868, 0.94868, 0.95996, 1.24633, 1, 1.07497, 0.87709, 0.96927, 1.01473, 0.96927, 1, 1, 1, 0.77295, 1, 1, 1.09836, 1.09836, 1.09836, 1.01522, 0.86321, 0.94434, 0.8649, 0.94434, 0.86182, 1, 1, 1.083, 1, 0.91578, 0.86438, 1.17308, 1.18416, 1.14589, 0.69825, 0.97622, 1.96791, 1.24822, 1.24822, 1.17308, 1.24822, 1.24822, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.42603, 1, 0.99862, 0.99862, 1, 0.87025, 0.87025, 0.87025, 0.87025, 1.17984, 1.42603, 1, 1.42603, 1.42603, 0.99862, 1, 1, 1, 1, 1, 1.2886, 1.04315, 1.15296, 1.34163, 1, 1, 1, 1.10742, 1.10742, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const SegoeuiItalicMetrics = {
-  lineHeight: 1.33008,
-  lineGap: 0
-};
-const SegoeuiRegularFactors = [1.76738, 1, 1, 0.98594, 1.02285, 1.10454, 1.06234, 0.96927, 0.92037, 1.19985, 1.2046, 0.90616, 0.90616, 1.07152, 1.1714, 0.78032, 1.20088, 0.78032, 1.40246, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.96927, 0.78032, 0.78032, 1.1714, 1.1714, 1.1714, 0.80597, 0.94084, 0.96706, 0.85944, 0.85734, 0.97093, 0.75842, 0.79936, 0.88198, 0.9831, 0.95782, 0.71387, 0.86969, 0.84636, 1.07796, 1.03584, 0.96924, 0.83968, 0.96924, 0.82826, 0.79649, 0.85771, 0.95132, 0.93119, 0.98965, 0.88433, 0.8287, 0.93365, 1.08612, 1.3638, 1.08612, 1.45786, 0.74627, 0.80499, 0.91484, 1.05707, 0.92383, 1.05882, 0.9403, 1.12654, 1.05882, 1.01756, 1.09011, 1.09011, 0.99414, 1.09011, 1.034, 1.01756, 1.05356, 1.05707, 1.05882, 1.04399, 0.84863, 1.21968, 1.01756, 0.95801, 1.00068, 0.91797, 0.96777, 0.9043, 0.90351, 0.92105, 0.90351, 1.1714, 0.85337, 0.96927, 0.96927, 0.99912, 0.96927, 0.92105, 0.80597, 1.2434, 1.20808, 1.05937, 0.90957, 1.1714, 1.20808, 0.75155, 0.94261, 1.24644, 1.09971, 1.09971, 0.84751, 1, 0.85273, 0.78032, 0.61584, 1.05425, 1.17914, 0.90957, 1.08665, 1.11593, 1.14169, 0.73381, 0.96706, 0.96706, 0.96706, 0.96706, 0.96706, 0.96706, 0.86035, 0.85734, 0.75842, 0.75842, 0.75842, 0.75842, 0.95782, 0.95782, 0.95782, 0.95782, 0.97093, 1.03584, 0.96924, 0.96924, 0.96924, 0.96924, 0.96924, 1.1714, 0.96924, 0.95132, 0.95132, 0.95132, 0.95132, 0.8287, 0.83968, 0.89049, 0.91484, 0.91484, 0.91484, 0.91484, 0.91484, 0.91484, 0.93575, 0.92383, 0.9403, 0.9403, 0.9403, 0.9403, 0.8717, 0.8717, 0.8717, 0.8717, 1.00527, 1.01756, 1.05356, 1.05356, 1.05356, 1.05356, 1.05356, 1.24644, 0.95923, 1.01756, 1.01756, 1.01756, 1.01756, 0.96777, 1.05707, 0.96777, 0.96706, 0.91484, 0.96706, 0.91484, 0.96706, 0.91484, 0.85734, 0.92383, 0.85734, 0.92383, 0.85734, 0.92383, 0.85734, 0.92383, 0.97093, 1.0969, 0.97093, 1.05882, 0.75842, 0.9403, 0.75842, 0.9403, 0.75842, 0.9403, 0.75842, 0.9403, 0.75842, 0.9403, 0.88198, 1.05882, 0.88198, 1.05882, 0.88198, 1.05882, 1, 1, 0.9831, 1.01756, 0.9831, 1.01756, 0.95782, 0.8717, 0.95782, 0.8717, 0.95782, 0.8717, 0.95782, 1.09011, 0.95782, 0.8717, 0.84784, 1.11551, 0.71387, 1.09011, 1, 1, 0.99414, 0.84636, 1.09011, 1, 1, 0.84636, 1.0536, 0.84636, 0.94298, 0.84636, 1.23297, 1.03584, 1.01756, 1, 1, 1.03584, 1.01756, 1.00323, 1.03444, 1.01756, 0.96924, 1.05356, 0.96924, 1.05356, 0.96924, 1.05356, 0.93066, 0.98293, 0.82826, 1.04399, 1, 1, 0.82826, 1.04399, 0.79649, 0.84863, 0.79649, 0.84863, 0.79649, 0.84863, 0.79649, 0.84863, 1, 1, 0.85771, 1.17318, 0.85771, 1.21968, 0.95132, 1.01756, 0.95132, 1.01756, 0.95132, 1.01756, 0.95132, 1.01756, 0.95132, 1.01756, 0.95132, 1.01756, 0.98965, 1.00068, 0.8287, 0.96777, 0.8287, 0.93365, 0.9043, 0.93365, 0.9043, 0.93365, 0.9043, 1.08571, 0.96927, 0.96706, 0.91484, 0.86035, 0.93575, 0.96924, 0.95923, 1, 1, 0.85771, 1.21968, 1.11437, 1.11437, 0.93109, 0.91202, 0.60411, 0.84164, 0.55572, 1.01173, 0.97361, 0.81818, 0.81818, 0.96635, 0.78032, 0.72727, 0.92366, 0.98601, 1.03405, 0.77968, 1.09799, 1.2, 0.96706, 0.85944, 0.85638, 0.96491, 0.75842, 0.93365, 0.9831, 0.96924, 0.95782, 0.86969, 0.94152, 1.07796, 1.03584, 0.78437, 0.96924, 0.98715, 0.83968, 0.83491, 0.85771, 0.8287, 0.94492, 0.88433, 0.9287, 1.0098, 0.95782, 0.8287, 1.0625, 0.98248, 1.03424, 1.2, 1.01071, 1.0625, 0.95246, 1.03809, 1.04912, 0.98248, 1.00221, 1.03424, 1.05443, 1.2, 1.04785, 0.99609, 1.00169, 1.05176, 0.99346, 1.05356, 0.9087, 1.03004, 0.95542, 0.93117, 1.23362, 1.01071, 1.07831, 1.02512, 1.05205, 1.03502, 1.2, 1.01071, 1.05356, 1.01071, 1.03502, 0.75842, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.03719, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.9403, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.04021, 1, 1, 1, 1, 1, 1, 0.98965, 1.00068, 0.98965, 1.00068, 0.98965, 1.00068, 0.8287, 0.96777, 1, 1.20088, 0.89903, 1, 1, 0.75155, 1.03077, 1.03077, 1.03077, 1.03077, 1.13196, 1.13196, 1.13196, 0.67428, 0.67428, 1.16039, 0.73291, 1.20996, 1.22135, 1.06483, 0.94868, 0.94868, 0.95996, 1.24633, 1, 1.07497, 0.87796, 0.96927, 1.01518, 0.96927, 1, 1, 1, 0.77295, 1, 1, 1.10539, 1.10539, 1.11358, 1.06967, 0.86279, 0.94434, 0.86279, 0.94434, 0.86182, 1, 1, 1.083, 1, 0.91578, 0.86507, 1.1714, 1.18416, 1.14589, 0.69825, 0.97622, 1.9697, 1.24822, 1.24822, 1.17238, 1.24822, 1.24822, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.42603, 1, 0.99862, 0.99862, 1, 0.87025, 0.87025, 0.87025, 0.87025, 1.18083, 1.42603, 1, 1.42603, 1.42603, 0.99862, 1, 1, 1, 1, 1, 1.2886, 1.04315, 1.15296, 1.34163, 1, 1, 1, 1.10938, 1.10938, 1, 1, 1, 1.05425, 1.09971, 1.09971, 1.09971, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
-const SegoeuiRegularMetrics = {
-  lineHeight: 1.33008,
-  lineGap: 0
-};
+;// ./src/core/xfa_font_widths.js
+const XfaFontCodePoints = [32, 95, 161, 12, 174, 210, 402, 1, 506, 6, 536, 4, 710, 2, 713, 1, 728, 6, 900, 7, 908, 1, 910, 20, 931, 44, 1024, 96, 1138, 2, 1168, 2, 7808, 6, 7922, 2, 8208, 2, 8211, 3, 8215, 8, 8224, 3, 8230, 1, 8240, 1, 8242, 2, 8249, 2, 8252, 1, 8254, 1, 8260, 1, 8319, 1, 8355, 2, 8359, 1, 8364, 1, 8453, 1, 8467, 1, 8470, 1, 8482, 1, 8486, 1, 8494, 1, 8539, 4, 8592, 6, 8616, 1, 8706, 1, 8710, 1, 8719, 1, 8721, 2, 8730, 1, 8734, 2, 8745, 1, 8747, 1, 8776, 1, 8800, 2, 8804, 2, 8962, 1, 8976, 1, 8992, 2, 9472, 1, 9474, 1, 9484, 1, 9488, 1, 9492, 1, 9496, 1, 9500, 1, 9508, 1, 9516, 1, 9524, 1, 9532, 1, 9552, 29, 9600, 1, 9604, 1, 9608, 1, 9612, 1, 9616, 4, 9632, 2, 9642, 3, 9650, 1, 9658, 1, 9660, 1, 9668, 1, 9674, 2, 9679, 1, 9688, 2, 9702, 1, 9786, 3, 9792, 1, 9794, 1, 9824, 1, 9827, 1, 9829, 2, 9834, 3, 61441, 2, 61445, 1];
+const ArialRegularWidths = [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584, 333, 556, 556, 556, 556, 260, 556, 333, 737, 370, 556, 584, 737, 552, 400, 549, 333, 333, 333, 576, 537, 278, 333, 333, 365, 556, 834, 834, 834, 611, 667, 667, 667, 667, 667, 667, 1000, 722, 667, 667, 667, 667, 278, 278, 278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556, 556, 889, 500, 556, 556, 556, 556, 278, 278, 278, 278, 556, 556, 556, 556, 556, 556, 556, 549, 611, 556, 556, 556, 556, 500, 556, 500, 667, 556, 667, 556, 667, 556, 722, 500, 722, 500, 722, 500, 722, 500, 722, 615, 722, 556, 667, 556, 667, 556, 667, 556, 667, 556, 667, 556, 778, 556, 778, 556, 778, 556, 778, 556, 722, 556, 722, 556, 278, 278, 278, 278, 278, 278, 278, 222, 278, 278, 735, 444, 500, 222, 667, 500, 500, 556, 222, 556, 222, 556, 292, 556, 334, 556, 222, 722, 556, 722, 556, 722, 556, 604, 723, 556, 778, 556, 778, 556, 778, 556, 1000, 944, 722, 333, 722, 333, 722, 333, 667, 500, 667, 500, 667, 500, 667, 500, 611, 278, 611, 375, 611, 278, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 944, 722, 667, 500, 667, 611, 500, 611, 500, 611, 500, 222, 556, 667, 556, 1000, 889, 778, 611, 667, 500, 611, 278, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 667, 278, 784, 838, 384, 774, 855, 752, 222, 667, 667, 551, 668, 667, 611, 722, 778, 278, 667, 668, 833, 722, 650, 778, 722, 667, 618, 611, 667, 798, 667, 835, 748, 278, 667, 578, 446, 556, 222, 547, 578, 575, 500, 557, 446, 441, 556, 556, 222, 500, 500, 576, 500, 448, 556, 690, 569, 482, 617, 395, 547, 648, 525, 713, 781, 222, 547, 556, 547, 781, 667, 667, 865, 542, 719, 667, 278, 278, 500, 1057, 1010, 854, 583, 722, 635, 719, 667, 656, 667, 542, 677, 667, 923, 604, 719, 719, 583, 656, 833, 722, 778, 719, 667, 722, 611, 635, 760, 667, 740, 667, 917, 938, 792, 885, 656, 719, 1010, 722, 556, 573, 531, 365, 583, 556, 669, 458, 559, 559, 438, 583, 688, 552, 556, 542, 556, 500, 458, 500, 823, 500, 573, 521, 802, 823, 625, 719, 521, 510, 750, 542, 556, 556, 556, 365, 510, 500, 222, 278, 222, 906, 812, 556, 438, 559, 500, 552, 778, 556, 489, 411, 944, 722, 944, 722, 944, 722, 667, 500, 333, 333, 556, 1000, 1000, 552, 222, 222, 222, 222, 333, 333, 333, 556, 556, 350, 1000, 1000, 188, 354, 333, 333, 500, 333, 167, 365, 556, 556, 1094, 556, 885, 323, 1073, 1000, 768, 600, 834, 834, 834, 834, 1000, 500, 1000, 500, 1000, 500, 500, 494, 612, 823, 713, 584, 549, 713, 979, 719, 274, 549, 549, 583, 549, 549, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 494, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 500, 500, 333];
+const ArialBoldWidths = [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584, 333, 556, 556, 556, 556, 280, 556, 333, 737, 370, 556, 584, 737, 552, 400, 549, 333, 333, 333, 576, 556, 278, 333, 333, 365, 556, 834, 834, 834, 611, 722, 722, 722, 722, 722, 722, 1000, 722, 667, 667, 667, 667, 278, 278, 278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556, 556, 889, 556, 556, 556, 556, 556, 278, 278, 278, 278, 611, 611, 611, 611, 611, 611, 611, 549, 611, 611, 611, 611, 611, 556, 611, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 719, 722, 611, 667, 556, 667, 556, 667, 556, 667, 556, 667, 556, 778, 611, 778, 611, 778, 611, 778, 611, 722, 611, 722, 611, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 785, 556, 556, 278, 722, 556, 556, 611, 278, 611, 278, 611, 385, 611, 479, 611, 278, 722, 611, 722, 611, 722, 611, 708, 723, 611, 778, 611, 778, 611, 778, 611, 1000, 944, 722, 389, 722, 389, 722, 389, 667, 556, 667, 556, 667, 556, 667, 556, 611, 333, 611, 479, 611, 333, 722, 611, 722, 611, 722, 611, 722, 611, 722, 611, 722, 611, 944, 778, 667, 556, 667, 611, 500, 611, 500, 611, 500, 278, 556, 722, 556, 1000, 889, 778, 611, 667, 556, 611, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 465, 722, 333, 853, 906, 474, 825, 927, 838, 278, 722, 722, 601, 719, 667, 611, 722, 778, 278, 722, 667, 833, 722, 644, 778, 722, 667, 600, 611, 667, 821, 667, 809, 802, 278, 667, 615, 451, 611, 278, 582, 615, 610, 556, 606, 475, 460, 611, 541, 278, 558, 556, 612, 556, 445, 611, 766, 619, 520, 684, 446, 582, 715, 576, 753, 845, 278, 582, 611, 582, 845, 667, 669, 885, 567, 711, 667, 278, 276, 556, 1094, 1062, 875, 610, 722, 622, 719, 722, 719, 722, 567, 712, 667, 904, 626, 719, 719, 610, 702, 833, 722, 778, 719, 667, 722, 611, 622, 854, 667, 730, 703, 1005, 1019, 870, 979, 719, 711, 1031, 719, 556, 618, 615, 417, 635, 556, 709, 497, 615, 615, 500, 635, 740, 604, 611, 604, 611, 556, 490, 556, 875, 556, 615, 581, 833, 844, 729, 854, 615, 552, 854, 583, 556, 556, 611, 417, 552, 556, 278, 281, 278, 969, 906, 611, 500, 615, 556, 604, 778, 611, 487, 447, 944, 778, 944, 778, 944, 778, 667, 556, 333, 333, 556, 1000, 1000, 552, 278, 278, 278, 278, 500, 500, 500, 556, 556, 350, 1000, 1000, 240, 479, 333, 333, 604, 333, 167, 396, 556, 556, 1094, 556, 885, 489, 1115, 1000, 768, 600, 834, 834, 834, 834, 1000, 500, 1000, 500, 1000, 500, 500, 494, 612, 823, 713, 584, 549, 713, 979, 722, 274, 549, 549, 583, 549, 549, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 494, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 611, 611, 333];
+const ArialItalicWidths = [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584, 333, 556, 556, 556, 556, 260, 556, 333, 737, 370, 556, 584, 737, 552, 400, 549, 333, 333, 333, 576, 537, 278, 333, 333, 365, 556, 834, 834, 834, 611, 667, 667, 667, 667, 667, 667, 1000, 722, 667, 667, 667, 667, 278, 278, 278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556, 556, 889, 500, 556, 556, 556, 556, 278, 278, 278, 278, 556, 556, 556, 556, 556, 556, 556, 549, 611, 556, 556, 556, 556, 500, 556, 500, 667, 556, 667, 556, 667, 556, 722, 500, 722, 500, 722, 500, 722, 500, 722, 625, 722, 556, 667, 556, 667, 556, 667, 556, 667, 556, 667, 556, 778, 556, 778, 556, 778, 556, 778, 556, 722, 556, 722, 556, 278, 278, 278, 278, 278, 278, 278, 222, 278, 278, 733, 444, 500, 222, 667, 500, 500, 556, 222, 556, 222, 556, 281, 556, 400, 556, 222, 722, 556, 722, 556, 722, 556, 615, 723, 556, 778, 556, 778, 556, 778, 556, 1000, 944, 722, 333, 722, 333, 722, 333, 667, 500, 667, 500, 667, 500, 667, 500, 611, 278, 611, 354, 611, 278, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 944, 722, 667, 500, 667, 611, 500, 611, 500, 611, 500, 222, 556, 667, 556, 1000, 889, 778, 611, 667, 500, 611, 278, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 667, 278, 789, 846, 389, 794, 865, 775, 222, 667, 667, 570, 671, 667, 611, 722, 778, 278, 667, 667, 833, 722, 648, 778, 725, 667, 600, 611, 667, 837, 667, 831, 761, 278, 667, 570, 439, 555, 222, 550, 570, 571, 500, 556, 439, 463, 555, 542, 222, 500, 492, 548, 500, 447, 556, 670, 573, 486, 603, 374, 550, 652, 546, 728, 779, 222, 550, 556, 550, 779, 667, 667, 843, 544, 708, 667, 278, 278, 500, 1066, 982, 844, 589, 715, 639, 724, 667, 651, 667, 544, 704, 667, 917, 614, 715, 715, 589, 686, 833, 722, 778, 725, 667, 722, 611, 639, 795, 667, 727, 673, 920, 923, 805, 886, 651, 694, 1022, 682, 556, 562, 522, 493, 553, 556, 688, 465, 556, 556, 472, 564, 686, 550, 556, 556, 556, 500, 833, 500, 835, 500, 572, 518, 830, 851, 621, 736, 526, 492, 752, 534, 556, 556, 556, 378, 496, 500, 222, 222, 222, 910, 828, 556, 472, 565, 500, 556, 778, 556, 492, 339, 944, 722, 944, 722, 944, 722, 667, 500, 333, 333, 556, 1000, 1000, 552, 222, 222, 222, 222, 333, 333, 333, 556, 556, 350, 1000, 1000, 188, 354, 333, 333, 500, 333, 167, 365, 556, 556, 1094, 556, 885, 323, 1083, 1000, 768, 600, 834, 834, 834, 834, 1000, 500, 998, 500, 1000, 500, 500, 494, 612, 823, 713, 584, 549, 713, 979, 719, 274, 549, 549, 584, 549, 549, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 494, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 500, 500, 333];
+const ArialBoldItalicWidths = [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584, 333, 556, 556, 556, 556, 280, 556, 333, 737, 370, 556, 584, 737, 552, 400, 549, 333, 333, 333, 576, 556, 278, 333, 333, 365, 556, 834, 834, 834, 611, 722, 722, 722, 722, 722, 722, 1000, 722, 667, 667, 667, 667, 278, 278, 278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556, 556, 889, 556, 556, 556, 556, 556, 278, 278, 278, 278, 611, 611, 611, 611, 611, 611, 611, 549, 611, 611, 611, 611, 611, 556, 611, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 556, 722, 740, 722, 611, 667, 556, 667, 556, 667, 556, 667, 556, 667, 556, 778, 611, 778, 611, 778, 611, 778, 611, 722, 611, 722, 611, 278, 278, 278, 278, 278, 278, 278, 278, 278, 278, 782, 556, 556, 278, 722, 556, 556, 611, 278, 611, 278, 611, 396, 611, 479, 611, 278, 722, 611, 722, 611, 722, 611, 708, 723, 611, 778, 611, 778, 611, 778, 611, 1000, 944, 722, 389, 722, 389, 722, 389, 667, 556, 667, 556, 667, 556, 667, 556, 611, 333, 611, 479, 611, 333, 722, 611, 722, 611, 722, 611, 722, 611, 722, 611, 722, 611, 944, 778, 667, 556, 667, 611, 500, 611, 500, 611, 500, 278, 556, 722, 556, 1000, 889, 778, 611, 667, 556, 611, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 333, 722, 333, 854, 906, 473, 844, 930, 847, 278, 722, 722, 610, 671, 667, 611, 722, 778, 278, 722, 667, 833, 722, 657, 778, 718, 667, 590, 611, 667, 822, 667, 829, 781, 278, 667, 620, 479, 611, 278, 591, 620, 621, 556, 610, 479, 492, 611, 558, 278, 566, 556, 603, 556, 450, 611, 712, 605, 532, 664, 409, 591, 704, 578, 773, 834, 278, 591, 611, 591, 834, 667, 667, 886, 614, 719, 667, 278, 278, 556, 1094, 1042, 854, 622, 719, 677, 719, 722, 708, 722, 614, 722, 667, 927, 643, 719, 719, 615, 687, 833, 722, 778, 719, 667, 722, 611, 677, 781, 667, 729, 708, 979, 989, 854, 1000, 708, 719, 1042, 729, 556, 619, 604, 534, 618, 556, 736, 510, 611, 611, 507, 622, 740, 604, 611, 611, 611, 556, 889, 556, 885, 556, 646, 583, 889, 935, 707, 854, 594, 552, 865, 589, 556, 556, 611, 469, 563, 556, 278, 278, 278, 969, 906, 611, 507, 619, 556, 611, 778, 611, 575, 467, 944, 778, 944, 778, 944, 778, 667, 556, 333, 333, 556, 1000, 1000, 552, 278, 278, 278, 278, 500, 500, 500, 556, 556, 350, 1000, 1000, 240, 479, 333, 333, 604, 333, 167, 396, 556, 556, 1104, 556, 885, 516, 1146, 1000, 768, 600, 834, 834, 834, 834, 999, 500, 1000, 500, 1000, 500, 500, 494, 612, 823, 713, 584, 549, 713, 979, 722, 274, 549, 549, 583, 549, 549, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 494, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 611, 611, 333];
+const CalibriRegularWidths = [278, 325.88, 400.902, 497.909, 506.699, 714.712, 682.134, 220.798, 303.216, 303.216, 497.842, 498.059, 249.663, 333, 252.594, 386.464, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 267.739, 267.739, 498.059, 498.059, 498.059, 463.254, 893.921, 578.623, 543.952, 533.081, 615.093, 488.284, 459.594, 630.997, 622.906, 252.104, 318.85, 519.54, 420.297, 854.975, 645.36, 662.249, 516.605, 672.993, 542.843, 459.476, 487.431, 641.454, 567.39, 889.796, 519.046, 487.31, 468.386, 306.826, 386.464, 306.826, 497.792, 497.909, 291.009, 478.872, 525.248, 422.85, 525.248, 497.42, 305.361, 470.576, 525.248, 229.319, 239.076, 454.59, 229.319, 798.822, 525.248, 527.199, 525.248, 525.248, 348.624, 391.115, 335.162, 525.248, 451.66, 714.679, 433.105, 452.635, 395.02, 314.468, 460.866, 314.468, 498.059, 325.677, 497.909, 506.699, 497.909, 506.699, 498.495, 497.909, 392.57, 834.682, 402.216, 512.065, 498.059, 506.96, 393.869, 338.948, 498.201, 335.93, 334.465, 291.984, 576, 585.819, 278, 307.123, 246.087, 422.093, 512.065, 636.242, 671.403, 675.306, 463.498, 578.623, 578.623, 578.623, 578.623, 578.623, 578.623, 763.18, 533.081, 488.284, 488.284, 488.284, 488.284, 252.104, 252.104, 252.104, 252.104, 624.364, 645.36, 662.249, 662.249, 662.249, 662.249, 662.249, 498.059, 663.72, 641.454, 641.454, 641.454, 641.454, 487.31, 516.605, 527.482, 478.872, 478.872, 478.872, 478.872, 478.872, 478.872, 772.808, 422.85, 497.42, 497.42, 497.42, 497.42, 229.631, 229.631, 229.631, 229.631, 525.248, 525.248, 527.199, 527.199, 527.199, 527.199, 527.199, 498.201, 529.438, 525.248, 525.248, 525.248, 525.248, 452.635, 525.248, 452.635, 578.623, 478.872, 578.623, 478.872, 578.623, 478.872, 533.081, 422.85, 533.081, 422.85, 533.081, 422.85, 533.081, 422.85, 615.093, 568.592, 624.364, 551.608, 488.284, 497.42, 488.284, 497.42, 488.284, 497.42, 488.284, 497.42, 488.284, 497.42, 630.997, 470.576, 630.997, 470.576, 630.997, 470.576, 778, 556, 622.906, 525.248, 656.096, 532.57, 252.104, 229.631, 252.104, 229.631, 252.104, 229.631, 252.104, 229.319, 252.104, 229.631, 571.396, 468.913, 318.85, 239.076, 667, 500, 454.59, 420.297, 229.319, 556, 222, 422.738, 264.12, 545.747, 373.552, 429.571, 247.372, 645.36, 525.248, 722, 556, 645.36, 525.248, 579.097, 628.294, 525.248, 662.249, 527.199, 662.249, 527.199, 662.249, 527.199, 866.7, 849.751, 542.843, 348.624, 722, 333, 542.843, 348.624, 459.476, 391.115, 459.476, 391.115, 459.476, 391.115, 459.476, 391.115, 611, 278, 487.431, 345.705, 487.431, 342.004, 641.454, 525.248, 641.454, 525.248, 641.454, 525.248, 641.454, 525.248, 641.454, 525.248, 641.454, 525.248, 889.796, 714.679, 487.31, 452.635, 487.31, 468.386, 395.02, 468.386, 395.02, 468.386, 395.02, 242.493, 305.094, 578.623, 478.872, 763.18, 772.808, 663.72, 529.438, 667, 500, 487.431, 335.162, 395.011, 395.011, 333, 380.852, 225.581, 320.792, 312.004, 450.186, 469.227, 316.886, 494.129, 578.196, 252.594, 488.173, 623.128, 252.092, 661.755, 487.034, 663.67, 274.206, 578.623, 543.952, 415.691, 564.48, 488.284, 468.386, 622.906, 662.249, 252.104, 519.54, 572.783, 854.975, 645.36, 491.77, 662.249, 622.906, 516.605, 458.377, 487.431, 487.31, 759.417, 519.046, 749.596, 664.456, 252.104, 487.31, 567.261, 455.772, 536.963, 274.206, 541.628, 567.261, 531.07, 446.29, 523.775, 455.772, 347.72, 536.963, 531.592, 274.206, 454.59, 462.89, 549.642, 448.73, 376.181, 527.199, 552.78, 508.925, 410.703, 531.576, 387.187, 541.628, 650.929, 426.347, 707.631, 696.504, 274.206, 541.628, 527.199, 541.628, 696.504, 488.284, 667, 865, 542, 719, 667, 278, 278, 500, 1057, 1010, 854, 583, 641.454, 635, 719, 667, 656, 667, 542, 677, 667, 923, 604, 719, 719, 583, 656, 833, 722, 778, 719, 667, 722, 611, 635, 760, 667, 740, 667, 917, 938, 792, 885, 656, 719, 1010, 722, 556, 573, 531, 365, 583, 556, 669, 458, 559, 559, 438, 583, 688, 552, 556, 542, 556, 500, 458, 500, 823, 500, 573, 521, 802, 823, 625, 719, 521, 510, 750, 542, 497.42, 556, 556, 365, 510, 500, 222, 278, 222, 906, 812, 556, 438, 540.922, 500, 552, 778, 556, 489, 411, 889.796, 714.679, 889.796, 714.679, 889.796, 714.679, 487.31, 452.635, 333, 333, 497.909, 905.27, 1000, 497.827, 249.324, 249.324, 249.324, 249.324, 418.448, 418.448, 418.448, 497.909, 497.909, 497.907, 690.43, 1038.09, 188, 354, 338.861, 338.861, 557.615, 498.035, 336.442, 362.558, 459.345, 506.699, 922.089, 506.699, 885, 323, 1073, 705.08, 768, 738.648, 665.54, 704.113, 704.113, 645.516, 905.27, 905.275, 905.27, 905.275, 1288.09, 777.345, 472.17, 532.562, 612, 799.084, 541.096, 498.059, 498.201, 853.162, 683.587, 701.902, 365.823, 498.201, 498.201, 497.625, 498.201, 498.201, 875.48, 498.059, 540.036, 540.036, 499.65, 500, 499.65, 499.65, 499.65, 499.65, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 353.511, 353.511, 1000, 990, 990, 990, 990, 510.598, 549.803, 604, 604, 604, 353.511, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 529.295, 529.295, 333];
+const CalibriBoldWidths = [278, 325.677, 438.365, 497.909, 506.699, 728.873, 704.427, 233.602, 311.515, 311.515, 497.842, 498.059, 257.967, 333, 267.253, 429.946, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 275.874, 275.874, 498.059, 498.059, 498.059, 463.498, 898.346, 605.816, 560.416, 529.175, 630.227, 487.797, 459.105, 637.345, 630.71, 266.763, 330.965, 546.749, 422.965, 874.017, 658.536, 676.417, 532.233, 686.18, 562.857, 472.663, 495.246, 652.681, 591.316, 906.4, 550.789, 519.54, 478.15, 324.698, 429.946, 324.698, 498.059, 497.909, 300.286, 493.517, 536.764, 418.34, 536.764, 503.28, 316.4, 474.246, 536.764, 245.755, 255.526, 479.85, 245.755, 813.328, 536.764, 537.741, 536.764, 536.764, 355.324, 398.819, 346.673, 536.764, 473.017, 745.277, 459.345, 473.501, 397.46, 343.608, 475.462, 343.608, 498.059, 325.677, 497.909, 506.699, 497.909, 506.699, 498.428, 497.909, 414.542, 834.682, 415.884, 538.425, 498.059, 506.96, 389.96, 342.368, 498.201, 337.882, 335.93, 300.776, 576, 597.494, 278, 303.216, 252.434, 434.781, 538.425, 657.726, 690.927, 701.669, 463.498, 605.816, 605.816, 605.816, 605.816, 605.816, 605.816, 775.39, 529.175, 487.797, 487.797, 487.797, 487.797, 266.763, 266.763, 266.763, 266.763, 639.013, 658.536, 676.417, 676.417, 676.417, 676.417, 676.417, 498.059, 680.812, 652.681, 652.681, 652.681, 652.681, 519.54, 532.233, 554.831, 493.517, 493.517, 493.517, 493.517, 493.517, 493.517, 774.764, 418.34, 503.28, 503.28, 503.28, 503.28, 245.755, 245.755, 245.755, 245.755, 536.764, 536.764, 537.741, 537.741, 537.741, 537.741, 537.741, 498.201, 544.089, 536.764, 536.764, 536.764, 536.764, 473.501, 536.764, 473.501, 605.816, 493.517, 605.816, 493.517, 605.816, 493.517, 529.175, 418.34, 529.175, 418.34, 529.175, 418.34, 529.175, 418.34, 630.227, 596.885, 639.013, 568.994, 487.797, 503.28, 487.797, 503.28, 487.797, 503.28, 487.797, 503.28, 487.797, 503.28, 637.345, 474.246, 637.345, 474.246, 637.345, 474.246, 778, 611, 630.71, 536.764, 657.561, 547.505, 266.763, 245.755, 266.763, 245.755, 266.763, 245.755, 266.763, 245.755, 266.763, 245.755, 598.398, 501.329, 330.965, 255.526, 722, 556, 479.85, 422.965, 245.755, 611, 278, 430.291, 305.952, 561.668, 422.358, 432.729, 263.83, 658.536, 536.764, 722, 611, 658.536, 536.764, 621.638, 640.983, 536.764, 676.417, 537.741, 676.417, 537.741, 676.417, 537.741, 874.02, 842.907, 562.857, 355.324, 722, 389, 562.857, 355.324, 472.663, 398.819, 472.663, 398.819, 472.663, 398.819, 472.663, 398.819, 611, 333, 495.246, 363.278, 495.246, 354.485, 652.681, 536.764, 652.681, 536.764, 652.681, 536.764, 652.681, 536.764, 652.681, 536.764, 652.681, 536.764, 906.4, 745.277, 519.54, 473.501, 519.54, 478.15, 397.46, 478.15, 397.46, 478.15, 397.46, 258.457, 316.32, 605.816, 493.517, 775.39, 774.764, 680.812, 544.089, 667, 556, 495.246, 346.673, 401.358, 401.358, 333, 384.758, 235.344, 327.629, 315.421, 444.325, 485.827, 316.886, 494.309, 605.816, 267.572, 487.78, 631.029, 266.81, 676.508, 519.389, 680.749, 286.307, 605.816, 560.416, 409.618, 577.839, 487.797, 478.15, 630.71, 676.417, 266.763, 546.749, 593.757, 874.017, 658.536, 492.531, 676.417, 630.71, 532.233, 469.65, 495.246, 519.54, 801.46, 550.789, 807.536, 680.866, 266.763, 519.54, 591.064, 457.346, 544.089, 286.307, 548.308, 591.064, 545.096, 467.157, 532.323, 457.895, 363.901, 544.089, 545.398, 286.307, 480.31, 486.194, 563.646, 471.06, 384.983, 537.741, 579.387, 530.57, 406.723, 544.368, 392.324, 548.308, 698.891, 450.933, 737.383, 718.005, 286.307, 548.308, 537.741, 548.308, 718.005, 487.797, 669, 885, 567, 711, 667, 278, 276, 556, 1094, 1062, 875, 610, 651.706, 622, 719, 722, 719, 722, 567, 712, 667, 904, 626, 719, 719, 610, 702, 833, 722, 778, 719, 667, 722, 611, 622, 854, 667, 730, 703, 1005, 1019, 870, 979, 719, 711, 1031, 719, 556, 618, 615, 417, 635, 556, 709, 497, 615, 615, 500, 635, 740, 604, 611, 604, 611, 556, 490, 556, 875, 556, 615, 581, 833, 844, 729, 854, 615, 552, 854, 583, 503.28, 556, 611, 417, 552, 556, 278, 281, 278, 969, 906, 611, 500, 556.87, 556, 604, 778, 611, 487, 447, 906.4, 745.277, 906.4, 745.277, 906.4, 745.277, 519.54, 473.501, 333, 333, 497.909, 905.27, 1000, 498.804, 257.967, 257.967, 257.967, 257.967, 435.06, 435.06, 435.06, 497.909, 497.909, 497.907, 711.43, 1061.52, 240, 479, 344.229, 344.229, 586.913, 498.035, 380.877, 371.587, 463.737, 506.699, 920.131, 506.699, 885, 489, 1115, 720.21, 768, 738.648, 696.298, 738.299, 738.299, 679.702, 905.27, 905.275, 905.27, 905.275, 1310.06, 768.555, 472.17, 536.958, 612, 781.998, 550.379, 498.059, 498.201, 838.017, 683.587, 701.495, 375.591, 498.201, 498.201, 497.625, 498.201, 498.201, 875.48, 498.059, 540.036, 540.036, 499.65, 500, 499.65, 499.65, 499.65, 499.65, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 353.511, 353.511, 1000, 990, 990, 990, 990, 533.54, 549.803, 604, 604, 604, 353.511, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 554.342, 554.342, 333];
+const CalibriItalicWidths = [278, 325.88, 400.902, 497.909, 506.699, 714.712, 682.134, 220.798, 303.216, 303.216, 497.842, 498.059, 249.663, 333, 252.594, 387.93, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 267.739, 267.739, 498.059, 498.059, 498.059, 463.254, 893.921, 578.623, 543.952, 522.338, 615.093, 488.284, 459.594, 630.997, 622.906, 252.104, 318.85, 519.54, 420.297, 854.975, 644.378, 654.438, 516.605, 664.21, 542.843, 452.153, 487.431, 641.454, 567.39, 890.277, 519.046, 487.31, 468.386, 306.826, 384.51, 306.826, 497.792, 497.909, 291.009, 514.022, 514.022, 416.015, 514.022, 477.409, 305.361, 514.022, 514.022, 229.319, 239.076, 454.59, 229.319, 791.008, 514.022, 513.043, 514.022, 514.022, 342.767, 389.16, 335.162, 514.022, 445.8, 714.679, 433.105, 447.265, 395.02, 314.468, 460.866, 314.468, 498.059, 325.677, 497.909, 506.699, 497.909, 506.699, 498.495, 497.909, 392.57, 834.682, 430.528, 512.065, 498.059, 506.96, 393.869, 338.948, 498.201, 335.93, 334.465, 291.984, 576, 585.819, 278, 307.123, 246.087, 422.093, 512.065, 636.242, 671.403, 675.306, 463.498, 578.623, 578.623, 578.623, 578.623, 578.623, 578.623, 763.18, 522.338, 488.284, 488.284, 488.284, 488.284, 252.104, 252.104, 252.104, 252.104, 624.364, 644.378, 654.438, 654.438, 654.438, 654.438, 654.438, 498.059, 657.853, 641.454, 641.454, 641.454, 641.454, 487.31, 516.605, 527.482, 514.022, 514.022, 514.022, 514.022, 514.022, 514.022, 754.254, 416.015, 477.409, 477.409, 477.409, 477.409, 229.631, 229.631, 229.631, 229.631, 525.248, 514.022, 513.043, 513.043, 513.043, 513.043, 513.043, 498.201, 529.438, 514.022, 514.022, 514.022, 514.022, 447.265, 514.022, 447.265, 578.623, 514.022, 578.623, 514.022, 578.623, 514.022, 522.338, 416.015, 522.338, 416.015, 522.338, 416.015, 522.338, 416.015, 615.093, 554.688, 624.364, 550.629, 488.284, 477.409, 488.284, 477.409, 488.284, 477.409, 488.284, 477.409, 488.284, 477.409, 630.997, 514.022, 630.997, 514.022, 630.997, 514.022, 778, 556, 622.906, 514.022, 656.096, 520.366, 252.104, 229.631, 252.104, 229.631, 252.104, 229.631, 252.104, 229.319, 252.104, 229.631, 570.978, 468.913, 318.85, 239.076, 667, 500, 454.59, 420.297, 229.319, 556, 222, 422.738, 263.438, 545.747, 373.628, 429.571, 247.372, 644.378, 514.022, 722, 556, 644.378, 514.022, 569.084, 626.827, 514.022, 654.438, 513.043, 654.438, 513.043, 654.438, 513.043, 866.7, 814.587, 542.843, 342.767, 722, 333, 542.843, 342.767, 452.153, 389.16, 452.153, 389.16, 452.153, 389.16, 452.153, 389.16, 611, 278, 487.431, 345.699, 487.431, 342.004, 641.454, 514.022, 641.454, 514.022, 641.454, 514.022, 641.454, 514.022, 641.454, 514.022, 641.454, 514.022, 890.277, 714.679, 487.31, 447.265, 487.31, 468.386, 395.02, 468.386, 395.02, 468.386, 395.02, 242.493, 305.094, 578.623, 514.022, 763.18, 754.254, 657.853, 529.438, 667, 500, 487.431, 335.162, 395.011, 395.011, 333, 380.852, 223.14, 320.792, 312.004, 450.186, 469.227, 316.886, 494.129, 578.623, 252.594, 488.549, 622.91, 252.165, 654.343, 487.177, 664.144, 274.206, 578.623, 543.952, 415.302, 564.539, 488.284, 468.386, 622.906, 656.391, 252.104, 519.54, 572.76, 854.975, 644.378, 491.365, 654.438, 623.384, 516.605, 458.796, 487.431, 487.31, 759.845, 519.046, 750.393, 664.285, 252.104, 487.31, 564.631, 455.098, 525.224, 274.206, 541.695, 564.631, 527.564, 445.8, 523.752, 455.098, 347.37, 525.224, 558.097, 274.206, 454.59, 462.716, 538.229, 448.73, 376.164, 513.043, 552.797, 509.007, 410.369, 531.713, 387.184, 541.695, 653.467, 426.35, 707.965, 696.457, 274.206, 541.695, 513.043, 541.695, 696.457, 488.284, 667, 843, 544, 708, 667, 278, 278, 500, 1066, 982, 844, 589, 641.305, 639, 724, 667, 651, 667, 544, 704, 667, 917, 614, 715, 715, 589, 686, 833, 722, 778, 725, 667, 722, 611, 639, 795, 667, 727, 673, 920, 923, 805, 886, 651, 694, 1022, 682, 556, 562, 522, 493, 553, 556, 688, 465, 556, 556, 472, 564, 686, 550, 556, 556, 556, 500, 833, 500, 835, 500, 572, 518, 830, 851, 621, 736, 526, 492, 752, 534, 477.409, 556, 556, 378, 496, 500, 222, 222, 222, 910, 828, 556, 472, 513.771, 500, 556, 778, 556, 492, 339, 890.277, 714.679, 890.277, 714.679, 890.277, 714.679, 487.31, 447.265, 333, 333, 497.909, 905.27, 1000, 497.827, 249.324, 249.324, 249.324, 249.324, 418.448, 418.448, 418.448, 497.909, 497.909, 497.907, 689.94, 1038.09, 188, 354, 338.861, 338.861, 557.615, 498.035, 336.442, 357.182, 459.345, 506.699, 912.801, 506.699, 885, 323, 1083, 705.08, 768, 738.648, 665.54, 704.113, 704.113, 645.516, 905.72, 905.275, 905.675, 905.275, 1288.09, 777.345, 472.17, 532.562, 612, 799.084, 541.096, 498.059, 498.201, 853.162, 683.587, 701.902, 365.823, 498.201, 498.201, 498.059, 498.201, 498.201, 875.48, 498.059, 540.036, 540.036, 499.65, 500, 499.65, 499.65, 499.65, 499.65, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 353.511, 353.511, 1000, 990, 990, 990, 990, 510.598, 549.803, 604, 604, 604, 353.511, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 529.295, 529.295, 333];
+const CalibriBoldItalicWidths = [278, 325.677, 438.365, 497.909, 506.699, 728.873, 704.427, 233.602, 311.515, 311.515, 497.842, 498.059, 257.967, 333, 267.253, 434.344, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 506.699, 275.874, 275.874, 498.059, 498.059, 498.059, 463.498, 898.346, 605.816, 560.416, 518.432, 630.227, 487.797, 459.105, 637.345, 630.71, 266.763, 330.965, 546.749, 422.965, 874.017, 656.096, 668.598, 532.233, 677.389, 562.857, 465.339, 495.246, 652.681, 591.316, 906.882, 550.789, 519.54, 478.15, 324.698, 425.062, 324.698, 498.059, 497.909, 300.286, 527.688, 527.971, 411.507, 527.971, 491.076, 316.4, 527.971, 527.482, 245.755, 255.526, 479.85, 245.755, 803.567, 527.482, 527.482, 527.971, 527.971, 351.905, 393.937, 346.673, 527.482, 469.108, 745.277, 459.345, 470.087, 397.46, 343.608, 475.462, 343.608, 498.059, 325.677, 497.909, 506.699, 497.909, 506.699, 498.428, 497.909, 414.542, 834.682, 440.777, 538.425, 498.059, 506.96, 389.96, 342.368, 498.201, 337.882, 335.93, 300.776, 576, 597.494, 278, 303.216, 252.434, 434.781, 538.425, 657.726, 690.927, 701.669, 463.498, 605.816, 605.816, 605.816, 605.816, 605.816, 605.816, 775.39, 518.432, 487.797, 487.797, 487.797, 487.797, 266.763, 266.763, 266.763, 266.763, 639.013, 656.096, 668.598, 668.598, 668.598, 668.598, 668.598, 498.059, 677.389, 652.681, 652.681, 652.681, 652.681, 519.54, 532.233, 554.831, 527.688, 527.688, 527.688, 527.688, 527.688, 527.688, 763.535, 411.507, 491.076, 491.076, 491.076, 491.076, 245.755, 245.755, 245.755, 245.755, 536.764, 527.482, 527.482, 527.482, 527.482, 527.482, 527.482, 498.201, 544.089, 527.482, 527.482, 527.482, 527.482, 470.087, 527.971, 470.087, 605.816, 527.688, 605.816, 527.688, 605.816, 527.688, 518.432, 411.507, 518.432, 411.507, 518.432, 411.507, 518.432, 411.507, 630.227, 588.581, 639.013, 566.556, 487.797, 491.076, 487.797, 491.076, 487.797, 491.076, 487.797, 491.076, 487.797, 491.076, 637.345, 527.971, 637.345, 527.971, 637.345, 527.971, 778, 611, 630.71, 527.482, 657.561, 536.275, 266.763, 245.755, 266.763, 245.755, 266.763, 245.755, 266.763, 245.755, 266.763, 245.755, 597.972, 501.329, 330.965, 255.526, 722, 556, 479.85, 422.965, 245.755, 611, 278, 430.291, 306.156, 561.668, 422.358, 432.729, 263.83, 656.096, 527.482, 722, 611, 656.096, 527.482, 615.294, 637.079, 527.482, 668.598, 527.482, 668.598, 527.482, 668.598, 527.482, 874.02, 817.023, 562.857, 351.905, 722, 389, 562.857, 351.905, 465.339, 393.937, 465.339, 393.937, 465.339, 393.937, 465.339, 393.937, 611, 333, 495.246, 363.278, 495.246, 354.485, 652.681, 527.482, 652.681, 527.482, 652.681, 527.482, 652.681, 527.482, 652.681, 527.482, 652.681, 527.482, 906.882, 745.277, 519.54, 470.087, 519.54, 478.15, 397.46, 478.15, 397.46, 478.15, 397.46, 258.457, 316.32, 605.816, 527.688, 775.39, 763.535, 677.389, 544.089, 667, 556, 495.246, 346.673, 401.358, 401.358, 333, 384.758, 233.393, 327.629, 315.421, 444.325, 485.827, 316.886, 494.129, 605.816, 267.572, 487.788, 631.029, 266.521, 668.271, 519.433, 680.531, 286.307, 605.816, 560.416, 409.761, 577.302, 487.797, 478.15, 630.71, 672.511, 266.763, 546.749, 593.757, 874.017, 656.096, 492.021, 668.598, 631.057, 532.233, 469.463, 495.246, 519.54, 801.014, 550.789, 807.993, 680.868, 266.763, 519.54, 584.362, 457.981, 534.808, 286.307, 548.052, 584.362, 542.822, 467.157, 532.408, 457.981, 364.479, 534.808, 570.215, 286.307, 480.047, 486.194, 553.687, 471.06, 385.506, 527.482, 579.169, 529.865, 406.565, 544.785, 392.873, 548.052, 699.6, 450.967, 737.844, 717.365, 286.307, 548.052, 527.482, 548.052, 717.365, 487.797, 667, 886, 614, 719, 667, 278, 278, 556, 1094, 1042, 854, 622, 651.637, 677, 719, 722, 708, 722, 614, 722, 667, 927, 643, 719, 719, 615, 687, 833, 722, 778, 719, 667, 722, 611, 677, 781, 667, 729, 708, 979, 989, 854, 1000, 708, 719, 1042, 729, 556, 619, 604, 534, 618, 556, 736, 510, 611, 611, 507, 622, 740, 604, 611, 611, 611, 556, 889, 556, 885, 556, 646, 583, 889, 935, 707, 854, 594, 552, 865, 589, 491.076, 556, 611, 469, 563, 556, 278, 278, 278, 969, 906, 611, 507, 527.227, 556, 611, 778, 611, 575, 467, 906.882, 745.277, 906.882, 745.277, 906.882, 745.277, 519.54, 470.087, 333, 333, 497.909, 905.27, 1000, 498.804, 257.967, 257.967, 257.967, 249.663, 435.06, 435.06, 435.06, 497.909, 497.909, 497.907, 710.94, 1061.52, 240, 479, 344.229, 344.229, 586.913, 498.035, 380.877, 368.169, 463.737, 506.699, 919.919, 506.699, 885, 516, 1146, 720.21, 768, 738.648, 696.298, 738.299, 738.299, 679.702, 905.254, 905.275, 905.27, 905.275, 1310.7, 768.555, 472.17, 536.958, 612, 781.998, 550.379, 498.059, 498.201, 838.017, 683.587, 701.495, 375.591, 498.201, 498.201, 497.625, 498.201, 498.201, 875.48, 498.059, 540.036, 540.036, 499.65, 500, 499.65, 499.65, 499.65, 499.65, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 353.511, 353.511, 1000, 990, 990, 990, 990, 533.54, 549.803, 604, 604, 604, 353.511, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 554.342, 554.342, 333];
+const HelveticaRegularWidths = [278.167, 278.167, 355.021, 555.85, 555.85, 888.84, 667.007, 191.082, 332.993, 332.993, 388.841, 584.018, 278.167, 332.993, 278.167, 278.167, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 278.167, 278, 584.018, 584.018, 584.018, 555.85, 1014.868, 667.007, 667.007, 721.834, 721.834, 667.007, 611.159, 778.171, 721.834, 278.167, 500, 667.007, 555.85, 832.992, 721.834, 778.171, 667.007, 778.171, 721.834, 667.007, 611.159, 721.834, 667.007, 944.151, 667.007, 667.007, 611.159, 278.167, 278.167, 278.167, 468.761, 555.85, 332.993, 555.85, 555.85, 500, 555.85, 555.85, 278.167, 555.85, 555.85, 221.831, 221.831, 500, 221.831, 832.992, 555.85, 555.85, 555.85, 555.85, 332.993, 500, 278.167, 555.85, 500, 721.834, 500, 500, 500, 334.017, 260.234, 334.017, 584.018, 332.993, 555.85, 555.85, 555.85, 555.85, 260.234, 555.85, 332.993, 737.184, 369.882, 555.85, 584.018, 737.184, 332.85, 400.096, 584.185, 333, 333, 332.993, 576, 536.893, 278.167, 332.993, 333, 364.766, 555.85, 834.017, 834.017, 834.017, 611.159, 667.007, 667.007, 667.007, 667.007, 667.007, 667.007, 1000, 721.834, 667.007, 667.007, 667.007, 667.007, 278.167, 278.167, 278.167, 278.167, 721.834, 721.834, 778.171, 778.171, 778.171, 778.171, 778.171, 584.018, 778.171, 721.834, 721.834, 721.834, 721.834, 667.007, 667.007, 611.159, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 888.84, 500, 555.85, 555.85, 555.85, 555.85, 278.167, 278.167, 278.167, 278.167, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 584.185, 611.159, 555.85, 555.85, 555.85, 555.85, 500, 555.85, 500, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 721.834, 500, 721.834, 500, 721.834, 500, 721.834, 500, 721.834, 643.265, 721.834, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 778.171, 555.85, 778.171, 555.85, 778.171, 555.85, 778.171, 555.85, 721.834, 555.85, 721.834, 555.85, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 221.831, 278.167, 278.167, 735.14, 444.151, 500, 221.831, 667.007, 500, 500, 555.85, 221.831, 555.85, 221.831, 555.85, 299.51, 555.85, 334.017, 555.85, 221.831, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 603.994, 722.855, 555.85, 778.171, 555.85, 778.171, 555.85, 778.171, 555.85, 1000, 944.151, 721.834, 332.993, 721.834, 332.993, 721.834, 332.993, 667.007, 500, 667.007, 500, 667.007, 500, 667.007, 500, 611.159, 278.167, 611.159, 316.999, 611.159, 278.167, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 944.151, 721.834, 667.007, 500, 667.007, 611.159, 500, 611.159, 500, 611.159, 500, 221.831, 555.85, 667.007, 555.85, 1000, 888.84, 778.171, 611.159, 667.007, 500, 611.159, 278.167, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 666.52, 278, 783.82, 838.109, 384.211, 773.59, 854.53, 751.556, 221.831, 667.007, 667.007, 551.22, 612.028, 667.007, 611.159, 721.834, 778.171, 278.167, 667.007, 668.033, 832.992, 721.834, 650.098, 778.171, 721.834, 667.007, 617.833, 611.159, 667.007, 798.152, 667.007, 834.549, 748, 278.167, 667.007, 577.873, 446.201, 555.85, 221.831, 547.126, 577.873, 574.805, 500, 557.362, 446.201, 441.084, 555.85, 555.85, 221.831, 500, 500, 555.834, 500, 448.246, 555.85, 690.055, 569.154, 482, 616.815, 394.98, 547.126, 647.566, 525.1, 713.107, 781.242, 221.831, 547.126, 555.85, 547.126, 781.242, 667.007, 666.52, 865.251, 542.499, 719.252, 667.007, 278.167, 278.167, 500, 1056.873, 1009.748, 854, 583.478, 718.83, 634.746, 719.252, 667.007, 655.751, 667.007, 542.499, 676.756, 667.007, 922.658, 603.994, 719.252, 719.252, 583.478, 655.751, 832.992, 721.834, 778.171, 719.252, 667.007, 721.834, 611.159, 634.746, 759.749, 667.007, 740.252, 667.494, 917.495, 938.497, 792.499, 884.743, 655.751, 719.252, 1009.748, 721.834, 555.85, 573.246, 530.75, 365.256, 582.504, 555.85, 669.054, 457.505, 559.408, 559.408, 438.499, 582.504, 688.502, 551.752, 555.85, 542.499, 555.85, 500, 457.991, 500, 823.247, 500, 573.246, 521.005, 801.751, 823.247, 625, 719.252, 521.005, 509.745, 750, 542.499, 555.85, 555.85, 555.85, 365.256, 509.745, 500, 221.831, 278.167, 221.831, 905.746, 812.503, 555.85, 438.499, 559.408, 500, 551.752, 778, 556, 489.23, 410.868, 944.151, 721.834, 944.151, 721.834, 944.151, 721.834, 667.007, 500, 333, 333, 555.85, 1000, 1000, 551.752, 221.831, 221.831, 221.831, 221.831, 332.993, 332.993, 332.993, 555.85, 555.85, 349.902, 1000, 1000, 188.502, 353.996, 332.993, 332.993, 500, 332.993, 278.013, 365, 555.85, 555.85, 1094.252, 555.85, 884.743, 322.758, 1073.247, 1000, 767.931, 599.904, 834.017, 834.017, 834.017, 834.017, 1000, 500, 1000, 500, 1000, 500, 500, 475.865, 612, 995.707, 996.154, 584.018, 453.145, 713.107, 979, 719.252, 274.074, 549.17, 549.17, 582.504, 549.17, 549.17, 603.994, 584.018, 603.994, 603.994, 999.3, 1000, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 995.299, 995.299, 995.996, 603.994, 604, 353.508, 353.508, 1000, 990.257, 990.257, 990.257, 990.257, 470.866, 603.994, 603.994, 603.994, 603.994, 497.31, 1021, 1051.758, 917.495, 750, 750, 530.75, 655.751, 594.249, 509.745, 500, 750, 750, 500, 500, 333];
+const HelveticaBoldWidths = [278.167, 332.993, 473.877, 555.85, 555.85, 888.84, 721.834, 238.207, 332.993, 332.993, 388.841, 584.018, 278.167, 332.993, 278.167, 278.167, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 332.993, 333, 584.018, 584.018, 584.018, 611.159, 974.903, 721.834, 721.834, 721.834, 721.834, 667.007, 611.159, 778.171, 721.834, 278.167, 555.85, 721.834, 611.159, 832.992, 721.834, 778.171, 667.007, 778.171, 721.834, 667.007, 611.159, 721.834, 667.007, 944.151, 667.007, 667.007, 611.159, 332.993, 278.167, 332.993, 584.018, 555.85, 332.993, 555.85, 611.159, 555.85, 611.159, 555.85, 332.993, 611.159, 611.159, 278.167, 278.167, 555.85, 278.167, 888.84, 611.159, 611.159, 611.159, 611.159, 388.841, 555.85, 332.993, 611.159, 555.85, 778.171, 555.85, 555.85, 500, 388.841, 280.216, 388.841, 584.018, 332.993, 555.85, 555.85, 555.85, 555.85, 280.216, 555.85, 332.993, 737.184, 369.882, 555.85, 584.018, 737.184, 332.85, 400.096, 584.185, 333, 333, 332.993, 576, 555.85, 278.167, 332.993, 333, 364.766, 555.85, 834.017, 834.017, 834.017, 611.159, 721.834, 721.834, 721.834, 721.834, 721.834, 721.834, 1000, 721.834, 667.007, 667.007, 667.007, 667.007, 278.167, 278.167, 278.167, 278.167, 721.834, 721.834, 778.171, 778.171, 778.171, 778.171, 778.171, 584.018, 778.171, 721.834, 721.834, 721.834, 721.834, 667.007, 667.007, 611.159, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 888.84, 555.85, 555.85, 555.85, 555.85, 555.85, 278.167, 278.167, 278.167, 278.167, 611.159, 611.159, 611.159, 611.159, 611.159, 611.159, 611.159, 584.185, 611.159, 611.159, 611.159, 611.159, 611.159, 555.85, 611.159, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 743.259, 721.834, 611.159, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 778.171, 611.159, 778.171, 611.159, 778.171, 611.159, 778.171, 611.159, 721.834, 611.159, 721.834, 611.159, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 785.33, 555.85, 555.85, 278.167, 721.834, 555.85, 555.85, 611.159, 278.167, 611.159, 278.167, 611.159, 399.738, 611.159, 478.995, 611.159, 278.167, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 707.504, 722.855, 611.159, 778.171, 611.159, 778.171, 611.159, 778.171, 611.159, 1000, 944.151, 721.834, 388.841, 721.834, 388.841, 721.834, 388.841, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 611.159, 332.993, 611.159, 388.996, 611.159, 332.993, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 944.151, 778.171, 667.007, 555.85, 667.007, 611.159, 500, 611.159, 500, 611.159, 500, 278.167, 555.85, 721.834, 555.85, 1000, 888.84, 778.171, 611.159, 667.007, 555.85, 611.159, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 465.158, 721.834, 333, 852.974, 906.236, 474.37, 825.297, 926.75, 838.109, 278.167, 721.834, 721.834, 600.928, 612.214, 667.007, 611.159, 721.834, 778.171, 278.167, 721.834, 667.007, 832.992, 721.834, 644.444, 778.171, 721.834, 667.007, 599.904, 611.159, 667.007, 821.197, 667.007, 808.919, 802, 278.167, 667.007, 615.252, 450.829, 611.159, 278.167, 581.971, 615.252, 609.646, 555.85, 605.558, 475.39, 459.549, 611.159, 541.471, 278.167, 558.385, 555.85, 611.186, 555.85, 444.689, 611.159, 766.375, 619.347, 520, 683.918, 445.71, 581.971, 714.671, 576.317, 752.586, 845.27, 278.167, 581.971, 611.159, 581.971, 845.27, 667.007, 669.054, 884.743, 567.108, 710.573, 667.007, 278.167, 276.121, 555.85, 1094.252, 1062.499, 875, 609.646, 718.83, 621.932, 719.252, 721.834, 719.252, 721.834, 567.108, 711.601, 667.007, 904.19, 625.537, 719.252, 719.252, 609.646, 702.337, 832.992, 721.834, 778.171, 719.252, 667.007, 721.834, 611.159, 621.932, 854.487, 667.007, 729.533, 703.366, 1005.121, 1018.959, 870.374, 979, 719.252, 710.573, 1030.753, 719.252, 555.85, 618.321, 615.252, 417.496, 635.235, 555.85, 709.014, 496.93, 615.252, 615.252, 499.51, 634.746, 740.252, 603.994, 611.159, 603.994, 611.159, 555.85, 490.255, 555.85, 875, 555.85, 615.252, 581.436, 832.5, 844.253, 728.993, 854, 615.252, 551.752, 854, 582.504, 555.85, 555.85, 611.159, 417.496, 551.752, 555.85, 278.167, 280.75, 278.167, 969.252, 905.746, 611.159, 499.51, 615.252, 555.85, 603.994, 778, 611, 487.185, 447.224, 944.151, 778.171, 944.151, 778.171, 944.151, 778.171, 667.007, 555.85, 333, 333, 555.85, 1000, 1000, 551.752, 278.167, 278.167, 278.167, 278.167, 500, 500, 500, 555.85, 555.85, 349.902, 1000, 1000, 240.254, 478.995, 332.993, 332.993, 603.994, 332.993, 278.013, 396, 555.85, 555.85, 1094.252, 555.85, 884.743, 489.23, 1115.256, 1000, 767.931, 599.904, 834.017, 834.017, 834.017, 834.017, 1000, 500, 1000, 500, 1000, 500, 500, 493.862, 612, 995.707, 996.154, 584.018, 549.17, 713.107, 979, 718.83, 274.074, 549.17, 549.17, 582.504, 549.17, 549.17, 603.994, 584.018, 603.994, 603.994, 999.3, 1000, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 995.299, 995.299, 995.996, 603.994, 604, 353.508, 353.508, 1000, 990.257, 990.257, 990.257, 990.257, 493.862, 603.994, 603.994, 603.994, 603.994, 497.31, 1021, 1051.758, 917.495, 750, 750, 530.75, 655.751, 594.249, 509.745, 500, 750, 750, 611, 611, 333];
+const HelveticaItalicWidths = [278.167, 278.167, 355.021, 555.85, 555.85, 888.84, 667.007, 191.082, 332.993, 332.993, 388.841, 584.018, 278.167, 332.993, 278.167, 278.167, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 278.167, 278, 584.018, 584.018, 584.018, 555.85, 1014.868, 667.007, 667.007, 721.834, 721.834, 667.007, 611.159, 778.171, 721.834, 278.167, 500, 667.007, 555.85, 832.992, 721.834, 778.171, 667.007, 778.171, 721.834, 667.007, 611.159, 721.834, 667.007, 944.151, 667.007, 667.007, 611.159, 278.167, 278.167, 278.167, 468.761, 555.85, 332.993, 555.85, 555.85, 500, 555.85, 555.85, 278.167, 555.85, 555.85, 221.831, 221.831, 500, 221.831, 832.992, 555.85, 555.85, 555.85, 555.85, 332.993, 500, 278.167, 555.85, 500, 721.834, 500, 500, 500, 334.017, 260.234, 334.017, 584.018, 332.993, 555.85, 555.85, 555.85, 555.85, 260.234, 555.85, 332.993, 737.184, 369.882, 555.85, 584.018, 737.184, 332.85, 400.096, 584.185, 333, 333, 332.993, 576, 536.893, 278.167, 332.993, 333, 364.766, 555.85, 834.017, 834.017, 834.017, 611.159, 667.007, 667.007, 667.007, 667.007, 667.007, 667.007, 1000, 721.834, 667.007, 667.007, 667.007, 667.007, 278.167, 278.167, 278.167, 278.167, 721.834, 721.834, 778.171, 778.171, 778.171, 778.171, 778.171, 584.018, 778.171, 721.834, 721.834, 721.834, 721.834, 667.007, 667.007, 611.159, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 888.84, 500, 555.85, 555.85, 555.85, 555.85, 278.167, 278.167, 278.167, 278.167, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 584.185, 611.159, 555.85, 555.85, 555.85, 555.85, 500, 555.85, 500, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 721.834, 500, 721.834, 500, 721.834, 500, 721.834, 500, 721.834, 643, 721.834, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 778.171, 555.85, 778.171, 555.85, 778.171, 555.85, 778.171, 555.85, 721.834, 555.85, 721.834, 555.85, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 221.831, 278.167, 278.167, 732.604, 444.151, 500, 221.831, 667.007, 500, 500, 555.85, 221.831, 555.85, 221.831, 555.85, 298.734, 555.85, 400.096, 555.85, 221.831, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 615.252, 722.855, 555.85, 778.171, 555.85, 778.171, 555.85, 778.171, 555.85, 1000, 944.151, 721.834, 332.993, 721.834, 332.993, 721.834, 332.993, 667.007, 500, 667.007, 500, 667.007, 500, 667.007, 500, 611.159, 278.167, 611.159, 316.996, 611.159, 278.167, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 944.151, 721.834, 667.007, 500, 667.007, 611.159, 500, 611.159, 500, 611.159, 500, 221.831, 555.85, 667.007, 555.85, 1000, 888.84, 778.171, 611.159, 667.007, 500, 611.159, 278.167, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 667.007, 278, 789.426, 845.805, 389.327, 794.056, 864.766, 775.101, 221.831, 667.007, 667.007, 569.687, 612.093, 667.007, 611.159, 721.834, 778.171, 278.167, 667.007, 667.007, 832.992, 721.834, 647.566, 778.171, 725.392, 667.007, 600.39, 611.159, 667.007, 837.084, 667.007, 831.432, 761, 278.167, 667.007, 569.687, 438.548, 554.822, 221.831, 550.198, 569.687, 570.709, 500, 556.334, 438.548, 462.62, 554.822, 541.518, 221.831, 500, 491.813, 556.149, 500, 447.224, 555.85, 670.08, 573.246, 486, 602.97, 373.978, 550.198, 651.654, 546.104, 728.459, 779.195, 221.831, 550.198, 555.85, 550.198, 779.195, 667.007, 667.007, 843.228, 544.054, 708.481, 667.007, 278.167, 278.167, 500, 1066.085, 981.578, 843.764, 588.647, 714.671, 638.84, 724.369, 667.007, 651.124, 667.007, 544.054, 703.901, 667.007, 917.009, 614.233, 714.671, 714.671, 588.647, 686.453, 832.992, 721.834, 778.171, 725.392, 667.007, 721.834, 611.159, 638.84, 795.079, 667.007, 726.949, 672.664, 919.586, 923.148, 804.823, 885.77, 651.124, 694.153, 1021.54, 682.361, 555.85, 562.5, 522.026, 492.837, 553.265, 555.85, 688.014, 465.158, 555.85, 555.85, 471.83, 564.034, 686.453, 549.709, 555.85, 549.851, 555.85, 500, 374, 500, 834.549, 500, 572.223, 518.425, 829.925, 850.923, 620.907, 736.162, 526.121, 492.3, 752.045, 533.818, 555.85, 555.85, 555.85, 378.072, 496.397, 500, 221.831, 221.831, 221.831, 909.845, 828.364, 555.85, 471.83, 555.576, 500, 555.85, 778, 556, 491.813, 338.644, 944.151, 721.834, 944.151, 721.834, 944.151, 721.834, 667.007, 500, 333, 333, 555.85, 1000, 1000, 551.752, 221.831, 221.831, 221.831, 221.831, 332.993, 332.993, 332.993, 555.85, 555.85, 349.902, 1000, 1000, 188.502, 353.996, 332.993, 332.993, 500, 332.993, 278.013, 365, 555.85, 555.85, 1094.252, 555.85, 888.744, 322.758, 1082.989, 1000, 767.931, 599.904, 834.017, 834.017, 834.017, 834.017, 1000.49, 500, 1000.445, 500, 1000, 500, 500, 475.865, 612, 995.707, 996.154, 584.018, 453.145, 713.107, 979, 719.252, 274.074, 549.17, 549.17, 584.018, 549.17, 549.17, 603.994, 584.018, 603.994, 603.994, 999.3, 1000, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 995.299, 995.299, 995.996, 603.994, 604, 353.508, 353.508, 1000, 990.257, 990.257, 990.257, 990.257, 470.866, 603.994, 603.994, 603.994, 603.994, 497.31, 1021, 1051.758, 917.495, 750, 750, 530.75, 655.751, 594.249, 509.745, 500, 750, 750, 500, 500, 333];
+const HelveticaBoldItalicWidths = [278.167, 332.993, 473.877, 555.85, 555.85, 888.84, 721.834, 238.207, 332.993, 332.993, 388.841, 584.018, 278.167, 332.993, 278.167, 278.167, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 332.993, 333, 584.018, 584.018, 584.018, 611.159, 974.903, 721.834, 721.834, 721.834, 721.834, 667.007, 611.159, 778.171, 721.834, 278.167, 555.85, 721.834, 611.159, 832.992, 721.834, 778.171, 667.007, 778.171, 721.834, 667.007, 611.159, 721.834, 667.007, 944.151, 667.007, 667.007, 611.159, 332.993, 278.167, 332.993, 584.018, 555.85, 332.993, 555.85, 611.159, 555.85, 611.159, 555.85, 332.993, 611.159, 611.159, 278.167, 278.167, 555.85, 278.167, 888.84, 611.159, 611.159, 611.159, 611.159, 388.841, 555.85, 332.993, 611.159, 555.85, 778.171, 555.85, 555.85, 500, 388.841, 280.216, 388.841, 584.018, 332.993, 555.85, 555.85, 555.85, 555.85, 280.216, 555.85, 332.993, 737.184, 369.882, 555.85, 584.018, 737.184, 332.85, 400.096, 584.185, 333, 333, 332.993, 576, 555.85, 278.167, 332.993, 333, 364.766, 555.85, 834.017, 834.017, 834.017, 611.159, 721.834, 721.834, 721.834, 721.834, 721.834, 721.834, 1000, 721.834, 667.007, 667.007, 667.007, 667.007, 278.167, 278.167, 278.167, 278.167, 721.834, 721.834, 778.171, 778.171, 778.171, 778.171, 778.171, 584.018, 778.171, 721.834, 721.834, 721.834, 721.834, 667.007, 667.007, 611.159, 555.85, 555.85, 555.85, 555.85, 555.85, 555.85, 888.84, 555.85, 555.85, 555.85, 555.85, 555.85, 278.167, 278.167, 278.167, 278.167, 611.159, 611.159, 611.159, 611.159, 611.159, 611.159, 611.159, 584.185, 611.159, 611.159, 611.159, 611.159, 611.159, 555.85, 611.159, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 555.85, 721.834, 743.256, 721.834, 611.159, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 778.171, 611.159, 778.171, 611.159, 778.171, 611.159, 778.171, 611.159, 721.834, 611.159, 721.834, 611.159, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 278.167, 781.773, 555.85, 555.85, 278.167, 721.834, 555.85, 555.85, 611.159, 278.167, 611.159, 278.167, 611.159, 400.004, 611.159, 478.995, 611.159, 278.167, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 707.504, 722.855, 611.159, 778.171, 611.159, 778.171, 611.159, 778.171, 611.159, 1000, 944.151, 721.834, 388.841, 721.834, 388.841, 721.834, 388.841, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 667.007, 555.85, 611.159, 332.993, 611.159, 388.996, 611.159, 332.993, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 721.834, 611.159, 944.151, 778.171, 667.007, 555.85, 667.007, 611.159, 500, 611.159, 500, 611.159, 500, 278.167, 555.85, 721.834, 555.85, 1000, 888.84, 778.171, 611.159, 667.007, 555.85, 611.159, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 332.993, 721.834, 333, 854, 906.236, 472.853, 843.764, 929.823, 846.831, 278.167, 721.834, 721.834, 610.134, 611.65, 667.007, 611.159, 721.834, 778.171, 278.167, 721.834, 667.007, 832.992, 721.834, 656.777, 778.171, 718.23, 667.007, 589.67, 611.159, 667.007, 821.737, 667.007, 829.39, 781, 278.167, 667.007, 619.882, 479.484, 611.159, 278.167, 590.693, 619.882, 621.397, 555.85, 609.646, 479.484, 492.3, 611.159, 558.385, 278.167, 566.079, 555.85, 610.972, 555.85, 450.293, 611.159, 712.085, 604.534, 532, 664.425, 409.311, 590.693, 704.387, 578.364, 773.054, 833.525, 278.167, 590.693, 611.159, 590.693, 833.525, 667.007, 667.007, 886.257, 614.233, 719.252, 667.007, 278.167, 278.167, 555.85, 1093.759, 1042.01, 854.487, 621.932, 718.763, 676.756, 718.763, 721.834, 707.993, 721.834, 614.233, 721.834, 667.007, 926.75, 643.424, 718.763, 718.763, 615.252, 686.986, 832.992, 721.834, 778.171, 718.763, 667.007, 721.834, 611.159, 676.756, 781.242, 667.007, 728.993, 707.993, 979, 989.227, 854, 1000, 707.993, 719.252, 1042.01, 728.993, 555.85, 618.858, 603.994, 534.31, 617.833, 555.85, 735.669, 509.745, 611.159, 611.159, 507.162, 621.932, 740.252, 603.994, 611.159, 611.159, 611.159, 555.85, 408.922, 555.85, 885.23, 555.85, 646.006, 582.994, 888.84, 934.944, 706.972, 854, 594.249, 552.243, 865.251, 589.135, 555.85, 555.85, 611.159, 468.761, 563.011, 555.85, 278.167, 278.167, 278.167, 968.758, 906.236, 611.159, 507.162, 610.86, 555.85, 611.159, 778, 611, 574.805, 467.205, 944.151, 778.171, 944.151, 778.171, 944.151, 778.171, 667.007, 555.85, 333, 333, 555.85, 1000, 1000, 551.752, 278.167, 278.167, 278.167, 278.167, 500, 500, 500, 555.85, 555.85, 349.902, 1000, 1000, 240.254, 478.995, 332.993, 332.993, 603.994, 332.993, 278.013, 396, 555.85, 555.85, 1104, 555.85, 884.743, 515.886, 1146, 1000, 767.931, 599.904, 834.017, 834.017, 834.017, 834.017, 999.979, 500, 1000, 500, 1000.49, 500, 500, 493.862, 612, 995.707, 996.154, 584.018, 549.17, 713.107, 979, 718.83, 274.074, 549.17, 549.17, 582.504, 549.17, 549.17, 603.994, 584.018, 603.994, 603.994, 999.3, 1000, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 999.3, 995.299, 995.299, 995.996, 603.994, 604, 353.508, 353.508, 1000, 990.257, 990.257, 990.257, 990.257, 493.862, 603.994, 603.994, 603.994, 603.994, 497.31, 1021, 1051.758, 917.495, 750, 750, 530.75, 655.751, 594.249, 509.745, 500, 750, 750, 611, 611, 333];
+const MyriadProRegularWidths = [212.128, 230.14, 337.019, 496.864, 512.86, 791.859, 605.009, 188.082, 283.992, 283.992, 414.83, 596.019, 207.124, 306.993, 207.124, 343.208, 512.86, 512.86, 512.86, 512.86, 512.86, 512.86, 512.86, 512.86, 512.86, 512.86, 207.124, 207.124, 596.019, 596.019, 596.019, 405.891, 736.9, 612.006, 542.004, 579.867, 665.843, 492.006, 487.126, 646.137, 651.85, 239.144, 370, 542.004, 471.872, 803.995, 657.85, 689.152, 532.006, 689.152, 537.876, 493.006, 497.128, 646.847, 558.006, 846.136, 571.005, 541.004, 553.144, 284.172, 341.206, 284.172, 595.696, 499.861, 299.993, 481.869, 568.844, 448, 563.845, 500.861, 292.175, 558.847, 554.849, 233.824, 242.817, 469, 235.822, 833.991, 554.849, 548.85, 568.844, 562.844, 326.993, 396, 331.201, 550.851, 481, 735.826, 463, 471, 428, 284.014, 239.216, 284.014, 596.019, 229.993, 512.86, 512.86, 512.86, 512.86, 239.216, 518.859, 299.993, 677.17, 345.891, 418.885, 596.019, 419.102, 299.868, 318.076, 596.187, 333, 333, 299.993, 576, 511.895, 207.124, 299.993, 333, 354.773, 418.885, 759.015, 759.015, 759.015, 406.107, 612.006, 612.006, 612.006, 612.006, 612.006, 612.006, 788, 579.867, 492.006, 492.006, 492.006, 492.006, 239.144, 239.144, 239.144, 239.144, 670.846, 657.85, 689.152, 689.152, 689.152, 689.152, 689.152, 596.019, 689.152, 646.847, 646.847, 646.847, 646.847, 541.004, 531.005, 548.146, 481.869, 481.869, 481.869, 481.869, 481.869, 481.869, 772.861, 448, 500.861, 500.861, 500.861, 500.861, 234.143, 234.143, 234.143, 234.143, 540.855, 554.849, 548.85, 548.85, 548.85, 548.85, 548.85, 596.187, 549.142, 550.851, 550.851, 550.851, 550.851, 471, 568.844, 471, 612.006, 481.869, 612.006, 481.869, 612.006, 481.869, 579.867, 448, 579.867, 448, 579.867, 448, 579.867, 448, 665.843, 574.238, 670.846, 563.845, 492.006, 500.861, 492.006, 500.861, 492.006, 500.861, 492.006, 500.861, 492.006, 500.861, 646.137, 558.847, 646.137, 558.847, 646.137, 558.847, 778, 556, 651.85, 554.849, 656.847, 554.849, 239.144, 234.143, 239.144, 234.143, 239.144, 234.143, 239.144, 233.824, 239.144, 234.143, 609.117, 477.162, 370, 242.817, 667, 500, 469, 471.872, 235.822, 556, 222, 471.872, 244.416, 471.872, 272.013, 475.869, 241.818, 657.85, 554.849, 722, 556, 657.85, 554.849, 554.997, 657.865, 554.849, 689.152, 548.85, 689.152, 548.85, 689.152, 548.85, 894, 863.137, 537.876, 326.993, 722, 333, 537.876, 326.993, 493.006, 396, 493.006, 396, 667, 500, 493.006, 396, 611, 278, 497.128, 339, 497.128, 331.201, 646.847, 550.851, 646.847, 550.851, 646.847, 550.851, 646.847, 550.851, 646.847, 550.851, 646.847, 550.851, 846.136, 735.826, 541.004, 471, 541.004, 553.144, 428, 553.144, 428, 553.144, 428, 222, 512.86, 612.006, 481.869, 788, 772.861, 689.152, 549.142, 667, 500, 497.128, 331.201, 299.993, 299.993, 299.993, 299.993, 299.993, 299.993, 299.993, 299.993, 299.993, 300.992, 345.99, 614.56, 217.132, 560.874, 722.096, 309.17, 727.614, 705.614, 741.562, 235.822, 612.006, 542.004, 451.181, 620.031, 492.006, 553.144, 651.85, 689.152, 239.144, 542.004, 609.029, 803.995, 657.85, 540.079, 689.152, 633.851, 532.006, 551.855, 497.128, 588.007, 718.136, 571.005, 684.633, 705.416, 239.144, 588.007, 550.88, 440.198, 554.849, 235.822, 524.119, 550.88, 559.809, 464, 546.35, 440.198, 409.076, 554.849, 533.855, 235.822, 493, 472, 552.833, 469, 433.238, 548.85, 555.05, 563.151, 482, 553.832, 412.98, 524.119, 641.565, 457.086, 655.097, 694.215, 235.822, 524.119, 548.85, 524.119, 694.215, 667, 667, 865, 542, 719, 667, 278, 278, 500, 1057, 1010, 854, 583, 722, 635, 719, 667, 656, 667, 542, 677, 667, 923, 604, 719, 719, 583, 656, 833, 722, 778, 719, 667, 722, 611, 635, 760, 667, 740, 667, 917, 938, 792, 885, 656, 719, 1010, 722, 556, 573, 531, 365, 583, 556, 669, 458, 559, 559, 438, 583, 688, 552, 556, 542, 556, 500, 458, 500, 823, 500, 573, 521, 802, 823, 625, 719, 521, 510, 750, 542, 556, 556, 556, 365, 510, 500, 222, 278, 222, 906, 812, 556, 438, 559, 500, 552, 778, 556, 489, 411, 846.136, 735.826, 846.136, 735.826, 846.136, 735.826, 541.004, 471, 306.993, 333, 499.861, 1000, 1000, 552, 206.844, 206.844, 206.844, 222, 353.992, 353.992, 355.99, 499.861, 499.861, 281.922, 1000, 1156, 188, 354, 254.995, 254.995, 500, 333, 121.005, 365, 556, 556, 1094, 512.86, 885, 323, 1073, 619, 768, 816.87, 834, 834, 834, 834, 1000, 500, 1000, 500, 1000, 500, 500, 529.85, 612, 614.822, 507.078, 596.019, 562.176, 728.108, 979, 719, 316.086, 596.187, 596.187, 583, 596.187, 596.187, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 521.852, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 500, 500, 333];
+const MyriadProBoldWidths = [202.123, 267.995, 396.899, 549.851, 554.849, 879.843, 677.842, 205.177, 313.992, 313.992, 453.811, 596.019, 260.158, 321.991, 260.158, 331.201, 554.849, 554.849, 554.849, 554.849, 554.849, 554.849, 554.849, 554.849, 554.849, 554.849, 259.993, 259.993, 596.019, 596.019, 596.019, 445.12, 769.919, 655.85, 603.859, 594.863, 695.835, 534.007, 527.14, 682.15, 688.839, 285.172, 410.89, 613.859, 511.132, 845.995, 689.842, 717.153, 581.004, 717.153, 592.863, 540.003, 548.146, 681.842, 636.005, 888.144, 613.006, 603.008, 577.151, 313.992, 330.2, 313.992, 596.019, 499.861, 299.993, 527.855, 598.157, 450.877, 596.159, 527.855, 340.992, 585.155, 586.151, 274.166, 291.177, 541.85, 275.167, 859.841, 586.151, 577.151, 598.157, 595.157, 379.843, 433.88, 366.993, 583.151, 529.857, 759.165, 518.859, 522.857, 469, 313.872, 283.217, 313.872, 596.019, 267.995, 554.849, 554.849, 554.849, 554.849, 283.217, 560.848, 299.993, 677.17, 377.881, 464.872, 596.019, 459.114, 299.868, 356.088, 596.187, 333, 333, 299.993, 576, 541.85, 260.158, 299.993, 333, 385.754, 464.872, 831.014, 831.014, 831.014, 445.12, 655.85, 655.85, 655.85, 655.85, 655.85, 655.85, 868, 594.863, 534.007, 534.007, 534.007, 534.007, 285.172, 285.172, 285.172, 285.172, 703.834, 689.842, 717.153, 717.153, 717.153, 717.153, 717.153, 596.019, 717.153, 681.842, 681.842, 681.842, 681.842, 603.008, 580.01, 600.155, 527.855, 527.855, 527.855, 527.855, 527.855, 527.855, 802.856, 450.877, 527.855, 527.855, 527.855, 527.855, 274.166, 274.166, 274.166, 274.166, 574.151, 586.151, 577.151, 577.151, 577.151, 577.151, 577.151, 596.187, 577.151, 583.151, 583.151, 583.151, 583.151, 522.857, 598.157, 522.857, 655.85, 527.855, 655.85, 527.855, 655.85, 527.855, 594.863, 450.877, 594.863, 450.877, 594.863, 450.877, 594.863, 450.877, 695.835, 606.21, 703.834, 596.159, 534.007, 527.855, 534.007, 527.855, 534.007, 527.855, 534.007, 527.855, 534.007, 527.855, 682.15, 585.155, 682.15, 585.155, 682.15, 585.155, 778, 611, 688.839, 586.151, 700.838, 586.151, 285.172, 274.166, 285.172, 274.166, 285.172, 274.166, 285.172, 274.166, 285.172, 274.166, 696.295, 564.846, 410.89, 291.177, 722, 556, 541.85, 511.132, 275.167, 611, 278, 511.132, 284.811, 511.132, 353.995, 517.138, 287.174, 689.842, 586.151, 722, 611, 689.842, 586.151, 585.587, 689.865, 586.151, 717.153, 577.151, 717.153, 577.151, 717.153, 577.151, 936, 868.14, 592.863, 379.843, 722, 389, 592.863, 379.843, 540.003, 433.88, 540.003, 433.88, 667, 556, 540.003, 433.88, 611, 333, 548.146, 370.995, 548.146, 366.993, 681.842, 583.151, 681.842, 583.151, 681.842, 583.151, 681.842, 583.151, 681.842, 583.151, 681.842, 583.151, 888.144, 759.165, 603.008, 522.857, 603.008, 577.151, 469, 577.151, 469, 577.151, 469, 278, 554.849, 655.85, 527.855, 868, 802.856, 717.153, 577.151, 667, 556, 548.146, 366.993, 299.993, 299.993, 299.993, 299.993, 299.993, 299.993, 299.993, 299.993, 299.993, 302.993, 435.147, 663.843, 276.993, 641.976, 797.208, 393.306, 792.281, 775.797, 815.106, 280.168, 655.85, 603.859, 481.942, 648.229, 534.007, 577.151, 688.839, 719.152, 285.172, 613.859, 648.011, 845.995, 689.842, 574.396, 717.153, 666.846, 581.004, 577.908, 548.146, 625.006, 785.188, 613.006, 741.926, 744.224, 285.172, 625.006, 583.241, 467.822, 586.151, 280.168, 557.969, 583.241, 586.661, 514.862, 575.579, 468.383, 440.57, 586.151, 570.501, 280.168, 548.375, 517.858, 585.176, 509.858, 471.669, 577.151, 600.291, 591.331, 520, 593.931, 451.709, 557.969, 710.667, 504.276, 725.598, 733.24, 280.168, 557.969, 577.151, 557.969, 733.24, 667, 669, 885, 567, 711, 667, 278, 276, 556, 1094, 1062, 875, 610, 722, 622, 719, 722, 719, 722, 567, 712, 667, 904, 626, 719, 719, 610, 702, 833, 722, 778, 719, 667, 722, 611, 622, 854, 667, 730, 703, 1005, 1019, 870, 979, 719, 711, 1031, 719, 556, 618, 615, 417, 635, 556, 709, 497, 615, 615, 500, 635, 740, 604, 611, 604, 611, 556, 490, 556, 875, 556, 615, 581, 833, 844, 729, 854, 615, 552, 854, 583, 556, 556, 611, 417, 552, 556, 278, 281, 278, 969, 906, 611, 500, 615, 556, 604, 778, 611, 487, 447, 888.144, 759.165, 888.144, 759.165, 888.144, 759.165, 603.008, 522.857, 321.991, 333, 499.861, 1000, 1000, 552, 260.158, 260.158, 260.158, 278, 454, 454, 459, 523.858, 523.858, 337.904, 1000, 1285, 240, 479, 269.993, 269.993, 604, 333, 125.006, 396, 556, 556, 1094, 554.849, 885, 489, 1115, 650, 768, 816.87, 834, 834, 834, 834, 1000, 500, 1000, 500, 1000, 500, 500, 578.835, 612, 662.803, 543.085, 596.019, 589.187, 752.115, 979, 722, 358.096, 596.187, 596.187, 583, 596.187, 596.187, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 573.835, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 611, 611, 333];
+const MyriadProItalicWidths = [182.109, 236.142, 304.018, 491.865, 491.865, 772.861, 589.008, 166.071, 283.992, 283.992, 413.83, 596.019, 211.127, 306.993, 211.127, 326.197, 491.865, 491.865, 491.865, 491.865, 491.865, 491.865, 491.865, 491.865, 491.865, 491.865, 211.127, 211.127, 596.019, 596.019, 596.019, 383.896, 719.899, 568.004, 519.006, 554.871, 646.847, 470.008, 465.124, 623.131, 626.855, 233.142, 364, 515.004, 441.881, 779.996, 631.851, 668.146, 507.007, 668.146, 522.88, 466.006, 474.124, 620.855, 539.009, 829.134, 521.007, 517.005, 523.138, 284.172, 329.199, 284.172, 595.696, 499.861, 382.99, 521.856, 524.858, 423, 524.858, 452.879, 283.171, 523.858, 533.855, 228.827, 226.829, 456, 228.827, 807.993, 533.855, 521.856, 524.858, 524.858, 317.992, 373, 313.189, 525.854, 455, 706.838, 441, 441, 415, 284.014, 217.196, 284.014, 596.019, 235.994, 491.865, 491.865, 491.865, 491.865, 217.196, 500.861, 382.99, 675.166, 349.891, 408.888, 596.019, 395.098, 382.829, 318.076, 596.187, 333, 333, 382.99, 576, 493.9, 211.127, 382.99, 333, 344.779, 407.887, 751.017, 751.017, 751.017, 384.099, 568.004, 568.004, 568.004, 568.004, 568.004, 568.004, 773, 554.871, 470.008, 470.008, 470.008, 470.008, 233.142, 233.142, 233.142, 233.142, 653.85, 631.851, 668.146, 668.146, 668.146, 668.146, 668.146, 596.019, 667.143, 620.855, 620.855, 620.855, 620.855, 517.005, 507.007, 538.138, 521.856, 521.856, 521.856, 521.856, 521.856, 521.856, 717.868, 423, 452.879, 452.879, 452.879, 452.879, 229.139, 229.139, 229.139, 229.139, 515.857, 533.855, 521.856, 521.856, 521.856, 521.856, 521.856, 596.187, 523.138, 525.854, 525.854, 525.854, 525.854, 441, 525.854, 441, 568.004, 521.856, 568.004, 521.856, 568.004, 521.856, 554.871, 423, 554.871, 423, 554.871, 423, 554.871, 423, 646.847, 534, 653.85, 524.858, 470.008, 452.879, 470.008, 452.879, 470.008, 452.879, 470.008, 452.879, 470.008, 452.879, 623.131, 523.858, 623.131, 523.858, 623.131, 523.858, 778, 556, 626.855, 533.855, 626.855, 533.855, 233.142, 229.139, 233.142, 229.139, 233.142, 229.139, 233.142, 228.827, 233.142, 229.139, 596.677, 456.157, 364, 226.829, 667, 500, 456, 441.881, 228.827, 556, 222, 441.881, 235.79, 441.881, 265.064, 447.875, 236.821, 631.851, 533.855, 722, 556, 631.851, 533.855, 534.22, 631.873, 533.855, 668.146, 521.856, 668.146, 521.856, 668.146, 521.856, 867, 800.125, 522.88, 317.992, 722, 333, 522.88, 317.992, 466.006, 373, 466.006, 373, 667, 500, 466.006, 373, 611, 278, 474.124, 312.996, 474.124, 313.189, 620.855, 525.854, 620.855, 525.854, 620.855, 525.854, 620.855, 525.854, 620.855, 525.854, 620.855, 525.854, 829.134, 706.838, 517.005, 441, 517.005, 523.138, 415, 523.138, 415, 523.138, 415, 222, 491.865, 568.004, 521.856, 773, 717.868, 667.143, 523.138, 667, 500, 474.124, 313.189, 382.99, 382.99, 382.99, 382.99, 382.99, 383.992, 382.99, 382.99, 382.99, 359.993, 345.99, 568.004, 214.13, 491.263, 646.852, 254.215, 683.046, 600.838, 697.089, 228.827, 568.004, 519.006, 435.759, 596.09, 470.008, 523.138, 626.855, 668.146, 233.142, 515.004, 569.004, 779.996, 631.851, 533.641, 668.146, 621.332, 507.007, 534.348, 474.124, 544.005, 691.069, 521.007, 647.341, 680.227, 233.142, 544.005, 540.702, 405.583, 533.832, 228.827, 501.177, 540.702, 532.732, 439, 522.318, 405.583, 391.679, 533.832, 515.545, 228.827, 461, 436.832, 525.143, 440, 418.209, 521.856, 528.061, 537.233, 486, 537.979, 387.976, 501.177, 612.678, 423.079, 624.398, 676.164, 228.827, 501.177, 521.856, 501.177, 676.164, 667, 667, 843, 544, 708, 667, 278, 278, 500, 1066, 982, 844, 589, 715, 639, 724, 667, 651, 667, 544, 704, 667, 917, 614, 715, 715, 589, 686, 833, 722, 778, 725, 667, 722, 611, 639, 795, 667, 727, 673, 920, 923, 805, 886, 651, 694, 1022, 682, 556, 562, 522, 493, 553, 556, 688, 465, 556, 556, 472, 564, 686, 550, 556, 556, 556, 500, 833, 500, 835, 500, 572, 518, 830, 851, 621, 736, 526, 492, 752, 534, 556, 556, 556, 378, 496, 500, 222, 222, 222, 910, 828, 556, 472, 565, 500, 556, 778, 556, 492, 339, 829.134, 706.838, 829.134, 706.838, 829.134, 706.838, 517.005, 441, 306.993, 333, 499.861, 1000, 1000, 552, 193.853, 193.853, 193.853, 222, 341.991, 341.991, 341.991, 482.869, 482.869, 276.924, 1000, 1124, 188, 354, 244.995, 244.995, 500, 333, 142.007, 365, 556, 556, 1094, 491.865, 885, 323, 1083, 669, 768, 816.87, 834, 834, 834, 834, 1000, 500, 998, 500, 1000, 500, 500, 517.85, 612, 616.822, 536.083, 596.019, 540.167, 728.108, 979, 719, 291.078, 596.187, 596.187, 584, 596.187, 596.187, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 519.851, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 500, 500, 333];
+const MyriadProBoldItalicWidths = [184.111, 268.994, 386.903, 540.855, 540.855, 868.846, 665.843, 198.173, 313.992, 313.992, 451.816, 596.019, 260.158, 321.991, 260.158, 326.197, 540.855, 540.855, 540.855, 540.855, 540.855, 540.855, 540.855, 540.855, 540.855, 540.855, 259.993, 259.993, 596.019, 596.019, 596.019, 437.116, 748.927, 617.859, 581.867, 582.863, 680.839, 517.005, 511.132, 673.149, 665.843, 274.166, 398.891, 589.86, 487.126, 820.988, 665.843, 705.156, 559.006, 705.156, 582.863, 510.008, 527.14, 654.847, 611.005, 864.138, 569.004, 570.005, 553.144, 313.992, 337.203, 313.992, 596.019, 499.861, 394.991, 553.848, 560.146, 434.881, 560.146, 500.861, 328.991, 558.149, 563.146, 265.159, 275.167, 529.857, 265.159, 830.851, 563.146, 559.144, 562.144, 560.146, 369.85, 415.888, 347.992, 560.146, 511.859, 733.156, 497.865, 496.864, 450, 313.872, 240.184, 313.872, 596.019, 268.994, 540.855, 540.855, 540.855, 540.855, 240.184, 555.85, 394.991, 673.168, 399.874, 460.874, 596.019, 409.101, 394.824, 356.088, 596.187, 333, 333, 394.991, 576, 537.852, 260.158, 394.991, 333, 382.754, 459.873, 826.019, 826.019, 826.019, 437.116, 617.859, 617.859, 617.859, 617.859, 617.859, 617.859, 845, 582.863, 517.005, 517.005, 517.005, 517.005, 274.166, 274.166, 274.166, 274.166, 692.838, 665.843, 705.156, 705.156, 705.156, 705.156, 705.156, 596.019, 702.153, 654.847, 654.847, 654.847, 654.847, 570.005, 558.006, 580.151, 553.848, 553.848, 553.848, 553.848, 553.848, 553.848, 762.86, 434.881, 500.861, 500.861, 500.861, 500.861, 265.159, 265.159, 265.159, 265.159, 558.149, 563.146, 559.144, 559.144, 559.144, 559.144, 559.144, 596.187, 560.146, 560.146, 560.146, 560.146, 560.146, 496.864, 564.149, 496.864, 617.859, 553.848, 617.859, 553.848, 617.859, 553.848, 582.863, 434.881, 582.863, 434.881, 582.863, 434.881, 582.863, 434.881, 680.839, 568.194, 692.838, 560.146, 517.005, 500.861, 517.005, 500.861, 517.005, 500.861, 517.005, 500.861, 517.005, 500.861, 673.149, 558.149, 673.149, 558.149, 673.149, 558.149, 778, 611, 665.843, 563.146, 665.843, 563.146, 274.166, 265.159, 274.166, 265.159, 274.166, 265.159, 274.166, 265.159, 274.166, 265.159, 672.802, 539.854, 398.891, 275.167, 722, 556, 529.857, 487.126, 265.159, 611, 278, 487.126, 273.002, 487.126, 355.998, 499.132, 278.167, 665.843, 563.146, 722, 611, 665.843, 563.146, 562.605, 665.869, 563.146, 705.156, 559.144, 705.156, 559.144, 705.156, 559.144, 909, 826.132, 582.863, 369.85, 722, 389, 582.863, 369.85, 510.008, 415.888, 510.008, 415.888, 667, 556, 510.008, 415.888, 611, 333, 527.14, 347.998, 527.14, 347.992, 654.847, 560.146, 654.847, 560.146, 654.847, 560.146, 654.847, 560.146, 654.847, 560.146, 654.847, 560.146, 864.138, 733.156, 570.005, 496.864, 570.005, 553.144, 450, 553.144, 450, 553.144, 450, 278, 540.855, 617.859, 553.848, 845, 762.86, 702.153, 560.146, 667, 556, 527.14, 347.992, 394.991, 394.991, 394.991, 394.991, 394.991, 394.991, 394.991, 394.991, 394.991, 335.994, 434.991, 617.859, 266.993, 571.001, 718.186, 327.898, 743.792, 673.869, 759.852, 265.159, 617.859, 581.867, 476.105, 635.632, 517.005, 553.144, 665.843, 705.156, 274.166, 589.86, 618.009, 820.988, 665.843, 560.809, 705.156, 653.208, 559.006, 557.686, 527.14, 557.005, 765.751, 569.004, 691.32, 721.222, 274.166, 557.005, 575.893, 437.442, 563.146, 265.159, 535.718, 575.893, 562.359, 482.869, 550.684, 437.442, 427.263, 563.146, 555.383, 265.159, 522.078, 474.868, 558.975, 482.869, 452.295, 559.144, 573.067, 565.56, 532, 585.376, 430.325, 535.718, 685.379, 471.295, 691.047, 716.598, 265.159, 535.718, 559.144, 535.718, 716.598, 667, 667, 886, 614, 719, 667, 278, 278, 556, 1094, 1042, 854, 622, 719, 677, 719, 722, 708, 722, 614, 722, 667, 927, 643, 719, 719, 615, 687, 833, 722, 778, 719, 667, 722, 611, 677, 781, 667, 729, 708, 979, 989, 854, 1000, 708, 719, 1042, 729, 556, 619, 604, 534, 618, 556, 736, 510, 611, 611, 507, 622, 740, 604, 611, 611, 611, 556, 889, 556, 885, 556, 646, 583, 889, 935, 707, 854, 594, 552, 865, 589, 556, 556, 611, 469, 563, 556, 278, 278, 278, 969, 906, 611, 507, 619, 556, 611, 778, 611, 575, 467, 864.138, 733.156, 864.138, 733.156, 864.138, 733.156, 570.005, 496.864, 321.991, 333, 499.861, 1000, 1000, 552, 255.154, 255.154, 255.154, 278, 448, 448, 448, 518.859, 518.859, 335.906, 1000, 1260, 240, 479, 267.995, 266.993, 604, 333, 143.007, 396, 556, 556, 1104, 540.855, 885, 516, 1146, 698, 768, 816.87, 834, 834, 834, 834, 999, 500, 1000, 500, 1000, 500, 500, 565.837, 612, 651.808, 561.088, 596.019, 568.177, 752.115, 979, 722, 337.091, 596.187, 596.187, 583, 596.187, 596.187, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 604, 604, 354, 354, 1000, 990, 990, 990, 990, 592.83, 604, 604, 604, 604, 354, 1021, 1052, 917, 750, 750, 531, 656, 594, 510, 500, 750, 750, 611, 611, 333];
+const SegoeuiRegularWidths = [274.091, 284.352, 392.112, 590.661, 538.914, 818.209, 800.3, 230.079, 301.751, 301.751, 416.821, 684.098, 216.929, 399.893, 216.929, 389.884, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 216.929, 216.929, 684.098, 684.098, 684.098, 448.119, 954.953, 645.029, 573.246, 618.999, 701.011, 505.866, 488.409, 686.18, 709.798, 266.274, 356.935, 580.083, 470.576, 897.941, 747.876, 754.069, 560.067, 754.069, 598.004, 531.259, 524.061, 686.853, 621.104, 934.23, 589.848, 552.743, 570.46, 301.941, 379.136, 301.941, 683.736, 414.926, 268.062, 508.651, 587.731, 461.915, 588.704, 522.807, 313.178, 588.704, 565.763, 242.004, 242.004, 497.07, 242.004, 861.322, 565.763, 585.779, 587.731, 588.704, 347.649, 424.315, 339.071, 565.763, 479.005, 722.491, 458.985, 483.885, 452.15, 301.772, 239.473, 301.772, 684.098, 284.172, 538.914, 538.914, 555.511, 538.914, 239.473, 448.119, 414.052, 890.355, 391.967, 505.721, 684.098, 890.355, 414.856, 377.044, 684.296, 366.203, 366.203, 282.221, 576, 457.916, 216.929, 205.075, 351.065, 430.386, 505.721, 906.266, 930.686, 952.169, 448.358, 645.029, 645.029, 645.029, 645.029, 645.029, 645.029, 860.35, 618.999, 505.866, 505.866, 505.866, 505.866, 266.274, 266.274, 266.274, 266.274, 701.011, 747.876, 754.069, 754.069, 754.069, 754.069, 754.069, 684.098, 754.069, 686.853, 686.853, 686.853, 686.853, 552.743, 560.067, 544.089, 508.651, 508.651, 508.651, 508.651, 508.651, 508.651, 831.882, 461.915, 522.807, 522.807, 522.807, 522.807, 242.333, 242.333, 242.333, 242.333, 558.93, 565.763, 585.779, 585.779, 585.779, 585.779, 585.779, 684.296, 586.09, 565.763, 565.763, 565.763, 565.763, 483.885, 587.731, 483.885, 645.029, 508.651, 645.029, 508.651, 645.029, 508.651, 618.999, 461.915, 618.999, 461.915, 618.999, 461.915, 618.999, 461.915, 701.011, 674.594, 701.011, 588.704, 505.866, 522.807, 505.866, 522.807, 505.866, 522.807, 505.866, 522.807, 505.866, 522.807, 686.18, 588.704, 686.18, 588.704, 686.18, 588.704, 778, 556, 709.798, 565.763, 709.798, 565.763, 266.274, 242.333, 266.274, 242.333, 266.274, 242.333, 266.274, 242.004, 266.274, 242.333, 623.162, 495.286, 356.935, 242.004, 667, 500, 497.07, 470.576, 242.004, 556, 222, 470.576, 307.651, 470.576, 314.955, 470.576, 273.719, 747.876, 565.763, 722, 556, 747.876, 565.763, 605.951, 747.9, 565.763, 754.069, 585.779, 754.069, 585.779, 754.069, 585.779, 930.66, 927.886, 598.004, 347.649, 722, 333, 598.004, 347.649, 531.259, 424.315, 531.259, 424.315, 531.259, 424.315, 531.259, 424.315, 611, 278, 524.061, 439.942, 524.061, 339.071, 686.853, 565.763, 686.853, 565.763, 686.853, 565.763, 686.853, 565.763, 686.853, 565.763, 686.853, 565.763, 934.23, 722.491, 552.743, 483.885, 552.743, 570.46, 452.15, 570.46, 452.15, 570.46, 452.15, 241.028, 538.914, 645.029, 508.651, 860.35, 831.882, 754.069, 586.09, 667, 500, 524.061, 339.071, 371.085, 371.085, 310.053, 303.703, 201.169, 280.266, 185.055, 336.906, 324.212, 272.454, 272.454, 644.555, 216.929, 570.18, 774.027, 378.628, 800.355, 666.626, 825.688, 266.4, 645.029, 573.246, 471.865, 644.56, 505.866, 570.46, 709.798, 754.069, 266.274, 580.083, 628.935, 897.941, 747.876, 509.841, 754.069, 712.722, 560.067, 515.974, 524.061, 552.743, 754.046, 589.848, 775.464, 755.33, 266.274, 552.743, 614.125, 438.186, 575.037, 266.4, 552.858, 614.125, 547.665, 519.045, 584.36, 438.186, 441.975, 575.037, 586.263, 266.4, 523.925, 498.045, 576.973, 525.88, 445.07, 585.779, 627.003, 586.093, 460.512, 574.532, 487.28, 552.858, 698.745, 538.188, 750.112, 808.351, 266.4, 552.858, 585.779, 552.858, 808.351, 505.866, 667, 865, 542, 719, 667, 278, 278, 500, 1057, 1010, 854, 583, 748.851, 635, 719, 667, 656, 667, 542, 677, 667, 923, 604, 719, 719, 583, 656, 833, 722, 778, 719, 667, 722, 611, 635, 760, 667, 740, 667, 917, 938, 792, 885, 656, 719, 1010, 722, 556, 573, 531, 365, 583, 556, 669, 458, 559, 559, 438, 583, 688, 552, 556, 542, 556, 500, 458, 500, 823, 500, 573, 521, 802, 823, 625, 719, 521, 510, 750, 542, 522.807, 556, 556, 365, 510, 500, 222, 278, 222, 906, 812, 556, 438, 581.477, 500, 552, 778, 556, 489, 411, 934.23, 722.491, 934.23, 722.491, 934.23, 722.491, 552.743, 483.885, 333, 399.893, 499.861, 1000, 1000, 414.856, 228.831, 228.831, 228.831, 228.831, 376.943, 376.943, 376.943, 374.9, 374.9, 406.137, 732.91, 1209.96, 229.614, 376.95, 315.91, 315.91, 479.98, 415.028, 167, 392.364, 488.146, 538.914, 1110.607, 538.914, 885, 323, 1073, 772.95, 768, 600, 921.895, 921.895, 928.726, 892.105, 862.79, 472.17, 862.79, 472.17, 861.82, 500, 500, 535.002, 612, 753.687, 616.795, 684.098, 650.104, 817.02, 683.587, 701.902, 539.698, 685.273, 685.273, 683.498, 685.273, 685.273, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 861.322, 604, 353.511, 353.511, 1000, 861.548, 861.548, 861.548, 861.548, 583.33, 861.322, 604, 861.322, 861.322, 353.511, 1021, 1052, 917, 750, 750, 684.247, 684.306, 684.858, 684.231, 500, 750, 750, 554.69, 554.69, 333];
+const SegoeuiBoldWidths = [276.046, 327.139, 493.036, 592.123, 575.037, 867.033, 849.411, 293.223, 369.131, 369.131, 454.893, 707.049, 271.161, 404.289, 271.161, 443.627, 575.037, 575.037, 575.037, 575.037, 575.037, 575.037, 575.037, 575.037, 575.037, 575.037, 270.989, 270.989, 707.049, 707.049, 707.049, 438.105, 954.008, 702.961, 640.963, 623.88, 737.133, 532.233, 520.157, 711.092, 765.934, 317.087, 445.189, 648.775, 511.364, 957.025, 789.854, 758.464, 614.267, 758.464, 652.681, 560.553, 586.09, 722.975, 667, 1005.048, 655.281, 606.943, 607.096, 369.131, 436.299, 369.131, 707.049, 414.926, 313.959, 537.941, 620.281, 479.85, 619.303, 540.866, 383.293, 619.303, 602.208, 284.352, 284.352, 558.93, 284.352, 915.848, 605.141, 611.489, 620.281, 619.303, 397.784, 439.818, 389.15, 605.141, 541.844, 797.536, 552.097, 537.941, 479.005, 368.99, 326.421, 368.99, 707.049, 327.139, 575.037, 575.037, 556, 575.037, 326.421, 485.221, 461.904, 874.244, 410.027, 580.898, 707.049, 874.244, 414.856, 379.976, 707.255, 404.289, 404.289, 303.216, 576, 509.14, 271.161, 215.328, 394.032, 455.761, 580.898, 952.169, 965.347, 979.024, 438.105, 702.961, 702.961, 702.961, 702.961, 702.961, 702.961, 935.06, 623.88, 532.233, 532.233, 532.233, 532.233, 317.087, 317.087, 317.087, 317.087, 737.133, 789.854, 757.974, 757.974, 757.974, 757.974, 757.974, 707.049, 758.464, 722.975, 722.975, 722.975, 722.975, 606.943, 614.267, 628.096, 537.941, 537.941, 537.941, 537.941, 537.941, 537.941, 827.979, 479.85, 540.866, 540.866, 540.866, 540.866, 284.352, 284.352, 284.352, 284.352, 593.415, 605.141, 611, 611, 611, 611, 611, 707.255, 611.489, 605.141, 605.141, 605.141, 605.141, 537.941, 620.281, 537.941, 702.961, 537.941, 702.961, 537.941, 702.961, 537.941, 623.88, 479.85, 623.88, 479.85, 623.88, 479.85, 623.88, 479.85, 737.133, 740.98, 737.133, 632.489, 532.233, 540.866, 532.233, 540.866, 532.233, 540.866, 532.233, 540.866, 532.233, 540.866, 711.092, 619.303, 711.092, 619.303, 711.092, 619.303, 778, 611, 765.934, 602.208, 765.934, 616.371, 317.087, 284.352, 317.087, 284.352, 317.087, 284.352, 317.087, 284.352, 317.087, 284.352, 762.533, 604.328, 445.189, 284.352, 722, 556, 558.93, 511.364, 284.352, 611, 278, 511.364, 364.018, 511.364, 433.102, 511.364, 314.154, 789.854, 605.141, 722, 611, 789.854, 605.141, 684.579, 789.885, 605.141, 758.464, 611.489, 758.464, 611.489, 758.464, 611.489, 939.94, 924.469, 652.681, 397.784, 722, 389, 652.681, 397.784, 560.553, 439.818, 560.553, 439.818, 560.553, 439.818, 560.553, 439.818, 611, 333, 586.09, 512.693, 586.09, 389.15, 722.975, 605.141, 722.975, 605.141, 722.975, 605.141, 722.975, 605.141, 722.975, 605.141, 722.975, 605.141, 1005.048, 797.536, 606.943, 537.941, 606.943, 607.096, 479.005, 607.096, 479.005, 607.096, 479.005, 299.498, 575.037, 702.961, 537.941, 935.06, 827.979, 758.464, 611.489, 667, 556, 586.09, 389.15, 383.293, 383.293, 336.906, 346.183, 252.923, 270.989, 266.107, 383.293, 406.24, 316.886, 408.34, 730.296, 271.478, 654.763, 889.393, 479.375, 846.005, 779.579, 863.886, 328.324, 702.961, 640.963, 511.655, 703.369, 532.233, 607.096, 765.934, 758.464, 317.087, 648.775, 692.88, 957.025, 789.854, 554.091, 758.464, 764.959, 614.267, 568.758, 586.09, 606.943, 815.631, 655.281, 826.086, 765.854, 317.087, 606.943, 636.98, 462.712, 611.489, 328.324, 620.575, 636.98, 621.712, 566.742, 611.369, 463.272, 464.876, 611.489, 612.352, 328.324, 570.706, 548.677, 612.979, 553.559, 477.205, 611.489, 692.724, 618.511, 487.776, 613.206, 548.959, 620.575, 750.628, 554.504, 790.575, 831.81, 328.324, 620.575, 611.489, 620.575, 831.81, 532.233, 669, 885, 567, 711, 667, 278, 276, 556, 1094, 1062, 875, 610, 790.345, 622, 719, 722, 719, 722, 567, 712, 667, 904, 626, 719, 719, 610, 702, 833, 722, 778, 719, 667, 722, 611, 622, 854, 667, 730, 703, 1005, 1019, 870, 979, 719, 711, 1031, 719, 556, 618, 615, 417, 635, 556, 709, 497, 615, 615, 500, 635, 740, 604, 611, 604, 611, 556, 490, 556, 875, 556, 615, 581, 833, 844, 729, 854, 615, 552, 854, 583, 540.866, 556, 611, 417, 552, 556, 278, 281, 278, 969, 906, 611, 500, 627.7, 556, 604, 778, 611, 487, 447, 1005.048, 797.536, 1005.048, 797.536, 1005.048, 797.536, 606.943, 537.941, 333, 404.289, 499.861, 1000, 1000, 414.856, 290.215, 290.215, 290.215, 290.215, 493.165, 493.165, 493.165, 406.141, 406.141, 422.247, 912.11, 1256.35, 293.28, 493.159, 344.229, 344.229, 580.076, 415.028, 167, 445.318, 519.877, 575.037, 1309.376, 575.037, 885, 489, 1115, 771, 768, 600, 965.347, 965.347, 965.347, 925.306, 862.79, 472.17, 862.79, 472.17, 861.82, 500, 500, 577.471, 612, 790.78, 642.677, 707.049, 650.104, 812.627, 683.587, 701.495, 576.329, 708.232, 708.232, 706.433, 708.232, 708.232, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 861.322, 604, 353.511, 353.511, 1000, 861.548, 861.548, 861.548, 861.548, 587.238, 861.322, 604, 861.322, 861.322, 353.511, 1021, 1052, 917, 750, 750, 684.247, 684.306, 684.858, 684.231, 500, 750, 750, 667.169, 667.169, 333];
+const SegoeuiItalicWidths = [275.07, 319.041, 374.046, 590.661, 538.914, 823.09, 769.538, 226.171, 304.192, 304.192, 417.798, 685.079, 217.905, 399.893, 217.905, 396.236, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 538.914, 217.905, 217.905, 685.079, 685.079, 685.079, 430.06, 959.835, 631.842, 573.246, 639.013, 711.748, 499.029, 488.898, 688.133, 707.842, 266.274, 346.19, 599.62, 462.764, 817.864, 750.801, 754.069, 575.201, 754.069, 581.896, 497.075, 526.016, 688.802, 627.934, 929.349, 590.829, 554.204, 569.971, 304.382, 386.464, 304.382, 684.712, 414.926, 349.114, 541.844, 541.844, 436.035, 541.844, 486.683, 295.1, 541.844, 556.979, 258.594, 240.053, 490.235, 258.594, 857.898, 561.86, 535.011, 541.844, 541.844, 354.971, 395.02, 323.436, 557.952, 473.145, 720.051, 455.08, 483.885, 452.15, 304.214, 240.451, 304.214, 685.079, 318.841, 538.914, 538.914, 556, 538.914, 240.451, 448.119, 349.114, 909.406, 435.897, 514.022, 685.079, 890.355, 348.963, 377.044, 685.273, 366.203, 366.203, 349.114, 576, 457.916, 216.929, 349.114, 366.203, 446.49, 514.022, 916.032, 946.799, 960.951, 430.291, 631.842, 631.842, 631.842, 631.842, 631.842, 631.842, 854.98, 639.013, 499.029, 499.029, 499.029, 499.029, 266.274, 266.274, 266.274, 266.274, 711.748, 750.801, 754.069, 754.069, 754.069, 754.069, 754.069, 685.079, 754.069, 688.802, 688.802, 688.802, 688.802, 554.204, 575.201, 540.179, 541.844, 541.844, 541.844, 541.844, 541.844, 541.844, 826.023, 436.035, 486.683, 486.683, 486.683, 486.683, 258.946, 258.946, 258.946, 258.946, 521.828, 561.86, 535.011, 535.011, 535.011, 535.011, 535.011, 685.273, 535.297, 557.952, 557.952, 557.952, 557.952, 483.885, 541.844, 483.885, 631.842, 541.844, 631.842, 541.844, 631.842, 541.844, 639.013, 436.035, 639.013, 436.035, 639.013, 436.035, 639.013, 436.035, 711.748, 596.194, 711.748, 541.844, 499.029, 486.683, 499.029, 486.683, 499.029, 486.683, 499.029, 486.683, 499.029, 486.683, 688.133, 541.844, 688.133, 541.844, 688.133, 541.844, 778, 556, 707.842, 556.979, 707.842, 556.979, 266.274, 258.946, 266.274, 258.946, 266.274, 258.946, 266.274, 258.594, 266.274, 258.946, 618.806, 500.659, 346.19, 240.053, 667, 500, 490.235, 462.764, 258.594, 556, 222, 471.06, 294.659, 471.06, 315.02, 462.764, 274.694, 750.801, 561.86, 722, 556, 750.801, 561.86, 606.206, 750.828, 561.86, 754.069, 535.011, 754.069, 535.011, 754.069, 535.011, 923.83, 851.214, 581.896, 354.971, 722, 333, 581.896, 354.971, 497.075, 395.02, 497.075, 395.02, 497.075, 395.02, 497.075, 395.02, 611, 278, 526.016, 363.767, 524.061, 323.436, 688.802, 557.952, 688.802, 557.952, 688.802, 557.952, 688.802, 557.952, 688.802, 557.952, 688.802, 557.952, 929.349, 720.051, 554.204, 483.885, 554.204, 569.971, 452.15, 569.971, 452.15, 569.971, 452.15, 292.747, 538.914, 631.842, 541.844, 854.98, 826.023, 754.069, 535.297, 667, 500, 526.016, 323.436, 349.114, 349.114, 349.114, 349.114, 349.114, 349.114, 349.114, 349.114, 349.114, 272.943, 272.943, 631.842, 216.929, 560.364, 768.87, 327.425, 793.023, 671.205, 819.439, 266.4, 631.842, 573.246, 471.909, 644.63, 499.029, 569.971, 707.842, 754.069, 266.274, 599.62, 655.768, 817.864, 750.801, 509.419, 754.069, 707.905, 575.201, 516.45, 526.016, 554.204, 753.986, 590.829, 808.53, 770.771, 266.274, 554.204, 625.632, 456.56, 573.548, 266.4, 587.125, 625.632, 560.751, 519.045, 584.339, 456.56, 441.535, 573.548, 571.273, 266.4, 510.74, 497.855, 573.888, 506.35, 459.212, 535.011, 600.655, 560.297, 454.77, 571.753, 488.739, 587.125, 729.106, 545.023, 768.55, 804.395, 266.4, 587.125, 535.011, 587.125, 804.395, 499.029, 667, 843, 544, 708, 667, 278, 278, 500, 1066, 982, 844, 589, 741.841, 639, 724, 667, 651, 667, 544, 704, 667, 917, 614, 715, 715, 589, 686, 833, 722, 778, 725, 667, 722, 611, 639, 795, 667, 727, 673, 920, 923, 805, 886, 651, 694, 1022, 682, 556, 562, 522, 493, 553, 556, 688, 465, 556, 556, 472, 564, 686, 550, 556, 556, 556, 500, 833, 500, 835, 500, 572, 518, 830, 851, 621, 736, 526, 492, 752, 534, 486.683, 556, 556, 378, 496, 500, 222, 222, 222, 910, 828, 556, 472, 557.683, 500, 556, 778, 556, 492, 339, 929.349, 720.051, 929.349, 720.051, 929.349, 720.051, 554.204, 483.885, 333, 399.893, 499.861, 1000, 1000, 414.856, 210.778, 210.778, 210.778, 210.778, 374.016, 374.016, 374.016, 375.873, 375.873, 404.674, 735.84, 1211.91, 229.614, 376.95, 315.91, 315.91, 479.98, 415.028, 167, 392.364, 487.662, 538.914, 1110.115, 538.914, 885, 323, 1083, 772.95, 768, 600, 916.032, 916.032, 916.032, 846.693, 863.21, 472.17, 863.17, 472.17, 861.82, 500, 500, 535.002, 612, 753.687, 616.303, 685.079, 650.104, 817.02, 683.587, 701.902, 539.207, 685.273, 685.273, 685.079, 685.273, 685.273, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 861.322, 604, 353.511, 353.511, 1000, 861.548, 861.548, 861.548, 861.548, 582.841, 861.322, 604, 861.322, 861.322, 353.511, 1021, 1052, 917, 750, 750, 684.247, 684.306, 684.858, 684.231, 500, 750, 750, 553.71, 553.71, 333];
+const SegoeuiBoldItalicWidths = [275.07, 346.183, 493.036, 571.618, 576.016, 868.011, 801.081, 293.223, 370.11, 370.11, 454.893, 708.024, 271.161, 403.799, 271.161, 444.116, 576.016, 576.016, 576.016, 576.016, 576.016, 576.016, 576.016, 576.016, 576.016, 576.016, 270.989, 270.989, 708.024, 708.024, 708.024, 449.336, 954.008, 702.961, 647.8, 634.616, 752.757, 529.791, 521.134, 709.139, 763.984, 317.087, 442.748, 650.724, 512.342, 869.619, 798.64, 758.955, 629.888, 758.955, 639.988, 537.115, 587.067, 722.975, 667, 1007.975, 654.794, 607.917, 607.096, 370.11, 437.275, 370.11, 708.024, 414.926, 438.954, 592.613, 592.927, 461.786, 592.927, 519.877, 374.991, 592.927, 598.303, 317.576, 262.855, 561.86, 317.576, 910.967, 598.303, 575.348, 592.927, 592.927, 399.736, 438.845, 374.991, 598.303, 533.059, 795.093, 547.699, 537.941, 485.84, 369.966, 326.421, 369.966, 708.024, 346.183, 576.016, 576.016, 556, 576.016, 326.421, 485.705, 438.954, 875.217, 469.09, 585.779, 708.024, 874.244, 438.768, 379.976, 708.232, 413.077, 413.077, 438.954, 576, 508.651, 271.161, 438.954, 377.922, 455.761, 585.779, 950.21, 963.887, 979.024, 449.336, 702.961, 702.961, 702.961, 702.961, 702.961, 702.961, 943.85, 634.616, 529.791, 529.791, 529.791, 529.791, 317.087, 317.087, 317.087, 317.087, 752.757, 798.64, 758.955, 758.955, 758.955, 758.955, 758.955, 708.024, 758.955, 722.975, 722.975, 722.975, 722.975, 607.917, 629.888, 603.185, 592.613, 592.613, 592.613, 592.613, 592.613, 592.613, 859.707, 461.786, 519.877, 519.877, 519.877, 519.877, 317.576, 317.576, 317.576, 317.576, 568.994, 598.303, 575.348, 575.348, 575.348, 575.348, 575.348, 708.232, 575.348, 598.303, 598.303, 598.303, 598.303, 537.941, 592.927, 537.941, 702.961, 592.613, 702.961, 592.613, 702.961, 592.613, 634.616, 461.786, 634.616, 461.786, 634.616, 461.786, 634.616, 461.786, 752.757, 742.442, 752.757, 592.927, 529.791, 519.877, 529.791, 519.877, 529.791, 519.877, 529.791, 519.877, 529.791, 519.877, 709.139, 592.927, 709.139, 592.927, 709.139, 592.927, 778, 611, 763.984, 598.303, 763.984, 598.303, 317.087, 317.576, 317.087, 317.576, 317.087, 317.576, 317.087, 317.576, 317.087, 317.576, 761.989, 579.919, 442.748, 282.398, 722, 556, 561.86, 512.342, 317.576, 611, 278, 512.342, 432.135, 512.342, 433.102, 512.342, 332.232, 798.64, 598.303, 722, 611, 798.64, 598.303, 715.321, 798.669, 598.303, 758.955, 575.348, 758.955, 575.348, 758.955, 575.348, 916.02, 868.301, 639.988, 399.736, 722, 389, 639.988, 399.736, 537.115, 438.845, 537.115, 438.845, 537.115, 438.845, 537.115, 438.845, 611, 333, 587.067, 504.88, 586.09, 389.15, 722.975, 598.303, 722.975, 598.303, 722.975, 598.303, 722.975, 598.303, 722.975, 598.303, 722.975, 598.303, 1007.975, 795.093, 607.917, 537.941, 607.917, 607.096, 485.84, 607.096, 485.84, 607.096, 485.84, 342.493, 576.016, 702.961, 592.613, 943.85, 859.707, 758.955, 575.348, 667, 556, 587.067, 374.991, 438.954, 438.954, 438.954, 438.954, 438.954, 438.954, 438.954, 438.954, 438.954, 316.886, 423.33, 727.855, 277.336, 663.575, 898.181, 450.547, 873.287, 801.121, 908.026, 317.576, 702.961, 647.8, 529.901, 736.879, 529.791, 607.096, 763.984, 758.955, 317.087, 650.724, 711.436, 869.619, 798.64, 557.911, 758.955, 751.703, 629.888, 578.289, 587.067, 607.917, 824.926, 654.794, 845.124, 773.182, 317.087, 607.917, 650.758, 474.114, 614.904, 317.576, 635.408, 650.758, 618.559, 572.107, 614.88, 474.114, 468.059, 614.904, 620.055, 317.576, 568.932, 544.774, 616.182, 556, 488.601, 575.348, 707.116, 595.241, 494.909, 620.023, 552.661, 635.408, 779.236, 540.378, 805.713, 836.927, 317.576, 635.408, 575.348, 635.408, 836.927, 529.791, 667, 886, 614, 719, 667, 278, 278, 556, 1094, 1042, 854, 622, 784.407, 677, 719, 722, 708, 722, 614, 722, 667, 927, 643, 719, 719, 615, 687, 833, 722, 778, 719, 667, 722, 611, 677, 781, 667, 729, 708, 979, 989, 854, 1000, 708, 719, 1042, 729, 556, 619, 604, 534, 618, 556, 736, 510, 611, 611, 507, 622, 740, 604, 611, 611, 611, 556, 889, 556, 885, 556, 646, 583, 889, 935, 707, 854, 594, 552, 865, 589, 519.877, 556, 611, 469, 563, 556, 278, 278, 278, 969, 906, 611, 507, 598.01, 556, 611, 778, 611, 575, 467, 1007.975, 795.093, 1007.975, 795.093, 1007.975, 795.093, 607.917, 537.941, 333, 403.799, 499.861, 1000, 1000, 414.856, 291.191, 291.191, 291.191, 290.215, 493.165, 493.165, 493.165, 405.652, 405.652, 421.757, 914.06, 1265.14, 293.28, 493.159, 344.229, 344.229, 580.076, 415.028, 167, 432.135, 518.898, 574.548, 1286.613, 576.016, 885, 516, 1146, 771, 768, 600, 963.887, 963.887, 963.887, 963.887, 862.776, 472.17, 862.79, 472.17, 862.24, 500, 500, 576.982, 612, 790.78, 642.185, 708.024, 650.104, 812.136, 683.587, 701.495, 576.329, 708.232, 708.232, 707.406, 708.232, 708.232, 604, 584, 604, 604, 708, 625, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 708, 729, 861.322, 604, 353.511, 353.511, 1000, 861.548, 861.548, 861.548, 861.548, 586.749, 861.322, 604, 861.322, 861.322, 353.511, 1021, 1052, 917, 750, 750, 684.247, 684.306, 684.858, 684.231, 500, 750, 750, 692.074, 692.074, 333];
 
 ;// ./src/core/xfa_fonts.js
 
 
 
 
-
-
-
-
+const DEFAULT_METRICS = {
+  lineHeight: 1.2,
+  lineGap: 0.2
+};
+const HELVETICA_ITALIC_METRICS = {
+  lineHeight: 1.35,
+  lineGap: 0.2
+};
 const getXFAFontMap = getLookupTableFactory(function (t) {
-  t["MyriadPro-Regular"] = t["PdfJS-Fallback-Regular"] = {
-    name: "LiberationSans-Regular",
-    factors: MyriadProRegularFactors,
-    baseWidths: LiberationSansRegularWidths,
-    baseMapping: LiberationSansRegularMapping,
-    metrics: MyriadProRegularMetrics
-  };
-  t["MyriadPro-Bold"] = t["PdfJS-Fallback-Bold"] = {
-    name: "LiberationSans-Bold",
-    factors: MyriadProBoldFactors,
-    baseWidths: LiberationSansBoldWidths,
-    baseMapping: LiberationSansBoldMapping,
-    metrics: MyriadProBoldMetrics
-  };
-  t["MyriadPro-It"] = t["MyriadPro-Italic"] = t["PdfJS-Fallback-Italic"] = {
-    name: "LiberationSans-Italic",
-    factors: MyriadProItalicFactors,
-    baseWidths: LiberationSansItalicWidths,
-    baseMapping: LiberationSansItalicMapping,
-    metrics: MyriadProItalicMetrics
-  };
-  t["MyriadPro-BoldIt"] = t["MyriadPro-BoldItalic"] = t["PdfJS-Fallback-BoldItalic"] = {
-    name: "LiberationSans-BoldItalic",
-    factors: MyriadProBoldItalicFactors,
-    baseWidths: LiberationSansBoldItalicWidths,
-    baseMapping: LiberationSansBoldItalicMapping,
-    metrics: MyriadProBoldItalicMetrics
-  };
-  t.ArialMT = t.Arial = t["Arial-Regular"] = {
-    name: "LiberationSans-Regular",
-    baseWidths: LiberationSansRegularWidths,
-    baseMapping: LiberationSansRegularMapping
-  };
-  t["Arial-BoldMT"] = t["Arial-Bold"] = {
-    name: "LiberationSans-Bold",
-    baseWidths: LiberationSansBoldWidths,
-    baseMapping: LiberationSansBoldMapping
-  };
-  t["Arial-ItalicMT"] = t["Arial-Italic"] = {
-    name: "LiberationSans-Italic",
-    baseWidths: LiberationSansItalicWidths,
-    baseMapping: LiberationSansItalicMapping
-  };
-  t["Arial-BoldItalicMT"] = t["Arial-BoldItalic"] = {
-    name: "LiberationSans-BoldItalic",
-    baseWidths: LiberationSansBoldItalicWidths,
-    baseMapping: LiberationSansBoldItalicMapping
-  };
-  t["Calibri-Regular"] = {
-    name: "LiberationSans-Regular",
-    factors: CalibriRegularFactors,
-    baseWidths: LiberationSansRegularWidths,
-    baseMapping: LiberationSansRegularMapping,
-    metrics: CalibriRegularMetrics
-  };
-  t["Calibri-Bold"] = {
-    name: "LiberationSans-Bold",
-    factors: CalibriBoldFactors,
-    baseWidths: LiberationSansBoldWidths,
-    baseMapping: LiberationSansBoldMapping,
-    metrics: CalibriBoldMetrics
-  };
-  t["Calibri-Italic"] = {
-    name: "LiberationSans-Italic",
-    factors: CalibriItalicFactors,
-    baseWidths: LiberationSansItalicWidths,
-    baseMapping: LiberationSansItalicMapping,
-    metrics: CalibriItalicMetrics
-  };
-  t["Calibri-BoldItalic"] = {
-    name: "LiberationSans-BoldItalic",
-    factors: CalibriBoldItalicFactors,
-    baseWidths: LiberationSansBoldItalicWidths,
-    baseMapping: LiberationSansBoldItalicMapping,
-    metrics: CalibriBoldItalicMetrics
-  };
-  t["Segoeui-Regular"] = {
-    name: "LiberationSans-Regular",
-    factors: SegoeuiRegularFactors,
-    baseWidths: LiberationSansRegularWidths,
-    baseMapping: LiberationSansRegularMapping,
-    metrics: SegoeuiRegularMetrics
-  };
-  t["Segoeui-Bold"] = {
-    name: "LiberationSans-Bold",
-    factors: SegoeuiBoldFactors,
-    baseWidths: LiberationSansBoldWidths,
-    baseMapping: LiberationSansBoldMapping,
-    metrics: SegoeuiBoldMetrics
-  };
-  t["Segoeui-Italic"] = {
-    name: "LiberationSans-Italic",
-    factors: SegoeuiItalicFactors,
-    baseWidths: LiberationSansItalicWidths,
-    baseMapping: LiberationSansItalicMapping,
-    metrics: SegoeuiItalicMetrics
-  };
-  t["Segoeui-BoldItalic"] = {
-    name: "LiberationSans-BoldItalic",
-    factors: SegoeuiBoldItalicFactors,
-    baseWidths: LiberationSansBoldItalicWidths,
-    baseMapping: LiberationSansBoldItalicMapping,
-    metrics: SegoeuiBoldItalicMetrics
-  };
-  t["Helvetica-Regular"] = t.Helvetica = {
-    name: "LiberationSans-Regular",
-    factors: HelveticaRegularFactors,
-    baseWidths: LiberationSansRegularWidths,
-    baseMapping: LiberationSansRegularMapping,
-    metrics: HelveticaRegularMetrics
-  };
-  t["Helvetica-Bold"] = {
-    name: "LiberationSans-Bold",
-    factors: HelveticaBoldFactors,
-    baseWidths: LiberationSansBoldWidths,
-    baseMapping: LiberationSansBoldMapping,
-    metrics: HelveticaBoldMetrics
-  };
-  t["Helvetica-Italic"] = {
-    name: "LiberationSans-Italic",
-    factors: HelveticaItalicFactors,
-    baseWidths: LiberationSansItalicWidths,
-    baseMapping: LiberationSansItalicMapping,
-    metrics: HelveticaItalicMetrics
-  };
-  t["Helvetica-BoldItalic"] = {
-    name: "LiberationSans-BoldItalic",
-    factors: HelveticaBoldItalicFactors,
-    baseWidths: LiberationSansBoldItalicWidths,
-    baseMapping: LiberationSansBoldItalicMapping,
-    metrics: HelveticaBoldItalicMetrics
-  };
+  const styles = [["Regular", "Helvetica"], ["Bold", "Helvetica-Bold"], ["Italic", "Helvetica-Oblique"], ["BoldItalic", "Helvetica-BoldOblique"]];
+  for (const [family, widths, metrics] of [["Arial", [ArialRegularWidths, ArialBoldWidths, ArialItalicWidths, ArialBoldItalicWidths], null], ["Calibri", [CalibriRegularWidths, CalibriBoldWidths, CalibriItalicWidths, CalibriBoldItalicWidths], {
+    lineHeight: 1.2207,
+    lineGap: 0.2207
+  }], ["Helvetica", [HelveticaRegularWidths, HelveticaBoldWidths, HelveticaItalicWidths, HelveticaBoldItalicWidths], DEFAULT_METRICS], ["MyriadPro", [MyriadProRegularWidths, MyriadProBoldWidths, MyriadProItalicWidths, MyriadProBoldItalicWidths], DEFAULT_METRICS], ["Segoeui", [SegoeuiRegularWidths, SegoeuiBoldWidths, SegoeuiItalicWidths, SegoeuiBoldItalicWidths], {
+    lineHeight: 1.33008,
+    lineGap: 0
+  }]]) {
+    for (const [i, [style, name]] of styles.entries()) {
+      const font = {
+        name,
+        widths: widths[i]
+      };
+      if (metrics) {
+        font.metrics = family === "Helvetica" && i >= 2 ? HELVETICA_ITALIC_METRICS : metrics;
+      }
+      t[`${family}-${style}`] = font;
+    }
+  }
+  for (const [style] of styles) {
+    t[`PdfJS-Fallback-${style}`] = t[`MyriadPro-${style}`];
+  }
+  t["MyriadPro-It"] = t["MyriadPro-Italic"];
+  t["MyriadPro-BoldIt"] = t["MyriadPro-BoldItalic"];
+  t.ArialMT = t.Arial = t["Arial-Regular"];
+  t["Arial-BoldMT"] = t["Arial-Bold"];
+  t["Arial-ItalicMT"] = t["Arial-Italic"];
+  t["Arial-BoldItalicMT"] = t["Arial-BoldItalic"];
+  t.Helvetica = t["Helvetica-Regular"];
 });
 function getXfaFontName(name) {
-  const fontName = normalizeFontName(name);
-  const fontMap = getXFAFontMap();
-  return fontMap[fontName];
-}
-function getXfaFontWidths(name) {
-  const info = getXfaFontName(name);
-  if (!info) {
-    return null;
-  }
-  const {
-    baseWidths,
-    baseMapping,
-    factors
-  } = info;
-  const rescaledBaseWidths = !factors ? baseWidths : baseWidths.map((w, i) => w * factors[i]);
-  let currentCode = -2;
-  let currentArray;
-  const newWidths = [];
-  for (const [unicode, glyphIndex] of baseMapping.map((charUnicode, index) => [charUnicode, index]).sort(([unicode1], [unicode2]) => unicode1 - unicode2)) {
-    if (unicode === -1) {
-      continue;
-    }
-    if (unicode === currentCode + 1) {
-      currentArray.push(rescaledBaseWidths[glyphIndex]);
-      currentCode += 1;
-    } else {
-      currentCode = unicode;
-      currentArray = [rescaledBaseWidths[glyphIndex]];
-      newWidths.push(unicode, currentArray);
-    }
-  }
-  return newWidths;
+  return getXFAFontMap()[normalizeFontName(name)];
 }
 function getXfaFontDict(name) {
-  const widths = getXfaFontWidths(name);
+  const {
+    widths
+  } = getXfaFontName(name);
+  const newWidths = [];
+  for (let i = 0, j = 0, ii = XfaFontCodePoints.length; i < ii; i += 2) {
+    const count = XfaFontCodePoints[i + 1];
+    newWidths.push(XfaFontCodePoints[i], widths.slice(j, j + count));
+    j += count;
+  }
   const dict = new Dict(null);
   dict.set("BaseFont", Name.get(name));
   dict.set("Type", Name.get("Font"));
   dict.set("Subtype", Name.get("CIDFontType2"));
   dict.set("Encoding", Name.get("Identity-H"));
   dict.set("CIDToGIDMap", Name.get("Identity"));
-  dict.set("W", widths);
-  dict.set("FirstChar", widths[0]);
-  dict.set("LastChar", widths.at(-2) + widths.at(-1).length - 1);
+  dict.set("W", newWidths);
+  dict.set("FirstChar", newWidths[0]);
+  dict.set("LastChar", newWidths.at(-2) + newWidths.at(-1).length - 1);
   const descriptor = new Dict(null);
   dict.set("FontDescriptor", descriptor);
   const systemInfo = new Dict(null);
@@ -32743,22 +32044,18 @@ const substitutionMap = new Map([["Times-Roman", {
   ultimate: "serif"
 }], ["Helvetica", {
   local: ["Helvetica", "Helvetica Neue", "Arial", "Arial Nova", "Liberation Sans", "Arimo", "Nimbus Sans", "Nimbus Sans L", "A030", "TeX Gyre Heros", "FreeSans", "DejaVu Sans", "Albany", "Bitstream Vera Sans", "Arial Unicode MS", "Microsoft Sans Serif", "Apple Symbols", "Cantarell"],
-  path: "LiberationSans-Regular.ttf",
   style: NORMAL,
   ultimate: "sans-serif"
 }], ["Helvetica-Bold", {
   alias: "Helvetica",
-  path: "LiberationSans-Bold.ttf",
   style: BOLD,
   ultimate: "sans-serif"
 }], ["Helvetica-Oblique", {
   alias: "Helvetica",
-  path: "LiberationSans-Italic.ttf",
   style: ITALIC,
   ultimate: "sans-serif"
 }], ["Helvetica-BoldOblique", {
   alias: "Helvetica",
-  path: "LiberationSans-BoldItalic.ttf",
   style: BOLDITALIC,
   ultimate: "sans-serif"
 }], ["Courier", {
@@ -32959,11 +32256,10 @@ function getFamilyName(str) {
 function generateFont({
   alias,
   local,
-  path,
   fallback,
   style,
   ultimate
-}, src, localFontPath, useFallback = true, usePath = true, append = "") {
+}, src, useFallback = true, append = "") {
   const result = {
     style: null,
     ultimate: null
@@ -32977,7 +32273,7 @@ function generateFont({
   if (alias) {
     const substitution = substitutionMap.get(alias);
     const aliasAppend = append || getStyleToAppend(style);
-    Object.assign(result, generateFont(substitution, src, localFontPath, useFallback && !fallback, usePath && !path, aliasAppend));
+    Object.assign(result, generateFont(substitution, src, useFallback && !fallback, aliasAppend));
   }
   if (style) {
     result.style = style;
@@ -32989,15 +32285,12 @@ function generateFont({
     const fallbackInfo = substitutionMap.get(fallback);
     const {
       ultimate: fallbackUltimate
-    } = generateFont(fallbackInfo, src, localFontPath, useFallback, usePath && !path, append);
+    } = generateFont(fallbackInfo, src, useFallback, append);
     result.ultimate ||= fallbackUltimate;
-  }
-  if (usePath && path && localFontPath) {
-    src.push(`url(${localFontPath}${path})`);
   }
   return result;
 }
-function getFontSubstitution(systemFontCache, idFactory, localFontPath, baseFontName, standardFontName, type) {
+function getFontSubstitution(systemFontCache, idFactory, baseFontName, standardFontName, type) {
   if (baseFontName.startsWith("InvalidPDFjsFont_")) {
     return null;
   }
@@ -33053,7 +32346,7 @@ function getFontSubstitution(systemFontCache, idFactory, localFontPath, baseFont
   const {
     style,
     ultimate
-  } = generateFont(substitution, src, localFontPath);
+  } = generateFont(substitution, src);
   const guessFallback = ultimate === null;
   const fallback = guessFallback ? "" : `,${ultimate}`;
   substitutionInfo = {
@@ -33066,6 +32359,575 @@ function getFontSubstitution(systemFontCache, idFactory, localFontPath, baseFont
   };
   systemFontCache.set(key, substitutionInfo);
   return substitutionInfo;
+}
+
+;// ./external/hellbox/hellbox.js
+function font_data_files(family, bold, italic, weight, stem_v, italic_angle) {
+  try {
+    const retptr = hellbox_wasm.__wbindgen_add_to_stack_pointer(-16);
+    hellbox_wasm.font_data_files(retptr, family, bold, italic, weight, stem_v, italic_angle);
+    var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+    var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+    var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+    var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+    if (r3) {
+      throw takeObject(r2);
+    }
+    var v1 = getArrayJsValueFromWasm0(r0, r1);
+    hellbox_wasm.__wbindgen_free(r0, r1 * 4, 4);
+    return v1;
+  } finally {
+    hellbox_wasm.__wbindgen_add_to_stack_pointer(16);
+  }
+}
+function generate_font(codepoints, lengths, widths, char_codes, family, bold, italic, weight, stem_v, italic_angle, cap_height, ascent, kerning) {
+  try {
+    const retptr = hellbox_wasm.__wbindgen_add_to_stack_pointer(-16);
+    const ptr0 = passArray32ToWasm0(codepoints, hellbox_wasm.__wbindgen_malloc);
+    const len0 = hellbox_WASM_VECTOR_LEN;
+    const ptr1 = passArray32ToWasm0(lengths, hellbox_wasm.__wbindgen_malloc);
+    const len1 = hellbox_WASM_VECTOR_LEN;
+    const ptr2 = passArrayF64ToWasm0(widths, hellbox_wasm.__wbindgen_malloc);
+    const len2 = hellbox_WASM_VECTOR_LEN;
+    const ptr3 = passArray32ToWasm0(char_codes, hellbox_wasm.__wbindgen_malloc);
+    const len3 = hellbox_WASM_VECTOR_LEN;
+    var ptr4 = isLikeNone(kerning) ? 0 : passArrayF64ToWasm0(kerning, hellbox_wasm.__wbindgen_malloc);
+    var len4 = hellbox_WASM_VECTOR_LEN;
+    hellbox_wasm.generate_font(retptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, family, bold, italic, weight, stem_v, italic_angle, cap_height, !isLikeNone(ascent), isLikeNone(ascent) ? 0 : ascent, ptr4, len4);
+    var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+    var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+    var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+    var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+    if (r3) {
+      throw takeObject(r2);
+    }
+    var v6 = getArrayU8FromWasm0(r0, r1).slice();
+    hellbox_wasm.__wbindgen_free(r0, r1 * 1, 1);
+    return v6;
+  } finally {
+    hellbox_wasm.__wbindgen_add_to_stack_pointer(16);
+  }
+}
+function generate_standard_font(codepoints, lengths, widths, char_codes, name, ascent, kerning) {
+  try {
+    const retptr = hellbox_wasm.__wbindgen_add_to_stack_pointer(-16);
+    const ptr0 = passArray32ToWasm0(codepoints, hellbox_wasm.__wbindgen_malloc);
+    const len0 = hellbox_WASM_VECTOR_LEN;
+    const ptr1 = passArray32ToWasm0(lengths, hellbox_wasm.__wbindgen_malloc);
+    const len1 = hellbox_WASM_VECTOR_LEN;
+    const ptr2 = passArrayF64ToWasm0(widths, hellbox_wasm.__wbindgen_malloc);
+    const len2 = hellbox_WASM_VECTOR_LEN;
+    const ptr3 = passArray32ToWasm0(char_codes, hellbox_wasm.__wbindgen_malloc);
+    const len3 = hellbox_WASM_VECTOR_LEN;
+    const ptr4 = passStringToWasm0(name, hellbox_wasm.__wbindgen_malloc, hellbox_wasm.__wbindgen_realloc);
+    const len4 = hellbox_WASM_VECTOR_LEN;
+    var ptr5 = isLikeNone(kerning) ? 0 : passArrayF64ToWasm0(kerning, hellbox_wasm.__wbindgen_malloc);
+    var len5 = hellbox_WASM_VECTOR_LEN;
+    hellbox_wasm.generate_standard_font(retptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, ptr4, len4, !isLikeNone(ascent), isLikeNone(ascent) ? 0 : ascent, ptr5, len5);
+    var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+    var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+    var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+    var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+    if (r3) {
+      throw takeObject(r2);
+    }
+    var v7 = getArrayU8FromWasm0(r0, r1).slice();
+    hellbox_wasm.__wbindgen_free(r0, r1 * 1, 1);
+    return v7;
+  } finally {
+    hellbox_wasm.__wbindgen_add_to_stack_pointer(16);
+  }
+}
+function has_data(name) {
+  const ptr0 = passStringToWasm0(name, hellbox_wasm.__wbindgen_malloc, hellbox_wasm.__wbindgen_realloc);
+  const len0 = hellbox_WASM_VECTOR_LEN;
+  const ret = hellbox_wasm.has_data(ptr0, len0);
+  return ret !== 0;
+}
+function missing_glyphs(codepoints, lengths, family) {
+  try {
+    const retptr = hellbox_wasm.__wbindgen_add_to_stack_pointer(-16);
+    const ptr0 = passArray32ToWasm0(codepoints, hellbox_wasm.__wbindgen_malloc);
+    const len0 = hellbox_WASM_VECTOR_LEN;
+    const ptr1 = passArray32ToWasm0(lengths, hellbox_wasm.__wbindgen_malloc);
+    const len1 = hellbox_WASM_VECTOR_LEN;
+    hellbox_wasm.missing_glyphs(retptr, ptr0, len0, ptr1, len1, family);
+    var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+    var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+    var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+    var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+    if (r3) {
+      throw takeObject(r2);
+    }
+    var v3 = getArrayU32FromWasm0(r0, r1).slice();
+    hellbox_wasm.__wbindgen_free(r0, r1 * 4, 4);
+    return v3;
+  } finally {
+    hellbox_wasm.__wbindgen_add_to_stack_pointer(16);
+  }
+}
+function missing_standard_glyphs(codepoints, lengths, name) {
+  try {
+    const retptr = hellbox_wasm.__wbindgen_add_to_stack_pointer(-16);
+    const ptr0 = passArray32ToWasm0(codepoints, hellbox_wasm.__wbindgen_malloc);
+    const len0 = hellbox_WASM_VECTOR_LEN;
+    const ptr1 = passArray32ToWasm0(lengths, hellbox_wasm.__wbindgen_malloc);
+    const len1 = hellbox_WASM_VECTOR_LEN;
+    const ptr2 = passStringToWasm0(name, hellbox_wasm.__wbindgen_malloc, hellbox_wasm.__wbindgen_realloc);
+    const len2 = hellbox_WASM_VECTOR_LEN;
+    hellbox_wasm.missing_standard_glyphs(retptr, ptr0, len0, ptr1, len1, ptr2, len2);
+    var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+    var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+    var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+    var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+    if (r3) {
+      throw takeObject(r2);
+    }
+    var v4 = getArrayU32FromWasm0(r0, r1).slice();
+    hellbox_wasm.__wbindgen_free(r0, r1 * 4, 4);
+    return v4;
+  } finally {
+    hellbox_wasm.__wbindgen_add_to_stack_pointer(16);
+  }
+}
+function set_data(name, bytes) {
+  try {
+    const retptr = hellbox_wasm.__wbindgen_add_to_stack_pointer(-16);
+    const ptr0 = passStringToWasm0(name, hellbox_wasm.__wbindgen_malloc, hellbox_wasm.__wbindgen_realloc);
+    const len0 = hellbox_WASM_VECTOR_LEN;
+    const ptr1 = hellbox_passArray8ToWasm0(bytes, hellbox_wasm.__wbindgen_malloc);
+    const len1 = hellbox_WASM_VECTOR_LEN;
+    hellbox_wasm.set_data(retptr, ptr0, len0, ptr1, len1);
+    var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+    var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+    if (r1) {
+      throw takeObject(r0);
+    }
+  } finally {
+    hellbox_wasm.__wbindgen_add_to_stack_pointer(16);
+  }
+}
+function standard_font_codepoints(name) {
+  try {
+    const retptr = hellbox_wasm.__wbindgen_add_to_stack_pointer(-16);
+    const ptr0 = passStringToWasm0(name, hellbox_wasm.__wbindgen_malloc, hellbox_wasm.__wbindgen_realloc);
+    const len0 = hellbox_WASM_VECTOR_LEN;
+    hellbox_wasm.standard_font_codepoints(retptr, ptr0, len0);
+    var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+    var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+    var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+    var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+    if (r3) {
+      throw takeObject(r2);
+    }
+    var v2 = getArrayU32FromWasm0(r0, r1).slice();
+    hellbox_wasm.__wbindgen_free(r0, r1 * 4, 4);
+    return v2;
+  } finally {
+    hellbox_wasm.__wbindgen_add_to_stack_pointer(16);
+  }
+}
+function standard_font_data_files(name) {
+  try {
+    const retptr = hellbox_wasm.__wbindgen_add_to_stack_pointer(-16);
+    const ptr0 = passStringToWasm0(name, hellbox_wasm.__wbindgen_malloc, hellbox_wasm.__wbindgen_realloc);
+    const len0 = hellbox_WASM_VECTOR_LEN;
+    hellbox_wasm.standard_font_data_files(retptr, ptr0, len0);
+    var r0 = getDataViewMemory0().getInt32(retptr + 4 * 0, true);
+    var r1 = getDataViewMemory0().getInt32(retptr + 4 * 1, true);
+    var r2 = getDataViewMemory0().getInt32(retptr + 4 * 2, true);
+    var r3 = getDataViewMemory0().getInt32(retptr + 4 * 3, true);
+    if (r3) {
+      throw takeObject(r2);
+    }
+    var v2 = getArrayJsValueFromWasm0(r0, r1);
+    hellbox_wasm.__wbindgen_free(r0, r1 * 4, 4);
+    return v2;
+  } finally {
+    hellbox_wasm.__wbindgen_add_to_stack_pointer(16);
+  }
+}
+function hellbox_wbg_get_imports() {
+  const import0 = {
+    __proto__: null,
+    __wbg_Error_30c8987f7c2ed4e2: function (arg0, arg1) {
+      const ret = Error(hellbox_getStringFromWasm0(arg0, arg1));
+      return addHeapObject(ret);
+    },
+    __wbindgen_generic_0000000000000001: function (arg0, arg1) {
+      const ret = hellbox_getStringFromWasm0(arg0, arg1);
+      return addHeapObject(ret);
+    }
+  };
+  return {
+    __proto__: null,
+    "./hellbox_bg.js": import0
+  };
+}
+function addHeapObject(obj) {
+  if (heap_next === heap.length) heap.push(heap.length + 1);
+  const idx = heap_next;
+  heap_next = heap[idx];
+  heap[idx] = obj;
+  return idx;
+}
+function dropObject(idx) {
+  if (idx < 1028) return;
+  heap[idx] = heap_next;
+  heap_next = idx;
+}
+function getArrayJsValueFromWasm0(ptr, len) {
+  ptr = ptr >>> 0;
+  const mem = getDataViewMemory0();
+  const result = [];
+  for (let i = ptr; i < ptr + 4 * len; i += 4) {
+    result.push(takeObject(mem.getUint32(i, true)));
+  }
+  return result;
+}
+function getArrayU32FromWasm0(ptr, len) {
+  ptr = ptr >>> 0;
+  return getUint32ArrayMemory0().subarray(ptr / 4, ptr / 4 + len);
+}
+function getArrayU8FromWasm0(ptr, len) {
+  ptr = ptr >>> 0;
+  return hellbox_getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
+}
+let cachedDataViewMemory0 = null;
+function getDataViewMemory0() {
+  if (cachedDataViewMemory0 === null || cachedDataViewMemory0.buffer !== hellbox_wasm.memory.buffer) {
+    cachedDataViewMemory0 = new DataView(hellbox_wasm.memory.buffer);
+  }
+  return cachedDataViewMemory0;
+}
+let cachedFloat64ArrayMemory0 = null;
+function getFloat64ArrayMemory0() {
+  if (cachedFloat64ArrayMemory0 === null || cachedFloat64ArrayMemory0.buffer !== hellbox_wasm.memory.buffer) {
+    cachedFloat64ArrayMemory0 = new Float64Array(hellbox_wasm.memory.buffer);
+  }
+  return cachedFloat64ArrayMemory0;
+}
+function hellbox_getStringFromWasm0(ptr, len) {
+  return hellbox_decodeText(ptr >>> 0, len);
+}
+let cachedUint32ArrayMemory0 = null;
+function getUint32ArrayMemory0() {
+  if (cachedUint32ArrayMemory0 === null || cachedUint32ArrayMemory0.buffer !== hellbox_wasm.memory.buffer) {
+    cachedUint32ArrayMemory0 = new Uint32Array(hellbox_wasm.memory.buffer);
+  }
+  return cachedUint32ArrayMemory0;
+}
+let hellbox_cachedUint8ArrayMemory0 = null;
+function hellbox_getUint8ArrayMemory0() {
+  if (hellbox_cachedUint8ArrayMemory0 === null || hellbox_cachedUint8ArrayMemory0.buffer !== hellbox_wasm.memory.buffer) {
+    hellbox_cachedUint8ArrayMemory0 = new Uint8Array(hellbox_wasm.memory.buffer);
+  }
+  return hellbox_cachedUint8ArrayMemory0;
+}
+function getObject(idx) {
+  return heap[idx];
+}
+let heap = new Array(1024).fill(undefined);
+heap.push(undefined, null, true, false);
+let heap_next = heap.length;
+function isLikeNone(x) {
+  return x === undefined || x === null;
+}
+function passArray32ToWasm0(arg, malloc) {
+  const ptr = malloc(arg.length * 4, 4) >>> 0;
+  getUint32ArrayMemory0().set(arg, ptr / 4);
+  hellbox_WASM_VECTOR_LEN = arg.length;
+  return ptr;
+}
+function hellbox_passArray8ToWasm0(arg, malloc) {
+  const ptr = malloc(arg.length * 1, 1) >>> 0;
+  hellbox_getUint8ArrayMemory0().set(arg, ptr / 1);
+  hellbox_WASM_VECTOR_LEN = arg.length;
+  return ptr;
+}
+function passArrayF64ToWasm0(arg, malloc) {
+  const ptr = malloc(arg.length * 8, 8) >>> 0;
+  getFloat64ArrayMemory0().set(arg, ptr / 8);
+  hellbox_WASM_VECTOR_LEN = arg.length;
+  return ptr;
+}
+function passStringToWasm0(arg, malloc, realloc) {
+  if (realloc === undefined) {
+    const buf = cachedTextEncoder.encode(arg);
+    const ptr = malloc(buf.length, 1) >>> 0;
+    hellbox_getUint8ArrayMemory0().subarray(ptr, ptr + buf.length).set(buf);
+    hellbox_WASM_VECTOR_LEN = buf.length;
+    return ptr;
+  }
+  let len = arg.length;
+  let ptr = malloc(len, 1) >>> 0;
+  const mem = hellbox_getUint8ArrayMemory0();
+  let offset = 0;
+  for (; offset < len; offset++) {
+    const code = arg.charCodeAt(offset);
+    if (code > 0x7F) break;
+    mem[ptr + offset] = code;
+  }
+  if (offset !== len) {
+    if (offset !== 0) {
+      arg = arg.slice(offset);
+    }
+    ptr = realloc(ptr, len, len = offset + arg.length * 3, 1) >>> 0;
+    const view = hellbox_getUint8ArrayMemory0().subarray(ptr + offset, ptr + len);
+    const ret = cachedTextEncoder.encodeInto(arg, view);
+    offset += ret.written;
+    ptr = realloc(ptr, len, offset, 1) >>> 0;
+  }
+  hellbox_WASM_VECTOR_LEN = offset;
+  return ptr;
+}
+function takeObject(idx) {
+  const ret = getObject(idx);
+  dropObject(idx);
+  return ret;
+}
+let hellbox_cachedTextDecoder = new TextDecoder('utf-8', {
+  ignoreBOM: true,
+  fatal: true
+});
+hellbox_cachedTextDecoder.decode();
+const hellbox_MAX_SAFARI_DECODE_BYTES = 2146435072;
+let hellbox_numBytesDecoded = 0;
+function hellbox_decodeText(ptr, len) {
+  hellbox_numBytesDecoded += len;
+  if (hellbox_numBytesDecoded >= hellbox_MAX_SAFARI_DECODE_BYTES) {
+    hellbox_cachedTextDecoder = new TextDecoder('utf-8', {
+      ignoreBOM: true,
+      fatal: true
+    });
+    hellbox_cachedTextDecoder.decode();
+    hellbox_numBytesDecoded = len;
+  }
+  return hellbox_cachedTextDecoder.decode(hellbox_getUint8ArrayMemory0().subarray(ptr, ptr + len));
+}
+const cachedTextEncoder = new TextEncoder();
+if (!('encodeInto' in cachedTextEncoder)) {
+  cachedTextEncoder.encodeInto = function (arg, view) {
+    const buf = cachedTextEncoder.encode(arg);
+    view.set(buf);
+    return {
+      read: arg.length,
+      written: buf.length
+    };
+  };
+}
+let hellbox_WASM_VECTOR_LEN = 0;
+let hellbox_wasmModule, hellbox_wasmInstance, hellbox_wasm;
+function hellbox_wbg_finalize_init(instance, module) {
+  hellbox_wasmInstance = instance;
+  hellbox_wasm = instance.exports;
+  hellbox_wasmModule = module;
+  cachedDataViewMemory0 = null;
+  cachedFloat64ArrayMemory0 = null;
+  cachedUint32ArrayMemory0 = null;
+  hellbox_cachedUint8ArrayMemory0 = null;
+  return hellbox_wasm;
+}
+async function hellbox_wbg_load(module, imports) {
+  if (typeof Response === 'function' && module instanceof Response) {
+    if (!module.ok) {
+      throw new Error(`failed to fetch Wasm: ${module.status} ${module.statusText} fetching '${module.url}'`);
+    }
+    if (typeof WebAssembly.instantiateStreaming === 'function') {
+      try {
+        return await WebAssembly.instantiateStreaming(module, imports);
+      } catch (e) {
+        const validResponse = expectedResponseType(module.type);
+        if (validResponse && module.headers.get('Content-Type') !== 'application/wasm') {
+          console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve Wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
+        } else {
+          throw e;
+        }
+      }
+    }
+    const bytes = await module.arrayBuffer();
+    return await WebAssembly.instantiate(bytes, imports);
+  } else {
+    const instance = await WebAssembly.instantiate(module, imports);
+    if (instance instanceof WebAssembly.Instance) {
+      return {
+        instance,
+        module
+      };
+    } else {
+      return instance;
+    }
+  }
+  function expectedResponseType(type) {
+    switch (type) {
+      case 'basic':
+      case 'cors':
+      case 'default':
+        return true;
+    }
+    return false;
+  }
+}
+function hellbox_initSync(module) {
+  if (hellbox_wasm !== undefined) return hellbox_wasm;
+  if (module !== undefined) {
+    if (Object.getPrototypeOf(module) === Object.prototype) {
+      ({
+        module
+      } = module);
+    } else {
+      console.warn('using deprecated parameters for `initSync()`; pass a single object instead');
+    }
+  }
+  const imports = hellbox_wbg_get_imports();
+  if (!(module instanceof WebAssembly.Module)) {
+    module = new WebAssembly.Module(module);
+  }
+  const instance = new WebAssembly.Instance(module, imports);
+  return hellbox_wbg_finalize_init(instance, module);
+}
+async function hellbox_wbg_init(module_or_path) {
+  if (hellbox_wasm !== undefined) return hellbox_wasm;
+  if (module_or_path !== undefined) {
+    if (Object.getPrototypeOf(module_or_path) === Object.prototype) {
+      ({
+        module_or_path
+      } = module_or_path);
+    } else {
+      console.warn('using deprecated parameters for the initialization function; pass a single object instead');
+    }
+  }
+  const imports = hellbox_wbg_get_imports();
+  if (typeof module_or_path === 'string' || typeof Request === 'function' && module_or_path instanceof Request || typeof URL === 'function' && module_or_path instanceof URL) {
+    module_or_path = fetch(module_or_path);
+  }
+  const {
+    instance,
+    module
+  } = await hellbox_wbg_load(await module_or_path, imports);
+  return hellbox_wbg_finalize_init(instance, module);
+}
+
+function initJs(instantiate) {
+  if (hellbox_wasm !== undefined) return hellbox_wasm;
+  return hellbox_wbg_finalize_init({
+    exports: instantiate(hellbox_wbg_get_imports())
+  }, undefined);
+}
+
+;// ./src/core/hellbox.js
+
+
+
+const FAMILIES = new Map([["Courier", 2], ["Helvetica", 0], ["Times", 1]]);
+const MAX_GLYPHS = 65534;
+const PRIVATE_USE_START = 0xf0000;
+class Hellbox {
+  static #isLoaded = false;
+  static #loadPromises = new WeakMap();
+  static #pendingData = new WeakMap();
+  static async #load(context) {
+    const {
+      standardFontDataUrl,
+      useWorkerFetch,
+      wasmUrl
+    } = context.options;
+    if (useWorkerFetch && (!wasmUrl || !standardFontDataUrl)) {
+      return false;
+    }
+    return this.#isLoaded || this.#loadPromises.getOrInsertComputed(context.handler, () => WasmLoader.load(context, "hellbox_bg.wasm", "hellbox_nowasm_fallback.js", instantiate => {
+      initJs(instantiate);
+      this.#isLoaded = true;
+    }));
+  }
+  static #loadData(context, files) {
+    const pending = this.#pendingData.getOrInsertComputed(context.handler, makeMap);
+    return Promise.all(files.map(file => {
+      if (has_data(file)) {
+        return null;
+      }
+      return pending.getOrInsertComputed(file, () => WasmLoader.fetch(context, "standardFontDataUrl", file).then(data => {
+        if (!has_data(file)) {
+          set_data(file, data);
+        }
+      }).finally(() => pending.delete(file)));
+    }));
+  }
+  static async generate(context, font) {
+    const {
+      standardFontName
+    } = font;
+    if (!standardFontName || font.vertical || font.cssFontInfo) {
+      return;
+    }
+    const replacesFont = !font.systemFontInfo || standardFontName === "Symbol" || standardFontName === "ZapfDingbats";
+    if (context.options.disableFontFace && !replacesFont) {
+      return;
+    }
+    if (!(await this.#load(context))) {
+      return;
+    }
+    const weight = font.black ? 900 : 0;
+    const family = weight ? FAMILIES.get(standardFontName.split("-", 1)[0]) : undefined;
+    const italic = /Oblique|Italic/.test(standardFontName);
+    const glyphs = font.getMissingFileGlyphs(replacesFont);
+    const codePoints = Uint32Array.from(glyphs, glyph => glyph.codePoint);
+    const lengths = new Uint32Array(codePoints.length).fill(1);
+    try {
+      const files = family === undefined ? standard_font_data_files(standardFontName) : [...font_data_files(family, false, false, 0, 0, 0), ...font_data_files(family, false, italic, weight, 0, 0)];
+      await this.#loadData(context, files);
+      const missing = new Set(family === undefined ? missing_standard_glyphs(codePoints, lengths, standardFontName) : missing_glyphs(codePoints, lengths, family));
+      const available = glyphs.filter((_, i) => !missing.has(i)).slice(0, MAX_GLYPHS);
+      if (available.length === 0) {
+        return;
+      }
+      const toFontChar = new Map();
+      const mappedCodePoints = new Set();
+      let privateUseCode = PRIVATE_USE_START;
+      const fontCharCodes = Uint32Array.from(available, ({
+        codePoint,
+        charCodes
+      }) => {
+        if (!mappedCodePoints.has(codePoint)) {
+          mappedCodePoints.add(codePoint);
+          return codePoint;
+        }
+        for (const charCode of charCodes) {
+          toFontChar.set(charCode, privateUseCode);
+        }
+        return privateUseCode++;
+      });
+      const args = [Uint32Array.from(available, glyph => glyph.codePoint), lengths.subarray(0, available.length), Float64Array.from(available, glyph => glyph.width ?? NaN), fontCharCodes];
+      const data = family === undefined ? generate_standard_font(...args, standardFontName) : generate_font(...args, family, false, italic, weight, 0, 0, 0);
+      font.setGeneratedFont({
+        data,
+        codePoints: fontCharCodes,
+        toFontChar
+      }, replacesFont);
+    } catch (ex) {
+      warn(`Hellbox.generate - "${font.name}": "${ex}".`);
+    }
+  }
+  static async generateXfaFont(context, standardFontName, widths) {
+    if (!(await this.#load(context))) {
+      return null;
+    }
+    try {
+      await this.#loadData(context, standard_font_data_files(standardFontName));
+      const widthByCodePoint = new Map();
+      for (let i = 0, ii = widths.length - 1; i < ii; i += 2) {
+        const start = widths[i];
+        for (const [j, width] of widths[i + 1].entries()) {
+          widthByCodePoint.set(start + j, width);
+        }
+      }
+      const codePoints = standard_font_codepoints(standardFontName);
+      return generate_standard_font(codePoints, new Uint32Array(codePoints.length).fill(1), Float64Array.from(codePoints, cp => widthByCodePoint.get(cp) ?? NaN), new Uint32Array(0), standardFontName);
+    } catch (ex) {
+      warn(`Hellbox.generateXfaFont - "${standardFontName}": "${ex}".`);
+      return null;
+    }
+  }
 }
 
 ;// ./src/shared/murmurhash3.js
@@ -34220,6 +34082,7 @@ class PDFImage {
 
 
 
+
 const DefaultPartialEvaluatorOptions = Object.freeze({
   maxImageSize: -1,
   disableFontFace: false,
@@ -34337,7 +34200,6 @@ class PartialEvaluator {
     idFactory,
     fontCache,
     builtInCMapCache,
-    standardFontDataCache,
     globalColorSpaceCache,
     globalImageCache,
     systemFontCache,
@@ -34350,7 +34212,6 @@ class PartialEvaluator {
     this.idFactory = idFactory;
     this.fontCache = fontCache;
     this.builtInCMapCache = builtInCMapCache;
-    this.standardFontDataCache = standardFontDataCache;
     this.globalColorSpaceCache = globalColorSpaceCache;
     this.globalImageCache = globalImageCache;
     this.systemFontCache = systemFontCache;
@@ -34481,30 +34342,6 @@ class PartialEvaluator {
     }
     this.builtInCMapCache.set(name, data);
     return data;
-  }
-  async fetchStandardFontData(name) {
-    const cachedData = this.standardFontDataCache.get(name);
-    if (cachedData) {
-      return new Stream(cachedData);
-    }
-    if (this.options.useSystemFonts && name !== "Symbol" && name !== "ZapfDingbats") {
-      return null;
-    }
-    const standardFontNameToFileName = getFontNameToFileMap(),
-      filename = standardFontNameToFileName[name];
-    let data;
-    try {
-      if (this.options.useWorkerFetch) {
-        data = await fetchBinaryData(`${this.options.standardFontDataUrl}${filename}`);
-      } else {
-        throw new Error("Only worker-thread fetching supported.");
-      }
-    } catch (ex) {
-      warn(ex);
-      return null;
-    }
-    this.standardFontDataCache.set(name, data);
-    return new Stream(data);
   }
   async buildFormXObject(resources, xobj, smask, operatorList, task, initialState, localColorSpaceCache, seenRefs) {
     const {
@@ -34905,7 +34742,7 @@ class PartialEvaluator {
   handleText(chars, state) {
     const font = state.font;
     const glyphs = font.charsToGlyphs(chars);
-    if (font.data) {
+    if (font.data && !font.missingFile) {
       const isAddToPathSet = !!(state.textRenderingMode & TextRenderingMode.ADD_TO_PATH_FLAG);
       if (isAddToPathSet || state.fillColorSpace.name === "Pattern" || state.strokeColorSpace.name === "Pattern" || font.disableFontFace) {
         PartialEvaluator.buildFontPaths(font, glyphs, this.handler, this.options);
@@ -35106,10 +34943,10 @@ class PartialEvaluator {
       font.cacheKey = `cacheKey_${fontID}`;
       this.fontCache.put(font.cacheKey, promise);
     }
-    font.loadedName = `${this.idFactory.getDocId()}_${fontID}`;
-    this.translateFont(preEvaluatedFont).then(async translatedFont => {
+    const loadedName = `${this.idFactory.getDocId()}_${fontID}`;
+    this.translateFont(preEvaluatedFont, loadedName).then(async translatedFont => {
       const translated = new TranslatedFont({
-        loadedName: font.loadedName,
+        loadedName,
         font: translatedFont,
         dict: font
       });
@@ -35124,7 +34961,7 @@ class PartialEvaluator {
     }).catch(reason => {
       warn(`loadFont - translateFont failed: "${reason}".`);
       resolve(new TranslatedFont({
-        loadedName: font.loadedName,
+        loadedName,
         font: new ErrorFont(reason?.message),
         dict: font
       }));
@@ -36787,7 +36624,7 @@ class PartialEvaluator {
         baseEncodingName = null;
       }
     }
-    const nonEmbeddedFont = !properties.file || properties.isInternalFont,
+    const nonEmbeddedFont = !properties.file,
       isSymbolsFontName = getSymbolsFonts()[properties.name];
     if (baseEncodingName && nonEmbeddedFont && isSymbolsFontName) {
       baseEncodingName = null;
@@ -37337,7 +37174,7 @@ class PartialEvaluator {
     lastChar,
     toUnicode,
     cssFontInfo
-  }) {
+  }, loadedName) {
     const isType3Font = type === "Type3";
     if (!descriptor) {
       if (isType3Font) {
@@ -37356,7 +37193,7 @@ class PartialEvaluator {
         const properties = {
           type,
           name: baseFontName,
-          loadedName: baseDict.loadedName,
+          loadedName,
           systemFontInfo: null,
           widths: metrics.widths,
           defaultWidth: metrics.defaultWidth,
@@ -37371,14 +37208,8 @@ class PartialEvaluator {
           isType3Font
         };
         const widths = dict.get("Widths");
-        const standardFontName = getStandardFontName(baseFontName);
-        let file = null;
-        if (standardFontName) {
-          file = await this.fetchStandardFontData(standardFontName);
-          properties.isInternalFont = !!file;
-        }
-        if (!properties.isInternalFont && this.options.useSystemFonts) {
-          properties.systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, baseFontName, standardFontName, type);
+        if (this.options.useSystemFonts) {
+          properties.systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, baseFontName, getStandardFontName(baseFontName), type);
         }
         const newProperties = await this.extractDataStructures(dict, properties);
         if (Array.isArray(widths)) {
@@ -37395,7 +37226,9 @@ class PartialEvaluator {
         } else {
           newProperties.widths = this.buildCharCodeToWidth(metrics.widths, newProperties);
         }
-        return new Font(baseFontName, file, newProperties, this.options);
+        const font = new Font(baseFontName, null, newProperties, this.options);
+        await Hellbox.generate(this, font);
+        return font;
       }
     }
     let fontName = descriptor.get("FontName");
@@ -37453,8 +37286,6 @@ class PartialEvaluator {
       warn(`translateFont - fetching "${fontName.name}" font file: "${ex}".`);
       fontFile = null;
     }
-    let isInternalFont = false;
-    let glyphScaleFactors = null;
     let systemFontInfo = null;
     if (fontFile) {
       if (fontFile.dict) {
@@ -37467,25 +37298,19 @@ class PartialEvaluator {
         length3 = fontFile.dict.get("Length3");
       }
     } else if (cssFontInfo) {
-      const standardFontName = getXfaFontName(fontName.name);
-      if (standardFontName) {
+      const xfaFont = getXfaFontName(fontName.name);
+      if (xfaFont) {
         cssFontInfo.fontFamily = `${cssFontInfo.fontFamily}-PdfJS-XFA`;
-        cssFontInfo.metrics = standardFontName.metrics || null;
-        glyphScaleFactors = standardFontName.factors || null;
-        fontFile = await this.fetchStandardFontData(standardFontName.name);
-        isInternalFont = !!fontFile;
+        cssFontInfo.metrics = xfaFont.metrics || null;
         baseDict = dict = getXfaFontDict(fontName.name);
         composite = true;
+        const data = await Hellbox.generateXfaFont(this, xfaFont.name, dict.get("W"));
+        if (data) {
+          fontFile = new Stream(data);
+        }
       }
-    } else if (!isType3Font) {
-      const standardFontName = getStandardFontName(fontName.name);
-      if (standardFontName) {
-        fontFile = await this.fetchStandardFontData(standardFontName);
-        isInternalFont = !!fontFile;
-      }
-      if (!isInternalFont && this.options.useSystemFonts) {
-        systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, fontName.name, standardFontName, type);
-      }
+    } else if (!isType3Font && this.options.useSystemFonts) {
+      systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, fontName.name, getStandardFontName(fontName.name), type);
     }
     const fontMatrix = lookupMatrix(dict.getArray("FontMatrix"), FONT_IDENTITY_MATRIX);
     const bbox = lookupNormalRect(descriptor.getArray("FontBBox") || dict.getArray("FontBBox"), isType3Font ? [0, 0, 0, 0] : undefined);
@@ -37522,8 +37347,7 @@ class PartialEvaluator {
       length1,
       length2,
       length3,
-      isInternalFont,
-      loadedName: baseDict.loadedName,
+      loadedName,
       composite,
       fixedPitch: false,
       fontMatrix,
@@ -37539,7 +37363,6 @@ class PartialEvaluator {
       italicAngle,
       isType3Font,
       cssFontInfo,
-      scaleFactors: glyphScaleFactors,
       systemFontInfo
     };
     if (composite) {
@@ -37560,7 +37383,7 @@ class PartialEvaluator {
     const font = new Font(fontName.name, fontFile, newProperties, this.options);
     if (font.missingFile && !font.systemFontInfo && !isType3Font && this.options.useSystemFonts) {
       const standardFontName = getStandardFontName(fontName.name);
-      const substitution = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, fontName.name, standardFontName, type);
+      const substitution = getFontSubstitution(this.systemFontCache, this.idFactory, fontName.name, standardFontName, type);
       if (substitution) {
         if (substitution.guessFallback) {
           substitution.guessFallback = false;
@@ -37569,6 +37392,7 @@ class PartialEvaluator {
         font.systemFontInfo = substitution;
       }
     }
+    await Hellbox.generate(this, font);
     return font;
   }
   static buildFontPaths(font, glyphs, handler, evaluatorOptions) {
@@ -37628,7 +37452,7 @@ class TranslatedFont {
     handler.send("commonobj", [this.loadedName, "Font", fontData], transfers);
   }
   fallback(handler, evaluatorOptions) {
-    if (!this.font.data) {
+    if (!this.font.data || this.font.missingFile) {
       return;
     }
     this.font.disableFontFace = true;
@@ -40675,7 +40499,6 @@ class Catalog {
   pageDictCache = new RefMap();
   pageIndexCache = new RefMap();
   pageKidsCountCache = new RefMap();
-  standardFontDataCache = new Map();
   systemFontCache = new Map();
   constructor(pdfManager, xref) {
     this.pdfManager = pdfManager;
@@ -41598,7 +41421,6 @@ class Catalog {
     }
     this.fontCache.clear();
     this.builtInCMapCache.clear();
-    this.standardFontDataCache.clear();
     this.systemFontCache.clear();
   }
   async getPageDict(pageIndex) {
@@ -54610,19 +54432,10 @@ class WidgetAnnotation extends Annotation {
     return `/Tx BMC q ${colors}BT ` + defaultAppearance + ` 1 0 0 1 0 0 Tm ${renderedText}` + " ET Q EMC";
   }
   static async _getFontData(evaluator, task, appearanceData, resources) {
-    const operatorList = new OperatorList();
-    const initialState = {
-      font: null,
-      clone() {
-        return this;
-      }
-    };
     const {
-      fontName,
-      fontSize
-    } = appearanceData;
-    await evaluator.handleSetFont(resources, [fontName && Name.get(fontName), fontSize], null, operatorList, task, initialState, null);
-    return initialState.font;
+      font
+    } = await evaluator.loadFont(appearanceData.fontName || null, null, resources, task);
+    return font;
   }
   _getTextWidth(text, font) {
     return Math.sumPrecise(font.charsToGlyphs(text).map(g => g.width)) / 1000;
@@ -59289,7 +59102,6 @@ class Page {
     globalIdFactory,
     fontCache,
     builtInCMapCache,
-    standardFontDataCache,
     globalColorSpaceCache,
     globalImageCache,
     systemFontCache,
@@ -59303,7 +59115,6 @@ class Page {
     this.ref = ref;
     this.fontCache = fontCache;
     this.builtInCMapCache = builtInCMapCache;
-    this.standardFontDataCache = standardFontDataCache;
     this.globalColorSpaceCache = globalColorSpaceCache;
     this.globalImageCache = globalImageCache;
     this.systemFontCache = systemFontCache;
@@ -59331,7 +59142,6 @@ class Page {
       idFactory: this._localIdFactory,
       fontCache: this.fontCache,
       builtInCMapCache: this.builtInCMapCache,
-      standardFontDataCache: this.standardFontDataCache,
       globalColorSpaceCache: this.globalColorSpaceCache,
       globalImageCache: this.globalImageCache,
       systemFontCache: this.systemFontCache,
@@ -59942,7 +59752,6 @@ class PDFDocument {
       globalIdFactory: this._globalIdFactory,
       fontCache: catalog.fontCache,
       builtInCMapCache: catalog.builtInCMapCache,
-      standardFontDataCache: catalog.standardFontDataCache,
       globalColorSpaceCache: catalog.globalColorSpaceCache,
       globalImageCache: catalog.globalImageCache,
       systemFontCache: catalog.systemFontCache,
@@ -60193,8 +60002,7 @@ class PDFDocument {
     });
     const {
       builtInCMapCache,
-      fontCache,
-      standardFontDataCache
+      fontCache
     } = this.catalog;
     const partialEvaluator = new PartialEvaluator({
       xref: this.xref,
@@ -60203,7 +60011,6 @@ class PDFDocument {
       idFactory: this._globalIdFactory,
       fontCache,
       builtInCMapCache,
-      standardFontDataCache,
       options
     });
     const operatorList = new OperatorList();
@@ -64746,7 +64553,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "6.5.447";
+    const workerVersion = "6.5.472";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }

@@ -19,6 +19,8 @@ pdfjs.jar:
  content/web/wasm/qcms_bg.wasm (content/web/wasm/qcms_bg.wasm)
  content/web/wasm/jbig2.wasm (content/web/wasm/jbig2.wasm)
  content/web/wasm/jbig2_nowasm_fallback.js (content/web/wasm/jbig2_nowasm_fallback.js)
+ content/web/wasm/hellbox_bg.wasm (content/web/wasm/hellbox_bg.wasm)
+ content/web/wasm/hellbox_nowasm_fallback.js (content/web/wasm/hellbox_nowasm_fallback.js)
  content/web/iccs/ (content/web/iccs/*.icc)
 #ifdef ANDROID
  content/GeckoViewPdfJsParent.sys.mjs (content/GeckoViewPdfJsParent.sys.mjs)
