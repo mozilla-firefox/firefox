@@ -126,6 +126,7 @@ AppWindow::AppWindow(uint32_t aChromeFlags)
       mIgnoreXULSizeMode(false),
       mDestroying(false),
       mRegistered(false),
+      mDominantClientSize(false),
       mChromeFlags(aChromeFlags),
       mWidgetListenerDelegate(this) {}
 
@@ -687,6 +688,7 @@ nsresult AppWindow::MoveResize(const Maybe<DesktopPoint>& aPosition,
   if (aSize) {
     mWindow->SetSizeMode(nsSizeMode_Normal);
     mIntrinsicallySized = false;
+    mDominantClientSize = false;
   }
 
   if (aPosition && aSize) {
@@ -869,8 +871,8 @@ NS_IMETHODIMP AppWindow::SetVisibility(bool aVisibility) {
   nsCOMPtr<nsIWidget> window = mWindow;
   window->Show(aVisibility);
 
-  // NOTE(emilio): A bit hacky, but we need to synchronously trigger resizes for
-  // remote frames here if we're a sized popup.
+  // NOTE(emilio): A bit hacky, but we need to synchronously trigger resizes
+  // for remote frames here if we're a sized popup (mDominantClientSize=true).
   //
   // This is because what we do to show a popup window with a specified size is
   // to wait until the chrome loads (and gets sized, and thus laid out at a
@@ -879,7 +881,7 @@ NS_IMETHODIMP AppWindow::SetVisibility(bool aVisibility) {
   //
   // After bug 1917458, that remote browser resize would happen asynchronously,
   // which means content might be able to observe the old size unexpectedly.
-  if (aVisibility && mIsSizedPopup) {
+  if (aVisibility && mDominantClientSize) {
     if (RefPtr doc = mDocShell->GetDocument()) {
       doc->SynchronouslyUpdateRemoteBrowserDimensions();
     }
@@ -1454,15 +1456,43 @@ void AppWindow::StaggerPosition(int32_t& aRequestedX, int32_t& aRequestedY,
   } while (keepTrying);
 }
 
-void AppWindow::SyncOneShotAttributesToWidget() {
+void AppWindow::SyncAttributesToWidget() {
   nsCOMPtr<dom::Element> windowElement = GetWindowDOMElement();
-  if (!windowElement) {
-    return;
-  }
+  if (!windowElement) return;
 
-  MOZ_DIAGNOSTIC_ASSERT(mWindow, "No widget on SyncOneShotAttributesToWidget?");
+  MOZ_DIAGNOSTIC_ASSERT(mWindow, "No widget on SyncAttributesToWidget?");
 
   nsAutoString attr;
+
+  // Some attributes can change the client size (e.g. customtitlebar on Windows
+  // and MacOS). But we might want to keep it.
+  const LayoutDeviceIntSize oldClientSize = mWindow->GetClientSize();
+  // We have to check now whether we want to restore the client size, as any
+  // change in size will reset its state.
+  bool maintainClientSize = mDominantClientSize;
+
+  // "hidechrome" attribute
+  // FIXME(emilio): This should arguably be
+  // HideWindowChrome(windowElement->GetBoolAttr(...)), but that has
+  // side-effects in some platforms.
+  if (windowElement->GetBoolAttr(nsGkAtoms::hidechrome)) {
+    mWindow->HideWindowChrome(true);
+  }
+  NS_ENSURE_TRUE_VOID(mWindow);
+
+  // "customtitlebar" attribute
+  // FIXME(emilio): This should arguably be
+  // SetCustomTitlebar(windowElement->GetBoolAttr(...)), but that breaks with
+  // the early blank window which sets the custom titlebar via
+  // nsIDOMWindowUtils...
+  if (windowElement->GetBoolAttr(nsGkAtoms::customtitlebar)) {
+    mWindow->SetCustomTitlebar(true);
+  }
+
+  NS_ENSURE_TRUE_VOID(mWindow);
+
+  mWindow->SetMicaBackdrop(windowElement->GetBoolAttr(nsGkAtoms::windowsmica));
+  NS_ENSURE_TRUE_VOID(mWindow);
 
   // "windowtype", "windowclass", "windowname" attributes
   nsAutoString windowClassAttr, windowNameAttr;
@@ -1479,6 +1509,11 @@ void AppWindow::SyncOneShotAttributesToWidget() {
     mWindow->SetIsEarlyBlankWindow(attr.EqualsLiteral("navigator:blank"));
     NS_ENSURE_TRUE_VOID(mWindow);
   }
+
+  // "hidetitlebarseparator" attribute
+  mWindow->SetHideTitlebarSeparator(
+      windowElement->GetBoolAttr(nsGkAtoms::hidetitlebarseparator));
+  NS_ENSURE_TRUE_VOID(mWindow);
 
   // "macnativefullscreen" attribute. Only override the creation-time default
   // when the attribute is actually present; absence means "use the
@@ -1497,6 +1532,14 @@ void AppWindow::SyncOneShotAttributesToWidget() {
   windowElement->GetAttribute(u"macanimationtype"_ns, attr);
   if (attr.EqualsLiteral("document")) {
     mWindow->SetWindowAnimationType(nsIWidget::eDocumentWindowAnimation);
+  }
+
+  // Check if the client size did change and if we want to restore it.
+  if (maintainClientSize && mWindow->SizeMode() == nsSizeMode_Normal &&
+      oldClientSize != mWindow->GetClientSize()) {
+    mWindow->ResizeClient(oldClientSize / mWindow->GetDesktopToDeviceScale(),
+                          true);
+    mDominantClientSize = true;
   }
 }
 
@@ -2060,7 +2103,7 @@ NS_IMETHODIMP AppWindow::SizeShellTo(nsIDocShellTreeItem* aShellItem,
     auto newSize =
         LayoutDeviceIntSize(aCX, aCY) + GetOuterToInnerSizeDifference(mWindow);
     SetSize(newSize.width, newSize.height, /* aRepaint = */ true);
-    mIsSizedPopup = true;
+    mDominantClientSize = true;
     return NS_OK;
   }
 
@@ -2206,9 +2249,10 @@ void AppWindow::EnableParent(bool aEnable) {
 
 NS_IMETHODIMP
 AppWindow::BeforeStartLayout() {
-  // Note that we rely on ChromeObserver having already initialized for
-  // LoadPersistentWindowState() to deal with window sizes properly.
-  SyncOneShotAttributesToWidget();
+  // Ordering here is important, loading width/height values in
+  // LoadPersistentWindowState() depends on the customtitlebar attribute (since
+  // we need to translate outer to inner sizes).
+  SyncAttributesToWidget();
   LoadPersistentWindowState();
   if (mWindow) {
     SizeShell();
@@ -2423,7 +2467,7 @@ void AppWindow::SizeShellToWithLimit(int32_t aDesiredWidth,
   // has yet to complete can still change the size. We want the latest call to
   // define the final size.
   SetSize(winWidth, winHeight, true);
-  mIsSizedPopup = true;
+  mDominantClientSize = true;
 }
 
 nsresult AppWindow::GetInitialOpenWindowInfo(
@@ -2464,6 +2508,7 @@ void AppWindow::WindowMoved(nsIWidget*, const LayoutDeviceIntPoint&) {
 
 void AppWindow::WindowResized(nsIWidget* aWidget,
                               const LayoutDeviceIntSize& aSize) {
+  mDominantClientSize = false;
   if (mDocShell) {
     mDocShell->SetPositionAndSize(0, 0, aSize.width, aSize.height, 0);
   }
@@ -2888,7 +2933,7 @@ void AppWindow::OnChromeLoaded() {
   nsresult rv = EnsureContentTreeOwner();
 
   if (NS_SUCCEEDED(rv)) {
-    SyncOneShotAttributesToWidget();
+    SyncAttributesToWidget();
     if (RefPtr ps = GetPresShell()) {
       // Sync window properties now, before showing the window.
       ps->SyncWindowPropertiesIfNeeded();
@@ -2901,8 +2946,8 @@ void AppWindow::OnChromeLoaded() {
       AddTooltipSupport();
     }
     // At this point the window may have been closed already during Show() or
-    // SyncOneShotAttributesToWidget(), so AppWindow::Destroy may already have
-    // been called. Take care!
+    // SyncAttributesToWidget(), so AppWindow::Destroy may already have been
+    // called. Take care!
   }
   mPersistentAttributesMask += AllPersistentAttributes();
 }

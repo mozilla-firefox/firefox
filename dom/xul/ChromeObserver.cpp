@@ -19,7 +19,8 @@ namespace mozilla::dom {
 
 NS_IMPL_ISUPPORTS(ChromeObserver, nsIMutationObserver)
 
-ChromeObserver::ChromeObserver(Document* aDocument) : mDocument(aDocument) {}
+ChromeObserver::ChromeObserver(Document* aDocument)
+    : nsStubMutationObserver(), mDocument(aDocument) {}
 
 void ChromeObserver::Init() {
   mDocument->AddMutationObserver(this);
@@ -28,28 +29,36 @@ void ChromeObserver::Init() {
     return;
   }
   nsAutoScriptBlocker scriptBlocker;
-  uint32_t i = 0;
-  while (BorrowedAttrInfo info = rootElement->GetAttrInfoAt(i++)) {
+  uint32_t attributeCount = rootElement->GetAttrCount();
+  for (uint32_t i = 0; i < attributeCount; i++) {
+    BorrowedAttrInfo info = rootElement->GetAttrInfoAt(i);
     const nsAttrName* name = info.mName;
+    if (name->LocalName() == nsGkAtoms::customtitlebar) {
+      // Some linux windows managers have an issue when the customtitlebar is
+      // applied while the browser is loading (bug 1598848). For now, skip
+      // applying this attribute when initializing.
+      continue;
+    }
     AttributeChanged(rootElement, name->NamespaceID(), name->LocalName(),
                      AttrModType::Addition, nullptr);
   }
 }
 
-already_AddRefed<nsIWidget> ChromeObserver::GetWindowWidget() {
+nsIWidget* ChromeObserver::GetWindowWidget() {
   // only top level chrome documents can set the titlebar color
   if (mDocument && mDocument->IsRootDisplayDocument()) {
     nsCOMPtr<nsISupports> container = mDocument->GetContainer();
     if (nsCOMPtr<nsIBaseWindow> baseWindow = do_QueryInterface(container)) {
       nsCOMPtr<nsIWidget> mainWidget = baseWindow->GetMainWidget();
-      return mainWidget.forget();
+      return mainWidget;
     }
   }
   return nullptr;
 }
 
 void ChromeObserver::SetHideTitlebarSeparator(bool aState) {
-  if (RefPtr mainWidget = GetWindowWidget()) {
+  nsIWidget* mainWidget = GetWindowWidget();
+  if (mainWidget) {
     // We can do this synchronously because SetHideTitlebarSeparator doesn't
     // have any synchronous effects apart from a harmless invalidation.
     mainWidget->SetHideTitlebarSeparator(aState);
@@ -111,7 +120,7 @@ void ChromeObserver::SetMica(bool aEnable) {
 }
 
 void ChromeObserver::SetCustomTitlebar(bool aCustomTitlebar) {
-  if (RefPtr mainWidget = GetWindowWidget()) {
+  if (nsIWidget* mainWidget = GetWindowWidget()) {
     // SetCustomTitlebar can dispatch native events, hence doing it off a
     // script runner
     nsContentUtils::AddScriptRunner(NewRunnableMethod<bool>(
