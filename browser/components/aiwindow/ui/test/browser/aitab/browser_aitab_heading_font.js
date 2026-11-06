@@ -24,9 +24,19 @@ const { createAITab } = ChromeUtils.importESModule(
 );
 
 const AITAB_PREF = "browser.smartwindow.aitab.enabled";
-// Any real font works; the page registers it under its heading font name.
-const TEST_FONT_URL =
-  "resource://pdf.js/web/standard_fonts/LiberationSans-Regular.ttf";
+// A minimal TrueType font mapping printable ASCII to a box glyph, so the h1
+// renders with it alone. The page registers it under its heading font name.
+const TEST_FONT_BASE64 =
+  "AAEAAAAKAIAAAwAgT1MvMkXIRHIAAAEoAAAAYGNtYXAAEADTAAABkAAAAChnbHlmW9EkagAA" +
+  "AcAAAAAaaGVhZC+UsoQAAACsAAAANmhoZWEFegHEAAAA5AAAACRobXR4AooAAAAAAYgAAAAG" +
+  "bG9jYQANAAAAAAG4AAAABm1heHAABAAGAAABCAAAACBuYW1lAAYAAAAAAdwAAAAGcG9zdAAD" +
+  "AAAAAAHkAAAAIAABAAAAAQAA8uBh018PPPUAAwPoAAAAAOcTN3QAAAAA5xM3dAAyAAACJgK8" +
+  "AAAAAwACAAAAAAAAAAEAAAMg/zgAAAJYADIAMgImAAEAAAAAAAAAAAAAAAAAAAABAAEAAAAC" +
+  "AAQAAQAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAwJYAlgABQAEAAAAAAAAAAAAAAAAAAAAAAAA" +
+  "AAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAPz8/PwAAACAAfgMg/zgAAAMgAMgAAAAA" +
+  "AAAAAAAAAAAAAAAgAAACWAAAADIAAAAAAAEAAwAKAAAADAANAAAAAAAcAAAAAAAAAAEAAAAg" +
+  "AAAAfgAAAAEAAAAAAA0AAAABADIAAAImArwAAwAAMxEhETIB9AK8/UQAAAAAAAAAAAYAAAAD" +
+  "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 
 const client = RemoteSettings("ai-window-aitab");
 
@@ -36,7 +46,7 @@ let pageSlug;
 
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({ set: [[AITAB_PREF, true]] });
-  fontBytes = await (await fetch(TEST_FONT_URL)).arrayBuffer();
+  fontBytes = Uint8Array.fromBase64(TEST_FONT_BASE64).buffer;
 
   // Remote Settings checks cached files against the record's hash and size.
   const digest = await crypto.subtle.digest("SHA-256", fontBytes);
