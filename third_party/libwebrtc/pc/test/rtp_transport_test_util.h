@@ -46,7 +46,7 @@ class TransportObserver : public RtpPacketSinkInterface {
   // RtpPacketInterface override.
   void OnRtpPacket(const RtpPacketReceived& packet) override {
     rtp_count_++;
-    last_recv_rtp_packet_ = packet.Buffer();
+    last_recv_rtp_packet_ = packet;
   }
 
   void OnUndemuxableRtpPacket(const RtpPacketReceived& packet) {
@@ -64,7 +64,7 @@ class TransportObserver : public RtpPacketSinkInterface {
   int rtcp_count() const { return rtcp_count_; }
   int sent_packet_count() const { return sent_packet_count_; }
 
-  rtc::CopyOnWriteBuffer last_recv_rtp_packet() {
+  const RtpPacketReceived& last_recv_rtp_packet() {
     return last_recv_rtp_packet_;
   }
 
@@ -98,7 +98,7 @@ class TransportObserver : public RtpPacketSinkInterface {
   int rtcp_count_ = 0;
   int sent_packet_count_ = 0;
   int ready_to_send_signal_count_ = 0;
-  rtc::CopyOnWriteBuffer last_recv_rtp_packet_;
+  RtpPacketReceived last_recv_rtp_packet_;
   rtc::CopyOnWriteBuffer last_recv_rtcp_packet_;
   absl::AnyInvocable<void(bool)> action_on_ready_to_send_;
   absl::AnyInvocable<void()> action_on_sent_packet_;

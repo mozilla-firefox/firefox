@@ -52,8 +52,7 @@ def os_from_name(name):
 # Add names of builders to remove from LKGR finder to this list. This is
 # useful when a failure can be safely ignored while fixing it without
 # blocking the LKGR finder on it.
-skipped_lkgr_bots = [
-]
+skipped_lkgr_bots = []
 
 # Use LUCI Scheduler BBv2 names and add Scheduler realms configs.
 lucicfg.enable_experiment("crbug.com/1182002")
@@ -335,10 +334,27 @@ luci.cq_tryjob_verifier(
     cq_group = "cq_infra",
 )
 
+# Internal-only tryjob always included into CQ:
 luci.cq_tryjob_verifier(
     builder = "webrtc-internal:g3.webrtc-internal.try/internal_compile_lite",
     owner_whitelist = ["project-webrtc-internal-tryjob-access"],
     cq_group = "cq",
+)
+
+# Includable via `Cq-Include-Trybots: webrtc-internal/g3.webrtc-internal.try:internal_compile`:
+luci.cq_tryjob_verifier(
+    builder = "webrtc-internal:g3.webrtc-internal.try/internal_compile",
+    owner_whitelist = ["project-webrtc-internal-tryjob-access"],
+    cq_group = "cq",
+    includable_only = True,
+)
+
+# Includable via `Cq-Include-Trybots: webrtc-internal/g3.webrtc-internal.try:internal_tests`:
+luci.cq_tryjob_verifier(
+    builder = "webrtc-internal:g3.webrtc-internal.try/internal_tests",
+    owner_whitelist = ["project-webrtc-internal-tryjob-access"],
+    cq_group = "cq",
+    includable_only = True,
 )
 
 # Notifier definitions:
@@ -744,7 +760,7 @@ try_builder("linux_compile_arm64_rel")
 ci_builder("Linux Asan", "Linux|x64|asan")
 try_builder("linux_asan")
 ci_builder("Linux MSan", "Linux|x64|msan")
-try_builder("linux_msan", cq = None)  # TODO(b/329130536): Re-enable
+try_builder("linux_msan")
 ci_builder("Linux Tsan v2", "Linux|x64|tsan")
 try_builder("linux_tsan2")
 ci_builder("Linux UBSan", "Linux|x64|ubsan")

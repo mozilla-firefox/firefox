@@ -19,7 +19,6 @@
 #include "rtc_base/gunit.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/message_digest.h"
-#include "rtc_base/socket_stream.h"
 #include "rtc_base/ssl_identity.h"
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/stream.h"
@@ -157,6 +156,88 @@ class SSLAdapterTestDummyClient : public sigslot::has_slots<> {
   std::string data_;
 };
 
+namespace {
+
+class SocketStream : public rtc::StreamInterface, public sigslot::has_slots<> {
+ public:
+  explicit SocketStream(rtc::Socket* socket) : socket_(socket) {
+    socket_->SignalConnectEvent.connect(this, &SocketStream::OnConnectEvent);
+    socket_->SignalReadEvent.connect(this, &SocketStream::OnReadEvent);
+    socket_->SignalWriteEvent.connect(this, &SocketStream::OnWriteEvent);
+    socket_->SignalCloseEvent.connect(this, &SocketStream::OnCloseEvent);
+  }
+
+  ~SocketStream() override = default;
+
+  rtc::StreamState GetState() const override {
+    switch (socket_->GetState()) {
+      case rtc::Socket::CS_CONNECTED:
+        return rtc::SS_OPEN;
+      case rtc::Socket::CS_CONNECTING:
+        return rtc::SS_OPENING;
+      case rtc::Socket::CS_CLOSED:
+      default:
+        return rtc::SS_CLOSED;
+    }
+  }
+
+  rtc::StreamResult Read(rtc::ArrayView<uint8_t> buffer,
+                         size_t& read,
+                         int& error) override {
+    int result = socket_->Recv(buffer.data(), buffer.size(), nullptr);
+    if (result < 0) {
+      if (socket_->IsBlocking())
+        return rtc::SR_BLOCK;
+      error = socket_->GetError();
+      return rtc::SR_ERROR;
+    }
+    if ((result > 0) || (buffer.size() == 0)) {
+      read = result;
+      return rtc::SR_SUCCESS;
+    }
+    return rtc::SR_EOS;
+  }
+
+  rtc::StreamResult Write(rtc::ArrayView<const uint8_t> data,
+                          size_t& written,
+                          int& error) override {
+    int result = socket_->Send(data.data(), data.size());
+    if (result < 0) {
+      if (socket_->IsBlocking())
+        return rtc::SR_BLOCK;
+      error = socket_->GetError();
+      return rtc::SR_ERROR;
+    }
+    written = result;
+    return rtc::SR_SUCCESS;
+  }
+
+  void Close() override { socket_->Close(); }
+
+ private:
+  void OnConnectEvent(rtc::Socket* socket) {
+    RTC_DCHECK_EQ(socket, socket_.get());
+    SignalEvent(this, rtc::SE_OPEN | rtc::SE_READ | rtc::SE_WRITE, 0);
+  }
+
+  void OnReadEvent(rtc::Socket* socket) {
+    RTC_DCHECK_EQ(socket, socket_.get());
+    SignalEvent(this, rtc::SE_READ, 0);
+  }
+  void OnWriteEvent(rtc::Socket* socket) {
+    RTC_DCHECK_EQ(socket, socket_.get());
+    SignalEvent(this, rtc::SE_WRITE, 0);
+  }
+  void OnCloseEvent(rtc::Socket* socket, int err) {
+    RTC_DCHECK_EQ(socket, socket_.get());
+    SignalEvent(this, rtc::SE_CLOSE, err);
+  }
+
+  std::unique_ptr<rtc::Socket> socket_;
+};
+
+}  // namespace
+
 class SSLAdapterTestDummyServer : public sigslot::has_slots<> {
  public:
   explicit SSLAdapterTestDummyServer(const rtc::SSLMode& ssl_mode,
@@ -257,8 +338,8 @@ class SSLAdapterTestDummyServer : public sigslot::has_slots<> {
 
  private:
   void DoHandshake(rtc::Socket* socket) {
-    ssl_stream_adapter_ = rtc::SSLStreamAdapter::Create(
-        std::make_unique<rtc::SocketStream>(socket));
+    ssl_stream_adapter_ =
+        rtc::SSLStreamAdapter::Create(std::make_unique<SocketStream>(socket));
 
     ssl_stream_adapter_->SetMode(ssl_mode_);
     ssl_stream_adapter_->SetServerRole();

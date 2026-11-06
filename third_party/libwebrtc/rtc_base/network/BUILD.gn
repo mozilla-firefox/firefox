@@ -17,6 +17,11 @@ rtc_library("sent_packet") {
   absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
 }
 
+rtc_source_set("ecn_marking") {
+  visibility = [ "*" ]
+  sources = [ "ecn_marking.h" ]
+}
+
 rtc_library("received_packet") {
   visibility = [ "*" ]
   sources = [
@@ -24,6 +29,7 @@ rtc_library("received_packet") {
     "received_packet.h",
   ]
   deps = [
+    ":ecn_marking",
     "..:socket_address",
     "../../api:array_view",
     "../../api/units:timestamp",

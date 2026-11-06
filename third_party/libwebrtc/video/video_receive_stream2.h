@@ -61,7 +61,7 @@ class CallStats;
 // multiple calls to clock->Now().
 struct VideoFrameMetaData {
   VideoFrameMetaData(const webrtc::VideoFrame& frame, Timestamp now)
-      : rtp_timestamp(frame.timestamp()),
+      : rtp_timestamp(frame.rtp_timestamp()),
         timestamp_us(frame.timestamp_us()),
         ntp_time_ms(frame.ntp_time_ms()),
         width(frame.width()),

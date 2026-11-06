@@ -118,7 +118,7 @@ TEST_F(GenericDecoderTest, FrameDroppedIfTooManyFramesInFlight) {
   ASSERT_EQ(10U, frames.size());
   // Expect that the first frame was dropped since all decodes released at the
   // same time and the oldest frame info is the first one dropped.
-  EXPECT_EQ(frames[0].timestamp(), 90000u);
+  EXPECT_EQ(frames[0].rtp_timestamp(), 90000u);
   EXPECT_EQ(1u, user_callback_.frames_dropped());
 }
 

@@ -35,13 +35,11 @@ using ::webrtc::Timestamp;
 
 RRSendQueue::RRSendQueue(absl::string_view log_prefix,
                          DcSctpSocketCallbacks* callbacks,
-                         size_t buffer_size,
                          size_t mtu,
                          StreamPriority default_priority,
                          size_t total_buffered_amount_low_threshold)
     : log_prefix_(log_prefix),
       callbacks_(*callbacks),
-      buffer_size_(buffer_size),
       default_priority_(default_priority),
       scheduler_(log_prefix_, mtu),
       total_buffered_amount_(
@@ -377,10 +375,6 @@ void RRSendQueue::Add(Timestamp now,
   GetOrCreateStreamInfo(stream_id).Add(std::move(message),
                                        std::move(attributes));
   RTC_DCHECK(IsConsistent());
-}
-
-bool RRSendQueue::IsFull() const {
-  return total_buffered_amount() >= buffer_size_;
 }
 
 bool RRSendQueue::IsEmpty() const {

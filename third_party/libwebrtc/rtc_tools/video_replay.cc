@@ -218,7 +218,7 @@ class FileRenderPassthrough : public rtc::VideoSinkInterface<VideoFrame> {
       return;
 
     std::stringstream filename;
-    filename << basename_ << count_++ << "_" << video_frame.timestamp()
+    filename << basename_ << count_++ << "_" << video_frame.rtp_timestamp()
              << ".jpg";
 
     test::JpegFrameWriter frame_writer(filename.str());

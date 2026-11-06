@@ -82,7 +82,8 @@ class VideoQualityTest : public test::CallTest,
   std::unique_ptr<VideoDecoder> CreateVideoDecoder(
       const Environment& env,
       const SdpVideoFormat& format);
-  std::unique_ptr<VideoEncoder> CreateVideoEncoder(const SdpVideoFormat& format,
+  std::unique_ptr<VideoEncoder> CreateVideoEncoder(const Environment& env,
+                                                   const SdpVideoFormat& format,
                                                    VideoAnalyzer* analyzer);
   void SetupVideo(Transport* send_transport, Transport* recv_transport);
   void SetupThumbnails(Transport* send_transport, Transport* recv_transport);

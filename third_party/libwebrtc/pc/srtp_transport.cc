@@ -145,7 +145,8 @@ void SrtpTransport::OnRtpPacketReceived(const rtc::ReceivedPacket& packet) {
   }
   payload.SetSize(len);
   DemuxPacket(std::move(payload),
-              packet.arrival_time().value_or(Timestamp::MinusInfinity()));
+              packet.arrival_time().value_or(Timestamp::MinusInfinity()),
+              packet.ecn());
 }
 
 void SrtpTransport::OnRtcpPacketReceived(const rtc::ReceivedPacket& packet) {

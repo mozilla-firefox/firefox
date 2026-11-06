@@ -191,8 +191,11 @@ flat_set<uint32_t> RtpTransport::GetSsrcsForSink(RtpPacketSinkInterface* sink) {
 }
 
 void RtpTransport::DemuxPacket(rtc::CopyOnWriteBuffer packet,
-                               webrtc::Timestamp arrival_time) {
-  RtpPacketReceived parsed_packet(&header_extension_map_, arrival_time);
+                               webrtc::Timestamp arrival_time,
+                               rtc::EcnMarking ecn) {
+  RtpPacketReceived parsed_packet(&header_extension_map_);
+  parsed_packet.set_arrival_time(arrival_time);
+  parsed_packet.set_ecn(ecn);
 
   if (!parsed_packet.Parse(std::move(packet))) {
     RTC_LOG(LS_ERROR)
@@ -247,8 +250,10 @@ void RtpTransport::OnSentPacket(rtc::PacketTransportInternal* packet_transport,
 void RtpTransport::OnRtpPacketReceived(
     const rtc::ReceivedPacket& received_packet) {
   rtc::CopyOnWriteBuffer payload(received_packet.payload());
-  DemuxPacket(payload, received_packet.arrival_time().value_or(
-                           Timestamp::MinusInfinity()));
+  DemuxPacket(
+      payload,
+      received_packet.arrival_time().value_or(Timestamp::MinusInfinity()),
+      received_packet.ecn());
 }
 
 void RtpTransport::OnRtcpPacketReceived(

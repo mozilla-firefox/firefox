@@ -55,14 +55,15 @@ int32_t VideoRenderFrames::AddFrame(VideoFrame&& new_frame) {
   // really slow system never renders any frames.
   if (!incoming_frames_.empty() &&
       new_frame.render_time_ms() + kOldRenderTimestampMS < time_now) {
-    RTC_LOG(LS_WARNING) << "Too old frame, timestamp=" << new_frame.timestamp();
+    RTC_LOG(LS_WARNING) << "Too old frame, timestamp="
+                        << new_frame.rtp_timestamp();
     ++frames_dropped_;
     return -1;
   }
 
   if (new_frame.render_time_ms() > time_now + kFutureRenderTimestampMS) {
     RTC_LOG(LS_WARNING) << "Frame too long into the future, timestamp="
-                        << new_frame.timestamp();
+                        << new_frame.rtp_timestamp();
     ++frames_dropped_;
     return -1;
   }

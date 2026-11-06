@@ -12,6 +12,8 @@
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
 #include "absl/flags/usage.h"
+#include "api/environment/environment.h"
+#include "api/environment/environment_factory.h"
 #include "api/test/create_frame_generator.h"
 #include "api/test/frame_generator_interface.h"
 #include "api/video/builtin_video_bitrate_allocator_factory.h"
@@ -308,6 +310,7 @@ class TestVideoEncoderFactoryWrapper final {
   }
 
   std::unique_ptr<VideoEncoder> CreateAndInitializeVideoEncoder(
+      const Environment& env,
       const VideoCodec& video_codec_setting) {
     const std::string video_codec_string =
         CodecTypeToPayloadString(video_codec_setting.codecType);
@@ -316,8 +319,8 @@ class TestVideoEncoderFactoryWrapper final {
 
     // Create video encoder.
     std::unique_ptr<VideoEncoder> video_encoder =
-        builtin_video_encoder_factory_->CreateVideoEncoder(
-            SdpVideoFormat(video_codec_string));
+        builtin_video_encoder_factory_->Create(
+            env, SdpVideoFormat(video_codec_string));
     RTC_CHECK(video_encoder);
 
     // Initialize video encoder.
@@ -407,6 +410,8 @@ int main(int argc, char* argv[]) {
   const uint32_t bitrate_kbps = absl::GetFlag(FLAGS_bitrate_kbps);
   const uint32_t key_frame_interval = absl::GetFlag(FLAGS_key_frame_interval);
   const uint32_t maximum_number_of_frames = absl::GetFlag(FLAGS_frames);
+
+  const webrtc::Environment env = webrtc::CreateEnvironment();
 
   std::unique_ptr<webrtc::TestVideoEncoderFactoryWrapper>
       test_video_encoder_factory_wrapper =
@@ -514,7 +519,7 @@ int main(int argc, char* argv[]) {
 
   std::unique_ptr<webrtc::VideoEncoder> video_encoder =
       test_video_encoder_factory_wrapper->CreateAndInitializeVideoEncoder(
-          video_codec_setting);
+          env, video_codec_setting);
   RTC_CHECK(video_encoder);
 
   // Create `TestEncodedImageCallback`.
@@ -539,7 +544,7 @@ int main(int argc, char* argv[]) {
     webrtc::VideoFrame frame =
         webrtc::VideoFrame::Builder()
             .set_video_frame_buffer(frame_buffer_generator->NextFrame().buffer)
-            .set_timestamp_rtp(rtp_timestamp)
+            .set_rtp_timestamp(rtp_timestamp)
             .build();
     ret = video_encoder->Encode(frame, &frame_types);
     RTC_CHECK_EQ(ret, WEBRTC_VIDEO_CODEC_OK);

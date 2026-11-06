@@ -133,6 +133,7 @@ rtc_library("rtp_rtcp_format") {
     "../../rtc_base:macromagic",
     "../../rtc_base:safe_conversions",
     "../../rtc_base:stringutils",
+    "../../rtc_base/network:ecn_marking",
     "../../system_wrappers",
     "../video_coding:codec_globals_headers",
   ]

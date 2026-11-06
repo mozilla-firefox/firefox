@@ -99,7 +99,7 @@ void FrameEncodeMetadataWriter::OnEncodeStarted(const VideoFrame& frame) {
 
   timing_frames_info_.resize(num_spatial_layers_);
   FrameMetadata metadata;
-  metadata.rtp_timestamp = frame.timestamp();
+  metadata.rtp_timestamp = frame.rtp_timestamp();
   metadata.encode_start_time_ms = rtc::TimeMillis();
   metadata.ntp_time_ms = frame.ntp_time_ms();
   metadata.timestamp_us = frame.timestamp_us();

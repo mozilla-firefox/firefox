@@ -20,11 +20,11 @@
 #error "See: bugs.webrtc.org/9213#c13."
 #endif
 
-#include "api/video/color_space.h"
-
 extern "C" {
-#include "third_party/ffmpeg/libavcodec/avcodec.h"
+#include <libavcodec/avcodec.h>
 }  // extern "C"
+
+#include "api/video/color_space.h"
 
 namespace webrtc {
 

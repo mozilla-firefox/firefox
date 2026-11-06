@@ -71,7 +71,7 @@ rtc_library("audio") {
     "../logging:rtc_event_audio",
     "../logging:rtc_stream_config",
     "../media:media_channel",
-    "../media:rtc_media_base",
+    "../media:media_channel_impl",
     "../modules/async_audio_processing",
     "../modules/audio_coding",
     "../modules/audio_coding:audio_coding_module_typedefs",

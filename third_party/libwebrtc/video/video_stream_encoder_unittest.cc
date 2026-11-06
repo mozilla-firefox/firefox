@@ -1231,17 +1231,18 @@ class VideoStreamEncoderTest : public ::testing::Test {
       {
         MutexLock lock(&local_mutex_);
         if (expect_null_frame_) {
-          EXPECT_EQ(input_image.timestamp(), 0u);
+          EXPECT_EQ(input_image.rtp_timestamp(), 0u);
           EXPECT_EQ(input_image.width(), 1);
           last_frame_types_ = *frame_types;
           expect_null_frame_ = false;
         } else {
-          EXPECT_GT(input_image.timestamp(), timestamp_);
+          EXPECT_GT(input_image.rtp_timestamp(), timestamp_);
           EXPECT_GT(input_image.ntp_time_ms(), ntp_time_ms_);
-          EXPECT_EQ(input_image.timestamp(), input_image.ntp_time_ms() * 90);
+          EXPECT_EQ(input_image.rtp_timestamp(),
+                    input_image.ntp_time_ms() * 90);
         }
 
-        timestamp_ = input_image.timestamp();
+        timestamp_ = input_image.rtp_timestamp();
         ntp_time_ms_ = input_image.ntp_time_ms();
         last_input_width_ = input_image.width();
         last_input_height_ = input_image.height();

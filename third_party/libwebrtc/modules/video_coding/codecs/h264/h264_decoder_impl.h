@@ -21,10 +21,6 @@
 #error "See: bugs.webrtc.org/9213#c13."
 #endif
 
-#include <memory>
-
-#include "modules/video_coding/codecs/h264/include/h264.h"
-
 // CAVEAT: According to ffmpeg docs for avcodec_send_packet, ffmpeg requires a
 // few extra padding bytes after the end of input. And in addition, docs for
 // AV_INPUT_BUFFER_PADDING_SIZE says "If the first 23 bits of the additional
@@ -40,11 +36,14 @@
 // passed to ffmpeg.
 
 extern "C" {
-#include "third_party/ffmpeg/libavcodec/avcodec.h"
+#include <libavcodec/avcodec.h>
 }  // extern "C"
+
+#include <memory>
 
 #include "common_video/h264/h264_bitstream_parser.h"
 #include "common_video/include/video_frame_buffer_pool.h"
+#include "modules/video_coding/codecs/h264/include/h264.h"
 
 namespace webrtc {
 

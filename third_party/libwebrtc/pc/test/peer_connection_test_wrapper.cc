@@ -21,6 +21,7 @@
 #include "absl/types/optional.h"
 #include "api/audio/audio_mixer.h"
 #include "api/create_peerconnection_factory.h"
+#include "api/environment/environment.h"
 #include "api/media_types.h"
 #include "api/sequence_checker.h"
 #include "api/video_codecs/video_decoder_factory.h"
@@ -50,18 +51,20 @@
 #include "rtc_base/time_utils.h"
 #include "test/gtest.h"
 
-using webrtc::FakeVideoTrackRenderer;
-using webrtc::IceCandidateInterface;
-using webrtc::MediaStreamInterface;
-using webrtc::MediaStreamTrackInterface;
-using webrtc::MockSetSessionDescriptionObserver;
-using webrtc::PeerConnectionInterface;
-using webrtc::RtpReceiverInterface;
-using webrtc::SdpType;
-using webrtc::SessionDescriptionInterface;
-using webrtc::VideoTrackInterface;
-
 namespace {
+
+using ::webrtc::Environment;
+using ::webrtc::FakeVideoTrackRenderer;
+using ::webrtc::IceCandidateInterface;
+using ::webrtc::MediaStreamInterface;
+using ::webrtc::MediaStreamTrackInterface;
+using ::webrtc::MockSetSessionDescriptionObserver;
+using ::webrtc::PeerConnectionInterface;
+using ::webrtc::RtpReceiverInterface;
+using ::webrtc::SdpType;
+using ::webrtc::SessionDescriptionInterface;
+using ::webrtc::VideoTrackInterface;
+
 const char kStreamIdBase[] = "stream_id";
 const char kVideoTrackLabelBase[] = "video_track";
 const char kAudioTrackLabelBase[] = "audio_track";
@@ -75,13 +78,14 @@ class FuzzyMatchedVideoEncoderFactory : public webrtc::VideoEncoderFactory {
     return factory_.GetSupportedFormats();
   }
 
-  std::unique_ptr<webrtc::VideoEncoder> CreateVideoEncoder(
+  std::unique_ptr<webrtc::VideoEncoder> Create(
+      const Environment& env,
       const webrtc::SdpVideoFormat& format) override {
     if (absl::optional<webrtc::SdpVideoFormat> original_format =
             webrtc::FuzzyMatchSdpVideoFormat(factory_.GetSupportedFormats(),
                                              format)) {
       return std::make_unique<webrtc::SimulcastEncoderAdapter>(
-          &factory_, *original_format);
+          env, &factory_, nullptr, *original_format);
     }
 
     return nullptr;

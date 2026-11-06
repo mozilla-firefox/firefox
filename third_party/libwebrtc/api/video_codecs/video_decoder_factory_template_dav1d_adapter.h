@@ -21,10 +21,7 @@
 namespace webrtc {
 struct Dav1dDecoderTemplateAdapter {
   static std::vector<SdpVideoFormat> SupportedFormats() {
-    return {SdpVideoFormat("AV1"),
-            SdpVideoFormat(
-                "AV1", {{"profile",
-                         AV1ProfileToString(AV1Profile::kProfile1).data()}})};
+    return {SdpVideoFormat::AV1Profile0(), SdpVideoFormat::AV1Profile1()};
   }
 
   static std::unique_ptr<VideoDecoder> CreateDecoder(

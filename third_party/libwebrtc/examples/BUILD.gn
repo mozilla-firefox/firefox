@@ -697,7 +697,7 @@ if (is_linux || is_chromeos || is_win) {
       "../api/video:video_rtp_headers",
       "../api/video_codecs:video_codecs_api",
       "../media:media_channel",
-      "../media:rtc_media_base",
+      "../media:video_common",
       "../p2p:connection",
       "../p2p:port_allocator",
       "../p2p:rtc_p2p",
@@ -729,7 +729,6 @@ if (is_linux || is_chromeos || is_win) {
       ]
       configs += [ "//build/config/win:windowed" ]
       deps += [
-        "../media:rtc_media_base",
         "../rtc_base:win32",
         "../rtc_base:win32_socket_init",
       ]

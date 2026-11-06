@@ -85,9 +85,13 @@ struct DcSctpOptions {
   // buffer is fully utilized.
   size_t max_receiver_window_buffer_size = 5 * 1024 * 1024;
 
-  // Maximum send buffer size. It will not be possible to queue more data than
-  // this before sending it.
+  // Send queue total size limit. It will not be possible to queue more data if
+  // the queue size is larger than this number.
   size_t max_send_buffer_size = 2'000'000;
+
+  // Per stream send queue size limit. Similar to `max_send_buffer_size`, but
+  // limiting the size of individual streams.
+  size_t per_stream_send_queue_limit = 2'000'000;
 
   // A threshold that, when the amount of data in the send buffer goes below
   // this value, will trigger `DcSctpCallbacks::OnTotalBufferedAmountLow`.

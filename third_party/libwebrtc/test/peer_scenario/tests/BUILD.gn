@@ -24,7 +24,6 @@ if (rtc_include_tests) {
       "../../../api:rtc_stats_api",
       "../../../api/units:data_rate",
       "../../../api/units:time_delta",
-      "../../../media:rtc_media_base",
       "../../../media:stream_params",
       "../../../modules/rtp_rtcp:rtp_rtcp_format",
       "../../../pc:media_session",

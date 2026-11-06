@@ -1675,6 +1675,7 @@ if (is_ios || is_mac) {
         "../api/video:video_rtp_headers",
         "../api/video_codecs:video_codecs_api",
         "../common_video",
+        "../media:adapted_video_track_source",
         "../media:codec",
         "../media:rtc_audio_video",
         "../media:rtc_media_base",

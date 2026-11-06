@@ -345,7 +345,7 @@ int LibvpxVp9Decoder::ReturnFrame(
 
   auto builder = VideoFrame::Builder()
                      .set_video_frame_buffer(img_wrapped_buffer)
-                     .set_timestamp_rtp(timestamp);
+                     .set_rtp_timestamp(timestamp);
   if (explicit_color_space) {
     builder.set_color_space(*explicit_color_space);
   } else {

@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/environment/environment.h"
 #include "api/numerics/samples_stats_counter.h"
 #include "api/test/metrics/metric.h"
 #include "api/test/metrics/metrics_logger.h"
@@ -207,6 +208,7 @@ class VideoCodecTester {
 
   // Encodes video, collects and returns encode metrics.
   static std::unique_ptr<VideoCodecStats> RunEncodeTest(
+      const Environment& env,
       const VideoSourceSettings& source_settings,
       VideoEncoderFactory* encoder_factory,
       const EncoderSettings& encoder_settings,

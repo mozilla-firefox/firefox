@@ -544,7 +544,7 @@ int32_t H264EncoderImpl::Encode(
 
     encoded_images_[i]._encodedWidth = configurations_[i].width;
     encoded_images_[i]._encodedHeight = configurations_[i].height;
-    encoded_images_[i].SetRtpTimestamp(input_frame.timestamp());
+    encoded_images_[i].SetRtpTimestamp(input_frame.rtp_timestamp());
     encoded_images_[i].SetColorSpace(input_frame.color_space());
     encoded_images_[i]._frameType = ConvertToVideoFrameType(info.eFrameType);
     encoded_images_[i].SetSimulcastIndex(configurations_[i].simulcast_idx);

@@ -215,7 +215,6 @@ DcSctpSocket::DcSctpSocket(absl::string_view log_prefix,
                      absl::bind_front(&DcSctpSocket::OnSentPacket, this)),
       send_queue_(log_prefix_,
                   &callbacks_,
-                  options_.max_send_buffer_size,
                   options_.mtu,
                   options_.default_stream_priority,
                   options_.total_buffered_amount_low_threshold) {}
@@ -544,7 +543,9 @@ SendStatus DcSctpSocket::InternalSend(const DcSctpMessage& message,
                        "Unable to send message as the socket is shutting down");
     return SendStatus::kErrorShuttingDown;
   }
-  if (send_queue_.IsFull()) {
+  if (send_queue_.total_buffered_amount() >= options_.max_send_buffer_size ||
+      send_queue_.buffered_amount(message.stream_id()) >=
+          options_.per_stream_send_queue_limit) {
     if (lifecycle_id.IsSet()) {
       callbacks_.OnLifecycleEnd(lifecycle_id);
     }

@@ -87,7 +87,8 @@ class ScalingObserver : public test::SendTest {
                   bool expect_scaling)
       : SendTest(expect_scaling ? kTimeout * 4 : kTimeout),
         encoder_factory_(
-            [](const SdpVideoFormat& format) -> std::unique_ptr<VideoEncoder> {
+            [](const Environment& env,
+               const SdpVideoFormat& format) -> std::unique_ptr<VideoEncoder> {
               if (format.name == "VP8")
                 return VP8Encoder::Create();
               if (format.name == "VP9")

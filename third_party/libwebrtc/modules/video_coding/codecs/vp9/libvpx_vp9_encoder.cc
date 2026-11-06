@@ -1057,7 +1057,7 @@ int LibvpxVp9Encoder::Encode(const VideoFrame& input_image,
 
     if (codec_.mode == VideoCodecMode::kScreensharing) {
       const uint32_t frame_timestamp_ms =
-          1000 * input_image.timestamp() / kVideoPayloadTypeFrequency;
+          1000 * input_image.rtp_timestamp() / kVideoPayloadTypeFrequency;
 
       // To ensure that several rate-limiters with different limits don't
       // interfere, they must be queried in order of increasing limit.
@@ -1818,7 +1818,7 @@ void LibvpxVp9Encoder::GetEncodedLayerFrame(const vpx_codec_cx_pkt* pkt) {
   UpdateReferenceBuffers(*pkt, pics_since_key_);
 
   TRACE_COUNTER1("webrtc", "EncodedFrameSize", encoded_image_.size());
-  encoded_image_.SetRtpTimestamp(input_image_->timestamp());
+  encoded_image_.SetRtpTimestamp(input_image_->rtp_timestamp());
   encoded_image_.SetCaptureTimeIdentifier(
       input_image_->capture_time_identifier());
   encoded_image_.SetColorSpace(input_image_->color_space());

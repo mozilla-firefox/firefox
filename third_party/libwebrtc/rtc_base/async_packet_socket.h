@@ -50,6 +50,14 @@ struct RTC_EXPORT PacketOptions {
   ~PacketOptions();
 
   DiffServCodePoint dscp = DSCP_NO_CHANGE;
+
+  // Packet will be sent with ECN(1), RFC-3168, Section 5.
+  // Intended to be used with L4S
+  // https://www.rfc-editor.org/rfc/rfc9331.html
+  // TODO(https://bugs.webrtc.org/15368): Actually implement support for sending
+  // packets with different marking.
+  bool ecn_1 = false;
+
   // When used with RTP packets (for example, webrtc::PacketOptions), the value
   // should be 16 bits. A value of -1 represents "not set".
   int64_t packet_id = -1;

@@ -83,7 +83,7 @@ class ReceiveStatisticsProxyTest : public ::testing::Test {
     VideoFrame frame =
         VideoFrame::Builder()
             .set_video_frame_buffer(I420Buffer::Create(width, height))
-            .set_timestamp_rtp(0)
+            .set_rtp_timestamp(0)
             .set_timestamp_ms(render_time_ms)
             .set_rotation(kVideoRotation_0)
             .build();

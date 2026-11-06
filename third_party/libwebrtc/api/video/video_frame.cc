@@ -199,6 +199,12 @@ VideoFrame::Builder& VideoFrame::Builder::set_reference_time(
   return *this;
 }
 
+VideoFrame::Builder& VideoFrame::Builder::set_rtp_timestamp(
+    uint32_t rtp_timestamp) {
+  timestamp_rtp_ = rtp_timestamp;
+  return *this;
+}
+
 VideoFrame::Builder& VideoFrame::Builder::set_timestamp_rtp(
     uint32_t timestamp_rtp) {
   timestamp_rtp_ = timestamp_rtp;

@@ -146,7 +146,7 @@ class IvfVideoFrameGeneratorTest : public ::testing::Test {
       const uint32_t timestamp =
           last_frame_timestamp +
           kVideoPayloadTypeFrequency / codec_settings.maxFramerate;
-      frame.set_timestamp(timestamp);
+      frame.set_rtp_timestamp(timestamp);
 
       last_frame_timestamp = timestamp;
 

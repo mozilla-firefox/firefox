@@ -1520,7 +1520,7 @@ void VideoStreamEncoder::OnFrame(Timestamp post_time,
 
   // Convert NTP time, in ms, to RTP timestamp.
   const int kMsToRtpTimestamp = 90;
-  incoming_frame.set_timestamp(
+  incoming_frame.set_rtp_timestamp(
       kMsToRtpTimestamp * static_cast<uint32_t>(incoming_frame.ntp_time_ms()));
 
   // Identifier should remain the same for newly produced incoming frame and the
@@ -2015,7 +2015,7 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
       << out_frame.width() << "x" << out_frame.height();
 
   TRACE_EVENT1("webrtc", "VCMGenericEncoder::Encode", "timestamp",
-               out_frame.timestamp());
+               out_frame.rtp_timestamp());
 
   frame_encode_metadata_writer_.OnEncodeStarted(out_frame);
 

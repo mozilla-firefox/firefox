@@ -401,7 +401,6 @@ if (!build_with_mozilla) {
     # Basically, don't add stuff here. You might break sensitive downstream
     # targets like pnacl. API should not depend on anything outside of this
     # file, really. All these should arguably go away in time.
-    "../media:rtc_media_base",
     "../media:rtc_media_config",
     "../modules/audio_processing:audio_processing_statistics",
     "../rtc_base:checks",
@@ -615,7 +614,6 @@ if (!build_with_mozilla) {
     ":track_id_stream_info_map",
     ":video_quality_analyzer_api",
     "../media:media_constants",
-    "../media:rtc_media_base",
     "../modules/audio_processing:api",
     "../rtc_base:checks",
     "../rtc_base:network",

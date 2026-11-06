@@ -1966,8 +1966,7 @@ WebRtcVideoSendChannel::WebRtcVideoSendStream::SetRtpParameters(
   webrtc::RTCError error = CheckRtpParametersInvalidModificationAndValues(
       rtp_parameters_, new_parameters);
   if (!error.ok()) {
-    // Error is propagated to the callback at a higher level
-    return error;
+    return webrtc::InvokeSetParametersCallback(callback, error);
   }
 
   bool new_param = false;

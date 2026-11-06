@@ -316,7 +316,7 @@ void RetransmissionEndToEndTest::ReceivesPliAndRecovers(int rtp_history_ms) {
     void OnFrame(const VideoFrame& video_frame) override {
       MutexLock lock(&mutex_);
       if (received_pli_ &&
-          video_frame.timestamp() > highest_dropped_timestamp_) {
+          video_frame.rtp_timestamp() > highest_dropped_timestamp_) {
         observation_complete_.Set();
       }
       if (!received_pli_)
@@ -412,7 +412,7 @@ void RetransmissionEndToEndTest::DecodesRetransmittedFrame(bool enable_rtx,
       EXPECT_EQ(kVideoRotation_90, frame.rotation());
       {
         MutexLock lock(&mutex_);
-        if (frame.timestamp() == retransmitted_timestamp_)
+        if (frame.rtp_timestamp() == retransmitted_timestamp_)
           observation_complete_.Set();
       }
       orig_renderer_->OnFrame(frame);

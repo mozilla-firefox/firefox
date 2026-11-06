@@ -42,6 +42,7 @@ void TimestampExtrapolator::Reset(Timestamp start) {
   start_ = start;
   prev_ = start_;
   first_unwrapped_timestamp_ = absl::nullopt;
+  prev_unwrapped_timestamp_ = absl::nullopt;
   w_[0] = 90.0;
   w_[1] = 0;
   p_[0][0] = 1;

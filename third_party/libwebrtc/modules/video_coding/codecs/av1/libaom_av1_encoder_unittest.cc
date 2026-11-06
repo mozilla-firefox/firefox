@@ -426,7 +426,7 @@ TEST(LibaomAv1EncoderTest, AdheresToTargetBitrateDespiteUnevenFrameTiming) {
       VideoFrame frame = VideoFrame::Builder()
                              .set_video_frame_buffer(
                                  frame_buffer_generator->NextFrame().buffer)
-                             .set_timestamp_rtp(rtp_timestamp)
+                             .set_rtp_timestamp(rtp_timestamp)
                              .build();
 
       RTC_CHECK_EQ(encoder->Encode(frame, &frame_types), WEBRTC_VIDEO_CODEC_OK);

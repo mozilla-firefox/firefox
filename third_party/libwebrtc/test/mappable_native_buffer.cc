@@ -49,7 +49,7 @@ VideoFrame CreateMappableNativeFrame(int64_t ntp_time_ms,
       VideoFrame::Builder()
           .set_video_frame_buffer(rtc::make_ref_counted<MappableNativeBuffer>(
               mappable_type, width, height))
-          .set_timestamp_rtp(99)
+          .set_rtp_timestamp(99)
           .set_timestamp_ms(99)
           .set_rotation(kVideoRotation_0)
           .build();

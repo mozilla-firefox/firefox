@@ -310,11 +310,11 @@ public interface VideoEncoder {
    * encoder (e.g., an Android platform encoder), or alternatively 2) a native
    * encoder (e.g., a software encoder or a C++ encoder adapter).
    *
-   * For case 1), createNativeVideoEncoder() should return zero.
+   * For case 1), createNative() should return zero.
    * In this case, we expect the native library to call the encoder through
    * JNI using the Java interface declared below.
    *
-   * For case 2), createNativeVideoEncoder() should return a non-zero value.
+   * For case 2), createNative() should return a non-zero value.
    * In this case, we expect the native library to treat the returned value as
    * a raw pointer of type webrtc::VideoEncoder* (ownership is transferred to
    * the caller). The native library should then directly call the
@@ -322,9 +322,16 @@ public interface VideoEncoder {
    * the Java interface methods declared below should thus throw an
    * UnsupportedOperationException.
    */
+
   @CalledByNative
+  @Deprecated
   default long createNativeVideoEncoder() {
     return 0;
+  }
+
+  @CalledByNative
+  default long createNative(long webrtcEnvRef) {
+    return createNativeVideoEncoder();
   }
 
   /**

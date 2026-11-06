@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/video_encoder_factory.h"
@@ -30,11 +31,13 @@ class FunctionVideoEncoderFactory final : public VideoEncoderFactory {
  public:
   explicit FunctionVideoEncoderFactory(
       std::function<std::unique_ptr<VideoEncoder>()> create)
-      : create_([create = std::move(create)](const SdpVideoFormat&) {
+      : create_([create = std::move(create)](const Environment&,
+                                             const SdpVideoFormat&) {
           return create();
         }) {}
   explicit FunctionVideoEncoderFactory(
-      std::function<std::unique_ptr<VideoEncoder>(const SdpVideoFormat&)>
+      std::function<std::unique_ptr<VideoEncoder>(const Environment&,
+                                                  const SdpVideoFormat&)>
           create)
       : create_(std::move(create)) {}
 
@@ -44,13 +47,14 @@ class FunctionVideoEncoderFactory final : public VideoEncoderFactory {
     return {};
   }
 
-  std::unique_ptr<VideoEncoder> CreateVideoEncoder(
-      const SdpVideoFormat& format) override {
-    return create_(format);
+  std::unique_ptr<VideoEncoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
+    return create_(env, format);
   }
 
  private:
-  const std::function<std::unique_ptr<VideoEncoder>(const SdpVideoFormat&)>
+  const std::function<std::unique_ptr<VideoEncoder>(const Environment&,
+                                                    const SdpVideoFormat&)>
       create_;
 };
 

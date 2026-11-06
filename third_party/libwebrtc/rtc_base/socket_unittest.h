@@ -64,6 +64,8 @@ class SocketTest : public ::testing::Test {
   void TestSocketRecvTimestampIPv6();
   void TestUdpSocketRecvTimestampUseRtcEpochIPv4();
   void TestUdpSocketRecvTimestampUseRtcEpochIPv6();
+  void TestSocketSendRecvWithEcnIPV4();
+  void TestSocketSendRecvWithEcnIPV6();
 
   static const int kTimeout = 5000;  // ms
   const IPAddress kIPv4Loopback;
@@ -95,6 +97,7 @@ class SocketTest : public ::testing::Test {
   void GetSetOptionsInternal(const IPAddress& loopback);
   void SocketRecvTimestamp(const IPAddress& loopback);
   void UdpSocketRecvTimestampUseRtcEpoch(const IPAddress& loopback);
+  void SocketSendRecvWithEcn(const IPAddress& loopback);
 
   SocketFactory* socket_factory_;
 };

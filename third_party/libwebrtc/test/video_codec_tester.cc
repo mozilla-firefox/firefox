@@ -16,6 +16,7 @@
 #include <utility>
 
 #include "api/array_view.h"
+#include "api/environment/environment.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
 #include "api/video/builtin_video_bitrate_allocator_factory.h"
@@ -107,7 +108,7 @@ class VideoSource {
     frame_num_[timestamp_rtp] = frame_num;
     return VideoFrame::Builder()
         .set_video_frame_buffer(buffer)
-        .set_timestamp_rtp(timestamp_rtp)
+        .set_rtp_timestamp(timestamp_rtp)
         .set_timestamp_us((timestamp_rtp / k90kHz).us())
         .build();
   }
@@ -124,7 +125,7 @@ class VideoSource {
         frame_reader_->ReadFrame(frame_num_.at(timestamp_rtp), resolution);
     return VideoFrame::Builder()
         .set_video_frame_buffer(buffer)
-        .set_timestamp_rtp(timestamp_rtp)
+        .set_rtp_timestamp(timestamp_rtp)
         .build();
   }
 
@@ -330,7 +331,7 @@ class VideoCodecAnalyzer : public VideoCodecTester::VideoCodecStats {
   void StartEncode(const VideoFrame& video_frame,
                    const EncodingSettings& encoding_settings) {
     int64_t encode_start_us = rtc::TimeMicros();
-    task_queue_.PostTask([this, timestamp_rtp = video_frame.timestamp(),
+    task_queue_.PostTask([this, timestamp_rtp = video_frame.rtp_timestamp(),
                           encoding_settings, encode_start_us]() {
       RTC_CHECK(frames_.find(timestamp_rtp) == frames_.end())
           << "Duplicate frame. Frame with timestamp " << timestamp_rtp
@@ -417,7 +418,7 @@ class VideoCodecAnalyzer : public VideoCodecTester::VideoCodecStats {
 
   void FinishDecode(const VideoFrame& decoded_frame, int spatial_idx) {
     int64_t decode_finished_us = rtc::TimeMicros();
-    task_queue_.PostTask([this, timestamp_rtp = decoded_frame.timestamp(),
+    task_queue_.PostTask([this, timestamp_rtp = decoded_frame.rtp_timestamp(),
                           spatial_idx, width = decoded_frame.width(),
                           height = decoded_frame.height(),
                           decode_finished_us]() {
@@ -438,7 +439,7 @@ class VideoCodecAnalyzer : public VideoCodecTester::VideoCodecStats {
           decoded_frame.video_frame_buffer()->ToI420();
 
       task_queue_.PostTask([this, decoded_buffer,
-                            timestamp_rtp = decoded_frame.timestamp(),
+                            timestamp_rtp = decoded_frame.rtp_timestamp(),
                             spatial_idx]() {
         VideoFrame ref_frame = video_source_->ReadFrame(
             timestamp_rtp, {.width = decoded_buffer->width(),
@@ -883,10 +884,12 @@ class Encoder : public EncodedImageCallback {
   using EncodeCallback =
       absl::AnyInvocable<void(const EncodedImage& encoded_frame)>;
 
-  Encoder(VideoEncoderFactory* encoder_factory,
+  Encoder(const Environment& env,
+          VideoEncoderFactory* encoder_factory,
           const EncoderSettings& encoder_settings,
           VideoCodecAnalyzer* analyzer)
-      : encoder_factory_(encoder_factory),
+      : env_(env),
+        encoder_factory_(encoder_factory),
         analyzer_(analyzer),
         pacer_(encoder_settings.pacing_settings) {
     RTC_CHECK(analyzer_) << "Analyzer must be provided";
@@ -903,8 +906,8 @@ class Encoder : public EncodedImageCallback {
   }
 
   void Initialize(const EncodingSettings& encoding_settings) {
-    encoder_ = encoder_factory_->CreateVideoEncoder(
-        encoding_settings.sdp_video_format);
+    encoder_ =
+        encoder_factory_->Create(env_, encoding_settings.sdp_video_format);
     RTC_CHECK(encoder_) << "Could not create encoder for video format "
                         << encoding_settings.sdp_video_format.ToString();
 
@@ -923,10 +926,11 @@ class Encoder : public EncodedImageCallback {
               EncodeCallback callback) {
     {
       MutexLock lock(&mutex_);
-      callbacks_[input_frame.timestamp()] = std::move(callback);
+      callbacks_[input_frame.rtp_timestamp()] = std::move(callback);
     }
 
-    Timestamp pts = Timestamp::Micros((input_frame.timestamp() / k90kHz).us());
+    Timestamp pts =
+        Timestamp::Micros((input_frame.rtp_timestamp() / k90kHz).us());
 
     task_queue_.PostScheduledTask(
         [this, input_frame, encoding_settings] {
@@ -940,8 +944,9 @@ class Encoder : public EncodedImageCallback {
 
           int error = encoder_->Encode(input_frame, /*frame_types=*/nullptr);
           if (error != 0) {
-            RTC_LOG(LS_WARNING) << "Encode failed with error code " << error
-                                << " RTP timestamp " << input_frame.timestamp();
+            RTC_LOG(LS_WARNING)
+                << "Encode failed with error code " << error
+                << " RTP timestamp " << input_frame.rtp_timestamp();
           }
         },
         pacer_.Schedule(pts));
@@ -1192,6 +1197,7 @@ class Encoder : public EncodedImageCallback {
     return encoded_frame;
   }
 
+  const Environment env_;
   VideoEncoderFactory* const encoder_factory_;
   std::unique_ptr<VideoEncoder> encoder_;
   VideoCodecAnalyzer* const analyzer_;
@@ -1236,7 +1242,7 @@ void ConfigureSimulcast(VideoCodec* vc) {
       /*min_layer=*/1, num_spatial_layers, vc->width, vc->height,
       /*bitrate_priority=*/1.0, cricket::kDefaultVideoMaxQpVpx,
       /*is_screenshare=*/false, /*temporal_layers_supported=*/true,
-      field_trials);
+      field_trials, webrtc::kVideoCodecVP8);
 
   vc->numberOfSimulcastStreams = streams.size();
   RTC_CHECK_LE(vc->numberOfSimulcastStreams, num_spatial_layers);
@@ -1552,6 +1558,7 @@ VideoCodecTester::RunDecodeTest(const Environment& env,
 
 std::unique_ptr<VideoCodecTester::VideoCodecStats>
 VideoCodecTester::RunEncodeTest(
+    const Environment& env,
     const VideoSourceSettings& source_settings,
     VideoEncoderFactory* encoder_factory,
     const EncoderSettings& encoder_settings,
@@ -1559,7 +1566,7 @@ VideoCodecTester::RunEncodeTest(
   VideoSource video_source(source_settings);
   std::unique_ptr<VideoCodecAnalyzer> analyzer =
       std::make_unique<VideoCodecAnalyzer>(/*video_source=*/nullptr);
-  Encoder encoder(encoder_factory, encoder_settings, analyzer.get());
+  Encoder encoder(env, encoder_factory, encoder_settings, analyzer.get());
   encoder.Initialize(encoding_settings.begin()->second);
 
   for (const auto& [timestamp_rtp, frame_settings] : encoding_settings) {
@@ -1589,7 +1596,7 @@ VideoCodecTester::RunEncodeDecodeTest(
   std::unique_ptr<VideoCodecAnalyzer> analyzer =
       std::make_unique<VideoCodecAnalyzer>(&video_source);
   const EncodingSettings& frame_settings = encoding_settings.begin()->second;
-  Encoder encoder(encoder_factory, encoder_settings, analyzer.get());
+  Encoder encoder(env, encoder_factory, encoder_settings, analyzer.get());
   encoder.Initialize(frame_settings);
 
   int num_spatial_layers =

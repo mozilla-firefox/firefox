@@ -320,7 +320,8 @@ EncoderStreamFactory::CreateSimulcastOrConferenceModeScreenshareStreams(
                               encoder_config.number_of_streams, width, height,
                               encoder_config.bitrate_priority, max_qp_,
                               is_screenshare_ && conference_mode_,
-                              temporal_layers_supported, trials_);
+                              temporal_layers_supported, trials_,
+                              encoder_config.codec_type);
   // Allow an experiment to override the minimum bitrate for the lowest
   // spatial layer. The experiment's configuration has the lowest priority.
   if (experimental_min_bitrate) {

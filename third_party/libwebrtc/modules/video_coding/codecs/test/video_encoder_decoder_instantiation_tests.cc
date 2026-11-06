@@ -123,7 +123,7 @@ INSTANTIATE_TEST_SUITE_P(MultipleEncodersDecoders,
 TEST_P(VideoEncoderDecoderInstantiationTest, DISABLED_InstantiateVp8Codecs) {
   for (int i = 0; i < num_encoders_; ++i) {
     std::unique_ptr<VideoEncoder> encoder =
-        encoder_factory_->CreateVideoEncoder(vp8_format_);
+        encoder_factory_->Create(env_, vp8_format_);
     EXPECT_EQ(0, InitEncoder(kVideoCodecVP8, encoder.get()));
     encoders_.emplace_back(std::move(encoder));
   }
@@ -141,7 +141,7 @@ TEST_P(VideoEncoderDecoderInstantiationTest,
        DISABLED_InstantiateH264CBPCodecs) {
   for (int i = 0; i < num_encoders_; ++i) {
     std::unique_ptr<VideoEncoder> encoder =
-        encoder_factory_->CreateVideoEncoder(h264cbp_format_);
+        encoder_factory_->Create(env_, h264cbp_format_);
     EXPECT_EQ(0, InitEncoder(kVideoCodecH264, encoder.get()));
     encoders_.emplace_back(std::move(encoder));
   }

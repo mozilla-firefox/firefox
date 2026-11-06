@@ -865,7 +865,7 @@ class TurnPortTest : public ::testing::Test,
 
 TEST_F(TurnPortTest, TestTurnPortType) {
   CreateTurnPort(kTurnUsername, kTurnPassword, kTurnUdpProtoAddr);
-  EXPECT_EQ(cricket::RELAY_PORT_TYPE, turn_port_->Type());
+  EXPECT_EQ(IceCandidateType::kRelay, turn_port_->Type());
 }
 
 // Tests that the URL of the servers can be correctly reconstructed when

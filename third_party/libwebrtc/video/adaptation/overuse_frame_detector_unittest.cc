@@ -105,7 +105,7 @@ class OveruseFrameDetectorTest : public ::testing::Test,
             .build();
     uint32_t timestamp = 0;
     while (num_frames-- > 0) {
-      frame.set_timestamp(timestamp);
+      frame.set_rtp_timestamp(timestamp);
       int64_t capture_time_us = rtc::TimeMicros();
       overuse_detector_->FrameCaptured(frame, capture_time_us);
       clock_.AdvanceTime(TimeDelta::Micros(delay_us));
@@ -131,7 +131,7 @@ class OveruseFrameDetectorTest : public ::testing::Test,
             .build();
     uint32_t timestamp = 0;
     while (num_frames-- > 0) {
-      frame.set_timestamp(timestamp);
+      frame.set_rtp_timestamp(timestamp);
       int64_t capture_time_us = rtc::TimeMicros();
       overuse_detector_->FrameCaptured(frame, capture_time_us);
       int max_delay_us = 0;
@@ -166,7 +166,7 @@ class OveruseFrameDetectorTest : public ::testing::Test,
             .build();
     uint32_t timestamp = 0;
     while (num_frames-- > 0) {
-      frame.set_timestamp(timestamp);
+      frame.set_rtp_timestamp(timestamp);
       int interval_us = random.Rand(min_interval_us, max_interval_us);
       int64_t capture_time_us = rtc::TimeMicros();
       overuse_detector_->FrameCaptured(frame, capture_time_us);
@@ -381,7 +381,7 @@ TEST_F(OveruseFrameDetectorTest, MeasuresMultipleConcurrentSamples) {
           .build();
   for (size_t i = 0; i < 1000; ++i) {
     // Unique timestamps.
-    frame.set_timestamp(static_cast<uint32_t>(i));
+    frame.set_rtp_timestamp(static_cast<uint32_t>(i));
     int64_t capture_time_us = rtc::TimeMicros();
     overuse_detector_->FrameCaptured(frame, capture_time_us);
     clock_.AdvanceTime(TimeDelta::Micros(kIntervalUs));
@@ -408,7 +408,7 @@ TEST_F(OveruseFrameDetectorTest, UpdatesExistingSamples) {
           .build();
   uint32_t timestamp = 0;
   for (size_t i = 0; i < 1000; ++i) {
-    frame.set_timestamp(timestamp);
+    frame.set_rtp_timestamp(timestamp);
     int64_t capture_time_us = rtc::TimeMicros();
     overuse_detector_->FrameCaptured(frame, capture_time_us);
     // Encode and send first parts almost instantly.
@@ -863,7 +863,7 @@ TEST_F(OveruseFrameDetectorTest2, MeasuresMultipleConcurrentSamples) {
           .build();
   for (size_t i = 0; i < 1000; ++i) {
     // Unique timestamps.
-    frame.set_timestamp(static_cast<uint32_t>(i));
+    frame.set_rtp_timestamp(static_cast<uint32_t>(i));
     int64_t capture_time_us = rtc::TimeMicros();
     overuse_detector_->FrameCaptured(frame, capture_time_us);
     clock_.AdvanceTime(TimeDelta::Micros(kIntervalUs));
@@ -890,7 +890,7 @@ TEST_F(OveruseFrameDetectorTest2, UpdatesExistingSamples) {
           .build();
   uint32_t timestamp = 0;
   for (size_t i = 0; i < 1000; ++i) {
-    frame.set_timestamp(timestamp);
+    frame.set_rtp_timestamp(timestamp);
     int64_t capture_time_us = rtc::TimeMicros();
     overuse_detector_->FrameCaptured(frame, capture_time_us);
     // Encode and send first parts almost instantly.

@@ -107,11 +107,11 @@ class FrameObserver : public test::RtpRtcpObserver,
   // Verifies that all sent frames are decoded and rendered.
   void OnFrame(const VideoFrame& rendered_frame) override {
     MutexLock lock(&mutex_);
-    EXPECT_THAT(sent_timestamps_, Contains(rendered_frame.timestamp()));
+    EXPECT_THAT(sent_timestamps_, Contains(rendered_frame.rtp_timestamp()));
 
     // Remove old timestamps too, only the newest decoded frame is rendered.
     num_rendered_frames_ +=
-        RemoveOlderOrEqual(rendered_frame.timestamp(), &sent_timestamps_);
+        RemoveOlderOrEqual(rendered_frame.rtp_timestamp(), &sent_timestamps_);
 
     if (num_rendered_frames_ >= kFramesToObserve) {
       EXPECT_TRUE(sent_timestamps_.empty()) << "All sent frames not decoded.";
@@ -199,7 +199,8 @@ void MultiCodecReceiveTest::RunTestWithCodecs(
   EXPECT_TRUE(!configs.empty());
 
   test::FunctionVideoEncoderFactory encoder_factory(
-      [](const SdpVideoFormat& format) -> std::unique_ptr<VideoEncoder> {
+      [](const Environment& env,
+         const SdpVideoFormat& format) -> std::unique_ptr<VideoEncoder> {
         if (format.name == "VP8") {
           return VP8Encoder::Create();
         }

@@ -50,7 +50,6 @@ if (rtc_include_tests) {
       "../../api/video_codecs:video_encoder_factory_template_libvpx_vp9_adapter",
       "../../api/video_codecs:video_encoder_factory_template_open_h264_adapter",
       "../../media:rtc_audio_video",
-      "../../media:rtc_media_base",
       "../../media:rtp_utils",
       "../../modules/audio_device:test_audio_device_module",
       "../../modules/rtp_rtcp:rtp_rtcp_format",

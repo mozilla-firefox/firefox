@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "absl/strings/string_view.h"
+#include "api/environment/environment.h"
 #include "api/video/video_codec_type.h"
 #include "api/video_codecs/video_encoder.h"
 #include "modules/video_coding/include/video_error_codes.h"
@@ -141,7 +142,7 @@ int32_t QualityAnalyzingVideoEncoder::Encode(
   {
     MutexLock lock(&mutex_);
     // Store id to be able to retrieve it in analyzing callback.
-    timestamp_to_frame_id_list_.push_back({frame.timestamp(), frame.id()});
+    timestamp_to_frame_id_list_.push_back({frame.rtp_timestamp(), frame.id()});
     // If this list is growing, it means that we are not receiving new encoded
     // images from encoder. So it should be a bug in setup on in the encoder.
     RTC_DCHECK_LT(timestamp_to_frame_id_list_.size(), kMaxFrameInPipelineCount);
@@ -158,7 +159,7 @@ int32_t QualityAnalyzingVideoEncoder::Encode(
       auto it = timestamp_to_frame_id_list_.end();
       while (it != timestamp_to_frame_id_list_.begin()) {
         --it;
-        if (it->first == frame.timestamp()) {
+        if (it->first == frame.rtp_timestamp()) {
           timestamp_to_frame_id_list_.erase(it);
           break;
         }
@@ -402,11 +403,11 @@ QualityAnalyzingVideoEncoderFactory::QueryCodecSupport(
   return delegate_->QueryCodecSupport(format, scalability_mode);
 }
 
-std::unique_ptr<VideoEncoder>
-QualityAnalyzingVideoEncoderFactory::CreateVideoEncoder(
+std::unique_ptr<VideoEncoder> QualityAnalyzingVideoEncoderFactory::Create(
+    const Environment& env,
     const SdpVideoFormat& format) {
   return std::make_unique<QualityAnalyzingVideoEncoder>(
-      peer_name_, delegate_->CreateVideoEncoder(format), bitrate_multiplier_,
+      peer_name_, delegate_->Create(env, format), bitrate_multiplier_,
       stream_to_sfu_config_, injector_, analyzer_);
 }
 

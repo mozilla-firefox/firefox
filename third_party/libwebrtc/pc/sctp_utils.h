@@ -36,36 +36,20 @@ struct DataChannelInit;
 class StreamId {
  public:
   StreamId() = default;
-  explicit StreamId(int id)
-      : id_(id >= cricket::kMinSctpSid && id <= cricket::kSpecMaxSctpSid
-                ? absl::optional<uint16_t>(static_cast<uint16_t>(id))
-                : absl::nullopt) {}
+  explicit StreamId(uint16_t id) : id_(id) {}
   StreamId(const StreamId& sid) = default;
   StreamId& operator=(const StreamId& sid) = default;
-
-  // Returns `true` if a valid stream id is contained, in the range of
-  // kMinSctpSid - kSpecMaxSctpSid ([0..0xffff]). Note that this
-  // is different than having `kMaxSctpSid` as the upper bound, which is
-  // the limit that is internally used by `SctpSidAllocator`. Sid values may
-  // be assigned to `StreamId` outside of `SctpSidAllocator` and have a higher
-  // id value than supplied by `SctpSidAllocator`, yet is still valid.
-  bool HasValue() const { return id_.has_value(); }
-
   // Provided for compatibility with existing code that hasn't been updated
   // to use `StreamId` directly. New code should not use 'int' for the stream
   // id but rather `StreamId` directly.
-  int stream_id_int() const {
-    return id_.has_value() ? static_cast<int>(id_.value().value()) : -1;
-  }
-
-  void reset() { id_ = absl::nullopt; }
+  int stream_id_int() const { return static_cast<int>(id_.value()); }
 
   bool operator==(const StreamId& sid) const { return id_ == sid.id_; }
   bool operator<(const StreamId& sid) const { return id_ < sid.id_; }
   bool operator!=(const StreamId& sid) const { return !(operator==(sid)); }
 
  private:
-  absl::optional<dcsctp::StreamID> id_;
+  dcsctp::StreamID id_;
 };
 
 // Read the message type and return true if it's an OPEN message.

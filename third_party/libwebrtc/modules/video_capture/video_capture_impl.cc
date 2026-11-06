@@ -244,7 +244,7 @@ int32_t VideoCaptureImpl::IncomingFrame(uint8_t* videoFrame,
   VideoFrame captureFrame =
       VideoFrame::Builder()
           .set_video_frame_buffer(buffer)
-          .set_timestamp_rtp(0)
+          .set_rtp_timestamp(0)
           .set_timestamp_ms(rtc::TimeMillis())
           .set_rotation(!apply_rotation_ ? _rotateFrame : kVideoRotation_0)
           .build();

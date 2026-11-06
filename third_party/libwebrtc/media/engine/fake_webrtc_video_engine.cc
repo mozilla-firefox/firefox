@@ -14,6 +14,7 @@
 #include <memory>
 
 #include "absl/strings/match.h"
+#include "api/environment/environment.h"
 #include "media/base/codec.h"
 #include "media/base/media_constants.h"
 #include "media/engine/simulcast_encoder_adapter.h"
@@ -23,6 +24,8 @@
 namespace cricket {
 
 namespace {
+
+using ::webrtc::Environment;
 
 static constexpr webrtc::TimeDelta kEventTimeout =
     webrtc::TimeDelta::Seconds(10);
@@ -232,8 +235,8 @@ FakeWebRtcVideoEncoderFactory::QueryCodecSupport(
   return {.is_supported = false};
 }
 
-std::unique_ptr<webrtc::VideoEncoder>
-FakeWebRtcVideoEncoderFactory::CreateVideoEncoder(
+std::unique_ptr<webrtc::VideoEncoder> FakeWebRtcVideoEncoderFactory::Create(
+    const Environment& env,
     const webrtc::SdpVideoFormat& format) {
   webrtc::MutexLock lock(&mutex_);
   std::unique_ptr<webrtc::VideoEncoder> encoder;
@@ -244,7 +247,8 @@ FakeWebRtcVideoEncoderFactory::CreateVideoEncoder(
       // encoders. Enter vp8_factory_mode so that we now create these encoders
       // instead of more adapters.
       vp8_factory_mode_ = true;
-      encoder = std::make_unique<webrtc::SimulcastEncoderAdapter>(this, format);
+      encoder = std::make_unique<webrtc::SimulcastEncoderAdapter>(
+          env, /*primary_factory=*/this, /*fallback_factory=*/nullptr, format);
     } else {
       num_created_encoders_++;
       created_video_encoder_event_.Set();

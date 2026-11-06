@@ -35,7 +35,6 @@ using ::webrtc::Timestamp;
 constexpr Timestamp kNow = Timestamp::Zero();
 constexpr StreamID kStreamID(1);
 constexpr PPID kPPID(53);
-constexpr size_t kMaxQueueSize = 1000;
 constexpr StreamPriority kDefaultPriority(10);
 constexpr size_t kBufferedAmountLowThreshold = 500;
 constexpr size_t kOneFragmentPacketSize = 100;
@@ -47,7 +46,7 @@ class RRSendQueueTest : public testing::Test {
   RRSendQueueTest()
       : buf_("log: ",
              &callbacks_,
-             kMaxQueueSize,
+
              kMtu,
              kDefaultPriority,
              kBufferedAmountLowThreshold) {}
@@ -60,14 +59,12 @@ class RRSendQueueTest : public testing::Test {
 TEST_F(RRSendQueueTest, EmptyBuffer) {
   EXPECT_TRUE(buf_.IsEmpty());
   EXPECT_FALSE(buf_.Produce(kNow, kOneFragmentPacketSize).has_value());
-  EXPECT_FALSE(buf_.IsFull());
 }
 
 TEST_F(RRSendQueueTest, AddAndGetSingleChunk) {
   buf_.Add(kNow, DcSctpMessage(kStreamID, kPPID, {1, 2, 4, 5, 6}));
 
   EXPECT_FALSE(buf_.IsEmpty());
-  EXPECT_FALSE(buf_.IsFull());
   absl::optional<SendQueue::DataToSend> chunk_opt =
       buf_.Produce(kNow, kOneFragmentPacketSize);
   ASSERT_TRUE(chunk_opt.has_value());
@@ -124,30 +121,30 @@ TEST_F(RRSendQueueTest, GetChunksFromTwoMessages) {
 
 TEST_F(RRSendQueueTest, BufferBecomesFullAndEmptied) {
   std::vector<uint8_t> payload(600);
-  EXPECT_FALSE(buf_.IsFull());
+  EXPECT_LT(buf_.total_buffered_amount(), 1000u);
   buf_.Add(kNow, DcSctpMessage(kStreamID, kPPID, payload));
-  EXPECT_FALSE(buf_.IsFull());
+  EXPECT_LT(buf_.total_buffered_amount(), 1000u);
   buf_.Add(kNow, DcSctpMessage(StreamID(3), PPID(54), payload));
-  EXPECT_TRUE(buf_.IsFull());
+  EXPECT_GE(buf_.total_buffered_amount(), 1000u);
   // However, it's still possible to add messages. It's a soft limit, and it
   // might be necessary to forcefully add messages due to e.g. external
   // fragmentation.
   buf_.Add(kNow, DcSctpMessage(StreamID(5), PPID(55), payload));
-  EXPECT_TRUE(buf_.IsFull());
+  EXPECT_GE(buf_.total_buffered_amount(), 1000u);
 
   absl::optional<SendQueue::DataToSend> chunk_one = buf_.Produce(kNow, 1000);
   ASSERT_TRUE(chunk_one.has_value());
   EXPECT_EQ(chunk_one->data.stream_id, kStreamID);
   EXPECT_EQ(chunk_one->data.ppid, kPPID);
 
-  EXPECT_TRUE(buf_.IsFull());
+  EXPECT_GE(buf_.total_buffered_amount(), 1000u);
 
   absl::optional<SendQueue::DataToSend> chunk_two = buf_.Produce(kNow, 1000);
   ASSERT_TRUE(chunk_two.has_value());
   EXPECT_EQ(chunk_two->data.stream_id, StreamID(3));
   EXPECT_EQ(chunk_two->data.ppid, PPID(54));
 
-  EXPECT_FALSE(buf_.IsFull());
+  EXPECT_LT(buf_.total_buffered_amount(), 1000u);
   EXPECT_FALSE(buf_.IsEmpty());
 
   absl::optional<SendQueue::DataToSend> chunk_three = buf_.Produce(kNow, 1000);
@@ -155,7 +152,7 @@ TEST_F(RRSendQueueTest, BufferBecomesFullAndEmptied) {
   EXPECT_EQ(chunk_three->data.stream_id, StreamID(5));
   EXPECT_EQ(chunk_three->data.ppid, PPID(55));
 
-  EXPECT_FALSE(buf_.IsFull());
+  EXPECT_LT(buf_.total_buffered_amount(), 1000u);
   EXPECT_TRUE(buf_.IsEmpty());
 }
 
@@ -813,7 +810,7 @@ TEST_F(RRSendQueueTest, WillHandoverPriority) {
   DcSctpSocketHandoverState state;
   buf_.AddHandoverState(state);
 
-  RRSendQueue q2("log: ", &callbacks_, kMaxQueueSize, kMtu, kDefaultPriority,
+  RRSendQueue q2("log: ", &callbacks_, kMtu, kDefaultPriority,
                  kBufferedAmountLowThreshold);
   q2.RestoreFromState(state);
   EXPECT_EQ(q2.GetStreamPriority(StreamID(1)), StreamPriority(42));

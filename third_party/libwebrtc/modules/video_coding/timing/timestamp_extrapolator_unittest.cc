@@ -231,4 +231,20 @@ TEST(TimestampExtrapolatorTest, TimestampJump) {
               Optional(clock.CurrentTime()));
 }
 
+TEST(TimestampExtrapolatorTest, GapInReceivedFrames) {
+  SimulatedClock clock(
+      Timestamp::Seconds(std::numeric_limits<uint32_t>::max() / 90000 - 31));
+  TimestampExtrapolator ts_extrapolator(clock.CurrentTime());
+
+  uint32_t rtp = std::numeric_limits<uint32_t>::max();
+  clock.AdvanceTime(k25FpsDelay);
+  ts_extrapolator.Update(clock.CurrentTime(), rtp);
+
+  rtp += 30 * 90000;
+  clock.AdvanceTime(TimeDelta::Seconds(30));
+  ts_extrapolator.Update(clock.CurrentTime(), rtp);
+  EXPECT_THAT(ts_extrapolator.ExtrapolateLocalTime(rtp),
+              Optional(clock.CurrentTime()));
+}
+
 }  // namespace webrtc

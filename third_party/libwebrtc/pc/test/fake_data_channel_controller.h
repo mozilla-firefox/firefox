@@ -59,8 +59,8 @@ class FakeDataChannelController
                   std::move(my_weak_ptr), std::string(label),
                   transport_available_, init, signaling_thread_,
                   network_thread_);
-          if (transport_available_ && channel->sid_n().HasValue()) {
-            AddSctpDataStream(channel->sid_n());
+          if (transport_available_ && channel->sid_n().has_value()) {
+            AddSctpDataStream(*channel->sid_n());
           }
           if (ready_to_send_) {
             network_thread_->PostTask([channel = channel] {
@@ -97,7 +97,6 @@ class FakeDataChannelController
 
   void AddSctpDataStream(webrtc::StreamId sid) override {
     RTC_DCHECK_RUN_ON(network_thread_);
-    RTC_CHECK(sid.HasValue());
     if (!transport_available_) {
       return;
     }
@@ -106,7 +105,6 @@ class FakeDataChannelController
 
   void RemoveSctpDataStream(webrtc::StreamId sid) override {
     RTC_DCHECK_RUN_ON(network_thread_);
-    RTC_CHECK(sid.HasValue());
     known_stream_ids_.erase(sid);
     // Unlike the real SCTP transport, act like the closing procedure finished
     // instantly.

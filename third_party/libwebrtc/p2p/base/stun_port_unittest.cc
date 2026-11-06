@@ -35,6 +35,7 @@ using ::testing::DoAll;
 using ::testing::Return;
 using ::testing::ReturnPointee;
 using ::testing::SetArgPointee;
+using webrtc::IceCandidateType;
 
 static const SocketAddress kLocalAddr("127.0.0.1", 0);
 static const SocketAddress kIPv6LocalAddr("::1", 0);
@@ -261,14 +262,14 @@ class StunPortTest : public FakeClockBase, public StunPortTestBase {};
 // Test that we can create a STUN port.
 TEST_F(StunPortTest, TestCreateStunPort) {
   CreateStunPort(kStunAddr1);
-  EXPECT_EQ("stun", port()->Type());
+  EXPECT_EQ(IceCandidateType::kSrflx, port()->Type());
   EXPECT_EQ(0U, port()->Candidates().size());
 }
 
 // Test that we can create a UDP port.
 TEST_F(StunPortTest, TestCreateUdpPort) {
   CreateSharedUdpPort(kStunAddr1, nullptr);
-  EXPECT_EQ("local", port()->Type());
+  EXPECT_EQ(IceCandidateType::kHost, port()->Type());
   EXPECT_EQ(0U, port()->Candidates().size());
 }
 
@@ -460,7 +461,7 @@ TEST_F(StunPortTest, TestNoDuplicatedAddressWithTwoStunServers) {
   stun_servers.insert(kStunAddr1);
   stun_servers.insert(kStunAddr2);
   CreateStunPort(stun_servers);
-  EXPECT_EQ("stun", port()->Type());
+  EXPECT_EQ(IceCandidateType::kSrflx, port()->Type());
   PrepareAddress();
   EXPECT_TRUE_SIMULATED_WAIT(done(), kTimeoutMs, fake_clock);
   EXPECT_EQ(1U, port()->Candidates().size());
@@ -474,7 +475,7 @@ TEST_F(StunPortTest, TestMultipleStunServersWithBadServer) {
   stun_servers.insert(kStunAddr1);
   stun_servers.insert(kBadAddr);
   CreateStunPort(stun_servers);
-  EXPECT_EQ("stun", port()->Type());
+  EXPECT_EQ(IceCandidateType::kSrflx, port()->Type());
   PrepareAddress();
   EXPECT_TRUE_SIMULATED_WAIT(done(), kTimeoutMs, fake_clock);
   EXPECT_EQ(1U, port()->Candidates().size());
@@ -495,7 +496,7 @@ TEST_F(StunPortTest, TestTwoCandidatesWithTwoStunServersAcrossNat) {
   stun_servers.insert(kStunAddr1);
   stun_servers.insert(kStunAddr2);
   CreateStunPort(stun_servers);
-  EXPECT_EQ("stun", port()->Type());
+  EXPECT_EQ(IceCandidateType::kSrflx, port()->Type());
   PrepareAddress();
   EXPECT_TRUE_SIMULATED_WAIT(done(), kTimeoutMs, fake_clock);
   EXPECT_EQ(2U, port()->Candidates().size());

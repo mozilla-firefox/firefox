@@ -145,9 +145,9 @@ void AsyncUDPSocket::OnReadEvent(Socket* socket) {
     }
     *receive_buffer.arrival_time += *socket_time_offset_;
   }
-  NotifyPacketReceived(ReceivedPacket(receive_buffer.payload,
-                                      receive_buffer.source_address,
-                                      receive_buffer.arrival_time));
+  NotifyPacketReceived(
+      ReceivedPacket(receive_buffer.payload, receive_buffer.source_address,
+                     receive_buffer.arrival_time, receive_buffer.ecn));
 }
 
 void AsyncUDPSocket::OnWriteEvent(Socket* socket) {

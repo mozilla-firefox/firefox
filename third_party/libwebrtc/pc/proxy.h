@@ -70,24 +70,13 @@
 #include "rtc_base/string_utils.h"
 #include "rtc_base/system/rtc_export.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/trace_event.h"
 
 #if !defined(RTC_DISABLE_PROXY_TRACE_EVENTS) && !defined(WEBRTC_CHROMIUM_BUILD)
 #define RTC_DISABLE_PROXY_TRACE_EVENTS
 #endif
 
 namespace webrtc {
-namespace proxy_internal {
-
-// Class for tracing the lifetime of MethodCall::Marshal.
-class ScopedTrace {
- public:
-  explicit ScopedTrace(const char* class_and_method_name);
-  ~ScopedTrace();
-
- private:
-  [[maybe_unused]] const char* const class_and_method_name_;
-};
-}  // namespace proxy_internal
 
 template <typename R>
 class ReturnType {
@@ -334,7 +323,7 @@ class ConstMethodCall {
       rtc::MakeCompileTimeString(proxy_name_)           \
           .Concat(rtc::MakeCompileTimeString("::"))     \
           .Concat(rtc::MakeCompileTimeString(#method)); \
-  proxy_internal::ScopedTrace scoped_trace(class_and_method_name.string)
+  TRACE_EVENT0("webrtc", class_and_method_name.string)
 
 #endif  // if defined(RTC_DISABLE_PROXY_TRACE_EVENTS)
 

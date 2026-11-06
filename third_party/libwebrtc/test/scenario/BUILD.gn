@@ -115,7 +115,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "../../media:media_constants",
       "../../media:rtc_audio_video",
       "../../media:rtc_internal_video_codecs",
-      "../../media:rtc_media_base",
       "../../modules/audio_device",
       "../../modules/audio_device:mock_audio_device",
       "../../modules/audio_device:test_audio_device_module",

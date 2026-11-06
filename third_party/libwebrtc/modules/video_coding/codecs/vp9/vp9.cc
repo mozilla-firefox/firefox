@@ -46,15 +46,11 @@ std::vector<SdpVideoFormat> SupportedVP9Codecs(bool add_scalability_modes) {
       }
     }
   }
-  std::vector<SdpVideoFormat> supported_formats{SdpVideoFormat(
-      cricket::kVp9CodecName,
-      {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile0)}},
-      scalability_modes)};
+  std::vector<SdpVideoFormat> supported_formats{
+      SdpVideoFormat(SdpVideoFormat::VP9Profile0(), scalability_modes)};
   if (vpx_supports_high_bit_depth) {
-    supported_formats.push_back(SdpVideoFormat(
-        cricket::kVp9CodecName,
-        {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile2)}},
-        scalability_modes));
+    supported_formats.push_back(
+        SdpVideoFormat(SdpVideoFormat::VP9Profile2(), scalability_modes));
   }
 
   return supported_formats;
@@ -69,12 +65,8 @@ std::vector<SdpVideoFormat> SupportedVP9DecoderCodecs() {
   // The WebRTC internal decoder supports VP9 profile 1 and 3. However, there's
   // currently no way of sending VP9 profile 1 or 3 using the internal encoder.
   // It would require extended support for I444, I422, and I440 buffers.
-  supported_formats.push_back(SdpVideoFormat(
-      cricket::kVp9CodecName,
-      {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile1)}}));
-  supported_formats.push_back(SdpVideoFormat(
-      cricket::kVp9CodecName,
-      {{kVP9FmtpProfileId, VP9ProfileToString(VP9Profile::kProfile3)}}));
+  supported_formats.push_back(SdpVideoFormat::VP9Profile1());
+  supported_formats.push_back(SdpVideoFormat::VP9Profile3());
   return supported_formats;
 #else
   return std::vector<SdpVideoFormat>();

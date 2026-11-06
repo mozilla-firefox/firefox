@@ -61,7 +61,7 @@ EncodedVideoFrameProducer::Encode() {
     VideoFrame frame =
         VideoFrame::Builder()
             .set_video_frame_buffer(frame_buffer_generator->NextFrame().buffer)
-            .set_timestamp_rtp(rtp_timestamp_)
+            .set_rtp_timestamp(rtp_timestamp_)
             .set_capture_time_identifier(capture_time_identifier_)
             .build();
     rtp_timestamp_ += rtp_tick;

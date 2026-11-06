@@ -1940,9 +1940,9 @@ TEST_F(TestVp9ImplFrameDropping, PreEncodeFrameDropping) {
   VideoFrame input_frame = NextInputFrame();
   for (size_t frame_num = 0; frame_num < num_frames_to_encode; ++frame_num) {
     EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK, encoder_->Encode(input_frame, nullptr));
-    const size_t timestamp = input_frame.timestamp() +
+    const size_t timestamp = input_frame.rtp_timestamp() +
                              kVideoPayloadTypeFrequency / input_framerate_fps;
-    input_frame.set_timestamp(static_cast<uint32_t>(timestamp));
+    input_frame.set_rtp_timestamp(static_cast<uint32_t>(timestamp));
   }
 
   const size_t num_encoded_frames = GetNumEncodedFrames();
@@ -1992,9 +1992,9 @@ TEST_F(TestVp9ImplFrameDropping, DifferentFrameratePerSpatialLayer) {
   VideoFrame input_frame = NextInputFrame();
   for (size_t frame_num = 0; frame_num < num_input_frames; ++frame_num) {
     EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK, encoder_->Encode(input_frame, nullptr));
-    const size_t timestamp = input_frame.timestamp() +
+    const size_t timestamp = input_frame.rtp_timestamp() +
                              kVideoPayloadTypeFrequency / input_framerate_fps;
-    input_frame.set_timestamp(static_cast<uint32_t>(timestamp));
+    input_frame.set_rtp_timestamp(static_cast<uint32_t>(timestamp));
   }
 
   std::vector<EncodedImage> encoded_frames;

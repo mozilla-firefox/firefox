@@ -258,6 +258,7 @@ std::unique_ptr<VideoCodecStats> RunEncodeDecodeTest(
 }
 
 std::unique_ptr<VideoCodecStats> RunEncodeTest(
+    const Environment& env,
     std::string codec_type,
     std::string codec_impl,
     const VideoInfo& video_info,
@@ -292,7 +293,8 @@ std::unique_ptr<VideoCodecStats> RunEncodeTest(
     encoder_settings.encoder_output_base_path = output_path + "_enc_output";
   }
 
-  return VideoCodecTester::RunEncodeTest(source_settings, encoder_factory.get(),
+  return VideoCodecTester::RunEncodeTest(env, source_settings,
+                                         encoder_factory.get(),
                                          encoder_settings, encoding_settings);
 }
 
@@ -394,6 +396,7 @@ class BitrateAdaptationTest
 
 TEST_P(BitrateAdaptationTest, BitrateAdaptation) {
   auto [codec_type, codec_impl, video_info, bitrate_kbps] = GetParam();
+  const Environment env = CreateEnvironment();
 
   int duration_s = 10;  // Duration of fixed rate interval.
   int num_frames =
@@ -417,7 +420,7 @@ TEST_P(BitrateAdaptationTest, BitrateAdaptation) {
   encoding_settings.merge(encoding_settings2);
 
   std::unique_ptr<VideoCodecStats> stats =
-      RunEncodeTest(codec_type, codec_impl, video_info, encoding_settings);
+      RunEncodeTest(env, codec_type, codec_impl, video_info, encoding_settings);
 
   VideoCodecStats::Stream stream;
   if (stats != nullptr) {
@@ -472,6 +475,7 @@ class FramerateAdaptationTest
 
 TEST_P(FramerateAdaptationTest, FramerateAdaptation) {
   auto [codec_type, codec_impl, video_info, framerate_fps] = GetParam();
+  const Environment env = CreateEnvironment();
 
   int duration_s = 10;  // Duration of fixed rate interval.
 
@@ -497,7 +501,7 @@ TEST_P(FramerateAdaptationTest, FramerateAdaptation) {
   encoding_settings.merge(encoding_settings2);
 
   std::unique_ptr<VideoCodecStats> stats =
-      RunEncodeTest(codec_type, codec_impl, video_info, encoding_settings);
+      RunEncodeTest(env, codec_type, codec_impl, video_info, encoding_settings);
 
   VideoCodecStats::Stream stream;
   if (stats != nullptr) {

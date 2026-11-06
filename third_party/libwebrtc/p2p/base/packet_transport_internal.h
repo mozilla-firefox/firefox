@@ -98,19 +98,21 @@ class RTC_EXPORT PacketTransportInternal : public sigslot::has_slots<> {
   sigslot::signal1<absl::optional<rtc::NetworkRoute>> SignalNetworkRouteChanged;
 
   // Signalled when the transport is closed.
-  sigslot::signal1<PacketTransportInternal*> SignalClosed;
+  void SetOnCloseCallback(absl::AnyInvocable<void() &&> callback);
 
  protected:
   PacketTransportInternal();
   ~PacketTransportInternal() override;
 
   void NotifyPacketReceived(const rtc::ReceivedPacket& packet);
+  void NotifyOnClose();
 
   webrtc::SequenceChecker network_checker_{webrtc::SequenceChecker::kDetached};
 
  private:
   webrtc::CallbackList<PacketTransportInternal*, const rtc::ReceivedPacket&>
       received_packet_callback_list_ RTC_GUARDED_BY(&network_checker_);
+  absl::AnyInvocable<void() &&> on_close_;
 };
 
 }  // namespace rtc

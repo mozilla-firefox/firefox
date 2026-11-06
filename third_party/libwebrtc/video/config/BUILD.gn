@@ -25,7 +25,7 @@ rtc_library("streams_config") {
     "../../api/video_codecs:video_codecs_api",
     "../../call/adaptation:resource_adaptation",
     "../../media:media_constants",
-    "../../media:rtc_media_base",
+    "../../media:video_adapter",
     "../../modules/video_coding:video_coding_utility",
     "../../modules/video_coding:webrtc_vp9_helpers",
     "../../rtc_base:checks",

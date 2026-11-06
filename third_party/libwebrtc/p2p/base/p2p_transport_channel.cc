@@ -1410,7 +1410,7 @@ bool P2PTransportChannel::CreateConnection(PortInterface* port,
   }
 
   if (ice_field_trials_.skip_relay_to_non_relay_connections) {
-    IceCandidateType port_type = PortTypeToIceCandidateType(port->Type());
+    IceCandidateType port_type = port->Type();
     if ((port_type != remote_candidate.type()) &&
         (port_type == IceCandidateType::kRelay ||
          remote_candidate.is_relay())) {
@@ -1758,7 +1758,7 @@ rtc::NetworkRoute P2PTransportChannel::ConfigureNetworkRoute(
           .local = CreateRouteEndpointFromCandidate(
               /* local= */ true, conn->local_candidate(),
               /* uses_turn= */
-              conn->port()->Type() == RELAY_PORT_TYPE),
+              conn->port()->Type() == IceCandidateType::kRelay),
           .remote = CreateRouteEndpointFromCandidate(
               /* local= */ false, conn->remote_candidate(),
               /* uses_turn= */ conn->remote_candidate().is_relay()),

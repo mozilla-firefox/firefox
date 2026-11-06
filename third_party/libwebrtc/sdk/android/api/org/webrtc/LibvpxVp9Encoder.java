@@ -16,7 +16,13 @@ public class LibvpxVp9Encoder extends WrappedNativeVideoEncoder {
     return nativeCreateEncoder();
   }
 
+  @Override
+  public long createNative(long webrtcEnvRef) {
+    return nativeCreate(webrtcEnvRef);
+  }
+
   static native long nativeCreateEncoder();
+  static native long nativeCreate(long webrtcEnvRef);
 
   @Override
   public boolean isHardwareEncoder() {

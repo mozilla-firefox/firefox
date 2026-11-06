@@ -85,8 +85,8 @@ class SctpSidAllocator {
   // Gets the first unused odd/even id based on the DTLS role. If `role` is
   // SSL_CLIENT, the allocated id starts from 0 and takes even numbers;
   // otherwise, the id starts from 1 and takes odd numbers.
-  // If a `StreamId` cannot be allocated, `StreamId::HasValue()` will be false.
-  StreamId AllocateSid(rtc::SSLRole role);
+  // If a `StreamId` cannot be allocated, `absl::nullopt` is returned.
+  absl::optional<StreamId> AllocateSid(rtc::SSLRole role);
 
   // Attempts to reserve a specific sid. Returns false if it's unavailable.
   bool ReserveSid(StreamId sid);
@@ -215,7 +215,7 @@ class SctpDataChannel : public DataChannelInterface {
   // stats purposes (see also `GetStats()`).
   int internal_id() const { return internal_id_; }
 
-  StreamId sid_n() const {
+  absl::optional<StreamId> sid_n() const {
     RTC_DCHECK_RUN_ON(network_thread_);
     return id_n_;
   }
@@ -267,7 +267,8 @@ class SctpDataChannel : public DataChannelInterface {
 
   rtc::Thread* const signaling_thread_;
   rtc::Thread* const network_thread_;
-  StreamId id_n_ RTC_GUARDED_BY(network_thread_);
+  absl::optional<StreamId> id_n_ RTC_GUARDED_BY(network_thread_) =
+      absl::nullopt;
   const int internal_id_;
   const std::string label_;
   const std::string protocol_;

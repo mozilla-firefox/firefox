@@ -246,10 +246,22 @@ void SimulcastEncoderAdapter::StreamContext::OnDroppedFrame(
   parent_->OnDroppedFrame(stream_idx_);
 }
 
+SimulcastEncoderAdapter::SimulcastEncoderAdapter(
+    const Environment& env,
+    absl::Nonnull<VideoEncoderFactory*> primary_factory,
+    absl::Nullable<VideoEncoderFactory*> fallback_factory,
+    const SdpVideoFormat& format)
+    : SimulcastEncoderAdapter(&env,
+                              primary_factory,
+                              fallback_factory,
+                              format,
+                              env.field_trials()) {}
+
 SimulcastEncoderAdapter::SimulcastEncoderAdapter(VideoEncoderFactory* factory,
                                                  const SdpVideoFormat& format)
-    : SimulcastEncoderAdapter(factory,
-                              nullptr,
+    : SimulcastEncoderAdapter(/*env=*/nullptr,
+                              /*primary_factory=*/factory,
+                              /*fallback_factory=*/nullptr,
                               format,
                               FieldTrialBasedConfig()) {}
 
@@ -258,7 +270,20 @@ SimulcastEncoderAdapter::SimulcastEncoderAdapter(
     VideoEncoderFactory* fallback_factory,
     const SdpVideoFormat& format,
     const FieldTrialsView& field_trials)
-    : inited_(0),
+    : SimulcastEncoderAdapter(/*env=*/nullptr,
+                              primary_factory,
+                              fallback_factory,
+                              format,
+                              field_trials) {}
+
+SimulcastEncoderAdapter::SimulcastEncoderAdapter(
+    absl::Nullable<const Environment*> env,
+    absl::Nonnull<VideoEncoderFactory*> primary_factory,
+    absl::Nullable<VideoEncoderFactory*> fallback_factory,
+    const SdpVideoFormat& format,
+    const FieldTrialsView& field_trials)
+    : env_(env != nullptr ? absl::make_optional(*env) : absl::nullopt),
+      inited_(0),
       primary_encoder_factory_(primary_factory),
       fallback_encoder_factory_(fallback_factory),
       video_format_(format),
@@ -509,7 +534,7 @@ int SimulcastEncoderAdapter::Encode(
 
     // Convert timestamp from RTP 90kHz clock.
     const Timestamp frame_timestamp =
-        Timestamp::Micros((1000 * input_image.timestamp()) / 90);
+        Timestamp::Micros((1000 * input_image.rtp_timestamp()) / 90);
 
     // If adapter is passed through and only one sw encoder does simulcast,
     // frame types for all streams should be passed to the encoder unchanged.
@@ -744,12 +769,16 @@ SimulcastEncoderAdapter::FetchOrCreateEncoderContext(
     cached_encoder_contexts_.erase(encoder_context_iter);
   } else {
     std::unique_ptr<VideoEncoder> primary_encoder =
-        primary_encoder_factory_->CreateVideoEncoder(video_format_);
+        env_.has_value()
+            ? primary_encoder_factory_->Create(*env_, video_format_)
+            : primary_encoder_factory_->CreateVideoEncoder(video_format_);
 
     std::unique_ptr<VideoEncoder> fallback_encoder;
     if (fallback_encoder_factory_ != nullptr) {
       fallback_encoder =
-          fallback_encoder_factory_->CreateVideoEncoder(video_format_);
+          env_.has_value()
+              ? fallback_encoder_factory_->Create(*env_, video_format_)
+              : fallback_encoder_factory_->CreateVideoEncoder(video_format_);
     }
 
     std::unique_ptr<VideoEncoder> encoder;

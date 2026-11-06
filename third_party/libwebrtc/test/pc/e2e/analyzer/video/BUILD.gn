@@ -153,6 +153,7 @@ rtc_library("quality_analyzing_video_encoder") {
   deps = [
     ":encoded_image_data_injector_api",
     "../../../../../api:video_quality_analyzer_api",
+    "../../../../../api/environment",
     "../../../../../api/test/pclf:media_configuration",
     "../../../../../api/video:video_frame",
     "../../../../../api/video_codecs:video_codecs_api",

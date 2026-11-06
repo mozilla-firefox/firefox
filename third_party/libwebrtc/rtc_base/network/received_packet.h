@@ -15,6 +15,7 @@
 #include "absl/types/optional.h"
 #include "api/array_view.h"
 #include "api/units/timestamp.h"
+#include "rtc_base/network/ecn_marking.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -38,6 +39,7 @@ class RTC_EXPORT ReceivedPacket {
   ReceivedPacket(rtc::ArrayView<const uint8_t> payload,
                  const SocketAddress& source_address,
                  absl::optional<webrtc::Timestamp> arrival_time = absl::nullopt,
+                 EcnMarking ecn = EcnMarking::kNotEct,
                  DecryptionInfo decryption = kNotDecrypted);
 
   ReceivedPacket CopyAndSet(DecryptionInfo decryption_info) const;
@@ -51,6 +53,9 @@ class RTC_EXPORT ReceivedPacket {
   absl::optional<webrtc::Timestamp> arrival_time() const {
     return arrival_time_;
   }
+
+  // L4S Explicit Congestion Notification.
+  EcnMarking ecn() const { return ecn_; }
 
   const DecryptionInfo& decryption_info() const { return decryption_info_; }
 
@@ -73,6 +78,7 @@ class RTC_EXPORT ReceivedPacket {
   rtc::ArrayView<const uint8_t> payload_;
   absl::optional<webrtc::Timestamp> arrival_time_;
   const SocketAddress& source_address_;
+  EcnMarking ecn_;
   DecryptionInfo decryption_info_;
 };
 

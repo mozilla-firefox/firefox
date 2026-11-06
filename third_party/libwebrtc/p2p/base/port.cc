@@ -176,12 +176,8 @@ Port::~Port() {
   CancelPendingTasks();
 }
 
-const absl::string_view Port::Type() const {
-  if (type_ == webrtc::IceCandidateType::kHost)
-    return "local";
-  if (type_ == webrtc::IceCandidateType::kSrflx)
-    return "stun";
-  return webrtc::IceCandidateTypeToString(type_);
+IceCandidateType Port::Type() const {
+  return type_;
 }
 const rtc::Network* Port::Network() const {
   return network_;

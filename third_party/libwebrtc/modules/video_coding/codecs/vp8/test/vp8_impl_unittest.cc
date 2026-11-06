@@ -253,7 +253,7 @@ TEST_F(TestVp8Impl, Configure) {
 TEST_F(TestVp8Impl, OnEncodedImageReportsInfo) {
   constexpr Timestamp kCaptureTimeIdentifier = Timestamp::Micros(1000);
   VideoFrame input_frame = NextInputFrame();
-  input_frame.set_timestamp(kInitialTimestampRtp);
+  input_frame.set_rtp_timestamp(kInitialTimestampRtp);
   input_frame.set_timestamp_us(kInitialTimestampMs *
                                rtc::kNumMicrosecsPerMillisec);
   input_frame.set_capture_time_identifier(kCaptureTimeIdentifier);
@@ -493,7 +493,7 @@ TEST_F(TestVp8Impl, ChecksSimulcastSettings) {
 #endif
 TEST_F(TestVp8Impl, MAYBE_AlignedStrideEncodeDecode) {
   VideoFrame input_frame = NextInputFrame();
-  input_frame.set_timestamp(kInitialTimestampRtp);
+  input_frame.set_rtp_timestamp(kInitialTimestampRtp);
   input_frame.set_timestamp_us(kInitialTimestampMs *
                                rtc::kNumMicrosecsPerMillisec);
   EncodedImage encoded_frame;
@@ -511,7 +511,7 @@ TEST_F(TestVp8Impl, MAYBE_AlignedStrideEncodeDecode) {
   ASSERT_TRUE(decoded_frame);
   // Compute PSNR on all planes (faster than SSIM).
   EXPECT_GT(I420PSNR(&input_frame, decoded_frame.get()), 36);
-  EXPECT_EQ(kInitialTimestampRtp, decoded_frame->timestamp());
+  EXPECT_EQ(kInitialTimestampRtp, decoded_frame->rtp_timestamp());
 }
 
 TEST_F(TestVp8Impl, EncoderWith2TemporalLayers) {

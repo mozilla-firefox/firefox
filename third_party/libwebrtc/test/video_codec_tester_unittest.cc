@@ -125,7 +125,7 @@ class TestVideoEncoder : public MockVideoEncoder {
       encoded_frame.SetFrameType(frame.keyframe
                                      ? VideoFrameType::kVideoFrameKey
                                      : VideoFrameType::kVideoFrameDelta);
-      encoded_frame.SetRtpTimestamp(input_frame.timestamp());
+      encoded_frame.SetRtpTimestamp(input_frame.rtp_timestamp());
       encoded_frame.SetSpatialIndex(frame.layer_id.spatial_idx);
       encoded_frame.SetTemporalIndex(frame.layer_id.temporal_idx);
       encoded_frame.SetEncodedData(
@@ -161,7 +161,7 @@ class TestVideoDecoder : public MockVideoDecoder {
     VideoFrame decoded_frame =
         VideoFrame::Builder()
             .set_video_frame_buffer(frame_buffer)
-            .set_timestamp_rtp(encoded_frame.RtpTimestamp())
+            .set_rtp_timestamp(encoded_frame.RtpTimestamp())
             .build();
     callback_->Decoded(decoded_frame);
     frame_sizes_.push_back(DataSize::Bytes(encoded_frame.size()));
@@ -194,11 +194,10 @@ class VideoCodecTesterTest : public ::testing::Test {
         .framerate = kTargetFramerate};
 
     NiceMock<MockVideoEncoderFactory> encoder_factory;
-    ON_CALL(encoder_factory, CreateVideoEncoder)
-        .WillByDefault([&](const SdpVideoFormat&) {
-          return std::make_unique<NiceMock<TestVideoEncoder>>(scalability_mode,
-                                                              encoded_frames);
-        });
+    ON_CALL(encoder_factory, Create).WillByDefault(WithoutArgs([&] {
+      return std::make_unique<NiceMock<TestVideoEncoder>>(scalability_mode,
+                                                          encoded_frames);
+    }));
 
     NiceMock<MockVideoDecoderFactory> decoder_factory;
     ON_CALL(decoder_factory, Create).WillByDefault(WithoutArgs([&] {
@@ -610,16 +609,16 @@ class VideoCodecTesterTestPacing
 
 TEST_P(VideoCodecTesterTestPacing, PaceEncode) {
   auto [pacing_settings, expected_delta_ms] = GetParam();
+  const Environment env = CreateEnvironment();
   VideoSourceSettings video_source{
       .file_path = source_yuv_file_path_,
       .resolution = {.width = kSourceWidth, .height = kSourceHeight},
       .framerate = kTargetFramerate};
 
   NiceMock<MockVideoEncoderFactory> encoder_factory;
-  ON_CALL(encoder_factory, CreateVideoEncoder(_))
-      .WillByDefault([](const SdpVideoFormat&) {
-        return std::make_unique<NiceMock<MockVideoEncoder>>();
-      });
+  ON_CALL(encoder_factory, Create).WillByDefault(WithoutArgs([] {
+    return std::make_unique<NiceMock<MockVideoEncoder>>();
+  }));
 
   std::map<uint32_t, EncodingSettings> encoding_settings =
       VideoCodecTester::CreateEncodingSettings(
@@ -629,7 +628,7 @@ TEST_P(VideoCodecTesterTestPacing, PaceEncode) {
   EncoderSettings encoder_settings;
   encoder_settings.pacing_settings = pacing_settings;
   std::vector<Frame> frames =
-      VideoCodecTester::RunEncodeTest(video_source, &encoder_factory,
+      VideoCodecTester::RunEncodeTest(env, video_source, &encoder_factory,
                                       encoder_settings, encoding_settings)
           ->Slice(/*filter=*/{}, /*merge=*/false);
   ASSERT_THAT(frames, SizeIs(kNumFrames));

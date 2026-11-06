@@ -312,16 +312,17 @@ std::unique_ptr<VideoDecoder> VideoQualityTest::CreateVideoDecoder(
 }
 
 std::unique_ptr<VideoEncoder> VideoQualityTest::CreateVideoEncoder(
+    const Environment& env,
     const SdpVideoFormat& format,
     VideoAnalyzer* analyzer) {
   std::unique_ptr<VideoEncoder> encoder;
   if (format.name == "VP8") {
-    encoder = std::make_unique<SimulcastEncoderAdapter>(encoder_factory_.get(),
-                                                        format);
+    encoder = std::make_unique<SimulcastEncoderAdapter>(
+        env, encoder_factory_.get(), nullptr, format);
   } else if (format.name == "FakeCodec") {
     encoder = webrtc::FakeVideoEncoderFactory::CreateVideoEncoder();
   } else {
-    encoder = encoder_factory_->CreateVideoEncoder(format);
+    encoder = encoder_factory_->Create(env, format);
   }
 
   std::vector<FileWrapper> encoded_frame_dump_files;
@@ -372,12 +373,13 @@ VideoQualityTest::VideoQualityTest(
           [this](const Environment& env, const SdpVideoFormat& format) {
             return this->CreateVideoDecoder(env, format);
           }),
-      video_encoder_factory_([this](const SdpVideoFormat& format) {
-        return this->CreateVideoEncoder(format, nullptr);
-      }),
+      video_encoder_factory_(
+          [this](const Environment& env, const SdpVideoFormat& format) {
+            return this->CreateVideoEncoder(env, format, nullptr);
+          }),
       video_encoder_factory_with_analyzer_(
-          [this](const SdpVideoFormat& format) {
-            return this->CreateVideoEncoder(format, analyzer_.get());
+          [this](const Environment& env, const SdpVideoFormat& format) {
+            return this->CreateVideoEncoder(env, format, analyzer_.get());
           }),
       video_bitrate_allocator_factory_(
           CreateBuiltinVideoBitrateAllocatorFactory()),

@@ -43,7 +43,8 @@ std::vector<webrtc::VideoStream> GetSimulcastConfig(
     int max_qp,
     bool is_screenshare_with_conference_mode,
     bool temporal_layers_supported,
-    const webrtc::FieldTrialsView& trials);
+    const webrtc::FieldTrialsView& trials,
+    webrtc::VideoCodecType codec);
 
 // Gets the simulcast config layers for a non-screensharing case.
 std::vector<webrtc::VideoStream> GetNormalSimulcastLayers(
@@ -54,7 +55,8 @@ std::vector<webrtc::VideoStream> GetNormalSimulcastLayers(
     int max_qp,
     bool temporal_layers_supported,
     bool base_heavy_tl3_rate_alloc,
-    const webrtc::FieldTrialsView& trials);
+    const webrtc::FieldTrialsView& trials,
+    webrtc::VideoCodecType codec);
 
 // Gets simulcast config layers for screenshare settings.
 std::vector<webrtc::VideoStream> GetScreenshareLayers(

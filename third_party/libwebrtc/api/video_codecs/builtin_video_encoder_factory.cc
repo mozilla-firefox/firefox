@@ -14,15 +14,14 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/match.h"
 #include "absl/types/optional.h"
+#include "api/environment/environment.h"
+#include "api/transport/field_trial_based_config.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder.h"
-#include "media/base/codec.h"
-#include "media/base/media_constants.h"
+#include "api/video_codecs/video_encoder_factory.h"
 #include "media/engine/internal_encoder_factory.h"
 #include "media/engine/simulcast_encoder_adapter.h"
-#include "rtc_base/checks.h"
 
 namespace webrtc {
 
@@ -43,10 +42,27 @@ class BuiltinVideoEncoderFactory : public VideoEncoderFactory {
     if (format.IsCodecInList(
             internal_encoder_factory_->GetSupportedFormats())) {
       encoder = std::make_unique<SimulcastEncoderAdapter>(
-          internal_encoder_factory_.get(), format);
+          /*primary_factory=*/internal_encoder_factory_.get(),
+          /*fallback_factory=*/nullptr, format, FieldTrialBasedConfig());
     }
 
     return encoder;
+  }
+
+  std::unique_ptr<VideoEncoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
+    // Try creating an InternalEncoderFactory-backed SimulcastEncoderAdapter.
+    // The adapter has a passthrough mode for the case that simulcast is not
+    // used, so all responsibility can be delegated to it.
+    if (format.IsCodecInList(
+            internal_encoder_factory_->GetSupportedFormats())) {
+      return std::make_unique<SimulcastEncoderAdapter>(
+          env,
+          /*primary_factory=*/internal_encoder_factory_.get(),
+          /*fallback_factory=*/nullptr, format);
+    }
+
+    return nullptr;
   }
 
   std::vector<SdpVideoFormat> GetSupportedFormats() const override {

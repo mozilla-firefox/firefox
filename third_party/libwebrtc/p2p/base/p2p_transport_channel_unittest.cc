@@ -5031,8 +5031,8 @@ TEST_F(P2PTransportChannelMostLikelyToWorkFirstTest,
   P2PTransportChannel& ch =
       StartTransportChannel(true, max_strong_interval, &field_trials_);
   EXPECT_TRUE_WAIT(ch.ports().size() == 2, kDefaultTimeout);
-  EXPECT_EQ(ch.ports()[0]->Type(), LOCAL_PORT_TYPE);
-  EXPECT_EQ(ch.ports()[1]->Type(), RELAY_PORT_TYPE);
+  EXPECT_EQ(ch.ports()[0]->Type(), IceCandidateType::kHost);
+  EXPECT_EQ(ch.ports()[1]->Type(), IceCandidateType::kRelay);
 
   ch.AddRemoteCandidate(
       CreateUdpCandidate(IceCandidateType::kRelay, "1.1.1.1", 1, 1));
@@ -5092,8 +5092,8 @@ TEST_F(P2PTransportChannelMostLikelyToWorkFirstTest,
        TestRelayRelayFirstWhenEverythingPinged) {
   P2PTransportChannel& ch = StartTransportChannel(true, 500, &field_trials_);
   EXPECT_TRUE_WAIT(ch.ports().size() == 2, kDefaultTimeout);
-  EXPECT_EQ(ch.ports()[0]->Type(), LOCAL_PORT_TYPE);
-  EXPECT_EQ(ch.ports()[1]->Type(), RELAY_PORT_TYPE);
+  EXPECT_EQ(ch.ports()[0]->Type(), IceCandidateType::kHost);
+  EXPECT_EQ(ch.ports()[1]->Type(), IceCandidateType::kRelay);
 
   ch.AddRemoteCandidate(
       CreateUdpCandidate(IceCandidateType::kHost, "1.1.1.1", 1, 1));
@@ -5130,8 +5130,8 @@ TEST_F(P2PTransportChannelMostLikelyToWorkFirstTest,
        TestNoStarvationOnNonRelayConnection) {
   P2PTransportChannel& ch = StartTransportChannel(true, 500, &field_trials_);
   EXPECT_TRUE_WAIT(ch.ports().size() == 2, kDefaultTimeout);
-  EXPECT_EQ(ch.ports()[0]->Type(), LOCAL_PORT_TYPE);
-  EXPECT_EQ(ch.ports()[1]->Type(), RELAY_PORT_TYPE);
+  EXPECT_EQ(ch.ports()[0]->Type(), IceCandidateType::kHost);
+  EXPECT_EQ(ch.ports()[1]->Type(), IceCandidateType::kRelay);
 
   ch.AddRemoteCandidate(
       CreateUdpCandidate(IceCandidateType::kRelay, "1.1.1.1", 1, 1));
@@ -5173,8 +5173,8 @@ TEST_F(P2PTransportChannelMostLikelyToWorkFirstTest,
       "WebRTC-IceFieldTrials/skip_relay_to_non_relay_connections:true/");
   P2PTransportChannel& ch = StartTransportChannel(true, 500, &field_trials);
   EXPECT_TRUE_WAIT(ch.ports().size() == 2, kDefaultTimeout);
-  EXPECT_EQ(ch.ports()[0]->Type(), LOCAL_PORT_TYPE);
-  EXPECT_EQ(ch.ports()[1]->Type(), RELAY_PORT_TYPE);
+  EXPECT_EQ(ch.ports()[0]->Type(), IceCandidateType::kHost);
+  EXPECT_EQ(ch.ports()[1]->Type(), IceCandidateType::kRelay);
 
   // Remote Relay candidate arrives.
   ch.AddRemoteCandidate(
@@ -5199,9 +5199,9 @@ TEST_F(P2PTransportChannelMostLikelyToWorkFirstTest, TestTcpTurn) {
 
   P2PTransportChannel& ch = StartTransportChannel(true, 500, &field_trials_);
   EXPECT_TRUE_WAIT(ch.ports().size() == 3, kDefaultTimeout);
-  EXPECT_EQ(ch.ports()[0]->Type(), LOCAL_PORT_TYPE);
-  EXPECT_EQ(ch.ports()[1]->Type(), RELAY_PORT_TYPE);
-  EXPECT_EQ(ch.ports()[2]->Type(), RELAY_PORT_TYPE);
+  EXPECT_EQ(ch.ports()[0]->Type(), IceCandidateType::kHost);
+  EXPECT_EQ(ch.ports()[1]->Type(), IceCandidateType::kRelay);
+  EXPECT_EQ(ch.ports()[2]->Type(), IceCandidateType::kRelay);
 
   // Remote Relay candidate arrives.
   ch.AddRemoteCandidate(

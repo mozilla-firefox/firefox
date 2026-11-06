@@ -16,6 +16,7 @@
 #include "absl/memory/memory.h"
 #include "api/audio_codecs/builtin_audio_decoder_factory.h"
 #include "api/audio_codecs/builtin_audio_encoder_factory.h"
+#include "api/environment/environment.h"
 #include "api/rtc_event_log/rtc_event_log_factory.h"
 #include "api/task_queue/default_task_queue_factory.h"
 #include "api/test/create_time_controller.h"
@@ -177,19 +178,16 @@ class LambdaSetRemoteDescriptionObserver
 
 class FakeVideoEncoderFactory : public VideoEncoderFactory {
  public:
-  FakeVideoEncoderFactory(Clock* clock) : clock_(clock) {}
   std::vector<SdpVideoFormat> GetSupportedFormats() const override {
     return {SdpVideoFormat::VP8()};
   }
-  std::unique_ptr<VideoEncoder> CreateVideoEncoder(
-      const SdpVideoFormat& format) override {
+  std::unique_ptr<VideoEncoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
     RTC_CHECK_EQ(format.name, "VP8");
-    return std::make_unique<FakeVp8Encoder>(clock_);
+    return std::make_unique<FakeVp8Encoder>(&env.clock());
   }
-
- private:
-  Clock* const clock_;
 };
+
 class FakeVideoDecoderFactory : public VideoDecoderFactory {
  public:
   std::vector<SdpVideoFormat> GetSupportedFormats() const override {
@@ -260,8 +258,8 @@ PeerScenarioClient::PeerScenarioClient(
       TestAudioDeviceModule::CreateDiscardRenderer(config.audio.sample_rate));
 
   if (config.video.use_fake_codecs) {
-    pcf_deps.video_encoder_factory = std::make_unique<FakeVideoEncoderFactory>(
-        net->time_controller()->GetClock());
+    pcf_deps.video_encoder_factory =
+        std::make_unique<FakeVideoEncoderFactory>();
     pcf_deps.video_decoder_factory =
         std::make_unique<FakeVideoDecoderFactory>();
   } else {

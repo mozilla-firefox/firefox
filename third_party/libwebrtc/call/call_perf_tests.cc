@@ -456,7 +456,7 @@ void CallPerfTest::TestCaptureNtpTime(
       }
 
       FrameCaptureTimeList::iterator iter =
-          capture_time_list_.find(video_frame.timestamp());
+          capture_time_list_.find(video_frame.rtp_timestamp());
       EXPECT_TRUE(iter != capture_time_list_.end());
 
       // The real capture time has been wrapped to uint32_t before converted
@@ -1186,9 +1186,10 @@ void CallPerfTest::TestEncodeFramerate(VideoEncoderFactory* encoder_factory,
 TEST_F(CallPerfTest, TestEncodeFramerateVp8Simulcast) {
   InternalEncoderFactory internal_encoder_factory;
   test::FunctionVideoEncoderFactory encoder_factory(
-      [&internal_encoder_factory]() {
+      [&internal_encoder_factory](const Environment& env,
+                                  const SdpVideoFormat& format) {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat::VP8());
+            env, &internal_encoder_factory, nullptr, SdpVideoFormat::VP8());
       });
 
   TestEncodeFramerate(&encoder_factory, "VP8",
@@ -1198,9 +1199,10 @@ TEST_F(CallPerfTest, TestEncodeFramerateVp8Simulcast) {
 TEST_F(CallPerfTest, TestEncodeFramerateVp8SimulcastLowerInputFps) {
   InternalEncoderFactory internal_encoder_factory;
   test::FunctionVideoEncoderFactory encoder_factory(
-      [&internal_encoder_factory]() {
+      [&internal_encoder_factory](const Environment& env,
+                                  const SdpVideoFormat& format) {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat::VP8());
+            env, &internal_encoder_factory, nullptr, SdpVideoFormat::VP8());
       });
 
   TestEncodeFramerate(&encoder_factory, "VP8",

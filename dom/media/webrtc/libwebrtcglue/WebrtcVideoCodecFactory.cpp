@@ -73,9 +73,9 @@ std::unique_ptr<webrtc::VideoEncoder> WebrtcVideoEncoderFactory::Create(
       // XXX We might be able to use the simulcast proxy for more codecs, but
       // that requires testing.
       return std::make_unique<webrtc::SimulcastEncoderAdapter>(
-          mInternalFactory.get(), aFormat);
+          aEnv, mInternalFactory.get(), nullptr, aFormat);
     default:
-      return mInternalFactory->CreateVideoEncoder(aFormat);
+      return mInternalFactory->Create(aEnv, aFormat);
   }
 }
 

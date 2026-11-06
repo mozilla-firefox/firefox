@@ -363,13 +363,12 @@ TEST(VideoCodecTestLibvpx, MAYBE_SimulcastVP8) {
   config.encoded_frame_checker = frame_checker.get();
 
   InternalEncoderFactory internal_encoder_factory;
-  std::unique_ptr<VideoEncoderFactory> adapted_encoder_factory =
-      std::make_unique<FunctionVideoEncoderFactory>([&]() {
+  auto adapted_encoder_factory = std::make_unique<FunctionVideoEncoderFactory>(
+      [&](const Environment& env, const SdpVideoFormat& format) {
         return std::make_unique<SimulcastEncoderAdapter>(
-            &internal_encoder_factory, SdpVideoFormat::VP8());
+            env, &internal_encoder_factory, nullptr, SdpVideoFormat::VP8());
       });
-  std::unique_ptr<InternalDecoderFactory> internal_decoder_factory(
-      new InternalDecoderFactory());
+  auto internal_decoder_factory = std::make_unique<InternalDecoderFactory>();
 
   auto fixture =
       CreateVideoCodecTestFixture(config, std::move(internal_decoder_factory),

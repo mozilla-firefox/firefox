@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/video_encoder_factory.h"
 
@@ -45,8 +46,8 @@ class VideoEncoderProxyFactory : public VideoEncoderFactory {
     return {};
   }
 
-  std::unique_ptr<VideoEncoder> CreateVideoEncoder(
-      const SdpVideoFormat& format) override {
+  std::unique_ptr<VideoEncoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
     ++num_simultaneous_encoder_instances_;
     max_num_simultaneous_encoder_instances_ =
         std::max(max_num_simultaneous_encoder_instances_,

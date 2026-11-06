@@ -98,7 +98,7 @@ class SctpDataChannelTest : public ::testing::Test {
     StreamId sid(0);
     network_thread_.BlockingCall([&]() {
       RTC_DCHECK_RUN_ON(&network_thread_);
-      if (!inner_channel_->sid_n().HasValue()) {
+      if (!inner_channel_->sid_n().has_value()) {
         inner_channel_->SetSctpSid_n(sid);
         controller_->AddSctpDataStream(sid);
       }
@@ -115,7 +115,6 @@ class SctpDataChannelTest : public ::testing::Test {
   // to run on the network thread.
   void SetChannelSid(const rtc::scoped_refptr<SctpDataChannel>& channel,
                      StreamId sid) {
-    RTC_DCHECK(sid.HasValue());
     network_thread_.BlockingCall([&]() {
       channel->SetSctpSid_n(sid);
       controller_->AddSctpDataStream(sid);
@@ -172,7 +171,7 @@ TEST_F(SctpDataChannelTest, VerifyConfigurationGetters) {
   // Check the non-const part of the configuration.
   EXPECT_EQ(channel_->id(), init_.id);
   network_thread_.BlockingCall(
-      [&]() { EXPECT_EQ(inner_channel_->sid_n(), StreamId()); });
+      [&]() { EXPECT_EQ(inner_channel_->sid_n(), absl::nullopt); });
 
   SetChannelReady();
   EXPECT_EQ(channel_->id(), 0);
@@ -188,12 +187,14 @@ TEST_F(SctpDataChannelTest, ConnectedToTransportOnCreated) {
   EXPECT_TRUE(controller_->IsConnected(dc.get()));
 
   // The sid is not set yet, so it should not have added the streams.
-  StreamId sid = network_thread_.BlockingCall([&]() { return dc->sid_n(); });
-  EXPECT_FALSE(controller_->IsStreamAdded(sid));
+  absl::optional<StreamId> sid =
+      network_thread_.BlockingCall([&]() { return dc->sid_n(); });
+  EXPECT_FALSE(sid.has_value());
 
   SetChannelSid(dc, StreamId(0));
   sid = network_thread_.BlockingCall([&]() { return dc->sid_n(); });
-  EXPECT_TRUE(controller_->IsStreamAdded(sid));
+  ASSERT_TRUE(sid.has_value());
+  EXPECT_TRUE(controller_->IsStreamAdded(*sid));
 }
 
 // Tests the state of the data channel.
@@ -1035,14 +1036,14 @@ TEST_F(SctpSidAllocatorTest, SctpIdAllocationNoReuse) {
   StreamId old_id(1);
   EXPECT_TRUE(allocator_.ReserveSid(old_id));
 
-  StreamId new_id = allocator_.AllocateSid(rtc::SSL_SERVER);
-  EXPECT_TRUE(new_id.HasValue());
+  absl::optional<StreamId> new_id = allocator_.AllocateSid(rtc::SSL_SERVER);
+  EXPECT_TRUE(new_id.has_value());
   EXPECT_NE(old_id, new_id);
 
   old_id = StreamId(0);
   EXPECT_TRUE(allocator_.ReserveSid(old_id));
   new_id = allocator_.AllocateSid(rtc::SSL_CLIENT);
-  EXPECT_TRUE(new_id.HasValue());
+  EXPECT_TRUE(new_id.has_value());
   EXPECT_NE(old_id, new_id);
 }
 
@@ -1053,17 +1054,18 @@ TEST_F(SctpSidAllocatorTest, SctpIdReusedForRemovedDataChannel) {
   EXPECT_TRUE(allocator_.ReserveSid(odd_id));
   EXPECT_TRUE(allocator_.ReserveSid(even_id));
 
-  StreamId allocated_id = allocator_.AllocateSid(rtc::SSL_SERVER);
-  EXPECT_EQ(odd_id.stream_id_int() + 2, allocated_id.stream_id_int());
+  absl::optional<StreamId> allocated_id =
+      allocator_.AllocateSid(rtc::SSL_SERVER);
+  EXPECT_EQ(odd_id.stream_id_int() + 2, allocated_id->stream_id_int());
 
   allocated_id = allocator_.AllocateSid(rtc::SSL_CLIENT);
-  EXPECT_EQ(even_id.stream_id_int() + 2, allocated_id.stream_id_int());
+  EXPECT_EQ(even_id.stream_id_int() + 2, allocated_id->stream_id_int());
 
   allocated_id = allocator_.AllocateSid(rtc::SSL_SERVER);
-  EXPECT_EQ(odd_id.stream_id_int() + 4, allocated_id.stream_id_int());
+  EXPECT_EQ(odd_id.stream_id_int() + 4, allocated_id->stream_id_int());
 
   allocated_id = allocator_.AllocateSid(rtc::SSL_CLIENT);
-  EXPECT_EQ(even_id.stream_id_int() + 4, allocated_id.stream_id_int());
+  EXPECT_EQ(even_id.stream_id_int() + 4, allocated_id->stream_id_int());
 
   allocator_.ReleaseSid(odd_id);
   allocator_.ReleaseSid(even_id);
@@ -1077,10 +1079,10 @@ TEST_F(SctpSidAllocatorTest, SctpIdReusedForRemovedDataChannel) {
 
   // Verifies that used higher ids are not reused.
   allocated_id = allocator_.AllocateSid(rtc::SSL_SERVER);
-  EXPECT_EQ(odd_id.stream_id_int() + 6, allocated_id.stream_id_int());
+  EXPECT_EQ(odd_id.stream_id_int() + 6, allocated_id->stream_id_int());
 
   allocated_id = allocator_.AllocateSid(rtc::SSL_CLIENT);
-  EXPECT_EQ(even_id.stream_id_int() + 6, allocated_id.stream_id_int());
+  EXPECT_EQ(even_id.stream_id_int() + 6, allocated_id->stream_id_int());
 }
 
 // Code coverage tests for default implementations in data_channel_interface.*.

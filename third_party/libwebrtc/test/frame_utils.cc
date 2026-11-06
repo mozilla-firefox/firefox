@@ -36,7 +36,7 @@ bool EqualPlane(const uint8_t* data1,
 }
 
 bool FramesEqual(const webrtc::VideoFrame& f1, const webrtc::VideoFrame& f2) {
-  if (f1.timestamp() != f2.timestamp() ||
+  if (f1.rtp_timestamp() != f2.rtp_timestamp() ||
       f1.ntp_time_ms() != f2.ntp_time_ms() ||
       f1.render_time_ms() != f2.render_time_ms()) {
     return false;

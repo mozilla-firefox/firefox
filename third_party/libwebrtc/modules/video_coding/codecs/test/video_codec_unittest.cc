@@ -110,7 +110,7 @@ VideoFrame VideoCodecUnitTest::NextInputFrame() {
   const uint32_t timestamp =
       last_input_frame_timestamp_ +
       kVideoPayloadTypeFrequency / codec_settings_.maxFramerate;
-  input_frame.set_timestamp(timestamp);
+  input_frame.set_rtp_timestamp(timestamp);
   input_frame.set_timestamp_us(timestamp * (1000 / 90));
 
   last_input_frame_timestamp_ = timestamp;

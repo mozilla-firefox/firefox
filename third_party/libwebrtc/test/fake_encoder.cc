@@ -141,7 +141,7 @@ int32_t FakeEncoder::Encode(const VideoFrame& input_image,
     EncodedImage encoded;
     encoded.SetEncodedData(buffer);
 
-    encoded.SetRtpTimestamp(input_image.timestamp());
+    encoded.SetRtpTimestamp(input_image.rtp_timestamp());
     encoded._frameType = frame_info.keyframe ? VideoFrameType::kVideoFrameKey
                                              : VideoFrameType::kVideoFrameDelta;
     encoded._encodedWidth = simulcast_streams[i].width;

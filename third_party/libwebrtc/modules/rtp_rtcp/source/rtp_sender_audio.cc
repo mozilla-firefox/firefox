@@ -31,25 +31,9 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
-#include "rtc_base/trace_event.h"
 #include "system_wrappers/include/ntp_time.h"
 
 namespace webrtc {
-
-namespace {
-[[maybe_unused]] const char* FrameTypeToString(AudioFrameType frame_type) {
-  switch (frame_type) {
-    case AudioFrameType::kEmptyFrame:
-      return "empty";
-    case AudioFrameType::kAudioFrameSpeech:
-      return "audio_speech";
-    case AudioFrameType::kAudioFrameCN:
-      return "audio_cn";
-  }
-  RTC_CHECK_NOTREACHED();
-}
-
-}  // namespace
 
 RTPSenderAudio::RTPSenderAudio(Clock* clock, RTPSender* rtp_sender)
     : clock_(clock),
@@ -145,8 +129,6 @@ bool RTPSenderAudio::MarkerBit(AudioFrameType frame_type, int8_t payload_type) {
 bool RTPSenderAudio::SendAudio(const RtpAudioFrame& frame) {
   RTC_DCHECK_GE(frame.payload_id, 0);
   RTC_DCHECK_LE(frame.payload_id, 127);
-  TRACE_EVENT_ASYNC_STEP1("webrtc", "Audio", frame.rtp_timestamp, "Send",
-                          "type", FrameTypeToString(frame.type));
 
   // From RFC 4733:
   // A source has wide latitude as to how often it sends event updates. A
@@ -279,9 +261,6 @@ bool RTPSenderAudio::SendAudio(const RtpAudioFrame& frame) {
     MutexLock lock(&send_audio_mutex_);
     last_payload_type_ = frame.payload_id;
   }
-  TRACE_EVENT_ASYNC_END2("webrtc", "Audio", frame.rtp_timestamp, "timestamp",
-                         packet->Timestamp(), "seqnum",
-                         packet->SequenceNumber());
   packet->set_packet_type(RtpPacketMediaType::kAudio);
   packet->set_allow_retransmission(true);
   std::vector<std::unique_ptr<RtpPacketToSend>> packets(1);

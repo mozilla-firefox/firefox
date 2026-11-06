@@ -56,7 +56,6 @@ class RRSendQueue : public SendQueue {
  public:
   RRSendQueue(absl::string_view log_prefix,
               DcSctpSocketCallbacks* callbacks,
-              size_t buffer_size,
               size_t mtu,
               StreamPriority default_priority,
               size_t total_buffered_amount_low_threshold);
@@ -271,7 +270,6 @@ class RRSendQueue : public SendQueue {
 
   const absl::string_view log_prefix_;
   DcSctpSocketCallbacks& callbacks_;
-  const size_t buffer_size_;
   const StreamPriority default_priority_;
   OutgoingMessageId current_message_id = OutgoingMessageId(0);
   StreamScheduler scheduler_;

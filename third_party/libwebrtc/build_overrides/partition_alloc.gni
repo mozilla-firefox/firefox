@@ -10,3 +10,5 @@
 # base/allocator/partition_allocator/build_overrides/partition_alloc.gni
 import(
     "//base/allocator/partition_allocator/build_overrides/partition_alloc.gni")
+
+assert_cpp20_default = true

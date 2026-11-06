@@ -1100,6 +1100,7 @@ if (rtc_include_tests) {
       "../rtc_base:socket_server",
       "../rtc_base:ssl",
       "../rtc_base:threading",
+      "../rtc_base:timeutils",
       "../rtc_base/network:received_packet",
       "../rtc_base/third_party/sigslot",
       "../test:test_support",

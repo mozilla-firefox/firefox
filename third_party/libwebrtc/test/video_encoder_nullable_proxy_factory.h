@@ -14,6 +14,7 @@
 #include <memory>
 #include <vector>
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/video_encoder_factory.h"
 #include "test/video_encoder_proxy_factory.h"
@@ -30,12 +31,12 @@ class VideoEncoderNullableProxyFactory final : public VideoEncoderProxyFactory {
 
   ~VideoEncoderNullableProxyFactory() override = default;
 
-  std::unique_ptr<VideoEncoder> CreateVideoEncoder(
-      const SdpVideoFormat& format) override {
+  std::unique_ptr<VideoEncoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override {
     if (!encoder_) {
       return nullptr;
     }
-    return VideoEncoderProxyFactory::CreateVideoEncoder(format);
+    return VideoEncoderProxyFactory::Create(env, format);
   }
 };
 

@@ -34,11 +34,22 @@ TEST(PacketTransportInternal,
             EXPECT_EQ(packet.decryption_info(),
                       rtc::ReceivedPacket::kDtlsDecrypted);
           });
-  packet_transport.NotifyPacketReceived(
-      rtc::ReceivedPacket({}, rtc::SocketAddress(), absl::nullopt,
-                          rtc::ReceivedPacket::kDtlsDecrypted));
+  packet_transport.NotifyPacketReceived(rtc::ReceivedPacket(
+      {}, rtc::SocketAddress(), absl::nullopt, rtc::EcnMarking::kNotEct,
+      rtc::ReceivedPacket::kDtlsDecrypted));
 
   packet_transport.DeregisterReceivedPacketCallback(&receiver);
+}
+
+TEST(PacketTransportInternal, NotifiesOnceOnClose) {
+  rtc::FakePacketTransport packet_transport("test");
+  int call_count = 0;
+  packet_transport.SetOnCloseCallback([&]() { ++call_count; });
+  ASSERT_EQ(call_count, 0);
+  packet_transport.NotifyOnClose();
+  EXPECT_EQ(call_count, 1);
+  packet_transport.NotifyOnClose();
+  EXPECT_EQ(call_count, 1);  // Call count should not have increased.
 }
 
 }  // namespace

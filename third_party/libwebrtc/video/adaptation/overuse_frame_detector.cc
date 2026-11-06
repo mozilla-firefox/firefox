@@ -105,8 +105,8 @@ class SendProcessingUsage1 : public OveruseFrameDetector::ProcessingUsage {
     if (last_capture_time_us != -1)
       AddCaptureSample(1e-3 * (time_when_first_seen_us - last_capture_time_us));
 
-    frame_timing_.push_back(FrameTiming(frame.timestamp_us(), frame.timestamp(),
-                                        time_when_first_seen_us));
+    frame_timing_.push_back(FrameTiming(
+        frame.timestamp_us(), frame.rtp_timestamp(), time_when_first_seen_us));
   }
 
   absl::optional<int> FrameSent(

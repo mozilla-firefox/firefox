@@ -256,12 +256,12 @@ void VideoAnalyzer::DeliverRtpPacket(
 void VideoAnalyzer::PreEncodeOnFrame(const VideoFrame& video_frame) {
   MutexLock lock(&lock_);
   if (!first_encoded_timestamp_) {
-    while (frames_.front().timestamp() != video_frame.timestamp()) {
+    while (frames_.front().rtp_timestamp() != video_frame.rtp_timestamp()) {
       ++dropped_frames_before_first_encode_;
       frames_.pop_front();
       RTC_CHECK(!frames_.empty());
     }
-    first_encoded_timestamp_ = video_frame.timestamp();
+    first_encoded_timestamp_ = video_frame.rtp_timestamp();
   }
 }
 
@@ -317,9 +317,10 @@ void VideoAnalyzer::OnFrame(const VideoFrame& video_frame) {
   StartExcludingCpuThreadTime();
 
   int64_t send_timestamp =
-      wrap_handler_.Unwrap(video_frame.timestamp() - rtp_timestamp_delta_);
+      wrap_handler_.Unwrap(video_frame.rtp_timestamp() - rtp_timestamp_delta_);
 
-  while (wrap_handler_.Unwrap(frames_.front().timestamp()) < send_timestamp) {
+  while (wrap_handler_.Unwrap(frames_.front().rtp_timestamp()) <
+         send_timestamp) {
     if (!last_rendered_frame_) {
       // No previous frame rendered, this one was dropped after sending but
       // before rendering.
@@ -335,7 +336,7 @@ void VideoAnalyzer::OnFrame(const VideoFrame& video_frame) {
   VideoFrame reference_frame = frames_.front();
   frames_.pop_front();
   int64_t reference_timestamp =
-      wrap_handler_.Unwrap(reference_frame.timestamp());
+      wrap_handler_.Unwrap(reference_frame.rtp_timestamp());
   if (send_timestamp == reference_timestamp - 1) {
     // TODO(ivica): Make this work for > 2 streams.
     // Look at RTPSender::BuildRTPHeader.
@@ -906,7 +907,7 @@ void VideoAnalyzer::AddFrameComparison(const VideoFrame& reference,
                                        const VideoFrame& render,
                                        bool dropped,
                                        int64_t render_time_ms) {
-  int64_t reference_timestamp = wrap_handler_.Unwrap(reference.timestamp());
+  int64_t reference_timestamp = wrap_handler_.Unwrap(reference.rtp_timestamp());
   int64_t send_time_ms = send_times_[reference_timestamp];
   send_times_.erase(reference_timestamp);
   int64_t recv_time_ms = recv_times_[reference_timestamp];
@@ -1011,10 +1012,10 @@ void VideoAnalyzer::CapturedFrameForwarder::OnFrame(
   VideoFrame copy = video_frame;
   // Frames from the capturer does not have a rtp timestamp.
   // Create one so it can be used for comparison.
-  RTC_DCHECK_EQ(0, video_frame.timestamp());
+  RTC_DCHECK_EQ(0, video_frame.rtp_timestamp());
   if (video_frame.ntp_time_ms() == 0)
     copy.set_ntp_time_ms(clock_->CurrentNtpInMilliseconds());
-  copy.set_timestamp(copy.ntp_time_ms() * 90);
+  copy.set_rtp_timestamp(copy.ntp_time_ms() * 90);
   analyzer_->AddCapturedFrameForComparison(copy);
   MutexLock lock(&lock_);
   ++captured_frames_;

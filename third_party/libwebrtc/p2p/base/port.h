@@ -193,46 +193,6 @@ class RTC_EXPORT Port : public PortInterface, public sigslot::has_slots<> {
        const webrtc::FieldTrialsView* field_trials = nullptr,
        bool shared_socket = false);
 
-  // // TODO: bugs.webrtc.org/15846 - Remove.
-  [[deprecated("Use IceCandidateType version")]] Port(
-      webrtc::TaskQueueBase* thread,
-      absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND,
-      rtc::PacketSocketFactory* factory,
-      const rtc::Network* network,
-      uint16_t min_port,
-      uint16_t max_port,
-      absl::string_view username_fragment,
-      absl::string_view password,
-      const webrtc::FieldTrialsView* field_trials = nullptr,
-      bool shared_socket = false)
-      : Port(thread,
-             PortTypeToIceCandidateType(type),
-             factory,
-             network,
-             min_port,
-             max_port,
-             username_fragment,
-             password,
-             field_trials,
-             shared_socket) {}
-
-  // // TODO: bugs.webrtc.org/15846 - Remove.
-  [[deprecated("Use IceCandidateType version")]] Port(
-      webrtc::TaskQueueBase* thread,
-      absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND,
-      rtc::PacketSocketFactory* factory,
-      const rtc::Network* network,
-      absl::string_view username_fragment,
-      absl::string_view password,
-      const webrtc::FieldTrialsView* field_trials = nullptr)
-      : Port(thread,
-             PortTypeToIceCandidateType(type),
-             factory,
-             network,
-             username_fragment,
-             password,
-             field_trials) {}
-
  public:
   ~Port() override;
 
@@ -241,7 +201,7 @@ class RTC_EXPORT Port : public PortInterface, public sigslot::has_slots<> {
   // uniquely identify subclasses. Whenever a new subclass of Port introduces a
   // conflict in the value of the 2-tuple, make sure that the implementation
   // that relies on this 2-tuple for RTTI is properly changed.
-  const absl::string_view Type() const override;
+  webrtc::IceCandidateType Type() const override;
   const rtc::Network* Network() const override;
 
   // Methods to set/get ICE role and tiebreaker values.
@@ -418,24 +378,6 @@ class RTC_EXPORT Port : public PortInterface, public sigslot::has_slots<> {
   void UpdateNetworkCost() override;
 
   rtc::WeakPtr<Port> NewWeakPtr() { return weak_factory_.GetWeakPtr(); }
-
-  // TODO: bugs.webrtc.org/15846 - Remove.
-  [[deprecated("Use IceCandidateType version")]] void AddAddress(
-      const rtc::SocketAddress& address,
-      const rtc::SocketAddress& base_address,
-      const rtc::SocketAddress& related_address,
-      absl::string_view protocol,
-      absl::string_view relay_protocol,
-      absl::string_view tcptype,
-      absl::string_view type,
-      uint32_t type_preference,
-      uint32_t relay_preference,
-      absl::string_view url,
-      bool is_final) {
-    AddAddress(address, base_address, related_address, protocol, relay_protocol,
-               tcptype, PortTypeToIceCandidateType(type), type_preference,
-               relay_preference, url, is_final);
-  }
 
   void AddAddress(const rtc::SocketAddress& address,
                   const rtc::SocketAddress& base_address,

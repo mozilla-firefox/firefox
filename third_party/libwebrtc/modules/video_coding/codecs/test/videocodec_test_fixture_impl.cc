@@ -80,7 +80,7 @@ void ConfigureSimulcast(VideoCodec* codec_settings) {
   const std::vector<webrtc::VideoStream> streams = cricket::GetSimulcastConfig(
       /*min_layer=*/1, codec_settings->numberOfSimulcastStreams,
       codec_settings->width, codec_settings->height, kBitratePriority, kMaxQp,
-      /* is_screenshare = */ false, true, trials);
+      /* is_screenshare = */ false, true, trials, webrtc::kVideoCodecVP8);
 
   for (size_t i = 0; i < streams.size(); ++i) {
     SimulcastStream* ss = &codec_settings->simulcastStream[i];
@@ -178,7 +178,9 @@ SdpVideoFormat CreateSdpVideoFormat(
 
     return SdpVideoFormat(config.codec_name, codec_params);
   } else if (config.codec_settings.codecType == kVideoCodecVP9) {
-    return SdpVideoFormat(config.codec_name, {{"profile-id", "0"}});
+    return SdpVideoFormat::VP9Profile0();
+  } else if (config.codec_settings.codecType == kVideoCodecAV1) {
+    return SdpVideoFormat::AV1Profile0();
   }
 
   return SdpVideoFormat(config.codec_name);
@@ -703,7 +705,7 @@ bool VideoCodecTestFixtureImpl::CreateEncoderAndDecoder() {
     decoder_format = *config_.decoder_format;
   }
 
-  encoder_ = encoder_factory_->CreateVideoEncoder(encoder_format);
+  encoder_ = encoder_factory_->Create(env, encoder_format);
   EXPECT_TRUE(encoder_) << "Encoder not successfully created.";
   if (encoder_ == nullptr) {
     return false;

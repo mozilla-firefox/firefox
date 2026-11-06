@@ -727,13 +727,13 @@ void DtlsTransport::OnDtlsEvent(rtc::StreamInterface* dtls, int sig, int err) {
         NotifyPacketReceived(rtc::ReceivedPacket(
             rtc::MakeArrayView(buf, read), rtc::SocketAddress(),
             webrtc::Timestamp::Micros(rtc::TimeMicros()),
-            rtc::ReceivedPacket::kDtlsDecrypted));
+            rtc::EcnMarking::kNotEct, rtc::ReceivedPacket::kDtlsDecrypted));
       } else if (ret == rtc::SR_EOS) {
         // Remote peer shut down the association with no error.
         RTC_LOG(LS_INFO) << ToString() << ": DTLS transport closed by remote";
         set_writable(false);
         set_dtls_state(webrtc::DtlsTransportState::kClosed);
-        SignalClosed(this);
+        NotifyOnClose();
       } else if (ret == rtc::SR_ERROR) {
         // Remote peer shut down the association with an error.
         RTC_LOG(LS_INFO)
@@ -742,7 +742,7 @@ void DtlsTransport::OnDtlsEvent(rtc::StreamInterface* dtls, int sig, int err) {
             << read_error;
         set_writable(false);
         set_dtls_state(webrtc::DtlsTransportState::kFailed);
-        SignalClosed(this);
+        NotifyOnClose();
       }
     } while (ret == rtc::SR_SUCCESS);
   }

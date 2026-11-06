@@ -211,8 +211,8 @@ TEST(TestVideoFrame, WidthHeightValues) {
   const int valid_value = 10;
   EXPECT_EQ(valid_value, frame.width());
   EXPECT_EQ(valid_value, frame.height());
-  frame.set_timestamp(123u);
-  EXPECT_EQ(123u, frame.timestamp());
+  frame.set_rtp_timestamp(123u);
+  EXPECT_EQ(123u, frame.rtp_timestamp());
   frame.set_ntp_time_ms(456);
   EXPECT_EQ(456, frame.ntp_time_ms());
   EXPECT_EQ(789, frame.render_time_ms());
@@ -246,7 +246,7 @@ TEST(TestVideoFrame, ShallowCopy) {
                           .set_rotation(kRotation)
                           .set_timestamp_us(0)
                           .build();
-  frame1.set_timestamp(timestamp);
+  frame1.set_rtp_timestamp(timestamp);
   frame1.set_ntp_time_ms(ntp_time_ms);
   frame1.set_timestamp_us(timestamp_us);
   VideoFrame frame2(frame1);
@@ -260,17 +260,17 @@ TEST(TestVideoFrame, ShallowCopy) {
   EXPECT_EQ(yuv1->DataU(), yuv2->DataU());
   EXPECT_EQ(yuv1->DataV(), yuv2->DataV());
 
-  EXPECT_EQ(frame2.timestamp(), frame1.timestamp());
+  EXPECT_EQ(frame2.rtp_timestamp(), frame1.rtp_timestamp());
   EXPECT_EQ(frame2.ntp_time_ms(), frame1.ntp_time_ms());
   EXPECT_EQ(frame2.timestamp_us(), frame1.timestamp_us());
   EXPECT_EQ(frame2.rotation(), frame1.rotation());
 
-  frame2.set_timestamp(timestamp + 1);
+  frame2.set_rtp_timestamp(timestamp + 1);
   frame2.set_ntp_time_ms(ntp_time_ms + 1);
   frame2.set_timestamp_us(timestamp_us + 1);
   frame2.set_rotation(kVideoRotation_90);
 
-  EXPECT_NE(frame2.timestamp(), frame1.timestamp());
+  EXPECT_NE(frame2.rtp_timestamp(), frame1.rtp_timestamp());
   EXPECT_NE(frame2.ntp_time_ms(), frame1.ntp_time_ms());
   EXPECT_NE(frame2.timestamp_us(), frame1.timestamp_us());
   EXPECT_NE(frame2.rotation(), frame1.rotation());
@@ -281,14 +281,14 @@ TEST(TestVideoFrame, TextureInitialValues) {
       640, 480, 100, 10, webrtc::kVideoRotation_0);
   EXPECT_EQ(640, frame.width());
   EXPECT_EQ(480, frame.height());
-  EXPECT_EQ(100u, frame.timestamp());
+  EXPECT_EQ(100u, frame.rtp_timestamp());
   EXPECT_EQ(10, frame.render_time_ms());
   ASSERT_TRUE(frame.video_frame_buffer() != nullptr);
   EXPECT_TRUE(frame.video_frame_buffer()->type() ==
               VideoFrameBuffer::Type::kNative);
 
-  frame.set_timestamp(200);
-  EXPECT_EQ(200u, frame.timestamp());
+  frame.set_rtp_timestamp(200);
+  EXPECT_EQ(200u, frame.rtp_timestamp());
   frame.set_timestamp_us(20);
   EXPECT_EQ(20, frame.timestamp_us());
 }

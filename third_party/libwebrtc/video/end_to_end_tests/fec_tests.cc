@@ -110,7 +110,7 @@ TEST_F(FecEndToEndTest, ReceivesUlpfec) {
       MutexLock lock(&mutex_);
       // Rendering frame with timestamp of packet that was dropped -> FEC
       // protection worked.
-      auto it = dropped_timestamps_.find(video_frame.timestamp());
+      auto it = dropped_timestamps_.find(video_frame.rtp_timestamp());
       if (it != dropped_timestamps_.end()) {
         observation_complete_.Set();
       }
@@ -289,7 +289,7 @@ class FlexfecRenderObserver : public test::EndToEndTest,
     MutexLock lock(&mutex_);
     // Rendering frame with timestamp of packet that was dropped -> FEC
     // protection worked.
-    auto it = dropped_timestamps_.find(video_frame.timestamp());
+    auto it = dropped_timestamps_.find(video_frame.rtp_timestamp());
     if (it != dropped_timestamps_.end()) {
       if (!expect_flexfec_rtcp_ || received_flexfec_rtcp_) {
         observation_complete_.Set();

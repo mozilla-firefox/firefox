@@ -97,8 +97,6 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   void OnTransportWritableState(rtc::PacketTransportInternal* transport);
   void OnTransportReadPacket(rtc::PacketTransportInternal* transport,
                              const rtc::ReceivedPacket& packet);
-  void OnTransportClosed(rtc::PacketTransportInternal* transport);
-
   void MaybeConnectSocket();
 
   rtc::Thread* network_thread_;

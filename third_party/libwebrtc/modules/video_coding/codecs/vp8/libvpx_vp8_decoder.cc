@@ -302,7 +302,7 @@ int LibvpxVp8Decoder::ReturnFrame(
 
   VideoFrame decoded_image = VideoFrame::Builder()
                                  .set_video_frame_buffer(buffer)
-                                 .set_timestamp_rtp(timestamp)
+                                 .set_rtp_timestamp(timestamp)
                                  .set_color_space(explicit_color_space)
                                  .build();
   decode_complete_callback_->Decoded(decoded_image, absl::nullopt, qp);

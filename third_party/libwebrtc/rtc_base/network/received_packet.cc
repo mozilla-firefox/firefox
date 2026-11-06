@@ -20,15 +20,17 @@ namespace rtc {
 ReceivedPacket::ReceivedPacket(rtc::ArrayView<const uint8_t> payload,
                                const SocketAddress& source_address,
                                absl::optional<webrtc::Timestamp> arrival_time,
+                               EcnMarking ecn,
                                DecryptionInfo decryption)
     : payload_(payload),
       arrival_time_(std::move(arrival_time)),
       source_address_(source_address),
+      ecn_(ecn),
       decryption_info_(decryption) {}
 
 ReceivedPacket ReceivedPacket::CopyAndSet(
     DecryptionInfo decryption_info) const {
-  return ReceivedPacket(payload_, source_address_, arrival_time_,
+  return ReceivedPacket(payload_, source_address_, arrival_time_, ecn_,
                         decryption_info);
 }
 

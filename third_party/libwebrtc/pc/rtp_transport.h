@@ -92,7 +92,9 @@ class RtpTransport : public RtpTransportInternal {
 
  protected:
   // These methods will be used in the subclasses.
-  void DemuxPacket(rtc::CopyOnWriteBuffer packet, Timestamp arrival_time);
+  void DemuxPacket(rtc::CopyOnWriteBuffer packet,
+                   Timestamp arrival_time,
+                   rtc::EcnMarking ecn);
 
   bool SendPacket(bool rtcp,
                   rtc::CopyOnWriteBuffer* packet,
