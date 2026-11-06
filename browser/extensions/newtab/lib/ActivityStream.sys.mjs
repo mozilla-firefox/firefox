@@ -1200,7 +1200,7 @@ export const PREFS_CONFIG = new Map([
     "newtabAdSize.billboard",
     {
       title: "Boolean flag to turn the billboard ad size on and off",
-      value: false,
+      value: true,
     },
   ],
   [
@@ -1208,7 +1208,7 @@ export const PREFS_CONFIG = new Map([
     {
       title:
         "position for billboard spoc - should correlate to a row in DS grid",
-      value: "3",
+      value: "1",
     },
   ],
   [
@@ -1222,7 +1222,7 @@ export const PREFS_CONFIG = new Map([
     "discoverystream.promoCard.enabled",
     {
       title: "Boolean flag to turn the promo card on and off",
-      value: false,
+      value: true,
     },
   ],
   [

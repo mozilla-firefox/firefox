@@ -2137,14 +2137,14 @@ pref("browser.newtabpage.activity-stream.discoverystream.newSponsoredLabel.enabl
 pref("browser.newtabpage.activity-stream.discoverystream.spoc-positions", "2,4,8,13,17,20");
 
 // For both spoc and tiles, count corresponds to the matching placement. So the first placement in an array corresponds to the first count.
-pref("browser.newtabpage.activity-stream.discoverystream.placements.spocs", "newtab_stories_1, newtab_stories_2, newtab_stories_3, newtab_stories_4, newtab_stories_5, newtab_stories_6");
-pref("browser.newtabpage.activity-stream.discoverystream.placements.spocs.counts", "1,1,1,1,1,1");
-pref("browser.newtabpage.activity-stream.discoverystream.placements.contextualSpocs", "newtab_stories_1, newtab_stories_2, newtab_stories_3, newtab_stories_4, newtab_stories_5, newtab_stories_6");
-pref("browser.newtabpage.activity-stream.discoverystream.placements.contextualSpocs.counts", "1, 1, 1, 1, 1, 1");
+pref("browser.newtabpage.activity-stream.discoverystream.placements.spocs", "newtab_stories_1, newtab_stories_2, newtab_stories_3, newtab_stories_4, newtab_stories_5, newtab_stories_6, newtab_stories_7, newtab_stories_8, newtab_stories_9, newtab_stories_10, newtab_stories_11, newtab_stories_12, newtab_billboard");
+pref("browser.newtabpage.activity-stream.discoverystream.placements.spocs.counts", "1,1,1,1,1,1,1,1,1,1,1,1,1");
+pref("browser.newtabpage.activity-stream.discoverystream.placements.contextualSpocs", "newtab_stories_1, newtab_stories_2, newtab_stories_3, newtab_stories_4, newtab_stories_5, newtab_stories_6, newtab_stories_7, newtab_stories_8, newtab_stories_9, newtab_stories_10, newtab_stories_11, newtab_stories_12");
+pref("browser.newtabpage.activity-stream.discoverystream.placements.contextualSpocs.counts", "1,1,1,1,1,1,1,1,1,1,1,1");
 pref("browser.newtabpage.activity-stream.discoverystream.placements.tiles", "newtab_tile_1, newtab_tile_2, newtab_tile_3");
 pref("browser.newtabpage.activity-stream.discoverystream.placements.tiles.counts", "1, 1, 1");
-pref("browser.newtabpage.activity-stream.discoverystream.placements.contextualBanners", "");
-pref("browser.newtabpage.activity-stream.discoverystream.placements.contextualBanners.counts", "");
+pref("browser.newtabpage.activity-stream.discoverystream.placements.contextualBanners", "newtab_billboard");
+pref("browser.newtabpage.activity-stream.discoverystream.placements.contextualBanners.counts", "1");
 
 // This is a 0-based index, for consistency with the other position CSVs,
 // but Contile positions are a 1-based index, so we end up adding 1 to these before using them.
