@@ -544,11 +544,6 @@ class nsMenuPopupFrame final : public nsBlockFrame, public nsIWidgetListener {
 
   bool ShouldFollowAnchor(nsRect& aRect);
 
-  // Returns parent menu widget for submenus that are in the same
-  // frame hierarchy, it's needed for Linux/Wayland which demands
-  // strict popup windows hierarchy.
-  nsIWidget* GetParentMenuWidget();
-
   // Returns the effective margin for this popup. This is the CSS margin plus
   // the context-menu shift, if needed.
   nsMargin GetMargin() const;

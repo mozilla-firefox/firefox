@@ -317,9 +317,6 @@ class nsTreeBodyFrame final : public mozilla::SimpleXULLeafFrame,
   // Calculates our width/height once border and padding have been removed.
   void CalcInnerBox();
 
-  // Calculate the total width of our scrollable portion
-  nscoord CalcHorzWidth(const ScrollParts& aParts);
-
   // Looks up a ComputedStyle in the style cache.  On a cache miss we resolve
   // the pseudo-styles passed in and place them into the cache.
   ComputedStyle* GetPseudoComputedStyle(
@@ -418,12 +415,6 @@ class nsTreeBodyFrame final : public mozilla::SimpleXULLeafFrame,
 
   void PostScrollEvent();
   MOZ_CAN_RUN_SCRIPT void FireScrollEvent();
-
-  /**
-   * Clear the pointer to this frame for all nsTreeImageListeners that were
-   * created by this frame.
-   */
-  void DetachImageListeners();
 
 #ifdef ACCESSIBILITY
   /**
