@@ -375,8 +375,10 @@ inline bool inThirdPartyPath(SourceLocation Loc, const SourceManager &SM) {
     return pair->second;
   }
 
-  SmallString<1024> FileName = OriginalFileName;
-  llvm::sys::fs::make_absolute(FileName);
+  SmallString<1024> FileName;
+  if (llvm::sys::fs::real_path(OriginalFileName, FileName)) {
+    llvm::sys::fs::make_absolute(FileName);
+  }
 
   for (uint32_t i = 0; i < MOZ_THIRD_PARTY_PATHS_COUNT; ++i) {
     auto PathB = sys::path::begin(FileName);
