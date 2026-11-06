@@ -171,20 +171,24 @@ extern "C" {
 
 extern "C" {
     fn moz_mock_network_udp_send_would_block(family: u16, addr: *const u8, port: u16) -> bool;
+    fn moz_mock_network_udp_send_reset(family: u16, addr: *const u8, port: u16) -> bool;
 }
 
-fn mock_udp_send_would_block(dest: SocketAddr) -> bool {
+fn mock_udp_send_error(dest: SocketAddr) -> Option<io::ErrorKind> {
     if !static_prefs::pref!("network.socket.attach_mock_network_layer") {
-        return false;
+        return None;
     }
+    let (family, octets) = match dest.ip() {
+        IpAddr::V4(v4) => (AF_INET_U16, v4.octets().to_vec()),
+        IpAddr::V6(v6) => (AF_INET6_U16, v6.octets().to_vec()),
+    };
     unsafe {
-        match dest.ip() {
-            IpAddr::V4(v4) => {
-                moz_mock_network_udp_send_would_block(AF_INET_U16, v4.octets().as_ptr(), dest.port())
-            }
-            IpAddr::V6(v6) => {
-                moz_mock_network_udp_send_would_block(AF_INET6_U16, v6.octets().as_ptr(), dest.port())
-            }
+        if moz_mock_network_udp_send_reset(family, octets.as_ptr(), dest.port()) {
+            Some(io::ErrorKind::ConnectionReset)
+        } else if moz_mock_network_udp_send_would_block(family, octets.as_ptr(), dest.port()) {
+            Some(io::ErrorKind::WouldBlock)
+        } else {
+            None
         }
     }
 }
@@ -1432,10 +1436,9 @@ pub extern "C" fn neqo_http3conn_process_output_and_send(
                     break NS_ERROR_CONNECTION_REFUSED;
                 }
 
-                let send_result = if mock_udp_send_would_block(dg.destination()) {
-                    Err(io::Error::from(io::ErrorKind::WouldBlock))
-                } else {
-                    conn.socket.as_mut().expect("non NSPR IO").send(&dg)
+                let send_result = match mock_udp_send_error(dg.destination()) {
+                    Some(kind) => Err(io::Error::from(kind)),
+                    None => conn.socket.as_mut().expect("non NSPR IO").send(&dg),
                 };
                 match send_result {
                     Ok(()) => {}

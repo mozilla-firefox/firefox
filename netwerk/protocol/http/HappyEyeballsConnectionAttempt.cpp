@@ -1246,7 +1246,9 @@ nsresult HappyEyeballsConnectionAttempt::EstablishTCPConnection(
     NotifyConnectionActivity(info, NS_HTTP_ACTIVITY_SUBTYPE_ECH_SET);
   }
   NotifyConnectionActivity(info, NS_HTTP_ACTIVITY_SUBTYPE_CONNECTION_CREATED);
-  uint32_t caps = mCaps | (aIsEchRetry ? NS_HTTP_IS_RETRY : 0);
+  // A failed racing attempt must not clear the origin's alt-svc mappings.
+  uint32_t caps =
+      mCaps | NS_HTTP_ERROR_SOFTLY | (aIsEchRetry ? NS_HTTP_IS_RETRY : 0);
   RefPtr<ConnectionEstablisher> establisher =
       mEstablisherFactory->Create(ConnectionEstablisherType::TCP, info, aTarget,
                                   caps, mSpeculative, mAllow1918);
@@ -1310,7 +1312,9 @@ nsresult HappyEyeballsConnectionAttempt::EstablishUDPConnection(
     NotifyConnectionActivity(info, NS_HTTP_ACTIVITY_SUBTYPE_ECH_SET);
   }
   NotifyConnectionActivity(info, NS_HTTP_ACTIVITY_SUBTYPE_CONNECTION_CREATED);
-  uint32_t caps = mCaps | (aIsEchRetry ? NS_HTTP_IS_RETRY : 0);
+  // A failed racing attempt must not clear the origin's alt-svc mappings.
+  uint32_t caps =
+      mCaps | NS_HTTP_ERROR_SOFTLY | (aIsEchRetry ? NS_HTTP_IS_RETRY : 0);
   RefPtr<ConnectionEstablisher> establisher = mEstablisherFactory->Create(
       ConnectionEstablisherType::UDP, info, AsVariant(aAddr), caps,
       mSpeculative, mAllow1918);
