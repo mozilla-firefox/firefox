@@ -688,6 +688,8 @@ struct Vec<uint8_t> final {
     return ret;
   }
 
+  void Clear() { inner.length = 0; }
+
   void SetEmpty() {
     // We need to ensure that (data, capacity, length) always remain valid
     // to be passed to Vec::from_raw_parts. In particular, this requires that

@@ -55,6 +55,7 @@
 #  include "mozilla/widget/WinCompositorWidget.h"
 #endif
 #if defined(MOZ_WIDGET_GTK)
+#  include "mozilla/gfx/UnscaledFontFreeType.h"
 #  include "mozilla/widget/GtkCompositorWidget.h"
 #endif
 #ifdef MOZ_WIDGET_ANDROID
@@ -653,6 +654,21 @@ static bool ReadRawFont(const OpAddRawFont& aOp, wr::ShmSegmentsReader& aReader,
   return true;
 }
 
+static bool ValidateFontDescriptor(wr::Vec<uint8_t>& aBytes,
+                                   uint32_t& aFontIndex) {
+#ifdef MOZ_WIDGET_GTK
+  nsCString path;
+  if (!UnscaledFontFontconfig::ValidateFontDescriptor(
+          aBytes.Data(), aBytes.Length(), path, aFontIndex)) {
+    return false;
+  }
+  aBytes.Clear();
+  aBytes.PushBytes(
+      Range<uint8_t>((uint8_t*)path.BeginReading(), path.Length()));
+#endif
+  return true;
+}
+
 already_AddRefed<WebRenderBridgeParent>
 WebRenderBridgeParent::FindSnapshotSourceBridge(
     const wr::IdNamespace& aNamespace) {
@@ -879,8 +895,10 @@ bool WebRenderBridgeParent::UpdateResources(
         }
 
         wr::Vec<uint8_t> bytes;
-        if (reader.Read(op.bytes(), bytes)) {
-          aUpdates.AddFontDescriptor(op.key(), bytes, op.fontIndex());
+        uint32_t fontIndex = op.fontIndex();
+        if (reader.Read(op.bytes(), bytes) &&
+            ValidateFontDescriptor(bytes, fontIndex)) {
+          aUpdates.AddFontDescriptor(op.key(), bytes, fontIndex);
         } else {
           gfxCriticalNote << "TOpAddFontDescriptor failed";
           success = false;
