@@ -22,7 +22,7 @@ This skill helps you create new Android gradle modules following Mozilla's conve
 - **ui** - UI components; has overlap with Compose components.
 
 ## Steps to Create a New Component
-Create a plan to execute the steps. The plan should include all nine steps below.
+Create a plan to execute the steps. The plan should include all eight steps below.
 
 ### 1. Determine Component Type and Name
 
@@ -36,8 +36,6 @@ Ask the user:
 
 ```bash
 mkdir -p mobile/android/android-components/components/{category}/{name}/src/main/java/mozilla/components/{category}/{name}
-mkdir -p mobile/android/android-components/components/{category}/{name}/src/test/java/mozilla/components/{category}/{name}
-mkdir -p mobile/android/android-components/components/{category}/{name}/src/test/resources
 ```
 
 ### 3. Create build.gradle
@@ -48,7 +46,6 @@ Key elements:
 - Apply the `com.android.library` plugin in the `plugins {}` block
 - Set namespace: `mozilla.components.{category}.{name}`
 - Include common dependencies: `androidx.core`, `kotlinx.coroutines`
-- Include test dependencies: `junit.bom`, `junit4`, `robolectric`, `kotlinx.coroutines.test`
 - Apply common config and publish scripts
 
 **Add dependencies as needed:**
@@ -93,6 +90,7 @@ File: `src/test/java/mozilla/components/{category}/{name}/{ComponentName}Test.kt
 Reference the example at `mobile/android/android-components/components/feature/example/src/test/java/mozilla/components/feature/example/ExampleFeatureTest.kt`.
 
 Key elements:
+- Add test dependencies `junit.bom` and `junit4`, plus `kotlinx.coroutines.test` for coroutine tests
 - MPL 2.0 license header
 - Use `StandardTestDispatcher` from `kotlinx.coroutines.test` for testing coroutines
 - Inject the test dispatcher into the component being tested
@@ -101,18 +99,9 @@ Key elements:
 - Track actual callback invocations instead of using mocks
 - Write descriptive test names using backticks (e.g., `` `start triggers onUpdate callback` ``)
 - Use JUnit assertions to verify behavior
+- Robolectric tests: see the `android` skill
 
-### 7. Create Robolectric Configuration
-
-File: `src/test/resources/robolectric.properties`
-
-```properties
-sdk=35
-```
-
-This configures Robolectric to use Android SDK 35 for unit tests.
-
-### 8. Create README.md
+### 7. Create README.md
 
 File: `README.md`
 
@@ -125,7 +114,7 @@ Key elements:
 - Code examples showing how to use the component
 - MPL 2.0 license footer
 
-### 9. Register in .buildconfig.yml
+### 8. Register in .buildconfig.yml
 
 Add the component to `.buildconfig.yml` in alphabetical order within its category:
 

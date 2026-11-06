@@ -1385,6 +1385,7 @@ class DownloadsFeatureTest {
     fun `GIVEN a download WHEN a 3rd party app is selected THEN delegate download to it`() =
         runTest(testDispatcher) {
             val spyContext = spy(testContext)
+            doNothing().`when`(spyContext).startActivity(any())
             val usecases: DownloadsUseCases = mock()
             val consumeDownloadUseCase: ConsumeDownloadUseCase = mock()
             doReturn(consumeDownloadUseCase).`when`(usecases).consumeDownload

@@ -740,6 +740,9 @@ class LensCameraActivityTest {
     }
 
     @Test
+    // Robolectric grants declared permissions on request on SDK 37:
+    // https://github.com/robolectric/robolectric/issues/11518
+    @Config(sdk = [36])
     fun `GIVEN the camera permission was denied WHEN the activity resumes THEN the camera is not started behind the denial`() {
         // No grantPermissions here, so the resume inside setup requests the permission.
         val controller = Robolectric.buildActivity(LensCameraActivity::class.java).setup()

@@ -664,6 +664,7 @@ class ProjectPlugin : Plugin<Project> {
                 systemProperty("logging.test-mode", "true")
                 systemProperty("javax.net.ssl.trustStoreType", "JKS")
                 jvmArgs("--enable-native-access=ALL-UNNAMED")
+                jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
                 if (automation) {
                     systemProperty(
                         "robolectric.dependency.dir",
@@ -679,6 +680,13 @@ class ProjectPlugin : Plugin<Project> {
                 val listener = MozillaTestOutputListener(logger)
                 addTestListener(listener)
                 addTestOutputListener(listener)
+            }
+
+            val libs = project.extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
+            val espresso = libs.findLibrary("androidx-test-espresso-core").get().get()
+            val espressoNotation = "${espresso.module}:${espresso.versionConstraint.requiredVersion}"
+            project.configurations.matching { it.name == "testImplementation" }.configureEach {
+                project.dependencies.constraints.add(name, espressoNotation)
             }
         }
     }
