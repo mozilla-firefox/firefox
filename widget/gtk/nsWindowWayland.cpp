@@ -372,13 +372,19 @@ void nsWindowWaylandToplevel::MoveToWorkspace(
   if (!nsAppShell::IsSessionRestoreSupported()) {
     return;
   }
-  mWorkspaceID = NS_ConvertUTF16toUTF8(aWorkspaceIDStr);
   LOG("nsWindowWaylandToplevel::MoveToWorkspace() session ID %s "
       "mWaitingToSessionRestore %d mNeedsShow %d",
-      mWorkspaceID.get(), mWaitingToSessionRestore, mNeedsShow);
+      NS_ConvertUTF16toUTF8(aWorkspaceIDStr).get(), mWaitingToSessionRestore,
+      mNeedsShow);
+  // A window which does not wait for session restore is already shown or it is
+  // shown without restore, and it is added to the session under its own ID.
+  // The passed ID is from a previous session and the compositor may still
+  // store state for it, so add_toplevel with it would fail with a name_in_use
+  // protocol error (Bug 2064100).
   if (!mWaitingToSessionRestore) {
     return;
   }
+  mWorkspaceID = NS_ConvertUTF16toUTF8(aWorkspaceIDStr);
   mWaitingToSessionRestore = false;
   if (mNeedsShow) {
     NativeShow(/* show */ true);

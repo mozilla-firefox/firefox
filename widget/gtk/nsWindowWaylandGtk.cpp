@@ -53,6 +53,11 @@ static nsWindowWaylandPopupGtk* PopupAsGtk(nsWindowWaylandPopup* aPopup) {
 
   Likewise we use GetWorkspaceID() to create/save the xdg_toplevel session
   for later restore.
+
+  A window which does not wait for session restore cannot be restored, so it
+  ignores MoveToWorkspace() and is added to the session under a new ID instead.
+  This happens when a previous session is restored from the menu or a closed
+  window is reopened.
 */
 
 static struct xdg_toplevel* GetXdgToplevelFromGdkWindow(GdkWindow* aWindow) {
