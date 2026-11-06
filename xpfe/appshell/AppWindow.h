@@ -201,7 +201,7 @@ class AppWindow final : public nsIBaseWindow,
   bool LoadSizeFromXUL(int32_t& aSpecWidth, int32_t& aSpecHeight);
   void SetSpecifiedSize(const CSSIntSize&);
   MOZ_CAN_RUN_SCRIPT bool UpdateWindowStateFromMiscXULAttributes();
-  void SyncAttributesToWidget();
+  void SyncOneShotAttributesToWidget();
   void SavePersistentAttributes(PersistentAttributes);
   void MaybeSavePersistentPositionAndSize(PersistentAttributes,
                                           dom::Element& aRootElement,
@@ -333,9 +333,9 @@ class AppWindow final : public nsIBaseWindow,
   // otherwise happen due to script running as we tear down various things.
   bool mDestroying;
   bool mRegistered;
-  // Indicator for whether the client size, instead of the window size, should
-  // be maintained in case of a change in their relation.
-  bool mDominantClientSize;
+  // Indicator for whether we've ever been sized to the client dimensions (i.e.
+  // we're a sized popup).
+  bool mIsSizedPopup = false;
   PersistentAttributes mPersistentAttributesDirty;
   PersistentAttributes mPersistentAttributesMask;
   uint32_t mChromeFlags;
