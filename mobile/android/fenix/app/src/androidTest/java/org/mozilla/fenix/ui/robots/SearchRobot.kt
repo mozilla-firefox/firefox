@@ -553,7 +553,11 @@ class SearchRobot(private val composeTestRule: ComposeTestRule) {
         )
         assertTrue(
             "$TAG: Neither the device camera was opened nor the camera app error message was displayed",
-            mDevice.findObject(UiSelector().resourceId("$packageName:id/view_finder")).waitForExists(waitingTime) ||
+            // The Lens camera shows its title whether or not a camera is available.
+            mDevice
+                .findObject(UiSelector().text(getStringResource(R.string.lens_camera_title_qr)))
+                .waitForExists(waitingTime) ||
+                mDevice.findObject(UiSelector().resourceId("$packageName:id/view_finder")).exists() ||
                 // In case there is no camera available, an error will be shown.
                 mDevice.findObject(UiSelector().resourceId("$packageName:id/camera_error")).exists(),
         )

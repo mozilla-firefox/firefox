@@ -30,12 +30,14 @@ import mozilla.components.support.ktx.android.net.isHttpOrHttps
 import mozilla.components.support.ktx.kotlin.toNormalizedUrl
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.components.appstate.AppAction.QrScannerAction
+import org.mozilla.fenix.components.lens.LensCameraActivity
 import org.mozilla.fenix.ext.components
 
 /**
  * Handles QR Scan Activity requests and results.
  * - Observes QR scan requests from the AppStore.
- * - Launches QR scan activity and updates AppStore with the result.
+ * - Launches [LensCameraActivity] in QR-only mode or [QrScanActivity], based on whether the Google Lens integration is
+ *   enabled, and updates AppStore with the result.
  * - Does NOT update any UI or toolbar state directly.
  *
  * Other features (such as toolbar middleware) should observe AppStore for QR scan results and update their own state
@@ -47,6 +49,7 @@ class QrScanFenixFeature(
     private val qrScanActivityLauncher: ActivityResultLauncher<Intent>,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     override val onNeedToRequestPermissions: OnNeedToRequestPermissions = {},
+    private val isLensCameraEnabled: () -> Boolean = { context.components.settings.googleLensIntegrationEnabled },
 ) : LifecycleAwareFeature, PermissionsFeature {
 
     private var scope: CoroutineScope? = null
@@ -78,7 +81,12 @@ class QrScanFenixFeature(
     }
 
     private fun launchQrScan() {
-        val intent = QrScanActivity.newIntent(context = context)
+        val intent =
+            if (isLensCameraEnabled()) {
+                LensCameraActivity.newQrScannerIntent(context = context)
+            } else {
+                QrScanActivity.newIntent(context = context)
+            }
         try {
             qrScanActivityLauncher.launch(intent)
         } catch (e: ActivityNotFoundException) {

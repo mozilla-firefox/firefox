@@ -3362,8 +3362,8 @@ class Settings(
 
     /**
      * User preference (local only) controlling whether the Google Lens integration is active when
-     * [googleLensIntegrationEnabled] is on. When false, the standard QR scanner is used and the "Open with Google Lens"
-     * image context menu entry is hidden.
+     * [googleLensIntegrationEnabled] is on. When false, the toolbar offers the QR scanner instead of Google Lens and
+     * the "Open with Google Lens" image context menu entry is hidden.
      */
     var googleLensIntegrationUserEnabled by
         booleanPreference(

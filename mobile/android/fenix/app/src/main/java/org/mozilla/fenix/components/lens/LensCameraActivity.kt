@@ -131,7 +131,7 @@ class LensCameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_lens_camera)
         permissionRequested = savedInstanceState?.getBoolean(STATE_PERMISSION_REQUESTED, false) == true
-        if (savedInstanceState == null) {
+        if (savedInstanceState == null && !isQrOnly) {
             lifecycleScope.launch(Dispatchers.IO) { clearLensImageCache() }
         }
 
