@@ -680,6 +680,25 @@ add_task(async function test_unavailable_spotlight() {
       "AI_WINDOW_GUEST_UNAVAILABLE_MODAL",
       "The unavailable message is shown"
     );
+    const screen =
+      showSpotlightDialog.firstCall.args[1].content.screens[0].content;
+    Assert.deepEqual(
+      screen.above_button_content[0].link_keys,
+      ["sign_in"],
+      "The body has a sign in link"
+    );
+    const { orderedExecution, actions } = screen.sign_in.action.data;
+    Assert.ok(orderedExecution, "The sign in actions run in order");
+    Assert.deepEqual(
+      actions.map(a => a.type),
+      ["FXA_SIGNIN_FLOW", "FXA_AIWINDOW_SIGNIN_FLOW"],
+      "The sign in link signs in to FxA, then launches Smart Window"
+    );
+    Assert.ok(
+      actions[1].requiresPrevious,
+      "Smart Window is only launched after a successful FxA sign-in"
+    );
+    Assert.ok(screen.sign_in.action.dismiss, "The sign in link dismisses");
   } finally {
     sb.restore();
   }

@@ -115,8 +115,42 @@ const GUEST_UNAVAILABLE_MESSAGE = {
             fontSize: "24px",
             string_id: "smartwindow-guest-unavailable-title",
           },
-          subtitle: {
-            string_id: "smartwindow-guest-unavailable-body",
+          above_button_content: [
+            {
+              type: "text",
+              text: {
+                string_id: "smartwindow-guest-unavailable-body",
+                fontSize: "13px",
+                marginBlock: "10px 20px",
+                marginInline: "20px",
+              },
+              link_keys: ["sign_in"],
+              font_styles: "legal",
+            },
+          ],
+          sign_in: {
+            action: {
+              type: "MULTI_ACTION",
+              data: {
+                orderedExecution: true,
+                actions: [
+                  {
+                    type: "FXA_SIGNIN_FLOW",
+                    data: {
+                      entrypoint: "smartwindow",
+                      extraParams: {
+                        service: "smartwindow",
+                      },
+                    },
+                  },
+                  {
+                    type: "FXA_AIWINDOW_SIGNIN_FLOW",
+                    requiresPrevious: true,
+                  },
+                ],
+              },
+              dismiss: true,
+            },
           },
           primary_button: {
             label: {
