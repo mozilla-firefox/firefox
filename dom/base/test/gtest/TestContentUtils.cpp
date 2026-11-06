@@ -10,6 +10,7 @@
 #include "mozilla/ErrorResult.h"
 #include "mozilla/OriginAttributes.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/RangeBoundary.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/IPCTransferable.h"
@@ -425,4 +426,54 @@ TEST(DOM_Base_ContentUtils, EmptyScriptInWindowlessDocumentSkipsCheckpoint)
   // microtask really was pending.
   EnterAndLeaveMicroTask();
   EXPECT_TRUE(ran);
+}
+
+TEST(DOM_Base_ContentUtils, ComparePointsAncestorLimiter)
+{
+  using namespace mozilla;
+  RefPtr<Document> doc = CreateWindowlessDocument();
+  RefPtr<Element> root = doc->CreateHTMLElement(nsGkAtoms::div);
+  RefPtr<Element> first = doc->CreateHTMLElement(nsGkAtoms::p);
+  RefPtr<Element> last = doc->CreateHTMLElement(nsGkAtoms::p);
+  RefPtr<Element> outside = doc->CreateHTMLElement(nsGkAtoms::div);
+  IgnoredErrorResult error;
+  root->AppendChild(*first, error);
+  ASSERT_FALSE(error.Failed());
+  root->AppendChild(*last, error);
+  ASSERT_FALSE(error.Failed());
+  auto compare = [&](const RawRangeBoundary& aFirst,
+                     const RawRangeBoundary& aLast, const nsINode* aLimiter) {
+    return nsContentUtils::ComparePoints<TreeKind::DOM>(aFirst, aLast, nullptr,
+                                                        aLimiter);
+  };
+  EXPECT_EQ(
+      compare(RawRangeBoundary(first, 0u), RawRangeBoundary(last, 0u), root),
+      Some(-1));
+  EXPECT_EQ(
+      compare(RawRangeBoundary(last, 0u), RawRangeBoundary(first, 0u), root),
+      Some(1));
+  EXPECT_EQ(
+      compare(RawRangeBoundary(root, 0u), RawRangeBoundary(last, 0u), root),
+      Some(-1));
+  EXPECT_EQ(
+      compare(RawRangeBoundary(first, 0u), RawRangeBoundary(first, 0u), first),
+      Some(0));
+  EXPECT_TRUE(
+      compare(RawRangeBoundary(first, 0u), RawRangeBoundary(last, 0u), first)
+          .isNothing());
+  EXPECT_TRUE(
+      compare(RawRangeBoundary(outside, 0u), RawRangeBoundary(first, 0u), root)
+          .isNothing());
+  EXPECT_EQ(compare(RawRangeBoundary::FromChild(*first),
+                    RawRangeBoundary::FromChild(*last), root),
+            Some(-1));
+  EXPECT_EQ(compare(RawRangeBoundary(root, 0u), RawRangeBoundary::After(*first),
+                    root),
+            Some(-1));
+  EXPECT_TRUE(compare(RawRangeBoundary::After(*first),
+                      RawRangeBoundary(outside, 0u), root)
+                  .isNothing());
+  EXPECT_EQ(
+      compare(RawRangeBoundary(first, 0u), RawRangeBoundary(last, 0u), nullptr),
+      Some(-1));
 }

@@ -542,20 +542,23 @@ uint32_t nsContentUtils::sInnerOrOuterWindowSerialCounter = 0;
 
 INSTANTIATE_METHOD_FOR_CONST_RANGE_BOUNDARY_REFS(Maybe<int32_t>,
                                                  nsContentUtils::ComparePoints,
-                                                 TreeKind::DOM,
-                                                 NodeIndexCache*);
+                                                 TreeKind::DOM, NodeIndexCache*,
+                                                 const nsINode*);
 INSTANTIATE_METHOD_FOR_CONST_RANGE_BOUNDARY_REFS(Maybe<int32_t>,
                                                  nsContentUtils::ComparePoints,
                                                  TreeKind::ShadowIncludingDOM,
-                                                 NodeIndexCache*);
+                                                 NodeIndexCache*,
+                                                 const nsINode*);
 INSTANTIATE_METHOD_FOR_CONST_RANGE_BOUNDARY_REFS(Maybe<int32_t>,
                                                  nsContentUtils::ComparePoints,
                                                  TreeKind::Flat,
-                                                 NodeIndexCache*);
+                                                 NodeIndexCache*,
+                                                 const nsINode*);
 INSTANTIATE_METHOD_FOR_CONST_RANGE_BOUNDARY_REFS(Maybe<int32_t>,
                                                  nsContentUtils::ComparePoints,
                                                  TreeKind::FlatForSelection,
-                                                 NodeIndexCache*);
+                                                 NodeIndexCache*,
+                                                 const nsINode*);
 
 #undef INSTANTIATE_METHOD_FOR_CONST_RANGE_BOUNDARY_REFS
 #undef INSTANTIATE_METHOD_FOR_TREEKIND_TEMPLATE_PARAM
@@ -956,6 +959,18 @@ constexpr TreeKind TreeKindToCompareChildren() {
   }
 }
 
+template <TreeKind aKind>
+static inline bool IsInclusiveDescendantForComparison(
+    const nsINode& aNode, const nsINode& aAncestor) {
+  for (const nsINode* node = &aNode; node;
+       node = GetParentNodeForComparison<aKind>::Get(node)) {
+    if (node == &aAncestor) {
+      return true;
+    }
+  }
+  return false;
+}
+
 template <class GetParentStruct>
 class MOZ_STACK_CLASS CommonAncestors final {
  public:
@@ -969,15 +984,24 @@ class MOZ_STACK_CLASS CommonAncestors final {
    * CanComputeIndex() returns false, ComputeChildIndex() nor GetChildCount() is
    * never used.
    */
-  CommonAncestors(const NodeType& aNode1, const NodeType& aNode2) {
+  CommonAncestors(const NodeType& aNode1, const NodeType& aNode2,
+                  const NodeType* aAncestorLimiter = nullptr) {
 #ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
     mAssertNoGC.emplace();
 #endif  // #ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
 
     AppendInclusiveAncestors(const_cast<NodeType*>(&aNode1),
-                             mInclusiveAncestors1);
+                             mInclusiveAncestors1, aAncestorLimiter);
+    if (aAncestorLimiter &&
+        mInclusiveAncestors1.LastElement() != aAncestorLimiter) {
+      return;
+    }
     AppendInclusiveAncestors(const_cast<NodeType*>(&aNode2),
-                             mInclusiveAncestors2);
+                             mInclusiveAncestors2, aAncestorLimiter);
+    if (aAncestorLimiter &&
+        mInclusiveAncestors2.LastElement() != aAncestorLimiter) {
+      return;
+    }
 
     // Find where the parent chain differs
     size_t depth1 = mInclusiveAncestors1.Length();
@@ -1031,10 +1055,14 @@ class MOZ_STACK_CLASS CommonAncestors final {
 
  private:
   static void AppendInclusiveAncestors(NodeType* aNode,
-                                       nsTArray<NodeType*>& aArrayOfParents) {
+                                       nsTArray<NodeType*>& aArrayOfParents,
+                                       const NodeType* aAncestorLimiter) {
     NodeType* node = aNode;
     while (node) {
       aArrayOfParents.AppendElement(node);
+      if (node == aAncestorLimiter) {
+        break;
+      }
       node = GetParentStruct::Get(node);
     }
   }
@@ -4124,16 +4152,19 @@ Maybe<int32_t> nsContentUtils::CompareChildNodeAndChildOffset(
 template <TreeKind aKind>
 Maybe<int32_t> nsContentUtils::ComparePointsWithIndices(
     const nsINode* aParent1, uint32_t aOffset1, const nsINode* aParent2,
-    uint32_t aOffset2, NodeIndexCache* aIndexCache) {
+    uint32_t aOffset2, NodeIndexCache* aIndexCache,
+    const nsINode* aAncestorLimiter) {
   MOZ_ASSERT(aParent1);
   MOZ_ASSERT(aParent2);
 
   if (aParent1 == aParent2) {
+    MOZ_ASSERT_IF(aAncestorLimiter, IsInclusiveDescendantForComparison<aKind>(
+                                        *aParent1, *aAncestorLimiter));
     return Some(aOffset1 < aOffset2 ? -1 : (aOffset1 > aOffset2 ? 1 : 0));
   }
 
   const CommonAncestors<GetParentNodeForComparison<aKind>> commonAncestors(
-      *aParent1, *aParent2);
+      *aParent1, *aParent2, aAncestorLimiter);
   const nsINode* const closestCommonAncestor =
       commonAncestors.GetClosestCommonAncestor();
   if (MOZ_UNLIKELY(!closestCommonAncestor)) {
@@ -4331,7 +4362,8 @@ template <TreeKind aKind, typename PT1, typename RT1, typename PT2,
 Maybe<int32_t> nsContentUtils::ComparePoints(
     const RangeBoundaryBase<PT1, RT1>& aBoundary1,
     const RangeBoundaryBase<PT2, RT2>& aBoundary2,
-    NodeIndexCache* aIndexCache /* = nullptr */) {
+    NodeIndexCache* aIndexCache /* = nullptr */,
+    const nsINode* aAncestorLimiter /* = nullptr */) {
   if (!aBoundary1.IsSet() || !aBoundary2.IsSet()) {
     return Nothing{};
   }
@@ -4349,7 +4381,7 @@ Maybe<int32_t> nsContentUtils::ComparePoints(
     return ComparePointsWithIndices<aKind>(
         aBoundary1.GetContainer(), *aBoundary1.Offset(kValidOrInvalidOffsets1),
         aBoundary2.GetContainer(), *aBoundary2.Offset(kValidOrInvalidOffsets2),
-        aIndexCache);
+        aIndexCache, aAncestorLimiter);
   }
 
   // Otherwise, i.e., at least one RangeBoundaryBase stores the child node.
@@ -4362,6 +4394,10 @@ Maybe<int32_t> nsContentUtils::ComparePoints(
   // If we're comparing children in the same container, we don't need to compute
   // common ancestors.  So, we can skip it and just compare the children.
   if (aBoundary1.GetContainer() == aBoundary2.GetContainer()) {
+    MOZ_ASSERT_IF(aAncestorLimiter,
+                  IsInclusiveDescendantForComparison<aKind>(
+                      *aBoundary1.GetContainer(), *aAncestorLimiter));
+
     const nsIContent* const child1 = aBoundary1.GetChildAtOffset();
     MOZ_ASSERT_IF(child1, !child1->IsShadowRoot());
     const nsIContent* const child2 = aBoundary2.GetChildAtOffset();
@@ -4385,7 +4421,7 @@ Maybe<int32_t> nsContentUtils::ComparePoints(
   // don't have offset, so, we cannot use offset when we compare the boundaries
   // whose one is a descendant of the other.
   const CommonAncestors<GetParentNodeForComparison<aKind>> commonAncestors(
-      *aBoundary1.GetContainer(), *aBoundary2.GetContainer());
+      *aBoundary1.GetContainer(), *aBoundary2.GetContainer(), aAncestorLimiter);
 
   const nsINode* const closestCommonAncestor =
       commonAncestors.GetClosestCommonAncestor();
