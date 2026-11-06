@@ -2,11 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { INITIAL_STATE } from "common/Reducers.sys.mjs";
 import { actionTypes as at } from "common/Actions.mjs";
 import { Travel } from "content-src/components/Widgets/Travel/Travel";
 import { WrapWithProvider } from "test/jest/test-utils";
+import { FRAMED_WIDGET_LOAD_TIMEOUT_MS } from "content-src/components/Widgets/useFramedWidgetMessages";
 
 const mockState = {
   ...INITIAL_STATE,
@@ -45,6 +46,109 @@ const renderWidget = (dispatch = jest.fn(), props = {}, state = mockState) => {
 };
 
 describe("Travel widget", () => {
+  // jsdom does not honor `source` from the MessageEvent init dict, so it is
+  // forced onto the instance.
+  function postFrameMessage(container, data) {
+    const frame = container.querySelector("iframe.travel-frame");
+    const event = new MessageEvent("message", {
+      data: { channel: "travel_widget", sentAt: "", ...data },
+      origin: new URL(mockState.FramedWidgets.travel.url).origin,
+    });
+    Object.defineProperty(event, "source", { value: frame.contentWindow });
+    act(() => {
+      window.dispatchEvent(event);
+    });
+  }
+
+  const postChangeSize = (container, size) =>
+    postFrameMessage(container, {
+      type: "action",
+      message: "change_size",
+      payload: { size },
+    });
+
+  it("shows the frame only after widget_ready", () => {
+    const { container } = renderWidget();
+    const article = container.querySelector("article.travel");
+    expect(article.hasAttribute("data-ready")).toBe(false);
+    postFrameMessage(container, {
+      type: "widget_ready",
+      payload: { protocol: 1 },
+    });
+    expect(article.hasAttribute("data-ready")).toBe(true);
+  });
+
+  it("records load_timeout and hides itself without widget_ready", () => {
+    jest.useFakeTimers();
+    try {
+      const { dispatch } = renderWidget();
+      act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
+      const actions = dispatch.mock.calls.map(([a]) => a);
+      expect(
+        actions.find(a => a.type === at.WIDGETS_ERROR)?.data.error_type
+      ).toBe("load_timeout");
+      expect(actions).toContainEqual({
+        type: at.FRAMED_WIDGET_UNAVAILABLE,
+        data: { id: "travel" },
+      });
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it("grows to the size the frame asks for and counts it as an interaction", () => {
+    const { container, handleUserInteraction } = renderWidget();
+    postChangeSize(container, "large");
+    expect(container.querySelector("article.travel").className).toContain(
+      "large-widget"
+    );
+    expect(handleUserInteraction).toHaveBeenCalledWith("travel");
+  });
+
+  it("lets the user's Change size choice win over the frame's request", () => {
+    const { container } = renderWidget();
+    postChangeSize(container, "large");
+    expect(
+      container
+        .querySelector("#travel-size-submenu panel-item[data-size='large']")
+        .hasAttribute("checked")
+    ).toBe(true);
+    fireEvent.click(
+      container.querySelector(
+        "#travel-size-submenu panel-item[data-size='medium']"
+      )
+    );
+    expect(container.querySelector("article.travel").className).toContain(
+      "medium-widget"
+    );
+  });
+
+  it("reports the size the frame asked for in telemetry", () => {
+    const { container, dispatch } = renderWidget();
+    postChangeSize(container, "large");
+    fireEvent.click(
+      container.querySelector(
+        "panel-item[data-l10n-id='newtab-travel-menu-learn-more']"
+      )
+    );
+    const userEvent = dispatch.mock.calls.find(
+      ([action]) =>
+        action?.type === at.WIDGETS_USER_EVENT &&
+        action.data?.user_action === "learn_more"
+    );
+    expect(userEvent[0].data.widget_size).toBe("large");
+  });
+
+  it("keeps its size when the layout can't host a larger widget", () => {
+    const { container } = renderWidget(jest.fn(), {
+      widgetsMayBeMaximized: false,
+    });
+    postChangeSize(container, "large");
+    expect(container.querySelector("article.travel").className).toContain(
+      "medium-widget"
+    );
+  });
+
   it("loads the manifest url in a sandboxed iframe labelled by the title", () => {
     const { container } = renderWidget();
     const frame = container.querySelector("iframe.travel-frame");

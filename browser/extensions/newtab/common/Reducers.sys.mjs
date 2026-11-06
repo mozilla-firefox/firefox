@@ -1310,6 +1310,11 @@ function FramedWidgets(prevState = INITIAL_STATE.FramedWidgets, action) {
   switch (action.type) {
     case at.FRAMED_WIDGETS_UPDATE:
       return action.data;
+    // Dispatched in content when a widget's document fails to load. The
+    // marker hides the widget in that tab, even with a trainhop URL override,
+    // until the next manifest update replaces the state.
+    case at.FRAMED_WIDGET_UNAVAILABLE:
+      return { ...prevState, [action.data.id]: { unavailable: true } };
     default:
       return prevState;
   }

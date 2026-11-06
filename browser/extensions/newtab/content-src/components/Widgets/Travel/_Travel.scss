@@ -84,4 +84,9 @@
   min-block-size: 0;
   width: 100%;
   border: none;
+
+  // Hidden until the widget's document sends widget_ready.
+  .travel:not([data-ready]) & {
+    visibility: hidden;
+  }
 }

@@ -227,7 +227,7 @@ export const PREF_WREXHAMAFC_VIEW = "widgets.wrexhamAFC.view";
  * @property {boolean} [skipNightlyDefault] - When true, the widget opts out of being on everywhere in Nightly. See skipsNightlyDefault in lib/ActivityStream.sys.mjs.
  * @property {string|null} [trainhopNamespace] - When set, the widget ships its whole config in one dedicated object at trainhopConfig.<namespace>. Its `enabled` overrides the default value of enabledPref on the default branch (user toggle still wins, like widgetsSettings.*Enabled); `visible` reveals the widget (isWidgetAddable) without writing a pref; `size` is read by resolveWidgetSize. All widgets define this today.
  * @property {string} [src] - URL of the widget's document; a trainhop namespace `iframeSrcOverride` overrides it.
- * @property {boolean} [framed] - When true, the widget's document URL comes from its entry in the Merino framed widgets manifest, which FramedWidgetsFeed stores in the FramedWidgets state under its id; the widget is hidden while it has no enabled entry (see resolveWidgetFrame). A trainhop namespace `iframeSrcOverride` still overrides it, but only when isAllowedFrameUrl accepts it; otherwise it is ignored. The frame-src CSP in render-activity-stream-html.js must allow the host too.
+ * @property {boolean} [framed] - When true, the widget's document URL comes from its entry in the Merino framed widgets manifest, which FramedWidgetsFeed stores in the FramedWidgets state under its id; the widget is hidden while it has no enabled entry (see resolveWidgetFrame). A trainhop namespace `iframeSrcOverride` still overrides it, but only when isAllowedFrameUrl accepts it and the widget isn't marked unavailable in the FramedWidgets state. The frame-src CSP in render-activity-stream-html.js must allow the host too.
  * @property {string} [extensionID] - ID of an extension that provides the widget's document. getWidgets keeps the entry only while the ExtensionWidgets state has this extension.
  * @property {string} [icon] - URL of a 16px image drawn before the widget's name in its MozWidgetCard header.
  * @property {"FramedWidgetCard"} [card] - The name of the card component that draws an entry without its own row component: FramedWidgetCard, for a document a hosted page provides. A web page can report its own state only through FramedWidgetCard. Without it, MozWidgetCard draws the entry.
@@ -670,11 +670,12 @@ export function isAllowedFrameUrl(value, prefs) {
 /**
  * Returns the document URL a widget's card should load and its frame state.
  *
- * The trainhop namespace iframeSrcOverride wins and is treated as healthy; for a
- * framed widget it must also pass isAllowedFrameUrl. Otherwise a framed widget
- * takes its URL and state from the Merino frames manifest:
- * it is "ok" while the manifest has an enabled entry for it and "hidden"
- * otherwise. A non-framed
+ * A framed widget marked unavailable in the FramedWidgets state (its document
+ * failed to load) is "hidden", even with an override. Otherwise the trainhop
+ * namespace iframeSrcOverride wins and is treated as healthy; for a framed
+ * widget it must also pass isAllowedFrameUrl. Otherwise a framed widget takes
+ * its URL and state from the Merino frames manifest: it is "ok" while the
+ * manifest has an enabled entry for it and "hidden" otherwise. A non-framed
  * widget loads its static src and is always "ok".
  *
  * @param {object} widget - a WIDGET_REGISTRY entry
@@ -683,6 +684,9 @@ export function isAllowedFrameUrl(value, prefs) {
  * @returns {{src: string, state: "ok" | "hidden"}}
  */
 export function resolveWidgetFrame(widget, prefs, framedWidgets) {
+  if (widget?.framed && framedWidgets?.[widget.id]?.unavailable) {
+    return { src: "", state: "hidden" };
+  }
   const override =
     widget?.trainhopNamespace &&
     prefs.trainhopConfig?.[widget.trainhopNamespace]?.iframeSrcOverride;

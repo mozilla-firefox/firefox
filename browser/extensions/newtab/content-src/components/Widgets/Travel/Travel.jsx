@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // eslint-disable-next-line no-unused-vars
-import React, { useCallback } from "react";
+import React, { useCallback, useRef } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
@@ -17,6 +17,10 @@ import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuFooter } from "../WidgetMenuFooter";
 import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
+import {
+  useFramedWidgetReady,
+  useFramedWidgetSize,
+} from "../useFramedWidgetMessages";
 
 const USER_ACTION_TYPES = {
   CHANGE_SIZE: "change_size",
@@ -56,16 +60,51 @@ function Travel({
   const widgetSize = resolveWidgetSize(TRAVEL_ENTRY, prefs);
   const hasInteracted = prefs["widgets.travel.interaction"];
 
-  const { impressionRef, recordUserAction } = useWidgetTelemetry({
-    dispatch,
-    widget: TRAVEL_ENTRY,
-    widgetSize,
-  });
-
   const handleInteraction = useCallback(
     () => handleUserInteraction("travel"),
     [handleUserInteraction]
   );
+
+  const iframeRef = useRef(null);
+  // Explore travel asks for a larger size, which also counts as the user
+  // interacting and clears the New badge. Loading messages don't count.
+  const { requestedSize, clearRequestedSize } = useFramedWidgetSize({
+    widget: TRAVEL_ENTRY,
+    src,
+    iframeRef,
+    widgetSize,
+    onAction(message) {
+      if (message === "change_size") {
+        handleInteraction();
+      }
+    },
+  });
+  // Like Crossword's growth, a layout that can't host a larger widget keeps
+  // the widget at its own size.
+  const displaySize =
+    widgetsMayBeMaximized && requestedSize ? requestedSize : widgetSize;
+
+  const { impressionRef, recordUserAction, recordError } = useWidgetTelemetry({
+    dispatch,
+    widget: TRAVEL_ENTRY,
+    widgetSize: displaySize,
+  });
+  // The frame stays hidden until the widget's document sends widget_ready. A
+  // load timeout or terminal widget_error hides the whole widget.
+  const ready = useFramedWidgetReady({
+    widget: TRAVEL_ENTRY,
+    src,
+    iframeRef,
+    onError(reason, terminal) {
+      recordError(reason);
+      if (terminal) {
+        dispatch({
+          type: at.FRAMED_WIDGET_UNAVAILABLE,
+          data: { id: TRAVEL_ENTRY.id },
+        });
+      }
+    },
+  });
 
   const handleChangeSize = useCallback(
     size => {
@@ -81,9 +120,11 @@ function Travel({
         value: size,
         size,
       });
+      // The user's choice replaces any size the frame asked for.
+      clearRequestedSize();
       handleInteraction();
     },
-    [dispatch, recordUserAction, handleInteraction]
+    [dispatch, recordUserAction, handleInteraction, clearRequestedSize]
   );
 
   function handleLearnMore() {
@@ -99,7 +140,8 @@ function Travel({
 
   return (
     <article
-      className={`travel widget col-4 ${widgetSize}-widget`}
+      className={`travel widget col-4 ${displaySize}-widget`}
+      data-ready={ready || undefined}
       ref={impressionRef}
       aria-labelledby="travel-widget-label"
     >
@@ -136,7 +178,7 @@ function Travel({
               widgetEnabledMap={widgetEnabledMap}
               widgetName={TRAVEL_ENTRY.telemetryName}
               enabledPref={TRAVEL_ENTRY.enabledPref}
-              widgetSize={widgetSize}
+              widgetSize={displaySize}
               learnMoreL10nId="newtab-travel-menu-learn-more"
               onLearnMore={handleLearnMore}
               sizeSubmenu={
@@ -144,7 +186,7 @@ function Travel({
                   <SizeSubmenu
                     submenuId="travel-size-submenu"
                     sizes={TRAVEL_ENTRY.validSizes}
-                    checkedSize={widgetSize}
+                    checkedSize={displaySize}
                     onChangeSize={handleChangeSize}
                   />
                 ) : null
@@ -154,6 +196,10 @@ function Travel({
         </div>
       </div>
       <iframe
+        // A new document gets a new window, so late messages from the old
+        // one fail the source check.
+        key={src}
+        ref={iframeRef}
         className="travel-frame"
         aria-labelledby="travel-widget-label"
         src={src}

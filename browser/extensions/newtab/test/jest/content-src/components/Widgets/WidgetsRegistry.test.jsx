@@ -1078,6 +1078,24 @@ describe("resolveWidgetFrame", () => {
     ).toEqual({ src: frameUrl, state: "ok" });
   });
 
+  it("keeps an unavailable framed widget hidden, even with an override", () => {
+    expect(
+      resolveWidgetFrame(
+        framedWidget,
+        {
+          ...FRAME_HOST_PREFS,
+          trainhopConfig: {
+            widgetTestFramed: {
+              iframeSrcOverride:
+                "https://hotfix.merino.prod.webservices.mozgcp.net/index.html",
+            },
+          },
+        },
+        { testFramed: { unavailable: true } }
+      )
+    ).toEqual({ src: "", state: "hidden" });
+  });
+
   it("lets the trainhop iframeSrcOverride override a hidden framed widget", () => {
     const trainhopSrc =
       "https://hotfix.merino.prod.webservices.mozgcp.net/index.html";

@@ -157,6 +157,26 @@ add_task(async function test_endpoint_must_be_allowlisted() {
   sandbox.restore();
 });
 
+add_task(async function test_unchanged_manifest_is_not_rebroadcast() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeFeed(sandbox);
+  await feed.onAction({ type: actionTypes.INIT });
+  const broadcasts = () =>
+    feed.store.dispatch
+      .getCalls()
+      .filter(c => c.args[0]?.type === actionTypes.FRAMED_WIDGETS_UPDATE)
+      .length;
+  Assert.equal(broadcasts(), 1, "Broadcasts the first manifest");
+
+  feed.update();
+  Assert.equal(broadcasts(), 1, "Skips an identical rebroadcast");
+
+  feed.manifest = { widgets: [] };
+  feed.update();
+  Assert.equal(broadcasts(), 2, "Broadcasts a changed manifest");
+  sandbox.restore();
+});
+
 add_task(async function test_endpoint_follows_environment() {
   const sandbox = sinon.createSandbox();
   const prefs = { ...ENABLED_PREFS };
