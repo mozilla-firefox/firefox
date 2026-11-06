@@ -108,10 +108,6 @@ class nsTextControlFrame final : public mozilla::ScrollContainerFrame {
         aFrame->Style()->GetPseudoType());
   }
 
-  // called by the focus listener
-  nsresult MaybeBeginSecureKeyboardInput();
-  void MaybeEndSecureKeyboardInput();
-
   mozilla::TextControlElement* ControlElement() const {
     MOZ_ASSERT(mozilla::TextControlElement::FromNode(GetContent()));
     return static_cast<mozilla::TextControlElement*>(GetContent());

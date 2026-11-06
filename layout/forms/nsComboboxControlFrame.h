@@ -33,8 +33,6 @@ class nsComboboxControlFrame final : public mozilla::ButtonControlFrame {
 
   nscoord IntrinsicISize(const mozilla::IntrinsicSizeInput& aInput,
                          mozilla::IntrinsicISizeType aType) final;
-  void GetLabelText(nsAString&);
-  void UpdateLabelText();
 
   void Reflow(nsPresContext* aCX, ReflowOutput& aDesiredSize,
               const ReflowInput& aReflowInput, nsReflowStatus& aStatus) final;
