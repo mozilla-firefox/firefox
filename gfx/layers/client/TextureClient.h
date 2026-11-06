@@ -15,7 +15,8 @@
 #include "mozilla/Atomics.h"
 #include "mozilla/Attributes.h"  // for override
 #include "mozilla/Mutex.h"
-#include "mozilla/RefPtr.h"               // for RefPtr, RefCounted
+#include "mozilla/RefPtr.h"  // for RefPtr, RefCounted
+#include "mozilla/UniquePtr.h"
 #include "mozilla/UniquePtrExtensions.h"  // for UniqueFileHandle
 #include "mozilla/dom/ipc/IdType.h"
 #include "mozilla/gfx/2D.h"  // for DrawTarget
@@ -627,8 +628,8 @@ class TextureClient : public AtomicRefCountedWithFinalize<TextureClient> {
 
   /// If you add new code that uses this method, you are probably doing
   /// something wrong.
-  TextureData* GetInternalData() { return mData; }
-  const TextureData* GetInternalData() const { return mData; }
+  TextureData* GetInternalData() { return mData.get(); }
+  const TextureData* GetInternalData() const { return mData.get(); }
 
   /**
    * Serializes the underlying TextureData into aDescriptor. Returns false if
@@ -746,7 +747,7 @@ class TextureClient : public AtomicRefCountedWithFinalize<TextureClient> {
   RefPtr<ITextureClientRecycleAllocator> mRecycleAllocator;
   RefPtr<TextureReadLock> mReadLock MOZ_GUARDED_BY(mMutex);
 
-  TextureData* mData;
+  UniquePtr<TextureData> mData;
   RefPtr<gfx::DrawTarget> mBorrowedDrawTarget;
   bool mBorrowedSnapshot = false;
 
