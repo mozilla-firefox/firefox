@@ -5363,7 +5363,7 @@ nsContainerFrame* nsCSSFrameConstructor::GetAbsoluteContainingBlock(
         continue;
       }
     }
-    if (absPosCBCandidate->IsScrollContainerFrame()) {
+    if (absPosCBCandidate->IsScrollContainerOrSubclass()) {
       ScrollContainerFrame* scrollContainerFrame =
           do_QueryFrame(absPosCBCandidate);
       absPosCBCandidate = scrollContainerFrame->GetScrolledFrame();
