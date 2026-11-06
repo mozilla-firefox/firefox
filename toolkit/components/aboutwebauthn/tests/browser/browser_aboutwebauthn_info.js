@@ -32,7 +32,7 @@ function send_auth_data_and_check(auth_data) {
   is(info_text.hidden, true, "Start prompt not hidden");
 
   let info_section = doc.getElementById("token-info-section");
-  isnot(info_section.style.display, "none", "Info section hidden");
+  ok(BrowserTestUtils.isVisible(info_section), "Info section hidden");
 }
 
 add_task(async function multiple_devices() {

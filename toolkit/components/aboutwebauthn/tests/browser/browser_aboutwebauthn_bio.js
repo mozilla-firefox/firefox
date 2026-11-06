@@ -79,9 +79,8 @@ async function send_authinfo_and_open_bio_section(ops) {
     // Click the section and wait for it to open
     let bio_enrollment_section = doc.getElementById("bio-enrollment-section");
     bio_enrollments_tab_button.click();
-    isnot(
-      bio_enrollment_section.style.display,
-      "none",
+    ok(
+      BrowserTestUtils.isVisible(bio_enrollment_section),
       "bio enrollment section not visible"
     );
     is(
@@ -232,9 +231,8 @@ add_task(async function bio_enrollment_add_new() {
   let add_bio_enrollment_section = doc.getElementById(
     "add-bio-enrollment-section"
   );
-  isnot(
-    add_bio_enrollment_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isVisible(add_bio_enrollment_section),
     "Add bio enrollment section invisible"
   );
   let enrollment_name = doc.getElementById("enrollment-name");
@@ -294,9 +292,8 @@ add_task(async function bio_enrollment_delete() {
 
   // Confirmation dialog should pop open
   let confirmation_section = doc.getElementById("confirm-deletion-section");
-  isnot(
-    confirmation_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isVisible(confirmation_section),
     "Confirmation section did not open."
   );
 
@@ -322,9 +319,8 @@ add_task(async function bio_enrollment_delete() {
 
   let cancel_button = doc.getElementById("cancel-confirmation-button");
   cancel_button.click();
-  is(
-    confirmation_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isHidden(confirmation_section),
     "Confirmation section did not close."
   );
   check_bio_buttons_disabled(false);

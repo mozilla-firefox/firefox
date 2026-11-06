@@ -34,7 +34,7 @@ async function send_authinfo_and_open_pin_section(ops) {
     // Click the section and wait for it to open
     let pin_section = doc.getElementById("set-change-pin-section");
     pin_tab_button.click();
-    isnot(pin_section.style.display, "none", "PIN section not visible");
+    ok(BrowserTestUtils.isVisible(pin_section), "PIN section not visible");
     is(
       pin_tab_button.getAttribute("selected"),
       "true",
@@ -136,7 +136,7 @@ add_task(async function pin_switch_back_and_forth() {
   // Now click the "info"-button and verify the correct buttons are highlighted
   info_tab_button.click();
   // await info_promise;
-  isnot(info_section.style.display, "none", "info section not visible");
+  ok(BrowserTestUtils.isVisible(info_section), "info section not visible");
   is(
     info_tab_button.getAttribute("selected"),
     "true",
@@ -150,7 +150,7 @@ add_task(async function pin_switch_back_and_forth() {
 
   // Click back to the PIN section
   pin_tab_button.click();
-  isnot(pin_section.style.display, "none", "PIN section not visible");
+  ok(BrowserTestUtils.isVisible(pin_section), "PIN section not visible");
   is(
     pin_tab_button.getAttribute("selected"),
     "true",
@@ -193,7 +193,10 @@ add_task(async function invalid_pin() {
   let pin_required = doc.getElementById("pin-required-section");
   let msg = JSON.stringify({ type: "pin-required" });
   Services.obs.notifyObservers(null, "about-webauthn-prompt", msg);
-  isnot(pin_required.style.display, "none", "PIN required dialog not visible");
+  ok(
+    BrowserTestUtils.isVisible(pin_required),
+    "PIN required dialog not visible"
+  );
 
   let info_tab_button = doc.getElementById("info-tab-button");
   is(
@@ -208,11 +211,10 @@ add_task(async function invalid_pin() {
   set_text(pin_field, "654321");
   send_pin_button.click();
 
-  is(
-    pin_required.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isHidden(pin_required),
     "PIN required dialog did not disappear"
   );
   let pin_section = doc.getElementById("set-change-pin-section");
-  isnot(pin_section.style.display, "none", "PIN section did not reappear");
+  ok(BrowserTestUtils.isVisible(pin_section), "PIN section did not reappear");
 });

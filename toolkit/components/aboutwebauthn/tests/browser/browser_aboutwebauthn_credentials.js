@@ -72,9 +72,8 @@ async function send_authinfo_and_open_cred_section(ops) {
       "credential-management-section"
     );
     credentials_tab_button.click();
-    isnot(
-      credentials_section.style.display,
-      "none",
+    ok(
+      BrowserTestUtils.isVisible(credentials_section),
       "credentials section not visible"
     );
     is(
@@ -185,15 +184,13 @@ add_task(async function cred_mgmt_real_data() {
 
   // Confirmation section should now be open
   let credential_section = doc.getElementById("credential-management-section");
-  is(
-    credential_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isHidden(credential_section),
     "credential section still visible"
   );
   let confirmation_section = doc.getElementById("confirm-deletion-section");
-  isnot(
-    confirmation_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isVisible(confirmation_section),
     "Confirmation section did not open."
   );
 
@@ -218,14 +215,12 @@ add_task(async function cred_mgmt_real_data() {
 
   let cancel_button = doc.getElementById("cancel-confirmation-button");
   cancel_button.click();
-  isnot(
-    credential_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isVisible(credential_section),
     "credential section still visible"
   );
-  is(
-    confirmation_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isHidden(confirmation_section),
     "Confirmation section did not open."
   );
   check_cred_buttons_disabled(false);

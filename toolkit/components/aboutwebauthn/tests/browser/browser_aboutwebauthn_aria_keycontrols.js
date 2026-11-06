@@ -109,9 +109,8 @@ add_task(async function switching_sections() {
   EventUtils.sendKey("RETURN");
 
   let credentials_section = doc.getElementById("credential-management-section");
-  isnot(
-    credentials_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isVisible(credentials_section),
     "credentials section not visible"
   );
 
@@ -119,14 +118,13 @@ add_task(async function switching_sections() {
   EventUtils.sendKey("RETURN");
 
   let pin_section = doc.getElementById("set-change-pin-section");
-  isnot(pin_section.style.display, "none", "pin section not visible");
+  ok(BrowserTestUtils.isVisible(pin_section), "pin section not visible");
 
   EventUtils.sendKey("DOWN"); // Credentials section
   EventUtils.sendChar(" "); // Try using Space instead of Return
 
-  isnot(
-    credentials_section.style.display,
-    "none",
+  ok(
+    BrowserTestUtils.isVisible(credentials_section),
     "credentials section not visible"
   );
 });

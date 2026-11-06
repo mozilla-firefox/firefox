@@ -758,10 +758,10 @@ function open_tab(evt, tabName) {
   // Hide all others
   tabcontent = Array.from(document.getElementsByClassName("tabcontent"));
   tabcontent.forEach(tab => {
-    tab.style.display = "none";
+    tab.hidden = true;
   });
   // Display the one we selected
-  document.getElementById(tabName).style.display = "block";
+  document.getElementById(tabName).hidden = false;
 
   // If this is a temporary overlay, like pin-required, we don't
   // touch the sidebar and which button is selected.
