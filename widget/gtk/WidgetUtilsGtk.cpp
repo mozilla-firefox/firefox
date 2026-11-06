@@ -134,8 +134,22 @@ bool GdkIsX11Display() {
   return isX11Display;
 }
 
+// Returns the pointer of the display's default seat.
+//
+// On Wayland the client pointer belongs to whichever seat added a device
+// last, so with several seats it can be a seat the user is not on. The
+// default seat is the first one the compositor announced.
 GdkDevice* GdkGetPointer() {
+  static auto sGdkDisplayGetDefaultSeat = (GdkSeat * (*)(GdkDisplay*))
+      dlsym(RTLD_DEFAULT, "gdk_display_get_default_seat");
+  static auto sGdkSeatGetPointer =
+      (GdkDevice * (*)(GdkSeat*)) dlsym(RTLD_DEFAULT, "gdk_seat_get_pointer");
   GdkDisplay* display = gdk_display_get_default();
+  if (sGdkDisplayGetDefaultSeat && sGdkSeatGetPointer) {
+    if (GdkSeat* seat = sGdkDisplayGetDefaultSeat(display)) {
+      return sGdkSeatGetPointer(seat);
+    }
+  }
   GdkDeviceManager* deviceManager = gdk_display_get_device_manager(display);
   return gdk_device_manager_get_client_pointer(deviceManager);
 }

@@ -325,7 +325,13 @@ nsresult nsDragSessionSource::InvokeDragSessionImpl(
   if (!aArrayTransferables) return NS_ERROR_INVALID_ARG;
   mSourceDataItems = aArrayTransferables;
 
-  GdkDevice* device = widget::GdkGetPointer();
+  // Use the device that pressed the button, which GTK also drags with.
+  //
+  // With several seats, another seat's pointer may not be over any of our
+  // windows, so asking it for the origin window would fail the drag.
+  GdkEvent* existingEvent = widget::GetLastPointerDownEvent();
+  GdkDevice* device = existingEvent ? gdk_event_get_device(existingEvent)
+                                    : widget::GdkGetPointer();
   GdkWindow* originGdkWindow = nullptr;
   if (widget::GdkIsWaylandDisplay() || widget::IsXWaylandProtocol()) {
     originGdkWindow =
@@ -361,7 +367,6 @@ nsresult nsDragSessionSource::InvokeDragSessionImpl(
   if (aActionType & nsIDragService::DRAGDROP_ACTION_LINK)
     action = (GdkDragAction)(action | GDK_ACTION_LINK);
 
-  GdkEvent* existingEvent = widget::GetLastPointerDownEvent();
   GdkEvent fakeEvent;
   if (!existingEvent) {
     memset(&fakeEvent, 0, sizeof(GdkEvent));
