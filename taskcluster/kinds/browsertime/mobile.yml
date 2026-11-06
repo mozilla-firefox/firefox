@@ -664,6 +664,7 @@ browsertime-nav-bench-m:
         by-test-platform:
             android-hw-a55.*shippable.*: [autoland]
             android-hw-a55.*nightlyasrelease.*: [autoland]
+            android-em-14-arm64.*shippable.*: [autoland]
             default: []
     tier: 3
     treeherder-symbol: Btime(navb-m)

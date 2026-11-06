@@ -44961,6 +44961,23 @@ A composite benchmark that measures page loading and sub-navigation performance 
 * **verbose**: true
 * **Test Task**:
 
+:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-m-fenix-nav-bench-m**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
 :::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-nightlyasrelease/opt <hardware-samsung-a55>`**
 :widths: 30 15 15 15 15
 :header-rows: 1

@@ -103,9 +103,13 @@ class MitmproxyAndroid(Mitmproxy):
             # now use the manifest to download hostutils so we can get certutil
             tooltool_download(_dest, self.config["run_local"], self.mozproxy_dir)
 
-            # the production bitbar container host is always linux
+            # bitbar hosts are linux, the Android emulator hosts are macOS
+            if mozinfo.os == "mac":
+                hostutils_glob = "host-utils*.mac"
+            else:
+                hostutils_glob = "host-utils*[!z|checksum]"
             self.certutil_path = glob.glob(
-                os.path.join(self.mozproxy_dir, "host-utils*[!z|checksum]")
+                os.path.join(self.mozproxy_dir, hostutils_glob)
             )[0]
 
             # must add hostutils/certutil to the path
