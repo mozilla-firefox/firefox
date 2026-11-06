@@ -514,6 +514,14 @@ export class OpenTabsTabRow extends FxviewTabRowBase {
       >
         ${this.#faviconTemplate()}
       </moz-button>
+      ${when(
+        this.containerObj,
+        () =>
+          html`<span
+            class="fxview-tab-row-pinned-context-line identity-color-${this
+              .containerObj.color}"
+          ></span>`
+      )}
     `;
   }
 
