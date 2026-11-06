@@ -52,7 +52,7 @@ public:
               instrumentationscope::ScopeConfigurator<TracerConfig>::Builder(
                   TracerConfig::Default())
                   .Build()),
-      SpanLimits span_limits = SpanLimits::NoLimits());
+      SpanLimits span_limits = SpanLimits::NoLimits()) noexcept;
 
   TracerContext(const TracerContext &)            = delete;
   TracerContext(TracerContext &&)                 = delete;

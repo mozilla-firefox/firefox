@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cstddef>
+#include <stddef.h>
 #include <initializer_list>
 #include <iterator>
 #include <type_traits>

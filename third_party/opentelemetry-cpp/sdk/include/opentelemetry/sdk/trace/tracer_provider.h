@@ -56,7 +56,7 @@ public:
               instrumentationscope::ScopeConfigurator<TracerConfig>::Builder(
                   TracerConfig::Default())
                   .Build()),
-      SpanLimits span_limits = SpanLimits::NoLimits());
+      SpanLimits span_limits = SpanLimits::NoLimits()) noexcept;
 
   explicit TracerProvider(
       std::vector<std::unique_ptr<SpanProcessor>> &&processors,
@@ -70,13 +70,13 @@ public:
               instrumentationscope::ScopeConfigurator<TracerConfig>::Builder(
                   TracerConfig::Default())
                   .Build()),
-      SpanLimits span_limits = SpanLimits::NoLimits());
+      SpanLimits span_limits = SpanLimits::NoLimits()) noexcept;
 
   /**
    * Initialize a new tracer provider with a specified context
    * @param context The owned tracer configuration/pipeline for this provider.
    */
-  explicit TracerProvider(std::unique_ptr<TracerContext> context);
+  explicit TracerProvider(std::unique_ptr<TracerContext> context) noexcept;
 
   TracerProvider(const TracerProvider &)            = delete;
   TracerProvider(TracerProvider &&)                 = delete;
@@ -155,11 +155,6 @@ private:
   std::vector<std::shared_ptr<Tracer>> tracers_;
   std::shared_ptr<TracerContext> context_;
   std::mutex lock_;
-  // Allocated during provider construction so GetTracer can return it without allocating.
-  nostd::shared_ptr<opentelemetry::trace::Tracer> noop_tracer_;
-  // Cleared on the first GetTracer construction failure. Later uncached GetTracer
-  // calls return the preallocated noop without retrying construction.
-  bool initialized_{false};
 };
 }  // namespace trace
 }  // namespace sdk

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <cstdint>
+#include <stdint.h>
 
 #include <atomic>
 #include <mutex>
@@ -40,7 +40,7 @@ public:
   /** Construct a new Tracer with the given context pipeline. */
   explicit Tracer(std::shared_ptr<TracerContext> context,
                   std::unique_ptr<InstrumentationScope> instrumentation_scope =
-                      InstrumentationScope::Create(""));
+                      InstrumentationScope::Create("")) noexcept;
 
   nostd::shared_ptr<opentelemetry::trace::Span> StartSpan(
       nostd::string_view name,
@@ -136,10 +136,11 @@ private:
   // tracer-context.
   std::shared_ptr<InstrumentationScope> instrumentation_scope_;
   std::shared_ptr<TracerContext> context_;
+  mutable std::mutex tracer_config_mutex_;
+  TracerConfig tracer_config_;
 #if OPENTELEMETRY_ABI_VERSION_NO < 2
   std::atomic<bool> is_enabled_{false};
 #endif
-  nostd::shared_ptr<opentelemetry::trace::Span> noop_span_;
 };
 }  // namespace trace
 }  // namespace sdk

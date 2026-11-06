@@ -3,15 +3,14 @@
 
 #pragma once
 
-#include <cstddef>
 #include <string>
-#include "opentelemetry/common/attribute_value.h"
-#include "opentelemetry/common/key_value_iterable.h"
+#include <type_traits>
+
 #include "opentelemetry/common/key_value_iterable_view.h"
 #include "opentelemetry/nostd/string_view.h"
 #include "opentelemetry/nostd/type_traits.h"
 #include "opentelemetry/nostd/unique_ptr.h"
-#include "opentelemetry/nostd/utility.h"
+#include "opentelemetry/nostd/variant.h"
 #include "opentelemetry/sdk/common/attribute_utils.h"
 #include "opentelemetry/version.h"
 
@@ -45,7 +44,12 @@ public:
       nostd::string_view name,
       nostd::string_view version                  = "",
       nostd::string_view schema_url               = "",
-      InstrumentationScopeAttributes &&attributes = {});
+      InstrumentationScopeAttributes &&attributes = {})
+  {
+    return nostd::unique_ptr<InstrumentationScope>(
+        new InstrumentationScope{name, version, schema_url, std::move(attributes)});
+  }
+
   /**
    * Returns a newly created InstrumentationScope with the specified library name and version.
    * @param name name of the instrumentation scope.
@@ -58,7 +62,11 @@ public:
       nostd::string_view name,
       nostd::string_view version,
       nostd::string_view schema_url,
-      const InstrumentationScopeAttributes &attributes);
+      const InstrumentationScopeAttributes &attributes)
+  {
+    return nostd::unique_ptr<InstrumentationScope>(new InstrumentationScope{
+        name, version, schema_url, InstrumentationScopeAttributes(attributes)});
+  }
 
   /**
    * Returns a newly created InstrumentationScope with the specified library name and version.
@@ -90,14 +98,18 @@ public:
     return result;
   }
 
-  std::size_t HashCode() const noexcept;
+  std::size_t HashCode() const noexcept { return hash_code_; }
 
   /**
    * Compare 2 instrumentation libraries.
    * @param other the instrumentation scope to compare to.
    * @returns true if the 2 instrumentation libraries are equal, false otherwise.
    */
-  bool operator==(const InstrumentationScope &other) const noexcept;
+  bool operator==(const InstrumentationScope &other) const noexcept
+  {
+    return this->name_ == other.name_ && this->version_ == other.version_ &&
+           this->schema_url_ == other.schema_url_ && this->attributes_ == other.attributes_;
+  }
 
   /**
    * Check whether the instrumentation scope has given name and version.
@@ -112,21 +124,52 @@ public:
   bool equal(const nostd::string_view name,
              const nostd::string_view version,
              const nostd::string_view schema_url                       = "",
-             const opentelemetry::common::KeyValueIterable *attributes = nullptr) const noexcept;
+             const opentelemetry::common::KeyValueIterable *attributes = nullptr) const noexcept
+  {
 
-  const std::string &GetName() const noexcept;
-  const std::string &GetVersion() const noexcept;
-  const std::string &GetSchemaURL() const noexcept;
-  const InstrumentationScopeAttributes &GetAttributes() const noexcept;
+    if (this->name_ != name || this->version_ != version || this->schema_url_ != schema_url)
+    {
+      return false;
+    }
+
+    if (attributes == nullptr)
+    {
+      if (attributes_.empty())
+      {
+        return true;
+      }
+      return false;
+    }
+
+    return attributes_.EqualTo(*attributes);
+  }
+
+  const std::string &GetName() const noexcept { return name_; }
+  const std::string &GetVersion() const noexcept { return version_; }
+  const std::string &GetSchemaURL() const noexcept { return schema_url_; }
+  const InstrumentationScopeAttributes &GetAttributes() const noexcept { return attributes_; }
 
   void SetAttribute(nostd::string_view key,
-                    const opentelemetry::common::AttributeValue &value) noexcept;
+                    const opentelemetry::common::AttributeValue &value) noexcept
+  {
+    attributes_[std::string(key)] =
+        nostd::visit(opentelemetry::sdk::common::AttributeConverter(), value);
+  }
 
 private:
   InstrumentationScope(nostd::string_view name,
                        nostd::string_view version,
                        nostd::string_view schema_url               = "",
-                       InstrumentationScopeAttributes &&attributes = {});
+                       InstrumentationScopeAttributes &&attributes = {})
+      : name_(name), version_(version), schema_url_(schema_url), attributes_(std::move(attributes))
+  {
+    std::string hash_data;
+    hash_data.reserve(name_.size() + version_.size() + schema_url_.size());
+    hash_data += name_;
+    hash_data += version_;
+    hash_data += schema_url_;
+    hash_code_ = std::hash<std::string>{}(hash_data);
+  }
 
 private:
   std::string name_;
