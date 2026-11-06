@@ -33,6 +33,21 @@ function getClosedTabGroupsById() {
   return closedTabGroupsById;
 }
 
+/**
+ * @param {ClosedTabStateData} aClosedTab
+ * @returns {{sourceClosedId: number}|{sourceWindowId: WindowID}}
+ */
+function getClosedDataSource(aClosedTab) {
+  if (typeof aClosedTab.sourceClosedId == "number") {
+    return { sourceClosedId: aClosedTab.sourceClosedId };
+  }
+  // Only the closed tabs of closed windows have a numeric sourceWindowId, and
+  // getClosedTabDataFromClosedWindows sets their sourceClosedId.
+  return {
+    sourceWindowId: /** @type {WindowID} */ (aClosedTab.sourceWindowId),
+  };
+}
+
 export var RecentlyClosedTabsAndWindowsMenuUtils = {
   /**
    * Builds up a document fragment of UI items for the recently closed tabs.
@@ -84,14 +99,11 @@ export var RecentlyClosedTabsAndWindowsMenuUtils = {
           if (groupId && closedTabGroupsById.has(groupId)) {
             if (groupId != currentGroupId) {
               // This is the first tab in a new group. Push all the tabs into the menu.
-              // Note that the calls to the createTabGroup methods below use the
-              // tab itself as a closed data source, since it will always contain
-              // one of either sourceClosedId or sourceWindowId.
               if (aTagName == "menuitem") {
                 createTabGroupSubmenu(
                   closedTabGroupsById.get(groupId),
                   index,
-                  tab,
+                  getClosedDataSource(tab),
                   doc,
                   fragment
                 );
@@ -99,7 +111,7 @@ export var RecentlyClosedTabsAndWindowsMenuUtils = {
                 createTabGroupSubpanel(
                   closedTabGroupsById.get(groupId),
                   index,
-                  tab,
+                  getClosedDataSource(tab),
                   doc,
                   fragment
                 );
@@ -336,7 +348,7 @@ function setTabGroupColorProperties(element, tabGroup) {
  *        Session store state for the closed tab group.
  * @param {number} aIndex
  *        The index of the first tab in the tab group, relative to the tab strip.
- * @param {{sourceClosedId: number}|{sourceWindowId: string}} aSource
+ * @param {{sourceClosedId: number}|{sourceWindowId: WindowID}} aSource
  *        An object that can be resolved to a closed data source.
  * @param {Document} aDocument
  *        A document object that can be used to create the entry.
@@ -399,7 +411,7 @@ function createTabGroupSubmenu(
  *        Session store state for the closed tab group.
  * @param {number} aIndex
  *        The index of the first tab in the tab group, relative to the tab strip.
- * @param {{sourceClosedId: number}|{sourceWindowId: string}} aSource
+ * @param {{sourceClosedId: number}|{sourceWindowId: WindowID}} aSource
  *        An object that can be resolved to a closed data source.
  * @param {Document} aDocument
  *        A document object that can be used to create the entry.
@@ -549,7 +561,7 @@ function createEntry(
       );
     } else {
       // sourceWindowId is used to look up the closed tab entry to remove it when it is restored
-      let sourceWindowId = closedTab.sourceWindowId;
+      let sourceWindowId = /** @type {WindowID} */ (closedTab.sourceWindowId);
       element.setAttribute("value", String(aIndex));
       element.setAttribute("source-window-id", sourceWindowId);
       element.addEventListener("command", event =>

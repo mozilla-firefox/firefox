@@ -80,11 +80,13 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  *   URL of the tab's icon.
  * @property {number} pos
  *   Position the tab had in the tab strip.
- * @property {WindowID} sourceWindowId
- *   Window the tab closed in.
+ * @property {WindowID|number} sourceWindowId
+ *   Window the tab closed in, or the `closedId` of that window when it was
+ *   restored as a closed window from an earlier session.
  * @property {number} [sourceClosedId]
- *   `closedId` of the window the tab closed in, set once that window itself
- *   has closed.
+ *   `closedId` of the closed window the tab closed in. Set only on the copies
+ *   `SessionStore.getClosedTabDataFromClosedWindows` and
+ *   `SessionStore.getClosedTabGroups` return, never on stored state.
  * @property {boolean} [closedInGroup]
  *   Whether the tab closed along with the other selected tabs.
  * @property {TabGroupId} [closedInTabGroupId]

@@ -6146,8 +6146,9 @@ class _SessionStore {
    *
    * @param {ClosedTabStateData[]} tabData
    *        an array of data to be restored
-   * @param {string} windowId
-   *        The SessionStore id for the window these tabs should be associated with
+   * @param {WindowID|number} windowId
+   *        The SessionStore id for the window these tabs should be associated
+   *        with, or the `closedId` of the closed window they belong to
    * @returns {ClosedTabStateData[]}
    *          The updated tabData array
    */
