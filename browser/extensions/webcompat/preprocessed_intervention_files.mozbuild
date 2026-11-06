@@ -105,6 +105,7 @@ preprocessed_intervention_files = [
     "bug1953077-Nintendo_movie_guidebook-fix_blank_movie_guidebook.css",
     "bug1954002-advancedmd.com.js",
     "bug1954144-td.com-fix_scrollbars.css",
+    "bug1954921-dood.al.js",
     "bug1955932-coopvoce.it-fix_broken_radio_buttons.css",
     "bug1959598-signal-tech.com.js",
     "bug1960294-firstenergycorp.com-hide_browser_notice.css",

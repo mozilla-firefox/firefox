@@ -1,0 +1,17 @@
+{
+  "label": "dood.al",
+  "bugs": {
+    "1954921": {
+      "issue": "unsupported-warning",
+      "matches": ["*://dood.al/pinktrombone/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": ["remove_firefox_from_useragent.js"]
+      }
+    }
+  ]
+}
