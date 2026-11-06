@@ -77,6 +77,7 @@ class DowngradePingTest : public ::testing::Test {
     Preferences::ClearUser("toolkit.telemetry.server");
     Preferences::ClearUser("toolkit.telemetry.cachedClientID");
     Preferences::ClearUser("toolkit.telemetry.cachedProfileGroupID");
+    Preferences::ClearUser("toolkit.profiles.machineID");
     RemoveUpdateTelemetryJson();
 #ifdef XP_WIN
     RemoveInstallTelemetryJson();
@@ -434,7 +435,103 @@ TEST_F(DowngradePingTest, DaysSinceLock) {
   EXPECT_LE(actual, expectedDays + 1);
 }
 
+TEST_F(DowngradePingTest, SameMachine) {
+  nsCString machineId;
+  if (NS_FAILED(GetMachineId(machineId))) {
+    GTEST_SKIP() << "No machine ID available";
+  }
+  ASSERT_EQ(NS_OK, Preferences::SetCString("toolkit.profiles.machineID",
+                                           machineId, PrefValueKind::User));
+
+  auto result = GenerateDowngradeTelemetry(
+      "test-ping-id"_ns, "131.0_20250201000000/20250201000000"_ns, false, 0,
+      "test-channel"_ns, "default"_ns, mozilla::Nothing(), false);
+  ASSERT_TRUE(result);
+  mCreatedPingPath = *result;
+
+  nsCString contents;
+  ASSERT_TRUE(ReadPingFile(*result, contents));
+
+  Json::Value root;
+  Json::Reader reader;
+  ASSERT_TRUE(
+      reader.parse(contents.BeginReading(), contents.EndReading(), root));
+
+  Json::Value payload = root["payload"];
+  EXPECT_TRUE(payload.isMember("isDifferentMachine"));
+  EXPECT_FALSE(payload["isDifferentMachine"].asBool());
+}
+
+TEST_F(DowngradePingTest, DifferentMachine) {
+  nsCString machineId;
+  if (NS_FAILED(GetMachineId(machineId))) {
+    GTEST_SKIP() << "No machine ID available";
+  }
+  ASSERT_EQ(NS_OK, Preferences::SetCString("toolkit.profiles.machineID",
+                                           "some-other-machine"_ns,
+                                           PrefValueKind::User));
+
+  auto result = GenerateDowngradeTelemetry(
+      "test-ping-id"_ns, "131.0_20250201000000/20250201000000"_ns, false, 0,
+      "test-channel"_ns, "default"_ns, mozilla::Nothing(), false);
+  ASSERT_TRUE(result);
+  mCreatedPingPath = *result;
+
+  nsCString contents;
+  ASSERT_TRUE(ReadPingFile(*result, contents));
+
+  Json::Value root;
+  Json::Reader reader;
+  ASSERT_TRUE(
+      reader.parse(contents.BeginReading(), contents.EndReading(), root));
+
+  Json::Value payload = root["payload"];
+  EXPECT_TRUE(payload.isMember("isDifferentMachine"));
+  EXPECT_TRUE(payload["isDifferentMachine"].asBool());
+}
+
+TEST_F(DowngradePingTest, DifferentMachineAbsentWithoutPref) {
+  auto result = GenerateDowngradeTelemetry(
+      "test-ping-id"_ns, "131.0_20250201000000/20250201000000"_ns, false, 0,
+      "test-channel"_ns, "default"_ns, mozilla::Nothing(), false);
+  ASSERT_TRUE(result);
+  mCreatedPingPath = *result;
+
+  nsCString contents;
+  ASSERT_TRUE(ReadPingFile(*result, contents));
+
+  Json::Value root;
+  Json::Reader reader;
+  ASSERT_TRUE(
+      reader.parse(contents.BeginReading(), contents.EndReading(), root));
+
+  Json::Value payload = root["payload"];
+  EXPECT_FALSE(payload.isMember("isDifferentMachine"));
+}
+
 #ifdef XP_WIN
+TEST_F(DowngradePingTest, ProfileType) {
+  auto result = GenerateDowngradeTelemetry(
+      "test-ping-id"_ns, "131.0_20250201000000/20250201000000"_ns, false, 0,
+      "test-channel"_ns, "default"_ns, mozilla::Nothing(), false);
+  ASSERT_TRUE(result);
+  mCreatedPingPath = *result;
+
+  nsCString contents;
+  ASSERT_TRUE(ReadPingFile(*result, contents));
+
+  Json::Value root;
+  Json::Reader reader;
+  ASSERT_TRUE(
+      reader.parse(contents.BeginReading(), contents.EndReading(), root));
+
+  Json::Value payload = root["payload"];
+  ASSERT_TRUE(payload.isMember("profileType"));
+  std::string profileType = payload["profileType"].asString();
+  EXPECT_TRUE(profileType == "normal" || profileType == "roaming" ||
+              profileType == "mandatory" || profileType == "temporary");
+}
+
 TEST_F(DowngradePingTest, IsNewInstallTrue) {
   // Install happened after the lock time.
   PRTime lockTime = PRTime(1700000000) * PR_MSEC_PER_SEC;
@@ -538,5 +635,6 @@ TEST_F(DowngradePingTest, IsNewInstallNotPresentOnNonWindows) {
 
   Json::Value payload = root["payload"];
   EXPECT_FALSE(payload.isMember("isNewInstall"));
+  EXPECT_FALSE(payload.isMember("profileType"));
 }
 #endif
