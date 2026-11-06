@@ -136,6 +136,7 @@ preprocessed_intervention_files = [
     "bug2004610-character.ai-fix_broken_italics.css",
     "bug2005520-portal.adtpulse.com-hide_browser_notice.css",
     "bug2006036-fbo.fubon.com.js",
+    "bug2008579-music.youtube.com-show_carousel_scrollbars.css",
     "bug2009187-deadpixeltest.org-fix_popup_position.css",
     "bug2009358-stgguaiba.com.br-fix_table_layout.css",
     "bug2009389-anyto.imyfone.com-fix_table_of_contents_height.css",

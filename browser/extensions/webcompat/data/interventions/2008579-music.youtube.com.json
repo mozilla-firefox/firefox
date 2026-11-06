@@ -1,0 +1,18 @@
+{
+  "label": "music.youtube.com",
+  "bugs": {
+    "2008579": {
+      "issue": "broken-scrolling",
+      "matches": ["*://music.youtube.com/*"]
+    }
+  },
+  "css": {
+    "show_carousel_scrollbars": "ytmusic-carousel:not([browser-supports-hiding-scrollbars]) #items.ytmusic-carousel { padding-bottom: 0 !important; margin-bottom: 0 !important; }"
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "css": ["show_carousel_scrollbars"]
+    }
+  ]
+}
