@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<div id="root"></div>
+<script src="util.js"></script>
+<script>
+// Many rules sharing the same :has() argument, with a `:not(... *)` that makes
+// every descendant of a mutated subtree a potential relative selector match.
+function create_rules(n, sheet) {
+  for (let i = 0; i < n; i++) {
+    sheet.insertRule(
+      `@media (min-width: ${i}px) { :root:has([data-overlap]:not([style*="display: none"]):not([style*="display: none"] *)) .cls-${i} { color: green; } }`,
+      sheet.cssRules.length
+    );
+  }
+}
+
+function create_subtree(width, depth) {
+  const d = document.createElement("div");
+  d.setAttribute("style", "display: none");
+  for (let i = 0; i < width; i++) {
+    const c = document.createElement("div");
+    for (let j = 0; j < depth; j++) {
+      c.appendChild(document.createElement("span"));
+    }
+    d.appendChild(c);
+  }
+  return d;
+}
+
+window.onload = function() {
+  const rules = 60;
+  const s = document.createElement("style");
+  document.head.appendChild(s);
+  create_rules(rules, s.sheet);
+  for (let i = 0; i < 200; i++) {
+    const d = document.createElement("div");
+    d.className = "cls-" + (i % rules);
+    root.appendChild(d);
+  }
+  const subtrees = [];
+  for (let i = 0; i < 5; i++) {
+    subtrees.push(create_subtree(40, 25));
+  }
+  flush_layout();
+  perf_start();
+  for (const subtree of subtrees) {
+    document.body.appendChild(subtree);
+    flush_style();
+    subtree.remove();
+    flush_style();
+  }
+  perf_finish();
+};
+</script>

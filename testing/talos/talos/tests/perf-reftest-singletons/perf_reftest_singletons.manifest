@@ -51,6 +51,7 @@
 % http://localhost/tests/perf-reftest-singletons/insert-subtree-not-nth-edge-has-pseudo.html
 % http://localhost/tests/perf-reftest-singletons/remove-tons-of-table-rows.html
 % http://localhost/tests/perf-reftest-singletons/has-reject-by-local-name.html
+% http://localhost/tests/perf-reftest-singletons/has-not-descendant-many-rules.html
 % http://localhost/tests/perf-reftest-singletons/overflow-changed-tracker-1.html?n=10000
 % http://localhost/tests/perf-reftest-singletons/overflow-changed-tracker-1.html?n=20000
 % http://localhost/tests/perf-reftest-singletons/random-font-sizes-1.html
