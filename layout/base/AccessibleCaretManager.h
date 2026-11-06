@@ -187,9 +187,6 @@ class AccessibleCaretManager {
   MOZ_CAN_RUN_SCRIPT
   void UpdateCaretsForSelectionMode(const UpdateCaretsHintSet& aHints);
 
-  // A helper function to update mShouldDisableApz.
-  void UpdateShouldDisableApz();
-
   // Provide haptic / touch feedback, primarily for selection on longpress and
   // caret dragging.
   void ProvideHapticFeedback(mozilla::HapticFeedbackType aType);

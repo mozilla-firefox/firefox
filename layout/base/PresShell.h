@@ -2022,8 +2022,6 @@ class PresShell final : public nsStubDocumentObserver,
 
   DOMHighResTimeStamp GetPerformanceNowUnclamped();
 
-  bool ScheduleReflowOffTimer();
-
   friend class ::AutoPointerEventTargetUpdater;
 
   // ProcessReflowCommands returns whether we processed all our dirty roots
@@ -2051,16 +2049,6 @@ class PresShell final : public nsStubDocumentObserver,
   void AddUserSheet(StyleSheet*);
   void AddAgentSheet(StyleSheet*);
   void AddAuthorSheet(StyleSheet*);
-
-  /**
-   * Initialize cached font inflation preference values and do an initial
-   * computation to determine if font inflation is enabled.
-   *
-   * @see nsLayoutUtils::sFontSizeInflationEmPerLine
-   * @see nsLayoutUtils::sFontSizeInflationMinTwips
-   * @see nsLayoutUtils::sFontSizeInflationLineThreshold
-   */
-  void SetupFontInflation();
 
   /**
    * Implementation methods for FlushPendingNotifications.

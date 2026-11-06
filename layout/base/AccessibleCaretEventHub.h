@@ -128,12 +128,6 @@ class AccessibleCaretEventHub : public nsIScrollObserver,
   MOZ_CAN_RUN_SCRIPT_BOUNDARY
   static void FireLongTap(nsITimer* aTimer, void* aAccessibleCaretEventHub);
 
-  void LaunchScrollEndInjector();
-  void CancelScrollEndInjector();
-
-  MOZ_CAN_RUN_SCRIPT_BOUNDARY
-  static void FireScrollEnd(nsITimer* aTimer, void* aAccessibleCaretEventHub);
-
   // Member variables
   State* mState = NoActionState();
 
