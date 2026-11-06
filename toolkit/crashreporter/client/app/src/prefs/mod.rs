@@ -33,6 +33,7 @@ impl Prefs {
     /// Update prefs from the given profile directory.
     pub fn update_from_profile_dir(&mut self, profile_dir: &Path) -> &mut Self {
         self.update_from_file(&profile_dir.join("prefs.js"));
+        self.update_from_file(&profile_dir.join("user.js"));
         self
     }
 
