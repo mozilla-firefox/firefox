@@ -763,45 +763,50 @@ void HTMLVideoElement::OnSecondaryVideoOutputFirstFrameRendered() {
       mVisualCloneTarget->GetVideoFrameContainer());
 }
 
-void HTMLVideoElement::OnVisibilityChange(Visibility aNewVisibility) {
-  HTMLMediaElement::OnVisibilityChange(aNewVisibility);
-
+void HTMLVideoElement::UpdateAutoplayAfterVisibilityChange(bool aSync) {
   // See the alternative part after step 4, but we only pause/resume invisible
   // autoplay for non-audible video, which is different from the spec. This
   // behavior seems aiming to reduce the power consumption without interering
   // users, and Chrome and Safari also chose to do that only for non-audible
   // video, so we want to match them in order to reduce webcompat issue.
   // https://html.spec.whatwg.org/multipage/media.html#ready-states:eligible-for-autoplay-2
-  if (!HasAttr(nsGkAtoms::autoplay) || IsAudible()) {
+  if (!HasAttr(nsGkAtoms::autoplay) || IsAudible() ||
+      mVisibilityState == Visibility::Untracked) {
     return;
   }
-
-  if (aNewVisibility == Visibility::ApproximatelyVisible && mPaused &&
-      IsEligibleForAutoplay() && AllowedToPlay()) {
-    LOG("resume invisible paused autoplay video");
-    RunAutoplay();
+  const bool visible = mVisibilityState == Visibility::ApproximatelyVisible;
+  if (visible) {
+    if (!IsEligibleForAutoplay() || !AllowedToPlay()) {
+      return;
+    }
+    if (aSync) {
+      LOG("resume invisible paused autoplay video");
+      RunAutoplay();
+      return;
+    }
+  } else {
+    // Pip can keep playing even if invisible.
+    if (IsCloningElementVisually() || !mCanAutoplayFlag) {
+      return;
+    }
+    if (aSync) {
+      LOG("pause non-audible autoplay video when it's invisible");
+      PauseInternal();
+      mCanAutoplayFlag = true;
+      return;
+    }
   }
 
-  // We need to consider the Pip window as well, which won't reflect in the
-  // visibility event.
-  if ((aNewVisibility == Visibility::ApproximatelyNonVisible &&
-       !IsCloningElementVisually()) &&
-      mCanAutoplayFlag) {
-    // Defer pausing the element to avoid changing the element state during the
-    // style refresh.
-    NS_DispatchToMainThread(NS_NewRunnableFunction(
-        __func__, [self = RefPtr<HTMLMediaElement>(this), this] {
-          // https://html.spec.whatwg.org/multipage/media.html#ready-states:intersect-the-viewport-3
-          if (mVisibilityState != Visibility::ApproximatelyNonVisible ||
-              !mCanAutoplayFlag) {
-            return;
-          }
-          LOG("pause non-audible autoplay video when it's invisible");
-          PauseInternal();
-          mCanAutoplayFlag = true;
-        }));
-    return;
-  }
+  MOZ_ASSERT(!aSync);
+  NS_DispatchToMainThread(NewRunnableMethod<bool>(
+      "HTMLVideoElement::UpdateAutoplayAfterVisibilityChange", this,
+      &HTMLVideoElement::UpdateAutoplayAfterVisibilityChange,
+      /* aSync = */ true));
+}
+
+void HTMLVideoElement::OnVisibilityChange(Visibility aNewVisibility) {
+  HTMLMediaElement::OnVisibilityChange(aNewVisibility);
+  UpdateAutoplayAfterVisibilityChange(/* aSync = */ false);
 }
 
 void HTMLVideoElement::ResetState() {
