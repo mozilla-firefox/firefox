@@ -64,7 +64,8 @@ class WebrtcVideoDecoderFactory : public GmpPluginNotifier,
     return std::vector<webrtc::SdpVideoFormat>();
   }
 
-  std::unique_ptr<webrtc::VideoDecoder> CreateVideoDecoder(
+  std::unique_ptr<webrtc::VideoDecoder> Create(
+      const webrtc::Environment& aEnv,
       const webrtc::SdpVideoFormat& aFormat) override;
 
  private:
