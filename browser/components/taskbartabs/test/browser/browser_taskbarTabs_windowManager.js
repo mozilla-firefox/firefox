@@ -157,6 +157,109 @@ add_task(async function test_eject_window_selected_tab() {
   await BrowserTestUtils.removeTab(tab);
 });
 
+add_task(async function test_windows_for_id() {
+  const wm = new TaskbarTabsWindowManager();
+
+  Assert.deepEqual(
+    wm.getWindowsForId(id1),
+    [],
+    "No window should be returned when none is open."
+  );
+
+  let win1 = await wm.openWindow(taskbarTab1);
+  let win2 = await wm.openWindow(taskbarTab1);
+  let win3 = await wm.openWindow(taskbarTab2);
+
+  await SimpleTest.promiseFocus(win1);
+  Assert.deepEqual(
+    wm.getWindowsForId(id1),
+    [win1, win2],
+    "The windows of the Taskbar Tab should be ordered by most recent use."
+  );
+  Assert.deepEqual(
+    wm.getWindowsForId(id2),
+    [win3],
+    "Only windows of the requested Taskbar Tab should be returned."
+  );
+
+  await BrowserTestUtils.closeWindow(win2);
+  Assert.deepEqual(
+    wm.getWindowsForId(id1),
+    [win1],
+    "A closed window should not be returned."
+  );
+
+  const tabOpenPromise = BrowserTestUtils.waitForEvent(
+    window.gBrowser.tabContainer,
+    "TabOpen"
+  );
+  const win1Closed = BrowserTestUtils.windowClosed(win1);
+  await wm.ejectWindow(win1);
+  let tab = (await tabOpenPromise).target;
+  Assert.deepEqual(
+    wm.getWindowsForId(id1),
+    [],
+    "An ejected window should not be returned."
+  );
+
+  await win1Closed;
+  await BrowserTestUtils.removeTab(tab);
+  await BrowserTestUtils.closeWindow(win3);
+});
+
+add_task(async function test_open_window_raises_existing_windows() {
+  const wm = new TaskbarTabsWindowManager();
+
+  let winMinimized = await wm.openWindow(taskbarTab1);
+  let winRecent = await wm.openWindow(taskbarTab1);
+  let winOther = await wm.openWindow(taskbarTab2);
+
+  let sizeModeChange = BrowserTestUtils.waitForEvent(
+    winMinimized,
+    "sizemodechange"
+  );
+  winMinimized.minimize();
+  await sizeModeChange;
+
+  await SimpleTest.promiseFocus(winOther);
+  await SimpleTest.promiseFocus(window);
+
+  let winNew = await wm.openWindow(taskbarTab1);
+  await TestUtils.waitForCondition(
+    () => winMinimized.windowState != winMinimized.STATE_MINIMIZED,
+    "Waiting for the minimized window to be restored."
+  );
+
+  is(
+    Services.focus.activeWindow,
+    winNew,
+    "The new window should be the active window."
+  );
+  let ordered = BrowserWindowTracker.getOrderedWindows();
+  Assert.deepEqual(
+    ordered.slice(0, 3),
+    [winNew, winRecent, winMinimized],
+    "The existing windows should be raised in order, below the new window."
+  );
+  Assert.greater(
+    ordered.indexOf(window),
+    ordered.indexOf(winMinimized),
+    "The windows of the Taskbar Tab should be above the browser window."
+  );
+  Assert.greater(
+    ordered.indexOf(winOther),
+    ordered.indexOf(winMinimized),
+    "Windows of other Taskbar Tabs should not be raised."
+  );
+
+  await Promise.all([
+    BrowserTestUtils.closeWindow(winMinimized),
+    BrowserTestUtils.closeWindow(winRecent),
+    BrowserTestUtils.closeWindow(winOther),
+    BrowserTestUtils.closeWindow(winNew),
+  ]);
+}).skip(AppConstants.platform !== "win"); // Existing windows are only raised on Windows.
+
 add_task(async function test_window_class() {
   const wm = new TaskbarTabsWindowManager();
 

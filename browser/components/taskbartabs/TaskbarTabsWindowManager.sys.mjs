@@ -36,6 +36,9 @@ export class TaskbarTabsWindowManager {
   #openWindows = new Map();
   // Map from the tab browser permanent key to originating window ID.
   #tabOriginMap = new WeakMap();
+  // Whether existing windows are being raised before opening a new window for
+  // the same Taskbar Tab. Their focus doesn't count towards usage time.
+  #isRaisingWindows = false;
 
   /**
    * Moves an existing browser tab into a Taskbar Tab.
@@ -113,7 +116,35 @@ export class TaskbarTabsWindowManager {
     args.appendElement(null);
     args.appendElement(Services.scriptSecurityManager.getSystemPrincipal());
 
+    // Linux window managers only allow a single window to be activated per
+    // user interaction, so the existing windows can't be raised there.
+    if (AppConstants.platform === "win") {
+      this.#focusWindowsForTaskbarTab(aTaskbarTab);
+    }
     return await this.#openWindow(aTaskbarTab, args, aIcon);
+  }
+
+  /**
+   * Raises the windows already open for a Taskbar Tab, keeping their order, so
+   * that a new window opened afterwards ends up on top of them.
+   *
+   * @param {TaskbarTab} aTaskbarTab - The Taskbar Tab whose windows to raise.
+   */
+  #focusWindowsForTaskbarTab(aTaskbarTab) {
+    let existingWindows = this.getWindowsForId(aTaskbarTab.id).filter(
+      win => !win.isCloaked
+    );
+
+    // Windows activates and focuses each window synchronously within focus().
+    // Raise the least recently used window first to keep their order.
+    this.#isRaisingWindows = true;
+    try {
+      for (let win of existingWindows.reverse()) {
+        win.focus();
+      }
+    } finally {
+      this.#isRaisingWindows = false;
+    }
   }
 
   /**
@@ -208,11 +239,11 @@ export class TaskbarTabsWindowManager {
   #attachWindowFocusTelemetry(aWindow) {
     let timerId = null;
 
-    function focused() {
-      if (timerId == null) {
+    const focused = () => {
+      if (timerId == null && !this.#isRaisingWindows) {
         timerId = Glean.webApp.usageTime.start();
       }
-    }
+    };
 
     function blur() {
       if (timerId != null) {
@@ -319,6 +350,24 @@ export class TaskbarTabsWindowManager {
    */
   getCountForId(aId) {
     return this.#openWindows.get(aId)?.size ?? 0;
+  }
+
+  /**
+   * Returns the windows associated to a Taskbar Tab, most recently used first,
+   * with minimized windows last.
+   *
+   * @param {string} aId - The Taskbar Tab ID.
+   * @returns {DOMWindow[]} The windows associated to the Taskbar Tab ID.
+   */
+  getWindowsForId(aId) {
+    let openWindows = this.#openWindows.get(aId);
+    if (!openWindows) {
+      return [];
+    }
+
+    return lazy.BrowserWindowTracker.getOrderedWindows().filter(
+      win => !win.closed && openWindows.has(getWindowId(win))
+    );
   }
 
   /**
