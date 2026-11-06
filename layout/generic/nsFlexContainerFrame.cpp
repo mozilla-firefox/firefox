@@ -4858,9 +4858,9 @@ void nsFlexContainerFrame::Reflow(nsPresContext* aPresContext,
 
     // mCumulativeBEndEdgeShift was updated in ReflowChildren(), and our
     // children's block-size may grow in fragmented context. If our block-size
-    // and max-block-size are unconstrained, then we allow the flex container to
-    // grow to accommodate any children whose sizes grew as a result of
-    // fragmentation.
+    // is unconstrained, then we allow the flex container to grow to accommodate
+    // any children whose sizes grew as a result of fragmentation, subject to
+    // our min/max constraints.
     if (aReflowInput.ComputedBSize() == NS_UNCONSTRAINEDSIZE) {
       contentBoxSize.BSize(wm) = aReflowInput.ApplyMinMaxBSize(
           contentBoxSize.BSize(wm) + fragmentData.mCumulativeBEndEdgeShift);
@@ -4887,10 +4887,9 @@ void nsFlexContainerFrame::Reflow(nsPresContext* aPresContext,
         if (aReflowInput.ComputedMaxBSize() == NS_UNCONSTRAINEDSIZE) {
           mayNeedNextInFlow = true;
         } else {
-          // The definite max-block-size can be the upper bound of our
-          // content-box block-size. We should check whether we need a
-          // next-in-flow.
-          mayNeedNextInFlow = contentBoxSize.BSize(wm) - consumedBSize >
+          // Our content-box block-size may grow further in later fragments.
+          // Only consider our own box complete once we reach max-block-size.
+          mayNeedNextInFlow = aReflowInput.ComputedMaxBSize() - consumedBSize >
                               availableSizeForItems.BSize(wm);
         }
       }
