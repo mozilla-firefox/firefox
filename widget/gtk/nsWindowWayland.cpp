@@ -68,6 +68,9 @@ void nsWindowWayland::RemoveFromList() {
 // origin without any content and move it to issue synced commit to toplevel
 // window.
 void nsWindowWayland::ForceToplevelCommit() {
+  if (!mIsMapped) {
+    return;
+  }
   GdkWindow* window = GetToplevelGdkWindow();
   if (!window) {
     return;
