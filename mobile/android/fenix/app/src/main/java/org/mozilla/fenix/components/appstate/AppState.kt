@@ -20,6 +20,7 @@ import org.mozilla.fenix.components.appstate.recommendations.ContentRecommendati
 import org.mozilla.fenix.components.appstate.search.SearchState
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
+import org.mozilla.fenix.components.appstate.sports.SportsWidgetState
 import org.mozilla.fenix.components.appstate.webcompat.WebCompatState
 import org.mozilla.fenix.home.HomeFragment
 import org.mozilla.fenix.home.bookmarks.Bookmark
@@ -89,6 +90,7 @@ import org.mozilla.fenix.wallpapers.WallpaperState
  * @property blockedTrackersState The [BlockedTrackersState] with data about blocked trackers.
  * @property longfoxEntryPointReady Whether the fox peek animation should play on the next homepage view.
  * @property isTabsTrayVisible Whether TabsTray is shown.
+ * @property sportsWidgetState The [SportsWidgetState] of the Wrexham widget on the homepage.
  */
 data class AppState(
     val isForeground: Boolean = true,
@@ -132,4 +134,5 @@ data class AppState(
     val blockedTrackersState: BlockedTrackersState = BlockedTrackersState(),
     val longfoxEntryPointReady: Boolean = false,
     val isTabsTrayVisible: Boolean = false,
+    val sportsWidgetState: SportsWidgetState = SportsWidgetState(),
 ) : State

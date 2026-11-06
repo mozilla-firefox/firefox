@@ -60,6 +60,7 @@ import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
 import org.mozilla.fenix.components.appstate.setup.checklist.getSetupChecklistCollection
+import org.mozilla.fenix.components.appstate.sports.SportsWidgetState
 import org.mozilla.fenix.components.bookmarks.lastSavedFolderCache
 import org.mozilla.fenix.components.ipprotection.IPProtection
 import org.mozilla.fenix.components.ipprotection.IPProtectionAuthSources
@@ -337,6 +338,7 @@ class Components(
                                 },
                             recentHistory = emptyList(),
                             setupChecklistState = setupChecklistState(),
+                            sportsWidgetState = setupSportsWidgetState(),
                         )
                         .run { filterState(blocklistHandler) },
                 middlewares =
@@ -404,6 +406,12 @@ class Components(
             browserUseCases = { useCases.fenixBrowserUseCases },
         )
     }
+
+    private fun setupSportsWidgetState() =
+        SportsWidgetState(
+            isFeatureEnabled = settings.enableHomepageWrexhamWidget,
+            isVisible = settings.showHomepageWrexhamWidget,
+        )
 
     private fun setupChecklistState() =
         if (settings.showSetupChecklist) {

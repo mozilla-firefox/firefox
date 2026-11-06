@@ -20,6 +20,7 @@ import org.mozilla.fenix.components.appstate.search.SearchStateReducer
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistReducer
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarStateReducer
+import org.mozilla.fenix.components.appstate.sports.SportsWidgetReducer
 import org.mozilla.fenix.components.appstate.webcompat.WebCompatReducer
 import org.mozilla.fenix.ext.filterOutTab
 import org.mozilla.fenix.home.recentsyncedtabs.RecentSyncedTabState
@@ -265,6 +266,8 @@ internal object AppStoreReducer {
                 state.copy(supportedMenuNotifications = state.supportedMenuNotifications - action.notification)
 
             is AppAction.BlockedTrackersAction -> BlockedTrackersStateReducer.reduce(state, action)
+
+            is AppAction.SportsWidgetAction -> SportsWidgetReducer.reduce(state, action)
 
             is AppAction.UpdateTabsTrayVisibility -> state.copy(isTabsTrayVisible = action.visible)
         }
