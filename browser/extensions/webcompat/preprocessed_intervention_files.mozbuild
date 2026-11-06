@@ -128,6 +128,7 @@ preprocessed_intervention_files = [
     "bug1995452-polymarket.com-hide_extra_scrollbars.css",
     "bug1997575-perplexity.ai.js",
     "bug1998361-doctolib.de-hide_browser_notice.css",
+    "bug1999490-demo.paw.wolffaud.io.js",
     "bug1999770-configuraraparelhos.claro.com.br-unhide_phone_description.css",
     "bug2000558-www.jal.co.jp-fix_table_rendering.css",
     "bug2000906-teams.microsoft.com.js",

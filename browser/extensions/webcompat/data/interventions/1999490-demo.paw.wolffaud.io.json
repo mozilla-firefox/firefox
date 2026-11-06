@@ -1,0 +1,17 @@
+{
+  "label": "demo.paw.wolffaud.io",
+  "bugs": {
+    "1999490": {
+      "issue": "firefox-blocked-completely",
+      "matches": ["*://demo.paw.wolffaud.io/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "content_scripts": {
+        "js": ["add_chrome_to_useragent.js", "define_minimal_window_chrome.js"]
+      }
+    }
+  ]
+}
