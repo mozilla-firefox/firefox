@@ -26,6 +26,7 @@ import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.utils.Browsers
 import mozilla.telemetry.glean.Glean
 import mozilla.telemetry.glean.config.Configuration
+import org.mozilla.experiments.nimbus.Nimbus.Pings as NimbusPings
 import org.mozilla.focus.BuildConfig
 import org.mozilla.focus.Components
 import org.mozilla.focus.GleanMetrics.Browser
@@ -133,6 +134,7 @@ class GleanMetricsService(
         )
 
         Glean.registerPings(Pings)
+        Glean.registerPings(NimbusPings.nimbusTargetingContext)
 
         if (telemetryEnabled) {
             serviceScope.launch {

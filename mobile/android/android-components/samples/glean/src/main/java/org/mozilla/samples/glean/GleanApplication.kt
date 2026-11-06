@@ -18,6 +18,7 @@ import mozilla.components.support.rusthttp.RustHttpConfig
 import mozilla.components.support.rustlog.RustLog
 import mozilla.telemetry.glean.Glean
 import mozilla.telemetry.glean.config.Configuration
+import org.mozilla.experiments.nimbus.Nimbus.Pings as NimbusPings
 import org.mozilla.samples.glean.GleanMetrics.Basic
 import org.mozilla.samples.glean.GleanMetrics.Custom
 import org.mozilla.samples.glean.GleanMetrics.GleanBuildInfo
@@ -44,6 +45,7 @@ class GleanApplication : Application() {
 
         // Register the sample application's custom pings.
         Glean.registerPings(Pings)
+        Glean.registerPings(NimbusPings.nimbusTargetingContext)
 
         // Initialize the Glean library. Ideally, this is the first thing that
         // must be done right after enabling logging.
