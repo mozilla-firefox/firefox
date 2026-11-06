@@ -397,8 +397,12 @@ impl FontContext {
         if !self.fonts.contains_key(font_key) {
             let len = bytes.len();
             match FONT_CACHE.lock().unwrap().add_font(FontTemplate::Raw(bytes, index)) {
-                Ok(font) => self.fonts.insert(*font_key, font),
-                Err(result) => panic!("adding raw font failed: {} bytes, err={:?}", len, result),
+                Ok(font) => {
+                    self.fonts.insert(*font_key, font);
+                }
+                Err(result) => {
+                    error!("adding raw font failed: {} bytes, err={:?}", len, result);
+                }
             };
         }
     }
@@ -407,8 +411,12 @@ impl FontContext {
         if !self.fonts.contains_key(font_key) {
             let path = native_font_handle.path.to_string_lossy().into_owned();
             match FONT_CACHE.lock().unwrap().add_font(FontTemplate::Native(native_font_handle)) {
-                Ok(font) => self.fonts.insert(*font_key, font),
-                Err(result) => panic!("adding native font failed: file={} err={:?}", path, result),
+                Ok(font) => {
+                    self.fonts.insert(*font_key, font);
+                }
+                Err(result) => {
+                    error!("adding native font failed: file={} err={:?}", path, result);
+                }
             };
         }
     }
@@ -981,7 +989,11 @@ impl FontContext {
             FT_Pixel_Mode::FT_PIXEL_MODE_BGRA => {
                 (bitmap.width as usize, bitmap.rows as usize)
             }
-            _ => panic!("Unsupported mode"),
+            _ => {
+                error!("Unsupported mode");
+                debug!("mode={:?}", pixel_mode);
+                return Err(GlyphRasterError::LoadFailed);
+            }
         };
 
         // If we need padding, we will need to expand the buffer size.
@@ -1069,7 +1081,10 @@ impl FontContext {
                     let src_slice = unsafe { slice::from_raw_parts(src, dest_slice.len()) };
                     dest_slice.copy_from_slice(src_slice);
                 }
-                _ => panic!("Unsupported mode"),
+                _ => {
+                    error!("Unsupported mode");
+                    return Err(GlyphRasterError::LoadFailed);
+                }
             }
             src_row = unsafe { src_row.offset(bitmap.pitch as isize) };
             dest = row_end + 8 * padding;
