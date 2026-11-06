@@ -23,6 +23,10 @@
   margin-block-end: var(--space-large);
 }
 
+.monitors-group {
+  margin-block-end: var(--space-xlarge);
+}
+
 .no-monitors-wrapper {
   display: flex;
   align-items: center;

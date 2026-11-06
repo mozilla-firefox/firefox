@@ -1,0 +1,11 @@
+[DEFAULT]
+prefs = [
+  "browser.newtab.preload=false",
+  "browser.smartwindow.endpoint=http://localhost:0/v1",
+]
+support-files = [
+  "test_monitors_display_page.html",
+  "test_monitors_display.mjs",
+]
+
+["browser_tasks_monitor_groups.js"]

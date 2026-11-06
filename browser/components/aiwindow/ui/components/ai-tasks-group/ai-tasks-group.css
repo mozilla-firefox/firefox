@@ -1,0 +1,83 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  display: block;
+}
+
+.heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-small);
+  margin-block: 0 var(--space-medium);
+  font-size: var(--font-size-root);
+  font-weight: var(--font-weight-semibold);
+}
+
+.count {
+  color: var(--text-color-deemphasized);
+  font-weight: var(--font-weight);
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+}
+
+/* Show the first five cards until the group is expanded. Must match
+   VISIBLE_COUNT in ai-tasks-group.mjs. */
+:host(:not([expanded])) ::slotted(:nth-child(n + 6)) {
+  display: none;
+}
+
+/* Cards revealed by "Show N more" fade and slide in, one after another.
+   AITasksGroup.animateCollapse reverses this for "Show less". */
+@media (prefers-reduced-motion: no-preference) {
+  :host([expanded]) ::slotted(:nth-child(n + 6)) {
+    transition:
+      opacity 200ms var(--motion-easing-standard),
+      translate 200ms var(--motion-easing-standard);
+
+    @starting-style {
+      opacity: 0;
+      translate: 0 calc(-1 * var(--space-small));
+    }
+  }
+
+  :host([expanded]) ::slotted(:nth-child(7)) {
+    transition-delay: 40ms;
+  }
+
+  :host([expanded]) ::slotted(:nth-child(8)) {
+    transition-delay: 80ms;
+  }
+
+  :host([expanded]) ::slotted(:nth-child(n + 9)) {
+    transition-delay: 120ms;
+  }
+}
+
+.toggle-button {
+  all: unset;
+  display: block;
+  margin-block-start: var(--space-medium);
+  color: var(--link-color);
+  cursor: pointer;
+  width: fit-content;
+
+  &:hover {
+    color: var(--link-color-hover);
+    text-decoration: underline;
+  }
+
+  &:hover:active {
+    color: var(--link-color-active);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-offset);
+  }
+}

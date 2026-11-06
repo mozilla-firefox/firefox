@@ -33,6 +33,8 @@ browser.jar:
   content/browser/aiwindow/components/monitors-display.css          (components/monitors-display/monitors-display.css)
   content/browser/aiwindow/components/monitor-icon.mjs              (components/monitors-display/monitor-icon.mjs)
   content/browser/aiwindow/components/monitor-status-chip.mjs       (components/monitors-display/monitor-status-chip.mjs)
+  content/browser/aiwindow/components/ai-tasks-group.mjs            (components/ai-tasks-group/ai-tasks-group.mjs)
+  content/browser/aiwindow/components/ai-tasks-group.css            (components/ai-tasks-group/ai-tasks-group.css)
   content/browser/aiwindow/components/tab-group-icon.mjs            (components/tab-group-icon/tab-group-icon.mjs)
   content/browser/aiwindow/components/tab-group-icon.css            (components/tab-group-icon/tab-group-icon.css)
   content/browser/aiwindow/components/smartwindow-chip.mjs          (components/smartwindow-chip/smartwindow-chip.mjs)
