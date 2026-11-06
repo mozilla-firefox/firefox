@@ -246,9 +246,6 @@ class nsCSSBorderRenderer final {
   // Draw the given dashed/dotted corner with solid style
   void DrawFallbackSolidCorner(mozilla::Side aSide, mozilla::Corner aCorner);
 
-  // Analyze if all border sides have the same width.
-  bool AllBordersSameWidth();
-
   // Analyze if all borders are 'solid' this also considers hidden or 'none'
   // borders because they can be considered 'solid' borders of 0 width and
   // with no color effect.

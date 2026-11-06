@@ -279,7 +279,7 @@ static gfxFloat LinearGradientStopPositionForPoint(
    *   denominator = d.x^2 + d.y^2
    *   t = numerator/denominator
    *
-   * In nsCSSRendering::PaintGradient we know the length of d
+   * In nsCSSGradientRenderer::Paint we know the length of d
    * is not zero.
    */
   double numerator = d.x.value * p.x.value + d.y.value * p.y.value;
