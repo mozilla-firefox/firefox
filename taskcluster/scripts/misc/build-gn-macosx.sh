@@ -14,7 +14,7 @@ CROSS_SYSROOT=$MOZ_FETCHES_DIR/MacOSX13.3.sdk
 # arm64 macOS only exists from 11.0; Intel goes back further.
 case "$TARGET" in
   aarch64-apple-darwin) export MACOSX_DEPLOYMENT_TARGET=11.0 ;;
-  x86_64-apple-darwin) export MACOSX_DEPLOYMENT_TARGET=10.15 ;;
+  x86_64-apple-darwin) export MACOSX_DEPLOYMENT_TARGET=10.12 ;;
   *)
     echo "Unsupported macOS target $TARGET"
     exit 1
