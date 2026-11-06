@@ -49,7 +49,6 @@ generate:
             ln -s ../tools/lint/eslint/eslint-plugin-mozilla node_modules &&
             ln -s ../tools/lint/eslint/eslint-plugin-spidermonkey-js node_modules &&
             ./mach doc --outdir docs-out --no-open --no-serve --archive --dump-trees=/builds/worker/artifacts/trees.json
-        sparse-profile: sphinx-docs
     optimization:
         docs: null
     fetches:
@@ -110,7 +109,6 @@ upload:
             ln -s ../tools/lint/eslint/eslint-plugin-mozilla node_modules &&
             ln -s ../tools/lint/eslint/eslint-plugin-spidermonkey-js node_modules &&
             ./mach doc --upload --no-open --no-serve --write-url /builds/worker/firefox-source-docs-url.txt --dump-trees=/builds/worker/artifacts/trees.json --errors-file=/builds/worker/issues.json
-        sparse-profile: sphinx-docs
     scopes:
         - secrets:get:project/releng/gecko/build/level-{level}/gecko-docs-upload
     optimization:
