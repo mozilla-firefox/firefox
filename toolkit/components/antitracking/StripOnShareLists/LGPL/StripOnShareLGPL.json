@@ -568,7 +568,7 @@
   },
   "linkedin": {
     "queryParams": ["refId", "trk", "trackingId"],
-    "hosts": ["ca.linkedin.com", "ro.linkedin.com"]
+    "schemelessSites": ["linkedin.com"]
   },
   "newyorker": {
     "queryParams": ["esrc", "bxid", "cndid", "source", "mbid"],

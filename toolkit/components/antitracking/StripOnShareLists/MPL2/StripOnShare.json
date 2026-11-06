@@ -334,8 +334,15 @@
     "hosts": ["www.humblebundle.com"]
   },
   "linkedin": {
-    "queryParams": ["rcm"],
-    "hosts": ["www.linkedin.com"]
+    "queryParams": [
+      "rcm",
+      "eBP",
+      "alternateChannel",
+      "origin",
+      "lipi",
+      "isJobSearch"
+    ],
+    "schemelessSites": ["linkedin.com"]
   },
   "ebay": {
     "queryParams": ["customid", "toolid"],
