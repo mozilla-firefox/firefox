@@ -4857,6 +4857,10 @@ void ClientWebGLContext::TexImage(uint8_t funcDims, GLenum imageTarget,
       if (StaticPrefs::webgl_disable_DOM_blit_uploads()) {
         return Some(std::string{"DOM blit uploads are disabled."});
       }
+      if (!contextInfo.supportsDomBlitUploads) {
+        return Some(
+            std::string{"DOM blit uploads are not supported by this context."});
+      }
       return {};
     }();
 

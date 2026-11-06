@@ -661,6 +661,11 @@ RefPtr<WebGLContext> WebGLContext::Create(HostWebGLContext* host,
   out->limits = *webgl->mLimits;
   out->uploadableSdTypes = webgl->mUploadableSdTypes;
   out->vendor = webgl->gl->Vendor();
+#if defined(MOZ_AARCH64) && defined(XP_MACOSX)
+  // Blit uploads can cause application freezes on the native GL driver on apple
+  // silicon. See bug 1800573.
+  out->supportsDomBlitUploads = webgl->gl->IsMetalANGLE();
+#endif
   out->optionalRenderableFormatBits = webgl->mOptionalRenderableFormatBits;
 
   return webgl;
