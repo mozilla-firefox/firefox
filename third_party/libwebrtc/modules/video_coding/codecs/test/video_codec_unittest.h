@@ -14,6 +14,8 @@
 #include <memory>
 #include <vector>
 
+#include "api/environment/environment.h"
+#include "api/environment/environment_factory.h"
 #include "api/test/frame_generator_interface.h"
 #include "api/video_codecs/video_decoder.h"
 #include "api/video_codecs/video_encoder.h"
@@ -30,7 +32,8 @@ namespace webrtc {
 class VideoCodecUnitTest : public ::testing::Test {
  public:
   VideoCodecUnitTest()
-      : encode_complete_callback_(this),
+      : env_(CreateEnvironment()),
+        encode_complete_callback_(this),
         decode_complete_callback_(this),
         wait_for_encoded_frames_threshold_(1),
         last_input_frame_timestamp_(0) {}
@@ -96,6 +99,7 @@ class VideoCodecUnitTest : public ::testing::Test {
 
   size_t GetNumEncodedFrames();
 
+  const Environment env_;
   VideoCodec codec_settings_;
 
   std::unique_ptr<VideoEncoder> encoder_;

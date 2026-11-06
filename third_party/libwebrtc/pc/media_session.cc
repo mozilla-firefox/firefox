@@ -2069,10 +2069,12 @@ RTCError MediaSessionDescriptionFactory::AddRtpContentForOffer(
   SetMediaProtocol(secure_transport, content_description.get());
 
   content_description->set_direction(media_description_options.direction);
+  bool has_codecs = !content_description->codecs().empty();
 
   session_description->AddContent(
       media_description_options.mid, MediaProtocolType::kRtp,
-      media_description_options.stopped, std::move(content_description));
+      media_description_options.stopped || !has_codecs,
+      std::move(content_description));
   return AddTransportOffer(media_description_options.mid,
                            media_description_options.transport_options,
                            current_description, session_description,

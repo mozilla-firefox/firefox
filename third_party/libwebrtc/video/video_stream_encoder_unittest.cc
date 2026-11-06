@@ -17,6 +17,8 @@
 #include <utility>
 
 #include "absl/memory/memory.h"
+#include "api/environment/environment.h"
+#include "api/environment/environment_factory.h"
 #include "api/field_trials_view.h"
 #include "api/rtp_parameters.h"
 #include "api/task_queue/default_task_queue_factory.h"
@@ -381,17 +383,17 @@ class VideoStreamEncoderUnderTest : public VideoStreamEncoder {
           allocation_callback_type,
       const FieldTrialsView& field_trials,
       int num_cores)
-      : VideoStreamEncoder(time_controller->GetClock(),
-                           num_cores,
-                           stats_proxy,
-                           settings,
-                           std::unique_ptr<OveruseFrameDetector>(
-                               overuse_detector_proxy_ =
-                                   new CpuOveruseDetectorProxy(stats_proxy)),
-                           std::move(cadence_adapter),
-                           std::move(encoder_queue),
-                           allocation_callback_type,
-                           field_trials),
+      : VideoStreamEncoder(
+            CreateEnvironment(&field_trials, time_controller->GetClock()),
+            num_cores,
+            stats_proxy,
+            settings,
+            std::unique_ptr<OveruseFrameDetector>(
+                overuse_detector_proxy_ =
+                    new CpuOveruseDetectorProxy(stats_proxy)),
+            std::move(cadence_adapter),
+            std::move(encoder_queue),
+            allocation_callback_type),
         time_controller_(time_controller),
         fake_cpu_resource_(FakeResource::Create("FakeResource[CPU]")),
         fake_quality_resource_(FakeResource::Create("FakeResource[QP]")),
@@ -693,15 +695,15 @@ class SimpleVideoStreamEncoderFactory {
       std::unique_ptr<TaskQueueBase, TaskQueueDeleter> encoder_queue,
       const FieldTrialsView* field_trials = nullptr) {
     auto result = std::make_unique<AdaptedVideoStreamEncoder>(
-        time_controller_.GetClock(),
+        CreateEnvironment(&field_trials_, field_trials,
+                          time_controller_.GetClock()),
         /*number_of_cores=*/1,
         /*stats_proxy=*/stats_proxy_.get(), encoder_settings_,
         std::make_unique<CpuOveruseDetectorProxy>(
             /*stats_proxy=*/nullptr),
         std::move(zero_hertz_adapter), std::move(encoder_queue),
         VideoStreamEncoder::BitrateAllocationCallbackType::
-            kVideoBitrateAllocation,
-        field_trials ? *field_trials : field_trials_);
+            kVideoBitrateAllocation);
     result->SetSink(&sink_, /*rotation_applied=*/false);
     return result;
   }
@@ -9230,11 +9232,12 @@ TEST(VideoStreamEncoderSimpleTest, CreateDestroy) {
   };
 
   // Lots of boiler plate.
-  test::ScopedKeyValueConfig field_trials;
   GlobalSimulatedTimeController time_controller(Timestamp::Zero());
-  auto stats_proxy = std::make_unique<MockableSendStatisticsProxy>(
-      time_controller.GetClock(), VideoSendStream::Config(nullptr),
-      webrtc::VideoEncoderConfig::ContentType::kRealtimeVideo, field_trials);
+  Environment env = CreateEnvironment(time_controller.GetClock());
+  MockableSendStatisticsProxy stats_proxy(
+      &env.clock(), VideoSendStream::Config(nullptr),
+      webrtc::VideoEncoderConfig::ContentType::kRealtimeVideo,
+      env.field_trials());
   SimpleVideoStreamEncoderFactory::MockFakeEncoder mock_fake_encoder(
       time_controller.GetClock());
   test::VideoEncoderProxyFactory encoder_factory(&mock_fake_encoder);
@@ -9252,20 +9255,19 @@ TEST(VideoStreamEncoderSimpleTest, CreateDestroy) {
       encoder_queue(new SuperLazyTaskQueue());
 
   // Construct a VideoStreamEncoder instance and let it go out of scope without
-  // doing anything else (including calling Stop()). This should be fine since
-  // the posted init task will simply be deleted.
-  auto encoder = std::make_unique<VideoStreamEncoder>(
-      time_controller.GetClock(), 1, stats_proxy.get(), encoder_settings,
-      std::make_unique<CpuOveruseDetectorProxy>(stats_proxy.get()),
+  // doing anything else. This should be fine since the posted init task will
+  // simply be deleted.
+  VideoStreamEncoder encoder(
+      env, 1, &stats_proxy, encoder_settings,
+      std::make_unique<CpuOveruseDetectorProxy>(&stats_proxy),
       std::move(adapter), std::move(encoder_queue),
       VideoStreamEncoder::BitrateAllocationCallbackType::
-          kVideoBitrateAllocation,
-      field_trials);
+          kVideoBitrateAllocation);
 
   // Stop the encoder explicitly. This additional step tests if we could
   // hang when calling stop and the TQ has been stopped and/or isn't accepting
   // any more tasks.
-  encoder->Stop();
+  encoder.Stop();
 }
 
 TEST(VideoStreamEncoderFrameCadenceTest, ActivatesFrameCadenceOnContentType) {

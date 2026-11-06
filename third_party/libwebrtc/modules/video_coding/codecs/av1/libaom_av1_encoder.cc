@@ -18,8 +18,10 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/macros.h"
+#include "absl/base/nullability.h"
 #include "absl/strings/match.h"
 #include "absl/types/optional.h"
+#include "api/environment/environment.h"
 #include "api/field_trials_view.h"
 #include "api/scoped_refptr.h"
 #include "api/transport/field_trial_based_config.h"
@@ -374,7 +376,8 @@ bool LibaomAv1Encoder::SetEncoderControlParameters(int param_id,
   return error_code == AOM_CODEC_OK;
 }
 
-// Only positive speeds, range for real-time coding currently is: 6 - 8.
+// Only positive speeds, range for real-time coding currently is: 6 - 10.
+// Speed 11 is used for screen sharing.
 // Lower means slower/better quality, higher means fastest/lower quality.
 int LibaomAv1Encoder::GetCpuSpeed(int width, int height) {
   if (aux_config_) {
@@ -386,6 +389,9 @@ int LibaomAv1Encoder::GetCpuSpeed(int width, int height) {
 
     return 10;
   } else {
+    if (encoder_settings_.mode == VideoCodecMode::kScreensharing) {
+      return 11;
+    }
     // For smaller resolutions, use lower speed setting (get some coding gain at
     // the cost of increased encoding complexity).
     switch (encoder_settings_.GetVideoEncoderComplexity()) {
@@ -867,6 +873,17 @@ VideoEncoder::EncoderInfo LibaomAv1Encoder::GetEncoderInfo() const {
 }
 
 }  // namespace
+
+absl::Nonnull<std::unique_ptr<VideoEncoder>> CreateLibaomAv1Encoder(
+    const Environment& env,
+    LibaomAv1EncoderSettings settings) {
+  if (settings.max_pixel_count_to_cpu_speed.empty()) {
+    return std::make_unique<LibaomAv1Encoder>(absl::nullopt,
+                                              env.field_trials());
+  } else {
+    return std::make_unique<LibaomAv1Encoder>(settings, env.field_trials());
+  }
+}
 
 std::unique_ptr<VideoEncoder> CreateLibaomAv1Encoder() {
   return std::make_unique<LibaomAv1Encoder>(absl::nullopt,

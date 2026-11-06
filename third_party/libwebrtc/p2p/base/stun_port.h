@@ -46,9 +46,9 @@ class RTC_EXPORT UDPPort : public Port {
       absl::optional<int> stun_keepalive_interval,
       const webrtc::FieldTrialsView* field_trials = nullptr) {
     // Using `new` to access a non-public constructor.
-    auto port = absl::WrapUnique(
-        new UDPPort(thread, LOCAL_PORT_TYPE, factory, network, socket, username,
-                    password, emit_local_for_anyaddress, field_trials));
+    auto port = absl::WrapUnique(new UDPPort(
+        thread, webrtc::IceCandidateType::kHost, factory, network, socket,
+        username, password, emit_local_for_anyaddress, field_trials));
     port->set_stun_keepalive_delay(stun_keepalive_interval);
     if (!port->Init()) {
       return nullptr;
@@ -69,8 +69,8 @@ class RTC_EXPORT UDPPort : public Port {
       const webrtc::FieldTrialsView* field_trials = nullptr) {
     // Using `new` to access a non-public constructor.
     auto port = absl::WrapUnique(new UDPPort(
-        thread, LOCAL_PORT_TYPE, factory, network, min_port, max_port, username,
-        password, emit_local_for_anyaddress, field_trials));
+        thread, webrtc::IceCandidateType::kHost, factory, network, min_port,
+        max_port, username, password, emit_local_for_anyaddress, field_trials));
     port->set_stun_keepalive_delay(stun_keepalive_interval);
     if (!port->Init()) {
       return nullptr;
@@ -118,7 +118,7 @@ class RTC_EXPORT UDPPort : public Port {
 
  protected:
   UDPPort(rtc::Thread* thread,
-          absl::string_view type,
+          webrtc::IceCandidateType type,
           rtc::PacketSocketFactory* factory,
           const rtc::Network* network,
           uint16_t min_port,
@@ -129,7 +129,7 @@ class RTC_EXPORT UDPPort : public Port {
           const webrtc::FieldTrialsView* field_trials);
 
   UDPPort(rtc::Thread* thread,
-          absl::string_view type,
+          webrtc::IceCandidateType type,
           rtc::PacketSocketFactory* factory,
           const rtc::Network* network,
           rtc::AsyncPacketSocket* socket,

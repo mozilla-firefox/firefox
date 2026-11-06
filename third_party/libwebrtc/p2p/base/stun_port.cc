@@ -160,7 +160,7 @@ bool UDPPort::AddressResolver::GetResolvedAddress(
 }
 
 UDPPort::UDPPort(rtc::Thread* thread,
-                 absl::string_view type,
+                 webrtc::IceCandidateType type,
                  rtc::PacketSocketFactory* factory,
                  const rtc::Network* network,
                  rtc::AsyncPacketSocket* socket,
@@ -182,7 +182,7 @@ UDPPort::UDPPort(rtc::Thread* thread,
       emit_local_for_anyaddress_(emit_local_for_anyaddress) {}
 
 UDPPort::UDPPort(rtc::Thread* thread,
-                 absl::string_view type,
+                 webrtc::IceCandidateType type,
                  rtc::PacketSocketFactory* factory,
                  const rtc::Network* network,
                  uint16_t min_port,
@@ -380,7 +380,8 @@ void UDPPort::OnLocalAddressReady(rtc::AsyncPacketSocket* socket,
   MaybeSetDefaultLocalAddress(&addr);
 
   AddAddress(addr, addr, rtc::SocketAddress(), UDP_PROTOCOL_NAME, "", "",
-             LOCAL_PORT_TYPE, ICE_TYPE_PREFERENCE_HOST, 0, "", false);
+             webrtc::IceCandidateType::kHost, ICE_TYPE_PREFERENCE_HOST, 0, "",
+             false);
   MaybePrepareStunCandidate();
 }
 
@@ -541,7 +542,7 @@ void UDPPort::OnStunBindingRequestSucceeded(
     url << "stun:" << stun_server_addr.hostname() << ":"
         << stun_server_addr.port();
     AddAddress(stun_reflected_addr, socket_->GetLocalAddress(), related_address,
-               UDP_PROTOCOL_NAME, "", "", STUN_PORT_TYPE,
+               UDP_PROTOCOL_NAME, "", "", webrtc::IceCandidateType::kSrflx,
                ICE_TYPE_PREFERENCE_SRFLX, 0, url.str(), false);
   }
   MaybeSetPortCompleteOrError();
@@ -654,7 +655,7 @@ StunPort::StunPort(rtc::Thread* thread,
                    const ServerAddresses& servers,
                    const webrtc::FieldTrialsView* field_trials)
     : UDPPort(thread,
-              STUN_PORT_TYPE,
+              webrtc::IceCandidateType::kSrflx,
               factory,
               network,
               min_port,

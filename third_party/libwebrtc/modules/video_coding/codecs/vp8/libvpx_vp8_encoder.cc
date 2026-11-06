@@ -264,6 +264,12 @@ absl::optional<TimeDelta> ParseFrameDropInterval() {
 
 }  // namespace
 
+std::unique_ptr<VideoEncoder> CreateVp8Encoder(const Environment& env,
+                                               Vp8EncoderSettings settings) {
+  return std::make_unique<LibvpxVp8Encoder>(env, std::move(settings),
+                                            LibvpxInterface::Create());
+}
+
 std::unique_ptr<VideoEncoder> VP8Encoder::Create() {
   return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::Create(),
                                             VP8Encoder::Settings());

@@ -645,7 +645,7 @@ class VideoStreamEncoder::DegradationPreferenceManager
 };
 
 VideoStreamEncoder::VideoStreamEncoder(
-    Clock* clock,
+    const Environment& env,
     uint32_t number_of_cores,
     VideoStreamEncoderObserver* encoder_stats_observer,
     const VideoStreamEncoderSettings& settings,
@@ -654,15 +654,14 @@ VideoStreamEncoder::VideoStreamEncoder(
     std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>
         encoder_queue,
     BitrateAllocationCallbackType allocation_cb_type,
-    const FieldTrialsView& field_trials,
     webrtc::VideoEncoderFactory::EncoderSelectorInterface* encoder_selector)
-    : field_trials_(field_trials),
+    : env_(env),
       worker_queue_(TaskQueueBase::Current()),
       number_of_cores_(number_of_cores),
       settings_(settings),
       allocation_cb_type_(allocation_cb_type),
       rate_control_settings_(
-          RateControlSettings::ParseFromKeyValueConfig(&field_trials)),
+          RateControlSettings::ParseFromKeyValueConfig(&env_.field_trials())),
       encoder_selector_from_constructor_(encoder_selector),
       encoder_selector_from_factory_(
           encoder_selector_from_constructor_
@@ -673,10 +672,9 @@ VideoStreamEncoder::VideoStreamEncoder(
                             : encoder_selector_from_factory_.get()),
       encoder_stats_observer_(encoder_stats_observer),
       frame_cadence_adapter_(std::move(frame_cadence_adapter)),
-      clock_(clock),
-      delta_ntp_internal_ms_(clock_->CurrentNtpInMilliseconds() -
-                             clock_->TimeInMilliseconds()),
-      last_frame_log_ms_(clock_->TimeInMilliseconds()),
+      delta_ntp_internal_ms_(env_.clock().CurrentNtpInMilliseconds() -
+                             env_.clock().TimeInMilliseconds()),
+      last_frame_log_ms_(env_.clock().TimeInMilliseconds()),
       next_frame_types_(1, VideoFrameType::kVideoFrameDelta),
       automatic_animation_detection_experiment_(
           ParseAutomatincAnimationDetectionFieldTrial()),
@@ -684,28 +682,29 @@ VideoStreamEncoder::VideoStreamEncoder(
       video_stream_adapter_(
           std::make_unique<VideoStreamAdapter>(&input_state_provider_,
                                                encoder_stats_observer,
-                                               field_trials)),
+                                               env_.field_trials())),
       degradation_preference_manager_(
           std::make_unique<DegradationPreferenceManager>(
               video_stream_adapter_.get())),
       stream_resource_manager_(&input_state_provider_,
                                encoder_stats_observer,
-                               clock_,
+                               &env_.clock(),
                                settings_.experiment_cpu_load_estimator,
                                std::move(overuse_detector),
                                degradation_preference_manager_.get(),
-                               field_trials),
+                               env_.field_trials()),
       video_source_sink_controller_(/*sink=*/frame_cadence_adapter_.get(),
                                     /*source=*/nullptr),
-      default_limits_allowed_(
-          !field_trials.IsEnabled("WebRTC-DefaultBitrateLimitsKillSwitch")),
+      default_limits_allowed_(!env_.field_trials().IsEnabled(
+          "WebRTC-DefaultBitrateLimitsKillSwitch")),
       qp_parsing_allowed_(
-          !field_trials.IsEnabled("WebRTC-QpParsingKillSwitch")),
-      switch_encoder_on_init_failures_(!field_trials.IsDisabled(
+          !env_.field_trials().IsEnabled("WebRTC-QpParsingKillSwitch")),
+      switch_encoder_on_init_failures_(!env_.field_trials().IsDisabled(
           kSwitchEncoderOnInitializationFailuresFieldTrial)),
       vp9_low_tier_core_threshold_(
-          ParseVp9LowTierCoreCountThreshold(field_trials)),
-      experimental_encoder_thread_limit_(ParseEncoderThreadLimit(field_trials)),
+          ParseVp9LowTierCoreCountThreshold(env_.field_trials())),
+      experimental_encoder_thread_limit_(
+          ParseEncoderThreadLimit(env_.field_trials())),
       encoder_queue_(std::move(encoder_queue)) {
   TRACE_EVENT0("webrtc", "VideoStreamEncoder::VideoStreamEncoder");
   RTC_DCHECK_RUN_ON(worker_queue_);
@@ -948,9 +947,8 @@ void VideoStreamEncoder::ReconfigureEncoder() {
     encoder_.reset();
 
     encoder_ = MaybeCreateFrameDumpingEncoderWrapper(
-        settings_.encoder_factory->CreateVideoEncoder(
-            encoder_config_.video_format),
-        field_trials_);
+        settings_.encoder_factory->Create(env_, encoder_config_.video_format),
+        env_.field_trials());
     if (!encoder_) {
       RTC_LOG(LS_ERROR) << "CreateVideoEncoder failed, failing encoder format: "
                         << encoder_config_.video_format.ToString();
@@ -986,7 +984,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
                 webrtc::VideoEncoderConfig::ContentType::kScreen,
             encoder_config_.legacy_conference_mode, encoder_->GetEncoderInfo(),
             MergeRestrictions({latest_restrictions_, animate_restrictions_}),
-            &field_trials_);
+            &env_.field_trials());
 
     streams = factory->CreateEncoderStreams(
         last_frame_info_->width, last_frame_info_->height, encoder_config_);
@@ -1158,18 +1156,22 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   rtc::SimpleStringBuilder log_stream(log_stream_buf);
   log_stream << "ReconfigureEncoder: simulcast streams: ";
   for (size_t i = 0; i < codec.numberOfSimulcastStreams; ++i) {
-    log_stream << "{" << i << ": " << codec.simulcastStream[i].width << "x"
-               << codec.simulcastStream[i].height << " "
-               << ScalabilityModeToString(
-                      codec.simulcastStream[i].GetScalabilityMode())
-               << ", min_kbps: " << codec.simulcastStream[i].minBitrate
-               << ", target_kbps: " << codec.simulcastStream[i].targetBitrate
-               << ", max_kbps: " << codec.simulcastStream[i].maxBitrate
-               << ", max_fps: " << codec.simulcastStream[i].maxFramerate
-               << ", max_qp: " << codec.simulcastStream[i].qpMax << ", num_tl: "
-               << codec.simulcastStream[i].numberOfTemporalLayers
-               << ", active: "
-               << (codec.simulcastStream[i].active ? "true" : "false") << "}";
+    absl::optional<ScalabilityMode> scalability_mode =
+        codec.simulcastStream[i].GetScalabilityMode();
+    if (scalability_mode) {
+      log_stream << "{" << i << ": " << codec.simulcastStream[i].width << "x"
+                 << codec.simulcastStream[i].height << " "
+                 << ScalabilityModeToString(*scalability_mode)
+                 << ", min_kbps: " << codec.simulcastStream[i].minBitrate
+                 << ", target_kbps: " << codec.simulcastStream[i].targetBitrate
+                 << ", max_kbps: " << codec.simulcastStream[i].maxBitrate
+                 << ", max_fps: " << codec.simulcastStream[i].maxFramerate
+                 << ", max_qp: " << codec.simulcastStream[i].qpMax
+                 << ", num_tl: "
+                 << codec.simulcastStream[i].numberOfTemporalLayers
+                 << ", active: "
+                 << (codec.simulcastStream[i].active ? "true" : "false") << "}";
+    }
   }
   if (encoder_config_.codec_type == kVideoCodecVP9 ||
       encoder_config_.codec_type == kVideoCodecAV1) {
@@ -1358,13 +1360,13 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   //  * We have screensharing with layers.
   //  * "WebRTC-FrameDropper" field trial is "Disabled".
   force_disable_frame_dropper_ =
-      field_trials_.IsDisabled(kFrameDropperFieldTrial) ||
+      env_.field_trials().IsDisabled(kFrameDropperFieldTrial) ||
       (num_layers > 1 && codec.mode == VideoCodecMode::kScreensharing);
 
   const VideoEncoder::EncoderInfo info = encoder_->GetEncoderInfo();
   if (rate_control_settings_.UseEncoderBitrateAdjuster()) {
     bitrate_adjuster_ =
-        std::make_unique<EncoderBitrateAdjuster>(codec, field_trials_);
+        std::make_unique<EncoderBitrateAdjuster>(codec, env_.field_trials());
     bitrate_adjuster_->OnEncoderInfo(info);
   }
 
@@ -1783,7 +1785,7 @@ void VideoStreamEncoder::MaybeEncodeVideoFrame(const VideoFrame& video_frame,
   uint32_t framerate_fps = GetInputFramerateFps();
   frame_cadence_adapter_->UpdateFrameRate();
 
-  int64_t now_ms = clock_->TimeInMilliseconds();
+  int64_t now_ms = env_.clock().TimeInMilliseconds();
   if (pending_encoder_reconfiguration_) {
     ReconfigureEncoder();
     last_parameters_update_ms_.emplace(now_ms);
@@ -1932,7 +1934,7 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
     }
   }
   encoder_info_ = info;
-  last_encode_info_ms_ = clock_->TimeInMilliseconds();
+  last_encode_info_ms_ = env_.clock().TimeInMilliseconds();
 
   VideoFrame out_frame(video_frame);
   // Crop or scale the frame if needed. Dimension may be reduced to fit encoder
@@ -2194,7 +2196,7 @@ EncodedImageCallback::Result VideoStreamEncoder::OnEncodedImage(
     temporal_index = 0;
   }
 
-  RunPostEncode(image_copy, clock_->CurrentTime().us(), temporal_index,
+  RunPostEncode(image_copy, env_.clock().CurrentTime().us(), temporal_index,
                 frame_size);
 
   if (result.error == Result::OK) {
@@ -2315,7 +2317,7 @@ void VideoStreamEncoder::OnBitrateUpdated(DataRate target_bitrate,
         !DropDueToSize(pending_frame_->size())) {
       // A pending stored frame can be processed.
       int64_t pending_time_us =
-          clock_->CurrentTime().us() - pending_frame_post_time_us_;
+          env_.clock().CurrentTime().us() - pending_frame_post_time_us_;
       if (pending_time_us < kPendingFrameTimeoutMs * 1000)
         EncodeVideoFrame(*pending_frame_, pending_frame_post_time_us_);
       pending_frame_.reset();
@@ -2446,8 +2448,8 @@ VideoStreamEncoder::AutomaticAnimationDetectionExperiment
 VideoStreamEncoder::ParseAutomatincAnimationDetectionFieldTrial() const {
   AutomaticAnimationDetectionExperiment result;
 
-  result.Parser()->Parse(
-      field_trials_.Lookup("WebRTC-AutomaticAnimationDetectionScreenshare"));
+  result.Parser()->Parse(env_.field_trials().Lookup(
+      "WebRTC-AutomaticAnimationDetectionScreenshare"));
 
   if (!result.enabled) {
     RTC_LOG(LS_INFO) << "Automatic animation detection experiment is disabled.";

@@ -20,6 +20,7 @@
 
 #include "absl/algorithm/container.h"
 #include "api/dtls_transport_interface.h"
+#include "api/environment/environment.h"
 #include "api/rtp_parameters.h"
 #include "api/sequence_checker.h"
 #include "api/transport/enums.h"
@@ -38,11 +39,13 @@ using webrtc::SdpType;
 namespace webrtc {
 
 JsepTransportController::JsepTransportController(
+    const Environment& env,
     rtc::Thread* network_thread,
     cricket::PortAllocator* port_allocator,
     AsyncDnsResolverFactoryInterface* async_dns_resolver_factory,
     Config config)
-    : network_thread_(network_thread),
+    : env_(env),
+      network_thread_(network_thread),
       port_allocator_(port_allocator),
       async_dns_resolver_factory_(async_dns_resolver_factory),
       transports_(
@@ -62,7 +65,6 @@ JsepTransportController::JsepTransportController(
   RTC_DCHECK(config_.rtcp_handler);
   RTC_DCHECK(config_.ice_transport_factory);
   RTC_DCHECK(config_.on_dtls_handshake_error_);
-  RTC_DCHECK(config_.field_trials);
 }
 
 JsepTransportController::~JsepTransportController() {
@@ -397,7 +399,7 @@ JsepTransportController::CreateIceTransport(const std::string& transport_name,
   init.set_port_allocator(port_allocator_);
   init.set_async_dns_resolver_factory(async_dns_resolver_factory_);
   init.set_event_log(config_.event_log);
-  init.set_field_trials(config_.field_trials);
+  init.set_field_trials(&env_.field_trials());
   auto transport = config_.ice_transport_factory->CreateIceTransport(
       transport_name, component, std::move(init));
   RTC_DCHECK(transport);
@@ -494,7 +496,7 @@ std::unique_ptr<SrtpTransport> JsepTransportController::CreateSdesTransport(
     cricket::DtlsTransportInternal* rtcp_dtls_transport) {
   RTC_DCHECK_RUN_ON(network_thread_);
   auto srtp_transport = std::make_unique<SrtpTransport>(
-      rtcp_dtls_transport == nullptr, *config_.field_trials);
+      rtcp_dtls_transport == nullptr, env_.field_trials());
   RTC_DCHECK(rtp_dtls_transport);
   srtp_transport->SetRtpPacketTransport(rtp_dtls_transport);
   if (rtcp_dtls_transport) {
@@ -513,7 +515,7 @@ JsepTransportController::CreateDtlsSrtpTransport(
     cricket::DtlsTransportInternal* rtcp_dtls_transport) {
   RTC_DCHECK_RUN_ON(network_thread_);
   auto dtls_srtp_transport = std::make_unique<DtlsSrtpTransport>(
-      rtcp_dtls_transport == nullptr, *config_.field_trials);
+      rtcp_dtls_transport == nullptr, env_.field_trials());
   if (config_.enable_external_auth) {
     dtls_srtp_transport->EnableExternalAuth();
   }
@@ -1090,8 +1092,8 @@ RTCError JsepTransportController::MaybeCreateJsepTransport(
 
   std::unique_ptr<cricket::SctpTransportInternal> sctp_transport;
   if (config_.sctp_factory) {
-    sctp_transport =
-        config_.sctp_factory->CreateSctpTransport(rtp_dtls_transport.get());
+    sctp_transport = config_.sctp_factory->CreateSctpTransport(
+        env_, rtp_dtls_transport.get());
   }
 
   std::unique_ptr<cricket::JsepTransport> jsep_transport =

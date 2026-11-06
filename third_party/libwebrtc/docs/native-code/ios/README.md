@@ -78,7 +78,7 @@ $ # debug build for 64-bit iOS
 $ gn gen out/ios_64 --args='target_os="ios" target_cpu="arm64"'
 
 $ # debug build for simulator
-$ gn gen out/ios_sim --args='target_os="ios" target_cpu="x64"'
+$ gn gen out/ios_sim --args='target_os="ios" target_cpu="x64" enable_run_ios_unittests_with_xctest=true'
 ```
 
 ## Compiling with ninja

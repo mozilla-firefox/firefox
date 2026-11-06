@@ -41,7 +41,6 @@ class MockRtpTransportControllerSend
                int rtcp_report_interval_ms,
                Transport*,
                const RtpSenderObservers&,
-               RtcEventLog*,
                std::unique_ptr<FecController>,
                const RtpSenderFrameEncryptionConfig&,
                rtc::scoped_refptr<FrameTransformerInterface>),

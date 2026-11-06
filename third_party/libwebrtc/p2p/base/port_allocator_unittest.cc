@@ -19,6 +19,8 @@
 #include "test/gtest.h"
 #include "test/scoped_key_value_config.h"
 
+using webrtc::IceCandidateType;
+
 static const char kContentName[] = "test content";
 // Based on ICE_UFRAG_LENGTH
 static const char kIceUfrag[] = "UF00";
@@ -294,7 +296,7 @@ TEST_F(PortAllocatorTest, SanitizeEmptyCandidateDefaultConfig) {
 
 TEST_F(PortAllocatorTest, SanitizeIpv4CandidateDefaultConfig) {
   cricket::Candidate input(1, "udp", rtc::SocketAddress(kIpv4Address, 443), 1,
-                           "username", "password", cricket::LOCAL_PORT_TYPE, 1,
+                           "username", "password", IceCandidateType::kHost, 1,
                            "foundation", 1, 1);
   cricket::Candidate output = allocator_->SanitizeCandidate(input);
   EXPECT_EQ(kIpv4AddressWithPort, output.address().ToString());
@@ -304,7 +306,7 @@ TEST_F(PortAllocatorTest, SanitizeIpv4CandidateDefaultConfig) {
 TEST_F(PortAllocatorTest, SanitizeIpv4CandidateMdnsObfuscationEnabled) {
   allocator_->SetMdnsObfuscationEnabledForTesting(true);
   cricket::Candidate input(1, "udp", rtc::SocketAddress(kIpv4Address, 443), 1,
-                           "username", "password", cricket::LOCAL_PORT_TYPE, 1,
+                           "username", "password", IceCandidateType::kHost, 1,
                            "foundation", 1, 1);
   cricket::Candidate output = allocator_->SanitizeCandidate(input);
   EXPECT_NE(kIpv4AddressWithPort, output.address().ToString());
@@ -315,7 +317,7 @@ TEST_F(PortAllocatorTest, SanitizePrflxCandidateMdnsObfuscationEnabled) {
   allocator_->SetMdnsObfuscationEnabledForTesting(true);
   // Create the candidate from an IP literal. This populates the hostname.
   cricket::Candidate input(1, "udp", rtc::SocketAddress(kIpv4Address, 443), 1,
-                           "username", "password", cricket::PRFLX_PORT_TYPE, 1,
+                           "username", "password", IceCandidateType::kPrflx, 1,
                            "foundation", 1, 1);
   cricket::Candidate output = allocator_->SanitizeCandidate(input);
   EXPECT_NE(kIpv4AddressWithPort, output.address().ToString());
@@ -327,7 +329,7 @@ TEST_F(PortAllocatorTest,
   allocator_->SetMdnsObfuscationEnabledForTesting(true);
   // Create the candidate from an IP literal. This populates the hostname.
   cricket::Candidate input(1, "udp", rtc::SocketAddress(kIpv4Address, 443), 1,
-                           "username", "password", cricket::PRFLX_PORT_TYPE, 1,
+                           "username", "password", IceCandidateType::kPrflx, 1,
                            "foundation", 1, 1);
 
   cricket::Candidate output = allocator_->SanitizeCandidate(input);
@@ -343,8 +345,8 @@ TEST_F(PortAllocatorTest, SanitizeIpv4NonLiteralMdnsObfuscationEnabled) {
   rtc::IPAddress ip;
   EXPECT_TRUE(IPFromString(kIpv4Address, &ip));
   cricket::Candidate input(1, "udp", rtc::SocketAddress(ip, 443), 1, "username",
-                           "password", cricket::LOCAL_PORT_TYPE, 1,
-                           "foundation", 1, 1);
+                           "password", IceCandidateType::kHost, 1, "foundation",
+                           1, 1);
   cricket::Candidate output = allocator_->SanitizeCandidate(input);
   EXPECT_NE(kIpv4AddressWithPort, output.address().ToString());
   EXPECT_EQ("", output.address().ipaddr().ToString());

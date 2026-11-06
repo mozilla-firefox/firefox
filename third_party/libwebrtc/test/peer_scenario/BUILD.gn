@@ -35,6 +35,7 @@ if (rtc_include_tests) {
       "../../api:time_controller",
       "../../api/audio_codecs:builtin_audio_decoder_factory",
       "../../api/audio_codecs:builtin_audio_encoder_factory",
+      "../../api/environment",
       "../../api/rtc_event_log:rtc_event_log_factory",
       "../../api/task_queue:default_task_queue_factory",
       "../../api/transport:field_trial_based_config",

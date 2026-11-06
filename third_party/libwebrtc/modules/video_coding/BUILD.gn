@@ -474,6 +474,7 @@ rtc_library("webrtc_h264") {
   deps = [
     ":video_codec_interface",
     ":video_coding_utility",
+    "../../api/environment",
     "../../api/transport/rtp:dependency_descriptor",
     "../../api/video:video_codec_constants",
     "../../api/video:video_frame",
@@ -497,6 +498,7 @@ rtc_library("webrtc_h264") {
     "//third_party/libyuv",
   ]
   absl_deps = [
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/container:inlined_vector",
     "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/types:optional",
@@ -584,6 +586,7 @@ rtc_library("webrtc_vp8") {
   ]
   absl_deps = [
     "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/strings:strings",
     "//third_party/abseil-cpp/absl/types:optional",
   ]
@@ -679,6 +682,7 @@ rtc_library("webrtc_vp9") {
     "../../api:field_trials_view",
     "../../api:refcountedbase",
     "../../api:scoped_refptr",
+    "../../api/environment",
     "../../api/transport:field_trial_based_config",
     "../../api/video:video_frame",
     "../../api/video:video_frame_i010",
@@ -700,7 +704,6 @@ rtc_library("webrtc_vp9") {
     "../../rtc_base/experiments:field_trial_parser",
     "../../rtc_base/experiments:rate_control_settings",
     "../../rtc_base/synchronization:mutex",
-    "../../system_wrappers:field_trial",
     "../rtp_rtcp:rtp_rtcp_format",
     "svc:scalability_mode_util",
     "svc:scalability_structures",
@@ -710,6 +713,7 @@ rtc_library("webrtc_vp9") {
   ]
   absl_deps = [
     "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/container:inlined_vector",
     "//third_party/abseil-cpp/absl/memory",
     "//third_party/abseil-cpp/absl/strings:strings",
@@ -829,6 +833,8 @@ if (rtc_include_tests) {
       "../../api:scoped_refptr",
       "../../api:sequence_checker",
       "../../api:videocodec_test_fixture_api",
+      "../../api/environment",
+      "../../api/environment:environment_factory",
       "../../api/numerics:numerics",
       "../../api/task_queue",
       "../../api/task_queue:default_task_queue_factory",
@@ -1080,6 +1086,7 @@ if (rtc_include_tests) {
       "../../test:explicit_key_value_config",
       "../../test:field_trial",
       "../../test:fileutils",
+      "../../test:scoped_key_value_config",
       "../../test:test_support",
       "../../test:video_test_common",
       "../rtp_rtcp:rtp_rtcp_format",

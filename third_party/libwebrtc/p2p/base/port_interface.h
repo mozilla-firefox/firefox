@@ -52,6 +52,7 @@ class PortInterface {
  public:
   virtual ~PortInterface();
 
+  // TODO: bugs.webrtc.org/15846 - Change return type to IceCandidateType.
   virtual const absl::string_view Type() const = 0;
   virtual const rtc::Network* Network() const = 0;
 

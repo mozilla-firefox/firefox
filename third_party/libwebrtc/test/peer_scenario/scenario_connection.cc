@@ -25,7 +25,8 @@ class ScenarioIceConnectionImpl : public ScenarioIceConnection,
                                   private JsepTransportController::Observer,
                                   private RtpPacketSinkInterface {
  public:
-  ScenarioIceConnectionImpl(test::NetworkEmulationManagerImpl* net,
+  ScenarioIceConnectionImpl(const Environment& env,
+                            test::NetworkEmulationManagerImpl* net,
                             IceConnectionObserver* observer);
   ~ScenarioIceConnectionImpl() override;
 
@@ -73,12 +74,14 @@ class ScenarioIceConnectionImpl : public ScenarioIceConnection,
 };
 
 std::unique_ptr<ScenarioIceConnection> ScenarioIceConnection::Create(
+    const Environment& env,
     webrtc::test::NetworkEmulationManagerImpl* net,
     IceConnectionObserver* observer) {
-  return std::make_unique<ScenarioIceConnectionImpl>(net, observer);
+  return std::make_unique<ScenarioIceConnectionImpl>(env, net, observer);
 }
 
 ScenarioIceConnectionImpl::ScenarioIceConnectionImpl(
+    const Environment& env,
     test::NetworkEmulationManagerImpl* net,
     IceConnectionObserver* observer)
     : observer_(observer),
@@ -100,7 +103,8 @@ ScenarioIceConnectionImpl::ScenarioIceConnectionImpl(
           new cricket::BasicPortAllocator(manager_->network_manager(),
                                           manager_->packet_socket_factory())),
       jsep_controller_(
-          new JsepTransportController(network_thread_,
+          new JsepTransportController(env,
+                                      network_thread_,
                                       port_allocator_.get(),
                                       /*async_resolver_factory*/ nullptr,
                                       CreateJsepConfig())) {
@@ -135,7 +139,6 @@ JsepTransportController::Config ScenarioIceConnectionImpl::CreateJsepConfig() {
     RTC_DCHECK_RUN_ON(network_thread_);
     observer_->OnPacketReceived(packet);
   };
-  config.field_trials = &field_trials;
   return config;
 }
 

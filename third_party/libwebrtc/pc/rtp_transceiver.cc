@@ -40,16 +40,17 @@ namespace webrtc {
 namespace {
 
 RTCError VerifyCodecPreferences(
-    const std::vector<RtpCodecCapability>& codecs,
-    const std::vector<cricket::Codec>& recv_codecs) {
+    const std::vector<RtpCodecCapability>& unfiltered_codecs,
+    const std::vector<cricket::Codec>& recv_codecs,
+    const FieldTrialsView& field_trials) {
   // If the intersection between codecs and
-  // RTCRtpSender.getCapabilities(kind).codecs or the intersection between
-  // codecs and RTCRtpReceiver.getCapabilities(kind).codecs contains only
-  // contains RTX, RED, FEC or CN codecs or is an empty set, throw
+  // RTCRtpReceiver.getCapabilities(kind).codecs only contains RTX, RED, FEC
+  // codecs or Comfort Noise codecs or is an empty set, throw
   // InvalidModificationError.
   // This ensures that we always have something to offer, regardless of
   // transceiver.direction.
-
+  // TODO(fippo): clean up the filtering killswitch
+  std::vector<RtpCodecCapability> codecs = unfiltered_codecs;
   if (!absl::c_any_of(codecs, [&recv_codecs](const RtpCodecCapability& codec) {
         return codec.IsMediaCodec() &&
                absl::c_any_of(recv_codecs,
@@ -71,10 +72,26 @@ RTCError VerifyCodecPreferences(
           return codec.MatchesRtpCodec(codec_preference);
         });
     if (!is_recv_codec) {
-      LOG_AND_RETURN_ERROR(
-          RTCErrorType::INVALID_MODIFICATION,
-          std::string("Invalid codec preferences: invalid codec with name \"") +
-              codec_preference.name + "\".");
+      if (!field_trials.IsDisabled(
+              "WebRTC-SetCodecPreferences-ReceiveOnlyFilterInsteadOfThrow")) {
+        LOG_AND_RETURN_ERROR(
+            RTCErrorType::INVALID_MODIFICATION,
+            std::string(
+                "Invalid codec preferences: invalid codec with name \"") +
+                codec_preference.name + "\".");
+      } else {
+        // Killswitch behavior: filter out any codec not in receive codecs.
+        codecs.erase(std::remove_if(
+            codecs.begin(), codecs.end(),
+            [&recv_codecs](const RtpCodecCapability& codec) {
+              return codec.IsMediaCodec() &&
+                     !absl::c_any_of(
+                         recv_codecs,
+                         [&codec](const cricket::Codec& recv_codec) {
+                           return recv_codec.MatchesRtpCodec(codec);
+                         });
+            }));
+      }
     }
   }
 
@@ -670,7 +687,8 @@ RTCError RtpTransceiver::SetCodecPreferences(
   } else if (media_type_ == cricket::MEDIA_TYPE_VIDEO) {
     recv_codecs = media_engine()->video().recv_codecs(context()->use_rtx());
   }
-  result = VerifyCodecPreferences(codecs, recv_codecs);
+  result = VerifyCodecPreferences(codecs, recv_codecs,
+                                  context()->env().field_trials());
 
   if (result.ok()) {
     codec_preferences_ = codecs;

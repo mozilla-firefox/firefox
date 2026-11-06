@@ -214,10 +214,10 @@ class PeerConnectionIceBaseTest : public ::testing::Test {
   cricket::Candidate CreateLocalUdpCandidate(
       const rtc::SocketAddress& address) {
     cricket::Candidate candidate;
+    RTC_DCHECK_EQ(candidate.type(), IceCandidateType::kHost);
     candidate.set_component(cricket::ICE_CANDIDATE_COMPONENT_DEFAULT);
     candidate.set_protocol(cricket::UDP_PROTOCOL_NAME);
     candidate.set_address(address);
-    candidate.set_type(cricket::LOCAL_PORT_TYPE);
     return candidate;
   }
 

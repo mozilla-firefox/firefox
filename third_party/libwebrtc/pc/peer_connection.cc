@@ -773,10 +773,8 @@ JsepTransportController* PeerConnection::InitializeTransportController_n(
         }
       };
 
-  config.field_trials = &env_.field_trials();
-
   transport_controller_.reset(new JsepTransportController(
-      network_thread(), port_allocator_.get(),
+      env_, network_thread(), port_allocator_.get(),
       async_dns_resolver_factory_.get(), std::move(config)));
 
   transport_controller_->SubscribeIceConnectionState(

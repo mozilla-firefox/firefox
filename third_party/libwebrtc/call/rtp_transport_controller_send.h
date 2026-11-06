@@ -42,7 +42,6 @@
 
 namespace webrtc {
 class FrameEncryptorInterface;
-class RtcEventLog;
 
 class RtpTransportControllerSend final
     : public RtpTransportControllerSendInterface,
@@ -66,7 +65,6 @@ class RtpTransportControllerSend final
       int rtcp_report_interval_ms,
       Transport* send_transport,
       const RtpSenderObservers& observers,
-      RtcEventLog* event_log,
       std::unique_ptr<FecController> fec_controller,
       const RtpSenderFrameEncryptionConfig& frame_encryption_config,
       rtc::scoped_refptr<FrameTransformerInterface> frame_transformer) override;

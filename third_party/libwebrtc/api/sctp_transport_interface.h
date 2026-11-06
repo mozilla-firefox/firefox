@@ -53,7 +53,7 @@ class RTC_EXPORT SctpTransportInformation {
   absl::optional<int> MaxChannels() const { return max_channels_; }
 
  private:
-  SctpTransportState state_;
+  SctpTransportState state_ = SctpTransportState::kNew;
   rtc::scoped_refptr<DtlsTransportInterface> dtls_transport_;
   absl::optional<double> max_message_size_;
   absl::optional<int> max_channels_;

@@ -16,13 +16,14 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/environment/environment.h"
 #include "api/units/data_rate.h"
 #include "api/video/render_resolution.h"
 #include "api/video_codecs/sdp_video_format.h"
+#include "api/video_codecs/video_encoder.h"
+#include "rtc_base/checks.h"
 
 namespace webrtc {
-
-class VideoEncoder;
 
 // A factory that creates VideoEncoders.
 // NOTE: This class is still under development and may change without notice.
@@ -96,8 +97,21 @@ class VideoEncoderFactory {
   }
 
   // Creates a VideoEncoder for the specified format.
+  virtual std::unique_ptr<VideoEncoder> Create(const Environment& env,
+                                               const SdpVideoFormat& format) {
+    return CreateVideoEncoder(format);
+  }
+
+  // Deprecated in favor of the `Create` above.
+  // TODO: bugs.webrtc.org/15860 - Make private when all callers are updated
+  // to use Create function above. Delete when all derived classes implement
+  // `Create` instead of this function.
   virtual std::unique_ptr<VideoEncoder> CreateVideoEncoder(
-      const SdpVideoFormat& format) = 0;
+      const SdpVideoFormat& format) {
+    // Newer code shouldn't call this function,
+    // Older code should implement it in derived classes.
+    RTC_CHECK_NOTREACHED();
+  }
 
   // This method creates a EncoderSelector to use for a VideoSendStream.
   // (and hence should probably been called CreateEncoderSelector()).

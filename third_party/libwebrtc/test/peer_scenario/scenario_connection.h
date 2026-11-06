@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "api/candidate.h"
+#include "api/environment/environment.h"
 #include "api/jsep.h"
 #include "p2p/base/transport_description.h"
 #include "test/network/network_emulation_manager.h"
@@ -41,6 +42,7 @@ class ScenarioIceConnection {
     ~IceConnectionObserver() = default;
   };
   static std::unique_ptr<ScenarioIceConnection> Create(
+      const Environment& env,
       test::NetworkEmulationManagerImpl* net,
       IceConnectionObserver* observer);
 

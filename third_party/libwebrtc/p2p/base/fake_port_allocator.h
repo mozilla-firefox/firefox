@@ -64,7 +64,7 @@ class TestUDPPort : public UDPPort {
               bool emit_localhost_for_anyaddress,
               const webrtc::FieldTrialsView* field_trials)
       : UDPPort(thread,
-                LOCAL_PORT_TYPE,
+                webrtc::IceCandidateType::kHost,
                 factory,
                 network,
                 min_port,

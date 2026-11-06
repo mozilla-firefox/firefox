@@ -13,6 +13,8 @@
 
 #include <memory>
 
+#include "api/environment/environment.h"
+
 // These classes are not part of the API, and are treated as opaque pointers.
 namespace cricket {
 class SctpTransportInternal;
@@ -34,6 +36,7 @@ class SctpTransportFactoryInterface {
 
   // Create an SCTP transport using `channel` for the underlying transport.
   virtual std::unique_ptr<cricket::SctpTransportInternal> CreateSctpTransport(
+      const Environment& env,
       rtc::PacketTransportInternal* channel) = 0;
 };
 

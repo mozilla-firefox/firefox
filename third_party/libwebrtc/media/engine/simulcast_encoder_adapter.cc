@@ -19,6 +19,7 @@
 #include <utility>
 
 #include "absl/algorithm/container.h"
+#include "absl/types/optional.h"
 #include "api/field_trials_view.h"
 #include "api/scoped_refptr.h"
 #include "api/transport/field_trial_based_config.h"
@@ -808,7 +809,8 @@ webrtc::VideoCodec SimulcastEncoderAdapter::MakeStreamCodec(
   // By default, `scalability_mode` comes from SimulcastStream when
   // SimulcastEncoderAdapter is used. This allows multiple encodings of L1Tx,
   // but SimulcastStream currently does not support multiple spatial layers.
-  ScalabilityMode scalability_mode = stream_params.GetScalabilityMode();
+  absl::optional<ScalabilityMode> scalability_mode =
+      stream_params.GetScalabilityMode();
   // To support the full set of scalability modes in the event that this is the
   // only active encoding, prefer VideoCodec::GetScalabilityMode() if all other
   // encodings are inactive.
@@ -821,10 +823,12 @@ webrtc::VideoCodec SimulcastEncoderAdapter::MakeStreamCodec(
       }
     }
     if (only_active_stream) {
-      scalability_mode = codec.GetScalabilityMode().value();
+      scalability_mode = codec.GetScalabilityMode();
     }
   }
-  codec_params.SetScalabilityMode(scalability_mode);
+  if (scalability_mode.has_value()) {
+    codec_params.SetScalabilityMode(*scalability_mode);
+  }
   // Settings that are based on stream/resolution.
   if (is_lowest_quality_stream) {
     // Settings for lowest spatial resolutions.

@@ -13,6 +13,8 @@
 #include <memory>
 #include <utility>
 
+#include "api/environment/environment.h"
+#include "api/environment/environment_factory.h"
 #include "net/dcsctp/public/mock_dcsctp_socket.h"
 #include "net/dcsctp/public/mock_dcsctp_socket_factory.h"
 #include "p2p/base/fake_packet_transport.h"
@@ -49,7 +51,10 @@ static_assert(!std::is_abstract_v<MockDataChannelSink>);
 
 class Peer {
  public:
-  Peer() : fake_packet_transport_("transport"), simulated_clock_(1000) {
+  Peer()
+      : fake_packet_transport_("transport"),
+        simulated_clock_(1000),
+        env_(CreateEnvironment(&simulated_clock_)) {
     auto socket_ptr = std::make_unique<dcsctp::MockDcSctpSocket>();
     socket_ = socket_ptr.get();
 
@@ -60,7 +65,7 @@ class Peer {
         .WillOnce(Return(ByMove(std::move(socket_ptr))));
 
     sctp_transport_ = std::make_unique<webrtc::DcSctpTransport>(
-        rtc::Thread::Current(), &fake_packet_transport_, &simulated_clock_,
+        env_, rtc::Thread::Current(), &fake_packet_transport_,
         std::move(mock_dcsctp_socket_factory));
     sctp_transport_->SetDataChannelSink(&sink_);
     sctp_transport_->SetOnConnectedCallback([this]() { sink_.OnConnected(); });
@@ -68,6 +73,7 @@ class Peer {
 
   rtc::FakePacketTransport fake_packet_transport_;
   webrtc::SimulatedClock simulated_clock_;
+  Environment env_;
   dcsctp::MockDcSctpSocket* socket_;
   std::unique_ptr<webrtc::DcSctpTransport> sctp_transport_;
   NiceMock<MockDataChannelSink> sink_;

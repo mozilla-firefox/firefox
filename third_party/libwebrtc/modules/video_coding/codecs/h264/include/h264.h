@@ -16,8 +16,11 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/nullability.h"
+#include "api/environment/environment.h"
 #include "api/video_codecs/h264_profile_level_id.h"
 #include "api/video_codecs/scalability_mode.h"
+#include "api/video_codecs/video_encoder.h"
 #include "media/base/codec.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 #include "rtc_base/system/rtc_export.h"
@@ -59,6 +62,14 @@ class RTC_EXPORT H264Encoder : public VideoEncoder {
 
   ~H264Encoder() override {}
 };
+
+struct H264EncoderSettings {
+  H264PacketizationMode packetization_mode =
+      H264PacketizationMode::NonInterleaved;
+};
+absl::Nonnull<std::unique_ptr<VideoEncoder>> CreateH264Encoder(
+    const Environment& env,
+    H264EncoderSettings settings = {});
 
 class RTC_EXPORT H264Decoder : public VideoDecoder {
  public:

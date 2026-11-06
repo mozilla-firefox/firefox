@@ -13,6 +13,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "api/fec_controller_override.h"
@@ -38,6 +39,14 @@ namespace webrtc {
 
 class LibvpxVp8Encoder : public VideoEncoder {
  public:
+  LibvpxVp8Encoder(const Environment& env,
+                   Vp8EncoderSettings settings,
+                   std::unique_ptr<LibvpxInterface> interface)
+      // TODO: bugs.webrtc.org/15860 - Save `env` and use field trials from it
+      // when constructor below can be removed.
+      : LibvpxVp8Encoder(std::move(interface), std::move(settings)) {}
+
+  // Deprecated, bugs.webrtc.org/15860
   LibvpxVp8Encoder(std::unique_ptr<LibvpxInterface> interface,
                    VP8Encoder::Settings settings);
   ~LibvpxVp8Encoder() override;

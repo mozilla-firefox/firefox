@@ -86,6 +86,7 @@
 #include "rtc_base/thread.h"
 
 namespace cricket {
+using ::webrtc::IceCandidateType;
 using ::webrtc::SafeTask;
 using ::webrtc::TimeDelta;
 
@@ -99,7 +100,7 @@ TCPPort::TCPPort(rtc::Thread* thread,
                  bool allow_listen,
                  const webrtc::FieldTrialsView* field_trials)
     : Port(thread,
-           LOCAL_PORT_TYPE,
+           IceCandidateType::kHost,
            factory,
            network,
            min_port,
@@ -181,10 +182,10 @@ void TCPPort::PrepareAddress() {
     // failed, we still want to add the socket address.
     RTC_LOG(LS_VERBOSE) << "Preparing TCP address, current state: "
                         << static_cast<int>(listen_socket_->GetState());
-    AddAddress(listen_socket_->GetLocalAddress(),
-               listen_socket_->GetLocalAddress(), rtc::SocketAddress(),
-               TCP_PROTOCOL_NAME, "", TCPTYPE_PASSIVE_STR, LOCAL_PORT_TYPE,
-               ICE_TYPE_PREFERENCE_HOST_TCP, 0, "", true);
+    AddAddress(
+        listen_socket_->GetLocalAddress(), listen_socket_->GetLocalAddress(),
+        rtc::SocketAddress(), TCP_PROTOCOL_NAME, "", TCPTYPE_PASSIVE_STR,
+        IceCandidateType::kHost, ICE_TYPE_PREFERENCE_HOST_TCP, 0, "", true);
   } else {
     RTC_LOG(LS_INFO) << ToString()
                      << ": Not listening due to firewall restrictions.";
@@ -199,7 +200,8 @@ void TCPPort::PrepareAddress() {
     AddAddress(rtc::SocketAddress(Network()->GetBestIP(), DISCARD_PORT),
                rtc::SocketAddress(Network()->GetBestIP(), 0),
                rtc::SocketAddress(), TCP_PROTOCOL_NAME, "", TCPTYPE_ACTIVE_STR,
-               LOCAL_PORT_TYPE, ICE_TYPE_PREFERENCE_HOST_TCP, 0, "", true);
+               IceCandidateType::kHost, ICE_TYPE_PREFERENCE_HOST_TCP, 0, "",
+               true);
   }
 }
 

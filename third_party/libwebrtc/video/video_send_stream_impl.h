@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "absl/types/optional.h"
+#include "api/environment/environment.h"
 #include "api/field_trials_view.h"
 #include "api/metronome/metronome.h"
 #include "api/task_queue/pending_task_safety_flag.h"
@@ -73,21 +74,18 @@ class VideoSendStreamImpl : public webrtc::VideoSendStream,
   using RtpStateMap = std::map<uint32_t, RtpState>;
   using RtpPayloadStateMap = std::map<uint32_t, RtpPayloadState>;
 
-  VideoSendStreamImpl(Clock* clock,
+  VideoSendStreamImpl(const Environment& env,
                       int num_cpu_cores,
-                      TaskQueueFactory* task_queue_factory,
                       RtcpRttStats* call_stats,
                       RtpTransportControllerSendInterface* transport,
                       Metronome* metronome,
                       BitrateAllocatorInterface* bitrate_allocator,
                       SendDelayStats* send_delay_stats,
-                      RtcEventLog* event_log,
                       VideoSendStream::Config config,
                       VideoEncoderConfig encoder_config,
                       const RtpStateMap& suspended_ssrcs,
                       const RtpPayloadStateMap& suspended_payload_states,
                       std::unique_ptr<FecController> fec_controller,
-                      const FieldTrialsView& field_trials,
                       std::unique_ptr<VideoStreamEncoderInterface>
                           video_stream_encoder_for_test = nullptr);
   ~VideoSendStreamImpl() override;
@@ -187,6 +185,7 @@ class VideoSendStreamImpl : public webrtc::VideoSendStream,
   MediaStreamAllocationConfig GetAllocationConfig() const
       RTC_RUN_ON(thread_checker_);
 
+  const Environment env_;
   RTC_NO_UNIQUE_ADDRESS SequenceChecker thread_checker_;
 
   RtpTransportControllerSendInterface* const transport_;
@@ -200,7 +199,6 @@ class VideoSendStreamImpl : public webrtc::VideoSendStream,
   RtpVideoSenderInterface* const rtp_video_sender_;
   bool running_ RTC_GUARDED_BY(thread_checker_) = false;
 
-  Clock* const clock_;
   const bool has_alr_probing_;
   const PacingConfig pacing_config_;
 

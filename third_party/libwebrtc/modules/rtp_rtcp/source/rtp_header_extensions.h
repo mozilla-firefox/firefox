@@ -100,9 +100,6 @@ class AudioLevelExtension {
                     bool voice_activity,
                     uint8_t audio_level);
 };
-// TODO: bugs.webrtc.org/15788 - In two weeks remove this alias and put new
-// meaning into AudioLevel class.
-using AudioLevel [[deprecated]] = AudioLevelExtension;
 
 #if !defined(WEBRTC_MOZILLA_BUILD)
 class CsrcAudioLevel {

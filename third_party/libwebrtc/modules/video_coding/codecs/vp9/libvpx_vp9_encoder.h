@@ -37,6 +37,11 @@ namespace webrtc {
 
 class LibvpxVp9Encoder : public VP9Encoder {
  public:
+  LibvpxVp9Encoder(const Environment& env,
+                   Vp9EncoderSettings settings,
+                   std::unique_ptr<LibvpxInterface> interface);
+
+  // Deprecated, bugs.webrtc.org/15860
   LibvpxVp9Encoder(const cricket::VideoCodec& codec,
                    std::unique_ptr<LibvpxInterface> interface,
                    const FieldTrialsView& trials);
@@ -61,6 +66,10 @@ class LibvpxVp9Encoder : public VP9Encoder {
   EncoderInfo GetEncoderInfo() const override;
 
  private:
+  LibvpxVp9Encoder(std::unique_ptr<LibvpxInterface> interface,
+                   VP9Profile profile,
+                   const FieldTrialsView& trials);
+
   // Determine number of encoder threads to use.
   int NumberOfThreads(int width, int height, int number_of_cores);
 

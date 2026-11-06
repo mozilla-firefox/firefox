@@ -12,6 +12,7 @@ rtc_source_set("fake_sctp_transport") {
   visibility = [ "*" ]
   sources = [ "fake_sctp_transport.h" ]
   deps = [
+    "../../../api/environment",
     "../../../api/transport:sctp_transport_factory_interface",
     "../../../media:rtc_data_sctp_transport_internal",
   ]

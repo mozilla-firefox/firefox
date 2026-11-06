@@ -13,6 +13,7 @@
 
 #include <memory>
 
+#include "api/environment/environment.h"
 #include "api/transport/sctp_transport_factory_interface.h"
 #include "media/sctp/sctp_transport_internal.h"
 
@@ -61,6 +62,7 @@ class FakeSctpTransport : public cricket::SctpTransportInternal {
 class FakeSctpTransportFactory : public webrtc::SctpTransportFactoryInterface {
  public:
   std::unique_ptr<cricket::SctpTransportInternal> CreateSctpTransport(
+      const webrtc::Environment& env,
       rtc::PacketTransportInternal*) override {
     last_fake_sctp_transport_ = new FakeSctpTransport();
     return std::unique_ptr<cricket::SctpTransportInternal>(

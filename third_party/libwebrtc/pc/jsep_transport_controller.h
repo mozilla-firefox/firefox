@@ -26,6 +26,7 @@
 #include "api/async_dns_resolver.h"
 #include "api/candidate.h"
 #include "api/crypto/crypto_options.h"
+#include "api/environment/environment.h"
 #include "api/ice_transport_factory.h"
 #include "api/ice_transport_interface.h"
 #include "api/jsep.h"
@@ -138,9 +139,6 @@ class JsepTransportController : public sigslot::has_slots<> {
     // Factory for SCTP transports.
     SctpTransportFactoryInterface* sctp_factory = nullptr;
     std::function<void(rtc::SSLHandshakeError)> on_dtls_handshake_error_;
-
-    // Field trials.
-    const FieldTrialsView* field_trials;
   };
 
   // The ICE related events are fired on the `network_thread`.
@@ -148,6 +146,7 @@ class JsepTransportController : public sigslot::has_slots<> {
   // and destruction of the JsepTransportController must occur on the
   // `network_thread`.
   JsepTransportController(
+      const Environment& env,
       rtc::Thread* network_thread,
       cricket::PortAllocator* port_allocator,
       AsyncDnsResolverFactoryInterface* async_dns_resolver_factory,
@@ -483,6 +482,7 @@ class JsepTransportController : public sigslot::has_slots<> {
   bool OnTransportChanged(const std::string& mid,
                           cricket::JsepTransport* transport);
 
+  const Environment env_;
   rtc::Thread* const network_thread_ = nullptr;
   cricket::PortAllocator* const port_allocator_ = nullptr;
   AsyncDnsResolverFactoryInterface* const async_dns_resolver_factory_ = nullptr;

@@ -102,7 +102,7 @@ void ConfigureSvc(VideoCodec& codec_settings,
 class TestVp9Impl : public VideoCodecUnitTest {
  protected:
   std::unique_ptr<VideoEncoder> CreateEncoder() override {
-    return VP9Encoder::Create();
+    return CreateVp9Encoder(env_);
   }
 
   std::unique_ptr<VideoDecoder> CreateDecoder() override {
@@ -255,7 +255,7 @@ TEST_F(TestVp9Impl, SwitchInputPixelFormatsWithoutReconfigure) {
 }
 
 TEST(Vp9ImplTest, ParserQpEqualsEncodedQp) {
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   encoder->InitEncode(&codec_settings, kSettings);
 
@@ -272,7 +272,7 @@ TEST(Vp9ImplTest, ParserQpEqualsEncodedQp) {
 }
 
 TEST(Vp9ImplTest, EncodeAttachesTemplateStructureWithSvcController) {
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   EXPECT_EQ(encoder->InitEncode(&codec_settings, kSettings),
             WEBRTC_VIDEO_CODEC_OK);
@@ -292,7 +292,7 @@ TEST(Vp9ImplTest, EncodeAttachesTemplateStructureWithSvcController) {
 }
 
 TEST(Vp9ImplTest, EncoderWith2TemporalLayers) {
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   codec_settings.VP9()->numberOfTemporalLayers = 2;
   // Tl0PidIdx is only used in non-flexible mode.
@@ -314,7 +314,7 @@ TEST(Vp9ImplTest, EncoderWith2TemporalLayers) {
 }
 
 TEST(Vp9ImplTest, EncodeTemporalLayersWithSvcController) {
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   codec_settings.VP9()->numberOfTemporalLayers = 2;
   EXPECT_EQ(encoder->InitEncode(&codec_settings, kSettings),
@@ -343,7 +343,7 @@ TEST(Vp9ImplTest, EncodeTemporalLayersWithSvcController) {
 }
 
 TEST(Vp9ImplTest, EncoderWith2SpatialLayers) {
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   codec_settings.VP9()->numberOfSpatialLayers = 2;
   EXPECT_EQ(encoder->InitEncode(&codec_settings, kSettings),
@@ -361,7 +361,7 @@ TEST(Vp9ImplTest, EncoderWith2SpatialLayers) {
 }
 
 TEST(Vp9ImplTest, EncodeSpatialLayersWithSvcController) {
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   codec_settings.VP9()->numberOfSpatialLayers = 2;
   EXPECT_EQ(encoder->InitEncode(&codec_settings, kSettings),
@@ -503,7 +503,7 @@ TEST(Vp9ImplTest, EnableDisableSpatialLayersWithSvcController) {
   // Note: bit rate allocation is high to avoid frame dropping due to rate
   // control, the encoder should always produce a frame. A dropped
   // frame indicates a problem and the test will fail.
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   ConfigureSvc(codec_settings, num_spatial_layers);
   codec_settings.SetFrameDropEnabled(true);
@@ -570,7 +570,7 @@ MATCHER_P2(GenericLayerIs, spatial_id, temporal_id, "") {
 }
 
 TEST(Vp9ImplTest, SpatialUpswitchNotAtGOFBoundary) {
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   ConfigureSvc(codec_settings, /*num_spatial_layers=*/3,
                /*num_temporal_layers=*/3);
@@ -774,7 +774,7 @@ TEST(Vp9ImplTest,
   // Must not be multiple of temporal period to exercise all code paths.
   const size_t num_frames_to_encode = 5;
 
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   ConfigureSvc(codec_settings, num_spatial_layers, num_temporal_layers);
   codec_settings.SetFrameDropEnabled(false);
@@ -1851,7 +1851,7 @@ TEST_P(Vp9ImplWithLayeringTest, FlexibleMode) {
   // encoder and writes it into RTP payload descriptor. Check that reference
   // list in payload descriptor matches the predefined one, which is used
   // in non-flexible mode.
-  std::unique_ptr<VideoEncoder> encoder = VP9Encoder::Create();
+  std::unique_ptr<VideoEncoder> encoder = CreateVp9Encoder(CreateEnvironment());
   VideoCodec codec_settings = DefaultCodecSettings();
   codec_settings.VP9()->flexibleMode = true;
   codec_settings.SetFrameDropEnabled(false);
@@ -2040,11 +2040,7 @@ class TestVp9ImplProfile2 : public TestVp9Impl {
   }
 
   std::unique_ptr<VideoEncoder> CreateEncoder() override {
-    cricket::VideoCodec profile2_codec =
-        cricket::CreateVideoCodec(cricket::kVp9CodecName);
-    profile2_codec.SetParam(kVP9FmtpProfileId,
-                            VP9ProfileToString(VP9Profile::kProfile2));
-    return VP9Encoder::Create(profile2_codec);
+    return CreateVp9Encoder(env_, {.profile = VP9Profile::kProfile2});
   }
 
   std::unique_ptr<VideoDecoder> CreateDecoder() override {

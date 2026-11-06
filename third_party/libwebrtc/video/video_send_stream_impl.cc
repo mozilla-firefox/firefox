@@ -24,6 +24,7 @@
 #include "api/adaptation/resource.h"
 #include "api/call/bitrate_allocation.h"
 #include "api/crypto/crypto_options.h"
+#include "api/environment/environment.h"
 #include "api/fec_controller.h"
 #include "api/field_trials_view.h"
 #include "api/metronome/metronome.h"
@@ -340,27 +341,25 @@ RtpSenderObservers CreateObservers(RtcpRttStats* call_stats,
 }
 
 std::unique_ptr<VideoStreamEncoderInterface> CreateVideoStreamEncoder(
-    Clock* clock,
+    const Environment& env,
     int num_cpu_cores,
-    TaskQueueFactory* task_queue_factory,
     SendStatisticsProxy* stats_proxy,
     const VideoStreamEncoderSettings& encoder_settings,
     VideoStreamEncoder::BitrateAllocationCallbackType
         bitrate_allocation_callback_type,
-    const FieldTrialsView& field_trials,
     Metronome* metronome,
     webrtc::VideoEncoderFactory::EncoderSelectorInterface* encoder_selector) {
   std::unique_ptr<TaskQueueBase, TaskQueueDeleter> encoder_queue =
-      task_queue_factory->CreateTaskQueue("EncoderQueue",
-                                          TaskQueueFactory::Priority::NORMAL);
+      env.task_queue_factory().CreateTaskQueue(
+          "EncoderQueue", TaskQueueFactory::Priority::NORMAL);
   TaskQueueBase* encoder_queue_ptr = encoder_queue.get();
   return std::make_unique<VideoStreamEncoder>(
-      clock, num_cpu_cores, stats_proxy, encoder_settings,
+      env, num_cpu_cores, stats_proxy, encoder_settings,
       std::make_unique<OveruseFrameDetector>(stats_proxy),
       FrameCadenceAdapterInterface::Create(
-          clock, encoder_queue_ptr, metronome,
-          /*worker_queue=*/TaskQueueBase::Current(), field_trials),
-      std::move(encoder_queue), bitrate_allocation_callback_type, field_trials,
+          &env.clock(), encoder_queue_ptr, metronome,
+          /*worker_queue=*/TaskQueueBase::Current(), env.field_trials()),
+      std::move(encoder_queue), bitrate_allocation_callback_type,
       encoder_selector);
 }
 
@@ -385,24 +384,25 @@ PacingConfig::PacingConfig(const PacingConfig&) = default;
 PacingConfig::~PacingConfig() = default;
 
 VideoSendStreamImpl::VideoSendStreamImpl(
-    Clock* clock,
+    const Environment& env,
     int num_cpu_cores,
-    TaskQueueFactory* task_queue_factory,
     RtcpRttStats* call_stats,
     RtpTransportControllerSendInterface* transport,
     Metronome* metronome,
     BitrateAllocatorInterface* bitrate_allocator,
     SendDelayStats* send_delay_stats,
-    RtcEventLog* event_log,
     VideoSendStream::Config config,
     VideoEncoderConfig encoder_config,
     const std::map<uint32_t, RtpState>& suspended_ssrcs,
     const std::map<uint32_t, RtpPayloadState>& suspended_payload_states,
     std::unique_ptr<FecController> fec_controller,
-    const FieldTrialsView& field_trials,
     std::unique_ptr<VideoStreamEncoderInterface> video_stream_encoder_for_test)
-    : transport_(transport),
-      stats_proxy_(clock, config, encoder_config.content_type, field_trials),
+    : env_(env),
+      transport_(transport),
+      stats_proxy_(&env_.clock(),
+                   config,
+                   encoder_config.content_type,
+                   env_.field_trials()),
       send_packet_observer_(&stats_proxy_, send_delay_stats),
       config_(std::move(config)),
       content_type_(encoder_config.content_type),
@@ -410,17 +410,16 @@ VideoSendStreamImpl::VideoSendStreamImpl(
           video_stream_encoder_for_test
               ? std::move(video_stream_encoder_for_test)
               : CreateVideoStreamEncoder(
-                    clock,
+                    env_,
                     num_cpu_cores,
-                    task_queue_factory,
                     &stats_proxy_,
                     config_.encoder_settings,
-                    GetBitrateAllocationCallbackType(config_, field_trials),
-                    field_trials,
+                    GetBitrateAllocationCallbackType(config_,
+                                                     env_.field_trials()),
                     metronome,
                     config_.encoder_selector)),
       encoder_feedback_(
-          clock,
+          &env_.clock(),
           SupportsPerLayerPictureLossIndication(
               encoder_config.video_format.parameters),
           config_.rtp.ssrcs,
@@ -438,18 +437,15 @@ VideoSendStreamImpl::VideoSendStreamImpl(
                           &encoder_feedback_,
                           &stats_proxy_,
                           &send_packet_observer_),
-          event_log,
           std::move(fec_controller),
           CreateFrameEncryptionConfig(&config_),
           config_.frame_transformer)),
-      clock_(clock),
       has_alr_probing_(
           config_.periodic_alr_bandwidth_probing ||
-          GetAlrSettings(field_trials, encoder_config.content_type)),
-      pacing_config_(PacingConfig(field_trials)),
+          GetAlrSettings(env_.field_trials(), encoder_config.content_type)),
+      pacing_config_(PacingConfig(env_.field_trials())),
       worker_queue_(TaskQueueBase::Current()),
       timed_out_(false),
-
       bitrate_allocator_(bitrate_allocator),
       has_active_encodings_(HasActiveEncodings(encoder_config)),
       disable_padding_(true),
@@ -460,11 +456,13 @@ VideoSendStreamImpl::VideoSendStreamImpl(
       encoder_target_rate_bps_(0),
       encoder_bitrate_priority_(encoder_config.bitrate_priority),
       encoder_av1_priority_bitrate_override_bps_(
-          GetEncoderPriorityBitrate(config_.rtp.payload_name, field_trials)),
-      configured_pacing_factor_(GetConfiguredPacingFactor(config_,
-                                                          content_type_,
-                                                          pacing_config_,
-                                                          field_trials)) {
+          GetEncoderPriorityBitrate(config_.rtp.payload_name,
+                                    env_.field_trials())),
+      configured_pacing_factor_(
+          GetConfiguredPacingFactor(config_,
+                                    content_type_,
+                                    pacing_config_,
+                                    env_.field_trials())) {
   RTC_DCHECK_GE(config_.rtp.payload_type, 0);
   RTC_DCHECK_LE(config_.rtp.payload_type, 127);
   RTC_DCHECK(!config_.rtp.ssrcs.empty());
@@ -472,7 +470,8 @@ VideoSendStreamImpl::VideoSendStreamImpl(
   RTC_DCHECK_NE(encoder_max_bitrate_bps_, 0);
   RTC_LOG(LS_INFO) << "VideoSendStreamImpl: " << config_.ToString();
 
-  RTC_CHECK(AlrExperimentSettings::MaxOneFieldTrialEnabled(field_trials));
+  RTC_CHECK(
+      AlrExperimentSettings::MaxOneFieldTrialEnabled(env_.field_trials()));
 
   absl::optional<bool> enable_alr_bw_probing;
 
@@ -480,14 +479,14 @@ VideoSendStreamImpl::VideoSendStreamImpl(
   // pacing settings.
   if (configured_pacing_factor_) {
     absl::optional<AlrExperimentSettings> alr_settings =
-        GetAlrSettings(field_trials, content_type_);
+        GetAlrSettings(env_.field_trials(), content_type_);
     int queue_time_limit_ms;
     if (alr_settings) {
       enable_alr_bw_probing = true;
       queue_time_limit_ms = alr_settings->max_paced_queue_time;
     } else {
       RateControlSettings rate_control_settings =
-          RateControlSettings::ParseFromKeyValueConfig(&field_trials);
+          RateControlSettings::ParseFromKeyValueConfig(&env_.field_trials());
       enable_alr_bw_probing = rate_control_settings.UseAlrProbing();
       queue_time_limit_ms = pacing_config_.max_pacing_delay.Get().ms();
     }
@@ -720,7 +719,7 @@ void VideoSendStreamImpl::OnBitrateAllocationUpdated(
     if (encoder_target_rate_bps_ == 0) {
       return;
     }
-    int64_t now_ms = clock_->TimeInMilliseconds();
+    int64_t now_ms = env_.clock().TimeInMilliseconds();
     if (video_bitrate_allocation_context_) {
       // If new allocation is within kMaxVbaSizeDifferencePercent larger
       // than the previously sent allocation and the same streams are still

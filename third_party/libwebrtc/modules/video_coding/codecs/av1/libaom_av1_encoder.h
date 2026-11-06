@@ -13,15 +13,22 @@
 #include <map>
 #include <memory>
 
-#include "absl/strings/string_view.h"
+#include "absl/base/nullability.h"
+#include "api/environment/environment.h"
 #include "api/video_codecs/video_encoder.h"
 
 namespace webrtc {
-struct LibaomAv1EncoderAuxConfig {
+
+struct LibaomAv1EncoderSettings {
   // A map of max pixel count --> cpu speed.
   std::map<int, int> max_pixel_count_to_cpu_speed;
 };
+absl::Nonnull<std::unique_ptr<VideoEncoder>> CreateLibaomAv1Encoder(
+    const Environment& env,
+    LibaomAv1EncoderSettings settings = {});
 
+// Deprecated, Use CreateLibaomAv1Encoder above, bugs.webrtc.org/15860
+using LibaomAv1EncoderAuxConfig = LibaomAv1EncoderSettings;
 std::unique_ptr<VideoEncoder> CreateLibaomAv1Encoder();
 std::unique_ptr<VideoEncoder> CreateLibaomAv1Encoder(
     const LibaomAv1EncoderAuxConfig& aux_config);

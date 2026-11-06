@@ -67,11 +67,11 @@ const VideoEncoder::Settings kSettings(kCapabilities,
 class TestVp8Impl : public VideoCodecUnitTest {
  protected:
   std::unique_ptr<VideoEncoder> CreateEncoder() override {
-    return VP8Encoder::Create();
+    return CreateVp8Encoder(env_);
   }
 
   std::unique_ptr<VideoDecoder> CreateDecoder() override {
-    return CreateVp8Decoder(CreateEnvironment());
+    return CreateVp8Decoder(env_);
   }
 
   void ModifyCodecSettings(VideoCodec* codec_settings) override {

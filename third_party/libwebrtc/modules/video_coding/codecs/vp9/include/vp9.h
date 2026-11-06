@@ -15,8 +15,12 @@
 #include <memory>
 #include <vector>
 
+#include "absl/base/nullability.h"
+#include "api/environment/environment.h"
 #include "api/video_codecs/scalability_mode.h"
 #include "api/video_codecs/sdp_video_format.h"
+#include "api/video_codecs/video_encoder.h"
+#include "api/video_codecs/vp9_profile.h"
 #include "media/base/codec.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 
@@ -31,13 +35,19 @@ std::vector<SdpVideoFormat> SupportedVP9Codecs(
 // preference. These will be availble for receive-only connections.
 std::vector<SdpVideoFormat> SupportedVP9DecoderCodecs();
 
+struct Vp9EncoderSettings {
+  VP9Profile profile = VP9Profile::kProfile0;
+};
+absl::Nonnull<std::unique_ptr<VideoEncoder>> CreateVp9Encoder(
+    const Environment& env,
+    Vp9EncoderSettings settings = {});
+
 class VP9Encoder : public VideoEncoder {
  public:
-  // Deprecated. Returns default implementation using VP9 Profile 0.
-  // TODO(emircan): Remove once this is no longer used.
+  // Deprecated. Use CreateVp9Encoder above, bugs.webrtc.org/15860
   static std::unique_ptr<VP9Encoder> Create();
-  // Parses VP9 Profile from `codec` and returns the appropriate implementation.
   static std::unique_ptr<VP9Encoder> Create(const cricket::VideoCodec& codec);
+
   static bool SupportsScalabilityMode(ScalabilityMode scalability_mode);
 
   ~VP9Encoder() override {}

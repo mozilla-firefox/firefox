@@ -19,7 +19,7 @@
 
 #include "absl/container/inlined_vector.h"
 #include "api/adaptation/resource.h"
-#include "api/field_trials_view.h"
+#include "api/environment/environment.h"
 #include "api/rtp_sender_interface.h"
 #include "api/sequence_checker.h"
 #include "api/task_queue/pending_task_safety_flag.h"
@@ -43,7 +43,6 @@
 #include "rtc_base/race_checker.h"
 #include "rtc_base/rate_statistics.h"
 #include "rtc_base/thread_annotations.h"
-#include "system_wrappers/include/clock.h"
 #include "video/adaptation/video_stream_encoder_resource_manager.h"
 #include "video/encoder_bitrate_adjuster.h"
 #include "video/frame_cadence_adapter.h"
@@ -74,7 +73,7 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
     kVideoLayersAllocation
   };
   VideoStreamEncoder(
-      Clock* clock,
+      const Environment& env,
       uint32_t number_of_cores,
       VideoStreamEncoderObserver* encoder_stats_observer,
       const VideoStreamEncoderSettings& settings,
@@ -83,7 +82,6 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
       std::unique_ptr<webrtc::TaskQueueBase, webrtc::TaskQueueDeleter>
           encoder_queue,
       BitrateAllocationCallbackType allocation_cb_type,
-      const FieldTrialsView& field_trials,
       webrtc::VideoEncoderFactory::EncoderSelectorInterface* encoder_selector =
           nullptr);
   ~VideoStreamEncoder() override;
@@ -270,7 +268,7 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
                            VideoStreamEncoderObserver::DropReason reason)
       RTC_RUN_ON(encoder_queue_);
 
-  const FieldTrialsView& field_trials_;
+  const Environment env_;
   TaskQueueBase* const worker_queue_;
 
   const int number_of_cores_;
@@ -331,7 +329,6 @@ class VideoStreamEncoder : public VideoStreamEncoderInterface,
       RTC_GUARDED_BY(encoder_queue_) = false;
 
   bool encoder_failed_ RTC_GUARDED_BY(encoder_queue_) = false;
-  Clock* const clock_;
 
   // Used to make sure incoming time stamp is increasing for every frame.
   int64_t last_captured_timestamp_ RTC_GUARDED_BY(encoder_queue_) = 0;

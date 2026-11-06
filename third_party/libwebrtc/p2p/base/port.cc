@@ -39,9 +39,12 @@
 #include "rtc_base/time_utils.h"
 #include "rtc_base/trace_event.h"
 
+using webrtc::IceCandidateType;
+
 namespace cricket {
 namespace {
 
+using ::webrtc::IceCandidateType;
 using ::webrtc::RTCError;
 using ::webrtc::RTCErrorType;
 using ::webrtc::TaskQueueBase;
@@ -86,6 +89,17 @@ absl::optional<ProtocolType> StringToProto(absl::string_view proto_name) {
   return absl::nullopt;
 }
 
+IceCandidateType PortTypeToIceCandidateType(const absl::string_view type) {
+  if (type == "host" || type == LOCAL_PORT_TYPE)
+    return IceCandidateType::kHost;
+  if (type == "srflx" || type == STUN_PORT_TYPE)
+    return IceCandidateType::kSrflx;
+  if (type == PRFLX_PORT_TYPE)
+    return IceCandidateType::kPrflx;
+  RTC_DCHECK_EQ(type, RELAY_PORT_TYPE);
+  return IceCandidateType::kRelay;
+}
+
 // RFC 6544, TCP candidate encoding rules.
 const int DISCARD_PORT = 9;
 const char TCPTYPE_ACTIVE_STR[] = "active";
@@ -93,45 +107,36 @@ const char TCPTYPE_PASSIVE_STR[] = "passive";
 const char TCPTYPE_SIMOPEN_STR[] = "so";
 
 Port::Port(TaskQueueBase* thread,
-           absl::string_view type,
+           webrtc::IceCandidateType type,
            rtc::PacketSocketFactory* factory,
            const rtc::Network* network,
            absl::string_view username_fragment,
            absl::string_view password,
            const webrtc::FieldTrialsView* field_trials)
-    : thread_(thread),
-      factory_(factory),
-      type_(type),
-      send_retransmit_count_attribute_(false),
-      network_(network),
-      min_port_(0),
-      max_port_(0),
-      component_(ICE_CANDIDATE_COMPONENT_DEFAULT),
-      generation_(0),
-      ice_username_fragment_(username_fragment),
-      password_(password),
-      timeout_delay_(kPortTimeoutDelay),
-      enable_port_packets_(false),
-      ice_role_(ICEROLE_UNKNOWN),
-      tiebreaker_(0),
-      shared_socket_(true),
-      weak_factory_(this),
-      field_trials_(field_trials) {
-  RTC_DCHECK(factory_ != NULL);
-  Construct();
-}
+    : Port(thread,
+           type,
+           factory,
+           network,
+           0,
+           0,
+           username_fragment,
+           password,
+           field_trials,
+           true) {}
 
 Port::Port(TaskQueueBase* thread,
-           absl::string_view type,
+           webrtc::IceCandidateType type,
            rtc::PacketSocketFactory* factory,
            const rtc::Network* network,
            uint16_t min_port,
            uint16_t max_port,
            absl::string_view username_fragment,
            absl::string_view password,
-           const webrtc::FieldTrialsView* field_trials)
+           const webrtc::FieldTrialsView* field_trials,
+           bool shared_socket /*= false*/)
     : thread_(thread),
       factory_(factory),
+      field_trials_(field_trials),
       type_(type),
       send_retransmit_count_attribute_(false),
       network_(network),
@@ -145,15 +150,11 @@ Port::Port(TaskQueueBase* thread,
       enable_port_packets_(false),
       ice_role_(ICEROLE_UNKNOWN),
       tiebreaker_(0),
-      shared_socket_(false),
-      weak_factory_(this),
-      field_trials_(field_trials) {
-  RTC_DCHECK(factory_ != NULL);
-  Construct();
-}
-
-void Port::Construct() {
+      shared_socket_(shared_socket),
+      network_cost_(network->GetCost(*field_trials_)),
+      weak_factory_(this) {
   RTC_DCHECK_RUN_ON(thread_);
+  RTC_DCHECK(factory_ != nullptr);
   // TODO(pthatcher): Remove this old behavior once we're sure no one
   // relies on it.  If the username_fragment and password are empty,
   // we should just create one.
@@ -163,7 +164,6 @@ void Port::Construct() {
     password_ = rtc::CreateRandomString(ICE_PWD_LENGTH);
   }
   network_->SignalTypeChanged.connect(this, &Port::OnNetworkTypeChanged);
-  network_cost_ = network_->GetCost(field_trials());
 
   PostDestroyIfDead(/*delayed=*/true);
   RTC_LOG(LS_INFO) << ToString() << ": Port created with network cost "
@@ -177,7 +177,11 @@ Port::~Port() {
 }
 
 const absl::string_view Port::Type() const {
-  return type_;
+  if (type_ == webrtc::IceCandidateType::kHost)
+    return "local";
+  if (type_ == webrtc::IceCandidateType::kSrflx)
+    return "stun";
+  return webrtc::IceCandidateTypeToString(type_);
 }
 const rtc::Network* Port::Network() const {
   return network_;
@@ -241,7 +245,7 @@ void Port::AddAddress(const rtc::SocketAddress& address,
                       absl::string_view protocol,
                       absl::string_view relay_protocol,
                       absl::string_view tcptype,
-                      absl::string_view type,
+                      IceCandidateType type,
                       uint32_t type_preference,
                       uint32_t relay_preference,
                       absl::string_view url,
@@ -873,8 +877,9 @@ void Port::OnNetworkTypeChanged(const rtc::Network* network) {
 std::string Port::ToString() const {
   rtc::StringBuilder ss;
   ss << "Port[" << rtc::ToHex(reinterpret_cast<uintptr_t>(this)) << ":"
-     << content_name_ << ":" << component_ << ":" << generation_ << ":" << type_
-     << ":" << network_->ToString() << "]";
+     << content_name_ << ":" << component_ << ":" << generation_ << ":"
+     << webrtc::IceCandidateTypeToString(type_) << ":" << network_->ToString()
+     << "]";
   return ss.Release();
 }
 

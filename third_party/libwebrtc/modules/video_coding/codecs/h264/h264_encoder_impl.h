@@ -58,7 +58,9 @@ class H264EncoderImpl : public H264Encoder {
     void SetStreamState(bool send_stream);
   };
 
- public:
+  H264EncoderImpl(const Environment& env, H264EncoderSettings settings);
+
+  // Deprecated, bugs.webrtc.org/15860
   explicit H264EncoderImpl(const cricket::VideoCodec& codec);
   ~H264EncoderImpl() override;
 
@@ -90,6 +92,8 @@ class H264EncoderImpl : public H264Encoder {
   }
 
  private:
+  explicit H264EncoderImpl(H264PacketizationMode packetization_mode);
+
   SEncParamExt CreateEncoderParams(size_t i) const;
 
   webrtc::H264BitstreamParser h264_bitstream_parser_;

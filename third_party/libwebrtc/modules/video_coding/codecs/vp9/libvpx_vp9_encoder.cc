@@ -223,14 +223,28 @@ void LibvpxVp9Encoder::EncoderOutputCodedPacketCallback(vpx_codec_cx_pkt* pkt,
   enc->GetEncodedLayerFrame(pkt);
 }
 
+LibvpxVp9Encoder::LibvpxVp9Encoder(const Environment& env,
+                                   Vp9EncoderSettings settings,
+                                   std::unique_ptr<LibvpxInterface> interface)
+    : LibvpxVp9Encoder(std::move(interface),
+                       settings.profile,
+                       env.field_trials()) {}
+
 LibvpxVp9Encoder::LibvpxVp9Encoder(const cricket::VideoCodec& codec,
                                    std::unique_ptr<LibvpxInterface> interface,
+                                   const FieldTrialsView& trials)
+    : LibvpxVp9Encoder(
+          std::move(interface),
+          ParseSdpForVP9Profile(codec.params).value_or(VP9Profile::kProfile0),
+          trials) {}
+
+LibvpxVp9Encoder::LibvpxVp9Encoder(std::unique_ptr<LibvpxInterface> interface,
+                                   VP9Profile profile,
                                    const FieldTrialsView& trials)
     : libvpx_(std::move(interface)),
       encoded_image_(),
       encoded_complete_callback_(nullptr),
-      profile_(
-          ParseSdpForVP9Profile(codec.params).value_or(VP9Profile::kProfile0)),
+      profile_(profile),
       inited_(false),
       timestamp_(0),
       rc_max_intra_target_(0),
