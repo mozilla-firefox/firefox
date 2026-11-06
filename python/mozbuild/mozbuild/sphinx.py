@@ -171,11 +171,12 @@ def find_mots_config_path(app):
 
 def export_mots(config_path):
     """Load mots configuration and export it to file."""
-    # Load from disk and initialize configuration and directory.
+    # Load from disk and initialize configuration and directory. The export
+    # doesn't need the path index built by Directory.load(), which globs the
+    # whole tree and takes several seconds.
     config = FileConfig(config_path)
     config.load()
     directory = Directory(config)
-    directory.load()
 
     # Fetch file format (i.e., "rst") and export path.
     frmt = config.config["export"]["format"]
