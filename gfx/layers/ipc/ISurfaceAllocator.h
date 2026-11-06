@@ -131,6 +131,7 @@ class HostIPCAllocator : public ISurfaceAllocator {
   }
 
   bool IsAboutToSendAsyncMessages() { return mAboutToSendAsyncMessages; }
+  void ClearAboutToSendAsyncMessages() { mAboutToSendAsyncMessages = false; }
 
  protected:
   nsTArray<AsyncParentMessageData> mPendingAsyncMessage;
