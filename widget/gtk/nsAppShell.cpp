@@ -627,12 +627,6 @@ bool nsAppShell::IsSessionRestoreSupported() {
       LOGW("nsAppShell::IsSessionRestoreSupported(): disabled by pref.");
       return false;
     }
-    if (IsGnomeDesktopEnvironment()) {
-      LOGW(
-          "nsAppShell::IsSessionRestoreSupported(): disabled due to Bug "
-          "2064100.");
-      return false;
-    }
 
     GType waylandWindowType = g_type_from_name("GdkWaylandWindow");
     bool supported =
