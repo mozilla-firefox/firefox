@@ -5,6 +5,7 @@
 #include "fuzz-tests/tests.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "js/AllocPolicy.h"
 #include "js/GlobalObject.h"
@@ -72,12 +73,26 @@ static void jsfuzz_uninit(JSContext* cx) {
   }
 }
 
+static void jsfuzz_shutdown() {
+  jsfuzz_uninit(gCx);
+  gCx = nullptr;
+  JS_ShutDown();
+}
+
 int main(int argc, char* argv[]) {
   // Override prefs for fuzz-tests.
   JS::Prefs::setAtStartup_experimental_weakrefs_expose_cleanupSome(true);
 
   if (!JS_Init()) {
     fprintf(stderr, "Error: Call to jsfuzz_init() failed\n");
+    return 1;
+  }
+
+  // Shut down before static destructors run, while helper threads can still
+  // use their synchronization primitives.
+  if (atexit(jsfuzz_shutdown) != 0) {
+    fprintf(stderr, "Error: Could not register shutdown handler\n");
+    JS_ShutDown();
     return 1;
   }
 
@@ -117,10 +132,6 @@ int main(int argc, char* argv[]) {
 #elif AFLFUZZ
   testingFunc(nullptr, 0);
 #endif
-
-  jsfuzz_uninit(gCx);
-
-  JS_ShutDown();
 
   return 0;
 }
