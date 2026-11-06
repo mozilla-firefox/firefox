@@ -90,4 +90,6 @@ run-if = [
 
 ["browser_test_selection_size_text.js"]
 
+["browser_test_touch.js"]
+
 ["browser_text_selectionAPI_test.js"]

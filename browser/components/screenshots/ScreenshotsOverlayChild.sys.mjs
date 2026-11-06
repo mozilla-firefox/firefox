@@ -420,7 +420,15 @@ export class ScreenshotsOverlay {
   handleEvent(event) {
     switch (event.type) {
       case "click":
-        this.handleClick(event);
+        // Touch taps on buttons are handled on touchend.
+        if (event.pointerType !== "touch") {
+          this.handleClick(event);
+        }
+        break;
+      case "touchend":
+        // touchend is the last event of a tap, so an event handler that tears
+        // down the overlay doesn't let the rest of the tap reach the page.
+        this.handleTouchEnd(event);
         break;
       case "pointerdown":
         this.handlePointerDown(event);
@@ -494,6 +502,16 @@ export class ScreenshotsOverlay {
       case "reselect-button":
         this.reselectRegion();
         break;
+    }
+  }
+
+  handleTouchEnd(event) {
+    if (
+      event.originalTarget.id === "screenshots-cancel-button" ||
+      event.originalTarget.closest("#buttons-container") ===
+        this.buttonsContainer
+    ) {
+      this.handleClick(event);
     }
   }
 

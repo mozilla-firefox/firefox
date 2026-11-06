@@ -372,6 +372,56 @@ class ScreenshotsHelper {
     this.endY = endY;
   }
 
+  /**
+   * The touch equivalent of dragOverlay. See dragOverlay for the constraints
+   * on the coordinates.
+   */
+  async touchDragOverlay(
+    startX,
+    startY,
+    endX,
+    endY,
+    expectedStartingState = "crosshairs"
+  ) {
+    await this.assertStateChange(expectedStartingState);
+
+    await touch.start(startX, startY, {}, this.browser);
+    await this.waitForStateChange(["draggingReady", "resizing"]);
+
+    await touch.move(endX, endY, {}, this.browser);
+    await this.waitForStateChange(["dragging", "resizing"]);
+
+    AccessibilityUtils.setEnv({ mustHaveAccessibleRule: false });
+    await touch.end(endX, endY, {}, this.browser);
+    await this.assertStateChange("selected");
+    AccessibilityUtils.resetEnv();
+  }
+
+  /**
+   * Tap a button in the overlay with a synthesized touchstart and touchend.
+   *
+   * Synthesized touch events produce pointer events but no click, unlike a
+   * tap on a real touchscreen, so this only exercises the overlay's
+   * touchend handling of buttons.
+   *
+   * @param {string} id The id of the button in the overlay
+   */
+  async tapOverlayButton(id) {
+    let { x, y } = await SpecialPowers.spawn(this.browser, [id], buttonId => {
+      let screenshotsChild = content.windowGlobalChild.getActor(
+        "ScreenshotsComponent"
+      );
+      let { left, top, width, height } = screenshotsChild.overlay
+        .getElementById(buttonId)
+        .getBoundingClientRect();
+      return { x: left + width / 2, y: top + height / 2 };
+    });
+
+    info(`tapping ${id} at ${x}, ${y}`);
+    await touch.start(x, y, {}, this.browser);
+    await touch.end(x, y, {}, this.browser);
+  }
+
   async moveOverlayViaKeyboard(mover, events) {
     await SpecialPowers.spawn(
       this.browser,

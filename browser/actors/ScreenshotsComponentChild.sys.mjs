@@ -28,6 +28,7 @@ export class ScreenshotsComponentChild extends JSWindowActorChild {
     "pointerup",
     "keyup",
     "keydown",
+    "touchend",
   ];
 
   // The following events are only listened to so we can prevent them from
@@ -42,7 +43,6 @@ export class ScreenshotsComponentChild extends JSWindowActorChild {
     "mouseleave",
     "touchstart",
     "touchmove",
-    "touchend",
     "dblclick",
     "auxclick",
     "keypress",
