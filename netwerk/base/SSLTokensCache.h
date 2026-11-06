@@ -48,7 +48,8 @@ struct SessionCacheInfo {
   nsTArray<uint8_t> mServerCertBytes;
   Maybe<nsTArray<nsTArray<uint8_t>>> mSucceededCertChainBytes;
   Maybe<bool> mIsBuiltCertChainRootBuiltInRoot;
-  nsITransportSecurityInfo::OverridableErrorCategory mOverridableErrorCategory;
+  nsITransportSecurityInfo::OverridableErrorCategory mOverridableErrorCategory =
+      nsITransportSecurityInfo::OverridableErrorCategory::ERROR_UNSET;
   Maybe<nsTArray<nsTArray<uint8_t>>> mHandshakeCertificatesBytes;
 };
 
