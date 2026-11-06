@@ -6,7 +6,12 @@
 
 include("/third_party/opentelemetry-cpp/opentelemetry-config.mozbuild")
 
+LOCAL_INCLUDES += [
+  "/third_party/opentelemetry-cpp/sdk"
+]
+
 UNIFIED_SOURCES += [
+  "detail/percent_decode.cc",
   "resource.cc",
   "resource_detector.cc",
 ]

@@ -20,6 +20,7 @@ UNIFIED_SOURCES += [
   "simple_processor_factory.cc",
   "span.cc",
   "span_data.cc",
+  "span_limits.cc",
   "tracer.cc",
   "tracer_config.cc",
   "tracer_context.cc",
