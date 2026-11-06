@@ -36,6 +36,8 @@ add_task(async function test_no_shortcuts() {
       "No shortcuts found"
     );
   });
+
+  await SpecialPowers.popPrefEnv();
 });
 
 function visibleBox(popup) {
@@ -189,27 +191,30 @@ add_task(async function test_no_menu_when_nothing_available() {
   const spy = sinon.spy(GenAI, "handleShortcutsMessage");
   const panel = document.getElementById("selection-shortcut-action-panel");
 
-  // "failed" rather than the other statuses because it is the one that makes
-  // the default engine getters throw.
-  SearchService.forceInitializationStatusForTests("failed");
   try {
     await BrowserTestUtils.withNewTab("data:text/plain,hi", async browser => {
-      await selectAllAndMouseUp(browser);
-      await TestUtils.waitForCondition(
-        () => spy.called,
-        "Actor offered shortcuts to the parent"
-      );
+      // "failed" rather than the other statuses because it is the one that
+      // makes the default engine getters throw.
+      SearchService.forceInitializationStatusForTests("failed");
+      try {
+        await selectAllAndMouseUp(browser);
+        await TestUtils.waitForCondition(
+          () => spy.called,
+          "Actor offered shortcuts to the parent"
+        );
 
-      // openPopup() sets state synchronously, while the panelopen attribute
-      // only lands on popupshown, too late for this assertion.
-      Assert.equal(
-        panel.state,
-        "closed",
-        "Menu stays closed with neither chatbot nor search available"
-      );
+        // openPopup() sets state synchronously, while the panelopen attribute
+        // only lands on popupshown, too late for this assertion.
+        Assert.equal(
+          panel.state,
+          "closed",
+          "Menu stays closed with neither chatbot nor search available"
+        );
+      } finally {
+        SearchService.forceInitializationStatusForTests("success");
+      }
     });
   } finally {
-    SearchService.forceInitializationStatusForTests("success");
     spy.restore();
     await SpecialPowers.popPrefEnv();
   }
@@ -2196,13 +2201,14 @@ add_task(async function test_show_shortcuts() {
 
     SidebarController.hide();
   });
+
+  await SpecialPowers.popPrefEnv();
 });
 
 /**
  * Check that shortcuts shown on second tab
  */
 add_task(async function test_show_shortcuts_second_tab() {
-  // NB: this test runs after test_show_shortcuts, which showed shortcuts
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.ml.chat.shortcuts", true],
@@ -2232,6 +2238,8 @@ add_task(async function test_show_shortcuts_second_tab() {
       sandbox.restore();
     }
   );
+
+  await SpecialPowers.popPrefEnv();
 });
 
 /**
@@ -2240,7 +2248,10 @@ add_task(async function test_show_shortcuts_second_tab() {
 add_task(async function test_show_warning_label() {
   Services.fog.testResetFOG();
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.ml.chat.shortcuts", true]],
+    set: [
+      ["browser.ml.chat.shortcuts", true],
+      ["browser.ml.chat.provider", "http://localhost:8080"],
+    ],
   });
   await BrowserTestUtils.withNewTab(
     "data:text/plain,hi".repeat(1000),
@@ -2314,6 +2325,8 @@ add_task(async function test_show_warning_label() {
       );
     }
   );
+
+  await SpecialPowers.popPrefEnv();
 });
 
 /**
@@ -2421,6 +2434,7 @@ add_task(async function test_input_selection() {
   );
 
   sandbox.restore();
+  await SpecialPowers.popPrefEnv();
 });
 
 /**
@@ -2573,6 +2587,9 @@ add_task(async function test_panel_actions_layout() {
       button.hidden = true;
     }
 
+    await SpecialPowers.pushPrefEnv({ set: MORE_ACTIONS_PREFS });
+    panel.updateActions(panel.selectionData.selection, browser);
+
     // moz-button maps the host aria-label and title onto the inner button, so
     // check the element that actually takes focus rather than the custom
     // element.
@@ -2603,6 +2620,7 @@ add_task(async function test_panel_actions_layout() {
       /^Search .+ for “hi”$/,
       "Search action names the engine and the selection"
     );
+    await SpecialPowers.popPrefEnv();
   });
 
   await SpecialPowers.popPrefEnv();
