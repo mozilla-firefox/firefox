@@ -270,8 +270,6 @@ class SharedSubResourceCache {
   // to be called when the document goes away, or when its principal changes.
   void UnregisterLoader(Loader&);
 
-  void PrepareForShutdown();
-
   void ClearInProcess(const Maybe<bool>& aChrome,
                       const Maybe<nsCOMPtr<nsIPrincipal>>& aPrincipal,
                       const Maybe<nsCString>& aSchemelessSite,

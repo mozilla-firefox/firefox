@@ -247,8 +247,6 @@ bool Gecko_ElementHasCSSAnimations(
     const mozilla::dom::Element* aElementOrPseudo);
 bool Gecko_ElementHasCSSTransitions(
     const mozilla::dom::Element* aElementOrPseudo);
-bool Gecko_ElementHasWebAnimations(
-    const mozilla::dom::Element* aElementOrPseudo);
 size_t Gecko_ElementTransitions_Length(
     const mozilla::dom::Element* aElementOrPseudo);
 
@@ -273,9 +271,6 @@ const mozilla::StyleAnimationValue* Gecko_AnimationGetBaseStyle(
     const RawServoAnimationValueTable* aBaseStyles,
     const mozilla::CSSPropertyId* aProperty);
 
-void Gecko_StyleTransition_SetUnsupportedProperty(
-    mozilla::StyleTransition* aTransition, nsAtom* aAtom);
-
 // Atoms.
 nsAtom* Gecko_Atomize(const char* aString, uint32_t aLength);
 nsAtom* Gecko_Atomize16(const nsAString* aString);
@@ -297,14 +292,6 @@ nsTArray<uint32_t>* Gecko_AppendFeatureValueHashEntry(
     gfxFontFeatureValueSet* value_set, nsAtom* family, uint32_t alternate,
     nsAtom* name);
 
-// Font variant alternates
-void Gecko_ClearAlternateValues(nsFont* font, size_t length);
-
-void Gecko_AppendAlternateValues(nsFont* font, uint32_t alternate_name,
-                                 nsAtom* atom);
-
-void Gecko_CopyAlternateValuesFrom(nsFont* dest, const nsFont* src);
-
 // The FontPaletteValueSet returned from this function has zero reference.
 mozilla::gfx::FontPaletteValueSet* Gecko_ConstructFontPaletteValueSet();
 
@@ -320,23 +307,6 @@ void Gecko_SetFontPaletteBase(
 void Gecko_SetFontPaletteOverride(
     mozilla::gfx::FontPaletteValueSet::PaletteValues* aValues, int32_t aIndex,
     mozilla::StyleAbsoluteColor* aColor);
-
-// Visibility style
-void Gecko_SetImageOrientation(nsStyleVisibility* aVisibility,
-                               uint8_t aOrientation, bool aFlip);
-
-void Gecko_SetImageOrientationAsFromImage(nsStyleVisibility* aVisibility);
-
-void Gecko_CopyImageOrientationFrom(nsStyleVisibility* aDst,
-                                    const nsStyleVisibility* aSrc);
-
-// list-style-image style.
-void Gecko_SetListStyleImageNone(nsStyleList* style_struct);
-
-void Gecko_SetListStyleImageImageValue(nsStyleList* style_struct,
-                                       const mozilla::StyleComputedUrl* url);
-
-void Gecko_CopyListStyleImageFrom(nsStyleList* dest, const nsStyleList* src);
 
 // Dirtiness tracking.
 void Gecko_NoteDirtyElement(const mozilla::dom::Element*);
@@ -423,19 +393,6 @@ mozilla::Keyframe* Gecko_GetOrCreateKeyframeForTimelineRangeOffset(
     const mozilla::StyleComputedTimingFunction* aTimingFunction,
     const mozilla::dom::CompositeOperationOrAuto aComposition,
     size_t* aMatchedIdx);
-
-void Gecko_ResetFilters(nsStyleEffects* effects, size_t new_len);
-
-void Gecko_CopyFiltersFrom(nsStyleEffects* aSrc, nsStyleEffects* aDest);
-
-void Gecko_nsStyleSVG_SetDashArrayLength(nsStyleSVG* svg, uint32_t len);
-
-void Gecko_nsStyleSVG_CopyDashArray(nsStyleSVG* dst, const nsStyleSVG* src);
-
-void Gecko_nsStyleSVG_SetContextPropertiesLength(nsStyleSVG* svg, uint32_t len);
-
-void Gecko_nsStyleSVG_CopyContextProperties(nsStyleSVG* dst,
-                                            const nsStyleSVG* src);
 
 void Gecko_GetComputedURLSpec(const mozilla::StyleComputedUrl* url,
                               nsCString* spec);
@@ -621,8 +578,6 @@ mozilla::PointerCapabilities Gecko_MediaFeatures_PrimaryPointerCapabilities(
 
 mozilla::PointerCapabilities Gecko_MediaFeatures_AllPointerCapabilities(
     const mozilla::dom::Document*);
-
-float Gecko_MediaFeatures_GetDevicePixelRatio(const mozilla::dom::Document*);
 
 bool Gecko_MediaFeatures_IsResourceDocument(const mozilla::dom::Document*);
 bool Gecko_MediaFeatures_InAndroidPipMode(const mozilla::dom::Document*);

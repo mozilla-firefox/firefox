@@ -226,11 +226,6 @@ class RestyleManager {
 
 #ifdef DEBUG
   static nsCString ChangeHintToString(nsChangeHint aHint);
-
-  /**
-   * DEBUG ONLY method to verify integrity of style tree versus frame tree
-   */
-  void DebugVerifyStyleTree(nsIFrame* aFrame);
 #endif
 
   void FlushOverflowChangedTracker() { mOverflowChangedTracker.Flush(); }
@@ -273,9 +268,6 @@ class RestyleManager {
     void StopAnimationsForElementsWithoutFrames();
 
    private:
-    void StopAnimationsWithoutFrame(nsTArray<RefPtr<Element>>& aArray,
-                                    const PseudoStyleRequest& aPseudoRequest);
-
     RestyleManager* mRestyleManager;
     AutoRestore<AnimationsWithDestroyedFrame*> mRestorePointer;
 

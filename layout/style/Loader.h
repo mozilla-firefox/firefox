@@ -299,12 +299,6 @@ class Loader final {
                           nsIURI* aURL, dom::MediaList* aMedia,
                           LoaderReusableStyleSheets* aSavedSheets);
 
-  /**
-   * Called when we hit the internal memory cache with a complete stylesheet.
-   */
-  void DidHitCompleteSheetCache(const SheetLoadDataHashKey&,
-                                const StyleUseCounters* aCounters);
-
   enum class UseSystemPrincipal { No, Yes };
 
   /**

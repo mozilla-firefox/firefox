@@ -222,8 +222,6 @@ class nsComputedDOMStyle final : public nsDOMCSSDeclaration,
       const mozilla::StyleGridTemplateComponent& aTrackList,
       const mozilla::ComputedGridTrackInfo& aTrackInfo);
 
-  bool GetLineHeightCoord(nscoord& aCoord);
-
   bool ShouldHonorMinSizeAutoInAxis(mozilla::PhysicalAxis aAxis);
 
   /* Properties queryable as CSSValues.

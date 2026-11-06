@@ -689,11 +689,6 @@ class ServoStyleSet {
 
   void RunPostTraversalTasks();
 
-  void PrependSheetOfType(Origin, StyleSheet*);
-  void AppendSheetOfType(Origin, StyleSheet*);
-  void InsertSheetOfType(Origin, StyleSheet*, StyleSheet* aBeforeSheet);
-  void RemoveSheetOfType(Origin, StyleSheet*);
-
   const nsPresContext* GetPresContext() const {
     return const_cast<ServoStyleSet*>(this)->GetPresContext();
   }

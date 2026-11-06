@@ -69,8 +69,6 @@ class MediaQueryList final : public DOMEventTargetHelper,
     }
   }
 
-  void RecomputeMatches();
-
   // We only need a pointer to the document to support lazy
   // reevaluation following dynamic changes.  However, this lazy
   // reevaluation is perhaps somewhat important, since some usage
