@@ -693,6 +693,20 @@ set_config("CARGO_PROFILE_RELEASE_OPT_LEVEL", rustc_opt_level)
 set_config("CARGO_PROFILE_DEV_OPT_LEVEL", rustc_opt_level)
 
 
+@depends_if(cargo_info)
+def cargo_build_override_trim_paths(cargo_info):
+    if cargo_info.version >= "1.102":
+        return "all"
+
+
+set_config(
+    "CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_TRIM_PATHS", cargo_build_override_trim_paths
+)
+set_config(
+    "CARGO_PROFILE_DEV_BUILD_OVERRIDE_TRIM_PATHS", cargo_build_override_trim_paths
+)
+
+
 @depends(
     rustc_opt_level,
     debug_rust,

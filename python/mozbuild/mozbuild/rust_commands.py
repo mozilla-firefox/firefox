@@ -54,7 +54,9 @@ CARGO_CONFIG_KEYS = {
     "CARGO": _as_str,
     "CARGOFLAGS": _as_args,
     "CARGO_INCREMENTAL": _as_str,
+    "CARGO_PROFILE_DEV_BUILD_OVERRIDE_TRIM_PATHS": _as_str,
     "CARGO_PROFILE_DEV_OPT_LEVEL": _as_str,
+    "CARGO_PROFILE_RELEASE_BUILD_OVERRIDE_TRIM_PATHS": _as_str,
     "CARGO_PROFILE_RELEASE_OPT_LEVEL": _as_str,
     "CC_KNOWN_WRAPPER_CUSTOM": _as_str,
     "DLL_PREFIX": _as_str,
@@ -587,6 +589,10 @@ def compose_env(
         "CARGO_PROFILE_RELEASE_OPT_LEVEL"
     )
     env["CARGO_PROFILE_DEV_OPT_LEVEL"] = substs.get("CARGO_PROFILE_DEV_OPT_LEVEL")
+    for profile in ("RELEASE", "DEV"):
+        key = f"CARGO_PROFILE_{profile}_BUILD_OVERRIDE_TRIM_PATHS"
+        if trim_paths := substs.get(key):
+            env[key] = trim_paths
     env["BINDGEN_EXTRA_CLANG_ARGS"] = " ".join(substs.get("BINDGEN_EXTRA_CLANG_ARGS"))
 
     if coreaudio_sdk := substs.get("MOZ_RUST_COREAUDIO_SDK_PATH"):
