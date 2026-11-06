@@ -53,6 +53,11 @@ const errorTextOf = e =>
     .replace(GUID_LIKE, "<id>")
     .slice(0, 200);
 
+// Encoding a string for the Rust store replaces each lone surrogate with U+FFFD,
+// so a value is compared in that form: the replacement is not a divergence.
+const wellFormed = value =>
+  typeof value == "string" ? value.toWellFormed() : value;
+
 /**
  * Copy a profile's records from one store to the other, and check field by
  * field that they came out the same. A dry run does the copy only to measure it,
@@ -629,7 +634,11 @@ export class AutofillStorageMigrator {
       ].filter(
         field =>
           this.isStoredField(field) &&
-          this.fieldDiffers(field, record[field], copy[field])
+          this.fieldDiffers(
+            field,
+            wellFormed(record[field]),
+            wellFormed(copy[field])
+          )
       );
       if (!differing.length) {
         continue;

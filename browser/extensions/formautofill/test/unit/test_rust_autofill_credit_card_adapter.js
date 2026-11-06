@@ -1441,3 +1441,26 @@ add_task(async function test_store_error_for_a_card_another_key_wrote() {
     "a card the store cannot decrypt is recorded"
   );
 });
+
+add_task(async function test_lone_surrogates_are_refused() {
+  const { adapter } = await newAdapter("autofill-cc-adapter-surrogates.sqlite");
+
+  await Assert.rejects(
+    adapter.add({ ...TEST_RECORD, "cc-name": "Jane Doe\uD83D" }),
+    /"cc-name" contains lone surrogates/,
+    "a record with a lone surrogate is not added"
+  );
+  Assert.equal((await adapter.getAll()).length, 0, "nothing is stored");
+
+  const guid = await adapter.add(TEST_RECORD);
+  await Assert.rejects(
+    adapter.update(guid, { "cc-name": "\uDE00Jane Doe" }, true),
+    /"cc-name" contains lone surrogates/,
+    "an update with a lone surrogate is refused"
+  );
+  Assert.equal(
+    (await adapter.get(guid))["cc-name"],
+    TEST_RECORD["cc-name"],
+    "the stored record is unchanged"
+  );
+});

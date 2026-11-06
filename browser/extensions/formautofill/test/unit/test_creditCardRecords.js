@@ -85,6 +85,13 @@ const TEST_CREDIT_CARD_EMPTY_AFTER_NORMALIZE = {
   "cc-exp-month": 13,
 };
 
+const TEST_CREDIT_CARD_WITH_LONE_SURROGATE = {
+  "cc-name": "John Doe\uD83D",
+  "cc-number": "4929001587121045",
+  "cc-exp-month": 4,
+  "cc-exp-year": 2030,
+};
+
 const TEST_CREDIT_CARD_EMPTY_AFTER_UPDATE_CREDIT_CARD_1 = {
   "cc-name": "",
   "cc-number": "",
@@ -255,6 +262,11 @@ add_task(async function test_add() {
     profileStorage.creditCards.add(TEST_CREDIT_CARD_EMPTY_AFTER_NORMALIZE),
     /Record contains no valid field\./
   );
+
+  await Assert.rejects(
+    profileStorage.creditCards.add(TEST_CREDIT_CARD_WITH_LONE_SURROGATE),
+    /"cc-name" contains lone surrogates/
+  );
 });
 
 add_task(async function test_addWithBillingAddress() {
@@ -393,6 +405,14 @@ add_task(async function test_update() {
       TEST_CREDIT_CARD_EMPTY_AFTER_NORMALIZE
     ),
     /Record contains no valid field\./
+  );
+
+  await Assert.rejects(
+    profileStorage.creditCards.update(
+      guid,
+      TEST_CREDIT_CARD_WITH_LONE_SURROGATE
+    ),
+    /"cc-name" contains lone surrogates/
   );
 
   await profileStorage.creditCards.update(guid, TEST_CREDIT_CARD_1);

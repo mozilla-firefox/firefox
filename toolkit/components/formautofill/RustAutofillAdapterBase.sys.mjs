@@ -515,6 +515,11 @@ export class RustAutofillAdapterBase {
           `"${key}" contains invalid data type: ${typeof record[key]}`
         );
       }
+      // Encoding the string for the store would replace a lone surrogate with
+      // U+FFFD, so the stored record wouldn't match the submitted one.
+      if (typeof record[key] == "string" && !record[key].isWellFormed()) {
+        throw new Error(`"${key}" contains lone surrogates`);
+      }
       if (!preserveEmptyFields && record[key] === "") {
         delete record[key];
       }

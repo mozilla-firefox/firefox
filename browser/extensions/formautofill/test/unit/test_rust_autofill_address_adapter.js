@@ -297,3 +297,30 @@ add_task(async function test_read_suppresses_country_without_metadata() {
   Assert.equal(fetched["address-level2"], "Pristina", "other fields are kept");
   Assert.equal(fetched["postal-code"], "10000", "other fields are kept");
 });
+
+add_task(async function test_lone_surrogates_are_refused() {
+  const dbPath = FileTestUtils.getTempFile(
+    "autofill-adapter-surrogates.sqlite"
+  ).path;
+  const adapter = new RustAutofillAddressesAdapter(await newStore(dbPath));
+
+  await Assert.rejects(
+    adapter.add({ ...TEST_RECORD, organization: "Mozilla\uD83D" }),
+    /"organization" contains lone surrogates/,
+    "a record with a lone surrogate is not added"
+  );
+  await adapter.refreshCount();
+  Assert.ok(adapter.isEmpty(), "nothing is stored");
+
+  const guid = await adapter.add(TEST_RECORD);
+  await Assert.rejects(
+    adapter.update(guid, { "street-address": "\uDE00Main Street" }, true),
+    /"street-address" contains lone surrogates/,
+    "an update with a lone surrogate is refused"
+  );
+  Assert.equal(
+    (await adapter.get(guid))["street-address"],
+    TEST_RECORD["street-address"],
+    "the stored record is unchanged"
+  );
+});

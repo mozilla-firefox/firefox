@@ -65,6 +65,11 @@ const TEST_ADDRESS_WITH_INVALID_FIELD = {
   email: { email: "invalidemail" },
 };
 
+const TEST_ADDRESS_WITH_LONE_SURROGATE = {
+  "street-address": "Another Address",
+  organization: "Mozilla\uD83D",
+};
+
 const TEST_ADDRESS_EMPTY_AFTER_NORMALIZE = {
   country: "XXXXXX",
 };
@@ -203,6 +208,11 @@ add_task(async function test_add() {
   );
 
   await Assert.rejects(
+    profileStorage.addresses.add(TEST_ADDRESS_WITH_LONE_SURROGATE),
+    /"organization" contains lone surrogates/
+  );
+
+  await Assert.rejects(
     profileStorage.addresses.add({}),
     /Record contains no valid field\./
   );
@@ -314,6 +324,11 @@ add_task(async function test_update() {
   await Assert.rejects(
     profileStorage.addresses.update(guid, TEST_ADDRESS_WITH_INVALID_FIELD),
     /"email" contains invalid data type: object/
+  );
+
+  await Assert.rejects(
+    profileStorage.addresses.update(guid, TEST_ADDRESS_WITH_LONE_SURROGATE),
+    /"organization" contains lone surrogates/
   );
 
   await Assert.rejects(

@@ -1808,3 +1808,30 @@ add_task(async function test_a_reporting_failure_still_ends_the_dry_run() {
 
   await s._finalize();
 });
+
+add_task(async function test_lone_surrogates_are_not_a_divergence() {
+  let { s, guids } = await setupStorageWithRecords("mig-surrogates.json", [
+    "Ann One",
+  ]);
+  // A record stored before lone surrogates were refused, which add() no longer
+  // lets through.
+  s.addresses._data[0].organization = "Mozilla\uD83D";
+  s.addresses._store.saveSoon();
+
+  s = await enableRust(s);
+  const rust = activeRust(s);
+
+  Assert.equal(
+    (await rust.get(guids[0])).organization,
+    "Mozilla\uFFFD",
+    "the copy holds U+FFFD in place of the lone surrogate"
+  );
+  const event = migrationEvents().at(-1);
+  Assert.equal(event.extra.result, "ok", "the migration completes");
+  Assert.equal(event.extra.failed, "0", "the record did not fail");
+  Assert.equal(
+    event.extra.diverged,
+    "0",
+    "the replacement is not a divergence"
+  );
+});
