@@ -115,7 +115,7 @@ async function testAllStylesheets(
     styleSheetInDebuggerEnabled
   );
   await selectNode("div", inspector);
-  await testRuleViewLinkLabel(view);
+  await testRuleViewLinkLabel(view, styleSheetInDebuggerEnabled);
   await testDisabledStyleEditor(view, toolbox);
   await testFirstInlineStyleSheet(view, toolbox);
   await testSecondInlineStyleSheet(view, toolbox);
@@ -275,12 +275,12 @@ async function testDisabledStyleEditor(view, toolbox) {
   Services.prefs.clearUserPref("devtools.styleeditor.enabled");
 }
 
-async function testRuleViewLinkLabel(view) {
+async function testRuleViewLinkLabel(view, styleSheetInDebuggerEnabled) {
   info("Checking the data URL link label");
   let labelElem = await waitFor(() => getRuleViewLinkByIndex(view, 1));
   let value = labelElem.textContent;
   let tooltipText = labelElem.getAttribute("title");
-
+  const panel = styleSheetInDebuggerEnabled ? "Debugger" : "Style Editor";
   is(
     value,
     STYLESHEET_DATA_URL_CONTENTS + ":1",
@@ -288,7 +288,7 @@ async function testRuleViewLinkLabel(view) {
   );
   is(
     tooltipText,
-    `View source in Style Editor → ${STYLESHEET_DATA_URL}:1`,
+    `View source in ${panel} → ${STYLESHEET_DATA_URL}:1`,
     "Rule view data URL stylesheet tooltip text matches the full URI path"
   );
 
@@ -304,7 +304,7 @@ async function testRuleViewLinkLabel(view) {
   );
   is(
     tooltipText,
-    `View source in Style Editor → ${EXTERNAL_STYLESHEET_URL}:1`,
+    `View source in ${panel} → ${EXTERNAL_STYLESHEET_URL}:1`,
     "Rule view external stylesheet tooltip text matches the full URI path"
   );
 }

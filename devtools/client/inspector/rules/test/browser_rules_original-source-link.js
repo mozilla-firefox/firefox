@@ -35,11 +35,21 @@ async function testLinksInRuleView(styleSheetInDebuggerEnabled) {
   info("Selecting the test node");
   await selectNode("div", inspector);
 
-  await verifyStyleSheetLink(view, SCSS_FILENAME, SCSS_LOC_LINE);
+  await verifyStyleSheetLink(
+    view,
+    SCSS_FILENAME,
+    SCSS_LOC_LINE,
+    styleSheetInDebuggerEnabled
+  );
 
   info("Setting the " + PREF + " pref to false");
   Services.prefs.setBoolPref(PREF, false);
-  await verifyStyleSheetLink(view, CSS_FILENAME, CSS_LOC_LINE);
+  await verifyStyleSheetLink(
+    view,
+    CSS_FILENAME,
+    CSS_LOC_LINE,
+    styleSheetInDebuggerEnabled
+  );
 
   info("Setting the " + PREF + " pref to true again");
   Services.prefs.setBoolPref(PREF, true);
@@ -74,10 +84,16 @@ async function testLinksInRuleView(styleSheetInDebuggerEnabled) {
   }
 }
 
-async function verifyStyleSheetLink(view, fileName, lineNumber) {
+async function verifyStyleSheetLink(
+  view,
+  fileName,
+  lineNumber,
+  styleSheetInDebuggerEnabled
+) {
   const expectedLocation = `${fileName}:${lineNumber}`;
   const expectedUrl = URL_ROOT_SSL + fileName;
-  const expectedTitle = `View source in Style Editor → ${URL_ROOT_SSL}${expectedLocation}`;
+  const panel = styleSheetInDebuggerEnabled ? "Debugger" : "Style Editor";
+  const expectedTitle = `View source in ${panel} → ${URL_ROOT_SSL}${expectedLocation}`;
 
   info("Verifying that the rule-view stylesheet link is " + expectedLocation);
   const label = getRuleViewLinkByIndex(view, 1);
