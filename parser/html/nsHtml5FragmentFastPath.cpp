@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <string_view>
 #include <type_traits>
 
 #include "mozilla/Array.h"
@@ -13,6 +14,7 @@
 #include "mozilla/Span.h"
 #include "mozilla/TextUtils.h"
 #include "mozilla/Try.h"
+#include "mozilla/Utf16.h"
 #include "mozilla/Vector.h"
 #include "mozilla/dom/Comment.h"
 #include "mozilla/dom/Document.h"
@@ -382,6 +384,8 @@ struct Token {
   // For start tags.
   uint8_t mTagIndex;
   uint8_t mAttributeCount;
+  // Whether the data is in Parser::mDecodedData rather than in the source.
+  bool mDecoded;
   // For text and comments, the offset of their data in the source. For start
   // tags, the index of their first attribute.
   uint32_t mOffset;
@@ -397,6 +401,8 @@ struct AttributeToken {
   uint8_t mNameLength;
   // Whether the tokenizer would represent the value as an atom.
   bool mUseAtom;
+  // Whether the value is in Parser::mDecodedData rather than in the source.
+  bool mDecoded;
   uint32_t mValueOffset;
   uint32_t mValueLength;
 };
@@ -458,7 +464,8 @@ class Parser {
     for (const Token& token : mTokens) {
       switch (token.mKind) {
         case Token::Kind::Text:
-          MOZ_TRY(AppendText(parents[depth], mStart + token.mOffset,
+          MOZ_TRY(AppendText(parents[depth],
+                             Chars(token.mDecoded, token.mOffset),
                              token.mLength));
           break;
         case Token::Kind::Comment:
@@ -500,6 +507,10 @@ class Parser {
   bool AtEnd() const { return mPos == mEnd; }
 
   uint32_t Offset(const char16_t* aPos) const { return aPos - mStart; }
+
+  const char16_t* Chars(bool aDecoded, uint32_t aOffset) const {
+    return (aDecoded ? mDecodedData.BeginReading() : mStart) + aOffset;
+  }
 
   void SkipWhitespace() {
     while (mPos != mEnd && IsAsciiWhitespace(*mPos)) {
@@ -585,15 +596,19 @@ class Parser {
   //   U+000A LF characters, and there are never any U+000D CR characters in
   //   the input to the tokenization stage.
   //
-  // This leaves character references, U+0000 and carriage returns in text to
-  // the full parser.
+  // ParseDecodedText() handles character references. This leaves U+0000 and
+  // carriage returns in text to the full parser.
   bool ParseChildren(ContentModel aModel) {
     while (true) {
       const char16_t* text = mPos;
       SkipText();
-      if (mPos != text &&
-          !mTokens.append(Token{Token::Kind::Text, 0, 0, Offset(text),
-                                uint32_t(mPos - text)})) {
+      if (!AtEnd() && *mPos == '&') {
+        if (!ParseDecodedText(text)) {
+          return false;
+        }
+      } else if (mPos != text &&
+                 !mTokens.append(Token{Token::Kind::Text, 0, 0, false,
+                                       Offset(text), uint32_t(mPos - text)})) {
         return false;
       }
       if (AtEnd()) {
@@ -639,6 +654,244 @@ class Parser {
         return false;
       }
     }
+  }
+
+  // Tokenizes the text from aStart on, whose character references from mPos
+  // on get decoded into mDecodedData.
+  bool ParseDecodedText(const char16_t* aStart) {
+    const uint32_t offset = mDecodedData.Length();
+    if (!mDecodedData.Append(aStart, mPos - aStart, fallible)) {
+      return false;
+    }
+    do {
+      if (!AppendCharacterReference(false)) {
+        return false;
+      }
+      const char16_t* text = mPos;
+      SkipText();
+      if (!mDecodedData.Append(text, mPos - text, fallible)) {
+        return false;
+      }
+    } while (!AtEnd() && *mPos == '&');
+    return mTokens.append(Token{Token::Kind::Text, 0, 0, true, offset,
+                                uint32_t(mDecodedData.Length() - offset)});
+  }
+
+  // Decodes the character reference at mPos into mDecodedData, or a lone "&"
+  // that doesn't start one. Only references whose decoding doesn't depend on
+  // the context are supported, except that in attribute values, an "&"
+  // followed by letters and digits and then "=" is always literal.
+  //
+  // https://html.spec.whatwg.org/#character-reference-state
+  //   Set the temporary buffer to the empty string. Append a U+0026 AMPERSAND
+  //   (&) character to the temporary buffer. Consume the next input
+  //   character:
+  //   ASCII alphanumeric
+  //     Reconsume in the named character reference state.
+  //   U+0023 NUMBER SIGN (#)
+  //     Append the current input character to the temporary buffer. Switch to
+  //     the numeric character reference state.
+  //   Anything else
+  //     Flush code points consumed as a character reference. Reconsume in the
+  //     return state.
+  //
+  // https://html.spec.whatwg.org/#flush-code-points-consumed-as-a-character-reference
+  //   When a state says to flush code points consumed as a character
+  //   reference, it means that for each code point in the temporary buffer
+  //   (in the order they were added to the buffer), the user agent must append
+  //   the code point from the buffer to the current attribute's value if the
+  //   character reference was consumed as part of an attribute, or emit the
+  //   code point as a character token otherwise.
+  bool AppendCharacterReference(bool aInAttributeValue) {
+    MOZ_ASSERT(*mPos == '&');
+    const char16_t* pos = mPos + 1;
+    if (pos == mEnd || !(IsAsciiAlphanumeric(*pos) || *pos == '#')) {
+      ++mPos;
+      return mDecodedData.Append(u'&', fallible);
+    }
+    // https://html.spec.whatwg.org/#numeric-character-reference-state
+    //   Set the character reference code to zero (0).
+    //   Consume the next input character:
+    //   U+0078 LATIN SMALL LETTER X
+    //   U+0058 LATIN CAPITAL LETTER X
+    //     Append the current input character to the temporary buffer. Switch
+    //     to the hexadecimal character reference start state.
+    //   ASCII digit
+    //     Reconsume in the decimal character reference state.
+    //   Anything else
+    //     This is an absence-of-digits-in-numeric-character-reference parse
+    //     error. Flush code points consumed as a character reference.
+    //     Reconsume in the return state.
+    //
+    // https://html.spec.whatwg.org/#hexadecimal-character-reference-start-state
+    //   Consume the next input character:
+    //   ASCII hex digit
+    //     Reconsume in the hexadecimal character reference state.
+    //   Anything else
+    //     This is an absence-of-digits-in-numeric-character-reference parse
+    //     error. Flush code points consumed as a character reference.
+    //     Reconsume in the return state.
+    //
+    // https://html.spec.whatwg.org/#hexadecimal-character-reference-state
+    //   Consume the next input character:
+    //   ASCII digit
+    //     Multiply the character reference code by 16. Add a numeric version
+    //     of the current input character (subtract 0x0030 from the
+    //     character's code point) to the character reference code.
+    //   ASCII upper hex digit
+    //     Multiply the character reference code by 16. Add a numeric version
+    //     of the current input character as a hexadecimal digit (subtract
+    //     0x0037 from the character's code point) to the character reference
+    //     code.
+    //   ASCII lower hex digit
+    //     Multiply the character reference code by 16. Add a numeric version
+    //     of the current input character as a hexadecimal digit (subtract
+    //     0x0057 from the character's code point) to the character reference
+    //     code.
+    //   U+003B SEMICOLON (;)
+    //     Switch to the numeric character reference end state.
+    //   Anything else
+    //     This is a missing-semicolon-after-character-reference parse error.
+    //     Reconsume in the numeric character reference end state.
+    //
+    // https://html.spec.whatwg.org/#decimal-character-reference-state
+    //   Consume the next input character:
+    //   ASCII digit
+    //     Multiply the character reference code by 10. Add a numeric version
+    //     of the current input character (subtract 0x0030 from the
+    //     character's code point) to the character reference code.
+    //   U+003B SEMICOLON (;)
+    //     Switch to the numeric character reference end state.
+    //   Anything else
+    //     This is a missing-semicolon-after-character-reference parse error.
+    //     Reconsume in the numeric character reference end state.
+    //
+    // https://html.spec.whatwg.org/#numeric-character-reference-end-state
+    //   Check the character reference code:
+    //   - If the number is 0x00, then this is a null-character-reference parse
+    //     error. Set the character reference code to 0xFFFD.
+    //   - If the number is greater than 0x10FFFF, then this is a
+    //     character-reference-outside-unicode-range parse error. Set the
+    //     character reference code to 0xFFFD.
+    //   - If the number is a surrogate, then this is a
+    //     surrogate-character-reference parse error. Set the character
+    //     reference code to 0xFFFD.
+    //   - If the number is a noncharacter, then this is a
+    //     noncharacter-character-reference parse error.
+    //   - If the number is 0x0D, or a control that's not ASCII whitespace,
+    //     then this is a control-character-reference parse error. If the
+    //     number is one of the numbers in the first column of the following
+    //     table, then find the row with that number in the first column, and
+    //     set the character reference code to the number in the second column
+    //     of that row.
+    //     ...
+    //   Set the temporary buffer to the empty string. Append a code point
+    //   equal to the character reference code to the temporary buffer. Flush
+    //   code points consumed as a character reference. Switch to the return
+    //   state.
+    //
+    // Missing digits, a missing semicolon, and every code point for which the
+    // end state reports a parse error, are left to the full parser. So is
+    // U+000C FORM FEED, which isn't an error.
+    if (*pos == '#') {
+      ++pos;
+      const bool hex = pos != mEnd && (*pos == 'x' || *pos == 'X');
+      if (hex) {
+        ++pos;
+      }
+      const char16_t* digits = pos;
+      uint32_t value = 0;
+      for (; pos != mEnd && (hex ? IsAsciiHexDigit(*pos) : IsAsciiDigit(*pos));
+           ++pos) {
+        value = value * (hex ? 16 : 10) + AsciiAlphanumericToNumber(*pos);
+        if (value > 0x10FFFF) {
+          return false;
+        }
+      }
+      // Leave out the code points the tokenizer replaces or reports as
+      // errors.
+      const bool supported = value == '\t' || value == '\n' ||
+                             (value >= 0x20 && value < 0x7F) ||
+                             (value >= 0xA0 && value < 0xD800) ||
+                             (value >= 0xE000 && value < 0xFDD0) ||
+                             (value >= 0xFDF0 && (value & 0xFFFE) != 0xFFFE);
+      if (pos == digits || pos == mEnd || *pos != ';' || !supported) {
+        return false;
+      }
+      mPos = pos + 1;
+      return IsInBMP(value)
+                 ? mDecodedData.Append(char16_t(value), fallible)
+                 : mDecodedData.Append(HighSurrogate(value), fallible) &&
+                       mDecodedData.Append(LowSurrogate(value), fallible);
+    }
+    // https://html.spec.whatwg.org/#named-character-reference-state
+    //   Consume the maximum number of characters possible, where the consumed
+    //   characters are one of the identifiers in the first column of the
+    //   named character references table. Append each character to the
+    //   temporary buffer when it's consumed.
+    //   If there is a match
+    //     If the character reference was consumed as part of an attribute, and
+    //     the last character matched is not a U+003B SEMICOLON character (;),
+    //     and the next input character is either a U+003D EQUALS SIGN
+    //     character (=) or an ASCII alphanumeric, then, for historical
+    //     reasons, flush code points consumed as a character reference and
+    //     switch to the return state.
+    //     Otherwise:
+    //       1. If the last character matched is not a U+003B SEMICOLON
+    //          character (;), then this is a
+    //          missing-semicolon-after-character-reference parse error.
+    //       2. Set the temporary buffer to the empty string. Append one or two
+    //          characters corresponding to the character reference name (as
+    //          given by the second column of the named character references
+    //          table) to the temporary buffer.
+    //       3. Flush code points consumed as a character reference. Switch to
+    //          the return state.
+    //   Otherwise
+    //     Flush code points consumed as a character reference. Switch to the
+    //     ambiguous ampersand state.
+    //
+    // https://html.spec.whatwg.org/#ambiguous-ampersand-state
+    //   Consume the next input character:
+    //   ASCII alphanumeric
+    //     If the character reference was consumed as part of an attribute,
+    //     then append the current input character to the current attribute's
+    //     value. Otherwise, emit the current input character as a character
+    //     token.
+    //   U+003B SEMICOLON (;)
+    //     This is an unknown-named-character-reference parse error. Reconsume
+    //     in the return state.
+    //   Anything else
+    //     Reconsume in the return state.
+    //
+    // No identifier in the table starts with one of the names below including
+    // their semicolon, so these are the longest match. In an attribute value,
+    // the longest match within letters and digits followed by "=" doesn't end
+    // with a semicolon, so the historical rule keeps the "&" and what follows
+    // literal, as does the ambiguous ampersand state if there is no match.
+    // Everything else is left to the full parser.
+    static constexpr struct {
+      std::u16string_view mName;
+      char16_t mValue;
+    } kNamed[] = {{u"amp;", '&'},  {u"lt;", '<'},    {u"gt;", '>'},
+                  {u"quot;", '"'}, {u"apos;", '\''}, {u"nbsp;", 0xA0}};
+    for (const auto& named : kNamed) {
+      if (size_t(mEnd - pos) >= named.mName.size() &&
+          !memcmp(pos, named.mName.data(),
+                  named.mName.size() * sizeof(char16_t))) {
+        mPos = pos + named.mName.size();
+        return mDecodedData.Append(named.mValue, fallible);
+      }
+    }
+    if (aInAttributeValue) {
+      while (pos != mEnd && IsAsciiAlphanumeric(*pos)) {
+        ++pos;
+      }
+      if (pos != mEnd && *pos == '=') {
+        ++mPos;
+        return mDecodedData.Append(u'&', fallible);
+      }
+    }
+    return false;
   }
 
   // Tokenizes a comment, or a bogus comment starting with "<?", at mPos.
@@ -916,7 +1169,7 @@ class Parser {
         return false;
       }
     }
-    return mTokens.append(Token{Token::Kind::Comment, 0, 0, Offset(data),
+    return mTokens.append(Token{Token::Kind::Comment, 0, 0, false, Offset(data),
                                 uint32_t(dataEnd - data)});
   }
 
@@ -981,7 +1234,7 @@ class Parser {
     }
 
     const size_t tokenIndex = mTokens.length();
-    if (!mTokens.append(Token{Token::Kind::StartTag, tagIndex, 0,
+    if (!mTokens.append(Token{Token::Kind::StartTag, tagIndex, 0, false,
                               uint32_t(mAttributes.length()), 0})) {
       return false;
     }
@@ -1177,7 +1430,7 @@ class Parser {
       return false;
     }
     ++mPos;
-    return mTokens.append(Token{Token::Kind::EndTag, 0, 0, 0, 0});
+    return mTokens.append(Token{Token::Kind::EndTag, 0, 0, false, 0, 0});
   }
 
   // Tokenizes the attributes and the end of a start tag. A carriage return in
@@ -1346,6 +1599,7 @@ class Parser {
                                Offset(nameStart),
                                uint8_t(length),
                                known && known->isUseAtom(),
+                               false,
                                0,
                                0};
       // https://html.spec.whatwg.org/#attribute-name-state
@@ -1430,9 +1684,11 @@ class Parser {
       // these cases.
       const char16_t* value = ++mPos;
       while (mPos != mEnd && *mPos != quote) {
-        // Character references and newline normalization need the full
-        // parser.
-        if (*mPos == '&' || *mPos == '\r' || !*mPos) {
+        if (*mPos == '&') {
+          return ParseDecodedAttributeValue(aAttribute, value, quote);
+        }
+        // Newline normalization and U+0000 need the full parser.
+        if (*mPos == '\r' || !*mPos) {
           return false;
         }
         ++mPos;
@@ -1498,6 +1754,39 @@ class Parser {
     }
     aAttribute.mValueOffset = Offset(value);
     aAttribute.mValueLength = mPos - value;
+    return true;
+  }
+
+  // Tokenizes the quoted attribute value from aStart on, whose character
+  // references from mPos on get decoded into mDecodedData.
+  bool ParseDecodedAttributeValue(AttributeToken& aAttribute,
+                                  const char16_t* aStart, char16_t aQuote) {
+    aAttribute.mDecoded = true;
+    aAttribute.mValueOffset = mDecodedData.Length();
+    if (!mDecodedData.Append(aStart, mPos - aStart, fallible)) {
+      return false;
+    }
+    while (true) {
+      const char16_t* segment = mPos;
+      while (mPos != mEnd && *mPos != aQuote && *mPos != '&' && *mPos != '\r' &&
+             *mPos) {
+        ++mPos;
+      }
+      if (!mDecodedData.Append(segment, mPos - segment, fallible)) {
+        return false;
+      }
+      if (AtEnd() || *mPos == '\r' || !*mPos) {
+        return false;
+      }
+      if (*mPos == aQuote) {
+        break;
+      }
+      if (!AppendCharacterReference(true)) {
+        return false;
+      }
+    }
+    aAttribute.mValueLength = mDecodedData.Length() - aAttribute.mValueOffset;
+    ++mPos;
     return true;
   }
 
@@ -1605,7 +1894,8 @@ class Parser {
   // Represents the value the way nsHtml5Tokenizer does, which
   // Element::SetNoNameSpaceAttrOnNewlyCreatedElement() relies on.
   nsHtml5String MakeValue(const AttributeToken& aAttribute) {
-    char16_t* value = const_cast<char16_t*>(mStart) + aAttribute.mValueOffset;
+    char16_t* value = const_cast<char16_t*>(
+        Chars(aAttribute.mDecoded, aAttribute.mValueOffset));
     const int32_t length = int32_t(aAttribute.mValueLength);
     if (nsHtml5String digit =
             nsHtml5Portability::newSingleDigitAttributeValue(value, length)) {
@@ -1642,6 +1932,8 @@ class Parser {
   Vector<AttributeToken, 32> mAttributes;
   // The node infos of the elements created so far, by index into kTags.
   RefPtr<NodeInfo> mNodeInfos[kTagCount];
+  // Text and attribute values with character references, decoded.
+  nsAutoString mDecodedData;
 };
 
 uint32_t sSuccessCount = 0;

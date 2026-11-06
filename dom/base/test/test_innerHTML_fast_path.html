@@ -40,6 +40,13 @@ const ACCEPTED = [
   "<div class=\"abcdefghijklmnopqrstuvwxyz\" title=\"x<em>y</em>z\">text that spans strides</div>",
   "<label for=x>l</label><input id=x>",
   "<!-- c -->x",
+  "a &amp; b",
+  "<div title=\"&lt;\">x</div>",
+  "&lt;&gt;&quot;&apos;&nbsp;&amp;",
+  "&#65;&#x42;&#X43;&#128512;&#9;&#10;&#xFFFD;&#x1f600;",
+  "Tom & Jerry, a &<b>b</b> &",
+  "<span title=\"a&amp;b &lt;c&gt; &#65;\" data-x='&quot;q&quot;' alt=\"Tom & Jerry\">x &amp; y</span>",
+  "<img src=\"x.png?h=30&w=30&lpos=a\" alt=\"a&b1=c\" title=\"&amp=1 &lt=2\">",
   "<!---->x<!-- a --->y<!-- -- -->z<!--<svg>&-->",
   "<ul><!--x--><li>1</li><!---->\n<li>2</li></ul>",
   "<?lit$1088786$>x<div><?lit$2$></div>",
@@ -80,6 +87,8 @@ const ACCEPTED = [
   "<picture><source srcset=\"a.png\"><img src=\"a.png\"></picture>",
   "<div a=>x</div><div b= >y</div><div c=/>z</div>",
   "<div Data-Foo=1 data-bar=2 dATA-bAZ=3 foo=4 fo=5>x</div>",
+  "&#xA0;&#xD7FF;&#xE000;&#xFDCF;&#xFDF0;&#x10FFFD;&#0000065;",
+  "<span title=\"a&\">x</span><div class=\"a&amp;b\" tabindex=\"&#49;\">y</div>",
 ];
 
 // Short text without markup, which innerHTML handles before the fast path.
@@ -88,8 +97,6 @@ const TEXT_WITHOUT_MARKUP = ["", "plain text"];
 // Markup that makes the fast path fall back to the full parser.
 const REJECTED = [
   ...TEXT_WITHOUT_MARKUP,
-  "a &amp; b",
-  "<div title=\"&lt;\">x</div>",
   "<div a\"b=1>x</div>",
   "<!-->x",
   "<!--->x",
@@ -114,6 +121,22 @@ const REJECTED = [
   "<div a=b=c>x</div>",
   "<div a=b\"c>x</div>",
   "<div a=b&amp;c>x</div>",
+  "<img alt=\"&copy 2020\" title=\"&notin\" src=\"x.png?&lt\">",
+  "<span title=\"&copy;\">x</span>",
+  "<img src=\"x.png?openid.x=1&openid.y=2\">",
+  "<span title=\"&amp;\r\n\">x</span>",
+  "&amp",
+  "&ampx;",
+  "&AMP;",
+  "&copy; &notin;",
+  "a &b=c",
+  "&#0;&#x110000;",
+  "&#55296;",
+  "&#128;",
+  "&#13;",
+  "&#x;",
+  "&#65",
+  "&amp;\r\n",
   "<div a=b\0c>x</div>",
   "a\r\nb",
   "<div title=\"a\r\nb\">x</div>",
@@ -171,6 +194,14 @@ const REJECTED = [
   "<output>o</output>",
   "<?a\rb>x",
   "<?a\0b>x",
+  "&#x7F;",
+  "&#x9F;",
+  "&#12;",
+  "&#xFDD0;",
+  "&#x1FFFE;",
+  "&#99999999999;",
+  "<span title=\"&#x;\">x</span>",
+  "<span title=\"&#65\">x</span>",
 ];
 
 // The fast path scans text 16 code units at a time, so put characters it has
@@ -178,7 +209,7 @@ const REJECTED = [
 // every position around the stride boundaries.
 const TEXT = "abcdefghijklmnopqrstuvwxyz0123456789ABCD";
 for (const [insert, accepted] of [
-  ["&amp;", false], ["\r", false], ["\0", false], ["<b>x</b>", true], ["<!--c-->", true],
+  ["&amp;", true], ["&#x1F600;", true], ["& ", true], ["\r", false], ["\0", false], ["<b>x</b>", true], ["<!--c-->", true],
   ["</span>", false], ["ļ", true], ["Ħ", true], ["č", true], ["Ā", true],
   ["\u{1F600}", true],
 ]) {
@@ -192,7 +223,8 @@ for (const [insert, accepted] of [
 for (const quote of ["\"", "'"]) {
   const other = quote == "\"" ? "'" : "\"";
   for (const [insert, accepted] of [
-    ["&amp;", false], ["\r", false], ["\0", false], [quote, false],
+    ["&amp;", true], ["&#x1F600;", true], ["& ", true], ["\r", false],
+    ["\0", false], [quote, false],
     [other, true], ["<b>x</b>", true], ["Ģ", true], ["Ħ", true], ["ħ", true],
     ["č", true], ["Ā", true], ["\u{1F600}", true],
   ]) {
