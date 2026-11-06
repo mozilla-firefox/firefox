@@ -9027,7 +9027,7 @@ nsresult nsDocShell::InternalLoad(nsDocShellLoadState* aLoadState,
   //    * url's scheme is a fetch scheme,
   //    then:
   if (RefPtr<Document> document = GetDocument();
-      !aLoadState->LoadIsFromSessionHistory() && document &&
+      !isDownload && !aLoadState->LoadIsFromSessionHistory() && document &&
       aLoadState->UserNavigationInvolvement() !=
           UserNavigationInvolvement::BrowserUI &&
       !document->IsInitialDocument() &&

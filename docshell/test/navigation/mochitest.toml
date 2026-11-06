@@ -91,6 +91,10 @@ prefs=["privacy.restrict3rdpartystorage.heuristic.window_open=false"]
 
 ["test_aboutblank_change_process.html"]
 
+["test_anchor_download_single_navigate_event.html"]
+support-files = ["file_anchor_download_single_navigate_event.sjs"]
+skip-if = ["!sessionHistoryInParent"]
+
 ["test_beforeunload_and_bfcache.html"]
 support-files = ["file_beforeunload_and_bfcache.html"]
 

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>&lt;a download&gt; fires exactly one navigate event</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script>
+"use strict";
+
+const SJS = "file_anchor_download_single_navigate_event.sjs";
+
+async function waitForDownloadRequest() {
+  const response = await fetch(`${SJS}?arrived`);
+  await response.text();
+}
+
+add_task(async function test_anchor_download_single_navigate_event() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["dom.navigation.webidl.enabled", true],
+      ["dom.navigation.api.strict.enabled", true],
+    ],
+  });
+
+  const iframe = document.createElement("iframe");
+  iframe.src = "blank.html";
+  document.body.appendChild(iframe);
+  await new Promise(resolve => iframe.addEventListener("load", resolve, { once: true }));
+
+  let navigateEvents = 0;
+  iframe.contentWindow.navigation.onnavigate = _ => navigateEvents++;
+
+  const a = iframe.contentDocument.createElement("a");
+  a.href = `${SJS}?download`;
+  a.download = "";
+  iframe.contentDocument.body.appendChild(a);
+  a.click();
+
+  // The download request reaching the server means the load has gone past
+  // the point where a second navigate event could be fired for it.
+  await waitForDownloadRequest();
+
+  is(navigateEvents, 1,
+    "Only the download request navigate event should fire");
+
+  iframe.remove();
+  await fetch(`${SJS}?release`);
+});
+</script>
+</body>
+</html>
