@@ -276,12 +276,6 @@ subprojects { project ->
     }
 
     afterEvaluate {
-        if (it.hasProperty('android')) {
-            kotlin {
-                jvmToolchain(config.jvmTargetCompatibility)
-            }
-        }
-
         if (it.hasProperty('android')
                 && (project.projectDir.absolutePath.contains("android-components")
                 || projectName == "fenix"

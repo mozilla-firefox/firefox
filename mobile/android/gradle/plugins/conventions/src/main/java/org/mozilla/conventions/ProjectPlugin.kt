@@ -11,6 +11,7 @@ import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.FilterConfiguration
 import org.gradle.api.Action
 import org.gradle.api.GradleException
+import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
@@ -37,6 +38,8 @@ import org.gradle.api.specs.Spec
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.compile.JavaCompile
+import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.TestDescriptor
 import org.gradle.api.tasks.testing.TestListener
@@ -47,8 +50,11 @@ import org.gradle.kotlin.dsl.getByType
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.process.CommandLineArgumentProvider
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.mozilla.conventions.ktfmt.configureKtfmt
+import java.io.DataInputStream
+import java.io.EOFException
 import java.io.File
 import java.util.concurrent.Callable
 import java.util.zip.ZipFile
@@ -78,6 +84,7 @@ class ProjectPlugin : Plugin<Project> {
         configureJniKeepDebugSymbols(project)
         configureKotlinCompilerMessageReformatting(project)
         configureKotlinWarningsAsErrors(project)
+        configureJvmTarget(project)
         configureAndroidBuildToolsVersion(project, substs)
         configureAppServicesSubstitution(project, extraProperties, substs)
         configureGleanSubstitution(project, extraProperties)
@@ -346,6 +353,43 @@ class ProjectPlugin : Plugin<Project> {
             compilerOptions {
                 allWarningsAsErrors.set(true)
             }
+        }
+    }
+
+    private fun configureJvmTarget(project: Project) {
+        val javaVersion = JavaVersion.VERSION_17
+        project.pluginManager.withPlugin("com.android.base") {
+            project.extensions.getByType<CommonExtension>().compileOptions.apply {
+                sourceCompatibility = javaVersion
+                targetCompatibility = javaVersion
+            }
+        }
+        project.pluginManager.withPlugin("java") {
+            project.tasks.withType<JavaCompile>().configureEach {
+                options.release.set(javaVersion.majorVersion.toInt())
+            }
+            project.tasks.withType<KotlinCompile>().configureEach {
+                compilerOptions.freeCompilerArgs.add("-Xjdk-release=${javaVersion.majorVersion}")
+            }
+        }
+        project.tasks.withType<KotlinCompile>().configureEach {
+            compilerOptions {
+                jvmTarget.set(JvmTarget.fromTarget(javaVersion.majorVersion))
+            }
+        }
+        if (project.providers.environmentVariable("MOZ_AUTOMATION").isPresent) {
+            val javaMajor = javaVersion.majorVersion.toInt()
+            project.tasks.withType<JavaCompile>().configureEach {
+                val classes = destinationDirectory
+                doLast { checkClassFileVersions(classes.get().asFile, javaMajor) }
+            }
+            project.tasks.withType<KotlinCompile>().configureEach {
+                val classes = destinationDirectory
+                doLast { checkClassFileVersions(classes.get().asFile, javaMajor) }
+            }
+        }
+        project.tasks.withType<Javadoc>().configureEach {
+            options.source = javaVersion.majorVersion
         }
     }
 
@@ -764,5 +808,23 @@ internal fun missingRoomImplementations(databases: List<String>, generatedFiles:
     return databases.filterNot { database ->
         val impl = "${database.substringAfterLast('.')}_Impl"
         generated.any { it == impl || it.endsWith("_$impl") }
+    }
+}
+
+internal fun checkClassFileVersions(dir: File, javaMajor: Int) {
+    // Class file major version 61 is Java 17: https://docs.oracle.com/javase/specs/jvms/se17/html/jvms-4.html#jvms-4.1
+    val max = javaMajor + 44
+    val tooNew = dir.walk().filter { it.isFile && it.extension == "class" }.mapNotNull { file ->
+        val version = DataInputStream(file.inputStream()).use {
+            try {
+                if (it.readInt() == 0xCAFEBABE.toInt()) { it.readUnsignedShort(); it.readUnsignedShort() } else null
+            } catch (e: EOFException) {
+                null
+            }
+        } ?: throw GradleException("$file is not a class file")
+        if (version > max) "$file: class file version $version" else null
+    }.toList()
+    if (tooNew.isNotEmpty()) {
+        throw GradleException("Class files newer than version $max (Java $javaMajor):\n" + tooNew.joinToString("\n"))
     }
 }

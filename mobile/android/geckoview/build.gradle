@@ -306,7 +306,6 @@ androidComponents.onVariants(androidComponents.selector().all()) { variant ->
         }
 
         options.memberLevel = JavadocMemberLevel.PROTECTED
-        options.source = 11
         options.links("https://developer.android.com/reference")
 
         options.docTitle = "GeckoView ${mozconfig.substs.MOZ_APP_VERSION} API"
