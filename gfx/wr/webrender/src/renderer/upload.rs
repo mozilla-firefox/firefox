@@ -137,6 +137,11 @@ pub fn upload_to_texture_cache(
                 }
             };
 
+            if let Some(stride) = stride {
+                let bpp = texture.get_format().bytes_per_pixel();
+                assert!(stride >= rect.width() * bpp);
+            }
+
             stats.items_uploaded += 1;
 
             let use_batch_upload = renderer.device.use_batched_texture_uploads() &&
