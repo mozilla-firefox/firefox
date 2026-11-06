@@ -26,8 +26,6 @@ class nsContentDLF final : public nsIDocumentLoaderFactory {
   NS_DECL_ISUPPORTS
   NS_DECL_NSIDOCUMENTLOADERFACTORY
 
-  nsresult InitUAStyleSheet();
-
   /**
    * Create a blank document using the given loadgroup and given
    * principal.  aPrincipal is allowed to be null, in which case the
@@ -36,9 +34,6 @@ class nsContentDLF final : public nsIDocumentLoaderFactory {
   static already_AddRefed<mozilla::dom::Document> CreateBlankDocument(
       nsILoadGroup* aLoadGroup, nsIPrincipal* aPrincipal,
       nsIPrincipal* aPartitionedPrincipal, nsDocShell* aContainer);
-
- private:
-  static nsresult EnsureUAStyleSheet();
 };
 
 nsresult NS_NewContentDocumentLoaderFactory(nsIDocumentLoaderFactory** aResult);
