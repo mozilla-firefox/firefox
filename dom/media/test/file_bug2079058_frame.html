@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body>
+<script>
+"use strict";
+
+// Creates element A and waits for its metadata, then reopens this document and
+// moves A into an inactive document, so A's stalled request keeps this frame's
+// load event pending. It then creates element B in the parent with the same
+// URL. When the load event fires, it applies `action` and posts A's error code
+// to the parent.
+
+const params = new URLSearchParams(location.search);
+const action = params.get("action");
+const src = params.get("src");
+const SpecialPowers = parent.SpecialPowers;
+const videos = { A: null, B: null };
+let inactive;
+
+function createVideo(doc) {
+  const video = doc.createElement("video");
+  video.preload = "auto";
+  video.muted = true;
+  video.src = src;
+  return video;
+}
+
+function onReloadComplete() {
+  const errorCode = videos.A.error?.code;
+  if (action == "resetB") {
+    videos.B.removeAttribute("src");
+    videos.B.load();
+  } else {
+    const name = action == "dropA" ? "A" : "B";
+    inactive.adoptNode(videos[name]);
+    videos[name] = null;
+  }
+  // Spin the event loop between collections so pending tasks release the
+  // dropped element.
+  for (let i = 0; i < 8; i++) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", "bug2079058.sjs?ping", false);
+    xhr.send();
+    SpecialPowers.forceGC();
+    SpecialPowers.forceCC();
+  }
+  parent.postMessage({ type: "load-fired", errorCode }, "*");
+}
+
+function startSharingElement() {
+  videos.B = createVideo(parent.document);
+}
+
+function reopenDocument() {
+  document.open();
+  window.addEventListener("load", onReloadComplete, { capture: true, once: true });
+  inactive = document.implementation.createHTMLDocument("");
+  inactive.adoptNode(videos.A);
+  // Give A time to suspend its download before B shares its resource.
+  setTimeout(startSharingElement, 500);
+}
+
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    videos.A = createVideo(document);
+    videos.A.addEventListener(
+      "loadedmetadata",
+      () => setTimeout(reopenDocument, 0),
+      { once: true }
+    );
+  }, 0);
+}, { once: true });
+</script>
+</body>
+</html>

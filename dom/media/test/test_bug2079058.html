@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test dropping or resetting media elements that share a resource from a frame load event</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+<script>
+"use strict";
+
+// eslint-disable-next-line sdl/no-insecure-url
+const SJS = "http://example.com/tests/dom/media/test/bug2079058.sjs";
+
+// The frame makes element A. This document makes element B with the same URL,
+// so A and B use the same resource.
+//
+// This document and the frame are on mochi.test. The media URL is on
+// example.com. The server redirects the request of B to example.org. The
+// shared resource then has data from two origins. Because of this, the decoder
+// of A stops the redirect and sets a network error on A. Then the load event of
+// the frame can occur.
+//
+// The frame does aAction in the load event:
+// - "dropA": Move A to an inactive document and remove its reference.
+// - "dropB": Move B to an inactive document and remove its reference.
+// - "resetB": Remove the src attribute of B, then call load() on B.
+//
+// Expected result: The page continues to the end in all cases. A has
+// MEDIA_ERR_NETWORK when the load event occurs. This error code shows that the
+// test used the redirect path.
+async function runTest(aAction) {
+  const src = `${SJS}?key=${aAction}-${Math.random().toString(36).slice(2)}`;
+  const loadFired = new Promise(resolve => {
+    window.addEventListener("message", function onMessage(e) {
+      if (e.data?.type == "load-fired") {
+        window.removeEventListener("message", onMessage);
+        resolve(e.data);
+      }
+    });
+  });
+  const iframe = document.createElement("iframe");
+  iframe.src = `file_bug2079058_frame.html?action=${aAction}&src=${encodeURIComponent(src)}`;
+  document.body.appendChild(iframe);
+
+  const { errorCode } = await loadFired;
+  await new Promise(resolve => setTimeout(resolve, 0));
+  SpecialPowers.forceGC();
+  SpecialPowers.forceCC();
+  is(
+    errorCode,
+    MediaError.MEDIA_ERR_NETWORK,
+    `A has a network error when the frame load event runs ${aAction}`
+  );
+  iframe.remove();
+  await fetch(`${SJS}?release`, { mode: "no-cors" });
+}
+
+SimpleTest.registerCleanupFunction(async () => {
+  await fetch(`${SJS}?release`, { mode: "no-cors" });
+});
+
+add_task(async function testDropSharingElement() {
+  await runTest("dropB");
+});
+
+add_task(async function testResetSharingElement() {
+  await runTest("resetB");
+});
+
+add_task(async function testDropErroringElement() {
+  await runTest("dropA");
+});
+</script>
+</body>
+</html>

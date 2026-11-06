@@ -747,3 +747,9 @@ support-files = [
   "bug1735300-vp9-flac-edit-list.mp4",
   "rms-utils.js",
 ]
+
+["test_bug2079058.html"]
+support-files = [
+  "bug2079058.sjs",
+  "file_bug2079058_frame.html",
+]
