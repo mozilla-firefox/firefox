@@ -160,6 +160,7 @@ preprocessed_intervention_files = [
     "bug2040371-keywords.smarthr.jp-hide_browser_notice.css",
     "bug2041215-vitra.com.tr-fix_zero_width_product_images.css",
     "bug2044288-www.kuaishou.com-fix_missing_video_thumbnails.css",
+    "bug2045674-quickconnect.to.js",
     "bug2046741-mylabmastering.pearson.com-hide_unsupported_modal.css",
     "bug2051291-customers.extend-hide_preloader.css",
     "bug2053077-jobs.abbott-restore_otp_inputs.css",

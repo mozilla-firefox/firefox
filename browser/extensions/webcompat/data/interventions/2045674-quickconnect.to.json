@@ -1,0 +1,17 @@
+{
+  "label": "quickconnect.to",
+  "bugs": {
+    "2045674": {
+      "issue": "broken-interactive-elements",
+      "matches": ["*://*.quickconnect.to/sharing/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": ["use_chrome_useragent.js"]
+      }
+    }
+  ]
+}
