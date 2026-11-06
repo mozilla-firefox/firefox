@@ -1,0 +1,5 @@
+# The evolve Mercurial extension, from PyPI rather than cloned, because cloning
+# from repo.mercurial-scm.org or foss.heptapod.net often fails in CI. The hash
+# pins the exact wheel; its files match tag 12.0.0 of
+# https://foss.heptapod.net/mercurial/evolve (e7a245b44abc5ccd2b317b8f051587b116f9219f).
+hg-evolve==12.0.0 --hash=sha256:fca084d13c79acc784f50266bf802d62c2435f6ef714e585541539627e4f366f

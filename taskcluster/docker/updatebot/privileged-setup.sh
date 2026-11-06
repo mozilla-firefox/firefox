@@ -79,5 +79,6 @@ chown -R worker:worker .*
 
 python3 -m pip install --break-system-packages -U pip
 python3 -m pip install --break-system-packages poetry==2.1.1
+python3 -m pip install --break-system-packages --only-binary :all: --require-hashes -r /setup/evolve-requirements.txt
 
 rm -rf /setup
