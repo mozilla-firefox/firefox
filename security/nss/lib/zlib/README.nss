@@ -7,4 +7,4 @@ License File: http://zlib.net/zlib_license.html
 
 Description:
 
-NSS uses zlib in modutil and signtool.
+NSS uses zlib for TLS certificate compression in tstclnt and selfserv.

@@ -85,6 +85,16 @@ make_cert() {
         type_args=(-g 2048 --pss --extGeneric 1.3.6.1.4.1.44363.44:not-critical:empty.txt)
         type=rsa
         ;;
+    unknown_ext)
+        touch empty.txt
+        type_args=(-q nistp256 --extKeyUsage serverAuth --extGeneric 1.3.6.1.4.1.13769.666.666.666.1.500.9.3:not-critical:empty.txt)
+        type=ec
+        ;;
+    unknown_critical_ext)
+        touch empty.txt
+        type_args=(-q nistp256 --extKeyUsage serverAuth --extGeneric 1.3.6.1.4.1.13769.666.666.666.1.500.9.3:critical:empty.txt)
+        type=ec
+        ;;
   esac
   msg="create certificate: $@"
   shift 2

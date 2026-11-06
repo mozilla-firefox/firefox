@@ -15,6 +15,7 @@
 #include "nss_scoped_ptrs.h"
 #include "testvectors_base/test-structs.h"
 #include "pk11_import.h"
+#include "pk11_keygen.h"
 
 namespace nss_test {
 
@@ -142,5 +143,26 @@ TEST_F(Pkcs11HmacTest, Sha3384) {
 TEST_F(Pkcs11HmacTest, Sha3512) {
   Run("hmac_sha3_512", "HMACSHA3-512", CKM_SHA3_512_HMAC);
 }
+
+class Pkcs11MacKeyTest : public ::testing::TestWithParam<CK_MECHANISM_TYPE> {};
+
+// MAC mechanisms should refuse to sign with an RSA private key.
+TEST_P(Pkcs11MacKeyTest, RsaKeyIsNotAMacKey) {
+  ScopedSECKEYPrivateKey priv;
+  ScopedSECKEYPublicKey pub;
+  Pkcs11KeyPairGenerator(CKM_RSA_PKCS_KEY_PAIR_GEN).GenerateKey(&priv, &pub);
+  ASSERT_TRUE(priv);
+
+  uint8_t msg_buf[16] = {0};
+  uint8_t mac_buf[HASH_LENGTH_MAX];
+  SECItem msg = {siBuffer, msg_buf, sizeof(msg_buf)};
+  SECItem mac = {siBuffer, mac_buf, sizeof(mac_buf)};
+  EXPECT_EQ(SECFailure, PK11_SignWithMechanism(priv.get(), GetParam(), nullptr,
+                                               &mac, &msg));
+  EXPECT_EQ(SEC_ERROR_INVALID_KEY, PORT_GetError());
+}
+
+INSTANTIATE_TEST_SUITE_P(MacMechanisms, Pkcs11MacKeyTest,
+                         ::testing::Values(CKM_SHA256_HMAC, CKM_AES_CMAC));
 
 }  // namespace nss_test

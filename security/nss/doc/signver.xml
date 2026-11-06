@@ -26,7 +26,7 @@
 
   <refsynopsisdiv>
     <cmdsynopsis>
-      <command>signtool</command>
+      <command>signver</command>
 	<group choice="plain">
 		<arg choice="plain">-A</arg>
 		<arg choice="plain">-V</arg>
@@ -183,8 +183,6 @@ Using the legacy databases must be manually specified by using the <command>dbm:
 
   <refsection id="seealso">
     <title>See Also</title>
-    <para>signtool (1)</para>
-
 	<para>The NSS wiki has information on the new database design and how to configure applications to use it.</para>
 	<itemizedlist>
 		<listitem>

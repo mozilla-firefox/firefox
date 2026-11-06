@@ -16,8 +16,6 @@
 <ul>
 <li>Add a PKCS #11 module, specifying a name and library file.
 (<a href="#add">-add</a>)
-<li>Add a PKCS #11 module from a server-formatted JAR file.
-(<a href="#jar">-jar</a>)
 <li>Change the password on or initialize a token.
 (<a href="#changepw">-changepw</a>)
 <li>Create databases (secmod[ule].db, key3.db, cert7.db) from scratch.
@@ -179,26 +177,6 @@ or database integrity. Before using this option, test the command
 interactively once to see the warnings that are produced.</td>
 </tr>
 
-<!-------------------------- -jar ------------------------------------->
-<tr>
-<td><a name="jar"></a><code>-jar <u><i>JAR file</i></u>
--installdir <u><i>root installation directory</i></u>
-[-tempdir <u><i>temporary directory</i></u>]</code></td>
-<td>Adds a new module from the given JAR file. The JAR file uses the 
-server <a href="pk11jar.html">PKCS #11 JAR format</a> to describe the names of
-any files that need to be installed, the name of the module, mechanism flags,
-and cipher flags.  The <u><i>root installation directory</i></u>
-is the directory relative to which files will be installed. This should be a
- directory 
-under which it would be natural to store dynamic library files, such as
-a server's root directory, or Communicator's root directory.
-The <u><i>temporary directory</i></u> is where temporary modutil files
-will be created in the course of the installation.  If no temporary directory
-is specified, the current directory will be used.
-<p>If used with the <code>-nocertdb</code> option, the signatures on the JAR
-file will not be checked.</td>
-</tr>
-
 <!----------------------------- -list ------------------------------>
 <tr>
 <td><a name="list"></a><code>-list [<u><i>module name</i></u>]</code></td>
@@ -309,8 +287,7 @@ no default, and this option must be used.</td>
 <td><code>-nocertdb</code></td>
 <td>Do not open the certificate or key databases.  This has several effects.
 With the <code>-create</code> command, this means that only a secmod.db file
-will be created; cert7.db and key3.db will not be created.  With the
-<code>-jar</code> command, signatures on the JAR file will not be checked.
+will be created; cert7.db and key3.db will not be created.
 With the <code>-changepw</code> command, the password on the Netscape internal 
 module cannot be set or changed, since this password is stored in key3.db.
 </td>

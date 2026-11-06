@@ -84,3 +84,5 @@ make_cert delegator_rsa_pss2048 delegator_rsa_pss2048 sign
 make_cert delegator_mldsa44 delegator_mldsa44 sign
 make_cert delegator_mldsa65 delegator_mldsa65 sign
 make_cert delegator_mldsa87 delegator_mldsa87 sign
+make_cert unknown_ext unknown_ext sign
+make_cert unknown_critical_ext unknown_critical_ext sign

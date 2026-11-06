@@ -43,7 +43,7 @@ publish:
 	   opt/sun/private/$(RPMLIBDIR)/libjss*.so
 	mkdir -p opt/sun/private/bin
 	(cd $(CORE_DEPTH)/../dist/$(OBJDIR)/bin && tar cphf - \
-		certutil cmsutil crlutil modutil pk12util signtool \
+		certutil cmsutil crlutil modutil pk12util \
 		signver ssltap addbuiltin ) | (cd opt/sun/private/bin && tar xvfBp -)
 	(cd $(CORE_DEPTH)/../dist/public && tar cphf - .) \
 		| (mkdir -p opt/sun/private/include && cd opt/sun/private/include && tar xvfBp -)

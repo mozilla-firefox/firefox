@@ -418,6 +418,9 @@ typedef struct SSLResumptionTokenInfoStr {
     PRUint32 alpnSelectionLen;
     PRUint32 maxEarlyDataSize;
     PRTime expirationTime; /* added in NSS 3.41 */
+    /* PR_TRUE if the token carries the resumption secret in cleartext. See
+     * SSL_EnablePlaintextResumptionExport. Added in NSS 3.134. */
+    PRBool plaintextSecret;
 } SSLResumptionTokenInfo;
 
 /*
@@ -437,10 +440,28 @@ typedef struct SSLResumptionTokenInfoStr {
                           SSLResumptionTokenInfo *_token, PRUintn _len),     \
                          (tokenData, tokenLen, token, len))
 
+/* Flags for SSL_GetResumptionTokenInfoWithFlags. */
+/* Leave |peerCert| NULL rather than constructing a CERTCertificate. */
+#define SSL_RESUMPTION_TOKEN_INFO_NO_PEER_CERT 0x1
+
+/*
+ * As SSL_GetResumptionTokenInfo, with |flags| a bitwise OR of
+ * SSL_RESUMPTION_TOKEN_INFO_* values. Unknown flags are rejected with
+ * SEC_ERROR_INVALID_ARGS.
+ */
+#define SSL_GetResumptionTokenInfoWithFlags(tokenData, tokenLen, token, len, \
+                                            flags)                           \
+    SSL_EXPERIMENTAL_API("SSL_GetResumptionTokenInfoWithFlags",              \
+                         (const PRUint8 *_tokenData, unsigned int _tokenLen, \
+                          SSLResumptionTokenInfo *_token, PRUintn _len,      \
+                          PRUint32 _flags),                                  \
+                         (tokenData, tokenLen, token, len, flags))
+
 /*
  * SSL_GetResumptionTokenInfo allocates memory in order to populate |tokenInfo|.
  * Any SSLResumptionTokenInfo struct filled with SSL_GetResumptionTokenInfo
- * has to be freed with SSL_DestroyResumptionTokenInfo.
+ * or SSL_GetResumptionTokenInfoWithFlags has to be freed with
+ * SSL_DestroyResumptionTokenInfo.
  */
 #define SSL_DestroyResumptionTokenInfo(tokenInfo) \
     SSL_EXPERIMENTAL_API(                         \

@@ -86,6 +86,7 @@ ifeq ($(OS_ARCH), WINNT)
 NSS_LIBS_1 = \
 	$(DIST)/lib/$(LIB_PREFIX)smime.$(LIB_SUFFIX) \
 	$(DIST)/lib/$(LIB_PREFIX)ssl.$(LIB_SUFFIX) \
+	$(DIST)/lib/$(LIB_PREFIX)mozpkix.$(LIB_SUFFIX) \
 	$(DIST)/lib/$(LIB_PREFIX)nss.$(LIB_SUFFIX) \
 	$(NULL)
 NSS_LIBS_2 = \
@@ -115,6 +116,7 @@ else
 NSS_LIBS_1 = \
 	$(DIST)/lib/$(LIB_PREFIX)smime.$(LIB_SUFFIX) \
 	$(DIST)/lib/$(LIB_PREFIX)ssl.$(LIB_SUFFIX) \
+	$(DIST)/lib/$(LIB_PREFIX)mozpkix.$(LIB_SUFFIX) \
 	$(DIST)/lib/$(LIB_PREFIX)nss.$(LIB_SUFFIX) \
 	$(NULL)
 NSS_LIBS_2 = \
@@ -257,4 +259,3 @@ FREEBL_LIBS = $(FREEBL_LIB_DIR)/$(LIB_PREFIX)freebl.$(LIB_SUFFIX)
 EXTRA_LIBS += $(FREEBL_LIBS)
 endif
 
-JAR_LIBS = $(DIST)/lib/$(LIB_PREFIX)jar.$(LIB_SUFFIX)

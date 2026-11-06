@@ -16,6 +16,8 @@ include manifest.mn
 
 include $(CORE_DEPTH)/coreconf/config.mk
 
+include $(CORE_DEPTH)/lib/mozpkix/mozpkix_cxx.mk
+
 #######################################################################
 # (3) Include "component" configuration information. (OPTIONAL)       #
 ######################################################################

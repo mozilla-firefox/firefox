@@ -1,26 +1,26 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+CORE_DEPTH = ../../..
 
 MODULE = nss
 
-LIBRARY_NAME = jar
+LIBRARY_NAME = mozpkix
 SHARED_LIBRARY = $(NULL)
 
-CORE_DEPTH = ../..
-
-CSRCS =	\
-	jarver.c \
-	jarsign.c \
-	jar.c \
-	jar-ds.c \
-	jarfile.c \
-	jarint.c \
+CPPSRCS = \
+	pkixbuild.cpp \
+	pkixc.cpp \
+	pkixcert.cpp \
+	pkixcheck.cpp \
+	pkixder.cpp \
+	pkixnames.cpp \
+	pkixnss.cpp \
+	pkixocsp.cpp \
+	pkixresult.cpp \
+	pkixtime.cpp \
+	pkixverify.cpp \
 	$(NULL)
-
-EXPORTS	 = jar.h jar-ds.h jarfile.h
-
-DEFINES = -DMOZILLA_CLIENT=1
 
 # This part of the code, including all sub-dirs, can be optimized for size
 export ALLOW_OPT_CODE_SIZE = 1

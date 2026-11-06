@@ -9,11 +9,6 @@ MODULE = sectools
 
 CSRCS = modutil.c		\
 		pk11.c			\
-		instsec.c		\
-		install.c		\
-		installparse.c		\
-		install-ds.c		\
-		lex.Pk11Install_yy.c	\
 		$(NULL)
 
 CPPSRCS = 
@@ -22,11 +17,9 @@ PROGRAM =  modutil
 
 REQUIRES = seccmd nss dbm
 
-DEFINES = -DNSPR20 -DYY_NO_UNPUT -DYY_NO_INPUT
+DEFINES = -DNSPR20
 
 # sigh
 #INCLUDES += -I$(CORE_DEPTH)/nss/lib/pk11wrap
 
 # USE_STATIC_LIBS = 1 
-
-EXTRA_LIBS = $(JAR_LIBS)

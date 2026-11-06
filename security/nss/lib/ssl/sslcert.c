@@ -6,10 +6,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "nssrenam.h" /* for CERT_DecodeDERCertificate */
 #include "ssl.h"
 #include "sslimpl.h"
-#include "secder.h"        /* for DER_DEFAULT_CHUNKSIZE */
 #include "secoid.h"        /* for SECOID_GetAlgorithmTag */
 #include "pk11func.h"      /* for PK11_ReferenceSlot */
 #include "nss.h"           /* for NSS_RegisterShutdown */
@@ -1042,76 +1040,6 @@ NSS_FindCertKEAType(CERTCertificate *cert)
         default:
             return ssl_kea_null;
     }
-}
-
-/* Copy a subjectPublicKeyInfo onto an arena of its own.
- *
- * Free the result with SECKEY_DestroySubjectPublicKeyInfo().
- */
-static CERTSubjectPublicKeyInfo *
-ssl_CopySPKI(const CERTSubjectPublicKeyInfo *from)
-{
-    CERTSubjectPublicKeyInfo *spki;
-    PLArenaPool *arena;
-
-    arena = PORT_NewArena(DER_DEFAULT_CHUNKSIZE);
-    if (!arena) {
-        PORT_SetError(SEC_ERROR_NO_MEMORY);
-        return NULL;
-    }
-
-    spki = PORT_ArenaZNew(arena, CERTSubjectPublicKeyInfo);
-    if (!spki) {
-        PORT_FreeArena(arena, PR_FALSE);
-        PORT_SetError(SEC_ERROR_NO_MEMORY);
-        return NULL;
-    }
-    spki->arena = arena;
-
-    /* The cast drops const only because SECKEY_CopySubjectPublicKeyInfo()
-     * predates our const-correctness efforts. */
-    if (SECKEY_CopySubjectPublicKeyInfo(arena, spki,
-                                        (CERTSubjectPublicKeyInfo *)from) !=
-        SECSuccess) {
-        PORT_FreeArena(arena, PR_FALSE);
-        return NULL;
-    }
-    return spki;
-}
-
-/* Parse the subjectPublicKeyInfo out of a DER-encoded certificate.
- *
- * The certificate is decoded into a CERTCertificate that lives only for the
- * duration of this call.  It is never added to any certificate database and no
- * reference to it escapes, so the partially initialized structure that
- * CERT_DecodeDERCertificate() produces -- which is why that function is unsafe
- * to use for long-lived certificates -- is not observable to callers.  The
- * subjectPublicKeyInfo itself is fully populated by the DER template, and it is
- * copied onto an arena of its own before the certificate is destroyed.
- *
- * Free the result with SECKEY_DestroySubjectPublicKeyInfo().
- */
-CERTSubjectPublicKeyInfo *
-ssl_ExtractSPKIFromDER(const SECItem *derCert)
-{
-    CERTCertificate *cert;
-    CERTSubjectPublicKeyInfo *spki;
-
-    if (!derCert || !derCert->data || !derCert->len) {
-        PORT_SetError(SEC_ERROR_INVALID_ARGS);
-        return NULL;
-    }
-
-    /* The cast drops const only because CERT_DecodeDERCertificate() predates
-     * our const-correctness efforts. */
-    cert = CERT_DecodeDERCertificate((SECItem *)derCert, PR_FALSE, NULL);
-    if (!cert) {
-        return NULL;
-    }
-
-    spki = ssl_CopySPKI(&cert->subjectPublicKeyInfo);
-    CERT_DestroyCertificate(cert);
-    return spki;
 }
 
 void

@@ -42,9 +42,6 @@ f none usr/include/mps/cryptohi.h 0644 root bin
 f none usr/include/mps/cryptoht.h 0644 root bin
 f none usr/include/mps/ecl-exp.h 0644 root bin
 f none usr/include/mps/hasht.h 0644 root bin
-f none usr/include/mps/jar-ds.h 0644 root bin
-f none usr/include/mps/jar.h 0644 root bin
-f none usr/include/mps/jarfile.h 0644 root bin
 f none usr/include/mps/key.h 0644 root bin
 #f none usr/include/mps/keydbt.h 0644 root bin
 f none usr/include/mps/keyhi.h 0644 root bin

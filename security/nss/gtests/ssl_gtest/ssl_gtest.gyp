@@ -43,6 +43,7 @@
         'ssl_misc_unittest.cc',
         'ssl_reconfig_unittest.cc',
         'ssl_option_unittest.cc',
+        'ssl_peer_cert_unittest.cc',
         'ssl_record_unittest.cc',
         'ssl_recordsep_unittest.cc',
         'ssl_recordsize_unittest.cc',

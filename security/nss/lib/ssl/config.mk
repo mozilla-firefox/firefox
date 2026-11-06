@@ -7,6 +7,10 @@ ifdef NISCC_TEST
 DEFINES += -DNISCC_TEST
 endif
 
+# mozpkixwrappers.cpp uses mozpkix.  Linked as an archive, so only the mozpkix
+# objects that are referenced are pulled in.
+EXTRA_LIBS += $(DIST)/lib/$(LIB_PREFIX)mozpkix.$(LIB_SUFFIX)
+
 ifeq (,$(filter-out WIN%,$(OS_TARGET)))
 
 ifdef NS_USE_GCC

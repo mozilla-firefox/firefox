@@ -36,7 +36,6 @@
         '<(DEPTH)/exports.gyp:nss_exports',
         '<(DEPTH)/gtests/google_test/google_test.gyp:gtest',
         '<(DEPTH)/lib/util/util.gyp:nssutil',
-        '<(DEPTH)/lib/ssl/ssl.gyp:ssl',
         '<(DEPTH)/lib/nss/nss.gyp:nss_static',
         '<(DEPTH)/lib/pk11wrap/pk11wrap.gyp:pk11wrap_static',
         '<(DEPTH)/lib/cryptohi/cryptohi.gyp:cryptohi',
@@ -59,6 +58,12 @@
         [ 'OS=="win"', {
           'libraries': [
             'advapi32.lib',
+          ],
+        }, {
+          # mozpkix is built without RTTI, so UBSan's vptr check can't find
+          # typeinfo for its classes, such as TrustDomain::IssuerChecker.
+          'cflags_cc': [
+            '-fno-sanitize=vptr',
           ],
         }],
       ],

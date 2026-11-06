@@ -1665,9 +1665,8 @@ extern PRBool ssl_SignatureSchemeEnabled(const sslSocket *ss,
 extern PRBool ssl_IsSupportedSignatureScheme(SSLSignatureScheme scheme);
 extern SECStatus ssl_CheckSignatureSchemeConsistency(
     sslSocket *ss, SSLSignatureScheme scheme, CERTSubjectPublicKeyInfo *spki);
-/* Parse the subjectPublicKeyInfo out of a DER-encoded certificate without
- * instantiating a lasting CERTCertificate and without touching any
- * certificate database.  Free the result with
+/* Parse the subjectPublicKeyInfo out of a DER-encoded certificate with
+ * mozpkix (see mozpkixwrappers.cpp). Free the result with
  * SECKEY_DestroySubjectPublicKeyInfo(). */
 extern CERTSubjectPublicKeyInfo *ssl_ExtractSPKIFromDER(const SECItem *derCert);
 /* Install |derCert| as the peer's end-entity certificate, replacing any
@@ -1940,6 +1939,11 @@ SECStatus SSLExp_EnablePlaintextResumptionExport(PRFileDesc *fd, PRBool enabled)
 
 SECStatus SSLExp_GetResumptionTokenInfo(const PRUint8 *tokenData, unsigned int tokenLen,
                                         SSLResumptionTokenInfo *token, unsigned int version);
+SECStatus SSLExp_GetResumptionTokenInfoWithFlags(const PRUint8 *tokenData,
+                                                 unsigned int tokenLen,
+                                                 SSLResumptionTokenInfo *token,
+                                                 unsigned int version,
+                                                 PRUint32 flags);
 
 SECStatus SSLExp_DestroyResumptionTokenInfo(SSLResumptionTokenInfo *token);
 

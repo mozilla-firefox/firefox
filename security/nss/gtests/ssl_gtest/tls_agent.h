@@ -90,6 +90,8 @@ class TlsAgent : public PollTarget {
   static const std::string kServerMlDsa44;
   static const std::string kServerMlDsa65;
   static const std::string kServerMlDsa87;
+  static const std::string kServerUnknownExt;
+  static const std::string kServerUnknownCriticalExt;
   static const std::string kDelegatorEcdsa256;    // draft-ietf-tls-subcerts
   static const std::string kDelegatorRsae2048;    // draft-ietf-tls-subcerts
   static const std::string kDelegatorRsaPss2048;  // draft-ietf-tls-subcerts

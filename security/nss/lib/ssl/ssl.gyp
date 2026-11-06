@@ -14,6 +14,7 @@
         'cmpcert.c',
         'dtlscon.c',
         'dtls13con.c',
+        'mozpkixwrappers.cpp',
         'prelib.c',
         'selfencrypt.c',
         'ssl3con.c',
@@ -81,6 +82,11 @@
       ],
       'dependencies': [
         '<(DEPTH)/exports.gyp:nss_exports',
+        '<(DEPTH)/exports.gyp:nss_mozpkix_exports',
+        '<(DEPTH)/lib/mozpkix/mozpkix.gyp:mozpkix_ssl',
+      ],
+      'includes': [
+        '../mozpkix/mozpkix_cxx.gypi',
       ],
     },
     {

@@ -7,12 +7,10 @@
  */
 
 #include "modutil.h"
-#include "install.h"
 #include <plstr.h>
 #include "certdb.h" /* for CERT_DB_FILE_VERSION */
 #include "nss.h"
 
-static void install_error(char* message);
 static char* PR_fgets(char* buf, int size, PRFileDesc* file);
 static char* progName;
 
@@ -27,7 +25,6 @@ typedef enum {
     DISABLE_COMMAND,
     ENABLE_COMMAND,
     FIPS_COMMAND,
-    JAR_COMMAND,
     LIST_COMMAND,
     RAW_LIST_COMMAND,
     RAW_ADD_COMMAND,
@@ -46,7 +43,6 @@ static char* commandNames[] = {
     "-disable",
     "-enable",
     "-fips",
-    "-jar",
     "-list",
     "-rawlist",
     "-rawadd",
@@ -69,7 +65,6 @@ typedef enum {
     ENABLE_ARG,
     FIPS_ARG,
     FORCE_ARG,
-    JAR_ARG,
     LIBFILE_ARG,
     LIST_ARG,
     RAW_LIST_ARG,
@@ -78,8 +73,6 @@ typedef enum {
     PWFILE_ARG,
     SLOT_ARG,
     UNDEFAULT_ARG,
-    INSTALLDIR_ARG,
-    TEMPDIR_ARG,
     SECMOD_ARG,
     NOCERTDB_ARG,
     STRING_ARG,
@@ -103,7 +96,6 @@ static char* optionStrings[] = {
     "-enable",
     "-fips",
     "-force",
-    "-jar",
     "-libfile",
     "-list",
     "-rawlist",
@@ -112,8 +104,6 @@ static char* optionStrings[] = {
     "-pwfile",
     "-slot",
     "-undefault",
-    "-installdir",
-    "-tempdir",
     "-secmod",
     "-nocertdb",
     "-string",
@@ -168,9 +158,6 @@ static char* secmodString = NULL;
 static char* mechanisms = NULL;
 static char* ciphers = NULL;
 static char* fipsArg = NULL;
-static char* jarFile = NULL;
-static char* installDir = NULL;
-static char* tempDir = NULL;
 static short force = 0;
 static PRBool nocertdb = PR_FALSE;
 
@@ -352,40 +339,6 @@ parse_args(int argc, char* argv[])
             case NOCERTDB_ARG:
                 nocertdb = PR_TRUE;
                 break;
-            case INSTALLDIR_ARG:
-                if (installDir != NULL) {
-                    PR_fprintf(PR_STDERR, errStrings[DUPLICATE_OPTION_ERR], arg);
-                    return DUPLICATE_OPTION_ERR;
-                }
-                if (TRY_INC(i, argc)) {
-                    PR_fprintf(PR_STDERR, errStrings[OPTION_NEEDS_ARG_ERR], arg);
-                    return OPTION_NEEDS_ARG_ERR;
-                }
-                installDir = argv[i];
-                break;
-            case TEMPDIR_ARG:
-                if (tempDir != NULL) {
-                    PR_fprintf(PR_STDERR, errStrings[DUPLICATE_OPTION_ERR], arg);
-                    return DUPLICATE_OPTION_ERR;
-                }
-                if (TRY_INC(i, argc)) {
-                    PR_fprintf(PR_STDERR, errStrings[OPTION_NEEDS_ARG_ERR], arg);
-                    return OPTION_NEEDS_ARG_ERR;
-                }
-                tempDir = argv[i];
-                break;
-            case JAR_ARG:
-                if (command != NO_COMMAND) {
-                    PR_fprintf(PR_STDERR, errStrings[MULTIPLE_COMMAND_ERR], arg);
-                    return MULTIPLE_COMMAND_ERR;
-                }
-                command = JAR_COMMAND;
-                if (TRY_INC(i, argc)) {
-                    PR_fprintf(PR_STDERR, errStrings[OPTION_NEEDS_ARG_ERR], arg);
-                    return OPTION_NEEDS_ARG_ERR;
-                }
-                jarFile = argv[i];
-                break;
             case LIBFILE_ARG:
                 if (libFile != NULL) {
                     PR_fprintf(PR_STDERR, errStrings[DUPLICATE_OPTION_ERR], arg);
@@ -533,13 +486,6 @@ verify_params()
                 PL_strcasecmp(fipsArg, "false")) {
                 PR_fprintf(PR_STDERR, errStrings[INVALID_FIPS_ARG]);
                 return INVALID_FIPS_ARG;
-            }
-            break;
-        case JAR_COMMAND:
-            if (installDir == NULL) {
-                PR_fprintf(PR_STDERR, errStrings[MISSING_PARAM_ERR],
-                           commandNames[JAR_COMMAND], optionStrings[INSTALLDIR_ARG]);
-                return MISSING_PARAM_ERR;
             }
             break;
         case LIST_COMMAND:
@@ -719,13 +665,6 @@ usage()
                "-fips [ true | false ]           If true, enable FIPS mode.  If false,\n"
                "                                 disable FIPS mode\n"
                "-force                           Do not run interactively\n"
-               "-jar JARFILE                     Install a PKCS #11 module from the given\n"
-               "                                 JAR file in the PKCS #11 JAR format\n"
-               "   -installdir DIR               Use DIR as the root directory of the\n"
-               "                                 installation\n"
-               "   [-tempdir DIR]                Use DIR as the temporary installation\n"
-               "                                 directory. If not specified, the current\n"
-               "                                 directory is used\n"
                "-list [MODULE]                   Lists information about the specified module\n"
                "                                 or about all modules if none is specified\n"
                "-rawadd MODULESPEC               Add module spec string to secmod DB\n"
@@ -740,8 +679,7 @@ usage()
                "---------------------------------------------------------------------------\n"
                "-dbdir DIR                       Directory DIR contains the security databases\n"
                "-dbprefix prefix                 Prefix for the security databases\n"
-               "-nocertdb                        Do not load certificate or key databases. No\n"
-               "                                 verification will be performed on JAR files.\n"
+               "-nocertdb                        Do not load certificate or key databases\n"
                "-secmod secmodName               Name of the security modules file\n"
                "---------------------------------------------------------------------------\n"
                "\n"
@@ -911,11 +849,6 @@ main(int argc, char* argv[])
         case CHKFIPS_COMMAND:
             errcode = ChkFipsMode(fipsArg);
             break;
-        case JAR_COMMAND:
-            Pk11Install_SetErrorHandler(install_error);
-            errcode = Pk11Install_DoInstall(jarFile, installDir, tempDir,
-                                            PR_STDOUT, force, nocertdb);
-            break;
         case LIST_COMMAND:
             if (moduleName) {
                 errcode = ListModule(moduleName);
@@ -939,18 +872,6 @@ main(int argc, char* argv[])
 loser:
     PR_Cleanup();
     return errcode;
-}
-
-/************************************************************************
- *
- * i n s t a l l _ e r r o r
- *
- * Callback function to handle errors in PK11 JAR file installation.
- */
-static void
-install_error(char* message)
-{
-    PR_fprintf(PR_STDERR, "Install error: %s\n", message);
 }
 
 /*************************************************************************

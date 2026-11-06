@@ -8,6 +8,7 @@
 nspr_cflags=
 nspr_cxxflags=
 nspr_ldflags=
+nspr_dllflags=
 nspr_opt=
 
 # Try to avoid bmake on OS X and BSD systems
@@ -101,7 +102,8 @@ nspr_build()
     pushd "$nspr_dir" >/dev/null
 
     CFLAGS="$nspr_cflags" CXXFLAGS="$nspr_cxxflags" \
-          LDFLAGS="$nspr_ldflags" HOST_CC="$HOST_CC" CC="$CC" CXX="$CCC" \
+          LDFLAGS="$nspr_ldflags" DLLFLAGS="$nspr_dllflags" \
+          HOST_CC="$HOST_CC" CC="$CC" CXX="$CCC" \
           run_verbose "$nspr_configure" "${extra_params[@]}" "$@"
     popd >/dev/null
     echo "NSPR [2/5] make ..."

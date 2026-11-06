@@ -51,7 +51,7 @@ enum Class : uint8_t {
   // PRIVATE = 3 << 6 // unused
 };
 
-enum Constructed { CONSTRUCTED = 1 << 5 };
+enum Constructed : uint8_t { CONSTRUCTED = 1 << 5 };
 
 enum Tag : uint8_t {
   BOOLEAN = UNIVERSAL | 0x01,

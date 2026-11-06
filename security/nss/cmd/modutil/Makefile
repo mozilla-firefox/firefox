@@ -25,7 +25,6 @@ include $(CORE_DEPTH)/coreconf/config.mk
 #######################################################################
 
 include ../platlibs.mk
-include $(CORE_DEPTH)/coreconf/zlib.mk
 
 #######################################################################
 # (5) Execute "global" rules. (OPTIONAL)                              #
@@ -45,10 +44,3 @@ include $(CORE_DEPTH)/coreconf/rules.mk
 
 
 include ../platrules.mk
-
-#
-# Cancel the built-in implicit yacc and lex rules.
-#
-
-%.c: %.y
-%.c: %.l

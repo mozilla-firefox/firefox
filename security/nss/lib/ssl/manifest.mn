@@ -66,6 +66,10 @@ CSRCS = \
         tls13subcerts.c \
         $(NULL)
 
+CPPSRCS = \
+        mozpkixwrappers.cpp \
+        $(NULL)
+
 LIBRARY_NAME = ssl
 LIBRARY_VERSION = 3
 MAPFILE = $(OBJDIR)/$(LIBRARY_NAME).def

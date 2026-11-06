@@ -105,11 +105,6 @@
       </varlistentry>
 
       <varlistentry>
-        <term>-jar JAR-file</term>
-	  <listitem><para>Add a new PKCS #11 module to the database using the named JAR file. Use this command with the <option>-installdir</option> and <option>-tempdir</option> arguments. The JAR file uses the NSS PKCS #11 JAR format to identify all the files to be installed, the module's name, the mechanism flags, and the cipher flags, as well as any files to be installed on the target machine, including the PKCS #11 module library file and other files such as documentation. This is covered in the JAR installation file section in the man page, which details the special script needed to perform an installation through a server or with <command>modutil</command>. </para></listitem>
-      </varlistentry>
-
-      <varlistentry>
           <term>-list [modulename]</term>
 	  <listitem><para>Display basic information about the contents of the <filename>secmod.db</filename> file. Specifying a <emphasis>modulename</emphasis> displays detailed information about a particular module and its slots and tokens.</para></listitem>
       </varlistentry>
@@ -160,11 +155,6 @@
       </varlistentry>
 
       <varlistentry>
-        <term>-installdir root-installation-directory</term>
-	  <listitem><para>Specify the root installation directory relative to which files will be installed by the <option>-jar</option> option. This directory should be one below which it is appropriate to store dynamic library files, such as a server's root directory.</para></listitem>
-      </varlistentry>
-
-      <varlistentry>
         <term>-libfile library-file</term>
 	  <listitem><para>Specify a path to a library file containing the implementation of the PKCS #11 interface module that is being added to the database.</para></listitem>
       </varlistentry>
@@ -187,9 +177,6 @@
 		<itemizedlist>
 		<listitem>
           <para>With the <option>-create</option> command, only a module security file is created; certificate and key databases are not created.</para>
-		</listitem>
-		<listitem>
-          <para>With the <option>-jar</option> command, signatures on the JAR file are not checked.</para>
 		</listitem>
 		<listitem>
           <para>With the <option>-changepw</option> command, the password on the NSS internal module cannot be set or changed, since this password is stored in the key database.</para></listitem>
@@ -217,10 +204,6 @@
 	  <listitem><para>Pass a configuration string for the module being added to the database.</para></listitem>
       </varlistentry>
 
-      <varlistentry>
-        <term>-tempdir temporary-directory</term>
-	  <listitem><para>Give a directory location where temporary files are created during the installation by the <option>-jar</option> option. If no temporary directory is specified, the current directory is used.</para></listitem>
-      </varlistentry>
     </variablelist>
   </refsection>
 
@@ -232,7 +215,7 @@
 <programlisting>modutil -create -dbdir directory</programlisting>
 
 	<para><command>Adding a Cryptographic Module</command></para>
-	<para>Adding a PKCS #11 module means submitting a supporting library file, enabling its ciphers, and setting default provider status for various security mechanisms. This can be done by supplying all of the information through <command>modutil</command> directly or by running a JAR file and install script. For the most basic case, simply upload the library:</para>
+	<para>Adding a PKCS #11 module means submitting a supporting library file, enabling its ciphers, and setting default provider status for various security mechanisms. This can be done by supplying all of the information through <command>modutil</command> directly. For the most basic case, simply upload the library:</para>
 <programlisting>modutil -add modulename -libfile library-file [-ciphers cipher-enable-list] [-mechanisms mechanism-list] </programlisting>
 	<para>For example:
 <programlisting>modutil -dbdir /home/my/sharednssdb -add "Example PKCS #11 Module" -libfile "/tmp/crypto.so" -mechanisms RSA:DSA:RC2:RANDOM 
@@ -241,61 +224,6 @@ Using database directory ...
 Module "Example PKCS #11 Module" added to database.</programlisting>
         </para>
 
-
-	<para><command>Installing a Cryptographic Module from a JAR File</command></para>
-	<para>PKCS #11 modules can also be loaded using a JAR file, which contains all of the required libraries and an installation script that describes how to install the module. The JAR install script is described in more detail in <xref linkend="jar-install-file" />.</para>
-	<para>The JAR installation script defines the setup information for each platform that the module can be installed on. For example:</para>
-<programlisting>Platforms { 
-   Linux:5.4.08:x86 { 
-      ModuleName { "Example PKCS #11 Module" } 
-      ModuleFile { crypto.so } 
-      DefaultMechanismFlags{0x0000} 
-      CipherEnableFlags{0x0000} 
-      Files { 
-         crypto.so { 
-            Path{ /tmp/crypto.so } 
-         } 
-         setup.sh { 
-            Executable 
-            Path{ /tmp/setup.sh } 
-         } 
-      } 
-   } 
-   Linux:6.0.0:x86 { 
-      EquivalentPlatform { Linux:5.4.08:x86 } 
-   } 
-} </programlisting>
-	<para>Both the install script and the required libraries must be bundled in a JAR file, which is specified with the <option>-jar</option> argument.</para>
-
-<programlisting>modutil -dbdir /home/mt"jar-install-filey/sharednssdb -jar install.jar -installdir /home/my/sharednssdb
-
-This installation JAR file was signed by: 
----------------------------------------------- 
-
-**SUBJECT NAME** 
-
-C=US, ST=California, L=Mountain View, CN=Cryptorific Inc., OU=Digital ID
-Class 3 - Netscape Object Signing, OU="www.verisign.com/repository/CPS
-Incorp. by Ref.,LIAB.LTD(c)9 6", OU=www.verisign.com/CPS Incorp.by Ref
-. LIABILITY LTD.(c)97 VeriSign, OU=VeriSign Object Signing CA - Class 3
-Organization, OU="VeriSign, Inc.", O=VeriSign Trust Network **ISSUER
-NAME**, OU=www.verisign.com/CPS Incorp.by Ref. LIABILITY LTD.(c)97
-VeriSign, OU=VeriSign Object Signing CA - Class 3 Organization,
-OU="VeriSign, Inc.", O=VeriSign Trust Network 
----------------------------------------------- 
-
-Do you wish to continue this installation? (y/n) y 
-Using installer script "installer_script" 
-Successfully parsed installation script 
-Current platform is Linux:5.4.08:x86 
-Using installation parameters for platform Linux:5.4.08:x86 
-Installed file crypto.so to /tmp/crypto.so
-Installed file setup.sh to ./pk11inst.dir/setup.sh 
-Executing "./pk11inst.dir/setup.sh"... 
-"./pk11inst.dir/setup.sh" executed successfully 
-Installed module "Example PKCS #11 Module" into module database 
-
-Installation completed successfully </programlisting>
 
 	<para><command>Adding Module Spec</command></para>
 	<para>Each module has information stored in the security database about its configuration and parameters. These can be added or edited using the <option>-rawadd</option> command. For the current settings or to see the format of the module spec in the database, use the <option>-rawlist</option> option.</para>
@@ -425,205 +353,6 @@ Re-enter new password:
 Token "Communicator Certificate DB" password changed successfully.</programlisting>
   </refsection>
 
-  <refsection id="jar-install-file"><title>JAR Installation File Format</title>
-     <para>When a JAR file is run by a server, by <command>modutil</command>, or by any program that does not interpret JavaScript, a special information file must be included to install the libraries. There are several things to keep in mind with this file:</para>
-	<itemizedlist>
-		<listitem>
-			<para>
-				It must be declared in the JAR archive's manifest file. 
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-				The script can have any name. 
-			</para>
-		</listitem>
-		<listitem>
-			<para>
-				The metainfo tag for this is <command>Pkcs11_install_script</command>. To declare meta-information in the manifest file, put it in a file that is passed to <command>signtool</command>.</para>
-		</listitem>
-	</itemizedlist>
-
-	<para><command>Sample Script</command></para>
-	<para>For example, the PKCS #11 installer script could be in the file pk11install. If so, the metainfo file for <command>signtool</command> includes a line such as this:</para>
-<programlisting>+ Pkcs11_install_script: pk11install</programlisting>
-
-	<para>The script must define the platform and version number, the module name and file, and any optional information like supported ciphers and mechanisms. Multiple platforms can be defined in a single install file.</para>
-<programlisting>ForwardCompatible { IRIX:6.2:mips SUNOS:5.5.1:sparc }
-Platforms {
-   WIN95::x86 {
-      ModuleName { "Example Module" }
-      ModuleFile { win32/fort32.dll }
-      DefaultMechanismFlags{0x0001}
-      DefaultCipherFlags{0x0001}
-      Files {
-         win32/setup.exe {
-            Executable
-            RelativePath { %temp%/setup.exe }
-         }
-         win32/setup.hlp {
-            RelativePath { %temp%/setup.hlp }
-         }
-         win32/setup.cab {
-            RelativePath { %temp%/setup.cab }
-         }
-      }
-   }
-   SUNOS:5.5.1:sparc {
-      ModuleName { "Example UNIX Module" }
-      ModuleFile { unix/fort.so }
-      DefaultMechanismFlags{0x0001}
-      CipherEnableFlags{0x0001}
-      Files {
-         unix/fort.so {
-            RelativePath{%root%/lib/fort.so}
-            AbsolutePath{/usr/local/netscape/lib/fort.so}
-            FilePermissions{555}
-         }
-         xplat/instr.html {
-            RelativePath{%root%/docs/inst.html}
-            AbsolutePath{/usr/local/netscape/docs/inst.html}
-            FilePermissions{555}
-         }
-      }
-   }
-   IRIX:6.2:mips {
-      EquivalentPlatform { SUNOS:5.5.1:sparc }
-   }
-}</programlisting>
-
-	<para><command>Script Grammar</command></para>
-	<para>The script is basic Java, allowing lists, key-value pairs, strings, and combinations of all of them.</para>
-<programlisting>--> valuelist
-
-valuelist --> value valuelist
-               &lt;null>
-
-value ---> key_value_pair
-            string
-
-key_value_pair --> key { valuelist }
-
-key --> string
-
-string --> simple_string
-            "complex_string"
-
-simple_string --> [^ \t\n\""{""}"]+ 
-
-complex_string --> ([^\"\\\r\n]|(\\\")|(\\\\))+ </programlisting>
-
-	<para>Quotes and backslashes must be escaped with a backslash. A complex string must not include newlines or carriage returns.Outside of complex strings, all white space (for example, spaces, tabs, and carriage returns) is considered equal and is used only to delimit tokens.</para>
-
-	<para><command>Keys</command></para>
-	<para>The Java install file uses keys to define the platform and module information.</para>
-	<para><command>ForwardCompatible</command> gives a list of platforms that are forward compatible. If the current platform cannot be found in the list of supported platforms, then the <command>ForwardCompatible</command> list is checked for any platforms that have the same OS and architecture in an earlier version. If one is found, its attributes are used for the current platform. </para>
-	<para><command>Platforms</command> (required) Gives a list of platforms. Each entry in the list is itself a key-value pair: the key is the name of the platform and the value list contains various attributes of the platform. The platform string is in the format <emphasis>system name:OS release:architecture</emphasis>. The installer obtains these values from NSPR. OS release is an empty string on non-Unix operating systems. NSPR supports these platforms:</para>
-	<itemizedlist>
-	<listitem>
-	<para>AIX (rs6000)</para>
-	</listitem>
-	<listitem>
-	<para>BSDI (x86)</para>
-	</listitem>
-	<listitem>
-	<para>FREEBSD (x86)</para>
-	</listitem>
-	<listitem>
-	<para>HPUX (hppa1.1)</para>
-	</listitem>
-	<listitem>
-	<para>IRIX (mips)</para>
-	</listitem>
-	<listitem>
-	<para>LINUX (ppc, alpha, x86)</para>
-	</listitem>
-	<listitem>
-	<para>MacOS (PowerPC)</para>
-	</listitem>
-	<listitem>
-	<para>NCR (x86)</para>
-	</listitem>
-	<listitem>
-	<para>NEC (mips)</para>
-	</listitem>
-	<listitem>
-	<para>OSF (alpha)</para>
-	</listitem>
-	<listitem>
-	<para>SOLARIS (sparc)</para>
-	</listitem>
-	<listitem>
-	<para>SONY (mips)</para>
-	</listitem>
-	<listitem>
-	<para>SUNOS (sparc)</para>
-	</listitem>
-	<listitem>
-	<para>UnixWare (x86)</para>
-	</listitem>
-	<listitem>
-	<para>WIN95 (x86, x86-64), the historical NSPR name for all Windows versions</para>
-	</listitem>
-	</itemizedlist>
-
-	<para>For example:</para>
-<programlisting>IRIX:6.2:mips
-SUNOS:5.5.1:sparc
-Linux:2.0.32:x86
-</programlisting>
-	<para>The module information is defined independently for each platform in the <command>ModuleName</command>, <command>ModuleFile</command>, and <command>Files</command> attributes. These attributes must be given unless an <command>EquivalentPlatform</command> attribute is specified. </para>
-
-	<para><command>Per-Platform Keys</command></para>
-	<para>Per-platform keys have meaning only within the value list of an entry in the <command>Platforms</command> list.</para>
-	<para><command>ModuleName</command> (required) gives the common name for the module. This name is used to reference the module by servers and by the <command>modutil</command> tool. </para>
-	<para><command>ModuleFile</command> (required) names the PKCS #11 module file for this platform. The name is given as the relative path of the file within the JAR archive. </para>
-	<para><command>Files</command> (required) lists the files that need to be installed for this module. Each entry in the file list is a key-value pair. The key is the path of the file in the JAR archive, and the value list contains attributes of the file. At least <command>RelativePath</command> or <command>AbsolutePath</command> must be specified for each file.</para>
-	<para><command>DefaultMechanismFlags</command> specifies mechanisms for which this module is the default provider; this is equivalent to the <option>-mechanism</option> option with the <option>-add</option> command. This key-value pair is a bitstring specified in hexadecimal (0x) format. It is constructed as a bitwise OR. If the DefaultMechanismFlags entry is omitted, the value defaults to 0x0.</para>
-
-<programlisting>RSA:                   0x00000001
-DSA:                   0x00000002
-RC2:                   0x00000004
-RC4:                   0x00000008
-DES:                   0x00000010
-DH:                    0x00000020
-FORTEZZA:              0x00000040
-RC5:                   0x00000080
-SHA1:                  0x00000100
-MD5:                   0x00000200
-MD2:                   0x00000400
-RANDOM:                0x08000000
-FRIENDLY:              0x10000000
-OWN_PW_DEFAULTS:       0x20000000
-DISABLE:               0x40000000</programlisting>
-
-	<para><command>CipherEnableFlags</command> specifies ciphers that this module provides that NSS does not provide (so that the module enables those ciphers for NSS). This is equivalent to the <option>-cipher</option> argument with the <option>-add</option> command. This key is a bitstring specified in hexadecimal (0x) format. It is constructed as a bitwise OR. If the <command>CipherEnableFlags</command> entry is omitted, the value defaults to 0x0.</para>
-
-	<para><command>EquivalentPlatform</command> specifies that the attributes of the named platform should also be used for the current platform. This makes it easier when more than one platform uses the same settings.</para>
-
-	<para><command>Per-File Keys</command></para>
-	<para>Some keys have meaning only within the value list of an entry in a <command>Files</command> list.</para>
-	<para>Each file requires a path key the identifies where the file is. Either <command>RelativePath</command> or <command>AbsolutePath</command> must be specified. If both are specified, the relative path is tried first, and the absolute path is used only if no relative root directory is provided by the installer program.</para>
-	<para><command>RelativePath</command> specifies the destination directory of the file, relative to some directory decided at install time. Two variables can be used in the relative path: <command>%root%</command> and <command>%temp%</command>. <command>%root%</command> is replaced at run time with the directory relative to which files should be installed; for example, it may be the server's root directory. The <command>%temp%</command> directory is created at the beginning of the installation and destroyed at the end. The purpose of <command>%temp%</command> is to hold executable files (such as setup programs) or files that are used by these programs. Files destined for the temporary directory are guaranteed to be in place before any executable file is run; they are not deleted until all executable files have finished.</para>
-	<para><command>AbsolutePath</command> specifies the destination directory of the file as an absolute path. </para>
-	<para><command>Executable</command> specifies that the file is to be executed during the course of the installation. Typically, this string is used for a setup program provided by a module vendor, such as a self-extracting setup executable. More than one file can be specified as executable, in which case the files are run in the order in which they are specified in the script file.</para>
-	<para><command>FilePermissions</command> sets permissions on any referenced files in a string of octal digits, according to the standard Unix format. This string is a bitwise OR.</para>
-
-<programlisting>
-user read:                0400
-user write:               0200
-user execute:             0100
-group read:               0040
-group write:              0020
-group execute:            0010
-other read:               0004
-other write:              0002
-other execute:            0001
-</programlisting>
-
-<para>Some platforms may not understand these permissions. They are applied only insofar as they make sense for the current platform. If this attribute is omitted, a default of 777 is assumed.</para>
-  </refsection>
-
 <refsection id="databases"><title>NSS Database Types</title>
 <para>NSS originally used BerkeleyDB databases to store security information. 
 The last versions of these <emphasis>legacy</emphasis> databases are:</para>
@@ -701,7 +430,6 @@ Using the legacy databases must be manually specified by using the <command>dbm:
     <title>See Also</title>
     <para>certutil (1)</para>
     <para>pk12util (1)</para>
-    <para>signtool (1)</para>
 
 	<para>The NSS wiki has information on the new database design and how to configure applications to use it.</para>
 <itemizedlist>

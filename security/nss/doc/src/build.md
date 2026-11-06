@@ -263,10 +263,6 @@ libraries. So the NSS library has the following forms:
 
 NSS, SSL, and S/MIME have all of the above forms.
 
-The following static libraries aren't included in any shared libraries
-
-- `libjar.a`/`jar.lib` provides an API for creating JAR files.
-
 The following static libraries are included only in external loadable PKCS
 \# 11 modules:
 

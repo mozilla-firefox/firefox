@@ -1,0 +1,9 @@
+# Pulled from https://apt.llvm.org/
+Types: deb
+URIs: http://apt.llvm.org/noble/
+Suites: llvm-toolchain-noble-23
+Components: main
+Architectures: amd64
+# From https://apt.llvm.org/llvm-snapshot.gpg.key
+# Checked fingerprint against the value published on the above.
+Signed-By: /etc/apt/trusted.gpg.d/apt.llvm.org.asc

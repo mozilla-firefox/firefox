@@ -23,6 +23,17 @@ win-x64/opt:
 win-x64/debug:
     description: "Windows x64 (debug)"
 
+win-x64-asan/debug:
+    description: "Windows x64 (ASan, debug)"
+    worker:
+        env:
+            UBSAN_OPTIONS: "print_stacktrace=1"
+            NSS_DISABLE_ARENA_FREE_LIST: "1"
+            NSS_DISABLE_UNLOAD: "1"
+            CFLAGS: "-O2"
+    attributes:
+        asan: true
+
 win-x64/opt-static:
     description: "Windows x64 Static (opt)"
     attributes:

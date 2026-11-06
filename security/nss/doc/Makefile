@@ -3,7 +3,7 @@
 # Creates man pages for the NSS security tools
 #
 # pk12util, certutil, modutil, ssltap, 
-# signtool, signver, cmsutil, crlutil,  
+# signver, cmsutil, crlutil,  
 # derdump, pp, vfychain, vfyserv
 #
 
@@ -48,7 +48,7 @@ nroff/%.1 : %.xml
 
 MANPAGES = \
 nroff/certutil.1 nroff/cmsutil.1 nroff/crlutil.1 nroff/pk12util.1 \
-nroff/modutil.1 nroff/ssltap.1 nroff/derdump.1 nroff/signtool.1 nroff/signver.1 \
+nroff/modutil.1 nroff/ssltap.1 nroff/derdump.1 nroff/signver.1 \
 nroff/pp.1 nroff/vfychain.1 nroff/vfyserv.1 nroff/nss-policy-check.1
 
 all-man: prepare $(MANPAGES)
@@ -63,7 +63,7 @@ html/%.html : %.xml
 
 HTMLPAGES = \
 html/certutil.html html/cmsutil.html html/crlutil.html html/pk12util.html html/modutil.html \
-html/ssltap.html html/derdump.html html/signtool.html html/signver.html html/pp.html \
+html/ssltap.html html/derdump.html html/signver.html html/pp.html \
 html/vfychain.html html/vfyserv.html html/nss-policy-check.html
 
 all-html: prepare $(HTMLPAGES)

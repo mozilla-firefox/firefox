@@ -4442,6 +4442,7 @@ struct {
     EXP(GetEchRetryConfigs),
     EXP(GetExtensionSupport),
     EXP(GetResumptionTokenInfo),
+    EXP(GetResumptionTokenInfoWithFlags),
     EXP(HelloRetryRequestCallback),
     EXP(InstallExtensionHooks),
     EXP(HkdfExtract),
@@ -4719,8 +4720,19 @@ SECStatus
 SSLExp_GetResumptionTokenInfo(const PRUint8 *tokenData, unsigned int tokenLen,
                               SSLResumptionTokenInfo *tokenOut, PRUintn len)
 {
+    return SSLExp_GetResumptionTokenInfoWithFlags(tokenData, tokenLen, tokenOut,
+                                                  len, 0);
+}
+
+SECStatus
+SSLExp_GetResumptionTokenInfoWithFlags(const PRUint8 *tokenData,
+                                       unsigned int tokenLen,
+                                       SSLResumptionTokenInfo *tokenOut,
+                                       PRUintn len, PRUint32 flags)
+{
     if (!tokenData || !tokenOut || !tokenLen ||
-        len > sizeof(SSLResumptionTokenInfo)) {
+        len > sizeof(SSLResumptionTokenInfo) ||
+        (flags & ~SSL_RESUMPTION_TOKEN_INFO_NO_PEER_CERT)) {
         PORT_SetError(SEC_ERROR_INVALID_ARGS);
         return SECFailure;
     }
@@ -4736,8 +4748,10 @@ SSLExp_GetResumptionTokenInfo(const PRUint8 *tokenData, unsigned int tokenLen,
     }
 
     /* |sid| only holds the peer certificate as DER; SSLResumptionTokenInfo is
-     * a public struct that hands out a CERTCertificate, so make one here. */
-    if (sid.peerCertDER.data) {
+     * a public struct that hands out a CERTCertificate, so make one here
+     * unless the caller doesn't want it. */
+    if (sid.peerCertDER.data &&
+        !(flags & SSL_RESUMPTION_TOKEN_INFO_NO_PEER_CERT)) {
         token.peerCert = CERT_NewTempCertificate(NULL, /* dbHandle */
                                                  &sid.peerCertDER,
                                                  NULL, PR_FALSE, PR_TRUE);
@@ -4767,6 +4781,9 @@ SSLExp_GetResumptionTokenInfo(const PRUint8 *tokenData, unsigned int tokenLen,
         token.maxEarlyDataSize = 0;
     }
     token.expirationTime = sid.expirationTime;
+    /* A successful decode guarantees the version and features bytes. */
+    token.plaintextSecret =
+        (tokenData[1] & SSLResumptionTokenFeatureRawMS) ? PR_TRUE : PR_FALSE;
 
     token.length = PR_MIN(sizeof(SSLResumptionTokenInfo), len);
     PORT_Memcpy(tokenOut, &token, token.length);

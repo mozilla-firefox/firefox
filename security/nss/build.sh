@@ -203,10 +203,6 @@ gyp_params+=(-Denable_sslkeylogfile="$sslkeylogfile")
 if [ "$fuzz" = 1 ]; then
     source "$cwd/coreconf/fuzz.sh"
 fi
-nspr_set_flags $sanitizer_flags
-if [ ! -z "$sanitizer_flags" ]; then
-    gyp_params+=(-Dsanitizer_flags="$sanitizer_flags")
-fi
 
 if [ "$msvc" = 1 ]; then
     source "$cwd/coreconf/msvc.sh"
@@ -229,6 +225,14 @@ if [ "$clang_cl" = 1 ]; then
         *) CC=clang-cl ;;
     esac
     export CC CCC="$CC" CXX="$CC"
+    if [ -n "$sanitizer_flags" ]; then
+        clang_cl_sanitizers
+    fi
+fi
+
+nspr_set_flags $sanitizer_flags
+if [ ! -z "$sanitizer_flags" ]; then
+    gyp_params+=(-Dsanitizer_flags="$sanitizer_flags")
 fi
 
 # -c = clean first
@@ -285,6 +289,7 @@ if check_config "$nspr_config" \
                  nspr_cflags="$(Q "$nspr_cflags")" \
                  nspr_cxxflags="$(Q "$nspr_cxxflags")" \
                  nspr_ldflags="$(Q "$nspr_ldflags")" \
+                 nspr_dllflags="$(Q "$nspr_dllflags")" \
                  nspr_opt="$(Q "$nspr_opt")"; then
     rebuild_nspr=1
 fi
@@ -296,6 +301,12 @@ fi
 # Save the chosen target.
 echo "$target" > "$dist_dir/latest"
 for i in "${all_args[@]}"; do echo "$i"; done > "$argsfile"
+
+# Install the asan runtime next to the executables for easier discovery.
+if [ -n "$asan_runtime_dll" ]; then
+    mkdir -p "$dist_dir/$target/bin"
+    cp -f "$asan_runtime_dll" "$dist_dir/$target/bin/"
+fi
 
 # Build.
 # NSPR.

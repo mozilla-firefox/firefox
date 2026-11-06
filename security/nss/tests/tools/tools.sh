@@ -14,7 +14,6 @@
 #
 # tests implemented:
 #    pk12util
-#    signtool
 #
 # special strings
 # ---------------
@@ -96,26 +95,18 @@ tools_init()
 
   TOOLSDIR=${HOSTDIR}/tools
   COPYDIR=${TOOLSDIR}/copydir
-  SIGNDIR=${TOOLSDIR}/signdir
 
   PKCS12POLICY=${QADIR}/tools/pkcs12policy.txt
 
   R_TOOLSDIR=../tools
   R_COPYDIR=../tools/copydir
-  R_SIGNDIR=../tools/signdir
   P_R_COPYDIR=${R_COPYDIR}
-  P_R_SIGNDIR=${R_SIGNDIR}
   if [ -n "${MULTIACCESS_DBM}" ]; then
       P_R_COPYDIR="multiaccess:Tools.$version"
-      P_R_SIGNDIR="multiaccess:Tools.sign.$version"
   fi
 
   mkdir -p ${TOOLSDIR}
   mkdir -p ${COPYDIR}
-  mkdir -p ${SIGNDIR}
-  cp ${ALICEDIR}/* ${SIGNDIR}/
-  mkdir -p ${TOOLSDIR}/html
-  cp ${QADIR}/tools/sign*.html ${TOOLSDIR}/html
   mkdir -p ${TOOLSDIR}/data
   cp ${QADIR}/tools/TestOldCA.p12 ${TOOLSDIR}/data
   cp ${QADIR}/tools/TestOldAES128CA.p12 ${TOOLSDIR}/data
@@ -888,61 +879,6 @@ map_cipher()
    echo "${1}"
 }
 
-############################## tools_sign ##############################
-# local shell function to test basic functionality of signtool
-########################################################################
-tools_sign()
-{
-  echo "$SCRIPTNAME: Create objsign cert -------------------------------"
-  echo "signtool -G \"objectsigner\" -d ${P_R_SIGNDIR} -p \"nss\""
-  ${BINDIR}/signtool -G "objsigner" -d ${P_R_SIGNDIR} -p "nss" 2>&1 <<SIGNSCRIPT
-y
-TEST
-MOZ
-NSS
-NY
-US
-liz
-liz@moz.org
-SIGNSCRIPT
-  html_msg $? 0 "Create objsign cert (signtool -G)"
-
-  echo "$SCRIPTNAME: Signing a jar of files ----------------------------"
-  echo "signtool -Z nojs.jar -d ${P_R_SIGNDIR} -p \"nss\" -k objsigner \\"
-  echo "         ${R_TOOLSDIR}/html"
-  ${BINDIR}/signtool -Z nojs.jar -d ${P_R_SIGNDIR} -p "nss" -k objsigner \
-           ${R_TOOLSDIR}/html
-  html_msg $? 0 "Signing a jar of files (signtool -Z)"
-
-  echo "$SCRIPTNAME: Listing signed files in jar ----------------------"
-  echo "signtool -v nojs.jar -d ${P_R_SIGNDIR} -p nss -k objsigner"
-  ${BINDIR}/signtool -v nojs.jar -d ${P_R_SIGNDIR} -p nss -k objsigner
-  html_msg $? 0 "Listing signed files in jar (signtool -v)"
-
-  echo "$SCRIPTNAME: Show who signed jar ------------------------------"
-  echo "signtool -w nojs.jar -d ${P_R_SIGNDIR}"
-  ${BINDIR}/signtool -w nojs.jar -d ${P_R_SIGNDIR}
-  html_msg $? 0 "Show who signed jar (signtool -w)"
-
-  echo "$SCRIPTNAME: Signing a xpi of files ----------------------------"
-  echo "signtool -Z nojs.xpi -X -d ${P_R_SIGNDIR} -p \"nss\" -k objsigner \\"
-  echo "         ${R_TOOLSDIR}/html"
-  ${BINDIR}/signtool -Z nojs.xpi -X -d ${P_R_SIGNDIR} -p "nss" -k objsigner \
-           ${R_TOOLSDIR}/html
-  html_msg $? 0 "Signing a xpi of files (signtool -Z -X)"
-
-  echo "$SCRIPTNAME: Listing signed files in xpi ----------------------"
-  echo "signtool -v nojs.xpi -d ${P_R_SIGNDIR} -p nss -k objsigner"
-  ${BINDIR}/signtool -v nojs.xpi -d ${P_R_SIGNDIR} -p nss -k objsigner
-  html_msg $? 0 "Listing signed files in xpi (signtool -v)"
-
-  echo "$SCRIPTNAME: Show who signed xpi ------------------------------"
-  echo "signtool -w nojs.xpi -d ${P_R_SIGNDIR}"
-  ${BINDIR}/signtool -w nojs.xpi -d ${P_R_SIGNDIR}
-  html_msg $? 0 "Show who signed xpi (signtool -w)"
-
-}
-
 tools_modutil()
 {
   echo "$SCRIPTNAME: Test if DB created by modutil -create is initialized"
@@ -973,7 +909,6 @@ tools_cleanup()
 
 tools_init
 tools_p12
-tools_sign
 tools_modutil
 tools_cleanup
 

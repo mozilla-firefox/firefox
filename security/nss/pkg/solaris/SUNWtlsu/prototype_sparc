@@ -37,7 +37,6 @@
 #64#f none usr/sfw/bin/sparcv9/cmsutil 0755 root bin
 #64#f none usr/sfw/bin/sparcv9/modutil 0755 root bin
 #64#f none usr/sfw/bin/sparcv9/pk12util 0755 root bin
-#64#f none usr/sfw/bin/sparcv9/signtool 0755 root bin
 #64#f none usr/sfw/bin/sparcv9/signver 0755 root bin
 #64#f none usr/sfw/bin/sparcv9/ssltap 0755 root bin
 #64#f none usr/sfw/bin/sparcv9/addbuiltin 0755 root bin

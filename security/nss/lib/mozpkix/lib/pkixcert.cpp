@@ -38,8 +38,8 @@ BackCert::Init()
 
   Reader tbsCertificate;
 
-  // The scope of |input| and |certificate| are limited to this block so we
-  // don't accidentally confuse them for tbsCertificate later.
+  // The scope of |certificate| is limited to this block so we
+  // don't accidentally confuse it for tbsCertificate later.
   {
     Reader certificate;
     rv = der::ExpectTagAndGetValueAtEnd(der, der::SEQUENCE, certificate);
@@ -162,6 +162,19 @@ BackCert::Init()
   }
 
   return der::End(tbsCertificate);
+}
+
+Result
+FindSubjectPublicKeyInfo(Input certDER, /*out*/ Input& subjectPublicKeyInfo)
+{
+  // BackCert::Init doesn't depend on the end-entity/CA distinction or on the
+  // child certificate, so these don't matter here.
+  BackCert cert(certDER, EndEntityOrCA::MustBeEndEntity, nullptr);
+  Result rv = cert.Init();
+  if (rv != Success) {
+    return rv;
+  }
+  return subjectPublicKeyInfo.Init(cert.GetSubjectPublicKeyInfo());
 }
 
 Result

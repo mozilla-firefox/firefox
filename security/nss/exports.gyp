@@ -26,7 +26,6 @@
             'lib/cryptohi/exports.gyp:lib_cryptohi_exports',
             'lib/dev/exports.gyp:lib_dev_exports',
             'lib/freebl/exports.gyp:lib_freebl_exports',
-            'lib/jar/exports.gyp:lib_jar_exports',
             'lib/nss/exports.gyp:lib_nss_exports',
             'lib/pk11wrap/exports.gyp:lib_pk11wrap_exports',
             'lib/pkcs12/exports.gyp:lib_pkcs12_exports',

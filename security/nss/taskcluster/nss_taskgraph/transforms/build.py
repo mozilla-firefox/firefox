@@ -35,6 +35,7 @@ def set_build_attributes(config, jobs):
 EXTRA_COMPILERS = {
     "clang": {"CC": "clang", "CCC": "clang++"},
     "clang-10": {"CC": "clang-10", "CCC": "clang++-10"},
+    "clang-23": {"CC": "clang-23", "CCC": "clang++-23"},
     # gcc-8 is the RHEL 8 system compiler (our floor); gcc-11 is RHEL 9.
     "gcc-8": {"CC": "gcc-8", "CCC": "g++-8"},
     "gcc-11": {"CC": "gcc-11", "CCC": "g++-11"},
@@ -75,9 +76,9 @@ def add_variants(config, jobs):
 
         # Windows gyp builds use clang-cl, as Firefox does (see
         # uses_clang_cl). MSVC is kept as a build-only extra, like the extra
-        # Linux compilers below.
+        # Linux compilers below. Sanitizer builds are clang-only.
         if (attributes["build_platform"].startswith("win")
-                and not attributes.get("make") and not attributes.get("static")):
+                and not any(attributes.get(attr) for attr in ("make", "static", "asan"))):
             msvc_job = deepcopy(job)
             msvc_job["name"] += "-msvc"
             msvc_job["description"] += " w/ MSVC"

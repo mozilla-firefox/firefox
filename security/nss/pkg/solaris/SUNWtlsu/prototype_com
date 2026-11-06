@@ -33,7 +33,6 @@ f none usr/sfw/bin/crlutil 0755 root bin
 f none usr/sfw/bin/cmsutil 0755 root bin
 f none usr/sfw/bin/modutil 0755 root bin
 f none usr/sfw/bin/pk12util 0755 root bin
-f none usr/sfw/bin/signtool 0755 root bin
 f none usr/sfw/bin/signver 0755 root bin
 f none usr/sfw/bin/ssltap 0755 root bin
 f none usr/sfw/bin/addbuiltin 0755 root bin

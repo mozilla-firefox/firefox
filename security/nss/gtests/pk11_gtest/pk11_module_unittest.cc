@@ -435,7 +435,9 @@ TEST_F(Pkcs11ModuleLoadFunctionTest, SuccessLoadModuleWithFunction) {
   EXPECT_EQ(
       0, PORT_Memcmp((char*)info.manufacturerID, "Test PKCS11 Manufacturer ID",
                      sizeof("Test PKCS11 Manufacturer ID") - 1));
-  EXPECT_EQ(info.flags, 0UL);
+  // EXPECT_EQ takes its arguments by reference, and on Windows, where the
+  // PKCS#11 structures are packed, info.flags is misaligned. Copy it.
+  EXPECT_EQ(static_cast<CK_FLAGS>(info.flags), 0UL);
 
   EXPECT_EQ(0,
             PORT_Memcmp((char*)info.libraryDescription, "Test PKCS11 Library",

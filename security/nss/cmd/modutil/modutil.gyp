@@ -11,19 +11,12 @@
       'target_name': 'modutil',
       'type': 'executable',
       'sources': [
-        'install-ds.c',
-        'install.c',
-        'installparse.c',
-        'instsec.c',
-        'lex.Pk11Install_yy.c',
         'modutil.c',
         'pk11.c'
       ],
       'dependencies': [
         '<(DEPTH)/exports.gyp:nss_exports',
-        '<(DEPTH)/exports.gyp:dbm_exports',
-        '<(DEPTH)/lib/jar/jar.gyp:jar',
-        '<(DEPTH)/lib/zlib/zlib.gyp:nss_zlib'
+        '<(DEPTH)/exports.gyp:dbm_exports'
       ]
     }
   ],
@@ -33,9 +26,7 @@
       '<(nss_private_dist_dir)/dbm'
     ],
     'defines': [
-      'NSPR20',
-      'YY_NO_UNPUT',
-      'YY_NO_INPUT'
+      'NSPR20'
     ]
   },
   'variables': {

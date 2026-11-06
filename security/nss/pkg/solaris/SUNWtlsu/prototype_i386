@@ -37,7 +37,6 @@
 #64#f none usr/sfw/bin/amd64/cmsutil 0755 root bin
 #64#f none usr/sfw/bin/amd64/modutil 0755 root bin
 #64#f none usr/sfw/bin/amd64/pk12util 0755 root bin
-#64#f none usr/sfw/bin/amd64/signtool 0755 root bin
 #64#f none usr/sfw/bin/amd64/signver 0755 root bin
 #64#f none usr/sfw/bin/amd64/ssltap 0755 root bin
 #64#f none usr/sfw/bin/amd64/addbuiltin 0755 root bin
