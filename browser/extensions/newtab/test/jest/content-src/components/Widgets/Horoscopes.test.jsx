@@ -55,7 +55,7 @@ describe("Horoscopes widget", () => {
     expect(frame).toHaveAttribute("aria-labelledby", "horoscopes-widget-label");
     expect(frame).toHaveAttribute(
       "sandbox",
-      "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+      "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
     );
   });
 

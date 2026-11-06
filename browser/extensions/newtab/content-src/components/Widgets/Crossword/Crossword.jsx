@@ -14,6 +14,7 @@ import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import { useSizeSubmenu } from "../../../lib/utils";
 import {
+  FRAMED_WIDGET_SANDBOX,
   WIDGET_REGISTRY,
   resolveWidgetFrame,
   resolveWidgetSize,
@@ -450,9 +451,7 @@ function Crossword({
           className="crossword-frame"
           title="Crossword"
           src={src}
-          // allow-same-origin is required for the crossword to work, but is
-          // currently under security review to see if it's safe to keep in our codebase right now.
-          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          sandbox={FRAMED_WIDGET_SANDBOX}
         />
       </div>
     </article>

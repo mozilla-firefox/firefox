@@ -243,7 +243,7 @@ describe("<Crossword>", () => {
       expect(frame).toBeInTheDocument();
       expect(frame).toHaveAttribute(
         "sandbox",
-        "allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
       );
       expect(frame).toHaveAttribute(
         "src",

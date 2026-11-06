@@ -7,6 +7,7 @@ import React, { useCallback } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
+  FRAMED_WIDGET_SANDBOX,
   WIDGET_REGISTRY,
   resolveWidgetFrame,
   resolveWidgetSize,
@@ -159,9 +160,7 @@ function Travel({
           className="travel-frame"
           aria-labelledby="travel-widget-label"
           src={src}
-          // Same sandbox as the Crossword frame, including allow-same-origin,
-          // which is under the same security review.
-          sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          sandbox={FRAMED_WIDGET_SANDBOX}
         />
       </div>
     </article>

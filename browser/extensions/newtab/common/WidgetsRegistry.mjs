@@ -633,6 +633,14 @@ export function getWidgets(registry, extensionWidgets) {
 export const FRAMED_WIDGETS = WIDGET_REGISTRY.filter(w => w.framed);
 
 /**
+ * The sandbox of a framed widget's iframe. allow-same-origin is required by
+ * the widget documents and is under security review. allow-forms lets a
+ * widget submit its own forms, such as the Travel search.
+ */
+export const FRAMED_WIDGET_SANDBOX =
+  "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox";
+
+/**
  * Returns true if a framed widget may load this URL. Framed widget URLs set the
  * iframe src and the origin the widget trusts for postMessage, so only https
  * URLs whose host ends with one of the comma-separated suffixes in the
