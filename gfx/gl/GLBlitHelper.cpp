@@ -1727,23 +1727,13 @@ bool GLBlitHelper::Blit(DMABufSurface* surface, const gfx::IntRect& destRect,
 
   const char* fragSample = nullptr;
   auto fragConvert = kFragConvert_None;
-  // Determine the reorder from source and destination formats. YUV sources
-  // are converted to RGB by the color matrix, while single-plane RGBA
-  // sources are sampled raw, so a BGRA-ordered DMABuf (e.g. a WebGL
-  // backbuffer) already matches a BGRA destination. Swap R/B exactly when
-  // the two orders differ.
-  const auto srcFormat = surface->GetFormat();
-  const bool srcIsBGRA = srcFormat == gfx::SurfaceFormat::B8G8R8A8 ||
-                         srcFormat == gfx::SurfaceFormat::B8G8R8X8;
   const bool dstIsBGRA = aDestFormat == gfx::SurfaceFormat::B8G8R8A8 ||
                          aDestFormat == gfx::SurfaceFormat::B8G8R8X8;
-  const bool swapRB = srcIsBGRA != dstIsBGRA;
   switch (pixelFormat) {
     case DMABufSurface::SURFACE_RGBA:
       fragSample = kFragSample_OnePlane;
-      if (swapRB) {
-        fragConvert = kFragConvert_BGR;
-      }
+      // TODO: The surface format of single-plane surfaces is unreliable, so it
+      // can't be used currently to determine a BGRA swizzle.
       break;
     case DMABufSurface::SURFACE_YUV:
       if (surface->GetTextureCount() == 2) {
@@ -1756,8 +1746,11 @@ bool GLBlitHelper::Blit(DMABufSurface* surface, const gfx::IntRect& destRect,
         return false;
       }
       pYuvArgs = &yuvArgs;
+      // YUV sources are converted to RGB by the color matrix, while the
+      // destination may store the opposite, BGRA order (e.g. canvas2d). Swap
+      // R/B when the destination is BGRA to compensate.
       fragConvert =
-          swapRB ? kFragConvert_ColorMatrixBGR : kFragConvert_ColorMatrix;
+          dstIsBGRA ? kFragConvert_ColorMatrixBGR : kFragConvert_ColorMatrix;
       break;
     default:
       return false;
