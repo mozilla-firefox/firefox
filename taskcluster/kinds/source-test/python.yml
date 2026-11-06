@@ -217,8 +217,6 @@ mozbase:
     when:
         files-changed:
             - 'testing/mozbase/**'
-            - 'testing/web-platform/*.py'
-            - 'testing/web-platform/python.toml'
             - 'tools/rb/**'
 
 mozharness:
