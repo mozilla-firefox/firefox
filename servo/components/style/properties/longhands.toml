@@ -1774,7 +1774,7 @@ affects = "layout"
 
 [position-visibility]
 type = "PositionVisibility"
-initial = "computed::PositionVisibility::ANCHORS_VISIBLE"
+initial = "computed::PositionVisibility::ANCHOR_VISIBLE"
 struct = "position"
 engine = "gecko"
 animation_type = "discrete"

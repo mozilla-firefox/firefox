@@ -1295,7 +1295,7 @@ static bool ComputePositionVisibility(
                "always can't be combined");
     return true;
   }
-  if (vis & StylePositionVisibility::ANCHORS_VALID) {
+  if (vis & StylePositionVisibility::ANCHOR_VALID) {
     for (const auto& ref : aReferencedAnchors) {
       if (ref.GetData().isNothing()) {
         return false;
@@ -1310,7 +1310,7 @@ static bool ComputePositionVisibility(
       return false;
     }
   }
-  if (vis & StylePositionVisibility::ANCHORS_VISIBLE) {
+  if (vis & StylePositionVisibility::ANCHOR_VISIBLE) {
     const auto* defaultAnchorName = aReferencedAnchors.mDefaultAnchorName.get();
     auto anchorTreeScope = aReferencedAnchors.mAnchorTreeScope;
     if (defaultAnchorName) {

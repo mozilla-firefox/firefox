@@ -1111,7 +1111,7 @@ nsStylePosition::nsStylePosition()
       mMinHeight(StyleSize::Auto()),
       mMaxHeight(StyleMaxSize::None()),
       mPositionAnchor(StylePositionAnchorKeyword::Normal()),
-      mPositionVisibility(StylePositionVisibility::ANCHORS_VISIBLE),
+      mPositionVisibility(StylePositionVisibility::ANCHOR_VISIBLE),
       mPositionTryFallbacks(StylePositionTryFallbacks()),
       mPositionTryOrder(StylePositionTryOrder::Normal),
       mFlexBasis(StyleFlexBasis::Size(StyleSize::Auto())),
