@@ -85,6 +85,7 @@ class ProjectPlugin : Plugin<Project> {
         configureKotlinCompilerMessageReformatting(project)
         configureKotlinWarningsAsErrors(project)
         configureJvmTarget(project)
+        configureJavacLint(project)
         configureAndroidBuildToolsVersion(project, substs)
         configureAppServicesSubstitution(project, extraProperties, substs)
         configureGleanSubstitution(project, extraProperties)
@@ -390,6 +391,31 @@ class ProjectPlugin : Plugin<Project> {
         }
         project.tasks.withType<Javadoc>().configureEach {
             options.source = javaVersion.majorVersion
+        }
+    }
+
+    private fun configureJavacLint(project: Project) {
+        project.tasks.withType<JavaCompile>().configureEach {
+            options.compilerArgs.addAll(
+                listOf(
+                    // Turn on all warnings, except...
+                    "-Xlint:all",
+                    // Deprecation, because we do use deprecated API for compatibility.
+                    "-Xlint:-deprecation",
+                    // Serial, because we don't use Java serialization.
+                    "-Xlint:-serial",
+                    // Classfile, because javac has a bug with MethodParameters attributes
+                    // with Java 7. https://bugs.openjdk.java.net/browse/JDK-8190452
+                    "-Xlint:-classfile",
+                ),
+            )
+
+            // In GeckoView java projects only, turn all remaining warnings
+            // into errors unless marked by @SuppressWarnings.
+            val werrorProjects = setOf("annotations", "messaging_example", "port_messaging_example", "test_runner")
+            if (project.name.startsWith("geckoview") || project.name in werrorProjects) {
+                options.compilerArgs.add("-Werror")
+            }
         }
     }
 

@@ -205,39 +205,6 @@ def getArtifactSuffix() {
     return suffix
 }
 
-afterEvaluate {
-    subprojects { project ->
-        tasks.withType(JavaCompile) {
-            // Add compiler args for all code except third-party code.
-            options.compilerArgs += [
-                // Turn on all warnings, except...
-                "-Xlint:all",
-                // Deprecation, because we do use deprecated API for compatibility.
-                "-Xlint:-deprecation",
-                // Serial, because we don't use Java serialization.
-                "-Xlint:-serial",
-                // Classfile, because javac has a bug with MethodParameters attributes
-                // with Java 7. https://bugs.openjdk.java.net/browse/JDK-8190452
-                "-Xlint:-classfile"]
-
-            // In GeckoView java projects only, turn all remaining warnings
-            // into errors unless marked by @SuppressWarnings.
-            def projectName = project.getName()
-            if (projectName.startsWith('geckoview')
-                || projectName == 'annotations'
-                || projectName == 'messaging_example'
-                || projectName == 'port_messaging_example'
-                || projectName == 'test_runner'
-            ) {
-                options.compilerArgs += [
-                        "-Werror"
-                ]
-            }
-        }
-    }
-}
-
-
 subprojects { project ->
     // Perform spotless lint in GeckoView projects only.
     // Sync with spotless_projects in mobile/android/gradle.configure.
