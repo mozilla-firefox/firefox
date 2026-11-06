@@ -7,12 +7,17 @@ import os
 import re
 
 import yaml
+from diskarzhan import diskarzhan
 from mozlint import result
 from mozlint.pathutils import expand_exclusions
 
 here = os.path.dirname(__file__)
 with open(os.path.join(here, "..", "..", "..", "mfbt", "api.yml")) as fd:
     description = yaml.safe_load(fd)
+
+supported_keys = "variables", "functions", "macros", "types", "literals"
+for categories in description.values():
+    assert set(categories.keys()).issubset(supported_keys)
 
 
 def generate_diff(path, raw_content, line_to_delete):
@@ -28,53 +33,39 @@ def generate_diff(path, raw_content, line_to_delete):
     return diff
 
 
-symbol_pattern = r"\b{}\b"
-literal_pattern = r'[0-9."\']{}\b'
-
-categories_pattern = {
-    "variables": symbol_pattern,
-    "functions": symbol_pattern,
-    "macros": symbol_pattern,
-    "types": symbol_pattern,
-    "literals": literal_pattern,
+MFBT_INCLUDE_RE = re.compile(r'#\s*include\s*"mozilla/([^"\n]+)"')
+mfbt_api = {
+    header: frozenset(
+        symbol
+        for category, symbols in categories.items()
+        if category != "literals"
+        for symbol in symbols
+    )
+    for header, categories in description.items()
+}
+mfbt_literals = {
+    header: categories["literals"]
+    for header, categories in description.items()
+    if "literals" in categories
 }
 
 
 def check_mfbt_headers(path, raw_content, config):
     """Return list of (lineno, msg) for unused mfbt headers."""
-    supported_keys = "variables", "functions", "macros", "types", "literals"
-    unused = []
-
-    for header, categories in description.items():
-        assert set(categories.keys()).issubset(supported_keys)
-
-        if path.endswith(f"mfbt/{header}") or path.endswith(f"mfbt/{header[:-1]}.cpp"):
-            continue
-
-        headerline = rf'#\s*include "mozilla/{header}"'
-        if not (match := re.search(headerline, raw_content)):
-            continue
-
-        content = raw_content.replace(f'"mozilla/{header}"', "")
-
-        for category, pattern in categories_pattern.items():
-            identifiers = categories.get(category, [])
-            if any(
-                re.search(pattern.format(identifier), content)
-                for identifier in identifiers
-            ):
-                break
-        else:
-            msg = f"{path} includes {header} but does not reference any of its API"
-            lineno = 1 + raw_content.count("\n", 0, match.start())
-            unused.append((lineno, msg))
-
-    return unused
+    api = mfbt_api
+    if "mfbt/" in path:
+        api = {
+            header: symbols
+            for header, symbols in mfbt_api.items()
+            if not path.endswith(f"mfbt/{header}")
+            and not path.endswith(f"mfbt/{header[:-2]}.cpp")
+        }
+    return diskarzhan.lint_headers(
+        path, raw_content, api, include_re=MFBT_INCLUDE_RE, literals=mfbt_literals
+    )
 
 
 def lint(paths, config, **lintargs):
-    import diskarzhan
-
     results = {"results": [], "fixed": 0}
     paths = list(expand_exclusions(paths, config, lintargs["root"]))
     fix = lintargs.get("fix")
@@ -87,14 +78,14 @@ def lint(paths, config, **lintargs):
             continue
 
         mfbt_results = check_mfbt_headers(path, raw_content, config)
-        diskarzhan_results = diskarzhan.diskarzhan.lint_std_headers(path, raw_content)
-        diskarzhan_results += diskarzhan.diskarzhan.lint_cstd_headers(path, raw_content)
+        diskarzhan_results = diskarzhan.lint_std_headers(path, raw_content)
+        diskarzhan_results += diskarzhan.lint_cstd_headers(path, raw_content)
 
         all_results = mfbt_results + diskarzhan_results
 
         if fix:
             if all_results:
-                diskarzhan.diskarzhan.fix_includes(path, raw_content, all_results)
+                diskarzhan.fix_includes(path, raw_content, all_results)
                 results["fixed"] += len(all_results)
         else:
             for lineno, msg in all_results:

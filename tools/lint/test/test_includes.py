@@ -82,6 +82,28 @@ def test_lint_mfbt_includes(lint, paths):
         "incorrect_literal.h includes Literals.h but does not reference any of its API"
     )
 
+    results = lint(paths("incorrect_range_other_include.h"))
+    assert len(results) == 1
+    assert results[0].lineno == 1
+    assert results[0].message.endswith(
+        "incorrect_range_other_include.h includes Range.h but does not reference any of its API"
+    )
+
+    results = lint(paths("incorrect_assert_with_maybe.h"))
+    assert len(results) == 1
+    assert results[0].lineno == 1
+    assert results[0].message.endswith(
+        "incorrect_assert_with_maybe.h includes Assertions.h but does not reference any of its API"
+    )
+
+
+def test_lint_mfbt_own_header(linter_module):
+    contents = '#include "mozilla/Maybe.h"\n'
+    assert linter_module.check_mfbt_headers("mfbt/Maybe.cpp", contents, None) == []
+    assert linter_module.check_mfbt_headers("mfbt/Other.cpp", contents, None) == [
+        (1, "mfbt/Other.cpp includes Maybe.h but does not reference any of its API")
+    ]
+
 
 def test_lint_std_includes(lint, paths):
     results = lint(paths("correct_tuple.h"))
