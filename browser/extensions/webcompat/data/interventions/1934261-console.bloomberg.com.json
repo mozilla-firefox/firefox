@@ -1,0 +1,20 @@
+{
+  "label": "console.bloomberg.com",
+  "bugs": {
+    "1934261": {
+      "issue": "unsupported-warning",
+      "matches": ["*://console.bloomberg.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "hide_messages": [
+        {
+          "container": "bb-chrome-alert-bar",
+          "message": "For best Enterprise Console experience use"
+        }
+      ]
+    }
+  ]
+}

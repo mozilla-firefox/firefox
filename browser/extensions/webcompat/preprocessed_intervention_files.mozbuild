@@ -83,6 +83,7 @@ preprocessed_intervention_files = [
     "bug1928941-oasis.decart.ai.js",
     "bug1928945-vizzy.io.js",
     "bug1931538-buzzfeed.com-card_game_fix.css",
+    "bug1934261-console.bloomberg.com.js",
     "bug1934534-thnet.gov.cn.js",
     "bug1934567-port8.fi-fix_scrolling.css",
     "bug1934908-www.cbsnews.com.js",
