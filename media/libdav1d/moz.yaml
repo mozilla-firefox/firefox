@@ -58,6 +58,9 @@ vendoring:
   generated:
     - '{yaml_dir}/vcs_version.h'
 
+  patches:
+    - reset_n_ts_on_frame_init_failure.patch
+
   update-actions:
     - action: copy-file
       from: include/vcs_version.h.in
