@@ -2,97 +2,102 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use super::language_info::LanguageInfo;
 use super::zip::{read_archive_file_as_string, read_zip, Archive};
+use super::{language_info::LanguageInfo, LanguageBundle};
 use crate::config::installation_resource_path;
-use crate::prefs_parser::find_string_pref;
+use crate::prefs::Prefs;
 use crate::std::path::{Path, PathBuf};
 use anyhow::Context;
 
-const LOCALE_PREF_KEY: &str = "intl.locale.requested";
-
-/// Use the profile language preferences to determine the localization to use.
-pub fn read(
-    profile_dir: &Path,
-    base_locales: &[String],
-    useragent_locale: Option<&str>,
-) -> anyhow::Result<Option<LanguageInfo>> {
-    let Some((identifier, langpack)) =
-        select_langpack(profile_dir, base_locales, useragent_locale)?
-    else {
-        return Ok(None);
-    };
-
-    let mut zip = read_zip(&langpack)?;
-
-    let ftl_definitions = read_archive_ftl_definitions(&mut zip, &identifier)?;
-    let ftl_branding = read_archive_ftl_branding(&mut zip, &identifier).unwrap_or_else(|e| {
-        log::warn!(
-            "failed to read branding for {identifier} from {}: {e:#}",
-            langpack.display()
-        );
-        log::info!("using fallback branding info");
-        LanguageInfo::default().ftl_branding
-    });
-
-    Ok(Some(LanguageInfo {
-        identifier,
-        ftl_definitions,
-        ftl_branding,
-    }))
+/// The configuration relevant for langpack selection.
+pub struct Config<'a> {
+    pub prefs: &'a Prefs,
+    pub profile_dir: &'a Path,
+    pub base_locales: &'a [String],
+    pub useragent_locale: Option<&'a str>,
 }
 
-/// Select the langpack to use based on profile settings, the useragent locale, and the existence
-/// of langpack files.
-/// Returns `Ok(None)` if no locales are found in pref and from useragent locale. Also return
-/// `Ok(None)` if the locale specified is the base installation locale, as there is no langpack for
-/// the base installation locale.
-fn select_langpack(
-    profile_dir: &Path,
-    base_locales: &[String],
-    useragent_locale: Option<&str>,
-) -> anyhow::Result<Option<(String, PathBuf)>> {
-    let mut locales = locales_from_prefs(profile_dir)?
-        .into_iter()
-        .flatten()
-        .chain(useragent_locale.map(str::to_string));
+/// An installed langpack.
+pub struct Langpack {
+    identifier: String,
+    path: PathBuf,
+}
 
-    if locales.clone().count() == 0 {
-        return Ok(None);
+impl Config<'_> {
+    /// Get the current langpack in use.
+    ///
+    /// This attempts other configured languages if langpack files are missing.
+    ///
+    /// Returns `Ok(None)` if no locales in pref and the useragent locale are available. This also
+    /// returns `Ok(None)` if the locale specified is the base installation locale, as there is no
+    /// langpack for that locale.
+    pub fn current_langpack(&self) -> anyhow::Result<Option<Langpack>> {
+        let mut locales = locales_from_prefs(self.prefs)?
+            .into_iter()
+            .flatten()
+            .chain(self.useragent_locale.map(str::to_string));
+
+        if locales.clone().count() == 0 {
+            return Ok(None);
+        }
+
+        // Use the first language that is either the base locale or we can find a langpack extension for
+        locales
+            .find_map(|lang| {
+                if self.base_locales.contains(&lang) {
+                    Some(None)
+                } else {
+                    find_langpack_extension(self.profile_dir, &lang).map(|path| {
+                        Some(Langpack {
+                            identifier: lang,
+                            path,
+                        })
+                    })
+                }
+            })
+            .with_context(|| {
+                format!("couldn't locate langpack for requested locales ({locales:?})")
+            })
+    }
+}
+
+impl Langpack {
+    /// Load the localized string bundle for the langpack.
+    pub fn load(&self) -> anyhow::Result<LanguageBundle> {
+        self.language_info().and_then(LanguageInfo::load_strings)
     }
 
-    // Use the first language that is either the base locale or we can find a langpack extension for
-    locales
-        .find_map(|lang| {
-            if base_locales.contains(&lang) {
-                Some(None)
-            } else {
-                find_langpack_extension(profile_dir, &lang).map(|path| Some((lang, path)))
-            }
+    /// Read the language info for the langpack.
+    fn language_info(&self) -> anyhow::Result<LanguageInfo> {
+        let Self { identifier, path } = self;
+        let mut zip = read_zip(path)?;
+
+        let ftl_definitions = read_archive_ftl_definitions(&mut zip, identifier)?;
+        let ftl_branding = read_archive_ftl_branding(&mut zip, identifier).unwrap_or_else(|e| {
+            log::warn!(
+                "failed to read branding for {identifier} from {}: {e:#}",
+                path.display()
+            );
+            log::info!("using fallback branding info");
+            LanguageInfo::default().ftl_branding
+        });
+
+        Ok(LanguageInfo {
+            identifier: identifier.clone(),
+            ftl_definitions,
+            ftl_branding,
         })
-        .with_context(|| format!("couldn't locate langpack for requested locales ({locales:?})"))
+    }
 }
 
-fn locales_from_prefs(profile_dir: &Path) -> anyhow::Result<Option<Vec<String>>> {
-    let prefs = profile_dir.join("prefs.js");
-    if !prefs.exists() {
-        log::debug!(
-            "no prefs.js exists in {}; not reading localization info",
-            profile_dir.display()
-        );
-        return Ok(None);
-    }
-
-    let prefs_contents = std::fs::read_to_string(&prefs)
-        .with_context(|| format!("while reading {}", prefs.display()))?;
-
+fn locales_from_prefs(prefs: &Prefs) -> anyhow::Result<Option<Vec<String>>> {
     // Logic dictated by https://firefox-source-docs.mozilla.org/intl/locale.html#requested-locales
 
-    let Some(langs) = parse_requested_locales(&prefs_contents) else {
+    let Some(langs) = prefs.requested_locales() else {
         // If the pref is unset, the installation locale should be used.
         log::debug!(
             "no locale pref set in {}; using installation locale",
-            prefs.display()
+            prefs.display_paths()
         );
         return Ok(None);
     };
@@ -106,33 +111,12 @@ fn locales_from_prefs(profile_dir: &Path) -> anyhow::Result<Option<Vec<String>>>
         }
         log::debug!(
             "locale pref blank in {}; using OS locale settings ({os_locales:?})",
-            prefs.display()
+            prefs.display_paths()
         );
         os_locales
     } else {
         langs.into_iter().map(|s| s.to_owned()).collect()
     }))
-}
-
-/// Parse the language pref (if any) from the prefs file.
-///
-/// For example:
-/// ```rust
-/// let input = r#"user_pref("intl.locale.requested", "foo , bar,,");"#;
-/// let expected_output = Some(vec!["foo","bar"]);
-/// assert_eq!(parse_requested_locales(input), output);
-/// ```
-///
-/// This will parse the locales out of the user prefs file contents, which looks like
-/// `user_pref("intl.locale.requested", "<LOCALE LIST>")`.
-fn parse_requested_locales(prefs_content: &str) -> Option<Vec<&str>> {
-    let v = find_string_pref(prefs_content, LOCALE_PREF_KEY)?;
-    Some(
-        v.split(",")
-            .map(|s| s.trim())
-            .filter(|s| !s.is_empty())
-            .collect(),
-    )
 }
 
 /// Find the langpack extension for the given locale.
@@ -168,30 +152,4 @@ fn read_archive_ftl_branding(
 ) -> anyhow::Result<String> {
     let path = format!("browser/localization/{language_identifier}/branding/brand.ftl");
     read_archive_file_as_string(langpack, &path)
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn parse_locales_none() {
-        assert_eq!(parse_requested_locales(""), None);
-    }
-
-    #[test]
-    fn parse_locales_empty() {
-        assert_eq!(
-            parse_requested_locales(r#"user_pref("intl.locale.requested","");"#),
-            Some(vec![])
-        );
-    }
-
-    #[test]
-    fn parse_locales() {
-        assert_eq!(
-            parse_requested_locales(r#"user_pref("intl.locale.requested", "fr,en-US");"#),
-            Some(vec!["fr", "en-US"])
-        );
-    }
 }

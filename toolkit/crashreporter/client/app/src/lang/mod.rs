@@ -7,6 +7,7 @@ mod language_info;
 mod omnijar;
 mod zip;
 
+use crate::prefs::Prefs;
 use fluent::{bundle::FluentBundle, FluentArgs, FluentResource};
 use intl_memoizer::concurrent::IntlLangMemoizer;
 use language_info::LanguageInfo;
@@ -37,18 +38,6 @@ pub fn load() -> LangStrings {
             .expect("the default/fallback LanguageInfo failed to load"),
     );
     LangStrings::new(bundles)
-}
-
-/// Get a localized string bundle from the configured locale langpack, if any.
-fn load_langpack(
-    profile_dir: &crate::std::path::Path,
-    base_locales: &[String],
-    useragent_locale: Option<&str>,
-) -> anyhow::Result<Option<LanguageBundle>> {
-    langpack::read(profile_dir, base_locales, useragent_locale).and_then(|r| match r {
-        Some(language_info) => language_info.load_strings().map(Some),
-        None => Ok(None),
-    })
 }
 
 /// A bundle of localized strings.
@@ -121,12 +110,20 @@ impl LangStrings {
     /// all existing bundles as fallbacks.
     pub fn add_langpack(
         &mut self,
+        prefs: &Prefs,
         profile_dir: &crate::std::path::Path,
         useragent_locale: Option<&str>,
     ) -> anyhow::Result<()> {
         let base_locales: Vec<String> = self.bundles.iter().map(|b| b.locale()).collect();
-        if let Some(strings) = load_langpack(profile_dir, &base_locales, useragent_locale)? {
-            self.bundles.insert(0, strings);
+        if let Some(langpack) = (langpack::Config {
+            prefs,
+            profile_dir,
+            base_locales: &base_locales,
+            useragent_locale,
+        })
+        .current_langpack()?
+        {
+            self.bundles.insert(0, langpack.load()?);
         }
         Ok(())
     }

@@ -182,6 +182,12 @@ impl From<std::path::PathBuf> for PathBuf {
     }
 }
 
+impl Into<std::path::PathBuf> for PathBuf {
+    fn into(self) -> std::path::PathBuf {
+        self.0
+    }
+}
+
 impl From<PathBuf> for std::ffi::OsString {
     fn from(pathbuf: PathBuf) -> Self {
         pathbuf.0.into()

@@ -15,7 +15,7 @@
 /// ```rust
 /// let input = r#"user_pref("FOOBAR", "baz");"#;
 /// let expected_output = Some(r#""baz""#);
-/// assert_eq!(find_pref(input, "FOOBAR"), output);
+/// assert_eq!(find_pref(input, "FOOBAR"), expected_output);
 /// ```
 pub fn find_pref<'a>(prefs_content: &'a str, pref: &str) -> Option<&'a str> {
     let mut search_content = prefs_content;
