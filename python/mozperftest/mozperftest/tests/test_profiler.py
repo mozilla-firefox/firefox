@@ -128,7 +128,8 @@ def test_profiling_mediator_defaults_to_all_profilers():
 
 
 def test_profiling_mediator_combined_profilers():
-    """Test that the Gecko profiler only collects markers when simpleperf runs too."""
+    """Test that the Gecko profiler only collects markers and simpleperf profiles
+    the JIT frames when both run."""
 
     mock_simpleperf = mock.MagicMock()
     mock_simpleperf.is_enabled.return_value = True
@@ -143,9 +144,12 @@ def test_profiling_mediator_combined_profilers():
         ProfilingMediator(["geckoprofiler"])
         mock_geckoprofiler.get_controller.assert_called_with(markers_only=False)
 
+        ProfilingMediator(["simpleperf"])
+        mock_simpleperf.get_controller.assert_called_with(jit_frames=False)
+
         ProfilingMediator(["simpleperf", "geckoprofiler"])
         mock_geckoprofiler.get_controller.assert_called_with(markers_only=True)
-        mock_simpleperf.get_controller.assert_called_with()
+        mock_simpleperf.get_controller.assert_called_with(jit_frames=True)
 
 
 if __name__ == "__main__":

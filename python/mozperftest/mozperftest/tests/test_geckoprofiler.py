@@ -345,8 +345,8 @@ def test_controller_stop_success(mock_run, tmp_path):
 @mock.patch("tempfile.NamedTemporaryFile")
 def test_controller_markers_only(mock_temp, mock_run, tmp_path):
     """Test that the markers-only mode, used together with simpleperf, uses the
-    markers-only settings, and names the profile so that it gets merged into
-    the simpleperf profile."""
+    markers-only settings and the JIT options for simpleperf, and names the
+    profile so that it gets merged into the simpleperf profile."""
     os.environ["MOZPERFTEST_GECKOPROFILE"] = "1"
     GeckoProfilerController.set_package_id("org.mozilla.fenix")
 
@@ -366,6 +366,11 @@ def test_controller_markers_only(mock_temp, mock_run, tmp_path):
     )
     assert "MOZ_PROFILER_STARTUP_INTERVAL: 500" in config_str
     assert "MOZ_PROFILER_STARTUP_NO_BASE: 1" in config_str
+    assert "IONPERF: func" in config_str
+    assert (
+        "PERF_SPEW_DIR: /storage/emulated/0/Android/data/org.mozilla.fenix/files"
+        in config_str
+    )
 
     mock_run.side_effect = partial(mock_subprocess_run, b"{}", 0)
     result = controller.stop(str(tmp_path), 2)
