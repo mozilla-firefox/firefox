@@ -1200,6 +1200,9 @@ pref("browser.tabs.groups.hoverPreview.enabled", true);
 pref("browser.tabs.groups.alternateMenu", true);
 // Number of times the "Tab group saved" confirmation hint has been shown
 pref("browser.tabs.groups.saveHintShownCount", 0);
+// Whether the hint pointing to the application menu has been shown after
+// removing the Tab Groups button
+pref("browser.tabs.groups.removedHintShown", false);
 
 pref("browser.tabs.groups.smart.enabled", true);
 

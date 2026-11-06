@@ -3,6 +3,10 @@
 
 "use strict";
 
+const { sinon } = ChromeUtils.importESModule(
+  "resource://testing-common/Sinon.sys.mjs"
+);
+
 ChromeUtils.defineESModuleGetters(this, {
   TabGroupTestUtils: "resource://testing-common/TabGroupTestUtils.sys.mjs",
   TabGroupsToolbarButton:
@@ -12,9 +16,14 @@ ChromeUtils.defineESModuleGetters(this, {
 const TAB_GROUPS_BUTTON_ID = "tab-groups-button";
 const TAB_GROUPS_BUTTON_INTRODUCED =
   "browser.toolbarbuttons.introduced.tab-groups-button";
+const REMOVED_HINT_SHOWN = "browser.tabs.groups.removedHintShown";
 
-add_setup(() => {
+add_setup(async () => {
   CustomizableUI.reset();
+  // Keep the removed hint out of the tasks that don't test it.
+  await SpecialPowers.pushPrefEnv({
+    set: [[REMOVED_HINT_SHOWN, true]],
+  });
 });
 
 registerCleanupFunction(() => {
@@ -288,4 +297,77 @@ add_task(async function test_auto_add_on_startup_with_saved_groups() {
   CustomizableUI.removeListener(TabGroupsToolbarButton);
   await SpecialPowers.popPrefEnv();
   CustomizableUI.reset();
+});
+
+async function setupRemovedHintTest() {
+  CustomizableUI.reset();
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [TAB_GROUPS_BUTTON_INTRODUCED, true],
+      [REMOVED_HINT_SHOWN, false],
+    ],
+  });
+  TabGroupsToolbarButton.init();
+  CustomizableUI.addWidgetToArea(
+    TAB_GROUPS_BUTTON_ID,
+    CustomizableUI.AREA_NAVBAR
+  );
+  return sinon.stub(window.ConfirmationHint, "show");
+}
+
+async function cleanupRemovedHintTest(showStub) {
+  showStub.restore();
+  CustomizableUI.removeListener(TabGroupsToolbarButton);
+  await SpecialPowers.popPrefEnv();
+  CustomizableUI.reset();
+}
+
+add_task(async function test_removed_hint_shown_once() {
+  let showStub = await setupRemovedHintTest();
+
+  CustomizableUI.removeWidgetFromArea(TAB_GROUPS_BUTTON_ID);
+  await TestUtils.waitForTick();
+  Assert.ok(showStub.calledOnce, "Removing the button shows the hint");
+  let [anchor, messageId] = showStub.firstCall?.args ?? [];
+  Assert.equal(
+    anchor.id,
+    "PanelUI-menu-button",
+    "The hint points at the application menu button"
+  );
+  Assert.equal(
+    messageId,
+    "confirmation-hint-tab-group-button-removed",
+    "The hint uses the removed button message"
+  );
+  Assert.ok(
+    Services.prefs.getBoolPref(REMOVED_HINT_SHOWN),
+    "Showing the hint sets the shown pref"
+  );
+
+  CustomizableUI.addWidgetToArea(
+    TAB_GROUPS_BUTTON_ID,
+    CustomizableUI.AREA_NAVBAR
+  );
+  CustomizableUI.removeWidgetFromArea(TAB_GROUPS_BUTTON_ID);
+  await TestUtils.waitForTick();
+  Assert.ok(showStub.calledOnce, "Removing the button again shows no hint");
+
+  await cleanupRemovedHintTest(showStub);
+});
+
+add_task(async function test_removed_hint_not_shown_on_move() {
+  let showStub = await setupRemovedHintTest();
+
+  CustomizableUI.addWidgetToArea(
+    TAB_GROUPS_BUTTON_ID,
+    CustomizableUI.AREA_FIXED_OVERFLOW_PANEL
+  );
+  await TestUtils.waitForTick();
+  Assert.ok(showStub.notCalled, "Moving the button shows no hint");
+  Assert.ok(
+    !Services.prefs.getBoolPref(REMOVED_HINT_SHOWN),
+    "Moving the button doesn't set the shown pref"
+  );
+
+  await cleanupRemovedHintTest(showStub);
 });

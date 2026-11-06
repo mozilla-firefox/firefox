@@ -23,6 +23,8 @@ confirmation-hint-firefox-relay-mask-created = New mask created!
 confirmation-hint-firefox-relay-mask-reused = Existing mask reused!
 confirmation-hint-screenshot-copied = Screenshot copied!
 confirmation-hint-tab-group-saved = Tab group saved
+# Shown after the tab groups button is removed from the toolbar. Points to the app menu where tab groups can still be found.
+confirmation-hint-tab-group-button-removed = Find tab groups in this menu
 # Variables:
 #   $tabCount (Number): The number of duplicate tabs closed, at least 1.
 confirmation-hint-duplicate-tabs-closed =
