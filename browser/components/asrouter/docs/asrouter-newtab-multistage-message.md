@@ -24,7 +24,7 @@ The mount function exposed by the bundle is `window.mountMultistageMessage`. It 
 |----------------------------------|-----------------------------------------------------------------------------------------------------------------------|
 | `AWEvaluateScreenTargeting`      | Forwarded to ASRouter via `window.ASRouterMessage`                                                                    |
 | `AWGetFeatureConfig`             | Returns the message `content` object                                                                                  |
-| `AWFinish`                       | Calls `handleDismiss` to close the message                                                                            |
+| `AWFinish`                       | Sends a DISMISS `newtab_message` ping with completion data, then calls `handleClose` to close the message             |
 | `AWSendToParent`                 | Forwarded to ASRouter as a `USER_ACTION`                                                                              |
 | `AWAddScreenImpression`          | Forwarded to ASRouter via `window.ASRouterMessage` to record a per-screen impression for frequency capping            |
 | `AWSendEventTelemetry`           | Forwards events as `newtab_message` pings; IMPRESSION events wait until the tab is visible                            |
@@ -96,6 +96,10 @@ Records a CLICK telemetry event for user interaction with the message.
 - **Screen impression telemetry**: an IMPRESSION event fired via `AWSendEventTelemetry` when each screen first renders (deferred until the tab is visible), with a per-screen `message_id` (`<message id>_<index>_<screen id>_<screen initials>`) and screen details in `event_context`, matching about:welcome.
 - **Click**: fired via `AWSendEventTelemetry` for user interactions (e.g. button clicks). The multistage ping is forwarded unchanged as a `newtab_message` ping, so it keeps its event name (e.g. `CLICK_BUTTON`, `AUTO_DISMISS`), the screen-specific `message_id` (`<message id>_<screen index>_<screen id>`) and the clicked button as `event_context.source`.
 - **Dismiss/Block**: fired by `handleDismiss` / `handleBlock` when the user clicks the dismiss button.
+- **Finish**: when the flow finishes via `AWFinish` (e.g. a card stack auto-dismissing on its last card), a single DISMISS event is forwarded as a `newtab_message` ping with the message's `message_id`. Its `event_context` adds:
+  - `completion_status`: each shown screen that has a primary button, mapped to `completed` (primary button clicked), `skipped` (secondary button clicked) or `expired` (neither).
+  - `completion_count`: the number of `completed` screens.
+  - `reason`: `engaged` if `completion_count` is above zero, `not_engaged` otherwise. Also recorded as `messaging_system.event_reason`.
 
 ## Strings
 

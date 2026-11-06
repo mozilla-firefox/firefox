@@ -10,18 +10,84 @@ window.mountMultistageMessage = function mountMultistageMessage(
   container,
   props
 ) {
-  const { messageData, handleDismiss, handleBlock } = props;
+  const { messageData, handleDismiss, handleBlock, handleClose } = props;
   const config = messageData.content;
   const impressionListeners = new AbortController();
+  // Outcome of each screen that has a primary button, keyed by screen id:
+  // "completed" (primary button clicked)
+  // "skipped" (secondary button clicked)
+  // "expired" (dismissed without either)
+  const completionStatus = {};
+  let currentScreenId = null;
+  let dismissSent = false;
+
+  const sendTelemetry = data =>
+    window.ASRouterMessage({
+      type: "AS_ROUTER_TELEMETRY_USER_EVENT",
+      data: { ...data, action: "newtab_message_user_event" },
+    });
+
+  const trackCards = (screens, shownScreens) => {
+    const shownIds = new Set(shownScreens.map(({ id }) => id));
+    for (const { id, content } of screens) {
+      if (!shownIds.has(id)) {
+        delete completionStatus[id];
+      } else if (content?.primary_button) {
+        completionStatus[id] ??= "expired";
+      }
+    }
+  };
+
+  const trackTelemetry = data => {
+    if (data.event === "IMPRESSION") {
+      currentScreenId = data.event_context?.screen_id ?? null;
+    } else if (
+      data.event === "CLICK_BUTTON" &&
+      currentScreenId in completionStatus
+    ) {
+      if (data.event_context?.source === "primary_button") {
+        completionStatus[currentScreenId] = "completed";
+      } else if (data.event_context?.source === "secondary_button") {
+        completionStatus[currentScreenId] = "skipped";
+      }
+    }
+  };
+
+  const sendDismissTelemetry = () => {
+    if (dismissSent) {
+      return;
+    }
+    dismissSent = true;
+    const completionCount = Object.values(completionStatus).filter(
+      cardStatus => cardStatus === "completed"
+    ).length;
+    sendTelemetry({
+      event: "DISMISS",
+      event_context: {
+        source: "newtab",
+        page: "about:newtab",
+        reason: completionCount ? "engaged" : "not_engaged",
+        completion_status: completionStatus,
+        completion_count: completionCount,
+      },
+      message_id: messageData.id,
+    });
+  };
 
   const awHandlers = {
-    AWEvaluateScreenTargeting: screens =>
-      window.ASRouterMessage({
+    AWEvaluateScreenTargeting: async screens => {
+      const filtered = await window.ASRouterMessage({
         type: "AW_EVALUATE_SCREEN_TARGETING",
         data: screens,
-      }),
+      });
+      trackCards(screens, filtered ?? screens);
+      return filtered;
+    },
     AWGetFeatureConfig: () => config,
-    AWFinish: () => handleDismiss(),
+    AWFinish: () => {
+      sendDismissTelemetry();
+      handleClose();
+    },
     AWSendToParent: (handlerName, data) =>
       window.ASRouterMessage({
         type: "USER_ACTION",
@@ -34,21 +100,21 @@ window.mountMultistageMessage = function mountMultistageMessage(
       });
     },
     AWSendEventTelemetry: data => {
-      const sendTelemetry = () =>
-        window.ASRouterMessage({
-          type: "AS_ROUTER_TELEMETRY_USER_EVENT",
-          data: { ...data, action: "newtab_message_user_event" },
-        });
+      trackTelemetry(data);
       if (
         data.event !== "IMPRESSION" ||
         document.visibilityState === "visible"
       ) {
-        sendTelemetry();
+        sendTelemetry(data);
       } else {
-        document.addEventListener("visibilitychange", sendTelemetry, {
-          once: true,
-          signal: impressionListeners.signal,
-        });
+        document.addEventListener(
+          "visibilitychange",
+          () => sendTelemetry(data),
+          {
+            once: true,
+            signal: impressionListeners.signal,
+          }
+        );
       }
     },
     AWGetSelectedTheme: () => Promise.resolve(),
