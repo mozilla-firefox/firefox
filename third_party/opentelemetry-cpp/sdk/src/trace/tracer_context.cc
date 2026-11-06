@@ -31,7 +31,7 @@ TracerContext::TracerContext(
     std::unique_ptr<Sampler> sampler,
     std::unique_ptr<IdGenerator> id_generator,
     std::unique_ptr<instrumentationscope::ScopeConfigurator<TracerConfig>> tracer_configurator,
-    SpanLimits span_limits) noexcept
+    SpanLimits span_limits)
     : resource_(resource),
       sampler_(std::move(sampler)),
       id_generator_(std::move(id_generator)),

@@ -9,8 +9,8 @@ origin:
   description: The OpenTelemetry C++ Client
   url: https://opentelemetry.io/
 
-  release: v1.28.0 (2026-07-16T22:46:07+02:00).
-  revision: v1.28.0
+  release: v1.30.0 (2026-10-22T21:44:09+02:00).
+  revision: v1.30.0
 
   license: Apache-2.0
   license-file: LICENSE
@@ -25,6 +25,7 @@ vendoring:
    - "sdk/include/opentelemetry/sdk/common/thread_instrumentation.h"
    - "sdk/include/opentelemetry/sdk/trace/batch_span_processor*.h"
    - "sdk/src/trace/batch_span_processor*.cc"
+   - "sdk/src/trace/span_limits.cc"
 
   include:
    - CHANGELOG.md
@@ -32,6 +33,7 @@ vendoring:
    - README.md
    - api/include/opentelemetry/*.h
    - api/include/opentelemetry/common/*.h
+   - api/include/opentelemetry/common/detail/*.h
    - api/include/opentelemetry/context/*.h
    - api/include/opentelemetry/detail/*.h
    - api/include/opentelemetry/nostd/*.h
@@ -59,7 +61,10 @@ vendoring:
    - sdk/include/opentelemetry/sdk/version/*.h
    - sdk/src/common/**/*.cc
    - sdk/src/common/**/*.h
+   - sdk/src/instrumentationscope/*.cc
    - sdk/src/resource/*.cc
+   - sdk/src/resource/detail/*.cc
+   - sdk/src/resource/detail/*.h
    - sdk/src/trace/*.cc
    - sdk/src/trace/*.h
    - sdk/src/trace/samplers/always_on_factory.cc
@@ -72,6 +77,7 @@ vendoring:
   patches:
    - patches/remove-non-vendored-context_value-variant.patch
    - patches/remove-log-related-entries-from-otlp-exporter.patch
+   - patches/remove-environment-span-limits.patch
 
 updatebot:
   maintainer-phab: jari

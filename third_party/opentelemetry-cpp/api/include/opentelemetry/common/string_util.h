@@ -3,8 +3,7 @@
 
 #pragma once
 
-#include <ctype.h>
-
+#include "opentelemetry/common/detail/ascii.h"
 #include "opentelemetry/common/macros.h"
 
 #if OPENTELEMETRY_HAVE_EXCEPTIONS
@@ -21,17 +20,19 @@ namespace common
 class StringUtil
 {
 public:
-  static nostd::string_view Trim(nostd::string_view str, size_t left, size_t right) noexcept
+  static nostd::string_view Trim(nostd::string_view str OPENTELEMETRY_ATTRIBUTE_LIFETIME_BOUND,
+                                 size_t left,
+                                 size_t right) noexcept
   {
     if (right >= str.size())
     {
       return nostd::string_view();
     }
-    while (left <= right && isspace(str[left]))
+    while (left <= right && detail::IsAsciiSpace(str[left]))
     {
       left++;
     }
-    while (left <= right && isspace(str[right]))
+    while (left <= right && detail::IsAsciiSpace(str[right]))
     {
       right--;
     }
@@ -53,7 +54,26 @@ public:
 #endif
   }
 
-  static nostd::string_view Trim(nostd::string_view str) noexcept
+  static nostd::string_view Substr(nostd::string_view str OPENTELEMETRY_ATTRIBUTE_LIFETIME_BOUND,
+                                   size_t pos,
+                                   size_t count = nostd::string_view::npos) noexcept
+  {
+#if OPENTELEMETRY_HAVE_EXCEPTIONS
+    try
+#endif
+    {
+      return str.substr(pos, count);
+    }
+#if OPENTELEMETRY_HAVE_EXCEPTIONS
+    catch (const std::out_of_range &)
+    {
+      return nostd::string_view();
+    }
+#endif
+  }
+
+  static nostd::string_view Trim(
+      nostd::string_view str OPENTELEMETRY_ATTRIBUTE_LIFETIME_BOUND) noexcept
   {
     if (str.empty())
     {

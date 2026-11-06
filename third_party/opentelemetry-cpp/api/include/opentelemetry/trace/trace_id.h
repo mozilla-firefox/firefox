@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include "opentelemetry/common/detail/ascii.h"
 #include "opentelemetry/nostd/span.h"
 #include "opentelemetry/version.h"
 
@@ -23,22 +24,21 @@ public:
   static constexpr size_t kSize = 16;
 
   // An invalid TraceId (all zeros).
-  TraceId() noexcept : rep_{0} {}
+  TraceId() noexcept = default;
 
   // Creates a TraceId with the given ID.
   explicit TraceId(nostd::span<const uint8_t, kSize> id) noexcept
   {
-    memcpy(rep_, id.data(), kSize);
+    std::memcpy(rep_, id.data(), kSize);
   }
 
   // Populates the buffer with the lowercase base16 representation of the ID.
   void ToLowerBase16(nostd::span<char, 2 * kSize> buffer) const noexcept
   {
-    constexpr char kHex[] = "0123456789abcdef";
     for (size_t i = 0; i < kSize; ++i)
     {
-      buffer[i * 2 + 0] = kHex[(rep_[i] >> 4) & 0xF];
-      buffer[i * 2 + 1] = kHex[(rep_[i] >> 0) & 0xF];
+      buffer[i * 2 + 0] = common::detail::LowerHexDigit(rep_[i] >> 4);
+      buffer[i * 2 + 1] = common::detail::LowerHexDigit(rep_[i]);
     }
   }
 
@@ -50,7 +50,7 @@ public:
 
   bool operator==(const TraceId &that) const noexcept
   {
-    return memcmp(rep_, that.rep_, kSize) == 0;
+    return std::memcmp(rep_, that.rep_, kSize) == 0;
   }
 
   bool operator!=(const TraceId &that) const noexcept { return !(*this == that); }
@@ -61,11 +61,11 @@ public:
   // Copies the opaque TraceId data to dest.
   void CopyBytesTo(nostd::span<uint8_t, kSize> dest) const noexcept
   {
-    memcpy(dest.data(), rep_, kSize);
+    std::memcpy(dest.data(), rep_, kSize);
   }
 
 private:
-  uint8_t rep_[kSize];
+  uint8_t rep_[kSize]{};
 };
 
 }  // namespace trace

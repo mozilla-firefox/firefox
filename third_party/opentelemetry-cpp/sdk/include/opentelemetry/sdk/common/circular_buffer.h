@@ -38,10 +38,7 @@ public:
    *
    * Note: This method must only be called from the consumer thread.
    */
-  CircularBufferRange<const AtomicUniquePtr<T>> Peek() const noexcept
-  {
-    return const_cast<CircularBuffer *>(this)->PeekImpl();
-  }
+  CircularBufferRange<const AtomicUniquePtr<T>> Peek() const noexcept { return PeekImpl(); }
 
   /**
    * Consume elements from the circular buffer's tail.
@@ -172,7 +169,7 @@ private:
   std::atomic<uint64_t> head_{0};
   std::atomic<uint64_t> tail_{0};
 
-  CircularBufferRange<AtomicUniquePtr<T>> PeekImpl() noexcept
+  CircularBufferRange<AtomicUniquePtr<T>> PeekImpl() const noexcept
   {
     uint64_t tail_index = tail_ % capacity_;
     uint64_t head_index = head_ % capacity_;

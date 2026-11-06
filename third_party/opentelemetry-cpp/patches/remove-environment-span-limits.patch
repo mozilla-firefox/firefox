@@ -1,0 +1,30 @@
+### Why this patch?
+ * Keep span limits independent of environment variables while preserving caller-provided defaults.
+ * Replace the excluded upstream implementation with one that returns its argument unchanged.
+diff --git a/sdk/src/trace/span_limits.cc b/sdk/src/trace/span_limits.cc
+new file mode 100644
+--- /dev/null
++++ b/sdk/src/trace/span_limits.cc
+@@ -0,0 +1,22 @@
++// Copyright The OpenTelemetry Authors
++// SPDX-License-Identifier: Apache-2.0
++
++#include "opentelemetry/sdk/trace/span_limits.h"
++
++OPENTELEMETRY_BEGIN_NAMESPACE
++namespace sdk
++{
++namespace trace
++{
++namespace span_limits_env
++{
++
++SpanLimits GetSpanLimitsFromEnv(const SpanLimits &defaults)
++{
++  return defaults;
++}
++
++}  // namespace span_limits_env
++}  // namespace trace
++}  // namespace sdk
++OPENTELEMETRY_END_NAMESPACE

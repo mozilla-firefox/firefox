@@ -35,15 +35,7 @@ constexpr int SPINLOCK_SLEEP_MS        = 1;
  * 2. A loop where the current thread yields control after checking the lock.
  * 3. Issuing a thread-sleep call before starting back in phase 1.
  *
- * This is meant to give a good balance of perofrmance and CPU consumption in
- * practice.
- *
- * This mutex uses an incremental back-off strategy with the following phases:
- * 1. A tight spin-lock loop (pending: using hardware PAUSE/YIELD instructions)
- * 2. A loop where the current thread yields control after checking the lock.
- * 3. Issuing a thread-sleep call before starting back in phase 1.
- *
- * This is meant to give a good balance of perofrmance and CPU consumption in
+ * This is meant to give a good balance of performance and CPU consumption in
  * practice.
  *
  * This class implements the `BasicLockable` specification:
@@ -119,7 +111,7 @@ public:
       {
         return;
       }
-      // Sleep and then start the whole process again. (goal ~1000ns)
+      // Sleep and then start the whole process again. (goal ~1ms)
       std::this_thread::sleep_for(std::chrono::milliseconds(SPINLOCK_SLEEP_MS));
     }
     return;

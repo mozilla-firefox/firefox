@@ -37,7 +37,7 @@ using Traits = std::char_traits<char>;
 class string_view
 {
 public:
-  typedef std::size_t size_type;
+  using size_type = std::size_t;
 
   static constexpr size_type npos = static_cast<size_type>(-1);
 

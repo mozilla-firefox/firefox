@@ -3,7 +3,9 @@
 
 #pragma once
 #include <functional>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include "opentelemetry/sdk/instrumentationscope/instrumentation_scope.h"
 #include "opentelemetry/version.h"

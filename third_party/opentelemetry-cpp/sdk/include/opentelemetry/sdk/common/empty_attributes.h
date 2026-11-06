@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <stdint.h>
 #include <array>
+#include <cstdint>
 #include <string>
 #include <utility>
 

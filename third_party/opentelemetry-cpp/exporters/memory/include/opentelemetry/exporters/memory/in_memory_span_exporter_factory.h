@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <stddef.h>
+#include <cstddef>
 #include <memory>
 
 #include "opentelemetry/exporters/memory/in_memory_span_data.h"

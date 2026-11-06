@@ -10,6 +10,7 @@
 #include <limits>
 #include <map>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -56,7 +57,7 @@ using OwnedAttributeValue = nostd::variant<bool,
                                            std::vector<uint64_t>,
                                            std::vector<uint8_t>>;
 
-enum OwnedAttributeType : std::uint8_t
+enum OwnedAttributeType : std::uint8_t  // NOLINT(cppcoreguidelines-use-enum-class)
 {
   kTypeBool,
   kTypeInt,
@@ -302,23 +303,68 @@ AttributeInsertOrAssign(Map &map, opentelemetry::nostd::string_view key, Value &
 #endif
 }
 
+// Variant visitor utility.
+
+// VisitVariantResult is a pair of the visitor return value (or nostd::monostate for void visitors)
+// and a bool that is true for success and false if an exception was caught
+template <typename T>
+using VisitVariantResult = std::pair<T, bool>;
+
+namespace detail
+{
+
+/*
+ * VisitVariantImpl is a helper for VisitVariant to handle void and non-void visitors.
+ * ValueType is the VisitorReturnType for non-void visitors, and
+ * nostd::monostate for visitors that do not return a value.
+ */
+
+// VisitVariantImpl for visitors that do not return values
+template <typename Visitor, typename Variant, typename ValueType>
+inline std::pair<ValueType, bool> VisitVariantImpl(Visitor &&visitor,
+                                                   const Variant &value,
+                                                   std::true_type)
+{
+  opentelemetry::nostd::visit(std::forward<Visitor>(visitor), value);
+  return VisitVariantResult<ValueType>{ValueType{}, true};
+}
+
+// VisitVariantImpl for visitors that return values
+template <typename Visitor, typename Variant, typename ValueType>
+inline std::pair<ValueType, bool> VisitVariantImpl(Visitor &&visitor,
+                                                   const Variant &value,
+                                                   std::false_type)
+{
+  return VisitVariantResult<ValueType>{
+      opentelemetry::nostd::visit(std::forward<Visitor>(visitor), value), true};
+}
+}  // namespace detail
+
 /**
  * VisitVariant
  *
  * Invokes nostd::visit(visitor, value) with exception-safe handling.
- * Returns pair<ReturnType, bool>: second=true on success, false if an exception was caught
- * On exception the first element is default-constructed.
+ * Returns pair<ResultValueType, bool> where bool is true on success and false if an
+ * exception was caught.
+ *
+ * ResultValueType is VisitorReturnType for non-void visitors, and nostd::monostate for void
+ * visitors.
+ *
  */
 template <typename Visitor, typename Variant>
 inline auto VisitVariant(Visitor &&visitor, const Variant &value) noexcept
-    -> std::pair<decltype(opentelemetry::nostd::visit(std::forward<Visitor>(visitor), value)), bool>
 {
+  using VisitorReturnType =
+      decltype(opentelemetry::nostd::visit(std::forward<Visitor>(visitor), value));
+  using ResultValueType =
+      typename std::conditional<std::is_void<VisitorReturnType>::value,
+                                opentelemetry::nostd::monostate, VisitorReturnType>::type;
 #if OPENTELEMETRY_HAVE_EXCEPTIONS
-  using ReturnType = decltype(opentelemetry::nostd::visit(std::forward<Visitor>(visitor), value));
   try
   {
 #endif
-    return {opentelemetry::nostd::visit(std::forward<Visitor>(visitor), value), true};
+    return detail::VisitVariantImpl<Visitor, Variant, ResultValueType>(
+        std::forward<Visitor>(visitor), value, std::is_void<VisitorReturnType>{});
 #if OPENTELEMETRY_HAVE_EXCEPTIONS
   }
 #  if defined(OPENTELEMETRY_HAVE_STD_VARIANT)
@@ -327,11 +373,11 @@ inline auto VisitVariant(Visitor &&visitor, const Variant &value) noexcept
   catch (const opentelemetry::nostd::bad_variant_access &)
 #  endif
   {
-    return {ReturnType{}, false};
+    return VisitVariantResult<ResultValueType>{ResultValueType{}, false};
   }
   catch (const std::bad_alloc &)
   {
-    return {ReturnType{}, false};
+    return VisitVariantResult<ResultValueType>{ResultValueType{}, false};
   }
 #endif
 }

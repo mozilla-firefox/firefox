@@ -58,31 +58,69 @@ static constexpr const char *kTelemetrySdkVersion = "telemetry.sdk.version";
 
 namespace TelemetrySdkLanguageValues
 {
-
+/**
+  <a href="https://opentelemetry.io/docs/languages/cpp/">C++</a>
+ */
 static constexpr const char *kCpp = "cpp";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/dotnet/">.NET</a>
+ */
 static constexpr const char *kDotnet = "dotnet";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/erlang/">Erlang/Elixir</a>
+ */
 static constexpr const char *kErlang = "erlang";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/go/">Go</a>
+ */
 static constexpr const char *kGo = "go";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/java/">Java</a>
+ */
 static constexpr const char *kJava = "java";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/kotlin/">Kotlin</a>
+ */
 static constexpr const char *kKotlin = "kotlin";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/js/">Node.js</a>
+ */
 static constexpr const char *kNodejs = "nodejs";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/php/">PHP</a>
+ */
 static constexpr const char *kPhp = "php";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/python/">Python</a>
+ */
 static constexpr const char *kPython = "python";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/ruby/">Ruby</a>
+ */
 static constexpr const char *kRuby = "ruby";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/rust/">Rust</a>
+ */
 static constexpr const char *kRust = "rust";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/swift/">Swift</a>
+ */
 static constexpr const char *kSwift = "swift";
 
+/**
+  <a href="https://opentelemetry.io/docs/languages/js/">Browser</a>
+ */
 static constexpr const char *kWebjs = "webjs";
 
 }  // namespace TelemetrySdkLanguageValues

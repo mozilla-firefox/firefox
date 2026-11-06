@@ -14,7 +14,7 @@ namespace trace
 {
 
 /**
- * DefaultSpan provides a non-operational Span that propagates
+ * DefaultSpan provides a non-recording Span that propagates
  * the tracer context by wrapping it inside the Span object.
  */
 
@@ -28,6 +28,7 @@ public:
 
   trace::SpanContext GetContext() const noexcept override { return span_context_; }
 
+  // Returns false, as DefaultSpan is a non-recording span.
   bool IsRecording() const noexcept override { return false; }
 
   void SetAttribute(nostd::string_view /* key */,

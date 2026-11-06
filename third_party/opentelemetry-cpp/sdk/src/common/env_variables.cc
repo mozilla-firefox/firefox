@@ -4,18 +4,18 @@
 #include "opentelemetry/sdk/common/env_variables.h"
 
 #ifdef _MSC_VER
-#  include <string.h>
+#  include <cstring>
 #  define strcasecmp _stricmp
 #else
 #  include <strings.h>
 #endif
 
-#include <cctype>
 #include <cerrno>
 #include <cstdlib>
 #include <limits>
 #include <ostream>
 
+#include "opentelemetry/common/detail/ascii.h"
 #include "opentelemetry/nostd/string_view.h"
 #include "opentelemetry/sdk/common/global_log_handler.h"
 #include "opentelemetry/version.h"
@@ -92,10 +92,10 @@ static bool GetTimeoutFromString(const char *input, std::chrono::system_clock::d
   std::chrono::system_clock::duration::rep result = 0;
 
   // Skip spaces
-  for (; *input && std::isspace(*input); ++input)
+  for (; *input && opentelemetry::common::detail::IsAsciiSpace(*input); ++input)
     ;
 
-  for (; *input && std::isdigit(*input); ++input)
+  for (; *input && opentelemetry::common::detail::IsAsciiDigit(*input); ++input)
   {
     auto digit = (*input - '0');
 

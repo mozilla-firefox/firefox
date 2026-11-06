@@ -1,14 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-#include <stdint.h>
 #include <chrono>
-#include <map>
-#include <mutex>
-#include <new>
+#include <cstdint>
 #include <utility>
 
 #include "opentelemetry/context/context.h"
+#include "opentelemetry/context/runtime_context.h"
 #include "opentelemetry/nostd/shared_ptr.h"
 #include "opentelemetry/nostd/string_view.h"
 #include "opentelemetry/nostd/variant.h"
@@ -20,8 +18,7 @@
 #include "opentelemetry/sdk/trace/tracer_config.h"
 #include "opentelemetry/sdk/trace/tracer_context.h"
 #include "opentelemetry/trace/context.h"
-#include "opentelemetry/trace/noop.h"
-#include "opentelemetry/trace/span.h"
+#include "opentelemetry/trace/default_span.h"
 #include "opentelemetry/trace/span_context.h"
 #include "opentelemetry/trace/span_id.h"
 #include "opentelemetry/trace/span_startoptions.h"
@@ -37,13 +34,15 @@ namespace sdk
 {
 namespace trace
 {
+
 Tracer::Tracer(std::shared_ptr<TracerContext> context,
-               std::unique_ptr<InstrumentationScope> instrumentation_scope) noexcept
+               std::unique_ptr<InstrumentationScope> instrumentation_scope)
     : instrumentation_scope_{std::move(instrumentation_scope)},
       context_{std::move(context)},
-      tracer_config_(context_->GetTracerConfigurator().ComputeConfig(*instrumentation_scope_))
+      noop_span_{std::make_shared<opentelemetry::trace::DefaultSpan>(
+          opentelemetry::trace::SpanContext::GetInvalid())}
 {
-  UpdateEnabled(tracer_config_.IsEnabled());
+  UpdateTracerConfig(context_->GetTracerConfigurator().ComputeConfig(*instrumentation_scope_));
 }
 
 nostd::shared_ptr<opentelemetry::trace::Span> Tracer::StartSpan(
@@ -52,129 +51,125 @@ nostd::shared_ptr<opentelemetry::trace::Span> Tracer::StartSpan(
     const opentelemetry::trace::SpanContextKeyValueIterable &links,
     const opentelemetry::trace::StartSpanOptions &options) noexcept
 {
-  // Check if the tracer is enabled using the API Tracer::Enabled() accessor if available.
-  if (!Enabled())
+#if OPENTELEMETRY_HAVE_EXCEPTIONS
+  try
   {
-    static const std::shared_ptr<opentelemetry::trace::NoopTracer> kNoopTracer =
-        std::make_shared<opentelemetry::trace::NoopTracer>();
-    return kNoopTracer->StartSpan(name, attributes, links, options);
-  }
+#endif
+    // Resolve parent span context from options or fall back to the current runtime context.
+    const auto parent_context = [&options]() noexcept -> opentelemetry::trace::SpanContext {
+      // 1. If the parent is a valid SpanContext, use it directly.
+      // 2. If the parent is a Context with a span, extract the SpanContext.
+      // 3. If the parent is a Context with the `is_root_span` flag set, return an invalid
+      // SpanContext.
+      // 4. If the parent is not provided, use the current runtime context to get the SpanContext.
+      if (const auto *span_context =
+              nostd::get_if<opentelemetry::trace::SpanContext>(&options.parent))
+      {
+        if (span_context->IsValid())
+        {
+          return *span_context;
+        }
+      }
+      else if (const auto *context = nostd::get_if<context::Context>(&options.parent))
+      {
+        auto ctx_span_context = opentelemetry::trace::GetSpanContext(*context);
+        if (ctx_span_context.IsValid())
+        {
+          return ctx_span_context;
+        }
+        else if (opentelemetry::trace::IsRootSpan(*context))
+        {
+          return opentelemetry::trace::SpanContext::GetInvalid();
+        }
+      }
 
-  // make sure to always overwrite this parent_context
-  bool get_current_context = true;
-  opentelemetry::trace::SpanContext parent_context(false, false);
-  if (const opentelemetry::trace::SpanContext *span_context =
-          nostd::get_if<opentelemetry::trace::SpanContext>(&options.parent))
-  {
-    if (span_context->IsValid())
+      return opentelemetry::trace::GetSpanContext(
+          opentelemetry::context::RuntimeContext::GetCurrent());
+    }();
+
+    if (!Enabled())
     {
-      parent_context      = *span_context;
-      get_current_context = false;
+      if (!parent_context.IsValid())
+      {
+        return noop_span_;
+      }
+      return {std::make_shared<opentelemetry::trace::DefaultSpan>(parent_context)};
     }
-  }
-  else if (const context::Context *context = nostd::get_if<context::Context>(&options.parent))
-  {
-    // fetch span context from parent span stored in the context
-    auto parent_span_context = opentelemetry::trace::GetSpan(*context)->GetContext();
-    if (parent_span_context.IsValid())
+
+    IdGenerator &generator                     = GetIdGenerator();
+    const opentelemetry::trace::SpanId span_id = generator.GenerateSpanId();
+    const opentelemetry::trace::TraceId trace_id =
+        parent_context.IsValid() ? parent_context.trace_id() : generator.GenerateTraceId();
+
+    const auto sampling_result = context_->GetSampler().ShouldSample(
+        parent_context, trace_id, name, options.kind, attributes, links);
+
+    const opentelemetry::trace::TraceFlags trace_flags =
+        [&]() noexcept -> opentelemetry::trace::TraceFlags {
+      std::uint8_t flags = 0;
+      if (parent_context.IsValid())
+      {
+        flags = parent_context.trace_flags().flags();
+      }
+      else if (generator.IsRandom())
+      {
+        flags = opentelemetry::trace::TraceFlags::kIsRandom;
+      }
+
+      if (sampling_result.IsSampled())
+      {
+        flags |= opentelemetry::trace::TraceFlags::kIsSampled;
+      }
+      else
+      {
+        flags &= ~opentelemetry::trace::TraceFlags::kIsSampled;
+      }
+
+      /* Support W3C Trace Context version 2. */
+      flags &= opentelemetry::trace::TraceFlags::kAllW3CTraceContext2Flags;
+
+      return opentelemetry::trace::TraceFlags(flags);
+    }();
+
+    const auto get_trace_state =
+        [&sampling_result,
+         &parent_context]() -> nostd::shared_ptr<opentelemetry::trace::TraceState> {
+      if (sampling_result.trace_state)
+      {
+        return sampling_result.trace_state;
+      }
+      if (parent_context.IsValid())
+      {
+        return parent_context.trace_state();
+      }
+      return opentelemetry::trace::TraceState::GetDefault();
+    };
+
+    opentelemetry::trace::SpanContext span_context(trace_id, span_id, trace_flags, false,
+                                                   get_trace_state());
+
+    nostd::shared_ptr<opentelemetry::trace::Span> span;
+
+    if (!sampling_result.IsRecording())
     {
-      parent_context      = parent_span_context;
-      get_current_context = false;
+      span = nostd::shared_ptr<opentelemetry::trace::Span>{
+          std::make_shared<opentelemetry::trace::DefaultSpan>(std::move(span_context))};
     }
     else
     {
-      if (opentelemetry::trace::IsRootSpan(*context))
-      {
-        get_current_context = false;
-      }
-    }
-  }
-
-  if (get_current_context)
-  {
-    parent_context = GetCurrentSpan()->GetContext();
-  }
-
-  IdGenerator &generator = GetIdGenerator();
-  opentelemetry::trace::TraceId trace_id;
-  opentelemetry::trace::SpanId span_id = generator.GenerateSpanId();
-  bool is_parent_span_valid            = false;
-  uint8_t flags                        = 0;
-
-  if (parent_context.IsValid())
-  {
-    trace_id             = parent_context.trace_id();
-    flags                = parent_context.trace_flags().flags();
-    is_parent_span_valid = true;
-  }
-  else
-  {
-    trace_id = generator.GenerateTraceId();
-    if (generator.IsRandom())
-    {
-      flags = opentelemetry::trace::TraceFlags::kIsRandom;
-    }
-  }
-
-  auto sampling_result = context_->GetSampler().ShouldSample(parent_context, trace_id, name,
-                                                             options.kind, attributes, links);
-  if (sampling_result.IsSampled())
-  {
-    flags |= opentelemetry::trace::TraceFlags::kIsSampled;
-  }
-  else
-  {
-    flags &= ~opentelemetry::trace::TraceFlags::kIsSampled;
-  }
-
-#if 0
-  /* https://github.com/open-telemetry/opentelemetry-specification as of v1.29.0 */
-  /* Support W3C Trace Context version 1. */
-  flags &= opentelemetry::trace::TraceFlags::kAllW3CTraceContext1Flags;
-#endif
-
-#if 1
-  /* Waiting for https://github.com/open-telemetry/opentelemetry-specification/issues/3411 */
-  /* Support W3C Trace Context version 2. */
-  flags &= opentelemetry::trace::TraceFlags::kAllW3CTraceContext2Flags;
-#endif
-
-  opentelemetry::trace::TraceFlags trace_flags(flags);
-
-  auto span_context =
-      std::unique_ptr<opentelemetry::trace::SpanContext>(new opentelemetry::trace::SpanContext(
-          trace_id, span_id, trace_flags, false,
-          sampling_result.trace_state ? sampling_result.trace_state
-          : is_parent_span_valid      ? parent_context.trace_state()
-                                      : opentelemetry::trace::TraceState::GetDefault()));
-
-  if (!sampling_result.IsRecording())
-  {
-    // create no-op span with valid span-context.
-
-    auto noop_span = nostd::shared_ptr<opentelemetry::trace::Span>{
-        new (std::nothrow)
-            opentelemetry::trace::NoopSpan(this->shared_from_this(), std::move(span_context))};
-    return noop_span;
-  }
-  else
-  {
-
-    auto span = nostd::shared_ptr<opentelemetry::trace::Span>{
-        new (std::nothrow) Span{this->shared_from_this(), name, attributes, links, options,
-                                parent_context, std::move(span_context)}};
-
-    // if the attributes is not nullptr, add attributes to the span.
-    if (sampling_result.attributes)
-    {
-      for (auto &kv : *sampling_result.attributes)
-      {
-        span->SetAttribute(kv.first, kv.second);
-      }
+      span = nostd::shared_ptr<opentelemetry::trace::Span>{
+          std::make_shared<Span>(shared_from_this(), name, attributes, links, options,
+                                 sampling_result, parent_context, std::move(span_context))};
     }
 
     return span;
+#if OPENTELEMETRY_HAVE_EXCEPTIONS
   }
+  catch (...)
+  {
+    return noop_span_;
+  }
+#endif
 }
 
 void Tracer::ForceFlushWithMicroseconds(uint64_t timeout) noexcept
@@ -199,12 +194,7 @@ void Tracer::CloseWithMicroseconds(uint64_t timeout) noexcept
 
 void Tracer::UpdateTracerConfig(TracerConfig config) noexcept
 {
-  const bool enabled = config.IsEnabled();
-  {
-    std::lock_guard<std::mutex> lock(tracer_config_mutex_);
-    tracer_config_ = config;
-  }
-  UpdateEnabled(enabled);
+  UpdateEnabled(config.IsEnabled());
 }
 
 }  // namespace trace

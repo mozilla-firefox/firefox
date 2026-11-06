@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <chrono>
+#include <map>
 #include <utility>
 
 #include "opentelemetry/nostd/function_ref.h"
 #include "opentelemetry/sdk/trace/processor.h"
 #include "opentelemetry/sdk/trace/recordable.h"
+#include "opentelemetry/sdk/trace/span_status.h"
 #include "opentelemetry/trace/span_id.h"
 #include "opentelemetry/trace/span_metadata.h"
 #include "opentelemetry/trace/trace_flags.h"
@@ -55,8 +57,9 @@ Span::Span(std::shared_ptr<Tracer> &&tracer,
            const common::KeyValueIterable &attributes,
            const opentelemetry::trace::SpanContextKeyValueIterable &links,
            const opentelemetry::trace::StartSpanOptions &options,
+           const opentelemetry::sdk::trace::SamplingResult &sampling_result,
            const opentelemetry::trace::SpanContext &parent_span_context,
-           std::unique_ptr<opentelemetry::trace::SpanContext> span_context) noexcept
+           opentelemetry::trace::SpanContext span_context) noexcept
     : tracer_{std::move(tracer)},
       recordable_{tracer_->GetProcessor().MakeRecordable()},
       start_steady_time{options.start_steady_time},
@@ -69,11 +72,11 @@ Span::Span(std::shared_ptr<Tracer> &&tracer,
   recordable_->SetSpanLimits(tracer_->GetSpanLimits());
   recordable_->SetName(name);
   recordable_->SetInstrumentationScope(tracer_->GetInstrumentationScope());
-  recordable_->SetIdentity(*span_context_, parent_span_context.IsValid()
-                                               ? parent_span_context.span_id()
-                                               : opentelemetry::trace::SpanId());
+  recordable_->SetIdentity(span_context_, parent_span_context.IsValid()
+                                              ? parent_span_context.span_id()
+                                              : opentelemetry::trace::SpanId());
 
-  recordable_->SetTraceFlags(span_context_->trace_flags());
+  recordable_->SetTraceFlags(span_context_.trace_flags());
 
   attributes.ForEachKeyValue([&](nostd::string_view key, common::AttributeValue value) noexcept {
     recordable_->SetAttribute(key, value);
@@ -85,6 +88,14 @@ Span::Span(std::shared_ptr<Tracer> &&tracer,
     recordable_->AddLink(span_context, attributes);
     return true;
   });
+
+  if (sampling_result.attributes != nullptr)
+  {
+    for (const auto &kv : *sampling_result.attributes)
+    {
+      recordable_->SetAttribute(kv.first, kv.second);
+    }
+  }
 
   recordable_->SetSpanKind(options.kind);
   recordable_->SetStartTime(NowOr(options.start_system_time));
@@ -100,6 +111,10 @@ Span::~Span()
 
 void Span::SetAttribute(nostd::string_view key, const common::AttributeValue &value) noexcept
 {
+  if (key.empty())
+  {
+    return;
+  }
   std::lock_guard<std::mutex> lock_guard{mu_};
   if (recordable_ == nullptr)
   {
@@ -187,7 +202,15 @@ void Span::SetStatus(opentelemetry::trace::StatusCode code, nostd::string_view d
   {
     return;
   }
-  recordable_->SetStatus(code, description);
+
+  const auto transition = detail::ApplyStatusTransition(status_code_, code, description);
+  if (!transition.accepted)
+  {
+    return;
+  }
+
+  status_code_ = transition.code;
+  recordable_->SetStatus(transition.code, transition.description);
 }
 
 void Span::UpdateName(nostd::string_view name) noexcept

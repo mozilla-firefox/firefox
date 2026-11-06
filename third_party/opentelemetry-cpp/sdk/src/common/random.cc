@@ -74,11 +74,11 @@ void Random::GenerateRandomBuffer(opentelemetry::nostd::span<uint8_t> buffer) no
     uint64_t value = GenerateRandom64();
     if (i + sizeof(uint64_t) <= buf_size)
     {
-      memcpy(&buffer[i], &value, sizeof(uint64_t));
+      std::memcpy(&buffer[i], &value, sizeof(uint64_t));
     }
     else
     {
-      memcpy(&buffer[i], &value, buf_size - i);
+      std::memcpy(&buffer[i], &value, buf_size - i);
     }
   }
 }

@@ -71,7 +71,7 @@ std::unique_ptr<opentelemetry::sdk::trace::TracerProvider> TracerProviderFactory
     std::unique_ptr<instrumentationscope::ScopeConfigurator<TracerConfig>> tracer_configurator)
 {
   return Create(std::move(processor), resource, std::move(sampler), std::move(id_generator),
-                std::move(tracer_configurator), SpanLimits::NoLimits());
+                std::move(tracer_configurator), span_limits_env::GetSpanLimitsFromEnv());
 }
 
 std::unique_ptr<opentelemetry::sdk::trace::TracerProvider> TracerProviderFactory::Create(
@@ -135,7 +135,7 @@ std::unique_ptr<opentelemetry::sdk::trace::TracerProvider> TracerProviderFactory
     std::unique_ptr<instrumentationscope::ScopeConfigurator<TracerConfig>> tracer_configurator)
 {
   return Create(std::move(processors), resource, std::move(sampler), std::move(id_generator),
-                std::move(tracer_configurator), SpanLimits::NoLimits());
+                std::move(tracer_configurator), span_limits_env::GetSpanLimitsFromEnv());
 }
 
 std::unique_ptr<opentelemetry::sdk::trace::TracerProvider> TracerProviderFactory::Create(

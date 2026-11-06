@@ -4,8 +4,8 @@
 #pragma once
 
 #include <cstddef>
-#include <string>
 
+#include "opentelemetry/nostd/string_view.h"
 #include "opentelemetry/version.h"
 
 OPENTELEMETRY_BEGIN_NAMESPACE
@@ -18,11 +18,11 @@ namespace common
  * Matches a text string against a pattern containing '?' (any single character)
  * and '*' (any sequence of characters, including empty) wildcards.
  */
-inline bool WildcardMatch(const std::string &pattern, const std::string &text)
+inline bool WildcardMatch(nostd::string_view pattern, nostd::string_view text)
 {
   size_t p      = 0;
   size_t t      = 0;
-  size_t star_p = std::string::npos;
+  size_t star_p = nostd::string_view::npos;
   size_t star_t = 0;
 
   while (t < text.size())
@@ -38,7 +38,7 @@ inline bool WildcardMatch(const std::string &pattern, const std::string &text)
       star_t = t;
       ++p;
     }
-    else if (star_p != std::string::npos)
+    else if (star_p != nostd::string_view::npos)
     {
       p = star_p + 1;
       ++star_t;

@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "opentelemetry/nostd/span.h"
 #include "opentelemetry/version.h"

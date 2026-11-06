@@ -3,6 +3,7 @@
 
 #include "opentelemetry/sdk/common/global_log_handler.h"
 
+#include <atomic>
 #include <iostream>
 
 OPENTELEMETRY_BEGIN_NAMESPACE
@@ -18,7 +19,7 @@ namespace
 struct GlobalLogHandlerData
 {
   nostd::shared_ptr<LogHandler> handler;
-  LogLevel log_level{LogLevel::Warning};
+  std::atomic<LogLevel> log_level{LogLevel::Warning};
 
   GlobalLogHandlerData() : handler(nostd::shared_ptr<LogHandler>(new DefaultLogHandler)) {}
   ~GlobalLogHandlerData() { is_singleton_destroyed = true; }
@@ -114,7 +115,7 @@ LogLevel GlobalLogHandler::GetLogLevel() noexcept
     return LogLevel::None;
   }
 
-  return GlobalLogHandlerData::Instance().log_level;
+  return GlobalLogHandlerData::Instance().log_level.load(std::memory_order_relaxed);
 }
 
 void GlobalLogHandler::SetLogLevel(LogLevel level) noexcept
@@ -123,7 +124,7 @@ void GlobalLogHandler::SetLogLevel(LogLevel level) noexcept
   {
     return;
   }
-  GlobalLogHandlerData::Instance().log_level = level;
+  GlobalLogHandlerData::Instance().log_level.store(level, std::memory_order_relaxed);
 }
 
 }  // namespace internal_log
