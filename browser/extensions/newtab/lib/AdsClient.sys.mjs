@@ -54,6 +54,10 @@ const STAGE_MARS_URL = "https://ads.allizom.org/";
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
+    logModule: "AdsClient",
+    // @backward-compat { version 162 }
+    // Older versions ignore logModule and name the module after the prefix.
+    // Remove prefix: once 162 reaches Release.
     prefix: "AdsClient",
     maxLogLevel: Services.prefs.getBoolPref(PREF_ADSCLIENT_LOG, false)
       ? "Debug"

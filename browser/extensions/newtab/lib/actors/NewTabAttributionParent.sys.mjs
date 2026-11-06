@@ -11,6 +11,10 @@ const lazy = {};
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
+    logModule: "NewTabAttributionParent",
+    // @backward-compat { version 162 }
+    // Older versions ignore logModule and name the module after the prefix.
+    // Remove prefix: once 162 reaches Release.
     prefix: "NewTabAttributionParent",
     maxLogLevel: "Warn",
   });

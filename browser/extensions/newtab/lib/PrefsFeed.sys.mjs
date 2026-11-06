@@ -107,6 +107,10 @@ const PREF_DEFAULTS = [
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
+    logModule: "PrefsFeed",
+    // @backward-compat { version 162 }
+    // Older versions ignore logModule and name the module after the prefix.
+    // Remove prefix: once 162 reaches Release.
     prefix: "PrefsFeed",
     maxLogLevel: Services.prefs.getBoolPref(
       "browser.newtabpage.activity-stream.activationWindow.log",

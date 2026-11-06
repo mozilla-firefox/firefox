@@ -20,6 +20,10 @@ const PREF_LOG =
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
+    logModule: "SponsoredTopSitesScoreProvider",
+    // @backward-compat { version 162 }
+    // Older versions ignore logModule and name the module after the prefix.
+    // Remove prefix: once 162 reaches Release.
     prefix: "SponsoredTopSitesScoreProvider",
     maxLogLevel: Services.prefs.getBoolPref(PREF_LOG, false) ? "Debug" : "Warn",
   });

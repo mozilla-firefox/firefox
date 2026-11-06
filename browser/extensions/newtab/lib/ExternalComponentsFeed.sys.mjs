@@ -16,6 +16,10 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///browser/components/newtab/AboutNewTabComponents.sys.mjs",
   logConsole: () =>
     console.createInstance({
+      logModule: "ExternalComponentsFeed",
+      // @backward-compat { version 162 }
+      // Older versions ignore logModule and name the module after the prefix.
+      // Remove prefix: once 162 reaches Release.
       prefix: "ExternalComponentsFeed",
       maxLogLevel: Services.prefs.getBoolPref(
         "browser.newtabpage.activity-stream.externalComponents.log",

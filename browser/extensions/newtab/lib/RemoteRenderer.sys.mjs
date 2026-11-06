@@ -43,6 +43,10 @@ const lazy = XPCOMUtils.declareLazy({
   },
   logConsole: () =>
     console.createInstance({
+      logModule: "RemoteRenderer",
+      // @backward-compat { version 162 }
+      // Older versions ignore logModule and name the module after the prefix.
+      // Remove prefix: once 162 reaches Release.
       prefix: "RemoteRenderer",
       maxLogLevel: Services.prefs.getBoolPref(
         "browser.newtabpage.activity-stream.remote-renderer.log",
