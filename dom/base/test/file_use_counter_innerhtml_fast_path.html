@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Use counter test for the innerHTML fast path</title>
+<style>
+  /* Sentinel use counter to signal that telemetry for this document has been captured */
+  div {
+    marker-mid: initial;
+  }
+</style>
+<div id="fast"></div>
+<div id="rejected"></div>
+<script>
+  document.getElementById("fast").innerHTML = "<span class=a>x</span>";
+  document.getElementById("rejected").innerHTML = "<table><tr><td>x</td></tr></table>";
+</script>

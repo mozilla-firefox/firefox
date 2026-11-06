@@ -72,11 +72,25 @@ already_AddRefed<Document> DOMParser::ParseFromStringInternal(
       document->ForceSkipDTDSecurityChecks();
     }
 
+    nsHtml5FragmentFastPath::ParseTimer timer(
+        nsHtml5FragmentFastPath::ParseTimer::Caller::DOMParser, aStr.Length());
     const bool fastPathEnabled =
         StaticPrefs::dom_html_fragment_fast_path_enabled();
     const bool parsedFast =
         fastPathEnabled &&
         nsHtml5FragmentFastPath::TryParseDocument(aStr, document, aRv);
+    if (fastPathEnabled) {
+      timer.FastPathTried(parsedFast);
+      // DOMParser::CreateWithoutGlobal() leaves mGlobal null.
+      if (nsPIDOMWindowInner* window =
+              mGlobal ? mGlobal->GetAsInnerWindow() : nullptr) {
+        if (Document* windowDocument = window->GetExtantDoc()) {
+          windowDocument->SetUseCounter(
+              parsedFast ? eUseCounter_custom_DOMParserFastPath
+                         : eUseCounter_custom_DOMParserFastPathRejected);
+        }
+      }
+    }
     if (!parsedFast) {
       nsresult rv = nsContentUtils::ParseDocumentHTML(aStr, document, false);
       if (NS_WARN_IF(NS_FAILED(rv))) {
@@ -84,6 +98,7 @@ already_AddRefed<Document> DOMParser::ParseFromStringInternal(
         return nullptr;
       }
     }
+    timer.Finish();
     if (NS_WARN_IF(aRv.Failed())) {
       return nullptr;
     }

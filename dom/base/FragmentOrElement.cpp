@@ -1333,10 +1333,20 @@ void FragmentOrElement::SetInnerHTMLInternal(const nsAString& aInnerHTML,
         !nsContentUtils::ShouldSanitizeFragment(
             target->NodePrincipal(),
             nsContentUtils::kParseFragmentPrivilegedDefaultSanitization);
+    nsHtml5FragmentFastPath::ParseTimer timer(
+        nsHtml5FragmentFastPath::ParseTimer::Caller::InnerHTML,
+        aInnerHTML.Length());
     const bool parsedFast =
         mayParseFast &&
         nsHtml5FragmentFastPath::TryParse(aInnerHTML, target,
                                           parseContext->AsElement(), aError);
+    if (mayParseFast) {
+      timer.FastPathTried(parsedFast);
+      // Not target's document, which is inert for template contents.
+      parseContext->OwnerDoc()->SetUseCounter(
+          parsedFast ? eUseCounter_custom_InnerHtmlFastPath
+                     : eUseCounter_custom_InnerHtmlFastPathRejected);
+    }
     if (!parsedFast) {
       aError = nsContentUtils::ParseFragmentHTML(
           aInnerHTML, target, contextLocalName, contextNameSpaceID,
@@ -1344,6 +1354,7 @@ void FragmentOrElement::SetInnerHTMLInternal(const nsAString& aInnerHTML,
           nsContentUtils::kParseFragmentPrivilegedDefaultSanitization,
           std::move(customElementRegistry));
     }
+    timer.Finish();
     doc->ResumeDOMNotifications();
     if (target->GetFirstChild()) {
       MutationObservers::NotifyContentAppended(target, target->GetFirstChild(),

@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Use counter test for the DOMParser fast path</title>
+<style>
+  /* Sentinel use counter to signal that telemetry for this document has been captured */
+  div {
+    marker-mid: initial;
+  }
+</style>
+<script>
+  new DOMParser().parseFromString("<span class=a>x</span>", "text/html");
+  new DOMParser().parseFromString("<table><tr><td>x</td></tr></table>", "text/html");
+</script>
