@@ -26,6 +26,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.Components
 import org.mozilla.fenix.components.Core
+import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.ContentRecommendationsAction
 import org.mozilla.fenix.ext.getPreferenceKey
 import org.mozilla.fenix.helpers.FenixGleanTestRule
@@ -198,7 +199,7 @@ internal class HomeSettingsFragmentTest {
     }
 
     @Test
-    fun `WHEN toggling the Wrexham widget setting THEN customize home preference_toggled is recorded with the wrexham_widget key`() {
+    fun `WHEN toggling the Wrexham widget setting THEN customize home preference_toggled is recorded with the wrexham_widget key and the widget visibility is dispatched`() {
         every { appSettings.enableHomepageWrexhamWidget } returns true
 
         activateFragment()
@@ -220,6 +221,7 @@ internal class HomeSettingsFragmentTest {
                 true,
             )
         }
+        verify { appStore.dispatch(AppAction.SportsWidgetAction.VisibilityChanged(isVisible = true)) }
 
         getWrexhamWidgetPreference().performClick()
 
@@ -235,6 +237,7 @@ internal class HomeSettingsFragmentTest {
                 false,
             )
         }
+        verify { appStore.dispatch(AppAction.SportsWidgetAction.VisibilityChanged(isVisible = false)) }
     }
 
     private fun activateFragment() {

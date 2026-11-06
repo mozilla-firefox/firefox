@@ -36,6 +36,7 @@ import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.Config
 import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.debugsettings.data.DefaultDebugSettingsRepository
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.components
@@ -212,7 +213,18 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_homepage_wrexham_widget).apply {
             isChecked = settings.enableHomepageWrexhamWidget
-            onPreferenceChangeListener = SharedPreferenceUpdater()
+            onPreferenceChangeListener =
+                object : SharedPreferenceUpdater() {
+                    override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean {
+                        val handled = super.onPreferenceChange(preference, newValue)
+                        if (handled) {
+                            preference.context.components.appStore.dispatch(
+                                AppAction.SportsWidgetAction.FeatureEnabledChanged(isEnabled = newValue as Boolean)
+                            )
+                        }
+                        return handled
+                    }
+                }
         }
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_ads_client_for_stories).apply {
