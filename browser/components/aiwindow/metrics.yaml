@@ -763,6 +763,47 @@ smart_window:
         description: >
           Time from response request start to the first rendered action-log entry
 
+  time_to_turn_complete:
+    type: event
+    description: |
+      Recorded when a chat turn successfully completes, including tool execution.
+      Cancelled and failed attempts and retries are excluded.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073261
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073261
+    data_sensitivity:
+      - interaction
+    notification_emails: *emails
+    expires: never
+    extra_keys:
+      location: *location
+      chat_id: *chat_id
+      message_seq: *message_seq
+      request_id: *request_id
+      model: *model
+      turn_index: *turn_index
+      context_message_count: *context_message_count
+      context_length: *context_length
+      duration:
+        type: quantity
+        unit: ms
+        description: >
+          The time from the original response request start to turn completion,
+          including engine and prompt preparation.
+      output_tokens:
+        type: quantity
+        unit: count
+        description: >
+          The sum of backend completion tokens across chat model responses in the
+          turn, including tool follow-up responses but excluding direct tool
+          answer streams. Omitted if any chat model response lacks completion-token usage.
+      tool_call_count:
+        type: quantity
+        unit: count
+        description: >
+          The number of model-requested tool executions attempted during the chat turn.
+
   client_error:
     type: event
     description: |

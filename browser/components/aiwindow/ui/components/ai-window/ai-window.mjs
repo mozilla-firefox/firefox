@@ -2871,6 +2871,7 @@ export class AIWindow extends MozLitElement {
 
     const requestStart = ChromeUtils.now();
     let assistantMessage;
+    let turnContext;
     let firstTokenTime = null;
     const onUpdate = (_e, message) => {
       if (message.role !== lazy.MESSAGE_ROLE.ASSISTANT) {
@@ -2951,15 +2952,34 @@ export class AIWindow extends MozLitElement {
           model: engine.model,
         };
         this.#pendingFirstActionLogContext = this.#pendingFirstCharacterContext;
+        turnContext = this.#pendingFirstCharacterContext;
       }
 
-      await lazy.Chat.fetchWithHistory({
+      const turnResult = await lazy.Chat.fetchWithHistory({
         conversation,
         browsingContext,
         mode: this.mode,
         signal,
         tokenPromise,
       });
+
+      if (turnResult && turnContext && !signal.aborted) {
+        Glean.smartWindow.timeToTurnComplete.record({
+          location: turnContext.location,
+          chat_id: turnContext.conversationId,
+          message_seq: turnContext.messageSeq,
+          request_id: turnContext.requestId,
+          model: turnContext.model,
+          turn_index: turnContext.turnIndex,
+          context_message_count: turnContext.contextMessageCount,
+          context_length: turnContext.contextLength,
+          duration: Math.round(ChromeUtils.now() - turnContext.startedAt),
+          tool_call_count: turnResult.toolCallCount,
+          ...(turnResult.outputTokens !== null && {
+            output_tokens: turnResult.outputTokens,
+          }),
+        });
+      }
 
       ChromeUtils.addProfilerMarker(
         "SmartWindow",

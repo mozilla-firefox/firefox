@@ -8,6 +8,7 @@ prefs = [
   "browser.smartwindow.endpoint=http://localhost:0/v1"
 ]
 support-files = [
+  "head_smartwindow_first_turn_telemetry.js",
   "head.js",
   "head_aiwindow_group_tabs_button.js",
   "head_smartformfill_autocomplete.js",
@@ -136,6 +137,16 @@ skip-if = [
 skip-if = [
   "os == 'win' && debug && standalone", # Bug 2028654
 ]
+
+["browser_smartwindow_first_turn_direct_answer_telemetry.js"]
+
+["browser_smartwindow_first_turn_outcomes_telemetry.js"]
+
+["browser_smartwindow_first_turn_sidebar_telemetry.js"]
+
+["browser_smartwindow_first_turn_telemetry.js"]
+
+["browser_smartwindow_first_turn_work_counts_telemetry.js"]
 
 ["browser_smartwindow_footer.js"]
 
