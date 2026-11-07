@@ -52,6 +52,12 @@ const CACHE_DB_NAME = "ads-client.sqlite";
 const PROD_MARS_URL = "https://ads.mozilla.org/";
 const STAGE_MARS_URL = "https://ads.allizom.org/";
 
+ChromeUtils.defineLazyGetter(lazy, "userAgent", () => {
+  return Cc["@mozilla.org/network/protocol;1?name=http"].getService(
+    Ci.nsIHttpProtocolHandler
+  ).userAgent;
+});
+
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
   return console.createInstance({
     logModule: "AdsClient",
@@ -275,11 +281,21 @@ export class _AdsClient {
         return null;
       }
 
-      const builtAdsClient = lazy.MozAdsClientBuilder.init()
+      let builder = lazy.MozAdsClientBuilder.init()
         .environment(this.environment)
         .cacheConfig(this.cacheConfig)
-        .telemetry(this.buildTelemetry())
-        .build();
+        .telemetry(this.buildTelemetry());
+
+      /**
+       * @backward-compat { version 162 }
+       * MozAdsClientBuilder.userAgent only exists once the vendored
+       * application-services includes PR #7729.
+       */
+      if (typeof builder.userAgent === "function") {
+        builder = builder.userAgent(lazy.userAgent);
+      }
+
+      const builtAdsClient = builder.build();
 
       // If we're not in the above corner case, then register a shutdown blocker to uninitialize.
       // Interrupt sooner prior to the `profile-before-change` phase to allow

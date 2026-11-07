@@ -8,6 +8,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   _AdsClient: "resource://newtab/lib/AdsClient.sys.mjs",
   AdsClient: "resource://newtab/lib/AdsClient.sys.mjs",
   AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
+  MozAdsClientBuilder:
+    "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAdsClient.sys.mjs",
   MozAdsEnvironment:
     "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustAdsClient.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
@@ -197,6 +199,26 @@ add_task(function test_getClient_singleton() {
     client,
     "getClient returns the same cached singleton"
   );
+});
+
+add_task(function test_getClient_setsUserAgent() {
+  const userAgentSpy = gSandbox.spy(
+    lazy.MozAdsClientBuilder.prototype,
+    "userAgent"
+  );
+
+  const adsClient = new lazy._AdsClient();
+  Assert.ok(adsClient.getClient(), "getClient built a MozAdsClient");
+
+  const expectedUserAgent = Cc[
+    "@mozilla.org/network/protocol;1?name=http"
+  ].getService(Ci.nsIHttpProtocolHandler).userAgent;
+  Assert.ok(
+    userAgentSpy.calledOnceWithExactly(expectedUserAgent),
+    "The builder receives the browser user agent"
+  );
+
+  userAgentSpy.restore();
 });
 
 add_task(async function test_getClient_opensCacheDatabase() {
