@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 6.5.472
- * pdfjsBuild = 1c3fdc259
+ * pdfjsVersion = 7.0.48
+ * pdfjsBuild = d44cfef28
  */
 /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
@@ -1894,6 +1894,7 @@ class Doc {
         break;
       case "WillPrint":
         this.#userActivationData.disablePrinting = true;
+        this.#userActivationData.disableSaving = true;
         try {
           this.#runActions(name);
         } catch (error) {
@@ -1903,6 +1904,7 @@ class Doc {
           command: "WillPrintFinished"
         });
         this.#userActivationData.disablePrinting = false;
+        this.#userActivationData.disableSaving = false;
         break;
       case "WillSave":
         this.#userActivationData.disableSaving = true;
