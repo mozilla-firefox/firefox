@@ -51,15 +51,20 @@ function setupRequestResponseTelemetry() {
   });
 
   afterEach(async () => {
-    if (mockEngineManager) {
-      mockEngineManager.cleanupMocks();
-      mockEngineManager = null;
+    try {
+      if (win) {
+        await BrowserTestUtils.closeWindow(win);
+      }
+    } finally {
+      try {
+        await mockEngineManager?.rejectAllRequests();
+      } finally {
+        mockEngineManager?.cleanupMocks();
+        mockEngineManager = null;
+        win = null;
+        sb.restore();
+        await SpecialPowers.popPrefEnv();
+      }
     }
-    if (win) {
-      await BrowserTestUtils.closeWindow(win);
-      win = null;
-    }
-    sb.restore();
-    await SpecialPowers.popPrefEnv();
   });
 }
