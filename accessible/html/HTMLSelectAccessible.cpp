@@ -288,7 +288,8 @@ uint64_t HTMLComboboxAccessible::NativeState() const {
   // Get focus status from base class
   uint64_t state = LocalAccessible::NativeState();
 
-  if (Elm()->State().HasState(dom::ElementState::OPEN)) {
+  nsComboboxControlFrame* comboFrame = do_QueryFrame(GetFrame());
+  if (comboFrame && comboFrame->IsDroppedDown()) {
     state |= states::EXPANDED;
   }
 
@@ -296,12 +297,29 @@ uint64_t HTMLComboboxAccessible::NativeState() const {
   return state;
 }
 
-void HTMLComboboxAccessible::Value(nsString& aValue) const {
-  HTMLSelectElement* select = HTMLSelectElement::FromNode(mContent);
-
-  if (HTMLOptionElement* option = select->GetSelectedOption()) {
-    option->GetRenderedLabel(aValue);
+EDescriptionValueFlag HTMLComboboxAccessible::Description(
+    nsString& aDescription) const {
+  aDescription.Truncate();
+  // First check to see if combo box itself has a description, perhaps through
+  // tooltip (title attribute) or via aria-describedby
+  EDescriptionValueFlag descFlag = LocalAccessible::Description(aDescription);
+  if (!aDescription.IsEmpty()) {
+    return descFlag;
   }
+
+  // Otherwise use description of selected option.
+  LocalAccessible* option = SelectedOption();
+  if (option) {
+    return option->Description(aDescription);
+  }
+
+  return eDescriptionOK;
+}
+
+void HTMLComboboxAccessible::Value(nsString& aValue) const {
+  // Use accessible name of selected option.
+  LocalAccessible* option = SelectedOption();
+  if (option) option->Name(aValue);
 }
 
 bool HTMLComboboxAccessible::HasPrimaryAction() const { return true; }

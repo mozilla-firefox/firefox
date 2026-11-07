@@ -355,6 +355,17 @@ add_task(async function () {
     "Text leafs are excluded from semantics rule."
   );
 
+  info("Combobox list that is invisible");
+  node = await walker.querySelector(walker.rootNode, "#combobox-1");
+  parent = await a11yWalker.getAccessibleFor(node);
+  front = (await parent.children())[0];
+  audit = await front.audit({ types: [KEYBOARD] });
+  Assert.deepEqual(
+    audit[KEYBOARD],
+    null,
+    "Combobox lists (invisible) are excluded from semantics rule."
+  );
+
   await waitForA11yShutdown(parentAccessibility);
   await target.destroy();
   gBrowser.removeCurrentTab();
