@@ -38,6 +38,7 @@ add_setup(async function () {
       ["browser.smartwindow.memories.generateFromConversation", false],
       ["browser.smartwindow.memories.generateFromHistory", false],
       ["browser.smartwindow.resumeCards.enabled", false],
+      ["places.semanticHistory.smartwindow.featureGate", false],
     ],
   });
 });
