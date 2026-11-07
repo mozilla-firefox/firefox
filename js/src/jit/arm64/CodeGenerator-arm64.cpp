@@ -28,7 +28,6 @@ using namespace js;
 using namespace js::jit;
 
 using JS::GenericNaN;
-using mozilla::FloorLog2;
 using mozilla::NegativeInfinity;
 
 // shared
@@ -230,8 +229,8 @@ void CodeGenerator::visitMulI(LMulI* ins) {
       default:
         // Use shift if cannot overflow and constant is a power of 2
         if (!mul->canOverflow() && constant > 0) {
-          int32_t shift = FloorLog2(uint32_t(constant));
-          if ((1 << shift) == constant) {
+          if (std::has_single_bit(uint32_t(constant))) {
+            int32_t shift = std::countr_zero(uint32_t(constant));
             masm.Lsl(destreg32, lhsreg32, shift);
             return;
           }
@@ -2199,8 +2198,8 @@ void CodeGenerator::visitMulI64(LMulI64* lir) {
       default:
         // Use shift if constant is nonnegative power of 2.
         if (constant > 0) {
-          int32_t shift = mozilla::FloorLog2(uint64_t(constant));
-          if (int64_t(1) << shift == constant) {
+          if (std::has_single_bit(uint64_t(constant))) {
+            int32_t shift = std::countr_zero(uint64_t(constant));
             masm.Lsl(ARMRegister(output.reg, 64),
                      ARMRegister(ToRegister64(lhs).reg, 64), shift);
             break;
@@ -2327,7 +2326,7 @@ void CodeGenerator::visitMulIntPtr(LMulIntPtr* ins) {
 
     // Use shift if constant is a power of 2.
     if (constant > 0 && std::has_single_bit(uintptr_t(constant))) {
-      uint32_t shift = mozilla::FloorLog2(uintptr_t(constant));
+      uint32_t shift = std::countr_zero(uintptr_t(constant));
       masm.Lsl(dest, lhs, shift);
       return;
     }

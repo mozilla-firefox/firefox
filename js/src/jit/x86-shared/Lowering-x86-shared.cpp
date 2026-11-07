@@ -6,6 +6,8 @@
 
 #include "mozilla/MathAlgorithms.h"
 
+#include <bit>
+
 #include "jit/Lowering.h"
 #include "jit/MIR-wasm.h"
 #include "jit/MIR.h"
@@ -17,7 +19,6 @@ using namespace js;
 using namespace js::jit;
 
 using mozilla::Abs;
-using mozilla::FloorLog2;
 using mozilla::Maybe;
 using mozilla::Nothing;
 using mozilla::Some;
@@ -174,8 +175,8 @@ void LIRGeneratorX86Shared::lowerDivI(MDiv* div) {
 
     // Division by powers of two can be done by shifting, and division by
     // other numbers can be done by a reciprocal multiplication technique.
-    int32_t shift = FloorLog2(Abs(rhs));
-    if (rhs != 0 && uint32_t(1) << shift == Abs(rhs)) {
+    if (std::has_single_bit(Abs(rhs))) {
+      int32_t shift = std::countr_zero(Abs(rhs));
       LAllocation lhs = useRegisterAtStart(div->lhs());
 
       // When truncated with maybe a non-zero remainder, we have to round the
@@ -228,8 +229,8 @@ void LIRGeneratorX86Shared::lowerDivI(MDiv* div) {
 void LIRGeneratorX86Shared::lowerModI(MMod* mod) {
   if (mod->rhs()->isConstant()) {
     int32_t rhs = mod->rhs()->toConstant()->toInt32();
-    int32_t shift = FloorLog2(Abs(rhs));
-    if (rhs != 0 && uint32_t(1) << shift == Abs(rhs)) {
+    if (std::has_single_bit(Abs(rhs))) {
+      int32_t shift = std::countr_zero(Abs(rhs));
       auto* lir =
           new (alloc()) LModPowTwoI(useRegisterAtStart(mod->lhs()), shift);
       if (mod->fallible()) {
@@ -283,9 +284,8 @@ void LIRGeneratorX86Shared::lowerUDiv(MDiv* div) {
   if (div->rhs()->isConstant()) {
     // NOTE: the result of toInt32 is coerced to uint32_t.
     uint32_t rhs = div->rhs()->toConstant()->toInt32();
-    int32_t shift = FloorLog2(rhs);
-
-    if (rhs != 0 && uint32_t(1) << shift == rhs) {
+    if (std::has_single_bit(rhs)) {
+      int32_t shift = std::countr_zero(rhs);
       auto* lir = new (alloc()) LDivPowTwoI(useRegisterAtStart(div->lhs()),
                                             LAllocation(), shift, false);
       if (div->fallible()) {
@@ -323,9 +323,8 @@ void LIRGeneratorX86Shared::lowerUDiv(MDiv* div) {
 void LIRGeneratorX86Shared::lowerUMod(MMod* mod) {
   if (mod->rhs()->isConstant()) {
     uint32_t rhs = mod->rhs()->toConstant()->toInt32();
-    int32_t shift = FloorLog2(rhs);
-
-    if (rhs != 0 && uint32_t(1) << shift == rhs) {
+    if (std::has_single_bit(rhs)) {
+      int32_t shift = std::countr_zero(rhs);
       auto* lir =
           new (alloc()) LModPowTwoI(useRegisterAtStart(mod->lhs()), shift);
       if (mod->fallible()) {

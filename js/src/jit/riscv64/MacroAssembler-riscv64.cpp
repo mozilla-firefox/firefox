@@ -5954,7 +5954,7 @@ void MacroAssemblerRiscv64::ma_mul32(Register rd, Register rs, Imm32 rt) {
   uint32_t shift = mozilla::FloorLog2(uint32_t(rt.value));
 
   // If the constant has only one bit set, it can be encoded as a bit-shift.
-  if ((1 << shift) == rt.value) {
+  if (std::has_single_bit(uint32_t(rt.value))) {
     slliw(rd, rs, shift);
     return;
   }
@@ -5962,8 +5962,8 @@ void MacroAssemblerRiscv64::ma_mul32(Register rd, Register rs, Imm32 rt) {
   // If the constant cannot be encoded as (1<<C1), see if it can be encoded
   // as (1<<C1) | (1<<C2), which can be computed using an add and a shift.
   uint32_t rest = rt.value - (1 << shift);
-  uint32_t shift_rest = mozilla::FloorLog2(rest);
-  if ((1u << shift_rest) == rest) {
+  if (std::has_single_bit(rest)) {
+    uint32_t shift_rest = std::countr_zero(rest);
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
 
@@ -6067,8 +6067,8 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
     }
 
     // Use shift if constant is power of 2.
-    uint8_t shift = mozilla::FloorLog2(rt.value);
-    if (uint64_t(1) << shift == rt.value) {
+    if (std::has_single_bit(rt.value)) {
+      uint8_t shift = std::countr_zero(rt.value);
       slli(rd, rs, shift);
       return;
     }
