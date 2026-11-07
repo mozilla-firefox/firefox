@@ -977,8 +977,7 @@ export class AIChatContent extends MozLitElement {
    * @param {CustomEvent} event
    */
   handleToolMessageEvent(event) {
-    const { convId, ordinal, turnIndex, content, actionLog } =
-      event.detail ?? {};
+    const { convId, ordinal, content, actionLog } = event.detail ?? {};
 
     if (!content?.name || !actionLog?.uiType) {
       return;
@@ -994,7 +993,6 @@ export class AIChatContent extends MozLitElement {
       role: "tool",
       uiType: actionLog.uiType,
       convId,
-      turnIndex,
       ordinal,
       toolCallId: content.tool_call_id,
       toolName: content.name,
@@ -1444,8 +1442,6 @@ export class AIChatContent extends MozLitElement {
     const key = `action-log:${toolMsgs[0]?.id ?? toolMsgs[0]?.messageId ?? groupIndex}`;
     return html`
       <ai-action-result
-        .conversationId=${toolMsgs[0].convId}
-        .turnIndex=${toolMsgs[0].turnIndex}
         .labelL10nId=${summary?.l10nId}
         .labelL10nArgs=${summary?.l10nArgs}
         .labelLink=${summary?.link ?? null}

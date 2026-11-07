@@ -712,97 +712,11 @@ smart_window:
       message_seq: *message_seq
       request_id: *request_id
       model: *model
-      turn_index: &turn_index
-        type: quantity
-        unit: count
-        description: >
-          Zero-based user turn index within the conversation; zero is the first turn.
-      context_message_count: &context_message_count
-        type: quantity
-        unit: count
-        description: >
-          Number of messages in the compacted chat-completions snapshot after prompt
-          preparation and before this turn's first model call.
-      context_length: &context_length
-        type: quantity
-        unit: count
-        description: >
-          UTF-16 code units in the JSON-serialized compacted messages at turn start,
-          including the system prompt and history but excluding tool schemas.
-          This is a context-size proxy, not a token count.
       latency:
         type: quantity
         unit: ms
         description: >
           Time from response request start to the first rendered assistant character
-
-  time_to_first_action_log:
-    type: event
-    description: |
-      Recorded when the first action-log entry is rendered after a chat request is submitted.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073260
-    data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073260
-    data_sensitivity:
-      - interaction
-    notification_emails: *emails
-    expires: never
-    extra_keys:
-      location: *location
-      chat_id: *chat_id
-      message_seq: *message_seq
-      request_id: *request_id
-      model: *model
-      turn_index: *turn_index
-      context_message_count: *context_message_count
-      context_length: *context_length
-      latency:
-        type: quantity
-        unit: ms
-        description: >
-          Time from response request start to the first rendered action-log entry
-
-  time_to_turn_complete:
-    type: event
-    description: |
-      Recorded when a chat turn successfully completes, including tool execution.
-      Cancelled and failed attempts and retries are excluded.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073261
-    data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2073261
-    data_sensitivity:
-      - interaction
-    notification_emails: *emails
-    expires: never
-    extra_keys:
-      location: *location
-      chat_id: *chat_id
-      message_seq: *message_seq
-      request_id: *request_id
-      model: *model
-      turn_index: *turn_index
-      context_message_count: *context_message_count
-      context_length: *context_length
-      duration:
-        type: quantity
-        unit: ms
-        description: >
-          The time from the original response request start to turn completion,
-          including engine and prompt preparation.
-      output_tokens:
-        type: quantity
-        unit: count
-        description: >
-          The sum of backend completion tokens across chat model responses in the
-          turn, including tool follow-up responses but excluding direct tool
-          answer streams. Omitted if any chat model response lacks completion-token usage.
-      tool_call_count:
-        type: quantity
-        unit: count
-        description: >
-          The number of model-requested tool executions attempted during the chat turn.
 
   client_error:
     type: event

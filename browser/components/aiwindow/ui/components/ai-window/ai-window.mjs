@@ -153,20 +153,17 @@ ChromeUtils.defineLazyGetter(lazy, "log", function () {
  */
 
 /**
- * Request context for telemetry about the first displayed response content.
+ * Request context used to record an assistant response's first displayed character.
  *
  * @typedef {{
  *   messageId: string,
- *   turnIndex: number,
- *   contextMessageCount: number,
- *   contextLength: number,
  *   conversationId: string,
  *   requestId: string,
  *   messageSeq: number,
  *   startedAt: number,
  *   location: string,
  *   model: string
- * }} PendingResponseContext
+ * }} PendingFirstCharacterContext
  */
 
 const MODE = {
@@ -305,16 +302,9 @@ export class AIWindow extends MozLitElement {
    * Context for a response awaiting its first displayed character, allowing
    * that character to be associated with the request telemetry.
    *
-   * @type {PendingResponseContext | null}
+   * @type {PendingFirstCharacterContext | null}
    */
   #pendingFirstCharacterContext = null;
-
-  /**
-   * Request awaiting its first visible action-log entry.
-   *
-   * @type {PendingResponseContext | null}
-   */
-  #pendingFirstActionLogContext = null;
 
   #starters = [];
   #starterPromptsAbortController = null;
@@ -931,7 +921,6 @@ export class AIWindow extends MozLitElement {
     this.#abortController?.abort();
     this.#abortController = null;
     this.#pendingFirstCharacterContext = null;
-    this.#pendingFirstActionLogContext = null;
 
     // Clean up visibility change handler
     if (this.#visibilityChangeHandler) {
@@ -1338,7 +1327,6 @@ export class AIWindow extends MozLitElement {
     if (
       selectedTab !== this.#getCurrentTab() ||
       !this.isConnected ||
-      this.isGenerating ||
       this.#conversation?.messageCount
     ) {
       return;
@@ -1405,7 +1393,7 @@ export class AIWindow extends MozLitElement {
               2,
               memoriesEnabled,
               this.conversationId,
-              abortController.signal
+              this.#starterPromptsAbortController.signal
             )
             .catch(e => {
               lazy.log.error(
@@ -1521,9 +1509,7 @@ export class AIWindow extends MozLitElement {
       this.resumeCardsLoading = false;
     }
 
-    if (this.#starterPromptsAbortController === abortController) {
-      this.#starterPromptsAbortController = null;
-    }
+    this.#starterPromptsAbortController = null;
     if (!rendersCardsIndependently && !abortController.signal.aborted) {
       this.#conversation.transientStarters = starters;
       this.#renderStarterPrompts(starters);
@@ -2865,7 +2851,6 @@ export class AIWindow extends MozLitElement {
 
     this.#abortController?.abort();
     this.#pendingFirstCharacterContext = null;
-    this.#pendingFirstActionLogContext = null;
     this.#abortController = new AbortController();
     const { signal } = this.#abortController;
     const stopWatchingTabClose =
@@ -2875,7 +2860,6 @@ export class AIWindow extends MozLitElement {
 
     const requestStart = ChromeUtils.now();
     let assistantMessage;
-    let turnContext;
     let firstTokenTime = null;
     const onUpdate = (_e, message) => {
       if (message.role !== lazy.MESSAGE_ROLE.ASSISTANT) {
@@ -2942,13 +2926,8 @@ export class AIWindow extends MozLitElement {
           lazy.MESSAGE_ROLE.ASSISTANT,
           conversation
         );
-        const context = conversation.compactChatCompletions();
-
         this.#pendingFirstCharacterContext = {
           messageId: assistantMessage.id,
-          turnIndex: assistantMessage.turnIndex,
-          contextMessageCount: context.length,
-          contextLength: JSON.stringify(context).length,
           conversationId: conversation.id,
           requestId: assistantMessage.parentMessageId,
           messageSeq: messageCount,
@@ -2956,35 +2935,15 @@ export class AIWindow extends MozLitElement {
           location: this.mode === MODE.FULLPAGE ? "home" : MODE.SIDEBAR,
           model: engine.model,
         };
-        this.#pendingFirstActionLogContext = this.#pendingFirstCharacterContext;
-        turnContext = this.#pendingFirstCharacterContext;
       }
 
-      const turnResult = await lazy.Chat.fetchWithHistory({
+      await lazy.Chat.fetchWithHistory({
         conversation,
         browsingContext,
         mode: this.mode,
         signal,
         tokenPromise,
       });
-
-      if (turnResult && turnContext && !signal.aborted) {
-        Glean.smartWindow.timeToTurnComplete.record({
-          location: turnContext.location,
-          chat_id: turnContext.conversationId,
-          message_seq: turnContext.messageSeq,
-          request_id: turnContext.requestId,
-          model: turnContext.model,
-          turn_index: turnContext.turnIndex,
-          context_message_count: turnContext.contextMessageCount,
-          context_length: turnContext.contextLength,
-          duration: Math.round(ChromeUtils.now() - turnContext.startedAt),
-          tool_call_count: turnResult.toolCallCount,
-          ...(turnResult.outputTokens !== null && {
-            output_tokens: turnResult.outputTokens,
-          }),
-        });
-      }
 
       ChromeUtils.addProfilerMarker(
         "SmartWindow",
@@ -3137,39 +3096,6 @@ export class AIWindow extends MozLitElement {
       message_seq: pending.messageSeq,
       request_id: pending.requestId,
       model: pending.model,
-      turn_index: pending.turnIndex,
-      context_message_count: pending.contextMessageCount,
-      context_length: pending.contextLength,
-      latency: Math.round(ChromeUtils.now() - pending.startedAt),
-    });
-  }
-
-  /**
-   * Records request latency when its first action-log entry becomes visible.
-   *
-   * @param {{conversationId: string, turnIndex: number}} detail
-   * @returns {void}
-   */
-  onFirstActionLogDisplayed({ conversationId, turnIndex }) {
-    const pending = this.#pendingFirstActionLogContext;
-    if (
-      !pending ||
-      pending.conversationId !== conversationId ||
-      pending.turnIndex !== turnIndex
-    ) {
-      return;
-    }
-
-    this.#pendingFirstActionLogContext = null;
-    Glean.smartWindow.timeToFirstActionLog.record({
-      location: pending.location,
-      chat_id: pending.conversationId,
-      message_seq: pending.messageSeq,
-      request_id: pending.requestId,
-      model: pending.model,
-      turn_index: pending.turnIndex,
-      context_message_count: pending.contextMessageCount,
-      context_length: pending.contextLength,
       latency: Math.round(ChromeUtils.now() - pending.startedAt),
     });
   }

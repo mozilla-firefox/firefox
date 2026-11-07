@@ -370,17 +370,6 @@ function recordToolCallEvent({ toolName, mode, conversation, error }) {
 }
 
 /**
- * Work performed by a successfully completed chat turn.
- *
- * @typedef {object} ChatTurnResult
- * @property {number | null} outputTokens - Backend completion tokens across chat
- *   model responses, excluding direct tool answer streams, or null if any chat
- *   model response omitted usage.
- * @property {number} toolCallCount - Model-requested tool executions attempted,
- *   including execution failures but excluding calls rejected before execution.
- */
-
-/**
  * Chat
  */
 export const Chat = {};
@@ -476,8 +465,6 @@ Object.assign(Chat, {
    * @param {Promise<string|null>} [options.tokenPromise] - A token
    *   fetch the caller already started, so a cold or expired token resolves
    *   alongside prompt construction rather than after it. Omit to fetch here.
-   * @returns {Promise<ChatTurnResult | null>} Completed-turn work counts, or null
-   *   if the turn was stopped early or handed off to another surface.
    */
   async fetchWithHistory({
     conversation,
@@ -512,8 +499,6 @@ Object.assign(Chat, {
     const chatToolsConfig = filterFeatureGatedTools(toolsConfig, conversation);
 
     let fullResponseText = "";
-    /** @type {ChatTurnResult} */
-    const turnResult = { outputTokens: 0, toolCallCount: 0 };
 
     // A search handoff sets `_searchExecutedTurn` (in executeToolByName). If a
     // later re-entry on the same turn (openSidebarAndContinue -> fetchWithHistory)
@@ -566,11 +551,6 @@ Object.assign(Chat, {
         );
         fullResponseText = response.fullResponseText;
         pendingToolCalls = response.pendingToolCalls;
-        turnResult.outputTokens =
-          turnResult.outputTokens !== null &&
-          response.usage?.completion_tokens != null
-            ? turnResult.outputTokens + response.usage.completion_tokens
-            : null;
 
         // Debug logging: Record the raw text and requested tool calls from the model
         logConversationStream(currentTurn, "CHAT RECV", {
@@ -601,14 +581,12 @@ Object.assign(Chat, {
           // We only run telemetry on our own endpoints
           runLLMaJTelemetry(conversation);
         }
-
-        return signal?.aborted ? null : turnResult;
+        return;
       }
 
       if (signal?.aborted) {
         logConversationStream(currentTurn, "STREAM END", null, "aborted");
-
-        return null;
+        return;
       }
 
       // Ensure all serialized tool calls have arguments and expand URL tokens.
@@ -731,8 +709,7 @@ Object.assign(Chat, {
         if (signal?.aborted) {
           abortToolCalls();
           logConversationStream(currentTurn, "STREAM END", null, "aborted");
-
-          return null;
+          return;
         }
 
         activeToolCall = null;
@@ -850,8 +827,6 @@ Object.assign(Chat, {
           });
         }
 
-        turnResult.toolCallCount++;
-
         try {
           if (featureGatedHandler) {
             result = await featureGatedHandler(
@@ -964,8 +939,7 @@ Object.assign(Chat, {
         if (signal?.aborted && !isSearchHandoff) {
           abortToolCalls();
           logConversationStream(currentTurn, "STREAM END", null, "aborted");
-
-          return null;
+          return;
         }
 
         const endsTurn =
@@ -992,8 +966,7 @@ Object.assign(Chat, {
           // need to be committed before returning since the commit
           // at the end of the loop will not be reached.
           conversation.securityProperties.commit();
-
-          return signal?.aborted ? null : turnResult;
+          return;
         }
 
         // Also terminal: the tool is writing the reply itself (the answers path
@@ -1004,8 +977,7 @@ Object.assign(Chat, {
         if (directAnswerStream) {
           await conversation.receiveResponse(directAnswerStream);
           logConversationStream(currentTurn, "STREAM END", null, toolName);
-
-          return signal?.aborted ? null : turnResult;
+          return;
         }
 
         // Perform the search handoff if the RUN_SEARCH tool was run.
@@ -1015,19 +987,16 @@ Object.assign(Chat, {
             console.error(
               "search_the_web: Associated window not available or closed, aborting search handoff"
             );
-
-            return null;
+            return;
           }
 
           lazy.AIWindow.openSidebarAndContinue(win, conversation);
-
-          return null;
+          return;
         }
       }
       if (signal?.aborted) {
         logConversationStream(currentTurn, "STREAM END", null, "aborted");
-
-        return null;
+        return;
       }
     }
   },
