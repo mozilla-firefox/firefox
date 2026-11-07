@@ -12,6 +12,9 @@
 
 "use strict";
 
+// TODO (Bug 2090225): Split tasks into smaller files to reduce the timeout.
+requestLongerTimeout(6);
+
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   AIWindowUI:
@@ -890,25 +893,23 @@ add_task(async function test_resume_prompt_click_marks_memory_applied() {
         async ({ browser, buttons }) => {
           buttons[0].click();
 
-          const aiWindowEl = browser.contentDocument.querySelector("ai-window");
-          const aichatBrowser = await TestUtils.waitForCondition(
-            () => aiWindowEl.shadowRoot?.querySelector("#aichat-browser"),
-            "Wait for aichat-browser"
-          );
+          const aichatBrowser = await getAichatBrowser(browser);
 
           await SpecialPowers.spawn(aichatBrowser, [], async () => {
-            const chatContent =
-              content.document.querySelector("ai-chat-content");
+            const chatRoot = await ContentTaskUtils.waitForCondition(
+              () =>
+                content.document.querySelector("ai-chat-content")?.shadowRoot,
+              "Wait for chat content shadow root"
+            );
 
             await ContentTaskUtils.waitForMutationCondition(
-              chatContent.shadowRoot,
+              chatRoot,
               { childList: true, subtree: true },
-              () =>
-                chatContent.shadowRoot.querySelector("assistant-message-footer")
+              () => chatRoot.querySelector("assistant-message-footer")
             );
             let appliedButton;
             await ContentTaskUtils.waitForCondition(() => {
-              const button = chatContent.shadowRoot
+              const button = chatRoot
                 .querySelector("assistant-message-footer")
                 ?.shadowRoot?.querySelector("applied-memories-button");
               // Unwrap the content element so Lit's prototype-backed
