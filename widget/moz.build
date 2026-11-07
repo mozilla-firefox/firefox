@@ -106,6 +106,8 @@ TEST_DIRS += ["tests", "tests/gtest"]
 
 DIRS += ["headless"]
 
+SPHINX_TREES["/widget"] = "docs"
+
 # Don't build the DSO under the 'build' directory as windows does.
 #
 # The DSOs get built in the toolkit dir itself.  Do this so that

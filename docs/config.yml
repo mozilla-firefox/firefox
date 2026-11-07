@@ -36,6 +36,7 @@ categories:
         - services
         - permissions
         - uriloader
+        - widget
         - widget/cocoa
         - widget/windows
         - toolkit/components/ml

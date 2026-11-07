@@ -44,6 +44,9 @@ the test itself is changed.
 Note that these tests use "real" focus and input, so you'll need to not touch
 your machine while running them. You can run them with the `--headless`
 flag to avoid this, but some tests may break in this mode.
+A headless run reads fixed look-and-feel values on Linux and the host's own on
+macOS and Windows, as [Look and feel](/widget/look-and-feel.md#headless)
+describes.
 
 
 Adding new tests
