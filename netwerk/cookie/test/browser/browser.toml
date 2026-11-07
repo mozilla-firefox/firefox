@@ -16,6 +16,8 @@ support-files = ["setFetchCookie.sjs"]
 
 ["browser_chips_partition_cap_child.js"]
 
+["browser_cookie_child_large_list.js"]
+
 ["browser_cookieStore_bfcache_leak.js"]
 
 ["browser_cookieStore_ip_domain.js"]
