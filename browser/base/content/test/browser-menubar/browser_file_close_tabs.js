@@ -30,6 +30,10 @@ add_task(async function test_menu_close_tab_count() {
     2,
     "Menu bar reflects multi-tab selection number (Close 2 Tabs)"
   );
+  if (document.hasPendingL10nMutations) {
+    await BrowserTestUtils.waitForEvent(document, "L10nMutationsFinished");
+  }
+  await simulateMenuClosed(fileMenu);
 
   let onClose = BrowserTestUtils.waitForEvent(
     gBrowser.tabContainer,
