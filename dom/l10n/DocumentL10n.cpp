@@ -91,13 +91,13 @@ class L10nReadyHandler final : public PromiseNativeHandler {
 
   void ResolvedCallback(JSContext* aCx, JS::Handle<JS::Value> aValue,
                         ErrorResult& aRv) override {
-    mDocumentL10n->InitialTranslationCompleted(true);
+    mDocumentL10n->InitialTranslationCompleted();
     mPromise->MaybeResolveWithUndefined();
   }
 
   void RejectedCallback(JSContext* aCx, JS::Handle<JS::Value> aValue,
                         ErrorResult& aRv) override {
-    mDocumentL10n->InitialTranslationCompleted(false);
+    mDocumentL10n->InitialTranslationCompleted();
 
     nsTArray<nsCString> errors{
         "[dom/l10n] Could not complete initial document translation."_ns,
@@ -150,12 +150,12 @@ void DocumentL10n::TriggerInitialTranslation() {
   if (!mReady) {
     // If we don't have `mReady` it means that we are in shutdown mode.
     // See bug 1687118 for details.
-    InitialTranslationCompleted(false);
+    InitialTranslationCompleted();
     return;
   }
 
   auto errorExit = MakeScopeExit([&] {
-    InitialTranslationCompleted(false);
+    InitialTranslationCompleted();
     mReady->MaybeRejectWithUndefined();
   });
 
@@ -190,7 +190,7 @@ void DocumentL10n::TriggerInitialTranslation() {
   if (promise->State() == Promise::PromiseState::Resolved) {
     // If the promise is already resolved, we can fast-track
     // to initial translation completed.
-    InitialTranslationCompleted(true);
+    InitialTranslationCompleted();
     mReady->MaybeResolveWithUndefined();
   } else {
     RefPtr<PromiseNativeHandler> l10nReadyHandler =
@@ -224,84 +224,19 @@ already_AddRefed<Promise> DocumentL10n::TranslateDocument(ErrorResult& aRv) {
   }
 
   RefPtr<nsXULPrototypeDocument> proto = mDocument->GetPrototype();
-
-  // 2. Check if the document has a prototype that may cache
-  //    translated elements.
+  // Check if the document has a prototype that may cache translated elements,
+  // and if so remove the elements that were translated from their prototype and
+  // unmodified.
   if (proto) {
-    // 2.1. Handle the case when we have proto.
-
-    // 2.1.1. Move elements that are not in the proto to a separate
-    //        array.
-    Sequence<OwningNonNull<Element>> nonProtoElements;
-
-    uint32_t i = elements.Length();
-    while (i > 0) {
-      Element* elem = elements.ElementAt(i - 1);
-      MOZ_RELEASE_ASSERT(elem->HasAttr(nsGkAtoms::datal10nid));
-      if (!elem->HasElementCreatedFromPrototypeAndHasUnmodifiedL10n()) {
-        if (NS_WARN_IF(!nonProtoElements.AppendElement(*elem, fallible))) {
-          promise->MaybeRejectWithUndefined();
-          return promise.forget();
-        }
-        elements.RemoveElement(elem);
-      }
-      i--;
-    }
-
-    // We populate the sequence in reverse order. Let's bring it
-    // back to top->bottom one.
-    nonProtoElements.Reverse();
-
-    AutoAllowLegacyScriptExecution exemption;
-
-    nsTArray<RefPtr<Promise>> promises;
-
-    // 2.1.2. If we're not loading from cache, push the elements that
-    //        are in the prototype to be translated and cached.
-    if (!proto->WasL10nCached() && !elements.IsEmpty()) {
-      RefPtr<Promise> translatePromise =
-          TranslateElements(elements, proto, aRv);
-      if (NS_WARN_IF(!translatePromise || aRv.Failed())) {
-        promise->MaybeRejectWithUndefined();
-        return promise.forget();
-      }
-      promises.AppendElement(translatePromise);
-    }
-
-    // 2.1.3. If there are elements that are not in the prototype,
-    //        localize them without attempting to cache and
-    //        independently of if we're loading from cache.
-    if (!nonProtoElements.IsEmpty()) {
-      RefPtr<Promise> nonProtoTranslatePromise =
-          TranslateElements(nonProtoElements, nullptr, aRv);
-      if (NS_WARN_IF(!nonProtoTranslatePromise || aRv.Failed())) {
-        promise->MaybeRejectWithUndefined();
-        return promise.forget();
-      }
-      promises.AppendElement(nonProtoTranslatePromise);
-    }
-
-    // 2.1.4. Collect promises with Promise::All (maybe empty).
-    AutoEntryScript aes(mGlobal, "DocumentL10n InitialTranslationCompleted");
-    promise = Promise::All(aes.cx(), promises, aRv);
-    if (NS_WARN_IF(aRv.Failed())) {
-      return nullptr;
-    }
-  } else {
-    // 2.2. Handle the case when we don't have proto.
-
-    // 2.2.1. Otherwise, translate all available elements,
-    //        without attempting to cache them.
-    promise = TranslateElements(elements, nullptr, aRv);
-    if (NS_WARN_IF(aRv.Failed())) {
-      return nullptr;
-    }
+    elements.RemoveElementsBy([](Element* aElement) {
+      return aElement->IsElementTranslatedFromPrototype();
+    });
   }
-
+  promise = TranslateElements(elements, proto, aRv);
   return promise.forget();
 }
 
-void DocumentL10n::InitialTranslationCompleted(bool aL10nCached) {
+void DocumentL10n::InitialTranslationCompleted() {
   if (mState >= DocumentL10nState::Ready) {
     return;
   }
@@ -314,7 +249,7 @@ void DocumentL10n::InitialTranslationCompleted(bool aL10nCached) {
   mState = DocumentL10nState::Ready;
 
   RefPtr<Document> doc = mDocument;
-  doc->InitialTranslationCompleted(aL10nCached);
+  doc->InitialTranslationCompleted();
 
   // In XUL scenario contentSink is nullptr.
   if (mContentSink) {

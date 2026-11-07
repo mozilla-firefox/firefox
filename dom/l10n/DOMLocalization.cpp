@@ -552,8 +552,8 @@ bool DOMLocalization::ApplyTranslations(
     if (aProto) {
       // We only need to rebuild deep if the translation has a value.
       // Otherwise we'll only rebuild the attributes.
-      aProto->RebuildL10nPrototype(elem,
-                                   !aTranslations[i].Value().mValue.IsVoid());
+      aProto->MaybeRebuildPrototypeAfterTranslation(
+          elem, !aTranslations[i].Value().mValue.IsVoid());
     }
   }
 

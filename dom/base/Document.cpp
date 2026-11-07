@@ -2858,10 +2858,12 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(Document)
   }
 
   // XXX: This should be not needed once bug 1569185 lands.
-  for (const auto& entry : tmp->mL10nProtoElements) {
-    NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb, "mL10nProtoElements key");
+  for (const auto& entry : tmp->mUntranslatedL10nProtoElements) {
+    NS_CYCLE_COLLECTION_NOTE_EDGE_NAME(cb,
+                                       "mUntranslatedL10nProtoElements key");
     cb.NoteXPCOMChild(entry.GetKey());
-    CycleCollectionNoteChild(cb, entry.GetWeak(), "mL10nProtoElements value");
+    CycleCollectionNoteChild(cb, entry.GetWeak(),
+                             "mUntranslatedL10nProtoElements value");
   }
 
   for (size_t i = 0; i < tmp->mPendingFrameStaticClones.Length(); ++i) {
@@ -3050,7 +3052,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(Document)
 
   tmp->UnregisterFromMemoryReportingForDataDocument();
 
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mL10nProtoElements)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mUntranslatedL10nProtoElements)
   NS_IMPL_CYCLE_COLLECTION_UNLINK_WEAK_PTR
   NS_IMPL_CYCLE_COLLECTION_UNLINK_WEAK_REFERENCE
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
@@ -5022,7 +5024,7 @@ void Document::OnParsingCompleted() {
   }
 }
 
-void Document::InitialTranslationCompleted(bool aL10nCached) {
+void Document::InitialTranslationCompleted() {
   if (mDocumentL10n && mDocumentL10n->mBlockingLayout) {
     // This means we blocked the load event in LocalizationLinkAdded.  It's
     // important that the load blocker removal here be async, because our caller
@@ -5032,12 +5034,7 @@ void Document::InitialTranslationCompleted(bool aL10nCached) {
     UnblockOnload(/* aFireSync = */ false);
   }
 
-  mL10nProtoElements.Clear();
-
-  nsXULPrototypeDocument* proto = GetPrototype();
-  if (proto) {
-    proto->SetIsL10nCached(aL10nCached);
-  }
+  mUntranslatedL10nProtoElements.Clear();
 }
 
 bool Document::AllowsL10n() const {

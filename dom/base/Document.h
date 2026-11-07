@@ -4519,15 +4519,10 @@ class Document : public nsINode,
   void OnParsingCompleted();
 
   /**
-   * This method is called when the initial translation
-   * of the document is completed.
-   *
-   * It unblocks the load event if translation was blocking it.
-   *
-   * If the `aL10nCached` is set to `true`, and the document has
-   * a prototype, it will set the `isL10nCached` flag on it.
+   * This method is called when the initial translation of the document is
+   * completed. It unblocks the load event if translation was blocking it.
    */
-  void InitialTranslationCompleted(bool aL10nCached);
+  void InitialTranslationCompleted();
 
   /**
    * Returns whether the document allows localization.
@@ -6229,8 +6224,10 @@ class Document : public nsINode,
 
   bool HasPendingInitialTranslation();
 
-  nsRefPtrHashtable<nsRefPtrHashKey<Element>, nsXULPrototypeElement>
-      mL10nProtoElements;
+  using ElementToProtoMap =
+      nsRefPtrHashtable<nsRefPtrHashKey<Element>, nsXULPrototypeElement>;
+  // The map from untranslated elements to their prototype.
+  ElementToProtoMap mUntranslatedL10nProtoElements;
 
   void LoadEventFired();
 

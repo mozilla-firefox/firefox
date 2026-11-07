@@ -68,7 +68,7 @@ class DocumentL10n final : public DOMLocalization {
   void TriggerInitialTranslation();
   already_AddRefed<Promise> TranslateDocument(ErrorResult& aRv);
 
-  void InitialTranslationCompleted(bool aL10nCached);
+  void InitialTranslationCompleted();
 
   Document* GetDocument() const { return mDocument; };
   void OnCreatePresShell();

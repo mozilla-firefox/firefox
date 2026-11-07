@@ -2482,7 +2482,6 @@ class Element : public FragmentOrElement {
    * @param aModType      AttrModType::Modification or AttrModType::Addition.
    * @param aNotify       should we notify document-observers?
    * @param aCallAfterSetAttr should we call AfterSetAttr?
-   * @param aComposedDocument The current composed document of the element.
    * @param aGuard        For making sure that this is called with a
    *                      mozAutoDocUpdate instance, this is here.  Specify
    *                      an instance of it which you created for the call.
@@ -2492,7 +2491,7 @@ class Element : public FragmentOrElement {
                             nsAttrValue& aParsedValue,
                             nsIPrincipal* aSubjectPrincipal,
                             AttrModType aModType, bool aNotify,
-                            bool aCallAfterSetAttr, Document* aComposedDocument,
+                            bool aCallAfterSetAttr,
                             const mozAutoDocUpdate& aGuard,
                             IsKnownNewAttr aIsKnownNew);
 

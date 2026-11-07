@@ -33,17 +33,12 @@ using namespace mozilla;
 using namespace mozilla::dom;
 using mozilla::dom::DestroyProtoAndIfaceCache;
 
-uint32_t nsXULPrototypeDocument::gRefCnt;
-
 //----------------------------------------------------------------------
 //
 // ctors, dtors, n' stuff
 //
 
-nsXULPrototypeDocument::nsXULPrototypeDocument()
-    : mRoot(nullptr), mLoaded(false), mCCGeneration(0), mWasL10nCached(false) {
-  ++gRefCnt;
-}
+nsXULPrototypeDocument::nsXULPrototypeDocument() = default;
 
 nsresult nsXULPrototypeDocument::Init() {
   mNodeInfoManager = new nsNodeInfoManager(nullptr, nullptr);
@@ -113,11 +108,6 @@ nsXULPrototypeDocument::Read(nsIObjectInputStream* aStream) {
 
   // Better safe than sorry....
   mNodeInfoManager->SetDocumentPrincipal(principal);
-
-  rv = aStream->ReadBoolean(&mWasL10nCached);
-  if (NS_FAILED(rv)) {
-    return rv;
-  }
 
   mRoot = new nsXULPrototypeElement();
 
@@ -254,11 +244,6 @@ nsXULPrototypeDocument::Write(nsIObjectOutputStream* aStream) {
     NS_WARNING("Serializing document without system principal");
   }
 #endif
-
-  tmp = aStream->WriteBoolean(mWasL10nCached);
-  if (NS_FAILED(tmp)) {
-    rv = tmp;
-  }
 
   // mozilla::dom::NodeInfo table
   nsTArray<RefPtr<mozilla::dom::NodeInfo>> nodeInfos;
@@ -413,10 +398,6 @@ nsresult nsXULPrototypeDocument::NotifyLoadDone() {
   return NS_OK;
 }
 
-void nsXULPrototypeDocument::SetIsL10nCached(bool aIsCached) {
-  mWasL10nCached = aIsCached;
-}
-
 void nsXULPrototypeDocument::RebuildPrototypeFromElement(
     nsXULPrototypeElement* aPrototype, Element* aElement, bool aDeep) {
   NodeInfo* oldNodeInfo = aElement->NodeInfo();
@@ -485,17 +466,13 @@ void nsXULPrototypeDocument::RebuildPrototypeFromElement(
   }
 }
 
-void nsXULPrototypeDocument::RebuildL10nPrototype(Element* aElement,
-                                                  bool aDeep) {
-  if (mWasL10nCached) {
-    return;
-  }
-
+void nsXULPrototypeDocument::MaybeRebuildPrototypeAfterTranslation(
+    Element* aElement, bool aDeep) {
   MOZ_ASSERT(aElement->HasAttr(nsGkAtoms::datal10nid));
-
   Document* doc = aElement->OwnerDoc();
   if (RefPtr<nsXULPrototypeElement> proto =
-          doc->mL10nProtoElements.Get(aElement)) {
+          doc->mUntranslatedL10nProtoElements.Get(aElement)) {
     RebuildPrototypeFromElement(proto, aElement, aDeep);
+    proto->mTranslated = true;
   }
 }

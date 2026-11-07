@@ -3351,12 +3351,7 @@ void Element::UnbindFromTree(UnbindContext& aContext) {
 
   ClearInDocument();
   SetIsConnected(false);
-  if (HasElementCreatedFromPrototypeAndHasUnmodifiedL10n()) {
-    if (document) {
-      document->mL10nProtoElements.Remove(this);
-    }
-    ClearElementCreatedFromPrototypeAndHasUnmodifiedL10n();
-  }
+  ClearElementTranslatedFromPrototype();
 
   if (nullParent || !mParent->IsInShadowTree()) {
     UnsetFlags(NODE_IS_IN_SHADOW_TREE);
@@ -3764,8 +3759,7 @@ nsresult Element::SetClassAttrFromParser(nsAtom* aValue) {
   nsAttrValue value;
   value.ParseAtomArray(aValue);
 
-  Document* document = GetComposedDoc();
-  mozAutoDocUpdate updateBatch(document, false);
+  mozAutoDocUpdate updateBatch(GetComposedDoc(), false);
 
   // In principle, BeforeSetAttr should be called here if a node type
   // existed that wanted to do something special for class, but there
@@ -3777,8 +3771,7 @@ nsresult Element::SetClassAttrFromParser(nsAtom* aValue) {
                           nullptr,  // old value
                           value, nullptr, AttrModType::Addition,
                           false,  // notify
-                          kCallAfterSetAttr, document, updateBatch,
-                          IsKnownNewAttr::Yes);
+                          kCallAfterSetAttr, updateBatch, IsKnownNewAttr::Yes);
 }
 
 nsresult Element::SetAttr(int32_t aNamespaceID, nsAtom* aName, nsAtom* aPrefix,
@@ -3878,10 +3871,9 @@ nsresult Element::SetAttrInternal(int32_t aNamespaceID, nsAtom* aName,
     return NS_OK;
   }
 
-  // Hold a script blocker while calling ParseAttribute since that can call
-  // out to id-observers
-  Document* document = GetComposedDoc();
-  mozAutoDocUpdate updateBatch(document, aNotify);
+  // Hold a script blocker while calling ParseAttribute since that can call out
+  // to id-observers
+  mozAutoDocUpdate updateBatch(GetComposedDoc(), aNotify);
 
   if (aNotify) {
     MutationObservers::NotifyAttributeWillChange(this, aNamespaceID, aName,
@@ -3895,10 +3887,10 @@ nsresult Element::SetAttrInternal(int32_t aNamespaceID, nsAtom* aName,
     BeforeSetAttr(aNamespaceID, aName, &attrValue, aNotify);
   }
 
-  return SetAttrAndNotify(
-      aNamespaceID, aName, aPrefix, oldValueSet ? &oldValue : nullptr,
-      attrValue, aSubjectPrincipal, modType, aNotify, kCallAfterSetAttr,
-      document, updateBatch, aIsKnownNew);
+  return SetAttrAndNotify(aNamespaceID, aName, aPrefix,
+                          oldValueSet ? &oldValue : nullptr, attrValue,
+                          aSubjectPrincipal, modType, aNotify,
+                          kCallAfterSetAttr, updateBatch, aIsKnownNew);
 }
 
 nsresult Element::SetParsedAttr(int32_t aNamespaceID, nsAtom* aName,
@@ -3926,8 +3918,7 @@ nsresult Element::SetParsedAttr(int32_t aNamespaceID, nsAtom* aName,
     }
   }
 
-  Document* document = GetComposedDoc();
-  mozAutoDocUpdate updateBatch(document, aNotify);
+  mozAutoDocUpdate updateBatch(GetComposedDoc(), aNotify);
 
   if (aNotify) {
     MutationObservers::NotifyAttributeWillChange(this, aNamespaceID, aName,
@@ -3941,7 +3932,7 @@ nsresult Element::SetParsedAttr(int32_t aNamespaceID, nsAtom* aName,
   return SetAttrAndNotify(aNamespaceID, aName, aPrefix,
                           oldValueSet ? &oldValue : nullptr, aParsedValue,
                           nullptr, modType, aNotify, kCallAfterSetAttr,
-                          document, updateBatch, aIsKnownNew);
+                          updateBatch, aIsKnownNew);
 }
 
 static MOZ_ALWAYS_INLINE void SetLifecycleCallbackNamespaceURI(
@@ -4143,8 +4134,8 @@ nsresult Element::SetAttrAndNotify(
     int32_t aNamespaceID, nsAtom* aName, nsAtom* aPrefix,
     const nsAttrValue* aOldValue, nsAttrValue& aParsedValue,
     nsIPrincipal* aSubjectPrincipal, AttrModType aModType, bool aNotify,
-    bool aCallAfterSetAttr, Document* aComposedDocument,
-    const mozAutoDocUpdate& aGuard, IsKnownNewAttr aIsKnownNew) {
+    bool aCallAfterSetAttr, const mozAutoDocUpdate& aGuard,
+    IsKnownNewAttr aIsKnownNew) {
   // NOTE: Please keep changes to this method in sync with
   // `SetNoNameSpaceAttrOnNewlyCreatedElement`!
   nsMutationGuard::DidMutate();
@@ -4190,15 +4181,6 @@ nsresult Element::SetAttrAndNotify(
     // No need to conditionally assign null here. If there was no previously
     // set value for the attribute, aOldValue will already be null.
     oldValue = aOldValue;
-  }
-
-  if (HasElementCreatedFromPrototypeAndHasUnmodifiedL10n() &&
-      aNamespaceID == kNameSpaceID_None &&
-      (aName == nsGkAtoms::datal10nid || aName == nsGkAtoms::datal10nargs)) {
-    ClearElementCreatedFromPrototypeAndHasUnmodifiedL10n();
-    if (aComposedDocument) {
-      aComposedDocument->mL10nProtoElements.Remove(this);
-    }
   }
 
   const CustomElementData* data = GetCustomElementData();
@@ -4357,6 +4339,14 @@ void Element::AfterSetAttr(int32_t aNamespaceID, nsAtom* aName,
              aName == nsGkAtoms::aria_labelledby ||
              aName == nsGkAtoms::aria_owns) {
     ClearExplicitlySetAttrElements(aName);
+  } else if ((aName == nsGkAtoms::datal10nid ||
+              aName == nsGkAtoms::datal10nargs) &&
+             aNotify) {
+    ClearElementTranslatedFromPrototype();
+    auto* doc = OwnerDoc();
+    if (!doc->mUntranslatedL10nProtoElements.IsEmpty()) [[unlikely]] {
+      doc->mUntranslatedL10nProtoElements.Remove(this);
+    }
   }
 }
 

@@ -165,9 +165,7 @@ class nsXULPrototypeNode {
 class nsXULPrototypeElement : public nsXULPrototypeNode {
  public:
   explicit nsXULPrototypeElement(mozilla::dom::NodeInfo* aNodeInfo = nullptr)
-      : nsXULPrototypeNode(eType_Element),
-        mNodeInfo(aNodeInfo),
-        mIsAtom(nullptr) {}
+      : nsXULPrototypeNode(eType_Element), mNodeInfo(aNodeInfo) {}
 
  private:
   virtual ~nsXULPrototypeElement() { Unlink(); }
@@ -200,6 +198,8 @@ class nsXULPrototypeElement : public nsXULPrototypeNode {
 
   nsTArray<nsXULPrototypeAttribute> mAttributes;  // [OWNER]
   RefPtr<nsAtom> mIsAtom;
+  // True if we have the l10n-translated attributes.
+  bool mTranslated = false;
 };
 
 class nsXULPrototypeScript : public nsXULPrototypeNode {

@@ -1106,17 +1106,20 @@ nsresult nsXULPrototypeElement::Serialize(
     rv = tmp;
   }
 
+  bool hasL10nId = false;
   nsAutoString attributeValue;
-  size_t i;
-  for (i = 0; i < mAttributes.Length(); ++i) {
+  for (const auto& attr : mAttributes) {
     RefPtr<mozilla::dom::NodeInfo> ni;
-    if (mAttributes[i].mName.IsAtom()) {
+    if (attr.mName.IsAtom()) {
+      auto* atom = attr.mName.Atom();
+      if (atom == nsGkAtoms::datal10nid) {
+        hasL10nId = true;
+      }
       ni = mNodeInfo->NodeInfoManager()->GetNodeInfo(
-          mAttributes[i].mName.Atom(), nullptr, kNameSpaceID_None,
-          nsINode::ATTRIBUTE_NODE);
+          atom, nullptr, kNameSpaceID_None, nsINode::ATTRIBUTE_NODE);
       NS_ASSERTION(ni, "the nodeinfo should already exist");
     } else {
-      ni = mAttributes[i].mName.NodeInfo();
+      ni = attr.mName.NodeInfo();
     }
 
     index = aNodeInfos->IndexOf(ni);
@@ -1126,8 +1129,16 @@ nsresult nsXULPrototypeElement::Serialize(
       rv = tmp;
     }
 
-    mAttributes[i].mValue.ToString(attributeValue);
+    attr.mValue.ToString(attributeValue);
     tmp = aStream->WriteWStringZ(attributeValue.get());
+    if (NS_FAILED(tmp)) {
+      rv = tmp;
+    }
+  }
+
+  // Write the translated bit if appropriate.
+  if (hasL10nId) {
+    tmp = aStream->WriteBoolean(mTranslated);
     if (NS_FAILED(tmp)) {
       rv = tmp;
     }
@@ -1138,8 +1149,7 @@ nsresult nsXULPrototypeElement::Serialize(
   if (NS_FAILED(tmp)) {
     rv = tmp;
   }
-  for (i = 0; i < mChildren.Length(); i++) {
-    nsXULPrototypeNode* child = mChildren[i].get();
+  for (nsXULPrototypeNode* child : mChildren) {
     switch (child->mType) {
       case eType_Element:
       case eType_Text:
@@ -1218,25 +1228,29 @@ nsresult nsXULPrototypeElement::Deserialize(
   if (NS_WARN_IF(NS_FAILED(rv))) return rv;
   int32_t attributes = int32_t(number);
 
+  bool hasL10nId = false;
   if (attributes > 0) {
     mAttributes.AppendElements(attributes);
 
     nsAutoString attributeValue;
     for (size_t i = 0; i < mAttributes.Length(); ++i) {
-      rv = aStream->Read32(&number);
-      if (NS_WARN_IF(NS_FAILED(rv))) return rv;
-      mozilla::dom::NodeInfo* ni = aNodeInfos->SafeElementAt(number, nullptr);
+      MOZ_TRY(aStream->Read32(&number));
+      NodeInfo* ni = aNodeInfos->SafeElementAt(number, nullptr);
       if (!ni) {
         return NS_ERROR_UNEXPECTED;
       }
-
+      if (ni->Equals(nsGkAtoms::datal10nid, kNameSpaceID_None)) {
+        hasL10nId = true;
+      }
       mAttributes[i].mName.SetTo(ni);
-
-      rv = aStream->ReadString(attributeValue);
-      if (NS_WARN_IF(NS_FAILED(rv))) return rv;
-      rv = SetAttrAt(i, attributeValue, aDocumentURI);
-      if (NS_WARN_IF(NS_FAILED(rv))) return rv;
+      MOZ_TRY(aStream->ReadString(attributeValue));
+      MOZ_TRY(SetAttrAt(i, attributeValue, aDocumentURI));
     }
+  }
+
+  mTranslated = false;
+  if (hasL10nId) {
+    MOZ_TRY(aStream->ReadBoolean(&mTranslated));
   }
 
   rv = aStream->Read32(&number);

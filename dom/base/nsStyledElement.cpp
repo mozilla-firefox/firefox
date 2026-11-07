@@ -101,12 +101,14 @@ nsresult nsStyledElement::SetInlineStyleDeclaration(
       MakeAndAddRef<DeclarationBlock>(do_AddRef(&aDeclaration)), nullptr);
   SetMayHaveStyle();
 
-  Document* document = GetComposedDoc();
-  mozAutoDocUpdate updateBatch(document, true);
+  const bool kNotify = true;
+  // TODO(emilio): given the MOZ_ASSERT above, isn't this updateBatch just
+  // redundant? Can we get it from the caller or so?
+  mozAutoDocUpdate updateBatch(GetComposedDoc(), kNotify);
   return SetAttrAndNotify(kNameSpaceID_None, nsGkAtoms::style, nullptr,
                           aData.mOldValue.ptrOr(nullptr), attrValue, nullptr,
-                          aData.mModType, true, kDontCallAfterSetAttr, document,
-                          updateBatch, mozilla::dom::IsKnownNewAttr::No);
+                          aData.mModType, kNotify, kDontCallAfterSetAttr,
+                          updateBatch, IsKnownNewAttr::No);
 }
 
 // ---------------------------------------------------------------

@@ -1469,8 +1469,7 @@ void SVGElement::DidChangeValue(nsAtom* aName, nsAttrValue& aNewValue,
   const nsAttrValue emptyValue;
   SetAttrAndNotify(kNameSpaceID_None, aName, nullptr, &emptyValue, aNewValue,
                    nullptr, modType, kNotifyDocumentObservers,
-                   kCallAfterSetAttr, GetComposedDoc(), aProofOfUpdate,
-                   mozilla::dom::IsKnownNewAttr::No);
+                   kCallAfterSetAttr, aProofOfUpdate, IsKnownNewAttr::No);
 }
 
 nsAtom* SVGElement::GetEventNameForAttr(nsAtom* aAttr) {

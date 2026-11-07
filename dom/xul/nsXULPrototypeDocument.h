@@ -93,24 +93,23 @@ class nsXULPrototypeDocument final : public nsISerializable {
 
   NS_DECL_CYCLE_COLLECTION_CLASS(nsXULPrototypeDocument)
 
-  bool WasL10nCached() { return mWasL10nCached; };
-
-  void SetIsL10nCached(bool aIsCached);
-  void RebuildPrototypeFromElement(nsXULPrototypeElement* aPrototype,
-                                   mozilla::dom::Element* aElement, bool aDeep);
-  void RebuildL10nPrototype(mozilla::dom::Element* aElement, bool aDeep);
+  void MaybeRebuildPrototypeAfterTranslation(mozilla::dom::Element*,
+                                             bool aDeep);
 
  protected:
+  void RebuildPrototypeFromElement(nsXULPrototypeElement* aPrototype,
+                                   mozilla::dom::Element* aElement, bool aDeep);
+
   nsCOMPtr<nsIURI> mURI;
   RefPtr<nsXULPrototypeElement> mRoot;
   nsTArray<RefPtr<nsXULPrototypePI> > mProcessingInstructions;
 
-  bool mLoaded;
   nsTArray<Callback> mPrototypeWaiters;
 
   RefPtr<nsNodeInfoManager> mNodeInfoManager;
 
-  uint32_t mCCGeneration;
+  uint32_t mCCGeneration = 0;
+  bool mLoaded = false;
 
   nsXULPrototypeDocument();
   virtual ~nsXULPrototypeDocument();
@@ -118,9 +117,6 @@ class nsXULPrototypeDocument final : public nsISerializable {
 
   friend NS_IMETHODIMP NS_NewXULPrototypeDocument(
       nsXULPrototypeDocument** aResult);
-
-  static uint32_t gRefCnt;
-  bool mWasL10nCached;
 };
 
 #endif  // nsXULPrototypeDocument_h_
