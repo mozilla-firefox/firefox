@@ -10,6 +10,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.ActivityResultLauncher
+import androidx.annotation.VisibleForTesting
 import androidx.biometric.BiometricManager
 import androidx.core.content.getSystemService
 import androidx.preference.Preference
@@ -17,6 +18,7 @@ import androidx.preference.PreferenceFragmentCompat
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.registerForActivityResult
+import org.mozilla.fenix.ext.runIfFragmentIsAttached
 import org.mozilla.fenix.settings.requirePreference
 
 /** Helper for creating and implementing the [BiometricPromptFeature]. Currently used for logins and credit cards. */
@@ -24,6 +26,10 @@ abstract class BiometricPromptPreferenceFragment : PreferenceFragmentCompat() {
 
     private val biometricPromptFeature = ViewBoundFeatureWrapper<BiometricPromptFeature>()
     internal lateinit var startForResult: ActivityResultLauncher<Intent>
+
+    @VisibleForTesting
+    internal var automotiveAuthenticator: AutomotiveSensitiveDataAuthenticator =
+        DefaultAutomotiveSensitiveDataAuthenticator()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,12 +92,24 @@ abstract class BiometricPromptPreferenceFragment : PreferenceFragmentCompat() {
     }
 
     /**
-     * Use [BiometricPromptFeature] or [KeyguardManager] to confirm device security.
+     * Use [AutomotiveSensitiveDataAuthenticator] on Android Automotive OS, or [BiometricPromptFeature] or
+     * [KeyguardManager] elsewhere, to confirm device security.
      *
      * @param context An Android [Context].
      * @param prefList a list of [Preference]s to disable while authentication is happening.
      */
     fun verifyCredentialsOrShowSetupWarning(context: Context, prefList: List<Int>) {
+        if (automotiveAuthenticator.isRequired(context)) {
+            togglePrefsEnabled(prefList, false)
+            automotiveAuthenticator.authenticate(
+                activity = requireActivity(),
+                title = unlockMessage(),
+                onAuthenticated = { runIfFragmentIsAttached { navigateOnSuccess() } },
+                onBlocked = { runIfFragmentIsAttached { togglePrefsEnabled(prefList, true) } },
+            )
+            return
+        }
+
         // Use the BiometricPrompt if available
         if (BiometricPromptFeature.canUseFeature(BiometricManager.from(context))) {
             togglePrefsEnabled(prefList, false)
