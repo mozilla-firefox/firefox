@@ -3,22 +3,37 @@
 
 "use strict";
 
-const { RunSearch } = ChromeUtils.importESModule(
+const {
+  RunSearch,
+  SEARCH_QUERY_ENDPOINT_PREF,
+  SEARCH_QUERY_APIKEY_PREF,
+  SEARCH_THE_WEB_FAST_PREF,
+} = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/Tools.sys.mjs"
+);
+
+const { MockEngineManager, MockSearchManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
 
 registerCleanupFunction(() => {
   Services.prefs.clearUserPref("browser.smartwindow.lastSmartWindowUsageTime");
 });
 
-function stubPreviousSearch(sandbox) {
-  const fetchWithHistory = sandbox.stub(Chat, "fetchWithHistory");
-  fetchWithHistory.callsFake(options => {
-    options.conversation._searchTheWebTurn =
-      options.conversation.currentTurnIndex();
-    return fetchWithHistory.wrappedMethod.call(Chat, options);
+/**
+ * Configures search requests for the mocked provider.
+ *
+ * @returns {Promise<void>}
+ */
+add_setup(async function setup_search_provider() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SEARCH_QUERY_ENDPOINT_PREF, "https://search.example.test/v1/search"],
+      [SEARCH_QUERY_APIKEY_PREF, "mock-search-api-key"],
+      [SEARCH_THE_WEB_FAST_PREF, true],
+    ],
   });
-}
+});
 
 /**
  * Test that run_search tool calls work end-to-end from the AI window.
@@ -28,34 +43,18 @@ function stubPreviousSearch(sandbox) {
  * RunSearch.runSearch and the post-tool sidebar handoff can find the window.
  */
 
-// Fullpage run_search from a new AI tab: the tool navigates the tab away, then
-// the post-tool handoff in Chat.sys.mjs opens the sidebar to continue streaming.
+/**
+ * This test case ensures that a full-page search preserves the conversation
+ * and renders its response in the sidebar with a generated title.
+ */
 add_task(async function test_run_search_fullpage_opens_sidebar() {
   const sb = sinon.createSandbox();
-  stubPreviousSearch(sb);
   const handoffSpy = sb.spy(AIWindow, "openSidebarAndContinue");
+  const searchManager = new MockSearchManager();
+  const engineManager = new MockEngineManager();
   let win;
-  let gotToolResultRequest = false;
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: {
-      toolCall: {
-        name: "search_the_web",
-        args: JSON.stringify({ query: "test search query" }),
-      },
-      followupChunks: ["Here are your search results."],
-      onRequest(body) {
-        const messages = Array.isArray(body.messages) ? body.messages : [];
-        if (messages.some(m => m && m.role === "tool")) {
-          gotToolResultRequest = true;
-        }
-      },
-    },
-  });
 
   try {
-    // Stub run_search to move the full-page conversation to the sidebar and
-    // navigate the browser away, like the real RunSearch does, so the original
-    // browsingContext becomes stale.
     const runSearchStub = sb
       .stub(RunSearch, "runSearch")
       .callsFake((_params, browsingContext) =>
@@ -67,44 +66,42 @@ add_task(async function test_run_search_fullpage_opens_sidebar() {
       win.gBrowser,
       AIWINDOW_URL
     );
-    const browser = tab.linkedBrowser;
     await AIWindowTestUtils.preloadAndCloseSidebar(win, tab);
 
+    info("Submit a full-page chat request and hand it off to the sidebar");
     await AIWindowTestUtils.dispatchSmartbarCommit(
-      browser,
+      tab.linkedBrowser,
       "search the web for something",
       "chat"
     );
-
-    await TestUtils.waitForCondition(
-      () => runSearchStub.calledOnce,
-      "run_search tool should be called"
+    const continuation = await AIWindowTestUtils.captureSearchHandoff(
+      engineManager,
+      searchManager,
+      "test search query"
     );
-
-    // The sidebar opening is the observable effect of the full handoff
-    // chain: pre-captured browsingContext was valid, getTabForBrowser
-    // found the tab, and openSidebarAndContinue ran.
-    await TestUtils.waitForCondition(
-      () => AIWindowUI.isSidebarOpen(win),
-      "Sidebar should open after fullpage run_search handoff"
-    );
-
-    await TestUtils.waitForCondition(
-      () => gotToolResultRequest,
-      "Server should receive follow-up request with tool results"
-    );
-
+    Assert.ok(runSearchStub.calledOnce, "The search tool runs once");
     Assert.ok(handoffSpy.calledOnce, "The handoff continues in the sidebar");
+    Assert.ok(AIWindowUI.isSidebarOpen(win), "Search opens the sidebar");
+
+    info("Complete the sidebar response and background title generation");
+    const sidebarBrowser = win.document.getElementById("ai-window-browser");
+    await AIWindowTestUtils.completeSearchHandoff(
+      engineManager,
+      sidebarBrowser,
+      continuation,
+      "Here are your search results."
+    );
     await AIWindowTestUtils.assertSidebarSmartbarFocused(
       win,
       "Full-page search handoff"
     );
   } finally {
-    sb.restore();
-    if (win) {
-      await BrowserTestUtils.closeWindow(win);
-    }
-    await restore();
+    await AIWindowTestUtils.cleanupSearchHandoff({
+      win,
+      engineManager,
+      searchManager,
+      sandbox: sb,
+    });
   }
 });
 
@@ -138,108 +135,72 @@ add_task(async function test_run_search_skips_search_load_focus() {
   }
 });
 
-// When the AI window is already in sidebar mode, run_search must receive the
-// adjacent tab's browsingContext (not the sidebar's own). Without the fix in
-// ai-window.mjs, the sidebar's browsingContext.embedderElement is the sidebar
-// <browser> (#ai-window-browser), causing gBrowser.getTabForBrowser() to
-// return null and aborting the search handoff.
+/**
+ * This test case ensures that a sidebar search navigates the adjacent tab
+ * and renders the completed response in the sidebar.
+ */
 add_task(
   async function test_run_search_from_sidebar_uses_tab_browsingContext() {
     const sb = sinon.createSandbox();
-    stubPreviousSearch(sb);
     const handoffSpy = sb.spy(AIWindow, "openSidebarAndContinue");
+    const searchManager = new MockSearchManager();
+    const engineManager = new MockEngineManager();
     let win;
-    // Track whether the server receives the follow-up request with tool
-    // results, which proves openSidebarAndContinue -> reloadAndContinue
-    // -> #fetchAIResponse() fired successfully.
-    let gotToolResultRequest = false;
-    const { restore } = await stubEngineNetworkBoundaries({
-      serverOptions: {
-        toolCall: {
-          name: "search_the_web",
-          args: JSON.stringify({ query: "sidebar search query" }),
-        },
-        followupChunks: ["Sidebar search results."],
-        onRequest(body) {
-          const messages = Array.isArray(body.messages) ? body.messages : [];
-          if (messages.some(m => m && m.role === "tool")) {
-            gotToolResultRequest = true;
-          }
-        },
-      },
-    });
+    let expectedBrowsingContext;
 
     try {
       const runSearchStub = sb
         .stub(RunSearch, "runSearch")
         .callsFake(async (_params, browsingContext) => {
+          Assert.strictEqual(
+            browsingContext,
+            expectedBrowsingContext,
+            "The tool receives the adjacent tab's browsing context"
+          );
           const ctxBrowser = browsingContext.embedderElement;
-          Assert.notEqual(
-            ctxBrowser.id,
-            "ai-window-browser",
-            "browsingContext should be a tab browser, not the sidebar browser"
-          );
-          Assert.ok(
-            ctxBrowser.documentGlobal.gBrowser.getTabForBrowser(ctxBrowser),
-            "browsingContext embedderElement should belong to a tab"
-          );
+          const loaded = BrowserTestUtils.browserLoaded(ctxBrowser);
           BrowserTestUtils.startLoadingURIString(
             ctxBrowser,
             "https://example.com/search_results"
           );
-          await BrowserTestUtils.browserLoaded(ctxBrowser);
+          await loaded;
+
           return "Mock search results";
         });
 
-      win = await openAIWindow();
-
-      // Open a content tab so there's a real tab adjacent to the sidebar.
-      const tab = await BrowserTestUtils.openNewForegroundTab(
-        win.gBrowser,
-        "https://example.com/"
-      );
-
-      AIWindowUI.openSidebar(win);
-      Assert.ok(AIWindowUI.isSidebarOpen(win), "Sidebar should be open");
-
+      ({ win } = await openAIWindowWithSidebar());
+      expectedBrowsingContext = win.gBrowser.selectedBrowser.browsingContext;
       const sidebarBrowser = win.document.getElementById("ai-window-browser");
-      await TestUtils.waitForCondition(() => {
-        const el = sidebarBrowser.contentDocument?.querySelector("ai-window");
-        return el?.shadowRoot;
-      }, "Wait for sidebar ai-window element and shadow root");
 
+      info("Submit a sidebar chat request that searches in the adjacent tab");
       await AIWindowTestUtils.dispatchSmartbarCommit(
         sidebarBrowser,
         "search the web from sidebar",
         "chat"
       );
-
-      await TestUtils.waitForCondition(
-        () => runSearchStub.calledOnce,
-        "run_search tool should be called from sidebar"
+      const continuation = await AIWindowTestUtils.captureSearchHandoff(
+        engineManager,
+        searchManager,
+        "sidebar search query"
       );
-
-      // The follow-up request proves the full chain completed:
-      // openSidebarAndContinue called reloadAndContinue which triggered
-      // a new fetchAIResponse with the tool result.
-      await TestUtils.waitForCondition(
-        () => gotToolResultRequest,
-        "Server should receive follow-up request with tool results"
-      );
-
+      Assert.ok(runSearchStub.calledOnce, "The search tool runs once");
       Assert.ok(handoffSpy.calledOnce, "The handoff continues in the sidebar");
-      Assert.ok(
-        AIWindowUI.isSidebarOpen(win),
-        "Sidebar should remain open after sidebar run_search"
-      );
 
-      await BrowserTestUtils.removeTab(tab);
+      info("Complete the sidebar response and background title generation");
+      await AIWindowTestUtils.completeSearchHandoff(
+        engineManager,
+        sidebarBrowser,
+        continuation,
+        "Sidebar search results."
+      );
+      Assert.ok(AIWindowUI.isSidebarOpen(win), "The sidebar remains open");
     } finally {
-      sb.restore();
-      if (win) {
-        await BrowserTestUtils.closeWindow(win);
-      }
-      await restore();
+      await AIWindowTestUtils.cleanupSearchHandoff({
+        win,
+        engineManager,
+        searchManager,
+        sandbox: sb,
+      });
     }
   }
 );

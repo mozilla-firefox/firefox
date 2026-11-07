@@ -18,6 +18,7 @@ import { MLTestUtils } from "resource://testing-common/MLTestUtils.sys.mjs";
 
 import { AIWindow } from "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs";
 import { AIWindowUI } from "moz-src:///browser/components/aiwindow/ui/modules/AIWindowUI.sys.mjs";
+import { MESSAGE_ROLE } from "moz-src:///browser/components/aiwindow/ui/modules/ChatEnums.sys.mjs";
 import { TestUtils } from "resource://testing-common/TestUtils.sys.mjs";
 import { AuthProvider } from "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs";
 import { Chat } from "moz-src:///browser/components/aiwindow/models/Chat.sys.mjs";
@@ -563,6 +564,205 @@ function readRequestBody(request) {
 
 export const AIWindowTestUtils = {
   AIWINDOW_URL: "chrome://browser/content/aiwindow/aiWindow.html",
+
+  /**
+   * Captures the model continuation after two searches trigger a sidebar handoff.
+   *
+   * @param {MockEngineManager} engineManager - The mocked model endpoint.
+   * @param {MockSearchManager} searchManager - The mocked search endpoint.
+   * @param {string} query - The requested search query.
+   * @returns {ReturnType<MockEngineManager["captureRequest"]>}
+   */
+  async captureSearchHandoff(engineManager, searchManager, query) {
+    const { Assert } = context().scope;
+    const toolParams = { query };
+    await engineManager.respondToWithToolCall({
+      toolName: "search_the_web",
+      toolParams,
+    });
+    await searchManager.respondTo({ response: { results: [] } });
+    const handoffId = await engineManager.respondToWithToolCall({
+      toolName: "search_the_web",
+      toolParams,
+    });
+    const continuation = await engineManager.captureRequest({
+      purpose: "chat",
+    });
+
+    Assert.ok(
+      continuation.request.streamOptions.enabled,
+      "The continuation requests streaming"
+    );
+    Assert.ok(
+      continuation.request.args.some(
+        message =>
+          message.role === "tool" &&
+          message.tool_call_id === handoffId &&
+          message.content === JSON.stringify("Mock search results")
+      ),
+      "The continuation includes the completed handoff tool result"
+    );
+
+    return continuation;
+  },
+
+  /**
+   * Completes the sidebar response and verifies its generated title and text.
+   *
+   * @param {MockEngineManager} engineManager - The mocked model endpoint.
+   * @param {MozBrowser} browser - The sidebar browser.
+   * @param {Awaited<ReturnType<MockEngineManager["captureRequest"]>>} continuation
+   *   The pending post-handoff request.
+   * @param {string} response - The expected assistant response.
+   * @returns {Promise<void>}
+   */
+  async completeSearchHandoff(engineManager, browser, continuation, response) {
+    const { Assert } = context().scope;
+    const aiWindow = browser.contentDocument.querySelector("ai-window");
+    await aiWindow.updateComplete;
+    Assert.ok(aiWindow.isGenerating, "The chat turn is still generating");
+    const generationFinished = BrowserTestUtils.waitForMutationCondition(
+      aiWindow.renderRoot,
+      { attributes: true, subtree: true },
+      () => !aiWindow.isGenerating
+    );
+
+    continuation.respond(response);
+    await generationFinished;
+    await engineManager.respondTo({
+      purpose: "title-generation",
+      response: "Mock search title",
+    });
+    await TestUtils.waitForCondition(
+      () => aiWindow.conversation.title === "Mock search title",
+      "The generated title reaches the conversation"
+    );
+    Assert.equal(
+      aiWindow.conversation.title,
+      "Mock search title",
+      "The generated title comes from the title engine"
+    );
+    Assert.equal(
+      aiWindow.conversation.messages.findLast(
+        message =>
+          message.role === MESSAGE_ROLE.ASSISTANT &&
+          message.content.type === "text"
+      )?.content.body,
+      response,
+      "The final assistant response is delivered"
+    );
+    await AIWindowTestUtils.assertRenderedSidebarResponse(browser, response);
+  },
+
+  /**
+   * Releases the search test window and mocks after outstanding chat work settles.
+   *
+   * @param {object} options
+   * @param {Window} [options.win] - The test window, if it opened successfully.
+   * @param {MockEngineManager} options.engineManager - The mocked model endpoint.
+   * @param {MockSearchManager} options.searchManager - The mocked search endpoint.
+   * @param {sinon.SinonSandbox} options.sandbox - The owned handoff stubs.
+   * @returns {Promise<void>}
+   */
+  async cleanupSearchHandoff({ win, engineManager, searchManager, sandbox }) {
+    searchManager.rejectAllRequests();
+    try {
+      if (win) {
+        await BrowserTestUtils.closeWindow(win);
+      }
+    } finally {
+      try {
+        await engineManager.rejectAllRequests();
+      } finally {
+        engineManager.cleanupMocks();
+        searchManager.cleanupMocks();
+        sandbox.restore();
+      }
+    }
+  },
+
+  /**
+   * Checks that a completed assistant response is visible in the sidebar.
+   *
+   * @param {MozBrowser} browser - The browser displaying the conversation.
+   * @param {string} response - The expected rendered assistant response.
+   * @returns {Promise<void>}
+   */
+  async assertRenderedSidebarResponse(browser, response) {
+    const { Assert } = context().scope;
+    const { SpecialPowers } = context().window;
+    const aiWindow = browser.contentDocument.querySelector("ai-window");
+    await aiWindow.updateComplete;
+    const chatBrowser = aiWindow.renderRoot.querySelector("#aichat-browser");
+    Assert.ok(
+      BrowserTestUtils.isVisible(browser),
+      "The sidebar browser is visible"
+    );
+    Assert.ok(
+      BrowserTestUtils.isVisible(chatBrowser),
+      "The chat browser is visible"
+    );
+    const renderedResponse = await SpecialPowers.spawn(
+      chatBrowser,
+      [response],
+      async expected => {
+        await ContentTaskUtils.waitForMutationCondition(
+          content.document.documentElement,
+          { childList: true, subtree: true },
+          () => content.document.querySelector("ai-chat-content")
+        );
+        const chat = content.document.querySelector("ai-chat-content");
+        await chat.updateComplete;
+        let message;
+
+        await ContentTaskUtils.waitForMutationCondition(
+          chat.shadowRoot,
+          { childList: true, subtree: true },
+          () => {
+            message = Array.from(
+              chat.shadowRoot.querySelectorAll("ai-chat-message")
+            ).findLast(element => {
+              const messageElement = element.wrappedJSObject || element;
+
+              return messageElement.role === "assistant";
+            });
+
+            return !!message;
+          }
+        );
+        const messageElement = message.wrappedJSObject || message;
+        await messageElement.updateComplete;
+
+        await ContentTaskUtils.waitForMutationCondition(
+          message.shadowRoot,
+          { childList: true, subtree: true, characterData: true },
+          () => {
+            const element =
+              message.shadowRoot.querySelector(".message-assistant");
+
+            return element?.textContent.trim() === expected;
+          }
+        );
+        const rendered = message.shadowRoot.querySelector(".message-assistant");
+        await ContentTaskUtils.waitForCondition(
+          () => ContentTaskUtils.isVisible(rendered),
+          "The assistant response is visible"
+        );
+        Assert.ok(
+          rendered.getBoundingClientRect().width > 0 &&
+            rendered.getBoundingClientRect().height > 0,
+          "The assistant response occupies visible space"
+        );
+
+        return rendered.textContent.trim();
+      }
+    );
+    Assert.equal(
+      renderedResponse,
+      response,
+      "The sidebar renders the response"
+    );
+  },
 
   /**
    * Gives the helpers access to test scope globals such as info and
