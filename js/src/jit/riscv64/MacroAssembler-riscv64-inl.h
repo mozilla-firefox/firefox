@@ -1565,7 +1565,7 @@ void MacroAssembler::fallibleUnboxPtr(const ValueOperand& src, Register dest,
                                       JSValueType type, Label* fail) {
   MOZ_ASSERT(type == JSVAL_TYPE_OBJECT || type == JSVAL_TYPE_STRING ||
              type == JSVAL_TYPE_SYMBOL || type == JSVAL_TYPE_BIGINT);
-  // dest := src XOR mask
+  // dest := src + negated shifted tag (see ImmNegatedShiftedTag)
   // scratch := dest >> JSVAL_TAG_SHIFT
   // fail if scratch != 0
   //
@@ -1573,8 +1573,8 @@ void MacroAssembler::fallibleUnboxPtr(const ValueOperand& src, Register dest,
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
   MOZ_ASSERT(src.valueReg() != scratch);
-  mov(ImmShiftedTag(type), scratch);
-  xor_(dest, src.valueReg(), scratch);
+  mov(ImmNegatedShiftedTag(type), scratch);
+  add(dest, src.valueReg(), scratch);
   srli(scratch, dest, JSVAL_TAG_SHIFT);
   ma_b(scratch, Imm32(0), fail, Assembler::NotEqual, ShortJump);
 }

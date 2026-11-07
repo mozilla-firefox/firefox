@@ -2250,11 +2250,11 @@ void MacroAssemblerRiscv64Compat::boxValue(JSValueType type, Register src,
     case JSVAL_TYPE_PRIVATE_GCTHING:
     case JSVAL_TYPE_BIGINT:
     case JSVAL_TYPE_OBJECT: {
-      // Loading the shifted tag requires only two instructions.
-      ma_li(dest, ImmShiftedTag(type));
+      // Loading the negated shifted tag requires at most two instructions.
+      ma_li(dest, ImmNegatedShiftedTag(type));
 
       // Insert payload.
-      or_(dest, dest, src);
+      sub(dest, src, dest);
       return;
     }
     case JSVAL_TYPE_DOUBLE:
@@ -2512,11 +2512,11 @@ void MacroAssemblerRiscv64Compat::tagValue(JSValueType type, Register payload,
       case JSVAL_TYPE_PRIVATE_GCTHING:
       case JSVAL_TYPE_BIGINT:
       case JSVAL_TYPE_OBJECT: {
-        // Loading the shifted tag requires only two instructions.
-        ma_li(scratch, ImmShiftedTag(type));
+        // Loading the negated shifted tag requires at most two instructions.
+        ma_li(scratch, ImmNegatedShiftedTag(type));
 
         // Insert payload.
-        or_(dest.valueReg(), payload, scratch);
+        sub(dest.valueReg(), payload, scratch);
         break;
       }
       case JSVAL_TYPE_DOUBLE:

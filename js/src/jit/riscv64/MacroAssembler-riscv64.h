@@ -87,6 +87,19 @@ struct ImmShiftedTag : public ImmWord {
   }
 };
 
+// The negated shifted tag. Adding it to a Value unboxes the Value and
+// subtracting it from a payload boxes the payload. Like xoring with the
+// shifted tag, adding it clears the bits above the payload if and only if the
+// tag matches, so a mistyped Value still unboxes to a pointer with high bits
+// set. The negated shifted tags of booleans, objects, strings and symbols are
+// a single bit, which ma_li loads with one bseti when Zbs is available. The
+// other negated shifted tags, like all shifted tags, take two instructions.
+struct ImmNegatedShiftedTag : public ImmWord {
+  explicit ImmNegatedShiftedTag(JSValueType type)
+      : ImmWord(
+            -uintptr_t(JSValueShiftedTag(JSVAL_TYPE_TO_SHIFTED_TAG(type)))) {}
+};
+
 struct ImmTag : public Imm32 {
   explicit ImmTag(JSValueTag mask) : Imm32(int32_t(mask)) {}
 };
@@ -883,8 +896,8 @@ class MacroAssemblerRiscv64Compat : public MacroAssemblerRiscv64 {
     UseScratchRegisterScope temps(this);
     Register scratch = temps.Acquire();
     MOZ_ASSERT(scratch != src);
-    mov(ImmShiftedTag(type), scratch);
-    xor_(dest, src, scratch);
+    mov(ImmNegatedShiftedTag(type), scratch);
+    add(dest, src, scratch);
   }
 
   void unboxGCThingForGCBarrier(const Address& src, Register dest) {
