@@ -525,6 +525,39 @@ PrefetchRecordParent::AsyncOnChannelRedirect(
     aCb->OnRedirectVerifyCallback(NS_BINDING_ABORTED);
     return NS_OK;
   }
+
+  // "If request's current URL is not potentially trustworthy, then set
+  // response to a network error", checked on every hop, not just the first.
+  if (!nsMixedContentBlocker::IsPotentiallyTrustworthyOrigin(newURI)) {
+    LOG_SPECRULES_WARN(
+        ("PrefetchRecordParent::AsyncOnChannelRedirect: this=%p redirect to "
+         "a non-trustworthy URL rejected",
+         this));
+    aCb->OnRedirectVerifyCallback(NS_BINDING_ABORTED);
+    return NS_OK;
+  }
+
+  // Cross-site prefetches are not supported yet: the isolated partition that
+  // keeps a cross-site hop uncredentialed is not implemented, so don't follow
+  // a redirect off the document's site either.
+  if (StaticPrefs::dom_speculation_rules_same_site_only()) {
+    auto* wgp = static_cast<WindowGlobalParent*>(Manager());
+    nsCOMPtr<nsIPrincipal> docPrincipal =
+        wgp ? wgp->DocumentPrincipal() : nullptr;
+    bool isCrossSite = true;
+    if (docPrincipal) {
+      docPrincipal->IsThirdPartyURI(newURI, &isCrossSite);
+    }
+    if (isCrossSite) {
+      LOG_SPECRULES_WARN(
+          ("PrefetchRecordParent::AsyncOnChannelRedirect: this=%p cross-site "
+           "redirect rejected (same_site_only=true)",
+           this));
+      aCb->OnRedirectVerifyCallback(NS_BINDING_ABORTED);
+      return NS_OK;
+    }
+  }
+
   AppendRedirectChainEntry(newURI);
   ConfigureSecPurpose(aNewChannel);
   aCb->OnRedirectVerifyCallback(NS_OK);
