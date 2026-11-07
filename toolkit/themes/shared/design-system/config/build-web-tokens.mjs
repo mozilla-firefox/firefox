@@ -4,6 +4,7 @@
 
 /* eslint-disable no-console */
 
+import { basename } from "node:path";
 import { parseArgs } from "node:util";
 import process from "node:process";
 // eslint-disable-next-line import-x/no-unresolved
@@ -15,9 +16,8 @@ import { OVERRIDE_IDENTIFIERS } from "./helpers/general/override-identifiers.mjs
 import { tokenPaths } from "./helpers/general/token-paths.mjs";
 
 const getWebTokensConfig = ({ overrideIdentifier } = {}) => {
-  const componentNames = getExternalComponentInfo()
-    .filter(({ isWeb }) => isWeb)
-    .map(({ componentName }) => componentName);
+  const components = getExternalComponentInfo().filter(({ isWeb }) => isWeb);
+  const componentNames = components.map(({ componentName }) => componentName);
 
   return {
     source: tokenPaths,
@@ -29,10 +29,17 @@ const getWebTokensConfig = ({ overrideIdentifier } = {}) => {
         },
       },
       formats: {
+        "css/variables/web": createWebFormat({ overrideIdentifier }),
         "css/variables/web/all": createWebFormat({
           overrideIdentifier,
           includeComponents: componentNames,
         }),
+        ...Object.fromEntries(
+          componentNames.map(componentName => [
+            `css/variables/web/${componentName}`,
+            createWebFormat({ overrideIdentifier, componentName }),
+          ])
+        ),
       },
     },
     parsers: ["json-parser"],
@@ -45,9 +52,17 @@ const getWebTokensConfig = ({ overrideIdentifier } = {}) => {
         transformGroup: "css",
         files: [
           {
+            destination: "dist/web/acorn-tokens.css",
+            format: "css/variables/web",
+          },
+          {
             destination: "dist/web/acorn-tokens-all.css",
             format: "css/variables/web/all",
           },
+          ...components.map(({ componentName, destination }) => ({
+            destination: `dist/web/components/${basename(destination)}`,
+            format: `css/variables/web/${componentName}`,
+          })),
         ],
       },
     },

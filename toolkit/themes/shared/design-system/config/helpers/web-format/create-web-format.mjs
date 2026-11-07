@@ -95,12 +95,13 @@ const getLayers = ({ dictionary, overrideIdentifier, componentName }) => {
  *
  * @param {object} [options]
  * @param {string} [options.overrideIdentifier] - Set of override tokens (e.g. "nova") to apply on top of the base tokens.
+ * @param {string} [options.componentName] - Only output this component's tokens, scoped to :host for use in its shadow DOM.
  * @param {string[]} [options.includeComponents] - Components whose tokens are also output alongside the base tokens.
  */
 export const createWebFormat =
-  ({ overrideIdentifier, includeComponents = [] } = {}) =>
+  ({ overrideIdentifier, componentName, includeComponents = [] } = {}) =>
   ({ dictionary, file }) => {
-    const layers = getLayers({ dictionary, overrideIdentifier });
+    const layers = getLayers({ dictionary, overrideIdentifier, componentName });
     for (const includedComponent of includeComponents) {
       mergeLayers(
         layers,
@@ -113,8 +114,8 @@ export const createWebFormat =
     }
 
     const getRuleCSS = tokens =>
-      `:root {
-  ${groupAndSortTokens({ tokens: [...tokens.values()] }).join("\n  ")}
+      `${componentName ? ":host" : ":root"} {
+  ${groupAndSortTokens({ tokens: [...tokens.values()], componentName }).join("\n  ")}
 }`;
 
     let rules = [getRuleCSS(layers.foundation)];
