@@ -579,6 +579,9 @@ class SVGUtils final {
 
   static float ComputeOpacity(const nsIFrame* aFrame, bool aHandleOpacity);
 
+  // Whether clip paths can be rendered with WebRender path clips.
+  static bool UseWebRenderPaths();
+
   /**
    * SVG frames expect to paint in SVG user units, which are equal to CSS px
    * units. This method provides a transform matrix to multiply onto a

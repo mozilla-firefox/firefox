@@ -392,46 +392,51 @@ void SVGClipPathFrame::Init(nsIContent* aContent, nsContainerFrame* aParent,
 
 gfxMatrix SVGClipPathFrame::GetCanvasTM() { return mMatrixForChildren; }
 
-bool SVGClipPathFrame::GetSimpleClipShape(nsIFrame* aClippedFrame,
-                                          CSSRect* aRect, CSSSize* aRadii) {
+auto SVGClipPathFrame::GetSimpleClipShape(nsIFrame* aClippedFrame,
+                                          bool aAllowGeometry)
+    -> Maybe<SimpleClipShape> {
   nsIFrame* singleClipPathChild = nullptr;
   if (!IsTrivial(&singleClipPathChild)) {
-    return false;
+    return {};
   }
+  SVGGeometryElement::SimpleShape shape;
+  // The spec says to clip away everything when there is nothing to clip with,
+  // which matches what ApplyClipPath does.
+  shape.SetRoundedRect(CSSRect(), CSSSize());
   if (!singleClipPathChild) {
-    // The spec says to clip away everything when there is nothing to clip
-    // with, which matches what ApplyClipPath does.
-    *aRect = CSSRect();
-    *aRadii = CSSSize();
-    return true;
+    return Some(SimpleClipShape(shape));
   }
   SVGGeometryFrame* pathFrame = do_QueryFrame(singleClipPathChild);
   if (!pathFrame) {
-    return false;
+    return {};
   }
 
   auto* element = static_cast<SVGGeometryElement*>(pathFrame->GetContent());
-  SVGGeometryElement::SimpleShape shape;
-  element->GetAsSimpleShape(&shape);
-  if (!shape.IsRoundedRect()) {
-    return false;
-  }
-
   gfxMatrix toClippedUserSpace =
       SVGUtils::GetTransformMatrixInUserSpace(pathFrame) *
       GetClipPathTransform(aClippedFrame);
-  if (toClippedUserSpace.IsSingular() ||
-      toClippedUserSpace.HasNonAxisAlignedTransform() ||
-      toClippedUserSpace._11 < 0 || toClippedUserSpace._22 < 0) {
-    return false;
+  if (toClippedUserSpace.IsSingular()) {
+    return Some(SimpleClipShape(shape));
   }
 
-  gfxRect rect = toClippedUserSpace.TransformBounds(
-      ThebesRect(shape.AsRect().ToUnknownRect()));
-  *aRect = CSSRect::FromUnknownRect(ToRect(rect));
-  *aRadii = CSSSize(float(shape.Radii().width * toClippedUserSpace._11),
-                    float(shape.Radii().height * toClippedUserSpace._22));
-  return true;
+  element->GetAsSimpleShape(&shape);
+  if (shape.IsRoundedRect() &&
+      !toClippedUserSpace.HasNonAxisAlignedTransform() &&
+      toClippedUserSpace._11 > 0 && toClippedUserSpace._22 > 0) {
+    gfxRect rect = toClippedUserSpace.TransformBounds(
+        ThebesRect(shape.AsRect().ToUnknownRect()));
+    shape.SetRoundedRect(
+        CSSRect::FromUnknownRect(ToRect(rect)),
+        CSSSize(float(shape.Radii().width * toClippedUserSpace._11),
+                float(shape.Radii().height * toClippedUserSpace._22)));
+    return Some(SimpleClipShape(shape));
+  }
+
+  if (!aAllowGeometry) {
+    return {};
+  }
+  return Some(SimpleClipShape(SimpleClipGeometry{
+      element, toClippedUserSpace, pathFrame->StyleSVG()->mClipRule}));
 }
 
 gfxMatrix SVGClipPathFrame::GetClipPathTransform(nsIFrame* aClippedFrame) {

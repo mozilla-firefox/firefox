@@ -23,6 +23,7 @@
 #include "StickyScrollContainer.h"
 #include "TextDrawTarget.h"
 #include "UnitTransforms.h"
+#include "gfx2DGlue.h"
 #include "gfxContext.h"
 #include "gfxMatrix.h"
 #include "gfxUtils.h"
@@ -65,6 +66,7 @@
 #include "mozilla/dom/PerformanceMainThread.h"
 #include "mozilla/dom/RemoteBrowser.h"
 #include "mozilla/dom/SVGElement.h"
+#include "mozilla/dom/SVGGeometryElement.h"
 #include "mozilla/dom/SVGPathData.h"
 #include "mozilla/dom/Selection.h"
 #include "mozilla/dom/ServiceWorkerRegistrar.h"
@@ -8671,11 +8673,13 @@ static Maybe<wr::WrClipChainId> CreateSimpleClipRegion(
     SVGObserverUtils::GetAndObserveClipPath(
         nsLayoutUtils::FirstContinuationOrIBSplitSibling(frame),
         &clipPathFrame);
-    CSSRect rect;
-    CSSSize radii;
-    if (!clipPathFrame ||
-        !clipPathFrame->GetSimpleClipShape(frame, &rect, &radii)) {
-      return Nothing();
+    if (!clipPathFrame) {
+      return {};
+    }
+    auto shape =
+        clipPathFrame->GetSimpleClipShape(frame, SVGUtils::UseWebRenderPaths());
+    if (!shape) {
+      return {};
     }
 
     nsPoint offsetToBoundingBox =
@@ -8693,26 +8697,44 @@ static Maybe<wr::WrClipChainId> CreateSimpleClipRegion(
                                         appUnitsPerDevPixel) -
         SVGUtils::FrameSpaceInCSSPxToUserSpaceOffset(frame) * cssToDev;
 
-    LayoutDeviceRect devRect = rect * cssToDev;
-    devRect.MoveBy(offset);
-    LayoutDeviceSize devRadii = radii * cssToDev;
-    wr::LayoutRect wrRect = wr::ToLayoutRect(devRect);
-
     wr::WrClipId clipId{};
-    if (devRadii.IsEmpty()) {
-      clipId = aBuilder.DefineRectClip(Nothing(), wrRect);
+    if (shape->is<SVGClipPathFrame::SimpleClipGeometry>()) {
+      // Same as SVGClipPathFrame::ApplyClipPath, positioned in the reference
+      // frame.
+      const auto& geometry = shape->as<SVGClipPathFrame::SimpleClipGeometry>();
+      RefPtr<WrPathRecorder> recorder = MakeRefPtr<WrPathRecorder>();
+      RefPtr<gfx::Path> unused = geometry.mElement->BuildPath(recorder);
+      unused = recorder->Finish();
+      gfxMatrix toReferenceFrame = geometry.mTransform;
+      toReferenceFrame.PostScale(cssToDev.scale, cssToDev.scale)
+          .PostTranslate(offset.x, offset.y);
+      recorder->Transform(gfx::ToMatrix(toReferenceFrame));
+      clipId = recorder->DefineClip(aBuilder,
+                                    geometry.mClipRule == StyleFillRule::Nonzero
+                                        ? wr::FillRule::Nonzero
+                                        : wr::FillRule::Evenodd);
     } else {
-      wr::ComplexClipRegion region;
-      region.rect = wrRect;
-      region.radii = wr::EmptyBorderRadius();
-      wr::LayoutSize r{devRadii.width, devRadii.height};
-      region.radii.top_left = r;
-      region.radii.top_right = r;
-      region.radii.bottom_left = r;
-      region.radii.bottom_right = r;
-      region.inset = wr::EmptyLayoutSideOffsets();
-      region.mode = wr::ClipMode::Clip;
-      clipId = aBuilder.DefineRoundedRectClip(Nothing(), region);
+      const auto& rect = shape->as<dom::SVGGeometryElement::SimpleShape>();
+      LayoutDeviceRect devRect = rect.AsRect() * cssToDev;
+      devRect.MoveBy(offset);
+      LayoutDeviceSize devRadii = rect.Radii() * cssToDev;
+      wr::LayoutRect wrRect = wr::ToLayoutRect(devRect);
+
+      if (devRadii.IsEmpty()) {
+        clipId = aBuilder.DefineRectClip(Nothing(), wrRect);
+      } else {
+        wr::ComplexClipRegion region;
+        region.rect = wrRect;
+        region.radii = wr::EmptyBorderRadius();
+        wr::LayoutSize r{devRadii.width, devRadii.height};
+        region.radii.top_left = r;
+        region.radii.top_right = r;
+        region.radii.bottom_left = r;
+        region.radii.bottom_right = r;
+        region.inset = wr::EmptyLayoutSideOffsets();
+        region.mode = wr::ClipMode::Clip;
+        clipId = aBuilder.DefineRoundedRectClip(Nothing(), region);
+      }
     }
     wr::WrClipChainId clipChainId = aBuilder.DefineClipChain(
         {&clipId, 1}, aBuilder.CurrentClipChainIdIfNotRoot());

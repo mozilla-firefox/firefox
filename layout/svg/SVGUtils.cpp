@@ -380,7 +380,7 @@ float SVGUtils::ComputeOpacity(const nsIFrame* aFrame, bool aHandleOpacity) {
   return styleEffects->mOpacity;
 }
 
-static bool UseWebRenderPaths() {
+bool SVGUtils::UseWebRenderPaths() {
   return gfxVars::UseSoftwareWebRender()
              ? StaticPrefs::gfx_webrender_paths_swgl()
              : StaticPrefs::gfx_webrender_paths();
@@ -423,10 +423,11 @@ SVGUtils::MaskUsage SVGUtils::DetermineMaskUsage(const nsIFrame* aFrame,
           // relative to one fragment cannot describe.
           if (StaticPrefs::gfx_webrender_svg_simple_clips() &&
               !usage.mShouldGenerateMaskLayer && !fragmented) {
-            CSSRect rect;
-            CSSSize radii;
-            usage.mIsSimpleClipShape = clipPathFrame->GetSimpleClipShape(
-                const_cast<nsIFrame*>(aFrame), &rect, &radii);
+            usage.mIsSimpleClipShape =
+                clipPathFrame
+                    ->GetSimpleClipShape(const_cast<nsIFrame*>(aFrame),
+                                         UseWebRenderPaths())
+                    .isSome();
           }
         } else {
           usage.mShouldGenerateClipMaskLayer = true;
