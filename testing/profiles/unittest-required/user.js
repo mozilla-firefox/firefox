@@ -56,7 +56,6 @@ user_pref("browser.urlbar.suggest.searches", false);
 user_pref("browser.fixup.domainsuffixwhitelist.test", true);
 user_pref("browser.warnOnQuit", false);
 user_pref("captivedetect.canonicalURL", "http://{server}/captive-detect/success.txt");
-user_pref("captivedetect.httpsCheck.url", "http://{server}/captive-detect/https-check");
 // Enable android logcat for better diagnostics on beta/release
 user_pref("consoleservice.logcat", true);
 // Point Firefox Health Report at a local server. We don't care if it actually

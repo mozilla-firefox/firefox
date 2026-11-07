@@ -3270,10 +3270,6 @@ pref("captivedetect.canonicalContent", "");
 pref("captivedetect.maxWaitingTime", 5000);
 pref("captivedetect.pollingTime", 3000);
 pref("captivedetect.maxRetryCount", 5);
-// When the canonical URL looks intercepted, confirm with a request to this
-// HTTPS endpoint. If it succeeds, the network is treated as an unlocked portal.
-pref("captivedetect.httpsCheck.enabled", true);
-pref("captivedetect.httpsCheck.url", "https://firefox-portal-detection.com/generate_204");
 
 // The tables used for Safebrowsing phishing and malware checks
 pref("urlclassifier.malwareTable", "goog-malware-proto,goog-unwanted-proto,moztest-harmful-simple,moztest-malware-simple,moztest-unwanted-simple");

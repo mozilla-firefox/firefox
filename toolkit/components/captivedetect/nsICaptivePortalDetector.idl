@@ -14,10 +14,8 @@ interface nsICaptivePortalCallback : nsISupports
 
   /**
    * Invoke callbacks after captive portal detection finished.
-   * @param unlockedPortal True if the canonical URL was intercepted but an
-   *                       HTTPS request got through.
    */
-  void complete(in boolean success, [optional] in boolean unlockedPortal);
+  void complete(in boolean success);
 };
 
 [scriptable, uuid(2f827c5a-f551-477f-af09-71adbfbd854a)]

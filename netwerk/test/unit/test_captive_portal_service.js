@@ -26,8 +26,6 @@ const PREF_CAPTIVE_CANONICAL_CONTENT = "captivedetect.canonicalContent";
 const PREF_CAPTIVE_MINTIME = "network.captive-portal-service.minInterval";
 const PREF_CAPTIVE_MAXTIME = "network.captive-portal-service.maxInterval";
 const PREF_DNS_NATIVE_IS_LOCALHOST = "network.dns.native-is-localhost";
-const PREF_HTTPS_CHECK_ENABLED = "captivedetect.httpsCheck.enabled";
-const PREF_HTTPS_CHECK_URL = "captivedetect.httpsCheck.url";
 
 const cps = Cc["@mozilla.org/network/captive-portal-service;1"].getService(
   Ci.nsICaptivePortalService
@@ -41,8 +39,6 @@ registerCleanupFunction(async () => {
   Services.prefs.clearUserPref(PREF_CAPTIVE_MINTIME);
   Services.prefs.clearUserPref(PREF_CAPTIVE_MAXTIME);
   Services.prefs.clearUserPref(PREF_DNS_NATIVE_IS_LOCALHOST);
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_ENABLED);
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_URL);
 
   await new Promise(resolve => {
     httpserver.stop(resolve);
@@ -232,176 +228,6 @@ add_task(async function test_200_endpoint_still_works() {
   cps.recheckCaptivePortal();
   await notification;
   equal(cps.state, Ci.nsICaptivePortalService.LOCKED_PORTAL);
-
-  restoreSharedConfig();
-});
-
-// When the canonical URL is intercepted but the HTTPS check gets through, the
-// network is reported as an unlocked portal rather than a locked one.
-add_task(async function test_https_check_reports_unlocked() {
-  Services.prefs.setBoolPref(PREF_CAPTIVE_ENABLED, false);
-  equal(cps.state, Ci.nsICaptivePortalService.UNKNOWN);
-
-  httpserver.registerPathHandler("/captive.html", contentHandler);
-  cpResponse = "<html>please log in</html>";
-  httpserver.registerPathHandler("/https-check", (metadata, response) => {
-    response.setStatusLine(metadata.httpVersion, 204, "No Content");
-  });
-  Services.prefs.setBoolPref(PREF_HTTPS_CHECK_ENABLED, true);
-  Services.prefs.setCharPref(
-    PREF_HTTPS_CHECK_URL,
-    `http://localhost:${httpserver.identity.primaryPort}/https-check`
-  );
-
-  let onLogin = () => Assert.ok(false, "Should not start a login");
-  Services.obs.addObserver(onLogin, "captive-portal-login");
-  let connectivityStates = [];
-  let mirroredStates = [];
-  let onConnectivityChanged = subject => {
-    connectivityStates.push(
-      subject.QueryInterface(Ci.nsICaptivePortalService).state
-    );
-  };
-  let onStateMirrored = subject => {
-    mirroredStates.push(
-      subject.QueryInterface(Ci.nsICaptivePortalService).state
-    );
-  };
-  Services.obs.addObserver(
-    onConnectivityChanged,
-    "network:captive-portal-connectivity-changed"
-  );
-  Services.obs.addObserver(
-    onStateMirrored,
-    "ipc:network:captive-portal-set-state"
-  );
-  let notification = observerPromise("network:captive-portal-connectivity");
-  Services.prefs.setBoolPref(PREF_CAPTIVE_ENABLED, true);
-
-  equal(await notification, "captive");
-  equal(cps.state, Ci.nsICaptivePortalService.UNLOCKED_PORTAL);
-
-  notification = observerPromise("network:captive-portal-connectivity");
-  cps.recheckCaptivePortal();
-  equal(await notification, "captive");
-
-  Services.obs.removeObserver(onLogin, "captive-portal-login");
-  Services.obs.removeObserver(
-    onConnectivityChanged,
-    "network:captive-portal-connectivity-changed"
-  );
-  Services.obs.removeObserver(
-    onStateMirrored,
-    "ipc:network:captive-portal-set-state"
-  );
-  Assert.deepEqual(connectivityStates, [
-    Ci.nsICaptivePortalService.UNLOCKED_PORTAL,
-  ]);
-  Assert.deepEqual(mirroredStates, [
-    Ci.nsICaptivePortalService.UNLOCKED_PORTAL,
-  ]);
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_ENABLED);
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_URL);
-  restoreSharedConfig();
-});
-
-// The HTTPS check fails until the user logs in, but the portal keeps
-// intercepting plain HTTP afterwards. The login polling must notice the HTTPS
-// check getting through and unlock the portal.
-add_task(async function test_https_check_unlocks_after_login() {
-  Services.prefs.setBoolPref(PREF_CAPTIVE_ENABLED, false);
-  equal(cps.state, Ci.nsICaptivePortalService.UNKNOWN);
-
-  let canonicalRequests = 0;
-  let onCanonicalRequest = null;
-  httpserver.registerPathHandler("/captive.html", (metadata, response) => {
-    canonicalRequests++;
-    onCanonicalRequest?.();
-    contentHandler(metadata, response);
-  });
-  cpResponse = "<html>please log in</html>";
-  let loggedIn = false;
-  httpserver.registerPathHandler("/https-check", (metadata, response) => {
-    if (loggedIn) {
-      response.setStatusLine(metadata.httpVersion, 204, "No Content");
-    } else {
-      response.setStatusLine(metadata.httpVersion, 302, "Found");
-      response.setHeader("Location", cpURI);
-    }
-  });
-  Services.prefs.setBoolPref(PREF_HTTPS_CHECK_ENABLED, true);
-  Services.prefs.setCharPref(
-    PREF_HTTPS_CHECK_URL,
-    `http://localhost:${httpserver.identity.primaryPort}/https-check`
-  );
-
-  let notification = observerPromise("captive-portal-login");
-  Services.prefs.setBoolPref(PREF_CAPTIVE_ENABLED, true);
-  await notification;
-  equal(cps.state, Ci.nsICaptivePortalService.LOCKED_PORTAL);
-
-  loggedIn = true;
-  let pollsAtLogin = canonicalRequests;
-  let stillLocked = new Promise(resolve => {
-    onCanonicalRequest = () => {
-      if (canonicalRequests - pollsAtLogin >= 3) {
-        resolve("locked");
-      }
-    };
-  });
-  let loginSuccess = observerPromise("captive-portal-login-success").then(
-    () => "unlocked"
-  );
-
-  equal(await Promise.race([loginSuccess, stillLocked]), "unlocked");
-  equal(cps.state, Ci.nsICaptivePortalService.UNLOCKED_PORTAL);
-
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_ENABLED);
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_URL);
-  restoreSharedConfig();
-});
-
-// Stopping the service resets the state to UNKNOWN, which must be mirrored to
-// content processes exactly once.
-add_task(async function test_stop_mirrors_unknown_state() {
-  let mirroredStates = [];
-  let onStateMirrored = subject => {
-    mirroredStates.push(
-      subject.QueryInterface(Ci.nsICaptivePortalService).state
-    );
-  };
-
-  for (let response of [SUCCESS_STRING, "<html>please log in</html>"]) {
-    Services.prefs.setBoolPref(PREF_CAPTIVE_ENABLED, false);
-    equal(cps.state, Ci.nsICaptivePortalService.UNKNOWN);
-
-    httpserver.registerPathHandler("/captive.html", contentHandler);
-    cpResponse = response;
-    let notification =
-      response == SUCCESS_STRING
-        ? observerPromise("network:captive-portal-connectivity")
-        : observerPromise("captive-portal-login");
-    Services.prefs.setBoolPref(PREF_CAPTIVE_ENABLED, true);
-    await notification;
-    notEqual(cps.state, Ci.nsICaptivePortalService.UNKNOWN);
-
-    mirroredStates = [];
-    Services.obs.addObserver(
-      onStateMirrored,
-      "ipc:network:captive-portal-set-state"
-    );
-    Services.prefs.setBoolPref(PREF_CAPTIVE_ENABLED, false);
-    Services.obs.removeObserver(
-      onStateMirrored,
-      "ipc:network:captive-portal-set-state"
-    );
-    equal(cps.state, Ci.nsICaptivePortalService.UNKNOWN);
-    Assert.deepEqual(
-      mirroredStates,
-      [Ci.nsICaptivePortalService.UNKNOWN],
-      `Stopping after "${response}"`
-    );
-  }
 
   restoreSharedConfig();
 });
