@@ -7856,13 +7856,21 @@ var gCSSProperties = {
     domProp: "positionVisibility",
     inherited: false,
     type: CSS_TYPE_LONGHAND,
-    initial_values: ["anchor-visible"],
-    other_values: ["anchor-valid", "always", "no-overflow"],
+    initial_values: ["anchor-visible", "anchors-visible"],
+    other_values: [
+      "always",
+      "anchor-valid",
+      "anchors-valid",
+      "no-overflow",
+      "anchor-visible no-overflow",
+      "anchor-visible anchors-valid no-overflow",
+    ],
     invalid_values: [
       "none",
       "auto",
       "always anchor-valid",
       "anchor-visible always",
+      "anchor-valid anchors-valid",
     ],
   },
   quotes: {

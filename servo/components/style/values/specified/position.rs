@@ -827,7 +827,11 @@ impl PositionTryOrder {
     ToShmem,
     ToTyped,
 )]
-#[css(bitflags(single = "always", mixed = "anchor-valid,anchor-visible,no-overflow"))]
+#[css(bitflags(
+    single = "always",
+    mixed = "anchor-valid,anchors-valid,anchor-visible,anchors-visible,no-overflow",
+    overlapping_bits
+))]
 #[repr(C)]
 /// Specified keyword values for the position-visibility property.
 pub struct PositionVisibility(u8);
