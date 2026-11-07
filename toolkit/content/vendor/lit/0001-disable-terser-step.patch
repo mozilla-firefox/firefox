@@ -1,4 +1,4 @@
-From 1f4b1280c6328e6429edef0c44b86e988448b3c6 Mon Sep 17 00:00:00 2001
+From 33fe47af91dfc431be369f8391376053b45fae3d Mon Sep 17 00:00:00 2001
 From: Mark Striemer <mstriemer@mozilla.com>
 Date: Wed, 16 Nov 2022 22:54:20 -0600
 Subject: [PATCH 1/7] disable terser step

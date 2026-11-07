@@ -1,4 +1,4 @@
-From 299c4b8928f9305faa8d46aa7d1def64f4659761 Mon Sep 17 00:00:00 2001
+From e2aa34d4155d60b6562e140503f9b828d445a3ca Mon Sep 17 00:00:00 2001
 From: Mark Striemer <mstriemer@mozilla.com>
 Date: Tue, 22 Nov 2022 18:17:01 -0600
 Subject: [PATCH 3/7] Disable source maps
