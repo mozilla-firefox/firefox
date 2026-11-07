@@ -9,6 +9,7 @@ from mozlog.structuredlog import StructuredLogger
 
 from mozperftest.metrics.notebook.perftestetl import PerftestETL
 from mozperftest.metrics.notebook.perftestnotebook import PerftestNotebook
+from mozperftest.system.geckoprofiler import GeckoProfilerController
 from mozperftest.tests.support import HERE, get_running_env
 from mozperftest.utils import temp_dir
 
@@ -151,6 +152,11 @@ def perftestetl_plugin():
     yield ret
 
     del os.environ["PERFTESTETL_PLUGIN"]
+
+
+@pytest.fixture(autouse=True)
+def reset_geckoprofiler_package_id(monkeypatch):
+    monkeypatch.setattr(GeckoProfilerController, "_package_id", None)
 
 
 @pytest.fixture

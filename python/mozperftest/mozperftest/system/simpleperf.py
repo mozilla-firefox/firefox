@@ -12,7 +12,11 @@ from pathlib import Path
 from mozbuild.nodeutil import find_node_executable
 
 from mozperftest.layers import Layer
-from mozperftest.system.geckoprofiler import GECKO_MARKERS_PROFILE_PREFIX
+from mozperftest.system.geckoprofiler import (
+    GECKO_MARKERS_PROFILE_PREFIX,
+    browser_package_id,
+    perf_spew_dir,
+)
 from mozperftest.utils import (
     ON_TRY,
     archive_files,
@@ -24,6 +28,13 @@ from mozperftest.utils import (
    call graph so that we can collect Java stacks.  This requires root access.
 """
 DEFAULT_SIMPLEPERF_OPTS = "-g --duration 30 -f 1000 --trace-offcpu -e cpu-clock -a"
+
+"""When Gecko writes jitdump files, frame pointer unwinding gives us JS stacks and
+   deeper native stacks, but no Java stacks.
+"""
+JIT_FRAMES_SIMPLEPERF_OPTS = (
+    "--call-graph fp --duration 30 -f 1000 --trace-offcpu -e cpu-clock -a"
+)
 
 BREAKPAD_SYMBOL_SERVER = "https://symbols.mozilla.org/"
 
@@ -71,9 +82,27 @@ class SimpleperfSymbolicationError(SimpleperfError):
 
 
 class SimpleperfController:
-    def __init__(self):
+    def __init__(self, jit_frames=False):
         self.device = get_adb_device_or_emu()
         self.profiler_process = None
+        self.jit_frames = jit_frames
+        self.package_id = None
+
+    def _list_jit_files(self):
+        """List the jitdump files that Gecko wrote for simpleperf."""
+        if not self.jit_frames or not self.package_id:
+            return []
+        spew_dir = perf_spew_dir(self.package_id)
+        output = self.device.shell_output(f"ls {spew_dir} 2>/dev/null || true")
+        return [
+            f"{spew_dir}/{name}"
+            for name in output.split()
+            if name.startswith("jit-") and name.endswith(".dump")
+        ]
+
+    def _remove_jit_files(self, files):
+        if files:
+            self.device.shell("rm -f " + " ".join(files))
 
     def start(self, simpleperf_opts):
         """Starts the simpleperf profiler asynchronously if the layer is enabled.
@@ -86,11 +115,26 @@ class SimpleperfController:
         root access.
         """
         if simpleperf_opts is None:
-            simpleperf_opts = DEFAULT_SIMPLEPERF_OPTS
+            simpleperf_opts = (
+                JIT_FRAMES_SIMPLEPERF_OPTS
+                if self.jit_frames
+                else DEFAULT_SIMPLEPERF_OPTS
+            )
 
         assert SimpleperfProfiler.is_enabled()
         if self.profiler_process:
             raise SimpleperfAlreadyRunningError("simpleperf already running")
+
+        if self.jit_frames:
+            self.package_id = browser_package_id()
+            if not self.package_id:
+                print(
+                    "Warning: the browser package id is unknown, so the jitdump "
+                    "files can't be collected and the profile won't have JS frames"
+                )
+
+        # Remove the files of earlier app launches, which aren't profiled.
+        self._remove_jit_files(self._list_jit_files())
 
         cmd = f"/data/local/tmp/simpleperf record {simpleperf_opts} -o /data/local/tmp/perf.data"
 
@@ -128,7 +172,13 @@ class SimpleperfController:
         # Pull profiler data directly to the given output path.
         self.device.pull("/data/local/tmp/perf.data", str(profile_path))
         self.device.shell("rm -f /data/local/tmp/perf.data")
-        return Path(output_path, f"perf-{index}.data")
+
+        # samply import looks for the jitdump files next to the perf.data file.
+        jit_files = self._list_jit_files()
+        for jit_file in jit_files:
+            self.device.pull(jit_file, str(Path(output_path, Path(jit_file).name)))
+        self._remove_jit_files(jit_files)
+        return profile_path
 
 
 class SimpleperfProfiler(Layer):
@@ -163,8 +213,8 @@ class SimpleperfProfiler(Layer):
         return os.environ.get("MOZPERFTEST_SIMPLEPERF", "0") == "1"
 
     @staticmethod
-    def get_controller():
-        return SimpleperfController()
+    def get_controller(jit_frames=False):
+        return SimpleperfController(jit_frames=jit_frames)
 
     def setup_simpleperf_path(self):
         """Sets up and verifies that the simpleperf NDK exists.

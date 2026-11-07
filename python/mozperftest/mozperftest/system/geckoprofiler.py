@@ -55,6 +55,27 @@ MARKERS_ONLY_GECKOPROFILER_OPTS = {
 GECKO_MARKERS_PROFILE_PREFIX = "gecko-markers-"
 
 
+def perf_spew_dir(package_id):
+    """The directory into which Gecko writes its jitdump files for simpleperf."""
+    return f"/storage/emulated/0/Android/data/{package_id}/files"
+
+
+def browser_package_id():
+    """The package id of the browser under test, or None if it isn't known."""
+    return GeckoProfilerController._package_id or os.environ.get("BROWSER_BINARY")
+
+
+def jit_env_for_simpleperf(package_id):
+    """Environment variables which let simpleperf unwind and name JS frames."""
+    return {
+        "PERF_SPEW_DIR": perf_spew_dir(package_id),
+        "IONPERF": "func",
+        "JIT_OPTION_emitInterpreterEntryTrampoline": "true",
+        "JIT_OPTION_enableICFramePointers": "true",
+        "JIT_OPTION_onlyInlineSelfHosted": "true",
+    }
+
+
 class GeckoProfilerController:
     """Controller that starts and stops profiling on device."""
 
@@ -72,7 +93,7 @@ class GeckoProfilerController:
         self.config_filename = None
 
     def _resolve_package_id(self):
-        pkg = self._package_id or os.environ.get("BROWSER_BINARY")
+        pkg = browser_package_id()
         if not pkg:
             raise GeckoProfilerError("Package id not set for GeckoProfiler")
         return pkg
@@ -108,6 +129,7 @@ class GeckoProfilerController:
             # With the long interval, the handoff from the base profiler would
             # delay startup, see bug 1955125.
             env["MOZ_PROFILER_STARTUP_NO_BASE"] = 1
+            env.update(jit_env_for_simpleperf(self.package_id))
         config_content = (
             "env:\n" + "".join(f"  {key}: {value}\n" for key, value in env.items())
         ).encode()

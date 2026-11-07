@@ -19,12 +19,15 @@ class ProfilingMediator:
             profilers = list(PROFILERS.keys())
         enabled = [name for name in profilers if PROFILERS[name].is_enabled()]
         # When both profilers run, the Gecko profile only provides the markers,
-        # which get merged into the simpleperf profile.
+        # which get merged into the simpleperf profile, and Gecko writes the
+        # jitdump files which let simpleperf profile JS.
         combined = "simpleperf" in enabled and "geckoprofiler" in enabled
         self.active_profilers = []
         for name in enabled:
             if name == "geckoprofiler":
                 controller = PROFILERS[name].get_controller(markers_only=combined)
+            elif name == "simpleperf":
+                controller = PROFILERS[name].get_controller(jit_frames=combined)
             else:
                 controller = PROFILERS[name].get_controller()
             self.active_profilers.append(controller)

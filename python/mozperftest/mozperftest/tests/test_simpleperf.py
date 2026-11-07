@@ -10,8 +10,10 @@ from unittest.mock import call
 import mozunit
 import pytest
 
+from mozperftest.system.geckoprofiler import GeckoProfilerController
 from mozperftest.system.simpleperf import (
     DEFAULT_SIMPLEPERF_OPTS,
+    JIT_FRAMES_SIMPLEPERF_OPTS,
     SimpleperfAlreadyRunningError,
     SimpleperfBinaryNotFoundError,
     SimpleperfController,
@@ -69,6 +71,7 @@ class FakeDevice:
         self.pushed_files = {}
         self.commands = []
         self.pulled_files = {}
+        self.shell_outputs = {}
 
     def push(self, source, destination):
         self.pushed_files[destination] = source
@@ -76,6 +79,10 @@ class FakeDevice:
     def shell(self, command):
         self.commands.append(command)
         return ""
+
+    def shell_output(self, command):
+        self.commands.append(command)
+        return self.shell_outputs.get(command, "")
 
     def pull(self, source, destination):
         self.pulled_files[destination] = source
@@ -367,6 +374,101 @@ def test_simpleperf_controller_stop_error(mock_is_enabled, mock_popen):
         controller.stop(str(output_dir), 1)
 
     assert "failed to run simpleperf" in str(excinfo.value)
+
+
+@mock.patch("mozperftest.system.simpleperf.get_adb_device_or_emu", new=FakeDevice)
+@mock.patch(
+    "mozperftest.system.simpleperf.SimpleperfProfiler.is_enabled", return_value=True
+)
+def test_simpleperf_controller_pulls_jit_files(mock_is_enabled, tmp_path):
+    """Test that the jitdump files from Gecko are pulled next to perf.data,
+    and that simpleperf uses frame pointer unwinding for the JIT frames."""
+    spew_dir = "/storage/emulated/0/Android/data/org.mozilla.fenix/files"
+    list_command = f"ls {spew_dir} 2>/dev/null || true"
+
+    controller = SimpleperfController(jit_frames=True)
+    controller.device.shell_outputs[list_command] = (
+        "Download\njit-123.dump\nother.txt\n"
+    )
+
+    with mock.patch.dict(os.environ, {"BROWSER_BINARY": "org.mozilla.fenix"}):
+        with mock.patch("mozperftest.system.simpleperf.subprocess.Popen") as mock_popen:
+            mock_popen.return_value = MockProcess()
+            controller.start(None)
+
+    assert JIT_FRAMES_SIMPLEPERF_OPTS in mock_popen.call_args[0][0][-1]
+
+    # Files from earlier app launches are removed before profiling.
+    jit_files = f"{spew_dir}/jit-123.dump"
+    assert f"rm -f {jit_files}" in controller.device.commands
+
+    controller.device.commands = []
+    controller.stop(str(tmp_path), 0)
+
+    assert controller.device.pulled_files == {
+        str(tmp_path / "perf-0.data"): "/data/local/tmp/perf.data",
+        str(tmp_path / "jit-123.dump"): f"{spew_dir}/jit-123.dump",
+    }
+    assert f"rm -f {jit_files}" in controller.device.commands
+
+
+@mock.patch("mozperftest.system.simpleperf.get_adb_device_or_emu", new=FakeDevice)
+@mock.patch(
+    "mozperftest.system.simpleperf.SimpleperfProfiler.is_enabled", return_value=True
+)
+def test_simpleperf_controller_jit_package_id_from_geckoprofiler(mock_is_enabled):
+    """Test that the jitdump files are found with the package id that the
+    geckoprofiler layer knows, when BROWSER_BINARY isn't set."""
+    controller = SimpleperfController(jit_frames=True)
+
+    GeckoProfilerController.set_package_id("org.mozilla.fenix")
+    with mock.patch.dict(os.environ):
+        os.environ.pop("BROWSER_BINARY", None)
+        with mock.patch("mozperftest.system.simpleperf.subprocess.Popen") as mock_popen:
+            mock_popen.return_value = MockProcess()
+            controller.start(None)
+
+    spew_dir = "/storage/emulated/0/Android/data/org.mozilla.fenix/files"
+    assert f"ls {spew_dir} 2>/dev/null || true" in controller.device.commands
+
+
+@mock.patch("mozperftest.system.simpleperf.get_adb_device_or_emu", new=FakeDevice)
+@mock.patch(
+    "mozperftest.system.simpleperf.SimpleperfProfiler.is_enabled", return_value=True
+)
+def test_simpleperf_controller_jit_without_package_id(mock_is_enabled, capsys):
+    """Test that a missing package id is reported instead of silently
+    profiling without JS frames."""
+    controller = SimpleperfController(jit_frames=True)
+
+    with mock.patch.dict(os.environ):
+        os.environ.pop("BROWSER_BINARY", None)
+        with mock.patch("mozperftest.system.simpleperf.subprocess.Popen") as mock_popen:
+            mock_popen.return_value = MockProcess()
+            controller.start(None)
+
+    assert "the browser package id is unknown" in capsys.readouterr().out
+    assert not any("Android/data" in command for command in controller.device.commands)
+
+
+@mock.patch("mozperftest.system.simpleperf.get_adb_device_or_emu", new=FakeDevice)
+@mock.patch(
+    "mozperftest.system.simpleperf.SimpleperfProfiler.is_enabled", return_value=True
+)
+def test_simpleperf_controller_without_jit_frames(mock_is_enabled, tmp_path):
+    """Test that the simpleperf-only run doesn't look for jitdump files."""
+    with mock.patch.dict(os.environ, {"BROWSER_BINARY": "org.mozilla.fenix"}):
+        controller = SimpleperfController()
+
+    with mock.patch("mozperftest.system.simpleperf.subprocess.Popen") as mock_popen:
+        mock_popen.return_value = MockProcess()
+        controller.start(None)
+    controller.stop(str(tmp_path), 0)
+
+    assert not any("Android/data" in command for command in controller.device.commands)
+    assert controller.device.pulled_files == {
+        str(tmp_path / "perf-0.data"): "/data/local/tmp/perf.data",
+    }
 
 
 # Tests for Simpleperf Symbolication
