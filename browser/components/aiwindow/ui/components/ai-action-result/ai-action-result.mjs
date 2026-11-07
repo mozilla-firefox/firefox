@@ -24,6 +24,8 @@ import "chrome://browser/content/aiwindow/components/website-chip-container.mjs"
  * The parent is responsible for performing the actual reversal and updating
  * the action state.
  *
+ * @property {string} conversationId - Conversation owning an action-log entry
+ * @property {number} turnIndex - Turn owning an action-log entry
  * @attribute {string} label - Header label for plain text (e.g. "Closed tab", "Closed 3 tabs")
  * @attribute {string} labelL10nId - Fluent localization ID for the header label
  * @attribute {object} labelL10nArgs - Arguments for the label localization (e.g. { count: 3 })
@@ -49,6 +51,8 @@ import "chrome://browser/content/aiwindow/components/website-chip-container.mjs"
  */
 export class AIActionResult extends MozLitElement {
   static properties = {
+    conversationId: { type: String },
+    turnIndex: { type: Number },
     label: { type: String },
     labelL10nId: { type: String },
     labelL10nArgs: { type: Object },
@@ -82,6 +86,13 @@ export class AIActionResult extends MozLitElement {
   // Fallback for finishing the sweep if the running animation can't be found
   // (e.g. reduced motion, where it isn't animating) — one cycle plus a buffer.
   static SWEEP_MAX_MS = 2200;
+
+  /**
+   * The action-log turn whose displayed label has been reported.
+   *
+   * @type {string | null}
+   */
+  #reportedActionLogTurn = null;
 
   #sweepTimer = null;
   #sweepAnim = null;
@@ -129,9 +140,48 @@ export class AIActionResult extends MozLitElement {
   }
 
   updated() {
+    this.#maybeReportActionLogDisplayed();
     if (this.#awaitingSweep && !this.#sweepAnim) {
       this.#finishCurrentSweep();
     }
+  }
+
+  /**
+   * Reports an action-log turn once its localized header is displayed.
+   *
+   * @returns {Promise<void>}
+   */
+  async #maybeReportActionLogDisplayed() {
+    const { conversationId, turnIndex } = this;
+
+    if (!conversationId || turnIndex === undefined) {
+      return;
+    }
+
+    const turn = `${conversationId}:${turnIndex}`;
+    if (this.#reportedActionLogTurn === turn) {
+      return;
+    }
+
+    this.#reportedActionLogTurn = turn;
+    const label = this.renderRoot?.querySelector(".action-result-label");
+    await document.l10n.translateElements([label]);
+
+    if (
+      !this.isConnected ||
+      this.conversationId !== conversationId ||
+      this.turnIndex !== turnIndex
+    ) {
+      return;
+    }
+
+    this.dispatchEvent(
+      new CustomEvent("AIChatContent:FirstActionLogDisplayed", {
+        bubbles: true,
+        composed: true,
+        detail: { conversationId, turnIndex },
+      })
+    );
   }
 
   // Run one final sweep from the shimmer's current position to the end and hold

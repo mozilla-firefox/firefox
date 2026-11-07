@@ -135,6 +135,10 @@ export class AIChatContentParent extends JSWindowActorParent {
         this.#getAIWindowElement()?.onFirstCharacterDisplayed(data);
         break;
 
+      case "AIChatContent:FirstActionLogDisplayed":
+        this.#getAIWindowElement()?.onFirstActionLogDisplayed(data);
+        break;
+
       case "AIChatContent:ClientError":
         this.#handleClientError(data);
         break;

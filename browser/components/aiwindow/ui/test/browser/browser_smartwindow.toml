@@ -130,6 +130,8 @@ skip-if = [
 
 ["browser_smartwindow_duplicate_chat_tabs.js"]
 
+["browser_smartwindow_first_action_log_telemetry.js"]
+
 ["browser_smartwindow_first_character_telemetry.js"]
 skip-if = [
   "os == 'win' && debug && standalone", # Bug 2028654
