@@ -14,18 +14,6 @@ Services.scriptloader.loadSubScript(
 );
 
 add_task(async function () {
-  // Open styles in the debugger
-  await testContextMenuOnClickLinkedAttr(true);
-  // Open styles in the style editor
-  await testContextMenuOnClickLinkedAttr(false);
-});
-
-async function testContextMenuOnClickLinkedAttr(styleSheetInDebuggerEnabled) {
-  await pushPref(
-    "devtools.debugger.features.stylesheets-in-debugger",
-    styleSheetInDebuggerEnabled
-  );
-
   const { toolbox, inspector } = await openInspectorForURL(TEST_URL);
 
   info("Select a node with a cssresource attribute");
@@ -39,15 +27,9 @@ async function testContextMenuOnClickLinkedAttr(styleSheetInDebuggerEnabled) {
   );
 
   info("Follow the link and wait for the style-editor to open");
-  if (!styleSheetInDebuggerEnabled) {
-    const onStyleEditorReady = toolbox.once("styleeditor-ready");
-    contextMenuItem.click();
-    await onStyleEditorReady;
-  } else {
-    const onDebuggerReady = toolbox.once("jsdebugger-ready");
-    contextMenuItem.click();
-    await onDebuggerReady;
-  }
+  const onStyleEditorReady = toolbox.once("styleeditor-ready");
+  contextMenuItem.click();
+  await onStyleEditorReady;
 
   // No real need to test that the editor opened on the right file here as this
   // is already tested in /framework/test/browser_toolbox_view_source_*
@@ -77,7 +59,7 @@ async function testContextMenuOnClickLinkedAttr(styleSheetInDebuggerEnabled) {
   // No real need to test that the debugger opened on the right file here as
   // this is already tested in /framework/test/browser_toolbox_view_source_*
   ok(true, "The debugger was open");
-}
+});
 
 function openContextMenuAndGetLinkFollowItem(inspector, target) {
   const items = openContextMenuAndGetAllItems(inspector, {

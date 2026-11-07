@@ -54,20 +54,17 @@ const EXAMPLE_ORG_DOCUMENT_URL =
   "https://example.org/document-builder.sjs?html=" + DOCUMENT_HTML;
 
 add_task(async function () {
-  // Open any external styles in the debugger
-  await testDataURIs(true);
-  // Open any external styles in the style editor
-  await testDataURIs(false);
+  await addTab(DOCUMENT_DATA_URL);
+  const { toolbox, inspector, view } = await openRuleView();
+
+  await testAllStylesheets(inspector, view, toolbox);
+
+  info("Navigate to the example.org document");
+  await navigateTo(EXAMPLE_ORG_DOCUMENT_URL);
+  await testAllStylesheets(inspector, view, toolbox);
 });
 
 add_task(async function () {
-  // Open any external styles in the debugger
-  await testLinksInDocumentUrls(true);
-  // Open any styles in the style editor
-  await testLinksInDocumentUrls(false);
-});
-
-async function testLinksInDocumentUrls(styleSheetInDebuggerEnabled) {
   info("Check that link to the style editor works after tab reload");
   await addTab(EXAMPLE_ORG_DOCUMENT_URL);
   const { toolbox, inspector, view } = await openRuleView();
@@ -75,53 +72,17 @@ async function testLinksInDocumentUrls(styleSheetInDebuggerEnabled) {
   info("Reload the example.org document");
   // Use navigateTo as it waits for the inspector to be ready.
   await navigateTo(EXAMPLE_ORG_DOCUMENT_URL);
-  await testAllStylesheets(
-    inspector,
-    view,
-    toolbox,
-    styleSheetInDebuggerEnabled
-  );
-}
+  await testAllStylesheets(inspector, view, toolbox);
+});
 
-async function testDataURIs(styleSheetInDebuggerEnabled) {
-  await addTab(DOCUMENT_DATA_URL);
-  const { toolbox, inspector, view } = await openRuleView();
-
-  await testAllStylesheets(
-    inspector,
-    view,
-    toolbox,
-    styleSheetInDebuggerEnabled
-  );
-
-  info("Navigate to the example.org document");
-  await navigateTo(EXAMPLE_ORG_DOCUMENT_URL);
-  await testAllStylesheets(
-    inspector,
-    view,
-    toolbox,
-    styleSheetInDebuggerEnabled
-  );
-}
-
-async function testAllStylesheets(
-  inspector,
-  view,
-  toolbox,
-  styleSheetInDebuggerEnabled
-) {
-  await pushPref(
-    "devtools.debugger.features.stylesheets-in-debugger",
-    styleSheetInDebuggerEnabled
-  );
+async function testAllStylesheets(inspector, view, toolbox) {
   await selectNode("div", inspector);
   await testRuleViewLinkLabel(view, styleSheetInDebuggerEnabled);
   await testDisabledStyleEditor(view, toolbox);
   await testFirstInlineStyleSheet(view, toolbox);
   await testSecondInlineStyleSheet(view, toolbox);
+  await testExternalStyleSheet(view, toolbox);
 
-  // Open external styles in the debugger
-  await testExternalStyleSheet(view, toolbox, styleSheetInDebuggerEnabled);
   info("Switch back to the inspector panel");
   await toolbox.selectTool("inspector");
   await selectNode("body", inspector);
@@ -167,63 +128,28 @@ async function testSecondInlineStyleSheet(view, toolbox) {
   await validateStyleEditorSheet(toolbox, editor, 1);
 }
 
-async function testExternalStyleSheet(
-  view,
-  toolbox,
-  styleSheetInDebuggerEnabled
-) {
+async function testExternalStyleSheet(view, toolbox) {
   info("Testing external stylesheet");
+  const styleEditorPanel = toolbox.getCurrentPanel();
+  const onEditorSelected = styleEditorPanel.UI.once("editor-selected");
 
-  if (!styleSheetInDebuggerEnabled) {
-    const styleEditorPanel = toolbox.getCurrentPanel();
-    const onEditorSelected = styleEditorPanel.UI.once("editor-selected");
+  info("Switching back to the inspector panel in the toolbox");
+  await toolbox.selectTool("inspector");
+  const onToolSelected = toolbox.once("styleeditor-selected");
 
-    info("Switching back to the inspector panel in the toolbox");
-    await toolbox.selectTool("inspector");
-    const onToolSelected = toolbox.once("styleeditor-selected");
+  info("Clicking on an external stylesheet link");
+  clickLinkByIndex(view, 1);
 
-    info("Clicking on an external stylesheet link");
-    clickLinkByIndex(view, 1);
+  info("Wait for the stylesheet editor to be selected");
+  const editor = await onEditorSelected;
+  await onToolSelected;
 
-    info("Wait for the stylesheet editor to be selected");
-    const editor = await onEditorSelected;
-    await onToolSelected;
-
-    is(
-      toolbox.currentToolId,
-      "styleeditor",
-      "The style editor is selected again"
-    );
-    await validateStyleEditorSheet(toolbox, editor, 2);
-  } else {
-    const onToolSelected = toolbox.once("jsdebugger-selected");
-
-    info("Switching back to the inspector panel in the toolbox");
-    await toolbox.selectTool("inspector");
-
-    info("Clicking on an external stylesheet link");
-    clickLinkByIndex(view, 1);
-
-    info("Wait for the debugger editor location to be selected");
-    await onToolSelected;
-    is(toolbox.currentToolId, "jsdebugger", "The debugger is selected again");
-
-    await validateDebuggerStyleSheet(toolbox, STYLESHEET_DATA_URL);
-  }
-}
-
-async function validateDebuggerStyleSheet(toolbox, expectedUrl) {
-  const debuggerPanel = toolbox.getPanel("jsdebugger");
-  const location = await waitFor(() => {
-    return debuggerPanel._selectors.getSelectedLocation(
-      debuggerPanel._getState()
-    );
-  });
   is(
-    location.source.url,
-    expectedUrl,
-    "selected stylesheet matches document stylesheet"
+    toolbox.currentToolId,
+    "styleeditor",
+    "The style editor is selected again"
   );
+  await validateStyleEditorSheet(toolbox, editor, 2);
 }
 
 async function validateStyleEditorSheet(toolbox, editor, expectedSheetIndex) {

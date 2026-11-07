@@ -49,18 +49,6 @@ const DOCUMENT_URL =
   );
 
 add_task(async function () {
-  // Open any external styles in the debugger
-  await testlinksFromTheComputedView(true);
-  // Open any external styles in the style editor
-  await testlinksFromTheComputedView(false);
-});
-
-async function testlinksFromTheComputedView(styleSheetInDebuggerEnabled) {
-  await pushPref(
-    "devtools.debugger.features.stylesheets-in-debugger",
-    styleSheetInDebuggerEnabled
-  );
-
   await addTab(DOCUMENT_URL);
   const { toolbox, inspector, view } = await openComputedView();
   await selectNode("span", inspector);
@@ -68,9 +56,9 @@ async function testlinksFromTheComputedView(styleSheetInDebuggerEnabled) {
   await testInlineStyle(view);
   await testFirstInlineStyleSheet(view, toolbox);
   await testSecondInlineStyleSheet(view, toolbox);
-  await testExternalStyleSheet(view, toolbox, styleSheetInDebuggerEnabled);
+  await testExternalStyleSheet(view, toolbox);
   await testConstructedStyleSheet(view, toolbox);
-}
+});
 
 async function testInlineStyle(view) {
   info("Testing inline style");
@@ -132,62 +120,37 @@ async function testSecondInlineStyleSheet(view, toolbox) {
   await validateStyleEditorSheet(editor, 1);
 }
 
-async function testExternalStyleSheet(
-  view,
-  toolbox,
-  styleSheetInDebuggerEnabled
-) {
+async function testExternalStyleSheet(view, toolbox) {
   info("Testing external stylesheet");
-  if (!styleSheetInDebuggerEnabled) {
-    const panel = toolbox.getCurrentPanel();
-    const onSelected = panel.UI.once("editor-selected");
 
-    info("Switching back to the inspector panel in the toolbox");
-    await toolbox.selectTool("inspector");
+  const panel = toolbox.getCurrentPanel();
+  const onSelected = panel.UI.once("editor-selected");
 
-    info("Clicking on an external stylesheet link");
-    checkComputedViewLink(view, {
-      index: 2,
-      expectedText: `.highlight {color: blue}:1`,
-      expectedTitle: `${STYLESHEET_URL}:1`,
-    });
+  info("Switching back to the inspector panel in the toolbox");
+  await toolbox.selectTool("inspector");
 
-    info("Waiting for an editor to be selected in StyleEditor");
-    const editor = await onSelected;
+  info("Clicking on an external stylesheet link");
+  checkComputedViewLink(view, {
+    index: 2,
+    expectedText: `.highlight {color: blue}:1`,
+    expectedTitle: `${STYLESHEET_URL}:1`,
+  });
 
-    is(
-      toolbox.currentToolId,
-      "styleeditor",
-      "The style editor is selected again"
-    );
-    await validateStyleEditorSheet(editor, 2);
-  } else {
-    const onToolSelected = toolbox.once("jsdebugger-selected");
+  info("Waiting for an editor to be selected in StyleEditor");
+  const editor = await onSelected;
 
-    info("Switching back to the inspector panel in the toolbox");
-    await toolbox.selectTool("inspector");
-
-    info("Clicking on an external stylesheet link");
-    checkComputedViewLink(view, {
-      index: 2,
-      expectedText: `.highlight {color: blue}:1`,
-      expectedTitle: `${STYLESHEET_URL}:1`,
-    });
-
-    info("Wait for the debugger editor location to be selected");
-    await onToolSelected;
-    is(
-      toolbox.currentToolId,
-      "jsdebugger",
-      "The style editor is selected again"
-    );
-    await validateDebuggerStyleSheet(toolbox, STYLESHEET_URL);
-  }
+  is(
+    toolbox.currentToolId,
+    "styleeditor",
+    "The style editor is selected again"
+  );
+  await validateStyleEditorSheet(editor, 2);
 }
 
 async function testConstructedStyleSheet(view, toolbox) {
   info("Testing constructed stylesheet");
-  const panel = await toolbox.selectTool("styleeditor");
+
+  const panel = toolbox.getCurrentPanel();
   const onSelected = panel.UI.once("editor-selected");
 
   info("Switching back to the inspector panel in the toolbox");
@@ -224,20 +187,6 @@ async function validateStyleEditorSheet(editor, expectedSheetIndex) {
     editor.styleSheet.href,
     expectedHref,
     "loaded stylesheet matches document stylesheet"
-  );
-}
-
-async function validateDebuggerStyleSheet(toolbox, expectedUrl) {
-  const debuggerPanel = toolbox.getPanel("jsdebugger");
-  const location = await waitFor(() => {
-    return debuggerPanel._selectors.getSelectedLocation(
-      debuggerPanel._getState()
-    );
-  });
-  is(
-    location.source.url,
-    expectedUrl,
-    "selected stylesheet matches document stylesheet"
   );
 }
 

@@ -401,20 +401,12 @@ async function resizeWindow(toolbox, width, height) {
   await onResize;
 }
 
-function assertSelectedLocationInDebugger(
-  debuggerPanel,
-  expectedLine,
-  expectedColumn,
-  expectedUrl
-) {
+function assertSelectedLocationInDebugger(debuggerPanel, line, column) {
   const location = debuggerPanel._selectors.getSelectedLocation(
     debuggerPanel._getState()
   );
-  is(location.line, expectedLine, "The expected line is correct");
-  is(location.column, expectedColumn, "The expected column is correct");
-  if (expectedUrl) {
-    is(location.source.url, expectedUrl, "The expected url is correct");
-  }
+  is(location.line, line);
+  is(location.column, column);
 }
 
 /**

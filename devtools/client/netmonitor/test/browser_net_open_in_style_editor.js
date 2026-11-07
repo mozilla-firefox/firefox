@@ -8,18 +8,6 @@
  */
 
 add_task(async function () {
-  // Open styles in the debugger
-  await testOpenInDebugger(true);
-  // Open styles in the style editor
-  await testOpenInDebugger(false);
-});
-
-async function testOpenInDebugger(styleSheetInDebuggerEnabled) {
-  await pushPref(
-    "devtools.debugger.features.stylesheets-in-debugger",
-    styleSheetInDebuggerEnabled
-  );
-
   const { tab, monitor, toolbox } = await initNetMonitor(
     CONTENT_TYPE_WITHOUT_CACHE_URL,
     { requestCount: 1 }
@@ -39,16 +27,15 @@ async function testOpenInDebugger(styleSheetInDebuggerEnabled) {
     { type: "contextmenu" },
     document.querySelectorAll(".request-list-item")[1]
   );
-  const onPanelReady = toolbox.once(
-    `${styleSheetInDebuggerEnabled ? "jsdebugger" : "styleeditor"}-ready`
-  );
+
+  const onStyleEditorReady = toolbox.once("styleeditor-ready");
   await selectContextMenuItem(
     monitor,
     "request-list-context-open-in-style-editor"
   );
-  await onPanelReady;
+  await onStyleEditorReady;
 
   ok(true, "Style Editor has been open");
 
   await teardown(monitor);
-}
+});
