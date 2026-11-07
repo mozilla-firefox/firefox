@@ -201,7 +201,7 @@ class AppWindow final : public nsIBaseWindow,
   bool LoadSizeFromXUL(int32_t& aSpecWidth, int32_t& aSpecHeight);
   void SetSpecifiedSize(const CSSIntSize&);
   MOZ_CAN_RUN_SCRIPT bool UpdateWindowStateFromMiscXULAttributes();
-  void SyncAttributesToWidget();
+  void SyncOneShotAttributesToWidget();
   void SavePersistentAttributes(PersistentAttributes);
   void MaybeSavePersistentPositionAndSize(PersistentAttributes,
                                           dom::Element& aRootElement,
@@ -333,17 +333,16 @@ class AppWindow final : public nsIBaseWindow,
   // otherwise happen due to script running as we tear down various things.
   bool mDestroying;
   bool mRegistered;
-  // Indicator for whether the client size, instead of the window size, should
-  // be maintained in case of a change in their relation.
-  bool mDominantClientSize;
   PersistentAttributes mPersistentAttributesDirty;
   PersistentAttributes mPersistentAttributesMask;
   uint32_t mChromeFlags;
   nsCOMPtr<nsIOpenWindowInfo> mInitialOpenWindowInfo;
   nsString mTitle;
 
+  // Client size requested via SizeShellTo().
+  DesktopSize mRequestedClientSize;
   // The screen rect of the opener.
-  mozilla::DesktopIntRect mOpenerScreenRect;
+  DesktopIntRect mOpenerScreenRect;
 
   nsCOMPtr<nsIRemoteTab> mPrimaryBrowserParent;
 
@@ -354,6 +353,11 @@ class AppWindow final : public nsIBaseWindow,
   MOZ_CAN_RUN_SCRIPT void IntrinsicallySizeShell(const CSSIntSize& aWindowDiff,
                                                  int32_t& aSpecWidth,
                                                  int32_t& aSpecHeight);
+
+  // Whether we are currently sized to a particular client size.
+  bool IsClientSizedWindow() const {
+    return mRequestedClientSize != DesktopSize();
+  }
 
   // GetPrimaryBrowserParentSize is called from xpidl methods and we don't have
   // a good way to annotate those with MOZ_CAN_RUN_SCRIPT yet.  It takes no

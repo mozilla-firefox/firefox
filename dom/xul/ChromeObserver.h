@@ -24,7 +24,7 @@ class ChromeObserver final : public nsStubMutationObserver {
   NS_DECL_NSIMUTATIONOBSERVER_NODEWILLBEDESTROYED
 
  protected:
-  nsIWidget* GetWindowWidget();
+  already_AddRefed<nsIWidget> GetWindowWidget();
   void SetHideTitlebarSeparator(bool);
   void HideWindowChrome(bool aShouldHide);
   void SetCustomTitlebar(bool);
