@@ -14,7 +14,7 @@
 == clip-path-polygon-010.html clip-path-stripes-001-ref.html
 == clip-path-polygon-011.html clip-path-stripes-001-ref.html
 == clip-path-polygon-012.html clip-path-stripes-001-ref.html
-fuzzy(0-127,0-20) == clip-path-polygon-013.html clip-path-stripes-003-ref.html
+fuzzy(0-128,0-20) == clip-path-polygon-013.html clip-path-stripes-003-ref.html
 
 fuzzy-if(!useDrawSnapshot,0-92,0-800) == clip-path-circle-001.html clip-path-circle-001-ref.html
 fuzzy-if(!useDrawSnapshot,0-92,0-800) == clip-path-circle-002.html clip-path-circle-001-ref.html

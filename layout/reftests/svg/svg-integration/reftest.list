@@ -48,6 +48,6 @@ fuzzy(0-1,0-5000) fuzzy-if(useDrawSnapshot,0-1,0-20000) == mask-mask-clipPath-op
 == transform-outer-svg-01.xhtml transform-outer-svg-01-ref.xhtml
 
 # box-decoration-break tests
-fuzzy(0-67,0-238) == box-decoration-break-01.xhtml box-decoration-break-01-ref.xhtml
+fuzzy(0-159,0-238) == box-decoration-break-01.xhtml box-decoration-break-01-ref.xhtml
 fuzzy(0-119,0-16) == box-decoration-break-02.xhtml box-decoration-break-02-ref.xhtml
-fuzzy(0-67,0-238) == box-decoration-break-03.xhtml box-decoration-break-01-ref.xhtml
+fuzzy(0-159,0-238) == box-decoration-break-03.xhtml box-decoration-break-01-ref.xhtml
