@@ -45,6 +45,12 @@ GENERATED_FILES["license.html"].inputs = [
 
 JAR_MANIFESTS += ["jar.mn"]
 
+CONTENT_ACCESSIBLE_FILES += [
+    "TopLevelVideoDocument.js",
+    "widgets/datetimebox.css",
+    "widgets/marquee.css",
+]
+
 PP_FILES_EXTRA_DEPS += ["!/source-repo.h"]
 
 SPHINX_TREES["toolkit_widgets"] = "widgets/docs"

@@ -636,11 +636,11 @@ toolbar .toolbarbutton-1 {
   display: none;
 
   &[soundplaying] {
-    list-style-image: url("chrome://global/skin/media/audio.svg");
+    list-style-image: url("resource://content-accessible/media/audio.svg");
   }
 
   &[muted] {
-    list-style-image: url("chrome://global/skin/media/audio-muted.svg");
+    list-style-image: url("resource://content-accessible/media/audio-muted.svg");
   }
 }
 
@@ -654,11 +654,11 @@ toolbar .toolbarbutton-1 {
 
 #mini-window-audio-button {
   &[soundplaying] {
-    list-style-image: url("chrome://global/skin/media/audio.svg");
+    list-style-image: url("resource://content-accessible/media/audio.svg");
   }
 
   &[muted] {
-    list-style-image: url("chrome://global/skin/media/audio-muted.svg");
+    list-style-image: url("resource://content-accessible/media/audio-muted.svg");
   }
 }
 

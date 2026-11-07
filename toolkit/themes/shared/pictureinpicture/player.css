@@ -390,19 +390,19 @@ body:not(:fullscreen) #controls:hover #timestamp {
 }
 
 #controls.playing #playpause {
-  background-image: url("chrome://global/skin/media/pause-fill.svg");
+  background-image: url("resource://content-accessible/media/pause-fill.svg");
 }
 
 #controls:not(.playing) #playpause {
-  background-image: url("chrome://global/skin/media/play-fill.svg");
+  background-image: url("resource://content-accessible/media/play-fill.svg");
 }
 
 #controls.muted #audio {
-  background-image: url("chrome://global/skin/media/audio-muted.svg");
+  background-image: url("resource://content-accessible/media/audio-muted.svg");
 }
 
 #controls:not(.muted) #audio {
-  background-image: url("chrome://global/skin/media/audio.svg");
+  background-image: url("resource://content-accessible/media/audio.svg");
 }
 
 body:not(:fullscreen) #fullscreen {

@@ -3,5 +3,4 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 toolkit.jar:
-    content/global/xml/XMLPrettyPrint.css                 (XMLPrettyPrint.css)
     content/global/xml/XMLPrettyPrint.xsl                 (XMLPrettyPrint.xsl)

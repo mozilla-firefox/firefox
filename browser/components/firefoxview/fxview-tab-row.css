@@ -112,11 +112,11 @@
 }
 
 .fxview-tab-row-button[muted="true"]::part(button) {
-  background-image: url("chrome://global/skin/media/audio-muted.svg");
+  background-image: url("resource://content-accessible/media/audio-muted.svg");
 }
 
 .fxview-tab-row-button[soundplaying="true"]::part(button) {
-  background-image: url("chrome://global/skin/media/audio.svg");
+  background-image: url("resource://content-accessible/media/audio.svg");
 }
 
 .fxview-tab-row-button.undo-button::part(button) {

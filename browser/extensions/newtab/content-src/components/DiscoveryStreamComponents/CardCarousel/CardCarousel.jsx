@@ -185,7 +185,7 @@ export function CardCarousel({
           ref={rotationControlRef}
           size="small"
           className="ds-carousel-rotation-control"
-          iconSrc={`chrome://global/skin/media/${
+          iconSrc={`resource://content-accessible/media/${
             paused ? "play" : "pause"
           }-fill.svg`}
           data-l10n-id={

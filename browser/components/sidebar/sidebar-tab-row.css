@@ -93,7 +93,7 @@
 }
 
 .fxview-tab-row-main.muted .fxview-tab-row-favicon::after {
-  background-image: url("chrome://global/skin/media/audio-muted.svg");
+  background-image: url("resource://content-accessible/media/audio-muted.svg");
 }
 
 .fxview-tab-row-main.soundplaying .fxview-tab-row-favicon::after {

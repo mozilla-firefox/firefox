@@ -142,7 +142,7 @@
   top: 8px;
   left: 8px;
   pointer-events: none;
-  background-image: url("chrome://global/skin/media/picture-in-picture-open.svg");
+  background-image: url("resource://content-accessible/media/picture-in-picture-open.svg");
   background-position: center, center;
   background-repeat: no-repeat;
   background-size: var(--pip-icon-size) var(--pip-icon-size);

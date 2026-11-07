@@ -11,6 +11,4 @@
    skin/classic/global/aboutNetworking.css
    skin/classic/global/aboutSupport.css
    skin/classic/global/icons/edit-copy.svg                  (../../shared/icons/edit-copy.svg)
-   skin/classic/global/media/picture-in-picture-open-android.svg (../../shared/media/picture-in-picture-open-android.svg)
 #  picture-in-picture, for the caption overlay in the player window:
-   skin/classic/global/pictureinpicture/texttracks.css      (../../shared/pictureinpicture/texttracks.css)

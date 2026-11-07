@@ -158,10 +158,10 @@ body.hcm .narrate-word-highlight {
     }
 
     &.narrate-start-stop {
-      background-image: url("chrome://global/skin/media/play-fill.svg");
+      background-image: url("resource://content-accessible/media/play-fill.svg");
 
       .narrate-dropdown.speaking & {
-        background-image: url("chrome://global/skin/media/pause-fill.svg");
+        background-image: url("resource://content-accessible/media/pause-fill.svg");
       }
     }
 
@@ -246,7 +246,7 @@ body.hcm .narrate-word-highlight {
   }
 
   > button.select-toggle::before {
-    background-image: url("chrome://global/skin/media/audio.svg");
+    background-image: url("resource://content-accessible/media/audio.svg");
   }
 
   > button.select-toggle::after {

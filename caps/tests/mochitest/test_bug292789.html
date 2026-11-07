@@ -37,8 +37,8 @@ let ChromeUtils = {
 
 /** <script src=""> test */
 function testScriptSrc(aCallback) {
-    is(typeof gTreeUtils.sort, "function",
-       "content can still load <script> from chrome://global");
+    is(typeof gTreeUtils, "undefined",
+       "content should not be able to load <script> from chrome://global");
 
     /**
      * Try to find an export from history.js.  We will find it if it is
@@ -70,7 +70,7 @@ var img_global = "chrome://global/skin/media/error.png";
 var img_mozapps = "chrome://mozapps/skin/extensions/extensionGeneric.svg";
 var res_mozapps = "resource://gre/chrome/toolkit/skin/classic/mozapps/extensions/extensionGeneric.svg";
 
-var imgTests = [[img_global, "success"],
+var imgTests = [[img_global, "fail"],
                 [img_mozapps, "fail"],
                 [res_mozapps, "success"]];
 

@@ -3,3 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 JAR_MANIFESTS += ["jar.mn"]
+
+CONTENT_ACCESSIBLE_FILES += [
+    "XMLPrettyPrint.css",
+]

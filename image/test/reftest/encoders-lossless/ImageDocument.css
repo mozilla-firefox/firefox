@@ -1,5 +1,5 @@
 body {
-  background: #222 url("chrome://global/skin/media/imagedoc-darknoise.png");
+  background: #222 url("resource://content-accessible/media/imagedoc-darknoise.png");
   margin: 0;
 }
 
@@ -11,6 +11,6 @@ img {
   right: 0;
   bottom: 0;
   left: 0;
-  background: hsl(0,0%,90%) url("chrome://global/skin/media/imagedoc-lightnoise.png");
+  background: hsl(0,0%,90%) url("resource://content-accessible/media/imagedoc-lightnoise.png");
   color: #222;
 }

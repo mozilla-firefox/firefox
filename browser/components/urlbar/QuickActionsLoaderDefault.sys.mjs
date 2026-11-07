@@ -199,7 +199,7 @@ const DEFAULT_ACTIONS = {
   mute: {
     l10nCommands: ["quickactions-cmd-mute"],
     label: "quickactions-mute",
-    icon: "chrome://global/skin/media/audio-muted.svg",
+    icon: "resource://content-accessible/media/audio-muted.svg",
     isInactive: () => !unmutedAudioTabs().length,
     onPick: () => {
       for (let tab of unmutedAudioTabs()) {

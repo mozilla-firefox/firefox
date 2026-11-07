@@ -45,12 +45,12 @@ add_task(async function test_resource_document_module_loads() {
     );
     is(
       results.chromeWidget,
-      "loaded",
-      "a resource: document can load the content-accessible chrome: module"
+      "blocked",
+      "a resource: document cannot load a chrome: module"
     );
     ok(
-      results.customElementDefined,
-      "the widget loaded from chrome: got defined"
+      !results.customElementDefined,
+      "the widget from chrome: did not get defined"
     );
     is(
       results.httpWithCORS,
@@ -89,5 +89,36 @@ add_task(async function test_moz_src_is_not_reachable() {
     result,
     Cr.NS_ERROR_DOM_BAD_URI,
     "a resource: principal cannot reach moz-src: even with ALLOW_CHROME"
+  );
+});
+
+add_task(async function test_pdfjs_can_reach_chrome() {
+  const secMan = Services.scriptSecurityManager;
+  const target = Services.io.newURI(
+    "chrome://global/content/elements/moz-message-bar.mjs"
+  );
+  const check = spec => {
+    try {
+      secMan.checkLoadURIWithPrincipal(
+        secMan.createContentPrincipal(Services.io.newURI(spec), {}),
+        target,
+        Ci.nsIScriptSecurityManager.ALLOW_CHROME |
+          Ci.nsIScriptSecurityManager.DONT_REPORT_ERRORS,
+        0
+      );
+      return Cr.NS_OK;
+    } catch (e) {
+      return e.result;
+    }
+  };
+  is(
+    check("resource://pdf.js/web/viewer.html"),
+    Cr.NS_OK,
+    "pdf.js can load chrome: modules"
+  );
+  is(
+    check("resource://test-module-cors-doc/file.html"),
+    Cr.NS_ERROR_DOM_BAD_URI,
+    "other resource: principals cannot load chrome: modules"
   );
 });

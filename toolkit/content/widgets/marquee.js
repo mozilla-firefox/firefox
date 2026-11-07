@@ -24,7 +24,7 @@ this.MarqueeWidget = class {
       "link"
     );
     link.rel = "stylesheet";
-    link.href = "chrome://global/content/elements/marquee.css";
+    link.href = "resource://content-accessible/marquee.css";
     this.shadowRoot.createElementAndAppendChildAt(this.shadowRoot, "slot");
 
     this._mutationObserver = new this.window.MutationObserver(aMutations =>

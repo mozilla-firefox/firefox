@@ -87,6 +87,12 @@ static bool SubjectToCSP(nsILoadInfo* aLoadInfo, nsIURI* aURI,
     if (StringBeginsWith(uriSpec, "resource://pdf.js/"_ns)) {
       return false;
     }
+    // Exempt the script used by the top-level VideoDocument.
+    if (contentType == ExtContentPolicyType::TYPE_SCRIPT &&
+        uriSpec.EqualsLiteral(
+            "resource://content-accessible/TopLevelVideoDocument.js")) {
+      return false;
+    }
     if (!isImgOrStyleOrDTD) {
       return true;
     }
@@ -94,12 +100,6 @@ static bool SubjectToCSP(nsILoadInfo* aLoadInfo, nsIURI* aURI,
   if (aURI->SchemeIs("chrome")) {
     nsAutoCString uriSpec;
     aURI->GetSpec(uriSpec);
-    // Exempt the script used by the top-level VideoDocument.
-    if (contentType == ExtContentPolicyType::TYPE_SCRIPT &&
-        uriSpec.EqualsLiteral(
-            "chrome://global/content/TopLevelVideoDocument.js")) {
-      return false;
-    }
     // Treat chrome: scripts loaded by pdf.js like resource://pdf.js/ scripts.
     if (contentType == ExtContentPolicyType::TYPE_SCRIPT &&
         nsContentUtils::IsPDFJS(aLoadInfo->GetLoadingPrincipal())) {

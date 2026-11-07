@@ -25,7 +25,7 @@ add_task(async function () {
     view,
     nodeSelector: ".test-element",
     propertyName: "background",
-    expectedUrl: "chrome://global/skin/icons/help.svg",
+    expectedUrl: "resource://content-accessible/media/audio.svg",
   });
 
   await testCase({

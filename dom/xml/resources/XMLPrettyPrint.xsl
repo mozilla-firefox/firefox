@@ -13,7 +13,7 @@
 
   <xsl:template match="/">
     <div id="top">
-      <link rel="stylesheet" href="chrome://global/content/xml/XMLPrettyPrint.css"/>
+      <link rel="stylesheet" href="resource://content-accessible/XMLPrettyPrint.css"/>
       <div id="header">
         <p id="nostylesheet" data-l10n-id="xml-nostylesheet"><a data-l10n-name="addons-link" href="https://addons.mozilla.org/firefox/search/?q=xslt+polyfill"></a></p>
       </div>

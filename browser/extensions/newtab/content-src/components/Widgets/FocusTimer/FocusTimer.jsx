@@ -894,7 +894,7 @@ export const FocusTimer = ({
               <moz-button
                 className="focus-timer-play-button"
                 type="icon ghost"
-                iconsrc={`chrome://global/skin/media/${isRunning ? "pause" : "play"}-fill.svg`}
+                iconsrc={`resource://content-accessible/media/${isRunning ? "pause" : "play"}-fill.svg`}
                 data-l10n-id={
                   isRunning
                     ? "newtab-widget-timer-pause-aria"
@@ -1060,7 +1060,7 @@ export const FocusTimer = ({
               <div className={`focus-timer-controls timer-running`}>
                 <moz-button
                   {...(!isRunning ? { type: "primary" } : {})}
-                  iconsrc={`chrome://global/skin/media/${isRunning ? "pause" : "play"}-fill.svg`}
+                  iconsrc={`resource://content-accessible/media/${isRunning ? "pause" : "play"}-fill.svg`}
                   data-l10n-id={
                     isRunning
                       ? "newtab-widget-timer-label-pause"

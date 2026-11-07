@@ -199,37 +199,37 @@
 }
 
 .playButton {
-  background-image: url(chrome://global/skin/media/pause-fill.svg);
+  background-image: url(resource://content-accessible/media/pause-fill.svg);
 }
 .playButton[paused] {
-  background-image: url(chrome://global/skin/media/play-fill.svg);
+  background-image: url(resource://content-accessible/media/play-fill.svg);
 }
 
 .muteButton {
-  background-image: url(chrome://global/skin/media/audio.svg);
+  background-image: url(resource://content-accessible/media/audio.svg);
 }
 .muteButton[muted] {
-  background-image: url(chrome://global/skin/media/audio-muted.svg);
+  background-image: url(resource://content-accessible/media/audio-muted.svg);
 }
 .muteButton[noAudio] {
-  background-image: url(chrome://global/skin/media/audioNoAudioButton.svg);
+  background-image: url(resource://content-accessible/media/audioNoAudioButton.svg);
 }
 .muteButton[noAudio] + .volumeStack {
   display: none;
 }
 
 .closedCaptionButton {
-  background-image: url(chrome://global/skin/media/closedCaptionButton-cc-off.svg);
+  background-image: url(resource://content-accessible/media/closedCaptionButton-cc-off.svg);
 }
 .closedCaptionButton[enabled] {
-  background-image: url(chrome://global/skin/media/closedCaptionButton-cc-on.svg);
+  background-image: url(resource://content-accessible/media/closedCaptionButton-cc-on.svg);
 }
 
 .fullscreenButton {
-  background-image: url(chrome://global/skin/media/fullscreenEnterButton.svg);
+  background-image: url(resource://content-accessible/media/fullscreenEnterButton.svg);
 }
 .fullscreenButton[fullscreened] {
-  background-image: url(chrome://global/skin/media/fullscreenExitButton.svg);
+  background-image: url(resource://content-accessible/media/fullscreenExitButton.svg);
 }
 
 .controlBarSpacer {
@@ -455,11 +455,11 @@
 
 /* Not showing the throbber on mobile because of conflict with m.youtube.com (see bug 1289412) */
 .controlsContainer:not(.mobile) .statusIcon[type="throbber"] {
-  background: url(chrome://global/skin/media/throbber.png) no-repeat center;
+  background: url(resource://content-accessible/media/throbber.png) no-repeat center;
 }
 
 .controlsContainer:not(.mobile) .statusIcon[type="throbber"][stalled] {
-  background: url(chrome://global/skin/media/stalled.png) no-repeat center;
+  background: url(resource://content-accessible/media/stalled.png) no-repeat center;
 }
 
 .statusIcon[type="error"],
@@ -472,20 +472,20 @@
 .statusIcon[type="error"] {
   min-width: 70px;
   min-height: 60px;
-  background-image: url(chrome://global/skin/media/error.png);
+  background-image: url(resource://content-accessible/media/error.png);
 }
 
 .statusIcon[type="pictureInPicture"] {
   min-width: 84px;
   min-height: 84px;
-  background-image: url(chrome://global/skin/media/picture-in-picture-open.svg);
+  background-image: url(resource://content-accessible/media/picture-in-picture-open.svg);
   -moz-context-properties: fill;
   fill: currentColor;
 }
 
 @media (-moz-platform: android) {
   .statusIcon[type="pictureInPicture"] {
-    background-image: url(chrome://global/skin/media/picture-in-picture-open-android.svg);
+    background-image: url(resource://content-accessible/media/picture-in-picture-open-android.svg);
   }
 }
 
@@ -504,7 +504,7 @@
   min-width: var(--clickToPlay-size);
   min-height: var(--clickToPlay-size);
   border-radius: 50%;
-  background-image: url(chrome://global/skin/media/play-fill.svg);
+  background-image: url(resource://content-accessible/media/play-fill.svg);
   background-repeat: no-repeat;
   background-position: 54% 50%;
   background-size: 40% 40%;

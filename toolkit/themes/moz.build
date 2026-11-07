@@ -25,11 +25,40 @@ elif app == "mobile/android":
 else:
     DIRS += ["windows"]
 
-if app != "mobile/android":
+CONTENT_ACCESSIBLE_FILES.media += [
+    "shared/media/audio-muted.svg",
+    "shared/media/audio.svg",
+    "shared/media/audioNoAudioButton.svg",
+    "shared/media/closedCaptionButton-cc-off.svg",
+    "shared/media/closedCaptionButton-cc-on.svg",
+    "shared/media/error.png",
+    "shared/media/fullscreenEnterButton.svg",
+    "shared/media/fullscreenExitButton.svg",
+    "shared/media/imagedoc-darknoise.png",
+    "shared/media/imagedoc-lightnoise.png",
+    "shared/media/pause-fill.svg",
+    "shared/media/picture-in-picture-open.svg",
+    "shared/media/pipToggle.css",
+    "shared/media/play-fill.svg",
+    "shared/media/stalled.png",
+    "shared/media/throbber.png",
+    "shared/media/videocontrols.css",
+]
+
+CONTENT_ACCESSIBLE_FILES += [
+    "shared/pictureinpicture/texttracks.css",
+]
+
+if app == "mobile/android":
+    CONTENT_ACCESSIBLE_FILES.media += [
+        "shared/media/picture-in-picture-open-android.svg",
+    ]
+else:
     CONTENT_ACCESSIBLE_FILES.illustrations += [
         "shared/illustrations/no-connection.svg",
         "shared/illustrations/security-error.svg",
     ]
+
 
 with Files("**"):
     BUG_COMPONENT = ("Toolkit", "Themes")

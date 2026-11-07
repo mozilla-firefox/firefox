@@ -59,11 +59,11 @@
     position: absolute;
 
     &[muted="true"] {
-      background-image: url("chrome://global/skin/media/audio-muted.svg");
+      background-image: url("resource://content-accessible/media/audio-muted.svg");
     }
 
     &[soundplaying="true"] {
-      background-image: url("chrome://global/skin/media/audio.svg");
+      background-image: url("resource://content-accessible/media/audio.svg");
     }
 
     &:active,

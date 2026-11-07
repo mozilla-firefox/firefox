@@ -1,5 +1,5 @@
 toolkit.jar:
-%  content global %content/global/ contentaccessible=yes
+%  content global %content/global/
    content/global/license.html
    content/global/xul.css
    content/global/autocomplete.css
@@ -73,7 +73,6 @@ toolkit.jar:
    content/global/resetProfile.js
    content/global/resetProfile.xhtml
    content/global/resetProfileProgress.xhtml
-   content/global/TopLevelVideoDocument.js
    content/global/datetimepicker.xhtml
    content/global/ScrollOffsets.mjs                (ScrollOffsets.mjs)
    content/global/treeUtils.js
@@ -86,7 +85,6 @@ toolkit.jar:
    content/global/bindings/colorpicker.mjs     (widgets/colorpicker.mjs)
    content/global/bindings/datekeeper.js       (widgets/datekeeper.js)
    content/global/bindings/datepicker.js       (widgets/datepicker.js)
-   content/global/bindings/datetimebox.css     (widgets/datetimebox.css)
    content/global/bindings/spinner.js          (widgets/spinner.js)
    content/global/bindings/timekeeper.js       (widgets/timekeeper.js)
    content/global/bindings/timepicker.js       (widgets/timepicker.js)
@@ -192,7 +190,6 @@ toolkit.jar:
    content/global/elements/panel-list.mjs      (widgets/panel-list/panel-list.mjs)
    content/global/elements/radio.js            (widgets/radio.js)
    content/global/elements/richlistbox.js      (widgets/richlistbox.js)
-   content/global/elements/marquee.css         (widgets/marquee.css)
    content/global/elements/marquee.js          (widgets/marquee.js)
    content/global/elements/menulist.js         (widgets/menulist.js)
    content/global/elements/popupnotification.js  (widgets/popupnotification.js)

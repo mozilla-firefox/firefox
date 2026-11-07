@@ -125,7 +125,7 @@ nsresult VideoDocument::CreateVideoElement() {
   } else {
     LinkStylesheet(nsLiteralString(
         u"resource://content-accessible/TopLevelVideoDocument.css"));
-    LinkScript(u"chrome://global/content/TopLevelVideoDocument.js"_ns);
+    LinkScript(u"resource://content-accessible/TopLevelVideoDocument.js"_ns);
   }
 
   ErrorResult rv;

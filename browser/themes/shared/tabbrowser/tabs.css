@@ -3426,11 +3426,11 @@ toolbar:not(#TabsToolbar) #firefox-view-button {
 }
 
 .all-tabs-mute-button[soundplaying] {
-  list-style-image: url(chrome://global/skin/media/audio.svg);
+  list-style-image: url(resource://content-accessible/media/audio.svg);
 }
 
 .all-tabs-mute-button[muted] {
-  list-style-image: url(chrome://global/skin/media/audio-muted.svg);
+  list-style-image: url(resource://content-accessible/media/audio-muted.svg);
 }
 
 .all-tabs-close-button {

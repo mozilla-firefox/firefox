@@ -102,7 +102,7 @@ add_task(async function test_aboutwelcome_single_select_icon_styles() {
 
 add_task(async function test_aboutwelcome_link_paragraph_inline_image() {
   const TEST_ICON_URL =
-    "chrome://global/skin/media/picture-in-picture-open.svg";
+    "resource://content-accessible/media/picture-in-picture-open.svg";
   const TEST_CONTENT = makeTestContent("TEST_LINK_PARAGRAPH_IMAGE_STEP", {
     above_button_content: [
       {

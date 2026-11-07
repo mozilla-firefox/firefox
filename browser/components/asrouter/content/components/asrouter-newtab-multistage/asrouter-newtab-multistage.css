@@ -6008,10 +6008,10 @@ html {
   flex-shrink: 0;
   width: var(--icon-size-small);
   height: var(--icon-size-small);
-  background: url("chrome://global/skin/media/pause-fill.svg") no-repeat center/contain;
+  background: url("resource://content-accessible/media/pause-fill.svg") no-repeat center/contain;
 }
 .onboardingContainer .animation-play-pause-button.paused::before {
-  background-image: url("chrome://global/skin/media/play-fill.svg");
+  background-image: url("resource://content-accessible/media/play-fill.svg");
 }
 .onboardingContainer .animation-play-pause-button:hover {
   background-color: color-mix(in srgb, var(--background-color-canvas), currentColor 14%);

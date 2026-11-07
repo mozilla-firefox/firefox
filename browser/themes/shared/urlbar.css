@@ -1104,7 +1104,7 @@ toolbar[inactive="true"] .urlbar,
 
 /* Picture-in-Picture icon */
 #picture-in-picture-button > .urlbar-icon {
-  list-style-image: url("chrome://global/skin/media/picture-in-picture-open.svg");
+  list-style-image: url("resource://content-accessible/media/picture-in-picture-open.svg");
 }
 
 #picture-in-picture-button[pipactive] > .urlbar-icon {

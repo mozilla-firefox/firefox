@@ -16,12 +16,12 @@
     color: #eee;
     /* The background-attachment is fixed to stop an ugly white gutter
        from appearing when the document is overscrolled. */
-    background: url("chrome://global/skin/media/imagedoc-darknoise.png") fixed;
+    background: url("resource://content-accessible/media/imagedoc-darknoise.png") fixed;
   }
 
   img.transparent {
     color: #222;
-    background: hsl(0, 0%, 90%) url("chrome://global/skin/media/imagedoc-lightnoise.png");
+    background: hsl(0, 0%, 90%) url("resource://content-accessible/media/imagedoc-lightnoise.png");
   }
 
   img {
