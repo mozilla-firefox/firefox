@@ -35,11 +35,11 @@ Sweep these from the chrome context and emit one row per cell:
   an item's computed `font-size` back. Before sweeping this axis on an
   in-content page, check whether the page sets its own root font size.
 - **Scrollbars.** `ui.useOverlayScrollbars`: 1 overlay, 0 classic; set it at
-  launch, since a live change notifies only media queries, and read it back in
+  launch, since a live change notifies only media queries (bug 2090576), and read it back in
   each cell (`references/environment-sweep.md` §3). Each platform's
   default is in its platform file (`desktop-theme-probing`), section
-  SCROLLBARS. A classic scrollbar takes width from the box; an overlay one does
-  not.
+  SCROLLBARS. A classic scrollbar takes width
+  from the box; an overlay one does not.
 - **Compositing.** Where the target's platform file (`desktop-theme-probing`),
   section COMPOSITING, names a media query that compositing decides, sweep both
   sides of it and read the query back in each cell; that section has the pref

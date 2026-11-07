@@ -4,8 +4,8 @@ macOS, as a probe's host and as a bug's target.
 
 ## HEADLESS
 
-A headless run reads the real system: the host's system colors, interface font,
-dark mode, contrast or high-contrast setting and overlay scrollbars. Pin the
+A headless run reads the host's own look and feel
+(`widget/docs/look-and-feel.md`, "Headless"). Pin the
 default regime with `--setpref ui.systemUsesDarkTheme=0`, `--setpref
 ui.useAccessibilityTheme=0` and `--setpref ui.useOverlayScrollbars=0` (or `=1`
 when the reading needs overlay scrollbars), and read each one back.

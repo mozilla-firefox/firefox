@@ -6,24 +6,21 @@ on macOS or Windows.
 
 ## HEADLESS
 
-Headless GTK has fixed system colors, the stand-ins that
-`ui.use_standins_for_native_colors` selects on a real backend, a fixed 16px
-`font: message-box`, and scrollbars per `widget.gtk.overlay-scrollbars.enabled`
-(SCROLLBARS below), so a color or metric that comes from
-GTK cannot be reproduced here, and "what is the root font size on this machine"
-has no answer. The accent is the exception: headless `AccentColor` is a fixed
-rgb(0, 96, 223) while Xvfb reads the desktop's own, and `--setpref
-ui.accentcolor=#rrggbb` with `ui.accentcolortext` sets `AccentColor` and
-`AccentColorText` in both. The color scheme differs the same way: headless reads
-`prefers-color-scheme` light and Xvfb follows the desktop's GTK theme, so a run
-whose result depends on the scheme, a theme's colors included, pins
-`ui.systemUsesDarkTheme` to 0 or 1 and reads `(prefers-color-scheme: dark)`
-back. Sweeping a range of root font sizes by setting
-`documentElement.style.fontSize` yourself still works (`desktop-theme-layout`
-§1). Read the desktop's value off a non-headless run, or from its own
-configuration (FONT below has the GTK setting). Headless GTK also reports no
-compositing (COMPOSITING below), so `popup.css` forces a popup's border radius
-and shadow margin to 0px; a popup radius or shadow reading needs `--setpref
+Headless GTK reads fixed look-and-feel values, not the desktop's
+(`widget/docs/look-and-feel.md`, "Headless", lists them), so a color or metric
+that comes from GTK cannot be reproduced here, and "what is the root font size
+on this machine" has no answer. Read the desktop's value off a non-headless run,
+or from its own configuration (FONT below has the GTK setting); sweeping root
+font sizes by setting `documentElement.style.fontSize` yourself still works
+(`desktop-theme-layout` §1). Xvfb reads the desktop's accent and color scheme
+where headless reads fixed ones, so pin each one a result depends on and read it
+back. `--setpref ui.accentcolor=#rrggbb` with `ui.accentcolortext` sets
+`AccentColor` and `AccentColorText`. `ui.systemUsesDarkTheme` set to 0 or 1 pins
+the scheme, which a theme's colors follow too; read `(prefers-color-scheme:
+dark)` back. Pin `ui.useOverlayScrollbars` as well, since the default differs
+between profiles (SCROLLBARS below). Headless GTK reports no compositing
+(COMPOSITING below), so `popup.css` forces a popup's border radius and shadow
+margin to 0px; a popup radius or shadow reading needs `--setpref
 ui.GtkCSDTransparencyAvailable=1`. Headless Linux also lacks the
 `customtitlebar` root attribute; to test a rule under it, read §4 "Test another
 platform's rule" in [`probe-recipes.md`](probe-recipes.md). Primary-selection
@@ -108,8 +105,8 @@ not `gsettings`.
 
 GTK defaults to overlay scrollbars
 (`widget.gtk.overlay-scrollbars.enabled`), headless included, and the test
-profiles turn that pref off, so a probe and a mochitest differ unless
-`ui.useOverlayScrollbars` (1 overlay, 0 classic, at launch) forces either.
+profiles turn that pref off, so a probe and a mochitest differ unless `ui.useOverlayScrollbars` (1 overlay, 0 classic, at launch) forces
+either.
 
 ## CONTRAST
 

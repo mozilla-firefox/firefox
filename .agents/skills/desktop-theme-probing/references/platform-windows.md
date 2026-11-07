@@ -4,9 +4,10 @@ Windows, as a probe's host and as a bug's target.
 
 ## HEADLESS
 
-A headless run reads the real system: the host's system colors, interface font,
-dark mode, contrast or high-contrast setting, overlay scrollbars and the accent
-color in the title bar. Pin the default regime with
+A headless run reads the host's own look and feel
+(`widget/docs/look-and-feel.md`, "Headless"), the accent color in the title
+bar included. Pin the default
+regime with
 `--setpref ui.systemUsesDarkTheme=0`, `--setpref ui.useAccessibilityTheme=0`,
 `--setpref ui.useOverlayScrollbars=0` (or `=1` when the reading needs overlay
 scrollbars) and `--setpref ui.windowsAccentColorInTitlebar=0`, and read each one

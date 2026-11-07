@@ -89,8 +89,9 @@ every state, until it puts chrome under forced colors (§2).
 
 Reach either realm's regime on any platform:
 
-- `ui.useAccessibilityTheme`: int, a LookAndFeel override. 1 turns
-  `prefers-contrast` on in both realms. (`ui.prefersContrast` does not exist.)
+- `ui.useAccessibilityTheme`: an int pref (`widget/docs/look-and-feel.md`,
+  "Overriding values with prefs"). 1 turns `prefers-contrast` on in both realms.
+  (`ui.prefersContrast` does not exist.)
 - `browser.display.document_color_use`: whether the page *also* gets forced
   colors (values and per-platform defaults: css_guidelines "High contrast
   mode"); a Linux or macOS run sets 0 to reach the Windows regime.

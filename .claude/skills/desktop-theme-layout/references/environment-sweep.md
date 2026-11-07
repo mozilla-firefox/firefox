@@ -97,7 +97,7 @@ resets `font-size` too.
 
 ### Scrollbars
 
-A live change of `ui.useOverlayScrollbars` triggers no reflow. Read it back
+A live change of `ui.useOverlayScrollbars` triggers no reflow (bug 2090576). Read it back
 with `win.matchMedia("(-moz-overlay-scrollbars)").matches` in each cell.
 
 ### DPI / scaling
