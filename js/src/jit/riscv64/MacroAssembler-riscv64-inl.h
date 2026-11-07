@@ -1603,10 +1603,10 @@ void MacroAssembler::inc64(AbsoluteAddress dest) {
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
   Register scratch2 = temps.Acquire();
-  ma_li(scratch, ImmWord(uintptr_t(dest.addr)));
-  ld(scratch2, scratch, 0);
+  Address address = computeAbsoluteAddress(dest, scratch);
+  ld(scratch2, address.base, address.offset);
   addi(scratch2, scratch2, 1);
-  sd(scratch2, scratch, 0);
+  sd(scratch2, address.base, address.offset);
 }
 
 void MacroAssembler::load32SignExtendToPtr(const Address& src, Register dest) {

@@ -1737,6 +1737,14 @@ void MacroAssemblerRiscv64::computeScaledAddress(
   }
 }
 
+Address MacroAssemblerRiscv64::computeAbsoluteAddress(AbsoluteAddress address,
+                                                      Register scratch) {
+  int64_t value = int64_t(address.addr);
+  int64_t low12 = int64_t(uint64_t(value) << 52) >> 52;
+  ma_li(scratch, ImmWord(uint64_t(value - low12)));
+  return Address(scratch, int32_t(low12));
+}
+
 void MacroAssemblerRiscv64::computeScaledAddress32(const BaseIndex& address,
                                                    Register dest) {
   Register base = address.base;
@@ -1834,8 +1842,7 @@ FaultingCodeRange MacroAssemblerRiscv64Compat::load32(AbsoluteAddress address,
                                                       Register dest) {
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
-  movePtr(ImmPtr(address.addr), scratch);
-  return load32(Address(scratch, 0), dest);
+  return load32(computeAbsoluteAddress(address, scratch), dest);
 }
 
 FaultingCodeRange MacroAssemblerRiscv64Compat::load32(
@@ -1860,8 +1867,7 @@ FaultingCodeRange MacroAssemblerRiscv64Compat::loadPtr(AbsoluteAddress address,
                                                        Register dest) {
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
-  movePtr(ImmPtr(address.addr), scratch);
-  return loadPtr(Address(scratch, 0), dest);
+  return loadPtr(computeAbsoluteAddress(address, scratch), dest);
 }
 
 FaultingCodeRange MacroAssemblerRiscv64Compat::loadPtr(
@@ -1921,8 +1927,7 @@ FaultingCodeRange MacroAssemblerRiscv64Compat::store32(
     Register src, AbsoluteAddress address) {
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
-  movePtr(ImmPtr(address.addr), scratch);
-  return store32(src, Address(scratch, 0));
+  return store32(src, computeAbsoluteAddress(address, scratch));
 }
 
 FaultingCodeRange MacroAssemblerRiscv64Compat::store32(Register src,
@@ -2002,8 +2007,7 @@ FaultingCodeRange MacroAssemblerRiscv64Compat::storePtr(Register src,
                                                         AbsoluteAddress dest) {
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
-  movePtr(ImmPtr(dest.addr), scratch);
-  return storePtr(src, Address(scratch, 0));
+  return storePtr(src, computeAbsoluteAddress(dest, scratch));
 }
 
 void MacroAssemblerRiscv64Compat::testNullSet(Condition cond,

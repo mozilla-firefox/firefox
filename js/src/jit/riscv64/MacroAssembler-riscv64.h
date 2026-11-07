@@ -353,6 +353,11 @@ class MacroAssemblerRiscv64 : public Assembler {
       const BaseIndex& address, UseScratchRegisterScope& temps,
       wasm::ZeroExtendIndex zeroExtend = wasm::ZeroExtendIndex::No);
 
+  // Load |address| without its low twelve bits into |scratch| and return an
+  // Address through |scratch| whose offset holds them, so that the access
+  // absorbs the ADDI which would otherwise end the materialization.
+  Address computeAbsoluteAddress(AbsoluteAddress address, Register scratch);
+
  private:
   bool UseShortBranch(Label* L, JumpKind jumpKind, OffsetSize bits,
                       mozilla::Maybe<AutoForbidNops>& maybeAfn);
