@@ -1,0 +1,148 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  --button-border-radius: var(--border-radius-circle);
+  --button-font-weight: var(--font-weight);
+  --button-font-size: var(--font-size-small);
+
+  display: inline-flex;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.option-select-button {
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.option-select-button::part(button) {
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  padding-inline: var(--space-large) var(--space-medium);
+}
+
+.option-select-button::part(moz-button-label) {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+panel-list {
+  --panel-max-width: var(--smartwindow-option-select-max-width, 405px);
+  padding-inline: var(--space-small);
+}
+
+.option-item {
+  align-items: center;
+  background: transparent;
+  border-radius: var(--border-radius-medium);
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: var(--space-small);
+  padding: var(--space-small);
+  text-align: start;
+  width: 100%;
+
+  &:hover {
+    background-color: var(--button-background-color-hover);
+  }
+
+  &:active {
+    background-color: var(--button-background-color-active);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-inset);
+  }
+
+  @media (forced-colors) {
+    &:hover,
+    &:focus-visible {
+      background-color: var(--color-accent-primary-selected);
+      color: var(--text-color-accent-primary-selected);
+    }
+  }
+
+  /* TODO: Bug 2033070 -  Nova tokens were implemented as the default value for the custom properties, and the fallbacks (and lint exceptions) will need to be removed after launch */
+  @media -moz-pref("browser.nova.enabled") {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    border-radius: var(--smartwindow-panel-item-border-radius);
+  }
+}
+
+.option-item-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-xxsmall);
+  min-width: 0;
+}
+
+.option-item-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small);
+}
+
+.option-item-label {
+  font-size: var(--font-size-root);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.option-item-badge {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, stylelint-plugin-mozilla/no-base-design-tokens */
+  background-color: light-dark(var(--color-violet-desaturated-10, #e7e1f8), var(--color-violet-desaturated-50, var(--color-violet-50)));
+  border-radius: var(--border-radius-circle);
+  color: var(--text-color);
+  flex-shrink: 0;
+  font-size: var(--font-size-small);
+  padding: var(--space-xxsmall) var(--space-small);
+
+  @media (forced-colors) {
+    outline: var(--border-width) solid;
+  }
+}
+
+.option-item-description {
+  color: var(--text-color-deemphasized);
+  font-size: var(--font-size-small);
+
+  @media (forced-colors) {
+    .option-item:is(:hover, :focus-visible) & {
+      color: inherit;
+    }
+  }
+}
+
+.option-item-avatar {
+  background: var(--background-color-canvas);
+  border-radius: var(--border-radius-circle);
+  box-sizing: border-box;
+  flex-shrink: 0;
+  height: var(--size-item-large);
+  padding: var(--space-small);
+  width: var(--size-item-large);
+}
+
+.option-item-icon {
+  height: auto;
+  width: 100%;
+}
+
+.option-item-check {
+  -moz-context-properties: fill;
+  fill: currentColor;
+  flex-shrink: 0;
+  height: var(--icon-size);
+  margin-inline-start: auto;
+  width: var(--icon-size);
+}
