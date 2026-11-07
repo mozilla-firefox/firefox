@@ -229,7 +229,7 @@ nsresult CaptivePortalService::Stop() {
   mCaptivePortalDetector = nullptr;
 
   // Clear the state in case anyone queries the state while detection is off.
-  mState = UNKNOWN;
+  StateTransition(UNKNOWN);
   return NS_OK;
 }
 
@@ -362,15 +362,6 @@ CaptivePortalService::Observe(nsISupports* aSubject, const char* aTopic,
     return NS_OK;
   }
 
-  // Send notification so that the captive portal state is mirrored in the
-  // content process.
-  nsCOMPtr<nsIObserverService> observerService = services::GetObserverService();
-  if (observerService) {
-    nsCOMPtr<nsICaptivePortalService> cps(this);
-    observerService->NotifyObservers(cps, NS_IPC_CAPTIVE_PORTAL_SET_STATE,
-                                     nullptr);
-  }
-
   return NS_OK;
 }
 
@@ -403,9 +394,11 @@ CaptivePortalService::Prepare() {
 }
 
 NS_IMETHODIMP
-CaptivePortalService::Complete(bool success) {
-  LOG(("CaptivePortalService::Complete(success=%d) mState=%d\n", success,
-       mState));
+CaptivePortalService::Complete(bool success, bool unlockedPortal) {
+  LOG(
+      ("CaptivePortalService::Complete(success=%d unlockedPortal=%d) "
+       "mState=%d\n",
+       success, unlockedPortal, mState));
   MOZ_ASSERT(XRE_GetProcessType() == GeckoProcessType_Default);
   if (!IsActive()) {
     return NS_OK;
@@ -417,6 +410,9 @@ CaptivePortalService::Complete(bool success) {
   // 2. when the request is aborted or times out (success == false)
 
   if (success) {
+    if (unlockedPortal) {
+      mEverBeenCaptive = true;
+    }
     if (mEverBeenCaptive) {
       StateTransition(UNLOCKED_PORTAL);
       NotifyConnectivityAvailable(true);
@@ -432,18 +428,28 @@ CaptivePortalService::Complete(bool success) {
 
 void CaptivePortalService::StateTransition(int32_t aNewState) {
   int32_t oldState = mState;
+  if (oldState == aNewState) {
+    return;
+  }
   mState = aNewState;
 
-  if ((oldState == UNKNOWN && mState == NOT_CAPTIVE) ||
-      (oldState == LOCKED_PORTAL && mState == UNLOCKED_PORTAL)) {
-    nsCOMPtr<nsIObserverService> observerService =
-        services::GetObserverService();
-    if (observerService) {
-      nsCOMPtr<nsICaptivePortalService> cps(this);
-      observerService->NotifyObservers(
-          cps, NS_CAPTIVE_PORTAL_CONNECTIVITY_CHANGED, nullptr);
-    }
+  nsCOMPtr<nsIObserverService> observerService = services::GetObserverService();
+  if (!observerService) {
+    return;
   }
+  nsCOMPtr<nsICaptivePortalService> cps(this);
+
+  if ((oldState == UNKNOWN &&
+       (mState == NOT_CAPTIVE || mState == UNLOCKED_PORTAL)) ||
+      (oldState == LOCKED_PORTAL && mState == UNLOCKED_PORTAL)) {
+    observerService->NotifyObservers(
+        cps, NS_CAPTIVE_PORTAL_CONNECTIVITY_CHANGED, nullptr);
+  }
+
+  // Send notification so that the captive portal state is mirrored in the
+  // content process.
+  observerService->NotifyObservers(cps, NS_IPC_CAPTIVE_PORTAL_SET_STATE,
+                                   nullptr);
 }
 
 }  // namespace net

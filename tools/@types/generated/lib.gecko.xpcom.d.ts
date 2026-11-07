@@ -2376,7 +2376,7 @@ interface nsICaptivePortalCallback extends nsISupports {
   /** <!-- binding_to(idl, method, XPIDL_nsICaptivePortalCallback_prepare) --> */
   prepare(): void;
   /** <!-- binding_to(idl, method, XPIDL_nsICaptivePortalCallback_complete) --> */
-  complete(success: boolean): void;
+  complete(success: boolean, unlockedPortal?: boolean): void;
 }
 
 /** <!-- binding_to(idl, interface_name, XPIDL_nsICaptivePortalDetector) --> */
