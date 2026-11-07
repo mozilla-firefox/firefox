@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Đặt làm trình duyệt mặc định</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Bỏ qua</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Tăng quyền riêng tư của bạn</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Tìm kiếm của bạn, theo cách của bạn</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Thêm lối tắt tới màn hình chính của bạn</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Làm cho sự riêng tư thành một thói quen</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Thêm</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Xóa</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Xóa tất cả các trang web</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Chặn cookie</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Rất tiếc. Chúng tôi đã gặp sự cố với thẻ này.</string>
   <!-- Subtitle for the tab crash report screen -->

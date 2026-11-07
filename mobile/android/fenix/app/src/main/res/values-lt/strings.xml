@@ -53,8 +53,6 @@
   <string name="home_bookmarks_menu_item_remove">Pašalinti</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">„%1$s“ kūrėjai yra „Mozilla“.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Dažni mitai apie privatųjį naršymą</string>
   <!--
     Description of private browsing mode displayed to users on the homepage when they enable private mode.
     %1$s is the name of the app (for example "Firefox").
@@ -209,8 +207,6 @@
   <string name="browser_menu_syncing_paused_caption">Sinchronizavimas pristabdytas</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Valdykite savo atsargines kopijas bei tai, ką sinchronizuojate</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Nauja privačioji kortelė</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Slaptažodžiai</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -288,12 +284,6 @@
   <string name="search_widget_text_long">Ieškokite saityne</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Paieška balsu</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Nuostatos</string>
   <!--
     Preferences
 
@@ -612,8 +602,6 @@
   <string name="close_tab_title">Užverti kortelę „%s“</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Atvertų kortelių meniu</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Įtraukti korteles į rinkinį</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Pašalinti rinkinį</string>
   <!-- Text for the menu button to rename a collection -->
@@ -876,8 +864,6 @@
   <string name="qr_scanner_dialog_invalid">Neteisingas saityno adresas.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">Gerai</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Ar tikrai norite pašalinti „%1$s“?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Tai pavyzdinis tekstas. Jis leidžia pamatyti, kaip atrodys tekstas padidinus arba sumažinus jo dydį su šia nuostata.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1201,8 +1187,6 @@
   <string name="confirm_clear_permission_site">Ar tikrai norite išvalyti šį leidimą šioje svetainėje?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">Nėra išimčių svetainėms</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Pašalinti</string>
   <!-- The error message in add login view when hostname field is blank. -->
   <string name="saved_login_hostname_required" tools:ignore="UnusedResources">Serverio vardas privalomas</string>
   <!-- Voice search button content description -->

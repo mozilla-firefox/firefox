@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">刪除</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s 是由 Mozilla 所打造。</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">隱私瀏覽功能的常見迷思</string>
   <!--
     Private Browsing
 
@@ -273,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">已暫停同步</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">管理要備份與同步的資料</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">開新隱私分頁</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">密碼</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -486,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">完成</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">歡迎使用 Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">若繼續，代表您同意 %1$s。</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox 的使用條款</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox 關心您的隱私。到我們的%1$s閱讀更多資訊。</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">隱私權公告</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">為了幫助改善瀏覽器，Firefox 會將除錯與互動資料傳送回 Mozilla。%1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">管理</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">啟動終極版 Android 瀏覽器</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -600,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">我們會保護您的資料，並自動防止企業偷窺您的點擊行為。</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">設為預設瀏覽器</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">選擇網址列位置</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">頂端</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">底部</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">挑選佈景主題</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">自動</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">亮色</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">暗色</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">立即從結束的地方繼續</string>
   <!-- Sync onboarding subtitle. -->
@@ -678,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">探索 Firefox 最新的隱私保護功能，這樣就可以掌握要如何受到保護的最新資訊。</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">開啟通知</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">讓每次搜尋都更有隱私</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">每次都從手機主畫面開始搜尋，讓 Firefox 的自動保護功能全程挺你。</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">新增 Firefox 小工具</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">輕鬆自訂，每次點擊都更有隱私</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -732,12 +696,6 @@
   <!--
     Preferences
 
-    Title for the settings page
-  -->
-  <string name="settings">設定</string>
-  <!--
-    Preferences
-
     Preference category for general settings
   -->
   <string name="preferences_category_general">一般</string>
@@ -761,6 +719,8 @@
   <string name="preferences_search">搜尋</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">搜尋引擎</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">將搜尋小工具新增至主畫面</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">主畫面小工具</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -1649,8 +1609,6 @@
   <string name="open_tabs_menu">開啟分頁選單</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">回到分頁管理員</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">將分頁儲存至收藏集</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">刪除收藏集</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2046,8 +2004,6 @@
   <string name="webcompat_reporter_label_mandatory_description">請詳細描述問題，幫助我們調查問題</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">請詳細描述問題，幫助我們調查（選填）</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">取消</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">傳送報告</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2569,8 +2525,6 @@
   <string name="qr_scanner_dialog_invalid">網址不正確。</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">確定</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">您確定要刪除 %1$s 嗎？</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">This is sample text. It is here to show how text will appear when you increase or decrease the size with this setting.\n中文字型測試：「老闆，來一杯大杯珍奶，半糖去冰！」</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3455,10 +3409,6 @@
   <string name="browser_menu_remove_from_shortcuts">從捷徑移除</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">您確定要刪除這筆密碼嗎？</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">刪除</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">取消</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">編輯密碼</string>
   <!-- The page title for adding new password. -->
@@ -3943,11 +3893,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">若此網站功能異常，可嘗試關閉此功能。</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">建議開啟追蹤保護功能。</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">追蹤器封鎖數量：%d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">不會封鎖追蹤器</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -4715,12 +4660,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">加入簽章</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">簽署 PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">下載 PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

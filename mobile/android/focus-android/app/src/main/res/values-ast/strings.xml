@@ -220,14 +220,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Abrir</string>
   <string name="error_hostLookup_title">Nun s\'alcontró\'l sirvidor</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Potencia la to privacidá</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Guetes al to xeitu</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Amiesta atayos a la to pantalla d\'aniciu</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Fai de la privacidá un vezu</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Amestar</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

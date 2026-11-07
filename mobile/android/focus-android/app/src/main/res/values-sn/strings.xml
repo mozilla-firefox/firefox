@@ -236,14 +236,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Vhura</string>
   <string name="error_hostLookup_title">Sevha harina kuoneka</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Shandisa simba rako rechivande</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Kutsvaga kwako, inzira yako</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Wedzera zvidzitiro pamba peimba yako</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Ita kuchengeteka kwako chive chijairire</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Wedzera</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

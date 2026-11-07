@@ -31,8 +31,6 @@
   <string name="tab_tray_close_multiselect_content_description">Salir d\'o modo de selección multiple</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s ye produciu per Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Mitos comuns sobre la navegación privada</string>
   <!--
     Open in App "contextual feature recommendation" (CFR)
 
@@ -179,12 +177,6 @@
   <string name="search_widget_text_long">Buscar en a web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Busqueda per voz</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Achustes</string>
   <!--
     Preferences
 
@@ -487,8 +479,6 @@
   <string name="close_tab_title">Zarrar pestanya %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Ubrir menú de pestanyas</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Alzar pestanyas en a colección</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Borrar colección</string>
   <!-- Text for the menu button to rename a collection -->
@@ -745,8 +735,6 @@
   <string name="qr_scanner_dialog_invalid">L’adreza web no ye valida.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">Aceptar</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Seguro que quiers borrar %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Este ye un texto d’eixemplo. Ye aquí pa amostrar cómo va a amaneixer lo texto quan aumentes u disminuigas la grandaria con esta configuración.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1022,8 +1010,6 @@
   <string name="confirm_clear_permission_site">Seguro que quiers eliminar este permiso pa este puesto?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">Sin excepcions pa lo puesto</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Borrar</string>
   <!-- Voice search button content description -->
   <string name="voice_search_content_description">Busqueda per voz</string>
   <!-- Voice search prompt description displayed after the user presses the voice search button -->

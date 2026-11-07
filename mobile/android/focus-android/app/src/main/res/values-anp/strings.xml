@@ -266,14 +266,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">डिफ़ॉल्ट ब्राउज़र सेट करो</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">छोड़ियै</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">अपन गोपनीयता के बढ़ैइयै</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">अपने के खोज, अपने के रस्ता</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">अपन मुख्य स्क्रीन पर शॉर्टकट जोड़ियै</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">गोपनीयता अपन आदत बनैइयै</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">जोड़ियै</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -332,8 +324,6 @@
   <string name="preference_exceptions_menu_remove">हटैइयै</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">सब वेबसाईट हटैइयै</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">कुकीज ब्लौक करियै</string>
   <!-- Label for button to close the tab -->
   <string name="tab_crash_report_close_tab_button_label">टैब बंद करियै</string>
   <!-- Category of trackers (social media) that can be blocked by Enhanced Tracking Protection. -->

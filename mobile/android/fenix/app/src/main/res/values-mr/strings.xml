@@ -21,8 +21,6 @@
   <string name="search_hint">शोधा किंवा पत्ता द्या</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s Mozilla द्वारा निर्मित केले गेले आहे.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">खाजगी ब्राउझिंग बद्दल सामान्य समजुती</string>
   <!--
     Home screen icons - Long press shortcuts
 
@@ -99,12 +97,6 @@
   <string name="search_widget_text_long">वेबवर शोधा</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">व्हॉईस शोध</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">सेटिंग</string>
   <!--
     Preferences
 
@@ -294,8 +286,6 @@
   <string name="close_tab_title">%s टॅब बंद करा</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">टॅबचा मेनू उघडा</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">संग्रहात टॅब जतन करा</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">संग्रह नष्ट करा</string>
   <!-- Text for the menu button to rename a collection -->
@@ -521,8 +511,6 @@
   <string name="qr_scanner_dialog_positive">परवानगी द्या</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">नाकारा</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">आपल्याला खात्री आहे की आपण %1$s हटवू इच्छिता?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">हा नमुना मजकूर आहे. आपण या सेटिंगसह आकार वाढवता किंवा कमी करता तेव्हा मजकूर कसा दिसेल हे दर्शविण्यासाठी आहे.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -776,6 +764,4 @@
   <string name="confirm_clear_permission_site">ह्या साईट वरील ही परवानगी नक्की साफ करायची का?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">कुठलेही अपवाद संकेतस्थळ नाहीत</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">काढून टाका</string>
 </resources>

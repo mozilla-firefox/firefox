@@ -106,8 +106,6 @@
   <string name="nova_onboarding_set_to_default_button">Iestatīt kā noklusējuma pārlūku</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text_1">Uzzināt vairāk</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Pievienot Firefox logrīku</string>
   <!-- Text preview for smaller sized widgets -->
   <string name="search_widget_text_short">Meklēt</string>
   <!-- Text preview for larger sized widgets -->
@@ -124,6 +122,8 @@
   <string name="preferences_search">Meklēt</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Meklētāji</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Pievienot sākuma skatam meklēšanas logrīku</string>
   <!-- Preference for settings related to Search engines suggestions -->
   <string name="preferences_search_engines_suggestions">Ieteikumi no meklētājiem</string>
   <!-- Preference for settings related to changing the default browser -->
@@ -408,8 +408,6 @@
   <string name="notification_privacy_report_body_has_trackers">Turpini pārlūkot! %1$s turpinās aizturēt.</string>
   <!-- Headline text of the weekly privacy report notification for when no trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
   <string name="notification_privacy_report_headline_no_trackers">%1$s aiztur izsekotājus, kamēr Tu pārlūko. Tie būs redzami šeit.</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Vai tiešām izdzēst %1$s?</string>
   <!-- Summary for Accessibility Text Automatic Size Scaling Preference -->
   <string name="preference_accessibility_auto_size_summary">Fonta izmērs atbildīs Taviem Android iestatījumiem. Atspējot, lai šeit pārvaldītu fonta lielumu.</string>
   <!-- Title for the downloads item in Delete browsing data -->
@@ -725,12 +723,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Pievienot parakstu</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">Parakstīt PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Lejupielādēt PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

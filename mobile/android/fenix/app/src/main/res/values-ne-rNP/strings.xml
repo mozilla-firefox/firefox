@@ -31,8 +31,6 @@
   <string name="tab_tray_close_multiselect_content_description">बहुछनौट मोडबाट बाहिर निस्कनुहोस्</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s Mozilla द्वारा निर्माण गरिएको हो।</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">निजी ब्राउजिङ्ग बारे सामान्य मिथकहरू</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">सेटिङ्गहरुमा जानुहोस्</string>
   <!-- Text for the negative action button -->
@@ -121,12 +119,6 @@
   <string name="search_widget_text_long">वेबमा खोजी गर्नुहोस्</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">आवाज खोजी गर्नुहोस्</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">सेटिङ्गहरु</string>
   <!--
     Preferences
 

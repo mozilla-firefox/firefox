@@ -380,14 +380,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Tiya\' kan achi\'el kanob\'äl k\'o wi</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Tik\'o\'</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Tinimär ruchuq\'a\' ri awichinem</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Akanoxik, ab\'ey</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Tatz\'aqatisaj jun ruchojokem ri rutikirib\'al awäch</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Tib\'an chi ri ichinanem tok jun ruk\'ulun na\'oj</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Titz\'aqatisäx</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -533,8 +525,6 @@
   <string name="preference_exceptions_menu_remove">Tiyuj</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Keyuj ronojel ajk\'amaya\'l ruxaq</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Keq\'at Kuki</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Kojakuyu\', K\'o qak\'ayewal rik\'in re ruwi\' re\'.</string>
   <!-- Subtitle for the tab crash report screen -->

@@ -380,14 +380,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Definir coma navegador per defaut</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Passar</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Renfortissètz vòstra vida privada</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Recercatz de vòstre biais</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Apondre d’acorchis a vòstre ecran d’acuèlh</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Vòstra vida priva a vòstras mans</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Apondre</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -514,8 +506,6 @@
   <string name="preference_exceptions_menu_remove">Suprimir</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Suprimir totes los sites web</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Blocar los cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">O planhèm, avèm de problèmas amb aqueste onglet.</string>
   <!-- Subtitle for the tab crash report screen -->

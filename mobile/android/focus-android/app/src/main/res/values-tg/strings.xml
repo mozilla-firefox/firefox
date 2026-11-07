@@ -380,14 +380,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Гузоштан ҳамчун браузери пешфарз</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Нодида гузарондан</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Махфияти худро тақвият диҳед</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Ҷустуҷӯи шумо, Интернети шумо</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Миёнбурҳоро ба экрани асосӣ илова намоед</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Махфиятро ба одати худ табдил диҳед</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Илова кардан</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -533,8 +525,6 @@
   <string name="preference_exceptions_menu_remove">Тоза кардан</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Тоза кардани ҳамаи сомонаҳо</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Манъ кардани кукиҳо</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Бубахшед. Барои ин варақа мушкилӣ ба миён омад.</string>
   <!-- Subtitle for the tab crash report screen -->

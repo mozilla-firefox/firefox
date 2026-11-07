@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Smazat</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">Autorem aplikace %1$s je Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Časté omyly o fungování anonymního prohlížení</string>
   <!--
     Private Browsing
 
@@ -273,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">Synchronizace byla pozastavená</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Spravujte, co zálohujete a synchronizujete</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Nový anonymní panel</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Hesla</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -482,18 +478,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Hotovo</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Vítá vás Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Pokračováním souhlasíte s dokumentem %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Podmínky používání Firefoxu</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefoxu záleží na vašem soukromí. Více se dozvíte v našich %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Zásady ochrany osobních údajů</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Firefox odesílá Mozille diagnostické údaje a údaje o interakcích, které pomáhají prohlížeč vylepšovat. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Správa</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Spuštění dokonalého prohlížeče pro Android</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -596,20 +580,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Chráníme vaše data a automaticky bráníme společnostem ve špehování vašeho klikání.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Nastavit jako výchozí prohlížeč</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Vyberte si adresní řádek</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Nahoře</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Dole</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Vyberte si vzhled</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Automatická</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Světlý</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Tmavý</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Okamžitě pokračujte tam, kde jste skončili</string>
   <!-- Sync onboarding subtitle. -->
@@ -674,12 +644,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Objevte nejnovější možnosti ochrany soukromí ve Firefoxu, abyste měli vždy informace o tom, jak zůstat v bezpečí.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Zapnout oznámení</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Zvyšte soukromí každého vyhledávání</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Každé vyhledávání můžete začít z domovské obrazovky telefonu a vědět, že vám automatická ochrana Firefoxu kryje záda.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Přidat miniaplikaci Firefox</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Snadné přizpůsobení a větší soukromí s každým klepnutím</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -727,12 +691,6 @@
   <string name="search_bar_with_lens_widget_description">Vyhledávací panel s vyhledáváním podle obrázku, anonymním a hlasovým vyhledáváním</string>
   <!-- Widget description in the widget picker screen for the compact search bar widget -->
   <string name="compact_search_bar_widget_description">Kompaktní vyhledávací panel</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Nastavení</string>
   <!--
     Preferences
 
@@ -1010,6 +968,16 @@
   <string name="customize_addon_collection_user_hint">Vlastník sbírky (ID uživatele)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Nastavení sbírky změněno. Pro aplikování změn se nyní aplikace ukončí…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Odebrat %1$s?</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Odebrat</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Zrušit</string>
   <!--
     Customize Home
 
@@ -1632,8 +1600,6 @@
   <string name="open_tabs_menu">Otevřít nabídku panelů</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Zpět do správce panelů</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Uložit panely do sbírky</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Odstranit sbírku</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2040,8 +2006,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Popište detailně problém, abyste nám pomohli problém prošetřit</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Popište detailně problém, abyste nám pomohli problém prošetřit (volitelné)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Zrušit</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Odeslat hlášení</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2563,8 +2527,6 @@
   <string name="qr_scanner_dialog_invalid">Webová adresa není platná.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">OK</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Opravdu chcete odstranit sbírku „%1$s“?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Toto je ukázkový text. Je tady proto, abyste mohli vidět, jak bude text vypadat, když jej pomocí tohoto nastavení zvětšíte nebo zmenšíte.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3452,10 +3414,6 @@
   <string name="browser_menu_remove_from_shortcuts">Odebrat ze zkratek</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Opravdu chcete smazat toto heslo?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Odstranit</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Zrušit</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Upravit heslo</string>
   <!-- The page title for adding new password. -->
@@ -3943,17 +3901,14 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Pokud se vám zdá, že je něco na této stránce nefunkční, zkuste to vypnout.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Je doporučeno zapnout ochranu proti sledování.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Zablokováno sledovacích prvků: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Sledovací prvky nejsou blokovány</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Nastavení soukromí</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Oprávnění</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Zabezpečené připojení</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4545,6 +4500,8 @@
   <string name="wrex_widget_match_suspended">Pozastaveno</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Odloženo</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Obnovit</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Výsledky</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4694,12 +4651,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Přidat podpis</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">Podepsat PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Stáhnout PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

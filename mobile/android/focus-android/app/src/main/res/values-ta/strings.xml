@@ -261,14 +261,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">திற</string>
   <string name="error_hostLookup_title">சேவகன் கிடைக்கவில்லை</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">தனியுரிமையைத் துரிதப்படுத்துங்கள்</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">உங்களின் தேடல் உங்கள் வழி</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">உங்கள் முகப்பு திரையில் சுருக்கு வழிகளைச் சேர்க்கவும்</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">தனியுரிமையை ஒரு பழக்கமாக்கவும்</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">சேர்</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

@@ -353,14 +353,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Ts\'áa bey navegador tumen defecto</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Síit</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Nojochkúuns a ba’il ta wóok’sal</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">A kaxan ba’al, je’e bey a k’áato’</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Ts’a’a u séeb k’at bejilo’ob ti’ a wokoj te’ yáax cha’anila’</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Suuktatech u kanáantal le a wóok’salo’</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Ts’áabak</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -487,8 +479,6 @@
   <string name="preference_exceptions_menu_remove">Tuup</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Luk\'es tuláakal le yáanal lu\'umo\'</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Ma’ meyajta’ak cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Sa\'asteni. Táan k yantal jump\'éel talamil yéetel le ju\'unil tu\'ux yaan.</string>
   <!-- Subtitle for the tab crash report screen -->

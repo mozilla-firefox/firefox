@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Vëre si shfletuesin parazgjedhje</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Anashkaloje</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Fuqizoni privatësinë tuaj</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Kërkimi juaj, me mënyrën tuaj</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Shtoni shkurtore te skena juaj e kreut</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Bëjeni zakon privatësinë</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Shtoje</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -527,8 +519,6 @@
   <string name="preference_exceptions_menu_remove">Hiqe</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Hiqi krejt sajtet</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Blloko Cookie-t</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Na ndjeni. Po kemi një problem me këtë skedë.</string>
   <!-- Subtitle for the tab crash report screen -->

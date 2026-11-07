@@ -61,8 +61,6 @@
   <string name="home_bookmarks_menu_item_remove">Bain</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">Is é Mozilla a tháirgeann %1$s.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Gnáthmhiotais maidir le brabhsáil phríobháideach</string>
   <!--
     Private Browsing
 
@@ -187,12 +185,6 @@
   <string name="search_widget_text_short">Cuardach</string>
   <!-- Text preview for larger sized widgets -->
   <string name="search_widget_text_long">Cuardaigh an Gréasán</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Socruithe</string>
   <!--
     Preferences
 
@@ -565,8 +557,6 @@
   <string name="qr_scanner_dialog_positive">CEADAIGH</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">DIÚLTAIGH</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">An bhfuil tú cinnte gur mhaith leat %1$s a scriosadh?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Is téacs samplach é seo. Feicfidh tú an chuma atá air tar éis duit an chlómhéid a athrú leis an socrú seo.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->

@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Elimină</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s este realizat de Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Mituri comune despre navigarea privată</string>
   <!--
     Private Browsing
 
@@ -269,8 +267,6 @@
   <string name="browser_menu_syncing_paused_caption">Sincronizarea a fost întreruptă</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Gestionează fișierele pentru care faci backup și sincronizează</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Filă privată nouă</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Parole</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -478,18 +474,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Gata</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Bine ai venit la Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Continuând, ești de acord cu %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Termeni de utilizare Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox are grijă de confidențialitatea ta. Află mai multe în secțiunea noastră %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Politica de confidențialitate</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Pentru a ajuta la îmbunătățirea browserului, Firefox trimite date de diagnosticare și interacțiune către Mozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Gestionează</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Lansează ultima versiune a browserului Android</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -592,20 +576,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Îți protejăm datele și blocăm automat companiile care spionează clicurile.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Setează ca browser implicit</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Alege-ți bara de adrese</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Sus</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Jos</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Alege-ți tema</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Automată</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Luminoasă</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Întunecată</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Continui rapid de unde ai rămas</string>
   <!-- Sync onboarding subtitle. -->
@@ -670,12 +640,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Descoperă cele mai recente funcții de confidențialitate din Firefox, astfel încât să fii mereu la curent cu modalitățile de protejare.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Activează notificările</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Fă fiecare căutare mai privată</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Începi fiecare căutare din ecranul de pornire al telefonului și știi că protecțiile automate ale Firefox sunt de folos.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Adaugă widgetul Firefox</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Ușor de personalizat și mai privat cu fiecare atingere</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -722,12 +686,6 @@
   <string name="search_bar_with_lens_widget_description">Bară de căutare cu căutare de imagini, privată și vocală</string>
   <!-- Widget description in the widget picker screen for the compact search bar widget -->
   <string name="compact_search_bar_widget_description">Bară de căutare compactă</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Setări</string>
   <!--
     Preferences
 
@@ -1614,8 +1572,6 @@
   <string name="open_tabs_menu">Meniu de file deschise</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Înapoi la managerul de file</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Salvează filele în colecție</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Șterge colecția</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2016,8 +1972,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Descrie problema detaliat pentru a ne ajuta să o investigăm</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Descrie problema în detaliu pentru a ne ajuta să o investigăm (opțional)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Anulează</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Trimite raportul</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2539,8 +2493,6 @@
   <string name="qr_scanner_dialog_invalid">Adresa web nu este validă.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">OK</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Sigur vrei să ștergi %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Acesta este un exemplu de text. Se află aici pentru a arăta cum va apărea textul când mărești sau micșorezi dimensiunea cu această setare.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3419,10 +3371,6 @@
   <string name="browser_menu_remove_from_shortcuts">Elimină din comenzile rapide</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Sigur dorești să ștergi această parolă?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Șterge</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Anulează</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Editează parola</string>
   <!-- The page title for adding new password. -->
@@ -3909,11 +3857,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Dacă ceva pare defect pe acest site, încearcă să îl dezactivezi.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Se recomandă activarea protecției la urmărire.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Elemente de urmărire blocate: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Elementele de urmărire nu sunt blocate</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -4618,12 +4561,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Adaugă o semnătură</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">Semnează PDF-ul</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Descarcă PDF-ul</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

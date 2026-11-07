@@ -369,14 +369,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">設為預設瀏覽器</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">略過</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">升級你嘅個人私隱</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">你想點搜尋，就點搜尋</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">喺你嘅主頁加入捷徑</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">私隱就習以為常</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">加入</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -493,8 +485,6 @@
   <string name="preference_exceptions_menu_remove">移除</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">移除所有網站</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">阻擋 Cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">對唔住。呢個 tab 發生問題。</string>
   <!-- Subtitle for the tab crash report screen -->

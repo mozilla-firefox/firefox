@@ -236,14 +236,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Buka</string>
   <string name="error_hostLookup_title">Pelayan tidak ditemui</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Tingkatkan privasi anda</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Carian anda, cara anda</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Letakkan pintasan dalam skrin utama</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Jadikan privasi satu tabiat</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Tambah</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

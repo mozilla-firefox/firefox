@@ -41,8 +41,6 @@
   <string name="tab_tray_close_multiselect_content_description">Kóp tańlaw rejiminen shıǵıw</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s Mozilla tárepinen islep shıǵılǵan.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Jeke kóriw haqqında tarqalǵan jalǵanlar</string>
   <!--
     Open in App "contextual feature recommendation" (CFR)
 
@@ -207,12 +205,6 @@
   <string name="search_widget_text_long">Internetden izlew</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Dawıslı izlew</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Sazlawlar</string>
   <!--
     Preferences
 
@@ -611,8 +603,6 @@
   <string name="close_tab_title">%s betin jabıw</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Betler menyusin ashıw</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Betlerdi toplamǵa saqlaw</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Toplamdı óshiriw</string>
   <!-- Text for the menu button to rename a collection -->
@@ -916,8 +906,6 @@
   <string name="qr_scanner_dialog_invalid">Veb mánzil qáte.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">MAQUL</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s dı óshiriwińizge isenimińiz kámil me?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Bul úlgi tekst. Siz bul sazlaw járdeminde ólshemdi úlkeytkende yamasa kishireytkende, tekst qanday kórinetuǵının kóriwge boladı.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1323,10 +1311,6 @@
   <string name="browser_menu_add_to_shortcuts">Operativ buyrıqlarǵa qosıw</string>
   <!-- Browser menu button that removes a shortcut from the home fragment -->
   <string name="browser_menu_remove_from_shortcuts">Operativ buyrıqlardan alıp tastaw</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Óshiriw</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Biykarlaw</string>
   <!-- The error message in add login view when hostname field is blank. -->
   <string name="saved_login_hostname_required" tools:ignore="UnusedResources">Server atı talap etiledi</string>
   <!-- Voice search button content description -->

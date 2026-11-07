@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">ᱚᱪᱚᱜᱽ ᱢᱮ</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s ᱛᱮᱭᱟᱨ ᱦᱩᱭ ᱠᱟᱱᱟ ᱢᱳᱡᱤᱞᱟ ᱫᱟᱨᱟᱭᱛᱮ ᱾</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">ᱱᱤᱡᱮᱨᱟᱜ ᱵᱽᱨᱟᱣᱡᱤᱝ ᱵᱟᱵᱚᱛ ᱥᱚᱢᱟᱱ ᱮᱰᱮ ᱠᱚ</string>
   <!--
     Private Browsing
 
@@ -263,8 +261,6 @@
   <string name="browser_menu_syncing_paused_caption">ᱟᱹᱭᱩᱨ ᱢᱤᱫ ᱛᱷᱩᱢ ᱠᱟᱱᱟ</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">ᱟᱢ ᱪᱮᱫ ᱵᱮᱠ ᱟᱯ ᱟᱨ ᱥᱤᱱᱠ ᱮᱢ ᱪᱟᱞᱟᱣ ᱢᱮ</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">ᱱᱟᱶᱟ ᱱᱤᱡᱮᱨᱟᱠ ᱴᱮᱵᱽ</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">ᱫᱟᱱᱟᱝ ᱥᱟᱵᱟᱫᱽ ᱠᱚ</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -468,18 +464,6 @@
   <string name="onboarding_preferences_dialog_positive_button">ᱦᱩᱭᱮᱱᱟ</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Firefox ᱨᱮ ᱥᱟᱹᱜᱩᱱ ᱫᱟᱨᱟᱢ</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">ᱞᱟᱦᱟᱜ ᱠᱟᱛᱮ, ᱟᱢ %1$s ᱨᱮᱢ ᱦᱮᱸᱥᱮᱨᱤᱭᱟᱹ ᱮᱫᱟ ᱾</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox ᱵᱮᱵᱷᱟᱨ ᱨᱮᱭᱟᱜ ᱥᱚᱨᱛᱚ</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox ᱟᱢᱟᱜ ᱯᱨᱟᱭᱣᱮᱥᱤ ᱵᱟᱵᱚᱛ ᱡᱚᱛᱚᱱ ᱤᱫᱤᱭᱟᱭ ᱾ ᱟᱞᱮᱭᱟᱜ %1$s ᱨᱮ ᱵᱟᱹᱲᱛᱤ ᱵᱟᱲᱟᱭ ᱢᱮ ᱾</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">ᱫᱟᱱᱟᱝ ᱠᱷᱚᱵᱚᱨ</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">ᱵᱽᱨᱟᱣᱩᱡᱟᱨ ᱥᱩᱫᱷᱨᱟᱹᱣ ᱜᱚᱲᱚ ᱞᱟᱹᱜᱤᱫ, Firefox ᱫᱚ Mozilla ᱴᱷᱮᱱ ᱰᱟᱭᱜᱽᱱᱚᱥᱴᱤᱠ ᱟᱨ ᱜᱟᱯᱟᱞᱢᱟᱨᱟᱣ ᱰᱟᱴᱟ ᱠᱩᱞᱟ ᱾ %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">ᱢᱮᱱᱮᱡᱽ ᱢᱮ</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Android ᱵᱽᱨᱟᱣᱩᱡᱟᱨ ᱯᱟᱨᱥᱟᱞ ᱢᱮ</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -582,20 +566,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">ᱟᱞᱮ ᱟᱢᱟᱜ ᱰᱟᱴᱟ ᱞᱮ ᱨᱩᱠᱷᱤᱭᱟᱹᱭᱟ ᱟᱨ ᱟᱢᱟᱜ ᱠᱞᱤᱠ ᱨᱮ ᱡᱟᱹᱥᱛᱤ ᱠᱷᱚᱱ ᱠᱚᱢᱯᱟᱱᱤ ᱠᱚ ᱟᱡ ᱛᱮ ᱵᱚᱱ ᱵᱚᱱᱫᱚ ᱠᱚᱣᱟ᱾</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">ᱢᱩᱞ ᱵᱽᱨᱟᱣᱩᱡᱟᱹᱨ ᱞᱮᱠᱷᱟ ᱥᱟᱡᱟᱣ ᱢᱮ</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">ᱟᱢᱟᱜ ᱴᱷᱤᱠᱟᱹᱱᱟ ᱵᱟᱨ ᱵᱟᱪᱷᱟᱣ ᱢᱮ</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">ᱪᱮᱛᱟᱱ</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">ᱞᱟᱛᱟᱨ</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">ᱟᱢᱟᱜ ᱛᱷᱤᱢ ᱵᱟᱪᱷᱟᱣ ᱢᱮ</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">ᱟᱡ ᱛᱮ</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">ᱢᱟᱨᱥᱟᱞ</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">ᱧᱩᱛ</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">ᱞᱚᱜᱚᱱ ᱪᱟᱞᱟᱜ ᱢᱮ ᱡᱟᱦᱟᱸ ᱨᱮ ᱢᱟᱲᱟᱝ ᱛᱟᱦᱮᱸ ᱠᱟᱱᱟᱢ</string>
   <!-- Sync onboarding subtitle. -->
@@ -660,12 +630,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Firefox ᱨᱮ ᱱᱟᱶᱟ ᱯᱨᱟᱭᱣᱮᱥᱤ ᱯᱷᱤᱪᱟᱨ ᱠᱚ ᱯᱟᱱᱛᱮ ᱢᱮ ᱡᱮᱢᱚᱱ ᱟᱢ ᱥᱟᱨᱟ ᱜᱷᱟᱹᱲᱤᱡ ᱨᱩᱠᱷᱤᱭᱟᱹ ᱛᱟᱦᱮᱱ ᱞᱟᱹᱜᱤᱫ ᱱᱟᱦᱟᱜ ᱛᱮ ᱛᱟᱦᱮᱱ ᱢᱮ᱾</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">ᱠᱷᱚᱵᱚᱨ ᱠᱚ ᱦᱮᱡ ᱪᱷᱚᱭ ᱢᱮ</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">ᱥᱟᱱᱟᱢ ᱥᱮᱸᱫᱽᱨᱟ ᱟᱨᱦᱚᱸ ᱯᱨᱟᱭᱣᱮᱴ ᱢᱮ</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">ᱟᱢᱟᱜ ᱯᱷᱚᱱ ᱨᱮᱭᱟᱜ ᱦᱚᱢ ᱥᱠᱨᱤᱱ ᱠᱷᱚᱱ ᱥᱟᱱᱟᱢ ᱥᱮᱸᱫᱽᱨᱟ ᱮᱦᱚᱵ ᱢᱮ ᱟᱨ ᱵᱟᱲᱟᱭ ᱢᱮ Firefox ᱨᱮᱭᱟᱜ ᱟᱡ ᱛᱮ ᱨᱩᱠᱷᱤᱭᱟᱹ ᱟᱢᱟᱜ ᱫᱮᱭᱟ ᱨᱮ ᱢᱮᱱᱟᱜᱼᱟ ᱾</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Firefox ᱣᱤᱡᱮᱴ ᱥᱮᱞᱮᱫ ᱢᱮ</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">ᱥᱟᱱᱟᱢ ᱴᱮᱯ ᱥᱟᱶ ᱠᱟᱥᱴᱚᱢᱟᱭᱤᱡᱽ ᱞᱟᱹᱜᱤᱫ ᱟᱞᱜᱟ ᱟᱨ ᱵᱟᱹᱲᱛᱤ ᱯᱨᱟᱭᱣᱮᱴ</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -704,12 +668,6 @@
   <string name="search_widget_text_long">ᱣᱮᱵ ᱨᱮ ᱥᱮᱸᱫᱽᱨᱟᱭ ᱢᱮ</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">ᱨᱚᱲ ᱥᱮᱸᱫᱽᱨᱟ</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">ᱥᱟᱡᱟᱣ ᱠᱚ</string>
   <!--
     Preferences
 
@@ -1566,8 +1524,6 @@
   <string name="open_tabs_menu">ᱴᱮᱵᱽ ᱢᱮᱱᱭᱩ ᱡᱷᱤᱡᱽ ᱢᱮ</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">ᱴᱮᱵᱽ ᱪᱟᱪᱞᱟᱣᱤᱭᱟᱹ ᱛᱮ ᱨᱩᱣᱟᱹᱲ ᱢᱮ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">ᱴᱮᱵᱽ ᱠᱚ ᱛᱩᱢᱟᱹᱞ ᱨᱮ ᱥᱟᱺᱪᱟᱣ ᱢᱮ</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">ᱛᱩᱢᱟᱹᱞ ᱢᱮᱴᱟᱣ ᱢᱮ</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1963,8 +1919,6 @@
   <string name="webcompat_reporter_label_mandatory_description">ᱮᱴᱠᱮᱴᱚᱬᱮ ᱨᱮᱭᱟᱜ ᱛᱚᱞᱟᱥ ᱞᱟᱹᱜᱤᱫ ᱟᱞᱮ ᱜᱚᱲᱚ ᱞᱟᱹᱜᱤᱫ ᱮᱴᱠᱮᱴᱚᱬᱮ ᱵᱤᱵᱨᱚᱬ ᱛᱮ ᱞᱟᱹᱭ ᱢᱮ</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">ᱮᱴᱠᱮᱴᱚᱬᱮ ᱨᱮᱭᱟᱜ ᱛᱚᱞᱟᱥ ᱞᱟᱹᱜᱤᱫ ᱟᱞᱮ ᱜᱚᱲᱚ ᱞᱟᱹᱜᱤᱫ ᱮᱴᱠᱮᱴᱚᱬᱮ ᱵᱤᱵᱨᱚᱬ ᱛᱮ ᱞᱟᱹᱭ ᱢᱮ (ᱩᱱᱟᱹᱜ ᱵᱟᱝ ᱡᱟᱹᱨᱩᱲ)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">ᱵᱟᱹᱰᱨᱟᱹ</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">ᱠᱷᱚᱵᱚᱨ ᱵᱷᱮᱡᱟᱭ ᱢᱮ</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2454,8 +2408,6 @@
   <string name="qr_scanner_dialog_invalid">ᱣᱮᱵᱽ ᱴᱷᱤᱠᱬᱟᱹ ᱵᱟᱭ ᱴᱷᱤᱠ ᱟ᱾</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">ᱴᱷᱤᱠ</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s ᱢᱮᱴᱟᱣ ᱞᱟᱹᱜᱤᱫ ᱛᱮ ᱪᱮᱫ ᱟᱢ ᱜᱚᱴᱟ ᱛᱮ ᱢᱮᱱᱟᱢ-ᱟ?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">ᱱᱚᱶᱟ ᱫᱚ ᱡᱮᱢᱚᱱ ᱟᱲᱟ ᱠᱟᱱᱟ ᱾ ᱱᱚᱶᱟ ᱫᱚ ᱥᱟᱡᱟᱣ ᱵᱚᱫᱚᱞ ᱠᱚ ᱫᱮᱠᱷᱟᱣ ᱞᱟᱹᱜᱤᱫ ᱠᱟᱱᱟ ᱚᱠᱟᱞᱠᱟᱛᱮ ᱟᱲᱟ ᱞᱚ ᱢᱟᱨᱟᱝ ᱟᱨ ᱵᱟᱝ ᱠᱟᱹᱴᱤᱡ ᱞᱮᱠᱷᱟᱱ ᱚᱠᱟᱞᱠᱟ ᱧᱮᱞᱚᱜᱼᱟ ᱾</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3320,10 +3272,6 @@
   <string name="browser_menu_remove_from_shortcuts">ᱠᱷᱟᱴᱚᱢᱟᱪᱷᱟ ᱠᱷᱚᱱ ᱚᱪᱚᱜᱽ ᱢᱮ</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">ᱪᱮᱫ ᱟᱢ ᱜᱚᱴᱟ ᱛᱮ ᱢᱮᱱᱟᱢᱼᱟ ᱱᱚᱶᱟ ᱫᱟᱱᱟᱝ ᱥᱟᱵᱟᱫᱽ ᱢᱮᱴᱟᱣ ᱞᱟ.ᱜᱤᱛ ᱛᱮ?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">ᱢᱮᱴᱟᱣ ᱢᱮ</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">ᱵᱟᱹᱰᱨᱟᱹ</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">ᱫᱟᱱᱟᱝ ᱥᱟᱵᱟᱫᱽ ᱥᱟᱯᱲᱟᱣ ᱢᱮ</string>
   <!-- The page title for adding new password. -->
@@ -3810,11 +3758,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">ᱡᱩᱫᱤ ᱱᱚᱶᱟ ᱥᱟᱭᱤᱴ ᱨᱮ ᱡᱟᱦᱟᱱᱟᱜ ᱨᱟᱹᱯᱩᱫ ᱧᱮᱞᱚᱜ ᱠᱟᱱᱟ, ᱮᱱᱠᱷᱟᱱ ᱚᱱᱟ ᱵᱚᱱᱫᱚ ᱨᱮᱭᱟᱜ ᱠᱩᱨᱩᱢᱩᱴᱩᱭ ᱢᱮ ᱾</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">ᱴᱨᱮᱠᱤᱝ ᱨᱩᱠᱷᱤᱭᱟᱹ ᱪᱟᱹᱞᱩ ᱞᱟᱹᱜᱤᱫ ᱡᱟᱹᱨᱩᱲ ᱜᱮᱭᱟ ᱾</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">ᱴᱨᱮᱠᱟᱨ ᱠᱚ ᱵᱞᱚᱠ ᱮᱱᱟ: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">ᱴᱨᱮᱠᱟᱨ ᱠᱚ ᱵᱟᱠᱚ ᱮᱥᱮᱫ ᱟᱠᱟᱱᱟ</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -4503,12 +4446,6 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">ᱣᱮᱵᱽᱥᱟᱭᱤᱴ ᱟᱭᱥᱚᱞᱮᱥᱚᱱ</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">ᱣᱮᱵᱽᱥᱟᱭᱤᱴ ᱠᱚ ᱛᱟᱞᱟ ᱨᱮ ᱢᱤᱫ ᱵᱟᱹᱲᱛᱤ ᱛᱟᱲᱟᱢ ᱡᱟᱦᱟᱸ ᱫᱚ ᱴᱮᱵᱽ ᱠᱚ ᱨᱮ ᱟᱢᱟᱜ ᱰᱟᱴᱟ ᱨᱩᱠᱷᱤᱭᱟᱹ ᱨᱮ ᱜᱚᱲᱚ ᱮᱢᱟᱭᱟ ᱾ ᱠᱟᱹᱢᱤᱦᱚᱨᱟ, ᱥᱛᱷᱤᱨ, ᱣᱮᱵᱽᱥᱟᱭᱤᱴ ᱵᱮᱥ ᱠᱟᱹᱢᱤᱦᱚᱪᱚ ᱟᱨ ᱵᱽᱨᱟᱣᱩᱡᱤᱝ ᱱᱟᱜᱟᱢ ᱪᱮᱫ ᱞᱮᱠᱟ ᱨᱩᱟᱠᱷᱤᱭᱟᱹᱟᱜ-ᱟ ᱚᱱᱟ ᱨᱮ ᱯᱨᱚᱵᱷᱟᱣ ᱮᱢ ᱫᱟᱲᱮᱭᱟᱜ-ᱟᱭ ᱾</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">PDF ᱨᱮ ᱥᱩᱦᱤ ᱮᱢ ᱢᱮ</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF ᱰᱟᱣᱱᱞᱚᱰ ᱮᱱᱟ</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

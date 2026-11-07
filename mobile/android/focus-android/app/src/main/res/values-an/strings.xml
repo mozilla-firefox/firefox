@@ -210,14 +210,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Ubrir</string>
   <string name="error_hostLookup_title">No s\'ha trobau lo servidor</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Refuerza la tuya privacidat</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Busca a la tuya traza</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Anyade alcorces a la tuya pantalla d\'inicio</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Fe d\'a privacidat un costumbre</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Anyader</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

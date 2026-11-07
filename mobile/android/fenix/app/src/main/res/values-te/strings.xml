@@ -39,8 +39,6 @@
   <string name="home_bookmarks_menu_item_remove">తొలగించు</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s‌ని తయారుచేసినది మొజిల్లా.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">అంతరంగిక విహారణ గురించి సామాన్య అపోహలు</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">అమరికలకు వెళ్లు</string>
   <!-- Text for the negative action button -->
@@ -184,12 +182,6 @@
   <string name="search_widget_text_long">జాలంలో వెతకండి</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">స్వర శోధన</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">అమరికలు</string>
   <!--
     Preferences
 
@@ -529,8 +521,6 @@
   <string name="close_tab_title">%s ట్యాబును మూసివేయి</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">తెరిచివున్న ట్యాబుల మెనూ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">ట్యాబులను సేకరణకు భద్రపరచు</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">సేకరణను తొలగించు</string>
   <!-- Text for the menu button to rename a collection -->
@@ -563,8 +553,6 @@
     %1$d is the number of downloads selected
   -->
   <string name="download_multi_select_title">%1$d ఎంచుకున్నారు</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">రద్దుచేయి</string>
   <!--
     Crashes
 
@@ -807,8 +795,6 @@
   <string name="qr_scanner_dialog_invalid">జాల చిరునామా సరైనది కాదు.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">సరే</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">మీరు నిజంగానే %1$s‌ను తొలగించాలనుకుంటున్నారా?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">ఇది నమూనా పాఠ్యం. ఈ అమరిక‌తో మీరు పరిమాణాన్ని పెంచినప్పుడు లేదా తగ్గించినప్పుడు పాఠ్యం ఎలా కనిపిస్తుందో చూపించడానికి ఇది ఇక్కడ ఉంది.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1170,10 +1156,6 @@
   <string name="confirm_clear_permission_site">నిజంగానే ఈ సైటుకున్న ఈ అనుమతిని తుడిచివేయాలనుకుంటున్నారా?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">సైటు మినహాయింపులేమీ లేవు</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">తొలగించు</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">రద్దుచేయి</string>
   <!-- Voice search button content description -->
   <string name="voice_search_content_description">స్వర శోధన</string>
   <!-- Voice search prompt description displayed after the user presses the voice search button -->

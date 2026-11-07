@@ -31,8 +31,6 @@
   <string name="tab_tray_close_multiselect_content_description">لە دۆخی دیاریکردنی چەندیی دەربچۆ</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s بەرهەم هێنراوە لە لایەن مۆزیلاوە.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">چەند ئەفسانەییەک دەربارەی گەڕانی تایبەتیی</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">بڕۆ بۆ ڕێکخستن</string>
   <!-- Text for the negative action button -->
@@ -127,12 +125,6 @@
   <string name="search_widget_text_long">بگەڕێ کە وێبدا</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">گەڕانی دەنگی</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">ڕێکخستنەکان</string>
   <!--
     Preferences
 
@@ -406,8 +398,6 @@
   <string name="close_tab_title">بازدەری %s دابخە</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">پێڕستی بازدەرەکان بکەرەوە</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">بازدەرەکان هەڵبگرە لە کۆکەرەوە</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">کۆکەرەوە بسڕەوە</string>
   <!-- Text for the menu button to rename a collection -->
@@ -652,8 +642,6 @@
   <string name="qr_scanner_dialog_positive">ڕێگەپێدان</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">ڕێگەنەدان</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">ئایا تۆ دڵنیایت کە دەتەوێت %1$s بسڕیتەوە؟</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">ئەم دەقێکی نمونەییە. لێرە پیشان دەدرێت بۆ ئەوەی بزانی چۆن دەردەچێت کاتێک قەبارەی نووسدینەکە زیاد و کەم دەکەیت.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -917,8 +905,6 @@
   <string name="confirm_clear_permission_site">تۆ دڵنیایت لە لابردنی ئەم دەسەڵاتە لەم ماڵپەڕە؟</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">هیچ ماڵپەڕێک بەدەر نەبێت</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">سڕینەوە</string>
   <!-- Voice search button content description -->
   <string name="voice_search_content_description">گەڕانی دەنگی</string>
   <!-- Voice search prompt description displayed after the user presses the voice search button -->

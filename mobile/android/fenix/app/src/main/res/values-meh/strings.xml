@@ -51,8 +51,6 @@
   <string name="home_bookmarks_menu_item_remove">Xita</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s kuvi iin a sá´á Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Tu´un nakani jiee nánuku yu\'u</string>
   <!--
     True Private Browsing Mode
 
@@ -191,8 +189,6 @@
   <string name="browser_menu_customize_reader_view_2">Sá\'á vii jíí vista lectura</string>
   <!-- Browser menu label to sign in to sync on the device using Mozilla accounts -->
   <string name="browser_menu_sign_in">Kajie´e sesión</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Pestaña yu´u jíía</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Contraseñas</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -262,12 +258,6 @@
   <string name="search_widget_text_long">Nánuku nuu Web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Nánuku jíí nasun yu\'unu</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Ke´i</string>
   <!--
     Preferences
 
@@ -746,8 +736,6 @@
   <string name="close_tab_title">Nakasɨ pestaña %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Síne nu kaji pestañas</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Chuva\'a daa pestañas nu colección</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Xita colección</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1083,8 +1071,6 @@
   <string name="qr_scanner_dialog_invalid">Nuu web ntu vatu.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">Kuvi</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">¿A mana kuvinu xitanu %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Ya\'a kuvi iin tu\'un ejemplo. Sukua tuvi naja kino tu\'un saa sá´á ka\'nunu a xíín sá´á lulinu jíí ya\'a.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1553,10 +1539,6 @@
   <string name="browser_menu_remove_from_shortcuts">Xita da atajos</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">¿A mana kuvinu xitanu contraseña ya\'a?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Xita</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Nkuvi-ka</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Natee contraseña</string>
   <!-- The page title for adding new password. -->

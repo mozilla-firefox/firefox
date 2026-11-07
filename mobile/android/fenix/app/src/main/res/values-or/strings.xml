@@ -59,12 +59,6 @@
   <!--
     Preferences
 
-    Title for the settings page
-  -->
-  <string name="settings">ସେଟିଂସମୂହ</string>
-  <!--
-    Preferences
-
     Preference category for general settings
   -->
   <string name="preferences_category_general">ସାଧାରଣ</string>

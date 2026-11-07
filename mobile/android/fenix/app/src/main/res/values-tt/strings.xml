@@ -61,8 +61,6 @@
   <string name="home_bookmarks_menu_item_remove">Бетерү</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s Mozilla тарафыннан җитештерелә.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Хосусый гизү турында киң таралган мифлар</string>
   <!--
     Private Browsing
 
@@ -227,8 +225,6 @@
   <string name="browser_menu_sign_back_in_to_sync">Синхронлауга кире керү</string>
   <!-- Browser menu caption label for the "Sign back in to sync" browser menu item described in `browser_menu_sign_back_in_to_sync` when there is an error in syncing -->
   <string name="browser_menu_syncing_paused_caption">Синхронлау туктатылды</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Яңа хосусый таб</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Серсүзләр</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -320,12 +316,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Әзер</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Firefox-ка рәхим итегез</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox куллану шартлары</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Хосусыйлык аңлатмасы</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Идарә итү</string>
   <!--
     Terms of use (ToU) first body text. %1$s is replaced by an active link,
     using onboarding_redesign_tou_body_one_link_text as text (“Firefox Terms of Use”).
@@ -343,22 +333,10 @@
   <string name="onboarding_marketing_redesign_positive_button" tools:ignore="UnusedResources">Раслау</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Стандарт браузер итеп билгеләү</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Өстә</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Аста</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Автоматик</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Ачык</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Караңгы</string>
   <!-- Notifications onboarding title. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">Искәртүләр Сезгә Firefox белән иминлерәк булып калырга ярдәм итә</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Искәртүләрне кабызу</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Firefox виджетын өстәү</string>
   <!--
     Search Widget
 
@@ -371,12 +349,6 @@
   <string name="search_widget_text_long">Интернетта эзләү</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Тавышлы эзләү</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Көйләүләр</string>
   <!--
     Preferences
 
@@ -920,8 +892,6 @@
   <string name="close_tab_title">%s табын ябу</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Ачык таблар менюсы</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Табларны җыентыкка саклау</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Җыентыкны бетерү</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1043,8 +1013,6 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">Зинһар, дөрес URL кертегез</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Баш тарту</string>
   <!--
     Crashes
 
@@ -1393,8 +1361,6 @@
   <string name="qr_scanner_dialog_invalid">Веб-адрес хаталы.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">ОК</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s җыентыгын бетерүне раслыйсызмы?</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
   <string name="preference_accessibility_text_size_summary">Вебсайтларда текстны зурайту я кечерәйтү</string>
   <!-- Title for Accessibility Text Size Scaling Preference -->
@@ -1916,10 +1882,6 @@
   <string name="browser_menu_remove_from_shortcuts">Ярлыклардан бетерү</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Бу серсүзне бетерүне раслыйсызмы?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Бетерү</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Баш тарту</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Серсүзне үзгәртү</string>
   <!-- The page title for adding new password. -->

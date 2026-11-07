@@ -39,8 +39,6 @@
   <string name="tab_tray_close_multiselect_content_description">Koʻp tanlov rejimidan chiqish</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s brauzerini Mozilla ishlab chiqqan.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Maxfiy koʻrish haqidagi umumiy afsonalar</string>
   <!--
     Open in App "contextual feature recommendation" (CFR)
 
@@ -203,12 +201,6 @@
   <string name="search_widget_text_long">Internetdan izlash</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Ovozli qidiruv</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Sozlamalar</string>
   <!--
     Preferences
 
@@ -577,8 +569,6 @@
   <string name="close_tab_title">%s varagʻini yopish</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Varaqlar menyusini ochish</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Varaqlarni kolleksiyaga saqlash</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Kolleksiyani oʻchirish</string>
   <!-- Text for the menu button to rename a collection -->
@@ -869,8 +859,6 @@
   <string name="qr_scanner_dialog_invalid">Manzil xato kiritilgan.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">OK</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Siz %1$sni oʻchirishni xohlaysizmi?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Bu namuna matn. Bu sozlamalar yordamida hajmni kattalashtirish yoki kamaytirishda matn qanday koʻrinishini namoyish etadi.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1268,10 +1256,6 @@
   <string name="browser_menu_add_to_shortcuts">Yorliqlarga qoʻshish</string>
   <!-- Browser menu button that removes a shortcut from the home fragment -->
   <string name="browser_menu_remove_from_shortcuts">Yorliqlardan olib tashlash</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Oʻchirish</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Bekor qilish</string>
   <!-- The error message in add login view when hostname field is blank. -->
   <string name="saved_login_hostname_required" tools:ignore="UnusedResources">Host nomi kerak</string>
   <!-- Voice search button content description -->

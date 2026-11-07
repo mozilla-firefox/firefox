@@ -374,14 +374,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Sá´á ka̱a̱ ya´a iin a ni´inu ntaka íchi</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Nava</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Sika privacidad noo´o</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Nánuku, kua kachi noo´o</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Tee a kivu ñama nuu kajie´e</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Kino jii privacidad</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Tee</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -519,8 +511,6 @@
   <string name="preference_exceptions_menu_remove">Xita</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Xita kuaiyo daa sitios</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Kasɨ cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Nei koo ini-nu. Iyo iin tixi jiin pestaña ya´a.</string>
   <!-- Subtitle for the tab crash report screen -->

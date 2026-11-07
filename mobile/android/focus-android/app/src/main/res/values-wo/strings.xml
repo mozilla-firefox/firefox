@@ -156,14 +156,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Ubbi</string>
   <string name="error_hostLookup_title">Giseesul joxekaay bi</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Dooleel sa sutura</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Seet ak noo ko bëggee</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Yokki lëkkalekaay ci njëlbeenu sa xoolu</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Def joow ci sutura doon jikko</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Yokk</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

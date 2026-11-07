@@ -69,8 +69,6 @@
   <string name="home_bookmarks_menu_item_remove">ເອົາອອກ</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s ແມ່ນຜະລິດຂື້ນໂດຍ Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">ຄວາມເຂົ້າໃຈຜິດທີ່ມັກພົບຕະລອດກ່ຽວກັບການທ່ອງເວັບແບບສ່ວນຕົວ</string>
   <!--
     Private Browsing
 
@@ -249,8 +247,6 @@
   <string name="browser_menu_syncing_paused_caption">ຢຸດການຊິງຄ໌ໄວ້ຊົ່ວຄາວ</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">ຈັດການສິ່ງທີ່ທ່ານສຳຮອງ ແລະ ຊິ້ງຂໍ້ມູນ</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">ແທັບສ່ວນຕົວໃຫມ່</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">ລະຫັດຜ່ານ</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -392,18 +388,6 @@
   <string name="onboarding_preferences_dialog_positive_button">ສຳເລັດ</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">ຍິນດີຕ້ອນຮັບສູ່ Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">ໂດຍການດຳເນີນການຕໍ່, ທ່ານເຫັນດີນຳ %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">ເງື່ອນໄຂການນໍາໃຊ້ Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox ເປັນຫ່ວງກ່ຽວກັບຄວາມເປັນສ່ວນຕົວຂອງທ່ານ. ສຶກສາເພີ່ມເຕີມໃນ %1$s ຂອງພວກເຮົາ.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">ນະໂຍບາຍຄວາມເປັນສ່ວນຕົວ</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">ເພື່ອຊ່ວຍປັບປຸງຕົວທ່ອງເວັບ, Firefox ສົ່ງຂໍ້ມູນການວິເຄາະ ແລະ ການໂຕ້ຕອບກັບ Mozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">ຈັດການ</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">ເປີດຕົວຕົວທ່ອງເວັບ Android ສຸດທ້າຍ</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -502,20 +486,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">ພວກເຮົາປົກປ້ອງຂໍ້ມູນຂອງທ່ານ ແລະ ບລັອກບໍລິສັດຕ່າງໆໂດຍອັດຕະໂນມັດຈາກການສອດແນມການຄລິກຂອງທ່ານ.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">ຕັ້ງເປັນໂປຣແກຣມທ່ອງເວັບເລີ່ມຕົ້ນ</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">ເລືອກແຖບທີ່ຢູ່ຂອງທ່ານ</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">ເທິງ</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">ລຸ່ມສຸດ</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">ເລືອກຮູບແບບຂອງທ່ານ</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">ອັດຕະໂນມັດ</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">ແສງສະຫວ່າງ</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">ມືດ</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">ສືບຕໍ່ທັນທີຈາກບ່ອນທີ່ທ່ານຄ້າງໄວ້</string>
   <!-- Sync onboarding subtitle. -->
@@ -547,12 +517,6 @@
   <string name="search_widget_text_long">ຄົ້ນຫາເວັບໄຊທ</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">ຄົ້ນຫາດ້ວຍສຽງ</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">ການຕັ້ງຄ່າ</string>
   <!--
     Preferences
 
@@ -1267,8 +1231,6 @@
   <string name="close_tab_title">ປິດແທັບ %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">ເປີດເມນູແທັບ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">ບັນທຶກແຖບໄປໄວ້ໃນບ່ອນເກັບສະສົມ</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">ລຶບບ່ອນເກັບສະສົມ</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1461,8 +1423,6 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">ກະລຸນາປ້ອນ URL ທີ່ຖືກຕ້ອງ</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">ຍົກເລີກ</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">ສົ່ງລາຍງານແລ້ວ</string>
   <!--
@@ -1886,8 +1846,6 @@
   <string name="qr_scanner_dialog_invalid">ທີ່ຢູ່ເວັບບໍ່ຖືກຕ້ອງ.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">ຕົກລົງ</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">ທ່ານແນ່ໃຈແລ້ວບໍ່ວ່າທ່ານຕ້ອງການລຶບ %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">ນີ້ແມ່ນຂໍ້ຄວາມຕົວຢ່າງ. ມັນຢູ່ທີ່ນີ້ເພື່ອສະແດງໃຫ້ເຫັນວ່າຂໍ້ຄວາມຈະປາກົດແນວໃດເມື່ອທ່ານເພີ່ມຫຼືຫຼຸດລົງຂະຫນາດດ້ວຍການຕັ້ງຄ່ານີ້.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -2450,10 +2408,6 @@
   <string name="browser_menu_add_to_shortcuts">ເພີ່ມທາງລັດ</string>
   <!-- Browser menu button that removes a shortcut from the home fragment -->
   <string name="browser_menu_remove_from_shortcuts">ລຶບອອກຈາກທາງລັດ</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">ລຶບ</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">ຍົກເລີກ</string>
   <!-- The error message in add login view when hostname field is blank. -->
   <string name="saved_login_hostname_required" tools:ignore="UnusedResources">ຕ້ອງການຊື່ໂຮສທ</string>
   <!-- Voice search button content description -->
@@ -2604,11 +2558,6 @@
   <string name="delete_language_all_languages_file_dialog_title">ລຶບທຸກພາສາ (%1$s) ບໍ?</string>
   <!-- Additional information for the dialog used by the translations feature to confirm deleting all languages file. %1$s is the name of the app (for example "Firefox"). -->
   <string name="delete_language_all_languages_file_dialog_message">ຖ້າທ່ານລຶບທຸກພາສາ, %1$s ຈະດາວໂຫຼດບາງພາສາໃສ່ແຄດຂອງທ່ານເມື່ອທ່ານແປ.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">ບລັອກຕົວຕິດຕາມ: %d</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.

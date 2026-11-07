@@ -236,14 +236,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Aç</string>
   <string name="error_hostLookup_title">Server tapılmadı</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Məxfiliyinizi gücləndirin</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Sizin axtarış, sizin qaydalar</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Ana ekranınıza keçidlər əlavə edin</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Məxfiliyi vərdiş halına gətirin</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Əlavə et</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

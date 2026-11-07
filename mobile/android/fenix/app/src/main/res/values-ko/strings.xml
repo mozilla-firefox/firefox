@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">제거</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s는 Mozilla에서 제작했습니다.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">사생활 보호 모드에 관한 흔한 오해</string>
   <!--
     Private Browsing
 
@@ -273,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">동기화가 일시중지됨</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">백업 및 동기화 항목 관리</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">새 사생활 보호 탭</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">비밀번호</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -486,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">완료</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Firefox 사용을 환영합니다</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">계속하면 %1$s에 동의하게 됩니다.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox 이용 약관</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox는 여러분의 개인 정보를 중요하게 생각합니다. %1$s에서 더 알아보세요.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">개인정보처리방침</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">브라우저 개선을 돕기 위해 Firefox는 진단 및 상호 작용 데이터를 Mozilla에 보냅니다. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">관리</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">최고의 Android 브라우저 실행</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -600,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">사용자의 데이터를 보호하고 기업이 여러분의 클릭을 염탐하는 것을 자동으로 차단합니다.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">기본 브라우저로 설정</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">주소 표시줄 선택</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">위쪽</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">아래쪽</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">테마 선택</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">자동</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">밝게</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">어둡게</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">중단했던 지점에서 즉시 다시 시작하세요</string>
   <!-- Sync onboarding subtitle. -->
@@ -678,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Firefox의 최신 개인 정보 보호 기능을 살펴보고 보호를 유지하는 방법에 대해 항상 알 수 있습니다.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">알림 켜기</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">모든 검색을 보다 안전하게 하세요</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">모든 검색을 휴대폰의 홈 화면에서 시작하세요. Firefox의 자동 보호 기능이 여러분을 지켜줍니다.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Firefox 위젯 추가</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">탭 할 때마다 더 쉬운 맞춤 설정 및 더 강력한 개인 정보 보호</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -731,12 +695,6 @@
   <!--
     Preferences
 
-    Title for the settings page
-  -->
-  <string name="settings">설정</string>
-  <!--
-    Preferences
-
     Preference category for general settings
   -->
   <string name="preferences_category_general">일반</string>
@@ -760,6 +718,8 @@
   <string name="preferences_search">검색</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">검색 엔진</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">홈 화면에 검색 위젯 추가</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">홈 화면 위젯</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -1648,8 +1608,6 @@
   <string name="open_tabs_menu">탭 메뉴 열기</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">탭 관리자로 돌아가기</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">탭을 모음집에 저장</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">모음집 삭제</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2044,8 +2002,6 @@
   <string name="webcompat_reporter_label_mandatory_description">조사에 도움이 되도록 문제를 자세히 설명해 주세요</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">조사에 도움이 되도록 문제를 자세히 설명해 주세요 (선택 사항)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">취소</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">보고서 보내기</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2567,8 +2523,6 @@
   <string name="qr_scanner_dialog_invalid">웹 주소가 잘못되었습니다.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">확인</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s 파일을 삭제하시겠습니까?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">샘플 텍스트입니다. 이 설정으로 크기를 늘리거나 줄일 때 텍스트가 어떻게 표시되는지 보여줍니다.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3453,10 +3407,6 @@
   <string name="browser_menu_remove_from_shortcuts">바로 가기에서 삭제</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">이 비밀번호를 삭제하시겠습니까?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">삭제</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">취소</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">비밀번호 편집</string>
   <!-- The page title for adding new password. -->
@@ -3941,11 +3891,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">이 사이트가 손상되어 보이면 이 기능을 꺼보세요.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">추적 방지 기능을 켜는 것을 권장합니다.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">차단된 추적기: %d개</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">추적기가 차단되지 않음</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -4713,12 +4658,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">서명 추가</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">PDF 서명</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF 다운로드</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
