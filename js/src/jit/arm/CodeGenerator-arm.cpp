@@ -342,19 +342,20 @@ void CodeGenerator::visitMulI(LMulI* ins) {
           if (!mul->canOverflow()) {
             // If it cannot overflow, we can do lots of optimizations.
             Register src = ToRegister(lhs);
-            uint32_t shift = FloorLog2(uint32_t(constant));
-            uint32_t rest = constant - (1 << shift);
             // See if the constant has one bit set, meaning it can be
             // encoded as a bitshift.
-            if ((1 << shift) == constant) {
+            if (std::has_single_bit(uint32_t(constant))) {
+              uint32_t shift = std::countr_zero(uint32_t(constant));
               masm.ma_lsl(Imm32(shift), src, ToRegister(dest));
               handled = true;
             } else {
               // If the constant cannot be encoded as (1 << C1), see
               // if it can be encoded as (1 << C1) | (1 << C2), which
               // can be computed using an add and a shift.
-              uint32_t shift_rest = FloorLog2(rest);
-              if ((1u << shift_rest) == rest) {
+              uint32_t shift = FloorLog2(uint32_t(constant));
+              uint32_t rest = constant - (1 << shift);
+              if (std::has_single_bit(rest)) {
+                uint32_t shift_rest = std::countr_zero(rest);
                 masm.as_add(ToRegister(dest), src,
                             lsl(src, shift - shift_rest));
                 if (shift_rest != 0) {
@@ -368,8 +369,8 @@ void CodeGenerator::visitMulI(LMulI* ins) {
             // To stay on the safe side, only optimize things that are a
             // power of 2.
 
-            uint32_t shift = FloorLog2(uint32_t(constant));
-            if ((1 << shift) == constant) {
+            if (std::has_single_bit(uint32_t(constant))) {
+              uint32_t shift = std::countr_zero(uint32_t(constant));
               // dest = lhs * pow(2,shift)
               masm.ma_lsl(Imm32(shift), ToRegister(lhs), ToRegister(dest));
               // At runtime, check (lhs == dest >> shift), if this
@@ -454,7 +455,7 @@ void CodeGenerator::visitMulIntPtr(LMulIntPtr* ins) {
 
     // Use shift if constant is a power of 2.
     if (constant > 0 && std::has_single_bit(uintptr_t(constant))) {
-      uint32_t shift = mozilla::FloorLog2(uintptr_t(constant));
+      uint32_t shift = std::countr_zero(uintptr_t(constant));
       masm.ma_lsl(Imm32(shift), ToRegister(lhs), ToRegister(dest));
       return;
     }
@@ -491,8 +492,8 @@ void CodeGenerator::visitMulI64(LMulI64* lir) {
       default:
         if (constant > 0) {
           // Use shift if constant is power of 2.
-          int32_t shift = mozilla::FloorLog2(uint64_t(constant));
-          if (int64_t(1) << shift == constant) {
+          if (std::has_single_bit(uint64_t(constant))) {
+            int32_t shift = std::countr_zero(uint64_t(constant));
             masm.lshift64(Imm32(shift), ToRegister64(lhs));
             return;
           }

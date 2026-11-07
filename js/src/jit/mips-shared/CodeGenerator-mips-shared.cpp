@@ -268,14 +268,13 @@ void CodeGenerator::visitMulI(LMulI* ins) {
     }
 
     if (constant > 0) {
-      uint32_t shift = mozilla::FloorLog2(uint32_t(constant));
-
       if (!mul->canOverflow()) {
         // If it cannot overflow, we can do lots of optimizations.
 
         // See if the constant has one bit set, meaning it can be
         // encoded as a bitshift.
-        if ((1 << shift) == constant) {
+        if (std::has_single_bit(uint32_t(constant))) {
+          uint32_t shift = std::countr_zero(uint32_t(constant));
           masm.ma_sll(dest, lhs, Imm32(shift));
           return;
         }
@@ -283,9 +282,10 @@ void CodeGenerator::visitMulI(LMulI* ins) {
         // If the constant cannot be encoded as (1<<C1), see if it can
         // be encoded as (1<<C1) | (1<<C2), which can be computed
         // using an add and a shift.
+        uint32_t shift = mozilla::FloorLog2(uint32_t(constant));
         uint32_t rest = constant - (1 << shift);
-        uint32_t shift_rest = mozilla::FloorLog2(rest);
-        if ((1u << shift_rest) == rest) {
+        if (std::has_single_bit(rest)) {
+          uint32_t shift_rest = std::countr_zero(rest);
           UseScratchRegisterScope temps(masm);
           Register scratch = temps.Acquire();
 
@@ -298,7 +298,8 @@ void CodeGenerator::visitMulI(LMulI* ins) {
         }
       } else {
         // To stay on the safe side, only optimize things that are a power of 2.
-        if ((1 << shift) == constant) {
+        if (std::has_single_bit(uint32_t(constant))) {
+          uint32_t shift = std::countr_zero(uint32_t(constant));
           UseScratchRegisterScope temps(masm);
           Register scratch = temps.Acquire();
 
@@ -396,8 +397,8 @@ void CodeGeneratorMIPSShared::emitMulI64(Register lhs, int64_t rhs,
     }
 
     // Use shift if constant is power of 2.
-    int32_t shift = mozilla::FloorLog2(uint64_t(rhs));
-    if (int64_t(1) << shift == rhs) {
+    if (std::has_single_bit(uint64_t(rhs))) {
+      int32_t shift = std::countr_zero(uint64_t(rhs));
       masm.lshiftPtr(Imm32(shift), lhs, dest);
       return;
     }

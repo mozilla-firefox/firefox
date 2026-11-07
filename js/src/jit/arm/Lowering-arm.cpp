@@ -194,12 +194,11 @@ void LIRGeneratorARM::lowerForMulInt64(LMulI64* ins, MMul* mir,
 
   if (rhs->isConstant()) {
     int64_t constant = rhs->toConstant()->toInt64();
-    int32_t shift = mozilla::FloorLog2(uint64_t(constant));
     // See special cases in CodeGeneratorARM::visitMulI64
     if (constant >= -1 && constant <= 2) {
       needsTemp = false;
     }
-    if (constant > 0 && int64_t(1) << shift == constant) {
+    if (constant > 0 && std::has_single_bit(uint64_t(constant))) {
       needsTemp = false;
     }
   }

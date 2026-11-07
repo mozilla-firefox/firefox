@@ -24,7 +24,6 @@ using namespace js::jit;
 
 using mozilla::Abs;
 using mozilla::DebugOnly;
-using mozilla::FloorLog2;
 using mozilla::NegativeInfinity;
 
 using JS::GenericNaN;
@@ -658,8 +657,8 @@ void CodeGenerator::visitMulI(LMulI* ins) {
           return;
         default:
           // Use shift if cannot overflow and constant is power of 2
-          int32_t shift = FloorLog2(uint32_t(constant));
           if (constant > 0 && std::has_single_bit(uint32_t(constant))) {
+            int32_t shift = std::countr_zero(uint32_t(constant));
             if (lhs != out) {
               masm.movl(lhs, out);
             }
