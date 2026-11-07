@@ -387,6 +387,7 @@ treeherder:
         'service-location': 'service-location'
         'service-mars': 'service-mars'
         'service-merino-manifest': 'service-merino-manifest'
+        'service-merino-sports': 'service-merino-sports'
         'service-merino-weather': 'service-merino-weather'
         'service-nimbus': 'service-nimbus'
         'service-pocket': 'service-pocket'

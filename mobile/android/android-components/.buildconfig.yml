@@ -2733,6 +2733,12 @@ projects:
     - components:support-test
     - components:support-utils
     - components:tooling-lint
+  components:service-merino-sports:
+    description: A library for fetching sports match data from the Merino service.
+    path: components/service/merino-sports
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:service-merino-weather:
     description: A library for fetching weather forecasts from the Merino service.
     path: components/service/merino-weather
