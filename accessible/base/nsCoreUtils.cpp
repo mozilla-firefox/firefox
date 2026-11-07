@@ -597,29 +597,11 @@ bool nsCoreUtils::CanCreateAccessibleWithoutFrame(nsIContent* aContent,
   if (!element) {
     return false;
   }
-  // <option> and <optgroup> can create an accessible for comboboxes, if our
-  // select can also create an accessible (even if they're display: none)
-  if (auto* option = dom::HTMLOptionElement::FromNode(element)) {
-    if (auto* select = option->GetSelect(); select && select->IsCombobox()) {
-      element = select;
-    }
-  } else if (auto* optgroup = dom::HTMLOptGroupElement::FromNode(element)) {
-    if (auto* select = optgroup->GetSelect(); select && select->IsCombobox()) {
-      element = select;
-    }
-  } else if (element->GetPseudoElementType() == PseudoStyleType::Picker) {
-    if (auto* select =
-            dom::HTMLSelectElement::FromNode(element->GetFlattenedTreeParent());
-        select && select->IsCombobox()) {
-      element = select;
-    }
-  }
 
-  // If we aren't display: contents or option/optgroup we can't create an
-  // accessible without frame. Our select combobox code relies on the latter.
-  // Note that we need to check primary frame explicitly for the <select> case
-  // above.
-  if (!element->GetPrimaryFrame() && !element->IsDisplayContents()) {
+  MOZ_ASSERT(!element->GetPrimaryFrame(), "Element should not have a frame");
+
+  // If we aren't display: contents we can't create an accessible without frame.
+  if (!element->IsDisplayContents()) {
     // Nothing in aContent's subtree can ever render in this case, regardless of
     // any ancestor.
     if (aIsSubtreeHidden) {

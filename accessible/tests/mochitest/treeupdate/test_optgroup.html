@@ -19,9 +19,8 @@
     async function doTest() {
       const selectNode = getNode("select");
       const select = getAccessible(selectNode);
-      const selectList = select.firstChild;
 
-      let reordered = waitForEvent(EVENT_REORDER, selectList);
+      let reordered = waitForEvent(EVENT_REORDER, select);
       const optGroup = document.createElement("optgroup");
       for (let i = 0; i < 2; i++) {
         const opt = document.createElement("option");
@@ -35,27 +34,23 @@
       await reordered;
 
       let tree =
-        { COMBOBOX: [
-          { COMBOBOX_LIST: [
-            { GROUPING: [
-              { COMBOBOX_OPTION: [] },
-              { COMBOBOX_OPTION: [] },
-            ] },
-            { COMBOBOX_OPTION: [] },
+        { LISTBOX: [
+          { GROUPING: [
+            { OPTION: [{ TEXT_LEAF: [] }] },
+            { OPTION: [{ TEXT_LEAF: [] }] },
           ] },
+          { OPTION: [] },
         ] };
       testAccessibleTree(select, tree);
 
       const option1Node = selectNode.firstChild.firstChild;
-      reordered = waitForEvent(EVENT_REORDER, selectList);
+      reordered = waitForEvent(EVENT_REORDER, select);
       selectNode.firstChild.remove();
       await reordered;
 
       tree =
-        { COMBOBOX: [
-          { COMBOBOX_LIST: [
-            { COMBOBOX_OPTION: [] },
-          ] },
+        { LISTBOX: [
+          { OPTION: [] },
         ] };
       testAccessibleTree(select, tree);
       is(
@@ -82,7 +77,7 @@
   <pre id="test">
   </pre>
 
-  <select id="select"></select>
+  <select id="select" size="3"></select>
 
   <div id="debug"/>
 </body>

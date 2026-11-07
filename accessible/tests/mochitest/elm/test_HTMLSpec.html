@@ -1245,16 +1245,7 @@
       obj = { // HTML:select
         role: ROLE_COMBOBOX,
         states: STATE_FOCUSABLE,
-        children: [
-          {
-            role: ROLE_COMBOBOX_LIST,
-            children: [
-              { role: ROLE_COMBOBOX_OPTION },
-              { role: ROLE_COMBOBOX_OPTION },
-              { role: ROLE_COMBOBOX_OPTION },
-            ],
-          },
-        ],
+        children: [],
       };
       testElm("select_combobox", obj);
 
