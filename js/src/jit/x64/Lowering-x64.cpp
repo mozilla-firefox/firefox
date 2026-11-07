@@ -513,7 +513,7 @@ void LIRGeneratorX64::lowerDivI64(MDiv* div) {
     // Division by powers of two can be done by shifting, and division by
     // other numbers can be done by a reciprocal multiplication technique.
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
+      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
       LAllocation lhs = useRegisterAtStart(div->lhs());
 
       // We have to round the result toward 0 when the remainder is non-zero.
@@ -544,7 +544,7 @@ void LIRGeneratorX64::lowerModI64(MMod* mod) {
     int64_t rhs = mod->rhs()->toConstant()->toInt64();
 
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
+      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
 
       auto* lir =
           new (alloc()) LModPowTwoI64(useRegisterAtStart(mod->lhs()), shift);
@@ -569,7 +569,7 @@ void LIRGeneratorX64::lowerUDivI64(MDiv* div) {
     uint64_t rhs = div->rhs()->toConstant()->toInt64();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = mozilla::FloorLog2(rhs);
+      int32_t shift = std::countr_zero(rhs);
 
       auto* lir = new (alloc()) LDivPowTwoI64(useRegisterAtStart(div->lhs()),
                                               LAllocation(), shift, false);
@@ -594,7 +594,7 @@ void LIRGeneratorX64::lowerUModI64(MMod* mod) {
     uint64_t rhs = mod->rhs()->toConstant()->toInt64();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = mozilla::FloorLog2(rhs);
+      int32_t shift = std::countr_zero(rhs);
 
       auto* lir =
           new (alloc()) LModPowTwoI64(useRegisterAtStart(mod->lhs()), shift);

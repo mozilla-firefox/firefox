@@ -6039,7 +6039,7 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
     }
 
     if (std::has_single_bit(rt.value + 1)) {
-      int32_t shift = mozilla::FloorLog2(rt.value + 1);
+      int32_t shift = std::countr_zero(rt.value + 1);
 
       UseScratchRegisterScope temps(this);
       Register savedRs = rs;
@@ -6053,7 +6053,7 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
     }
 
     if (std::has_single_bit(rt.value - 1)) {
-      int32_t shift = mozilla::FloorLog2(rt.value - 1);
+      int32_t shift = std::countr_zero(rt.value - 1);
 
       UseScratchRegisterScope temps(this);
       Register savedRs = rs;

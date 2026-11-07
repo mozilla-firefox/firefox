@@ -1504,7 +1504,7 @@ void CodeGenerator::visitMulIntPtr(LMulIntPtr* ins) {
 
     // Use shift if constant is a power of 2.
     if (constant > 0 && std::has_single_bit(uintptr_t(constant))) {
-      uint32_t shift = mozilla::FloorLog2(uintptr_t(constant));
+      uint32_t shift = std::countr_zero(uintptr_t(constant));
       masm.lshiftPtr(Imm32(shift), lhs);
       return;
     }

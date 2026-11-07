@@ -11936,7 +11936,7 @@ void CodeGenerator::visitPowOfTwoI(LPowOfTwoI* ins) {
   uint32_t base = ins->base();
   MOZ_ASSERT(std::has_single_bit(base));
 
-  uint32_t n = mozilla::FloorLog2(base);
+  uint32_t n = std::countr_zero(base);
   MOZ_ASSERT(n != 0);
 
   // Hacker's Delight, 2nd edition, theorem D2.

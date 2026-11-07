@@ -18,8 +18,6 @@
 using namespace js;
 using namespace js::jit;
 
-using mozilla::FloorLog2;
-
 LBoxAllocation LIRGeneratorARM::useBoxFixed(MDefinition* mir, Register reg1,
                                             Register reg2, bool useAtStart) {
   MOZ_ASSERT(mir->type() == MIRType::Value);
@@ -307,7 +305,7 @@ void LIRGeneratorARM::lowerDivI(MDiv* div) {
     // Check for division by a power of two, which is an easy and important
     // case to optimize.
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
+      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
       LDivPowTwoI* lir = new (alloc())
           LDivPowTwoI(useRegisterAtStart(div->lhs()), shift, rhs < 0);
       if (div->fallible()) {
@@ -371,7 +369,7 @@ void LIRGeneratorARM::lowerModI(MMod* mod) {
     int32_t rhs = mod->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
+      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
       LModPowTwoI* lir =
           new (alloc()) LModPowTwoI(useRegisterAtStart(mod->lhs()), shift);
       if (mod->fallible()) {
@@ -566,7 +564,7 @@ void LIRGeneratorARM::lowerUDiv(MDiv* div) {
     uint32_t rhs = div->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = mozilla::FloorLog2(rhs);
+      int32_t shift = std::countr_zero(rhs);
       auto* lir = new (alloc())
           LDivPowTwoI(useRegisterAtStart(div->lhs()), shift, false);
       if (div->fallible()) {
@@ -612,7 +610,7 @@ void LIRGeneratorARM::lowerUMod(MMod* mod) {
     uint32_t rhs = mod->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = mozilla::FloorLog2(rhs);
+      int32_t shift = std::countr_zero(rhs);
       auto* lir =
           new (alloc()) LModPowTwoI(useRegisterAtStart(mod->lhs()), shift);
       if (mod->fallible()) {

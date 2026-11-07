@@ -369,7 +369,7 @@ void CodeGeneratorMIPSShared::emitMulI64(Register lhs, int64_t rhs,
 
   if (rhs > 0) {
     if (std::has_single_bit(static_cast<uint64_t>(rhs + 1))) {
-      int32_t shift = mozilla::FloorLog2(uint64_t(rhs + 1));
+      int32_t shift = std::countr_zero(uint64_t(rhs + 1));
 
       UseScratchRegisterScope temps(masm);
       Register savedLhs = lhs;
@@ -383,7 +383,7 @@ void CodeGeneratorMIPSShared::emitMulI64(Register lhs, int64_t rhs,
     }
 
     if (std::has_single_bit(static_cast<uint64_t>(rhs - 1))) {
-      int32_t shift = mozilla::FloorLog2(uint64_t(rhs - 1u));
+      int32_t shift = std::countr_zero(uint64_t(rhs - 1u));
 
       UseScratchRegisterScope temps(masm);
       Register savedLhs = lhs;
