@@ -9,16 +9,16 @@ probe bug.
 
 - **`Missing chrome or resource URL: chrome://…`** in the browser log, with a
   Marionette timeout in the probe, on the first launch after the tree moved to
-  another base (e.g. a rebase, another branch). The objdir builds its chrome
-  registry from the jar manifests as a copy, so it still lists the old base's
-  files. Launch first and rebuild only on this signature: `./mach build faster`,
-  after `touch <objdir>/CLOBBER` when `[ CLOBBER -nt <objdir>/CLOBBER ]` says
-  the CLOBBER moved. A moved CLOBBER alone is no reason to rebuild: the tree
-  launches fine while the registry still matches. A checkout rewrites CLOBBER
-  with a new mtime whenever its content differs between the two revisions, so
-  after switching the test reads moved even for an objdir already good for the
-  new revision; `touch <objdir>/CLOBBER` once it is (e.g. right after
-  `./mach artifact install`).
+  another base (e.g. a rebase, another branch). For why, read
+  `build/docs/jar-manifests.md`, "In a Local Build". Launch first and rebuild
+  only on this signature: `./mach build faster`, after `touch
+  <objdir>/CLOBBER` when `[ CLOBBER -nt <objdir>/CLOBBER ]` says the CLOBBER
+  moved. A moved CLOBBER alone is no reason to rebuild: the tree launches fine
+  while the registry still matches. A checkout rewrites CLOBBER with a new
+  mtime whenever its content differs between the two revisions, so after
+  switching the test reads moved even for an objdir already good for the new
+  revision; `touch <objdir>/CLOBBER` once it is (e.g. right after `./mach
+  artifact install`).
 - **`Missing chrome or resource URL: moz-src:///…` that survives `build
   faster`**, or a UniFFI argument-count mismatch in a service's failed init
   (`SearchService: #init: failure`): the objdir's downloaded binary was built at
@@ -33,14 +33,15 @@ probe bug.
 
 ## 2. What is live at the next launch
 
-- A plain jar.mn entry (e.g. CSS, JS, `.mjs`) is either a symlink into the
-  source tree, live at the next launch with no rebuild, or a copy that needs
-  `./mach build faster` after each edit; the host's platform file, section
-  PATHS, says which.
-- An entry marked `*` in its jar.mn is a preprocessed copy: `browser.xhtml` with
-  every `.inc.xhtml` it `#include`s, and the other preprocessed `.xhtml` (e.g.
-  aboutDialog, pageInfo, webext-panels). It needs `./mach build faster` after
-  every edit, on every platform. The theme jar.mn files have no `*` entries.
+For why, read `build/docs/jar-manifests.md`, "In a Local Build".
+
+- A plain jar.mn entry (e.g. CSS, JS, `.mjs`) is live at the next launch where
+  the objdir symlinks it, and needs `./mach build faster` after each edit where
+  it is a copy; the host's platform file, section PATHS, says which.
+- Run `./mach build faster` after every edit to an entry marked `*` in its
+  jar.mn, on every platform: `browser.xhtml` with every `.inc.xhtml` it
+  `#include`s, and the other preprocessed `.xhtml` (e.g. aboutDialog, pageInfo,
+  webext-panels). The theme jar.mn files have no `*` entries.
 - A baseline placed by path (`SKILL.md` §6) follows the same rules.
 - A New Tab change absent at runtime may be a stale bundle left in the source
   tree, which shadows the objdir copy. New Tab's docs,

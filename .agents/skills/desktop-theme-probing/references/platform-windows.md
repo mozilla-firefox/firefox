@@ -59,10 +59,12 @@ and `drawSnapshot` read normally.
 ## PATHS
 
 The binary is `<objdir>/dist/bin/firefox.exe`, and the system temp directory is
-`%TEMP%`. A jar.mn entry is a copy unless the build could create symlinks
-(Developer Mode or an elevated shell); `find <objdir>/dist/bin -type l` printing
-nothing means copies, so run `./mach build faster` after each edit (§2 "What is
-live at the next launch" in [`build-freshness.md`](build-freshness.md)).
+`%TEMP%`. A jar.mn entry is a copy where the build cannot create a symlink
+(`build/docs/jar-manifests.md`, "In a Local Build"); on Windows it is a copy
+unless Developer Mode or an elevated shell allows symlinks.
+`find <objdir>/dist/bin -type l` printing nothing means copies, so run
+`./mach build faster` after each edit (§2 "What is live at the next launch" in
+[`build-freshness.md`](build-freshness.md)).
 
 ## GRABS
 
