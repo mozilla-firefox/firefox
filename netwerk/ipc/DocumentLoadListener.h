@@ -181,6 +181,10 @@ class DocumentLoadListener : public nsIInterfaceRequestor,
                            nsDocShellLoadState* aLoadState,
                            bool aSetNavigating);
 
+  static uint32_t SecurityFlagsForLoadInfo(nsDocShellLoadState*);
+  static uint32_t EffectiveSandboxFlags(uint32_t aBaseSandboxFlags,
+                                        nsSecurityFlags);
+
   // Creates a DocumentLoadListener directly in the parent process and opens it,
   // without needing an existing DocumentChannel.
   // If successful, aLoadState will be given a SpeculativeListener, which will

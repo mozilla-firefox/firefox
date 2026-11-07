@@ -10102,27 +10102,7 @@ nsresult nsDocShell::DoURILoad(nsDocShellLoadState* aLoadState,
                "DoURILoad thinks this is a document and InternalLoad does not");
   }
 
-  // We want to inherit aLoadState->PrincipalToInherit() when:
-  // 1. ChannelShouldInheritPrincipal returns true.
-  // 2. aLoadState->URI() is not data: URI, or data: URI is not
-  //    configured as unique opaque origin.
-  bool inheritPrincipal = false;
-
   nsCOMPtr<nsIURI> uri = aLoadState->URI();
-  if (aLoadState->PrincipalToInherit()) {
-    bool isSrcdoc =
-        aLoadState->HasInternalLoadFlags(INTERNAL_LOAD_FLAGS_IS_SRCDOC);
-    bool inheritAttrs = nsContentUtils::ChannelShouldInheritPrincipal(
-        aLoadState->PrincipalToInherit(), uri,
-        true,  // aInheritForAboutBlank
-        isSrcdoc);
-
-    inheritPrincipal = inheritAttrs && !uri->SchemeIs("data");
-  }
-
-  MOZ_ASSERT_IF(NS_IsAboutBlankAllowQueryAndFragment(uri) &&
-                    aLoadState->PrincipalToInherit(),
-                inheritPrincipal);
   // See https://bugzilla.mozilla.org/show_bug.cgi?id=1736570
   const bool doInitialSyncLoad = ShouldDoInitialAboutBlankSyncLoad(
       uri, aLoadState, aLoadState->PrincipalToInherit());
@@ -10247,17 +10227,10 @@ nsresult nsDocShell::DoURILoad(nsDocShellLoadState* aLoadState,
     return NS_ERROR_FAILURE;
   }
 
-  uint32_t sandboxFlags = mBrowsingContext->GetSandboxFlags();
-  nsSecurityFlags securityFlags =
-      nsILoadInfo::SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL;
-
-  if (mLoadType == LOAD_ERROR_PAGE) {
-    securityFlags |= nsILoadInfo::SEC_LOAD_ERROR_PAGE;
-  }
-
-  if (inheritPrincipal) {
-    securityFlags |= nsILoadInfo::SEC_FORCE_INHERIT_PRINCIPAL;
-  }
+  const nsSecurityFlags securityFlags =
+      DocumentLoadListener::SecurityFlagsForLoadInfo(aLoadState);
+  const uint32_t sandboxFlags = DocumentLoadListener::EffectiveSandboxFlags(
+      mBrowsingContext->GetSandboxFlags(), securityFlags);
 
   // Must never have a parent for TYPE_DOCUMENT loads
   MOZ_ASSERT_IF(contentPolicyType == nsIContentPolicy::TYPE_DOCUMENT,

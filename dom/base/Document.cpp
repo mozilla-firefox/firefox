@@ -3802,22 +3802,18 @@ nsresult Document::StartDocumentLoad(const char* aCommand, nsIChannel* aChannel,
     mChannel->GetSecurityInfo(getter_AddRefs(mSecurityInfo));
   }
 
-  // If this document is being loaded by a docshell, copy its sandbox flags
-  // to the document, and store the fullscreen enabled flag. These are
-  // immutable after being set here.
+  // Get our sandbox flags from the LoadInfo for this document.
+  // These are immutable after being set here.
   nsCOMPtr<nsIDocShell> docShell = do_QueryInterface(aContainer);
-
-  // If this is an error page, don't inherit sandbox flags
   nsCOMPtr<nsILoadInfo> loadInfo = aChannel->LoadInfo();
+  mSandboxFlags = loadInfo->GetSandboxFlags();
+  if (docShell) {
+    WarnIfSandboxIneffective(docShell, mSandboxFlags, aChannel);
+  }
 
   if (!IsTopLevelContentDocument()) {
     SetAncestorOriginsList(
         ProduceAncestorOriginsList(loadInfo->AncestorPrincipals()));
-  }
-
-  if (docShell && !loadInfo->GetLoadErrorPage()) {
-    mSandboxFlags = loadInfo->GetSandboxFlags();
-    WarnIfSandboxIneffective(docShell, mSandboxFlags, GetChannel());
   }
 
   mClassificationFlags = AntiTrackingUtils::GetClassificationFlags(aChannel);
