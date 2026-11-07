@@ -9,8 +9,10 @@
 #include "GLReadTexImageHelper.h"
 #include "GLUploadHelpers.h"
 #include "GeckoProfiler.h"
-#include "GfxTexturesReporter.h"   // for GfxTexturesReporter
-#include "gfx2DGlue.h"             // for ContentForFormat, etc
+#include "GfxTexturesReporter.h"  // for GfxTexturesReporter
+#include "gfx2DGlue.h"            // for ContentForFormat, etc
+#include "mozilla/ScopeExit.h"
+#include "mozilla/UniquePtrExtensions.h"
 #include "mozilla/gfx/2D.h"        // for DataSourceSurface
 #include "mozilla/gfx/BaseSize.h"  // for BaseSize
 #include "mozilla/gfx/Logging.h"   // for gfxCriticalError
@@ -589,23 +591,55 @@ bool AndroidHardwareBufferTextureSource::EnsureEGLImage() {
     const auto& gle = gl::GLContextEGL::Cast(mGL);
     const auto& egl = gle->mEgl;
 
-    // eglCreateSyncKHR takes ownership of the fd even on failure.
-    // Release it here to avoid closing the fd again.
-    const EGLint attribs[] = {LOCAL_EGL_SYNC_NATIVE_FENCE_FD_ANDROID,
-                              fenceFd.release(), LOCAL_EGL_NONE};
+    // Like Chromium's AndroidImageBacking::BeginRead() and
+    // ImageReaderGLOwner::ScopedCurrentImageRef::GetReadyFence(), give EGL a
+    // duplicate FD while retaining the original fence. Restore it on failure
+    // so a subsequent bind or readback still waits for the producer.
+    auto restoreAcquireFence = MakeScopeExit(
+        [&] { mAndroidHardwareBuffer->SetAcquireFence(std::move(fenceFd)); });
+    UniqueFileHandle importFd = DuplicateFileHandle(fenceFd);
+    if (!importFd) {
+      gfxCriticalNoteOnce
+          << "AHB compositor: failed to duplicate acquire fence FD";
+      DeleteTextureHandle();
+      DestroyEGLImage();
+      return false;
+    }
 
+    // EGL takes ownership of the duplicate, including on creation failure.
+    const EGLint attribs[] = {LOCAL_EGL_SYNC_NATIVE_FENCE_FD_ANDROID,
+                              importFd.release(), LOCAL_EGL_NONE};
     EGLSync sync =
         egl->fCreateSyncKHR(LOCAL_EGL_SYNC_NATIVE_FENCE_ANDROID, attribs);
-    if (sync) {
-      if (egl->IsExtensionSupported(gl::EGLExtension::KHR_wait_sync)) {
-        egl->fWaitSync(sync, 0);
-      } else {
-        egl->fClientWaitSync(sync, 0, LOCAL_EGL_FOREVER);
-      }
-      egl->fDestroySync(sync);
-    } else {
-      gfxCriticalNote << "Failed to create EGLSync from acquire fence fd";
+    if (!sync) {
+      const EGLint eglError = egl->mLib->fGetError();
+      gfxCriticalNoteOnce
+          << "AHB compositor: failed to import acquire fence, EGL error: "
+          << eglError;
+      DeleteTextureHandle();
+      DestroyEGLImage();
+      return false;
     }
+    bool waitSucceeded;
+    if (egl->IsExtensionSupported(gl::EGLExtension::KHR_wait_sync)) {
+      // Queue a GPU-side wait without blocking the CPU.
+      waitSucceeded = egl->fWaitSync(sync, 0) == LOCAL_EGL_TRUE;
+    } else {
+      // Without server-side wait support, block the CPU until the fence
+      // signals.
+      waitSucceeded = egl->fClientWaitSync(sync, 0, LOCAL_EGL_FOREVER) ==
+                      LOCAL_EGL_CONDITION_SATISFIED;
+    }
+    egl->fDestroySync(sync);
+    if (!waitSucceeded) {
+      gfxCriticalNoteOnce << "AHB compositor: acquire fence wait failed";
+      DeleteTextureHandle();
+      DestroyEGLImage();
+      return false;
+    }
+
+    // A successful wait no longer needs the original FD for retry.
+    restoreAcquireFence.release();
   }
 
   if (mTextureHandle) {
