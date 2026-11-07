@@ -5549,9 +5549,7 @@ void nsGlobalWindowOuter::SizeToContentOuter(
       presContext->CSSPixelsToDevPixels(cssSize.width),
       presContext->CSSPixelsToDevPixels(cssSize.height));
 
-  nsCOMPtr<nsIDocShell> docShell = mDocShell;
-  aError =
-      treeOwner->SizeShellTo(docShell, newDevSize.width, newDevSize.height);
+  aError = treeOwner->SetRootShellSize(newDevSize.width, newDevSize.height);
 }
 
 already_AddRefed<nsPIWindowRoot> nsGlobalWindowOuter::GetTopWindowRoot() {

@@ -185,12 +185,6 @@ nsContentTreeOwner::SetRootShellSize(int32_t aWidth, int32_t aHeight) {
   return mAppWindow->SetRootShellSize(aWidth, aHeight);
 }
 
-NS_IMETHODIMP nsContentTreeOwner::SizeShellTo(nsIDocShellTreeItem* aShellItem,
-                                              int32_t aCX, int32_t aCY) {
-  NS_ENSURE_STATE(mAppWindow);
-  return mAppWindow->SizeShellTo(aShellItem, aCX, aCY);
-}
-
 NS_IMETHODIMP
 nsContentTreeOwner::GetHasPrimaryContent(bool* aResult) {
   NS_ENSURE_STATE(mAppWindow);

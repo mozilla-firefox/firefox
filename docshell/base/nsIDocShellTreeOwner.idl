@@ -58,13 +58,6 @@ interface nsIDocShellTreeOwner : nsISupports
   readonly attribute BrowsingContext primaryContentBrowsingContext;
 
   /*
-  Tells the tree owner to size its window or parent window in such a way
-  that the shell passed along will be the size specified.
-  */
-  [can_run_script]
-  void sizeShellTo(in nsIDocShellTreeItem shell, in long cx, in long cy);
-
-  /*
   Gets the size of the primary content area in device pixels. This should work
   for both in-process and out-of-process content areas.
   */

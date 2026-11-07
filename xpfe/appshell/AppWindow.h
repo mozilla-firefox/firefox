@@ -228,8 +228,6 @@ class AppWindow final : public nsIBaseWindow,
   nsresult GetRootShellSize(int32_t* aWidth, int32_t* aHeight);
   nsresult SetRootShellSize(int32_t aWidth, int32_t aHeight);
 
-  NS_IMETHOD SizeShellTo(nsIDocShellTreeItem* aShellItem, int32_t aCX,
-                         int32_t aCY);
   NS_IMETHOD ExitModalLoop(nsresult aStatus);
   MOZ_CAN_RUN_SCRIPT
   NS_IMETHOD CreateNewChromeWindow(int32_t aChromeFlags,
@@ -339,7 +337,7 @@ class AppWindow final : public nsIBaseWindow,
   nsCOMPtr<nsIOpenWindowInfo> mInitialOpenWindowInfo;
   nsString mTitle;
 
-  // Client size requested via SizeShellTo().
+  // Client size requested via SetRootShellSize().
   DesktopSize mRequestedClientSize;
   // The screen rect of the opener.
   DesktopIntRect mOpenerScreenRect;

@@ -430,47 +430,6 @@ nsDocShellTreeOwner::SetRootShellSize(int32_t /*aWidth*/, int32_t /*aHeight*/) {
 }
 
 NS_IMETHODIMP
-nsDocShellTreeOwner::SizeShellTo(nsIDocShellTreeItem* aShellItem, int32_t aCX,
-                                 int32_t aCY) {
-  nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome = GetWebBrowserChrome();
-
-  NS_ENSURE_STATE(mTreeOwner || webBrowserChrome);
-
-  if (nsCOMPtr<nsIDocShellTreeOwner> treeOwner = mTreeOwner) {
-    return treeOwner->SizeShellTo(aShellItem, aCX, aCY);
-  }
-
-  if (aShellItem == mWebBrowser->mDocShell) {
-    nsCOMPtr<nsIBrowserChild> browserChild =
-        do_QueryInterface(webBrowserChrome);
-    if (browserChild) {
-      // The XUL window to resize is in the parent process, but there we
-      // won't be able to get the size of aShellItem. We can ask the parent
-      // process to change our size instead.
-      nsCOMPtr<nsIBaseWindow> shellAsWin(do_QueryInterface(aShellItem));
-      NS_ENSURE_TRUE(shellAsWin, NS_ERROR_FAILURE);
-
-      LayoutDeviceIntSize shellSize;
-      shellAsWin->GetSize(&shellSize.width, &shellSize.height);
-      LayoutDeviceIntSize deltaSize = LayoutDeviceIntSize(aCX, aCY) - shellSize;
-
-      LayoutDeviceIntSize currentSize;
-      GetSize(&currentSize.width, &currentSize.height);
-
-      LayoutDeviceIntSize newSize = currentSize + deltaSize;
-      return SetSize(newSize.width, newSize.height, true);
-    }
-    // XXX: this is weird, but we used to call a method here
-    // (webBrowserChrome->SizeBrowserTo()) whose implementations all failed
-    // like this, so...
-    return NS_ERROR_NOT_IMPLEMENTED;
-  }
-
-  MOZ_ASSERT_UNREACHABLE("This is unimplemented, API should be cleaned up");
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
 nsDocShellTreeOwner::GetHasPrimaryContent(bool* aResult) {
   *aResult = mPrimaryRemoteTab || mPrimaryContentShell;
   return NS_OK;

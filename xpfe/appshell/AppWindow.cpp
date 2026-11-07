@@ -2033,7 +2033,10 @@ AppWindow::SetPrimaryContentSize(int32_t aWidth, int32_t aHeight) {
     return SetPrimaryRemoteTabSize(aWidth, aHeight);
   }
   if (mPrimaryContentShell) {
-    return SizeShellTo(mPrimaryContentShell, aWidth, aHeight);
+    int32_t shellWidth, shellHeight;
+    MOZ_TRY(GetPrimaryContentShellSize(&shellWidth, &shellHeight));
+    SizeShellToWithLimit(aWidth, aHeight, shellWidth, shellHeight);
+    return NS_OK;
   }
   return NS_ERROR_UNEXPECTED;
 }
@@ -2051,35 +2054,12 @@ nsresult AppWindow::GetRootShellSize(int32_t* aWidth, int32_t* aHeight) {
 }
 
 nsresult AppWindow::SetRootShellSize(int32_t aWidth, int32_t aHeight) {
-  return SizeShellTo(mDocShell, aWidth, aHeight);
-}
-
-NS_IMETHODIMP AppWindow::SizeShellTo(nsIDocShellTreeItem* aShellItem,
-                                     int32_t aCX, int32_t aCY) {
-  MOZ_ASSERT(aShellItem == mDocShell || aShellItem == mPrimaryContentShell);
-  if (aShellItem == mDocShell) {
-    const LayoutDeviceIntSize clientSize(aCX, aCY);
-    auto newSize = clientSize + GetOuterToInnerSizeDifference(mWindow);
-    SetSize(newSize.width, newSize.height, /* aRepaint = */ true);
-    if (mWindow) {
-      mRequestedClientSize = clientSize / mWindow->GetDesktopToDeviceScale();
-    }
-    return NS_OK;
+  const LayoutDeviceIntSize clientSize(aWidth, aHeight);
+  auto newSize = clientSize + GetOuterToInnerSizeDifference(mWindow);
+  SetSize(newSize.width, newSize.height, /* aRepaint = */ true);
+  if (mWindow) {
+    mRequestedClientSize = clientSize / mWindow->GetDesktopToDeviceScale();
   }
-
-  // XXXTAB This is wrong, we should actually reflow based on the passed in
-  // shell.  For now we are hacking and doing delta sizing.  This is bad
-  // because it assumes all size we add will go to the shell which probably
-  // won't happen.
-  nsCOMPtr<nsIBaseWindow> shellAsWin(do_QueryInterface(aShellItem));
-  NS_ENSURE_TRUE(shellAsWin, NS_ERROR_FAILURE);
-
-  int32_t width = 0;
-  int32_t height = 0;
-  shellAsWin->GetSize(&width, &height);
-
-  SizeShellToWithLimit(aCX, aCY, width, height);
-
   return NS_OK;
 }
 
@@ -2283,7 +2263,6 @@ void AppWindow::IntrinsicallySizeShell(const CSSIntSize& aWindowDiff,
   if (!viewer) {
     return;
   }
-  RefPtr<nsDocShell> docShell = mDocShell;
 
   CSSIntCoord maxWidth = 0;
   CSSIntCoord maxHeight = 0;
@@ -2314,7 +2293,7 @@ void AppWindow::IntrinsicallySizeShell(const CSSIntSize& aWindowDiff,
 
   int32_t width = pc->CSSPixelsToDevPixels(size->width);
   int32_t height = pc->CSSPixelsToDevPixels(size->height);
-  SizeShellTo(docShell, width, height);
+  SetRootShellSize(width, height);
 
   // Update specified size for the final LoadPositionFromXUL call.
   aSpecWidth = size->width + aWindowDiff.width;
@@ -2374,7 +2353,7 @@ void AppWindow::SizeShell() {
         mRequestedClientSize * mWindow->GetDesktopToDeviceScale());
     if (mWindow->SizeMode() == nsSizeMode_Normal &&
         requestedDevSize != mWindow->GetClientSize()) {
-      SizeShellTo(mDocShell, requestedDevSize.width, requestedDevSize.height);
+      SetRootShellSize(requestedDevSize.width, requestedDevSize.height);
     }
   }
 
