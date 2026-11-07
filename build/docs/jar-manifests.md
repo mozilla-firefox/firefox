@@ -82,6 +82,9 @@ run through the preprocessor, since it contains `#ifdef` and `#endif` statements
 * content/mozapps/profile/profileDowngrade.xhtml  (content/profileDowngrade.xhtml)
 ```
 
+A local build installs a preprocessed file as a copy, so an edit to it needs
+`./mach build faster` (see [In a Local Build](#in-a-local-build)).
+
 ### Base Path, Variables, Wildcards and Localized Files
 
 The section name may be preceded with a base path between square brackets.
@@ -128,3 +131,26 @@ browser.jar:
 
 Notice how other files declare an installation destination using the `builtin-themes` resource that is defined. As such, a SVG file `preview.svg` for a theme `Alpenglow` may be loaded using the resource URL `resource://builtin-themes/alpenglow/preview.svg`
 so that a preview of the theme is available on `about:addons`. See {doc}`Chrome Registration <chrome-registration>` for more details on `resource` and other manifest instructions.
+
+## In a Local Build
+
+A local build installs the files a JAR manifest names into the objdir unpacked;
+`omni.ja` files are only made when the build is packaged.
+
+- A plain entry is installed as a symlink to its source file, so an edit to the
+  source file is live the next time Firefox starts, with no rebuild. Where the
+  build cannot create a symlink, it copies the file instead, and the copy is
+  only refreshed by the next `./mach build faster`.
+- An entry marked with `*` is installed as a preprocessed copy on every
+  platform, so an edit to it, or to any file it `#include`s, needs
+  `./mach build faster` before the next start. `browser/base/content/browser.xhtml`
+  is one, and an edit to an `.inc.xhtml` file it includes counts as an edit to
+  it.
+- The `chrome.manifest` files holding the
+  {doc}`Chrome Registration <chrome-registration>` instructions are generated,
+  and they and the installed files match the JAR manifests as of the last build.
+  After the source tree moves to another revision, such as after a rebase or a
+  branch switch, a file the new revision added is not installed yet. Loading it
+  prints `Missing chrome or resource URL:` with its URL, or crashes with
+  `Missing chrome or resource URLs:` in automation, until `./mach build faster`
+  installs the new revision's files and regenerates the manifests.
