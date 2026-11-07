@@ -5,10 +5,26 @@
 plugins {
     id 'com.android.library'
     alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
     namespace = 'mozilla.components.service.merino.sports'
+}
+
+dependencies {
+    implementation project(':components:concept-fetch')
+    implementation project(':components:support-base')
+
+    implementation libs.androidx.core
+    implementation libs.kotlinx.serialization.json
+
+    testImplementation project(':components:support-test')
+
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.kotlin.test
+    testImplementation libs.kotlinx.coroutines
+    testImplementation libs.robolectric
 }
 
 apply from: '../../../common-config.gradle'

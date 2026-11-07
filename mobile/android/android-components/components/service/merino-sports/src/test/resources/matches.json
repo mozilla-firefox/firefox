@@ -1,0 +1,112 @@
+{
+  "previous": [
+    {
+      "id": 116340,
+      "competition": {
+        "id": 27,
+        "name": "Test Cup"
+      },
+      "kickoff": "2026-10-04T14:00:00Z",
+      "home_team": {
+        "id": 90002327,
+        "name": "Team A",
+        "logo_url": "https://example.com/logos/90002327.png"
+      },
+      "away_team": {
+        "id": 90002100,
+        "name": "Team B",
+        "logo_url": "https://example.com/logos/90002100.png"
+      },
+      "period": "PenaltyShootout",
+      "status": "Final",
+      "clock": null,
+      "home_score": 2,
+      "away_score": 2,
+      "home_penalty_score": 5,
+      "away_penalty_score": 4,
+      "updated_at": "2026-10-04T16:20:00Z"
+    }
+  ],
+  "current": [
+    {
+      "id": 116351,
+      "competition": {
+        "id": 34,
+        "name": "Test League"
+      },
+      "kickoff": "2026-10-10T18:00:00Z",
+      "home_team": {
+        "id": 90002059,
+        "name": "Team C",
+        "logo_url": "https://example.com/logos/90002059.png"
+      },
+      "away_team": {
+        "id": 90002327,
+        "name": "Team A",
+        "logo_url": "https://example.com/logos/90002327.png"
+      },
+      "period": "Regular",
+      "status": "InProgress",
+      "clock": "90+3",
+      "home_score": 1,
+      "away_score": 1,
+      "home_penalty_score": null,
+      "away_penalty_score": null,
+      "updated_at": "2026-10-10T18:45:00Z"
+    }
+  ],
+  "upcoming": [
+    {
+      "id": 116362,
+      "competition": {
+        "id": 34,
+        "name": "Test League"
+      },
+      "kickoff": "2026-10-17T14:00:00Z",
+      "home_team": {
+        "id": 90002327,
+        "name": "Team A",
+        "logo_url": "https://example.com/logos/90002327.png"
+      },
+      "away_team": {
+        "id": 90002200,
+        "name": "Team D",
+        "logo_url": "https://example.com/logos/90002200.png"
+      },
+      "period": null,
+      "status": "Scheduled",
+      "clock": null,
+      "home_score": null,
+      "away_score": null,
+      "home_penalty_score": null,
+      "away_penalty_score": null,
+      "updated_at": "2026-10-10T09:00:00Z"
+    },
+    {
+      "id": 116373,
+      "competition": {
+        "id": 34,
+        "name": "Test League"
+      },
+      "kickoff": "2026-10-24T14:00:00Z",
+      "home_team": {
+        "id": 90002300,
+        "name": "Team E",
+        "logo_url": "https://example.com/logos/90002300.png"
+      },
+      "away_team": {
+        "id": 90002327,
+        "name": "Team A",
+        "logo_url": "https://example.com/logos/90002327.png"
+      },
+      "period": null,
+      "status": "Postponed",
+      "clock": null,
+      "home_score": null,
+      "away_score": null,
+      "home_penalty_score": null,
+      "away_penalty_score": null,
+      "updated_at": "2026-10-10T09:00:00Z"
+    }
+  ]
+}

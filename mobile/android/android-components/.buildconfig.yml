@@ -2738,6 +2738,10 @@ projects:
     path: components/service/merino-sports
     publish: true
     upstream_dependencies:
+    - components:concept-base
+    - components:concept-fetch
+    - components:support-base
+    - components:support-test
     - components:tooling-lint
   components:service-merino-weather:
     description: A library for fetching weather forecasts from the Merino service.
