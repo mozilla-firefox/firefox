@@ -62,9 +62,9 @@ Sweep these from the chrome context and emit one row per cell:
   contents (`selectNodeContents`, then `getBoundingClientRect()`): a label that
   fills its box has the same element rect whichever edge its text starts from.
   Repeat with text in the opposite direction to the UI (Hebrew in an LTR UI,
-  Latin in RTL), since an element with `dir="auto"`, a `<bdi>` or
-  `unicode-bidi: plaintext` takes its direction from its text, and its `start`
-  and `end` then follow the text, not the UI.
+  Latin in RTL) for an element with `dir="auto"`, a `<bdi>` or
+  `unicode-bidi: plaintext` (`docs/code-quality/coding-style/rtl_guidelines.md`,
+  "Testing").
 - **Script.** Set the label text to a few writing systems and re-measure.
 - **Full-page zoom.** `ZoomManager.setZoomForBrowser(browser, 1.5)` scales the
   content document and leaves chrome alone; read both sides.

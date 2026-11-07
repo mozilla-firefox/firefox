@@ -115,11 +115,11 @@ anywhere else ("HDPI support" there says what each declaration then reads). A
 ### Writing direction
 
 A box built from `left`/`right`, or from a one-sided padding, fails only in
-RTL. Setting `dir="rtl"` on the chrome root is the shortcut when the strings
-must stay English, but `:-moz-locale-dir()` matches on a document state bit
-rather than on the element's `dir`, so a `dir` flip leaves every
-`:-moz-locale-dir(rtl)` rule unmatched, and it cannot reproduce a label that
-only overflows once translated.
+RTL. Test RTL with `intl.l10n.pseudo` set to `bidi`, not `dir="rtl"` on the
+chrome root, which leaves every `:-moz-locale-dir(rtl)` rule unmatched
+(`docs/code-quality/coding-style/rtl_guidelines.md`, "Testing"). `bidi` keeps
+the English string lengths, so it cannot reproduce a label that only overflows
+once translated; `accented` lengthens strings by about 30% in an LTR UI.
 
 ### Script
 
