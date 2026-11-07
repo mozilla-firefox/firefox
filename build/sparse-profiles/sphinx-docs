@@ -20,6 +20,9 @@ glob:**/*.mjs
 glob:**/*.js
 glob:**/*.json
 
+# Agent skills are staged whole, including scripts their pages link to
+glob:.agents/skills/**
+
 # Potential included images. We don't glob all paths in order to avoid importing
 # images unrelated to documentation (like branding or test images)
 glob:**/docs/**.jpg
