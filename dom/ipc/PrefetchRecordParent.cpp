@@ -15,6 +15,7 @@
 #include "mozilla/net/NoVarySearchUtils.h"
 #include "nsContentPolicyUtils.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
+#include "nsICacheEntry.h"
 #include "nsICachingChannel.h"
 #include "nsIHttpChannel.h"
 #include "nsILoadInfo.h"
@@ -248,6 +249,23 @@ void PrefetchRecordParent::FillResponseOnLastEntry(nsIChannel* aChannel) {
   if (NS_SUCCEEDED(http->GetResponseHeader("No-Vary-Search"_ns, nvsHeader))) {
     last.mNoVarySearchHeader = nvsHeader;
   }
+}
+
+already_AddRefed<nsIURI> PrefetchRecordParent::CacheEntryURI() const {
+  if (mRedirectChain.Length() != 1) {
+    return nullptr;
+  }
+  nsCOMPtr<nsICacheEntry> entry = do_QueryInterface(mCacheToken);
+  if (!entry) {
+    return nullptr;
+  }
+  nsAutoCString key;
+  nsCOMPtr<nsIURI> uri;
+  if (NS_FAILED(entry->GetKey(key)) ||
+      NS_FAILED(NS_NewURI(getter_AddRefs(uri), key))) {
+    return nullptr;
+  }
+  return uri.forget();
 }
 
 bool PrefetchRecordParent::MatchesURL(nsIURI* aURL) const {

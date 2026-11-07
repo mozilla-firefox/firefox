@@ -4983,6 +4983,15 @@ nsresult nsHttpChannel::OpenCacheEntryInternal(bool isHttps) {
   nsCOMPtr<nsICacheStorage> cacheStorage;
   mCacheEntryURI = mURI;
 
+  // A navigation activated from a prefetch record reads the record's own
+  // entry. A cache-bypassing reload would truncate it, so it doesn't qualify.
+  bool readPrefetchEntry =
+      mNavigationalPrefetchCacheURI &&
+      !BYPASS_LOCAL_CACHE(mLoadFlags, LoadPreferCacheLoadOverBypass());
+  if (readPrefetchEntry) {
+    mCacheEntryURI = mNavigationalPrefetchCacheURI;
+  }
+
   uint32_t cacheEntryOpenFlags;
   bool offline = gIOService->IsOffline();
 
@@ -5004,6 +5013,10 @@ nsresult nsHttpChannel::OpenCacheEntryInternal(bool isHttps) {
     StoreCacheEntryIsReadOnly(true);
   } else if (BYPASS_LOCAL_CACHE(mLoadFlags, LoadPreferCacheLoadOverBypass())) {
     cacheEntryOpenFlags = nsICacheStorage::OPEN_TRUNCATE;
+  } else if (readPrefetchEntry) {
+    // Never write to (or replace) the entry the prefetch record holds.
+    cacheEntryOpenFlags = nsICacheStorage::OPEN_READONLY;
+    StoreCacheEntryIsReadOnly(true);
   } else {
     cacheEntryOpenFlags =
         nsICacheStorage::OPEN_NORMALLY | nsICacheStorage::CHECK_MULTITHREADED;
@@ -11159,6 +11172,12 @@ NS_IMETHODIMP
 nsHttpChannel::GetPreferCacheLoadOverBypass(bool* aPreferCacheLoadOverBypass) {
   NS_ENSURE_ARG(aPreferCacheLoadOverBypass);
   *aPreferCacheLoadOverBypass = LoadPreferCacheLoadOverBypass();
+  return NS_OK;
+}
+
+nsresult nsHttpChannel::SetNavigationalPrefetchCacheURI(nsIURI* aURI) {
+  ENSURE_CALLED_BEFORE_ASYNC_OPEN();
+  mNavigationalPrefetchCacheURI = aURI;
   return NS_OK;
 }
 
