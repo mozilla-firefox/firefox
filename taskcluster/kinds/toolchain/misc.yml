@@ -48,6 +48,7 @@ linux64-cctools-port:
         script: build-cctools-port.sh
         resources:
             - taskcluster/scripts/misc/cctools-ld64-dead-strip-compiler-builtins.patch
+            - taskcluster/scripts/misc/cctools-ld64-fix-out-of-bounds-read.patch
             - taskcluster/scripts/misc/cctools-llvm-c-headers.patch
             - taskcluster/scripts/misc/libdispatch-unused-but-set-global.patch
             - taskcluster/scripts/misc/libtapi.patch

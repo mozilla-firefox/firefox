@@ -82,6 +82,8 @@ patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/cctools-llvm-c-headers.patch
 # Keep Rust compiler_builtins atoms live during LTO dead-strip so cross-language
 # LTO links (e.g. macOS shippable) don't drop symbols like __umodti3.
 patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/cctools-ld64-dead-strip-compiler-builtins.patch
+# Fix out-of-bounds read when a string fills a string pool buffer to its end
+patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/cctools-ld64-fix-out-of-bounds-read.patch
 
 # Configure crosstools-port
 cd $CROSSTOOLS_CCTOOLS_DIR
