@@ -1157,7 +1157,7 @@ bool BaseCompiler::popConstPositivePowerOfTwo(int32_t* c, uint_fast8_t* power,
   if (*c <= cutoff || !std::has_single_bit(static_cast<uint32_t>(*c))) {
     return false;
   }
-  *power = mozilla::FloorLog2(uint32_t(*c));
+  *power = std::countr_zero(uint32_t(*c));
   stk_.popBack();
   return true;
 }
@@ -1172,7 +1172,7 @@ bool BaseCompiler::popConstPositivePowerOfTwo(int64_t* c, uint_fast8_t* power,
   if (*c <= cutoff || !std::has_single_bit(static_cast<uint64_t>(*c))) {
     return false;
   }
-  *power = mozilla::FloorLog2(uint64_t(*c));
+  *power = std::countr_zero(uint64_t(*c));
   stk_.popBack();
   return true;
 }

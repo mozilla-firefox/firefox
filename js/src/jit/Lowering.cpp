@@ -2822,7 +2822,7 @@ void LIRGenerator::visitBigIntPtrDiv(MBigIntPtrDiv* ins) {
   if (ins->rhs()->isConstant()) {
     intptr_t rhs = ins->rhs()->toConstant()->toIntPtr();
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
+      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
       auto* lir = new (alloc())
           LBigIntPtrDivPowTwo(useRegister(ins->lhs()), shift, rhs < 0);
       if (shift == 0 && rhs < 0) {
@@ -2843,7 +2843,7 @@ void LIRGenerator::visitBigIntPtrMod(MBigIntPtrMod* ins) {
   if (ins->rhs()->isConstant()) {
     intptr_t rhs = ins->rhs()->toConstant()->toIntPtr();
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
+      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
       auto* lir = new (alloc())
           LBigIntPtrModPowTwo(useRegister(ins->lhs()), temp(), shift);
       define(lir, ins);
