@@ -111,7 +111,17 @@ box and cannot tell what leaves it.
     in the order their edges are declared, and overrides that order where it
     saves a crossing; reordering node declarations does nothing. Declare the
     edges in the order the numbered steps run, so the steps read left to
-    right, and check the rendered page.
+    right, and check the rendered page. An invisible link (`a ~~~ b`) does not
+    order two siblings; it pushes its target down a rank.
+-   **A cycle needs the opposite order.** Declared in step order, a numbered
+    cycle zig-zags: 2 and 3 down the right, 4 to 7 on the left, 8 and 9 back on
+    the right. Declaring the later round trip's edges first sends the outbound
+    path down one side and the return up the other. Add a `%%` comment saying
+    why the edges are out of numeric order, or the next editor will sort them.
+-   **Give a state one self-transition.** Two on the same state flatten into
+    slivers a few pixels tall, with one loop's line through the other's label.
+    Merge them into one transition with both events in its label
+    ([mermaid#8706](https://github.com/mermaid-js/mermaid/issues/8706)).
 -   **Dotted arrows (`-. "label" .->`) for the return path** separate requests
     from results at no cost in width.
 
@@ -183,10 +193,33 @@ read each diagram back:
     `docs/conf.py` is missing.
 -   `scrolls` should be false, or the pan should be one you chose.
 -   No label should be empty or read `Unsupported markdown`.
--   Two edges between the same pair of nodes put their labels a node's width
-    apart, so narrowing a box can make them overlap. Compare the labels'
-    bounding rectangles; shortening one label is the fix, and the result can lay
-    out wider, so measure again.
+-   No two edge labels should overlap. Two edges between the same pair of nodes
+    put their labels a node's width apart, so narrowing a box can make them
+    collide, and a screenshot at page zoom hides it. List the colliding pairs:
+
+    ```js
+    () => {
+      const svgs = document.querySelectorAll(".mermaid svg");
+      const labels = [...document.querySelectorAll(".mermaid svg .edgeLabel")]
+        .filter(e => e.textContent.trim() && !e.parentElement.closest(".edgeLabel"))
+        .map(e => ({ t: e.textContent.trim(), r: e.getBoundingClientRect() }));
+      const hits = [];
+      for (let i = 0; i < labels.length; i++) {
+        for (let j = i + 1; j < labels.length; j++) {
+          const a = labels[i].r, b = labels[j].r;
+          if (a.left < b.right && b.left < a.right &&
+              a.top < b.bottom && b.top < a.bottom) {
+            hits.push(`${labels[i].t} | ${labels[j].t}`);
+          }
+        }
+      }
+      return { diagrams: svgs.length, labels: labels.length, hits };
+    }
+    ```
+
+    Shortening one label is the fix. `nodeSpacing` and `padding` are not:
+    `padding` large enough to separate the labels grew a 506px diagram to
+    813px. A shorter label can lay out wider overall, so measure again.
 
 Navigate the same tab on each rebuild, and return the diagram count with the
 labels, so a query that ran against the wrong page shows up as zero diagrams
