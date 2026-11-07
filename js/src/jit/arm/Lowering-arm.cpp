@@ -18,6 +18,8 @@
 using namespace js;
 using namespace js::jit;
 
+using mozilla::FloorLog2;
+
 LBoxAllocation LIRGeneratorARM::useBoxFixed(MDefinition* mir, Register reg1,
                                             Register reg2, bool useAtStart) {
   MOZ_ASSERT(mir->type() == MIRType::Value);
@@ -192,11 +194,12 @@ void LIRGeneratorARM::lowerForMulInt64(LMulI64* ins, MMul* mir,
 
   if (rhs->isConstant()) {
     int64_t constant = rhs->toConstant()->toInt64();
+    int32_t shift = mozilla::FloorLog2(uint64_t(constant));
     // See special cases in CodeGeneratorARM::visitMulI64
     if (constant >= -1 && constant <= 2) {
       needsTemp = false;
     }
-    if (constant > 0 && std::has_single_bit(uint64_t(constant))) {
+    if (constant > 0 && int64_t(1) << shift == constant) {
       needsTemp = false;
     }
   }
@@ -305,7 +308,7 @@ void LIRGeneratorARM::lowerDivI(MDiv* div) {
     // Check for division by a power of two, which is an easy and important
     // case to optimize.
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
+      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
       LDivPowTwoI* lir = new (alloc())
           LDivPowTwoI(useRegisterAtStart(div->lhs()), shift, rhs < 0);
       if (div->fallible()) {
@@ -369,7 +372,7 @@ void LIRGeneratorARM::lowerModI(MMod* mod) {
     int32_t rhs = mod->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
+      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
       LModPowTwoI* lir =
           new (alloc()) LModPowTwoI(useRegisterAtStart(mod->lhs()), shift);
       if (mod->fallible()) {
@@ -564,7 +567,7 @@ void LIRGeneratorARM::lowerUDiv(MDiv* div) {
     uint32_t rhs = div->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = std::countr_zero(rhs);
+      int32_t shift = mozilla::FloorLog2(rhs);
       auto* lir = new (alloc())
           LDivPowTwoI(useRegisterAtStart(div->lhs()), shift, false);
       if (div->fallible()) {
@@ -610,7 +613,7 @@ void LIRGeneratorARM::lowerUMod(MMod* mod) {
     uint32_t rhs = mod->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = std::countr_zero(rhs);
+      int32_t shift = mozilla::FloorLog2(rhs);
       auto* lir =
           new (alloc()) LModPowTwoI(useRegisterAtStart(mod->lhs()), shift);
       if (mod->fallible()) {

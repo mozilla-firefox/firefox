@@ -19,6 +19,8 @@
 using namespace js;
 using namespace js::jit;
 
+using mozilla::FloorLog2;
+
 LTableSwitch* LIRGeneratorLOONG64::newLTableSwitch(
     const LAllocation& in, const LDefinition& inputCopy) {
   return new (alloc()) LTableSwitch(in, inputCopy, temp());
@@ -179,7 +181,7 @@ void LIRGeneratorLOONG64::lowerDivI(MDiv* div) {
     // to optimize. Division by other constants can be optimized by a reciprocal
     // multiplication technique.
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
+      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
       auto* lir = new (alloc())
           LDivPowTwoI(useRegisterAtStart(div->lhs()), temp(), shift, rhs < 0);
       if (div->fallible()) {
@@ -210,7 +212,7 @@ void LIRGeneratorLOONG64::lowerDivI64(MDiv* div) {
     int64_t rhs = div->rhs()->toConstant()->toInt64();
 
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
+      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
       auto* lir = new (alloc())
           LDivPowTwoI64(useRegisterAtStart(div->lhs()), shift, rhs < 0);
       define(lir, div);
@@ -232,7 +234,7 @@ void LIRGeneratorLOONG64::lowerModI(MMod* mod) {
     int32_t rhs = mod->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
+      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
       auto* lir =
           new (alloc()) LModPowTwoI(useRegisterAtStart(mod->lhs()), shift);
       if (mod->fallible()) {
@@ -263,7 +265,7 @@ void LIRGeneratorLOONG64::lowerModI64(MMod* mod) {
     int64_t rhs = mod->rhs()->toConstant()->toInt64();
 
     if (std::has_single_bit(mozilla::Abs(rhs))) {
-      int32_t shift = std::countr_zero(mozilla::Abs(rhs));
+      int32_t shift = mozilla::FloorLog2(mozilla::Abs(rhs));
       auto* lir =
           new (alloc()) LModPowTwoI64(useRegisterAtStart(mod->lhs()), shift);
       define(lir, mod);
@@ -286,7 +288,7 @@ void LIRGeneratorLOONG64::lowerUDiv(MDiv* div) {
     uint32_t rhs = div->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = std::countr_zero(rhs);
+      int32_t shift = mozilla::FloorLog2(rhs);
       auto* lir = new (alloc())
           LDivPowTwoI(useRegisterAtStart(div->lhs()), temp(), shift, false);
       if (div->fallible()) {
@@ -323,7 +325,7 @@ void LIRGeneratorLOONG64::lowerUDivI64(MDiv* div) {
     uint64_t rhs = div->rhs()->toConstant()->toInt64();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = std::countr_zero(rhs);
+      int32_t shift = mozilla::FloorLog2(rhs);
       auto* lir = new (alloc())
           LDivPowTwoI64(useRegisterAtStart(div->lhs()), shift, false);
       define(lir, div);
@@ -346,7 +348,7 @@ void LIRGeneratorLOONG64::lowerUMod(MMod* mod) {
     uint32_t rhs = mod->rhs()->toConstant()->toInt32();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = std::countr_zero(rhs);
+      int32_t shift = mozilla::FloorLog2(rhs);
       auto* lir =
           new (alloc()) LModPowTwoI(useRegisterAtStart(mod->lhs()), shift);
       if (mod->fallible()) {
@@ -383,7 +385,7 @@ void LIRGeneratorLOONG64::lowerUModI64(MMod* mod) {
     uint64_t rhs = mod->rhs()->toConstant()->toInt64();
 
     if (std::has_single_bit(rhs)) {
-      int32_t shift = std::countr_zero(rhs);
+      int32_t shift = mozilla::FloorLog2(rhs);
       auto* lir =
           new (alloc()) LModPowTwoI64(useRegisterAtStart(mod->lhs()), shift);
       define(lir, mod);
