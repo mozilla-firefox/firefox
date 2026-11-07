@@ -7,8 +7,9 @@ on macOS or Windows.
 ## HEADLESS
 
 Headless GTK has fixed system colors, the stand-ins that
-`ui.use_standins_for_native_colors` selects on a real backend, a fixed 14px
-`font: message-box` and classic scrollbars, so a color or metric that comes from
+`ui.use_standins_for_native_colors` selects on a real backend, a fixed 16px
+`font: message-box`, and scrollbars per `widget.gtk.overlay-scrollbars.enabled`
+(SCROLLBARS below), so a color or metric that comes from
 GTK cannot be reproduced here, and "what is the root font size on this machine"
 has no answer. The accent is the exception: headless `AccentColor` is a fixed
 rgb(0, 96, 223) while Xvfb reads the desktop's own, and `--setpref
@@ -105,8 +106,9 @@ not `gsettings`.
 
 ## SCROLLBARS
 
-Real GTK defaults to overlay scrollbars
-(`widget.gtk.overlay-scrollbars.enabled`).
+GTK defaults to overlay scrollbars
+(`widget.gtk.overlay-scrollbars.enabled`), headless included, and the test
+profiles turn that pref off, so a probe and a mochitest differ unless
 `ui.useOverlayScrollbars` (1 overlay, 0 classic, at launch) forces either.
 
 ## CONTRAST
