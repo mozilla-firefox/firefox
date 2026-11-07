@@ -349,11 +349,7 @@ class RustLoginsStoreAdapter {
   }
 
   async delete(id) {
-    return await this.#store.delete(id);
-  }
-
-  async deleteMany(ids) {
-    return await this.#store.deleteMany(ids);
+    await this.#store.delete(id);
   }
 
   async deleteAll() {

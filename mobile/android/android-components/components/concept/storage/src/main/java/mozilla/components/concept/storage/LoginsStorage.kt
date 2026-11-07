@@ -127,12 +127,8 @@ interface LoginsStorage : Storage, StorageMaintenanceRegistry, AutoCloseable {
     /** Clears out all local state, bringing us back to the state before the first write (or sync). */
     suspend fun wipeLocal()
 
-    /**
-     * Deletes the login with the given GUID.
-     *
-     * @return True if the deletion did anything, false otherwise.
-     */
-    suspend fun delete(guid: String): Boolean
+    /** Deletes the login with the given GUID. Does nothing if the login does not exist. */
+    suspend fun delete(guid: String)
 
     /**
      * Fetches a password from the underlying storage layer by its GUID

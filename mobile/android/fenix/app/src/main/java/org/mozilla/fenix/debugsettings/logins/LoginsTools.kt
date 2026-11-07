@@ -94,11 +94,9 @@ fun LoginsTools(
             },
             onDeleteLogin = { entry ->
                 scope.launch {
-                    loginsStorage.delete(entry.guid).also { isSuccess ->
-                        if (isSuccess) {
-                            existingLogins -= entry
-                        }
-                    }
+                    loginsStorage.delete(entry.guid)
+                    // may or may not have been deleted (eg, not on exception etc), so always rebuild.
+                    origin?.let { existingLogins = loginsStorage.getByBaseDomain(it) }
                 }
             },
         )
@@ -157,7 +155,9 @@ internal class FakeLoginsStorage : LoginsStorage {
 
     override suspend fun wipeLocal() = Unit
 
-    override suspend fun delete(guid: String): Boolean = loginsByGuid.remove(guid) != null
+    override suspend fun delete(guid: String) {
+        loginsByGuid.remove(guid)
+    }
 
     override suspend fun get(guid: String): Login? = null
 

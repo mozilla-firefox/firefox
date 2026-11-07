@@ -140,9 +140,11 @@ class SyncableLoginsStorage(
      * @throws [LoginsApiException] if the storage is locked, and on unexpected errors (IO failure, rust panics, etc)
      */
     @Throws(LoginsApiException::class)
-    override suspend fun delete(guid: String): Boolean =
+    override suspend fun delete(guid: String) =
         withContext(coroutineContext) {
-            tryWithStorageOr(false) { delete(guid) }
+            // Explicitly `Unit` so this ignores any result from `DatabaseLoginsStorage.delete` as
+            // we land bug 2089859.
+            tryWithStorageOr<Unit>(Unit) { delete(guid) }
         }
 
     /**

@@ -44,6 +44,9 @@ permalink: /changelog/
 * **service-sync-autofill**
     * `GeckoCreditCardsAddressesStorageDelegate` saves the security code from `CreditCardEntry`. [Bug 2089057](https://bugzilla.mozilla.org/show_bug.cgi?id=2089057)
     * `AutofillCreditCardsAddressesStorage` stores and returns the credit card security code. `updateCreditCard` no longer removes a stored security code that the caller did not set. [Bug 2085145](https://bugzilla.mozilla.org/show_bug.cgi?id=2085145)
+* **concept-storage**, **service-sync-logins**
+    * ⚠️ **Breaking change**: `LoginsStorage.delete` no longer returns whether the login existed. The value was unreliable for synced logins and no caller used it.
+    [Bug 2089864](https://bugzilla.mozilla.org/show_bug.cgi?id=2089864)
 
 # 160.0
 * **concept-engine**
