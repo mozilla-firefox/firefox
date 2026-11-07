@@ -35,6 +35,13 @@ the view is closed immediately.
 
 Closing the view does not move the node back to its original position.
 
+In browser windows, the views declared in the appMenu-viewCache template,
+including the main view of the app menu and its subviews, stay in the
+template's content, outside the document, until they are first shown.
+The document's getElementById method doesn't find such a view. The
+PanelMultiView.getViewNode static method looks in the document first and
+then in the template, so use it to retrieve a view by ID.
+
 -- Visible or invisible
 
 This indicates whether the view is visible in the document from a layout
