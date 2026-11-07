@@ -37,9 +37,6 @@
       "chrome://browser/content/aiwindow/components/ai-chat-table.mjs": [
         "../../../browser/components/aiwindow/ui/components/ai-chat-table/ai-chat-table.mjs"
       ],
-      "chrome://browser/content/aiwindow/components/ai-clarifying-question.mjs": [
-        "../../../browser/components/aiwindow/ui/components/ai-clarifying-question/ai-clarifying-question.mjs"
-      ],
       "chrome://browser/content/aiwindow/components/ai-grouped-chip-container.mjs": [
         "../../../browser/components/aiwindow/ui/components/ai-grouped-chip-container/ai-grouped-chip-container.mjs"
       ],
@@ -1593,6 +1590,9 @@
       ],
       "resource:///modules/FirefoxBridgeExtensionUtils.sys.mjs": [
         "../../../browser/modules/FirefoxBridgeExtensionUtils.sys.mjs"
+      ],
+      "resource:///modules/GenAI.sys.mjs": [
+        "../../../browser/components/genai/GenAI.sys.mjs"
       ],
       "resource:///modules/HistoryController.sys.mjs": [
         "../../../browser/components/firefoxview/HistoryController.sys.mjs"
@@ -6711,6 +6711,9 @@
       ],
       "resource://gre/modules/policies/macOSPoliciesParser.sys.mjs": [
         "../../../toolkit/components/enterprisepolicies/macOSPoliciesParser.sys.mjs"
+      ],
+      "resource://gre/modules/services-automation/ServicesAutomation.sys.mjs": [
+        "../../../services/automation/ServicesAutomation.sys.mjs"
       ],
       "resource://gre/modules/sessionstore/PrivacyFilter.sys.mjs": [
         "../../../toolkit/modules/sessionstore/PrivacyFilter.sys.mjs"
