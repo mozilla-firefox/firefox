@@ -111,36 +111,6 @@ nsChromeTreeOwner::GetPrimaryContentBrowsingContext(
   return mAppWindow->GetPrimaryContentBrowsingContext(aBc);
 }
 
-NS_IMETHODIMP
-nsChromeTreeOwner::GetPrimaryContentSize(int32_t* aWidth, int32_t* aHeight) {
-  NS_ENSURE_STATE(mAppWindow);
-  return mAppWindow->GetPrimaryContentSize(aWidth, aHeight);
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::SetPrimaryContentSize(int32_t aWidth, int32_t aHeight) {
-  NS_ENSURE_STATE(mAppWindow);
-  return mAppWindow->SetPrimaryContentSize(aWidth, aHeight);
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::GetRootShellSize(int32_t* aWidth, int32_t* aHeight) {
-  NS_ENSURE_STATE(mAppWindow);
-  return mAppWindow->GetRootShellSize(aWidth, aHeight);
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::SetRootShellSize(int32_t aWidth, int32_t aHeight) {
-  NS_ENSURE_STATE(mAppWindow);
-  return mAppWindow->SetRootShellSize(aWidth, aHeight);
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::GetHasPrimaryContent(bool* aResult) {
-  NS_ENSURE_STATE(mAppWindow);
-  return mAppWindow->GetHasPrimaryContent(aResult);
-}
-
 //*****************************************************************************
 // nsChromeTreeOwner::nsIBaseWindow
 //*****************************************************************************
@@ -207,7 +177,7 @@ nsChromeTreeOwner::SetDimensions(DimensionRequest&& aRequest) {
   }
 
   MOZ_TRY(aRequest.SupplementFrom(this));
-  return aRequest.ApplyInnerTo(this, /* aAsRootShell */ true);
+  return aRequest.ApplyInnerTo(mAppWindow, /* aAsRootShell */ true);
 }
 
 NS_IMETHODIMP
@@ -220,7 +190,7 @@ nsChromeTreeOwner::GetDimensions(DimensionKind aDimensionKind, int32_t* aX,
   if (aY || aX) {
     return NS_ERROR_NOT_IMPLEMENTED;
   }
-  return GetRootShellSize(aCX, aCY);
+  return mAppWindow->GetRootShellSize(aCX, aCY);
 }
 
 NS_IMETHODIMP nsChromeTreeOwner::GetParentWidget(nsIWidget** aParentWidget) {

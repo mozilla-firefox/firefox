@@ -380,35 +380,6 @@ nsDocShellTreeOwner::GetPrimaryContentBrowsingContext(
   return NS_OK;
 }
 
-NS_IMETHODIMP
-nsDocShellTreeOwner::GetPrimaryContentSize(int32_t* /*aWidth*/,
-                                           int32_t* /*aHeight*/) {
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
-nsDocShellTreeOwner::SetPrimaryContentSize(int32_t /*aWidth*/,
-                                           int32_t /*aHeight*/) {
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
-nsDocShellTreeOwner::GetRootShellSize(int32_t* /*aWidth*/,
-                                      int32_t* /*aHeight*/) {
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
-nsDocShellTreeOwner::SetRootShellSize(int32_t /*aWidth*/, int32_t /*aHeight*/) {
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
-nsDocShellTreeOwner::GetHasPrimaryContent(bool* aResult) {
-  *aResult = mPrimaryRemoteTab || mPrimaryContentShell;
-  return NS_OK;
-}
-
 //*****************************************************************************
 // nsDocShellTreeOwner::nsIBaseWindow
 //*****************************************************************************

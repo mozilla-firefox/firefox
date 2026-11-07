@@ -222,10 +222,6 @@ class AppWindow final : public nsIBaseWindow,
   // See nsIDocShellTreeOwner for docs on next two methods
   nsresult ContentShellAdded(nsIDocShellTreeItem* aContentShell, bool aPrimary);
   nsresult ContentShellRemoved(nsIDocShellTreeItem* aContentShell);
-  NS_IMETHOD GetPrimaryContentSize(int32_t* aWidth, int32_t* aHeight);
-  NS_IMETHOD SetPrimaryContentSize(int32_t aWidth, int32_t aHeight);
-  nsresult GetRootShellSize(int32_t* aWidth, int32_t* aHeight);
-  nsresult SetRootShellSize(int32_t aWidth, int32_t aHeight);
 
   NS_IMETHOD ExitModalLoop(nsresult aStatus);
   MOZ_CAN_RUN_SCRIPT
@@ -235,7 +231,6 @@ class AppWindow final : public nsIBaseWindow,
   NS_IMETHOD CreateNewContentWindow(int32_t aChromeFlags,
                                     nsIOpenWindowInfo* aOpenWindowInfo,
                                     nsIAppWindow** _retval);
-  NS_IMETHOD GetHasPrimaryContent(bool* aResult);
 
   void EnableParent(bool aEnable);
   void PlaceWindowLayersBehind(uint32_t aLowLevel, uint32_t aHighLevel,

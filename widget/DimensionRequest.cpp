@@ -5,8 +5,8 @@
 #include "DimensionRequest.h"
 
 #include "mozilla/Try.h"
+#include "nsIAppWindow.h"
 #include "nsIBaseWindow.h"
-#include "nsIDocShellTreeOwner.h"
 
 namespace mozilla {
 
@@ -82,7 +82,7 @@ nsresult DimensionRequest::ApplyOuterTo(nsIBaseWindow* aTarget) {
   return NS_ERROR_UNEXPECTED;
 }
 
-nsresult DimensionRequest::ApplyInnerTo(nsIDocShellTreeOwner* aTarget,
+nsresult DimensionRequest::ApplyInnerTo(nsIAppWindow* aTarget,
                                         bool aAsRootShell) {
   NS_ENSURE_ARG_POINTER(aTarget);
   MOZ_ASSERT(mX.isSome() == mY.isSome(),

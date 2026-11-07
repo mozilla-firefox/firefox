@@ -2030,12 +2030,12 @@ nsresult AppWindow::SetPrimaryRemoteTabSize(int32_t aWidth, int32_t aHeight) {
   return NS_OK;
 }
 
-nsresult AppWindow::GetRootShellSize(int32_t* aWidth, int32_t* aHeight) {
+NS_IMETHODIMP AppWindow::GetRootShellSize(int32_t* aWidth, int32_t* aHeight) {
   NS_ENSURE_TRUE(mDocShell, NS_ERROR_FAILURE);
   return mDocShell->GetSize(aWidth, aHeight);
 }
 
-nsresult AppWindow::SetRootShellSize(int32_t aWidth, int32_t aHeight) {
+NS_IMETHODIMP AppWindow::SetRootShellSize(int32_t aWidth, int32_t aHeight) {
   const LayoutDeviceIntSize clientSize(aWidth, aHeight);
   auto newSize = clientSize + GetOuterToInnerSizeDifference(mWindow);
   SetSize(newSize.width, newSize.height, /* aRepaint = */ true);

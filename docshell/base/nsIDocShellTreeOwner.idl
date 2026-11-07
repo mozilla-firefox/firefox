@@ -56,30 +56,4 @@ interface nsIDocShellTreeOwner : nsISupports
   primary remote tab, depending on which is available.
   */
   readonly attribute BrowsingContext primaryContentBrowsingContext;
-
-  /*
-  Gets the size of the primary content area in device pixels. This should work
-  for both in-process and out-of-process content areas.
-  */
-  void getPrimaryContentSize(out long width, out long height);
-  /*
-  Sets the size of the primary content area in device pixels. This should work
-  for both in-process and out-of-process content areas.
-  */
-  void setPrimaryContentSize(in long width, in long height);
-
-  /*
-  Gets the size of the root docshell in device pixels.
-  */
-  void getRootShellSize(out long width, out long height);
-  /*
-  Sets the size of the root docshell in device pixels.
-  */
-  void setRootShellSize(in long width, in long height);
-
-  /*
-  Returns true if there is a primary content shell or a primary
-  remote tab.
-  */
-  readonly attribute boolean hasPrimaryContent;
 };

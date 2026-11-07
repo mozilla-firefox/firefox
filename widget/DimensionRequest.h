@@ -9,7 +9,7 @@
 #include "mozilla/Maybe.h"
 
 class nsIBaseWindow;
-class nsIDocShellTreeOwner;
+class nsIAppWindow;
 
 namespace mozilla {
 
@@ -31,7 +31,7 @@ enum class DimensionKind { Inner, Outer };
  * doesn't have immediate access to the results of the last change.
  *
  * Note: The concept of an inner position is not present on
- * nsIDocShellTreeOwner and nsIBaseWindow. A request specifying an inner
+ * nsIAppWindow and nsIBaseWindow. A request specifying an inner
  * position will return an NS_ERROR_NOT_IMPLEMENTED.
  */
 struct DimensionRequest {
@@ -63,7 +63,7 @@ struct DimensionRequest {
    *
    * @param aTarget  The target whose size we want to change.
    */
-  nsresult ApplyInnerTo(nsIDocShellTreeOwner* aTarget, bool aAsRootShell);
+  nsresult ApplyInnerTo(nsIAppWindow* aTarget, bool aAsRootShell);
 };
 
 }  // namespace mozilla

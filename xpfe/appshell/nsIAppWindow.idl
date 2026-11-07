@@ -65,6 +65,24 @@ interface nsIAppWindow : nsISupports
   void remoteTabAdded(in nsIRemoteTab aTab, in boolean aPrimary);
   void remoteTabRemoved(in nsIRemoteTab aTab);
 
+  /**
+   * Returns true if there is a primary content shell or a primary remote tab.
+   */
+  [infallible] readonly attribute boolean hasPrimaryContent;
+
+  /**
+   * Gets / sets the size of the primary content area in device pixels. This
+   * works for both in-process and out-of-process content areas.
+   */
+  void getPrimaryContentSize(out long width, out long height);
+  void setPrimaryContentSize(in long width, in long height);
+
+  /**
+   * Gets / sets the size of the root docshell in device pixels.
+   */
+  void getRootShellSize(out long width, out long height);
+  void setRootShellSize(in long width, in long height);
+
   [noscript,notxpcom] LiveResizeListenerArray getLiveResizeListeners();
 
   /**
