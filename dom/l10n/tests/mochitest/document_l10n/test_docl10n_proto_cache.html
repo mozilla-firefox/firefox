@@ -1,0 +1,82 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test that DOM mutations before the initial translation don't leave untranslated elements in the prototype cache</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css">
+  <script>
+  "use strict";
+
+  // Use a unique URL so that the first load is a cold one. The query needs to
+  // end with .xhtml for the prototype to be read back from the startup cache.
+  const URL = new window.URL(
+    `file_docl10n_proto_cache.xhtml?${Date.now()}.xhtml`,
+    location.href
+  ).href;
+
+  let mutate = false;
+  let parsedState = null;
+
+  window.onFrameParsed = function (doc) {
+    parsedState = {};
+    for (const id of ["mutated", "untouched"]) {
+      parsedState[id] = doc.getElementById(id).textContent;
+    }
+    if (mutate) {
+      const el = doc.getElementById("mutated");
+      el.setAttribute("data-l10n-id", "id-heading");
+      el.setAttribute("data-l10n-id", "crash-reports-title");
+    }
+  };
+
+  async function load(aMutate) {
+    mutate = aMutate;
+    parsedState = null;
+    const iframe = document.createElement("iframe");
+    const loaded = new Promise(r =>
+      iframe.addEventListener("load", r, { once: true })
+    );
+    iframe.src = URL;
+    document.body.appendChild(iframe);
+    await loaded;
+    const doc = iframe.contentDocument;
+    await doc.l10n.ready;
+    const result = { parsed: parsedState, final: {} };
+    for (const id of ["mutated", "untouched"]) {
+      result.final[id] = doc.getElementById(id).textContent;
+    }
+    iframe.remove();
+    return result;
+  }
+
+  add_task(async function test_proto_cache() {
+    let { parsed, final } = await load(/* aMutate = */ true);
+    is(parsed.mutated, "", "Cold load: #mutated not translated from prototype");
+    is(parsed.untouched, "", "Cold load: #untouched not translated from prototype");
+    is(final.mutated, "Crash Reports", "Cold load: #mutated translated");
+    is(final.untouched, "Report ID", "Cold load: #untouched translated");
+
+    ({ parsed, final } = await load(/* aMutate = */ false));
+    is(parsed.untouched, "Report ID", "Warm load: #untouched translated from prototype");
+    is(parsed.mutated, "", "Warm load: #mutated prototype was not cached as translated");
+    is(final.mutated, "Crash Reports", "Warm load: #mutated translated");
+    is(final.untouched, "Report ID", "Warm load: #untouched translated");
+
+    ({ parsed, final } = await load(/* aMutate = */ false));
+    is(parsed.mutated, "Crash Reports", "Second warm load: #mutated translated from prototype");
+    is(parsed.untouched, "Report ID", "Second warm load: #untouched translated from prototype");
+
+    // Drop the in-memory prototype so that it gets deserialized from the
+    // startup cache, which was written during the cold load.
+    Services.obs.notifyObservers(null, "chrome-flush-caches");
+    ({ parsed, final } = await load(/* aMutate = */ false));
+    is(parsed.untouched, "Report ID", "Load from startup cache: #untouched translated from prototype");
+    is(final.mutated, "Crash Reports", "Load from startup cache: #mutated translated");
+    is(final.untouched, "Report ID", "Load from startup cache: #untouched translated");
+  });
+  </script>
+</head>
+<body>
+</body>
+</html>

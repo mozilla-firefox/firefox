@@ -10,6 +10,9 @@
 
 ["document_l10n/test_docl10n_lazy.html"]
 
+["document_l10n/test_docl10n_proto_cache.html"]
+support-files = ["document_l10n/file_docl10n_proto_cache.xhtml"]
+
 ["document_l10n/test_docl10n_ready_rejected.html"]
 
 ["document_l10n/test_docl10n_removeResourceIds.html"]

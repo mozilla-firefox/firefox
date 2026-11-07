@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8"></meta>
+  <link rel="localization" href="crashreporter/aboutcrashes.ftl"/>
+</head>
+<body>
+  <div>
+    <h1 id="mutated" data-l10n-id="crash-reports-title"></h1>
+  </div>
+  <p id="untouched" data-l10n-id="id-heading"></p>
+  <script>
+    window.parent.onFrameParsed(document);
+  </script>
+</body>
+</html>
