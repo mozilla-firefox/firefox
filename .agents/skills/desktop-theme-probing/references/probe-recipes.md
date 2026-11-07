@@ -15,12 +15,11 @@ only under a test harness, so copy the steps a helper takes into the probe (e.g.
 `PlacesUtils.history.insert` or `insertMany` in place of
 `PlacesTestUtils.addVisits`).
 
-A panel view can live in a template until it is shown: an app menu item stays
-out of `document.getElementById` right after `PanelUI.show()`,
-which returns undefined, so awaiting it waits for nothing. Reach it
-with `PanelMultiView.getViewNode(document, id)` (from
-`moz-src:///browser/components/customizableui/PanelMultiView.sys.mjs`), then
-poll until `getComputedStyle(el).display` is non-empty before reading.
+Reach a panel view with `PanelMultiView.getViewNode(document, id)` (from
+`moz-src:///browser/components/customizableui/PanelMultiView.sys.mjs`), not
+`document.getElementById` (`browser/components/customizableui/docs/panelmultiview.md`,
+"Open or closed"). `PanelUI.show()` returns undefined, so poll until
+`getComputedStyle(el).display` is non-empty before reading.
 
 ## 2. Read a part inside a shadow root
 
