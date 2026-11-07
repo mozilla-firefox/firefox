@@ -75,7 +75,7 @@ iframe,
 
 :host([padded]) {
   .widget {
-    gap: var(--space-medium);
+    gap: var(--space-xsmall);
     padding: var(--space-medium);
   }
 
