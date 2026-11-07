@@ -127,5 +127,26 @@ def test_profiling_mediator_defaults_to_all_profilers():
         assert controller2 in profiler.active_profilers
 
 
+def test_profiling_mediator_combined_profilers():
+    """Test that the Gecko profiler only collects markers when simpleperf runs too."""
+
+    mock_simpleperf = mock.MagicMock()
+    mock_simpleperf.is_enabled.return_value = True
+    mock_geckoprofiler = mock.MagicMock()
+    mock_geckoprofiler.is_enabled.return_value = True
+
+    profilers = {
+        "simpleperf": mock_simpleperf,
+        "geckoprofiler": mock_geckoprofiler,
+    }
+    with mock.patch("mozperftest.profiler.PROFILERS", profilers):
+        ProfilingMediator(["geckoprofiler"])
+        mock_geckoprofiler.get_controller.assert_called_with(markers_only=False)
+
+        ProfilingMediator(["simpleperf", "geckoprofiler"])
+        mock_geckoprofiler.get_controller.assert_called_with(markers_only=True)
+        mock_simpleperf.get_controller.assert_called_with()
+
+
 if __name__ == "__main__":
     mozunit.main()
