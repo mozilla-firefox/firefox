@@ -452,9 +452,8 @@ gfxMatrix SVGClipPathFrame::GetClipPathTransform(nsIFrame* aClippedFrame) {
                                         flags);
 }
 
-SVGBBox SVGClipPathFrame::GetBBoxForClipPathFrame(const SVGBBox& aBBox,
-                                                  const gfxMatrix& aMatrix,
-                                                  SVGBBoxFlags aFlags) {
+SVGBBox SVGClipPathFrame::GetBBoxForClipPathFrame(const gfxMatrix& aMatrix,
+                                                  const SVGBBox* aBBox) {
   SVGClipPathFrame* clipPathThatClipsClipPath;
   if (SVGObserverUtils::GetAndObserveClipPath(this,
                                               &clipPathThatClipsClipPath) ==
@@ -483,12 +482,10 @@ SVGBBox SVGClipPathFrame::GetBBoxForClipPathFrame(const SVGBBox& aBBox,
         if (SVGObserverUtils::GetAndObserveClipPath(frame, &clipPathFrame) !=
                 SVGObserverUtils::ReferenceState::HasRefsSomeInvalid &&
             clipPathFrame) {
-          tmpBBox =
-              clipPathFrame->GetBBoxForClipPathFrame(tmpBBox, aMatrix, aFlags);
+          tmpBBox = clipPathFrame->GetBBoxForClipPathFrame(aMatrix, &tmpBBox);
         }
-        if (!aFlags.contains(
-                SVGBBoxFlag::DoNotClipToBBoxOfContentInsideClipPath)) {
-          tmpBBox.Intersect(aBBox);
+        if (aBBox) {
+          tmpBBox.Intersect(*aBBox);
         }
         unionBBox.UnionEdges(tmpBBox);
       }
@@ -496,8 +493,8 @@ SVGBBox SVGClipPathFrame::GetBBoxForClipPathFrame(const SVGBBox& aBBox,
   }
 
   if (clipPathThatClipsClipPath) {
-    unionBBox.Intersect(clipPathThatClipsClipPath->GetBBoxForClipPathFrame(
-        aBBox, aMatrix, aFlags));
+    unionBBox.Intersect(
+        clipPathThatClipsClipPath->GetBBoxForClipPathFrame(aMatrix, aBBox));
   }
   return unionBBox;
 }

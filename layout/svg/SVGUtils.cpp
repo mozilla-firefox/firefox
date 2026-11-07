@@ -975,12 +975,12 @@ gfxRect SVGUtils::GetBBox(nsIFrame* aFrame, SVGBBoxFlags aFlags,
         }
         matrix *= SVGUtils::GetTransformMatrixInUserSpace(clipPathFrame);
 
-        bbox = clipPathFrame->GetBBoxForClipPathFrame(bbox, matrix, aFlags)
+        const SVGBBox clipTo(bbox);
+        bbox = clipPathFrame->GetBBoxForClipPathFrame(matrix, &clipTo)
                    .ToThebesRect();
       }
 
-      if (hasClip && !aFlags.contains(
-                         SVGBBoxFlag::DoNotClipToBBoxOfContentInsideClipPath)) {
+      if (hasClip) {
         bbox = bbox.Intersect(clipRect);
       }
 

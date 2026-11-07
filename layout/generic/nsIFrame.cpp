@@ -34,6 +34,7 @@
 #include "mozilla/ReflowInput.h"
 #include "mozilla/RestyleManager.h"
 #include "mozilla/ResultExtensions.h"
+#include "mozilla/SVGClipPathFrame.h"
 #include "mozilla/SVGIntegrationUtils.h"
 #include "mozilla/SVGMaskFrame.h"
 #include "mozilla/SVGObserverUtils.h"
@@ -3137,14 +3138,25 @@ static Maybe<nsRect> ComputeClipForMaskItem(
       combinedClip = Some(ThebesRect(*result));
     }
   } else if (aMaskUsage.ShouldApplyClipPath()) {
-    gfxRect result = SVGUtils::GetBBox(
-        aMaskedFrame,
-        {SVGBBoxFlag::IncludeClipped, SVGBBoxFlag::IncludeFillGeometry,
-         SVGBBoxFlag::IncludeMarkers, SVGBBoxFlag::IncludeStroke,
-         SVGBBoxFlag::DoNotClipToBBoxOfContentInsideClipPath});
+    nsIFrame* firstFrame =
+        nsLayoutUtils::FirstContinuationOrIBSplitSibling(aMaskedFrame);
+    SVGClipPathFrame* clipPathFrame = nullptr;
+    SVGObserverUtils::GetAndObserveClipPath(firstFrame, &clipPathFrame);
+    MOZ_ASSERT(clipPathFrame, "ShouldApplyClipPath needs a clip path");
+    gfxRect result = clipPathFrame
+                         ->GetBBoxForClipPathFrame(
+                             clipPathFrame->GetClipPathTransform(aMaskedFrame))
+                         .ToThebesRect();
     combinedClip = Some(
         ThebesRect((CSSRect::FromUnknownRect(ToRect(result)) * cssToDevScale)
                        .ToUnknownRect()));
+    // The clip path is in the user space of the first continuation, which is
+    // where SVGIntegrationUtils paints it too.
+    if (firstFrame != aMaskedFrame) {
+      devPixelOffsetToUserSpace = nsLayoutUtils::PointToGfxPoint(
+          nsLayoutUtils::ComputeOffsetToUserSpace(aBuilder, firstFrame),
+          devPixelRatio);
+    }
   } else {
     // The code for this case is adapted from ComputeMaskGeometry().
 

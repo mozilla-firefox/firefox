@@ -61,9 +61,6 @@ enum class SVGBBoxFlag : uint16_t {
   // this flag is set; Otherwise, getBBox returns the union bounds in
   // the coordinate system formed by the <use> element.
   UseUserSpaceOfUseElement,
-  // For a frame with a clip-path, if this flag is set then the result
-  // will not be clipped to the bbox of the content inside the clip-path.
-  DoNotClipToBBoxOfContentInsideClipPath,
   // For some cases, e.g. when using transform-box: stroke-box, we may have
   // the cyclical dependency if any of the elements in the subtree has
   // non-scaling-stroke. In this case, we should break it and use

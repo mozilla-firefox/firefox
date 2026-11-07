@@ -130,9 +130,10 @@ class SVGClipPathFrame final : public SVGContainerFrame {
   }
 #endif
 
-  SVGBBox GetBBoxForClipPathFrame(const SVGBBox& aBBox,
-                                  const gfxMatrix& aMatrix,
-                                  SVGBBoxFlags aFlags);
+  // Returns the bounds of the clip path's children transformed by aMatrix.
+  // If a BBox is given, each child's bounds are intersected with it.
+  SVGBBox GetBBoxForClipPathFrame(const gfxMatrix& aMatrix,
+                                  const SVGBBox* = nullptr);
 
   /**
    * If the clipPath element transforms its children due to
