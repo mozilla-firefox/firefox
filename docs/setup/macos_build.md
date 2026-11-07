@@ -21,14 +21,12 @@ Mozilla's source tree requires a number of third-party tools.
 You will need to install [Homebrew](https://brew.sh/) so that we
 can automatically fetch the tools we need.
 
-### 1.2. Install Xcode
+### 1.2. Install the Xcode command-line tools
 
-Install Xcode from the App Store.
-Once done, finalize the installation in your terminal:
+Install the Xcode command-line tools:
 
 ```shell
-sudo xcode-select --switch /Applications/Xcode.app
-sudo xcodebuild -license
+xcode-select --install
 ```
 
 (install-python-macos)=
