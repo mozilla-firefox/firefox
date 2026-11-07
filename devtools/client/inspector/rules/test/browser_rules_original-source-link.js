@@ -23,21 +23,11 @@ add_task(async function () {
   info("Selecting the test node");
   await selectNode("div", inspector);
 
-  await verifyStyleSheetLink(
-    view,
-    SCSS_FILENAME,
-    SCSS_LOC_LINE,
-    styleSheetInDebuggerEnabled
-  );
+  await verifyStyleSheetLink(view, SCSS_FILENAME, SCSS_LOC_LINE);
 
   info("Setting the " + PREF + " pref to false");
   Services.prefs.setBoolPref(PREF, false);
-  await verifyStyleSheetLink(
-    view,
-    CSS_FILENAME,
-    CSS_LOC_LINE,
-    styleSheetInDebuggerEnabled
-  );
+  await verifyStyleSheetLink(view, CSS_FILENAME, CSS_LOC_LINE);
 
   info("Setting the " + PREF + " pref to true again");
   Services.prefs.setBoolPref(PREF, true);
@@ -90,16 +80,10 @@ function waitForOriginalStyleSheetEditorSelection(toolbox) {
   });
 }
 
-async function verifyStyleSheetLink(
-  view,
-  fileName,
-  lineNumber,
-  styleSheetInDebuggerEnabled
-) {
+async function verifyStyleSheetLink(view, fileName, lineNumber) {
   const expectedLocation = `${fileName}:${lineNumber}`;
   const expectedUrl = URL_ROOT_SSL + fileName;
-  const panel = styleSheetInDebuggerEnabled ? "Debugger" : "Style Editor";
-  const expectedTitle = `View source in ${panel} → ${URL_ROOT_SSL}${expectedLocation}`;
+  const expectedTitle = `View source in Style Editor → ${URL_ROOT_SSL}${expectedLocation}`;
 
   info("Verifying that the rule-view stylesheet link is " + expectedLocation);
   const label = getRuleViewLinkByIndex(view, 1);

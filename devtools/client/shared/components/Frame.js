@@ -61,14 +61,7 @@ function savedFrameToDebuggerLocation(frame) {
  * @returns {string}
  */
 function getTooltipMessage(messageSource, url) {
-  if (
-    !Services.prefs.getBoolPref(
-      "devtools.debugger.features.stylesheets-in-debugger",
-      false
-    ) &&
-    messageSource &&
-    messageSource === MESSAGE_SOURCE.CSS
-  ) {
+  if (messageSource && messageSource === MESSAGE_SOURCE.CSS) {
     return l10n.getFormatStr("frame.viewsourceinstyleeditor", url);
   }
   return l10n.getFormatStr("frame.viewsourceindebugger", url);
