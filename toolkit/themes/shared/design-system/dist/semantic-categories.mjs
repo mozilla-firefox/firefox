@@ -2049,10 +2049,6 @@ export const tokensTable = {
     { value: "var(--motion-easing-emphasized)", name: "--panel-motion-easing" },
     { value: "0.96", name: "--panel-motion-scale" },
     { value: "-4px", name: "--panel-motion-translate-y" },
-    { value: "185ms", name: "--panel-subview-motion-duration-enter" },
-    { value: "130ms", name: "--panel-subview-motion-duration-exit" },
-    { value: "150ms", name: "--panel-subview-motion-duration-parent-exit" },
-    { value: "120ms", name: "--panel-subview-motion-duration-fade-reduced" },
     { value: "200ms", name: "--sidebar-motion-duration-enter" },
     { value: "160ms", name: "--sidebar-motion-duration-exit" },
     {

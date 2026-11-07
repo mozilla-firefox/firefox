@@ -384,5 +384,21 @@ def buildtokens(command_context, import_figma, remote, fetch_figma, match, impor
     run_mach(
         command_context,
         "npm",
+        args=[
+            "run",
+            "build-web",
+            "--prefix=toolkit/themes/shared/design-system",
+            "--",
+            "--override=nova",
+        ],
+    )
+    run_mach(
+        command_context,
+        "npm",
+        args=["run", "format-web", "--prefix=toolkit/themes/shared/design-system"],
+    )
+    run_mach(
+        command_context,
+        "npm",
         args=["run", "build", "--prefix=toolkit/themes/shared/design-system"],
     )

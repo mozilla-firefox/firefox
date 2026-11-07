@@ -18,6 +18,7 @@ const BASE_TOKEN_PATH = {
  * @property {boolean} [isGlobal] - If true, tokens go into the shared CSS output.
  *  If false/absent, each component gets its own CSS output file co-located with its tokens.json.
  * @property {function(string): string} [nameTransform] - Optional transform applied to the filename-derived component name.
+ * @property {boolean} [isWeb] - If true, each component also gets its own CSS output file in the web export.
  */
 /** @type {TokenPath[]} */
 export const COMPONENT_TOKEN_PATHS = [
@@ -28,6 +29,7 @@ export const COMPONENT_TOKEN_PATHS = [
   {
     dir: "../../../content/widgets",
     nameTransform: componentName => componentName.replace("moz-", ""),
+    isWeb: true,
   },
   {
     dir: "../../../../browser/themes/shared",

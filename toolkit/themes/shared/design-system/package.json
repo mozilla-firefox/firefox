@@ -5,6 +5,8 @@
     "build": "style-dictionary build --verbose --config ./config/tokens-config.mjs && prettier ./dist/ \"../../../content/widgets/**/*.css\" \"../../../../browser/themes/shared/**/*.css\" --write",
     "import-figma-nova": "node src/import-figma-variables.mjs",
     "build-figma-nova": "node src/figma-import.mjs",
+    "build-web": "node ./config/build-web-tokens.mjs",
+    "format-web": "prettier ./dist/web --write",
     "test": "node tests/try-runner.js"
   },
   "devDependencies": {

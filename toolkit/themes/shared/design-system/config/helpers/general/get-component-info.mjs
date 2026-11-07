@@ -11,30 +11,33 @@ import { OVERRIDE_IDENTIFIERS } from "./override-identifiers.mjs";
 export const getComponentInfo = () => {
   return COMPONENT_TOKEN_PATHS.filter(({ dir }) =>
     existsSync(join(import.meta.dirname, "../../..", dir))
-  ).flatMap(({ dir, isGlobal = false, nameTransform = n => n }) => {
-    const srcDir = join(import.meta.dirname, "../../..", dir);
-    return readdirSync(srcDir, { recursive: true })
-      .filter(f => typeof f === "string")
-      .filter(
-        f =>
-          f.endsWith(".tokens.json") &&
-          !OVERRIDE_IDENTIFIERS.some(({ id }) =>
-            f.endsWith(`.${id}.tokens.json`)
-          )
-      )
-      .map(relativePath => ({
-        componentName: nameTransform(
-          basename(relativePath).replace(".tokens.json", "")
-        ),
-        destination: isGlobal
-          ? null
-          : `${dir}/${relativePath.replace(".tokens.json", ".tokens.css")}`,
-      }));
-  });
+  ).flatMap(
+    ({ dir, isGlobal = false, isWeb = false, nameTransform = n => n }) => {
+      const srcDir = join(import.meta.dirname, "../../..", dir);
+      return readdirSync(srcDir, { recursive: true })
+        .filter(f => typeof f === "string")
+        .filter(
+          f =>
+            f.endsWith(".tokens.json") &&
+            !OVERRIDE_IDENTIFIERS.some(({ id }) =>
+              f.endsWith(`.${id}.tokens.json`)
+            )
+        )
+        .map(relativePath => ({
+          componentName: nameTransform(
+            basename(relativePath).replace(".tokens.json", "")
+          ),
+          destination: isGlobal
+            ? null
+            : `${dir}/${relativePath.replace(".tokens.json", ".tokens.css")}`,
+          isWeb,
+        }));
+    }
+  );
 };
 
 export const getExternalComponentInfo = () =>
-  /** @type {{ componentName: string, destination: string }[]} */
+  /** @type {{ componentName: string, destination: string, isWeb: boolean }[]} */
   (getComponentInfo().filter(({ destination }) => destination !== null));
 
 export const getExternalComponentFormatConfig = () =>
