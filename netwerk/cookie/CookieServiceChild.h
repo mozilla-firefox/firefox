@@ -31,9 +31,6 @@ class CookieServiceChild final : public PCookieServiceChild,
   NS_DECL_ISUPPORTS
   NS_DECL_NSICOOKIESERVICE
 
-  typedef nsTArray<RefPtr<Cookie>> CookiesList;
-  typedef nsClassHashtable<CookieKey, CookiesList> CookiesMap;
-
   CookieServiceChild();
 
   void Init();
@@ -51,6 +48,9 @@ class CookieServiceChild final : public PCookieServiceChild,
                                         const Maybe<nsID>& aOperationID);
 
  private:
+  class CookiesList;
+  using CookiesMap = nsClassHashtable<CookieKey, CookiesList>;
+
   ~CookieServiceChild();
 
   enum class CookieNotificationAction {

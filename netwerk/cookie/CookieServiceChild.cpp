@@ -49,6 +49,107 @@ namespace net {
 
 static StaticRefPtr<CookieServiceChild> gCookieChildService;
 
+namespace {
+
+struct CookieLookupKey {
+  uint32_t mHash;
+  const nsACString& mName;
+  const nsACString& mHost;
+  const nsACString& mPath;
+};
+
+CookieLookupKey MakeCookieLookup(const Cookie& aCookie) {
+  return {aCookie.KeyHash(), aCookie.Name(), aCookie.Host(), aCookie.Path()};
+}
+
+CookieLookupKey MakeCookieLookup(const CookieStruct& aCookie) {
+  return {
+      Cookie::ComputeKeyHash(aCookie.name(), aCookie.host(), aCookie.path()),
+      aCookie.name(), aCookie.host(), aCookie.path()};
+}
+
+bool MatchesCookie(const Cookie* aCookie, const CookieLookupKey& aLookup) {
+  return aCookie->KeyHash() == aLookup.mHash &&
+         aCookie->Name().Equals(aLookup.mName) &&
+         aCookie->Host().Equals(aLookup.mHost) &&
+         aCookie->Path().Equals(aLookup.mPath);
+}
+
+}  // namespace
+
+class CookieServiceChild::CookiesList {
+ public:
+  // Results borrow the cookie and must not be used after the list is mutated.
+  class LookupResult {
+    friend class CookiesList;
+
+   public:
+    explicit operator bool() const { return mCookie; }
+    Cookie* get() const { return mCookie; }
+
+   private:
+    LookupResult() = default;
+    LookupResult(Cookie* aCookie, uint32_t aArrayIndex)
+        : mCookie(aCookie), mArrayIndex(aArrayIndex) {}
+
+    Cookie* mCookie = nullptr;
+    uint32_t mArrayIndex = 0;
+  };
+
+  LookupResult Lookup(const Cookie& aCookie) const {
+    return Lookup(MakeCookieLookup(aCookie));
+  }
+
+  LookupResult Lookup(const CookieStruct& aCookie) const {
+    return Lookup(MakeCookieLookup(aCookie));
+  }
+
+  void Remove(const LookupResult& aResult) {
+    MOZ_ASSERT(aResult);
+    MOZ_ASSERT(aResult.mArrayIndex < mArray.Length());
+    MOZ_ASSERT(mArray[aResult.mArrayIndex] == aResult.mCookie);
+    mArray.RemoveElementAt(aResult.mArrayIndex);
+  }
+
+  void Append(Cookie* aCookie) {
+    MOZ_ASSERT(aCookie);
+    mArray.AppendElement(aCookie);
+  }
+
+  bool HasNonExpiredCookies(int64_t aCurrentTimeInMSec) const {
+    for (Cookie* cookie : mArray) {
+      if (!cookie->IsExpired(aCurrentTimeInMSec)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void AppendNonExpiredTo(nsTArray<RefPtr<Cookie>>& aCookies,
+                          int64_t aCurrentTimeInMSec) const {
+    for (Cookie* cookie : mArray) {
+      if (!cookie->IsExpired(aCurrentTimeInMSec)) {
+        aCookies.AppendElement(cookie);
+      }
+    }
+  }
+
+ private:
+  LookupResult Lookup(const CookieLookupKey& aLookup) const {
+    for (uint32_t i = 0; i < mArray.Length(); ++i) {
+      Cookie* cookie = mArray[i];
+      if (MatchesCookie(cookie, aLookup)) {
+        // Remember the index so a successful lookup can be removed without a
+        // second linear scan.
+        return LookupResult(cookie, i);
+      }
+    }
+    return LookupResult();
+  }
+
+  nsTArray<RefPtr<Cookie>> mArray;
+};
+
 already_AddRefed<CookieServiceChild> CookieServiceChild::GetSingleton() {
   if (!gCookieChildService) {
     gCookieChildService = new CookieServiceChild();
@@ -215,26 +316,22 @@ void CookieServiceChild::RemoveSingleCookie(const CookieStruct& aCookie,
     return;
   }
 
-  uint32_t targetHash =
-      Cookie::ComputeKeyHash(aCookie.name(), aCookie.host(), aCookie.path());
-  for (uint32_t i = 0; i < cookiesList->Length(); i++) {
-    RefPtr<Cookie> cookie = cookiesList->ElementAt(i);
-    // bug 1858366: In the case that we are updating a stale cookie
-    // from the content process: the parent process will signal
-    // a batch deletion for the old cookie.
-    // When received by the content process we should not remove
-    // the new cookie since we have already updated the content
-    // process cookies. So we also check the expiry here.
-    if (cookie->KeyHash() == targetHash &&
-        cookie->Name().Equals(aCookie.name()) &&
-        cookie->Host().Equals(aCookie.host()) &&
-        cookie->Path().Equals(aCookie.path()) &&
-        cookie->ExpiryInMSec() <= aCookie.expiryInMSec()) {
-      cookiesList->RemoveElementAt(i);
-      NotifyObservers(cookie, aAttrs, CookieNotificationAction::CookieDeleted,
-                      aOperationID);
-      break;
-    }
+  auto result = cookiesList->Lookup(aCookie);
+  if (!result) {
+    return;
+  }
+
+  RefPtr<Cookie> cookie = result.get();
+  // bug 1858366: In the case that we are updating a stale cookie
+  // from the content process: the parent process will signal
+  // a batch deletion for the old cookie.
+  // When received by the content process we should not remove
+  // the new cookie since we have already updated the content
+  // process cookies. So we also check the expiry here.
+  if (cookie->ExpiryInMSec() <= aCookie.expiryInMSec()) {
+    cookiesList->Remove(result);
+    NotifyObservers(cookie, aAttrs, CookieNotificationAction::CookieDeleted,
+                    aOperationID);
   }
 }
 
@@ -340,27 +437,20 @@ CookieServiceChild::RecordDocumentCookie(Cookie* aCookie,
     cookiesList = mCookiesMap.GetOrInsertNew(key);
   }
 
-  bool cookieFound = false;
-
-  for (uint32_t i = 0; i < cookiesList->Length(); i++) {
-    Cookie* cookie = cookiesList->ElementAt(i);
-    if (cookie->KeyHash() == aCookie->KeyHash() &&
-        cookie->Name().Equals(aCookie->Name()) &&
-        cookie->Host().Equals(aCookie->Host()) &&
-        cookie->Path().Equals(aCookie->Path())) {
-      if (cookie->Value().Equals(aCookie->Value()) &&
-          cookie->ExpiryInMSec() == aCookie->ExpiryInMSec() &&
-          cookie->IsSecure() == aCookie->IsSecure() &&
-          cookie->SameSite() == aCookie->SameSite() &&
-          cookie->IsSession() == aCookie->IsSession() &&
-          cookie->IsHttpOnly() == aCookie->IsHttpOnly()) {
-        cookie->SetLastAccessedInUSec(aCookie->LastAccessedInUSec());
-        return CookieNotificationAction::NoActionNeeded;
-      }
-      cookiesList->RemoveElementAt(i);
-      cookieFound = true;
-      break;
+  auto result = cookiesList->Lookup(*aCookie);
+  bool cookieFound = bool(result);
+  if (result) {
+    Cookie* cookie = result.get();
+    if (cookie->Value().Equals(aCookie->Value()) &&
+        cookie->ExpiryInMSec() == aCookie->ExpiryInMSec() &&
+        cookie->IsSecure() == aCookie->IsSecure() &&
+        cookie->SameSite() == aCookie->SameSite() &&
+        cookie->IsSession() == aCookie->IsSession() &&
+        cookie->IsHttpOnly() == aCookie->IsHttpOnly()) {
+      cookie->SetLastAccessedInUSec(aCookie->LastAccessedInUSec());
+      return CookieNotificationAction::NoActionNeeded;
     }
+    cookiesList->Remove(result);
   }
 
   if (aCookie->IsExpired()) {
@@ -368,7 +458,7 @@ CookieServiceChild::RecordDocumentCookie(Cookie* aCookie,
                        : CookieNotificationAction::NoActionNeeded;
   }
 
-  cookiesList->AppendElement(aCookie);
+  cookiesList->Append(aCookie);
   return cookieFound ? CookieNotificationAction::CookieChanged
                      : CookieNotificationAction::CookieAdded;
 }
@@ -402,11 +492,7 @@ void CookieServiceChild::GetCookiesFromHost(
   }
 
   int64_t currentTimeInMSec = PR_Now() / PR_USEC_PER_MSEC;
-  for (Cookie* cookie : *cookiesList) {
-    if (!cookie->IsExpired(currentTimeInMSec)) {
-      aCookies.AppendElement(cookie);
-    }
-  }
+  cookiesList->AppendNonExpiredTo(aCookies, currentTimeInMSec);
 }
 
 void CookieServiceChild::StaleCookies(const nsTArray<RefPtr<Cookie>>& aCookies,
@@ -426,13 +512,7 @@ bool CookieServiceChild::HasExistingCookies(
   }
 
   int64_t currentTimeInMSec = PR_Now() / PR_USEC_PER_MSEC;
-  for (Cookie* cookie : *cookiesList) {
-    if (!cookie->IsExpired(currentTimeInMSec)) {
-      return true;
-    }
-  }
-
-  return false;
+  return cookiesList->HasNonExpiredCookies(currentTimeInMSec);
 }
 
 void CookieServiceChild::AddCookieFromDocument(
@@ -462,22 +542,18 @@ void CookieServiceChild::AddCookieFromDocument(
     bool isPotentiallyTrustworthy =
         principal->GetIsOriginPotentiallyTrustworthy();
 
-    for (uint32_t i = 0; i < cookies->Length(); ++i) {
-      Cookie* existingCookie = cookies->ElementAt(i);
-      if (existingCookie->KeyHash() == aCookie.KeyHash() &&
-          existingCookie->Name().Equals(aCookie.Name()) &&
-          existingCookie->Host().Equals(aCookie.Host()) &&
-          existingCookie->Path().Equals(aCookie.Path())) {
-        // Can't overwrite an httponly cookie from a script context.
-        if (existingCookie->IsHttpOnly()) {
-          return;
-        }
+    auto result = cookies->Lookup(aCookie);
+    if (result) {
+      Cookie* existingCookie = result.get();
+      // Can't overwrite an httponly cookie from a script context.
+      if (existingCookie->IsHttpOnly()) {
+        return;
+      }
 
-        // prevent insecure cookie from overwriting a secure one in insecure
-        // context.
-        if (existingCookie->IsSecure() && !isPotentiallyTrustworthy) {
-          return;
-        }
+      // prevent insecure cookie from overwriting a secure one in insecure
+      // context.
+      if (existingCookie->IsSecure() && !isPotentiallyTrustworthy) {
+        return;
       }
     }
   }
