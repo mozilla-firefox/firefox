@@ -2430,7 +2430,9 @@ void AppWindow::SizeShellToWithLimit(int32_t aDesiredWidth,
   // SetSize even when the size doesn't appear to change. A previous call that
   // has yet to complete can still change the size. We want the latest call to
   // define the final size.
-  SetSize(winWidth, winHeight, true);
+  auto clientSize = LayoutDeviceIntSize(winWidth, winHeight) -
+                    GetOuterToInnerSizeDifference(mWindow);
+  SetRootShellSize(clientSize.width, clientSize.height);
 }
 
 nsresult AppWindow::GetInitialOpenWindowInfo(
