@@ -23,7 +23,8 @@ registerCleanupFunction(() => {
 /**
  * This test case ensures that a search turn records its pending action log
  * before handoff and renders its first text afterward, with missing
- * first-character telemetry documented as an expected failure.
+ * first-character and turn completion telemetry documented as expected
+ * failures.
  */
 add_task(async function test_first_character_telemetry_after_search_handoff() {
   const sb = sinon.createSandbox();
@@ -31,6 +32,7 @@ add_task(async function test_first_character_telemetry_after_search_handoff() {
   const mockSearchManager = new MockSearchManager();
   let win;
   let firstCharacterDisplayed;
+  let requestCapturedAt;
 
   await SpecialPowers.pushPrefEnv({
     set: [
@@ -73,21 +75,22 @@ add_task(async function test_first_character_telemetry_after_search_handoff() {
       "chat"
     );
     for (const id of ["initial-search", "handoff-search"]) {
-      await mockEngineManager.respondTo({
+      const pending = await mockEngineManager.captureRequest({
         purpose: "chat",
-        response: {
-          text: "",
-          toolCalls: [
-            {
-              id,
-              type: "function",
-              function: {
-                name: "search_the_web",
-                arguments: JSON.stringify({ query: "test search query" }),
-              },
+      });
+      requestCapturedAt ??= ChromeUtils.now();
+      pending.respond({
+        text: "",
+        toolCalls: [
+          {
+            id,
+            type: "function",
+            function: {
+              name: "search_the_web",
+              arguments: JSON.stringify({ query: "test search query" }),
             },
-          ],
-        },
+          },
+        ],
       });
       if (id === "initial-search") {
         await TestUtils.waitForCondition(
@@ -110,8 +113,14 @@ add_task(async function test_first_character_telemetry_after_search_handoff() {
       AIWindowUI.isSidebarOpen(win),
       "The sidebar is open after handoff"
     );
+    Assert.equal(
+      Glean.smartWindow.timeToTurnComplete.testGetValue(),
+      undefined,
+      "Search handoff does not prematurely report turn completion"
+    );
 
     info("Return the first response text in the sidebar");
+    const completingAt = ChromeUtils.now();
     continuation.respond("Here are your search results.");
     await TestUtils.waitForCondition(
       () => firstCharacterDisplayed.called,
@@ -130,6 +139,46 @@ add_task(async function test_first_character_telemetry_after_search_handoff() {
     );
 
     const [request] = Glean.smartWindow.modelRequest.testGetValue();
+    const sidebarWindow =
+      sidebarBrowser.contentDocument.querySelector("ai-window");
+    await TestUtils.waitForCondition(
+      () => !sidebarWindow.isGenerating,
+      "The sidebar finishes the first turn"
+    );
+    const completedTurns =
+      Glean.smartWindow.timeToTurnComplete.testGetValue() ?? [];
+    Assert.lessOrEqual(
+      completedTurns.length,
+      1,
+      "Search handoff does not duplicate turn completion telemetry"
+    );
+    todo_is(
+      completedTurns.length,
+      1,
+      "Bug 2075708: One turn completion event is recorded after search handoff"
+    );
+    if (completedTurns.length) {
+      Assert.greaterOrEqual(
+        Number(completedTurns[0].extra.duration),
+        Math.floor(completingAt - requestCapturedAt),
+        "Turn duration includes the original request and search handoff"
+      );
+      Assert.equal(
+        completedTurns[0].extra.chat_id,
+        request.extra.chat_id,
+        "Turn completion retains the original conversation"
+      );
+      Assert.equal(
+        completedTurns[0].extra.request_id,
+        request.extra.request_id,
+        "Turn completion retains the original request"
+      );
+      Assert.equal(
+        completedTurns[0].extra.location,
+        "home",
+        "Turn completion retains the original location"
+      );
+    }
     const actionLogs = Glean.smartWindow.timeToFirstActionLog.testGetValue();
     Assert.equal(
       actionLogs.length,
