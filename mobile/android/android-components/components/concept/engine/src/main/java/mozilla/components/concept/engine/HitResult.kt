@@ -37,7 +37,7 @@ sealed class HitResult(open val src: String) {
     data class AUDIO(override val src: String, val title: String? = null) : HitResult(src)
 
     /** If the HTML element was of type 'HTMLImageElement' and contained a URI. */
-    data class IMAGE_SRC(override val src: String, val uri: String) : HitResult(src)
+    data class IMAGE_SRC(override val src: String, val uri: String, val title: String? = null) : HitResult(src)
 
     /** The type used if the URI is prepended with 'tel:'. */
     data class PHONE(override val src: String) : HitResult(src)

@@ -1772,7 +1772,7 @@ class GeckoEngineSession(
                 }
             GeckoSession.ContentDelegate.ContextElement.TYPE_IMAGE -> {
                 when {
-                    elementSrc != null && uri != null -> HitResult.IMAGE_SRC(elementSrc, uri)
+                    elementSrc != null && uri != null -> HitResult.IMAGE_SRC(elementSrc, uri, title)
                     elementSrc != null -> HitResult.IMAGE(elementSrc, title)
                     else -> HitResult.UNKNOWN("")
                 }

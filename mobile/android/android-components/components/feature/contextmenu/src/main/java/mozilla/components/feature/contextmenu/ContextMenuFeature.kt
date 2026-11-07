@@ -115,7 +115,8 @@ class ContextMenuFeature(
         // We know that we are going to show a context menu. Now is the time to perform the haptic feedback.
         engineView.asView().performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
 
-        val fragment = ContextMenuFragment.create(tab, hitResult.getLink(), ids, labels, additionalNote(hitResult))
+        val fragment =
+            ContextMenuFragment.create(tab, hitResult.getDisplayTitle(), ids, labels, additionalNote(hitResult))
         fragment.feature = this
         emitDisplayFact(labels.joinToString())
         fragment.show(fragmentManager, FRAGMENT_TAG)

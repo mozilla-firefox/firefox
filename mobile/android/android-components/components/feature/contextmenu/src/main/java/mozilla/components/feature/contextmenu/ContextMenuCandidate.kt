@@ -777,6 +777,13 @@ internal fun HitResult.getLink(): String =
         else -> "about:blank"
     }
 
+/** Returns a formatted url that includes the title, if available. */
+internal fun HitResult.getDisplayTitle(): String =
+    when {
+        this is HitResult.IMAGE_SRC && !title.isNullOrBlank() -> "$uri\n\n$title"
+        else -> getLink()
+    }
+
 @VisibleForTesting
 internal fun SessionState.isUrlSchemeAllowed(url: String): Boolean {
     return when (val engineSession = engineState.engineSession) {

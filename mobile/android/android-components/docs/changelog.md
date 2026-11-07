@@ -5,6 +5,8 @@ permalink: /changelog/
 ---
 
 # 162.0 (In Development)
+* **concept-engine**
+    * Added an optional `title` to `HitResult.IMAGE_SRC`.
 * **support-locale**
     * Added a new API `LocaleManager#onAttachBaseContext` that applies only the configuration changes for the locale without cached values. Should only be used in `attachBaseContext` overrides for `Application` and `Activity` classes.
         *  The API, similar to the others in `LocaleManager` assumes `enableSplit` is disabled for App Bundle splits; languages will be in the base package.

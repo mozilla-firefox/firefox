@@ -2254,6 +2254,25 @@ class ContextMenuCandidateTest {
 
         assertTrue(sessionState.isUrlSchemeAllowed("https://mozilla.org"))
     }
+
+    @Test
+    fun `GIVEN IMAGE_SRC with title combinations WHEN getTitleOrLink is called THEN it returns the title or link`() {
+        HitResult.IMAGE_SRC("https://mozilla.org/image.png", "https://mozilla.org", "Image title").also { result ->
+            assertEquals("https://mozilla.org\n\nImage title", result.getDisplayTitle())
+        }
+
+        HitResult.IMAGE_SRC("https://mozilla.org/image.png", "https://mozilla.org", " ").also { result ->
+            assertEquals("https://mozilla.org", result.getDisplayTitle())
+        }
+
+        HitResult.IMAGE_SRC("https://mozilla.org/image.png", "https://mozilla.org").also { result ->
+            assertEquals("https://mozilla.org", result.getDisplayTitle())
+        }
+
+        HitResult.IMAGE_SRC("https://mozilla.org/image.png", "https://mozilla.org", "Image title").also { result ->
+            assertEquals("https://mozilla.org", result.getLink())
+        }
+    }
 }
 
 private class TestSnackbarDelegate : SnackbarDelegate {
