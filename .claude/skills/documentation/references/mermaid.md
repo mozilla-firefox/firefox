@@ -8,6 +8,15 @@ drawn inside the activation of the call that made it, where `sequenceDiagram`
 lists messages one after another and leaves the nesting to the reader.
 `tools/moztreedocs/docs/mermaid-integration.md` has a rendered example.
 
+ZenUML differs from mermaid's own diagrams in two ways:
+
+-   **It numbers every message and return** (1, 2, 2.1, 2.1.1), with no option
+    to turn the numbers off, so hand-written step numbers double up. A diagram
+    tied to a numbered list in the prose belongs in `sequenceDiagram`.
+-   **A `return` value is one token unless quoted.** `return sorted results`
+    draws a return labelled `sorted` plus a self-call `results`;
+    `return "sorted results"` draws one label.
+
 Every failure below is invisible until the built page is open in a browser:
 
 -   **A diagram renders at its intrinsic size.** One narrower than the column is
