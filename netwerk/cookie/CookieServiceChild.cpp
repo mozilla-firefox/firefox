@@ -4,6 +4,8 @@
 
 #include "mozilla/net/CookieServiceChild.h"
 
+#include <memory>
+
 #include "Cookie.h"
 #include "CookieCommons.h"
 #include "CookieLogging.h"
@@ -15,15 +17,18 @@
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/ConsoleReportCollector.h"
+#include "mozilla/HashTable.h"
 #include "mozilla/LoadInfo.h"
 #include "mozilla/StaticPrefs_network.h"
 #include "mozilla/StoragePrincipalHelper.h"
 #include "mozilla/TimeStamp.h"
+#include "mozilla/UniquePtr.h"
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/WindowGlobalChild.h"
 #include "mozilla/glean/NetwerkMetrics.h"
 #include "mozilla/ipc/URIUtils.h"
+#include "mozilla/mozalloc.h"
 #include "mozilla/net/HttpChannelChild.h"
 #include "mozilla/net/NeckoChannelParams.h"
 #include "mozilla/net/NeckoChild.h"
@@ -68,16 +73,34 @@ CookieLookupKey MakeCookieLookup(const CookieStruct& aCookie) {
       aCookie.name(), aCookie.host(), aCookie.path()};
 }
 
-bool MatchesCookie(const Cookie* aCookie, const CookieLookupKey& aLookup) {
-  return aCookie->KeyHash() == aLookup.mHash &&
-         aCookie->Name().Equals(aLookup.mName) &&
-         aCookie->Host().Equals(aLookup.mHost) &&
-         aCookie->Path().Equals(aLookup.mPath);
-}
+struct CookieHasher {
+  using Lookup = CookieLookupKey;
+  using Key = RefPtr<Cookie>;
+
+  static HashNumber hash(const Lookup& aLookup) { return aLookup.mHash; }
+
+  static bool match(const Key& aCookie, const Lookup& aLookup) {
+    return aCookie->Name().Equals(aLookup.mName) &&
+           aCookie->Host().Equals(aLookup.mHost) &&
+           aCookie->Path().Equals(aLookup.mPath);
+  }
+
+  static bool MatchesArrayEntry(const Cookie* aCookie, const Lookup& aLookup) {
+    return aCookie->KeyHash() == aLookup.mHash &&
+           aCookie->Name().Equals(aLookup.mName) &&
+           aCookie->Host().Equals(aLookup.mHost) &&
+           aCookie->Path().Equals(aLookup.mPath);
+  }
+};
 
 }  // namespace
 
 class CookieServiceChild::CookiesList {
+  // Name, host, and path form the hash key and remain stable while a cookie is
+  // stored in the child list.
+  using CookieSet =
+      HashSet<RefPtr<Cookie>, CookieHasher, InfallibleAllocPolicy>;
+
  public:
   // Results borrow the cookie and must not be used after the list is mutated.
   class LookupResult {
@@ -91,6 +114,7 @@ class CookieServiceChild::CookiesList {
     LookupResult() = default;
     LookupResult(Cookie* aCookie, uint32_t aArrayIndex)
         : mCookie(aCookie), mArrayIndex(aArrayIndex) {}
+    explicit LookupResult(Cookie* aCookie) : mCookie(aCookie) {}
 
     Cookie* mCookie = nullptr;
     uint32_t mArrayIndex = 0;
@@ -106,6 +130,13 @@ class CookieServiceChild::CookiesList {
 
   void Remove(const LookupResult& aResult) {
     MOZ_ASSERT(aResult);
+    if (mSet) {
+      auto ptr = mSet->lookup(MakeCookieLookup(*aResult.mCookie));
+      MOZ_ASSERT(ptr);
+      mSet->remove(ptr);
+      return;
+    }
+
     MOZ_ASSERT(aResult.mArrayIndex < mArray.Length());
     MOZ_ASSERT(mArray[aResult.mArrayIndex] == aResult.mCookie);
     mArray.RemoveElementAt(aResult.mArrayIndex);
@@ -113,10 +144,29 @@ class CookieServiceChild::CookiesList {
 
   void Append(Cookie* aCookie) {
     MOZ_ASSERT(aCookie);
-    mArray.AppendElement(aCookie);
+    if (!mSet && mArray.Length() < kHashSetPromotionThreshold) {
+      mArray.AppendElement(aCookie);
+      return;
+    }
+
+    if (!mSet) {
+      Promote();
+    }
+
+    MOZ_ALWAYS_TRUE(
+        mSet->putNew(MakeCookieLookup(*aCookie), RefPtr<Cookie>(aCookie)));
   }
 
   bool HasNonExpiredCookies(int64_t aCurrentTimeInMSec) const {
+    if (mSet) {
+      for (auto iter = mSet->iter(); !iter.done(); iter.next()) {
+        if (!iter.get()->IsExpired(aCurrentTimeInMSec)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     for (Cookie* cookie : mArray) {
       if (!cookie->IsExpired(aCurrentTimeInMSec)) {
         return true;
@@ -127,6 +177,16 @@ class CookieServiceChild::CookiesList {
 
   void AppendNonExpiredTo(nsTArray<RefPtr<Cookie>>& aCookies,
                           int64_t aCurrentTimeInMSec) const {
+    if (mSet) {
+      for (auto iter = mSet->iter(); !iter.done(); iter.next()) {
+        Cookie* cookie = iter.get();
+        if (!cookie->IsExpired(aCurrentTimeInMSec)) {
+          aCookies.AppendElement(cookie);
+        }
+      }
+      return;
+    }
+
     for (Cookie* cookie : mArray) {
       if (!cookie->IsExpired(aCurrentTimeInMSec)) {
         aCookies.AppendElement(cookie);
@@ -136,18 +196,43 @@ class CookieServiceChild::CookiesList {
 
  private:
   LookupResult Lookup(const CookieLookupKey& aLookup) const {
+    if (mSet) {
+      CookieSet::Ptr ptr = mSet->lookup(aLookup);
+      return ptr ? LookupResult((*ptr).get()) : LookupResult();
+    }
+
     for (uint32_t i = 0; i < mArray.Length(); ++i) {
       Cookie* cookie = mArray[i];
-      if (MatchesCookie(cookie, aLookup)) {
-        // Remember the index so a successful lookup can be removed without a
-        // second linear scan.
+      if (CookieHasher::MatchesArrayEntry(cookie, aLookup)) {
         return LookupResult(cookie, i);
       }
     }
     return LookupResult();
   }
 
+  void Promote() {
+    MOZ_ASSERT(!mSet);
+    MOZ_ASSERT(mArray.Length() >= kHashSetPromotionThreshold);
+
+    mSet = std::make_unique<CookieSet>();
+    MOZ_ALWAYS_TRUE(mSet->reserve(mArray.Length() + 1));
+    for (RefPtr<Cookie>& cookie : mArray) {
+      auto lookup = MakeCookieLookup(*cookie);
+      MOZ_ASSERT(!mSet->has(lookup));
+      mSet->putNewInfallible(lookup, std::move(cookie));
+    }
+
+    mArray.Clear();
+    mArray.Compact();
+  }
+
+  // This exceeds the default parent per-host limit (180). Larger lists can
+  // result from a higher user-set limit or asynchronous updates in flight.
+  static constexpr uint32_t kHashSetPromotionThreshold = 256;
+  static_assert(kHashSetPromotionThreshold > kMaxCookiesPerHost);
+
   nsTArray<RefPtr<Cookie>> mArray;
+  UniquePtr<CookieSet> mSet;
 };
 
 already_AddRefed<CookieServiceChild> CookieServiceChild::GetSingleton() {
