@@ -15,12 +15,10 @@ describe("SmartWindowRequestResponseTelemetry", () => {
 
   it("records model_request and model_response on success", async () => {
     sb.stub(AuthProvider, "currentProviderName").get(() => "guest");
-    win = await openAIWindow();
-    const browser = win.gBrowser.selectedBrowser;
 
-    await withServer(
+    await AIWindowTestUtils.withHTTPChatWindow(
       { streamChunks: ["Hello from mock."], streamChunkDelayMs: 25 },
-      async () => {
+      async ({ browser }) => {
         await typeInSmartbar(browser, "testing telemetry");
         await submitSmartbar(browser);
         await TestUtils.waitForCondition(
@@ -162,14 +160,9 @@ describe("SmartWindowRequestResponseTelemetry", () => {
   });
 
   it("multi-turn conversation has consistent E2E telemetry", async () => {
-    win = await openAIWindow();
-    const browser = win.gBrowser.selectedBrowser;
-
-    const buildSpy = sb.spy(openAIEngine, "build");
-
-    await withServer(
+    await AIWindowTestUtils.withHTTPChatWindow(
       { streamChunks: ["Reply from mock."], streamChunkDelayMs: 25 },
-      async () => {
+      async ({ browser, buildStub }) => {
         // -- Turn 1 --
         await typeInSmartbar(browser, "first message");
         await submitSmartbar(browser);
@@ -284,7 +277,7 @@ describe("SmartWindowRequestResponseTelemetry", () => {
           "Turn 2 has duration"
         );
 
-        const chatBuildCalls = buildSpy
+        const chatBuildCalls = buildStub
           .getCalls()
           .filter(call => call.args[0]?.feature === "chat");
         Assert.greaterOrEqual(
@@ -323,14 +316,9 @@ describe("SmartWindowRequestResponseTelemetry", () => {
   });
 
   it("separate conversations have isolated IDs", async () => {
-    win = await openAIWindow();
-    const browser = win.gBrowser.selectedBrowser;
-
-    const buildSpy = sb.spy(openAIEngine, "build");
-
-    await withServer(
+    await AIWindowTestUtils.withHTTPChatWindow(
       { streamChunks: ["Response."], streamChunkDelayMs: 25 },
-      async () => {
+      async ({ browser, buildStub }) => {
         // -- Conversation A --
         await typeInSmartbar(browser, "conversation A");
         await submitSmartbar(browser);
@@ -342,6 +330,10 @@ describe("SmartWindowRequestResponseTelemetry", () => {
         const chatSubmitsA = Glean.smartWindow.chatSubmit.testGetValue();
         const chatIdA = chatSubmitsA[0].extra.chat_id;
 
+        const aiWindowElement =
+          browser.contentDocument.querySelector("ai-window");
+        await aiWindowElement.conversation.titlePromise;
+
         // -- Start new chat (resets conversationId) --
         await SpecialPowers.spawn(browser, [], async () => {
           const aiWindow = content.document.querySelector("ai-window");
@@ -350,11 +342,17 @@ describe("SmartWindowRequestResponseTelemetry", () => {
 
         // -- Conversation B --
         await typeInSmartbar(browser, "conversation B");
+        const responseComplete = BrowserTestUtils.waitForMutationCondition(
+          aiWindowElement.renderRoot,
+          { attributes: true, subtree: true },
+          () => Glean.smartWindow.modelResponse.testGetValue()?.length === 2
+        );
         await submitSmartbar(browser);
         await TestUtils.waitForCondition(
           () => Glean.smartWindow.chatSubmit.testGetValue()?.length >= 2,
           "Wait for conversation B chat_submit"
         );
+        await responseComplete;
 
         const chatSubmits = Glean.smartWindow.chatSubmit.testGetValue();
         Assert.equal(chatSubmits.length, 2, "Two chat_submit events total");
@@ -369,7 +367,7 @@ describe("SmartWindowRequestResponseTelemetry", () => {
           "Conversations A and B have different chat_ids"
         );
 
-        const chatBuilds = buildSpy
+        const chatBuilds = buildStub
           .getCalls()
           .filter(call => call.args[0]?.feature === "chat");
         Assert.greaterOrEqual(
