@@ -80,7 +80,6 @@ static nsresult GetDOMEventTarget(nsWebBrowser* aInBrowser,
 
 nsDocShellTreeOwner::nsDocShellTreeOwner()
     : mWebBrowser(nullptr),
-      mTreeOwner(nullptr),
       mPrimaryContentShell(nullptr),
       mWebBrowserChrome(nullptr),
       mOwnerWin(nullptr),
@@ -304,8 +303,6 @@ void nsDocShellTreeOwner::EnsureContentTreeOwner() {
 NS_IMETHODIMP
 nsDocShellTreeOwner::ContentShellAdded(nsIDocShellTreeItem* aContentShell,
                                        bool aPrimary) {
-  if (mTreeOwner) return mTreeOwner->ContentShellAdded(aContentShell, aPrimary);
-
   EnsureContentTreeOwner();
   aContentShell->SetTreeOwner(mContentTreeOwner);
 
@@ -318,10 +315,6 @@ nsDocShellTreeOwner::ContentShellAdded(nsIDocShellTreeItem* aContentShell,
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::ContentShellRemoved(nsIDocShellTreeItem* aContentShell) {
-  if (mTreeOwner) {
-    return mTreeOwner->ContentShellRemoved(aContentShell);
-  }
-
   if (mPrimaryContentShell == aContentShell) {
     mPrimaryContentShell = nullptr;
   }
@@ -332,10 +325,6 @@ nsDocShellTreeOwner::ContentShellRemoved(nsIDocShellTreeItem* aContentShell) {
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetPrimaryContentShell(nsIDocShellTreeItem** aShell) {
   NS_ENSURE_ARG_POINTER(aShell);
-
-  if (mTreeOwner) {
-    return mTreeOwner->GetPrimaryContentShell(aShell);
-  }
 
   nsCOMPtr<nsIDocShellTreeItem> shell;
   if (!mPrimaryRemoteTab) {
@@ -349,10 +338,6 @@ nsDocShellTreeOwner::GetPrimaryContentShell(nsIDocShellTreeItem** aShell) {
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::RemoteTabAdded(nsIRemoteTab* aTab, bool aPrimary) {
-  if (mTreeOwner) {
-    return mTreeOwner->RemoteTabAdded(aTab, aPrimary);
-  }
-
   if (aPrimary) {
     mPrimaryRemoteTab = aTab;
     mPrimaryContentShell = nullptr;
@@ -365,10 +350,6 @@ nsDocShellTreeOwner::RemoteTabAdded(nsIRemoteTab* aTab, bool aPrimary) {
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::RemoteTabRemoved(nsIRemoteTab* aTab) {
-  if (mTreeOwner) {
-    return mTreeOwner->RemoteTabRemoved(aTab);
-  }
-
   if (aTab == mPrimaryRemoteTab) {
     mPrimaryRemoteTab = nullptr;
   }
@@ -378,10 +359,6 @@ nsDocShellTreeOwner::RemoteTabRemoved(nsIRemoteTab* aTab) {
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetPrimaryRemoteTab(nsIRemoteTab** aTab) {
-  if (mTreeOwner) {
-    return mTreeOwner->GetPrimaryRemoteTab(aTab);
-  }
-
   nsCOMPtr<nsIRemoteTab> tab = mPrimaryRemoteTab;
   tab.forget(aTab);
   return NS_OK;
@@ -390,9 +367,6 @@ nsDocShellTreeOwner::GetPrimaryRemoteTab(nsIRemoteTab** aTab) {
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetPrimaryContentBrowsingContext(
     mozilla::dom::BrowsingContext** aBc) {
-  if (mTreeOwner) {
-    return mTreeOwner->GetPrimaryContentBrowsingContext(aBc);
-  }
   if (mPrimaryRemoteTab) {
     return mPrimaryRemoteTab->GetBrowsingContext(aBc);
   }
@@ -691,25 +665,6 @@ void nsDocShellTreeOwner::WebBrowser(nsWebBrowser* aWebBrowser) {
 }
 
 nsWebBrowser* nsDocShellTreeOwner::WebBrowser() { return mWebBrowser; }
-
-NS_IMETHODIMP
-nsDocShellTreeOwner::SetTreeOwner(nsIDocShellTreeOwner* aTreeOwner) {
-  if (aTreeOwner) {
-    nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome(do_GetInterface(aTreeOwner));
-    NS_ENSURE_TRUE(webBrowserChrome, NS_ERROR_INVALID_ARG);
-    NS_ENSURE_SUCCESS(SetWebBrowserChrome(webBrowserChrome),
-                      NS_ERROR_INVALID_ARG);
-    mTreeOwner = aTreeOwner;
-  } else {
-    mTreeOwner = nullptr;
-    nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome = GetWebBrowserChrome();
-    if (!webBrowserChrome) {
-      NS_ENSURE_SUCCESS(SetWebBrowserChrome(nullptr), NS_ERROR_FAILURE);
-    }
-  }
-
-  return NS_OK;
-}
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::SetWebBrowserChrome(

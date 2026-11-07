@@ -345,22 +345,14 @@ nsWebBrowser::GetDomWindow(mozIDOMWindowProxy** aWindow) {
 NS_IMETHODIMP
 nsWebBrowser::GetTreeOwner(nsIDocShellTreeOwner** aTreeOwner) {
   NS_ENSURE_ARG_POINTER(aTreeOwner);
-  *aTreeOwner = nullptr;
-  if (mDocShellTreeOwner) {
-    if (mDocShellTreeOwner->mTreeOwner) {
-      *aTreeOwner = mDocShellTreeOwner->mTreeOwner;
-    } else {
-      *aTreeOwner = mDocShellTreeOwner;
-    }
-  }
-  NS_IF_ADDREF(*aTreeOwner);
+  *aTreeOwner = do_AddRef(mDocShellTreeOwner).take();
   return NS_OK;
 }
 
 NS_IMETHODIMP
 nsWebBrowser::SetTreeOwner(nsIDocShellTreeOwner* aTreeOwner) {
-  EnsureDocShellTreeOwner();
-  return mDocShellTreeOwner->SetTreeOwner(aTreeOwner);
+  MOZ_ASSERT_UNREACHABLE("nsWebBrowser is never a child docshell");
+  return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 //*****************************************************************************

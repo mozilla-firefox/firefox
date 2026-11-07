@@ -109,7 +109,6 @@ using dom::Promise;
 AppWindow::AppWindow(uint32_t aChromeFlags)
     : mChromeTreeOwner(nullptr),
       mContentTreeOwner(nullptr),
-      mPrimaryContentTreeOwner(nullptr),
       mModalStatus(NS_OK),
       mFullscreenChangeState(FullscreenChangeState::NotChanging),
       mContinueModalLoop(false),
@@ -550,10 +549,6 @@ NS_IMETHODIMP AppWindow::Destroy() {
     mContentTreeOwner->AppWindow(nullptr);
     NS_RELEASE(mContentTreeOwner);
   }
-  if (mPrimaryContentTreeOwner) {
-    mPrimaryContentTreeOwner->AppWindow(nullptr);
-    NS_RELEASE(mPrimaryContentTreeOwner);
-  }
   if (mChromeTreeOwner) {
     mChromeTreeOwner->AppWindow(nullptr);
     NS_RELEASE(mChromeTreeOwner);
@@ -959,19 +954,9 @@ NS_IMETHODIMP AppWindow::EnsureChromeTreeOwner() {
 NS_IMETHODIMP AppWindow::EnsureContentTreeOwner() {
   if (mContentTreeOwner) return NS_OK;
 
-  mContentTreeOwner = new nsContentTreeOwner(false);
+  mContentTreeOwner = new nsContentTreeOwner();
   NS_ADDREF(mContentTreeOwner);
   mContentTreeOwner->AppWindow(this);
-
-  return NS_OK;
-}
-
-NS_IMETHODIMP AppWindow::EnsurePrimaryContentTreeOwner() {
-  if (mPrimaryContentTreeOwner) return NS_OK;
-
-  mPrimaryContentTreeOwner = new nsContentTreeOwner(true);
-  NS_ADDREF(mPrimaryContentTreeOwner);
-  mPrimaryContentTreeOwner->AppWindow(this);
 
   return NS_OK;
 }
@@ -1959,16 +1944,13 @@ dom::Element* AppWindow::GetWindowDOMElement() const {
 
 nsresult AppWindow::ContentShellAdded(nsIDocShellTreeItem* aContentShell,
                                       bool aPrimary) {
-  // Set the default content tree owner
+  MOZ_TRY(EnsureContentTreeOwner());
+  aContentShell->SetTreeOwner(mContentTreeOwner);
   if (aPrimary) {
-    NS_ENSURE_SUCCESS(EnsurePrimaryContentTreeOwner(), NS_ERROR_FAILURE);
-    aContentShell->SetTreeOwner(mPrimaryContentTreeOwner);
     mPrimaryContentShell = aContentShell;
     mPrimaryBrowserParent = nullptr;
-  } else {
-    NS_ENSURE_SUCCESS(EnsureContentTreeOwner(), NS_ERROR_FAILURE);
-    aContentShell->SetTreeOwner(mContentTreeOwner);
-    if (mPrimaryContentShell == aContentShell) mPrimaryContentShell = nullptr;
+  } else if (mPrimaryContentShell == aContentShell) {
+    mPrimaryContentShell = nullptr;
   }
 
   return NS_OK;

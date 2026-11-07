@@ -47,7 +47,7 @@ class nsContentTreeOwner final : public nsIDocShellTreeOwner,
   NS_IMETHOD Blur() override;
 
  protected:
-  explicit nsContentTreeOwner(bool fPrimary);
+  nsContentTreeOwner();
   virtual ~nsContentTreeOwner() = default;
 
   void AppWindow(mozilla::AppWindow* aAppWindow);
@@ -55,7 +55,6 @@ class nsContentTreeOwner final : public nsIDocShellTreeOwner,
 
  protected:
   mozilla::AppWindow* mAppWindow;
-  bool mPrimary;
 };
 
 #endif /* nsContentTreeOwner_h_ */

@@ -59,7 +59,6 @@ class nsDocShellTreeOwner final : public nsIDocShellTreeOwner,
   void WebBrowser(nsWebBrowser* aWebBrowser);
 
   nsWebBrowser* WebBrowser();
-  NS_IMETHOD SetTreeOwner(nsIDocShellTreeOwner* aTreeOwner);
   NS_IMETHOD SetWebBrowserChrome(nsIWebBrowserChrome* aWebBrowserChrome);
 
   NS_IMETHOD AddChromeListeners();
@@ -85,7 +84,6 @@ class nsDocShellTreeOwner final : public nsIDocShellTreeOwner,
  protected:
   // Weak References
   nsWebBrowser* mWebBrowser;
-  nsIDocShellTreeOwner* mTreeOwner;
   nsIDocShellTreeItem* mPrimaryContentShell;
 
   nsIWebBrowserChrome* mWebBrowserChrome;

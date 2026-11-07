@@ -185,7 +185,6 @@ class AppWindow final : public nsIBaseWindow,
 
   NS_IMETHOD EnsureChromeTreeOwner();
   NS_IMETHOD EnsureContentTreeOwner();
-  NS_IMETHOD EnsurePrimaryContentTreeOwner();
   NS_IMETHOD EnsurePrompter();
   NS_IMETHOD EnsureAuthPrompter();
   NS_IMETHOD ForceRoundedDimensions();
@@ -304,7 +303,6 @@ class AppWindow final : public nsIBaseWindow,
 
   nsChromeTreeOwner* mChromeTreeOwner;
   nsContentTreeOwner* mContentTreeOwner;
-  nsContentTreeOwner* mPrimaryContentTreeOwner;
   nsCOMPtr<nsIWidget> mWindow;
   RefPtr<nsDocShell> mDocShell;
   nsCOMPtr<nsPIDOMWindowOuter> mDOMWindow;

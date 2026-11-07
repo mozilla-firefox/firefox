@@ -48,8 +48,7 @@ using namespace mozilla;
 //***    nsContentTreeOwner: Object Management
 //*****************************************************************************
 
-nsContentTreeOwner::nsContentTreeOwner(bool fPrimary)
-    : mAppWindow(nullptr), mPrimary(fPrimary) {}
+nsContentTreeOwner::nsContentTreeOwner() : mAppWindow(nullptr) {}
 
 //*****************************************************************************
 // nsContentTreeOwner::nsISupports
