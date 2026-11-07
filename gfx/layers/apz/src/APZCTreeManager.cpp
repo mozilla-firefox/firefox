@@ -919,8 +919,11 @@ void APZCTreeManager::SampleForWebRender(const Maybe<VsyncId>& aVsyncId,
       if (RefPtr<UiCompositorControllerParent> uiController =
               UiCompositorControllerParent::GetFromRootLayerTreeId(
                   mRootLayersId)) {
-        uiController->NotifyCompositorScrollUpdates(
-            apzc->GetCompositorScrollUpdates());
+        nsTArray<CompositorScrollUpdate> updates =
+            apzc->GetCompositorScrollUpdates();
+        if (!updates.IsEmpty()) {
+          uiController->NotifyCompositorScrollUpdates(std::move(updates));
+        }
       }
     }
   }

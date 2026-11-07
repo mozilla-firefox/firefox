@@ -3777,11 +3777,14 @@ void nsWindow::NotifyCompositorScrollUpdates(
           mLayerViewSupport.Access()}) {
     const auto& compositor = lvs->GetJavaCompositor();
     mContentDocumentDisplayed = true;
+    const auto session = compositor->GetSession();
     for (const auto& update : aUpdates) {
       compositor->NotifyCompositorScrollUpdate(
-          update.mMetrics.mVisualScrollOffset.x,
-          update.mMetrics.mVisualScrollOffset.y, update.mMetrics.mZoom.scale,
-          ConvertScrollUpdateSource(update.mSource));
+          java::GeckoSession::ScrollPositionUpdate::New(
+              session, update.mMetrics.mVisualScrollOffset.x,
+              update.mMetrics.mVisualScrollOffset.y,
+              update.mMetrics.mZoom.scale,
+              ConvertScrollUpdateSource(update.mSource)));
     }
   }
 }
