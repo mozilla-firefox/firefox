@@ -121,10 +121,7 @@ impl<ValueType: ColorComponentType> ColorComponent<ValueType> {
                 let channel_value = origin_color
                     .and_then(|c| c.get_component_by_channel_keyword(*channel_keyword).ok());
                 match channel_value {
-                    Some(Some(value)) => Self::Value(ValueType::from_value(value)),
-                    // Preserve 'none' value here instead of converting to 0
-                    // since we are not currently in a calculation
-                    Some(None) => Self::None,
+                    Some(value) => Self::Value(ValueType::from_value(value.unwrap_or(0.0))),
                     // If the color needs to get resolved later (there's no absolute origin color),
                     // or the channel is invalid, we still keep the channel keyword around.
                     None => Self::ChannelKeyword(*channel_keyword),
