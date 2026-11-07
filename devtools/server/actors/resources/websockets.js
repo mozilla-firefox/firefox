@@ -27,7 +27,13 @@ class WebSocketWatcher {
   }
 
   static prepareFramePayload(targetActor, frame) {
-    const payload = new LongStringActor(targetActor.conn, frame.payload);
+    const text =
+      frame.opCode === Ci.nsIWebSocketFrame.OPCODE_TEXT
+        ? new TextDecoder("utf-8", { ignoreBOM: true }).decode(
+            Uint8Array.from(frame.payload, byte => byte.charCodeAt(0))
+          )
+        : frame.payload;
+    const payload = new LongStringActor(targetActor.conn, text);
     targetActor.manage(payload);
     return payload.form();
   }
@@ -130,6 +136,7 @@ class WebSocketWatcher {
       data: {
         type: "received",
         payload,
+        payloadSize: frame.payload.length,
         timeStamp: frame.timeStamp,
         finBit: frame.finBit,
         rsvBit1: frame.rsvBit1,
@@ -154,6 +161,7 @@ class WebSocketWatcher {
       data: {
         type: "sent",
         payload,
+        payloadSize: frame.payload.length,
         timeStamp: frame.timeStamp,
         finBit: frame.finBit,
         rsvBit1: frame.rsvBit1,

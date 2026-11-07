@@ -419,7 +419,9 @@ class MessagePayload extends Component {
       componentProps = { payload };
       dataLabel = L10N.getFormatStrWithNumbers(
         "netmonitor.ws.rawData.header",
-        getFormattedSize(this.state.payload.length)
+        getFormattedSize(
+          this.props.selectedMessage.payloadSize ?? this.state.payload.length
+        )
       );
     }
 

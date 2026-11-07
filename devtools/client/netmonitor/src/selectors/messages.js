@@ -109,12 +109,13 @@ const getDisplayedMessagesSummary = createSelector(
     let totalSize = 0;
 
     displayedMessages.forEach(message => {
+      const size = message.payloadSize ?? message.payload.length;
       if (message.type == "received") {
-        receivedSize += message.payload.length;
+        receivedSize += size;
       } else if (message.type == "sent") {
-        sentSize += message.payload.length;
+        sentSize += size;
       }
-      totalSize += message.payload.length;
+      totalSize += size;
       if (message.timeStamp < firstStartedMs) {
         firstStartedMs = message.timeStamp;
       }

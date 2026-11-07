@@ -24,18 +24,22 @@ class ColumnSize extends Component {
   }
 
   shouldComponentUpdate(nextProps) {
-    return this.props.item.payload !== nextProps.item.payload;
+    return (
+      this.props.item.payload !== nextProps.item.payload ||
+      this.props.item.payloadSize !== nextProps.item.payloadSize
+    );
   }
 
   render() {
-    const { payload } = this.props.item;
+    const { payload, payloadSize } = this.props.item;
+    const size = payloadSize ?? payload.length;
 
     return dom.td(
       {
         className: "message-list-column message-list-size",
-        title: getFormattedSize(payload.length),
+        title: getFormattedSize(size),
       },
-      getFormattedSize(payload.length)
+      getFormattedSize(size)
     );
   }
 }

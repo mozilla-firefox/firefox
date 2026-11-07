@@ -55,3 +55,5 @@ support-files = [
 ["browser_net_ws-stacks.js"]
 
 ["browser_net_ws-stomp-payload.js"]
+
+["browser_net_ws-utf8.js"]
