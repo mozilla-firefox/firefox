@@ -394,7 +394,7 @@
   <!-- Title for the listen to page AI feature toggle -->
   <string name="ai_controls_listen_to_page_title">Écouter la page</string>
   <!-- Description for the listen to page AI feature toggle -->
-  <string name="ai_controls_listen_to_page_description">Votre appareil peut utiliser l’IA pour lire à haute voix. Le texte et l’audio restent privés.</string>
+  <string name="ai_controls_listen_to_page_description">Votre appareil peut utiliser l’IA pour lire la page à voix haute. Le texte et l’audio restent confidentiels.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Bloquer les améliorations ayant recours à l’IA\u00a0?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -1019,7 +1019,7 @@
   -->
   <string name="addon_remove_dialog_title">Supprimer %1$s\u00a0?</string>
   <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
-  <string name="addon_remove_dialog_body">Cette action supprime l’extension et ses paramètres de cet appareil.</string>
+  <string name="addon_remove_dialog_body">L’extension et ses paramètres seront supprimés de cet appareil.</string>
   <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
   <string name="addon_remove_dialog_confirm">Supprimer</string>
   <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
@@ -1192,7 +1192,7 @@
   <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
   <string name="preferences_enable_sync_title">Synchroniser cet appareil</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
-  <string name="preferences_enable_sync_summary_sync_enabled">Vos données sont sauvegardées et disponibles sur les appareils synchronisés.</string>
+  <string name="preferences_enable_sync_summary_sync_enabled">Vos données sont sauvegardées et accessibles sur vos appareils synchronisés.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Utilisation des données enregistrées dans votre compte %1$s.</string>
   <!-- Summary for the sync preference category. -->
@@ -4550,11 +4550,11 @@
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Supprimer le widget</string>
   <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
-  <string name="wrex_widget_match_full_time_short">FT</string>
+  <string name="wrex_widget_match_full_time_short">Terminé</string>
   <!-- Sports widget match status label shown during half-time of a match. -->
   <string name="wrex_widget_match_half_time">Mi-temps</string>
   <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
-  <string name="wrex_widget_match_extra_time_short">ET</string>
+  <string name="wrex_widget_match_extra_time_short">Prolongations</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="wrex_widget_match_penalties">Tirs au but</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
@@ -4593,13 +4593,13 @@
   <!-- Sports widget error card description shown when the user is offline. -->
   <string name="wrex_widget_error_connection_offline_description">Vérifiez votre connexion Internet puis réessayez.</string>
   <!-- Sports widget error card title shown when match data fails to load. -->
-  <string name="wrex_widget_error_load_failed_title">Impossible d’afficher les informations sur le match pour l’instant</string>
+  <string name="wrex_widget_error_load_failed_title">Les informations du match ne sont pas disponibles pour le moment</string>
   <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
-  <string name="wrex_widget_error_try_refreshing">Essayez d’actualiser ou de revérifier plus tard.</string>
+  <string name="wrex_widget_error_try_refreshing">Actualisez la page ou réessayez plus tard.</string>
   <!-- Sports widget error card title shown when the latest match results fail to load. -->
-  <string name="wrex_widget_error_results_load_failed_title">Impossible d\'afficher les résultats pour l\'instant</string>
+  <string name="wrex_widget_error_results_load_failed_title">Impossible d’afficher les résultats pour l’instant</string>
   <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
-  <string name="wrex_widget_team_to_be_determined">Équipe à déterminer</string>
+  <string name="wrex_widget_team_to_be_determined">Équipe non encore déterminée</string>
   <!--
     Privacy notice homepage banner
 
