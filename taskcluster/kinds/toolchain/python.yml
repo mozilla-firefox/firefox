@@ -73,6 +73,10 @@ macosx64-python-3.10:
     run:
         toolchain-alias: macosx64-python
         toolchain-artifact: public/build/python.tar.zst
+        arguments:
+            - cpython-3.10-macos-dup3-pipe2.patch
+        resources:
+            - 'taskcluster/scripts/misc/cpython-3.10-macos-dup3-pipe2.patch'
     fetches:
         fetch:
             - cpython-3.10.11
@@ -88,6 +92,10 @@ macosx64-aarch64-python-3.10:
     run:
         toolchain-alias: macosx64-aarch64-python
         toolchain-artifact: public/build/python.tar.zst
+        arguments:
+            - cpython-3.10-macos-dup3-pipe2.patch
+        resources:
+            - 'taskcluster/scripts/misc/cpython-3.10-macos-dup3-pipe2.patch'
     fetches:
         fetch:
             - cpython-3.10.11
@@ -140,6 +148,10 @@ macosx64-python-3.11:
     worker-type: b-osx-1015
     run:
         toolchain-artifact: public/build/python.tar.zst
+        arguments:
+            - cpython-3.11-macos-dup3-pipe2.patch
+        resources:
+            - 'taskcluster/scripts/misc/cpython-3.11-macos-dup3-pipe2.patch'
     fetches:
         fetch:
             - cpython-3.11.7
@@ -154,6 +166,10 @@ macosx64-aarch64-python-3.11:
     worker-type: b-osx-arm64
     run:
         toolchain-artifact: public/build/python.tar.zst
+        arguments:
+            - cpython-3.11-macos-dup3-pipe2.patch
+        resources:
+            - 'taskcluster/scripts/misc/cpython-3.11-macos-dup3-pipe2.patch'
     fetches:
         fetch:
             - cpython-3.11.7

@@ -5,6 +5,7 @@
 #
 # This script builds the official interpreter for the python language,
 # while also packing in a few default extra packages.
+# Arguments are patches to apply to the cpython source.
 
 set -e
 set -x
@@ -12,6 +13,10 @@ set -x
 # Required fetch artifact
 python_src=${MOZ_FETCHES_DIR}/cpython-source
 xz_prefix=${MOZ_FETCHES_DIR}/xz
+
+for p in "$@"; do
+    patch -d ${python_src} -p1 --fuzz=0 < $(dirname $0)/$p
+done
 
 # Make the compiler-rt available to clang.
 env UPLOAD_DIR= $GECKO_PATH/taskcluster/scripts/misc/repack-clang.sh
