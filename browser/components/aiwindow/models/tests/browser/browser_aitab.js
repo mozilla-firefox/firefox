@@ -746,7 +746,9 @@ add_task(async function test_modification_keeps_links_from_earlier_turns() {
       first.toolConvId
     );
     const storedText = JSON.stringify(
-      stored.getMessagesInChatCompletionsFormat()
+      stored
+        .getMessagesInChatCompletionsFormat()
+        .filter(message => message.role !== "system")
     );
     Assert.ok(
       storedText.includes(SOURCE_URL),
