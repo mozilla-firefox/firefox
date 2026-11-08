@@ -114,6 +114,16 @@ struct ImmTagSignExt : public Imm32 {
   explicit ImmTagSignExt(JSValueTag mask) : Imm32(signExtend(mask)) {}
 };
 
+// The upper 32 bits of a Value whose payload fits in 32 bits are its tag
+// shifted left by 15. Sign-extended, as lw loads them, they are a multiple of
+// 1 << 15, which lui loads in one instruction.
+struct ImmTagUpperWord : public Imm32 {
+  static_assert(JSVAL_TAG_SHIFT - 32 >= 12, "lui loads the shifted tag");
+
+  explicit ImmTagUpperWord(JSValueTag tag)
+      : Imm32(int32_t(tag << (JSVAL_TAG_SHIFT - 32))) {}
+};
+
 class MacroAssemblerRiscv64 : public Assembler {
  public:
   MacroAssemblerRiscv64() {}
@@ -1015,6 +1025,25 @@ class MacroAssemblerRiscv64Compat : public MacroAssemblerRiscv64 {
                                     Register scratch) {
     splitSignExtTag(value, scratch);
     return scratch;
+  }
+
+  // Branch on the tag of a Value in memory by comparing its upper word with
+  // ImmTagUpperWord(tag), which takes one instruction fewer than loading the
+  // Value and extracting the sign-extended tag. The upper word equals
+  // ImmTagUpperWord(tag) for the types whose payload fits in 32 bits, and for
+  // all types it compares unsigned in the same order as the tag, because the
+  // payload bits below the shifted tag are less than 1 << 15. The equality
+  // tests of the pointer types extract the tag because their payload reaches
+  // into the upper word.
+  template <typename T>
+  void branchTestTagUpperWord(Condition cond, const T& address, JSValueTag tag,
+                              Label* label) {
+    T upperWord = address;
+    upperWord.offset += int32_t(sizeof(uint32_t));
+    UseScratchRegisterScope temps(this);
+    Register scratch = temps.Acquire();
+    load32(upperWord, scratch);
+    ma_b(scratch, ImmTagUpperWord(tag), label, cond, ShortJump);
   }
 
   void loadInt32OrDouble(const Address& src, FloatRegister dest);
