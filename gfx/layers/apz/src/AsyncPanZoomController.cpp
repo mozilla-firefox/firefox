@@ -1362,16 +1362,12 @@ nsEventStatus AsyncPanZoomController::HandleGestureEvent(
           rv = OnSingleTapConfirmed(tapGestureInput);
           break;
         case TapGestureInput::TAPGESTURE_DOUBLE:
-          if (!IsRootContent()) {
-            if (APZCTreeManager* treeManagerLocal = GetApzcTreeManager()) {
-              if (AsyncPanZoomController* apzc =
-                      treeManagerLocal->FindRootApzcFor(GetLayersId())) {
-                rv = apzc->OnDoubleTap(tapGestureInput);
-              }
+          if (APZCTreeManager* treeManagerLocal = GetApzcTreeManager()) {
+            if (AsyncPanZoomController* apzc =
+                    treeManagerLocal->FindDoubleTapHandlerFor(this)) {
+              rv = apzc->OnDoubleTap(tapGestureInput);
             }
-            break;
           }
-          rv = OnDoubleTap(tapGestureInput);
           break;
         case TapGestureInput::TAPGESTURE_SECOND:
           rv = OnSecondTap(tapGestureInput);
@@ -3428,15 +3424,14 @@ nsEventStatus AsyncPanZoomController::OnDoubleTap(
   APZC_LOG_DETAIL("got a double-tap in state %s\n", this,
                   ToString(mState).c_str());
 
-  MOZ_ASSERT(IsRootForLayersId(),
-             "This function should be called for the root content APZC or "
-             "OOPIF root APZC");
-
   CSSToCSSMatrix4x4 transformToRootContentApzc;
   RefPtr<AsyncPanZoomController> rootContentApzc;
   if (IsRootContent()) {
     rootContentApzc = RefPtr{this};
   } else {
+    MOZ_ASSERT(IsRootForLayersId(),
+               "This function should be called for the root content APZC or "
+               "OOPIF root APZC");
     if (APZCTreeManager* treeManagerLocal = GetApzcTreeManager()) {
       rootContentApzc = treeManagerLocal->FindZoomableApzc(this);
       if (rootContentApzc) {

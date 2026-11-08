@@ -3357,6 +3357,42 @@ AsyncPanZoomController* APZCTreeManager::FindRootApzcFor(
   return resultNode ? resultNode->GetApzc() : nullptr;
 }
 
+AsyncPanZoomController* APZCTreeManager::FindDoubleTapHandlerFor(
+    AsyncPanZoomController* aApzc) {
+  RecursiveMutexAutoLock lock(mTreeLock);
+
+  // aApzc is either:
+  //  a) an APZC in the top level content document, i.e. the root content APZC
+  //     or a sub scroll container sharing the document's layers id,
+  //  b) an APZC in the browser window's chrome document (browser.xhtml), or
+  //  c) an APZC having a different layers id, i.e. a scroll container in an
+  //     out-of-process iframe.
+  //
+  // a) wants the root content APZC it is a descendant of, or the one its fixed
+  // content is fixed to. The walk stays within the layers id, so b) doesn't
+  // reach the root content APZC of a top level content document loaded in the
+  // parent process, such as about:license, even though it shares
+  // browser.xhtml's layers id, and c) doesn't reach the root content APZC of
+  // the document embedding the iframe.
+  LayersId layersId = aApzc->GetLayersId();
+  AsyncPanZoomController* apzc = aApzc;
+  while (!apzc->IsRootContent()) {
+    AsyncPanZoomController* parent = FindHandoffParent(apzc).mApzc;
+    if (!parent) {
+      // b)'s root APZC has no enclosing document.
+      return nullptr;
+    }
+    if (parent->GetLayersId() != layersId) {
+      // The root APZC of c)'s layers id hands the zoom off to the root content
+      // APZC of the enclosing document.
+      MOZ_ASSERT(apzc->IsRootForLayersId());
+      return apzc;
+    }
+    apzc = parent;
+  }
+  return apzc;
+}
+
 AsyncPanZoomController* APZCTreeManager::FindRootContentApzcForLayersId(
     LayersId aLayersId) const {
   mTreeLock.AssertCurrentThreadIn();

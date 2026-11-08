@@ -450,3 +450,91 @@ TEST_F(APZCTreeManagerGenericTesterMock,
   // sent to the previous tab's content process.)
   EXPECT_EQ(zoomStart.mLayersId, tab2LayersId);
 }
+
+class APZDoubleTapInParentProcessTester
+    : public APZCTreeManagerGenericTesterMock {
+ protected:
+  // A content document loaded in the parent process, such as about:license,
+  // shares the chrome document's layers id. layers[0] is the chrome document's
+  // root, layers[1] the content document's root, layers[2] a subframe in the
+  // content document, layers[3] fixed content in the content document,
+  // layers[4] a scroll container in the fixed content and layers[5] a scroll
+  // container in the chrome document, e.g. the tab strip.
+  void CreateParentProcessContentTree() {
+    const char* treeShape = "x(x(x)x(x)x)";
+    LayerIntRect layerVisibleRect[] = {
+        LayerIntRect(0, 0, 100, 100), LayerIntRect(0, 20, 100, 80),
+        LayerIntRect(0, 20, 50, 50),  LayerIntRect(50, 50, 50, 50),
+        LayerIntRect(50, 50, 50, 50), LayerIntRect(0, 0, 100, 20),
+    };
+    CreateScrollData(treeShape, layerVisibleRect);
+    SetScrollableFrameMetrics(layers[0], START_SCROLL_ID);
+    SetScrollableFrameMetrics(layers[1], START_SCROLL_ID + 1);
+    SetScrollableFrameMetrics(layers[2], START_SCROLL_ID + 2);
+    layers[3]->SetFixedPositionScrollContainerId(START_SCROLL_ID + 1);
+    SetScrollableFrameMetrics(layers[4], START_SCROLL_ID + 4);
+    SetScrollableFrameMetrics(layers[5], START_SCROLL_ID + 5);
+    ModifyFrameMetrics(layers[1], [](ScrollMetadata& sm, FrameMetrics& fm) {
+      fm.SetIsRootContent(true);
+    });
+
+    registration =
+        std::make_unique<ScopedLayerTreeRegistration>(LayersId{0}, mcc);
+    UpdateHitTestingTree();
+
+    ApzcOf(layers[1])->UpdateZoomConstraints(ZoomConstraints(
+        true, true, CSSToParentLayerScale(0.25f), CSSToParentLayerScale(4.0f)));
+  }
+
+  UniquePtr<ScopedLayerTreeRegistration> registration;
+};
+
+TEST_F(APZDoubleTapInParentProcessTester, DoubleTapOnRootContent) {
+  CreateParentProcessContentTree();
+
+  EXPECT_CALL(*mcc, HandleTap(TapType::eDoubleTap, _, _,
+                              ApzcOf(layers[1])->GetGuid(), _, _))
+      .Times(1);
+
+  QueueMockHitResult(START_SCROLL_ID + 1);
+  TapGestureInput doubleTap(TapGestureInput::TAPGESTURE_DOUBLE, mcc->Time(),
+                            ScreenIntPoint(75, 50), MODIFIER_NONE);
+  manager->ReceiveInputEvent(doubleTap);
+}
+
+TEST_F(APZDoubleTapInParentProcessTester, DoubleTapOnSubframe) {
+  CreateParentProcessContentTree();
+
+  EXPECT_CALL(*mcc, HandleTap(TapType::eDoubleTap, _, _,
+                              ApzcOf(layers[1])->GetGuid(), _, _))
+      .Times(1);
+
+  QueueMockHitResult(START_SCROLL_ID + 2);
+  TapGestureInput doubleTap(TapGestureInput::TAPGESTURE_DOUBLE, mcc->Time(),
+                            ScreenIntPoint(25, 40), MODIFIER_NONE);
+  manager->ReceiveInputEvent(doubleTap);
+}
+
+TEST_F(APZDoubleTapInParentProcessTester, DoubleTapOnFixedContent) {
+  CreateParentProcessContentTree();
+
+  EXPECT_CALL(*mcc, HandleTap(TapType::eDoubleTap, _, _,
+                              ApzcOf(layers[1])->GetGuid(), _, _))
+      .Times(1);
+
+  QueueMockHitResult(START_SCROLL_ID + 4);
+  TapGestureInput doubleTap(TapGestureInput::TAPGESTURE_DOUBLE, mcc->Time(),
+                            ScreenIntPoint(75, 75), MODIFIER_NONE);
+  manager->ReceiveInputEvent(doubleTap);
+}
+
+TEST_F(APZDoubleTapInParentProcessTester, DoubleTapOnChrome) {
+  CreateParentProcessContentTree();
+
+  EXPECT_CALL(*mcc, HandleTap(TapType::eDoubleTap, _, _, _, _, _)).Times(0);
+
+  QueueMockHitResult(START_SCROLL_ID + 5);
+  TapGestureInput doubleTap(TapGestureInput::TAPGESTURE_DOUBLE, mcc->Time(),
+                            ScreenIntPoint(50, 10), MODIFIER_NONE);
+  manager->ReceiveInputEvent(doubleTap);
+}

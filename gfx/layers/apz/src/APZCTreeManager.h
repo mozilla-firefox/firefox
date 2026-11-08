@@ -658,6 +658,12 @@ class APZCTreeManager : public IAPZCTreeManager, public APZBridge {
 
   AsyncPanZoomController* FindRootApzcFor(LayersId aLayersId) const;
 
+  /**
+   * Find the APZC which handles a double tap that hit |aApzc|.
+   */
+  AsyncPanZoomController* FindDoubleTapHandlerFor(
+      AsyncPanZoomController* aApzc);
+
   ScreenMargin GetCompositorFixedLayerMargins() const;
 
   void AdjustEventPointForDynamicToolbar(ScreenIntPoint& aEventPoint,
