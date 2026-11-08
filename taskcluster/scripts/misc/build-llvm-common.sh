@@ -26,6 +26,12 @@ aarch64-apple-darwin)
   ;;
 x86_64-apple-darwin)
   arch=x86_64
+  # libc++ in the macOS 27 SDK emits a #warning when the deployment target is below 11.0.
+  EXTRA_CMAKE_FLAGS="
+    $EXTRA_CMAKE_FLAGS
+    -DCMAKE_C_FLAGS=-Wno-cpp
+    -DCMAKE_CXX_FLAGS=-Wno-cpp
+  "
   ;;
 esac
 
