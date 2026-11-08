@@ -343,6 +343,7 @@ static const char* gExactCallbackPrefs[] = {
     "layout.css.text-autospace-size.enabled",
     "layout.css.text-transform.uppercase-eszett.enabled",
     "privacy.trackingprotection.enabled",
+    nullptr,
 };
 
 static const char* gPrefixCallbackPrefs[] = {
@@ -351,6 +352,7 @@ static const char* gPrefixCallbackPrefs[] = {
     "font.",
     "gfx.font_rendering.",
     "layout.css.font-visibility.",
+    nullptr,
 };
 
 void nsPresContext::Destroy() {

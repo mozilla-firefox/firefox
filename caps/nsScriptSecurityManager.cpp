@@ -1557,8 +1557,9 @@ const char sJSEnabledPrefName[] = "javascript.enabled";
 const char sFileOriginPolicyPrefName[] =
     "security.fileuri.strict_origin_policy";
 
-static const char* kObservedPrefs[] = {
-    sJSEnabledPrefName, sFileOriginPolicyPrefName, "capability.policy."};
+static const char* kObservedPrefs[] = {sJSEnabledPrefName,
+                                       sFileOriginPolicyPrefName,
+                                       "capability.policy.", nullptr};
 
 /////////////////////////////////////////////
 // Constructor, Destructor, Initialization //

@@ -29,7 +29,7 @@ using namespace mozilla::dom;
 static constexpr const char* kPrefSVGDisabled = "svg.disabled";
 static constexpr const char* kPrefMathMLDisabled = "mathml.disabled";
 static constexpr const char* kObservedNSPrefs[] = {kPrefMathMLDisabled,
-                                                   kPrefSVGDisabled};
+                                                   kPrefSVGDisabled, nullptr};
 
 StaticRefPtr<nsNameSpaceManager> nsNameSpaceManager::sInstance;
 

@@ -765,6 +765,7 @@ static const char* gCallbackUpdatePrefs[] = {
     MAX_TIME_FOR_PR_CLOSE_DURING_SHUTDOWN,
     POLLABLE_EVENT_TIMEOUT,
     "network.socket.forcePort",
+    nullptr,
 };
 
 /* static */

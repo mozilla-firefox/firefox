@@ -335,6 +335,7 @@ static const char* gCallbackPrefs[] = {
     DOM_SECURITY_PREFIX,
     "image.http.accept",
     "image.jxl.enabled",
+    nullptr,
 };
 
 nsresult nsHttpHandler::Init() {

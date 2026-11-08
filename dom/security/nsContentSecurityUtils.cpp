@@ -889,7 +889,7 @@ void nsContentSecurityUtils::DetectJsHacks() {
 
   static const char* kObservedPrefs[] = {
       "xpinstall.signatures.required", "general.config.filename",
-      "autoadmin.global_config_url", "autoadmin.failover_to_cached"};
+      "autoadmin.global_config_url", "autoadmin.failover_to_cached", nullptr};
   if (MOZ_UNLIKELY(!sJSHackObserverAdded)) {
     Preferences::RegisterCallbacks(JSHackPrefObserver::PrefChanged,
                                    kObservedPrefs);

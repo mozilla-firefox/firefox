@@ -310,6 +310,7 @@ static const char* gCallbackPrefs[] = {
     PREF_MAX_SCRIPT_RUN_TIME_CONTENT,
     PREF_MAX_SCRIPT_RUN_TIME_CHROME,
     PREF_MAX_SCRIPT_RUN_TIME_EXT_CONTENT,
+    nullptr,
 };
 
 class WatchdogManager {

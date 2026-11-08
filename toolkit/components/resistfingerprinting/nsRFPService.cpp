@@ -203,6 +203,7 @@ static const char* gCallbackPrefs[] = {
     RESIST_FINGERPRINTINGPROTECTION_OVERRIDE_BASE_PREF,
     RESIST_FINGERPRINTINGPROTECTION_OVERRIDE_PREF,
     GLEAN_DATA_SUBMISSION_PREF,
+    nullptr,
 };
 
 nsresult nsRFPService::Init() {

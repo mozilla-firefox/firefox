@@ -23,8 +23,9 @@ namespace {
 
 // Prefs read by `PDMFactory::CreatePDMs` and the per-process `Create*PDMs`
 // helpers. Each `#ifdef` gate matches the corresponding wrapper in
-// `StaticPrefList.yaml`. These arrays are passed as bounded spans to
-// `Preferences::RegisterCallbacks`.
+// `StaticPrefList.yaml`. The trailing `nullptr` in each array is a sentinel
+// required by `Preferences::RegisterCallbacks`, which walks the array until
+// it sees a null pointer.
 
 constexpr const char* kInvalidatingPrefs_CrossPlatform[] = {
     "media.use-blank-decoder",
@@ -38,6 +39,7 @@ constexpr const char* kInvalidatingPrefs_CrossPlatform[] = {
     "media.hevc.enabled",
     "media.gmp.decoder.enabled",
     "media.gmp.decoder.preferred",
+    nullptr,
 };
 
 #ifdef MOZ_WMF
@@ -45,12 +47,14 @@ constexpr const char* kInvalidatingPrefs_WMF[] = {
     "media.wmf.enabled",
     "media.rdd-wmf.enabled",
     "media.wmf.media-engine.enabled",
+    nullptr,
 };
 #endif
 
 #ifdef MOZ_APPLEMEDIA
 constexpr const char* kInvalidatingPrefs_AppleMedia[] = {
     "media.rdd-applemedia.enabled",
+    nullptr,
 };
 #endif
 
@@ -58,6 +62,7 @@ constexpr const char* kInvalidatingPrefs_AppleMedia[] = {
 constexpr const char* kInvalidatingPrefs_Android[] = {
     "media.android-media-codec.preferred",
     "media.utility-android-media-codec.enabled",
+    nullptr,
 };
 #endif
 
@@ -66,6 +71,7 @@ constexpr const char* kInvalidatingPrefs_FFmpeg[] = {
     "media.ffmpeg.enabled",
     "media.rdd-ffmpeg.enabled",
     "media.hardware-video-decoding-vulkan.prefer-system-ffmpeg",
+    nullptr,
 };
 #endif
 

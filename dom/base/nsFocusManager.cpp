@@ -186,7 +186,7 @@ bool nsFocusManager::sTestMode = false;
 uint64_t nsFocusManager::sFocusActionCounter = 0;
 
 static const char* kObservedPrefs[] = {"accessibility.browsewithcaret",
-                                       "focusmanager.testmode"};
+                                       "focusmanager.testmode", nullptr};
 
 nsFocusManager::nsFocusManager()
     : mActionIdForActiveBrowsingContextInContent(0),

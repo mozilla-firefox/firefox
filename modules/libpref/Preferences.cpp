@@ -1445,13 +1445,9 @@ static bool DomainEndsWithMultipleDots(const nsACString& aDomain) {
   return StringEndsWith(aDomain, ".."_ns);
 }
 
-static bool HasInvalidCallbackDomains(const nsACString& aDomain) {
-  return DomainEndsWithMultipleDots(aDomain);
-}
-
-static bool HasInvalidCallbackDomains(Span<const char* const> aDomains) {
-  for (const char* domain : aDomains) {
-    if (!domain || DomainEndsWithMultipleDots(nsDependentCString(domain))) {
+static bool DomainEndsWithMultipleDots(const char* const* aDomains) {
+  for (const char* const* p = aDomains; *p; ++p) {
+    if (DomainEndsWithMultipleDots(nsDependentCString(*p))) {
       return true;
     }
   }
@@ -1498,13 +1494,13 @@ class CallbackNode : public CallbackData {
 #endif
   }
 
-  CallbackNode(Span<const char* const> aDomains, PrefChangedFunc aFunc,
-               void* aData, bool aIsPrefix)
+  CallbackNode(const char* const* aDomains, PrefChangedFunc aFunc, void* aData,
+               bool aIsPrefix)
       : CallbackData(aFunc, aData),
         mDomain(AsVariant(aDomains)),
         mIsPrefix(aIsPrefix) {}
 
-  const Variant<nsCString, Span<const char* const>>& Domain() const {
+  const Variant<nsCString, const char* const*>& Domain() const {
     return mDomain;
   }
 
@@ -1529,8 +1525,8 @@ class CallbackNode : public CallbackData {
       return !mSingleDomainHadTrailingDot;
     }
     // Array entries keep their dots, so an exact one still matches.
-    for (const char* domain : mDomain.as<Span<const char* const>>()) {
-      if (aPrefName.Equals(domain)) {
+    for (const char* const* p = mDomain.as<const char* const*>(); *p; ++p) {
+      if (aPrefName.Equals(*p)) {
         return true;
       }
     }
@@ -1556,14 +1552,8 @@ class CallbackNode : public CallbackData {
     return mDomain.as<nsCString>() == Substring(aDomain, 0, len);
   }
 
-  bool DomainIs(Span<const char* const> aPrefs) const {
-    if (!mDomain.is<Span<const char* const>>()) {
-      return false;
-    }
-
-    const auto& registered = mDomain.as<Span<const char* const>>();
-    return registered.Elements() == aPrefs.Elements() &&
-           registered.Length() == aPrefs.Length();
+  bool DomainIs(const char* const* aPrefs) const {
+    return mDomain == AsVariant(aPrefs);
   }
 
   void AddSizeOfIncludingThis(MallocSizeOf aMallocSizeOf, PrefsSizes& aSizes) {
@@ -1583,7 +1573,7 @@ class CallbackNode : public CallbackData {
  private:
   ~CallbackNode() = default;
 
-  Variant<nsCString, Span<const char* const>> mDomain;
+  Variant<nsCString, const char* const*> mDomain;
 
   bool mIsPrefix;
   // Array entries keep their dots in mDomain, so this stays false for them.
@@ -1698,12 +1688,9 @@ class CallbackTrie {
       // Domain is already stripped of trailing dot by CallbackNode ctor.
       NodeFor(aNode->Domain().as<nsCString>()).mCallbacks.AppendElement(aNode);
     } else {
-      const auto& domains = aNode->Domain().as<Span<const char* const>>();
-      if (domains.IsEmpty()) {
-        return;
-      }
-      for (const char* domain : domains) {
-        NodeFor(nsDependentCString(domain)).mCallbacks.AppendElement(aNode);
+      for (const char* const* p = aNode->Domain().as<const char* const*>(); *p;
+           ++p) {
+        NodeFor(nsDependentCString(*p)).mCallbacks.AppendElement(aNode);
       }
     }
     ++mLiveCount;
@@ -1764,14 +1751,14 @@ class CallbackTrie {
   }
 
   void CollectMatchingForUnregister(PrefChangedFunc aFunc,
-                                    Span<const char* const> aDomains,
-                                    void* aData, bool aIsPrefix,
+                                    const char* const* aDomains, void* aData,
+                                    bool aIsPrefix,
                                     nsTArray<CallbackNode*>& aOut) {
-    if (aDomains.IsEmpty()) return;
+    if (!*aDomains) return;
     // Array-registered nodes are indexed under each of their names; looking
-    // up the first name is sufficient — DomainIs() checks the span's backing
-    // address and length.
-    CallbackTrieNode* trieNode = FindNode(nsDependentCString(aDomains[0]));
+    // up the first name is sufficient — DomainIs() distinguishes by array
+    // pointer identity.
+    CallbackTrieNode* trieNode = FindNode(nsDependentCString(*aDomains));
     if (!trieNode) return;
     for (const RefPtr<CallbackNode>& node : trieNode->mCallbacks) {
       if (node->Func() == aFunc && node->Data() == aData &&
@@ -1856,8 +1843,9 @@ class CallbackTrie {
     if (aNode->Domain().is<nsCString>()) {
       RemoveCallbackAndPrune(aNode, aNode->Domain().as<nsCString>());
     } else {
-      for (const char* domain : aNode->Domain().as<Span<const char* const>>()) {
-        RemoveCallbackAndPrune(aNode, nsDependentCString(domain));
+      for (const char* const* p = aNode->Domain().as<const char* const*>(); *p;
+           ++p) {
+        RemoveCallbackAndPrune(aNode, nsDependentCString(*p));
       }
     }
   }
@@ -6008,7 +5996,7 @@ nsresult PreferencesImpl::RegisterCallbackImpl(PrefChangedFunc aCallback,
                                                bool aIsPrefix) {
   MOZ_ASSERT(NS_IsMainThread());
   NS_ENSURE_ARG(aCallback);
-  NS_ENSURE_FALSE(HasInvalidCallbackDomains(aPrefNode), NS_ERROR_INVALID_ARG);
+  NS_ENSURE_FALSE(DomainEndsWithMultipleDots(aPrefNode), NS_ERROR_INVALID_ARG);
   NS_ENSURE_TRUE(Preferences::InitStaticMembers(), NS_ERROR_NOT_AVAILABLE);
 
   RefPtr<CallbackNode> node =
@@ -6021,8 +6009,9 @@ nsresult PreferencesImpl::RegisterCallbackImpl(PrefChangedFunc aCallback,
     if (node->Domain().is<nsCString>()) {
       WarnIfPrefixObserverDiverges(node->RawDomain());
     } else {
-      for (const char* domain : node->Domain().as<Span<const char* const>>()) {
-        WarnIfPrefixObserverDiverges(nsDependentCString(domain));
+      for (const char* const* p = node->Domain().as<const char* const*>(); *p;
+           ++p) {
+        WarnIfPrefixObserverDiverges(nsDependentCString(*p));
       }
     }
   }
@@ -6037,7 +6026,7 @@ nsresult PreferencesImpl::UnregisterCallbackImpl(PrefChangedFunc aCallback,
                                                  bool aIsPrefix) {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(aCallback);
-  NS_ENSURE_FALSE(HasInvalidCallbackDomains(aPrefNode), NS_ERROR_INVALID_ARG);
+  NS_ENSURE_FALSE(DomainEndsWithMultipleDots(aPrefNode), NS_ERROR_INVALID_ARG);
   if (Preferences::sShutdown) {
     MOZ_ASSERT(!Preferences::sPreferences);
     return NS_OK;
@@ -6728,22 +6717,22 @@ nsresult Preferences::RegisterCallback(PrefChangedFunc aCallback,
 
 /* static */
 nsresult Preferences::RegisterCallbacks(PrefChangedFunc aCallback,
-                                        Span<const char* const> aPrefs,
-                                        void* aData, bool aPrefixMatch) {
+                                        const char* const* aPrefs, void* aData,
+                                        bool aPrefixMatch) {
   return PreferencesImpl::RegisterCallbackImpl(aCallback, aPrefs, aData,
                                                aPrefixMatch);
 }
 
 /* static */
 nsresult Preferences::RegisterCallbacksAndCall(PrefChangedFunc aCallback,
-                                               Span<const char* const> aPrefs,
+                                               const char* const* aPrefs,
                                                void* aClosure) {
   MOZ_ASSERT(aCallback);
 
   nsresult rv = RegisterCallbacks(aCallback, aPrefs, aClosure);
   if (NS_SUCCEEDED(rv)) {
-    for (const char* pref : aPrefs) {
-      (*aCallback)(pref, aClosure);
+    for (const char* const* ptr = aPrefs; *ptr; ptr++) {
+      (*aCallback)(*ptr, aClosure);
     }
   }
   return rv;
@@ -6759,7 +6748,7 @@ nsresult Preferences::UnregisterCallback(PrefChangedFunc aCallback,
 
 /* static */
 nsresult Preferences::UnregisterCallbacks(PrefChangedFunc aCallback,
-                                          Span<const char* const> aPrefs,
+                                          const char* const* aPrefs,
                                           void* aData, bool aPrefixMatch) {
   return PreferencesImpl::UnregisterCallbackImpl(aCallback, aPrefs, aData,
                                                  aPrefixMatch);
