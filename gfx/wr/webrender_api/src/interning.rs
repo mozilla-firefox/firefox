@@ -53,7 +53,7 @@
 
 use crate::serde::{Deserialize, Serialize};
 use malloc_size_of::MallocSizeOf;
-use std::collections::HashMap;
+use crate::FastHashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
@@ -264,7 +264,7 @@ struct Entry {
 #[derive(Debug, MallocSizeOf)]
 pub struct Interner<K: Eq + Hash + MallocSizeOf> {
     /// The interned set. Also the authority on which slots are live.
-    entries: HashMap<K, Entry>,
+    entries: FastHashMap<K, Entry>,
     /// Slots freed by garbage collection, available for re-use. Handed out in
     /// arbitrary order; nothing depends on which free slot a new item lands in.
     free_slots: Vec<u32>,
@@ -291,7 +291,7 @@ impl<K: Eq + Hash + MallocSizeOf> Interner<K> {
         assert!(retain_builds > 0, "an entry must survive the build that used it");
 
         Interner {
-            entries: HashMap::new(),
+            entries: FastHashMap::default(),
             free_slots: Vec::new(),
             slot_count: 0,
             pending_adds: Vec::new(),

@@ -6275,6 +6275,7 @@ dependencies = [
  "euclid",
  "malloc_size_of_derive",
  "peek-poke",
+ "rustc-hash 2.1.1",
  "serde",
  "serde_bytes",
  "serde_derive",

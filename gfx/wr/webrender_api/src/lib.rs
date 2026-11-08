@@ -88,6 +88,8 @@ use std::sync::Arc;
 use std::os::raw::c_void;
 use peek_poke::PeekPoke;
 
+pub(crate) type FastHashMap<K, V> = rustc_hash::FxHashMap<K, V>;
+
 /// Defined here for cbindgen
 pub const MAX_RENDER_TASK_SIZE: i32 = 16384;
 

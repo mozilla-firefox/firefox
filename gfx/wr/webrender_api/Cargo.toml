@@ -26,4 +26,5 @@ serde_derive = "1.0"
 serde_bytes = "0.11"
 malloc_size_of = { version = "0.2.0", path = "../wr_malloc_size_of", package = "wr_malloc_size_of" }
 peek-poke = { version = "0.3", path = "../peek-poke", features = ["extras"] }
+rustc-hash = "2.1.1"
 zeitstempel = "0.2.0"

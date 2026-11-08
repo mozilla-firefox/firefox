@@ -15,6 +15,7 @@ use std::marker::PhantomData;
 use std::ops::Range;
 use std::mem;
 use std::collections::HashMap;
+use crate::FastHashMap;
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 // local imports
 use crate::display_item as di;
@@ -1167,7 +1168,7 @@ pub struct DisplayListBuilder {
     /// frames subtract their `previously_applied_offset`, reference frames
     /// reset to zero. The offset fields are still sent so WebRender can keep
     /// applying them at frame time (APZ reconciliation, sticky math).
-    spatial_offsets: HashMap<di::SpatialId, AuOffset>,
+    spatial_offsets: FastHashMap<di::SpatialId, AuOffset>,
     /// Single-entry cache for `spatial_offsets`. Items are typically emitted
     /// grouped by spatial node, so consecutive lookups hit this and skip
     /// hashing (mirrors the scene builder's `ScrollOffsetMapper`).
@@ -1292,7 +1293,7 @@ impl DisplayListBuilder {
             save_state: None,
             serialized_content_buffer: None,
             state: BuildState::Idle,
-            spatial_offsets: HashMap::new(),
+            spatial_offsets: FastHashMap::default(),
             last_scroll_offset: None,
             // Replaced by `begin`; 60 is the dpr 1.0 value.
             au_grid: AuGrid::new(60.0),
