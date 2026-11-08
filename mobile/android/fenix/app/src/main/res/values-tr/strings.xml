@@ -715,6 +715,8 @@
   <string name="preferences_search">Arama</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Arama motorları</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Arama widget’ını ana ekrana ekle</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Ana ekran widget’ı</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -967,6 +969,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Uzantı koleksiyonu değiştirildi. Değişiklikleri uygulamak için uygulamadan çıkılıyor…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">%1$s kaldırılsın mı?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Bu işlem, uzantıyı ve uzantının ayarlarını bu cihazdan kaldırır.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Kaldır</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Vazgeç</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1131,6 +1145,10 @@
   <string name="preferences_sync_category">Nelerin eşitleneceğini seçin</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Eşitlenen veriler</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Bu cihazı eşitle</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Verileriniz yedeklenir ve eşitlenen cihazlarınızdan erişilebilir.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Bağlı tüm cihazlarınızda nelerin eşitleneceğini yönetin</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -3881,6 +3899,8 @@
   <string name="protection_panel_privacy_and_security_settings_2">Gizlilik ayarları</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">İzinler</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Güvenli bağlantı</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4458,6 +4478,8 @@
   <string name="wrex_widget_match_suspended">Askıya alındı</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Ertelendi</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Tazele</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Sonuçlar</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4466,6 +4488,8 @@
   <string name="wrex_widget_wallpapers">Duvar kâğıtları</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Aracı kaldır</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Penaltılar</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Diğer seçenekler</string>
   <!--
@@ -4479,6 +4503,18 @@
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, sayfa %2$d/%3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Çevrimdışısınız</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">İnternet bağlantınızı kontrol edip yeniden deneyin.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Maç bilgileri şu anda gösterilemiyor</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Yenilemeyi deneyin veya daha sonra tekrar kontrol edin.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Sonuçlar şu anda gösterilemiyor</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Takım henüz belli değil</string>
   <!--
     Privacy notice homepage banner
 

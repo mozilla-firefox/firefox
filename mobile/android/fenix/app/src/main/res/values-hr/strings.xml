@@ -720,6 +720,8 @@
   <string name="preferences_search">Tražilica</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Tražilice</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Dodaj widget za tražilicu na početni zaslon</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Widget na početnom ekranu</string>
   <!-- Preference for settings related to Search engines suggestions -->
