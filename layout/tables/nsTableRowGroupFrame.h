@@ -316,7 +316,7 @@ class nsTableRowGroupFrame final : public nsContainerFrame,
 
   void SplitRowGroup(nsPresContext* aPresContext, ReflowOutput& aDesiredSize,
                      const ReflowInput& aReflowInput, nsTableFrame* aTableFrame,
-                     nsReflowStatus& aStatus, bool aRowForcedPageBreak);
+                     nsReflowStatus& aStatus);
 
   void SplitSpanningCells(nsPresContext* aPresContext,
                           const ReflowInput& aReflowInput,

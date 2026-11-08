@@ -1041,8 +1041,7 @@ void nsTableRowGroupFrame::SplitRowGroup(nsPresContext* aPresContext,
                                          ReflowOutput& aDesiredSize,
                                          const ReflowInput& aReflowInput,
                                          nsTableFrame* aTableFrame,
-                                         nsReflowStatus& aStatus,
-                                         bool aRowForcedPageBreak) {
+                                         nsReflowStatus& aStatus) {
   MOZ_ASSERT(aPresContext->IsPaginated(),
              "SplitRowGroup currently supports only paged media");
 
@@ -1120,7 +1119,7 @@ void nsTableRowGroupFrame::SplitRowGroup(nsPresContext* aPresContext,
                           ReflowChildFlags::NoMoveFrame);
         rowFrame->DidResize(ForceAlignTopForTableCell::Yes);
 
-        if (!aRowForcedPageBreak && !aStatus.IsFullyComplete() &&
+        if (!aStatus.IsFullyComplete() &&
             ShouldAvoidBreakInside(aReflowInput)) {
           aStatus.SetInlineLineBreakBeforeAndReset();
           break;
@@ -1158,7 +1157,7 @@ void nsTableRowGroupFrame::SplitRowGroup(nsPresContext* aPresContext,
           // with a constrained block-size yet (we will find out when
           // SplitSpanningCells is called below)
           if (rowMetrics.BSize(wm) > availSize.BSize(wm) ||
-              (aStatus.IsInlineBreakBefore() && !aRowForcedPageBreak)) {
+              aStatus.IsInlineBreakBefore()) {
             // cases (1) and (2)
             if (isTopOfPage) {
               // We're on top of the page, so keep the row on this page. There
@@ -1193,8 +1192,7 @@ void nsTableRowGroupFrame::SplitRowGroup(nsPresContext* aPresContext,
         NS_ASSERTION(!contRow,
                      "We should not have created a continuation if none of "
                      "this row fits");
-        if (!prevRowFrame ||
-            (!aRowForcedPageBreak && ShouldAvoidBreakInside(aReflowInput))) {
+        if (!prevRowFrame || ShouldAvoidBreakInside(aReflowInput)) {
           aStatus.SetInlineLineBreakBeforeAndReset();
           break;
         }
@@ -1357,8 +1355,8 @@ void nsTableRowGroupFrame::Reflow(nsPresContext* aPresContext,
     const bool savedSpecialBSizeReflow = mutableRIFlags.mSpecialBSizeReflow;
     mutableRIFlags.mSpecialBSizeReflow = false;
 
-    SplitRowGroup(aPresContext, aDesiredSize, aReflowInput, tableFrame, aStatus,
-                  splitDueToPageBreak);
+    SplitRowGroup(aPresContext, aDesiredSize, aReflowInput, tableFrame,
+                  aStatus);
 
     mutableRIFlags.mSpecialBSizeReflow = savedSpecialBSizeReflow;
   }
