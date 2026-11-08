@@ -9,6 +9,7 @@
         "revert-llvmorg-21-init-18245-gfe56f69810b1.patch",
         "revert-llvmorg-16-init-11301-g163bb6d64e5f_clang_22.patch",
         "revert-llvmorg-15-init-13446-g7524fe962e47.patch",
+        "llvmorg-23-init-1731-ga63696edca8b.patch",
         "llvmorg-23-init-5314-g19e9bcba0bab.patch",
         "llvmorg-23-init-5315-gf2a10ab74ff7.patch",
         "llvmorg-23-init-5316-g4f4087edb182.patch",
