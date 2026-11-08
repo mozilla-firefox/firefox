@@ -961,6 +961,7 @@ void MacroAssembler::branchFloat32NotInUInt64Range(Address src, Register temp,
 
 // ========================================================================
 // Canonicalization primitives.
+#ifndef JS_CODEGEN_RISCV64
 void MacroAssembler::canonicalizeFloatNaN(FloatRegister reg) {
   Label notNaN;
   branchFloat(DoubleOrdered, reg, reg, &notNaN);
@@ -974,6 +975,7 @@ void MacroAssembler::canonicalizeDoubleNaN(FloatRegister reg) {
   loadConstantDouble(JS::GenericNaN(), reg);
   bind(&notNaN);
 }
+#endif  // !JS_CODEGEN_RISCV64
 
 void MacroAssembler::canonicalizeDoubleZero(FloatRegister reg,
                                             FloatRegister scratch) {

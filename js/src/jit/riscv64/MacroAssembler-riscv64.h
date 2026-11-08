@@ -1051,6 +1051,13 @@ class MacroAssemblerRiscv64Compat : public MacroAssemblerRiscv64 {
   void loadConstantDouble(double dp, FloatRegister dest);
   void loadConstantFloat32(float f, FloatRegister dest);
 
+  void canonicalizeDoubleNaN(FloatRegister reg) {
+    static_assert(JS::detail::CanonicalizedNaNBits == 0x7ff8'0000'0000'0000,
+                  "the canonical NaN of RISC-V is JS::GenericNaN()");
+    fmin_d(reg, reg, reg);
+  }
+  void canonicalizeFloatNaN(FloatRegister reg) { fmin_s(reg, reg, reg); }
+
   void testNullSet(Condition cond, const ValueOperand& value, Register dest);
 
   void testObjectSet(Condition cond, const ValueOperand& value, Register dest);

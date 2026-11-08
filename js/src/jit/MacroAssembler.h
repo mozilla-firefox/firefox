@@ -2354,9 +2354,12 @@ class MacroAssembler : public MacroAssemblerSpecific {
 
   // ========================================================================
   // Canonicalization primitives.
+#ifndef JS_CODEGEN_RISCV64
+  // On riscv64, these are defined in MacroAssemblerRiscv64Compat.
   inline void canonicalizeDoubleNaN(FloatRegister reg);
 
   inline void canonicalizeFloatNaN(FloatRegister reg);
+#endif
 
   // If denormal support is disabled, there are 2^53 ways to represent zero.
   // This function canonicalizes the representation to either -0.0 or +0.0,
