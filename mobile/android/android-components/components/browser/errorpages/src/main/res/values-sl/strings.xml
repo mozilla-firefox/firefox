@@ -92,7 +92,7 @@
   <!-- The document title and heading of the error page shown when the Internet connection is disrupted while loading a website. -->
   <string name="mozac_browser_errorpages_net_reset_title">Povezava je bila ponastavljena</string>
   <!-- The error message shown when the Internet connection is disrupted while loading a website. -->
-  <string name="mozac_browser_errorpages_net_reset_message"><![CDATA[<p>Povezava s stranjo je bila nepričakovano prekinjena med pogajanjem za povezavo. Poskusite znova.</p>\n<ul>\n<li>Spletno mesto je morda začasno nedosegljivo ali preobremenjeno. Poskusite znova nekoliko pozneje.</li>\n<li>Če ne morete naložiti nobene strani, preverite nastavitve podatkovne povezave ali Wi-Fi.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_net_reset_message"><![CDATA[<p>Omrežna povezava je bila prekinjena med pogajanjem za povezavo. Poskusite znova.</p>\n<ul>\n<li>Spletno mesto je morda začasno nedosegljivo ali preobremenjeno. Poskusite znova nekoliko pozneje.</li>\n<li>Če ne morete naložiti nobene strani, preverite nastavitve podatkovne povezave ali Wi-Fi.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when the browser refuses to load a type of file that is considered unsafe. -->
   <string name="mozac_browser_errorpages_unsafe_content_type_title">Nevarna vrsta datoteke</string>
   <!-- The error message shown when the browser refuses to load a type of file that is considered unsafe. -->
@@ -110,7 +110,7 @@
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_unknown_host_title">Naslova ni mogoče najti</string>
   <!-- In the example, the two URLs in markup do not need to be translated. -->
-  <string name="mozac_browser_errorpages_unknown_host_message"><![CDATA[<p>Strani ni bilo mogoče najti.</p>\n<ul>\n<li>Morda ste se zmotili pri črkovanju naslova, npr. <strong>ww</strong>.example.com namesto <strong>www</strong>.example.com.</li>\n<li>Če ne morete naložiti nobene strani, preverite nastavitve podatkovne povezave ali Wi-Fi.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_unknown_host_message"><![CDATA[<p>Brskalnik ni mogel najti gostiteljskega strežnika za navedeni naslov.</p>\n<ul>\n<li>Morda ste se zmotili pri črkovanju naslova, npr. <strong>ww</strong>.example.com namesto <strong>www</strong>.example.com.</li>\n<li>Če ne morete naložiti nobene strani, preverite nastavitve podatkovne povezave ali Wi-Fi.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_title_2">Videti je, da obstaja težava z vašo internetno povezavo</string>
   <!-- The main body text of this error page. It will be shown beneath the title -->
@@ -160,11 +160,11 @@
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_harmful_addon_uri_title">Stran je zaradi vaše varnosti blokirana</string>
   <!-- The %1$s will be replaced by the malicious website URL -->
-  <string name="mozac_browser_errorpages_harmful_addon_uri_message"><![CDATA[<p>Ta spletna stran na %1$s je bila blokirana, ker jo je poskušal odpreti eden izmed vaših dodatkov. Na tem spletnem mestu bi lahko ukradli vaše podatke, kot so gesla ali podatki o bančnem računu.</p>]]></string>
+  <string name="mozac_browser_errorpages_harmful_addon_uri_message"><![CDATA[<p>Ta spletna stran na %1$s je bila blokirana, ker jo je poskušal odpreti eden izmed vaših dodatkov. Na tem spletnem mestu bi lahko ukradli vaše podatke, kot so gesla ali številke kreditnih kartic.</p>]]></string>
   <!-- The title of the error page for websites that do not support HTTPS when HTTPS-Only is turned on -->
   <string name="mozac_browser_errorpages_httpsonly_title">Varno spletno mesto ni na voljo</string>
   <!-- The text of the error page for websites that do not support HTTPS when HTTPS-Only is turned on. %1$s will be replaced with the URL of the website. -->
-  <string name="mozac_browser_errorpages_httpsonly_message"><![CDATA[Omogočili ste način \"samo HTTPS\" za izboljšano varnost in varna različica HTTPS strani <em>%1$s</em> ni na voljo.]]></string>
+  <string name="mozac_browser_errorpages_httpsonly_message"><![CDATA[Omogočili ste način \"samo HTTPS\" za izboljšano varnost in različica HTTPS strani <em>%1$s</em> ni na voljo.]]></string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
   <string name="mozac_browser_errorpages_httpsonly_button">Nadaljuj na stran HTTP</string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->

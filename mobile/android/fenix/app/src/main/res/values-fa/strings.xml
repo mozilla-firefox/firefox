@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">حذف</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s را Mozilla ساخته است.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">باورهای نادرست رایج دربارهٔ مرور خصوصی</string>
   <!--
     Private Browsing
 
@@ -215,6 +213,10 @@
   <string name="browser_menu_no_extensions_installed_description">هنوز هیچ افزونه‌ای به‌کار نیفتاده</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">یک افزونهٔ پیشنهادی را امتحان کنید</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">بررسی به‌روزرسانی %1$s</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">برای به‌روزرسانی، تنظیمات را بررسی کنید</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">اطلاعات حساب</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -269,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">همگام‌سازی متوقف شده است</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">مدیریت آنچه پشتیبان‌گیری و همگام‌سازی می‌شود</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">زبانهٔ خصوصی جدید</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">گذرواژه‌ها</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -387,6 +387,10 @@
   <string name="ai_controls_voice_search_title">جست‌وجوی صوتی</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">صدا با Google Speech Services به متن تبدیل می‌شود.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">گوش دادن به صفحه</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">دستگاه شما ممکن است برای بلندخوانی از هوش مصنوعی استفاده کند. متن و صدا خصوصی می‌مانند.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">قابلیت‌های هوش مصنوعی مسدود شوند؟</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -478,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">انجام شد</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">به Firefox خوش‌آمدید</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">با ادامه دادن، شما با %1$s موافقت می‌کنید.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">شرایط استفاده از Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">‏Firefox به حریم خصوصی شما اهمیت می‌دهد. در %1$s ما بیشتر بدانید.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">نکات حفظ محرمانگی</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">برای کمک به بهبود مرورگر، Firefox داده‌های عیب‌یابی و تعاملی را برای Mozilla می‌فرستد. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">مدیریت</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">بهترین مرورگر Android را اجرا کنید</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -592,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">از داده‌هایتان محافظت می‌کنیم و به‌طور خودکار جلوی جاسوسی شرکت‌ها از کلیک‌هایتان را می‌گیریم.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">تنظیم به‌عنوان مرورگر پیش‌گزیده</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">نوار نشانی‌تان را انتخاب کنید</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">بالا</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">پایین</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">پوسته‌تان را انتخاب کنید</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">خودکار</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">روشن</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">تیره</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">بی‌درنگ از همان‌جایی که مانده بودید ادامه دهید</string>
   <!-- Sync onboarding subtitle. -->
@@ -670,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">از تازه‌ترین ویژگی‌های حریم خصوصی Firefox باخبر شوید تا همیشه بدانید چطور در امان بمانید.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">روشن کردن آگاهی‌ها</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">هر جست‌وجو را خصوصی‌تر کنید</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">هر جست‌وجو را از صفحهٔ اصلی تلفنتان آغاز کنید و خیالتان راحت باشد که محافظت‌های خودکار Firefox هوایتان را دارند.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">افزودن ابزارک Firefox</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">سفارشی‌سازی آسان و حریم خصوصی بیشتر با هر لمس</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -715,12 +687,12 @@
   <string name="search_widget_voice">جست‌وجوی صوتی</string>
   <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
   <string name="search_widget_private_search">جست‌و‌جوی خصوصی</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">تنظیمات</string>
+  <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for private search and for voice search -->
+  <string name="search_bar_widget_description">نوار جست‌وجو با جست‌وجوی خصوصی و صوتی</string>
+  <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for image search, private search and voice search -->
+  <string name="search_bar_with_lens_widget_description">نوار جست‌وجو با جست‌وجوی تصویری، خصوصی و صوتی</string>
+  <!-- Widget description in the widget picker screen for the compact search bar widget -->
+  <string name="compact_search_bar_widget_description">نوار جست‌وجوی فشرده</string>
   <!--
     Preferences
 
@@ -747,6 +719,8 @@
   <string name="preferences_search">جست‌وجو</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">موتورهای جست‌وجو</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">افزودن ابزارک جست‌و‌جو به صفحهٔ اصلی</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">ابزارک صفحهٔ اصلی</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -836,6 +810,8 @@
   <string name="preferences_toolbar_select_shortcut">انتخاب میان‌بر</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">ویرایش میان‌بر</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">منو</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">اشاره‌ها</string>
   <!-- Preference for settings related to visual options -->
@@ -996,6 +972,18 @@
   <string name="customize_addon_collection_user_hint">مالک مجموعه (شناسهٔ کاربری)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">مجموعهٔ افزونه‌ها تغییر کرد. در حال خروج از برنامه برای اعمال تغییرات…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">%1$s برداشته شود؟</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">این کار افزونه و تنظیمات آن را از این دستگاه برمی‌دارد.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">برداشتن</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">لغو</string>
   <!--
     Customize Home
 
@@ -1161,6 +1149,12 @@
   <string name="preferences_sync_category">انتخاب موارد همگام‌سازی</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">داده‌های همگام‌شده</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">همگام‌سازی این دستگاه</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">داده‌های شما پشتیبان‌گیری شده و در دستگاه‌های همگام‌شده در دسترس است.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">در حال استفاده از داده‌های ذخیره‌شده در حساب %1$s شما.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">مدیریت آنچه در همهٔ دستگاه‌های متصلتان همگام می‌شود</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1300,6 +1294,12 @@
   <string name="preference_simple_toolbar">ساده</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">گسترش‌یافته</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">محل جست‌وجو در صفحهٔ اصلی</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">وسط</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">بالا</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">گشودن زبانهٔ جدید</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1610,8 +1610,6 @@
   <string name="open_tabs_menu">گشودن منوی زبانه‌ها</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">بازگشت به مدیریت زبانه‌ها</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">ذخیرهٔ زبانه‌ها در مجموعه</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">حذف مجموعه</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1710,6 +1708,11 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">لغو</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">گزینه‌های بیشتر</string>
+  <!--
+    Content description for the Expand button on the contracted menu for a tab group:
+    when tapped, tabs are displayed in an expanded grid or list view, taking up the full screen.
+  -->
+  <string name="tab_groups_strip_expand_group_content_description">باز کردن برای نمایش زبانه‌ها در تمام‌صفحه</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">ویرایش</string>
   <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
@@ -1955,6 +1958,8 @@
   <string name="download_search_no_results_found">نتیجه‌ای پیدا نشد</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">انتخاب همه</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(داده)</string>
   <!--
     Downloads Content Type Filters
 
@@ -2003,8 +2008,6 @@
   <string name="webcompat_reporter_label_mandatory_description">مشکل را با جزئیات شرح دهید تا بتوانیم آن را بررسی کنیم</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">مشکل را با جزئیات شرح دهید تا بتوانیم آن را بررسی کنیم (اختیاری)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">لغو</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">ارسال گزارش</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2526,8 +2529,6 @@
   <string name="qr_scanner_dialog_invalid">نشانی وب معتبر نیست.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">تأیید</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">مطمئنید می‌خواهید %1$s را حذف کنید؟</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">این یک متن نمونه است. اینجاست تا نشان دهد وقتی با این تنظیم اندازه را بزرگ یا کوچک می‌کنید، متن چگونه نمایش داده می‌شود.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3263,6 +3264,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">همین حالا تنظیم کنید</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">بعداً</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">از داده‌های حساس خود محافظت کنید</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">یک الگوی قفل دستگاه، PIN یا گذرواژه تنظیم کنید تا اگر شخص دیگری خودروی شما را می‌راند، به داده‌های حساس ذخیره‌شدهٔ شما دسترسی پیدا نکند.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">هم‌اکنون راه‌اندازی شود</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">لغو</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">قفل دستگاهتان را باز کنید</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3405,10 +3414,6 @@
   <string name="browser_menu_remove_from_shortcuts">برداشتن از میان‌برها</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">آیا مطمئن هستید که می‌خواهید این گذرواژه را حذف کنید؟</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">حذف</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">لغو</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">ویرایش گذرواژه</string>
   <!-- The page title for adding new password. -->
@@ -3894,17 +3899,14 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">اگر چیزی در این وبگاه‌ درست کار نمی‌کند، خاموش کردن محافظت را امتحان کنید.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">روشن کردن محافظت در برابر ردیابی پیشنهاد می‌شود.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">ردیاب‌های مسدودشده: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">ردیاب‌ها مسدود نشده‌اند</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">تنظیمات حریم خصوصی</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">مجوزها</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">اتصال امن</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4471,6 +4473,79 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">اینجا</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">زنده</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">با تأخیر</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">متوقف‌شده</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">به تعویق افتاده</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">تازه‌سازی</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">نتایج</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">جدول رده‌بندی</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">پس‌زمینه‌ها</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">برداشتن ابزارک</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">پایان</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">بین دو نیمه</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">وقت اضافه</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">پنالتی‌ها</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">گزینه‌های بیشتر</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s در برابر %2$s، %3$s</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s، بازی زنده</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d، %3$s %4$d، %5$s، زنده</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">زمان سپری‌شده به دقیقه: %1$s</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s، صفحهٔ %2$d از %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">به نظر می‌رسد برون‌خط هستید</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">اتصال اینترنت خود را بررسی کنید و دوباره تلاش کنید.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">اکنون نمایش اطلاعات بازی ممکن نیست</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">تازه‌سازی را امتحان کنید یا بعداً سر بزنید.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">اکنون نمایش نتایج ممکن نیست</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">تیم هنوز مشخص نشده است</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4530,6 +4605,8 @@
   <string name="lens_camera_loading_status">در حال جست‌وجو</string>
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">لغو</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">بارگذاری این تصویر ممکن نشد.</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">این تصویر بار نشد. تصویر دیگری را امتحان کنید.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
@@ -4596,12 +4673,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">افزودن امضا</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">امضای PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">بارگیری PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
@@ -4622,6 +4693,14 @@
   <string name="pdf_tools_signature_clear_button">پاک کردن</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">افزودن</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
+  <string name="pdf_tools_signature_adding_content_description">در حال افزودن امضا</string>
+  <!--
+    Listen to page
+
+    Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
+  -->
+  <string name="reader_mode_panel_content_description_2">گزینه‌های نمای مطالعه</string>
   <!--
     Listen to page
 
@@ -4632,4 +4711,6 @@
   <string name="reader_mode_panel_listen_content_description">بلندخوانی</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">پخش‌کنندهٔ رسانه</string>
+  <!-- Content description for the reader view button Reader view facilitates readability and has a Listen to Page feature. Button icon is a document with headphones, and is displayed next to the page URL when the feature is available. -->
+  <string name="browser_menu_read_or_listen">نمای مطالعه، خواندن یا گوش دادن به صفحه</string>
 </resources>

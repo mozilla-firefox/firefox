@@ -47,7 +47,7 @@
   <!-- Description for the "tabs" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_tabs_description">dostop do zavihkov brskalnika</string>
   <!-- Description for the "webNavigation" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_web_navigation_description">dostop do dejavnosti brskalnika</string>
+  <string name="mozac_feature_addons_permissions_web_navigation_description">dostop do dejavnosti brskalnika med krmarjenjem</string>
   <!-- Description for the "bookmarks" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_bookmarks_description">branje in spreminjanje zaznamkov</string>
   <!-- Description for the "browserSettings" WebExtensions API permission. -->
@@ -179,7 +179,7 @@
   <!-- The sentence used when the developer of an extension has explicitly stated that they do not collect any data collection. -->
   <string name="mozac_feature_addons_permissions_none_required_data_collection_description">Razvijalec pravi, da ta razširitev ne zahteva zbiranja podatkov.</string>
   <!-- The sentence used when the extension requests new data collection permissions. %1$s is a formatted list of permissions. -->
-  <string name="mozac_feature_addons_permissions_data_collection_optional_description">Razvijalec pravi, da razširitev zbira: %1$s</string>
+  <string name="mozac_feature_addons_permissions_data_collection_optional_description">Razvijalec pravi, da želi razširitev zbirati: %1$s</string>
   <!-- Description for text button that expands the list of domain permissions -->
   <string name="mozac_feature_addons_permissions_show_all_sites">Prikaži vsa spletna mesta</string>
   <!-- Description for text button that hides the majority of the list of domain permissions -->

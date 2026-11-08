@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Odstrani</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s izdeluje Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Pogoste zmote o zasebnem brskanju</string>
   <!--
     Private Browsing
 
@@ -123,7 +121,7 @@
   <!-- Text for the negative action button to dismiss the Close Tabs Banner. -->
   <string name="tab_tray_close_tabs_banner_negative_button_text">Zapri</string>
   <!-- Text for the banner message to tell users about our inactive tabs feature. -->
-  <string name="tab_tray_inactive_onboarding_message">Zavihki, ki jih dva tedna niste odprli, se premaknejo sem.</string>
+  <string name="tab_tray_inactive_onboarding_message">Zavihki, ki si jih dva tedna niste ogledali, se premaknejo sem.</string>
   <!-- Text for the action link to go to Settings for inactive tabs. -->
   <string name="tab_tray_inactive_onboarding_button_text">Izklopi v nastavitvah</string>
   <!-- Text for title for the auto-close dialog of the inactive tabs. -->
@@ -269,8 +267,6 @@
   <string name="browser_menu_syncing_paused_caption">Sinhroniziranje ustavljeno</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Nastavite, kaj varnostno kopirati in sinhronizirati</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Nov zasebni zavihek</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Gesla</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -281,6 +277,8 @@
   <string name="browser_custom_tab_menu_handlebar_content_description">Zapri meni zavihkov po meri</string>
   <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
   <string name="browser_toolbar_cached_page_indicator">Predpomnjeno</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Trenutna različica strani</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">Dodaj stran med zaznamke</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -476,18 +474,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Končano</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Dobrodošli v Firefoxu</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Z nadaljevanjem se strinjate s %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">pogoji uporabe Firefoxa</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefoxu je mar za vašo zasebnost. Preberite več v našem %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">obvestilu o zasebnosti</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Za izboljšanje brskalnika Firefox Mozilli pošilja diagnostične podatke in podatke o uporabi. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Upravljaj</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Zaženite najboljši brskalnik za Android</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -526,7 +512,7 @@
   <!-- Marketing onboarding page title. 'Firefox' is intentionally hardcoded. -->
   <string name="onboarding_marketing_redesign_title" tools:ignore="BrandUsage">Pomagajte Firefoxu rasti</string>
   <!-- Marketing onboarding page opt-out checkbox. Unchecking the box does not increase data collection. Our data practices remain the same. 'Mozilla' is intentionally hardcoded. -->
-  <string name="onboarding_marketing_redesign_opt_out_checkbox" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim tehnološkim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
+  <string name="onboarding_marketing_redesign_opt_out_checkbox" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
   <!-- Marketing onboarding page clickable link text to "learn more" on how data is used. -->
   <string name="onboarding_marketing_redesign_learn_more" tools:ignore="UnusedResources">Kako uporabljamo te podatke</string>
   <!-- Marketing onboarding page button label. Button to confirm choice and start browsing. -->
@@ -546,7 +532,7 @@
   <!-- Marketing onboarding page title variant. “One last thing” refers to the final step or action in the onboarding process that we’re asking users to take before they can start using the browser. -->
   <string name="onboarding_marketing_title_1" tools:ignore="UnusedResources">Za konec</string>
   <!-- Marketing onboarding page body variant. 'Firefox' is intentionally hardcoded. -->
-  <string name="onboarding_marketing_body_1" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim tehnološkim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
+  <string name="onboarding_marketing_body_1" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
   <!-- Marketing onboarding page button label variant. Button to confirm choice and start browsing. -->
   <string name="onboarding_marketing_positive_button_1" tools:ignore="UnusedResources">Strinjam se, začni z brskanjem</string>
   <!-- "Continue" onboarding button. -->
@@ -581,7 +567,7 @@
   -->
   <string name="nova_onboarding_tou_body_line_3" tools:ignore="BrandUsage">Za izboljšanje brskalnika Firefox Mozilli pošilja diagnostične podatke in podatke o uporabi. %1$s</string>
   <!-- Terms of use (ToU) onboarding body line three link text for nova_onboarding_tou_body_line_3. -->
-  <string name="nova_onboarding_tou_body_line_3_link_text">Nastavitve</string>
+  <string name="nova_onboarding_tou_body_line_3_link_text">Upravljanje nastavitev</string>
   <!-- "Set to default" onboarding title. -->
   <string name="nova_onboarding_set_to_default_title" tools:ignore="UnusedResources">Poslovite se od vsiljivih sledilcev</string>
   <!-- "Set to default" onboarding title. -->
@@ -590,20 +576,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Ščitimo vaše podatke in samodejno preprečujemo podjetjem, da bi vohunila za vašimi kliki.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Nastavi kot privzeti brskalnik</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Izberite, kje želite imeti naslovno vrstico</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Na vrhu</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Na dnu</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Izberite si temo</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Samodejno</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Svetla</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Temna</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Hitro nadaljujte, kjer ste ostali</string>
   <!-- Sync onboarding subtitle. -->
@@ -616,11 +588,11 @@
     Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded.
     %1$s is replaced by an active link, using nova_onboarding_marketing_body_link_text as text (“How we use the data”).
   -->
-  <string name="nova_onboarding_marketing_body" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim tehnološkim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali. %1$s</string>
+  <string name="nova_onboarding_marketing_body" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali. %1$s</string>
   <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
-  <string name="nova_onboarding_marketing_body_2" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim tehnološkim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
+  <string name="nova_onboarding_marketing_body_2" tools:ignore="BrandUsage,UnusedResources">Sporočite Mozillinim partnerjem za trženje, kako ste odkrili Firefox in da ga uporabljate. Ti podatki se nikoli ne bodo prodali.</string>
   <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
-  <string name="nova_onboarding_marketing_body_3" tools:ignore="BrandUsage,UnusedResources">Pomagate nam lahko doseči več ljudi, tako da Mozilli dovolite, da kanale, na katerih promoviramo Firefox, obvestimo, da ste vi njegov uporabnik.</string>
+  <string name="nova_onboarding_marketing_body_3" tools:ignore="BrandUsage,UnusedResources">Pomagate nam lahko doseči več ljudi, tako da Mozilli dovolite, da kanale, na katerih promoviramo Firefox, obvesti, da ste vi njegov uporabnik.</string>
   <!--
     Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded.
     “Platform you came from” refers to the external app, website, store, campaign, or other source that directed the user to Firefox.
@@ -649,7 +621,7 @@
     Marketing onboarding additional body text. 'Firefox' is intentionally hardcoded.
     “Allowing” refers to the main button “Allow and Continue”; the ask for the user is to allow communicating back to the platform.
   -->
-  <string name="nova_onboarding_marketing_body_line_three" tools:ignore="BrandUsage">Prosim, razmislite o tem, da dovolite in pomagajte Firefoxu, da zmaga.</string>
+  <string name="nova_onboarding_marketing_body_line_three" tools:ignore="BrandUsage">Prosim, razmislite o tem, da dovolite, in pomagajte Firefoxu, da zmaga.</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text">Kako uporabljamo te podatke</string>
   <!-- Marketing onboarding body link text. -->
@@ -668,12 +640,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Odkrijte najnovejše možnosti zasebnosti v Firefoxu, da boste vedno na tekočem, kako ostati zaščiteni.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Vklopi obvestila</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Naj bo vsako iskanje zasebnejše</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Začnite vsako iskanje z domače strani svojega telefona in vedite, da vam Firefox s svojimi zaščitami krije hrbet.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Dodaj pripomoček Firefox</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Preprost za prilagajanje in zasebnejši z vsakim dotikom</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -719,12 +685,6 @@
   <string name="search_bar_widget_description">Iskalna vrstica z zasebnim in glasovnim iskanjem</string>
   <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for image search, private search and voice search -->
   <string name="search_bar_with_lens_widget_description">Iskalna vrstica s slikovnim, zasebnim in glasovnim iskanjem</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Nastavitve</string>
   <!--
     Preferences
 
@@ -871,7 +831,7 @@
   <!-- Preference title for switch preference to show a clipboard suggestion when searching -->
   <string name="preferences_show_clipboard_suggestions">Prikaži predloge odložišča</string>
   <!-- Preference title for switch preference to suggest browsing history when searching -->
-  <string name="preferences_search_browsing_history">Išči po zgodovini iskanja</string>
+  <string name="preferences_search_browsing_history">Išči po zgodovini brskanja</string>
   <!-- Preference title for switch preference to suggest bookmarks when searching -->
   <string name="preferences_search_bookmarks">Iskanje po zaznamkih</string>
   <!-- Preference title for switch preference to suggest synced tabs when searching -->
@@ -931,6 +891,8 @@
   <string name="preference_downloads_folder_permission_lost" tools:ignore="UnusedResources">Za uporabo te mape nimate dovoljenja. Poskusite izbrati drugo.</string>
   <!-- Preference title for choosing an app to handle downloads -->
   <string name="preferences_choose_app_for_downloads">Upravljaj prenose z drugo aplikacijo</string>
+  <!-- Message shown when no app is available to let the user pick a download folder. -->
+  <string name="preferences_downloads_no_folder_picker_available">Izbirnika map v tej napravi ni mogoče odpreti.</string>
   <!-- Preference category for deleting or removing downloads -->
   <string name="preferences_category_delete_or_remove_downloads">Izbriši ali odstrani prenose</string>
   <string name="preferences_downloads_delete_from_device">Izbriši z naprave</string>
@@ -1267,7 +1229,7 @@
     Preference description for marketing data collection.
     Note: The words "Firefox" and "Mozilla" should NOT be translated. “That you use it” is to mean that the user is opting in to sharing that they are continuing to use Firefox after installing it; not that Firefox is tracking their “usage” or what they’re using it for.
   -->
-  <string name="preferences_marketing_data_description_4" tools:ignore="BrandUsage">Objavite, kako ste odkrili Firefox in da ga uporabljate, z Mozillinimi tehnološkimi partnerji.</string>
+  <string name="preferences_marketing_data_description_4" tools:ignore="BrandUsage">Objavite, kako ste odkrili Firefox in da ga uporabljate, z Mozillinimi trženjskimi tehnološkimi partnerji.</string>
   <!-- Learn more link for marketing data preference -->
   <string name="preferences_marketing_data_learn_more">Več o podatkih za trženje</string>
   <!-- Title for studies preferences -->
@@ -1302,6 +1264,12 @@
   <string name="preference_simple_toolbar">Preprosto</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Razširjeno</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Položaj iskalne vrstice na domači strani</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">V sredini</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Na vrhu</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Odpri nov zavihek</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1614,8 +1582,6 @@
   <string name="open_tabs_menu">Meni odprtih zavihkov</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Nazaj na upravitelja zavihkov</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Shrani zavihke v zbirko</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Izbriši zbirko</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1972,6 +1938,8 @@
   <string name="download_search_no_results_found">Ni zadetkov</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Izberi vse</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(podatki)</string>
   <!--
     Downloads Content Type Filters
 
@@ -2020,8 +1988,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Podrobneje opišite težavo, da nam jo pomagate raziskati</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Podrobneje opišite težavo, da nam jo pomagate raziskati (neobvezno)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Prekliči</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Pošlji poročilo</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2294,7 +2260,7 @@
   <!-- Label that indicates that video and audio autoplay is only allowed over Wi-Fi -->
   <string name="preference_option_autoplay_allowed_wifi_only2">Zavrni zvok in video samo na mobilnih podatkih</string>
   <!-- Subtext that explains 'autoplay on Wi-Fi only' option -->
-  <string name="preference_option_autoplay_allowed_wifi_subtext">Zvok in Video se bosta predvajala na Wi-Fi</string>
+  <string name="preference_option_autoplay_allowed_wifi_subtext">Zvok in video se bosta predvajala na Wi-Fi</string>
   <!-- Label for global setting that indicates that video autoplay is allowed, but audio autoplay is blocked -->
   <string name="preference_option_autoplay_block_audio2">Zavrni samo zvok</string>
   <!-- Label for site specific setting that indicates that video autoplay is allowed, but audio autoplay is blocked -->
@@ -2523,7 +2489,7 @@
   <!-- Text shown in snackbar when user closes multiple inactive tabs. %1$s will be replaced with the number of tabs closed. -->
   <string name="snackbar_num_tabs_closed">Zaprtih zavihkov: %1$s</string>
   <!-- Text shown in snackbar when user bookmarks a list of tabs. %s is the name of the folder the bookmark was saved into. -->
-  <string name="snackbar_message_bookmarks_saved_in_2">Zaznamki shranjeni v “%s”</string>
+  <string name="snackbar_message_bookmarks_saved_in_2">Zaznamki shranjeni v \"%s\"</string>
   <!-- Text shown in snackbar when user adds a site to shortcuts -->
   <string name="snackbar_added_to_shortcuts">Dodano med bližnjice!</string>
   <!-- Text shown in snackbar when user closes a private tab -->
@@ -2543,8 +2509,6 @@
   <string name="qr_scanner_dialog_invalid">Spletni naslov ni veljaven.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">V redu</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Ali ste prepričani, da želite izbrisati %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">To je vzorčno besedilo. Pokaže vam, kako bo besedilo prikazano, ko povečate ali zmanjšate velikost s to nastavitvijo.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -2764,7 +2728,7 @@
   <!-- Description of social media trackers that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_social_media_trackers_description">Omeji zmožnost družbenih omrežij, da bi sledile vašemu brskanju po spletu.</string>
   <!-- Category of trackers (cross-site tracking cookies) that can be blocked by Enhanced Tracking Protection -->
-  <string name="etp_cookies_title">Spletni sledilni piškotki</string>
+  <string name="etp_cookies_title">Piškotki za sledenje med spletnimi mesti</string>
   <!-- Category of trackers (cross-site tracking cookies) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_cookies_title_2">Medspletni piškotki</string>
   <!-- Description of cross-site tracking cookies that can be blocked by Enhanced Tracking Protection -->
@@ -2883,7 +2847,7 @@
   <!-- Preference to access list of login exceptions that we don't use DNS over HTTPS -->
   <string name="preference_doh_exceptions">Izjeme</string>
   <!-- Description of "exceptions" for "DNS over HTTPS". %1$s is the name of the app (for example "Firefox"). -->
-  <string name="preference_doh_exceptions_summary">Na teh spletnih mestih in njihovih poddomenah %1$s ne bo uporabljal varnega DNS.</string>
+  <string name="preference_doh_exceptions_summary">Na teh spletnih mestih in njihovih poddomenah %1$s ne bo uporabljal zavarovanega DNS.</string>
   <!-- Text displayed that links to adding website domain for "DNS over HTTPS" exceptions. -->
   <string name="preference_doh_exceptions_add">Dodaj spletno mesto</string>
   <!-- Text displayed above the input field when adding exceptions for "DNS over HTTPS". -->
@@ -3282,6 +3246,8 @@
   <string name="credit_cards_warning_dialog_set_up_now">Nastavi zdaj</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Pozneje</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Zavarujte občutljive podatke</string>
   <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
   <string name="automotive_authentication_setup_dialog_set_up_now">Nastavi zdaj</string>
   <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
@@ -3289,7 +3255,7 @@
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Odklenite svojo napravo</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
-  <string name="credit_cards_biometric_prompt_unlock_message_2">Odklenite za ogled shranjenih plačilnih sredstev</string>
+  <string name="credit_cards_biometric_prompt_unlock_message_2">Odklenite za uporabo shranjenih plačilnih sredstev</string>
   <!-- Title of the "Add address" screen -->
   <string name="addresses_add_address">Dodaj naslov</string>
   <!-- Title of the "Edit address" screen -->
@@ -3428,10 +3394,6 @@
   <string name="browser_menu_remove_from_shortcuts">Odstrani iz bližnjic</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Ali ste prepričani, da želite izbrisati to geslo?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Izbriši</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Prekliči</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Uredi geslo</string>
   <!-- The page title for adding new password. -->
@@ -3467,7 +3429,7 @@
   <!-- Text displayed when user has disabled tab syncing in Firefox Sync Account -->
   <string name="synced_tabs_enable_tab_syncing">Omogočite sinhronizacijo zavihkov.</string>
   <!-- Text displayed when user has no tabs that have been synced -->
-  <string name="synced_tabs_no_tabs" tools:ignore="BrandUsage">V Firefoxu na drugih napravah nimate odprtih drugih zavihkov.</string>
+  <string name="synced_tabs_no_tabs" tools:ignore="BrandUsage">V Firefoxu na drugih napravah nimate odprtih zavihkov.</string>
   <!-- Text displayed in the synced tabs screen when a user is not signed in to Firefox Sync describing Synced Tabs -->
   <string name="synced_tabs_sign_in_message">Oglejte si seznam zavihkov drugih naprav.</string>
   <!-- Text displayed on a button in the synced tabs screen to link users to sign in when a user is not signed in to Firefox Sync -->
@@ -3645,7 +3607,7 @@
   <!-- Title for the translation dialog that allows a user to translate the webpage when a user uses the translation feature the first time. %1$s is the name of the app (for example "Firefox"). -->
   <string name="translations_bottom_sheet_title_first_time">Preskusite zasebno prevajanje v %1$su</string>
   <!-- Additional information on the translation dialog that appears when a user uses the translation feature the first time. %1$s is a link using translations_bottom_sheet_info_message_learn_more as text. -->
-  <string name="translations_bottom_sheet_info_message">Zasebnost je zagotovljena, saj prevodi nikoli ne zapustijo vašega računalnika. Novi jeziki in izboljšave so na poti! %1$s</string>
+  <string name="translations_bottom_sheet_info_message">Zasebnost je zagotovljena, saj prevodi nikoli ne zapustijo vaše naprave. Novi jeziki in izboljšave so na poti! %1$s</string>
   <!-- Text that links to additional information about the Firefox translations feature. -->
   <string name="translations_bottom_sheet_info_message_learn_more">Več o tem</string>
   <!-- Label for the dropdown to select which language to translate from on the translations dialog. Usually the translate from language selected will be the same as the page language. -->
@@ -3744,7 +3706,7 @@
   -->
   <string name="automatic_translation_toolbar_title_preference">Samodejno prevajanje</string>
   <!-- Screen header presenting the automatic translation preference feature. It will appear under the toolbar. -->
-  <string name="automatic_translation_header_preference">Izberite jezik za upravljanje nastavitev ”vedno prevedi“ in ”nikoli ne prevajaj“.</string>
+  <string name="automatic_translation_header_preference">Izberite jezik za upravljanje nastavitev \"vedno prevedi\" in \"nikoli ne prevajaj\".</string>
   <!-- The title of the warning card informs the user that the system could not load languages for translation settings. -->
   <string name="automatic_translation_error_warning_text">Jezikov ni bilo mogoče naložiti. Poskusite znova pozneje.</string>
   <!--
@@ -3888,7 +3850,7 @@
     Description text for the protection panel banner when tracking protection is disabled.
     %s is the name of the app (for example "Firefox").
   -->
-  <string name="protection_panel_banner_not_protected_description">%s je izključena. Priporočamo, da zaščito znova vključite.</string>
+  <string name="protection_panel_banner_not_protected_description">%s vas ne varuje. Priporočamo, da zaščito znova vključite.</string>
   <!--
     Title text for the protection panel banner when tracking protection is enabled.
     %s is the name of the app (for example "Firefox").
@@ -3919,11 +3881,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Če je videti, da spletno mesto ne deluje pravilno, jo poskusite izklopiti.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Priporočamo, da vključite zaščito pred sledenjem.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Zavrnjeni sledilci: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Sledilci niso blokirani</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -4048,7 +4005,7 @@
   <!-- The title of the tab count section in Tab Tools. -->
   <string name="debug_drawer_tab_tools_tab_count_title">Št. zavihkov</string>
   <!-- The active tab count category in the tab count section in Tab Tools. -->
-  <string name="debug_drawer_tab_tools_tab_count_active">Dejaven</string>
+  <string name="debug_drawer_tab_tools_tab_count_active">Dejavni</string>
   <!-- The inactive tab count category in the tab count section in Tab Tools. -->
   <string name="debug_drawer_tab_tools_tab_count_inactive">Nedejavni</string>
   <!-- The private tab count category in the tab count section in Tab Tools. -->
@@ -4140,7 +4097,7 @@
   <!-- Text shown in the survey title for homepage microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_homepage_title" tools:ignore="BrandUsage,UnusedResources">Kako zadovoljni ste s Firefoxovo domačo stranjo?</string>
   <!-- Text shown in the survey title for search experience microsurvey. Note: The word "Firefox" should NOT be translated. -->
-  <string name="microsurvey_search_title" tools:ignore="BrandUsage,UnusedResources">Kako zadovoljni ste z možnostjo iskanja v Firefoxu?</string>
+  <string name="microsurvey_search_title" tools:ignore="BrandUsage,UnusedResources">Kako zadovoljni ste z izkušnjo iskanja v Firefoxu?</string>
   <!-- Text shown in the survey title for sync experience microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_sync_title" tools:ignore="BrandUsage,UnusedResources">Kako zadovoljni ste s sinhronizacijo v Firefoxu?</string>
   <!-- Text shown in the survey title for 'describe your experience so far' microsurvey. Note: The word "Firefox" should NOT be translated. -->
@@ -4306,7 +4263,7 @@
   <!-- Push notification title about old Firefox version. "Update" is a noun. -->
   <string name="certificate_warning_push_notification_update_recommended_title" tools:ignore="UnusedResources">Priporočena je posodobitev</string>
   <!-- Push notification message about old Firefox version -->
-  <string name="certificate_warning_push_notification_pnr1_message" tools:ignore="UnusedResources">Dodatki in nekatere možnosti bodo 14. marca nehale delovati.</string>
+  <string name="certificate_warning_push_notification_pnr1_message" tools:ignore="UnusedResources">Dodatki in nekatere možnosti bodo 14. marca nehali delovati.</string>
   <!-- Push notification title about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
   <string name="certificate_warning_push_notification_pnw2_title" tools:ignore="BrandUsage,UnusedResources">Uporabljate starejšo različico Firefoxa</string>
   <!-- Push notification message about old Firefox version. "Update" is a verb. -->
@@ -4364,7 +4321,7 @@
   <!-- Subtitle for the setup checklist when the second task is completed. -->
   <string name="setup_checklist_subtitle_5_steps_second_step">Dokončali ste 2 od 5 korakov. Odličen napredek!</string>
   <!-- Subtitle for a setup checklist with 5 steps when three of the tasks are completed. -->
-  <string name="setup_checklist_subtitle_5_steps_third_step">Ste preko polovice! Trije koraki dokončani in še dva do konca.</string>
+  <string name="setup_checklist_subtitle_5_steps_third_step">Ste na pol poti! Trije koraki dokončani in še dva do konca.</string>
   <!-- Subtitle for a setup checklist with 5 steps when the fifth task is completed. -->
   <string name="setup_checklist_subtitle_5_steps_fourth_step">Še malo! Ste samo 1 korak od ciljne črte.</string>
   <!-- Subtitle for a setup checklist with 5 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
@@ -4382,7 +4339,7 @@
   <!-- The title of the toolbar selection task for the setup checklist -->
   <string name="setup_checklist_task_toolbar_selection">Izberite postavitev orodne vrstice</string>
   <!-- The title of the explore extensions task for the setup checklist -->
-  <string name="setup_checklist_task_explore_extensions">Razišči razširitve</string>
+  <string name="setup_checklist_task_explore_extensions">Raziščite razširitve</string>
   <!-- The title of the search widget task for the setup checklist -->
   <string name="setup_checklist_task_search_widget_2">Raziščite pripomoček za iskanje</string>
   <!--
@@ -4538,7 +4495,7 @@
   <!-- Content description for the gallery picker button in the Lens camera screen -->
   <string name="content_description_gallery">Izberite v galeriji za pošiljanje v Google Lens</string>
   <!-- Content description for the shutter button in the Lens camera screen -->
-  <string name="content_description_take_photo">Fotografiraj in pošlji Google Lens</string>
+  <string name="content_description_take_photo">Fotografiraj in pošlji v Google Lens</string>
   <!-- Image context menu entry that sends the long-pressed image to Google Lens -->
   <string name="context_menu_open_image_with_google_lens">Išči z Google Lens</string>
   <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->
@@ -4637,12 +4594,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Dodaj podpis</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">Podpiši PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Prenesi PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

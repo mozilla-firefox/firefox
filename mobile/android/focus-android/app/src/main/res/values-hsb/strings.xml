@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Jako standardny wobhladowak nastajić</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Přeskočić</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Zesylńće swoju priwatnosć</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Waše pytanje kaž wy jo chceće</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Přidajće swojej startowej wobrazowce tastowe skrótšenki</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Přiwučće sej priwatnosć</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Přidać</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Wotstronić</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Wšě sydła wotstronić</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Placki blokować</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Bohužel mamy problem z tutym rajtarkom.</string>
   <!-- Subtitle for the tab crash report screen -->

@@ -10,7 +10,7 @@
   <!-- Title of an alert shown when there is an internal VPN error, and the VPN should be disabled to continue using the browser. -->
   <string name="mozac_feature_ipprotection_unavaliable_dialog_title">要不使用 VPN 繼續嗎？</string>
   <!-- Body of an alert shown when there is an internal VPN error, and the VPN should be disabled to continue using the browser. -->
-  <string name="mozac_feature_ipprotection_unavaliable_dialog_body">VPN 目前並未正常運作，您實際的所在位置可能會被人追蹤。可以不使用 VPN 繼續上網，或選擇要關閉哪些分頁。</string>
+  <string name="mozac_feature_ipprotection_unavaliable_dialog_body">VPN 目前並未正常運作，您實際的所在位置可能會被他人看見。可以不使用 VPN 繼續上網，或選擇要關閉哪些分頁。</string>
   <!-- Title for a button on the alert shown when VPN errors. The button allows user to navigate into tabs tray, to close those they deem sensitive. -->
   <string name="mozac_feature_ipprotection_unavaliable_dialog_confirm_button">管理分頁</string>
   <!-- Title for a button on the alert shown when VPN errors. The button disabled the VPN, and allows the user to continue using the browser without the extra safety feature. -->

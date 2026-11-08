@@ -51,8 +51,6 @@
   <string name="home_bookmarks_menu_item_remove">Аныхра</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s еиқәнаршәеит Мозилла.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Ахатә ԥшаара иазку еицырзеиԥшу амифқәа</string>
   <!--
     True Private Browsing Mode
 
@@ -206,8 +204,6 @@
   <string name="browser_menu_sign_back_in_to_sync">Асинхронизациазы даҽазнык аҭалара</string>
   <!-- Browser menu caption label for the "Sign back in to sync" browser menu item described in `browser_menu_sign_back_in_to_sync` when there is an error in syncing -->
   <string name="browser_menu_syncing_paused_caption">Асинхронизациа аанкылоуп</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Ахатә абӷьыц ҿыц</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Амаӡажәақәа</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -286,12 +282,6 @@
   <string name="search_widget_text_long">Интернет аԥшаара</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Бжьыла аԥшаара</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Архиарақәа</string>
   <!--
     Preferences
 
@@ -814,8 +804,6 @@
   <string name="close_tab_title">Агәылаҵа арктәуп %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Иаарту абларҭақәа рмениу</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Агәылаҵақәа аизгаҿы еиқәырхатәуп</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Ианыхтәуп аизга</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1188,8 +1176,6 @@
   <string name="qr_scanner_dialog_invalid">Аҳа адрес иашам.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">ИБЗИОУП</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Агәра ганы уҟоума %1$s аԥыхра уҭахума?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Ари текст ҿырԥштәуп. Абраҟа атекст ашәагаа анузырҳалак ма ианурмаҷуа ишааԥшуа аарԥшразы ауп.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1702,10 +1688,6 @@
   <string name="browser_menu_remove_from_shortcuts">Аҿацәқәа рҟынтә иаԥыхтәуп</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Агәра ганы уҟоума ари амаӡажәа аԥыхра?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Аныхра</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Аԥыхра</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Амаӡажәа ԥсахтәуп</string>
   <!-- The page title for adding new password. -->

@@ -348,14 +348,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Aq´kan uva´ a´ kuxhe´ la b´anb´e</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Ye\' ookeb\'al sti\'</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">B\'an ooksat uyak\'il u eetze\'</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Achukune\', uve\' nasa\'</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Aq\'kan unq\'a kame\' vatz va ch\'ich\'e\' uva\' palchit itxakone\' see</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Chaansa see uva\' axh kuxh la ilon</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Aq\'okej</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -482,8 +474,6 @@
   <string name="preference_exceptions_menu_remove">Sojsa</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Sojsa-el kaajayil unq’a atinb’ale’</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Maj ivatz unq’a cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">La kuy o’. At uma’l kam uva’ ni yansan u k’uchb’al tetze’.</string>
   <!-- Subtitle for the tab crash report screen -->

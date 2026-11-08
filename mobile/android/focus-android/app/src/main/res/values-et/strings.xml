@@ -281,14 +281,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Ava</string>
   <string name="error_hostLookup_title">Serverit ei leitud</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Tugevda oma privaatsust</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Sinu otsing, sinu moodi</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Lisa otsetee oma avaekraanile</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Muuda privaatsus harjumuseks</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Lisa</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -413,8 +405,6 @@
   <string name="preference_exceptions_menu_remove">Eemalda</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Eemalda kõik saidid</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Küpsised blokitakse</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Vabandust. Meil on selle kaardiga probleeme.</string>
   <!-- Subtitle for the tab crash report screen -->

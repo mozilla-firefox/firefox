@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">ਹਟਾਓ</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s ਮੌਜ਼ੀਲਾ ਵਲੋਂ ਤਿਆਰ ਕੀਤਾ</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">ਪ੍ਰਾਈਵੇਟ ਟੈਬਾਂ ਬਾਰੇ ਆਮ ਫ਼ਰਜ਼ੀ ਗੱਲਾਂ</string>
   <!--
     Private Browsing
 
@@ -215,6 +213,10 @@
   <string name="browser_menu_no_extensions_installed_description">ਕੋਈ ਇਕਸਟੈਨਸ਼ਨ ਸਮਰੱਥ ਨਹੀਂ ਹੈ</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">ਸਿਫਾਰਸ਼ੀ ਇਕਸਟੈਨਸ਼ਨ ਨੂੰ ਅਜ਼ਮਾਓ</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">%1$s ਲਈ ਅੱਪਡੇਟ ਦੀ ਪੜਤਾਲ ਕਰੋ</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">ਅੱਪਡੇਟ ਲਈ ਸੈਟਿੰਗਾਂ ਦੀ ਪੜਤਾਲ ਕਰੋ</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">ਖਾਤਾ ਜਾਣਕਾਰੀ</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -269,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">ਸਿੰਕ ਨੂੰ ਰੋਕਿਆ ਗਿਆ ਹੈ</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">ਜੋ ਤੁਸੀਂ ਬੈਕਅੱਪ ਅਤੇ ਸਿੰਕ ਕਰਨਾ ਚਾਹੁੰਦੇ, ਉਹਨਾਂ ਦਾ ਇੰਤਜ਼ਾਮ ਕਰੋ</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">ਨਵੀਂ ਪ੍ਰਾਈਵੇਟ ਟੈਬ</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">ਪਾਸਵਰਡ</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -478,18 +478,6 @@
   <string name="onboarding_preferences_dialog_positive_button">ਮੁਕੰਮਲ</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Firefox ਵਲੋਂ ਜੀ ਆਇਆਂ ਨੂੰ</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">ਜਾਰੀ ਰੱਖ ਕੇ ਤੁਸੀਂ %1$s ਨਾਲ ਸਹਿਮਤ ਹੁੰਦੇ ਹੋ।</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox ਵਰਤਣ ਦੀਆਂ ਸ਼ਰਤਾਂ</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox ਤੁਹਾਡੀ ਪਰਦੇਦਾਰੀ ਦੀ ਪਰਵਾਹ ਕਰਦਾ ਹੈ। ਸਾਡੀ %1$s ਬਾਰੇ ਹੋਰ ਜਾਣੋ।</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">ਪਰਦੇਦਾਰੀ ਸੂਚਨਾ</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">ਬਰਾਊਜ਼ਰ ਵਿੱਚ ਸੁਧਾਰ ਕਰਨ ਲਈ ਮਦਦ ਵਾਸਤੇ Firefox Mozilla ਨੂੰ ਪੜਤਾਲ ਅਤੇ ਤਾਲਮੇਲ ਡਾਟਾ ਭੇਜਦਾ ਹੈ। %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">ਬੰਦੋਬਸਤ</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">ਸ਼ਾਨਦਾਰ Android ਬਰਾਊਜ਼ਰ ਨੂੰ ਚਲਾਓ</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -592,20 +580,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">ਅਸੀਂ ਤੁਹਾਡੇ ਡਾਟੇ ਨੂੰ ਸੁਰੱਖਿਅਤ ਰੱਖਦੇ ਹਾਂ ਅਤੇ ਜਦੋਂ ਵੀ ਤੁਸੀਂ ਕਲਿੱਕ ਕਰਦੇ ਹੋ ਤਾਂ ਆਪਣੇ-ਆਪ ਹੀ ਕੰਪਨੀਆਂ ਨੂੰ ਤੁਹਾਡੇ ਉੱਤੇ ਜਾਸੂਸੀ ਕਰਨ ਤੋਂ ਰੋਕਦੇ ਹਾਂ।</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">ਮੂਲ ਬਰਾਊਜ਼ਰ ਬਣਾਓ</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">ਆਪਣੀ ਸਿਰਨਾਵਾਂ ਪੱਟੀ ਨੂੰ ਚੁਣੋ</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">ਉੱਤੇ</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">ਹੇਠਾਂ</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">ਆਪਣਾ ਥੀਮ ਚੁਣੋ</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">ਆਟੋਮੈਟਿਕ</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">ਹਲਕਾ</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">ਗੂੜ੍ਹਾ</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">ਜਿੱਥੇ ਤੁਸੀਂ ਛੱਡਿਆ ਸੀ, ਉਥੋਂ ਫ਼ੌਰਨ ਖੋਲ੍ਹੋ</string>
   <!-- Sync onboarding subtitle. -->
@@ -670,12 +644,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Firefox ਵਿੱਚ ਨਵੇਂ ਪਰਦੇਦਾਰੀ ਫ਼ੀਚਰਾਂ ਬਾਰੇ ਜਾਣੋ ਤਾਂ ਕਿ ਤੁਸੀਂ ਸੁਰੱਖਿਅਤ ਰਹਿਣ ਬਾਰੇ ਹਮੇਸ਼ਾਂ ਤਾਜ਼ਾ ਜਾਣਕਾਰੀ ਹਾਸਲ ਕਰੋ।</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">ਸੂਚਨਾਵਾਂ ਨੂੰ ਚਾਲੂ ਕਰੋ</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">ਹਰ ਖੋਜ ਨੂੰ ਵੱਧ ਪ੍ਰਾਈਵੇਟ ਬਣਾਓ</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">ਹਰ ਖੋਜ ਨੂੰ ਆਪਣੇ ਫ਼ੋਨ ਦੀ ਮੁੱਖ ਸਕਰੀਨ ਤੋਂ ਸ਼ੁਰੂ ਕਰੋ ਅਤੇ ਯਾਦ ਰੱਖੋ ਕਿ Firefox ਆਪਣੇ-ਆਪ ਹੀ ਤੁਹਾਨੂੰ ਸੁਰੱਖਿਅਤ ਰੱਖਦਾ ਹੈ।</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Firefox ਵਿਜੈਟ ਨੂੰ ਜੋੜੋ</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">ਹਰ ਟੈਪ ਨਾਲ ਕਸਟਮਾਈਜ਼ ਕਰਨਾ ਸੌਖਾ ਅਤੇ ਵੱਧ ਪ੍ਰਾਈਵੇਟ</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -721,12 +689,6 @@
   <string name="search_bar_with_lens_widget_description">ਚਿੱਤਰ, ਪ੍ਰਾਈਵੇਟ ਅਤੇ ਆਵਾਜ਼ ਖੋਜ ਨਾਲ ਲੈੱਸ ਖੋਜ ਪੱਟੀ</string>
   <!-- Widget description in the widget picker screen for the compact search bar widget -->
   <string name="compact_search_bar_widget_description">ਸੰਖੇਪ ਖੋਜ ਪੱਟੀ</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">ਸੈਟਿੰਗਾਂ</string>
   <!--
     Preferences
 
@@ -842,6 +804,8 @@
   <string name="preferences_toolbar_select_shortcut">ਕੋਈ ਸ਼ਾਰਟਕੱਟ ਨੂੰ ਚੁਣੋ</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">ਸ਼ਾਰਟਕੱਟ ਨੂੰ ਸੋਧੋ</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">ਮੇਨੂ</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">ਇਸ਼ਾਰੇ</string>
   <!-- Preference for settings related to visual options -->
@@ -1622,8 +1586,6 @@
   <string name="open_tabs_menu">ਟੈਬ ਮੇਨੂ ਖੋਲ੍ਹੋ</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">ਟੈਬ ਮੈਨੇਜਰ ਉੱਤੇ ਵਾਪਸ ਜਾਓ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">ਟੈਬਾਂ ਨੂੰ ਭੰਡਾਰ ਵਿੱਚ ਸੰਭਾਲੋ</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">ਭੰਡਾਰ ਹਟਾਓ</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2022,8 +1984,6 @@
   <string name="webcompat_reporter_label_mandatory_description">ਮਸਲੇ ਬਾਰੇ ਜਾਂਚ ਕਰਨ ਲਈ ਸਾਡੀ ਮਦਦ ਵਾਸਤੇ ਵੇਰਵੇ ਸਮੇਤ ਸਮੱਸਿਆ ਦੀ ਜਾਣਕਾਰੀ ਦਿਓ</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">ਮਸਲੇ ਬਾਰੇ ਜਾਂਚ ਕਰਨ ਲਈ ਸਾਡੀ ਮਦਦ ਵਾਸਤੇ ਵੇਰਵੇ ਸਮੇਤ ਸਮੱਸਿਆ ਦੀ ਜਾਣਕਾਰੀ ਦਿਓ (ਚੋਣਵਾਂ)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">ਰੱਦ ਕਰੋ</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">ਰਿਪੋਰਟ ਭੇਜੋ</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2545,8 +2505,6 @@
   <string name="qr_scanner_dialog_invalid">ਵੈੱਬ ਸਿਰਨਾਵਾਂ ਦਰੁਸਤ ਨਹੀਂ ਹੈ।</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">ਠੀਕ ਹੈ</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">ਕੀ ਤੁਸੀਂ %1$s ਨੂੰ ਹਟਾਉਣਾ ਚਾਹੁੰਦੇ ਹੋ?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">ਇਹ ਤਾਂ ਲਿਖਤ ਨਮੂਨਾ ਹੈ। ਅੱਖਰ ਆਕਾਰ ਘਟਾਉਣ ਵਧਾਉਣ ਸਮੇਂ ਵੱਡੇ ਛੋਟੇ ਅੱਖਰਾਂ ਦੀ ਜਾਂਚ ਇੱਥੇ ਕੀਤੀ ਜਾ ਸਕਦੀ ਹੈ। ਉੱਤਮ, ਪ੍ਰੀਤ, ਵਰ੍ਹੇ, ਸਿੰਘ</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3432,10 +3390,6 @@
   <string name="browser_menu_remove_from_shortcuts">ਸ਼ਾਰਟਕੱਟ ਵਿੱਚੋਂ ਹਟਾਓ</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">ਕੀ ਤੁਸੀਂ ਇਸ ਪਾਸਵਰਡ ਨੂੰ ਹਟਾਉਣਾ ਚਾਹੁੰਦੇ ਹੋ?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">ਹਟਾਓ</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">ਰੱਦ ਕਰੋ</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">ਪਾਸਵਰਡ ਨੂੰ ਸੋਧੋ</string>
   <!-- The page title for adding new password. -->
@@ -3921,11 +3875,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">ਜੇ ਇਸ ਸਾਈਟ ਉੱਤੇ ਕੁਝ ਕੰਮ ਨਹੀਂ ਕਰਦਾ ਹੈ ਤਾਂ ਇਸ ਨੂੰ ਬੰਦ ਕਰਕੇ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">ਟਰੈਕਿੰਗ ਰੋਧੀ ਸੁਰੱਖਿਆ ਨੂੰ ਚਾਲੂ ਕਰਨ ਦੀ ਸਿਫ਼ਾਰਸ਼ ਕੀਤੀ ਜਾਂਦੀ ਹੈ।</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">ਪਾਬੰਦੀ ਲਾਏ ਟਰੈਕਰ: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">ਟਰੈਕਰਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਨਹੀਂ ਲਾਈ ਹੈ</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -4498,6 +4447,39 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">ਇੱਥੇ</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">ਲਾਈਵ</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">ਦੇਰੀ ਹੋਈ</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">ਮੁਅੱਤਲ ਕੀਤਾ</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">ਟਾਲਿਆ</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">ਨਤੀਜੇ</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">ਸਟੈਂਡਿੰਗ</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">ਵਾਲਪੇਪਰ</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">ਵਿਜੈੱਟ ਨੂੰ ਹਟਾਓ</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">ਹੋਰ ਚੋਣਾਂ</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, ਲਾਈਵ ਗੇਮ</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, \u0020%3$d ਵਿੱਚੋਂ %2$d ਸਫ਼ਾ</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4625,12 +4607,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">ਦਸਤਖ਼ਤ ਨੂੰ ਜੋੜੋ</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">PDF ਉੱਤੇ ਦਸਤਖ਼ਤ ਕਰੋ</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF ਨੂੰ ਡਾਊਨਲੋਡ ਕਰੋ</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

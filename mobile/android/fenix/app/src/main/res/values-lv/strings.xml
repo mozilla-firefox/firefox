@@ -62,6 +62,10 @@
   <string name="ai_controls_learn_more">Uzzināt vairāk</string>
   <!-- Title for the block AI enhancements toggle -->
   <string name="ai_controls_block_ai_title">Liegt MI uzlabojumus</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Klausīties lapu</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Ierīce var izmantot MI skaļai lasīšanai. Teksts un skaņa paliek privāti.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Liegt MI uzlabojumus?</string>
   <!-- Block button text in the block AI enhancements confirmation dialog -->
@@ -102,8 +106,6 @@
   <string name="nova_onboarding_set_to_default_button">Iestatīt kā noklusējuma pārlūku</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text_1">Uzzināt vairāk</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Pievienot Firefox logrīku</string>
   <!-- Text preview for smaller sized widgets -->
   <string name="search_widget_text_short">Meklēt</string>
   <!-- Text preview for larger sized widgets -->
@@ -120,6 +122,8 @@
   <string name="preferences_search">Meklēt</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Meklētāji</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Pievienot sākuma skatam meklēšanas logrīku</string>
   <!-- Preference for settings related to Search engines suggestions -->
   <string name="preferences_search_engines_suggestions">Ieteikumi no meklētājiem</string>
   <!-- Preference for settings related to changing the default browser -->
@@ -172,6 +176,18 @@
   <string name="addons_permissions_allow_for_all_sites">Atļaut visām vietnēm</string>
   <!-- The title of the required permissions section from addon's permissions screen. -->
   <string name="addons_permissions_heading_required_permissions">Nepieciešamās atļaujas:</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Noņemt %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Tas noņems no ierīces paplašinājumu un tā iestatījumus.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Noņemt</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Atcelt</string>
   <!-- Title for a customize home screen section. Continue is a section that displays the most recent browser tab, so users can continue browsing where they left off. -->
   <string name="customize_toggle_continue">Turpināt</string>
   <!-- Label for the menu item that opens the customize homepage settings screen. -->
@@ -188,6 +204,12 @@
   <string name="addon_failure_retry_action">Atkārtot</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Vienādotie dati</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Vienādot šo ierīci</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Dati ir dublēti un pieejami vienādotajās ierīcēs.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Izmanto kontā %1$s saglabātos datus.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Pārvaldīt, kas tiek vienādots visās savienotājās ierīcēs</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -386,8 +408,6 @@
   <string name="notification_privacy_report_body_has_trackers">Turpini pārlūkot! %1$s turpinās aizturēt.</string>
   <!-- Headline text of the weekly privacy report notification for when no trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
   <string name="notification_privacy_report_headline_no_trackers">%1$s aiztur izsekotājus, kamēr Tu pārlūko. Tie būs redzami šeit.</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Vai tiešām izdzēst %1$s?</string>
   <!-- Summary for Accessibility Text Automatic Size Scaling Preference -->
   <string name="preference_accessibility_auto_size_summary">Fonta izmērs atbildīs Taviem Android iestatījumiem. Atspējot, lai šeit pārvaldītu fonta lielumu.</string>
   <!-- Title for the downloads item in Delete browsing data -->
@@ -560,6 +580,8 @@
     Title text for the protection panel banner when the site is not secure.
   -->
   <string name="protection_panel_banner_not_secure_title">Šajā vietnē jāuzmanās</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Drošs savienojums</string>
   <!-- The button text to add tabs to the active tab group in the tab creation tool. -->
   <string name="debug_drawer_tab_tools_tab_creation_tool_button_text_active">Pievienot izmantotajām cilnēm</string>
   <!-- The button text to add tabs to the inactive tab group in the tab creation tool. -->
@@ -604,6 +626,8 @@
   <string name="wrex_widget_match_suspended">Apturēts</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Atlikts</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Atsvaidzināt</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Iznākumi</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -612,19 +636,57 @@
   <string name="wrex_widget_wallpapers">Tapetes</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Noņemt logrīku</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">SL</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Puslaiks</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">PL</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Sodi</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Vairāk iespēju</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s pret %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, spēle tiešraidē</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, tiešraide</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Aizritējušais laiks minūtēs; %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, %2$d. lapa no %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Šķiet, ka esi bezsaistē</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Jāpārbauda savienojums ar internetu un jāmēģina vēlreiz.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Šobrīd nevar parādīt informāciju par spēli</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Jāmēģina atsvaidzināt vai vēlāk jāieskatās atkal.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Šobrīd nevar parādīt iznākumu</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Komanda vēl tiks noteikta</string>
   <!--
     Collections migration homepage card
 
@@ -661,12 +723,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Pievienot parakstu</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">Parakstīt PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Lejupielādēt PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

@@ -65,8 +65,6 @@
   <string name="home_bookmarks_menu_item_remove">Suprimir</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s es produch per Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Mites màgers de la navegacion privada</string>
   <!--
     Private Browsing
 
@@ -251,8 +249,6 @@
   <string name="browser_menu_syncing_paused_caption">Sincronizacion en pausa</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Gerissètz çò que salvagardatz e sincronizatz</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Novèl onglet de nav. privada</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Senhals</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -432,18 +428,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Acabat</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Benvenguda dins Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">En contunhant, acceptatz las %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">condicions d’utilizacion de Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox se tracha per vòstra vida privada. Legissètz mai tocant aquò dins nòstra %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">politica de confidencialitat</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Per ajudar a melhorar lo navegador, Firefox envia de donadas de diagnostic e d\'interaccion a Mozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Gestion</string>
   <!-- Terms of use (ToU) second subheader. -->
   <string name="onboarding_redesign_tou_subheader_two" tools:ignore="UnusedResources">Proteccion automatica contra lo seguiment</string>
   <!--
@@ -483,18 +467,6 @@
   <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Passar</string>
   <!-- Terms of use (ToU) onboarding body line three link text for nova_onboarding_tou_body_line_3. -->
   <string name="nova_onboarding_tou_body_line_3_link_text">Gerir los paramètres</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Naut</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Bas</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Causissètz vòstre tèma</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Automatic</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Clar</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Escur</string>
   <!-- Marketing onboarding primary button text. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_marketing_primary_button_text" tools:ignore="BrandUsage,UnusedResources">Ajudar Firefox</string>
   <!-- Notifications onboarding button. -->
@@ -519,12 +491,6 @@
   <string name="search_widget_text_long">Recercar sul web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Recèrca a la votz</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Paramètres</string>
   <!--
     Preferences
 
@@ -1287,8 +1253,6 @@
   <string name="close_tab_title">Tampar l’onglet %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Dobrir lo menú dels onglets</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Enregistrar los onglets dins la colleccion</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Suprimir la colleccion</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1553,8 +1517,6 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">Picatz una URL valida</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Anullar</string>
   <!-- The button text for the preview report button to view a preview of the report. -->
   <string name="webcompat_reporter_preview_report">Visualizar lo rapòrt</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
@@ -1974,8 +1936,6 @@
   <string name="qr_scanner_dialog_invalid">Adreça web pas valida.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">D’acòrdi</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Volètz vertadièrament suprimir %1$s ?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Aquò es un exemple de tèxt. Aquí es una demostracion de coma apareisserà lo tèxt quand aumentatz o redusissètz la talha amb aqueste paramètre.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -2684,10 +2644,6 @@
   <string name="browser_menu_remove_from_shortcuts">Suprimir dels acorchis</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Volètz vertadièrament suprimir aqueste senhal ?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Suprimir</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Anullar</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Modificar lo senhal</string>
   <!-- The page title for adding new password. -->
@@ -3156,11 +3112,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Se quicòm sembla copat sus aqueste site, ensajatz de la desactivar.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Se recomanda d’activar la proteccion contra lo seguiment.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Traçadors blocats : %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Los traçadors sont pas blocats</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->

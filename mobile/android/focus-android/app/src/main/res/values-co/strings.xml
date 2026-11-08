@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Sceglie cum’è navigatore predefinitu</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Ignurà</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Rinfurzà a vostra vita privata</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Ricercate à a vostra manera</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Aghjunghjite accurtatoghji à u vostru screnu d’accolta</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Ripigliate in manu a vostra vita privata</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Aghjunghje</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Caccià</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Caccià tutti i siti web</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Bluccà i canistrelli</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Per disgrazia, avemu un prublema cù st’unghjetta.</string>
   <!-- Subtitle for the tab crash report screen -->

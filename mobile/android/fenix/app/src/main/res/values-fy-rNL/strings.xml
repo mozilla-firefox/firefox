@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Fuortsmite</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s is makke troch Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Faaks hearde myten oer priveenavigaasje</string>
   <!--
     Private Browsing
 
@@ -119,7 +117,7 @@
   <!-- Text for the banner message to tell users about our auto close feature. -->
   <string name="tab_tray_close_tabs_banner_message">Stel iepen ljepblêden yn om automatysk te sluten as se net yn de ôfrûne dei, wike of moanne besjoen binne.</string>
   <!-- Text for the positive action button to go to Settings for auto close tabs. -->
-  <string name="tab_tray_close_tabs_banner_positive_button_text">Byldopsjes</string>
+  <string name="tab_tray_close_tabs_banner_positive_button_text">Opsjes besjen</string>
   <!-- Text for the negative action button to dismiss the Close Tabs Banner. -->
   <string name="tab_tray_close_tabs_banner_negative_button_text">Slute</string>
   <!-- Text for the banner message to tell users about our inactive tabs feature. -->
@@ -216,9 +214,9 @@
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Probearje in oanrekommandearre útwreiding</string>
   <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
-  <string name="browser_menu_extensions_review_update_description">Fernijingen foar %1$s beoardiele</string>
+  <string name="browser_menu_extensions_review_update_description">Fernijing foar %1$s beoardiele</string>
   <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
-  <string name="browser_menu_extension_review_update_description">Ynstellingen om by te wurkjen beoardiele</string>
+  <string name="browser_menu_extension_review_update_description">By te wurkjen ynstellingen beoardiele</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Accountynformaasje</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -273,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">Syngronisaasje ûnderbrutsen</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Beheare wêrfan jo in reservekopy meitsje en wat jo syngronisearje</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Nij priveeljepblêd</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Wachtwurden</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -391,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Sprutsen sykopdracht</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Audio wurdt nei tekst omset troch Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Nei side harkje</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Jo apparaat kin gebrûk meitsje fan AI om lûdop foar te lêzen. De tekst en audio bliuwe privee.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">AI-ferbetteringen blokkearje?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -422,7 +422,7 @@
   <!-- Button in the search suggestions onboarding that does not allow search suggestions in private sessions -->
   <string name="search_suggestions_onboarding_do_not_allow_button">Net tastean</string>
   <!-- Search suggestion onboarding hint title text -->
-  <string name="search_suggestions_onboarding_title">Syksuggestjes tastean yn priveefinsters?</string>
+  <string name="search_suggestions_onboarding_title">Syksuggestjes yn priveesesjes tastean?</string>
   <!-- Search suggestion onboarding hint description text, %s is the name of the app (for example "Firefox"). -->
   <string name="search_suggestions_onboarding_text">%1$s sil alles wat jo yn de adresbalke yntype mei jo standert sykmasine diele.</string>
   <!-- Search engine suggestion title text. %s is the name of the suggested engine. -->
@@ -443,7 +443,7 @@
     %s is the search engine name (for example: DuckDuckGo).
     The colon character (in "%s:") is intended to have the screen reader make a small pause between the search engine name and the description of the button.
   -->
-  <string name="search_engine_selector_content_description">%s: sykmasjineselektor</string>
+  <string name="search_engine_selector_content_description">%s: sykmasineselektor</string>
   <!-- Text for the snackbar shown to confirm the deletion of a single browsing history item. %1$s is the shortened URL of the deleted history entry or the the actual deleted search term. Only one such item is deleted at a time. -->
   <string name="search_suggestions_delete_history_item_snackbar">%1$s út skiednis fuortsmite</string>
   <!-- Content description (not visible, for screen readers etc.): Button shown near a history search result allowing to delete it from browsing history. -->
@@ -482,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Dien</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Wolkom by Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Troch fierder te gean, geane jo akkoard mei de %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Gebrûksbetingsten fan Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox jout om jo privacy. Mear ynfo yn ús %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Privacyferklearring</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Om de browser te helpen ferbetterjen, ferstjoert Firefox diagnostyske en ynteraksjegegevens nei Mozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Beheare</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">De ultime Android-browser starte</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -540,7 +528,7 @@
   <!-- Set to default browser onboarding redesign title. -->
   <string name="onboarding_redesign_set_default_browser_title" tools:ignore="UnusedResources">Untfang standert automatyske beskerming tsjin folgjen</string>
   <!-- Set to default browser onboarding redesign body. -->
-  <string name="onboarding_redesign_set_default_browser_body" tools:ignore="UnusedResources">Mei ien tik foarkomme dat bedriuwen jo tikken bespionearje.</string>
+  <string name="onboarding_redesign_set_default_browser_body" tools:ignore="UnusedResources">Ien tik helpt foar te kommen dat bedriuwen jo klikken bespionearje.</string>
   <!-- Sync onboarding redesign title. 'Firefox' is intentionally hardcoded. -->
   <string name="onboarding_redesign_sync_title" tools:ignore="BrandUsage,UnusedResources">Syngronisearje oeral wêr’t jo Firefox brûke</string>
   <!-- Sync onboarding redesign body. -->
@@ -596,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Wy beskermje jo gegevens en blokkearje automatysk bedriuwen dy’t jo klikken bespionearje.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">As standertbrowser ynstelle</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Kies jo adresbalke</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Boppe</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Under</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Kies jo tema</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Automatysk</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Ljocht</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Donker</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Gean daliks troch wêr’t jo bleaun wiene</string>
   <!-- Sync onboarding subtitle. -->
@@ -622,7 +596,7 @@
     Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded.
     %1$s is replaced by an active link, using nova_onboarding_marketing_body_link_text as text (“How we use the data”).
   -->
-  <string name="nova_onboarding_marketing_body" tools:ignore="BrandUsage,UnusedResources">Diel mei Mozilla’s marketingtechnologypartners hoe’t jo Firefox ûntdutsen hawwe en dat jo it brûke. Dizze gegevens wurde nea ferkocht. %1$s</string>
+  <string name="nova_onboarding_marketing_body" tools:ignore="BrandUsage,UnusedResources">Diel mei Mozilla’s marketingpartners hoe’t jo Firefox ûntdutsen hawwe en dat jo it brûke. Dizze gegevens wurde nea ferkocht. %1$s</string>
   <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
   <string name="nova_onboarding_marketing_body_2" tools:ignore="BrandUsage,UnusedResources">Diel mei Mozilla’s marketingtechnologypartners hoe’t jo Firefox ûntdutsen hawwe en dat jo it brûke. Dizze gegevens wurde nea ferkocht.</string>
   <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
@@ -674,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Untdek de nijste privacyfunksjes yn Firefox, sadat jo altyd op de hichte binne fan hoe’t jo beskerme bliuwe kinne.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Notifikaasjes ynskeakelje</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Meitsje elke sykopdracht mear privee</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Begjin elke sykopdracht fan it startskerm fan jo telefoan ôf en wit dat de automatyske beskermingen fan Firefox jo stypje.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Firefox-widget tafoegje</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Ienfâldich oan te passen en mei elke tik mear privee</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -728,12 +696,6 @@
   <!--
     Preferences
 
-    Title for the settings page
-  -->
-  <string name="settings">Ynstellingen</string>
-  <!--
-    Preferences
-
     Preference category for general settings
   -->
   <string name="preferences_category_general">Algemien</string>
@@ -757,6 +719,8 @@
   <string name="preferences_search">Sykje</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Sykmasinen</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Sykwidget oan startskerm tafoegje</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Startskermwidget</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -766,7 +730,7 @@
   <!-- Preference Category for settings to Firefox Suggest -->
   <string name="preference_search_address_bar_fx_suggest" tools:ignore="BrandUsage">Adresbalke – Firefox Suggestjes</string>
   <!-- Preference link to Learn more about Firefox Suggest -->
-  <string name="preference_search_learn_about_fx_suggest" tools:ignore="BrandUsage">Mear ynfo oer Firefox Suggestes</string>
+  <string name="preference_search_learn_about_fx_suggest" tools:ignore="BrandUsage">Mear ynfo oer Firefox Suggestjes</string>
   <!-- Preference link to rating Fenix on the Play Store -->
   <string name="preferences_rate">Wurdearje op Google Play</string>
   <!--
@@ -1009,6 +973,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Utwreidingskolleksje oanpast. Tapassing wurdt ôfsluten om wizigingen ta te passen…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">%1$s fuortsmite?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Dit smyt de útwreiding en syn ynstellingen fan dit apparaat fuort.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Fuortsmite</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Annulearje</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1152,7 +1128,7 @@
     The user can decide if they would like to continue trying to start extensions or if they'd rather continue without them.
     %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="extension_process_crash_dialog_message">Ien of mear útwreidingen wurkje net mear, wêrtroch jo systeem ynstabyl wurdt. It is %1$s net slagge om de add-on(s) opnij te starten.\n\nUtwreidingen sille net opnij starte wurden wylst jo aktuele sesje.\n\nIt fuortsmiten of útskeakeljen fan útwreidingen kin dit probleem oplosse.</string>
+  <string name="extension_process_crash_dialog_message">Ien of mear útwreidingen wurkje net mear, wêrtroch jo systeem ynstabyl wurdt. It is %1$s net slagge om de útwreiding(en) opnij te starten.\n\nUtwreidingen sille net opnij starte wurden wylst jo aktuele sesje.\n\nIt fuortsmiten of útskeakeljen fan útwreidingen kin dit probleem oplosse.</string>
   <!-- Button text on the extension crash dialog to prompt the user to try restarting the extensions but the dialog will reappear if it is unsuccessful again -->
   <string name="extension_process_crash_dialog_retry_button_text" tools:ignore="UnusedResources">Probearje útwreidingen opnij te starten</string>
   <!-- Button text on the extension crash dialog to prompt the user to continue with all extensions disabled. -->
@@ -1173,6 +1149,12 @@
   <string name="preferences_sync_category">Kies wat jo syngronisearje wolle</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Syngronisearre gegevens</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Dit apparaat syngronisearje</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Fan jo gegevens wurdt in reservekopy makke en beskikber op syngronisearre apparaten.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Brûkt bewarre gegevens yn jo %1$s-account.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Beheare wat syngronisearre wurdt op al jo ferbûne apparaten</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1378,7 +1360,7 @@
   <!-- Preference for showing the opened tabs by swiping up on the toolbar -->
   <string name="preference_gestures_swipe_toolbar_show_tabs_2">Fei de wurkbalke fertikaal om iepen ljepblêden te besjen</string>
   <!-- Preference for switching tabs by swiping horizontally on the addressbar -->
-  <string name="preference_gestures_swipe_toolbar_switch_tabs_2">De arkbalke op side feie om fan ljepblêd te wikseljen</string>
+  <string name="preference_gestures_swipe_toolbar_switch_tabs_2">De adresbalke op side feie om fan ljepblêd te wikseljen</string>
   <!-- Preference for switching for the shake to summarize toggle in page summaries and customize settings -->
   <string name="preferences_shake_to_summarize">Skodzje foar in gearfetting</string>
   <!--
@@ -1593,7 +1575,7 @@
   <!-- Text shown as the title of the Close all tabs confirmation dialog in Tab Manager -->
   <string name="tab_manager_close_all_tabs_dialog_title">Alle ljepblêden slute?</string>
   <!-- Text shown in the body of the Close all tabs confirmation dialog in Tab Manager -->
-  <string name="tab_manager_close_all_tabs_dialog_body">Dit slút alle ljepblêden.</string>
+  <string name="tab_manager_close_all_tabs_dialog_body">Dit slút alle iepen ljepblêden.</string>
   <!-- Text shown on the confirm button in the Close all tabs confirmation dialog -->
   <string name="tab_manager_close_all_tabs_dialog_confirm">Ljepblêden slute</string>
   <!-- Text shown on the cancel button in the Close all tabs confirmation dialog -->
@@ -1623,13 +1605,11 @@
   <!-- Content description (not visible, for screen readers etc.): Close tab button. Closes the current session when pressed -->
   <string name="close_tab">Ljepblêd slute</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab <title> button. %s is the tab title -->
-  <string name="close_tab_title">Ljepblêden %s slute</string>
+  <string name="close_tab_title">Ljepblêd %s slute</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Menu Iepen ljepblêden</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Werom nei ljepblêdbehearder</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Ljepblêden yn kolleksje bewarje</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Kolleksje fuortsmite</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2028,8 +2008,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Beskriuw it probleem yn detail, sadat wy it ûndersykje kinne</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Beskriuw it probleem yn detail om ús te helpen it te ûndersykjen (opsjoneel)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Annulearje</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Rapport ferstjoere</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2089,7 +2067,7 @@
   <!-- Single unsubmitted crash matching remote settings. %1$s is the name of the app (for example "Firefox"). -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_title">Jo hawwe in net-ferstjoerde ûngelokrapport relatearre oan ûngelokken dy’t ûndersocht wurde. It ferstjoeren dêrfan sil ús helpe om %1$s te ferbetterjen. As jo dizze notifikaasje slute, wurdt dit rapport negearre.</string>
   <!-- Multiple unsubmitted crashes matching remote settings. %1$d is the number of unsent crash reports, %2$s is the name of the app (for example "Firefox"). -->
-  <string name="unsubmitted_crashes_requested_by_devs_dialog_title">Jo hawwe net-ferstjoerde ûngelokrapporten (%1$d) relatearre oan ûngelokken dy’t ûndersocht wurde. It ferstjoeren dêrfan sil ús helpe %2$s te ferbetterjen. As jo dizze notifikaasje slute, wurdt dit rapport negearre.</string>
+  <string name="unsubmitted_crashes_requested_by_devs_dialog_title">Jo hawwe net-ferstjoerde ûngelokrapporten (%1$d) relatearre oan ûngelokken dy’t ûndersocht wurde. It ferstjoeren dêrfan sil ús helpe %2$s te ferbetterjen. As jo dizze notifikaasje slute, wurde dizze rapporten negearre.</string>
   <!-- Unsubmitted crash dialog checkbox label for automatically sending reports in the future -->
   <string name="unsubmitted_crash_dialog_checkbox_label">Automatysk ûngelokrapporten ferstjoere</string>
   <!-- Unsubmitted crash dialog negative button to dismiss the dialog -->
@@ -2179,7 +2157,7 @@
   <!-- Bookmark URL editing field label -->
   <string name="bookmark_url_label">URL</string>
   <!-- Text indicating which folder a bookmark or folder will be saved in -->
-  <string name="bookmark_save_in_label">Besparje yn</string>
+  <string name="bookmark_save_in_label">Bewarje yn</string>
   <!-- Label for a text input field for a bookmark or folder name -->
   <string name="bookmark_name_label_normal_case">Namme</string>
   <!-- Bookmark select folder screen title -->
@@ -2376,7 +2354,7 @@
   <!-- Text for the cancel button from collection dialogs -->
   <string name="create_collection_negative">Annulearje</string>
   <!-- Default name for a new collection in "name new collection" step of the collection creator. %d is a placeholder for the number of collections -->
-  <string name="create_collection_default_name">Kolleksjes %d</string>
+  <string name="create_collection_default_name">Kolleksje %d</string>
   <!--
     Share
 
@@ -2521,7 +2499,7 @@
   <!-- Preference for not taking the short survey. -->
   <string name="preferences_not_take_survey">Nee tanke</string>
   <!-- Error message shown in a Toast when the system fails to trigger the device uninstallation prompt. -->
-  <string name="uninstall_survey_error_failed">It iepenjen fan de prompt foar it de-ynstallearjen fan it systeem is mislearre; brûk streekrjocht de aksje foar de-ynstallaasje fan it systeem.</string>
+  <string name="uninstall_survey_error_failed">It iepenjen fan de systeemprompt foar de-ynstallaasje is mislearre; brûk streekrjocht de aksje foar de-ynstallaasje fan it systeem.</string>
   <!--
     Snackbar
 
@@ -2551,8 +2529,6 @@
   <string name="qr_scanner_dialog_invalid">Webadres net jildich.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">OK</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Binne jo wis dat jo %1$s fuortsmite wolle?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Dit is foarbyldtekst. Hjir wurdt mei toand hoe’t tekst werjûn wurdt, wannear’t jo mei dizze ynstelling de ôfmjitting fergrutsje of ferlytsje.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3179,7 +3155,7 @@
   <!-- Snackbar (in-app pop-up notification) action button text that takes the user to the VPN settings screen. -->
   <string name="ip_protection_open_settings_snackbar_action">Ynstellingen</string>
   <!-- Description shown on the browser VPN settings screen prompting the user to turn the VPN on. -->
-  <string name="ip_protection_settings_description" tools:ignore="UnusedResources">Skeakelje VPN yn om jo navigaasje persoanliker en dreger te folgjen te meitsjen.</string>
+  <string name="ip_protection_settings_description" tools:ignore="UnusedResources">Skeakelje VPN yn om jo navigaasje mear privee en dreger te folgjen te meitsjen.</string>
   <!-- Title shown on the browser VPN settings screen for location selection section. -->
   <string name="ip_protection_location_title" tools:ignore="UnusedResources">Lokaasje</string>
   <!-- Label for the Recommended server location option which is automatically selected by the browser. -->
@@ -3281,7 +3257,7 @@
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Untskoattelje om jo bewarre kaarten te besjen</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
-  <string name="credit_cards_warning_dialog_title_2">Befeiligje jo bewarre betelmetoaden</string>
+  <string name="credit_cards_warning_dialog_title_2">Befeiligje jo bewarre betellingsmetoaden</string>
   <!-- Message of warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_message_3">Stel in beskoattelingspatroan, pinkoade of wachtwurd foar jo apparaat yn om jo bewarre betellingsmetoaden te beskermjen tsjin tagong as in oar jo apparaat hat.</string>
   <!-- Positive button to send users to set up a pin of warning dialog if users have no device authentication set up -->
@@ -3361,7 +3337,7 @@
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. The postal code field is universally used in address forms to specify the area code for mail sorting. -->
   <string name="addresses_postal_code" tools:ignore="UnusedResources">Postkoade</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. the Eircode field, specific to Ireland is a unique postal code system that helps in precise location identification. -->
-  <string name="addresses_eircode" tools:ignore="UnusedResources">Eirkoade</string>
+  <string name="addresses_eircode" tools:ignore="UnusedResources">Eircode</string>
   <!-- Label for an address field (e.g. mailing address) used as part of the form autofill feature. Used in cases we want to only display the word "Country" over "Country or Region". -->
   <string name="addresses_country_only" tools:ignore="UnusedResources">Lân</string>
   <!-- The text for the "Save" button for saving an address -->
@@ -3429,7 +3405,7 @@
   <!-- Confirmation message for a dialog confirming if the user wants to delete all the permissions for a site -->
   <string name="confirm_clear_permissions_site">Binne jo wis dat jo alle machtigingen op dizze website wiskje wolle?</string>
   <!-- Confirmation message for a dialog confirming if the user wants to set default value a permission for a site -->
-  <string name="confirm_clear_permission_site">Binne jo wis dat jo alle tastimmingen foar dizze website wiskje wolle?</string>
+  <string name="confirm_clear_permission_site">Binne jo wis dat jo dizze tastimming foar dizze website wiskje wolle?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">Gjin website-útsûnderingen</string>
   <!-- Browser menu button that adds a shortcut to the home fragment -->
@@ -3438,10 +3414,6 @@
   <string name="browser_menu_remove_from_shortcuts">Ut fluchkeppelingen fuortsmite</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Binne jo wis dat jo dit wachtwurd fuortsmite wolle?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Fuortsmite</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Annulearje</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Wachtwurd bewurkje</string>
   <!-- The page title for adding new password. -->
@@ -3714,7 +3686,7 @@
   <!-- Toggle switch description that will appear under the "Never translate these sites" settings toggle switch to provide more information on how this setting interacts with other settings. -->
   <string name="translation_option_bottom_sheet_switch_never_translate_site_description">Oerskriuwt alle oare ynstellingen</string>
   <!-- Toggle switch description that will appear under the "Never translate" and "Always translate" toggle switch settings to provide more information on how these  settings interacts with other settings. -->
-  <string name="translation_option_bottom_sheet_switch_description">Negearret oersetoanbiedingen</string>
+  <string name="translation_option_bottom_sheet_switch_description">Oerskriuwt oersetoanbiedingen</string>
   <!-- Button text for the button that will take the user to the translation settings dialog. -->
   <string name="translation_option_bottom_sheet_translation_settings">Oersetynstellingen</string>
   <!-- Button text for the button that will take the user to a website to learn more about how translations works in the given app. %1$s is the name of the app (for example "Firefox"). -->
@@ -3772,7 +3744,7 @@
   <!-- Preference option for never translate. Radio button title text. -->
   <string name="automatic_translation_option_never_translate_title_preference">Nea oersette</string>
   <!-- Preference option for never translate. Radio button summary text. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="automatic_translation_option_never_translate_summary_preference">%1$s sil oanbiede om websites yn dizze taal oer te setten.</string>
+  <string name="automatic_translation_option_never_translate_summary_preference">%1$s sil nea oanbiede om websites yn dizze taal oer te setten.</string>
   <!--
     Never translate site preference screen
 
@@ -3862,7 +3834,7 @@
   -->
   <string name="delete_language_all_languages_file_dialog_title">Alle talen (%1$s) fuortsmite?</string>
   <!-- Additional information for the dialog used by the translations feature to confirm deleting all languages file. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="delete_language_all_languages_file_dialog_message">As jo dizze talen fuortsmite, sil %1$s in part fan de talen nei jo buffer downloade wylst jo oersette.</string>
+  <string name="delete_language_all_languages_file_dialog_message">As jo alle talen fuortsmite, sil %1$s in part fan de talen nei jo buffer downloade wylst jo oersette.</string>
   <!-- Button text on the dialog used by the translations feature to confirm deleting a language. -->
   <string name="delete_language_file_dialog_positive_button_text">Fuortsmite</string>
   <!-- Button text on the dialog used by the translations feature to cancel deleting a language. -->
@@ -3927,17 +3899,14 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">As der wat op dizze website net wurket, probearje it dan út te skeakeljen.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Ynskeakeljen fan Beskerming tsjin folgjen wurdt oanrekommandearre.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Trackers blokkearre: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Trackers wirde net blokkearre</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Privacyynstellingen</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Tastimmingen</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Befeilige ferbining</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4102,7 +4071,7 @@
   <!-- Option for likert scale -->
   <string name="likert_scale_option_2" tools:ignore="UnusedResources">Tefreden</string>
   <!-- Option for likert scale -->
-  <string name="likert_scale_option_3" tools:ignore="UnusedResources">Gemiddeld</string>
+  <string name="likert_scale_option_3" tools:ignore="UnusedResources">Neutraal</string>
   <!-- Option for likert scale -->
   <string name="likert_scale_option_4" tools:ignore="UnusedResources">Untefreden</string>
   <!-- Option for likert scale -->
@@ -4126,13 +4095,13 @@
   <!-- Text shown in prompt for printing microsurvey. "sec" It's an abbreviation for "second". Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_prompt_printing_title" tools:ignore="BrandUsage,UnusedResources">Help it ôfdrukken yn Firefox better te meitsjen. It duorret mar in amerijke</string>
   <!-- Text shown in prompt for search microsurvey. Note: The word "Firefox" should NOT be translated. -->
-  <string name="microsurvey_prompt_search_title" tools:ignore="BrandUsage,UnusedResources">Help Firefox te ferbetterjen. It duorret mar in minút</string>
+  <string name="microsurvey_prompt_search_title" tools:ignore="BrandUsage,UnusedResources">Help it sykjen yn Firefox te ferbetterjen. It duorret mar in minút</string>
   <!-- Text shown in prompt for sync microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_prompt_sync_title" tools:ignore="BrandUsage,UnusedResources">Help syngronisaasje yn Firefox better te meitsjen. It duorret mar in minút</string>
   <!-- Text shown in the survey title for printing microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_survey_printing_title" tools:ignore="BrandUsage,UnusedResources">Hoe tefreden binne jo mei it ôfdrukken yn Firefox?</string>
   <!-- Text shown in the survey title for homepage microsurvey. Note: The word "Firefox" should NOT be translated. -->
-  <string name="microsurvey_homepage_title" tools:ignore="BrandUsage,UnusedResources">Hoe tefreden binne jo mei jo ûnderfining fan de Firefox-Startside?</string>
+  <string name="microsurvey_homepage_title" tools:ignore="BrandUsage,UnusedResources">Hoe tefreden binne jo mei jo Firefox-Startside?</string>
   <!-- Text shown in the survey title for search experience microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_search_title" tools:ignore="BrandUsage,UnusedResources">Hoe tefreden binne jo mei de sykûnderfining yn Firefox?</string>
   <!-- Text shown in the survey title for sync experience microsurvey. Note: The word "Firefox" should NOT be translated. -->
@@ -4146,7 +4115,7 @@
   -->
   <string name="microsurvey_uninstall_survey_title">Jo kommentaar is wichtich. Wêrom de-ynstallearje jo?</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_1_v2">De browser is stadich en ûnbetrouber</string>
+  <string name="uninstall_survey_option_1_v2">De browser is stadich of ûnbetrouber</string>
   <!-- Uninstall survey answer option -->
   <string name="uninstall_survey_option_2_v2">Websites wurken net goed</string>
   <!-- Uninstall survey answer option -->
@@ -4230,7 +4199,7 @@
     This tool allows temporarily overriding the home region (user's default locale)
     and the current region (device's detected location) for testing purposes.
   -->
-  <string name="debug_drawer_region_tools_title">Regiohelpmiddelen</string>
+  <string name="debug_drawer_region_tools_title">Regio-ark</string>
   <!-- The description of the Region tools in the Debug Drawer -->
   <string name="debug_drawer_regin_tools_description">Oerskriuwt tydlik de wearden foar de thúsregio en de aktuele regio foar testen.</string>
   <!-- The text label for displaying home region. -->
@@ -4266,7 +4235,7 @@
 
     Localisation note: this text should be as short as possible, max 68 chars
   -->
-  <string name="exit_fullscreen_with_back_button_short">Sleep fan de boppekant &amp; druk it gebear werom om ôf te sluten</string>
+  <string name="exit_fullscreen_with_back_button_short">Sleep fan de boppekant &amp; druk op werom om ôf te sluten</string>
   <!--
     Beta Label Component !
 
@@ -4515,6 +4484,8 @@
   <string name="wrex_widget_match_suspended">Underbrutsen</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Utsteld</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Fernije</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Resultaten</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4523,19 +4494,57 @@
   <string name="wrex_widget_wallpapers">Eftergrûnen</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Widget fuortsmite</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">FT</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Skoft</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">BT</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Strafskoppen</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Mear opsjes</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s tsjin %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, livewedstriid</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, live</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Ferrûne tiid yn minuten: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, side %2$d fan %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">It liket derop dat jo offline binne</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Kontrolearje jo ynternetferbining en probearje it opnij.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Kin op dit stuit gjin wedstriidynformaasje toane</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Probeaje te ferfarskjen of kontrolearje letter wer.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Kin op dit stuit gjin resultaten toane</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Team noch te bepalen</string>
   <!--
     Privacy notice homepage banner
 
@@ -4664,12 +4673,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">In ûndertekening tafoegje</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">PDF ûndertekenje</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF downloade</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

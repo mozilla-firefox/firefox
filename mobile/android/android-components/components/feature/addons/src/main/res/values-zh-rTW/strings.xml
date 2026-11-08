@@ -305,8 +305,22 @@
   <string name="mozac_feature_addons_install_addon_content_description_2">安裝 %1$s</string>
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">取消</string>
+  <!-- In list of installed extensions: displayed when the update for an extension requires changes to its permission settings. %1$s is the extension name. -->
+  <string name="mozac_feature_addons_update_requires_new_settings">%1$s 必須要求新權限才能更新。</string>
+  <!-- In extension details screen: Banner message displayed when the update for the extension requires changes to its permission settings. -->
+  <string name="mozac_feature_addons_update_requires_new_settings_this_extension">此擴充套件必須要求新權限才能更新。</string>
+  <!-- In list of installed extensions and extension details screens: Banner button displayed when the update for the extension requires changes to its permission settings. Clicking it opens an update confirmation dialog listing the required changes. -->
+  <string name="mozac_feature_addons_update_review_changes_button">確認變更</string>
+  <!-- Title of confirmation dialog for updating an extension that needs new permissions. %1$s is the name of the extension. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_title">%1$s 必須要求新權限才能更新</string>
+  <!-- Message below the title of the confirmation dialog for updating an extension that needs new permissions. The words "Cancel" and "update" should match the translations used in mozac_feature_addons_updater_permissions_dialog_cancel_button and mozac_feature_addons_updater_permissions_dialog_update_button. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_description">現在取消可維持目前的版本與設定，或更新以接受必要變更，並安裝最新版本。</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_update_button">更新</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_cancel_button">取消</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
-  <string name="mozac_feature_addons_user_rating_count_2">評價: %1$s</string>
+  <string name="mozac_feature_addons_user_rating_count_2">評價：%1$s</string>
   <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->
   <string name="mozac_feature_addons_rating_content_description_2">評分：%1$.02f 分，滿分 5 分</string>
   <!-- This is the title of page where all the add-ons are listed -->
@@ -404,9 +418,9 @@
   <!-- Text shown in a dialog that displays information about the last attempt to update an add-on. This is the title of the dialog. -->
   <string name="mozac_feature_addons_updater_dialog_title">更新資訊</string>
   <!-- Label in the dialog displaying information for the last attempt to update add-ons. It's followed by the date of the last attempt. -->
-  <string name="mozac_feature_addons_updater_dialog_last_attempt">上次嘗試:</string>
+  <string name="mozac_feature_addons_updater_dialog_last_attempt">上次嘗試：</string>
   <!-- Displayed in the "Status" field for the updater when an add-on has been correctly updated -->
-  <string name="mozac_feature_addons_updater_dialog_status">狀態:</string>
+  <string name="mozac_feature_addons_updater_dialog_status">狀態：</string>
   <!-- Text shown in the dialog when add-on installation is completed. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_installed_dialog_title_2">已安裝 %1$s</string>
   <!-- Used as text for the link in the description of the post-installation dialog. -->

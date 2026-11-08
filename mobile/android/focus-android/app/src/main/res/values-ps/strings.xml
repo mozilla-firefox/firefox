@@ -274,8 +274,6 @@
   <string name="preference_exceptions_menu_remove">لیرې کول</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">ټولې وېبپاڼې لرې کول</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">کوکيز باندې بنديز لګول</string>
   <!-- Category of trackers (content) that can be blocked by Enhanced Tracking Protection. -->
   <string name="content">منځپانګه</string>
   <!-- Category of trackers (analytics) that can be blocked by Enhanced Tracking Protection. -->

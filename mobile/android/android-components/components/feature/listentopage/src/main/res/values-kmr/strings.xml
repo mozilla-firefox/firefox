@@ -23,6 +23,8 @@
     <item quantity="one">Çirkeyek pêşve</item>
     <item quantity="other">%1$d çirke pêşve</item>
   </plurals>
+  <!-- Listen to Page media player: screen reader value of the playback position slider, such as "3:34 of 6:00". %1$s is the elapsed time and %2$s is the total duration. -->
+  <string name="mozac_feature_listentopage_seek_state">%1$s ji %2$s</string>
   <!-- Content description of the playback control notification, when the playback is set to 0.25 times the normal reading speed. -->
   <string name="mozac_feature_listentopage_notification_playback_speed_0_25">Leza lêdanê ji sedî 75 hêdîtir</string>
   <!-- Content description of the playback control notification, when the playback is set to 0.5 times (half) the normal reading speed. -->
@@ -45,8 +47,16 @@
   <string name="mozac_feature_listentopage_error_could_not_finish_playing_audio">Lêdana audio nehat qedandin. Dîsa biceribîne.</string>
   <!-- Error text shown on the Listen to Page media player when no voice options are available to play the audio. -->
   <string name="mozac_feature_listentopage_error_voice_options_not_available">Vebijarkên dengî ne berdest in</string>
+  <!-- Title of the Listen to page lock-screen notification: displayed instead of the page title, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_title">Hilpekîna nepen</string>
+  <!-- Message of the Listen to page lock-screen notification: displayed instead of the page URL, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_site">Malper veşartî ye</string>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">Bigire</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_voice_options">Vebijarkên Dengî</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of playback speeds. -->
+  <string name="mozac_feature_listentopage_playback_speed">Leza Lêdanê</string>
   <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
   <string name="mozac_feature_listentopage_audio">Deng</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->

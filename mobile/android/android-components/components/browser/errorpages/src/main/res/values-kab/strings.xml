@@ -9,6 +9,8 @@
 <resources>
   <!-- The button that appears at the bottom of an error page. -->
   <string name="mozac_browser_errorpages_page_refresh">Ɛreḍ tikkelt-nniḍen</string>
+  <!-- A link, shown after the archive service could not be reached, that retries the lookup. -->
+  <string name="mozac_browser_errorpages_archive_retry">Ɛreḍ tikket niḍen.</string>
   <!-- The document title and heading of an error page shown when a website cannot be loaded for an unknown reason. -->
   <string name="mozac_browser_errorpages_generic_title">Tuttra ur tezmir ad temmed</string>
   <!-- The error message shown when a website cannot be loaded for an unknown reason. -->
@@ -135,6 +137,8 @@
   <string name="mozac_browser_errorpages_safe_phishing_uri_title">Ugur n usmel n ukellex</string>
   <!-- The %1$s will be replaced by the malicious website URL -->
   <string name="mozac_browser_errorpages_safe_phishing_uri_message"><![CDATA[<p>Asmel web illan deg tansa %1$s ittwammel d akken d asmel n ukellex. Ihi ittusewḥel akken llan ismenyifen-inek n tɣellist.</p>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_harmful_addon_uri_title">Asmel yettusewḥ i tɣellist-ik</string>
   <!-- The title of the error page for websites that do not support HTTPS when HTTPS-Only is turned on -->
   <string name="mozac_browser_errorpages_httpsonly_title">Ulac taɣellist n usmel</string>
   <!-- The text of the error page for websites that do not support HTTPS when HTTPS-Only is turned on. %1$s will be replaced with the URL of the website. -->

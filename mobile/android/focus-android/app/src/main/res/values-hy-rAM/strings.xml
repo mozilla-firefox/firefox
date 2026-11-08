@@ -262,14 +262,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Կայել որպես սկզբնադիր դիտարկիչ</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Բաց թողնել</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Հզորացրեք ձեր գաղտնիությունը</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Ձեր որոնումը, ձեր ընտրությունը</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Հավելել դյուրանցումները տուն էկրանին:</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Գայղտնիությունը դարձրեք սովորույթ</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Ավելացնել</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

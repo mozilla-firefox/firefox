@@ -22,7 +22,7 @@
   -->
   <string name="hiscore">REKORD: %1$d</string>
   <string name="sound_on">🔈 zvok vključen</string>
-  <string name="sound_off">🔈 zvok izključen</string>
+  <string name="sound_off">🔇 zvok izključen</string>
   <!-- Back button -->
   <string name="back">nazaj</string>
   <!-- Share hiscore action label. hiscore is an abbreviation for "Highest Score" -->

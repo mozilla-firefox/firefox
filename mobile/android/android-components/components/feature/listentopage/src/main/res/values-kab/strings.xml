@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- Playback speed menu item, such as "1.5×". %1$s is the multiplier already formatted with the decimal separator of the locale. -->
+  <string name="mozac_feature_listentopage_playback_speed_option">%1$s×</string>
+  <!-- Playback speed menu item for the normal reading speed, which is also the default speed. "1×" means one times the normal speed. -->
+  <string name="mozac_feature_listentopage_playback_speed_option_default">1× (Amezwer)</string>
+</resources>

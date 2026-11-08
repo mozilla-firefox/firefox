@@ -306,6 +306,20 @@
   <string name="mozac_feature_addons_install_addon_content_description_2">Installer %1$s</string>
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">Annuller</string>
+  <!-- In list of installed extensions: displayed when the update for an extension requires changes to its permission settings. %1$s is the extension name. -->
+  <string name="mozac_feature_addons_update_requires_new_settings">%1$s kræver nye indstillinger for at kunne blive opdateret.</string>
+  <!-- In extension details screen: Banner message displayed when the update for the extension requires changes to its permission settings. -->
+  <string name="mozac_feature_addons_update_requires_new_settings_this_extension">Denne udvidelse kræver nye indstillinger for at kunne blive opdateret.</string>
+  <!-- In list of installed extensions and extension details screens: Banner button displayed when the update for the extension requires changes to its permission settings. Clicking it opens an update confirmation dialog listing the required changes. -->
+  <string name="mozac_feature_addons_update_review_changes_button">Gennemgå ændringer</string>
+  <!-- Title of confirmation dialog for updating an extension that needs new permissions. %1$s is the name of the extension. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_title">%1$s kræver nye indstillinger for at kunne blive opdateret</string>
+  <!-- Message below the title of the confirmation dialog for updating an extension that needs new permissions. The words "Cancel" and "update" should match the translations used in mozac_feature_addons_updater_permissions_dialog_cancel_button and mozac_feature_addons_updater_permissions_dialog_update_button. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_description">Annuller for at beholde den nuværende version og dine nuværende indstillinger, eller opdater for at få den nye version og godkende ændringerne.</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_update_button">Opdater</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_cancel_button">Annuller</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
   <string name="mozac_feature_addons_user_rating_count_2">Anmeldelser: %1$s</string>
   <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->

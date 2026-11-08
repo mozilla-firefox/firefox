@@ -355,14 +355,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Tyika Tana ña nduku xina</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Kanta</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Saa kanu ña sèè</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Nduku ña kunu, nixi kunu</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Chikaa nixi kitsau nu pantalla xinaa</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Ka\'un ña see</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Chikaa</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -487,8 +479,6 @@
   <string name="preference_exceptions_menu_remove">Xitaá</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Atoo ntii pagina web</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Kasi cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Kue ku nuna xikua yoo</string>
   <!-- Subtitle for the tab crash report screen -->

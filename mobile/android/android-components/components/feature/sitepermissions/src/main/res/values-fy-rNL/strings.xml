@@ -8,7 +8,7 @@
 
 <resources>
   <!-- Title of a dialog for a notification permission request. %1$s is the domain name of the website. -->
-  <string name="mozac_feature_sitepermissions_notification_title">%1$s tastean om meldingen te ferstjoeren?</string>
+  <string name="mozac_feature_sitepermissions_notification_title">%1$s tastean om notifikaasjes te ferstjoeren?</string>
   <!-- Title of a dialog for a camera permission request. %1$s is the domain name of the website. -->
   <string name="mozac_feature_sitepermissions_camera_title">%1$s tastean om jo kamera te brûken?</string>
   <!-- Title of a dialog for a microphone permission request. %1$s is the domain name of the website. -->

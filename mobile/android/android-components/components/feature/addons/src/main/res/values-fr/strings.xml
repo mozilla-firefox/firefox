@@ -91,7 +91,7 @@
   <!-- Description for the "userScripts" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_user_scripts_description">Autoriser les scripts tiers non vérifiés à accéder à vos données</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_devtools_description">Ouvrir les outils de développement afin d’accéder à vos données dans les onglets ouverts</string>
+  <string name="mozac_feature_addons_permissions_devtools_description">Permettre aux outils de développement d’accéder à vos données dans les onglets ouverts</string>
   <!-- Description for the "privacy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_privacy_description_for_update">Consulter et modifier les paramètres de vie privée.</string>
   <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
@@ -145,7 +145,7 @@
   <!-- Description for the "userScripts" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_user_scripts_description_for_update">Autoriser les scripts tiers non vérifiés à accéder à vos données.</string>
   <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Ouvrir les outils de développement afin d’accéder à vos données dans les onglets ouverts.</string>
+  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Permettre aux outils de développement d’accéder à vos données dans les onglets ouverts</string>
   <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
   <string name="mozac_feature_addons_permissions_one_site_description_for_update">Accéder à vos données pour %1$s.</string>
   <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->

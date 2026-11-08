@@ -210,14 +210,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Jist\'araña</string>
   <string name="error_hostLookup_title">Tunux janiw katutakiti</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">jumankirikis uk ch\'amañcham</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Thaqhatam ukhamark jumankiri</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Jank\'ak mantañanak uka mantañawjar ucht\'asim.</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Uka jumatakikis ukx sapakut ucht\'asim</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Yapt\'aña</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

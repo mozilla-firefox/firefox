@@ -21,8 +21,6 @@
   <string name="search_hint">ಹುಡುಕಿ ಅಥವಾ ವಿಳಾಸವನ್ನು ನಮೂದಿಸಿ</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s ಅನ್ನು ಮೊಜಿಲ್ಲಾ ಉತ್ಪಾದಿಸುತ್ತದೆ.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">ಖಾಸಗಿ ಬ್ರೌಸಿಂಗ್ ಬಗ್ಗೆ ಸಾಮಾನ್ಯ ಪುರಾಣಗಳು</string>
   <!--
     Home screen icons - Long press shortcuts
 
@@ -99,12 +97,6 @@
   <string name="search_widget_text_long">ಅಂತರ್ಜಾಲವನ್ನು ಹುಡುಕಿ</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">ಧ್ವನಿ ಹುಡುಕಾಟ</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">ಸಿದ್ಧತೆಗಳು</string>
   <!--
     Preferences
 
@@ -294,8 +286,6 @@
   <string name="close_tab_title">ಹಾಳೆಗಳನ್ನು ಮುಚ್ಚು %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">ಟ್ಯಾಬ್‌ಗಳ ಮೆನು ತೆರೆಯಿರಿ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">ಸಂಗ್ರಹಣೆಗೆ ಟ್ಯಾಬ್‌ಗಳನ್ನು ಉಳಿಸಿ</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">ಸಂಗ್ರಹಣೆಯನ್ನು ಅಳಿಸಿ</string>
   <!-- Text for the menu button to rename a collection -->
@@ -521,8 +511,6 @@
   <string name="qr_scanner_dialog_positive">ಅನುಮತಿಸು</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">ನಿರಾಕರಿಸು</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s ಅನ್ನು ಅಳಿಸಲು ನೀವು ಖಚಿತವಾಗಿ ಬಯಸುವಿರಾ?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">ಇದು ಮಾದರಿ ಪಠ್ಯ. ಈ ಸೆಟ್ಟಿಂಗ್‌ನೊಂದಿಗೆ ನೀವು ಗಾತ್ರವನ್ನು ಹೆಚ್ಚಿಸಿದಾಗ ಅಥವಾ ಕಡಿಮೆಗೊಳಿಸಿದಾಗ ಪಠ್ಯ ಹೇಗೆ ಕಾಣಿಸುತ್ತದೆ ಎಂಬುದನ್ನು ತೋರಿಸಲು ಇಲ್ಲಿದೆ.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -792,8 +780,6 @@
   <string name="confirm_clear_permission_site">ಈ ಸೈಟ್‌ಗಾಗಿ ಈ ಅನುಮತಿಯನ್ನು ತೆರವುಗೊಳಿಸಲು ನೀವು ಬಯಸುತ್ತೀರಾ?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">ಸೈಟ್ ವಿನಾಯಿತಿಗಳಿಲ್ಲ</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">ಅಳಿಸು</string>
   <!-- Voice search button content description -->
   <string name="voice_search_content_description">ಧ್ವನಿ ಹುಡುಕಾಟ</string>
   <!-- Voice search prompt description displayed after the user presses the voice search button -->

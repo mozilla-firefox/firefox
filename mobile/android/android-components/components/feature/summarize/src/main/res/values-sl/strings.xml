@@ -80,7 +80,7 @@
   <!-- Label for the shake sensitivity slider in settings -->
   <string name="mozac_summarize_settings_shake_sensitivity">Občutljivost na stresanje</string>
   <!-- Description for the shake sensitivity slider in settings -->
-  <string name="mozac_summarize_settings_shake_sensitivity_description">Prilagodite, kako močno morate stresati, za povzetek.</string>
+  <string name="mozac_summarize_settings_shake_sensitivity_description">Prilagodite, kako močno morate stresati za povzetek.</string>
   <!-- Low option label for the shake sensitivity slider in settings -->
   <string name="mozac_summarize_settings_shake_sensitivity_low">Nizka</string>
   <!-- Medium option label for the shake sensitivity slider in settings -->

@@ -69,8 +69,6 @@
   <string name="home_bookmarks_menu_item_remove">لېرې کړئ</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s د موزیلا لخوا تولید شوی.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">د شخصي پلټنې په اړه عامې افسانې</string>
   <!--
     Private Browsing
 

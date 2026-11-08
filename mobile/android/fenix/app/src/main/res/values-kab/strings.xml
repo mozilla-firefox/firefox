@@ -67,8 +67,6 @@
   <string name="home_bookmarks_menu_item_remove">Kkes</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s d afares n Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Tiktiwin tigejdanin yuzzlen ur nṣeḥḥi ara</string>
   <!--
     Private Browsing
 
@@ -247,8 +245,6 @@
   <string name="browser_menu_sign_back_in_to_sync">Ales qqen i wakken ad tesnekreḍ amtawi</string>
   <!-- Browser menu caption label for the "Sign back in to sync" browser menu item described in `browser_menu_sign_back_in_to_sync` when there is an error in syncing -->
   <string name="browser_menu_syncing_paused_caption">Amtawa yeḥbes</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Iccer uslig amaynut</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Awalen uffiren</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -382,18 +378,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Immed</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Anṣuf ar Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">S ukemmel, ad tqebleḍ %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Tiwtiln n useqdec n Fiefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox terḥa-t tudert-ik tabaḍnit. Issin ugar deg %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Tasertit n tbaḍnit</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Akken ad tεawneḍ deg usnerni iminig, Firefox ad yazen isefka n tawassna akked umyigew ɣer Mozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Sefrek</string>
   <!--
     Terms of use (ToU) first body text. %1$s is replaced by an active link,
     using onboarding_redesign_tou_body_one_link_text as text (“Firefox Terms of Use”).
@@ -455,12 +439,6 @@
   <string name="search_widget_text_long">Nadi di web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Anadi aɣectan</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Iɣewwaṛen</string>
   <!--
     Preferences
 
@@ -1159,8 +1137,6 @@
   <string name="close_tab_title">Mdel iccer %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Ldi umuɣ n yiccaren</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Sekles iccaren ɣer tegrumma</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Kkes tagrumma</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1346,8 +1322,6 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">Ma ulac aɣilif, sekcem URL ameɣtu</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Sefsex</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">Aneqqis yettwazen</string>
   <!--
@@ -1749,8 +1723,6 @@
   <string name="qr_scanner_dialog_invalid">Tansa n web d tarameɣtut.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">IH</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Tebɣiḍ ad tekseḍ %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Aḍris-a d amedya. akken ad tezṛeḍ amek ara d-iban u dris mi ara ad tesneɣseḍ neɣ ad ternuḍ tuɣzi deg iɣewwaṛen.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -2397,10 +2369,6 @@
   <string name="browser_menu_remove_from_shortcuts">Kkes seg yinegzumen</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">D tidet tebɣiḍ ad tekkseḍ awal-a n uεeddi?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Kkes</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Sefsex</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Ẓreg awal uffir</string>
   <!-- The page title for adding new password. -->
@@ -2831,11 +2799,6 @@
   <string name="protection_panel_etp_toggle_off">Yensa</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is enabled. -->
   <string name="protection_panel_etp_toggle_enabled_description_2">Ma yella wayen ur nteddu ara ɣef usmel-a, εreḍ ad tsenseḍ tamahilt-a.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Ineḍfaren ttusweḥlen: %d</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Iɣewwaren n tbaḍnit</string>
   <!-- Title text for the protection panel permissions section. -->

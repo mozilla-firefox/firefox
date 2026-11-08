@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Supprimer</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s est développé par Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Idées reçues sur la navigation privée</string>
   <!--
     Private Browsing
 
@@ -216,9 +214,9 @@
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Essayer une extension recommandée</string>
   <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
-  <string name="browser_menu_extensions_review_update_description">Mise à jour pour %1$s</string>
+  <string name="browser_menu_extensions_review_update_description">Passer en revue la mise à jour de %1$s</string>
   <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
-  <string name="browser_menu_extension_review_update_description">Vérifier les paramètres à mettre à jour</string>
+  <string name="browser_menu_extension_review_update_description">Voir les paramètres à mettre à jour</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Informations du compte</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -273,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">Synchronisation mise en pause</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Gérez ce que vous sauvegardez et synchronisez</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Nouvel onglet privé</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Mots de passe</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -391,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Recherche vocale</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">L’audio est converti en texte par Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Écouter la page</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Votre appareil peut utiliser l’IA pour lire la page à voix haute. Le texte et l’audio restent confidentiels.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Bloquer les améliorations ayant recours à l’IA\u00a0?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -482,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Terminé</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Bienvenue dans Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">En continuant, vous acceptez les %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Conditions d’utilisation de Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox se soucie de votre vie privée. Pour en savoir plus, consultez notre %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">politique de confidentialité</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Pour aider à l’amélioration du navigateur, Firefox envoie des données de diagnostic et d’interaction à Mozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Gérer</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Lancez le navigateur Android ultime</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -596,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Nous protégeons vos données et empêchons automatiquement les entreprises d’espionner vos clics.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Définir comme navigateur par défaut</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Choisissez votre barre d’adresse</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">En haut</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">En bas</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Choisissez un thème</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Automatique</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Clair</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Sombre</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Reprenez instantanément là où vous en étiez</string>
   <!-- Sync onboarding subtitle. -->
@@ -674,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Découvrez les dernières fonctionnalités de protection de la vie privée de Firefox pour savoir comment vous protéger.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Activer les notifications</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Rendez chaque recherche plus privée</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Lancez chaque recherche depuis l’écran d’accueil de votre téléphone et bénéficiez des protections automatiques de Firefox.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Ajouter le widget Firefox</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Simple à personnaliser et toujours plus privé à chaque interaction</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -728,12 +696,6 @@
   <!--
     Preferences
 
-    Title for the settings page
-  -->
-  <string name="settings">Paramètres</string>
-  <!--
-    Preferences
-
     Preference category for general settings
   -->
   <string name="preferences_category_general">Général</string>
@@ -757,6 +719,8 @@
   <string name="preferences_search">Recherche</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Moteurs de recherche</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Ajouter le widget de recherche à l’écran d’accueil</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Widget sur l’écran d’accueil</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -1009,6 +973,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Collection d’extensions modifiée. Fermeture de l’application pour appliquer les modifications…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Supprimer %1$s\u00a0?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">L’extension et ses paramètres seront supprimés de cet appareil.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Supprimer</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Annuler</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1173,6 +1149,12 @@
   <string name="preferences_sync_category">Choisir les informations à synchroniser</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Données synchronisées</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Synchroniser cet appareil</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Vos données sont sauvegardées et accessibles sur vos appareils synchronisés.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Utilisation des données enregistrées dans votre compte %1$s.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Gérer les données à synchroniser sur tous vos appareils connectés</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1628,8 +1610,6 @@
   <string name="open_tabs_menu">Ouvrir le menu des onglets</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Revenir au gestionnaire d’onglets</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Enregistrer les onglets dans une collection</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Supprimer la collection</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2028,8 +2008,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Décrivez le problème en détail pour nous aider à enquêter sur le problème</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Décrivez le problème en détail pour nous aider à enquêter dessus (facultatif)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Annuler</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Envoyer le signalement</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2445,7 +2423,7 @@
   <!-- Confirmation dialog button -->
   <string name="sync_confirmation_button">J’ai compris</string>
   <!-- Share error message -->
-  <string name="share_error_snackbar">Impossible de partager cette application</string>
+  <string name="share_error_snackbar">Impossible de partager avec cette application</string>
   <!-- Add new device screen title -->
   <string name="sync_add_new_device_title">Envoyer à un appareil</string>
   <!-- Text for the warning message on the Add new device screen -->
@@ -2551,8 +2529,6 @@
   <string name="qr_scanner_dialog_invalid">Adresse web non valide.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">OK</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Voulez-vous vraiment supprimer %1$s ?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Ceci est un exemple de texte. Il vous montre comment le texte apparaîtra lorsque vous augmentez ou diminuez sa taille avec ce paramètre.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3438,10 +3414,6 @@
   <string name="browser_menu_remove_from_shortcuts">Supprimer des raccourcis</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Voulez-vous vraiment supprimer ce mot de passe ?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Supprimer</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Annuler</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Modifier le mot de passe</string>
   <!-- The page title for adding new password. -->
@@ -3675,7 +3647,7 @@
   <!-- Button text on the translations dialog to begin a translation of the website. -->
   <string name="translations_bottom_sheet_positive_button">Traduire</string>
   <!-- Button text on the translations dialog when a translation error appears. -->
-  <string name="translations_bottom_sheet_positive_button_error">Veuillez réessayer</string>
+  <string name="translations_bottom_sheet_positive_button_error">Réessayer</string>
   <!-- Inactive button text on the translations dialog that indicates a translation is currently in progress. This button will be accompanied by a loading icon. -->
   <string name="translations_bottom_sheet_translating_in_progress">Traduction</string>
   <!-- Button content description (not visible, for screen readers etc.) for the translations dialog translate button that indicates a translation is currently in progress. -->
@@ -3927,17 +3899,14 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Si quelque chose semble ne pas fonctionner sur ce site, tentez de désactiver cette fonctionnalité.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Il est recommandé d’activer la protection contre le pistage.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Traqueurs bloqués\u00a0: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Les traqueurs ne sont pas bloqués</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Paramètres de vie privée</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Autorisations</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Connexion sécurisée</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4515,6 +4484,8 @@
   <string name="wrex_widget_match_suspended">Suspendu</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Reporté</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Actualiser</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Résultats</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4523,19 +4494,57 @@
   <string name="wrex_widget_wallpapers">Fonds d’écran</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Supprimer le widget</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Terminé</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Mi-temps</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Prolongations</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Tirs au but</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Options supplémentaires</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s contre %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, match en direct</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, en direct</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Temps écoulé en minutes\u00a0: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, page %2$d sur %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">On dirait que vous êtes hors connexion</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Vérifiez votre connexion Internet puis réessayez.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Les informations du match ne sont pas disponibles pour le moment</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Actualisez la page ou réessayez plus tard.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Impossible d’afficher les résultats pour l’instant</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Équipe non encore déterminée</string>
   <!--
     Privacy notice homepage banner
 
@@ -4664,12 +4673,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Ajouter une signature</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">Signer le PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Télécharger le PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

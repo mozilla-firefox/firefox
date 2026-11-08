@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Հեռացնել</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s-ը մշակված է Mozilla-ի կողմից:</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Տարածված առասպելներ գաղտնի դիտարկման վերաբերյալ</string>
   <!--
     Private Browsing
 
@@ -215,6 +213,10 @@
   <string name="browser_menu_no_extensions_installed_description">Ընդլայնումները միացված չեն</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Փորձեք խորհուրդ տրվող ընդլայնումը</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">Վերանայեք %1$s-ի թարմացումը</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Վերանայեք կարգավորումները՝ թարմացնելու համար</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Հաշվի տվյալներ</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -269,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">Համաժամեցումը կանգնեցվեց</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Կառավարեք պահուստավորումը և համաժամեցումը</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Նոր գաղտնի ներդիր</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Գաղտնաբառեր</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -387,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Ձայնային որոնում</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Ձայնը տեքստի է վերածվում Google Speech Services-ի կողմից։</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Լսել էջը</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Ձեր սարքը կարող է օգտագործել արհեստական բանականություն՝ բարձրաձայն կարդալու համար։ Տեքստն ու աուդիոն մնում են գաղտնի։</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Արգելափակե՞լ ԱԲ բարելավումները։</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -478,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Պատրաստ է</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Բարի գալուստ Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Շարունակելով՝ դուք համաձայնում եք %1$s-ին:</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox-ի օգտագործման պայմաններ</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox-ը հոգ է տանում ձեր գաղտնիության մասին: Կարդացեք ավելին մեր %1$s-ում:</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Գաղտնիության ծանուցում</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Դիտարկիչը բարելավելու համար Firefox-ն ախտորոշիչ և փոխազդեցության տվյալներ է ուղարկում Mozilla-ին: %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Կառավարել</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Գործարկեք Android-ի լավագույն դիտարկիչը</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -592,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Մենք պաշտպանում ենք ձեր տվյալները և ավտոմատ կերպով արգելափակում ենք ընկերությունների կողմից ձեր սեղմումների լրտեսումը։</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Սահմանել որպես սկզբնադիր դիտարկիչ</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Ընտրեք ձեր հասցեագոտին</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Վերև</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">ներքև</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Ընտրեք ձեր ձևավորումը</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Ինքնաշխատ</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Լուսավոր</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Մութ</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Անմիջապես շարունակեք այնտեղից, որտեղ կանգ եք առել</string>
   <!-- Sync onboarding subtitle. -->
@@ -670,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Բացահայտեք Firefox-ի գաղտնիության վերջին հնարավորությունները, որպեսզի միշտ տեղեկացված լինեք, թե ինչպես պաշտպանված մնալ։</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Միացնել ծանուցումները</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Դարձրեք յուրաքանչյուր որոնում ավելի անձնական</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Սկսեք յուրաքանչյուր որոնում ձեր հեռախոսի գլխավոր էկրանից և իմացեք, որ Firefox-ի ավտոմատ պաշտպանությունները ձեզ կօգնեն։</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Ավելացնել Firefox-ի վիջեթը</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Հեշտ է հարմարեցնել և ավելի գաղտնի է ամեն հպումով</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -721,12 +693,6 @@
   <string name="search_bar_with_lens_widget_description">Որոնման գոտի՝ պատկերի, գաղտնի և ձայնային որոնմամբ</string>
   <!-- Widget description in the widget picker screen for the compact search bar widget -->
   <string name="compact_search_bar_widget_description">Կոմպակտ որոնման գոտի</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Կարգավորումներ</string>
   <!--
     Preferences
 
@@ -842,6 +808,8 @@
   <string name="preferences_toolbar_select_shortcut">Ընտրեք դյուրացնում</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Խմբագրել դյուրանցումը</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Ցանկ</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Ժեստեր</string>
   <!-- Preference for settings related to visual options -->
@@ -1002,6 +970,18 @@
   <string name="customize_addon_collection_user_hint">Հավաքածուի սեփականատեր (օգտվողի ID)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Հավելվածների հավաքածուն փոփոխվել է: Հավելվածը փակելիս փոփոխությունները կգործադրվեն…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Հեռացնե՞լ %1$s-ը։</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Սա կհեռացնի ընդլայնումը և դրա կարգավորումները այս սարքից։</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Հեռացնել</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Չեղարկել</string>
   <!--
     Customize Home
 
@@ -1167,6 +1147,12 @@
   <string name="preferences_sync_category">Ընտրեք, թե ինչը համաժամեցնել</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Համաժամեցված տվյալներ</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Համաժամեցնել այս սարքը</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Ձեր տվյալները պահուստավորված են և հասանելի են համաժամեցված սարքերում։</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Օգտագործվում են ձեր %1$s հաշվի պահպանված տվյալները։</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Կառավարեք թե ինչ է համաժամեցվում ձեր բոլոր միացված սարքերում</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1306,6 +1292,12 @@
   <string name="preference_simple_toolbar">Պարզ</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Ընդարձակված</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Գլխավոր էջի որոնման տեղադրություն</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">Մեջտեղում</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Վերևում</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Բացել նոր ներդիր</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1616,8 +1608,6 @@
   <string name="open_tabs_menu">Բացել ներդիրների ցանկը</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Վերադառնալ ներդիրների կառավարիչ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Պահել ներդիրները հավաքածուում</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Ջնջել հավաքածուն</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2016,8 +2006,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Մանրամասն նկարագրեք խնդիրը, որպեսզի մենք կարողանանք այն ուսումնասիրել</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Մանրամասն նկարագրեք խնդիրը, որպեսզի մենք կարողանանք այն ուսումնասիրել (լրացուցիչ):</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Չեղարկել</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Ուղարկել զեկույց</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2539,8 +2527,6 @@
   <string name="qr_scanner_dialog_invalid">Հասցեն վավեր չէ:</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">Լավ</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Համոզվա՞ծ եք, որ ցանկանում եք ջնջել %1$s-ը։</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Սա ընտրանքային գրվածք է: Այստեղ ցույց է տրված, թե ինչպես կցուցադրվի այն, երբ մեծացնեք կամ փոքրացնեք չափը այս կարգավորումով:</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3276,6 +3262,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">Տեղակայել հիմա</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Ավելի ուշ</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Անվտանգ դարձրեք ձեր զգայուն տվյալները</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Սահմանեք սարքի կողպման նախշ, PIN կոդ կամ գաղտնաբառ՝ ձեր պահպանված զգայուն տվյալներին մուտք գործելուց պաշտպանելու համար, եթե ձեր մեքենան վարում է ուրիշ մեկը։</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Տեղակայել հիմա</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Չեղարկել</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Ապակողպեք ձեր սարքը</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3418,10 +3412,6 @@
   <string name="browser_menu_remove_from_shortcuts">Հանել դյուրանցումներից</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Համոզվա՞ծ եք, որ ցանկանում եք ջնջել այս գաղտնաբառը:</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Ջնջել</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Չեղարկել</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Խմբագրել գաղտնաբառը</string>
   <!-- The page title for adding new password. -->
@@ -3907,17 +3897,14 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Եթե այս կայքում ինչ-որ բան վնասված է, փորձեք անջատել այն:</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Խորհուրդ է տրվում միացնել հետագծման պաշտպանությունը։</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Հետագծողներ են արգելափակված՝ %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Հետագծիչներն արգելափակված չեն</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Գաղտնիության կարգավորումներ</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Թույլտվություններ</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Անվտանգ կապակցում</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4484,6 +4471,79 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">այստեղ</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">ՈՒՂԻՂ</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">Ուշացում</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">Կասեցված</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">Հետաձգված</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Թարմացնել</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Արդյունքներ</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Աղյուսակ</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Պաստառներ</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Հեռացնել վիջեթը</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">FT</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Խաղակես</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">ET</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">11 մետրանոցներ</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Լրացուցիչ ընտրանքներ</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s-ն ընդդեմ %2$s, %3$s</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, ուղիղ եթեր</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, ուղիղ եթեր</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Անցած ժամանակը րոպեներով՝ %1$s</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, էջ %2$d՝ %3$d-ից</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Կարծես թե դուք անցանց եք</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Ստուգեք Ձեր համացանցային կապը և փորձեք կրկին:</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Այս պահին հնարավոր չէ ցուցադրել խաղի մասին տեղեկությունները</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Փորձեք թարմացնել կամ ստուգեք ավելի ուշ։</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Այս պահին հնարավոր չէ ցուցադրել արդյունքները</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Թիմը կորոշվի</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4543,6 +4603,8 @@
   <string name="lens_camera_loading_status">Սա փնտրում եմ</string>
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Չեղարկել</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">Չհաջողվեց բեռնել այս պատկերը։</string>
   <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed">Չհաջողվեց բեռնել այս պատկերը։ Փորձեք մեկ այլը։</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
@@ -4609,12 +4671,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Ավելացնել ստորագրություն</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">Ստորագրել PDF-ը</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Ներբեռնել PDF-ը</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">پاک کردن</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s و دست مۊزیلا وورکل وابیڌه.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">باورا اشتوا من زایار زبار گشتن سیخومی</string>
   <!--
     Private Browsing
 
@@ -269,8 +267,6 @@
   <string name="browser_menu_syncing_paused_caption">هوم گوم کردن واستاڌه</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">دؽوۉداری اۊ چیه ک لادراری اگیری وو هوم گوم اکۊنی</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">بلگه سیخومی نۊ</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">رزما</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -478,18 +474,6 @@
   <string name="onboarding_preferences_dialog_positive_button">ٱنجوم وابی</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">و Firefox خش ٱوۊڌین</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">وا رئڌن وا پؽش، ایسا %1$s ن قوۊل اکۊنین.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">شرتا و کار گرؽڌن Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox و هریم سیخومی ایسا ٱهمیت اده. قلوه زس من %1$s دووسته بۊین.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">نوکات زفت مهرمووه ای</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">سی هیاری و بؽڌر وابیڌن گشت گر، Firefox داده یل تشخیسی وو تعامولا ن و Mozilla افشنه. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">دؽوۉداری</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">گشت گر دیندایی ٱندروید ن ر ونین</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -592,20 +576,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">ایما داده یل ایسا ن زفت اکۊنیم وو و جۊر خوتکار جلاو جاسۊسی شرکتا ز کلیک کردنا ایسا ن اگیریم.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">سامووݩ و عونوان گشت گر پؽش فرز</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">پسند نوار نشۊوی خوتووݩ</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">روء</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">بلم</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">پسند زمینه خوتووݩ</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">خوتکار</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">رۊشن</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">تاریک</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">زیتر ز جایی ک واستاڌین ریوین وا پؽش</string>
   <!-- Sync onboarding subtitle. -->
@@ -670,12 +640,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">نۊ ترین ویژیی یل هریم سیخومی من Firefox ن بجۊرین تا هی زبار بارتا زفت وابیڌن خوتووݩ ورۊ مهنین.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">رۊشن کردن وارسۊویا</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">هر پیتینیڌن ن سیخومی تر کۊنین</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">هر پیتینیڌنی ک ز بلگه هووه ای تیلیفووݩ خوتووݩ بنین پاس، دووسته بۊین زفت وابیڌنا خوتکار Firefox لادرار وو ویردار ایسا هڌن.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">ٱووردن ویجت Firefox</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">سفارشی کردن آسووݩ وو هریم سیخومی قلوه وا هر لمس</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -721,12 +685,6 @@
   <string name="search_bar_with_lens_widget_description">نوار پیتینیڌن وا پیتینیڌن شؽواتی، سیخومی وو دونگی</string>
   <!-- Widget description in the widget picker screen for the compact search bar widget -->
   <string name="compact_search_bar_widget_description">نوار پیتینیڌن تپنیڌه</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">سامووا</string>
   <!--
     Preferences
 
@@ -1622,8 +1580,6 @@
   <string name="open_tabs_menu">گۊشیڌن نومگه بلگه یل</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">وورگشتن و دؽوۉداری بلگه یل</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">زفت کردن بلگه یل من کتن</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">پاک کردن کتن</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2022,8 +1978,6 @@
   <string name="webcompat_reporter_label_mandatory_description">موشکل ن وا جۊزعیات بۊگۊین تا و ایما من واجۊری وو هل کردنس هیاری بڌه</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">موشکل ن وا جۊزعیات بۊگۊین تا و ایما من واجۊری وو هل کردنس هیاری بڌه (اختیاری)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">لقو</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">فشناڌن گوزارش</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2545,8 +2499,6 @@
   <string name="qr_scanner_dialog_invalid">نشۊوی اینترنتی زبال نؽ.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">خا</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">الن اخۊین %1$s پاک بۊ؟</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">یو نمووه هؽل هڌ. ایچونا ٱووڌه تا نشووݩ دیم ک وا گپ کردن یا کۊچیر کردن هندا وا ای سامووݩ، هؽل چتاور دیاری ابۊ.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3432,10 +3384,6 @@
   <string name="browser_menu_remove_from_shortcuts">وورداشتن ز ره نهنگا</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">الن اخۊین ک ای رزم ن پاک کۊنین؟</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">پاک کردن</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">لقو</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">آلشت رزم</string>
   <!-- The page title for adding new password. -->
@@ -3921,11 +3869,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">ٱر منی چیه من ای وبگه خراو هڌ، قپ ریت کۊنین هو ن کۊر کۊنین.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">فعال کردن زفت وابیڌن ری و ری رڌجۊری پؽشنهاڌ ابۊ.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">رڌجۊرا مسدۊد وابین: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">رڌجۊرا مسدۊد نوابینه</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -4625,12 +4568,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">ی امزا ازاف کۊنین</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">امزا کردن PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">دانلود PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

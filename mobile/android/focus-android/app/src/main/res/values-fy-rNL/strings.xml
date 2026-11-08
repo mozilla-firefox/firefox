@@ -15,7 +15,7 @@
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a browsing session -->
   <string name="feedback_erase2">Navigaasjeskiednis wiske</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
-  <string name="feedback_erase_custom_tab">Jo sneupskiednis fan de ljepblêden is wiske.</string>
+  <string name="feedback_erase_custom_tab">Jo navigaasjeskiednis fan it ljepblêd is wiske.</string>
   <!-- Content description for the button that opens the menu. -->
   <string name="content_description_menu">Menu</string>
   <!-- Menu item: Share the currently visible page -->
@@ -225,7 +225,7 @@
   -->
   <string name="preference_privacy_should_block_cookies_no_option2">Nee, tankewol</string>
   <string name="preference_privacy_should_block_cookies_third_party_tracker_cookies_option">Allinnich tracker-cookies fan tredden blokkearje</string>
-  <string name="preference_privacy_should_block_cookies_third_party_only_option">Allinnich cookies fan tredden</string>
+  <string name="preference_privacy_should_block_cookies_third_party_only_option">Allinnich cookies fan tredden blokkearje</string>
   <string name="preference_privacy_should_block_cookies_cross_site_option">Cross-sitecookies blokkearje</string>
   <string name="preference_privacy_should_block_cookies_yes_option2">Ja, graach</string>
   <!-- Preference Title: Biometrics can be used to unlock Focus if the previous session's data was not erased by the user. -->
@@ -236,7 +236,7 @@
     %s is the name of the app (for example "Firefox Focus" or "Firefox Klar")
     Shortcuts is a feature that allows the user to pin his favorite websites to Focus home screen so he can quickly access them.
   -->
-  <string name="preference_security_biometric_summary2">Untskoattelje mei fingerôfdruk as jo fluchtoetsen tafoege hawwe of as in website al iepen is yn %s.</string>
+  <string name="preference_security_biometric_summary2">Untskoattelje mei fingerôfdruk as jo fluchkeppelingen tafoege hawwe of as in website al iepen is yn %s.</string>
   <!--
     Preference Title: Secure Mode is a setting that prevents the app's content to show up in the "recent apps" screen
     and prevents the user from taking screenshots or casting the app to other displays.
@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">As standertbrowser ynstelle</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Oerslaan</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Fergrutsje jo privacy</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Sykje op jo manier</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Foegje keppelingen ta oan jo startskerm</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Meitsje privacy gewoan</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Tafoegje</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Fuortsmite</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Alle websites fuortsmite</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Cookies blokkearje</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Sorry, wy hawwe in probleem mei dit ljepblêd.</string>
   <!-- Subtitle for the tab crash report screen -->
@@ -683,5 +673,5 @@
 
     This text should be as short as possible, max 68 chars
   -->
-  <string name="exit_fullscreen_with_back_button_short">Sleep fan de boppekant ôf &amp; druk it gebear werom om ôf te sluten</string>
+  <string name="exit_fullscreen_with_back_button_short">Sleep fan de boppekant ôf &amp; druk op werom om ôf te sluten</string>
 </resources>

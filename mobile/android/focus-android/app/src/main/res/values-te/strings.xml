@@ -230,14 +230,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">తెరువు</string>
   <string name="error_hostLookup_title">సర్వర్ కనుగొనలేదు</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">మీ ప్రైవసీని శక్తిమంతం చేసుకోండి</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">మీ శోధన, మీ మార్గం</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">మీ ముంగిలి తెరలో సత్వరమార్గాలను జోడించండి</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">ఆంతరంగికతను అలవాటు చేసుకోండి</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">చేర్చు</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -306,8 +298,6 @@
   <string name="preference_exceptions_menu_remove">తొలగించు</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">అన్ని వెబ్‌సైట్లను తీసివేయి</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">కుకీలను నిరోధించు</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">క్షమించండి. ఈ ట్యాబులో ఏదో సమస్య ఉంది.</string>
   <!-- Subtitle for the tab crash report screen -->

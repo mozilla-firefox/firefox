@@ -293,7 +293,7 @@
   <!-- Action for dding an additional search engine to the list -->
   <string name="preference_search_add3">Pridať ďalší vyhľadávač</string>
   <!-- Explanation text above the list of search engines -->
-  <string name="preference_select_preferred_engine">Vyberte si vami požadovaný modul:</string>
+  <string name="preference_select_preferred_engine">Vyberte si preferovaný vyhľadávač:</string>
   <!-- Clickable action text that shows when user long-presses on a search engine search field (this is similar to paste or copy when long-pressing a text field) -->
   <string name="action_option_add_search_engine">Pridať vyhľadávač</string>
   <string name="search_add_manually_name_hint">Názov vyhľadávača</string>
@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Nastaviť ako predvolený prehliadač</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Preskočiť</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Posuňte svoje súkromie na vyššiu úroveň</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Prehliadanie podľa vás</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Pridajte si skratky na domovskú obrazovku</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Zvyknite si na súkromie</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Pridať</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Odstrániť</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Odstrániť všetky stránky</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Blokovanie cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Ospravedlňujeme sa, no vyskytol sa problém s touto kartou.</string>
   <!-- Subtitle for the tab crash report screen -->

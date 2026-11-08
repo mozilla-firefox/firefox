@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Eltávolítás</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">A %1$s a Mozilla terméke.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Gyakori tévhitek a privát böngészésről</string>
   <!--
     Private Browsing
 
@@ -273,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">Szinkronizálás szüneteltetve</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Kezelje, hogy mit ment és szinkronizál</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Új privát lap</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Jelszavak</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -391,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Hangalapú keresés</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">A hangokat a Google Speech Services szöveggé alakítja.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Oldal meghallgatása</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Az eszköz mesterséges intelligenciát használhat a felolvasáshoz. A szöveg és a hang privát marad.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Letiltja az MI funkcióbővítéseket?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -482,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Kész</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Üdvözli a Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">A folytatással elfogadja a %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox felhasználási feltételeit</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">A Firefox vigyáz az Ön adatvédelmére. További információk az %1$sunkban.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Adatvédelmi nyilatkozat</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">A böngésző fejlesztése érdekében, a Firefox diagnosztikai és interakciós adatokat küld a Mozillának. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Kezelés</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">A legjobb androidos böngésző elindítása</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -596,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Megvédjük adatait, és automatikusan megakadályozzuk a cégeket, hogy kémkedjenek a kattintásai után.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Beállítás alapértelmezett böngészőként</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Válassza ki a címsort</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Felül</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Alul</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Válasszon témát</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Automatikus</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Világos</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Sötét</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Azonnal folytassa ott, ahol abbahagyta</string>
   <!-- Sync onboarding subtitle. -->
@@ -674,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Fedezze fel a Firefox legújabb adatvédelmi funkcióit, hogy mindig naprakész legyen a védelméről.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Értesítések bekapcsolása</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Tegyen minden keresést még privátabbá</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Indítson minden keresést a telefonja kezdőképernyőjéről, és tudja, hogy a Firefox automatikus védelmét élvezi.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Firefox modul hozzáadása</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Könnyen testreszabható, és minden koppintással privátabb</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -725,12 +693,6 @@
   <string name="search_bar_with_lens_widget_description">Keresősáv kép-, privát és hangalapú kereséssel</string>
   <!-- Widget description in the widget picker screen for the compact search bar widget -->
   <string name="compact_search_bar_widget_description">Kompakt keresősáv</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Beállítások</string>
   <!--
     Preferences
 
@@ -1009,6 +971,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">A kiegészítőgyűjtemény módosítva. Kilépés az alkalmazásból a változások érvényesítéséhez…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Eltávolítja ezt: %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Ez eltávolítja a kiegészítőt és a beállításait az eszközről.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Eltávolítás</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Mégse</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1173,6 +1147,12 @@
   <string name="preferences_sync_category">Válassza ki, mit szeretne szinkronizálni</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Szinkronizált adatok</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Eszköz szinkronizálása</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Az adatairól biztonsági mentés készül, és elérhető a szinkronizált eszközökön.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">A %1$s-fiókjában mentett adatok használata.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Kezelje, hogy mit szinkronizál a csatlakoztatott eszközein</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1628,8 +1608,6 @@
   <string name="open_tabs_menu">Lapok menü megnyitása</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Vissza a lapkezelőhöz</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Lapok gyűjteménybe mentése</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Gyűjtemény törlése</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2028,8 +2006,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Írja le részletesen a problémát, hogy segítsen nekünk a probléma kivizsgálásában</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Írja le részletesen a problémát, hogy segítsen nekünk a probléma kivizsgálásában (nem kötelező)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Mégse</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Jelentés küldése</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2551,8 +2527,6 @@
   <string name="qr_scanner_dialog_invalid">A webcím érvénytelen.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">OK</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Biztos, hogy törli ezt: %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Ez egy mintaszöveg. Itt látható, hogy miként jelenik meg a szöveg, ha ezzel a beállítással növeli vagy csökkenti a méretét.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3438,10 +3412,6 @@
   <string name="browser_menu_remove_from_shortcuts">Eltávolítás az indítóikonok közül</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Biztos, hogy törli ezt a jelszót?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Törlés</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Mégse</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Jelszó szerkesztése</string>
   <!-- The page title for adding new password. -->
@@ -3927,17 +3897,14 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Ha valami nem működik ezen az oldalon, próbálja meg kikapcsolni.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">A követés elleni védelem bekapcsolása ajánlott.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Blokkolt követők: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">A nyomkövetők nincsenek blokkolva</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Adatvédelmi beállítások</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Engedélyek</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Biztonságos kapcsolat</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4515,6 +4482,8 @@
   <string name="wrex_widget_match_suspended">Felfüggesztve</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Elhalasztva</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Frissítés</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Eredmények</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4523,19 +4492,57 @@
   <string name="wrex_widget_wallpapers">Háttérképek</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Kisalkalmazás eltávolítása</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Teljes játékidő</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Félidő</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Hosszabbítás</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Büntetők</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">További beállítások</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s kontra %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, élő játék</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, élő</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Eltelt idő percekben: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, %2$d. / %3$d oldal</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Úgy tűnik, hogy kapcsolat nélküli módban van</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Ellenőrizze az internetkapcsolatát, és próbálja újra.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">A mérkőzés adatai most nem jeleníthetők meg</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Próbálja meg frissíteni, vagy térjen vissza később.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Jelenleg nem jeleníthető meg az eredmény</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">A csapat még meghatározásra vár</string>
   <!--
     Privacy notice homepage banner
 
@@ -4664,12 +4671,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Aláírás hozzáadása</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">PDF aláírása</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF letöltése</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Eliger como navigator predefinite</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Saltar</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Reinfortia tu confidentialitate</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Le recerca a tu gusto</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Adde accessos directe a tu schermo initial</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Transforma le confidentialitate in un habito</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Adder</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Remover</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Remover tote le sitos web</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Blocar le cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Nos regretta. Nos ha un problema con iste scheda.</string>
   <!-- Subtitle for the tab crash report screen -->

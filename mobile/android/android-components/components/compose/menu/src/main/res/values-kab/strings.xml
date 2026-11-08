@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at http://mozilla.org/MPL/2.0/.
+-->
+
+<resources>
+  <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
+  <string name="mozac_menu_item_new_indicator_label">Amaynut</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
+  <string name="mozac_menu_banner_dismiss_description">Sefsex asali</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">Taskant</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">Wennez ɣer umezwer</string>
+</resources>

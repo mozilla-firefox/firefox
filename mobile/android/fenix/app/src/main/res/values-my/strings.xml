@@ -39,8 +39,6 @@
   <string name="tab_tray_close_multiselect_content_description">multiselect mode ကိုပိတ်ပါ</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s ကို Mozilla မှ ထုတ်လုပ်သည်။</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">ပုဂ္ဂလိက browsing ဆိုင်ရာ အမြင်မှားများ</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">ဆက်တင် များသို့ သွားပါ။</string>
   <!-- Text for the negative action button -->
@@ -165,12 +163,6 @@
   <string name="search_widget_text_long">ဝဘ်တွင် ရှာဖွေပါ</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">အသံဖြင့် ရှာရန်</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">အပြင်အဆင်များ</string>
   <!--
     Preferences
 
@@ -458,8 +450,6 @@
   <string name="close_tab_title">%s တပ်ဗ်ကို ပိတ်ရန်</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">တက်ဗ်များ စာရင်းကို ဖွင့်ပါ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">စုဆောင်းမှု သို့ တက်ဗ်များ သိမ်းရန်</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">စုဆောင်းမှုကိုဖျက်ပါ</string>
   <!-- Text for the menu button to rename a collection -->
@@ -712,8 +702,6 @@
   <string name="qr_scanner_dialog_positive">ခွင့်ပြုပါ</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">Deny</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s ကိုသင်ဖျက်လိုသလား။</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">စာသားချဲ့ခြင်းချုံခြင်းများကို ထိန်းညှိရန် ဤနေရာတွင် နမူနာစာသားဖြင့်ပြထားပါသည်။</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1033,8 +1021,6 @@
   <string name="confirm_clear_permission_site">ဤဆိုက်အတွက်ခွင့်ပြုချက်များဖျက်ရန်သေချာပါသလား။</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">site ချွင်းချက်မရှိပါ</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">ဖျက်ပါ</string>
   <!-- Voice search button content description -->
   <string name="voice_search_content_description">အသံဖြင့် ရှာရန်</string>
   <!-- Voice search prompt description displayed after the user presses the voice search button -->

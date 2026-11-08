@@ -274,14 +274,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Atverti</string>
   <string name="error_hostLookup_title">Nerastas serveris</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Pagerinkite savo privatumą</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Jūsų paieška, jūsų skoniui</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Pridėkite leistukų į savo pradžios ekraną</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Įpraskite prie privatumo</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Pridėti</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -372,8 +364,6 @@
   <string name="preference_exceptions_menu_remove">Pašalinti</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Pašalinti visas svetaines</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Blokuoti slapukus</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Atsiprašome. Su šia kortele yra problemų.</string>
   <!-- Subtitle for the tab crash report screen -->

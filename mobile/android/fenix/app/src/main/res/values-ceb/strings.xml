@@ -31,8 +31,6 @@
   <string name="tab_tray_close_multiselect_content_description">Gawas sa multiselect mode</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s hinimo sa Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Mga tinuohan bahin sa private browsing</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">Adto sa settings</string>
   <!-- Text for the negative action button -->
@@ -149,12 +147,6 @@
   <string name="search_widget_text_long">i-Search sa web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Voice search</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Mga Setting</string>
   <!-- Preference link to rating Fenix on the Play Store -->
   <string name="preferences_rate">i-Rate sa Google Play</string>
   <!--

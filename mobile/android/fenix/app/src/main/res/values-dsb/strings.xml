@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Wótwónoźeś</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s se pśez Mozilla zgótujo.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Ceste myty wó priwatnem modusu</string>
   <!--
     Private Browsing
 
@@ -273,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">Synchronizacija jo zastajona</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Zastojśo, což zawěsćujośo a synchronizěrujośo</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Nowy priwatny rejtarik</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Gronidła</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -391,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Głosowe pytanje</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Awdio se pśez Google Speech Services do teksta pśetwórjuju.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Na bok słuchaś</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Waš rěd snaź KI wužywa, aby głosnje cytał. Tekst a awdio priwatnej wóstawatej.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Pólěpšenja KI blokěrowaś?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -482,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Dokóńcony</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Witajśo k Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Gaž pókšacujośo, zwólijośo do %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Wužywańske wuměnjenja Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox se wó wašu priwatnosć stara. Dalšne informacije w: %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Powěźeńka priwatnosći</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Aby pomagał, wobglědowak pólěpšyś, Firefox diagnostiske a daty interakcije na Mozilla sćelo. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Zastojaś</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Startujśo ultimatiwny wobglědowak Android</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -596,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Šćitamy waše daty a zawoborujomy awtomatiski pśedewześam pśi wusnuchlenju, gaž klikaśo.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Ako standardny wobglědowak nastajiś</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Wubjeŕśo swójo adresowe pólo</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Górjejce</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Dołojce</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Wubjeŕśo swóju drastwu</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Awtomatiski</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Swětły</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Śamny</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Cyńśo tam ned dalej, źož sćo pśestał</string>
   <!-- Sync onboarding subtitle. -->
@@ -674,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Namakajśo nejnowše funkcije priwatnosći w Firefox, aby pśecej na běžnem był, kak šćitany wóstawaśo.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Powěźeńki zmóžniś</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Cyńśo kužde pytanje priwatne</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Zachopśo kužde pytanje ze startoweje wobrazowki swójogo telefona a zgońśo, kak awtomatiski šćit Firefox wam kśebjat zawěsćujo.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Asistent Firefox pśidaś</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Lažko pśiměrjobny a priwatnjejšy z kuždym dotyknjenim</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -730,12 +698,6 @@
   <!--
     Preferences
 
-    Title for the settings page
-  -->
-  <string name="settings">Nastajenja</string>
-  <!--
-    Preferences
-
     Preference category for general settings
   -->
   <string name="preferences_category_general">Powšykne</string>
@@ -759,6 +721,8 @@
   <string name="preferences_search">Pytaś</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Pytnice</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Startowej wobrazowce pytański asistent pśidaś</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Asistent startoweje wobrazowki</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -1011,6 +975,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Zběrka rozšyrjenjow jo se změniła. Nałoženje se kóńcy, aby se změny nałožyli…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">%1$s wótwónoźeś?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">To rozšyrjenje a jogo nastajenja z toś togo rěda wótwónoźujo.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Wótwónoźeś</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Pśetergnuś</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1175,6 +1151,12 @@
   <string name="preferences_sync_category">Wubjeŕśo, což ma se synchronizěrowaś</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Synchronizěrowane daty</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Toś ten rěd synchronizěrowaś</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Waše daty su se zawěsćili a su na synchronizěrowanych rědach k dispoziciji.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Skłaźone daty z wašogo konta %1$s se wužywaju.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Zastojśo daty synchronizacijow na wšych wašych zwězanych rědach</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1632,8 +1614,6 @@
   <string name="open_tabs_menu">Meni wócynjonych rejtarikow</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Slědk k zastojnikoju rejtarikow</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Rejtariki do zběrki składowaś</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Zběrku wulašowaś</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2040,8 +2020,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Wopišćo problem nadrobnje, aby nam pomagał, problem pśespytowaś</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Wopišćo problem nadrobnje, aby nam pomagał, problem pśespytowaś (na žycenje)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Pśetergnuś</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Rozpšawu pósłaś</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2563,8 +2541,6 @@
   <string name="qr_scanner_dialog_invalid">Webadresa njejo płaśiwa.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">W pórěźe</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Cośo napšawdu %1$s lašowaś?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">To jo pśikładowy tekst. Pokazujo wam how, kak se tekst pokazujo, gaž wjelikosć z toś tym nastajenim pówušujośo abo pómjeńšujośo.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3452,10 +3428,6 @@
   <string name="browser_menu_remove_from_shortcuts">Ze zwězanjow wótwónoźeś</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Cośo napšawdu toś to gronidło lašowaś?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Lašowaś</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Pśetergnuś</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Gronidło wobźěłaś</string>
   <!-- The page title for adding new password. -->
@@ -3943,17 +3915,14 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Jolic něco na toś tom sedle wobškóźone wuglěda, znjemóžniśo jen.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Póruca se, šćit pśeśiwo slědowanjeju zmóžniś.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Pśeslědowaki blokěrowane: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Pśeslědowaki se njeblokěruju</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Nastajenja priwatnosći</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Pšawa</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Wěsty zwisk</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4545,6 +4514,8 @@
   <string name="wrex_widget_match_suspended">Wótgronjony</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Wótstarcony</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Aktualizěrowaś</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Wuslědki</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4553,19 +4524,57 @@
   <string name="wrex_widget_wallpapers">Slězynowe wobraze</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Asistent wótwónoźeś</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Pó pódl.</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Połcas</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Pódlejšenje</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Pokutne kopy</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Dalšne nastajenja</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s pśeśiwo %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, graśe live</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, live</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Zajźony cas w minutach: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, bok %2$d z %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Zda se, až sćo offline</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Pśeglědujśo swój internetny zwisk a wopytajśo hyšći raz.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Grajne daty njedaju se tuchylu pokazaś</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Aktualizěrujśo abo wopytajśo pózdźej hyšći raz.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Wuslědki tuchylu njejsu k dispoziciji</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Mustwo, kótarež se ma póstajiś</string>
   <!--
     Privacy notice homepage banner
 
@@ -4694,12 +4703,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Signaturu pśidaś</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">PDF signěrowaś</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF ześěgnuś</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

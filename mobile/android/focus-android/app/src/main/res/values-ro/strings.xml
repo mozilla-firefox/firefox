@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Setează ca browser implicit</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Omite</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Consolidează-ți confidențialitatea</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Caută în felul tău</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Adaugă comenzi rapide în ecranul de pornire</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Obișnuiește-te cu confidențialitatea</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Adaugă</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Elimină</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Elimină toate site-urile web</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Blochează cookie-uri</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Ne pare rău. Avem o problemă cu această filă.</string>
   <!-- Subtitle for the tab crash report screen -->

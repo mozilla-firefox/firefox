@@ -33,8 +33,6 @@
   <string name="tab_tray_close_multiselect_content_description">Kúrò ní móòdù aláṣàyàn púpọ̀</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s Jẹ́ ṣíṣẹ̀dá látọwọ́ọ Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Àwọn àròsọ tó wọ́pọ̀ nípa ìlọkiri-oníwẹ́ẹ̀bù ìkọ̀kọ̀</string>
   <!--
     Open in App "contextual feature recommendation" (CFR)
 
@@ -189,12 +187,6 @@
   <string name="search_widget_text_long">Wá lórí wẹ́ẹ̀bù</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Wíwá pẹ̀lú ohùn</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Àwọn ààtò</string>
   <!--
     Preferences
 
@@ -533,8 +525,6 @@
   <string name="close_tab_title">Pa táàbù dé %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Ṣí àwọn àtẹ táàbù</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Tọ́jú àwọn táàbù sínú àkójọpọ̀</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Pa àkójọpọ̀ rẹ́</string>
   <!-- Text for the menu button to rename a collection -->
@@ -817,8 +807,6 @@
   <string name="qr_scanner_dialog_invalid">Àdìrẹ́sì wẹ́ẹ̀bù ò fẹsẹ̀múlẹ̀.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">Ó DÁA</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Ṣé ó dá ọ lójú pé o fẹ́ paárẹ́ %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Èyí jẹ́ àpẹẹrẹ ọ̀rọ̀. Ó wà níbí láti ṣàfihàn bí ọ̀rọ̀ yóò ṣe ma hàn nígbà tí o bá ṣe ìlékún tàbí ìdíkù sí ìwọ̀n rẹ̀ pẹ̀lú ètò yìí.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1216,10 +1204,6 @@
   <string name="browser_menu_add_to_shortcuts">Ṣàfikún àwọn ọ̀nà-àbùjá</string>
   <!-- Browser menu button that removes a shortcut from the home fragment -->
   <string name="browser_menu_remove_from_shortcuts">Yọọ́ kúrò nínú àwọn ọ̀nà-àbùjá</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Parẹ́</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Paárẹ́</string>
   <!-- The error message in add login view when hostname field is blank. -->
   <string name="saved_login_hostname_required" tools:ignore="UnusedResources">A nílò orúkọ nẹ́tíwọọ̀kì kọ̀m̀pútà</string>
   <!-- Voice search button content description -->

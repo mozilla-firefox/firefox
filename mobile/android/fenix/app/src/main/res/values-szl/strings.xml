@@ -41,8 +41,6 @@
   <string name="tab_tray_close_multiselect_content_description">Wylyź ze trybu multiwyboru</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s produkuje Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Czynste mity ô prywatnym przeglōndaniu</string>
   <!--
     Open in App "contextual feature recommendation" (CFR)
 
@@ -213,12 +211,6 @@
   <string name="search_widget_text_long">Szukej w internecie</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Głosowe szukanie</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Sztalōnki</string>
   <!--
     Preferences
 
@@ -639,8 +631,6 @@
   <string name="close_tab_title">Zawrzij karta %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Myni ôtwartych kart</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Spamiyntej karty do kolekcyje</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Skasuj kolekcyjo</string>
   <!-- Text for the menu button to rename a collection -->
@@ -949,8 +939,6 @@
   <string name="qr_scanner_dialog_invalid">Adresa strōny je felerno.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">OK</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Na zicher chcesz skasować %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">To je przikładowy tekst. Je sam na to, coby pokozać, jak bydzie wyglōndoł, jak go zwiynkszysz abo zmyńszysz z tym sztalōnkym.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->

@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Өшіру</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s жасаған Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Жекелік шолу туралы кең тараған аңыздар</string>
   <!--
     Private Browsing
 
@@ -215,6 +213,10 @@
   <string name="browser_menu_no_extensions_installed_description">Іске қосылған кеңейтулер жоқ</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Ұсынылған кеңейтуді қолданып көріңіз</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">%1$s үшін жаңартуды қарап шығу</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Жаңарту үшін параметрлерді қарап шығу</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Тіркелгі ақпараты</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -269,8 +271,6 @@
   <string name="browser_menu_syncing_paused_caption">Синхрондау аялдатылды</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Сақтық көшірмесін жасап, синхрондайтын нәрселерді басқару</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Жаңа жекелік беті</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Парольдер</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -387,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Дауыстық іздеу</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Аудио мәтінге Google Speech Services арқылы түрлендіріледі.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Бетті тыңдау</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Сіздің құрылғыңыз дауыстап оқу үшін ЖИ пайдалануы мүмкін. Мәтін мен аудио жеке болып қала береді.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">ЖИ жақсартуларын бұғаттау керек пе?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -478,18 +482,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Дайын</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Firefox ішіне қош келдіңіз</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Жалғастыру арқылы сіз %1$s шарттарымен келісесіз.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox пайдалану шарттары</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox сіздің жекелігіңізге мән береді. Көбірек біздің %1$s ішінен біліңіз.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Жекелік ескертуі</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Браузерді жақсартуға көмектесу үшін Firefox Mozilla-ға диагностикалық және өзара әрекеттесу деректерін жібереді. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Басқару</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Android үшін ең күшті браузерін іске қосыңыз</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -592,20 +584,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Біз деректеріңізді қорғаймыз және компаниялардың әрбір шертуіңізді аңдуына автоматты түрде бұғаттау қоямыз.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Негізгі браузер қылу</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Адрестік жолағыңызды таңдаңыз</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Жоғарыда</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Төменде</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Теманы таңдаңыз</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Автоматты түрде</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Ашық түсті</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Күңгірт түсті</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Тоқтаған жерден бірден жалғастырыңыз</string>
   <!-- Sync onboarding subtitle. -->
@@ -670,12 +648,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Firefox-тың соңғы жекелік мүмкіндіктерімен танысып, қалай қорғалу керектігі туралы үнемі хабардар болыңыз.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Хабарламаларды іске қосу</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Әрбір іздеуді құпиялырақ етіңіз</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Әрбір іздеуді телефонның негізгі экранынан бастаңыз және Firefox-тың автоматты қорғанысы әрқашан қасыңызда екеніне сенімді болыңыз.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Firefox виджетін қосу</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Әр түрту арқылы баптауға оңай және жекелігі жоғары</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -724,12 +696,6 @@
   <!--
     Preferences
 
-    Title for the settings page
-  -->
-  <string name="settings">Баптаулар</string>
-  <!--
-    Preferences
-
     Preference category for general settings
   -->
   <string name="preferences_category_general">Жалпы</string>
@@ -753,6 +719,8 @@
   <string name="preferences_search">Іздеу</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Іздеу жүйелері</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Іздеу виджетін үй экранына қосу</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Басты экран виджеті</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -842,6 +810,8 @@
   <string name="preferences_toolbar_select_shortcut">Жарлықты таңдау</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Жарлықты түзету</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Мәзір</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Ым қимылдар</string>
   <!-- Preference for settings related to visual options -->
@@ -1002,6 +972,18 @@
   <string name="customize_addon_collection_user_hint">Жинақ иесі (Пайдаланушы идентификаторы)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Кеңейтулер жинағы өзгертілген. Өзгерістерді іске асыру үшін қолданба жұмысын аяқтау…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">%1$s өшіру керек пе?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Бұл әрекет кеңейтуді және оның параметрлерін бұл құрылғыдан өшіреді.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Өшіру</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Бас тарту</string>
   <!--
     Customize Home
 
@@ -1167,6 +1149,12 @@
   <string name="preferences_sync_category">Нені синхрондауды таңдаңыз</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Синхрондалған деректер</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Бұл құрылғыны синхрондау</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Сіздің деректеріңіздің сақтық көшірмесі жасалды және синхрондалған құрылғыларда қолжетімді.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">%1$s тіркелгіңізде сақталған деректер пайдаланылуда.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Барлық қосылған құрылғыларда синхрондалатын деректерді басқарыңыз</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1622,8 +1610,6 @@
   <string name="open_tabs_menu">Беттер мәзірін ашу</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Беттер басқарушысына оралу</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Беттерді жинаққа сақтау</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Жинақты өшіру</string>
   <!-- Text for the menu button to rename a collection -->
@@ -2022,8 +2008,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Мәселені зерттеуге көмектесу үшін мәселені толықтай сипаттаңыз</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Мәселені зерттеуге көмектесу үшін мәселені толықтай сипаттаңыз (міндетті емес)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Бас тарту</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Есептемені жіберу</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2545,8 +2529,6 @@
   <string name="qr_scanner_dialog_invalid">Веб-адресі қате.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">ОК</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s өшіруді шынымен қалайсыз ба?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Бұл мәтіндік үлгі. Осы параметрмен өлшемді ұлғайту немесе кішірейту кезінде мәтіннің қалай көрінетінін көруге болады.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3432,10 +3414,6 @@
   <string name="browser_menu_remove_from_shortcuts">Жарлықтардан өшіру</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Бұл парольді өшіруді шынымен қалайсыз ба?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Өшіру</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Бас тарту</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Парольді түзету</string>
   <!-- The page title for adding new password. -->
@@ -3921,17 +3899,14 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Бұл сайтта бірдеңе бұзылған болып көрінсе, оны сөндіріп көріңіз.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Бақылаудан қорғанысты іске қосу ұсынылады.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Блокталған трекерлер: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Трекерлер блокталмаған</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Жекелік баптаулары</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Рұқсаттар</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Қауіпсіз байланыс</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4498,6 +4473,79 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">осында</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">ТІКЕЛЕЙ ЭФИР</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">Кешіктірілді</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">Тоқтатылған</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">Кейінге қалдырылды</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Жаңарту</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Нәтижелер</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Турнир кестесі</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Тұсқағаздар</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Виджетті өшіру</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">АЯҚТ.</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Үзіліс</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">ҚОС_УАҚЫТ</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Пенальти</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Көбірек опциялар</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s - %2$s, %3$s</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, тікелей эфирдегі ойын</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, тікелей эфирде</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Матч уақыты, минут: %1$s</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, бет %2$d/%3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Сіз офлайн режимде сияқтысыз</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Интернет байланысын тексеріп, әрекетті қайталаңыз.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Матч ақпаратын қазір көрсету мүмкін емес</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Жаңартып көріңіз немесе кейінірек қайта тексеріңіз.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Нәтижелерді қазір көрсету мүмкін емес</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Команда әлі анықталмады</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4625,12 +4673,6 @@
     Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
   -->
   <string name="pdf_tools_sign_content_description_2">Қолтаңба қосу</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">PDF-ке қолтаңба қою</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF жүктеп алу</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Bruk som standard nettlesar</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Hopp over</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Styrk personvernet ditt</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Ditt søk på din måte</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Legg til snarvegar på startskjermen</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Gjer personvern til ein vane</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Legg til</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Fjern</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Fjern alle nettstadar</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Blokker infokapslar</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Beklagar. Vi har eit problem med denne fana.</string>
   <!-- Subtitle for the tab crash report screen -->

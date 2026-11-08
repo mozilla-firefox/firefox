@@ -15,8 +15,6 @@
   <string name="content_description_menu">Altre opsion</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Serca o scrìvi on indiriso</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Miti da sfatare so ƚa navigasion anonima</string>
   <!--
     Home screen icons - Long press shortcuts
 
@@ -89,12 +87,6 @@
   <string name="search_widget_text_long">Serca sul Web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Riserca vocale</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Inpostasion</string>
   <!--
     Preferences
 
@@ -475,8 +467,6 @@
   <string name="qr_scanner_dialog_positive">PARMETI</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">NEGA</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Scanseƚare %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Sto cua el xe on testo de exenpio. Mostra n’anteprima de cofà aparirà el testo cò te aumenti o riduxi ƚe dimension de i caratari co sta inpostasion.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -709,6 +699,4 @@
   <string name="confirm_clear_permission_site">Scanseƚare sto parmeso par sto sito?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">Nisuna ecesion par i siti</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Rimovi</string>
 </resources>

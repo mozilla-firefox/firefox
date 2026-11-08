@@ -335,14 +335,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Ini jirinhatarantskuani pekurintani</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Wanajchakuni</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Jískakwa ampe winhaskuntsï</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Ch\'éeti jirinhanstkwa, ch\'éeti jánkwa</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Wenakwarhu jurhikutakwaechani kuparhataa</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Méntku ísï jirikurhiparini</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Kúparhatani</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

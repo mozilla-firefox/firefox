@@ -16,6 +16,8 @@
   <string name="feedback_erase2">閲覧履歴を消去しました</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">タブの閲覧履歴が消去されました。</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">メニュー</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">共有...</string>
   <!--
@@ -380,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">既定のブラウザーに設定する</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">スキップ</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">プライバシーを強化</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">好きな方法で検索</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">ホーム画面にショートカットを追加</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">プライバシーを習慣に</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">追加</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -533,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">削除</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">すべてのウェブサイトを削除</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Cookie をブロック</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">申し訳ありません。このタブに問題があります。</string>
   <!-- Subtitle for the tab crash report screen -->

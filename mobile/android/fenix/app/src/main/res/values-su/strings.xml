@@ -51,8 +51,6 @@
   <string name="home_bookmarks_menu_item_remove">Piceun</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s dihasilkeun ku Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Mitos umum ngeunaan langlangan nyamuni</string>
   <!--
     True Private Browsing Mode
 
@@ -201,8 +199,6 @@
   <string name="browser_menu_sign_back_in_to_sync">Asup deui pikeun ngakurkeun</string>
   <!-- Browser menu caption label for the "Sign back in to sync" browser menu item described in `browser_menu_sign_back_in_to_sync` when there is an error in syncing -->
   <string name="browser_menu_syncing_paused_caption">Ngakurkeun dieureunkeun heula</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Tab nyamuni anyar</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Kecap sandi</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -274,12 +270,6 @@
   <string name="search_widget_text_long">Paluruh raramat</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Sungsi sora</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Setélan</string>
   <!--
     Preferences
 
@@ -800,8 +790,6 @@
   <string name="close_tab_title">Tutup tab %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Buka menu tab</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Simpen tab kana koléksi</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Hapus koléksi</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1160,8 +1148,6 @@
   <string name="qr_scanner_dialog_invalid">Alamat raramatna teu bener.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">HEUG</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Anjeun yakin rék mupus %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Ieu mangrupikeun conto téks. Di dieu pikeun nunjukkeun kumaha téks bakal némbongan nalika anjeun ningkatkeun atanapi ngirangan ukuran dina sétélan ieu.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1674,10 +1660,6 @@
   <string name="browser_menu_remove_from_shortcuts">Piceun tina takulan</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Yakin anjeun rék mupus ieu sandi?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Pupus</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Bolay</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Ropéa sandi</string>
   <!-- The page title for adding new password. -->
