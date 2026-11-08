@@ -154,14 +154,14 @@ bitflags! {
         const STALLED = 1u64 << 55;
         /// https://html.spec.whatwg.org/multipage/semantics-other.html#selector-muted
         const MUTED = 1u64 << 56;
-        /// This element is fullscreen and was requested to have keyboard lock.
-        const FULLSCREEN_KEYBOARD_LOCK = 1u64 << 57;
         /// https://drafts.csswg.org/selectors-5/#headings
         /// These 4 bits are used to pack the elements heading level into the element state
         /// Heading levels can be from 1-9 so 4 bits allows us to express the full range.
         const HEADING_LEVEL_BITS = 0b1111u64 << HEADING_LEVEL_OFFSET;
         /// https://w3c.github.io/picture-in-picture/#css-pseudo-class
         const PICTURE_IN_PICTURE = 1u64 << 61;
+        /// This element is fullscreen and was requested to have keyboard lock.
+        const FULLSCREEN_KEYBOARD_LOCK = 1u64 << 62;
 
         /// Some convenience unions.
         const DIR_STATES = Self::LTR.bits() | Self::RTL.bits();
