@@ -402,7 +402,7 @@ void CrashStatsLogForwarder::CrashAction(LogReason aReason) {
 #endif
 
 static const char* kObservedPrefs[] = {"gfx.downloadable_fonts.",
-                                       "gfx.font_rendering.", nullptr};
+                                       "gfx.font_rendering."};
 
 static void FontPrefChanged(const char* aPref, void* aData) {
   MOZ_ASSERT(aPref);

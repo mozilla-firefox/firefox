@@ -230,7 +230,6 @@ static const char* gCallbackPrefs[] = {
     PREF_LNA_IP_ADDR_SPACE_PRIVATE,
     PREF_LNA_IP_ADDR_SPACE_LOCAL,
     PREF_LNA_SKIP_DOMAINS,
-    nullptr,
 };
 
 nsresult nsIOService::Init() {

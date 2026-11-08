@@ -161,7 +161,7 @@ static const char* kObservedPrefs[] = {
     "intl.accept_languages",  // hmmmm...
     "browser.display.use_document_fonts.icon_font_allowlist",
     "gfx.font_rendering.fontations.enabled",
-    nullptr};
+};
 
 static const char kFontSystemWhitelistPref[] = "font.system.whitelist";
 

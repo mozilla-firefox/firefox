@@ -468,7 +468,7 @@ TEST(PrefsCallbackTrie, TrailingDotDomainSkipsStemPref)
 TEST(PrefsCallbackTrie, TrailingDotDomainSkipsStemPrefInArray)
 {
   static const char* const kPrefs[] = {"test.trie.stemarr.a.",
-                                       "test.trie.stemarr.b", nullptr};
+                                       "test.trie.stemarr.b"};
   int count = 0;
   Preferences::SetBool("test.trie.stemarr.a", false);
   Preferences::SetBool("test.trie.stemarr.a.b", false);
@@ -482,6 +482,36 @@ TEST(PrefsCallbackTrie, TrailingDotDomainSkipsStemPrefInArray)
   Preferences::SetBool("test.trie.stemarr.b", true);
   EXPECT_EQ(count, 2);
   Preferences::UnregisterPrefixCallbacks(IncrementCount, kPrefs, &count);
+}
+
+TEST(PrefsCallbackTrie, RegisterCallbacksAndCallUsesSpanBounds)
+{
+  const char* const prefs[] = {"test.trie.span.a", "test.trie.span.b",
+                               "test.trie.span.c"};
+  Span<const char* const> prefsView{prefs, 2};
+  int count = 0;
+
+  for (const char* pref : prefs) {
+    Preferences::SetBool(pref, false);
+  }
+  ASSERT_TRUE(NS_SUCCEEDED(Preferences::RegisterCallbacksAndCall(
+      IncrementCount, prefsView, &count)));
+  EXPECT_EQ(count, 2);
+
+  Preferences::SetBool(prefs[0], true);
+  Preferences::SetBool(prefs[1], true);
+  EXPECT_EQ(count, 4);
+
+  Preferences::SetBool(prefs[2], true);
+  EXPECT_EQ(count, 4);
+
+  const char* const samePrefsDifferentStorage[] = {prefs[0], prefs[1]};
+  Span<const char* const> differentView{samePrefsDifferentStorage};
+  EXPECT_EQ(
+      Preferences::UnregisterCallbacks(IncrementCount, differentView, &count),
+      NS_ERROR_FAILURE);
+  EXPECT_EQ(Preferences::UnregisterCallbacks(IncrementCount, prefsView, &count),
+            NS_OK);
 }
 
 // A pref-branch observer is handed pref names relative to its branch root, so
