@@ -118,7 +118,7 @@ def main():
     parser.add_argument(
         "--catalog",
         help="URL of the catalog",
-        default="https://swscan.apple.com/content/catalogs/others/index-26-15-14-13-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog",
+        default="https://swscan.apple.com/content/catalogs/others/index-27-26-15-14-13-12-10.16-10.15-10.14-10.13-10.12-10.11-10.10-10.9-mountainlion-lion-snowleopard-leopard.merged-1.sucatalog",
     )
     parser.add_argument(
         "--filter", help="Only show entries with metadata url matching the filter"

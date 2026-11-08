@@ -173,7 +173,7 @@ Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk/usr
 ```
 
 Once you have found the SDK you want, you can create or update toolchain tasks
-in `taskcluster/kinds/toolchain/macosx-sdk.yml`.
+in `taskcluster/kinds/toolchain/macos-sdk.yml`.
 
 The `taskcluster/scripts/misc/unpack-sdk.py` script takes the url of a SDK
 package, the sha512 hash for its content, the path to the SDK in the package,

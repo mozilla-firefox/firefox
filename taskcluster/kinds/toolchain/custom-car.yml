@@ -42,7 +42,7 @@ macosx64-aarch64-custom-car:
         toolchain-artifact: public/build/car_macosx_arm.tar.zst
     fetches:
         toolchain:
-            - MacOSX26.5.sdk
+            - MacOSX27.2.sdk
             - macosx64-aarch64-uv
 
 android-custom-car:
