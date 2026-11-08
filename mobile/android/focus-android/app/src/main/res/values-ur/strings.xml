@@ -269,14 +269,6 @@
   <string name="onboarding_first_screen_title">%1$s میں خوشامدید</string>
   <!-- New Onboarding flow first screen subtitle the one that appears under title -->
   <string name="onboarding_first_screen_subtitle">تیز۔ نجی۔ کوئی خلفشار نہیں۔</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">آپ کی نجی نوعیت کو پاور اپ کرے</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">آپ کی تلاش، آپ کی طرز پر</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">اپنی ابتدائی اسکرین پر تیز راہ کا ا ضافہ کریں</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">رازداری کو عادت بنائیں</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">اظافہ کریں</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -377,8 +369,6 @@
   <string name="preference_exceptions_menu_remove">ہٹائیں</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">تمام ویب سائٹیں ہٹائیں</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">کوکیز بلاک کری٘ں</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">معذرت ہمیں اس ٹیب کے ساتھ ایک مسئلہ درپیش ہے۔</string>
   <!-- Subtitle for the tab crash report screen -->

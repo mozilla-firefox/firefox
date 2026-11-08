@@ -378,14 +378,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">ነባሪ አሳሽ አድርገህ አስቀምጥ</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">ዝለል</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">ግላዊነትዎን ያስፉ</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">የእርስዎ ፍለጋ, የእርስዎ መንገድ</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">ወደ መነሻ ማያ ገጽዎ አቋራጮችን ያክሉ</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">ግላዊነት የማድረግ ልማድ ያድርጉ</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">ጨምር</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -512,8 +504,6 @@
   <string name="preference_exceptions_menu_remove">አስወግድ</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">ሁሉንም ድረ-ገፆች አስወግድ</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">ኩኪዎችን አግድ</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">እናዝናለን። በዚህ ትር ላይ ችግር እያጋጠመን ነው።</string>
   <!-- Subtitle for the tab crash report screen -->

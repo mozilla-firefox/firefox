@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Ustaw jako domyślną przeglądarkę</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Pomiń</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Nowy poziom prywatności</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Wyszukuj po swojemu</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Dodawaj skróty do ekranu głównego</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Prywatność na co dzień</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Dodaj</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Usuń</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Usuń wszystkie strony</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Blokowanie ciasteczek</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Wystąpił problem z\u00a0tą kartą.</string>
   <!-- Subtitle for the tab crash report screen -->

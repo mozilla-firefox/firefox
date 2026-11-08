@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Varsayılan tarayıcı yap</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Atla</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Gizliliğini güçlendir</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Senin araman, senin kararın</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Kısayolları ana ekranına ekle</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Hep gizli kal</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Ekle</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">Kaldır</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Tüm web sitelerini kaldır</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Çerezleri engelle</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Kusura bakmayın, bu sekmeyle ilgili bir sorun yaşıyoruz.</string>
   <!-- Subtitle for the tab crash report screen -->

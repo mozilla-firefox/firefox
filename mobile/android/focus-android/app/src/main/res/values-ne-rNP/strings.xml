@@ -273,14 +273,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">खोल्नुहोस्</string>
   <string name="error_hostLookup_title">सर्भर फेला परेन</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">आफ्नो गोपनीयताको बलियो बनाउनुहोस्</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">तपाईंको खोजी, तपाईंको बाटो</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">तपाईंको गृह स्क्रिनमा सर्टकट थप्नुहोस्</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">गोपनीयताको बानी बसाल्नुहोस्</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">थप्नुहोस्</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

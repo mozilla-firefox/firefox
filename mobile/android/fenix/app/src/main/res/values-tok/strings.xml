@@ -53,8 +53,6 @@
   <string name="home_bookmarks_menu_item_remove">o weka</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">kulupu Mozilla li pali e ilo %1$s.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">o kama sona pona e nasin len</string>
   <!--
     Clickable portion of the explanation for private browsing that links the user to our
     about privacy page.
@@ -194,8 +192,6 @@
   <string name="browser_menu_customize_reader_view_2">o nasin e lukin pona</string>
   <!-- Browser menu label to sign in to sync on the device using Mozilla accounts -->
   <string name="browser_menu_sign_in">o lon sijelo</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">poki sin pi nasin len</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">nimi open</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
@@ -283,14 +279,6 @@
   <string name="onboarding_preferences_dialog_positive_button">pona</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">o kama pona tawa ilo Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">sina kepeken ilo ni la %1$s li lawa e sina.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">nasin kepeken pi ilo Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">ilo Firefox li wile awen e len sina. o lukin e %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">toki lawa pi len sona</string>
   <!--
     Search Widget
 
@@ -303,12 +291,6 @@
   <string name="search_widget_text_long">o alasa lon ilo</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">o alasa kepeken toki uta</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">nasin ilo</string>
   <!--
     Preferences
 
@@ -693,8 +675,6 @@
   <string name="close_tab">o pini e poki</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab <title> button. %s is the tab title -->
   <string name="close_tab_title">o pini e poki \"%s\"</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">o pana poki tawa kulupu ni</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">o weka e kulupu poki</string>
   <!-- Text for the menu button to rename a collection -->
@@ -808,8 +788,6 @@
   <string name="webcompat_reporter_label_url">nimi nasin</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">o pana e nimi nasin pona</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">ala</string>
   <!-- Broken site reason text for site asked to turn off ad blocker -->
   <string name="webcompat_reporter_reason_turn_off_adblocker">lipu ni li wile e ni: sina weka ala e sitelen esun</string>
   <!-- Broken site reason text for something else -->
@@ -1052,8 +1030,6 @@
   <string name="qr_scanner_dialog_positive">ken</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">ken ala</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">sina wile ala wile weka e kulupu %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">nimi li pana ala e kon. ona li lon tawa ni taso: sina ante e suli nimi la nimi li pona ala pona tawa lukin?</string>
   <!-- Title for Accessibility Text Size Scaling Preference -->

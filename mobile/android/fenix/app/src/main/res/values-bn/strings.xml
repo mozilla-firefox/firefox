@@ -31,8 +31,6 @@
   <string name="tab_tray_close_multiselect_content_description">মাল্টিলেক্ট মোড থেকে প্রস্থান করুন</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s হচ্ছে Mozilla দ্বারা তৈরি।</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">ব্যাক্তিগত ব্রাউজিং সম্পর্কে কিছু ভুল ধারণা</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">সেটিং এ যাও</string>
   <!-- Text for the negative action button -->
@@ -127,12 +125,6 @@
   <string name="search_bar_with_lens_widget_description">ছবি, প্রাইভেট ও ভয়েস সার্চ সংবলিত সার্চ বার</string>
   <!-- Widget description in the widget picker screen for the compact search bar widget -->
   <string name="compact_search_bar_widget_description">সংক্ষিপ্ত সার্চ বার</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">সেটিংস</string>
   <!--
     Preferences
 
@@ -585,8 +577,6 @@
   <string name="qr_scanner_dialog_positive">ALLOW</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">DENY</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">আপনি কি নিশ্চিত আপনি %1$s মুছতে চান?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">এটি নমুনা লেখা। আপনি যখন এই সেটিংটি দিয়ে আকার বাড়াবেন বা হ্রাস করবেন তখন লেখা কি ভাবে প্রদর্শিত হবে তা দেখানোর জন্য এটি এখানে।</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -781,8 +771,6 @@
   <string name="confirm_clear_permissions_on_all_sites">আপনি কি নিশ্চিত যে আপনি সব সাইটের সব অনুমতি সাফ করতে চান?</string>
   <!-- Confirmation message for a dialog confirming if the user wants to delete all the permissions for a site -->
   <string name="confirm_clear_permissions_site">আপনি কি নিশ্চিত যে আপনি এই সাইটের জন্য সব অনুমতি সাফ করতে চান?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">মুছে ফেলুন</string>
   <!--
     PDF viewer toolbar and buttons
 

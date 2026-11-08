@@ -380,14 +380,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Cunfijura comu navicaturi pridifinutu</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Sauta</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Ammutta a to privatizza</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Riscedi â to manera</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Junci accurzi â to schirmata mastra</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Aḍḍìccati â privatizza</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Junci</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -514,8 +506,6 @@
   <string name="preference_exceptions_menu_remove">Leva</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Leva tutti i siti</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Ferma i viscotta</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Mi dispiaci. Cci fu un prubblema cu sta scheda.</string>
   <!-- Subtitle for the tab crash report screen -->

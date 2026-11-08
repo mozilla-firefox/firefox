@@ -126,8 +126,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Maak oop</string>
   <string name="error_hostLookup_title">Bediener nie gevind nie</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Jou soek, jou manier</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Voeg by</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

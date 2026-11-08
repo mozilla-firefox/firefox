@@ -366,14 +366,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">ডিফল্ট ব্রাউজার হিসাবে নির্ধারণ করুন</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">এড়িয়ে যান</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">আপনার গোপনীয়তা কঠোর করুন</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">আপনি খুঁজবেন, আমার মত করে</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">নীড় স্ক্রিনে শর্টকাট যোগ করুন</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">গোপনীয়তাকে অভ্যাসে পরিনত করুন</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">যোগ</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

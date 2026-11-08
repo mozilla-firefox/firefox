@@ -51,8 +51,6 @@
   <string name="home_bookmarks_menu_item_remove">قالدیر</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s موزیلا طرفیندن دوزه‌دیلمیش.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">گیزلی مورور حاقیندا یایقین اینانجلار</string>
   <!--
     True Private Browsing Mode
 
@@ -199,8 +197,6 @@
   <string name="browser_menu_sign_back_in_to_sync">دؤنگل اوچون گئنه گیرین</string>
   <!-- Browser menu caption label for the "Sign back in to sync" browser menu item described in `browser_menu_sign_back_in_to_sync` when there is an error in syncing -->
   <string name="browser_menu_syncing_paused_caption">دؤنگل دایاندیریلدی</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">یئنی گیزلی تاغ</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">رمز‌لر</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -272,12 +268,6 @@
   <string name="search_widget_text_long">وب‌ده آختارین</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">سس‌لی آختاریش</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">تنظیم‌‎لر</string>
   <!--
     Preferences
 
@@ -798,8 +788,6 @@
   <string name="close_tab_title">%s تاغی باغلا</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">آچیق تاغ‌لار منوسونو آچ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">تاغ‌لاریْ مجموعه‌ده ساخلاییْن</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">مجموعه‌نی سیل</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1140,8 +1128,6 @@
   <string name="qr_scanner_dialog_invalid">وب آدرسی گئچرسیز.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">تامام</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s مجموعه‌سینی سیلمه‌گه آرخایینسیز؟</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">بو نمونه متن‌دیر. بو تنظیم‌له اؤلچونو آرتیردیغینیزدا ویا آزالتیغینیزدا متن‌ین نئجه گؤرونه‌جگینی گؤسترمک اوچون بورادادیر.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1654,10 +1640,6 @@
   <string name="browser_menu_remove_from_shortcuts">شورتکات‌لاردان قالدیر</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">بو رمزی سیلمه‌گه آرخایینسیز؟</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">سیل</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">لغو</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">رمز دوزه‌لیشی</string>
   <!-- The page title for adding new password. -->

@@ -21,8 +21,6 @@
   <string name="search_hint">Scrivi ò çerca indirisso</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s o l\'é svilupou da Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Miti comuin in sciâ navegaçion privâ</string>
   <!--
     Home screen icons - Long press shortcuts
 
@@ -99,12 +97,6 @@
   <string name="search_widget_text_long">Çerca inta ræ</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Çerca co-a voxe</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Inpostaçioin</string>
   <!--
     Preferences
 
@@ -294,8 +286,6 @@
   <string name="close_tab_title">Særa feuggio %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Menû feuggi averti</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Sarva feuggi in coleçion</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Scancella coleçion</string>
   <!-- Text for the menu button to rename a collection -->
@@ -521,8 +511,6 @@
   <string name="qr_scanner_dialog_positive">PERMETTI</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">NO PERMETTE</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">T\'ê seguo de voei scancelâ %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Sto chi o l\'é \'n testo d\'ezenpio. Serve pe fa vedde comme saiâ o testo quande ti t\'aomenti o ti diminoisci o testo con sta inpostaçion.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -782,8 +770,6 @@
   <string name="confirm_clear_permission_site">Te seguo de scancelâ sto permisso pe sto scito?</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">Nisciunn-a eceçion pe-i sciti</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Scancella</string>
   <!-- Voice search button content description -->
   <string name="voice_search_content_description">Çerca co-a voxe</string>
   <!-- Voice search prompt description displayed after the user presses the voice search button -->

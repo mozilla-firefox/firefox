@@ -380,14 +380,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Зрабіць прадвызначаным браўзерам</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Прапусціць</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Узмацніце сваю прыватнасць</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Шукайце па-свойму</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Дадайце цэтлікі на хатні экран</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Зрабіце прыватнасць звычкаю</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Дадаць</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -533,8 +525,6 @@
   <string name="preference_exceptions_menu_remove">Выдаліць</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Выдаліць усе вэб-сайты</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Блакіраваць кукі</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Прабачце. З гэтай карткай узніклі праблемы.</string>
   <!-- Subtitle for the tab crash report screen -->

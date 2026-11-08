@@ -61,12 +61,6 @@
   <!--
     Preferences
 
-    Title for the settings page
-  -->
-  <string name="settings">Tisɣal</string>
-  <!--
-    Preferences
-
     Preference category for general settings
   -->
   <string name="preferences_category_general">Amatay</string>
@@ -302,8 +296,6 @@
   <string name="phone_feature_blocked_intro">Ssureg-t:</string>
   <!-- First step for the allowing a permission -->
   <string name="phone_feature_blocked_step_settings">1. Ddu ɣer tisɣal n Android</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Kkes</string>
   <!-- Voice search prompt description displayed after the user presses the voice search button -->
   <string name="voice_search_explainer">ssiwel dɣi</string>
   <!-- Title text displayed in the rename top site dialog. -->

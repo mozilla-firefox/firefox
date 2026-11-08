@@ -360,12 +360,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Peujeuet sibagoe browser teutap</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Lingkeue</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Peuköng privasi droeneuh</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Hasé mita droeneuh, kri droeneuh</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Peujeuet privasi jeuet keu reusam</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Tamah</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -446,8 +440,6 @@
   <string name="preference_exceptions_menu_remove">Sampôh</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Sampôh bandum situs</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Tham Kuki</string>
   <!-- Label for button to close the tab -->
   <string name="tab_crash_report_close_tab_button_label">Tôp Tab</string>
   <!-- Preference title for enhanced tracking protection settings. -->

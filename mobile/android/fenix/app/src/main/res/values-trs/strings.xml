@@ -73,8 +73,6 @@
   <string name="home_bookmarks_menu_item_remove">Guxūn</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s huin \\’ngō sa giri Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Nuguan\' nē huā rayi\'î riña aché nu huì\'</string>
   <!--
     Private Browsing
 
@@ -253,8 +251,6 @@
   <string name="browser_menu_syncing_paused_caption">Giyichin’ akuan’ guendâ nagi’hiaj nūguàn’anj</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Gānatsij nej sa dūnajt ‘ngō ñadu’hua nī nāgi’hiaj nūguan’àn</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Rakïj ñaj nakà gārasun \'ngō rïn\'</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Nej da\'nga\' huìi</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -452,18 +448,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Gà\' huaj</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Guruhuât gunumânt riña Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Si gān’ānjt ne’ ñāa, nī arâjyinat %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Chrēj da’huît gānikò’t sisī gārāsunt Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Riñun ruhuâ Firefox da’ gā huì gāchēt. Gīnī’in doj dàj hua nuguan’ nan riña %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Notisiâ Huìi</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Da’ gā’hue nāhuin sà’ doj riña aché nunt nan nī, a’nïn Firefox nuguan’ da’ nàchinj nan’an dàj ‘hiaj sun Mozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Ganikaj ñu\'un\'</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Giri yītïn sa nana’hui’ ‘hiaj sun ngà Android</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -566,20 +550,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Dugumîn ñûnj nej nuguan’ hūa rayi’ît nī narán ñûnj riña nej sa yī’ìi da’ sī naga’nāj nej man sò’.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Dūnâj gāhuin man riña sa nānà\'uì\' yītïnjt</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Nāguī dukuân ‘na’ nej dīreksiûn ruhuât gārasunt</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Raj</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Yi\'ij</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Nāguī si temât</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Sa nañû ma\'an</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Sa yigìïn</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Dàj rumin\' man</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Hìo doj nānikàjt danè’ gunâtj</string>
   <!-- Sync onboarding subtitle. -->
@@ -627,12 +597,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Gīni’in dàj huas a dugumîn nākà doj sò’ giri Firefox da’ gā nïn nīgànj gāchē nunt.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Nāchrūn nej nuguan’ atāj na’ānj an</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Nāgi’hiaj da’ gā huì doj nej sa nana’huî’t</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Gāyì’i nānà’huì’t riña aga’li a’mint nī gīnun ruhuâ sisī nīkāj Firefox nej sa dugumîn mān’an sò’.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Nā’nïnj si widget Firefox</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Gūru’man ra’a nī hìo doj gā’hue nāgi’hiát man dàj garan’ ruhuât nī huā huì man doj</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -670,12 +634,6 @@
   <string name="search_widget_text_long">Nānà\'uì\' riña web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Nānà\'uì\' ngà nanèt</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Nāgi\'iô\'</string>
   <!--
     Preferences
 
@@ -1360,8 +1318,6 @@
   <string name="close_tab_title">Nārán rakij ñanj %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Nā\'nïn si menú rakïj ñanj</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Na\'nïnj sà\' nej rakïj ñanj riña màn si yi\'nïnj</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Nādūre\' da\' huā ngè yi\'nïn\'ïn</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1499,8 +1455,6 @@
   <string name="webcompat_reporter_learn_more">Gāhuin chrūn doj</string>
   <!-- The text field label of the URL text field. This is displayed above the user-inputted URL. -->
   <string name="webcompat_reporter_label_url">URL</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Dūyichin\'</string>
   <!-- Text shown on the save button for the Edit URL confirmation dialog in the WebCompatReporter. -->
   <string name="webcompat_reporter_edit_url_dialog_save">Nā\'nïnj sà\'</string>
   <!-- Text shown on the dismiss button for the Edit URL confirmation dialog in the WebCompatReporter. -->
@@ -1813,8 +1767,6 @@
   <string name="qr_scanner_dialog_invalid">Nitāj si huā hue\'ê si direksiûn Web gachrûnt</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">GĀ’HUE</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Huā yītïnj ruhuât nādure\'t %1$s anj</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Ni\'iāj sò\' hua lechrâ nan. Dānaj gūruguì\'ij ni\'iājt sisī nāgi\'iaj yāchìjt asi nāgi\'iaj lít man.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -2303,10 +2255,6 @@
   <string name="browser_menu_add_to_shortcuts">Nā’nïnj man riña āksêso dīrêkto</string>
   <!-- Browser menu button that removes a shortcut from the home fragment -->
   <string name="browser_menu_remove_from_shortcuts">Nādure’ āsìj riña āksêso dīrêkto</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Nādūre\'</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Dūyichin\'</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Nachrūn da\'nga\' huìi</string>
   <!-- The page title for adding new password. -->

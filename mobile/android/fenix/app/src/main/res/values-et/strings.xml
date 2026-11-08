@@ -57,8 +57,6 @@
   <string name="home_bookmarks_menu_item_remove">Eemalda</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s on Mozilla poolt toodetud.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Levinumad müüdid privaatse veebilehitsemise kohta</string>
   <!--
     Private Browsing
 
@@ -206,8 +204,6 @@
   <string name="browser_menu_open_app_link">Ava äpis</string>
   <!-- Browser menu button to show reader view appearance controls e.g. the used font type and size -->
   <string name="browser_menu_customize_reader_view_2">Kohanda lugemisvaadet</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Uus privaatne kaart</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Paroolid</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
@@ -292,12 +288,6 @@
   <string name="search_widget_text_long">Otsi veebist</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Häälotsing</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Sätted</string>
   <!--
     Preferences
 
@@ -706,8 +696,6 @@
   <string name="close_tab_title">Sulge kaart %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Ava kaartide menüü</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Salvesta kaardid kollektsiooni</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Kustuta kollektsioon</string>
   <!-- Text for the menu button to rename a collection -->
@@ -809,8 +797,6 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">Palun sisesta korrektne URL</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Loobu</string>
   <!--
     Crashes
 
@@ -1094,8 +1080,6 @@
   <string name="qr_scanner_dialog_invalid">Veebiaadress pole korrektne.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">Olgu</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Kas oled kindel, et soovid kustutada kollektsiooni %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">See on näidistekst. Siin näidatakse, kuidas teksti kuvatakse, kui selle sättega suurust suurendada või vähendada.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -1626,10 +1610,6 @@
   <string name="browser_menu_remove_from_shortcuts">Eemalda otseteede hulgast</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Kas oled kindel, et soovid selle parooli kustutada?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Kustuta</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Loobu</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Parooli muutmine</string>
   <!-- The page title for adding new password. -->

@@ -67,8 +67,6 @@
   <string name="home_bookmarks_menu_item_remove">Ukloni</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s je razvila Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Uobičajeni mitovi o privatnom surfanju</string>
   <!--
     Private Browsing
 
@@ -240,8 +238,6 @@
   <string name="browser_menu_syncing_paused_caption">Sinhronizacija je pauzirana</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Upravljajte sadržajem koji se sigurnosno kopira i sinhronizuje</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Novi privatni tab</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Lozinke</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -377,18 +373,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Gotovo</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Dobrodošli u Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Ako nastavite, prihvatate %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Uvjeti korištenja Firefoxa</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox brine o vašoj privatnosti. Saznajte više u našem %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Polica privatnosti</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Kako bi pomogao u poboljšanju pretraživača, Firefox šalje dijagnostičke podatke i podatke o interakciji Mozili. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Upravljaj</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Pokrenite ultimativni Android preglednik</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -468,12 +452,6 @@
   <string name="search_widget_text_long">Pretraži web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Glasovna pretraga</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Postavke</string>
   <!--
     Preferences
 
@@ -1184,8 +1162,6 @@
   <string name="close_tab_title">Zatvori tab %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Meni otvorenih tabova</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Spasi tabove u kolekciju</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Obriši kolekciju</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1378,8 +1354,6 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">Molimo da unesete ispravan URL</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Otkaži</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">Izvještaj poslan</string>
   <!--
@@ -1803,8 +1777,6 @@
   <string name="qr_scanner_dialog_invalid">Web adresa nije važeća.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">OK</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Da li ste sigurni da želite obrisati %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Ovo je primjer teksta. Ovdje se nalazi kako bi vam prikazali kako će tekst izgledati kada povećate ili smanjite veličinu pomoću ove postavke.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -2447,10 +2419,6 @@
   <string name="browser_menu_remove_from_shortcuts">Ukloni iz prečica</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Jeste li sigurni da želite izbrisati ovu lozinku?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Obriši</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Otkaži</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Uredi lozinku</string>
   <!-- The page title for adding new password. -->
@@ -2893,11 +2861,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Ako nešto izgleda pokvareno na ovoj stranici, pokušajte to isključiti.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Preporučuje se uključivanje zaštite od praćenja.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Tragači blokirani: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Programi za praćenje nisu blokirani</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->

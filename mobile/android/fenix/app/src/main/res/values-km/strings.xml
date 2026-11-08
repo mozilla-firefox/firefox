@@ -73,8 +73,6 @@
   <string name="home_bookmarks_menu_item_remove">យកចេញ</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s ត្រូវ​បាន​ផលិត​ដោយ Mozilla។</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">ទេវកថាទូទៅអំពីការរុករកឯកជន</string>
   <!--
     Private Browsing
 
@@ -253,8 +251,6 @@
   <string name="browser_menu_syncing_paused_caption">ការធ្វើសមកាលកម្មត្រូវបានផ្អាក</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">គ្រប់គ្រងអ្វីដែលអ្នកបម្រុងទុក និងធ្វើសមកាលកម្ម</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">ផ្ទាំង​ឯកជន​ថ្មី</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">ពាក្យ​សម្ងាត់</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -429,14 +425,6 @@
   <string name="onboarding_preferences_dialog_positive_button">ធ្វើ​រួច</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">សូមស្វាគមន៍មកកាន់ Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">ដោយការបន្ត អ្នកយល់ព្រមតាម %1$s។</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">លក្ខខណ្ឌប្រើប្រាស់ Firefox</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">ការជូនដំណឹង​អំពី​ឯកជនភាព</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">គ្រប់គ្រង</string>
   <!-- Terms of use (ToU) first subheader. -->
   <string name="onboarding_redesign_tou_subheader_one" tools:ignore="UnusedResources">បើកវេបសាយលឿនដូចផ្លេកបន្ទារ</string>
   <!-- Terms of use (ToU) second subheader. -->
@@ -499,20 +487,6 @@
   <string name="nova_onboarding_tou_body_line_3_link_text">គ្រប់គ្រងការកំណត់</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">កំណត់ជាកម្មវិធីច្បោលបុរេជម្រើស</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">ជ្រើសរបារអាសយដ្ឋានរបស់អ្នក</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">ឯលើ</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">ឯបាត</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">រើសផ្ទៃស្បែករបស់អ្នក</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">ស្វ័យប្រវត្តិ</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">ភ្លឺ</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">ងងឹត</string>
   <!-- Sync onboarding subtitle. -->
   <string name="nova_onboarding_sync_subtitle">ចាប់យកចំណាំ ពាក្យសម្ងាត់ និងច្រើនទៀតនៅលើឧបករណ៍ណាមួយបានភ្លាមៗ។ ទិន្នន័យផ្ទាល់ខ្លួនរបស់អ្នកនៅតែមានសុវត្ថិភាព និងមានសុវត្ថិភាពជាមួយនឹងការអ៊ិនគ្រីប។</string>
   <!-- Sync onboarding button. -->
@@ -523,10 +497,6 @@
   <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">ការជូនដំណឹងជួយអ្នកឱ្យមានសុវត្ថិភាពជាមួយ Firefox</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">បើកការជូនដំណឹង</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">ធ្វើឱ្យការស្វែងរកនីមួយៗកាន់តែឯកជនភាព</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">បន្ថែមធាតុក្រាហ្វិក Firefox</string>
   <!--
     Widget Picker
 
@@ -545,12 +515,6 @@
   <string name="search_widget_text_long">ស្វែងរក​គេហទំព័រ</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">ការស្វែងរកតាមសំឡេង</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">ការ​កំណត់</string>
   <!--
     Preferences
 
@@ -1154,8 +1118,6 @@
   <string name="open_tabs_menu">បើកផ្ទាំងម៉ឺនុយ</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">ត្រឡប់ទៅកម្មវិធីគ្រប់គ្រងផ្ទាំងវិញ</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">រក្សាទុកផ្ទាំងទៅក្នុងបណ្តុំ</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">លុបបណ្តុំ</string>
   <!-- Text for the button to open tabs of the selected collection -->
@@ -1360,8 +1322,6 @@
   <string name="webcompat_reporter_learn_more">ស្វែងយល់បន្ថែម</string>
   <!-- The text field label of the URL text field. This is displayed above the user-inputted URL. -->
   <string name="webcompat_reporter_label_url">URL</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">បោះបង់</string>
   <!-- The button text for the preview report button to view a preview of the report. -->
   <string name="webcompat_reporter_preview_report">មើលមុនរាយការណ៍</string>
   <!--
@@ -1596,8 +1556,6 @@
   <string name="qr_scanner_dialog_negative">បដិសេធ</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">យល់ព្រម</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">តើអ្នកប្រាកដថាចង់លុប %1$s មែនទេ?</string>
   <!-- Title for Accessibility Text Size Scaling Preference -->
   <string name="preference_accessibility_font_size_title">ទំហំពុម្ពអក្សរ</string>
   <!-- Title for the Delete browsing data preference -->
@@ -1786,10 +1744,6 @@
   <string name="search_add_custom_engine_error_empty_name">បញ្ចូលឈ្មោះអេនជីនស្វែងរក</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">តើអ្នកពិតជាចង់លុបពាក្យសម្ងាត់នេះមែនទេ?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">លុប</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">បោះបង់</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">កែសម្រួលពាក្យសម្ងាត់</string>
   <!-- The page title for adding new password. -->

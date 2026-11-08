@@ -288,14 +288,6 @@
     %1$s is the app name and build variant (for example "Firefox Focus", "Firefox Klar Nightly").
   -->
   <string name="onboarding_first_screen_title">%1$s में आपका स्वागत हैं</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">अपनी गोपनीयता को बढ़ाएँ</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">आपका खोज, आपका रास्ता</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">अपने मुख्य स्क्रीन पर शॉर्टकट जोड़ें</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">गोपनीयता एक आदत बनाये</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">जोड़ें</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -368,8 +360,6 @@
   <string name="preference_exceptions_menu_remove">हटाएँ</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">सभी वेबसाइटों को हटाएँ</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">कुकीज़ बाधित करें</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">क्षमा करें। हमें इस टैब के साथ कोई समस्या आ रही है।</string>
   <!-- Subtitle for the tab crash report screen -->

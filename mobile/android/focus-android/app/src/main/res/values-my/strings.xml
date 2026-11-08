@@ -356,14 +356,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">ပုံသေဘရောက်ဇာ အဖြစ်သတ်မှတ်မည်</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">ကျော်ရန်</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">ကိုယ်ရေးကာကွယ်မှုကို တိုးမြှင့်ပါ</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">ကိုယ့်နည်းကိုယ့်ဟန် အသုံးပြုမည်</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">အမြန်သုံးလင့်ခ်ကို မူလစာမျက်နှာသို့ ထည့်ပါ</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">ကိုယ်ရေးလုံခြုံမှုကို နေ့စဉ် ဆောင်ရွက်ပါ</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">ထည့်ရန်</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

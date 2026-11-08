@@ -35,8 +35,6 @@
   <string name="tab_tray_select_collection">Danndu to leemannde</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">Ko Mozilla jibini %1$s</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Tinndi goowaaɗi baɗte banngogol suturo</string>
   <!-- Text for the positive action button to go to Settings for auto close tabs. -->
   <string name="tab_tray_close_tabs_banner_positive_button_text">Juɓtorɗe jiytol</string>
   <!-- Text for the banner message to tell users about our inactive tabs feature. -->
@@ -141,12 +139,6 @@
   <string name="search_widget_text_long">Yiylo geese ɗee</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Njiilaw sawto</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Teelte</string>
   <!--
     Preferences
 
@@ -464,8 +456,6 @@
   <string name="close_tab_title">Uddu tabbe %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Uddit dosol tabbe</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Danndu tabbe to leemannde</string>
   <!-- Text for the button to open tabs of the selected collection -->
   <string name="collection_open_tabs">Uddit tabbe</string>
   <!-- Text for the menu button to remove a top site -->
@@ -680,8 +670,6 @@
   <string name="qr_scanner_dialog_positive">YAMIR</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">HAƊ</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Aɗa yenanaa yiɗde momtude %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Ɗum ko jubbannde binndi. Waɗiraa ko ngam hollirde no binndi ɗii mbayata so a ɓeydii walla a ustii darnde alkule ɗee e ngol teeltol.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -903,8 +891,6 @@
   <string name="phone_feature_blocked_step_settings">1. Yah to teelte Android</string>
   <!-- Confirmation message for a dialog confirming if the user wants to set default value a permission for a site -->
   <string name="confirm_clear_permission_site">Aɗa yananaa yiɗde momtude ɗee jamirooje e ɗee lowe?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Momtu</string>
   <!-- The error message in add login view when hostname field is blank. -->
   <string name="saved_login_hostname_required" tools:ignore="UnusedResources">Innde lowre ena waɗɗii</string>
   <!-- Voice search button content description -->

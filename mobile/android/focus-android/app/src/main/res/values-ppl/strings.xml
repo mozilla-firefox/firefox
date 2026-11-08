@@ -334,14 +334,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">Shiktali ken ne tajtachialis achtutalijtuk</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">Te nikneki nikita</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Shikchikawa ne muichtakanemilis</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">Ken tikneki titatemua</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Shiktali tamelawka tik ne achtu iswat</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Shinemi ichtaka mujmusta</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Shiktali</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -466,8 +458,6 @@
   <string name="preference_exceptions_menu_remove">Shikishti</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">Shikishti muchi ne sitioj ipal ne matapan</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">Shiktentzakwa ne cookies</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">Shitapupulwi. Saman tikpiat uijkayu iwan ini itzun.</string>
   <!-- Subtitle for the tab crash report screen -->

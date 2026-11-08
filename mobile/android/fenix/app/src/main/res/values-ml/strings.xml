@@ -71,8 +71,6 @@
   <string name="home_bookmarks_menu_item_remove">മാറ്റുക</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s നിർമ്മിച്ചത് മോസില്ലയാണ്.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">സ്വകാര്യ തിരച്ചിലിനെക്കുറിച്ചുള്ള പൊതുവായ തെറ്റിദ്ധാരണങ്ങൾ</string>
   <!--
     Private Browsing
 
@@ -251,8 +249,6 @@
   <string name="browser_menu_syncing_paused_caption">സമന്വയിപ്പിക്കൽ താൽക്കാലികമായി നിർത്തി</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">താങ്ങൾ എന്തിന്റെ കരുതൽപ്പകൎപ്പു് എടുക്കാൻ പോവുന്നു അല്ലെങ്കിൽ സമന്വയിപ്പിക്കാൻ പോവുന്നുയെന്നു കൈകാര്യം ചെയ്യുക</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">പുതിയ സ്വകാര്യ ടാബ്</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">ഒളിവാക്കുകൾ</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -419,18 +415,6 @@
   <string name="onboarding_preferences_dialog_positive_button">ചെയ്തു</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">ഫയര്‍ഫോക്സിലേക്കു് സ്വാഗതം</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">തുടരുന്നതിലൂടെ, താങ്ങൾ %1$s അംഗീകരിക്കുന്നു.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Firefox ഉപയോഗനിബന്ധനകൾ</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">താങ്ങളുടെ സ്വകാര്യതക്കു് ഫയർഫോക്സു് ശ്രദ്ധിക്കാരുണ്ടു്. ഞങ്ങളുടെ %1$s-ൽ കൂടുതൽ അറിയുക.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">സ്വകാര്യതാ അറിയിപ്പ്</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">അന്വേഷിയന്ത്രത്തിനെ മെച്ചപ്പെുടത്താൻ ഫയർഫോക്സു് മോസില്ലക്കു് നിദാനനിർണയനീയും ഇടപാടുനീയ ദത്ത അയയ്ക്കാരുണ്ടു്. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">കൈകാര്യം ചെയ്യുക</string>
   <!-- Terms of use (ToU) first subheader. -->
   <string name="onboarding_redesign_tou_subheader_one" tools:ignore="UnusedResources">മിന്നൽ വിരവോടെ വെബ്ബിടങ്ങൾ ലഭ്യമാക്കുക</string>
   <!-- Terms of use (ToU) second subheader. -->
@@ -507,20 +491,6 @@
   <string name="nova_onboarding_set_to_default_title_2">ഉൾപ്പണിഞ്ഞ സ്വകാര്യതത്തോടെ എല്ലാ കണ്ണികളും തുറക്കുക</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">തനിമട്ടായ അന്വേഷിയായി വയ്ക്കുക</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">വിലാസപ്പട്ട തിരഞ്ഞെടുക്കുക</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">മുകള്‍ഭാഗം</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">കീഴ്ഭാഗം</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">അലങ്കാരം തിരഞ്ഞെടുക്കുക</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">തന്നെത്താനെ</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">തെളിച്ചം</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">ഇരുളിമ</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">താങ്ങൾ നിറുത്തിയയിടത്തിൽ നിന്നു് ഉടൻ തുടങ്ങുക</string>
   <!-- Sync onboarding subtitle. -->
@@ -545,8 +515,6 @@
   <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">Firefox-ൽ സുരക്ഷിതമായി തുടരാൻ അറിയിപ്പുകൾ താങ്ങളെ സഹായിക്കുന്നു</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">അറിയിപ്പുകൾ തുടങ്ങിവയ്ക്കുക</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">ഓരോ തിരച്ചിലും ഇനിയും സ്വകാര്യമാക്കുക</string>
   <!-- Customize prompt onboarding positive button. -->
   <string name="nova_onboarding_customize_prompt_positive_button" tools:ignore="UnusedResources">ഇഷ്ടാനുസൃതമാക്കൽ തുടങ്ങുക</string>
   <!-- App icon onboarding title. -->
@@ -569,12 +537,6 @@
   <string name="search_widget_text_long">വെബിൽ തിരയുക</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">ശബ്ദം ഉപയോഗിചു തിരയുക</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">ക്രമീകരണങ്ങൾ</string>
   <!--
     Preferences
 
@@ -1321,8 +1283,6 @@
   <string name="close_tab_title">%s ടാബ് അടയ്ക്കുക</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">ടാബുകളുടെ മെനു തുറക്കുക</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">ശേഖരത്തിലേക്ക് ടാബുകൾ സംരക്ഷിക്കുക</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">ശേഖരം നീക്കം ചെയ്യുക</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1637,8 +1597,6 @@
   <string name="webcompat_reporter_label_url">യുആര്‍എല്‍</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">ശരിയായൊരു യുആര്‍എല്‍ നല്‍കുക</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">റദ്ദാക്കുക</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
   <string name="webcompat_reporter_success_snackbar_text_2">അറിയിപ്പയച്ചു</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
@@ -2094,8 +2052,6 @@
   <string name="qr_scanner_dialog_invalid">ഈ വലവിലാസം സാധ്യമല്ല.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">ശരി</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">%1$s നീക്കം ചെയ്യണമെന്ന് താങ്കൾക്ക് ഉറപ്പാണോ?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">ഇതൊരു ഉദാഹരണ വാചകമാണ്. നിങ്ങൾ അക്ഷരത്തിന്റെ വലുപ്പം കൂട്ടുകയോ കുറയ്ക്കുകയോ ചെയ്യുമ്പോൾ എങ്ങനെ ദൃശ്യമാകുമെന്ന് കാണിക്കാൻ ഇത് സഹായിക്കുന്നു.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -2857,10 +2813,6 @@
   <string name="browser_menu_remove_from_shortcuts">കുറുക്കുവഴികളിൽ നിന്നു് മാറ്റുക</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">താങ്ങൾക്കു് ഉറപ്പായിട്ടു് ഈ ഒളിവാക്കു് മായ്ക്കണോ?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">നീക്കം ചെയ്യുക</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">റദ്ദാക്കുക</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">ഒളിവാക്കു് തിരുത്തുക</string>
   <!-- The page title for adding new password. -->
@@ -3319,11 +3271,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">ഈ വെബ്ബിടത്തിൽ എന്തെങ്കിലും തകരാറുണ്ടെന്നു തോന്നുന്നുണ്ടെങ്കിൽ പരിരക്ഷകളെ അണച്ചു നോക്കൂ.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">പിന്തുടൎച്ച പരിരക്ഷണം തുടങ്ങിവയ്ക്കുന്നതു ശുപാൎശചെയ്യപ്പെട്ടതാണു്.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">തടഞ്ഞിരിക്കുന്ന പിന്തുടർച്ചായന്ത്രങ്ങൾ: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">പിന്തുൎച്ചയന്ത്രങ്ങൾ തടഞ്ഞിട്ടില്ല</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->

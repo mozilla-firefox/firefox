@@ -29,8 +29,6 @@
   <string name="tab_tray_select_collection">સંગ્રહ પસંદ કરો</string>
   <!-- Content description for close button while in multiselect mode in tab tray -->
   <string name="tab_tray_close_multiselect_content_description">મલ્ટિસિલેક્ટ મોડમાંથી બહાર નીકળો</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">ખાનગી બ્રાઉઝિંગ વિશે સામાન્ય માન્યતાઓ</string>
   <!--
     Home screen icons - Long press shortcuts
 
@@ -103,12 +101,6 @@
   <string name="search_widget_text_long">વેબ પર શોધો</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">અવાજ દ્વારા શોધ</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">સેટિંગ્સ</string>
   <!--
     Preferences
 
@@ -489,8 +481,6 @@
   <string name="qr_scanner_dialog_positive">પરવાનગી આપો</string>
   <!-- QR code scanner prompt dialog positive option to deny navigation to scanned link -->
   <string name="qr_scanner_dialog_negative">નકારો</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">શું તમે ખરેખર %1$s ને કાઢી નાખવા માંગો છો?</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
   <string name="preference_accessibility_text_size_summary">વેબસાઇટ્સ પર ટેક્સ્ટ મોટા અથવા નાનાં બનાવો</string>
   <!-- Title for Accessibility Text Size Scaling Preference -->

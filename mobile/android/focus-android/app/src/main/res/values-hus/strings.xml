@@ -223,14 +223,6 @@
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">Ka japiy</string>
   <string name="error_hostLookup_title">Yab elan an pat\'ál ju\'taj dheyach an xeklek</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">Ka k\'adhbanchij in tsapik an tsinataláb</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">A alimtal jant\'in tat a le\'</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">Ka punuw tin ok\'ox wal a pat\'alil, an bél xi kin taja\' kit ulits dhubat</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">Kit xe\'tsin k\'al an tsinataláb</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">Ka punuw</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->

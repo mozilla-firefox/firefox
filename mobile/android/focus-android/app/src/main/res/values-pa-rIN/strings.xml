@@ -382,14 +382,6 @@
   <string name="onboarding_second_screen_default_browser_button_text">ਮੂਲ ਬਰਾਊਜ਼ਰ ਬਣਾਓ</string>
   <!-- New Onboarding flow second screen skip onboarding button label -->
   <string name="onboarding_second_screen_skip_button_text">ਛੱਡੋ</string>
-  <!-- First run tour (Default browser): Title -->
-  <string name="firstrun_defaultbrowser_title">ਆਪਣੀ ਪਰਦੇਦਾਰੀ ਨੂੰ ਕੰਟਰੋਲ ਕਰੋ</string>
-  <!-- First run tour (Search): Title -->
-  <string name="firstrun_search_title">ਤੁਹਾਡੀ ਖੋਜ, ਤੁਹਾਡਾ ਢੰਗ</string>
-  <!-- First run tour (Shortcut): Title -->
-  <string name="firstrun_shortcut_title">ਆਪਣੀ ਮੁੱਖ ਸਕਰੀਨ ਲਈ ਸ਼ਾਰਟਕਟ ਜੋੜੋ</string>
-  <!-- First run tour (Privacy): Title -->
-  <string name="firstrun_privacy_title">ਪਰਦੇਦਾਰੀ ਨੂੰ ਆਦਤ ਬਣਾਓ</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">ਜੋੜੋ</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
@@ -535,8 +527,6 @@
   <string name="preference_exceptions_menu_remove">ਹਟਾਓ</string>
   <!-- Button to remove all websites from the exception list -->
   <string name="preference_exceptions_remove_all_button_label">ਸਾਰੀਆਂ ਵੈੱਬਸਾਈਟਾਂ ਹਟਾਓ</string>
-  <!-- Title for Preference screen for cookie blocking for exceptions tracking protection -->
-  <string name="preference_block_cookies_title">ਕੂਕੀਜ਼ \'ਤੇ ਪਾਬੰਦੀ ਲਗਾਓ</string>
   <!-- Headline for the tab crash report screen -->
   <string name="tab_crash_report_headline">ਅਫ਼ਸੋਸ। ਸਾਨੂੰ ਇਸ ਟੈਬ ਨਾਲ ਸਮੱਸਿਆ ਆ ਰਹੀ ਹੈ।</string>
   <!-- Subtitle for the tab crash report screen -->

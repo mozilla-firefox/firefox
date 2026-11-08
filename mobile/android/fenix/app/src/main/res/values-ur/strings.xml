@@ -31,8 +31,6 @@
   <string name="tab_tray_close_multiselect_content_description">ملٹی سکرین موڈ سے نکلیں</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s ءMozilla کے ذریعہ تیار کیا گیا ہے۔</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">نجی براؤزنگ کے بارے میں عمومی فرضی داستان</string>
   <!-- Text for the positive action button -->
   <string name="open_in_app_cfr_positive_button_text">سیٹنگز پر جائیں</string>
   <!-- Text for the negative action button -->
@@ -156,12 +154,6 @@
   <string name="search_widget_text_long">ويب پر تلاش کريں</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">آواز کے ذریعے تلاش کریں</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">سیٹنگز</string>
   <!--
     Preferences
 
@@ -466,8 +458,6 @@
   <string name="close_tab_title">%s ٹیب بند کریں</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">ٹیبز کا مینو کھولیں</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">ٹیبز کو مجموعہ میں محفوظ کریں</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">مجموعہ حذف کریں</string>
   <!-- Text for the menu button to rename a collection -->
@@ -722,8 +712,6 @@
   <string name="qr_scanner_dialog_invalid">ویب پتہ جائز نہیں ہے</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">ٹھیک ہے</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">کیا آپ واقعی %1$s کو حذف کرنا چاہتے ہیں؟</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
   <string name="preference_accessibility_text_size_summary">ویبسائٹ پر موجود متن کو بڑا یا چھوٹا کریں</string>
   <!-- Title for Accessibility Text Size Scaling Preference -->
@@ -1026,8 +1014,6 @@
   <string name="confirm_clear_permission_site">کیا آپ واقعی اس سائٹ کے لئے اس اجازت کو ختم کرنا چاہتے ہیں؟</string>
   <!-- label shown when there are not site exceptions to show in the site exception settings -->
   <string name="no_site_exceptions">کوئی سائٹ استثنات نہیں ہے</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">حذف کریں</string>
   <!-- The error message in add login view when hostname field is blank. -->
   <string name="saved_login_hostname_required" tools:ignore="UnusedResources">میزبان نام درکار ہے۔</string>
   <!-- Voice search button content description -->

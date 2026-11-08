@@ -61,8 +61,6 @@
   <string name="home_bookmarks_menu_item_remove">Dilemel</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">Gant Mozilla eo produet %1$s.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Mojennoù a vez alies diwar-benn ar merdeiñ prevez</string>
   <!--
     True Private Browsing Mode
 
@@ -222,8 +220,6 @@
   <string name="browser_menu_sign_back_in_to_sync">Kennaskañ en-dro evit goubredañ</string>
   <!-- Browser menu caption label for the "Sign back in to sync" browser menu item described in `browser_menu_sign_back_in_to_sync` when there is an error in syncing -->
   <string name="browser_menu_syncing_paused_caption">Ehanet eo ar goubredañ</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Ivinell prevez nevez</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Gerioù-tremen</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
@@ -330,18 +326,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Graet</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Donemat e Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">En ur genderc\'hel e asantit d\'ar %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Termenoù arver Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox a ziwall ho puhez prevez. Deskit hiroc\'h en hor %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Evezhiadennoù a-fet buhez prevez</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Evit sikour da wellaat ar merdeer, Firefox a gas roadennoù dielfennañ hag etreoberiañ da vMozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Ardeiñ</string>
   <!-- Marketing onboarding page title variant. “One last thing” refers to the final step or action in the onboarding process that we’re asking users to take before they can start using the browser. -->
   <string name="onboarding_marketing_title_1" tools:ignore="UnusedResources">Un draig diwezhañ</string>
   <!-- Marketing onboarding page body variant. 'Firefox' is intentionally hardcoded. -->
@@ -366,12 +350,6 @@
   <string name="search_widget_text_long">Klask er web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Klask dre vouezh</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Arventennoù</string>
   <!--
     Preferences
 
@@ -965,8 +943,6 @@
   <string name="close_tab_title">Serriñ an ivinell %s</string>
   <!-- Content description (not visible, for screen readers etc.): Opens the open tabs menu when pressed -->
   <string name="open_tabs_menu">Digeriñ lañser an ivinelloù</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Enrollañ an ivinelloù en un dastumad</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Dilemel an dastumad</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1136,8 +1112,6 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">Enankit un URL reizh mar plij</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Nullañ</string>
   <!--
     These reason strings are dropdown options on a WebCompat reporter form, indicating what is broken on the site.
 
@@ -1507,8 +1481,6 @@
   <string name="qr_scanner_dialog_invalid">N’eo ket talvoudek ar chomlec’h web.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">Mat</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">Sur ocʼh e fell deocʼh dilemel %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Un destenn skouer an hini eo. Amañ emañ evit diskouez deocʼh penaos e vo skrammet an destenn pa greskit pe pa zigreskit ar ment gant an arventenn-mañ.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -2071,10 +2043,6 @@
   <string name="browser_menu_remove_from_shortcuts">Dilemel eus ar berradennoù</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">Sur ocʼh e fell deocʼh dilemel ar ger-tremen-mañ?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Dilemel</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Nullañ</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Aozañ ar ger-tremen</string>
   <!-- The page title for adding new password. -->
@@ -2456,11 +2424,6 @@
   <string name="protection_panel_etp_toggle_off">Diweredekaet</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is enabled. -->
   <string name="protection_panel_etp_toggle_enabled_description_2">Ma seblant bezañ torret un dra bennak war al lec’hienn-mañ, klaskit diweredekaat anezhañ.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Heulierien stanket: %d</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Aotreoù</string>
   <!-- Button text on the clear site data dialog to allow users to confirm they wish to clear the site data. -->

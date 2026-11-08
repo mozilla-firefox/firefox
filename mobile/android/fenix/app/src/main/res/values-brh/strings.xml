@@ -197,8 +197,6 @@
   <string name="browser_menu_open_app_link">ایپ ٹی مل</string>
   <!-- Browser menu label to sign in to sync on the device using Mozilla accounts -->
   <string name="browser_menu_sign_in">سائن ان</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">پوسکنا ڈکوئ ٹیب</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">کلیت لوزاک</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -330,18 +328,6 @@
   <string name="nova_onboarding_negative_button">داسہ نہ</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">آجو و گام اسے کن تیارمبو</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">برز</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">شیف</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">تینا تیم اے گچین کبو</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">تینٹ</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">رژنا</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">تہار</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text_1">پین ہیل کبو</string>
   <!-- Marketing onboarding primary button text. -->
@@ -366,12 +352,6 @@
   <string name="search_widget_voice">توارتون پٹبو</string>
   <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
   <string name="search_widget_private_search">ڈکوئ پٹ</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">سیٹنگاک</string>
   <!--
     Preferences
 
@@ -658,8 +638,6 @@
   <string name="download_content_type_filter_video">ویڈیوک</string>
   <!-- The button text for navigating to the SUMO link to learn more about reporting a broken site. -->
   <string name="webcompat_reporter_learn_more">پین ہیل کبو</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">کینسل</string>
   <!-- Unsubmitted crash dialog negative button to dismiss the dialog -->
   <string name="unsubmitted_crash_dialog_negative_button">بند</string>
   <!-- Snackbar title that confirms a bookmark was saved into a folder. %s is the name of the folder the bookmark was saved into. -->
