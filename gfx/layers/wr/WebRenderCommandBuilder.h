@@ -69,7 +69,6 @@ class WebRenderCommandBuilder final {
     SVGOrigin,
     Perspective,
     OwnLayer,
-    ViewTransitionCapture,
   };
 
   // Defines reference frame aKind of aFrame in the current space. Every

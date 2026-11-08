@@ -5702,59 +5702,6 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
   params.clip =
       wr::WrStackingContextClip::ClipChain(aBuilder.CurrentClipChainId());
 
-  // This is for the case if this frame is transformed. In this case, the wr
-  // display list looks like this, with the reference frame each stacking
-  // context is in:
-  //
-  // PushStackingContext(...)  // For the root
-  //   ...
-  //   nsDisplayTransform      // For the captured element if it is transformed
-  //     PushStackingContext   // In a new reference frame if the transform
-  //                           // matrix is not identity
-  //     VTCapture             // For the captured element
-  //       PushStackingContext // In a new reference frame
-  //       ...
-  //       Other display items // For the descendants of the captured element
-  //       ...
-  //       PopStackingContext
-  //     PopStackingContext
-  //   ...
-  // PopStackingContext
-  //
-  // The wrapper, nsDisplayTransform, creates a new coordinate system whose
-  // origin is from ToReferenceFrame(mFrame). The VTCapture item is inside this
-  // nsDisplayTransform, so it's in this coordinate system. This works well if
-  // the transform matrix is not identity. However, if the transform matrix is
-  // identity, we don't create a new coordinate system (because we don't push a
-  // reference frame in WR), at this moment, the |ref_frame_offset| of the
-  // stacking context of this VTCapture becomes the |origin| of the
-  // nsDisplayTransform (see nsDisplayTransform::CreateWebRenderCommands() for
-  // more details), so this offset may makes the
-  // position of this VTCapture wrong. (Note that the ToReferenceFrame(mFrame)
-  // of this VTCapture is the frame itself, but ToReferenceFrame(mFrame) of the
-  // nsDisplayTransform is its containing frame, e.g. viewport frame.)
-  //
-  // Therefore, we push a reference frame for this display item if the frame is
-  // transformed. This makes this VTCapture creates a new coordinate system, so
-  // its |ref_frame_offset| will be (0, 0), just fit the nsDisplayTransform's
-  // position.
-  //
-  // FIXME: We can avoid pushing a reference frame if the transform matrix is
-  // not identity, because we generate a new coordinate system already from the
-  // nsDisplayTransform (see nsDisplayTransform::CreateWebRenderCommands() for
-  // more details).
-  Maybe<DefinedReferenceFrame> referenceFrame;
-  if (mFrame->IsTransformed()) {
-    // Use an identity matrix to force to push a reference frame to create a new
-    // coordinate system for view transition captured frame.
-    wr::ReferenceFrameParams rfParams;
-    rfParams.transform_style = params.transform_style;
-    referenceFrame = Some(aManager->CommandBuilder().DefineReferenceFrame(
-        aBuilder, mFrame,
-        WebRenderCommandBuilder::FrameReferenceFrame::ViewTransitionCapture,
-        LayoutDevicePoint(), rfParams));
-  }
-
   if (key) {
     vt->UpdateActiveRectForCapturedFrame(capturedFrame, aSc.GetInheritedScale(),
                                          captureRect);
@@ -5774,7 +5721,7 @@ WebRenderCommandsResult nsDisplayViewTransitionCapture::CreateWebRenderCommands(
     params.snapshot = si.ptr();
   }
   StackingContextHelper sc(aSc, GetActiveScrolledRoot(), mFrame, this, aBuilder,
-                           params, referenceFrame);
+                           params);
   return nsDisplayWrapList::CreateWebRenderCommands(
       aBuilder, aResources, sc, aManager, aDisplayListBuilder);
 }
