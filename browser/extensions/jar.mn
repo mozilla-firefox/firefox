@@ -8,4 +8,4 @@
 # (e.g. browser/extensions/webcompat/builtin-addons.mn etc.).
 
 browser.jar:
-%   resource builtin-addons %builtin-addons/  contentaccessible=yes
+%   resource builtin-addons %builtin-addons/
