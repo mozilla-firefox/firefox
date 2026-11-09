@@ -171,6 +171,13 @@ PER_PROJECT_PARAMETERS = {
     "staging-firefox": {
         "target_tasks_method": "firefox_pull_request_tasks",
     },
+    # The code review bot pushes the stacks it analyzes here; it ran on try
+    # before, so keep the same parameters.
+    "firefox-crb": {
+        "enable_always_target": True,
+        "target_tasks_method": "try_tasks",
+        "release_type": "nightly",
+    },
     # the default parameters are used for projects that do not match above.
     "default": {
         "target_tasks_method": "default",

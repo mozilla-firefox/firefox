@@ -414,6 +414,7 @@ tasks:
                               'repoUrl == "https://github.com/mozilla-releng/staging-firefox"': "dev"
                               'repoUrl == "https://github.com/mozilla-firefox/firefox-dev"': "dev"
                               'repoUrl == "https://github.com/mozilla-firefox/firefox-dev-secure"': "dev"
+                              'repoUrl == "https://github.com/mozilla-firefox/firefox-crb"': "dev"
                               'repoUrl == "https://github.com/mozilla-firefox/firefox"': "prod"
                               $default: null
                       shortRef:
