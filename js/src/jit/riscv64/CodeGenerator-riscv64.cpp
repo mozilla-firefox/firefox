@@ -1014,56 +1014,27 @@ void CodeGenerator::visitMulI(LMulI* ins) {
       bailoutCmp32(cond, lhs, Imm32(0), ins->snapshot());
     }
 
-    // If it cannot overflow, we can do lots of optimizations.
-    if (!mul->canOverflow()) {
-      masm.ma_mul32(dest, lhs, Imm32(constant));
-      return;
-    }
-
     switch (constant) {
       case -1:
-        bailoutCmp32(Assembler::Equal, lhs, Imm32(INT32_MIN), ins->snapshot());
-
-        masm.negw(dest, lhs);
-        return;
+        if (mul->canOverflow()) {
+          bailoutCmp32(Assembler::Equal, lhs, Imm32(INT32_MIN),
+                       ins->snapshot());
+        }
+        [[fallthrough]];
       case 0:
-        masm.mov(zero, dest);
-        return;
       case 1:
-        masm.move32(lhs, dest);
-        return;
-      case 2:
-        Label mulTwoOverflow;
-        masm.ma_add32TestOverflow(dest, lhs, lhs, &mulTwoOverflow);
-
-        bailoutFrom(&mulTwoOverflow, ins->snapshot());
+        masm.ma_mul32(dest, lhs, Imm32(constant));
         return;
     }
 
-    if (constant > 0) {
-      uint32_t shift = mozilla::FloorLog2(uint32_t(constant));
+    if (mul->canOverflow()) {
+      Label mulConstOverflow;
+      masm.ma_mul32TestOverflow(dest, lhs, Imm32(constant), &mulConstOverflow);
 
-      // To stay on the safe side, only optimize things that are a power of 2.
-      if ((1 << shift) == constant) {
-        UseScratchRegisterScope temps(&masm);
-        Register scratch = temps.Acquire();
-
-        // dest = lhs * pow(2, shift)
-        masm.slli(dest, lhs, shift);
-
-        // At runtime, check (dest >> shift == intptr_t(dest) >> shift), if
-        // this does not hold, some bits were lost due to overflow, and the
-        // computation should be resumed as a double.
-        masm.sext_w(scratch, dest);
-        bailoutCmp32(Assembler::NotEqual, dest, scratch, ins->snapshot());
-        return;
-      }
+      bailoutFrom(&mulConstOverflow, ins->snapshot());
+    } else {
+      masm.ma_mul32(dest, lhs, Imm32(constant));
     }
-
-    Label mulConstOverflow;
-    masm.ma_mul32TestOverflow(dest, lhs, Imm32(constant), &mulConstOverflow);
-
-    bailoutFrom(&mulConstOverflow, ins->snapshot());
   } else {
     if (mul->canOverflow()) {
       Label multRegOverflow;
