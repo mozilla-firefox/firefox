@@ -19,7 +19,6 @@ transforms:
     - gecko_taskgraph.transforms.task:transforms
 
 task-defaults:
-    run-on-repo-type: [hg]
     attributes:
         artifact_map: taskcluster/gecko_taskgraph/manifests/fennec_geckoview.yml
     index:
@@ -78,7 +77,6 @@ task-defaults:
                 default: nightly-fat-aar
         platform: android-arm
     run:
-        clone-with: hg
         using: mozharness
         script: "mozharness/scripts/fx_desktop_build.py"
         secrets: true

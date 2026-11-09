@@ -151,7 +151,9 @@ def computeArtifactId() {
 
 def getGeckoViewDependency() {
     // on try, relax geckoview version pin to allow for --use-existing-task
-    if ('https://hg.mozilla.org/try' == System.env.GECKO_HEAD_REPOSITORY) {
+    // (MOZ_SOURCE_REPO names the push's repository even when the task clones
+    // it from the git mirror, GECKO_HEAD_REPOSITORY then names the mirror)
+    if ('https://hg.mozilla.org/try' == System.env.MOZ_SOURCE_REPO) {
         rootProject.logger.lifecycle("Getting geckoview on try: ${computeArtifactId()}:+")
         return "org.mozilla.geckoview:${computeArtifactId()}:+"
     }

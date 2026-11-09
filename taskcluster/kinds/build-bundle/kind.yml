@@ -16,7 +16,6 @@ kind-dependencies:
     - generate-baseline-profile-firebase
 
 task-defaults:
-    run-on-repo-type: [hg]
     aab-artifact-template:
         type: file
         name: 'public/build/target.aab'
@@ -24,7 +23,6 @@ task-defaults:
     attributes:
         build_platform: android
     run:
-        clone-with: hg
         gradle-package-command: bundle
         track-build-times: true
 

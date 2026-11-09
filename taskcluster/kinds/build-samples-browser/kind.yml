@@ -14,9 +14,7 @@ kind-dependencies:
     - toolchain
     - build
 
-
 task-defaults:
-    run-on-repo-type: [hg]
     use-gradle-cache: true
     attributes:
         build_platform: android
@@ -36,7 +34,6 @@ task-defaults:
             - target.maven.zip
     include-coverage: true
     run:
-        clone-with: hg
         pre-gradlew:
             - ["cd", "mobile/android/android-components"]
         using: gradlew

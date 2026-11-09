@@ -58,14 +58,17 @@ ext.configurePublish = { groupIdArg, artifactIdArg, descriptionArg ->
 
                         scm {
                             if (gradle.mozconfig.substs.MOZ_INCLUDE_SOURCE_INFO) {
-                                // URL is like "https://hg.mozilla.org/mozilla-central/rev/1e64b8a0c546a49459d404aaf930d5b1f621246a".
-                                connection = "scm:hg:${gradle.mozconfig.source_repo.MOZ_SOURCE_REPO}"
+                                // URL is like "https://hg.mozilla.org/mozilla-central/rev/1e64b8a0c546a49459d404aaf930d5b1f621246a"
+                                // or "https://github.com/mozilla-firefox/firefox/commit/1e64b8a0c546a49459d404aaf930d5b1f621246a".
+                                def sourceRepo = gradle.mozconfig.source_repo.MOZ_SOURCE_REPO
+                                def scmProvider = sourceRepo?.contains('hg.mozilla.org') ? 'hg' : 'git'
+                                connection = "scm:${scmProvider}:${sourceRepo}"
                                 url = gradle.mozconfig.source_repo.MOZ_SOURCE_URL
                                 tag = gradle.mozconfig.source_repo.MOZ_SOURCE_STAMP
                             } else {
-                                // Default to mozilla-central.
-                                connection = 'scm:hg:https://hg.mozilla.org/mozilla-central/'
-                                url = 'https://hg.mozilla.org/mozilla-central/'
+                                // Default to the main Firefox repository.
+                                connection = 'scm:git:https://github.com/mozilla-firefox/firefox/'
+                                url = 'https://github.com/mozilla-firefox/firefox/'
                             }
                         }
                     }
