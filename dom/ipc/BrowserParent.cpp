@@ -263,7 +263,7 @@ NS_INTERFACE_MAP_END
 NS_IMPL_CYCLE_COLLECTION_CLASS(BrowserParent)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(BrowserParent)
-  NS_IMPL_CYCLE_COLLECTION_UNLINK(mDestroyingFrameLoader)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mFrameLoader)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mBrowsingContext)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mFrameElement)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mBrowserDOMWindow)
@@ -273,7 +273,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(BrowserParent)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN(BrowserParent)
-  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDestroyingFrameLoader)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFrameLoader)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBrowsingContext)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFrameElement)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mBrowserDOMWindow)
@@ -295,7 +295,7 @@ BrowserParent::BrowserParent(ContentParent* aManager, const TabId& aTabId,
       mBrowsingContext(aBrowsingContext),
       mFrameElement(nullptr),
       mBrowserDOMWindow(nullptr),
-      mDestroyingFrameLoader(nullptr),
+      mFrameLoader(nullptr),
       mChromeFlags(aChromeFlags),
       mContentCache(*this),
       mRect(0, 0, 0, 0),
@@ -681,17 +681,7 @@ void BrowserParent::SetOwnerElement(Element* aElement) {
 }
 
 void BrowserParent::CacheFrameLoader(nsFrameLoader* aFrameLoader) {
-  mDestroyingFrameLoader = aFrameLoader;
-}
-
-void BrowserParent::SetOwnerFrameLoader(nsFrameLoader* aFrameLoader) {
-  mOwnerFrameLoader = aFrameLoader;
-
-  VisitChildren([aFrameLoader](BrowserBridgeParent* aBrowser) {
-    if (auto* browserParent = aBrowser->GetBrowserParent()) {
-      browserParent->SetOwnerFrameLoader(aFrameLoader);
-    }
-  });
+  mFrameLoader = aFrameLoader;
 }
 
 void BrowserParent::AddWindowListeners() {
@@ -915,7 +905,7 @@ void BrowserParent::ActorDestroy(ActorDestroyReason why) {
     }
   }
 
-  mDestroyingFrameLoader = nullptr;
+  mFrameLoader = nullptr;
 
   // If we were destroyed due to our ManagedEndpoints being dropped, make a
   // point of showing the subframe crashed UI. We don't fire the full
@@ -3566,8 +3556,13 @@ already_AddRefed<nsFrameLoader> BrowserParent::GetFrameLoader(
     return nullptr;
   }
 
-  RefPtr<nsFrameLoader> fl = mOwnerFrameLoader.get();
-  return fl.forget();
+  if (mFrameLoader) {
+    RefPtr<nsFrameLoader> fl = mFrameLoader;
+    return fl.forget();
+  }
+  RefPtr<Element> frameElement(mFrameElement);
+  RefPtr<nsFrameLoaderOwner> frameLoaderOwner = do_QueryObject(frameElement);
+  return frameLoaderOwner ? frameLoaderOwner->GetFrameLoader() : nullptr;
 }
 
 void BrowserParent::TryCacheDPIAndScale() {

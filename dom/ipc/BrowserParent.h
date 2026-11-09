@@ -262,8 +262,6 @@ class BrowserParent final : public PBrowserParent,
 
   void CacheFrameLoader(nsFrameLoader* aFrameLoader);
 
-  void SetOwnerFrameLoader(nsFrameLoader* aFrameLoader);
-
   void Destroy();
 
   void RemoveWindowListeners();
@@ -887,8 +885,7 @@ class BrowserParent final : public PBrowserParent,
   // We keep a strong reference to the frameloader after we've sent the
   // Destroy message and before we've received __delete__. This allows us to
   // dispatch message manager messages during this time.
-  RefPtr<nsFrameLoader> mDestroyingFrameLoader;
-  WeakPtr<nsFrameLoader> mOwnerFrameLoader;
+  RefPtr<nsFrameLoader> mFrameLoader;
   uint32_t mChromeFlags;
 
   // Pointer back to BrowserBridgeParent if there is one associated with
