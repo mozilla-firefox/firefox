@@ -825,6 +825,7 @@ class WasmFlags(TargetCompileFlags):
                 ("WASM_CFLAGS", "WASM_CXXFLAGS"),
             ),
             ("STL", context.config.substs.get("STL_FLAGS"), ("WASM_CXXFLAGS",)),
+            ("LINK", self._link_flags(), ("WASM_LDFLAGS",)),
         )
 
         TargetCompileFlags.__init__(self, context)
@@ -834,6 +835,17 @@ class WasmFlags(TargetCompileFlags):
         if substs.get("MOZ_DEBUG") or substs.get("MOZ_DEBUG_SYMBOLS"):
             return ["-g"]
         return []
+
+    def _link_flags(self):
+        optimize = self._context.config.substs.get("MOZ_OPTIMIZE")
+        return [
+            "-Wl,--export-all",
+            "-Wl,--stack-first",
+            f"-Wl,-z,stack-size={262144 if optimize else 1048576}",
+            "-Wl,--no-entry",
+            "-Wl,--import-memory",
+            "-Wl,--import-table",
+        ]
 
     def _optimize_flags(self):
         if not self._context.config.substs.get("MOZ_OPTIMIZE"):

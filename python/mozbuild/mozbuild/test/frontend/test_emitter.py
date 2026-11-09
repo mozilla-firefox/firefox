@@ -2266,6 +2266,34 @@ class TestEmitterBasic(unittest.TestCase):
             set(["-DFOO", '-DBAZ="abcd"', "-UQUX", "-DBAR=7", "-DVALUE=xyz"]),
         )
 
+    def _assert_wasm_link_flags(self, optimize, stack_size):
+        reader = self.reader(
+            "wasm-compile-flags",
+            extra_substs={
+                "WASM_CC": "clang",
+                "WASM_CXX": "clang++",
+                "MOZ_OPTIMIZE": optimize,
+            },
+        )
+        flags = list(self.read_topsrcdir(reader))[2]
+        self.assertEqual(
+            dict(flags.get_flags())["WASM_LDFLAGS"],
+            [
+                "-Wl,--export-all",
+                "-Wl,--stack-first",
+                f"-Wl,-z,stack-size={stack_size}",
+                "-Wl,--no-entry",
+                "-Wl,--import-memory",
+                "-Wl,--import-table",
+            ],
+        )
+
+    def test_wasm_link_flags(self):
+        self._assert_wasm_link_flags("1", 262144)
+
+    def test_wasm_link_flags_no_optimize(self):
+        self._assert_wasm_link_flags("", 1048576)
+
     def test_source_headers(self):
         reader = self.reader("reader-source-headers")
         objs = self.read_topsrcdir(reader)

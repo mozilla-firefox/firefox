@@ -362,7 +362,7 @@ $(WASM_ARCHIVE): $(CWASMOBJS) $(CPPWASMOBJS) $(STATIC_LIBS) $(GLOBAL_DEPS)
 	$(REPORT_BUILD_VERBOSE)
 	$(call BUILDSTATUS,START_WasmLib $@)
 	$(RM) $(WASM_ARCHIVE)
-	$(WASM_CXX) -o $@ -Wl,--export-all -Wl,--stack-first -Wl,-z,stack-size=$(if $(MOZ_OPTIMIZE),262144,1048576) -Wl,--no-entry -Wl,--import-memory -Wl,--import-table $(CWASMOBJS) $(CPPWASMOBJS) $(addprefix -l,$(WASM_LIBS))
+	$(WASM_CXX) -o $@ $(COMPUTED_WASM_LDFLAGS) $(CWASMOBJS) $(CPPWASMOBJS) $(addprefix -l,$(WASM_LIBS))
 	$(call BUILDSTATUS,END_WasmLib $@)
 
 ifeq ($(OS_ARCH),WINNT)
