@@ -12,6 +12,7 @@ UNIFIED_SOURCES += [
 ]
 
 BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]
+CRASHTEST_MANIFESTS += ["crashtests/crashtests.list"]
 
 include("/ipc/chromium/chromium-config.mozbuild")
 

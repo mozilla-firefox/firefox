@@ -262,7 +262,7 @@ already_AddRefed<Promise> DocumentPictureInPicture::RequestWindow(
   }
 
   // 2. Throw if not top-level
-  BrowsingContext* bc = ownerWin->GetBrowsingContext();
+  RefPtr<BrowsingContext> bc = ownerWin->GetBrowsingContext();
   if (!bc || !bc->IsTop()) {
     aRv.ThrowNotAllowedError(
         "Document Picture-in-Picture is only available in top-level contexts");
@@ -338,6 +338,14 @@ already_AddRefed<Promise> DocumentPictureInPicture::RequestWindow(
     rv = bc->SetControlsDocumentPiP(false);
     MOZ_ASSERT(NS_SUCCEEDED(rv));
     aRv.ThrowUnknownError("Failed to create PIP window");
+    return nullptr;
+  }
+
+  // Opening a window is MOZ_CAN_RUN_SCRIPT, we might be going away.
+  if (!ownerWin->IsFullyActive()) {
+    pipTraversable->Close(CallerType::System, IgnoreErrors());
+    (void)bc->SetControlsDocumentPiP(false);
+    aRv.ThrowNotAllowedError("Document is not fully active");
     return nullptr;
   }
 

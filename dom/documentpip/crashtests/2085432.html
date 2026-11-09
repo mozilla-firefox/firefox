@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<script>
+window.onload = () => {
+  if (opener) {
+    return;
+  }
+  const w = window.open();
+  SpecialPowers.wrap(w.document).notifyUserGestureActivation();
+  w.location = location.href;
+  w.documentPictureInPicture.requestWindow();
+  w.close();
+};
+</script>
