@@ -2980,8 +2980,13 @@ void nsCycleCollector::ForgetSkippable(SliceBudget& aBudget,
 
   if (mCCJSRuntime) {
     mCCJSRuntime->PrepareForForgetSkippable();
+    if (!IsIdle()) {
+      return;
+    }
   }
 
+  AutoRestore<bool> ar(mFreeingSnowWhite);
+  mFreeingSnowWhite = true;
   mKnownSnowWhiteCount = 0;
 
   MOZ_ASSERT(
@@ -4387,10 +4392,15 @@ void nsCycleCollector_forgetSkippable(TimeStamp aStartTime,
   data->mCollector->ForgetSkippable(aBudget, aRemoveChildlessNodes,
                                     aAsyncSnowWhiteFreeing);
   timeLog.Checkpoint("ForgetSkippable()");
+
   uint32_t purpleAfter = data->mCollector->SuspectedCount();
+  uint32_t removedPurples = 0;
+  if (purpleBefore > purpleAfter) {
+    removedPurples = purpleBefore - purpleAfter;
+  }
 
   data->mStats->AfterForgetSkippable(aStartTime, TimeStamp::Now(),
-                                     purpleBefore - purpleAfter, aInIdle);
+                                     removedPurples, aInIdle);
 }
 
 void nsCycleCollector_dispatchDeferredDeletion(bool aContinuation,
