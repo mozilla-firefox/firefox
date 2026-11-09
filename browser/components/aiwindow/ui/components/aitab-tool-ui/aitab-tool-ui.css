@@ -21,50 +21,7 @@
   padding: var(--space-small);
 }
 
-.title {
-  display: flex;
-  gap: var(--space-small);
-  padding: var(--space-xsmall) var(--space-small);
-  align-items: center;
-  margin: 0;
-  overflow-wrap: anywhere;
-  color: var(--text-color);
-  text-decoration: none;
-  border-radius: var(--border-radius-medium);
-
-  &:hover {
-    background-color: var(--button-background-color-menu-hover);
-  }
-}
-
-.title img {
-  -moz-context-properties: fill;
-  fill: currentColor;
-}
-
-p.title {
-  min-width: 0;
-
-  &:hover {
-    background: none;
-  }
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-small);
-  justify-content: end;
-}
-
 .card-title {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.complete-title {
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens --
    * Figma style */
   color: var(--smartwindow-text-color-accent-primary);
@@ -83,8 +40,38 @@ p.title {
   }
 }
 
-.complete {
-  .title {
-    padding: var(--space-xsmall) var(--space-small);
+.page-title {
+  display: flex;
+  gap: var(--space-small);
+  padding: var(--space-xsmall) var(--space-small);
+  align-items: center;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text-color);
+  text-decoration: none;
+  border-radius: var(--border-radius-medium);
+
+  &:hover {
+    background-color: var(--button-background-color-menu-hover);
   }
+
+  img {
+    -moz-context-properties: fill;
+    fill: currentColor;
+  }
+}
+
+p.page-title {
+  min-width: 0;
+
+  &:hover {
+    background: none;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small);
+  justify-content: end;
 }

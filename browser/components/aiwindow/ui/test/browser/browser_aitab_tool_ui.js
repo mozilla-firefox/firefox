@@ -105,7 +105,7 @@ async function readAITabCard(browser) {
       await cardElement.updateComplete;
       return {
         state: cardElement.state,
-        title: card.shadowRoot.querySelector(".title")?.textContent.trim(),
+        title: card.shadowRoot.querySelector(".page-title")?.textContent.trim(),
         buttonCount: card.shadowRoot.querySelectorAll("moz-button").length,
         hasSpinner: !!chatContent.shadowRoot.querySelector(
           "chat-assistant-loader"
@@ -199,7 +199,7 @@ async function clickCompletedAITabTitle(browser) {
     const chatContent = content.document.querySelector("ai-chat-content");
     const card = chatContent.shadowRoot.querySelector("aitab-tool-ui");
     await card.wrappedJSObject.updateComplete;
-    const link = card.shadowRoot.querySelector("a.title");
+    const link = card.shadowRoot.querySelector("a.page-title");
     content.setTimeout(() => link.click());
   });
 }
