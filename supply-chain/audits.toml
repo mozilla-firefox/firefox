@@ -5754,6 +5754,11 @@ who = "Dana Keeler <dkeeler@mozilla.com>"
 criteria = "safe-to-deploy"
 delta = "0.1.7 -> 0.1.8"
 
+[[audits.pkcs11-bindings]]
+who = "Dana Keeler <dkeeler@mozilla.com>"
+criteria = "safe-to-deploy"
+delta = "0.1.8 -> 0.1.9"
+
 [[audits.pkg-config]]
 who = "Mike Hommey <mh+mozilla@glandium.org>"
 criteria = "safe-to-deploy"

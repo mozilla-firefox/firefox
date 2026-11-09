@@ -574,6 +574,10 @@ static void CollectCertTelemetry(
       mozilla::glean::verification_used_cert_from::built_in_roots_module
           .AddToNumerator(1);
     }
+    if (issuerSources.contains(IssuerSource::PKCS11Module)) {
+      mozilla::glean::verification_used_cert_from::pkcs11_module.AddToNumerator(
+          1);
+    }
   }
 
   if ((aCertVerificationResult == Success ||

@@ -277,6 +277,7 @@ macro_rules! declare_pkcs11_find_functions {
             // Copying out the fields of `attr` avoids making a reference to an unaligned field.
             let typ = attr.type_;
             let typ = match typ {
+                CKA_CERTIFICATE_TYPE => "CKA_CERTIFICATE_TYPE".to_string(),
                 CKA_CLASS => "CKA_CLASS".to_string(),
                 CKA_EC_PARAMS => "CKA_EC_PARAMS".to_string(),
                 CKA_ID => "CKA_ID".to_string(),

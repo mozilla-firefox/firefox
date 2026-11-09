@@ -1,6 +1,6 @@
 [package]
 name = "pkcs11-bindings"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Dana Keeler <dkeeler@mozilla.com>", "John Schanck <jschanck@mozilla.com>"]
 license = "MIT"
 description = "Rust bindings for the PKCS#11 specification"

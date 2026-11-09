@@ -323,6 +323,18 @@ verification_used_cert_from:
       - dkeeler@mozilla.com
     expires: never
     denominator_metric: tls.certificate_verifications
+  pkcs11_module:
+    type: rate
+    description: >
+      How many successfully-built certificate chains used a certificate from a third-party PKCS#11 module.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2088996
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2088996
+    notification_emails:
+      - dkeeler@mozilla.com
+    expires: never
+    denominator_metric: tls.certificate_verifications
 
 pkcs11:
   third_party_modules_loaded:

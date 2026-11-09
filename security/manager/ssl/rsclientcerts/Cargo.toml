@@ -8,7 +8,7 @@ license = "MPL-2.0"
 [dependencies]
 digest = "0.10.2"
 env_logger = {version = "0.10", default-features = false } # disable `regex` to reduce code size
-pkcs11-bindings = "0.1.8"
+pkcs11-bindings = "0.1.9"
 rand = "0.8"
 rsclientcerts-util = { path = "../rsclientcerts-util" }
 sha2 = "0.10.2"

@@ -192,6 +192,8 @@ pub struct CryptokiCert {
     serial_number: Vec<u8>,
     /// The DER bytes of the subject distinguished name of the certificate.
     subject: Vec<u8>,
+    /// PKCS#11 certificate type. Will be CKC_X_509.
+    certificate_type: [u8; size_of::<CK_CERTIFICATE_TYPE>()],
 }
 
 impl CryptokiCert {
@@ -207,6 +209,7 @@ impl CryptokiCert {
             issuer,
             serial_number,
             subject,
+            certificate_type: CKC_X_509.to_ne_bytes(),
         })
     }
 }
@@ -223,6 +226,7 @@ impl CryptokiObject for CryptokiCert {
                 CKA_ISSUER => &self.issuer,
                 CKA_SERIAL_NUMBER => &self.serial_number,
                 CKA_SUBJECT => &self.subject,
+                CKA_CERTIFICATE_TYPE => self.certificate_type.as_slice(),
                 _ => return false,
             };
             if attr_value.as_slice() != comparison {
@@ -242,6 +246,7 @@ impl CryptokiObject for CryptokiCert {
             CKA_ISSUER => &self.issuer,
             CKA_SERIAL_NUMBER => &self.serial_number,
             CKA_SUBJECT => &self.subject,
+            CKA_CERTIFICATE_TYPE => &self.certificate_type,
             _ => return None,
         };
         Some(result)

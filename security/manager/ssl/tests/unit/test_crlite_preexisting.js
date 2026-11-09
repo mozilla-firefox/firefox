@@ -138,7 +138,7 @@ add_task(async function () {
   let ca = addCertFromFile(certdb, "test_crlite_filters/ca.pem", "C,C,");
   ok(ca, "ca certificate should decode successfully");
 
-  let issuerCert = constructCertFromFile("test_crlite_filters/int.pem");
+  let issuerCert = addCertFromFile(certdb, "test_crlite_filters/int.pem", ",,");
   ok(issuerCert, "issuer certificate should decode successfully");
 
   // Mark CRLite filter as fresh

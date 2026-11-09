@@ -84,6 +84,7 @@ enum class IssuerSource {
   ThirdPartyCertificates,  // a third-party certificate gleaned from the OS
   NSSCertDB,  // a certificate found in the profile's NSS certificate DB
   BuiltInRootsModule,  // a root from the built-in roots module
+  PKCS11Module,        // a certificate found in a third-party PKCS#11 module
 };
 
 using IssuerSources = EnumSet<IssuerSource>;
