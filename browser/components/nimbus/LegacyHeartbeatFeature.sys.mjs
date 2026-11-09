@@ -156,17 +156,11 @@ export const LegacyHeartbeatFeature = new (class {
       return null;
     }
 
-    const { slug, isRollout } =
+    const { slug } =
       lazy.NimbusFeatures.legacyHeartbeat.getEnrollmentMetadata();
     return {
       id: `nimbus:${slug}`,
-      name: `Nimbus legacyHeartbeat ${isRollout ? "rollout" : "experiment"} ${slug}`,
-      action: "show-heartbeat",
       arguments: survey,
-      capabilities: ["action.show-heartbeat"],
-      filter_expression: "true",
-      use_only_baseline_capabilities: true,
-      revision_id: "1", // Required for the Heartbeat telemetry ping.
     };
   }
 })();

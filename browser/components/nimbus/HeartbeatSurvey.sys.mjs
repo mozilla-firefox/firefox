@@ -71,7 +71,7 @@ export class HeartbeatSurvey {
       learnMoreUrl,
       postAnswerUrl: await this.generatePostAnswerURL(recipe),
       flowId: Services.uuid.generateUUID().toString().slice(1, -1),
-      surveyVersion: recipe.revision_id,
+      surveyVersion: "1", // Required for the Heartbeat telemetry ping.
     });
 
     heartbeat.eventEmitter.once(
@@ -142,8 +142,8 @@ export class HeartbeatSurvey {
   }
 
   /**
-   * Returns a surveyId value. If recipe calls to include the Normandy client
-   * ID, then the client ID is attached to the surveyId in the format
+   * Returns a surveyId value. If recipe calls to include the legacyRandomizationId,
+   * then the ID is attached to the surveyId in the format
    * `${surveyId}::${userId}`.
    *
    * @return {string} Survey ID, possibly with user UUID
@@ -189,7 +189,7 @@ export class HeartbeatSurvey {
         : 0,
       updateChannel: lazy.UpdateUtils.getUpdateChannel(false),
       utm_campaign: encodeURIComponent(message.replace(/\s+/g, "")),
-      utm_medium: recipe.action,
+      utm_medium: "show-heartbeat",
       utm_source: "firefox",
     };
     if (includeTelemetryUUID) {
