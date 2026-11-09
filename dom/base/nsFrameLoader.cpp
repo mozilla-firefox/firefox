@@ -2715,6 +2715,8 @@ bool nsFrameLoader::TryRemoteBrowserInternal() {
     return false;
   }
 
+  GetBrowserParent()->SetOwnerFrameLoader(this);
+
   MOZ_DIAGNOSTIC_ASSERT(mPendingBrowsingContext ==
                         mRemoteBrowser->GetBrowsingContext());
 
@@ -3684,6 +3686,16 @@ void nsFrameLoader::MaybeNotifyCrashed(BrowsingContext* aBrowsingContext,
     mTabProcessCrashFired = true;
   }
 
+  // Check our owner element still references us. If it's moved on,
+  // notifications and events don't need to be fired.
+  RefPtr<nsFrameLoaderOwner> owner = do_QueryObject(mOwnerContent);
+  if (owner) {
+    RefPtr<nsFrameLoader> currentFrameLoader = owner->GetFrameLoader();
+    if (currentFrameLoader != this) {
+      return;
+    }
+  }
+
   // Fire the crashed observer notification.
   nsCOMPtr<nsIObserverService> os = services::GetObserverService();
   if (!os) {
@@ -3692,15 +3704,7 @@ void nsFrameLoader::MaybeNotifyCrashed(BrowsingContext* aBrowsingContext,
 
   os->NotifyObservers(ToSupports(this), "oop-frameloader-crashed", nullptr);
 
-  // Check our owner element still references us. If it's moved, on, events
-  // don't need to be fired.
-  RefPtr<nsFrameLoaderOwner> owner = do_QueryObject(mOwnerContent);
   if (!owner) {
-    return;
-  }
-
-  RefPtr<nsFrameLoader> currentFrameLoader = owner->GetFrameLoader();
-  if (currentFrameLoader != this) {
     return;
   }
 
