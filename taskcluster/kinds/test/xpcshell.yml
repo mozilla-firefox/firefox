@@ -177,7 +177,7 @@ xpcshell:
                     - win64-samply
                     - profiler-node-tools
                 win.*32.*:
-                    - win32-node
+                    - win64-node
                     - win32-minidump-stackwalk
                     - win32-fix-stacks
                     - win32-samply
@@ -233,7 +233,7 @@ xpcshell-failures:
                     - macosx64-aarch64-samply
                     - profiler-node-tools
                 win.*32.*:
-                    - win32-node
+                    - win64-node
                     - win32-minidump-stackwalk
                     - win32-fix-stacks
                     - win32-samply

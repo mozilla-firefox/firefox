@@ -152,7 +152,7 @@ test-verify: &test-verify
                     - win32-minidump-stackwalk
                     - win32-fix-stacks
                 win.*32.*:
-                    - win32-node
+                    - win64-node
                     - win32-minidump-stackwalk
                     - win32-fix-stacks
                 android-em-14.*:
@@ -285,7 +285,7 @@ test-coverage:
                     - win32-minidump-stackwalk
                     - win32-fix-stacks
                 win.*32.*:
-                    - win32-node
+                    - win64-node
                     - win32-minidump-stackwalk
                     - win32-fix-stacks
                 android-em-14.*:
