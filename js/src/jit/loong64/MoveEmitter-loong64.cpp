@@ -234,15 +234,6 @@ void MoveEmitterLOONG64::emit(const MoveResolver& moves) {
       // We're lucky to have more than two spare scratch registers still
       // available. Grab another one as temporary storage for breaking cycles.
       cycleGeneralReg_ = temps.Acquire();
-    } else {
-      // Reserve stack for cycle resolution
-#if defined(ENABLE_JIT_SIMD)
-      static_assert(SpillSlotSize == 16);
-#else
-      static_assert(SpillSlotSize == 8);
-#endif
-      masm.reserveStack(SpillSlotSize);
-      pushedAtCycle_ = masm.framePushed();
     }
   }
 
@@ -253,8 +244,18 @@ void MoveEmitterLOONG64::emit(const MoveResolver& moves) {
   cycleGeneralReg_ = InvalidReg;
 }
 
-Address MoveEmitterLOONG64::cycleSlot() const {
-  MOZ_ASSERT(pushedAtCycle_ != -1, "pushedAtCycle_ not initialized");
+Address MoveEmitterLOONG64::cycleSlot() {
+  // Allocate a slot for breaking cycles if we have not already
+  if (pushedAtCycle_ == -1) {
+#if defined(ENABLE_JIT_SIMD)
+    static_assert(SpillSlotSize == 16);
+#else
+    static_assert(SpillSlotSize == 8);
+#endif
+    masm.reserveStack(SpillSlotSize);
+    pushedAtCycle_ = masm.framePushed();
+  }
+
   const int32_t offset = masm.framePushed() - pushedAtCycle_;
   MOZ_ASSERT(is_intN(offset, 12));
   return Address(StackPointer, offset);

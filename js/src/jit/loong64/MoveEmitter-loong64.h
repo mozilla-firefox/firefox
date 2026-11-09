@@ -35,7 +35,7 @@ class MoveEmitterLOONG64 {
   bool inCycle_ = false;
 
   void assertDone() { MOZ_ASSERT(!inCycle_); }
-  Address cycleSlot() const;
+  Address cycleSlot();
   int32_t getAdjustedOffset(const MoveOperand& operand) const;
   Address getAdjustedAddress(const MoveOperand& operand) const;
 
