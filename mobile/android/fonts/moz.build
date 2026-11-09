@@ -5,10 +5,15 @@
 with Files("**"):
     BUG_COMPONENT = ("GeckoView", "General")
 
+fonts = [
+    "CharisSILCompact-B.ttf",
+    "CharisSILCompact-BI.ttf",
+    "CharisSILCompact-I.ttf",
+    "CharisSILCompact-R.ttf",
+]
+
 if not CONFIG["MOZ_ANDROID_EXCLUDE_FONTS"]:
-    RESOURCE_FILES.fonts += [
-        "CharisSILCompact-B.ttf",
-        "CharisSILCompact-BI.ttf",
-        "CharisSILCompact-I.ttf",
-        "CharisSILCompact-R.ttf",
-    ]
+    RESOURCE_FILES.fonts += fonts
+
+TEST_HARNESS_FILES.reftest.fonts += fonts
+TEST_HARNESS_FILES.testing.mochitest.fonts += fonts

@@ -97,10 +97,6 @@ endif
 	cp $(DIST)/bin/dependentlibs.list.gtest $(PKG_STAGE)/gtest
 	cp $(DEPTH)/mozinfo.json $(PKG_STAGE)/gtest
 
-stage-android: make-stage-dir
-	$(NSINSTALL) $(topsrcdir)/mobile/android/fonts $(DEPTH)/_tests/reftest
-	$(NSINSTALL) $(topsrcdir)/mobile/android/fonts $(DEPTH)/_tests/testing/mochitest
-
 ifdef MOZ_COPY_PDBS
 CPP_UNIT_TEST_BINS=$(filter-out $(wildcard $(DIST)/cppunittests/*.pdb), $(wildcard $(DIST)/cppunittests/*))
 else
@@ -148,7 +144,6 @@ stage-extensions: make-stage-dir
   stage-all \
   stage-config \
   stage-jstests \
-  stage-android \
   test-packages-manifest \
   check \
   $(NULL)

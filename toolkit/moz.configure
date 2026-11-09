@@ -3910,14 +3910,12 @@ option(
     "MOZ_TEST_PACKAGE_ARCHIVES_SKIP",
     compile_environment,
     gtest_in_build,
-    build_project,
 )
 def test_package_configuration(
     available_archives,
     skipped_archives,
     compile_environment,
     gtest_in_build,
-    build_project,
 ):
     archives = set(available_archives) - set(skipped_archives)
 
@@ -3938,9 +3936,6 @@ def test_package_configuration(
     if gtest_in_build:
         archives.add("gtest")
         stage_targets.append("stage-gtest")
-
-    if build_project == "mobile/android":
-        stage_targets.append("stage-android")
 
     stage_targets.append("test-packages-manifest")
 
