@@ -6,6 +6,7 @@
 
 #include "mozilla/Components.h"
 #include "mozilla/IdentityCredentialRequestManager.h"
+#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/IdentityNetworkHelpers.h"
 #include "mozilla/dom/NavigatorLogin.h"
 #include "mozilla/dom/WindowGlobalParent.h"
@@ -31,6 +32,10 @@ mozilla::ipc::IPCResult WebIdentityParent::RecvGetIdentityCredential(
     IdentityCredentialRequestOptions&& aOptions,
     const CredentialMediationRequirement& aMediationRequirement,
     bool aHasUserActivation, const GetIdentityCredentialResolver& aResolver) {
+  if (!StaticPrefs::dom_security_credentialmanagement_identity_enabled()) {
+    aResolver(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+    return IPC_OK();
+  }
   WindowGlobalParent* manager =
       mozilla::ipc::ActorCast<WindowGlobalParent>(Manager());
   if (!manager) {
@@ -52,6 +57,10 @@ mozilla::ipc::IPCResult WebIdentityParent::RecvGetIdentityCredential(
 mozilla::ipc::IPCResult WebIdentityParent::RecvDisconnectIdentityCredential(
     const IdentityCredentialDisconnectOptions& aOptions,
     const DisconnectIdentityCredentialResolver& aResolver) {
+  if (!StaticPrefs::dom_security_credentialmanagement_identity_enabled()) {
+    aResolver(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+    return IPC_OK();
+  }
   WindowGlobalParent* manager =
       mozilla::ipc::ActorCast<WindowGlobalParent>(Manager());
   if (!manager) {
@@ -111,6 +120,10 @@ mozilla::ipc::IPCResult WebIdentityParent::RecvSetLoginStatus(
 mozilla::ipc::IPCResult WebIdentityParent::RecvResolveContinuationWindow(
     nsCString&& aToken, IdentityResolveOptions&& aOptions,
     const ResolveContinuationWindowResolver& aResolver) {
+  if (!StaticPrefs::dom_security_credentialmanagement_identity_enabled()) {
+    aResolver(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
+    return IPC_OK();
+  }
   // Pass the resolution on to the ICRM to handle it.
   // Faithfully convey its error in resolution.
   IdentityCredentialRequestManager* requestManager =
@@ -126,6 +139,10 @@ mozilla::ipc::IPCResult WebIdentityParent::RecvResolveContinuationWindow(
 
 mozilla::ipc::IPCResult WebIdentityParent::RecvIsActiveContinuationWindow(
     const IsActiveContinuationWindowResolver& aResolver) {
+  if (!StaticPrefs::dom_security_credentialmanagement_identity_enabled()) {
+    aResolver(false);
+    return IPC_OK();
+  }
   IdentityCredentialRequestManager* requestManager =
       IdentityCredentialRequestManager::GetInstance();
   if (!requestManager) {
