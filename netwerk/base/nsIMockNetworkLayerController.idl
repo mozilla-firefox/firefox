@@ -75,4 +75,16 @@ interface nsIMockNetworkLayerController : nsISupports
    * Removes all entries from the UDP would-block list.
    */
   void clearWouldBlockUDPAddr();
+
+  /**
+   * This method causes UDP sends to the given network address to fail with a
+   * connection reset error (NS_ERROR_NET_RESET for HTTP/3), like Windows
+   * reports for a peer that sent ICMP port unreachable.
+   */
+  void resetUDPAddrIO(in nsINetAddr aAddr);
+
+  /**
+   * Removes all entries from the UDP reset list.
+   */
+  void clearResetUDPAddr();
 };

@@ -1227,6 +1227,15 @@ skip-if = [
   # connection. Disable test on MacOS 10.15.
 ]
 
+["test_http3_proxy_reset_keeps_alt_svc.js"]
+head = "head_cookies.js head_channels.js head_cache.js head_http3.js http3_common.js"
+run-sequentially = ["true"] # http3server
+skip-if = [
+  "os == 'android'", # The MASQUE proxy runs on the host machine
+  "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", # dontfragment, see test_http3_with_proxy.js
+  "os == 'win' && msix", # Bug 1807931
+]
+
 ["test_http3_quic_token_partition.js"]
 skip-if = [
   "os == 'win' && os_version == '10.2009' && arch == 'x86_64'",
