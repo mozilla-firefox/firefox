@@ -9,6 +9,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.WorkManager
+import java.nio.charset.MalformedInputException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -194,7 +195,7 @@ class SyncableLoginsStorage(
     @Throws(InvalidKey::class, InvalidRecordException::class, LoginsApiException::class)
     override suspend fun add(entry: LoginEntry) =
         withContext(coroutineContext) {
-            getStorage().add(entry.toLoginEntry()).toLogin()
+            withStorage { add(entry.toLoginEntry()).toLogin() }
         }
 
     /**
@@ -206,7 +207,7 @@ class SyncableLoginsStorage(
     override suspend fun addMany(entries: List<LoginEntry>) =
         withContext(coroutineContext) {
             val asEntries = entries.map { it.toLoginEntry() }
-            getStorage().addMany(asEntries).map { it.toLoginResult() }
+            withStorage { addMany(asEntries).map { it.toLoginResult() } }
         }
 
     /**
@@ -223,7 +224,7 @@ class SyncableLoginsStorage(
     )
     override suspend fun update(guid: String, entry: LoginEntry) =
         withContext(coroutineContext) {
-            getStorage().update(guid, entry.toLoginEntry()).toLogin()
+            withStorage { update(guid, entry.toLoginEntry()).toLogin() }
         }
 
     /**
@@ -234,7 +235,7 @@ class SyncableLoginsStorage(
     @Throws(InvalidKey::class, InvalidRecordException::class, LoginsApiException::class)
     override suspend fun addOrUpdate(entry: LoginEntry) =
         withContext(coroutineContext) {
-            getStorage().addOrUpdate(entry.toLoginEntry()).toLogin()
+            withStorage { addOrUpdate(entry.toLoginEntry()).toLogin() }
         }
 
     override fun registerWithSyncManager() {
@@ -270,9 +271,21 @@ class SyncableLoginsStorage(
         }
     }
 
-    private suspend fun <T> tryWithStorageOr(default: T, operation: DatabaseLoginsStorage.() -> T): T {
+    /**
+     * Runs [operation] against the storage, converting the [MalformedInputException] thrown when a string can't be
+     * encoded as utf-8 (eg, it contains a lone surrogate) into an [InvalidRecordException].
+     */
+    private suspend fun <T> withStorage(operation: DatabaseLoginsStorage.() -> T): T {
         return try {
             getStorage().operation()
+        } catch (e: MalformedInputException) {
+            throw InvalidRecordException("Login contains invalid non utf-8 characters")
+        }
+    }
+
+    private suspend fun <T> tryWithStorageOr(default: T, operation: DatabaseLoginsStorage.() -> T): T {
+        return try {
+            withStorage(operation)
         } catch (e: LoginsApiException) {
             logger.error("Error during logins operation", e)
             default

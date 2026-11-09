@@ -6,6 +6,7 @@ package mozilla.components.service.sync.logins
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlin.test.assertIs
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.appservices.RustComponentsInitializer
@@ -13,6 +14,7 @@ import mozilla.components.concept.storage.LoginEntry
 import mozilla.components.lib.dataprotect.SecureAbove22Preferences
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -112,6 +114,60 @@ class SyncableLoginsStorageTest {
             storage.addMany(loginsToAdd)
 
             assertEquals(loginsToAdd.size, storage.list().size)
+
+            storage.close()
+        }
+
+    @Test
+    fun `findLoginToUpdate ignores entries with lone surrogates`() =
+        runTest(testDispatcher) {
+            RustComponentsInitializer.init()
+
+            securePrefs = SecureAbove22Preferences(testContext, "logins", forceInsecure = true)
+            storage = SyncableLoginsStorage(testContext, lazy { securePrefs }, testDispatcher)
+
+            storage.warmUp()
+
+            val entry =
+                LoginEntry(
+                    origin = "https://www.example.org",
+                    formActionOrigin = "https://www.example.org/login",
+                    username = "Foobar\uD83D",
+                    password = "MyVeryCoolPassword",
+                )
+            assertNull(storage.findLoginToUpdate(entry))
+
+            storage.close()
+        }
+
+    @Test
+    fun `writing entries with lone surrogates throws InvalidRecordException`() =
+        runTest(testDispatcher) {
+            RustComponentsInitializer.init()
+
+            securePrefs = SecureAbove22Preferences(testContext, "logins", forceInsecure = true)
+            storage = SyncableLoginsStorage(testContext, lazy { securePrefs }, testDispatcher)
+
+            storage.warmUp()
+
+            val validEntry =
+                LoginEntry(
+                    origin = "https://www.example.org",
+                    formActionOrigin = "https://www.example.org/login",
+                    username = "Foobar",
+                    password = "MyVeryCoolPassword",
+                )
+            val invalidEntry = validEntry.copy(username = "Foobar\uD83D")
+            val existing = storage.add(validEntry)
+
+            assertIs<InvalidRecordException>(runCatching { storage.add(invalidEntry) }.exceptionOrNull())
+            assertIs<InvalidRecordException>(runCatching { storage.addOrUpdate(invalidEntry) }.exceptionOrNull())
+            assertIs<InvalidRecordException>(
+                runCatching { storage.update(existing.guid, invalidEntry) }.exceptionOrNull()
+            )
+            assertIs<InvalidRecordException>(runCatching { storage.addMany(listOf(invalidEntry)) }.exceptionOrNull())
+
+            assertEquals(listOf(existing), storage.list())
 
             storage.close()
         }
