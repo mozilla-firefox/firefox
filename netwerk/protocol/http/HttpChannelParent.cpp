@@ -26,6 +26,7 @@
 #include "mozilla/dom/ContentProcessManager.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
+#include "mozilla/dom/LoadedOriginSet.h"
 #include "mozilla/dom/ServiceWorkerUtils.h"
 #include "mozilla/dom/WindowGlobalParent.h"
 #include "mozilla/ipc/BackgroundUtils.h"
@@ -2015,12 +2016,12 @@ void HttpChannelParent::UpdateAltDataBindingOrigin(HttpBaseChannel* aChannel) {
     if (Manager() && Manager()->Manager()) {
       cp = static_cast<ContentParent*>(Manager()->Manager());
     }
+    // Require the exact origin to have been loaded by this process.
     if (!cp ||
-        !cp->ValidatePrincipal(
-            principal, {ValidatePrincipalOptions::AllowSystemIfLoaded})) {
+        !cp->LoadedOrigins()->Has(principal, LoadedOriginSet::Level::Full)) {
       LOG(
           ("HttpChannelParent::UpdateAltDataBindingOrigin [this=%p] principal "
-           "not valid for the content process",
+           "not loaded by the content process",
            this));
       return;
     }
@@ -2029,13 +2030,21 @@ void HttpChannelParent::UpdateAltDataBindingOrigin(HttpBaseChannel* aChannel) {
   principal->GetOrigin(mAltDataBindingOrigin);
 }
 
-// Records, atomically with the alt-data write, the origin of the principal
-// that produced the alt-data.
-static void RecordAltDataPrincipal(nsICacheEntry* aCacheEntry,
-                                   const nsACString& aOrigin) {
+// Records, atomically with the alt-data write, the remote type of the process
+// and the origin of the principal that produced the alt-data.  The remote type
+// comes from the IPC actor, so the content process cannot choose it.
+static void RecordAltDataBinding(nsICacheEntry* aCacheEntry,
+                                 const nsACString& aOrigin,
+                                 PNeckoParent* aNeckoParent) {
   if (!aCacheEntry) {
     return;
   }
+  aCacheEntry->SetMetaDataElement(
+      "alt-data-from-child",
+      static_cast<ContentParent*>(aNeckoParent->Manager())
+          ->GetRemoteType()
+          .Stringify()
+          .get());
   if (aOrigin.IsEmpty()) {
     // Fail closed: without a known principal, clear any binding so that reads
     // reject this alt-data.
@@ -2061,8 +2070,7 @@ CacheEntryWriteHandleParent::OpenAlternativeOutputStream(
   nsresult rv =
       mCacheEntry->OpenAlternativeOutputStream(type, predictedSize, _retval);
   if (NS_SUCCEEDED(rv)) {
-    mCacheEntry->SetMetaDataElement("alt-data-from-child", "1");
-    RecordAltDataPrincipal(mCacheEntry, mBindingOrigin);
+    RecordAltDataBinding(mCacheEntry, mBindingOrigin, Manager());
   }
   return rv;
 }
@@ -2082,8 +2090,7 @@ nsresult HttpChannelParent::OpenAlternativeOutputStream(
   nsresult rv =
       mCacheEntry->OpenAlternativeOutputStream(type, predictedSize, _retval);
   if (NS_SUCCEEDED(rv)) {
-    mCacheEntry->SetMetaDataElement("alt-data-from-child", "1");
-    RecordAltDataPrincipal(mCacheEntry, mAltDataBindingOrigin);
+    RecordAltDataBinding(mCacheEntry, mAltDataBindingOrigin, Manager());
   }
   return rv;
 }

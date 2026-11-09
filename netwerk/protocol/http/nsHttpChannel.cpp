@@ -49,6 +49,7 @@
 #include "mozilla/dom/PerformanceStorage.h"
 #include "mozilla/dom/PolicyContainer.h"
 #include "mozilla/dom/ReferrerInfo.h"
+#include "mozilla/dom/RemoteType.h"
 #include "mozilla/dom/SecFetch.h"
 #include "mozilla/dom/ServiceWorkerUtils.h"
 #include "mozilla/dom/WindowGlobalParent.h"
@@ -5904,15 +5905,13 @@ nsresult nsHttpChannel::OpenCacheInputStream(nsICacheEntry* cacheEntry,
 
   // If an alternate representation was requested, try to open the alt
   // input stream.
-  // If the entry has a "is-from-child" metadata, then only open the altdata
-  // stream if the consumer is also from child.
-  bool altDataFromChild = false;
-  {
-    nsCString value;
-    rv = cacheEntry->GetMetaDataElement("alt-data-from-child",
-                                        getter_Copies(value));
-    altDataFromChild = !value.IsEmpty();
-  }
+  // If the entry has "alt-data-from-child" metadata (the remote type of the
+  // content process that wrote it), then only open the altdata stream if the
+  // consumer is also from child.
+  nsCString altDataRemoteType;
+  rv = cacheEntry->GetMetaDataElement("alt-data-from-child",
+                                      getter_Copies(altDataRemoteType));
+  bool altDataFromChild = !altDataRemoteType.IsEmpty();
 
   nsAutoCString altDataType;
   (void)cacheEntry->GetAltDataType(altDataType);
@@ -5921,19 +5920,27 @@ nsresult nsHttpChannel::OpenCacheInputStream(nsICacheEntry* cacheEntry,
   mCachedResponseHead->ContentType(contentType);
 
   // Alt-data written by a content process (bytecode cache) may only be
-  // consumed by a load whose principal matches the one that produced it.
+  // consumed by a load from the same remote type, with a principal matching
+  // the one that produced it.  The triggering remote type of a load from a
+  // content process is that of the process which sent it.
   if (altDataFromChild && !altDataType.IsEmpty()) {
     nsAutoCString storedOrigin;
     cacheEntry->GetMetaDataElement("alt-data-principal",
                                    getter_Copies(storedOrigin));
     nsAutoCString currentOrigin;
     GetAltDataBindingOrigin(currentOrigin);
+    dom::RemoteType currentRemoteType;
+    MOZ_ALWAYS_SUCCEEDS(mLoadInfo->GetTriggeringRemoteType(currentRemoteType));
+    nsCString currentRemoteTypeString = currentRemoteType.Stringify();
     if (storedOrigin.IsEmpty() || currentOrigin.IsEmpty() ||
-        !storedOrigin.Equals(currentOrigin)) {
+        !storedOrigin.Equals(currentOrigin) ||
+        !altDataRemoteType.Equals(currentRemoteTypeString)) {
       LOG(
-          ("Rejecting child-written alt-data due to principal mismatch "
-           "[channel=%p, stored='%s', current='%s']",
-           this, storedOrigin.get(), currentOrigin.get()));
+          ("Rejecting child-written alt-data due to principal or remote type "
+           "mismatch [channel=%p, stored='%s' from '%s', current='%s' from "
+           "'%s']",
+           this, storedOrigin.get(), altDataRemoteType.get(),
+           currentOrigin.get(), currentRemoteTypeString.get()));
       altDataType.Truncate();
     }
   }
