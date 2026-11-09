@@ -1,6 +1,7 @@
 # Solid color path fills drawn directly in the picture: translucency, depth
 # ordering against opaque primitives, a rectangle clip, a scale transform and
-# a path crossing a picture cache tile boundary (x = 1024).
+# a path crossing a picture cache tile boundary (x = 1024) with an opaque
+# rect over it.
 ---
 root:
   items:
@@ -67,3 +68,6 @@ root:
       bounds: [1000, 20, 60, 60]
       color: blue
       clip-chain: 105
+    - type: rect
+      bounds: [1030, 50, 40, 40]
+      color: yellow

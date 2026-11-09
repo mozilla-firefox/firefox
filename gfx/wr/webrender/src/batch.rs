@@ -757,8 +757,9 @@ pub struct BatchBuilder {
     /// The point of the raster space's device pixels that maps to the origin
     /// of the target's render task.
     task_content_origin: DevicePoint,
-    /// A temporary buffer for the tiles of a path.
+    /// Temporary buffers for the tiles of a path.
     path_tiles: FrameVec<PathTileInstance>,
+    path_solid_tiles: FrameVec<PathTileInstance>,
 }
 
 impl BatchBuilder {
@@ -774,6 +775,7 @@ impl BatchBuilder {
             task_visible_rect,
             task_content_origin,
             path_tiles: memory.new_vec(),
+            path_solid_tiles: memory.new_vec(),
         }
     }
 
@@ -845,7 +847,10 @@ impl BatchBuilder {
             scissor,
         }.write_gpu_blocks(&mut gpu_buffer_builder.i32);
 
+        let is_opaque = prim.color.a >= 1.0 && prim.blend_mode == BlendMode::PremultipliedAlpha;
+
         self.path_tiles.clear();
+        self.path_solid_tiles.clear();
         path_tiler.set_scissor_rect(scissor);
         path_tiler.fill_path(
             &prim.path,
@@ -856,23 +861,31 @@ impl BatchBuilder {
             &mut PathTilerOutput {
                 edges: &mut gpu_buffer_builder.edges,
                 tiles: &mut self.path_tiles,
+                solid_tiles: if is_opaque { Some(&mut self.path_solid_tiles) } else { None },
             },
         );
+
+        let bounding_rect = device_rect.intersection_unchecked(
+            &scissor.to_f32().translate(content_origin.to_vector())
+        );
+
+        if !self.path_solid_tiles.is_empty() {
+            let opaque_batch = self.batcher.set_params_and_get_batch(
+                BatchKey::new(BatchKind::Path, BlendMode::None, BatchTextures::empty()),
+                BatchFeatures::empty(),
+                None,
+                &bounding_rect,
+                z_id,
+            );
+            opaque_batch.extend(self.path_solid_tiles.iter().map(|tile| PrimitiveInstanceData::from(*tile)));
+        }
 
         if self.path_tiles.is_empty() {
             return;
         }
 
-        let batch_key = BatchKey::new(
-            BatchKind::Path,
-            prim.blend_mode,
-            BatchTextures::empty(),
-        );
-        let bounding_rect = device_rect.intersection_unchecked(
-            &scissor.to_f32().translate(content_origin.to_vector())
-        );
-        let batch = self.batcher.set_params_and_get_batch(
-            batch_key,
+        let alpha_batch = self.batcher.set_params_and_get_batch(
+            BatchKey::new(BatchKind::Path, prim.blend_mode, BatchTextures::empty()),
             BatchFeatures::empty(),
             None,
             &bounding_rect,
@@ -880,7 +893,7 @@ impl BatchBuilder {
         );
 
         // TODO: let the tiler push into the batch directly instead of copying.
-        batch.extend(self.path_tiles.iter().map(|tile| PrimitiveInstanceData::from(*tile)));
+        alpha_batch.extend(self.path_tiles.iter().map(|tile| PrimitiveInstanceData::from(*tile)));
     }
 
     /// Clear all current batchers. This is typically used when a primitive

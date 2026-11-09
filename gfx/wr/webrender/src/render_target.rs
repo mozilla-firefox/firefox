@@ -1018,6 +1018,7 @@ fn add_path_clip_task_to_batch(
         &mut PathTilerOutput {
             edges: &mut gpu_buffers.edges,
             tiles: &mut results.path_tiles,
+            solid_tiles: None,
         },
     );
 }

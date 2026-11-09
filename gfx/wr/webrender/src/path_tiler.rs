@@ -234,6 +234,7 @@ pub struct PathTileInstance {
     pub data: [u32; 4],
 }
 
+
 #[derive(Copy, Clone, Debug)]
 struct TileInstance {
     position: TilePosition,
@@ -345,6 +346,9 @@ pub struct PathTilerOutput<'l> {
     /// The frame's global edge buffer.
     pub edges: &'l mut PathEdgeBufferBuilder,
     pub tiles: &'l mut FrameVec<PathTileInstance>,
+    /// If set, receives the tiles that have no edges instead of `tiles`.
+    /// These tiles are fully covered by the path.
+    pub solid_tiles: Option<&'l mut FrameVec<PathTileInstance>>,
 }
 
 pub struct PathTiler {
@@ -1133,7 +1137,12 @@ impl PathTiler {
             return;
         }
 
-        output.tiles.push(TileInstance {
+        let tiles = match output.solid_tiles {
+            Some(ref mut solid_tiles) => solid_tiles,
+            None => &mut output.tiles,
+        };
+
+        tiles.push(TileInstance {
             position: TilePosition::extended(x as u32, y as u32, (x_end - x - 1) as u32),
             backdrop,
             first_edge: 0,

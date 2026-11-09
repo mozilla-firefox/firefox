@@ -40,3 +40,6 @@ root:
     - type: rect
       bounds: [1040, 40, 20, 20]
       color: blue
+    - type: rect
+      bounds: [1030, 50, 40, 40]
+      color: yellow
