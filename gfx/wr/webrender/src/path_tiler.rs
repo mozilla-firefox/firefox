@@ -86,9 +86,11 @@ use api::units::*;
 use euclid::default::Box2D;
 use euclid::{point2, Transform2D, Transform3D};
 
+use api::PremultipliedColorF;
 use crate::bezier;
+use crate::renderer::BlendMode;
 use crate::internal_types::FrameVec;
-use crate::renderer::{GpuBufferBlockEdge, PathEdgeBufferBuilder};
+use crate::renderer::{GpuBufferAddress, GpuBufferBlockEdge, GpuBufferBuilderI, GpuBufferWriterI, PathEdgeBufferBuilder};
 
 pub const TILE_SIZE: i32 = 16;
 const TILE_SIZE_F32: f32 = TILE_SIZE as f32;
@@ -281,6 +283,62 @@ impl PathInfo {
             0,
         ]
     }
+}
+
+/// The per-path parameters of the `ps_path_tile` shader: the `PathInfo`
+/// texel followed by two texels.
+pub struct PathPrimInfo {
+    pub path: PathInfo,
+    pub z_id: i32,
+    pub color: PremultipliedColorF,
+    /// In task-local device pixels. The tiler emits whole tiles, so tiles
+    /// crossing the scissor rect are clamped to it in the vertex shader.
+    pub scissor: DeviceIntRect,
+}
+
+impl PathPrimInfo {
+    pub fn write_gpu_blocks(&self, gpu_buffer: &mut GpuBufferBuilderI) -> GpuBufferAddress {
+        let mut writer = gpu_buffer.write_blocks(3);
+        self.push_gpu_blocks(&mut writer);
+        writer.finish()
+    }
+
+    pub fn push_gpu_blocks(&self, writer: &mut GpuBufferWriterI) {
+        fn unorm16(c: f32) -> u32 {
+            (c.max(0.0).min(1.0) * 65535.0 + 0.5) as u32
+        }
+
+        // See fetch_path_info and fetch_path_prim_info in path_tile.glsl.
+        let c = &self.color;
+        writer.push_one(self.path.encode());
+        writer.push_one([
+            self.z_id,
+            (unorm16(c.r) << 16 | unorm16(c.g)) as i32,
+            (unorm16(c.b) << 16 | unorm16(c.a)) as i32,
+            0,
+        ]);
+        writer.push_one([
+            self.scissor.min.x,
+            self.scissor.min.y,
+            self.scissor.max.x,
+            self.scissor.max.y,
+        ]);
+    }
+}
+
+/// A path filled with a solid color directly into its destination target.
+///
+/// The path is tiled during batching, once per target it is drawn into.
+#[cfg_attr(feature = "capture", derive(Serialize))]
+pub struct PathPrimitive {
+    pub path: Path,
+    pub fill_rule: FillRule,
+    /// Maps the path to the raster space's device pixels.
+    pub transform: Transform3D<f32, LayoutPixel, DevicePixel>,
+    /// Pixel-aligned, in the raster space's device pixels.
+    pub scissor: DeviceIntRect,
+    pub color: PremultipliedColorF,
+    pub blend_mode: BlendMode,
 }
 
 pub struct PathTilerOutput<'l> {

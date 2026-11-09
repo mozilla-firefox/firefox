@@ -167,6 +167,8 @@ pub struct FrameBuildingState<'a> {
     pub cmd_buffers: &'a mut CommandBufferList,
     pub clip_tree: &'a ClipTree,
     pub frame_gpu_data: &'a mut GpuBufferBuilder,
+    /// Whether primitives can use `QuadRenderStrategy::Path`.
+    pub path_rendering_enabled: bool,
     /// When using a render task to produce pixels that are associated with
     /// an image key (for example snapshotted pictures), inserting the image
     /// key / task id association in this hashmap allows the image item to
@@ -617,6 +619,7 @@ impl FrameBuilder {
             frame_gpu_data,
             image_dependencies: FastHashMap::default(),
             picture_scratch_handles: &mut picture_scratch_handles,
+            path_rendering_enabled: !debug_flags.contains(DebugFlags::DISABLE_DIRECT_PATH_FILL),
         };
 
 
@@ -814,6 +817,8 @@ impl FrameBuilder {
             scene.config.max_shared_surface_size,
             &frame_memory,
         );
+
+        profile.set(profiler::PATH_FILLS, scratch.primitive.frame.path_prims.len());
 
         let mut passes = frame_memory.new_vec();
         let mut has_texture_cache_tasks = false;
@@ -1307,7 +1312,16 @@ pub fn build_render_pass(
                             &ctx.frame_memory,
                         );
 
-                        let mut batch_builder = BatchBuilder::new(batcher);
+                        let task_visible_rect = dirty_rect
+                            .translate(-target_rect.min.to_vector())
+                            .intersection_unchecked(&DeviceIntRect::from_size(target_rect.size()));
+                        let mut batch_builder = BatchBuilder::new(
+                            batcher,
+                            task_visible_rect,
+                            pic_task.content_origin,
+                            &ctx.frame_memory,
+                        );
+                        path_tiler.begin_target(DeviceIntRect::from_size(target_rect.size()));
 
                         cmd_buffer.iter_prims(&mut |cmd, spatial_node_index, segments| {
                             batch_builder.add_prim_to_batch(
@@ -1323,6 +1337,7 @@ pub fn build_render_pass(
                                 z_generator,
                                 prim_instances,
                                 gpu_buffer_builder,
+                                path_tiler,
                                 segments,
                             );
                         });
@@ -1399,6 +1414,7 @@ pub fn build_render_pass(
         prim_instances,
         cmd_buffers,
         gpu_buffer_builder,
+        path_tiler,
     );
     pass.alpha.build(
         ctx,
@@ -1409,6 +1425,7 @@ pub fn build_render_pass(
         prim_instances,
         cmd_buffers,
         gpu_buffer_builder,
+        path_tiler,
     );
 
     for target in &mut pass.texture_cache.values_mut() {
@@ -1421,6 +1438,7 @@ pub fn build_render_pass(
             prim_instances,
             cmd_buffers,
             gpu_buffer_builder,
+            path_tiler,
         );
     }
 

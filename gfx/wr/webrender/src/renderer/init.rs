@@ -25,7 +25,7 @@ use crate::internal_types::{FastHashMap, FastHashSet};
 use crate::profiler::{self, Profiler, TransactionProfile};
 use crate::render_backend::RenderBackend;
 use crate::texture_cache::TextureCacheConfig;
-use crate::renderer::{
+use crate::renderer::{DEFAULT_PATH_AA_SAMPLES, 
     debug, vertex,
     debug::DebugOverlayState,
     Renderer, BufferDamageTracker, PipelineInfo, TextureResolver,
@@ -765,7 +765,7 @@ pub fn create_webrender_instance(
         shaders,
         debug: debug::LazyInitializedDebugRenderer::new(),
         debug_flags: DebugFlags::empty(),
-        path_aa_samples: if cfg!(target_os = "android") { 4 } else { 8 },
+        path_aa_samples: DEFAULT_PATH_AA_SAMPLES,
         profile: TransactionProfile::new(),
         frame_counter: 0,
         resource_upload_time: 0.0,

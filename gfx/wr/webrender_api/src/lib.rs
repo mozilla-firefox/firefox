@@ -844,6 +844,10 @@ bitflags! {
         /// incorrect after the flag is cleared until they are invalidated.
         /// Useful to benchmark frame building on its own.
         const SKIP_RENDERING = (1 as u64) << 38;
+        /// Don't fill solid color primitives clipped by a path directly in
+        /// their destination target. They go through an intermediate target
+        /// and a path clip mask instead.
+        const DISABLE_DIRECT_PATH_FILL = (1 as u64) << 39;
     }
 }
 

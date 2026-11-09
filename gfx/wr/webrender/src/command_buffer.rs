@@ -33,6 +33,8 @@ impl Command {
     const CMD_SET_SEGMENTS: u32 = 0x50000000;
     /// Draw a 3d-split-composite primitive.
     const CMD_DRAW_SPLIT_COMPOSITE: u32 = 0x60000000;
+    /// Draw a path primitive, tiled during batching.
+    const CMD_DRAW_PATH: u32 = 0x70000000;
 
     /// Bitmask for command bits of the command.
     const CMD_MASK: u32 = 0xf0000000;
@@ -70,6 +72,11 @@ impl Command {
 
     fn draw_quad() -> Self {
         Command(Command::CMD_DRAW_QUAD)
+    }
+
+    fn draw_path(path_index: u32) -> Self {
+        debug_assert!(path_index <= Command::PARAM_MASK);
+        Command(Command::CMD_DRAW_PATH | path_index)
     }
 }
 
@@ -147,6 +154,11 @@ pub enum PrimitiveCommand {
         edge_flags: EdgeMask,
         blend_mode: BlendMode,
     },
+    Path {
+        /// Index of the `PathPrimitive` in the frame's path primitive storage.
+        path_index: u32,
+        device_rect: DeviceRect,
+    },
 }
 
 impl PrimitiveCommand {
@@ -200,6 +212,10 @@ impl PrimitiveCommand {
             edge_flags,
             blend_mode,
         }
+    }
+
+    pub fn path(path_index: u32, device_rect: DeviceRect) -> Self {
+        PrimitiveCommand::Path { path_index, device_rect }
     }
 
     pub fn instance(
@@ -357,6 +373,10 @@ impl CommandBuffer {
                     self.commands.push(Command::data(src_color_task_ids[i].sub_rect_index as u32));
                 }
             }
+            PrimitiveCommand::Path { path_index, device_rect } => {
+                self.commands.push(Command::draw_path(path_index));
+                push_rect(&mut self.commands, &device_rect);
+            }
         }
     }
 
@@ -451,6 +471,11 @@ impl CommandBuffer {
                         device_rect,
                         gpu_buffer_address,
                     );
+                    f(&cmd, current_spatial_node_index, &[]);
+                }
+                Command::CMD_DRAW_PATH => {
+                    let device_rect = read_rect(&mut cmd_iter);
+                    let cmd = PrimitiveCommand::path(param, device_rect);
                     f(&cmd, current_spatial_node_index, &[]);
                 }
                 Command::CMD_SET_SEGMENTS => {

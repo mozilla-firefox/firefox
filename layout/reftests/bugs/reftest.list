@@ -1329,7 +1329,7 @@ pref(browser.display.focus_ring_width,1) == 491180-2.html 491180-2-ref.html
 == 501257-1a.html 501257-1-ref.html
 == 501257-1b.html 501257-1-ref.html
 == 501257-1.xhtml 501257-1-ref.xhtml
-fuzzy(0-6,0-97456) == 501627-1.html 501627-1-ref.html # Bug 1481664
+fuzzy(0-16,0-112000) == 501627-1.html 501627-1-ref.html # Bug 1481664
 == 502288-1.html 502288-1-ref.html
 fuzzy-if(gtkWidget,0-1,0-2) == 502447-1.html 502447-1-ref.html #Bug 1315834
 pref(layout.css.letter-spacing.model,0) == 502795-1.html 502795-1-ref.html

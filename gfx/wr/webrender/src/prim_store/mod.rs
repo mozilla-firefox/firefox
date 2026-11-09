@@ -5,6 +5,7 @@
 use api::ColorF;
 use api::{ImageRendering, LineOrientation, PrimitiveFlags};
 use api::units::*;
+use crate::path_tiler::PathPrimitive;
 use crate::clip::ClipNodeId;
 use crate::render_backend::{DataStores, DlStores};
 use crate::space::SnapRounding;
@@ -568,6 +569,10 @@ pub struct PrimitiveFrameScratch {
     /// Temporary buffers for building segments in to during prepare pass
     pub quad_direct_segments: Vec<QuadSegment>,
     pub quad_indirect_segments: Vec<QuadSegment>,
+
+    /// Paths drawn with `QuadRenderStrategy::Path`, indexed by
+    /// `PrimitiveCommand::Path`.
+    pub path_prims: Vec<PathPrimitive>,
 }
 
 impl Default for PrimitiveFrameScratch {
@@ -586,6 +591,7 @@ impl Default for PrimitiveFrameScratch {
             required_backdrop_chains: FastHashSet::default(),
             quad_direct_segments: Vec::new(),
             quad_indirect_segments: Vec::new(),
+            path_prims: Vec::new(),
         }
     }
 }
@@ -685,6 +691,7 @@ impl PrimitiveFrameScratch {
         recycler.recycle_vec(&mut self.debug_items);
         recycler.recycle_vec(&mut self.quad_direct_segments);
         recycler.recycle_vec(&mut self.quad_indirect_segments);
+        recycler.recycle_vec(&mut self.path_prims);
     }
 
     pub fn begin_frame(&mut self) {
@@ -699,6 +706,7 @@ impl PrimitiveFrameScratch {
         self.clip_mask_instances.push(ClipMaskKind::None);
         self.quad_direct_segments.clear();
         self.quad_indirect_segments.clear();
+        self.path_prims.clear();
 
         self.required_backdrop_chains.clear();
 

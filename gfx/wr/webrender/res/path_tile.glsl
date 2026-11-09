@@ -71,6 +71,32 @@ PathInfo fetch_path_info(int address) {
     return path;
 }
 
+struct PathPrimInfo {
+    int z_id;
+    // Premultiplied.
+    vec4 color;
+    // In pixels, relative to the origin of the render task.
+    vec4 scissor;
+};
+
+// See PathPrimInfo in path_tiler.rs. Stored in the two texels after the PathInfo.
+PathPrimInfo fetch_path_prim_info(int address) {
+    ivec4 data = fetch_from_gpu_buffer_1i(address + 1);
+    ivec4 scissor = fetch_from_gpu_buffer_1i(address + 2);
+
+    PathPrimInfo prim;
+    prim.z_id = data.x;
+    prim.color = vec4(
+        float((data.y >> 16) & 0xFFFF),
+        float(data.y & 0xFFFF),
+        float((data.z >> 16) & 0xFFFF),
+        float(data.z & 0xFFFF)
+    ) / 65535.0;
+    prim.scissor = vec4(scissor);
+
+    return prim;
+}
+
 #endif
 
 #ifdef WR_FRAGMENT_SHADER

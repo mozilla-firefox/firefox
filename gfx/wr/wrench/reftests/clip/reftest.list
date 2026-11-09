@@ -38,3 +38,4 @@ fuzzy(94,1600) fuzzy-if(platform(swgl),102,1600) fuzzy-if(platform(android),103,
 fuzzy(86,4200) fuzzy-if(platform(swgl),108,4200) fuzzy-if(platform(android),108,4200) == path-firefox-logo.yaml path-firefox-logo.png
 == path-fractional-rect.yaml path-fractional-rect-ref.yaml
 == path-conflation.yaml path-conflation-ref.yaml
+== path-fill-direct.yaml path-fill-direct-ref.yaml

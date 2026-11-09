@@ -1,0 +1,69 @@
+# Solid color path fills drawn directly in the picture: translucency, depth
+# ordering against opaque primitives, a rectangle clip, a scale transform and
+# a path crossing a picture cache tile boundary (x = 1024).
+---
+root:
+  items:
+    - type: rect
+      bounds: [0, 0, 1200, 400]
+      color: green
+    - type: clip
+      id: 1
+      path:
+        rect: [20, 20, 100, 100]
+        data: "M 0 0 L 100 0 L 100 100 L 0 100 Z M 25 25 L 75 25 L 75 75 L 25 75 Z"
+        fill-rule: evenodd
+    - type: clip-chain
+      id: 101
+      clips: [1]
+    - type: rect
+      bounds: [20, 20, 100, 100]
+      color: [0, 0, 255, 0.5]
+      clip-chain: 101
+    - type: rect
+      bounds: [60, 60, 80, 80]
+      color: yellow
+    - type: clip
+      id: 2
+      path:
+        rect: [150, 20, 100, 100]
+        data: "M 0 0 L 100 0 L 100 100 L 0 100 Z"
+    - type: clip
+      id: 3
+      bounds: [150, 20, 50, 100]
+    - type: clip-chain
+      id: 102
+      clips: [2, 3]
+    - type: rect
+      bounds: [150, 20, 100, 100]
+      color: blue
+      clip-chain: 102
+    - type: stacking-context
+      bounds: [0, 0, 0, 0]
+      transform: translate(20, 150) scale(2)
+      items:
+        - type: clip
+          id: 4
+          path:
+            rect: [0, 0, 40, 40]
+            data: "M 0 0 L 40 0 L 40 20 L 20 20 L 20 40 L 0 40 Z"
+        - type: clip-chain
+          id: 104
+          clips: [4]
+        - type: rect
+          bounds: [0, 0, 40, 40]
+          color: blue
+          clip-chain: 104
+    - type: clip
+      id: 5
+      path:
+        rect: [1000, 20, 60, 60]
+        data: "M 0 0 L 60 0 L 60 60 L 0 60 Z M 20 20 L 20 40 L 40 40 L 40 20 Z"
+        fill-rule: evenodd
+    - type: clip-chain
+      id: 105
+      clips: [5]
+    - type: rect
+      bounds: [1000, 20, 60, 60]
+      color: blue
+      clip-chain: 105

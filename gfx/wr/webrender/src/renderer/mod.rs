@@ -149,6 +149,9 @@ pub const VERTEX_DATA_TEXTURE_COUNT: usize = 3;
 /// Number of GPU blocks per UV rectangle provided for an image.
 pub const BLOCKS_PER_UV_RECT: usize = 2;
 
+/// See IntParameter::PathAaSamples.
+pub const DEFAULT_PATH_AA_SAMPLES: i32 = if cfg!(target_os = "android") { 4 } else { 8 };
+
 const GPU_TAG_BRUSH_YUV_IMAGE: GpuProfileTag = GpuProfileTag {
     label: "B_YuvImage",
     color: debug_colors::DARKGREEN,
@@ -248,6 +251,7 @@ impl BatchKind {
     fn sampler_tag(&self) -> GpuProfileTag {
         match *self {
             BatchKind::SplitComposite => GPU_TAG_PRIM_SPLIT_COMPOSITE,
+            BatchKind::Path => GPU_TAG_PRIMITIVE,
             BatchKind::TextRun(_) => GPU_TAG_PRIM_TEXT_RUN,
             BatchKind::Quad(PatternKind::ColorOrTexture) => GPU_TAG_PRIMITIVE,
             BatchKind::Quad(PatternKind::TextureExternal) => GPU_TAG_PRIMITIVE,
@@ -1196,6 +1200,7 @@ impl Renderer {
                 ResultMsg::SetParameter(ref param) => {
                     if let Parameter::Int(IntParameter::PathAaSamples, samples) = *param {
                         self.path_aa_samples = samples;
+                        self.shaders.borrow_mut().path_aa_samples = samples;
                     }
                     self.device.set_parameter(param);
                     self.profiler.set_parameter(param);

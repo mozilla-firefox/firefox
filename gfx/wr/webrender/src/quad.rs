@@ -3,13 +3,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use api::{BorderRadius, ClipMode, ColorF, units::*};
-use euclid::{SideOffsets2D, Size2D, point2};
+use euclid::{SideOffsets2D, Size2D, Transform3D, point2};
 
 use crate::ItemUid;
 use crate::border::NinePatchDescriptorExt;
 use crate::gpu_types::ClipSpace;
 use crate::pattern::repeat::RepeatedPattern;
-use crate::path_tiler::PathTransform;
+use crate::path_tiler::{PathPrimitive, PathTransform};
 use crate::render_task::{ImageClipSubTask, PathClipSubTask, RectangleClipSubTask, SubTask};
 use crate::transform::TransformPalette;
 use crate::batch::{BatchKey, BatchKind, BatchTextures};
@@ -19,7 +19,7 @@ use crate::command_buffer::CommandBufferList;
 use crate::frame_builder::FrameBuildingState;
 use crate::gpu_types::{PrimitiveInstanceData, QuadHeader, QuadInstance, QuadPrimitive, QuadSegment, ZBufferId};
 use crate::internal_types::TextureSource;
-use crate::pattern::{Pattern, PatternBuilder, PatternBuilderState, PatternKind, PatternShaderInput};
+use crate::pattern::{Pattern, PatternBuilder, PatternBuilderState, PatternKind, PatternShaderInput, TEXTURED_SHADER_MODE_COLOR};
 use crate::prim_store::{NinePatchDescriptor, PrimitiveScratchBuffer};
 use crate::quad_clip::{QuadClip, QuadClipShape, QuadClipStack, QuadMaskTile};
 use crate::render_task::{RenderTask, RenderTaskAddress, RenderTaskKind};
@@ -240,6 +240,16 @@ pub enum QuadRenderStrategy {
     /// has the opportunity to be drawn directly in the destination target or
     /// via an intermediate target if it is affected by a mask.
     Tiled,
+    /// The pattern is a solid color, and the only clip that needs a mask is a
+    /// path. The path is tiled during batching and its tiles are drawn
+    /// directly in the destination target with `ps_path_tile`.
+    Path {
+        /// The index of the path clip in the clip stack.
+        clip_index: usize,
+        /// Pixel-aligned bounds of the primitive and its rectangle clips, in
+        /// device pixels.
+        scissor: DeviceIntRect,
+    },
 }
 
 pub fn prepare_quad(
@@ -265,12 +275,19 @@ pub fn prepare_quad(
 
     let strategy = match cache_key {
         Some(_) => QuadRenderStrategy::Indirect,
-        None => get_prim_render_strategy(
+        None => get_path_render_strategy(
+            &pattern,
+            desc,
+            clips,
+            transform,
+            spatial_tree,
+            frame_state.path_rendering_enabled,
+        ).unwrap_or_else(|| get_prim_render_strategy(
             transform.prim_spatial_node_index(),
             clips,
             transform.is_2d_scale_offset(),
             spatial_tree,
-        ),
+        )),
     };
 
     prepare_quad_impl(
@@ -343,6 +360,18 @@ pub fn prepare_repeatable_quad(
                 stretch_size,
             ),
             ..*desc
+        };
+
+        let strategy = match cache_key {
+            Some(_) => strategy,
+            None => get_path_render_strategy(
+                &pattern,
+                &stretched_desc,
+                clips,
+                transform,
+                spatial_tree,
+                frame_state.path_rendering_enabled,
+            ).unwrap_or(strategy),
         };
 
         // Most common path.
@@ -671,6 +700,20 @@ fn prepare_quad_impl(
     // other rendering strategies to avoid cracks between side-by-side primitives.
     let round_edges = !aa_flags;
 
+    if let QuadRenderStrategy::Path { clip_index, scissor } = strategy {
+        prepare_path(
+            pattern,
+            &clips.clips()[clip_index],
+            scissor,
+            transform,
+            spatial_tree,
+            targets,
+            frame_state,
+            scratch,
+        );
+        return;
+    }
+
     if let QuadRenderStrategy::Direct = strategy {
         if pattern.is_opaque {
             quad_flags |= QuadFlags::IS_OPAQUE;
@@ -771,7 +814,7 @@ fn prepare_quad_impl(
     }
 
     match strategy {
-        QuadRenderStrategy::Direct => {}
+        QuadRenderStrategy::Direct | QuadRenderStrategy::Path { .. } => {}
         QuadRenderStrategy::Indirect => {
             let (local_bounds, aa_flags) = clips.adjust_border_clip_coverage(
                 local_bounds, aa_flags, transform, &clipped_surface_rect,
@@ -1492,6 +1535,149 @@ fn get_prim_render_strategy(
     }
 
     QuadRenderStrategy::Tiled
+}
+
+/// Selects `QuadRenderStrategy::Path` if the primitive can be drawn by filling
+/// a path clip with a solid color directly in the destination target.
+///
+/// This requires a solid color pattern, an axis-aligned primitive and a clip
+/// stack made of a single path and rectangle clips. The primitive's
+/// anti-aliased edges and the rectangle clips must be pixel-aligned in device
+/// space, since they are applied with an integer scissor rect.
+fn get_path_render_strategy(
+    pattern: &Pattern,
+    desc: &QuadDescriptor,
+    clips: &QuadClipStack,
+    transform: &QuadTransformState,
+    spatial_tree: &SpatialTree,
+    enabled: bool,
+) -> Option<QuadRenderStrategy> {
+    if !enabled || !clips.needs_mask() {
+        return None;
+    }
+
+    let is_solid_color = pattern.kind == PatternKind::ColorOrTexture
+        && pattern.shader_input.0 == TEXTURED_SHADER_MODE_COLOR
+        && pattern.texture_input.task_ids.iter().all(|id| *id == RenderTaskId::INVALID)
+        && pattern.blend_mode == BlendMode::PremultipliedAlpha;
+    if !is_solid_color {
+        return None;
+    }
+
+    let local_to_device = transform.as_2d_scale_offset()?;
+    let raster_spatial_node = transform.raster_spatial_node_index();
+    let device_pixel_scale = transform.device_pixel_scale().get();
+
+    let mut scissor = clips.coverage_rect().intersection_unchecked(&clips.surface_clip_rect());
+
+    let prim_rect = local_to_device.map_rect(&desc.bounds);
+    if !desc.aligned_aa_edges.is_empty() && !is_pixel_aligned(&prim_rect) {
+        return None;
+    }
+    scissor = scissor.intersection_unchecked(&prim_rect);
+
+    let local_clip_rect = clips.local_clip_rect();
+    if local_clip_rect != LayoutRect::max_rect() {
+        let rect = local_to_device.map_rect(&local_clip_rect);
+        if !is_pixel_aligned(&rect) {
+            return None;
+        }
+        scissor = scissor.intersection_unchecked(&rect);
+    }
+
+    let mut path_clip = None;
+    for (idx, clip) in clips.clips().iter().enumerate() {
+        let needs_rect = match clip.shape {
+            QuadClipShape::Path { ref path, origin, .. } => {
+                if path_clip.is_some() {
+                    return None;
+                }
+                path_clip = Some(idx);
+                let path_rect = path.aabb().translate(origin.to_vector());
+                !clip.rect.contains_box(&path_rect)
+            }
+            QuadClipShape::Rectangle { mode: ClipMode::Clip } => true,
+            _ => {
+                return None;
+            }
+        };
+
+        if needs_rect {
+            if !spatial_tree.can_get_relative_transform(clip.spatial_node, raster_spatial_node) {
+                return None;
+            }
+            let clip_to_raster = spatial_tree.get_relative_transform(
+                clip.spatial_node,
+                raster_spatial_node,
+            );
+            if !clip_to_raster.is_2d_scale_translation() {
+                return None;
+            }
+            let clip_to_device = ScaleOffset::from_transform(&clip_to_raster.into_transform())?
+                .then_scale(device_pixel_scale);
+            let rect: DeviceRect = clip_to_device.map_rect(&clip.rect);
+            if !is_pixel_aligned(&rect) {
+                return None;
+            }
+            scissor = scissor.intersection_unchecked(&rect);
+        }
+    }
+
+    let clip_index = path_clip?;
+    let scissor = scissor.round().to_i32();
+    if scissor.is_empty() {
+        return None;
+    }
+
+    Some(QuadRenderStrategy::Path { clip_index, scissor })
+}
+
+fn is_pixel_aligned(rect: &DeviceRect) -> bool {
+    const EPSILON: f32 = 1.0 / 256.0;
+    [rect.min.x, rect.min.y, rect.max.x, rect.max.y]
+        .iter()
+        .all(|v| (v - v.round()).abs() <= EPSILON)
+}
+
+fn prepare_path(
+    pattern: &Pattern,
+    clip: &QuadClip,
+    scissor: DeviceIntRect,
+    transform: &QuadTransformState,
+    spatial_tree: &SpatialTree,
+    targets: &[CommandBufferIndex],
+    frame_state: &mut FrameBuildingState,
+    scratch: &mut PrimitiveScratchBuffer,
+) {
+    let QuadClipShape::Path { ref path, fill_rule, origin } = clip.shape else {
+        unreachable!();
+    };
+
+    let Some(path_transform) = path_clip_to_device_transform(
+        clip,
+        origin,
+        transform.raster_spatial_node_index(),
+        transform.device_pixel_scale(),
+        spatial_tree,
+    ) else {
+        return;
+    };
+
+    let path_index = scratch.frame.path_prims.len() as u32;
+    scratch.frame.path_prims.push(PathPrimitive {
+        path: path.clone(),
+        fill_rule,
+        transform: path_transform,
+        scissor,
+        color: pattern.base_color.premultiplied(),
+        blend_mode: pattern.blend_mode,
+    });
+
+    frame_state.push_prim(
+        &PrimitiveCommand::path(path_index, scissor.to_f32()),
+        transform.prim_spatial_node_index(),
+        targets,
+    );
 }
 
 /// Adjust the transform and device rect until the latter fits the provided
@@ -2218,6 +2404,27 @@ fn path_clip_transform(
     device_pixel_scale: DevicePixelScale,
     spatial_tree: &SpatialTree,
 ) -> Option<PathTransform> {
+    let transform = path_clip_to_device_transform(
+        clip,
+        origin,
+        raster_spatial_node_index,
+        device_pixel_scale,
+        spatial_tree,
+    )?
+    .then_translate(euclid::vec3(-task_rect.min.x, -task_rect.min.y, 0.0));
+
+    Some(PathTransform::new(&transform))
+}
+
+/// The transform from the space of a path clip's path to the device pixels of
+/// the raster space.
+fn path_clip_to_device_transform(
+    clip: &QuadClip,
+    origin: LayoutPoint,
+    raster_spatial_node_index: SpatialNodeIndex,
+    device_pixel_scale: DevicePixelScale,
+    spatial_tree: &SpatialTree,
+) -> Option<Transform3D<f32, LayoutPixel, DevicePixel>> {
     let clip_to_raster = if spatial_tree.can_get_relative_transform(clip.spatial_node, raster_spatial_node_index) {
         spatial_tree
             .get_relative_transform(clip.spatial_node, raster_spatial_node_index)
@@ -2234,10 +2441,9 @@ fn path_clip_transform(
     let transform = LayoutTransform::translation(origin.x, origin.y, 0.0)
         .then(&clip_to_raster)
         .then_scale(device_pixel_scale.0, device_pixel_scale.0, 1.0)
-        .then_translate(euclid::vec3(-task_rect.min.x, -task_rect.min.y, 0.0))
         .with_destination::<DevicePixel>();
 
-    Some(PathTransform::new(&transform))
+    Some(transform)
 }
 
 fn can_use_aa_segments(

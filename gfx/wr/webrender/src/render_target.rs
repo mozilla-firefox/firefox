@@ -111,6 +111,7 @@ impl RenderTargetList {
         prim_instances: &[PrimitiveInstance],
         cmd_buffers: &CommandBufferList,
         gpu_buffer_builder: &mut GpuBufferBuilder,
+        path_tiler: &mut PathTiler,
     ) {
         if self.targets.is_empty() {
             return;
@@ -126,6 +127,7 @@ impl RenderTargetList {
                 prim_instances,
                 cmd_buffers,
                 gpu_buffer_builder,
+                path_tiler,
             );
         }
     }
@@ -245,6 +247,7 @@ impl RenderTarget {
         prim_instances: &[PrimitiveInstance],
         cmd_buffers: &CommandBufferList,
         gpu_buffer_builder: &mut GpuBufferBuilder,
+        path_tiler: &mut PathTiler,
     ) {
         tracy_rs::profile_scope!("build");
         let mut merged_batches = AlphaBatchContainer::new(None, &ctx.frame_memory);
@@ -310,7 +313,13 @@ impl RenderTarget {
                         &ctx.frame_memory,
                     );
 
-                    let mut batch_builder = BatchBuilder::new(alpha_batch_builder);
+                    let mut batch_builder = BatchBuilder::new(
+                        alpha_batch_builder,
+                        DeviceIntRect::from_size(target_rect.size()),
+                        pic_task.content_origin,
+                        &ctx.frame_memory,
+                    );
+                    path_tiler.begin_target(DeviceIntRect::from_size(target_rect.size()));
                     let cmd_buffer = cmd_buffers.get(pic_task.cmd_buffer_index);
 
                     cmd_buffer.iter_prims(&mut |cmd, spatial_node_index, segments| {
@@ -327,6 +336,7 @@ impl RenderTarget {
                             z_generator,
                             prim_instances,
                             gpu_buffer_builder,
+                            path_tiler,
                             segments,
                         );
                     });

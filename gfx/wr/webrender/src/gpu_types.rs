@@ -16,6 +16,7 @@ use crate::renderer::{GpuBufferAddress, GpuBufferBuilderF, GpuBufferHandle, GpuB
 use crate::util::ScaleOffset;
 use glyph_rasterizer::SubpixelDirection;
 use crate::util::pack_as_float;
+use crate::path_tiler::PathTileInstance;
 
 
 // Contains type that must exactly match the same structures declared in GLSL.
@@ -589,6 +590,14 @@ pub struct QuadInstance {
     pub edge_flags: u8,
     pub part_index: u8,
     pub segment_index: u8,
+}
+
+impl From<PathTileInstance> for PrimitiveInstanceData {
+    fn from(instance: PathTileInstance) -> Self {
+        PrimitiveInstanceData {
+            data: instance.data.map(|v| v as i32),
+        }
+    }
 }
 
 impl From<QuadInstance> for PrimitiveInstanceData {

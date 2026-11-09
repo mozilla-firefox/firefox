@@ -83,6 +83,7 @@ pub fn get_shader_features(flags: ShaderFeatureFlags) -> ShaderFeatures {
     if flags.contains(ShaderFeatureFlags::PATH_AA_ALL_MODES) {
         path_tile_features.push(String::new());
     }
+    shaders.insert("ps_path_tile", path_tile_features.clone());
     shaders.insert("cs_path_tile", path_tile_features);
 
     for name in &[
