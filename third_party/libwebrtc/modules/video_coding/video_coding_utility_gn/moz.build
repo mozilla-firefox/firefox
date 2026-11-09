@@ -45,7 +45,6 @@ UNIFIED_SOURCES += [
     "/third_party/libwebrtc/modules/video_coding/utility/ivf_file_writer.cc",
     "/third_party/libwebrtc/modules/video_coding/utility/qp_parser.cc",
     "/third_party/libwebrtc/modules/video_coding/utility/quality_scaler.cc",
-    "/third_party/libwebrtc/modules/video_coding/utility/reference_buffer_tracker.cc",
     "/third_party/libwebrtc/modules/video_coding/utility/simulcast_rate_allocator.cc",
     "/third_party/libwebrtc/modules/video_coding/utility/simulcast_utility.cc",
     "/third_party/libwebrtc/modules/video_coding/utility/vp8_header_parser.cc",
