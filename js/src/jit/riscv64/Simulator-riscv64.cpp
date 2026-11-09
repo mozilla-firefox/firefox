@@ -1163,6 +1163,11 @@ void Simulator::setCallResultFloat(float result) {
 
 void Simulator::setCallResult(int64_t res) { setRegister(a0, res); }
 
+#ifdef XP_DARWIN
+// add a dedicated setCallResult for intptr_t on Darwin
+void Simulator::setCallResult(intptr_t res) { setRegister(a0, I64(res)); }
+#endif
+
 void Simulator::setCallResult(__int128_t res) {
   setRegister(a0, I64(res));
   setRegister(a1, I64(res >> 64));
