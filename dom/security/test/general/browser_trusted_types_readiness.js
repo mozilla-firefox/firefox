@@ -16,7 +16,7 @@ function snapshot() {
   };
 }
 
-async function loadAndDestroy(query, expectedLabel) {
+async function loadAndDestroy(query, expectedLabel, expectedDocuments = 1) {
   await Services.fog.testFlushAllChildren();
   const before = snapshot();
   const tab = await BrowserTestUtils.openNewForegroundTab(
@@ -35,9 +35,10 @@ async function loadAndDestroy(query, expectedLabel) {
   await TestUtils.waitForCondition(async () => {
     await Services.fog.testFlushAllChildren();
     after = snapshot();
-    return expectedLabel
-      ? delta(expectedLabel) >= 1
-      : after.destroyed > before.destroyed;
+    return (
+      after.destroyed - before.destroyed >= expectedDocuments &&
+      (!expectedLabel || delta(expectedLabel) >= 1)
+    );
   }, "Waiting for the document to be destroyed and counted");
   const total = Object.keys(after.labels).reduce((s, l) => s + delta(l), 0);
   Assert.lessOrEqual(
@@ -54,7 +55,7 @@ add_task(async function test_pref_off() {
   const delta = await loadAndDestroy("csp=none&script=innerhtml", null);
   Assert.equal(
     delta(
-      "htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1"
+      "doc-top_htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1"
     ),
     0,
     "Nothing recorded with the pref off"
@@ -67,19 +68,19 @@ add_task(async function test_readiness() {
   for (const [query, label] of [
     [
       "csp=none&script=plain",
-      "htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-0",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-0",
     ],
     [
       "csp=none&script=plain&handler=1",
-      "htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
     ],
     [
       "csp=none&script=empty",
-      "htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-0",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-0",
     ],
     [
       "csp=none&script=innerhtml",
-      "htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
+      "doc-top_htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
     ],
     ...[
       "sethtmlunsafe",
@@ -92,71 +93,92 @@ add_task(async function test_readiness() {
       "data_document",
     ].map(script => [
       `csp=none&script=${script}`,
-      "htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
+      "doc-top_htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
     ]),
     [
       "csp=none&script=innerhtml&module=1",
-      "htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
+      "doc-top_htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
     ],
     [
       "csp=none&script=trusted_html&module=1",
-      "htmlsink-trusted_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-trusted_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=enforce&script=write_default",
-      "htmlsink-none_writesink-string_ttcsp-enforce_strictcsp-none_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-none_writesink-string_ttcsp-enforce_strictcsp-none_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=report&script=policy_only",
-      "htmlsink-none_writesink-none_ttcsp-report_strictcsp-none_created-1_used-0_lib-0_js-1",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-report_strictcsp-none_created-1_used-0_lib-0_js-1",
     ],
     [
       "csp=none&script=create_html",
-      "htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=none&script=trusted_html",
-      "htmlsink-trusted_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-trusted_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=none&script=write_noargs",
-      "htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1",
     ],
     [
       "csp=none&script=mixed_write",
-      "htmlsink-trusted_writesink-string_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-trusted_writesink-string_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=none&strict=enforce&script=plain",
-      "htmlsink-none_writesink-none_ttcsp-none_strictcsp-enforce_created-0_used-0_lib-0_js-0",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-none_strictcsp-enforce_created-0_used-0_lib-0_js-0",
     ],
     [
       "csp=enforce&strict=enforce&script=trusted_html",
-      "htmlsink-trusted_writesink-none_ttcsp-enforce_strictcsp-enforce_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-trusted_writesink-none_ttcsp-enforce_strictcsp-enforce_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=none&strict=report&script=innerhtml",
-      "htmlsink-string_writesink-none_ttcsp-none_strictcsp-report_created-0_used-0_lib-0_js-1",
+      "doc-top_htmlsink-string_writesink-none_ttcsp-none_strictcsp-report_created-0_used-0_lib-0_js-1",
     ],
     [
       "csp=none&strict=nobase&script=create_html",
-      "htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=none&strict=self&script=trusted_html",
-      "htmlsink-trusted_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-trusted_writesink-none_ttcsp-none_strictcsp-none_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=enforce&strict=report&script=trusted_html",
-      "htmlsink-trusted_writesink-none_ttcsp-enforce_strictcsp-report_created-1_used-1_lib-0_js-1",
+      "doc-top_htmlsink-trusted_writesink-none_ttcsp-enforce_strictcsp-report_created-1_used-1_lib-0_js-1",
     ],
     [
       "csp=report&strict=enforce&script=policy_only",
-      "htmlsink-none_writesink-none_ttcsp-report_strictcsp-enforce_created-1_used-0_lib-0_js-1",
+      "doc-top_htmlsink-none_writesink-none_ttcsp-report_strictcsp-enforce_created-1_used-0_lib-0_js-1",
     ],
   ]) {
     const delta = await loadAndDestroy(query, label);
     Assert.greaterOrEqual(delta(label), 1, `${query} records ${label}`);
   }
+  await SpecialPowers.popPrefEnv();
+});
+
+// A frame's document is labeled doc-sub, its parent doc-top.
+add_task(async function test_subdocument() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });
+  const top =
+    "doc-top_htmlsink-none_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-0";
+  const sub =
+    "doc-sub_htmlsink-string_writesink-none_ttcsp-none_strictcsp-none_created-0_used-0_lib-0_js-1";
+  const delta = await loadAndDestroy(
+    "csp=none&script=plain&frame=innerhtml",
+    sub,
+    2
+  );
+  Assert.greaterOrEqual(
+    delta(top),
+    1,
+    "The top-level document records doc-top"
+  );
+  Assert.greaterOrEqual(delta(sub), 1, "The frame's document records doc-sub");
   await SpecialPowers.popPrefEnv();
 });

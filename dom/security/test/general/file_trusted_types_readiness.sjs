@@ -65,8 +65,11 @@ function handleRequest(request, response) {
   const script = SCRIPTS[params.get("script")];
   const handler = params.has("handler") ? ` onload="0"` : "";
   const type = params.has("module") ? ` type="module"` : "";
+  const frame = params.has("frame")
+    ? `<iframe src="?csp=none&script=${params.get("frame")}"></iframe>`
+    : "";
   response.write(
-    `<!DOCTYPE html><html><body${handler}>${
+    `<!DOCTYPE html><html><body${handler}>${frame}${
       script === null ? "" : `<script nonce="n"${type}>${script}</script>`
     }</body></html>`
   );
