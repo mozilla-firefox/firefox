@@ -1208,7 +1208,8 @@ class MarionetteRefTestExecutor(RefTestExecutor):
                 self.has_window = False
 
             if not self.has_window:
-                self.protocol.base.create_window(type="window")
+                test_window = self.protocol.base.create_window(type="window")
+                self.protocol.base.set_window(test_window)
                 # Resize the browser window so that its inner dimensions have
                 # exactly a size of 800x600 pixels, which means ignoring all
                 # visible toolbars and sidebars.
