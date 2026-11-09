@@ -1316,6 +1316,7 @@ impl<'a, 'b> RelativeSelectorDependencyCollector<'a, 'b> {
         loop {
             // Reset the compound state.
             self.compound_state = PerCompoundState::new(index);
+            self.compound_state_attributes = RelativeSelectorCompoundStateAttributes::new();
 
             let (keep_traversing, index_offset) = visit_all_in_iter_compound(self, &mut iter);
 
