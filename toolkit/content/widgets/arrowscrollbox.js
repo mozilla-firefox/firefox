@@ -10,7 +10,7 @@
   class MozArrowScrollbox extends MozElements.BaseControl {
     static #startEndVertical = ["top", "bottom"];
     static #startEndHorizontal = ["left", "right"];
-    #scrollButtonUpdatePending = false;
+    #scrollButtonUpdatePending = null;
 
     static get inheritedAttributes() {
       return {
@@ -574,37 +574,48 @@
       this.scrollbox.scrollBy(scrollOptions);
     }
 
-    // @param aRafCount how many animation frames we need to wait to get
-    // current layout data from getBoundsWithoutFlushing.
+    // @param aRafCount how many animation frames to wait before reading the
+    // bounds.
     #updateScrollButtonsDisabledState(aRafCount = 2) {
       if (!this.overflowing) {
         this.toggleAttribute("scrolledtoend", true);
         this.toggleAttribute("scrolledtostart", true);
-        this.#scrollButtonUpdatePending = false;
+        this.#scrollButtonUpdatePending = null;
         return;
       }
 
-      if (aRafCount) {
-        if (this.#scrollButtonUpdatePending) {
+      if (this.#scrollButtonUpdatePending) {
+        return;
+      }
+
+      let pending = {};
+      this.#scrollButtonUpdatePending = pending;
+      let update = ([scrolledToStart, scrolledToEnd]) => {
+        if (this.#scrollButtonUpdatePending != pending) {
           return;
         }
-
-        this.#scrollButtonUpdatePending = true;
-        let oneIter = () => {
-          if (aRafCount--) {
-            if (this.#scrollButtonUpdatePending && this.isConnected) {
-              window.requestAnimationFrame(oneIter);
-            }
-          } else {
-            this.#updateScrollButtonsDisabledState(0);
+        this.#scrollButtonUpdatePending = null;
+        this.toggleAttribute("scrolledtoend", scrolledToEnd);
+        this.toggleAttribute("scrolledtostart", scrolledToStart);
+      };
+      let oneIter = () => {
+        if (aRafCount--) {
+          if (this.#scrollButtonUpdatePending == pending && this.isConnected) {
+            window.requestAnimationFrame(oneIter);
           }
-        };
-        oneIter();
-        return;
-      }
+        } else if (window.promiseDocumentFlushed) {
+          // Only chrome windows have promiseDocumentFlushed.
+          window
+            .promiseDocumentFlushed(() => this.#getScrolledToStartAndEnd())
+            .then(update);
+        } else {
+          update(this.#getScrolledToStartAndEnd());
+        }
+      };
+      oneIter();
+    }
 
-      this.#scrollButtonUpdatePending = false;
-
+    #getScrolledToStartAndEnd() {
       let scrolledToStart = false;
       let scrolledToEnd = false;
 
@@ -641,8 +652,7 @@
         }
       }
 
-      this.toggleAttribute("scrolledtoend", scrolledToEnd);
-      this.toggleAttribute("scrolledtostart", scrolledToStart);
+      return [scrolledToStart, scrolledToEnd];
     }
 
     disconnectedCallback() {
