@@ -154,7 +154,6 @@ netwerk/protocol/http/NetworkErrorLogging.sys.mjs
 netwerk/protocol/http/ObliviousHTTP.sys.mjs
 netwerk/protocol/http/WellKnownOpportunisticUtils.sys.mjs
 security/sandbox/common/SandboxUtils.sys.mjs
-services/automation/ServicesAutomation.sys.mjs
 services/common/async.sys.mjs
 services/common/hawkclient.sys.mjs
 services/common/hawkrequest.sys.mjs

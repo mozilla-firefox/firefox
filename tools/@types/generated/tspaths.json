@@ -37,6 +37,9 @@
       "chrome://browser/content/aiwindow/components/ai-chat-table.mjs": [
         "../../../browser/components/aiwindow/ui/components/ai-chat-table/ai-chat-table.mjs"
       ],
+      "chrome://browser/content/aiwindow/components/ai-clarifying-question.mjs": [
+        "../../../browser/components/aiwindow/ui/components/ai-clarifying-question/ai-clarifying-question.mjs"
+      ],
       "chrome://browser/content/aiwindow/components/ai-grouped-chip-container.mjs": [
         "../../../browser/components/aiwindow/ui/components/ai-grouped-chip-container/ai-grouped-chip-container.mjs"
       ],
@@ -45,6 +48,9 @@
       ],
       "chrome://browser/content/aiwindow/components/ai-sff-tab-selector.mjs": [
         "../../../browser/components/aiwindow/ui/components/ai-sff-tab-selector/ai-sff-tab-selector.mjs"
+      ],
+      "chrome://browser/content/aiwindow/components/ai-tasks-group.mjs": [
+        "../../../browser/components/aiwindow/ui/components/ai-tasks-group/ai-tasks-group.mjs"
       ],
       "chrome://browser/content/aiwindow/components/ai-website-confirmation.mjs": [
         "../../../browser/components/aiwindow/ui/components/ai-website-confirmation/ai-website-confirmation.mjs"
@@ -138,6 +144,9 @@
       ],
       "chrome://browser/content/aiwindow/components/smartwindow-history-menu.mjs": [
         "../../../browser/components/aiwindow/ui/components/smartwindow-history-menu/smartwindow-history-menu.mjs"
+      ],
+      "chrome://browser/content/aiwindow/components/smartwindow-option-select.mjs": [
+        "../../../browser/components/aiwindow/ui/components/smartwindow-option-select/smartwindow-option-select.mjs"
       ],
       "chrome://browser/content/aiwindow/components/smartwindow-panel-list.mjs": [
         "../../../browser/components/aiwindow/ui/components/smartwindow-panel-list/smartwindow-panel-list.mjs"
@@ -349,18 +358,6 @@
       "chrome://browser/content/preferences/config/notification-permissions.mjs": [
         "../../../browser/components/preferences/config/notification-permissions.mjs"
       ],
-      "chrome://browser/content/preferences/config/passwords-autofill.mjs": [
-        "../../../browser/components/preferences/config/passwords-autofill.mjs"
-      ],
-      "chrome://browser/content/preferences/config/permissions-data.mjs": [
-        "../../../browser/components/preferences/config/permissions-data.mjs"
-      ],
-      "chrome://browser/content/preferences/config/privacy.mjs": [
-        "../../../browser/components/preferences/config/privacy.mjs"
-      ],
-      "chrome://browser/content/preferences/config/search.mjs": [
-        "../../../browser/components/preferences/config/search.mjs"
-      ],
       "chrome://browser/content/preferences/widgets/dialog-button.mjs": [
         "../../../browser/components/preferences/widgets/dialog-button/dialog-button.mjs"
       ],
@@ -423,6 +420,9 @@
       ],
       "chrome://browser/content/sidebar/sidebar-opentabs-preview.mjs": [
         "../../../browser/components/sidebar/sidebar-opentabs-preview.mjs"
+      ],
+      "chrome://browser/content/sidebar/sidebar-page.mjs": [
+        "../../../browser/components/sidebar/sidebar-page.mjs"
       ],
       "chrome://browser/content/sidebar/sidebar-panel-header.mjs": [
         "../../../browser/components/sidebar/sidebar-panel-header.mjs"
@@ -1590,9 +1590,6 @@
       ],
       "resource:///modules/FirefoxBridgeExtensionUtils.sys.mjs": [
         "../../../browser/modules/FirefoxBridgeExtensionUtils.sys.mjs"
-      ],
-      "resource:///modules/GenAI.sys.mjs": [
-        "../../../browser/components/genai/GenAI.sys.mjs"
       ],
       "resource:///modules/HistoryController.sys.mjs": [
         "../../../browser/components/firefoxview/HistoryController.sys.mjs"
@@ -6712,9 +6709,6 @@
       "resource://gre/modules/policies/macOSPoliciesParser.sys.mjs": [
         "../../../toolkit/components/enterprisepolicies/macOSPoliciesParser.sys.mjs"
       ],
-      "resource://gre/modules/services-automation/ServicesAutomation.sys.mjs": [
-        "../../../services/automation/ServicesAutomation.sys.mjs"
-      ],
       "resource://gre/modules/sessionstore/PrivacyFilter.sys.mjs": [
         "../../../toolkit/modules/sessionstore/PrivacyFilter.sys.mjs"
       ],
@@ -7045,6 +7039,9 @@
       "resource://newtab/lib/Widgets/ExtensionWidgetsFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/Widgets/ExtensionWidgetsFeed.sys.mjs"
       ],
+      "resource://newtab/lib/Widgets/FramedWidgetsFeed.sys.mjs": [
+        "../../../browser/extensions/newtab/lib/Widgets/FramedWidgetsFeed.sys.mjs"
+      ],
       "resource://newtab/lib/Widgets/ListsFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/Widgets/ListsFeed.sys.mjs"
       ],
@@ -7194,6 +7191,9 @@
       ],
       "resource://pdf.js/build/pdf.worker.mjs": [
         "../../../toolkit/components/pdfjs/content/build/pdf.worker.mjs"
+      ],
+      "resource://pdf.js/web/wasm/hellbox_nowasm_fallback.js": [
+        "../../../toolkit/components/pdfjs/content/web/wasm/hellbox_nowasm_fallback.js"
       ],
       "resource://pdf.js/web/wasm/jbig2_nowasm_fallback.js": [
         "../../../toolkit/components/pdfjs/content/web/wasm/jbig2_nowasm_fallback.js"
@@ -7566,6 +7566,9 @@
       ],
       "resource://testing-common/CustomizableUITestUtils.sys.mjs": [
         "../../../browser/components/customizableui/test/CustomizableUITestUtils.sys.mjs"
+      ],
+      "resource://testing-common/DBusMockTestUtils.sys.mjs": [
+        "../../../testing/modules/DBusMockTestUtils.sys.mjs"
       ],
       "resource://testing-common/DOMFullscreenTestUtils.sys.mjs": [
         "../../../browser/base/content/test/browser-fullscreen/DOMFullscreenTestUtils.sys.mjs"

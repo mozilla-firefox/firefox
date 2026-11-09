@@ -70,7 +70,7 @@ var gExceptionPaths = [
   "resource://gre/localization/en-US/toolkit/formautofill",
 
   // Exclude all services-automation because they are used through webdriver
-  "resource://gre/modules/services-automation/",
+  "moz-src:///services/automation/",
 
   // Paths from this folder are constructed in NetErrorParent.sys.mjs based on
   // the type of cert or net error the user is encountering.
