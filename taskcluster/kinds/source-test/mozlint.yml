@@ -902,7 +902,6 @@ perfdocs-verify:
             - 'testing/talos/**'
             - 'testing/performance/**'
             - 'testing/perfdocs/**'
-            - 'tools/lint/perfdocs.yml'
             - 'toolkit/components/ml/tests/browser/**'
             - '**/*_perf.js'
 
