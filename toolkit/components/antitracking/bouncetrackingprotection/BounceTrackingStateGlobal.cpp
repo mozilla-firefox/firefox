@@ -192,6 +192,24 @@ nsresult BounceTrackingStateGlobal::ClearByTimeRange(
                                               aEntryType);
 }
 
+void BounceTrackingStateGlobal::DropChainRecordsIf(
+    ChainRecordPredicate aPredicate) {
+  for (auto iter = mBounceTrackers.Iter(); !iter.Done(); iter.Next()) {
+    RefPtr<BounceTrackingRecord>& record = iter.Data().mRecord;
+    if (record && aPredicate(*record)) {
+      record = nullptr;
+    }
+  }
+  for (auto iter = mRecentPurges.Iter(); !iter.Done(); iter.Next()) {
+    for (const RefPtr<BounceTrackingPurgeEntry>& entry : iter.Data()) {
+      BounceTrackingRecord* record = entry->GetBounceChainRecord();
+      if (record && aPredicate(*record)) {
+        entry->SetBounceChainRecord(nullptr);
+      }
+    }
+  }
+}
+
 bool BounceTrackingStateGlobal::HasBounceTracker(
     const nsACString& aSiteHost) const {
   return mBounceTrackers.Contains(aSiteHost);

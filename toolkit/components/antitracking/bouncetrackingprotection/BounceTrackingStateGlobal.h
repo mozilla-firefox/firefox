@@ -8,6 +8,7 @@
 #include "BounceTrackingMapEntry.h"
 #include "BounceTrackingProtectionStorage.h"
 #include "BounceTrackingRecord.h"
+#include "mozilla/FunctionRef.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/WeakPtr.h"
 #include "nsCycleCollectionParticipant.h"
@@ -90,6 +91,13 @@ class BounceTrackingStateGlobal final {
       PRTime aFrom, Maybe<PRTime> aTo = Nothing(),
       Maybe<BounceTrackingProtectionStorage::EntryType> aEntryType = Nothing(),
       bool aSkipStorage = false);
+
+  using ChainRecordPredicate = FunctionRef<bool(const BounceTrackingRecord&)>;
+
+  // Drops the bounce chain record of every bounce tracker candidate and purge
+  // log entry whose record aPredicate matches. Classification and purging don't
+  // depend on the record.
+  void DropChainRecordsIf(ChainRecordPredicate aPredicate);
 
   const nsTHashMap<nsCStringHashKey, PRTime>& UserActivationMapRef() {
     return mUserActivation;

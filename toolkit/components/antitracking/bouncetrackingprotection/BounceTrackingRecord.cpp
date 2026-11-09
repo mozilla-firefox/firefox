@@ -88,6 +88,39 @@ bool BounceTrackingRecord::HasBounceHost(const nsACString& aHost) const {
   return false;
 }
 
+bool BounceTrackingRecord::HasOriginAttributesMatching(
+    OriginAttributesPredicate aPredicate) const {
+  if ((!mInitialHost.IsEmpty() && aPredicate(mInitialOriginAttributes)) ||
+      (!mFinalHost.IsEmpty() && aPredicate(mFinalOriginAttributes))) {
+    return true;
+  }
+  for (const auto& entry : mBounceHosts) {
+    if (!aPredicate(entry.GetKey())) {
+      continue;
+    }
+    for (const nsACString& host : entry.GetData()) {
+      if (!host.EqualsLiteral("null")) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool BounceTrackingRecord::HasSiteHost(
+    const nsACString& aHost, OriginAttributesPredicate aPredicate) const {
+  if ((aHost == mInitialHost && aPredicate(mInitialOriginAttributes)) ||
+      (aHost == mFinalHost && aPredicate(mFinalOriginAttributes))) {
+    return true;
+  }
+  for (const auto& entry : mBounceHosts) {
+    if (aPredicate(entry.GetKey()) && entry.GetData().Contains(aHost)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const nsTHashSet<nsCStringHashKey>&
 BounceTrackingRecord::GetUserActivationHosts() const {
   return mUserActivationHosts;

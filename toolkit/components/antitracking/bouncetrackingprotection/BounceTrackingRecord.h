@@ -6,6 +6,7 @@
 #define mozilla_BounceTrackingRecord_h
 
 #include "nsIBounceTrackingRecord.h"
+#include "mozilla/FunctionRef.h"
 #include "mozilla/OriginAttributes.h"
 #include "mozilla/OriginAttributesHashKey.h"
 #include "mozilla/RefPtr.h"
@@ -66,6 +67,18 @@ class BounceTrackingRecord final : public nsIBounceTrackingRecord {
 
   // Whether aHost bounced in any storage partition.
   bool HasBounceHost(const nsACString& aHost) const;
+
+  using OriginAttributesPredicate = FunctionRef<bool(const OriginAttributes&)>;
+
+  // Whether any site of this record, the initial and final site included, ran
+  // in a storage partition aPredicate matches. "null" bounce entries are no
+  // site and don't count.
+  bool HasOriginAttributesMatching(OriginAttributesPredicate aPredicate) const;
+
+  // Whether aHost is a site of this record, the initial and final site
+  // included, in a storage partition aPredicate matches.
+  bool HasSiteHost(const nsACString& aHost,
+                   OriginAttributesPredicate aPredicate) const;
 
   void ClearUserActivationHosts();
 

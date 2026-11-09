@@ -89,14 +89,40 @@ nsresult BounceTrackingProtectionStorage::ClearByType(
   return DeleteDBEntriesByType(nullptr, aType);
 }
 
+// The bounce chain records the state globals keep with their candidates and
+// purge log entries name every site of the chain, which can span containers.
+// Clearing data has to drop the records naming cleared sites in every state
+// global, not only in the cleared ones.
+static void DropChainRecordsInAllStateGlobals(
+    const BounceTrackingProtectionStorage::StateGlobalMap& aStateGlobals,
+    BounceTrackingStateGlobal::ChainRecordPredicate aPredicate) {
+  for (const RefPtr<BounceTrackingStateGlobal>& stateGlobal :
+       aStateGlobals.Values()) {
+    stateGlobal->DropChainRecordsIf(aPredicate);
+  }
+}
+
 nsresult BounceTrackingProtectionStorage::ClearBySiteHost(
     const nsACString& aSiteHost, OriginAttributes* aOriginAttributes) {
   NS_ENSURE_TRUE(!aSiteHost.IsEmpty(), NS_ERROR_INVALID_ARG);
 
-  // If OriginAttributes are passed only clear the matching state global.
+  Maybe<OriginAttributes> originAttributes;
   if (aOriginAttributes) {
+    originAttributes.emplace(NormalizeOriginAttributes(*aOriginAttributes));
+  }
+
+  DropChainRecordsInAllStateGlobals(
+      mStateGlobal, [&](const BounceTrackingRecord& aRecord) {
+        return aRecord.HasSiteHost(
+            aSiteHost, [&](const OriginAttributes& aCandidate) {
+              return !originAttributes || *originAttributes == aCandidate;
+            });
+      });
+
+  // If OriginAttributes are passed only clear the matching state global.
+  if (originAttributes) {
     RefPtr<BounceTrackingStateGlobal> stateGlobal =
-        mStateGlobal.Get(*aOriginAttributes);
+        mStateGlobal.Get(*originAttributes);
     if (stateGlobal) {
       nsresult rv = stateGlobal->ClearSiteHost(aSiteHost, true);
       NS_ENSURE_SUCCESS(rv, rv);
@@ -114,10 +140,10 @@ nsresult BounceTrackingProtectionStorage::ClearBySiteHost(
 
   // Update the database.
   // Private browsing data is not written to disk.
-  if (aOriginAttributes && aOriginAttributes->IsPrivateBrowsing()) {
+  if (originAttributes && originAttributes->IsPrivateBrowsing()) {
     return NS_OK;
   }
-  return DeleteDBEntries(aOriginAttributes, aSiteHost);
+  return DeleteDBEntries(originAttributes.ptrOr(nullptr), aSiteHost);
 }
 
 nsresult BounceTrackingProtectionStorage::ClearByTimeRange(PRTime aFrom,
@@ -138,6 +164,16 @@ nsresult BounceTrackingProtectionStorage::ClearByTimeRange(PRTime aFrom,
 nsresult BounceTrackingProtectionStorage::ClearByOriginAttributesPattern(
     const OriginAttributesPattern& aOriginAttributesPattern,
     const Maybe<nsCString>& aSiteHost) {
+  auto patternMatches = [&](const OriginAttributes& aOriginAttributes) {
+    return aOriginAttributesPattern.Matches(aOriginAttributes);
+  };
+
+  DropChainRecordsInAllStateGlobals(
+      mStateGlobal, [&](const BounceTrackingRecord& aRecord) {
+        return aSiteHost ? aRecord.HasSiteHost(*aSiteHost, patternMatches)
+                         : aRecord.HasOriginAttributesMatching(patternMatches);
+      });
+
   // Clear in memory state.
   for (auto iter = mStateGlobal.Iter(); !iter.Done(); iter.Next()) {
     BounceTrackingStateGlobal* stateGlobal = iter.Data();

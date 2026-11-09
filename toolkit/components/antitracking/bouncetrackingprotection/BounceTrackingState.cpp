@@ -274,6 +274,20 @@ void BounceTrackingState::Reset(const OriginAttributes* aOriginAttributes,
   if (!sBounceTrackingStates) {
     return;
   }
+
+  Maybe<OriginAttributes> originAttributes;
+  if (aOriginAttributes) {
+    originAttributes.emplace(
+        BounceTrackingProtectionStorage::NormalizeOriginAttributes(
+            *aOriginAttributes));
+  }
+  auto matches = [&](const OriginAttributes& aCandidate) {
+    if (originAttributes) {
+      return *originAttributes == aCandidate;
+    }
+    return !aPattern || aPattern->Matches(aCandidate);
+  };
+
   for (const WeakPtr<BounceTrackingState>& btsWeak :
        sBounceTrackingStates->Values()) {
     if (!btsWeak) {
@@ -281,10 +295,13 @@ void BounceTrackingState::Reset(const OriginAttributes* aOriginAttributes,
     }
     RefPtr<BounceTrackingState> bounceTrackingState(btsWeak);
 
-    if ((aOriginAttributes &&
-         *aOriginAttributes != bounceTrackingState->OriginAttributesRef()) ||
-        (aPattern &&
-         !aPattern->Matches(bounceTrackingState->OriginAttributesRef()))) {
+    // A record which followed a load retargeted from another container also
+    // holds sites which ran in that container. Drop it whole rather than
+    // leaving a partial record behind.
+    if (!matches(bounceTrackingState->OriginAttributesRef()) &&
+        !(bounceTrackingState->mBounceTrackingRecord &&
+          bounceTrackingState->mBounceTrackingRecord
+              ->HasOriginAttributesMatching(matches))) {
       continue;
     }
     bounceTrackingState->CancelClientBounceDetectionTimeout();

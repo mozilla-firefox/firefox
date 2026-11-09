@@ -631,6 +631,12 @@ BounceTrackingProtection::ClearBySiteHostAndOriginAttributes(
     return NS_ERROR_INVALID_ARG;
   }
 
+  // Bounce tracking state is only kept for top level sites, which a partitioned
+  // principal never is.
+  if (!originAttributes.mPartitionKey.IsEmpty()) {
+    return NS_OK;
+  }
+
   // Reset per tab state for tabs matching the given OriginAttributes.
   BounceTrackingState::ResetAllForOriginAttributes(originAttributes);
 
