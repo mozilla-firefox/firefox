@@ -15,4 +15,7 @@ ignore = [
   # tokio soundness bug <https://bugzilla.mozilla.org/show_bug.cgi?id=2089569>
   # we don't deploy tokio, so this is low priority
   "RUSTSEC-2026-0386",
+  # libsqlite3-sys bundled SQLite <https://bugzilla.mozilla.org/show_bug.cgi?id=2090944>
+  # we build with in_gecko and link third_party/sqlite3, not the bundled copy
+  "RUSTSEC-2026-0459",
 ]
