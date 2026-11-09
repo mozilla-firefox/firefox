@@ -1480,23 +1480,6 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
             ch, ShiftState::MatchExactly, SkipIfEarlierHandlerDisabled::No));
       }
     }
-    // If unshiftedCharCodes doesn't have numeric but shiftedCharCode has it,
-    // this keyboard layout is AZERTY or similar layout, probably.
-    // In this case, Accel+[0-9] should be accessible without shift key.
-    // However, the priority should be lowest.
-    if (!HasASCIIDigit(aCandidates)) {
-      for (uint32_t i = 0; i < len; ++i) {
-        uint32_t ch = mAlternativeCharCodes[i].mShiftedCharCode;
-        if (ch >= '0' && ch <= '9') {
-          aCandidates.AppendElement(ShortcutKeyCandidate(
-              ch, ShiftState::MatchExactly,
-              // Ctrl + `-` in the French keyboard layout should not match with
-              // Ctrl + `6` shortcut when it's already fully zoomed out.
-              SkipIfEarlierHandlerDisabled::Yes));
-          break;
-        }
-      }
-    }
   } else {
     for (uint32_t i = 0; i < len; ++i) {
       uint32_t ch = mAlternativeCharCodes[i].mShiftedCharCode;
@@ -1537,6 +1520,23 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
       // key state only when the shift key is pressed.
       aCandidates.AppendElement(ShortcutKeyCandidate(
           ch, ShiftState::Ignorable, SkipIfEarlierHandlerDisabled::No));
+    }
+  }
+
+  // If Shift key is not pressed and the result doesn't have numeric but it's
+  // contained in alternative shifted char code, this keyboard layout is AZERTY
+  // or similar layout. In this case, Accel+[0-9] should be accessible without
+  // shift key. However, the priority should be lower than unshifted char codes.
+  if (!IsShift() && !HasASCIIDigit(aCandidates)) {
+    for (const auto& alt : mAlternativeCharCodes) {
+      if (alt.mShiftedCharCode >= '0' && alt.mShiftedCharCode <= '9') {
+        aCandidates.AppendElement(ShortcutKeyCandidate(
+            alt.mShiftedCharCode, ShiftState::MatchExactly,
+            // Ctrl + `-` in the French keyboard layout should not match with
+            // Ctrl + `6` shortcut when it's already fully zoomed out.
+            SkipIfEarlierHandlerDisabled::Yes));
+        break;
+      }
     }
   }
 
