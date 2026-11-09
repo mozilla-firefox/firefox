@@ -455,7 +455,7 @@ void ImageDocument::OnLoadComplete(imgIRequest* aRequest, nsresult aStatus) {
     nsAutoString errorMsg;
     FormatStringFromName("InvalidImage", formatString, errorMsg);
 
-    mImageContent->SetAttr(kNameSpaceID_None, nsGkAtoms::alt, errorMsg, false,
+    mImageContent->SetAttr(kNameSpaceID_None, nsGkAtoms::alt, errorMsg, true,
                            IsKnownNewAttr::No);
   }
 
