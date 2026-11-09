@@ -36,6 +36,10 @@ static double sNsPerTickd;
 static uint32_t sNumer = 0;
 static uint32_t sDenom = 0;
 
+#ifndef MOZ_TIMESTAMP_TICK_RATE_IS_DYNAMIC
+#  error "The mach timebase is only known at run time."
+#endif
+
 static uint64_t ClockTime() {
   // mach_absolute_time is it when it comes to ticks on the Mac.  Other calls
   // with less precision (such as TickCount) just call through to
@@ -95,6 +99,12 @@ void TimeStamp::Startup() {
   sNsPerTickd = double(timebaseInfo.numer) / timebaseInfo.denom;
   sNumer = timebaseInfo.numer;
   sDenom = timebaseInfo.denom;
+
+  // nanoseconds = ticks * sNumer / sDenom, so the tick rate is
+  // 1e9 * sDenom / sNumer ticks per second. Both the Intel (1/1) and Apple
+  // silicon (125/3) timebases divide seconds through microseconds evenly;
+  // nanoseconds reduce to 1/1 and 3/125 respectively.
+  detail::InitTickScales(1000000000ull * sDenom, sNumer);
 
   gInitialized = true;
 }

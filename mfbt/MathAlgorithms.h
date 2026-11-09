@@ -145,7 +145,7 @@ MOZ_NO_SANITIZE_UNSIGNED_OVERFLOW constexpr T RotateRight(const T aValue,
 // Greatest Common Divisor, from
 // https://en.wikipedia.org/wiki/Binary_GCD_algorithm#Implementation
 template <typename T>
-MOZ_ALWAYS_INLINE T GCD(T aA, T aB) {
+constexpr MOZ_ALWAYS_INLINE T GCD(T aA, T aB) {
   static_assert(std::is_integral_v<T>);
 
   MOZ_ASSERT(aA >= 0);

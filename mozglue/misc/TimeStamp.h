@@ -7,6 +7,7 @@
 
 #include "mozilla/Assertions.h"
 #include "mozilla/Attributes.h"
+#include "mozilla/CheckedArithmetic.h"
 #include "mozilla/FloatingPoint.h"
 #include "mozilla/Types.h"
 #include <algorithm>  // for std::min, std::max
@@ -26,6 +27,13 @@ using TimeStampValue = uint64_t;
 class TimeStamp;
 class TimeStampTests;
 
+// Whether the platform's tick rate is only known at run time. Must agree with
+// the implementation picked by mozglue/misc/timestamp.mozbuild, which each
+// TimeStamp_*.cpp checks.
+#if defined(XP_WIN) || defined(XP_DARWIN)
+#  define MOZ_TIMESTAMP_TICK_RATE_IS_DYNAMIC 1
+#endif
+
 /**
  * Platform-specific implementation details of BaseTimeDuration.
  */
@@ -37,6 +45,73 @@ class BaseTimeDurationPlatformUtils {
   // to the nearest tick, using integer/rational arithmetic (no floating point).
   static MFBT_API int64_t ToTicksAtRate(int64_t aTicks, uint32_t aRate);
 };
+
+namespace detail {
+
+/**
+ * Converting an integer count of units to a tick count. How that is done
+ * depends on whether the platform's tick rate is a compile-time constant.
+ *
+ * Where the tick rate is dynamic, nothing about it appears here: the conversion
+ * lives in TimeStamp.cpp, behind one entry point per unit so that a call site
+ * passes nothing but the count. That costs a call, but keeps the tick rate, and
+ * the shape of the data describing it, entirely out of mozglue's ABI, and makes
+ * a call site smaller than the floating-point call it replaces.
+ */
+#ifdef MOZ_TIMESTAMP_TICK_RATE_IS_DYNAMIC
+
+MFBT_API int64_t TicksFromSecondCount(int64_t aCount);
+MFBT_API int64_t TicksFromMillisecondCount(int64_t aCount);
+MFBT_API int64_t TicksFromMicrosecondCount(int64_t aCount);
+MFBT_API int64_t TicksFromNanosecondCount(int64_t aCount);
+
+/**
+ * Work out the tick counts the entry points above need, from a platform tick
+ * rate of aTickRateNum / aTickRateDen ticks per second. Called by the
+ * TimeStamp_*.cpp backend from TimeStamp::Startup(). Internal to mozglue, so
+ * deliberately not MFBT_API.
+ */
+void InitTickScales(uint64_t aTickRateNum, uint64_t aTickRateDen);
+
+#else
+
+/**
+ * The tick is always a nanosecond here, which divides every unit evenly, so
+ * these are constexpr versions of the out-of-line entry points above, under the
+ * same names: each is at most one multiply, and a duration built from an
+ * integer constant folds away entirely.
+ */
+constexpr int64_t SaturatingTicks(int64_t aCount, int64_t aTicksPerUnit) {
+  int64_t ticks;
+  if (MOZ_LIKELY(SafeMul(aCount, aTicksPerUnit, &ticks))) {
+    return ticks;
+  }
+  return aCount < 0 ? INT64_MIN : INT64_MAX;
+}
+constexpr int64_t TicksFromSecondCount(int64_t aCount) {
+  return SaturatingTicks(aCount, 1000000000);
+}
+constexpr int64_t TicksFromMillisecondCount(int64_t aCount) {
+  return SaturatingTicks(aCount, 1000000);
+}
+constexpr int64_t TicksFromMicrosecondCount(int64_t aCount) {
+  return SaturatingTicks(aCount, 1000);
+}
+constexpr int64_t TicksFromNanosecondCount(int64_t aCount) { return aCount; }
+
+#endif
+
+// Integral types that spell a character rather than a count. A duration built
+// from one of these is almost always a typo, so the integer BaseTimeDuration
+// factories reject them. signed char and unsigned char are deliberately absent
+// since they are how int8_t and uint8_t are spelled.
+template <typename T>
+inline constexpr bool IsCharacterType =
+    std::is_same_v<T, char> || std::is_same_v<T, char8_t> ||
+    std::is_same_v<T, char16_t> || std::is_same_v<T, char32_t> ||
+    std::is_same_v<T, wchar_t>;
+
+}  // namespace detail
 
 /**
  * Convert a tick count held in a double to the integer tick count used
@@ -155,6 +230,41 @@ class BaseTimeDuration {
   }
   static inline BaseTimeDuration FromMicroseconds(double aMicroseconds) {
     return FromMilliseconds(aMicroseconds / 1000.0);
+  }
+  static inline BaseTimeDuration FromNanoseconds(double aNanoseconds) {
+    return FromMilliseconds(aNanoseconds / 1000000.0);
+  }
+
+  // Integer overloads, preferred by overload resolution over the double ones
+  // above for any integral argument. These need neither floating-point
+  // arithmetic nor the range and infinity checks the double versions do, and
+  // are exact wherever the tick rate divides the unit. Pass an integer whenever
+  // the duration is a whole number of units.
+  //
+  // Durations too long to represent saturate to Forever() or its negation, the
+  // same values the double versions saturate to.
+  template <typename T>
+    requires(std::is_integral_v<T>)
+  static BaseTimeDuration FromSeconds(T aSeconds) {
+    return FromIntegerUnits<1>(aSeconds);
+  }
+  template <typename T>
+    requires(std::is_integral_v<T>)
+  static BaseTimeDuration FromMilliseconds(T aMilliseconds) {
+    return FromIntegerUnits<1000>(aMilliseconds);
+  }
+  template <typename T>
+    requires(std::is_integral_v<T>)
+  static BaseTimeDuration FromMicroseconds(T aMicroseconds) {
+    return FromIntegerUnits<1000000>(aMicroseconds);
+  }
+  // Nanoseconds are the finest unit the tick count can represent, and only then
+  // on platforms whose tick is a nanosecond; elsewhere this rounds to the
+  // nearest tick (100ns on a 10 MHz clock, ~41.7ns on Apple silicon).
+  template <typename T>
+    requires(std::is_integral_v<T>)
+  static BaseTimeDuration FromNanoseconds(T aNanoseconds) {
+    return FromIntegerUnits<1000000000>(aNanoseconds);
   }
 
   static constexpr BaseTimeDuration Zero() { return BaseTimeDuration(); }
@@ -283,6 +393,36 @@ class BaseTimeDuration {
 
   static BaseTimeDuration FromTicks(double aTicks) {
     return FromTicks(SaturatingTicksFromDouble(aTicks));
+  }
+
+  template <uint32_t UnitsPerSecond, typename T>
+  static BaseTimeDuration FromIntegerUnits(T aCount) {
+    static_assert(!std::is_same_v<T, bool>,
+                  "Building a duration out of a bool is almost certainly a "
+                  "mistake; pass an integer count of units");
+    static_assert(!detail::IsCharacterType<T>,
+                  "Building a duration out of a character type is almost "
+                  "certainly a mistake; pass an integer count of units");
+
+    int64_t count;
+    if constexpr (std::is_unsigned_v<T> && sizeof(T) >= sizeof(int64_t)) {
+      // A count that doesn't fit int64_t is longer than any representable
+      // duration, so saturate it here and let the scaling below clamp it.
+      count = aCount > uint64_t(INT64_MAX) ? INT64_MAX : int64_t(aCount);
+    } else {
+      count = int64_t(aCount);
+    }
+
+    if constexpr (UnitsPerSecond == 1) {
+      return FromTicks(detail::TicksFromSecondCount(count));
+    } else if constexpr (UnitsPerSecond == 1000) {
+      return FromTicks(detail::TicksFromMillisecondCount(count));
+    } else if constexpr (UnitsPerSecond == 1000000) {
+      return FromTicks(detail::TicksFromMicrosecondCount(count));
+    } else {
+      static_assert(UnitsPerSecond == 1000000000, "No such unit");
+      return FromTicks(detail::TicksFromNanosecondCount(count));
+    }
   }
 
   // Duration, result is implementation-specific difference of two TimeStamps

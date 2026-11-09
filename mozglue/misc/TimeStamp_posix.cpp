@@ -95,6 +95,20 @@ static uint64_t ClockTimeNs(const clockid_t aClockId = CLOCK_MONOTONIC) {
 
 namespace mozilla {
 
+#ifdef MOZ_TIMESTAMP_TICK_RATE_IS_DYNAMIC
+#  error "This implementation's tick is always a nanosecond."
+#endif
+
+// The tick unit TimespecToNs() produces is a nanosecond, so it divides every
+// unit evenly and TimeStamp.h can hard-code the counts. Keep the two in step.
+static_assert(
+    detail::TicksFromSecondCount(1) == int64_t(kNsPerSec) &&
+        detail::TicksFromMillisecondCount(1) == int64_t(kNsPerSec) / 1000 &&
+        detail::TicksFromMicrosecondCount(1) == int64_t(kNsPerSec) / 1000000 &&
+        detail::TicksFromNanosecondCount(1) == int64_t(kNsPerSec) / 1000000000,
+    "TimeStamp.h's compile-time tick rate must match the tick unit "
+    "TimespecToNs() produces");
+
 double BaseTimeDurationPlatformUtils::ToSeconds(int64_t aTicks) {
   return double(aTicks) / kNsPerSecd;
 }

@@ -8,6 +8,10 @@
 #include <intrin.h>
 #include <windows.h>
 
+#ifndef MOZ_TIMESTAMP_TICK_RATE_IS_DYNAMIC
+#  error "The QueryPerformanceCounter tick rate is only known at run time."
+#endif
+
 // Historical note: We used to sample both QueryPerformanceCounter (QPC) and
 // GetTickCount (GTC) timestamps in the past, as very early implementations of
 // QPC were buggy. We had heuristics to determine if QPC is unreliable and
@@ -58,6 +62,13 @@ static void InitConstants() {
   sTicksPerSecd = double(freq.QuadPart);
   sTicksPerMsd = sTicksPerSecd / kMsPerSecd;
   sQpcFrequency = static_cast<uint64_t>(freq.QuadPart);
+
+  // The QPC frequency is a whole number of ticks per second by definition, but
+  // it need not divide evenly into smaller units. It is typically 10 MHz on x86
+  // and x64, which divides seconds through microseconds evenly, but Microsoft
+  // documents that the value is not derived from the hardware frequency and
+  // must not be assumed.
+  detail::InitTickScales(sQpcFrequency, 1);
 }
 
 // ----------------------------------------------------------------------------

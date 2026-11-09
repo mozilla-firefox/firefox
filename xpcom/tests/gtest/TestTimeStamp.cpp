@@ -206,3 +206,110 @@ TEST(TimeStamp, ToTicksAtRate)
   EXPECT_EQ((-TimeDuration::FromMilliseconds(500)).ToTicksAtRate(90000),
             -45000);
 }
+
+TEST(TimeStamp, IntegerDurations)
+{
+  // An integral argument picks the integer overloads, which convert with
+  // integer arithmetic only. ToTicksAtRate() is likewise exact, so a whole
+  // number of units must round-trip EXACTLY on every platform, whatever the
+  // underlying clock's tick rate. Note that the double overloads are not
+  // required to agree to the tick: they round twice, so on a clock whose tick
+  // is not a whole number of nanoseconds they can land a tick low.
+  for (int64_t seconds : {0, 1, 2, 17, 60, 3600, 86400, 1000000}) {
+    EXPECT_EQ(TimeDuration::FromSeconds(seconds).ToTicksAtRate(1), seconds);
+    EXPECT_EQ(TimeDuration::FromSeconds(-seconds).ToTicksAtRate(1), -seconds);
+  }
+  for (int64_t ms : {0, 1, 5, 125, 500, 1000, 2125, 123456}) {
+    EXPECT_EQ(TimeDuration::FromMilliseconds(ms).ToTicksAtRate(1000), ms);
+    EXPECT_EQ(TimeDuration::FromMilliseconds(-ms).ToTicksAtRate(1000), -ms);
+  }
+  for (int64_t us : {0, 1, 11, 500, 99999, 1000000}) {
+    EXPECT_EQ(TimeDuration::FromMicroseconds(us).ToTicksAtRate(1000000), us);
+    EXPECT_EQ(TimeDuration::FromMicroseconds(-us).ToTicksAtRate(1000000), -us);
+  }
+
+  // The three units agree with each other.
+  EXPECT_EQ(TimeDuration::FromSeconds(1).ToTicksAtRate(1000000),
+            TimeDuration::FromMilliseconds(1000).ToTicksAtRate(1000000));
+  EXPECT_EQ(TimeDuration::FromSeconds(1).ToTicksAtRate(1000000),
+            TimeDuration::FromMicroseconds(1000000).ToTicksAtRate(1000000));
+
+  // Every integral type is accepted, and narrow ones don't lose their sign.
+  EXPECT_EQ(TimeDuration::FromMilliseconds(int8_t(-125)).ToTicksAtRate(1000),
+            -125);
+  EXPECT_EQ(TimeDuration::FromMilliseconds(uint8_t(250)).ToTicksAtRate(1000),
+            250);
+  EXPECT_EQ(TimeDuration::FromMilliseconds(int16_t(-500)).ToTicksAtRate(1000),
+            -500);
+  EXPECT_EQ(TimeDuration::FromMilliseconds(uint32_t(1000)).ToTicksAtRate(1000),
+            1000);
+  EXPECT_EQ(TimeDuration::FromMilliseconds(size_t(1000)).ToTicksAtRate(1000),
+            1000);
+
+  // Counts too long to represent saturate, as the double overloads do.
+  EXPECT_EQ(TimeDuration::FromSeconds(INT64_MAX), TimeDuration::Forever());
+  EXPECT_EQ(TimeDuration::FromMilliseconds(INT64_MAX), TimeDuration::Forever());
+  EXPECT_EQ(TimeDuration::FromMicroseconds(INT64_MAX), TimeDuration::Forever());
+  EXPECT_EQ(TimeDuration::FromSeconds(INT64_MIN), -TimeDuration::Forever());
+  EXPECT_EQ(TimeDuration::FromMilliseconds(INT64_MIN),
+            -TimeDuration::Forever());
+  EXPECT_EQ(TimeDuration::FromMicroseconds(INT64_MIN),
+            -TimeDuration::Forever());
+
+  // Unsigned counts past INT64_MAX saturate rather than wrapping negative.
+  EXPECT_EQ(TimeDuration::FromSeconds(UINT64_MAX), TimeDuration::Forever());
+  EXPECT_EQ(TimeDuration::FromMicroseconds(UINT64_MAX),
+            TimeDuration::Forever());
+
+  // A non-integral argument still picks the double overloads; this would not
+  // compile if the integer ones took over.
+  EXPECT_EQ(TimeDuration::FromMilliseconds(0.5).ToTicksAtRate(2000), 1);
+  EXPECT_EQ(TimeDuration::FromSeconds(1.5).ToTicksAtRate(2), 3);
+  EXPECT_EQ(TimeDuration::FromMilliseconds(1.0f).ToTicksAtRate(1000), 1);
+}
+
+TEST(TimeStamp, NanosecondDurations)
+{
+  // A nanosecond is finer than the tick on most platforms, so FromNanoseconds
+  // rounds to the nearest tick and only whole ticks round-trip. What must hold
+  // everywhere is that it agrees exactly with the coarser units, since
+  // 1000 * (rate/1e9) and rate/1e6 are the same rational and so round alike.
+  for (int64_t us : {0, 1, 11, 500, 99999, 1000000}) {
+    EXPECT_EQ(TimeDuration::FromNanoseconds(us * 1000),
+              TimeDuration::FromMicroseconds(us))
+        << "nanoseconds disagree with microseconds at " << us << " us";
+    EXPECT_EQ(TimeDuration::FromNanoseconds(-us * 1000),
+              TimeDuration::FromMicroseconds(-us));
+  }
+  EXPECT_EQ(TimeDuration::FromNanoseconds(1000000000),
+            TimeDuration::FromSeconds(1));
+  EXPECT_EQ(TimeDuration::FromNanoseconds(0), TimeDuration());
+
+  // Whole microseconds expressed in nanoseconds therefore round-trip exactly.
+  EXPECT_EQ(TimeDuration::FromNanoseconds(500000).ToTicksAtRate(1000000), 500);
+  EXPECT_EQ(TimeDuration::FromNanoseconds(-500000).ToTicksAtRate(1000000),
+            -500);
+
+  // Rounding is symmetric about zero and monotonic in between.
+  TimeDuration previous = TimeDuration::FromNanoseconds(0);
+  for (int64_t ns = 1; ns <= 5000; ns += 7) {
+    TimeDuration current = TimeDuration::FromNanoseconds(ns);
+    EXPECT_TRUE(current >= previous) << "not monotonic at " << ns << " ns";
+    EXPECT_EQ(TimeDuration::FromNanoseconds(-ns), -current);
+    previous = current;
+  }
+
+  // INT64_MAX nanoseconds is ~292 years, which is a representable number of
+  // ticks at any rate below 1 GHz, so unlike the coarser units nanoseconds
+  // don't generally saturate - on a 1 GHz tick INT64_MAX ns lands exactly on
+  // the Forever() sentinel, on a 10 MHz tick it is an ordinary duration. What
+  // must hold everywhere is that the ends of the range don't wrap, and that an
+  // unsigned count past INT64_MAX clamps rather than going negative.
+  EXPECT_TRUE(TimeDuration::FromNanoseconds(INT64_MAX) > TimeDuration());
+  EXPECT_TRUE(TimeDuration::FromNanoseconds(INT64_MIN) < TimeDuration());
+  EXPECT_EQ(TimeDuration::FromNanoseconds(UINT64_MAX),
+            TimeDuration::FromNanoseconds(INT64_MAX));
+
+  // The double overload still exists for symmetry with the other units.
+  EXPECT_EQ(TimeDuration::FromNanoseconds(1000000.0).ToTicksAtRate(1000), 1);
+}
