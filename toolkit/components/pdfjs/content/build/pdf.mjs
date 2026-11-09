@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.48
- * pdfjsBuild = d44cfef28
+ * pdfjsVersion = 7.0.65
+ * pdfjsBuild = 6619bf0c6
  */
 
 ;// ./src/shared/util.js
@@ -896,7 +896,7 @@ class OutputScale {
     if (maxPixels > 0) {
       maxAreaScale = Math.sqrt(maxPixels / (width * height));
     }
-    if (maxDim !== -1) {
+    if (maxDim > 0) {
       maxWidthScale = maxDim / width;
       maxHeightScale = maxDim / height;
     }
@@ -2052,7 +2052,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "e46e752c-cec6-4d75-b1fc-429d0d152011";
+const INTERNAL_EVT = "9ca1b0ec-6d8f-4df1-97eb-4c3b691c44a8";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -14655,7 +14655,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.48";
+      const apiVersion = "7.0.65";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -15229,7 +15229,6 @@ function getDocument(src = {}) {
   const standardFontDataUrl = getFactoryUrlProp(src.standardFontDataUrl);
   const wasmUrl = getFactoryUrlProp(src.wasmUrl);
   const ignoreErrors = src.stopAtErrors !== true;
-  const maxImageSize = Number.isInteger(src.maxImageSize) && src.maxImageSize > -1 ? src.maxImageSize : -1;
   const isOffscreenCanvasSupported = typeof src.isOffscreenCanvasSupported === "boolean" ? src.isOffscreenCanvasSupported : !(/* inlined export .isNodeJS */false);
   const isImageDecoderSupported = typeof src.isImageDecoderSupported === "boolean" ? src.isImageDecoderSupported : !(/* inlined export .isNodeJS */false);
   const canvasMaxAreaInBytes = Number.isInteger(src.canvasMaxAreaInBytes) ? src.canvasMaxAreaInBytes : -1;
@@ -15291,7 +15290,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.48",
+    apiVersion: "7.0.65",
     data,
     password,
     disableAutoFetch,
@@ -15299,7 +15298,6 @@ function getDocument(src = {}) {
     docBaseUrl,
     enableXfa,
     evaluatorOptions: {
-      maxImageSize,
       disableFontFace,
       ignoreErrors,
       isOffscreenCanvasSupported,
@@ -16993,8 +16991,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.48";
-const build = "d44cfef28";
+const version = "7.0.65";
+const build = "6619bf0c6";
 
 ;// ./src/display/editor/color_picker.js
 
@@ -25651,7 +25649,7 @@ class SignatureEditor extends DrawingEditor {
     this._willKeepAspectRatio = true;
     this.#signatureData = params.signatureData || null;
     this.#description = null;
-    this.defaultL10nId = "pdfjs-editor-signature-editor1";
+    this.defaultL10nId = "pdfjs-editor-signature-editor2";
   }
   static initialize(l10n, uiManager) {
     AnnotationEditor.initialize(l10n, uiManager);
@@ -28166,9 +28164,9 @@ globalThis.pdfjsLib = {
   updateUrlHash: updateUrlHash,
   Util: Util,
   VerbosityLevel: VerbosityLevel,
-  version: (/* inlined export .version */"7.0.48"),
+  version: (/* inlined export .version */"7.0.65"),
   XfaLayer: XfaLayer
 };
 
-const __webpack_exports__version = (/* inlined export .version */"7.0.48");
+const __webpack_exports__version = (/* inlined export .version */"7.0.65");
 export { AbortException, AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationLayer, AnnotationMode, AnnotationType, CSSConstants, ColorPicker, DOMSVGFactory, DrawLayer, FeatureTest, GlobalWorkerOptions, ImageKind, InvalidPDFException, MathClamp, OPS, OutputScale, PDFDataRangeTransport, PDFDateString, PDFWorker, PasswordException, PasswordResponses, PermissionFlag, PixelsPerInch, RenderingCancelledException, ResponseException, SignatureExtractor, SupportedImageMimeTypes, TextLayer, TextLayerImages, TouchManager, Util, VerbosityLevel, XfaLayer, applyOpacity, build, createValidAbsoluteUrl, fetchData, findContrastColor, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getRGB, getRGBA, getUuid, isDataScheme, isPdfFile, isValidExplicitDest, makeArr, makeMap, makeObj, makeSet, noContextMenu, normalizeUnicode, renderRichText, setLayerDimensions, shadow, stopEvent, updateUrlHash, __webpack_exports__version as version };

@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.48
- * pdfjsBuild = d44cfef28
+ * pdfjsVersion = 7.0.65
+ * pdfjsBuild = 6619bf0c6
  */
 
 ;// ./web/ui_utils.js
@@ -613,9 +613,6 @@ const defaultOptions = new Map([["allowedGlobalEvents", {
 }], ["enableHighlightFloatingButton", {
   value: false,
   kind: OptionKind.VIEWER + OptionKind.PREFERENCE
-}], ["enableMerge", {
-  value: false,
-  kind: OptionKind.VIEWER + OptionKind.PREFERENCE
 }], ["enableNewAltTextWhenAddingImage", {
   value: true,
   kind: OptionKind.VIEWER + OptionKind.PREFERENCE
@@ -762,9 +759,6 @@ const defaultOptions = new Map([["allowedGlobalEvents", {
   kind: OptionKind.API
 }], ["isOffscreenCanvasSupported", {
   value: true,
-  kind: OptionKind.API
-}], ["maxImageSize", {
-  value: -1,
   kind: OptionKind.API
 }], ["pdfBug", {
   value: false,
@@ -916,7 +910,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "e46e752c-cec6-4d75-b1fc-429d0d152011";
+const INTERNAL_EVT = "9ca1b0ec-6d8f-4df1-97eb-4c3b691c44a8";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -8674,7 +8668,7 @@ class PDFThumbnailView extends RenderableView {
     this.viewport = defaultViewport;
     this.pdfPageRotate = defaultViewport.rotation;
     this._optionalContentConfigPromise = optionalContentConfigPromise || null;
-    this.maxCanvasPixels = maxCanvasPixels ?? AppOptions.get("maxCanvasPixels");
+    this.maxCanvasPixels = maxCanvasPixels || AppOptions.get("maxCanvasPixels");
     this.maxCanvasDim = maxCanvasDim || AppOptions.get("maxCanvasDim");
     this.pageColors = pageColors || null;
     this.eventBus = eventBus;
@@ -9047,7 +9041,6 @@ const PIXELS_TO_SCROLL_WHEN_DRAGGING = 20;
 const SPACE_FOR_DRAG_MARKER_WHEN_NO_NEXT_ELEMENT = 15;
 class PDFThumbnailViewer {
   static #draggingScaleFactor = 0;
-  #enableMerge = false;
   #enableSplitMerge = false;
   #dragAC = null;
   #abortSignal = undefined;
@@ -9103,7 +9096,6 @@ class PDFThumbnailViewer {
     maxCanvasDim,
     pageColors,
     abortSignal,
-    enableMerge,
     enableSplitMerge,
     enableNewBadge,
     statusBar,
@@ -9122,7 +9114,6 @@ class PDFThumbnailViewer {
     this.maxCanvasDim = maxCanvasDim;
     this.pageColors = pageColors || null;
     this.#abortSignal = abortSignal;
-    this.#enableMerge = enableMerge || false;
     this.#enableSplitMerge = enableSplitMerge || false;
     this.#statusLabel = statusBar?.viewsManagerStatusActionLabel || null;
     this.#deselectButton = statusBar?.viewsManagerStatusActionDeselectButton || null;
@@ -9204,7 +9195,7 @@ class PDFThumbnailViewer {
         this.#updateStatus("select");
       });
       this.#deselectButton.classList.toggle("hidden", true);
-      if (this.#enableMerge && addFileComponent) {
+      if (addFileComponent) {
         const {
           picker,
           button
@@ -10339,7 +10330,7 @@ class PDFThumbnailViewer {
     });
   }
   #addExternalFileDropListeners() {
-    if (!this.#enableMerge) {
+    if (!this.#enableSplitMerge) {
       return;
     }
     const container = this.container;
@@ -12573,7 +12564,7 @@ class PDFPageView extends BasePDFPageView {
     this.#annotationMode = options.annotationMode ?? AnnotationMode.ENABLE_FORMS;
     this.imageResourcesPath = options.imageResourcesPath || "";
     this.enableDetailCanvas = options.enableDetailCanvas ?? true;
-    this.maxCanvasPixels = options.maxCanvasPixels ?? AppOptions.get("maxCanvasPixels");
+    this.maxCanvasPixels = options.maxCanvasPixels || AppOptions.get("maxCanvasPixels");
     this.maxCanvasDim = options.maxCanvasDim || AppOptions.get("maxCanvasDim");
     this.capCanvasAreaFactor = options.capCanvasAreaFactor ?? AppOptions.get("capCanvasAreaFactor");
     this.#enableAutoLinking = options.enableAutoLinking !== false;
@@ -12941,7 +12932,7 @@ class PDFPageView extends BasePDFPageView {
   }
   updateVisibleArea(visibleArea) {
     if (this.enableDetailCanvas) {
-      if (this.#needsRestrictedScaling && this.maxCanvasPixels > 0 && visibleArea) {
+      if (this.#needsRestrictedScaling && visibleArea) {
         this.detailView ??= new PDFPageDetailView({
           pageView: this,
           enableOptimizedPartialRendering: this.enableOptimizedPartialRendering,
@@ -13466,7 +13457,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "7.0.48";
+    const viewerVersion = "7.0.65";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -13509,7 +13500,6 @@ class PDFViewer {
     this.#supportsPinchToZoom = options.supportsPinchToZoom !== false;
     this.#enableAutoLinking = options.enableAutoLinking !== false;
     this.#minDurationToUpdateCanvas = options.minDurationToUpdateCanvas ?? 500;
-    this.defaultRenderingQueue = !options.renderingQueue;
     this.renderingQueue = options.renderingQueue;
     const {
       abortSignal
@@ -13688,9 +13678,6 @@ class PDFViewer {
       pagesRotation: rotation,
       pageNumber
     });
-    if (this.defaultRenderingQueue) {
-      this.update();
-    }
   }
   get firstPagePromise() {
     return this.pdfDocument ? this._firstPageCapability.promise : null;
@@ -14062,9 +14049,6 @@ class PDFViewer {
           viewer.lang = info.Language;
         }
       });
-      if (this.defaultRenderingQueue) {
-        this.update();
-      }
     }).catch(reason => {
       console.error("Unable to initialize viewer", reason);
       this._pagesCapability.reject(reason);
@@ -14401,9 +14385,6 @@ class PDFViewer {
       scale: newScale,
       presetValue: preset ? newValue : undefined
     });
-    if (this.defaultRenderingQueue) {
-      this.update();
-    }
   }
   get #pageWidthScaleFactor() {
     return this._spreadMode !== SpreadMode.NONE && this._scrollMode !== ScrollMode.HORIZONTAL ? 2 : 1;
@@ -17312,7 +17293,6 @@ class ViewsManager extends Sidebar {
     },
     eventBus,
     l10n,
-    enableMerge = false,
     enableSplitMerge = false,
     globalAbortSignal
   }) {
@@ -17346,12 +17326,9 @@ class ViewsManager extends Sidebar {
     this.eventBus = eventBus;
     if (!enableSplitMerge) {
       viewsManagerStatus.hidden = true;
-    }
-    this._enableSplitMerge = enableSplitMerge;
-    this._enableMerge = enableMerge;
-    if (!enableMerge) {
       viewsManagerAddFileButton.hidden = true;
     }
+    this._enableSplitMerge = enableSplitMerge;
     this.menu = new Menu(viewsManagerSelectorOptions, viewsManagerSelectorButton, [thumbnailButton, outlineButton, attachmentsButton, layersButton]);
     ViewsManager.#l10nDescription ||= Object.freeze({
       pagesTitle: "pdfjs-views-manager-pages-title",
@@ -17426,8 +17403,9 @@ class ViewsManager extends Sidebar {
         console.error(`PDFSidebar.switchView: "${view}" is not a valid view.`);
         return;
     }
-    this.viewsManagerStatus.hidden = !this._enableSplitMerge || view !== SidebarView.THUMBS;
-    this.viewsManagerAddFileButton.hidden = !this._enableMerge || view !== SidebarView.THUMBS;
+    const hideSplitMerge = !this._enableSplitMerge || view !== SidebarView.THUMBS;
+    this.viewsManagerStatus.hidden = hideSplitMerge;
+    this.viewsManagerAddFileButton.hidden = hideSplitMerge;
     this.viewsManagerCurrentOutlineButton.hidden = view !== SidebarView.OUTLINE;
     this.viewsManagerHeaderLabel.setAttribute("data-l10n-id", ViewsManager.#l10nDescription[titleL10nId] || "");
     this.active = view;
@@ -17888,7 +17866,6 @@ const PDFViewerApplication = {
       background: AppOptions.get("pageColorsBackground"),
       foreground: AppOptions.get("pageColorsForeground")
     } : null;
-    const enableMerge = AppOptions.get("enableMerge");
     const enableSplitMerge = AppOptions.get("enableSplitMerge");
     let altTextManager;
     if (AppOptions.get("enableUpdatedAddImage")) {
@@ -18056,7 +18033,6 @@ const PDFViewerApplication = {
         pageColors,
         abortSignal,
         enableSplitMerge,
-        enableMerge,
         enableNewBadge: AppOptions.get("enableNewBadge"),
         statusBar: viewsManager.viewsManagerStatusBar,
         undoBar: viewsManager.viewsManagerUndoBar,
@@ -18156,7 +18132,6 @@ const PDFViewerApplication = {
         elements: appConfig.viewsManager,
         eventBus,
         l10n,
-        enableMerge,
         enableSplitMerge,
         globalAbortSignal: abortSignal
       });

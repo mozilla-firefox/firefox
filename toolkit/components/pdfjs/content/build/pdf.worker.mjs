@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.48
- * pdfjsBuild = d44cfef28
+ * pdfjsVersion = 7.0.65
+ * pdfjsBuild = 6619bf0c6
  */
 
 ;// ./src/shared/util.js
@@ -29299,15 +29299,12 @@ class PSStackToTree {
           break;
         case TOKEN.idiv:
           if (b === 1) {
-            return second;
+            return this._makeUnary(TOKEN.truncate, second);
           }
           break;
         case TOKEN.exp:
           if (b === 1) {
             return second;
-          }
-          if (b === -1) {
-            return this._makeBinary(TOKEN.div, second, new PsConstNode(1));
           }
           if (b === 0.5) {
             return this._makeUnary(TOKEN.sqrt, second);
@@ -34087,7 +34084,6 @@ class PDFImage {
 
 
 const DefaultPartialEvaluatorOptions = Object.freeze({
-  maxImageSize: -1,
   disableFontFace: false,
   ignoreErrors: false,
   isOffscreenCanvasSupported: false,
@@ -34441,7 +34437,6 @@ class PartialEvaluator {
     localColorSpaceCache
   }) {
     const {
-      maxImageSize,
       ignoreErrors,
       isOffscreenCanvasSupported
     } = this.options;
@@ -34453,14 +34448,6 @@ class PartialEvaluator {
     const h = dict.get("H", "Height");
     if (!(w && typeof w === "number") || !(h && typeof h === "number")) {
       warn("Image dimensions are missing, or not numbers.");
-      return;
-    }
-    if (maxImageSize !== -1 && w * h > maxImageSize) {
-      const msg = "Image exceeded maximum allowed size and was removed.";
-      if (!ignoreErrors) {
-        throw new Error(msg);
-      }
-      warn(msg);
       return;
     }
     let optionalContent;
@@ -64729,7 +64716,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "7.0.48";
+    const workerVersion = "7.0.65";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }
