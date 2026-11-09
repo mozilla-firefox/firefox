@@ -5,7 +5,6 @@
 #include "BounceTrackingProtectionStorage.h"
 #include <cstdint>
 
-#include "BounceTrackingState.h"
 #include "BounceTrackingStateGlobal.h"
 #include "ErrorList.h"
 #include "MainThreadUtils.h"
@@ -41,6 +40,15 @@ BounceTrackingProtectionStorage::BounceTrackingProtectionStorage()
     : mMutex("mozilla::BounceTrackingProtectionStorage::mMutex"),
       mPendingWrites(0) {};
 
+// static
+OriginAttributes BounceTrackingProtectionStorage::NormalizeOriginAttributes(
+    const OriginAttributes& aOriginAttributes) {
+  OriginAttributes oa = aOriginAttributes;
+  oa.StripAttributes(OriginAttributes::STRIP_FIRST_PARTY_DOMAIN |
+                     OriginAttributes::STRIP_PARTITION_KEY);
+  return oa;
+}
+
 RefPtr<BounceTrackingStateGlobal>
 BounceTrackingProtectionStorage::GetStateGlobal(nsIPrincipal* aPrincipal) {
   MOZ_ASSERT(aPrincipal);
@@ -50,10 +58,7 @@ BounceTrackingProtectionStorage::GetStateGlobal(nsIPrincipal* aPrincipal) {
 RefPtr<BounceTrackingStateGlobal>
 BounceTrackingProtectionStorage::GetStateGlobal(
     const OriginAttributes& aOriginAttributes) {
-  OriginAttributes oa = aOriginAttributes;
-  oa.mFirstPartyDomain.Truncate();
-
-  return mStateGlobal.Get(oa);
+  return mStateGlobal.Get(NormalizeOriginAttributes(aOriginAttributes));
 }
 
 RefPtr<BounceTrackingStateGlobal>
@@ -65,17 +70,8 @@ BounceTrackingProtectionStorage::GetOrCreateStateGlobal(
 
 RefPtr<BounceTrackingStateGlobal>
 BounceTrackingProtectionStorage::GetOrCreateStateGlobal(
-    BounceTrackingState* aBounceTrackingState) {
-  MOZ_ASSERT(aBounceTrackingState);
-  return GetOrCreateStateGlobal(aBounceTrackingState->OriginAttributesRef());
-}
-
-RefPtr<BounceTrackingStateGlobal>
-BounceTrackingProtectionStorage::GetOrCreateStateGlobal(
     const OriginAttributes& aOriginAttributes) {
-  OriginAttributes oa = aOriginAttributes;
-  oa.mFirstPartyDomain.Truncate();
-
+  OriginAttributes oa = NormalizeOriginAttributes(aOriginAttributes);
   return mStateGlobal.GetOrInsertNew(oa, this, oa);
 }
 

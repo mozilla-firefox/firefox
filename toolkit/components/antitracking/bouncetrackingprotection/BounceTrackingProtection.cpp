@@ -292,6 +292,8 @@ nsresult BounceTrackingProtection::RecordStatefulBounces(
               "{}: aBounceTrackingState: {}", __FUNCTION__,
               *aBounceTrackingState);
 
+  aBounceTrackingState->DropRetargetedLoadBounces();
+
   // Assert: navigable’s bounce tracking record is not null.
   BounceTrackingRecord* record =
       aBounceTrackingState->GetBounceTrackingRecord();
@@ -301,16 +303,12 @@ nsresult BounceTrackingProtection::RecordStatefulBounces(
     return NS_ERROR_FAILURE;
   }
 
-  // Get the bounce tracker map and the user activation map.
-  RefPtr<BounceTrackingStateGlobal> globalState =
-      mStorage->GetOrCreateStateGlobal(aBounceTrackingState);
-  MOZ_ASSERT(globalState);
-
-  // The storage partition we're about to write bounce trackers into is keyed by
+  // The storage partition the tab's own bounces are written into is keyed by
   // the BounceTrackingState's cached OriginAttributes. Assert it still matches
   // the tab's current top BrowsingContext, so that if a tab's userContextId
   // were ever to change during its lifetime we don't file bounces under a
-  // container the tab no longer lives in. The BrowsingContext may be gone when
+  // container the tab no longer lives in. A load switching container is
+  // retargeted into a new tab instead. The BrowsingContext may be gone when
   // recording on tab close during shutdown; in that case there is nothing to
   // compare against and we skip the check. See Bug 2054941.
 #ifdef DEBUG
@@ -325,57 +323,82 @@ nsresult BounceTrackingProtection::RecordStatefulBounces(
 
   nsTArray<nsCString> classifiedHosts;
 
-  // For each host in navigable’s bounce tracking record's bounce set:
-  for (const nsACString& host : record->GetBounceHosts()) {
-    // Skip "null" entries, they are only used for logging purposes.
-    if (host.EqualsLiteral("null")) {
-      continue;
+  // Each bounce is classified in the storage partition it ran in, which can
+  // differ from the tab's if the load was retargeted into another container.
+  for (const auto& bounceHostsEntry : record->GetBounceHosts()) {
+    const OriginAttributes& originAttributes = bounceHostsEntry.GetKey();
+    nsAutoCString oaSuffix;
+    if (MOZ_LOG_TEST(gBounceTrackingProtectionLog, LogLevel::Info)) {
+      originAttributes.CreateSuffix(oaSuffix);
     }
+    // The bounce tracker map and the user activation map. Created for the
+    // first host to check, so "null" entries don't create a state global.
+    RefPtr<BounceTrackingStateGlobal> globalState;
 
-    // If host equals navigable’s bounce tracking record's initial host,
-    // continue.
-    if (host == record->GetInitialHost()) {
-      MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
-                  "{}: Skip host == initialHost: {}", __FUNCTION__, host);
-      continue;
+    // For each host in navigable’s bounce tracking record's bounce set:
+    for (const nsACString& host : bounceHostsEntry.GetData()) {
+      // Skip "null" entries, they are only used for logging purposes.
+      if (host.EqualsLiteral("null")) {
+        continue;
+      }
+
+      // If host equals navigable’s bounce tracking record's initial host,
+      // continue.
+      if (record->IsInitialSite(host, originAttributes)) {
+        MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
+                    "{}: Skip host == initialHost: {}{}", __FUNCTION__, host,
+                    oaSuffix);
+        continue;
+      }
+      // If host equals navigable’s bounce tracking record's final host,
+      // continue.
+      if (record->IsFinalSite(host, originAttributes)) {
+        MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
+                    "{}: Skip host == finalHost: {}{}", __FUNCTION__, host,
+                    oaSuffix);
+        continue;
+      }
+
+      if (!globalState) {
+        globalState = mStorage->GetOrCreateStateGlobal(originAttributes);
+        MOZ_ASSERT(globalState);
+      }
+
+      // If user activation map contains host, continue.
+      if (globalState->HasUserActivation(host)) {
+        MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
+                    "{}: Skip host with recent user activation: {}{}",
+                    __FUNCTION__, host, oaSuffix);
+        continue;
+      }
+
+      // If stateful bounce tracking map contains host, continue.
+      if (globalState->HasBounceTracker(host)) {
+        MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
+                    "{}: Skip already existing host: {}{}", __FUNCTION__, host,
+                    oaSuffix);
+        continue;
+      }
+
+      // Set stateful bounce tracking map[host] to topDocument’s relevant
+      // settings object’s current wall time.
+      PRTime now = PR_Now();
+      MOZ_ASSERT(!globalState->HasBounceTracker(host));
+      nsresult rv = globalState->RecordBounceTracker(host, now, false, record);
+      if (NS_WARN_IF(NS_FAILED(rv))) {
+        continue;
+      }
+
+      // A host can be classified in more than one container.
+      if (!classifiedHosts.Contains(host)) {
+        classifiedHosts.AppendElement(host);
+      }
+
+      MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Info,
+                  "{}: Added bounce tracker candidate. siteHost: {}{}, "
+                  "aBounceTrackingState: {}",
+                  __FUNCTION__, host, oaSuffix, *aBounceTrackingState);
     }
-    // If host equals navigable’s bounce tracking record's final host, continue.
-    if (host == record->GetFinalHost()) {
-      MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
-                  "{}: Skip host == finalHost: {}", __FUNCTION__, host);
-      continue;
-    }
-
-    // If user activation map contains host, continue.
-    if (globalState->HasUserActivation(host)) {
-      MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
-                  "{}: Skip host with recent user activation: {}", __FUNCTION__,
-                  host);
-      continue;
-    }
-
-    // If stateful bounce tracking map contains host, continue.
-    if (globalState->HasBounceTracker(host)) {
-      MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
-                  "{}: Skip already existing host: {}", __FUNCTION__, host);
-      continue;
-    }
-
-    // Set stateful bounce tracking map[host] to topDocument’s relevant settings
-    // object’s current wall time.
-    PRTime now = PR_Now();
-    MOZ_ASSERT(!globalState->HasBounceTracker(host));
-    nsresult rv = globalState->RecordBounceTracker(host, now, false, record);
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      continue;
-    }
-
-    classifiedHosts.AppendElement(host);
-
-    MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Info,
-                "{}: Added bounce tracker candidate. siteHost: {}, "
-                "aBounceTrackingState: {}",
-                __FUNCTION__, host, *aBounceTrackingState);
   }
 
   // Set navigable’s bounce tracking record to null.
@@ -722,7 +745,7 @@ BounceTrackingProtection::GetRecentPurgedChainEntriesForSite(
           if (record) {
             matches = record->GetInitialHost().Equals(aSiteHost) ||
                       record->GetFinalHost().Equals(aSiteHost) ||
-                      record->GetBounceHosts().Contains(aSiteHost);
+                      record->HasBounceHost(aSiteHost);
           }
         }
         if (matches) {

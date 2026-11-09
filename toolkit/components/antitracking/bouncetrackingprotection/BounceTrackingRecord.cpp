@@ -3,6 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "BounceTrackingRecord.h"
+#include "BounceTrackingProtectionStorage.h"
 #include "mozilla/Logging.h"
 
 namespace mozilla {
@@ -11,26 +12,58 @@ extern LazyLogModule gBounceTrackingProtectionLog;
 
 NS_IMPL_ISUPPORTS(BounceTrackingRecord, nsIBounceTrackingRecord);
 
-void BounceTrackingRecord::SetInitialHost(const nsACString& aHost) {
+void BounceTrackingRecord::SetInitialHost(
+    const nsACString& aHost, const OriginAttributes& aOriginAttributes) {
   mInitialHost = aHost;
+  mInitialOriginAttributes =
+      BounceTrackingProtectionStorage::NormalizeOriginAttributes(
+          aOriginAttributes);
 }
 
 const nsACString& BounceTrackingRecord::GetInitialHost() const {
   return mInitialHost;
 }
 
-void BounceTrackingRecord::SetFinalHost(const nsACString& aHost) {
+void BounceTrackingRecord::SetFinalHost(
+    const nsACString& aHost, const OriginAttributes& aOriginAttributes) {
   mFinalHost = aHost;
+  mFinalOriginAttributes =
+      BounceTrackingProtectionStorage::NormalizeOriginAttributes(
+          aOriginAttributes);
+}
+
+bool BounceTrackingRecord::IsInitialSite(
+    const nsACString& aHost, const OriginAttributes& aOriginAttributes) const {
+  return aHost == mInitialHost && aOriginAttributes == mInitialOriginAttributes;
+}
+
+bool BounceTrackingRecord::IsFinalSite(
+    const nsACString& aHost, const OriginAttributes& aOriginAttributes) const {
+  return aHost == mFinalHost && aOriginAttributes == mFinalOriginAttributes;
 }
 
 const nsACString& BounceTrackingRecord::GetFinalHost() const {
   return mFinalHost;
 }
 
-void BounceTrackingRecord::AddBounceHost(const nsACString& aHost) {
+void BounceTrackingRecord::AddBounceHost(
+    const nsACString& aHost, const OriginAttributes& aOriginAttributes) {
   MOZ_ASSERT(!aHost.IsEmpty());
 
-  mBounceHosts.Insert(aHost);
+  mBounceHosts
+      .LookupOrInsert(
+          BounceTrackingProtectionStorage::NormalizeOriginAttributes(
+              aOriginAttributes))
+      .Insert(aHost);
+  MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug, "{}: {}",
+              __FUNCTION__, *this);
+}
+
+void BounceTrackingRecord::RemoveBounceHosts(
+    const OriginAttributes& aOriginAttributes) {
+  mBounceHosts.Remove(
+      BounceTrackingProtectionStorage::NormalizeOriginAttributes(
+          aOriginAttributes));
   MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug, "{}: {}",
               __FUNCTION__, *this);
 }
@@ -41,14 +74,27 @@ void BounceTrackingRecord::AddUserActivationHost(const nsACString& aHost) {
   }
 }
 
-const nsTHashSet<nsCStringHashKey>& BounceTrackingRecord::GetBounceHosts()
-    const {
+const BounceTrackingRecord::BounceHostMap&
+BounceTrackingRecord::GetBounceHosts() const {
   return mBounceHosts;
+}
+
+bool BounceTrackingRecord::HasBounceHost(const nsACString& aHost) const {
+  for (const auto& hosts : mBounceHosts.Values()) {
+    if (hosts.Contains(aHost)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 const nsTHashSet<nsCStringHashKey>&
 BounceTrackingRecord::GetUserActivationHosts() const {
   return mUserActivationHosts;
+}
+
+void BounceTrackingRecord::ClearUserActivationHosts() {
+  mUserActivationHosts.Clear();
 }
 
 // nsIBounceTrackingRecord
@@ -65,9 +111,11 @@ NS_IMETHODIMP BounceTrackingRecord::GetFinalHost(nsACString& aResult) {
 
 NS_IMETHODIMP BounceTrackingRecord::GetBounceHosts(
     nsTArray<nsCString>& aResult) {
-  for (const auto& host : mBounceHosts) {
-    if (!host.EqualsLiteral("null")) {
-      aResult.AppendElement(host);
+  for (const auto& hosts : mBounceHosts.Values()) {
+    for (const auto& host : hosts) {
+      if (!host.EqualsLiteral("null") && !aResult.Contains(host)) {
+        aResult.AppendElement(host);
+      }
     }
   }
   return NS_OK;
