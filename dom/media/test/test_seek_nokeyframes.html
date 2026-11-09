@@ -1,0 +1,82 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Media test: seek with one IDR and falsely marked keyframes in MP4 container</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+  <script type="text/javascript" src="manifest.js"></script>
+  <script type="text/javascript" src="seek_support.js"></script>
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+// There are no keyframes near the seek targets because the video
+// only has one IDR at the beginning. The MP4 container contains
+// inaccurate keyframe info, marking all samples as sync.
+// Seeking should jump to the correct time and play correctly from
+// there.
+async function doTest(filePath, codecStr) {
+  const proms = [];
+  if (!document.createElement("video").canPlayType(`video/mp4; codecs="${codecStr}, mp4a.40.2"`)) {
+    ok(true, "Skipping unsupported codec " + codecStr);
+    return Promise.all(proms);
+  }
+  info(`Running with file ${filePath}, ${codecStr}`);
+  for (const seekTarget of [0, 1, 3.5]) {
+    //proms.push((async () => {
+     await (async () => {
+      const video = document.createElement("video");
+      video.src = filePath;
+      video.controls = true;
+      const { promise: errorPromise, resolve: resolveError } = Promise.withResolvers();
+      let notSupported = false;
+      video.addEventListener("error", (e) => {
+        info("video element got error " + e.name);
+        info(e);
+        if (e.target.error.code == e.target.error.MEDIA_ERR_DECODE) {
+          notSupported = true;
+          resolveError();
+        } else {
+          ok(false, "should not throw any errors: " + e.name)
+        }
+      });
+      info("Waiting for canplay event");
+      await Promise.race([once(video, 'canplay'), errorPromise]);
+      if (notSupported) {
+        ok(true, "Skipping unsupported codec " + codecStr);
+        return;
+      }
+      document.body.appendChild(video);
+
+      info("Seeking to " + seekTarget);
+      video.currentTime = seekTarget;
+      info("Wait for seeked event");
+      await once(video, "seeked");
+
+      info("Got seeked event, playing");
+      await video.play();
+      info("Pausing");
+      video.pause();
+      await once(video, "pause");
+      isfuzzy(video.currentTime, seekTarget, 0.1, "must seek to correct time");
+
+      await video.play();
+      info("Wait for ended event");
+      await once(video, "ended");
+      ok(true, "playback completed");
+      removeNodeAndSource(video);
+    })();
+  }
+  return Promise.all(proms)
+}
+
+add_task(() => doTest("no-stss-1-keyframe/h264.mp4", "avc1.64000d"))
+add_task(() => doTest("no-stss-1-keyframe/h265.mp4", "hvc1.1.6.L63.B0"))
+add_task(() => doTest("no-stss-1-keyframe/av1.mp4", "av01.0.00M.08"))
+add_task(() => doTest("no-stss-1-keyframe/vp9.mp4", "vp09.00.20.08"))
+
+</script>
+</pre>
+</body>
+</html>

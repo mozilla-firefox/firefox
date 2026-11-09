@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252">
+  <title>H264: Can seek after non-IDR I-frames and falsely labeled keyframes</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test"><script class="testbody" tye="text/javascript">
+
+// Test seeking in the presence of non-IDR I-frames and falsely labeled sync samples in the MP4 container.
+// Includes streams with and without marked EOS, as they have different behavior and failure modes.
+// If EOS is marked, we know whether or not there's a keyframe in the future. Without EOS the player may
+// opt to wait for one instead.
+// Expected: seeking should jump to the correct time and correctly play from there.
+
+// Bug 2083178: broken seeking only for H265, missing stss box, EOS not marked
+const IS_ANDROID = navigator.userAgent.includes("Android");
+
+function runTest({ prefixVideo, prefixAudio, codec, seekTarget, doEos }) {
+  const { promise, resolve, reject } = Promise.withResolvers();
+  info(`Testing file ${prefixVideo}/${prefixAudio}, seek to ${seekTarget}, mark end of stream: ${doEos}`)
+  runWithMSE(async (ms, el) => {
+    logEvents(el)
+    el.addEventListener("error", (e) => {
+      if (e.target.error.code == e.target.error.MEDIA_ERR_DECODE) {
+        (true, "Skipping unsupported codec " + codec);
+        resolve();
+      } else {
+        info("video element got error " + e.name);
+        reject(e);
+      }
+    });
+    el.controls = true;
+    el.pause()
+    await once(ms, "sourceopen");
+    info("Got sourceopen event");
+    let sbV;
+    let sbA;
+    try {
+      info("add sourcebuffer " + codec);
+      sbV = ms.addSourceBuffer(`video/mp4; codecs="${codec}"`);
+      info("add sourcebuffer audio");
+      sbA = ms.addSourceBuffer('video/mp4; codecs="mp4a.40.2"');
+    } catch (error) {
+      if (error.name === "NotSupportedError") {
+        ok(true, "Skipping unsupported codec " + codec);
+        el.remove();
+        resolve();
+        return;
+      }
+      reject(error);
+    }
+    sbV.addEventListener("error", (e) => {
+      info("sbV got errror " + e.name);
+      reject(e);
+    });
+    sbA.addEventListener("error", (e) => {
+      info("sbA got errror " + e.name);
+      reject(e);
+    });
+    await fetchAndLoad(sbV, prefixVideo, ["-0"], ".mp4");
+    await fetchAndLoad(sbA, prefixAudio, ["-1"], ".mp4");
+
+    if (doEos) {
+      ms.endOfStream();
+      info("marked endOfStream");
+    }
+
+    info("Seek to " + seekTarget)
+    el.currentTime = seekTarget;
+
+    info("Wait for seeked event");
+    await once(el, "seeked");
+    info("Got seeked event, playing");
+    await el.play();
+    el.pause()
+    await once(el, "pause")
+    isfuzzy(el.currentTime, seekTarget, 0.1, "must seek to correct time")
+
+    await el.play();
+
+    if (doEos) {
+      info("Wait for ended event");
+      await once(el, "ended");
+      ok(true, "playback completed");
+    } else {
+      info("Wait for waiting event");
+      await once(el, "waiting");
+      ok(true, "playback completed");
+    }
+
+    resolve();
+    el.remove();
+  });
+  return promise;
+}
+
+async function runTests(args) {
+  const proms = [];
+  for (const seekTarget of args.seekTargets) {
+    for (const doEos of args.doEos) {
+      proms.push(runTest({ ...args, seekTarget, doEos }));
+    }
+  }
+  await Promise.all(proms);
+}
+
+const canPlay = (codec) => MediaSource.isTypeSupported(`video/mp4; codecs="${codec}, mp4a.40.2"`)
+
+const codecs = [
+  ["h264", "avc1.64000d"],
+  ["h265", "hvc1.1.6.L63.B0"],
+  ["av1", "av01.0.00M.08"],
+  ["vp9", "vp09.00.20.08"],
+];
+
+for (const [prefix, codec] of codecs) {
+  if (!canPlay(codec)) {
+    info("skipping unsupported codec " + codec);
+    continue;
+  }
+  if (IS_ANDROID && prefix === "vp9") {
+    continue;
+  }
+  let doEos = [true, false];
+  if (IS_ANDROID &&prefix === "h265") {
+    doEos = [true];
+  }
+  add_task(() => runTests({
+    codec,
+    prefixVideo: "seek-odd-keyframes/single-idr-" + prefix,
+    prefixAudio: "seek-odd-keyframes/single-idr-" + prefix,
+    seekTargets: [0.0, 0.5, 1.5, 4.05],
+    doEos,
+  }));
+  add_task(() => runTests({
+    codec,
+    prefixVideo: "seek-odd-keyframes/sync-lies-" + prefix,
+    prefixAudio: "seek-odd-keyframes/single-idr-" + prefix,
+    seekTargets: [0.0, 1.5, 3.12],
+    doEos,
+  }));
+  if (prefix === "h264" || prefix === "h265") {
+    add_task(() => runTests({
+      codec,
+      prefixVideo: "seek-odd-keyframes/idr-then-nidr-" + prefix,
+      prefixAudio: "seek-odd-keyframes/idr-then-nidr-" + prefix,
+      seekTargets: [0.0, 0.6, 3.5],
+      doEos,
+    }));
+  }
+}
+
+</script>
+</pre>
+</body>
+</html>
