@@ -959,15 +959,29 @@ struct nsPurpleBuffer {
 
   ~nsPurpleBuffer() = default;
 
-  // This method compacts mEntries.
+ private:
+  class MOZ_STACK_CLASS AutoFlushAndDisableNurseryPurpleBuffer {
+   public:
+    AutoFlushAndDisableNurseryPurpleBuffer() {
+      if (NS_IsMainThread()) {
+        mNurseryEnabled.emplace(gNurseryPurpleBufferEnabled);
+        gNurseryPurpleBufferEnabled = false;
+        ClearNurseryPurpleBuffer();
+      }
+    }
+
+   private:
+    Maybe<AutoRestore<bool>> mNurseryEnabled;
+  };
+
+ public:
+  // This method compacts mEntries. It is safe to add more entries to the purple
+  // buffer while this is on the stack, but not to call VisitEntries or
+  // otherwise remove or modify entries that were in the buffer at the start of
+  // the function call. It will not visit entries added while it is running.
   template <class PurpleVisitor>
   void VisitEntries(PurpleVisitor& aVisitor) {
-    Maybe<AutoRestore<bool>> ar;
-    if (NS_IsMainThread()) {
-      ar.emplace(gNurseryPurpleBufferEnabled);
-      gNurseryPurpleBufferEnabled = false;
-      ClearNurseryPurpleBuffer();
-    }
+    AutoFlushAndDisableNurseryPurpleBuffer arNursery;
 
     if (mEntries.IsEmpty()) {
       return;
@@ -1041,6 +1055,32 @@ struct nsPurpleBuffer {
       }
 
       mEntries.PopLastN(oldLength - keptLength);
+    }
+  }
+
+  // This version of VisitEntries is allowed to be called while another
+  // VisitEntries is still on the stack. To enable this, it does not modify or
+  // remove any entries that were in the purple buffer at the start of the call.
+  // It may add additional entries, either via SuspectNurseryEntries() or
+  // PurpleVisitor::Visit(). It will not visit entries added while it is
+  // running.
+  template <class PurpleVisitor>
+  void VisitEntriesReentrant(PurpleVisitor& aVisitor) {
+    AutoFlushAndDisableNurseryPurpleBuffer arNursery;
+
+    if (mEntries.IsEmpty()) {
+      return;
+    }
+
+    auto revIter = mEntries.IterFromLast();
+    for (auto iter = mEntries.Iter(); !iter.Done(); iter.Next()) {
+      const nsPurpleBufferEntry& e = iter.Get();
+      if (e.mObject) {
+        aVisitor.Visit(&e);
+      }
+      if (&e == &revIter.Get()) {
+        break;
+      }
     }
   }
 
@@ -3023,7 +3063,7 @@ class PurpleScanBlackVisitor {
                          uint32_t& aCount, bool& aFailed)
       : mGraph(aGraph), mLogger(aLogger), mCount(aCount), mFailed(aFailed) {}
 
-  bool Visit(nsPurpleBuffer& aBuffer, nsPurpleBufferEntry* aEntry) {
+  void Visit(const nsPurpleBufferEntry* aEntry) {
     MOZ_ASSERT(aEntry->mObject,
                "Entries with null mObject shouldn't be in the purple buffer.");
 
@@ -3042,7 +3082,7 @@ class PurpleScanBlackVisitor {
 
     PtrInfo* pi = mGraph.FindNode(obj);
     if (!pi) {
-      return true;
+      return;
     }
     MOZ_ASSERT(pi->mParticipant,
                "No dead objects should be in the purple buffer.");
@@ -3050,10 +3090,9 @@ class PurpleScanBlackVisitor {
       mLogger->NoteIncrementalRoot((uint64_t)pi->mPointer);
     }
     if (pi->mColor == black) {
-      return true;
+      return;
     }
     FloodBlackNode(mCount, mFailed, pi);
-    return true;
   }
 
  private:
@@ -3081,7 +3120,7 @@ void nsCycleCollector::ScanIncrementalRoots() {
   bool failed = false;
   PurpleScanBlackVisitor purpleScanBlackVisitor(mGraph, mLogger,
                                                 mWhiteNodeCount, failed);
-  mPurpleBuf.VisitEntries(purpleScanBlackVisitor);
+  mPurpleBuf.VisitEntriesReentrant(purpleScanBlackVisitor);
   timeLog.Checkpoint("ScanIncrementalRoots::fix purple");
 
   bool hasJSRuntime = !!mCCJSRuntime;
