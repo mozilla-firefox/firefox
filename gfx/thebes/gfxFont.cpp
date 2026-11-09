@@ -4539,8 +4539,14 @@ bool gfxFont::InitMetricsFromSkrifa() {
     return false;
   }
 
-  SkrifaLocation* location = skrifa_font_resolve_variations_to_location(
-      skf, &mStyle.variationSettings);
+  // Get the variations to be applied to this instance: merge values implied
+  // by optical-sizing, weight and width properties with explicit variations
+  // set by the font-variation-settings property.
+  AutoTArray<gfxFontVariation, 8> variations;
+  mFontEntry->GetVariationsForStyle(variations, mStyle);
+
+  SkrifaLocation* location =
+      skrifa_font_resolve_variations_to_location(skf, &variations);
   SkrifaMetrics metrics;
   skrifa_font_get_metrics(skf, GetAdjustedSize(), location, &metrics);
 
