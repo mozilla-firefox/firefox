@@ -10,6 +10,7 @@
 #include "mozilla/Casting.h"
 
 #include <bit>
+#include <cstdint>
 
 #include "jit/Bailouts.h"
 #include "jit/BaselineFrame.h"
@@ -5919,62 +5920,81 @@ void MacroAssemblerRiscv64::ma_mul32(Register rd, Register rs, Imm32 rt) {
       break;
   }
 
-  if (rt.value > 0 && HasZbaExtension()) {
-    int ctz = std::countr_zero(uint32_t(rt.value));
-    if ((rt.value >> ctz) == 3) {
-      // rd = (rs * 2 + rs) << ctz
-      sh1add(rd, rs, rs);
-      if (ctz) {
-        slliw(rd, rd, ctz);
-      } else {
-        SignExtendWord(rd, rd);
+  if (rt.value > 0) {
+    const uint32_t uvalue = static_cast<uint32_t>(rt.value);
+    if (HasZbaExtension()) {
+      int ctz = std::countr_zero(uvalue);
+      if ((uvalue >> ctz) == 3) {
+        // rd = (rs * 2 + rs) << ctz
+        sh1add(rd, rs, rs);
+        if (ctz) {
+          slliw(rd, rd, ctz);
+        } else {
+          SignExtendWord(rd, rd);
+        }
+        return;
+      }
+      if ((uvalue >> ctz) == 5) {
+        // rd = (rs * 4 + rs) << ctz
+        sh2add(rd, rs, rs);
+        if (ctz) {
+          slliw(rd, rd, ctz);
+        } else {
+          SignExtendWord(rd, rd);
+        }
+        return;
+      }
+      if ((uvalue >> ctz) == 9) {
+        // rd = (rs * 8 + rs) << ctz
+        sh3add(rd, rs, rs);
+        if (ctz) {
+          slliw(rd, rd, ctz);
+        } else {
+          SignExtendWord(rd, rd);
+        }
+        return;
+      }
+    }
+
+    const uint8_t shift = mozilla::FloorLog2(uvalue);
+    // Use shift if constant is power of 2.
+    if (std::has_single_bit(uvalue)) {
+      slliw(rd, rs, shift);
+      return;
+    }
+
+    if (std::has_single_bit(uvalue + 1)) {
+      const int shift_plus_one = std::countr_zero(uvalue + 1);
+
+      UseScratchRegisterScope temps(this);
+      Register shifted = rd;
+      if (rd == rs) {
+        shifted = temps.Acquire();
+      }
+      slliw(shifted, rs, shift_plus_one);
+      subw(rd, shifted, rs);
+      return;
+    }
+
+    // If the constant cannot be encoded as (1<<C1), see if it can be encoded
+    // as (1<<C1) | (1<<C2), which can be computed using an add and a shift.
+    const uint32_t rest = uvalue - (UINT32_C(1) << shift);
+    if (std::has_single_bit(rest)) {
+      const int shift_rest = std::countr_zero(rest);
+
+      UseScratchRegisterScope temps(this);
+      Register shifted = rd;
+      if (rd == rs) {
+        shifted = temps.Acquire();
+      }
+
+      slliw(shifted, rs, (shift - shift_rest));
+      addw(rd, shifted, rs);
+      if (shift_rest != 0) {
+        slliw(rd, rd, shift_rest);
       }
       return;
     }
-    if ((rt.value >> ctz) == 5) {
-      // rd = (rs * 4 + rs) << ctz
-      sh2add(rd, rs, rs);
-      if (ctz) {
-        slliw(rd, rd, ctz);
-      } else {
-        SignExtendWord(rd, rd);
-      }
-      return;
-    }
-    if ((rt.value >> ctz) == 9) {
-      // rd = (rs * 8 + rs) << ctz
-      sh3add(rd, rs, rs);
-      if (ctz) {
-        slliw(rd, rd, ctz);
-      } else {
-        SignExtendWord(rd, rd);
-      }
-      return;
-    }
-  }
-
-  uint32_t shift = mozilla::FloorLog2(uint32_t(rt.value));
-
-  // If the constant has only one bit set, it can be encoded as a bit-shift.
-  if (std::has_single_bit(uint32_t(rt.value))) {
-    slliw(rd, rs, shift);
-    return;
-  }
-
-  // If the constant cannot be encoded as (1<<C1), see if it can be encoded
-  // as (1<<C1) | (1<<C2), which can be computed using an add and a shift.
-  uint32_t rest = rt.value - (1 << shift);
-  if (std::has_single_bit(rest)) {
-    uint32_t shift_rest = std::countr_zero(rest);
-    UseScratchRegisterScope temps(this);
-    Register scratch = temps.Acquire();
-
-    slliw(scratch, rs, (shift - shift_rest));
-    addw(rd, scratch, rs);
-    if (shift_rest != 0) {
-      slliw(rd, rd, shift_rest);
-    }
-    return;
   }
 
   UseScratchRegisterScope temps(this);
@@ -6000,9 +6020,7 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
       ma_mv(rd, zero);
       return;
     case 1:
-      if (rd != rs) {
-        ma_mv(rd, rs);
-      }
+      ma_mv(rd, rs);
       return;
     case 2:
       add(rd, rs, rs);
@@ -6014,7 +6032,7 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
   if (rt.value > 0) {
     const uint64_t uvalue = static_cast<uint64_t>(rt.value);
     if (HasZbaExtension()) {
-      int ctz = std::countr_zero(uint32_t(rt.value));
+      int ctz = std::countr_zero(uvalue);
       if ((uvalue >> ctz) == 3) {
         // rd = (rs * 2 + rs) << ctz
         sh1add(rd, rs, rs);
@@ -6041,38 +6059,43 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
       }
     }
 
-    if (std::has_single_bit(uvalue + 1)) {
-      int32_t shift = std::countr_zero(uvalue + 1);
-
-      UseScratchRegisterScope temps(this);
-      Register savedRs = rs;
-      if (rd == rs) {
-        savedRs = temps.Acquire();
-        ma_mv(savedRs, rs);
-      }
-      slli(rd, rs, shift);
-      sub(rd, rd, savedRs);
-      return;
-    }
-
-    if (std::has_single_bit(uvalue - 1)) {
-      int32_t shift = std::countr_zero(uvalue - 1);
-
-      UseScratchRegisterScope temps(this);
-      Register savedRs = rs;
-      if (rd == rs) {
-        savedRs = temps.Acquire();
-        ma_mv(savedRs, rs);
-      }
-      slli(rd, rs, shift);
-      add(rd, rd, savedRs);
-      return;
-    }
-
+    const uint8_t shift = mozilla::FloorLog2(uvalue);
     // Use shift if constant is power of 2.
     if (std::has_single_bit(uvalue)) {
-      uint8_t shift = std::countr_zero(uvalue);
       slli(rd, rs, shift);
+      return;
+    }
+
+    if (std::has_single_bit(uvalue + 1)) {
+      const int shift_plus_one = std::countr_zero(uvalue + 1);
+
+      UseScratchRegisterScope temps(this);
+      Register shifted = rd;
+      if (rd == rs) {
+        shifted = temps.Acquire();
+      }
+      slli(shifted, rs, shift_plus_one);
+      sub(rd, shifted, rs);
+      return;
+    }
+
+    // If the constant cannot be encoded as (1<<C1), see if it can be encoded
+    // as (1<<C1) | (1<<C2), which can be computed using an add and a shift.
+    const uint64_t rest = uvalue - (UINT64_C(1) << shift);
+    if (std::has_single_bit(rest)) {
+      const int shift_rest = std::countr_zero(rest);
+
+      UseScratchRegisterScope temps(this);
+      Register shifted = rd;
+      if (rd == rs) {
+        shifted = temps.Acquire();
+      }
+
+      slli(shifted, rs, (shift - shift_rest));
+      add(rd, shifted, rs);
+      if (shift_rest != 0) {
+        slli(rd, rd, shift_rest);
+      }
       return;
     }
   }
