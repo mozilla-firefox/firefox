@@ -1994,16 +1994,23 @@ void MacroAssemblerLOONG64::ma_b(Register lhs, Imm32 imm, Label* label,
   } else {
     UseScratchRegisterScope temps(asMasm());
     Register scratch = temps.Acquire();
+    MOZ_ASSERT(lhs != scratch);
     switch (c) {
       case Equal:
       case NotEqual:
-        MOZ_ASSERT(lhs != scratch);
+      case Above:
+      case AboveOrEqual:
+      case Below:
+      case BelowOrEqual:
+      case GreaterThan:
+      case GreaterThanOrEqual:
+      case LessThan:
+      case LessThanOrEqual:
         ma_li(scratch, imm);
         ma_b(lhs, scratch, label, c, jumpKind);
         break;
       default:
-        Condition cond = ma_cmp(scratch, lhs, imm, c);
-        asMasm().branchWithCode(getBranchCode(scratch, cond), label, jumpKind);
+        MOZ_CRASH("Invalid condition.");
     }
   }
 }
