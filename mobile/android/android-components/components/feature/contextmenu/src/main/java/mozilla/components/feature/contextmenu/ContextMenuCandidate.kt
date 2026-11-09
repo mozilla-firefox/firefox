@@ -10,7 +10,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.view.View
-import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import com.google.android.material.snackbar.Snackbar
 import mozilla.components.browser.state.state.SessionState
@@ -740,7 +739,13 @@ private fun HitResult.isUri(): Boolean =
 private fun HitResult.hasLinkText(): Boolean =
     (!(this as? HitResult.UNKNOWN)?.linkText.isNullOrEmpty() && src.isNotEmpty())
 
-private fun HitResult.isHttpLink(): Boolean = isUri() && getLink().startsWith("http")
+/**
+ * Returns whether this hit result is a link with an HTTP(S) URL.
+ *
+ * Public so that apps declaring their own [ContextMenuCandidate]s can match the visibility rules of the built-in link
+ * candidates exactly, rather than reimplementing the check and drifting from it.
+ */
+fun HitResult.isHttpLink(): Boolean = isUri() && getLink().startsWith("http")
 
 private fun HitResult.isLinkForOtherThanWebpage(): Boolean {
     val link = getLink()
@@ -784,8 +789,13 @@ internal fun HitResult.getDisplayTitle(): String =
         else -> getLink()
     }
 
-@VisibleForTesting
-internal fun SessionState.isUrlSchemeAllowed(url: String): Boolean {
+/**
+ * Returns whether [url]'s scheme is allowed to be loaded by this session's engine.
+ *
+ * Public so that apps declaring their own [ContextMenuCandidate]s can apply the same blocked-scheme check the built-in
+ * candidates use, rather than reimplementing it against the engine session's blocked schemes.
+ */
+fun SessionState.isUrlSchemeAllowed(url: String): Boolean {
     return when (val engineSession = engineState.engineSession) {
         null -> true
         else -> {
