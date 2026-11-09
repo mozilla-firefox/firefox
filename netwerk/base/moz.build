@@ -59,6 +59,7 @@ XPIDL_SOURCES += [
     "nsINetworkConnectivityService.idl",
     "nsINetworkInfoService.idl",
     "nsINetworkInterceptController.idl",
+    "nsINetworkInterface.idl",
     "nsINetworkLinkService.idl",
     "nsINullChannel.idl",
     "nsIParentChannel.idl",
@@ -257,6 +258,10 @@ UNIFIED_SOURCES += [
     "TLSServerSocket.cpp",
     "TRRLoadInfo.cpp",
 ]
+
+if CONFIG["MOZ_ENTERPRISE"]:
+    EXPORTS += ["nsNetworkInterface.h"]
+    UNIFIED_SOURCES += ["nsNetworkInterface.cpp"]
 
 if CONFIG["FUZZING"]:
     SOURCES += [

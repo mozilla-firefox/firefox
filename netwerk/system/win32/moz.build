@@ -11,6 +11,10 @@ if CONFIG["OS_ARCH"] == "WINNT":
         "nsNotifyAddrListener.h",
     ]
 
+    if CONFIG["MOZ_ENTERPRISE"]:
+        SOURCES += ["nsNetworkInterface_win.cpp"]
+        SOURCE_HEADERS += ["nsNetworkInterface_win.h"]
+
 LOCAL_INCLUDES += [
     "/netwerk/base",
 ]

@@ -4,6 +4,7 @@
 
 #include "nsISupports.idl"
 interface nsINetAddr;
+interface nsINetworkInterface;
 
 %{ C++
 #include "nsTArrayForwardDeclare.h"
@@ -115,6 +116,15 @@ interface nsINetworkLinkService : nsISupports
    * indicate that we should only use DNS, not TRR.
    */
   readonly attribute unsigned long platformDNSIndications;
+
+  /**
+   * Interfaces that are up and not loopback, with their addresses and default
+   * gateways. Collected in the background and refreshed on network changes,
+   * so it can be empty or slightly stale, notably right after startup.
+   * Throws NS_ERROR_NOT_IMPLEMENTED unless built with --enable-enterprise,
+   * and NS_ERROR_NOT_AVAILABLE outside the parent process.
+   */
+  readonly attribute Array<nsINetworkInterface> networkInterfaces;
 
   %{C++
     static bool HasNonLocalIPv6Address();

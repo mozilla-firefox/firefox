@@ -1,0 +1,58 @@
+/* vim: et ts=4 sw=4 tw=80
+ */
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#include "nsISupports.idl"
+
+/**
+ * A snapshot of one network interface, from
+ * nsINetworkLinkService.networkInterfaces.
+ *
+ * Addresses are strings without prefix length or IPv6 zone (no "%en0").
+ * IPv4 uses dotted-quad form, IPv6 the compressed form of RFC 5952.
+ * Lists are unordered and may be empty.
+ *
+ * See https://firefox-source-docs.mozilla.org/networking/network_interfaces.html
+ */
+[scriptable, uuid(1e3b9710-9118-4bc4-af4e-5cc166d64750)]
+interface nsINetworkInterface : nsISupports
+{
+    /**
+     * System name on Linux, Android and macOS, e.g. "eth0" or "en0".
+     * Adapter friendly name on Windows, e.g. "Wi-Fi", in UTF-8.
+     */
+    readonly attribute ACString name;
+
+    /**
+     * Hardware address as six lowercase hex bytes, e.g. "02:00:5e:10:00:01".
+     * Longer addresses are cut to six bytes, shorter ones padded with zeros.
+     * "00:00:00:00:00:00" when there is none, e.g. on a VPN tunnel.
+     */
+    readonly attribute ACString mac;
+
+    /**
+     * Next hops of the default routes through this interface that have an
+     * IPv4 gateway, e.g. "192.168.1.1". Routes without a next hop, as on
+     * point-to-point VPNs, are not listed.
+     */
+    readonly attribute Array<ACString> gwv4;
+
+    /**
+     * Next hops of the default routes through this interface that have an
+     * IPv6 gateway. Usually a link-local router address, e.g.
+     * "fe80::5a1d:d8ff:fe3c:ba90".
+     */
+    readonly attribute Array<ACString> gwv6;
+
+    /**
+     * IPv4 addresses, link-local ones (169.254.0.0/16) included.
+     */
+    readonly attribute Array<ACString> ipv4;
+
+    /**
+     * IPv6 addresses, link-local ones (fe80::/10) included.
+     */
+    readonly attribute Array<ACString> ipv6;
+};

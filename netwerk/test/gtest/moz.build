@@ -78,6 +78,9 @@ if CONFIG["OS_TARGET"] == "WINNT":
 if CONFIG["TARGET_OS"] == "OSX":
     UNIFIED_SOURCES += ["TestNetworkLinkIdHashingDarwin.cpp"]
 
+    if CONFIG["MOZ_ENTERPRISE"]:
+        UNIFIED_SOURCES += ["TestNetworkInterfaceDarwin.cpp"]
+
 TEST_HARNESS_FILES.gtest += [
     "urltestdata.json",
 ]

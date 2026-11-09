@@ -11,3 +11,7 @@ FINAL_LIBRARY = "xul"
 SOURCE_HEADERS += [
     "nsNetworkLinkService.h",
 ]
+
+if CONFIG["MOZ_ENTERPRISE"]:
+    SOURCES += ["nsNetworkInterface_mac.cpp"]
+    SOURCE_HEADERS += ["nsNetworkInterface_mac.h"]

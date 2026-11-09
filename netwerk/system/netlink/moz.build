@@ -14,6 +14,10 @@ if CONFIG["OS_ARCH"] == "Linux":
         "NetlinkService.h",
     ]
 
+    if CONFIG["MOZ_ENTERPRISE"]:
+        SOURCES += ["nsNetworkInterface_linux.cpp"]
+        SOURCE_HEADERS += ["nsNetworkInterface_linux.h"]
+
 # for socket
 OS_LIBS += CONFIG["SOCKET_LIBS"]
 

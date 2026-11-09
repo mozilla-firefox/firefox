@@ -48,6 +48,10 @@
 #include "nsThreadPool.h"
 #include "nsThreadUtils.h"
 
+#ifdef MOZ_ENTERPRISE
+#  include "nsNetworkInterface_win.h"
+#endif
+
 #if defined(__MINGW32__) || defined(__MINGW64__)
 BOOLEAN IN6_IS_ADDR_LOOPBACK(const struct in6_addr* a) {
   auto words = a->s6_words;
@@ -474,6 +478,9 @@ nsNotifyAddrListener::CheckAdaptersAddresses(void) {
   PIP_ADAPTER_ADDRESSES adapterList = (PIP_ADAPTER_ADDRESSES)moz_xmalloc(len);
 
   ULONG flags = GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST;
+#ifdef MOZ_ENTERPRISE
+  flags |= GAA_FLAG_INCLUDE_GATEWAYS;
+#endif
   if (!StaticPrefs::network_notify_resolvers()) {
     flags |= GAA_FLAG_SKIP_DNS_SERVER;
   }
@@ -502,6 +509,9 @@ nsNotifyAddrListener::CheckAdaptersAddresses(void) {
 
   nsTArray<nsCString> dnsSuffixList;
   nsTArray<mozilla::net::NetAddr> resolvers;
+#ifdef MOZ_ENTERPRISE
+  nsTArray<mozilla::net::NetworkInterface> networkInterfaces;
+#endif
   uint32_t platformDNSIndications = NONE_DETECTED;
   bool hasNonLocalIPv6 = false;
   if (ret == ERROR_SUCCESS) {
@@ -518,6 +528,10 @@ nsNotifyAddrListener::CheckAdaptersAddresses(void) {
           nsDependentString(adapter->Description).Find(u"VMnet") != kNotFound) {
         continue;
       }
+
+#ifdef MOZ_ENTERPRISE
+      networkInterfaces.AppendElement(WinNetworkInterface(adapter));
+#endif
 
       LOG(("Adapter %s type: %lu",
            NS_ConvertUTF16toUTF8(adapter->FriendlyName).get(),
@@ -681,6 +695,9 @@ nsNotifyAddrListener::CheckAdaptersAddresses(void) {
     MutexAutoLock lock(mMutex);
     mDnsSuffixList = std::move(dnsSuffixList);
     mDNSResolvers = std::move(resolvers);
+#ifdef MOZ_ENTERPRISE
+    mNetworkInterfaces = std::move(networkInterfaces);
+#endif
     mPlatformDNSIndications = platformDNSIndications;
   }
 
@@ -749,6 +766,18 @@ void nsNotifyAddrListener::CheckLinkStatus(void) {
                                                  : NS_NETWORK_LINK_DATA_DOWN);
     }
   }
+}
+
+NS_IMETHODIMP
+nsNotifyAddrListener::GetNetworkInterfaces(
+    nsTArray<RefPtr<nsINetworkInterface>>& aNetworkInterfaces) {
+#ifdef MOZ_ENTERPRISE
+  MutexAutoLock lock(mMutex);
+  return mozilla::net::nsNetworkInterface::GetNetworkInterfaces(
+      mNetworkInterfaces, aNetworkInterfaces);
+#else
+  return NS_ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 // static

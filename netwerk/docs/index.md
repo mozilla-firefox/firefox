@@ -54,6 +54,7 @@ url_parsers.md
 webtransport/webtransport
 captive_portals.md
 early_hints.md
+network_interfaces.md
 ```
 
 ## References

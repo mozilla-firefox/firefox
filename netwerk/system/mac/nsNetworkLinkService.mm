@@ -17,6 +17,12 @@
 #include <netinet/in.h>
 #include <resolv.h>
 
+#ifdef MOZ_ENTERPRISE
+#  include <net/if_media.h>
+#  include <sys/ioctl.h>
+#  include <sys/sockio.h>
+#endif
+
 #include "../../base/IPv6Utils.h"
 #include "../LinkServiceCommon.h"
 #include "../NetworkLinkServiceDefines.h"
@@ -37,6 +43,10 @@
 #include "nsServiceManagerUtils.h"
 #include "nsString.h"
 #include "nsThreadUtils.h"
+
+#ifdef MOZ_ENTERPRISE
+#  include "nsNetworkInterface_mac.h"
+#endif
 
 #import <Cocoa/Cocoa.h>
 #import <netinet/in.h>
@@ -400,7 +410,11 @@ static bool parseHashKey(struct rt_msghdr* rtm,
 // It detects the IP of the default gateways in the routing table, then the MAC
 // address of that IP in the ARP table before it hashes that string (to avoid
 // information leakage).
-bool nsNetworkLinkService::RoutingTable(nsTArray<nsCString>& aHash) {
+template <typename T>
+bool nsNetworkLinkService::RoutingTable(T& aTarget,
+                                        bool (*rtmParser)(struct rt_msghdr* rtm,
+                                                          T& strings,
+                                                          bool skipDstCheck)) {
   size_t needed;
   int mib[6];
   struct rt_msghdr* rtm;
@@ -435,7 +449,7 @@ bool nsNetworkLinkService::RoutingTable(nsTArray<nsCString>& aHash) {
       break;
     }
 
-    if (parseHashKey(rtm, aHash, false)) {
+    if (rtmParser(rtm, aTarget, false)) {
       rv = true;
     }
   }
@@ -500,7 +514,7 @@ bool nsNetworkLinkService::RoutingFromKernel(nsTArray<nsCString>& aHash) {
 // Figure out the current IPv4 "network identification" string.
 bool nsNetworkLinkService::IPv4NetworkId(SHA1Sum* aSHA1) {
   nsTArray<nsCString> hash;
-  if (!RoutingTable(hash)) {
+  if (!RoutingTable(hash, parseHashKey)) {
     NS_WARNING("IPv4NetworkId: No default gateways");
   }
 
@@ -659,6 +673,10 @@ nsNetworkLinkService::GetName(nsACString& aName) {
 
 void nsNetworkLinkService::calculateNetworkIdInternal(void) {
   MOZ_ASSERT(!NS_IsMainThread(), "Should not be called on the main thread");
+#ifdef MOZ_ENTERPRISE
+  UpdateNetworkInterfaces();
+#endif
+
   SHA1Sum sha1;
   bool idChanged = false;
   bool found4 = IPv4NetworkId(&sha1);
@@ -1037,6 +1055,104 @@ void nsNetworkLinkService::NotifyObservers(const char* aTopic,
         static_cast<nsINetworkLinkService*>(this), aTopic,
         aData ? NS_ConvertASCIItoUTF16(aData).get() : nullptr);
   }
+}
+
+#ifdef MOZ_ENTERPRISE
+void nsNetworkLinkService::UpdateNetworkInterfaces() {
+  MOZ_ASSERT(!NS_IsMainThread(), "Should not be called on the main thread");
+
+  struct ifaddrs* ifap;
+  if (getifaddrs(&ifap) < 0) {
+    return;
+  }
+  auto freeIfaddrs = mozilla::MakeScopeExit([&] { freeifaddrs(ifap); });
+
+  // getifaddrs() returns one entry per address, so the same interface usually
+  // shows up several times. Collect unique candidate names first so that we
+  // only probe each interface once.
+  nsTArray<nsCString> candidates;
+  for (struct ifaddrs* ifa = ifap; ifa; ifa = ifa->ifa_next) {
+    if (ifa->ifa_addr == NULL) {
+      continue;
+    }
+
+    if (!(ifa->ifa_flags & IFF_UP)) {
+      continue;
+    }
+
+    if (ifa->ifa_flags & IFF_LOOPBACK) {
+      continue;
+    }
+
+    if (!(ifa->ifa_flags & IFF_RUNNING)) {
+      continue;
+    }
+
+    nsDependentCString name(ifa->ifa_name);
+    if (!candidates.Contains(name)) {
+      candidates.AppendElement(name);
+    }
+  }
+
+  nsTArray<nsCString> ifNames;
+  if (!candidates.IsEmpty()) {
+    // SIOCGIFXMEDIA is an interface ioctl and works on any AF_INET datagram
+    // socket regardless of the address families configured on the interface,
+    // so a single socket is enough to probe all of them.
+    int s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s < 0) {
+      LOG(("nsNetworkLinkService::UpdateNetworkInterfaces "
+           "socket() failed with %d",
+           errno));
+    } else {
+      auto closeSocket = mozilla::MakeScopeExit([&] { close(s); });
+      for (const auto& name : candidates) {
+        struct ifmediareq ifmr;
+        memset(&ifmr, 0, sizeof(ifmr));
+        strlcpy(ifmr.ifm_name, name.get(), sizeof(ifmr.ifm_name));
+
+        int probe = ioctl(s, SIOCGIFXMEDIA, (caddr_t)&ifmr);
+        if (probe < 0) {
+          LOG(("nsNetworkLinkService::UpdateNetworkInterfaces "
+               "ioctl(SIOCGIFXMEDIA) on %s failed with %d",
+               name.get(), probe));
+          continue;
+        }
+
+        if (!(ifmr.ifm_status & IFM_ACTIVE)) {
+          continue;
+        }
+
+        ifNames.AppendElement(name);
+      }
+    }
+  }
+
+  nsTHashMap<nsCString, nsTArray<std::pair<int, nsCString>>> routes;
+  if (!RoutingTable(routes, getRoutesForNetworkInterfaces)) {
+    NS_WARNING("NetworkInterfaces: no routing table");
+  }
+
+  nsTArray<mozilla::net::NetworkInterface> interfaces;
+  for (const auto& ifName : ifNames) {
+    interfaces.AppendElement(MacNetworkInterface(ifName.get(), routes, ifap));
+  }
+
+  MutexAutoLock lock(mMutex);
+  mNetworkInterfaces = std::move(interfaces);
+}
+#endif
+
+NS_IMETHODIMP
+nsNetworkLinkService::GetNetworkInterfaces(
+    nsTArray<RefPtr<nsINetworkInterface>>& aNetworkInterfaces) {
+#ifdef MOZ_ENTERPRISE
+  MutexAutoLock lock(mMutex);
+  return mozilla::net::nsNetworkInterface::GetNetworkInterfaces(
+      mNetworkInterfaces, aNetworkInterfaces);
+#else
+  return NS_ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 /* static */

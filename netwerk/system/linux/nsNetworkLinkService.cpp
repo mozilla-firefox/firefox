@@ -233,3 +233,13 @@ void nsNetworkLinkService::NotifyObservers(const char* aTopic,
 bool nsINetworkLinkService::HasNonLocalIPv6Address() {
   return mozilla::net::NetlinkService::HasNonLocalIPv6Address();
 }
+
+NS_IMETHODIMP
+nsNetworkLinkService::GetNetworkInterfaces(
+    nsTArray<RefPtr<nsINetworkInterface>>& aNetworkInterfaces) {
+  if (!mNetlinkSvc) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  return mNetlinkSvc->GetNetworkInterfaces(aNetworkInterfaces);
+}

@@ -278,6 +278,16 @@ void nsAndroidNetworkLinkService::NotifyObservers(const char* aTopic,
   }
 }
 
+NS_IMETHODIMP
+nsAndroidNetworkLinkService::GetNetworkInterfaces(
+    nsTArray<RefPtr<nsINetworkInterface>>& aNetworkInterfaces) {
+  if (!mNetlinkSvc) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
+  return mNetlinkSvc->GetNetworkInterfaces(aNetworkInterfaces);
+}
+
 // static
 bool nsINetworkLinkService::HasNonLocalIPv6Address() {
   return mozilla::net::NetlinkService::HasNonLocalIPv6Address();
