@@ -67,6 +67,12 @@ class Statement final : public mozIStorageStatement,
  private:
   ~Statement();
 
+  /**
+   * Called when the refcount drops to zero. Deletes the object, on the main
+   * thread if it has JS helpers.
+   */
+  void Destroy();
+
   sqlite3_stmt* mDBStatement;
   uint32_t mParamCount;
   uint32_t mResultColumnCount;

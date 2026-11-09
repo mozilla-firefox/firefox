@@ -188,6 +188,9 @@ mozIStorageBindingParams* AsyncStatement::getParams() {
  * last execution of a statement that already lost its main-thread refs.
  */
 AsyncStatement::~AsyncStatement() {
+  MOZ_DIAGNOSTIC_ASSERT(mRefCnt == 1, "Unexpected refcount at destruction");
+  MOZ_ASSERT(NS_IsMainThread() || mStatementParamsHolder == nullptr,
+             "Must be destroyed on the main thread if JS params helpers exist");
   destructorAsyncFinalize();
 
   // If we are getting destroyed on the wrong event target, proxy the connection
@@ -205,7 +208,19 @@ AsyncStatement::~AsyncStatement() {
 //// nsISupports
 
 NS_IMPL_ADDREF(AsyncStatement)
-NS_IMPL_RELEASE(AsyncStatement)
+NS_IMPL_RELEASE_WITH_DESTROY(AsyncStatement, Destroy())
+
+void AsyncStatement::Destroy() {
+  // The JS params helper keeps a raw pointer to us that is cleared when the
+  // params holder is released on the main thread. Delete there, so that
+  // happens as part of our destruction rather than after it.
+  if (!NS_IsMainThread() && mStatementParamsHolder != nullptr) {
+    destructorAsyncFinalize();
+    NS_PROXY_DELETE_TO_MAIN_THREAD(AsyncStatement);
+    return;
+  }
+  delete this;
+}
 
 NS_INTERFACE_MAP_BEGIN(AsyncStatement)
   NS_INTERFACE_MAP_ENTRY(mozIStorageAsyncStatement)
