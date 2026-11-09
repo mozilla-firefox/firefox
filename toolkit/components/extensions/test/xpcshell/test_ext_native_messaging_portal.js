@@ -3,8 +3,8 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  DBusMockTestUtils: "resource://testing-common/DBusMockTestUtils.sys.mjs",
   Subprocess: "resource://gre/modules/Subprocess.sys.mjs",
-  TestUtils: "resource://testing-common/TestUtils.sys.mjs",
 });
 
 AddonTestUtils.init(this);
@@ -28,25 +28,13 @@ const portalBusName = "org.freedesktop.portal.Desktop";
 const portalObjectPath = "/org/freedesktop/portal/desktop";
 const portalInterfaceName = "org.freedesktop.portal.WebExtensions";
 const sessionInterfaceName = "org.freedesktop.portal.Session";
-const dbusMockInterface = "org.freedesktop.DBus.Mock";
-const addObjectMethod = `${dbusMockInterface}.AddObject`;
-const addMethodMethod = `${dbusMockInterface}.AddMethod`;
-const addPropertyMethod = `${dbusMockInterface}.AddProperty`;
-const updatePropertiesMethod = `${dbusMockInterface}.UpdateProperties`;
-const emitSignalDetailedMethod = `${dbusMockInterface}.EmitSignalDetailed`;
-const getCallsMethod = `${dbusMockInterface}.GetCalls`;
-const clearCallsMethod = `${dbusMockInterface}.ClearCalls`;
-const resetMethod = `${dbusMockInterface}.Reset`;
 const mockRequestObjectPath = "/org/freedesktop/portal/desktop/request";
 const mockManifest =
   '{"name":"echo","description":"a native connector","type":"stdio","path":"/usr/bin/echo","allowed_extensions":["native@tests.mozilla.org"]}';
 const nativeMessagingPref = "widget.use-xdg-desktop-portal.native-messaging";
 
-var DBUS_SESSION_BUS_ADDRESS = "";
-var DBUS_SESSION_BUS_PID = 0; // eslint-disable-line no-unused-vars
 var DBUS_MOCK = null;
 var FDS_MOCK = null;
-var gdbusCmd = null;
 
 async function background() {
   let port;
@@ -70,73 +58,23 @@ async function background() {
   });
 }
 
-async function mockSetup(objectPath, methodName, args) {
-  let mockProcess = await lazy.Subprocess.call({
-    command: gdbusCmd,
-    arguments: [
-      "call",
-      "--session",
-      "-d",
-      portalBusName,
-      "-o",
-      objectPath,
-      "-m",
-      methodName,
-      ...args,
-    ],
-  });
-  return mockProcess.wait();
-}
-
 add_setup(async function () {
   // Start and use a separate message bus for the tests, to not interfere with
   // the current's session message bus.
-  let dbus = await lazy.Subprocess.call({
-    command: await lazy.Subprocess.pathSearch("dbus-launch"),
-  });
-  let stdout = await dbus.stdout.readString();
-  let lines = stdout.split("\n");
-  for (let i in lines) {
-    let tokens = lines[i].split("=");
-    switch (tokens.shift()) {
-      case "DBUS_SESSION_BUS_ADDRESS":
-        DBUS_SESSION_BUS_ADDRESS = tokens.join("=");
-        break;
-      case "DBUS_SESSION_BUS_PID":
-        DBUS_SESSION_BUS_PID = tokens.join();
-        break;
-      default:
-    }
-  }
+  const address = await lazy.DBusMockTestUtils.startBus();
 
   let prefValue = Services.prefs.getIntPref(nativeMessagingPref, 0);
-  gdbusCmd = await lazy.Subprocess.pathSearch("gdbus");
   Services.prefs.setIntPref(nativeMessagingPref, 2);
 
-  Services.env.set("DBUS_SESSION_BUS_ADDRESS", DBUS_SESSION_BUS_ADDRESS);
   Services.env.set("GTK_USE_PORTAL", "1");
 
   // dbusmock is used to mock the native messaging portal's D-Bus API.
-  DBUS_MOCK = await lazy.Subprocess.call({
-    command: await lazy.Subprocess.pathSearch("python3"),
-    arguments: [
-      "-m",
-      "dbusmock",
-      portalBusName,
-      portalObjectPath,
-      portalInterfaceName,
-    ],
+  DBUS_MOCK = await lazy.DBusMockTestUtils.startMock({
+    address,
+    busName: portalBusName,
+    objectPath: portalObjectPath,
+    interfaceName: portalInterfaceName,
   });
-
-  // Wait until dbusmock is ready
-  await lazy.TestUtils.waitForCondition(async () => {
-    let res = await mockSetup(
-      portalObjectPath,
-      "org.freedesktop.DBus.Mock.GetCalls",
-      []
-    );
-    return res.exitCode == 0;
-  }, "waiting for dbusmock");
 
   // When talking to the native messaging portal over D-Bus, it returns a tuple
   // of file descriptors. For the mock to work correctly, the file descriptors
@@ -150,53 +88,44 @@ add_setup(async function () {
 
   registerCleanupFunction(async function () {
     await FDS_MOCK.kill();
-    await mockSetup(portalObjectPath, resetMethod, []);
-    await DBUS_MOCK.kill();
-    // XXX: While this works locally, it consistently fails when tests are run
-    // in CI, with "xpcshell return code: -15". This needs to be investigated
-    // further. This leaves a stray dbus-daemon process behind,
-    // which isn't ideal, but is harmless.
-    /*await lazy.Subprocess.call({
-      command: await lazy.Subprocess.pathSearch("kill"),
-      arguments: ["-SIGQUIT", DBUS_SESSION_BUS_PID],
-    });*/
+    await DBUS_MOCK.stop();
     Services.prefs.setIntPref(nativeMessagingPref, prefValue);
   });
 
   // Set up the mock objects and methods.
-  await mockSetup(portalObjectPath, addPropertyMethod, [
+  await DBUS_MOCK.mockCall("AddProperty", [
     portalInterfaceName,
     "version",
     "<uint32 1>",
   ]);
-  await mockSetup(portalObjectPath, addMethodMethod, [
+  await DBUS_MOCK.mockCall("AddMethod", [
     portalInterfaceName,
     "CreateSession",
     "a{sv}",
     "o",
     `ret = "${SESSION_HANDLE}"`,
   ]);
-  await mockSetup(portalObjectPath, addObjectMethod, [
+  await DBUS_MOCK.mockCall("AddObject", [
     SESSION_HANDLE,
     sessionInterfaceName,
     "@a{sv} {}",
     "@a(ssss) [('Close', '', '', '')]",
   ]);
-  await mockSetup(portalObjectPath, addMethodMethod, [
+  await DBUS_MOCK.mockCall("AddMethod", [
     portalInterfaceName,
     "GetManifest",
     "oss",
     "s",
     `ret = '${mockManifest}'`,
   ]);
-  await mockSetup(portalObjectPath, addMethodMethod, [
+  await DBUS_MOCK.mockCall("AddMethod", [
     portalInterfaceName,
     "Start",
     "ossa{sv}",
     "o",
     `ret = "${mockRequestObjectPath}/foobar"`,
   ]);
-  await mockSetup(portalObjectPath, addMethodMethod, [
+  await DBUS_MOCK.mockCall("AddMethod", [
     portalInterfaceName,
     "GetPipes",
     "oa{sv}",
@@ -211,20 +140,7 @@ add_setup(async function () {
 });
 
 async function verifyDbusMockCall(objectPath, method, offset) {
-  let getCalls = await lazy.Subprocess.call({
-    command: gdbusCmd,
-    arguments: [
-      "call",
-      "--session",
-      "-d",
-      portalBusName,
-      "-o",
-      objectPath,
-      "-m",
-      getCallsMethod,
-    ],
-  });
-  let out = await getCalls.stdout.readString();
+  let { stdout: out } = await DBUS_MOCK.mockCall("GetCalls", [], objectPath);
   out = out.match(/\((@a\(tsav\) )?\[(.*)\],\)/)[2];
   let calls = out.matchAll(/\(.*?\),?/g);
   let methodCalled = false;
@@ -253,10 +169,10 @@ async function verifyDbusMockCall(objectPath, method, offset) {
 }
 
 add_task(async function test_talk_to_portal() {
-  await mockSetup(portalObjectPath, clearCallsMethod, []);
+  await DBUS_MOCK.mockCall("ClearCalls");
 
   // Make sure the portal is considered available
-  await mockSetup(portalObjectPath, updatePropertiesMethod, [
+  await DBUS_MOCK.mockCall("UpdateProperties", [
     portalInterfaceName,
     "{'version': <uint32 1>}",
   ]);
@@ -327,32 +243,24 @@ add_task(async function test_talk_to_portal() {
   let requestPath = `${mockRequestObjectPath}/${senderName
     .slice(1)
     .replace(".", "_")}/${handleToken}`;
-  await mockSetup(portalObjectPath, addObjectMethod, [
+  await DBUS_MOCK.mockCall("AddObject", [
     requestPath,
     "org.freedesktop.portal.Request",
     "@a{sv} {}",
     "@a(ssss) []",
   ]);
-  let waitForRequestObject = await lazy.Subprocess.call({
-    command: gdbusCmd,
-    arguments: [
-      "introspect",
-      "--session",
-      "-d",
-      portalBusName,
-      "-o",
-      requestPath,
-      "-p",
+  await DBUS_MOCK.waitForObject(requestPath, "org.freedesktop.portal.Request");
+  await DBUS_MOCK.mockCall(
+    "EmitSignalDetailed",
+    [
+      "org.freedesktop.portal.Request",
+      "Response",
+      "ua{sv}",
+      "[<uint32 0>, <@a{sv} {}>]",
+      `{'destination': <'${senderName}'>}`,
     ],
-  });
-  await waitForRequestObject.wait();
-  await mockSetup(requestPath, emitSignalDetailedMethod, [
-    "org.freedesktop.portal.Request",
-    "Response",
-    "ua{sv}",
-    "[<uint32 0>, <@a{sv} {}>]",
-    `{'destination': <'${senderName}'>}`,
-  ]);
+    requestPath
+  );
 
   // Verify that the GetPipes method of the native messaging portal mock was
   // called as expected after the Start request completed.
@@ -366,10 +274,10 @@ add_task(async function test_talk_to_portal() {
 });
 
 add_task(async function test_portal_unavailable() {
-  await mockSetup(portalObjectPath, clearCallsMethod, []);
+  await DBUS_MOCK.mockCall("ClearCalls");
 
   // Make sure the portal is NOT considered available
-  await mockSetup(portalObjectPath, updatePropertiesMethod, [
+  await DBUS_MOCK.mockCall("UpdateProperties", [
     portalInterfaceName,
     "{'version': <uint32 0>}",
   ]);

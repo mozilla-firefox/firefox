@@ -26,6 +26,11 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
         "MockRegistry.sys.mjs",
     ]
 
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
+    TESTING_JS_MODULES += [
+        "DBusMockTestUtils.sys.mjs",
+    ]
+
 
 TEST_HARNESS_FILES.testing.mochitest.tests.SimpleTest += ["StructuredLog.sys.mjs"]
 
