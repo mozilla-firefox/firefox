@@ -58,6 +58,8 @@ skip-if = ["os == 'win'"]
 
 ["test_license_declarations.py"]
 
+["test_ipdl_uriparams.py"]
+
 ["test_lintpref.py"]
 
 ["test_manifest_toml.py"]

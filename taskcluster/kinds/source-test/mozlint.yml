@@ -145,6 +145,21 @@ uri-setspec:
             - '**/*.mm'
             - 'tools/lint/uri-setspec.yml'
 
+ipdl-uriparams:
+    description: Reject new uses of URIParams in IPDL in favor of nsIURI
+    treeherder:
+        symbol: misc(ipdl-uriparams)
+    run:
+        mach: lint -v -l ipdl-uriparams -f treeherder -f json:/builds/worker/mozlint.json .
+    fetches:
+        toolchain:
+            - linux64-mozcheck
+    when:
+        files-changed:
+            - '**/*.ipdl'
+            - '**/*.ipdlh'
+            - 'tools/lint/ipdl-uriparams.yml'
+
 eslint:
     description: JS lint check
     # Review bot waits for every lint, and this one finishes last more often

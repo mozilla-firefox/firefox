@@ -1,0 +1,29 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+avoid-ipdl-uriparams:
+    description: >-
+        Use nsIURI (e.g. `nullable nsIURI`) instead of URIParams in IPDL
+        interfaces. nsIURI is serialized directly, so there is no need to
+        convert to and from URIParams with SerializeURI/DeserializeURI.
+    level: error
+    include: ['.']
+    type: external
+    payload: mozcheck:lint
+    setup: mozcheck:setup
+    check: rejected-words
+    check-config:
+        regex-pattern: '\bURIParams\b'
+        ignore-case: false
+    support-files:
+        - 'tools/lint/mozcheck/**'
+    extensions:
+        - ipdl
+        - ipdlh
+    exclude:
+        # The definition of URIParams.
+        - ipc/glue/URIParams.ipdlh
+        # Existing uses that should eventually be migrated to nsIURI.
+        - dom/workers/remoteworkers/RemoteWorkerTypes.ipdlh
+        - netwerk/ipc/NeckoChannelParams.ipdlh

@@ -18,7 +18,6 @@ include WindowGlobalTypes;
 include IPCBlob;
 include IPCStream;
 include IPCTransferable;
-include URIParams;
 include PPrintingTypes;
 include PTabContext;
 include PBackgroundSharedTypes;
