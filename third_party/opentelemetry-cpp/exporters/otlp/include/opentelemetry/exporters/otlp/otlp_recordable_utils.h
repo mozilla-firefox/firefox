@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "opentelemetry/nostd/span.h"
+#include "opentelemetry/sdk/logs/recordable.h"
 #include "opentelemetry/sdk/trace/recordable.h"
 #include "opentelemetry/version.h"
 
@@ -49,6 +50,10 @@ public:
   static void PopulateRequest(
       const nostd::span<std::unique_ptr<opentelemetry::sdk::trace::Recordable>> &spans,
       proto::collector::trace::v1::ExportTraceServiceRequest *request) noexcept;
+
+  static void PopulateRequest(
+      const nostd::span<std::unique_ptr<opentelemetry::sdk::logs::Recordable>> &logs,
+      proto::collector::logs::v1::ExportLogsServiceRequest *request) noexcept;
 };
 }  // namespace otlp
 }  // namespace exporter

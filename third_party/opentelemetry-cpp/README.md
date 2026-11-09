@@ -28,6 +28,7 @@ C++ standards:
 * ISO/IEC 14882:2014 (C++14)
 * ISO/IEC 14882:2017 (C++17)
 * ISO/IEC 14882:2020 (C++20)
+* ISO/IEC 14882:2024 (C++23)
 
 Any exceptions to this are noted in the individual `README.md` files.
 
@@ -37,16 +38,16 @@ of the current project.
 
 ## Supported Development Platforms
 
- Our CI pipeline builds and tests on following `x86-64` platforms:
+Our CI pipeline builds and tests on the following platforms:
 
-| Platform                                                            |   Build type  |
-|---------------------------------------------------------------------|---------------|
-| ubuntu-22.04 (GCC 10, GCC 12, Clang 14)                             | CMake, Bazel  |
-| ubuntu-20.04 (GCC 9.4.0 - default compiler)                         | CMake, Bazel  |
-| ubuntu-20.04 (GCC 9.4.0 with -std=c++14/17/20 flags)                | CMake, Bazel  |
-| macOS 12.7 (Xcode 14.2)                                             | Bazel         |
-| Windows Server 2019 (Visual Studio Enterprise 2019)                 | CMake, Bazel  |
-| Windows Server 2022 (Visual Studio Enterprise 2022)                 | CMake         |
+| Platform            | Architecture | Build type   |
+|---------------------|--------------|--------------|
+| Ubuntu 22.04        | x86-64       | CMake        |
+| Ubuntu 24.04        | x86-64       | CMake, Bazel |
+| macOS 14            | arm64        | CMake        |
+| macOS 15            | arm64        | Bazel        |
+| Windows Server 2022 | x86-64       | CMake, Bazel |
+| Windows Server 2025 | x86-64       | CMake        |
 
 In general, the code shipped from this repository should build on all platforms
 having C++ compiler with [supported C++ standards](#supported-c-versions).
@@ -110,12 +111,13 @@ you're more than welcome to participate!
 * [Ehsan Saei](https://github.com/esigo)
 * [Lalit Kumar Bhasin](https://github.com/lalitb), Microsoft
 * [Marc Alff](https://github.com/marcalff), Oracle
-* [Tom Tan](https://github.com/ThomsonTan), Microsoft
 
 For more information about the maintainer role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#maintainer).
 
 ### Approvers
 
+* [Mateen Anjum](https://github.com/mateenali66)
+* [Tom Tan](https://github.com/ThomsonTan)
 * [WenTao Ou](https://github.com/owent)
 
 For more information about the approver role, see the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md#approver).

@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "opentelemetry/sdk/resource/resource_detector.h"
-#include "opentelemetry/nostd/variant.h"
+
 #include "opentelemetry/sdk/common/env_variables.h"
 #include "opentelemetry/sdk/resource/resource.h"
 #include "opentelemetry/semconv/service_attributes.h"
 #include "opentelemetry/version.h"
 
-#include <stddef.h>
+#include "src/resource/detail/percent_decode.h"
+
+#include "opentelemetry/nostd/variant.h"
+
+#include <cstddef>
 #include <sstream>
 #include <string>
 
@@ -33,6 +37,7 @@ Resource OTELResourceDetector::Detect() noexcept
 
   bool attributes_exists = opentelemetry::sdk::common::GetStringEnvironmentVariable(
       kOtelResourceAttributes, attributes_str);
+
   bool service_name_exists =
       opentelemetry::sdk::common::GetStringEnvironmentVariable(kOtelServiceName, service_name);
 
@@ -47,14 +52,17 @@ Resource OTELResourceDetector::Detect() noexcept
   {
     std::istringstream iss(attributes_str);
     std::string token;
+
     while (std::getline(iss, token, ','))
     {
       size_t pos = token.find('=');
+
       if (pos != std::string::npos)
       {
         std::string key   = token.substr(0, pos);
         std::string value = token.substr(pos + 1);
-        attributes[key]   = value;
+
+        attributes[key] = detail::PercentDecode(value);
       }
     }
   }

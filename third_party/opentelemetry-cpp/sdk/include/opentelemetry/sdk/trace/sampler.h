@@ -52,17 +52,17 @@ enum class Decision : std::uint8_t
  */
 struct SamplingResult
 {
-  Decision decision;
+  Decision decision{Decision::DROP};
   // A set of span Attributes that will also be added to the Span. Can be nullptr.
   std::unique_ptr<const std::map<std::string, opentelemetry::common::AttributeValue>> attributes;
   //  The tracestate used by the span.
   nostd::shared_ptr<opentelemetry::trace::TraceState> trace_state;
 
-  inline bool IsRecording()
+  inline bool IsRecording() const noexcept
   {
     return decision == Decision::RECORD_ONLY || decision == Decision::RECORD_AND_SAMPLE;
   }
-  inline bool IsSampled() { return decision == Decision::RECORD_AND_SAMPLE; }
+  inline bool IsSampled() const noexcept { return decision == Decision::RECORD_AND_SAMPLE; }
 };
 
 /**

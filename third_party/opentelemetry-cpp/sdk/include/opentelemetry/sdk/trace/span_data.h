@@ -174,7 +174,7 @@ public:
 
   /**
    * Get the status description for this span
-   * @return the description of the the status of this span
+   * @return the description of the status of this span
    */
   opentelemetry::nostd::string_view GetDescription() const noexcept { return status_desc_; }
 

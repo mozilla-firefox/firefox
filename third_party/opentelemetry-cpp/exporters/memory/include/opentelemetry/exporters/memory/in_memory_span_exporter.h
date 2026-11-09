@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <stddef.h>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <memory>
 #include <ostream>
 #include <utility>

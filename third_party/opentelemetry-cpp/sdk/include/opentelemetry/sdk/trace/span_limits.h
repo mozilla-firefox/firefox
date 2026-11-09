@@ -63,6 +63,26 @@ struct SpanLimits
   }
 };
 
+namespace span_limits_env
+{
+
+/**
+ * @brief Returns span limits read from the environment variables defined in the
+ * OpenTelemetry specification
+ * (https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/#span-limits).
+ *
+ * A field whose environment variable is not set keeps its value from @p defaults, so with no
+ * variables set the result equals @p defaults. The default of SpanLimits::NoLimits() leaves SDK
+ * behavior unchanged; pass SpanLimits{} to fall back to the specification defaults instead. The
+ * span-specific variables (OTEL_SPAN_ATTRIBUTE_VALUE_LENGTH_LIMIT,
+ * OTEL_SPAN_ATTRIBUTE_COUNT_LIMIT) take precedence over the general ones
+ * (OTEL_ATTRIBUTE_VALUE_LENGTH_LIMIT, OTEL_ATTRIBUTE_COUNT_LIMIT).
+ */
+OPENTELEMETRY_EXPORT SpanLimits
+GetSpanLimitsFromEnv(const SpanLimits &defaults = SpanLimits::NoLimits());
+
+}  // namespace span_limits_env
+
 }  // namespace trace
 }  // namespace sdk
 OPENTELEMETRY_END_NAMESPACE

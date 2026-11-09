@@ -119,7 +119,10 @@ public:
     while (node != nullptr)
     {
       auto processor = node->value_.get();
-      result |= processor->ForceFlush(timeout);
+      if (!processor->ForceFlush(timeout))
+      {
+        result = false;
+      }
       node = node->next_;
     }
     return result;
@@ -146,7 +149,10 @@ protected:
     while (node != nullptr)
     {
       auto processor = node->value_.get();
-      result |= processor->Shutdown(timeout);
+      if (!processor->Shutdown(timeout))
+      {
+        result = false;
+      }
       node = node->next_;
     }
     return result;

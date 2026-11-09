@@ -15,55 +15,46 @@ namespace trace
 {
 
 /**
- * StartSpanOptions provides options to set properties of a Span at the time of
- * its creation
+ * Provides options for creating a Span.
  */
 struct StartSpanOptions
 {
-  // Optionally sets the start time of a Span.
-  //
-  // If the start time of a Span is set, timestamps from both the system clock
-  // and steady clock must be provided.
-  //
-  // Timestamps from the steady clock can be used to most accurately measure a
-  // Span's duration, while timestamps from the system clock can be used to most
-  // accurately place a Span's
-  // time point relative to other Spans collected across a distributed system.
+  /**
+   * Optionally sets the system-clock start time of the Span.
+   *
+   * If a start time is set, both the system-clock and steady-clock timestamps
+   * must be provided. The system clock places the Span relative to Spans from
+   * other systems, while the steady clock measures its duration accurately.
+   */
   common::SystemTimestamp start_system_time;
+
+  /** The steady-clock start time corresponding to start_system_time. */
   common::SteadyTimestamp start_steady_time;
 
-  // Explicitly set the parent of a Span.
-  //
-  // The `parent` field is designed to establish  parent-child relationships
-  // in tracing spans. It can be set to either a `SpanContext` or a
-  // `context::Context` object.
-  //
-  // - When set to valid `SpanContext`, it directly assigns a specific Span as the parent
-  // of the newly created Span.
-  //
-  // - Alternatively, setting the `parent` field to a `context::Context` allows for
-  // more nuanced parent identification:
-  //   1. If the `Context` contains a Span object, this Span is treated as the parent.
-  //   2. If the `Context` contains the boolean flag `is_root_span` set to `true`,
-  //      it indicates that the new Span should be treated as a root Span, i.e., it
-  //      does not have a parent Span.
-  //   Example Usage:
-  //   ```cpp
-  //   trace_api::StartSpanOptions options;
-  //   opentelemetry::context::Context root;
-  //   root                    = root.SetValue(kIsRootSpanKey, true);
-  //   options.parent = root;
-  //   auto root_span = tracer->StartSpan("span root", options);
-  //  ```
-  //
-  // - If the `parent` field is not set, the newly created Span will inherit the
-  // parent of the currently active Span (if any) in the current context.
-  //
-  nostd::variant<SpanContext, context::Context> parent = SpanContext::GetInvalid();
+  /**
+   * Explicitly sets the parent of the Span.
+   *
+   * A valid `SpanContext` identifies the parent directly. An invalid
+   * `SpanContext` falls back to the currently active Span, if one exists;
+   * otherwise, the new Span is created as a root Span.
+   *
+   * When a `context::Context` is provided, a valid Span in that Context is used
+   * as the parent. Otherwise, if the Context contains `is_root_span` set to
+   * `true`, the new Span is created without a parent. If neither is present,
+   * the currently active Span is used as the parent, if one exists; otherwise,
+   * the new Span is created as a root Span.
+   *
+   * Example:
+   * ```cpp
+   * opentelemetry::trace::StartSpanOptions options;
+   * options.parent = opentelemetry::context::Context{
+   *     opentelemetry::trace::kIsRootSpanKey, true};
+   * auto root_span = tracer->StartSpan("span root", options);
+   * ```
+   */
+  nostd::variant<SpanContext, context::Context> parent = context::Context{};
 
-  // TODO:
-  // SpanContext remote_parent;
-  // Links
+  /** The role of the Span in a trace. */
   SpanKind kind = SpanKind::kInternal;
 };
 

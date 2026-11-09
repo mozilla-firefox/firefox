@@ -35,11 +35,21 @@ public:
 
   /**
    * Changes the singleton TracerProvider.
+   *
+   * Passing a nullptr TracerProvider installs a no-op TracerProvider, so that
+   * GetTracerProvider() never returns a nullptr TracerProvider.
    */
   static void SetTracerProvider(const nostd::shared_ptr<TracerProvider> &tp) noexcept
   {
     std::lock_guard<common::SpinLockMutex> guard(GetLock());
-    GetProvider() = tp;
+    if (tp)
+    {
+      GetProvider() = tp;
+    }
+    else
+    {
+      GetProvider() = nostd::shared_ptr<TracerProvider>(new NoopTracerProvider);
+    }
   }
 
 private:

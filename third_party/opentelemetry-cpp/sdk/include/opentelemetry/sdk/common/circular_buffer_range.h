@@ -3,8 +3,8 @@
 
 #pragma once
 
-#include <stddef.h>
 #include <cassert>
+#include <cstddef>
 #include <type_traits>
 
 #include "opentelemetry/nostd/span.h"

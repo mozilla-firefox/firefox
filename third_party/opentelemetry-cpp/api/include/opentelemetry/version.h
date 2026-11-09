@@ -12,9 +12,9 @@
 #endif
 
 // NOLINTBEGIN(cppcoreguidelines-macro-to-enum)
-#define OPENTELEMETRY_VERSION "1.28.0"
+#define OPENTELEMETRY_VERSION "1.30.0"
 #define OPENTELEMETRY_VERSION_MAJOR 1
-#define OPENTELEMETRY_VERSION_MINOR 28
+#define OPENTELEMETRY_VERSION_MINOR 30
 #define OPENTELEMETRY_VERSION_PATCH 0
 // NOLINTEND(cppcoreguidelines-macro-to-enum)
 
@@ -34,6 +34,9 @@
 // Experimental: bound synchronous metric instruments (Counter, Histogram).
 // This public API is available only in ABI v2 preview builds. Guard bound
 // instrument code with OPENTELEMETRY_HAVE_METRICS_BOUND_INSTRUMENTS_PREVIEW.
+
+// NOLINTBEGIN(cppcoreguidelines-macro-to-enum)
 #if OPENTELEMETRY_ABI_VERSION_NO >= 2 && defined(ENABLE_METRICS_BOUND_INSTRUMENTS_PREVIEW)
 #  define OPENTELEMETRY_HAVE_METRICS_BOUND_INSTRUMENTS_PREVIEW 1
 #endif
+// NOLINTEND(cppcoreguidelines-macro-to-enum)
