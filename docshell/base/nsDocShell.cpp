@@ -4819,12 +4819,6 @@ nsDocShell::SetDimensions(DimensionRequest&& /*aRequest*/) {
 }
 
 NS_IMETHODIMP
-nsDocShell::GetDimensions(int32_t* /*aX*/, int32_t* /*aY*/, int32_t* /*aCX*/,
-                          int32_t* /*aCY*/) {
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
 nsDocShell::GetParentWidget(nsIWidget** aParentWidget) {
   NS_ENSURE_ARG_POINTER(aParentWidget);
 

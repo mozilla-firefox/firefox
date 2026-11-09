@@ -629,12 +629,6 @@ nsWebBrowser::SetDimensions(DimensionRequest&& aRequest) {
 }
 
 NS_IMETHODIMP
-nsWebBrowser::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX,
-                            int32_t* aCY) {
-  return NS_ERROR_NOT_IMPLEMENTED;
-}
-
-NS_IMETHODIMP
 nsWebBrowser::GetParentWidget(nsIWidget** aParentWidget) {
   NS_ENSURE_ARG_POINTER(aParentWidget);
 

@@ -430,7 +430,7 @@ nsDocShellTreeOwner::SetPosition(int32_t aX, int32_t aY) {
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetPosition(int32_t* aX, int32_t* aY) {
-  return GetDimensions(aX, aY, nullptr, nullptr);
+  return GetPositionAndSize(aX, aY, nullptr, nullptr);
 }
 
 NS_IMETHODIMP
@@ -440,7 +440,7 @@ nsDocShellTreeOwner::SetSize(int32_t aCX, int32_t aCY, bool /*aRepaint*/) {
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetSize(int32_t* aCX, int32_t* aCY) {
-  return GetDimensions(nullptr, nullptr, aCX, aCY);
+  return GetPositionAndSize(nullptr, nullptr, aCX, aCY);
 }
 
 NS_IMETHODIMP
@@ -452,7 +452,14 @@ nsDocShellTreeOwner::SetPositionAndSize(int32_t aX, int32_t aY, int32_t aCX,
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetPositionAndSize(int32_t* aX, int32_t* aY, int32_t* aCX,
                                         int32_t* aCY) {
-  return GetDimensions(aX, aY, aCX, aCY);
+  nsCOMPtr<nsIBaseWindow> ownerWin = GetOwnerWin();
+  if (ownerWin) {
+    return ownerWin->GetPositionAndSize(aX, aY, aCX, aCY);
+  }
+
+  nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome = GetWebBrowserChrome();
+  NS_ENSURE_STATE(webBrowserChrome);
+  return webBrowserChrome->GetDimensions(aX, aY, aCX, aCY);
 }
 
 NS_IMETHODIMP
@@ -465,19 +472,6 @@ nsDocShellTreeOwner::SetDimensions(DimensionRequest&& aRequest) {
   nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome = GetWebBrowserChrome();
   NS_ENSURE_STATE(webBrowserChrome);
   return webBrowserChrome->SetDimensions(std::move(aRequest));
-}
-
-NS_IMETHODIMP
-nsDocShellTreeOwner::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX,
-                                   int32_t* aCY) {
-  nsCOMPtr<nsIBaseWindow> ownerWin = GetOwnerWin();
-  if (ownerWin) {
-    return ownerWin->GetDimensions(aX, aY, aCX, aCY);
-  }
-
-  nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome = GetWebBrowserChrome();
-  NS_ENSURE_STATE(webBrowserChrome);
-  return webBrowserChrome->GetDimensions(aX, aY, aCX, aCY);
 }
 
 NS_IMETHODIMP

@@ -122,14 +122,6 @@ interface nsIBaseWindow : nsISupports
    */
   [noscript] void setDimensions(in DimensionRequest aRequest);
 
-  /**
-   * Gets the outer dimensions of the window. The caller may pass nullptr for
-   * any value it is uninterested in receiving.
-   *
-   * @see DimensionRequest
-   */
-  [noscript] void getDimensions(out long aX, out long aY, out long aCX, out long aCY);
-
   /*
   This is the parenting widget for the control.
 

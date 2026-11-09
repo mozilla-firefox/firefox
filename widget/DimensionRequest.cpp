@@ -20,7 +20,7 @@ nsresult DimensionRequest::SupplementFrom(nsIBaseWindow* aSource) {
     return NS_OK;
   }
 
-  MOZ_TRY(aSource->GetDimensions(
+  MOZ_TRY(aSource->GetPositionAndSize(
       needsPosition ? &x : nullptr, needsPosition ? &y : nullptr,
       needsSize ? &width : nullptr, needsSize ? &height : nullptr));
 

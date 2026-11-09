@@ -642,11 +642,6 @@ AppWindow::SetDimensions(DimensionRequest&& aRequest) {
   return aRequest.ApplyOuterTo(this);
 }
 
-NS_IMETHODIMP
-AppWindow::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX, int32_t* aCY) {
-  return GetPositionAndSize(aX, aY, aCX, aCY);
-}
-
 nsresult AppWindow::MoveResize(const Maybe<LayoutDeviceIntPoint>& aPosition,
                                const Maybe<LayoutDeviceIntSize>& aSize,
                                bool aRepaint) {

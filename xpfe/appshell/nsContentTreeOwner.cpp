@@ -262,7 +262,7 @@ NS_IMETHODIMP
 nsContentTreeOwner::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX,
                                   int32_t* aCY) {
   NS_ENSURE_STATE(mAppWindow);
-  return mAppWindow->GetDimensions(aX, aY, aCX, aCY);
+  return mAppWindow->GetPositionAndSize(aX, aY, aCX, aCY);
 }
 
 NS_IMETHODIMP nsContentTreeOwner::GetParentWidget(nsIWidget** aParentWidget) {
