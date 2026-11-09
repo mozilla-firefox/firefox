@@ -27,7 +27,6 @@ UNIFIED_SOURCES += [
     "AppWindow.cpp",
     "nsAppShellService.cpp",
     "nsAppShellWindowEnumerator.cpp",
-    "nsChromeTreeOwner.cpp",
     "nsContentTreeOwner.cpp",
     "nsWindowMediator.cpp",
 ]
@@ -49,7 +48,6 @@ SOURCE_HEADERS += [
     "AppWindow.h",
     "nsAppShellService.h",
     "nsAppShellWindowEnumerator.h",
-    "nsChromeTreeOwner.h",
     "nsContentTreeOwner.h",
     "nsWindowMediator.h",
 ]

@@ -7,7 +7,6 @@
 #define mozilla_AppWindow_h_
 
 // Local Includes
-#include "nsChromeTreeOwner.h"
 #include "nsContentTreeOwner.h"
 
 // Helper classes
@@ -67,7 +66,6 @@ class AppWindow final : public nsIBaseWindow,
                         public nsIAppWindow,
                         public nsSupportsWeakReference,
                         public nsIWebProgressListener {
-  friend class ::nsChromeTreeOwner;
   friend class ::nsContentTreeOwner;
 
  public:
@@ -183,7 +181,6 @@ class AppWindow final : public nsIBaseWindow,
   void SetPersistenceTimer(uint32_t aDirtyFlags);
   void FirePersistenceTimer();
 
-  NS_IMETHOD EnsureChromeTreeOwner();
   NS_IMETHOD EnsureContentTreeOwner();
   NS_IMETHOD EnsurePrompter();
   NS_IMETHOD EnsureAuthPrompter();
@@ -296,7 +293,6 @@ class AppWindow final : public nsIBaseWindow,
     WidgetExitedFullscreen,
   };
 
-  nsChromeTreeOwner* mChromeTreeOwner;
   nsContentTreeOwner* mContentTreeOwner;
   nsCOMPtr<nsIWidget> mWindow;
   RefPtr<nsDocShell> mDocShell;

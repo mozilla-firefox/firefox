@@ -107,8 +107,7 @@ using dom::LoadURIOptions;
 using dom::Promise;
 
 AppWindow::AppWindow(uint32_t aChromeFlags)
-    : mChromeTreeOwner(nullptr),
-      mContentTreeOwner(nullptr),
+    : mContentTreeOwner(nullptr),
       mModalStatus(NS_OK),
       mFullscreenChangeState(FullscreenChangeState::NotChanging),
       mContinueModalLoop(false),
@@ -229,9 +228,9 @@ nsresult AppWindow::Initialize(nsIAppWindow* aParent, nsIAppWindow* aOpener,
 
   // Make sure to set the item type on the docshell _before_ calling
   // InitWindow() so it knows what type it is.
-  NS_ENSURE_SUCCESS(EnsureChromeTreeOwner(), NS_ERROR_FAILURE);
+  NS_ENSURE_SUCCESS(EnsureContentTreeOwner(), NS_ERROR_FAILURE);
 
-  mDocShell->SetTreeOwner(mChromeTreeOwner);
+  mDocShell->SetTreeOwner(mContentTreeOwner);
 
   r.MoveTo(0, 0);
   NS_ENSURE_SUCCESS(mDocShell->InitWindow(mWindow, r.X(), r.Y(), r.Width(),
@@ -549,10 +548,6 @@ NS_IMETHODIMP AppWindow::Destroy() {
   if (mContentTreeOwner) {
     mContentTreeOwner->AppWindow(nullptr);
     NS_RELEASE(mContentTreeOwner);
-  }
-  if (mChromeTreeOwner) {
-    mChromeTreeOwner->AppWindow(nullptr);
-    NS_RELEASE(mChromeTreeOwner);
   }
   if (mWindow) {
     mWindow->SetWidgetListener(nullptr);  // nsWebShellWindow hackery
@@ -922,16 +917,6 @@ NS_IMETHODIMP AppWindow::SetTitle(const nsAString& aTitle) {
 //*****************************************************************************
 // AppWindow: Helpers
 //*****************************************************************************
-
-NS_IMETHODIMP AppWindow::EnsureChromeTreeOwner() {
-  if (mChromeTreeOwner) return NS_OK;
-
-  mChromeTreeOwner = new nsChromeTreeOwner();
-  NS_ADDREF(mChromeTreeOwner);
-  mChromeTreeOwner->AppWindow(this);
-
-  return NS_OK;
-}
 
 NS_IMETHODIMP AppWindow::EnsureContentTreeOwner() {
   if (mContentTreeOwner) return NS_OK;
