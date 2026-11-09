@@ -743,8 +743,9 @@ nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
                              CommonSocketControl* aSocketControl) {
   PRTime expirationTime;
   SSLResumptionTokenInfo tokenInfo;
-  if (SSL_GetResumptionTokenInfo(aToken, aTokenLen, &tokenInfo,
-                                 sizeof(tokenInfo)) != SECSuccess) {
+  if (SSL_GetResumptionTokenInfoWithFlags(
+          aToken, aTokenLen, &tokenInfo, sizeof(tokenInfo),
+          SSL_RESUMPTION_TOKEN_INFO_NO_PEER_CERT) != SECSuccess) {
     LOG(("  cannot get expiration time from the token, NSS error %d",
          PORT_GetError()));
     return NS_ERROR_FAILURE;
