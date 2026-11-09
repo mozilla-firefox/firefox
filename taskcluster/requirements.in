@@ -2,5 +2,5 @@
 
 mozilla-taskgraph==5.0.0
 requests-unixsocket
-taskcluster-taskgraph[orjson,load-image]==24.6.0
+taskcluster-taskgraph[orjson,load-image]==24.7.0
 rtoml==0.14.0; python_version >= "3.10"
