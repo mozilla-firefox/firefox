@@ -38,6 +38,7 @@ class WaylandBuffer {
 
   already_AddRefed<gfx::DrawTarget> Lock();
   void* GetImageData();
+  int32_t GetStride() const { return mBufferSurface->GetStride(); }
   GLuint GetTexture() { return mBufferSurface->GetTexture(); }
   void DestroyGLResources() { mBufferSurface->ReleaseTextures(); }
   gfx::SurfaceFormat GetSurfaceFormat() { return mBufferSurface->GetFormat(); }

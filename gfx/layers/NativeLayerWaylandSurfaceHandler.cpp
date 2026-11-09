@@ -156,7 +156,7 @@ void NativeLayerWaylandSurfaceHandler::ReadBackFrontBuffer(
           gfx::CreateDataSourceSurfaceFromData(
               mSize, mFrontBuffer->GetSurfaceFormat(),
               (const uint8_t*)mFrontBuffer->GetImageData(),
-              mSize.width * BytesPerPixel(mFrontBuffer->GetSurfaceFormat()));
+              mFrontBuffer->GetStride());
       RefPtr<DrawTarget> dt = mInProgressBuffer->Lock();
 
       for (auto iter = copyRegion.RectIter(); !iter.Done(); iter.Next()) {

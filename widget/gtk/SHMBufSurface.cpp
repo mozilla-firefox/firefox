@@ -15,7 +15,9 @@
 #include "ImageContainer.h"
 #include "gfxPlatform.h"
 #include "mozilla/ScopeExit.h"
+#include "mozilla/gfx/Tools.h"
 #include "mozilla/ipc/SharedMemoryHandle.h"
+#include "mozilla/ipc/SharedMemoryMapping.h"
 #include "mozilla/layers/ImageDataSerializer.h"
 #include "mozilla/webrender/RenderTextureHost.h"
 #include "mozilla/widget/BufferSurface.h"
@@ -167,7 +169,19 @@ bool SHMBufSurfaceRGBA::CreateImpl(const IntSize& aSize,
   mWidth[0] = aSize.width;
   mHeight[0] = aSize.height;
   mFOURCCFormat = aFOURCCFormat;
-  const int size = GetWidth() * GetHeight() * GetFormatBPP();
+
+  // For zero-copy udmabuf import by compositors the pool must be
+  // page-aligned and the stride 256-byte aligned.
+  const Maybe<int32_t> stride =
+      GetAlignedStride<256>(GetWidth(), GetFormatBPP());
+  if (!stride) {
+    NS_WARNING("SHMBufSurfaceRGBA: Invalid surface size!");
+    return false;
+  }
+  mStrides[0] = *stride;
+  const size_t size =
+      ipc::shared_memory::PageAlignedSize(GetStride() * GetHeight());
+
   mShmHandle = ipc::shared_memory::Create(size);
   if (!mShmHandle) {
     NS_WARNING("SHMBufSurfaceRGBA: Unable to allocate shared memory!");
@@ -200,6 +214,7 @@ bool SHMBufSurfaceRGBA::CreateImpl(
   mWidth[0] = rgb.size().width;
   mHeight[0] = rgb.size().height;
   SetFormat(rgb.format());
+  mStrides[0] = GetWidth() * GetFormatBPP();
 
   return true;
 }
@@ -230,22 +245,20 @@ bool SHMBufSurfaceRGBA::UploadTexture(int aPlane, bool aNeedInit) {
 
   LOGDMABUF("SHMBufSurfaceRGBA::UploadTexture()");
 
-  // SHM surface is backed by a single tightly packed plane so we upload
-  // it as a whole.
+  // SHM surface is backed by a single plane so we upload it as a whole.
   const IntSize size = GetSize();
   const nsIntRegion region(IntRect(IntPoint(), size));
   return gl::UploadImageDataToTexture(
              mGL, static_cast<unsigned char*>(GetImageData()), size, IntPoint(),
-             GetFormatBPP() * size.width, GetFormat(), region, mTexture[0],
-             size,
+             mStrides[0], GetFormat(), region, mTexture[0], size,
              /* aOutUploadSize */ nullptr, aNeedInit) != SurfaceFormat::UNKNOWN;
 }
 
 already_AddRefed<gfx::DrawTarget> SHMBufSurfaceRGBA::Lock() {
   LOGDMABUF("SHMBufSurfaceRGBA::Lock()");
   return gfxPlatform::CreateDrawTargetForData(
-      static_cast<unsigned char*>(GetImageData()), GetSize(),
-      GetFormatBPP() * GetWidth(), GetFormat());
+      static_cast<unsigned char*>(GetImageData()), GetSize(), mStrides[0],
+      GetFormat());
 }
 
 #ifdef MOZ_WAYLAND
@@ -254,9 +267,8 @@ wl_buffer* SHMBufSurfaceRGBA::CreateWlBuffer() {
   if (!mShmPool) {
     return nullptr;
   }
-  auto* buffer =
-      wl_shm_pool_create_buffer(mShmPool.get(), 0, GetWidth(), GetHeight(),
-                                GetWidth() * GetFormatBPP(), GetWLFormat());
+  auto* buffer = wl_shm_pool_create_buffer(
+      mShmPool.get(), 0, GetWidth(), GetHeight(), mStrides[0], GetWLFormat());
   LOGDMABUF("SHMBufSurfaceRGBA::CreateWlBuffer() wl_buffer [%p]", buffer);
   return buffer;
 }
@@ -269,7 +281,8 @@ SHMBufSurfaceRGBA::GetAsSourceSurface() {
   gfx::IntSize size(GetWidth(), GetHeight());
   const auto format = gfx::SurfaceFormat::B8G8R8A8;
   RefPtr<gfx::DataSourceSurface> source =
-      gfx::Factory::CreateDataSourceSurface(size, format);
+      gfx::Factory::CreateDataSourceSurfaceWithStride(size, format,
+                                                      mStrides[0]);
   if (NS_WARN_IF(!source)) {
     LOGDMABUF(
         "SHMBufSurfaceRGBA::GetAsSourceSurface(): CreateDataSourceSurface "
@@ -284,14 +297,13 @@ SHMBufSurfaceRGBA::GetAsSourceSurface() {
         "SHMBufSurfaceRGBA::GetAsSourceSurface(): Mapping surface failed.");
     return nullptr;
   }
-  if (map.GetStride() != GetWidth() * GetFormatBPP()) {
+  if (map.GetStride() != mStrides[0]) {
     LOGDMABUF("SHMBufSurfaceRGBA::GetAsSourceSurface(): wrong stride %d vs. %d",
-              map.GetStride(), GetWidth() * GetFormatBPP());
+              map.GetStride(), mStrides[0]);
     return nullptr;
   }
 
-  memcpy(map.GetData(), GetImageData(),
-         GetHeight() * GetWidth() * GetFormatBPP());
+  memcpy(map.GetData(), GetImageData(), GetHeight() * mStrides[0]);
   return source.forget();
 }
 

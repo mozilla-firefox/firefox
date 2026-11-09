@@ -88,6 +88,8 @@ class BufferSurface {
   // no-op for surfaces which don't provide CPU-accessible memory (like DMABuf).
   virtual already_AddRefed<mozilla::gfx::DrawTarget> Lock() { return nullptr; }
   virtual void* GetImageData() { return nullptr; }
+  // Distance in bytes between rows of the plane.
+  int32_t GetStride(int aPlane = 0) const { return mStrides[aPlane]; }
 
   virtual bool CreateTextures(mozilla::gl::GLContext* aGLContext);
   // Surface memory may be recycled and hold a new frame while textures
