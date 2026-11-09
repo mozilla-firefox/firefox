@@ -525,14 +525,10 @@ impl HappyEyeballs {
                 };
             }
             Some(happy_eyeballs::Output::Timer { duration, .. }) => {
-                let duration_ms = match duration.as_millis() {
-                    0 => 1,
-                    ms => ms.try_into().unwrap_or_else(|_| {
-                        debug_assert!(false, "duration > u64::MAX");
-                        u64::MAX
-                    }),
-                };
-                *ret_event = Output::Timer { duration_ms };
+                let duration_us = u64::try_from(duration.as_micros())
+                    .unwrap_or(u64::MAX)
+                    .max(1);
+                *ret_event = Output::Timer { duration_us };
             }
             Some(happy_eyeballs::Output::AttemptConnection {
                 id,
@@ -741,7 +737,7 @@ pub enum Output {
         allow_stale: bool,
     },
     Timer {
-        duration_ms: u64,
+        duration_us: u64,
     },
     AttemptConnection {
         id: u64,

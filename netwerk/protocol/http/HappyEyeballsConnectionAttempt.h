@@ -302,7 +302,7 @@ class HappyEyeballsConnectionAttempt final : public ConnectionAttempt,
   nsresult CheckLNAForAddr(const NetAddr& aAddr);
 
   // Timer
-  void SetupTimer(uint64_t aTimeout);
+  void SetupTimer(uint64_t aTimeoutUs);
 
   // Entry actions for the terminal states; each ends by Transitioning to Done.
   void EnterSucceeded();
