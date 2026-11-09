@@ -11,7 +11,7 @@ namespace mozilla {
 NS_IMPL_ISUPPORTS(BounceTrackingMapEntry, nsIBounceTrackingMapEntry);
 
 NS_IMETHODIMP BounceTrackingMapEntry::GetSiteHost(nsACString& aSiteHost) {
-  aSiteHost = mSiteHost;
+  aSiteHost = mSite.SiteHost();
   return NS_OK;
 }
 NS_IMETHODIMP BounceTrackingMapEntry::GetTimeStamp(PRTime* aTimeStamp) {
@@ -25,7 +25,7 @@ NS_IMPL_ISUPPORTS(BounceTrackingPurgeEntry, nsIBounceTrackingPurgeEntry,
                   nsIBounceTrackingMapEntry);
 
 NS_IMETHODIMP BounceTrackingPurgeEntry::GetSiteHost(nsACString& aSiteHost) {
-  aSiteHost = mSiteHost;
+  aSiteHost = mSite.SiteHost();
   return NS_OK;
 }
 NS_IMETHODIMP BounceTrackingPurgeEntry::GetTimeStamp(PRTime* aTimeStamp) {

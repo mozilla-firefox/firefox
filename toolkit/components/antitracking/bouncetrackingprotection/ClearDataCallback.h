@@ -29,8 +29,8 @@ class ClearDataCallback final : public nsIClearDataCallback,
   NS_DECL_NSIURLCLASSIFIERFEATURECALLBACK
 
   explicit ClearDataCallback(ClearDataMozPromise::Private* aPromise,
-                             const OriginAttributes& aOriginAttributes,
-                             const nsACString& aHost, PRTime aBounceTime,
+                             const BounceTrackingSite& aSite,
+                             PRTime aBounceTime,
                              BounceTrackingRecord* aChainRecord = nullptr);
 
  private:

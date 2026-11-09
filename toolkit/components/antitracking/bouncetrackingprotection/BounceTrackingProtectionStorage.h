@@ -21,6 +21,7 @@
 #include "nsTHashSet.h"
 #include "mozIStorageConnection.h"
 #include "mozilla/OriginAttributesHashKey.h"
+#include "BounceTrackingSite.h"
 
 class nsIPrincipal;
 class mozIStorageConnection;
@@ -245,15 +246,14 @@ class BounceTrackingProtectionStorage final : public nsIObserver,
 
   // Writes the in-memory state of a site to the database.
   [[nodiscard]] nsresult PersistMemoryState(
-      BounceTrackingStateGlobal* aStateGlobal, const nsACString& aSiteHost);
+      BounceTrackingStateGlobal* aStateGlobal, const BounceTrackingSite& aSite);
 
   // Helpers used to sync updates to BounceTrackingStateGlobal with the
   // database.
 
   // Updates or inserts a DB entry keyed by OA + site host.
-  [[nodiscard]] nsresult UpdateDBEntry(
-      const OriginAttributes& aOriginAttributes, const nsACString& aSiteHost,
-      EntryType aEntryType, PRTime aTimeStamp);
+  [[nodiscard]] nsresult UpdateDBEntry(const BounceTrackingSite& aSite,
+                                       EntryType aEntryType, PRTime aTimeStamp);
 
   // Flushes pending updates to the database if the buffer is full
   [[nodiscard]] nsresult MaybeFlushPendingUpdates();

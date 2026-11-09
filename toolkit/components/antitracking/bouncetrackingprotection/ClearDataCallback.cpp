@@ -40,15 +40,13 @@ NS_IMPL_ISUPPORTS(ClearDataCallback, nsIClearDataCallback,
                   nsIUrlClassifierFeatureCallback);
 
 ClearDataCallback::ClearDataCallback(ClearDataMozPromise::Private* aPromise,
-                                     const OriginAttributes& aOriginAttributes,
-                                     const nsACString& aHost,
+                                     const BounceTrackingSite& aSite,
                                      PRTime aBounceTime,
                                      BounceTrackingRecord* aChainRecord)
     : mPromise(aPromise), mClearDurationTimer(0) {
-  MOZ_ASSERT(!aHost.IsEmpty(), "Host must not be empty");
+  MOZ_ASSERT(!aSite.IsNull(), "Site must not be null");
 
-  mEntry =
-      new BounceTrackingPurgeEntry(aOriginAttributes, aHost, aBounceTime, 0);
+  mEntry = new BounceTrackingPurgeEntry(aSite, aBounceTime, 0);
   if (aChainRecord) {
     mEntry->SetBounceChainRecord(aChainRecord);
   }
@@ -98,7 +96,7 @@ NS_IMETHODIMP ClearDataCallback::OnDataDeleted(uint32_t aFailedFlags) {
   } else {
     MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug,
                 "{}: Cleared host: {}, bounceTime: {}", __FUNCTION__,
-                mEntry->SiteHostRef(), mEntry->TimeStampRef());
+                mEntry->SiteRef().SiteHost(), mEntry->TimeStampRef());
 
     mEntry->PurgeTimeRef() = PR_Now();
     mPromise->Resolve(mEntry, __func__);
@@ -142,7 +140,7 @@ void ClearDataCallback::RecordURLClassifierTelemetry() {
   NS_ENSURE_TRUE_VOID(uriClassifier);
 
   // Create a copy of the site host because we might have to mutate it.
-  nsAutoCString siteHost(mEntry->SiteHostRef());
+  nsAutoCString siteHost(mEntry->SiteRef().SiteHost());
   nsContentUtils::MaybeFixIPv6Host(siteHost);
 
   // Create URI from siteHost
@@ -182,7 +180,7 @@ ClearDataCallback::OnClassifyComplete(
 
     nsresult rv = obsSvc->NotifyObservers(
         nullptr, TEST_OBSERVER_MSG_RECORDED_PURGE_TELEMETRY,
-        NS_ConvertUTF8toUTF16(mEntry->SiteHostRef()).get());
+        NS_ConvertUTF8toUTF16(mEntry->SiteRef().SiteHost()).get());
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
@@ -195,7 +193,7 @@ void ClearDataCallback::RecordPurgeEventTelemetry(bool aSuccess) {
       .bounceTime = Some(mEntry->TimeStampRef() / PR_USEC_PER_SEC),
       .isDryRun = Some(StaticPrefs::privacy_bounceTrackingProtection_mode() ==
                        nsIBounceTrackingProtection::MODE_ENABLED_DRY_RUN),
-      .siteHost = Some(nsAutoCString(mEntry->SiteHostRef())),
+      .siteHost = Some(nsAutoCString(mEntry->SiteRef().SiteHost())),
       .success = Some(aSuccess),
   };
   glean::bounce_tracking_protection::purge_action.Record(Some(extra));

@@ -8,6 +8,7 @@
 #include "BounceTrackingMapEntry.h"
 #include "BounceTrackingProtectionStorage.h"
 #include "BounceTrackingRecord.h"
+#include "BounceTrackingSite.h"
 #include "mozilla/FunctionRef.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/WeakPtr.h"
@@ -49,26 +50,33 @@ class BounceTrackingStateGlobal final {
     return mOriginAttributes;
   };
 
-  bool HasUserActivation(const nsACString& aSiteHost) const;
+  // The site of aSiteHost in the partition of this state global. Maps of the
+  // state global are keyed by site host.
+  BounceTrackingSite SiteFor(const nsACString& aSiteHost) const {
+    return BounceTrackingSite::FromSiteHost(aSiteHost, mOriginAttributes);
+  }
 
-  // Store a user interaction flag for  the given host. This will remove the
-  // host from the bounce tracker map if it exists.
-  [[nodiscard]] nsresult RecordUserActivation(const nsACString& aSiteHost,
+  bool HasUserActivation(const BounceTrackingSite& aSite) const;
+
+  // Store a user interaction flag for the given site. This will remove the
+  // site from the bounce tracker map if it exists.
+  [[nodiscard]] nsresult RecordUserActivation(const BounceTrackingSite& aSite,
                                               PRTime aTime,
                                               bool aSkipStorage = false);
 
   // Test-only method to clear a user activation flag.
-  [[nodiscard]] nsresult TestRemoveUserActivation(const nsACString& aSiteHost);
+  [[nodiscard]] nsresult TestRemoveUserActivation(
+      const BounceTrackingSite& aSite);
 
   // Clear any user interactions that happened before aTime.
   [[nodiscard]] nsresult ClearUserActivationBefore(PRTime aTime);
 
-  bool HasBounceTracker(const nsACString& aSiteHost) const;
+  bool HasBounceTracker(const BounceTrackingSite& aSite) const;
 
-  // Store a bounce tracker flag for the given host. A host which received user
+  // Store a bounce tracker flag for the given site. A site which received user
   // interaction recently can not be recorded as a bounce tracker.
   [[nodiscard]] nsresult RecordBounceTracker(
-      const nsACString& aSiteHost, PRTime aTime, bool aSkipStorage = false,
+      const BounceTrackingSite& aSite, PRTime aTime, bool aSkipStorage = false,
       BounceTrackingRecord* aRecord = nullptr);
 
   // Record the fact that we have purged state for a bounce tracker. This is
@@ -76,16 +84,16 @@ class BounceTrackingStateGlobal final {
   [[nodiscard]] nsresult RecordPurgedTracker(
       const RefPtr<BounceTrackingPurgeEntry>& aEntry);
 
-  // Remove one or many bounce trackers identified by site host.
+  // Remove one or many bounce trackers.
   [[nodiscard]] nsresult RemoveBounceTrackers(
-      const nsTArray<nsCString>& aSiteHosts);
+      const nsTArray<BounceTrackingSite>& aSites);
 
   // Clear user activation or bounce tracker map.
   [[nodiscard]] nsresult ClearByType(
       BounceTrackingProtectionStorage::EntryType aType, bool aSkipStorage);
 
-  [[nodiscard]] nsresult ClearSiteHost(const nsACString& aSiteHost,
-                                       bool aSkipStorage = false);
+  [[nodiscard]] nsresult ClearSite(const BounceTrackingSite& aSite,
+                                   bool aSkipStorage = false);
 
   [[nodiscard]] nsresult ClearByTimeRange(
       PRTime aFrom, Maybe<PRTime> aTo = Nothing(),
@@ -116,6 +124,11 @@ class BounceTrackingStateGlobal final {
 
  private:
   ~BounceTrackingStateGlobal() = default;
+
+  // Whether aSite belongs to the partition of this state global.
+  bool IsOwnSite(const BounceTrackingSite& aSite) const {
+    return !aSite.IsNull() && aSite.OriginAttributesRef() == mOriginAttributes;
+  }
 
   // The storage which manages this state global. Used to persist changes to
   // this state global in storage.

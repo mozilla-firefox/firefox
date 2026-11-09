@@ -6,7 +6,7 @@
 #define mozilla_BounceTrackingMapEntry_h
 
 #include "BounceTrackingRecord.h"
-#include "mozilla/OriginAttributes.h"
+#include "BounceTrackingSite.h"
 #include "nsIBounceTrackingMapEntry.h"
 #include "nsString.h"
 
@@ -17,21 +17,17 @@ namespace mozilla {
  */
 class BTPMapEntry {
  public:
-  OriginAttributes& OriginAttributesRef() { return mOriginAttributes; }
-
-  nsACString& SiteHostRef() { return mSiteHost; }
+  const BounceTrackingSite& SiteRef() const { return mSite; }
 
   PRTime& TimeStampRef() { return mTimeStamp; }
 
  protected:
-  BTPMapEntry(const OriginAttributes& aOriginAttributes,
-              const nsACString& aSiteHost, PRTime aTimeStamp)
-      : mOriginAttributes(aOriginAttributes),
-        mSiteHost(aSiteHost),
-        mTimeStamp(aTimeStamp) {}
+  BTPMapEntry(const BounceTrackingSite& aSite, PRTime aTimeStamp)
+      : mSite(aSite), mTimeStamp(aTimeStamp) {
+    MOZ_ASSERT(!aSite.IsNull());
+  }
 
-  OriginAttributes mOriginAttributes;
-  nsAutoCString mSiteHost;
+  BounceTrackingSite mSite;
   PRTime mTimeStamp;
 };
 
@@ -41,9 +37,8 @@ class BounceTrackingMapEntry final : public BTPMapEntry,
   NS_DECL_ISUPPORTS
   NS_DECL_NSIBOUNCETRACKINGMAPENTRY
 
-  BounceTrackingMapEntry(const OriginAttributes& aOriginAttributes,
-                         const nsACString& aSiteHost, PRTime aTimeStamp)
-      : BTPMapEntry(aOriginAttributes, aSiteHost, aTimeStamp) {}
+  BounceTrackingMapEntry(const BounceTrackingSite& aSite, PRTime aTimeStamp)
+      : BTPMapEntry(aSite, aTimeStamp) {}
 
  private:
   ~BounceTrackingMapEntry() = default;
@@ -59,11 +54,9 @@ class BounceTrackingPurgeEntry final : public BTPMapEntry,
   NS_DECL_ISUPPORTS
   NS_DECL_NSIBOUNCETRACKINGMAPENTRY
   NS_DECL_NSIBOUNCETRACKINGPURGEENTRY
-  BounceTrackingPurgeEntry(const OriginAttributes& aOriginAttributes,
-                           const nsACString& aSiteHost, PRTime aBounceTime,
+  BounceTrackingPurgeEntry(const BounceTrackingSite& aSite, PRTime aBounceTime,
                            PRTime aPurgeTime)
-      : BTPMapEntry(aOriginAttributes, aSiteHost, aBounceTime),
-        mPurgeTime(aPurgeTime) {}
+      : BTPMapEntry(aSite, aBounceTime), mPurgeTime(aPurgeTime) {}
 
   PRTime& BounceTimeRef() { return mTimeStamp; }
 
