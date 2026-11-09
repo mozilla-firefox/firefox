@@ -5,7 +5,7 @@
 task-defaults:
     index:
         product: firefox
-    worker-type: b-linux-docker-amd
+    worker-type: b-linux-docker-large-amd
     worker:
         artifacts:
             - name: public/build/security/{browser_entitlement}.xml
@@ -449,6 +449,7 @@ macosx64-aarch64-devedition/opt:
 
 macosx64-devedition/opt:
     description: "MacOS X Dev Edition Universal"
+    worker-type: b-linux-docker-amd
     attributes:
         shippable: true
         enable-build-signing: true
@@ -734,6 +735,7 @@ macosx64-aarch64-add-on-devel/opt:
 
 macosx64-add-on-devel/opt:
     description: "MacOS X add-on-devel"
+    worker-type: b-linux-docker-amd
     index:
         job-name: macosx64-add-on-devel
     treeherder:
@@ -982,6 +984,7 @@ macosx64-aarch64-reproduced/opt:
 
 macosx64-shippable/opt:
     description: "MacOS X Universal"
+    worker-type: b-linux-docker-amd
     attributes:
         shippable: true
         enable-build-signing: true

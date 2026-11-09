@@ -141,7 +141,7 @@ tasks:
         shipping-product: firefox
         treeherder:
             platform: osx-shippable/opt
-        worker-type: b-linux-docker-amd
+        worker-type: b-linux-docker-large-amd
         worker:
             max-run-time: 7200
             env:
@@ -190,7 +190,7 @@ tasks:
         shipping-product: firefox
         treeherder:
             platform: osx-aarch64-shippable/opt
-        worker-type: b-linux-docker-amd
+        worker-type: b-linux-docker-large-amd
         worker:
             max-run-time: 7200
             env:
@@ -240,7 +240,7 @@ tasks:
         shipping-product: firefox
         treeherder:
             platform: osx-aarch64-nightlyasrelease/opt
-        worker-type: b-linux-docker-amd
+        worker-type: b-linux-docker-large-amd
         worker:
             max-run-time: 7200
             env:
