@@ -71,8 +71,10 @@ async function test() {
   is(scrollendCount, 1, "Exactly one scrollend event should fire");
 }
 
-if (getPlatform() == "android") {
+if (getPlatform() == "android" || getPlatform() == "linux") {
   // We don't support native pan gestures on Android.
+  // Also, SpecialPowers.isHeadless is broken on Linux (bug 1889039),
+  // hence the scroll direction is reversed and the test fails on Linux.
   ok(true, "Skipping test on " + getPlatform());
   subtestDone();
 } else {
