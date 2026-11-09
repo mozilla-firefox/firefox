@@ -128,7 +128,14 @@ function getTabStripOrderedIds(win) {
   });
 }
 
-async function testWithNewWindow(func) {
+/**
+ * @param {function(Window):Promise<void>} func
+ * @param {object} [options]
+ * @param {function(Window):Promise<void>} [options.beforeOpen]
+ *   Runs after the tabs are added and before the All Tabs panel opens. The
+ *   panel builds its rows when it opens.
+ */
+async function testWithNewWindow(func, { beforeOpen } = {}) {
   const newWindow = await BrowserTestUtils.openNewBrowserWindow();
 
   await Promise.all([
@@ -138,6 +145,8 @@ async function testWithNewWindow(func) {
     addTabTo(newWindow.gBrowser, URL4),
     addTabTo(newWindow.gBrowser, URL5),
   ]);
+
+  await beforeOpen?.(newWindow);
 
   newWindow.gTabsPanel.init();
 
@@ -210,6 +219,52 @@ async function dropBefore(rowToDrag, rowToDropBefore, win) {
     rect.top + 0.25 * rect.height,
     win
   );
+}
+
+/**
+ * Virtually drag and drop a tabs list row onto an element that is inside the
+ * All Tabs panel but is not a row of the tabs list, for example the
+ * "View All Tabs" button.
+ *
+ * @param {XulToolbarItem} rowToDrag
+ * @param {Element} target
+ * @param {Window} win
+ */
+async function dropOnPanelElement(rowToDrag, target, win) {
+  const rect = target.getBoundingClientRect();
+  await drop(
+    rowToDrag,
+    target,
+    rect.left + 1,
+    rect.top + 0.5 * rect.height,
+    win
+  );
+}
+
+/**
+ * Virtually drag a tabs list row over an element of the All Tabs panel without
+ * a drop. Call `cancelDrag` to end the drag.
+ *
+ * @param {XulToolbarItem} rowToDrag
+ * @param {Element} target
+ * @param {Window} win
+ */
+function dragOverPanelElement(rowToDrag, target, win) {
+  const rect = target.getBoundingClientRect();
+  EventUtils.startDragSession(win, "move");
+  EventUtils.synthesizeDragOver(rowToDrag, target, null, "move", win, win, {
+    clientX: rect.left + 1,
+    clientY: rect.top + 0.5 * rect.height,
+  });
+}
+
+/**
+ * Ends the current drag session without a drop and without a `dragend`.
+ *
+ * @param {Window} win
+ */
+function cancelDrag(win) {
+  EventUtils._getDOMWindowUtils(win).dragSession.endDragSession(false);
 }
 
 /**
@@ -796,4 +851,505 @@ add_task(async function test_move_split_view_from_tab_list_to_tab_bar() {
 
     splitview.unsplitTabs();
   });
+});
+
+/**
+ * A tab dropped on an element below the tabs list moves to the end of the
+ * list.
+ */
+add_task(async function test_drop_on_view_all_tabs() {
+  await testWithNewWindow(async function (newWindow) {
+    const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+    const viewAllTabs = newWindow.document.getElementById(
+      "allTabsMenu-viewAllTabs"
+    );
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      ["unknown", 1, 2, 3, 4, 5],
+      "before the drop"
+    );
+
+    const rows = tabsListNode.querySelectorAll("toolbaritem");
+    await dropOnPanelElement(rows[1], viewAllTabs, newWindow);
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      ["unknown", 2, 3, 4, 5, 1],
+      "after dropping tab 1 on the View All Tabs button"
+    );
+    assertOrder(
+      getTabStripOrderedIds(newWindow),
+      ["unknown", 2, 3, 4, 5, 1],
+      "the tab strip matches the tabs list"
+    );
+  });
+});
+
+/**
+ * A tab dropped on the separator between the tabs list and the
+ * "View All Tabs" button moves to the end of the list.
+ */
+add_task(async function test_drop_on_footer_separator() {
+  await testWithNewWindow(async function (newWindow) {
+    const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+    const separator = newWindow.document.getElementById(
+      "allTabsMenu-viewAllTabs"
+    ).previousElementSibling;
+    Assert.equal(
+      separator.localName,
+      "toolbarseparator",
+      "the element before the View All Tabs button is a separator"
+    );
+
+    const rows = tabsListNode.querySelectorAll("toolbaritem");
+    await dropOnPanelElement(rows[1], separator, newWindow);
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      ["unknown", 2, 3, 4, 5, 1],
+      "after dropping tab 1 on the footer separator"
+    );
+    assertOrder(
+      getTabStripOrderedIds(newWindow),
+      ["unknown", 2, 3, 4, 5, 1],
+      "the tab strip matches the tabs list"
+    );
+  });
+});
+
+/**
+ * A tab dropped on an element above the tabs list moves to the start of the
+ * list.
+ */
+add_task(async function test_drop_above_the_tabs_list() {
+  await testWithNewWindow(async function (newWindow) {
+    const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+    const searchTabs = newWindow.document.getElementById(
+      "allTabsMenu-searchTabs"
+    );
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      ["unknown", 1, 2, 3, 4, 5],
+      "before the drop"
+    );
+
+    const rows = tabsListNode.querySelectorAll("toolbaritem");
+    await dropOnPanelElement(rows[2], searchTabs, newWindow);
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      [2, "unknown", 1, 3, 4, 5],
+      "after dropping tab 2 on the Search All Tabs button"
+    );
+    assertOrder(
+      getTabStripOrderedIds(newWindow),
+      [2, "unknown", 1, 3, 4, 5],
+      "the tab strip matches the tabs list"
+    );
+  });
+});
+
+/**
+ * A hidden tab that plays audio puts the hidden tabs button and a nested list
+ * of hidden tabs at the top of the tabs list. A tab dropped on a row of that
+ * nested list moves to the start of the visible tabs.
+ */
+add_task(async function test_drop_on_hidden_audio_tab() {
+  const beforeOpen = async newWindow => {
+    const tab5 = newWindow.gBrowser.tabs.at(5);
+    const tabHidden = BrowserTestUtils.waitForEvent(tab5, "TabHide");
+    newWindow.gBrowser.hideTab(tab5);
+    await tabHidden;
+    tab5.setAttribute("soundplaying", "");
+  };
+
+  const runTest = async newWindow => {
+    const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+    const hiddenAudioTabs = newWindow.document.getElementById(
+      "allTabsMenu-allTabsView-hiddenAudio-tabs"
+    );
+    Assert.ok(
+      BrowserTestUtils.isVisible(hiddenAudioTabs),
+      "the list of hidden tabs playing audio is visible"
+    );
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      [5, "unknown", 1, 2, 3, 4],
+      "before the drop"
+    );
+
+    const rows = tabsListNode.querySelectorAll("toolbaritem");
+    await dropOnPanelElement(rows[4], rows[0], newWindow);
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      [5, 3, "unknown", 1, 2, 4],
+      "after dropping tab 3 on the hidden tab playing audio"
+    );
+    assertOrder(
+      getTabStripOrderedIds(newWindow),
+      [3, "unknown", 1, 2, 4],
+      "the tab strip matches the tabs list"
+    );
+  };
+
+  await testWithNewWindow(runTest, { beforeOpen });
+});
+
+/**
+ * The tabs list scrolls separately from the rest of the panel. A tab dropped
+ * above or below a scrolled list moves next to the first or the last row that
+ * is in view, which is where the drop indicator shows it.
+ */
+add_task(async function test_drop_with_scrolled_list() {
+  const beforeOpen = newWindow => {
+    for (let i = 0; i < 40; i++) {
+      BrowserTestUtils.addTab(newWindow.gBrowser, "about:blank", {
+        skipAnimation: true,
+      });
+    }
+  };
+
+  const runTest = async newWindow => {
+    const { gBrowser } = newWindow;
+    const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+    const searchTabs = newWindow.document.getElementById(
+      "allTabsMenu-searchTabs"
+    );
+    const viewAllTabs = newWindow.document.getElementById(
+      "allTabsMenu-viewAllTabs"
+    );
+
+    const scrollToMiddle = () => {
+      tabsListNode.scrollTop =
+        (tabsListNode.scrollHeight - tabsListNode.clientHeight) / 2;
+    };
+    const getVisibleRows = () => {
+      const listRect = tabsListNode.getBoundingClientRect();
+      return [...tabsListNode.querySelectorAll("toolbaritem")].filter(row => {
+        const rect = row.getBoundingClientRect();
+        return rect.bottom > listRect.top && rect.top <= listRect.bottom - 1;
+      });
+    };
+
+    scrollToMiddle();
+    let visibleRows = getVisibleRows();
+    const rows = [...tabsListNode.querySelectorAll("toolbaritem")];
+    Assert.ok(
+      !visibleRows.includes(rows[0]) && !visibleRows.includes(rows.at(-1)),
+      "the first and the last rows are scrolled out of view"
+    );
+
+    let rowToDrag = visibleRows[Math.floor(visibleRows.length / 2)];
+    let draggedTab = tabOf(rowToDrag);
+    const firstVisibleTab = tabOf(visibleRows[0]);
+    await dropOnPanelElement(rowToDrag, searchTabs, newWindow);
+    Assert.equal(
+      gBrowser.tabs.indexOf(draggedTab) + 1,
+      gBrowser.tabs.indexOf(firstVisibleTab),
+      "a tab dropped above the list moves before the first visible row"
+    );
+
+    scrollToMiddle();
+    visibleRows = getVisibleRows();
+    rowToDrag = visibleRows[Math.floor(visibleRows.length / 2)];
+    draggedTab = tabOf(rowToDrag);
+    const lastVisibleTab = tabOf(visibleRows.at(-1));
+    await dropOnPanelElement(rowToDrag, viewAllTabs, newWindow);
+    Assert.equal(
+      gBrowser.tabs.indexOf(draggedTab) - 1,
+      gBrowser.tabs.indexOf(lastVisibleTab),
+      "a tab dropped below the list moves after the last visible row"
+    );
+  };
+
+  await testWithNewWindow(runTest, { beforeOpen });
+});
+
+/**
+ * When the tabs list is scrolled, the first and the last row can be out of
+ * view. For a drag above or below the list, the drop indicator stays at the
+ * edge of the visible list.
+ */
+add_task(async function test_drop_indicator_with_scrolled_list() {
+  const beforeOpen = newWindow => {
+    for (let i = 0; i < 40; i++) {
+      BrowserTestUtils.addTab(newWindow.gBrowser, "about:blank", {
+        skipAnimation: true,
+      });
+    }
+  };
+
+  const runTest = async newWindow => {
+    const allTabsPanel = newWindow.gTabsPanel.allTabsPanel;
+    const tabsListNode = allTabsPanel.containerNode;
+    const searchTabs = newWindow.document.getElementById(
+      "allTabsMenu-searchTabs"
+    );
+    const viewAllTabs = newWindow.document.getElementById(
+      "allTabsMenu-viewAllTabs"
+    );
+
+    tabsListNode.scrollTop =
+      (tabsListNode.scrollHeight - tabsListNode.clientHeight) / 2;
+    const listRect = tabsListNode.getBoundingClientRect();
+    const rows = [...tabsListNode.querySelectorAll("toolbaritem")];
+    Assert.less(
+      rows[0].getBoundingClientRect().bottom,
+      listRect.top,
+      "the first row is scrolled out of view above the list"
+    );
+    Assert.greater(
+      rows.at(-1).getBoundingClientRect().top,
+      listRect.bottom,
+      "the last row is scrolled out of view below the list"
+    );
+    const visibleRow = rows.find(
+      row => row.getBoundingClientRect().top >= listRect.top
+    );
+
+    const assertIndicatorAt = (edgeY, message) => {
+      Assert.ok(!allTabsPanel.dropIndicator.collapsed, "the indicator shows");
+      const rect = allTabsPanel.dropIndicator.getBoundingClientRect();
+      Assert.lessOrEqual(
+        Math.abs(rect.top + rect.height / 2 - edgeY),
+        rect.height,
+        message
+      );
+    };
+
+    dragOverPanelElement(visibleRow, searchTabs, newWindow);
+    assertIndicatorAt(
+      listRect.top,
+      "the indicator is at the top edge of the list"
+    );
+    cancelDrag(newWindow);
+
+    dragOverPanelElement(visibleRow, viewAllTabs, newWindow);
+    assertIndicatorAt(
+      listRect.bottom,
+      "the indicator is at the bottom edge of the list"
+    );
+    cancelDrag(newWindow);
+  };
+
+  await testWithNewWindow(runTest, { beforeOpen });
+});
+
+/**
+ * A tab dropped below the tabs list does not join an expanded group at the end
+ * of the list.
+ */
+add_task(async function test_drop_below_trailing_tab_group() {
+  const beforeOpen = newWindow => {
+    const tab5 = newWindow.gBrowser.tabs.at(5);
+    newWindow.gBrowser.addTabGroup([tab5], {
+      id: TAB_GROUP_1,
+      insertBefore: tab5,
+    });
+  };
+
+  const runTest = async newWindow => {
+    const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+    const viewAllTabs = newWindow.document.getElementById(
+      "allTabsMenu-viewAllTabs"
+    );
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      ["unknown", 1, 2, 3, 4, TAB_GROUP_1, 5],
+      "before the drop"
+    );
+
+    const rows = tabsListNode.querySelectorAll("toolbaritem");
+    const tab1 = tabOf(rows[1]);
+    await dropOnPanelElement(rows[1], viewAllTabs, newWindow);
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      ["unknown", 2, 3, 4, TAB_GROUP_1, 5, 1],
+      "after dropping tab 1 on the View All Tabs button"
+    );
+    Assert.ok(!tab1.group, "tab 1 is not in the tab group");
+    assertOrder(
+      getTabStripOrderedIds(newWindow),
+      ["unknown", 2, 3, 4, TAB_GROUP_1, 5, 1],
+      "the tab strip matches the tabs list"
+    );
+  };
+
+  await testWithNewWindow(runTest, { beforeOpen });
+});
+
+/**
+ * A tab dropped above a scrolled tabs list does not join an expanded group
+ * whose first tab is the first visible row.
+ */
+add_task(async function test_drop_above_leading_tab_group() {
+  let tabGroup;
+  const beforeOpen = newWindow => {
+    const { gBrowser } = newWindow;
+    for (let i = 0; i < 40; i++) {
+      BrowserTestUtils.addTab(gBrowser, "about:blank", {
+        skipAnimation: true,
+      });
+    }
+    const groupTabs = gBrowser.tabs.slice(20, 22);
+    tabGroup = gBrowser.addTabGroup(groupTabs, {
+      id: TAB_GROUP_1,
+      insertBefore: groupTabs[0],
+    });
+  };
+
+  const runTest = async newWindow => {
+    const { gBrowser } = newWindow;
+    const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+    const searchTabs = newWindow.document.getElementById(
+      "allTabsMenu-searchTabs"
+    );
+
+    const rows = [...tabsListNode.querySelectorAll("toolbaritem")];
+    const labelRow = rows.find(row => tabGroupOf(row) == tabGroup);
+    const firstGroupTab = tabGroup.tabs[0];
+    tabsListNode.scrollTop +=
+      labelRow.getBoundingClientRect().bottom -
+      tabsListNode.getBoundingClientRect().top +
+      1;
+
+    const listRect = tabsListNode.getBoundingClientRect();
+    const visibleRows = rows.filter(row => {
+      const rect = row.getBoundingClientRect();
+      return rect.bottom > listRect.top && rect.top <= listRect.bottom - 1;
+    });
+    Assert.equal(
+      tabOf(visibleRows[0]),
+      firstGroupTab,
+      "the first visible row is the first tab of the tab group"
+    );
+
+    const rowToDrag = visibleRows[Math.floor(visibleRows.length / 2)];
+    const draggedTab = tabOf(rowToDrag);
+    Assert.ok(!draggedTab.group, "the dragged tab is not in the tab group");
+    await dropOnPanelElement(rowToDrag, searchTabs, newWindow);
+
+    Assert.ok(!draggedTab.group, "the dragged tab does not join the tab group");
+    Assert.equal(
+      gBrowser.tabs.indexOf(draggedTab) + 1,
+      gBrowser.tabs.indexOf(firstGroupTab),
+      "the dragged tab moves before the tab group"
+    );
+  };
+
+  await testWithNewWindow(runTest, { beforeOpen });
+});
+
+/**
+ * A hidden tab that does not play audio puts the hidden tabs button at the end
+ * of the tabs list. A tab dropped on that button does not join an expanded
+ * group at the end of the list.
+ */
+add_task(
+  async function test_drop_on_hidden_tabs_button_with_trailing_tab_group() {
+    const beforeOpen = async newWindow => {
+      const { gBrowser } = newWindow;
+      const tab4 = gBrowser.tabs.at(4);
+      const tabHidden = BrowserTestUtils.waitForEvent(tab4, "TabHide");
+      gBrowser.hideTab(tab4);
+      await tabHidden;
+      const tab5 = gBrowser.tabs.at(5);
+      gBrowser.addTabGroup([tab5], {
+        id: TAB_GROUP_1,
+        insertBefore: tab5,
+      });
+    };
+
+    const runTest = async newWindow => {
+      const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+      const hiddenTabsButton = newWindow.document.getElementById(
+        "allTabsMenu-hiddenTabsButton"
+      );
+      Assert.equal(
+        hiddenTabsButton.parentNode,
+        tabsListNode,
+        "the hidden tabs button is in the tabs list"
+      );
+      Assert.ok(
+        BrowserTestUtils.isVisible(hiddenTabsButton),
+        "the hidden tabs button is visible"
+      );
+
+      assertOrder(
+        getTabsListOrderedIds(tabsListNode),
+        ["unknown", 1, 2, 3, TAB_GROUP_1, 5],
+        "before the drop"
+      );
+
+      const rows = tabsListNode.querySelectorAll("toolbaritem");
+      const tab1 = tabOf(rows[1]);
+      await dropOnPanelElement(rows[1], hiddenTabsButton, newWindow);
+
+      assertOrder(
+        getTabsListOrderedIds(tabsListNode),
+        ["unknown", 2, 3, TAB_GROUP_1, 5, 1],
+        "after dropping tab 1 on the hidden tabs button"
+      );
+      Assert.ok(!tab1.group, "tab 1 is not in the tab group");
+    };
+
+    await testWithNewWindow(runTest, { beforeOpen });
+  }
+);
+
+/**
+ * A row that moves to the end of the tabs list stays above the hidden tabs
+ * button. A tab dropped on the button then moves to the end of the list.
+ */
+add_task(async function test_hidden_tabs_button_stays_after_moved_rows() {
+  const beforeOpen = async newWindow => {
+    const tab4 = newWindow.gBrowser.tabs.at(4);
+    const tabHidden = BrowserTestUtils.waitForEvent(tab4, "TabHide");
+    newWindow.gBrowser.hideTab(tab4);
+    await tabHidden;
+  };
+
+  const runTest = async newWindow => {
+    const tabsListNode = newWindow.gTabsPanel.allTabsPanel.containerNode;
+    const hiddenTabsButton = newWindow.document.getElementById(
+      "allTabsMenu-hiddenTabsButton"
+    );
+    const viewAllTabs = newWindow.document.getElementById(
+      "allTabsMenu-viewAllTabs"
+    );
+
+    let rows = tabsListNode.querySelectorAll("toolbaritem");
+    await dropOnPanelElement(rows[1], viewAllTabs, newWindow);
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      ["unknown", 2, 3, 5, 1],
+      "after dropping tab 1 on the View All Tabs button"
+    );
+    rows = tabsListNode.querySelectorAll("toolbaritem");
+    const children = [...tabsListNode.children];
+    Assert.greater(
+      children.indexOf(hiddenTabsButton),
+      children.indexOf(rows[rows.length - 1]),
+      "the hidden tabs button is after the last row"
+    );
+
+    // A drop on the hidden tabs button after the move resolves to the last
+    // row, so the tab moves to the end of the list.
+    await dropOnPanelElement(rows[1], hiddenTabsButton, newWindow);
+
+    assertOrder(
+      getTabsListOrderedIds(tabsListNode),
+      ["unknown", 3, 5, 1, 2],
+      "after dropping tab 2 on the hidden tabs button"
+    );
+  };
+
+  await testWithNewWindow(runTest, { beforeOpen });
 });
