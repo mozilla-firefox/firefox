@@ -73,14 +73,6 @@ internal class BrowserStorePlayer(
 
     private var lastArtworkKey: Triple<String, MozMediaSession.Metadata?, Bitmap?>? = null
 
-    // On a track change the page often keeps reporting the previous track's positionState for a
-    // short while before pushing a fresh one. While that stale value persists we report position 0
-    // instead of the outgoing track's position. A tab's first update is always let through, where a
-    // non-zero start position is legitimate.
-    private var lastTabId: String? = null
-    private var lastTitle: String? = null
-    private var stalePositionState: MozMediaSession.PositionState? = null
-
     private var positionKey: PositionKey? = null
     private var positionSupplier: PositionSupplier = PositionSupplier.ZERO
 
@@ -100,7 +92,6 @@ internal class BrowserStorePlayer(
                 .distinctUntilChangedBy { it.mediaDisplayKey(context) }
                 .collect { tab ->
                     refreshArtwork(tab)
-                    trackStalePosition(tab)
                     invalidateState()
                 }
         }
@@ -149,11 +140,7 @@ internal class BrowserStorePlayer(
         rate: Float,
     ): PositionSupplier {
         val positionMs =
-            if (stalePositionState != null) {
-                0L
-            } else {
-                ((positionState?.position?.takeIf { it >= 0 && it.isFinite() } ?: 0.0) * C.MILLIS_PER_SECOND).toLong()
-            }
+            ((positionState?.position?.takeIf { it >= 0 && it.isFinite() } ?: 0.0) * C.MILLIS_PER_SECOND).toLong()
         val key = PositionKey(tab.id, tab.mediaSessionState?.metadata?.title, positionState, positionMs, rate)
         if (key != positionKey) {
             val start = if (positionKey?.copy(rate = rate) == key) positionSupplier.get() else positionMs
@@ -221,20 +208,6 @@ internal class BrowserStorePlayer(
             )
             .addIf(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM, tab?.mediaSessionState?.isSeekable() == true)
             .build()
-    }
-
-    private fun trackStalePosition(tab: SessionState?) {
-        val mss = tab?.mediaSessionState ?: return
-        val newTitle = mss.metadata?.title
-        if (tab.id != lastTabId) {
-            stalePositionState = null
-        } else if (newTitle != lastTitle) {
-            stalePositionState = mss.positionState
-        } else if (mss.positionState != stalePositionState) {
-            stalePositionState = null
-        }
-        lastTabId = tab.id
-        lastTitle = newTitle
     }
 
     /** Returns the artwork fetched for [tab] and its current metadata, or null if none has arrived. */

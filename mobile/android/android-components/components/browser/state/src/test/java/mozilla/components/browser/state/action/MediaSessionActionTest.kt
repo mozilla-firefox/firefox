@@ -94,6 +94,32 @@ class MediaSessionActionTest {
     }
 
     @Test
+    fun `UpdateMediaMetadataAction resets the position state only when the title changes`() {
+        val position = MediaSession.PositionState(duration = 100.0, position = 30.0, playbackRate = 1.0)
+        var state = BrowserState(tabs = listOf(createTab("https://www.mozilla.org", id = "test-tab")))
+        fun reduce(action: MediaSessionAction) = BrowserStateReducer.reduce(state, action).also { state = it }
+        fun position() = state.findTab("test-tab")?.mediaSessionState?.positionState
+        fun metadata(title: String, artist: String? = null) =
+            reduce(
+                MediaSessionAction.UpdateMediaMetadataAction(
+                    "test-tab",
+                    MediaSession.Metadata(title, artist, getArtwork = null),
+                )
+            )
+
+        reduce(MediaSessionAction.ActivatedMediaSessionAction("test-tab", mock()))
+        reduce(MediaSessionAction.UpdateMediaPositionStateAction("test-tab", position))
+        metadata("A")
+        assertEquals(position, position())
+
+        metadata("A", "X")
+        assertEquals(position, position())
+
+        metadata("B")
+        assertEquals(position.copy(position = 0.0), position())
+    }
+
+    @Test
     fun `UpdateMediaPlaybackStateAction updates media session state`() {
         var state = BrowserState(tabs = listOf(createTab("https://www.mozilla.org", id = "test-tab")))
 

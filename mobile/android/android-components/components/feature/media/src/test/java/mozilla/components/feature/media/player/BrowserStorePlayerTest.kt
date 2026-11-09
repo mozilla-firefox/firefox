@@ -1003,7 +1003,7 @@ class BrowserStorePlayerTest {
         }
 
     @Test
-    fun `GIVEN the title changes WHEN the position state is still the old track's THEN position 0 is reported until it refreshes`() =
+    fun `GIVEN the title changes WHEN the position state is still the old track's THEN position 0 is reported with the duration kept until it refreshes`() =
         runTest {
             val position = MediaSession.PositionState(duration = 100.0, position = 30.0)
             val tab =
@@ -1025,7 +1025,40 @@ class BrowserStorePlayerTest {
             )
             drain()
             assertEquals(0L, player.currentPosition)
+            assertEquals(100_000L, player.duration)
+            assertTrue(player.availableCommands.contains(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM))
 
+            store.dispatch(MediaSessionAction.UpdateMediaPositionStateAction(tab.id, position.copy(position = 2.0)))
+            drain()
+            assertEquals(2_000L, player.currentPosition)
+        }
+
+    @Test
+    fun `GIVEN the title changes WHEN a fresh position arrives in the same emission THEN the fresh position is reported`() =
+        runTest {
+            val position = MediaSession.PositionState(duration = 100.0, position = 30.0)
+            val tab =
+                mediaTab(
+                    MediaSession.PlaybackState.PAUSED,
+                    metadata = MediaSession.Metadata(title = "A", getArtwork = null),
+                    positionState = position,
+                )
+            val store = BrowserStore(BrowserState(tabs = listOf(tab)))
+            val player = newPlayer(store)
+            drain()
+
+            store.dispatch(
+                MediaSessionAction.UpdateMediaFeatureAction(
+                    tab.id,
+                    MediaSession.Feature(MediaSession.Feature.NEXT_TRACK),
+                )
+            )
+            store.dispatch(
+                MediaSessionAction.UpdateMediaMetadataAction(
+                    tab.id,
+                    MediaSession.Metadata(title = "B", getArtwork = null),
+                )
+            )
             store.dispatch(MediaSessionAction.UpdateMediaPositionStateAction(tab.id, position.copy(position = 2.0)))
             drain()
             assertEquals(2_000L, player.currentPosition)

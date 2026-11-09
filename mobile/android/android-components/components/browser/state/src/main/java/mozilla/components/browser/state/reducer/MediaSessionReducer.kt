@@ -65,7 +65,15 @@ private fun BrowserState.updateMediaMetadata(
     metadata: MediaSession.Metadata,
 ): BrowserState {
     return updateTabOrCustomTabState(tabId) { current ->
-        current.createCopy(mediaSessionState = current.mediaSessionState?.copy(metadata = metadata))
+        val mss = current.mediaSessionState
+        val trackChanged = mss?.metadata != null && mss.metadata.title != metadata.title
+        current.createCopy(
+            mediaSessionState =
+                mss?.copy(
+                    metadata = metadata,
+                    positionState = if (trackChanged) mss.positionState.copy(position = 0.0) else mss.positionState,
+                )
+        )
     }
 }
 
