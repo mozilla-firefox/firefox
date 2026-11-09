@@ -69,7 +69,7 @@ unsupported tool to submit uplift requests.
 
 1. Ensure you are using the
    [mozilla-firefox](https://github.com/mozilla-firefox/firefox) repository.
-2. Switch to the appropriate branch (e.g. beta, ESR140, etc.).
+2. Switch to the appropriate branch (e.g. `beta`, `esr140`, etc.).
 3. Make sure your local repository is up to date with the target branch head.
 4. Find the patch or series of patches in your local VCS.
    - You can `moz-phab patch` patches onto your local machine if need be.
@@ -99,7 +99,7 @@ which will **fail without recovery options if any conflicts are encountered.**
 
 1. Ensure you are using the
    [mozilla-firefox](https://github.com/mozilla-firefox/firefox) repository.
-2. Switch to the appropriate branch (e.g. beta, ESR140, etc.).
+2. Switch to the appropriate branch (e.g. `beta`, `esr140`, etc.).
 3. Make sure your local repository is up to date with the target branch head.
 4. Create a new branch for your uplift, e.g. `git switch -c <new branch name>`
 5. Cherry-pick each commit or range, e.g. `git cherry-pick <commit-hash>`
@@ -112,7 +112,7 @@ which will **fail without recovery options if any conflicts are encountered.**
    (for a single commit; or `git rebase -i HEAD~<some number>` for multiple
    commits). This step is not needed for the first attempt to uplift a commit
    from the main branch. It may be needed for complex cases, such as when
-   multiple uplift requests.
+   multiple uplift requests are made for the same commit.
    - If you want to update an existing uplift revision, ensure the commit
      message ends with a line containing `Differential Revision: ...` (replace
      `...` with the URL of your uplift's Phabricator URL)

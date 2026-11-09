@@ -47,12 +47,12 @@ A form is provided to add information in a comment for the uplift request.
 - \[Risk associated with taking this patch\]: Low/Medium/High
 - \[Explanation of risk level\]
   - When saying something is "low", "medium", or "high" risk please justify
-  - E.g.: Low risk because its a one line CSS change impacting only settings
-    page
+  - E.g.: Low risk because it's a one-line CSS change impacting only the
+    settings page
   - E.g.: Medium, given the code complexity and integration with other areas of
     code that might be impacted. Expect regressions in areas like...
-  - E.g.: Risky, given the complex nature the bake time we have have on central
-    or other branches. High rate of fallouts/regression. Could be mitigated by
+  - E.g.: High, given the complex nature of the change and the limited bake
+    time on firefox-main or other branches. High rate of fallouts/regression. Could be mitigated by
     more manual testing in areas or running some targeted test cases
     - If the issue could be worked around by disabling a certain feature, or
       with a different, less-risky, patch for uplift, mention this here —
@@ -61,10 +61,8 @@ A form is provided to add information in a comment for the uplift request.
   changes were made. String changes need to be approved by a l10n driver since
   they impact the work of localization teams.
 - \[Is Android affected?\] Does this fix also impact Android applications?
-  [GeckoView](https://wiki.mozilla.org/Mobile/GeckoView) Meaning as well as a
-  desktop release, Release Management should create an
-  [android-components](https://mozac.org/) build and follow up with
-  Fenix/Focus.
+  Release Management uses this to determine if specific follow-up actions are
+  needed for Fenix/Focus after the patch is uplifted.
 
 ## Risk vs Severity
 
@@ -173,6 +171,6 @@ support build infra
 
 ### ESR Uplift (approval-mozilla-esrXX)
 
-We do a ESR minor release every 2 weeks. These releases do not include new
+We do an ESR minor release every 2 weeks. These releases do not include new
 features and are reserved for stability/security fixes only. ESR uplift requests
 follow a similar uplift request process as Beta/Release.
