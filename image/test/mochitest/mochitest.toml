@@ -213,6 +213,9 @@ skip-if = [
 ["test_bullet_animation.html"]
 
 ["test_cache_eviction.html"]
+skip-if = [
+  "os == 'android' && ccov", # times out, bug 2070392
+]
 
 ["test_canvas_frame_animation.html"]
 
