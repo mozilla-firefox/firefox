@@ -130,7 +130,7 @@ class DictionaryCacheEntry final : public nsICacheEntryOpenCallback,
   // Accumulate a hash while saving a file being received to the cache
   void AccumulateHash(const char* aBuf, int32_t aCount);
   void FinishHash();
-  void FinishHashOnMainThread();
+  void FinishHashOnMainThread(const nsACString& aHash);
 
   // return a pointer to the data and length
   uint8_t* DictionaryData(size_t* aLength) const;
@@ -187,7 +187,7 @@ class DictionaryCacheEntry final : public nsICacheEntryOpenCallback,
   Maybe<UrlPatternGlue> mCachedPattern;
 
   // SHA-256 hash value - only written/read on MainThread (after
-  // pending->active) Written by FinishHash() on MainThread, immutable after
+  // pending->active) Written by FinishHashOnMainThread(), immutable after
   // that
   nsCString mHash;
 
@@ -206,7 +206,8 @@ class DictionaryCacheEntry final : public nsICacheEntryOpenCallback,
   Vector<uint8_t> mPendingDictionaryData;
 
   // for accumulating SHA-256 hash values for dictionaries
-  // Only used on main thread (MOZ_ASSERT in AccumulateHash/FinishHash)
+  // Only used sequentially from the cache write path (AccumulateHash/
+  // FinishHash), on whichever thread delivers the data; cleared by FinishHash
   nsCOMPtr<nsICryptoHash> mCrypto;
 
   // Structure to track prefetch callbacks with their private browsing status
