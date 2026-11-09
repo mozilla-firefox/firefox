@@ -70,11 +70,12 @@ const uint32_t kMaxClearOnShutdownCacheSizeKB = 150 * 1024;  // 150 MB
 const auto kPurgeExtension = ".purge.bg_rm"_ns;
 
 bool CacheFileHandle::DispatchRelease() {
-  if (CacheFileIOManager::IsOnIOThreadOrCeased()) {
+  RefPtr<CacheFileIOManager> ioMan = CacheFileIOManager::GetInstance();
+  if (!ioMan || !ioMan->mIOThread || ioMan->mIOThread->IsCurrentThread()) {
     return false;
   }
 
-  nsCOMPtr<nsIEventTarget> ioTarget = CacheFileIOManager::IOTarget();
+  nsCOMPtr<nsIEventTarget> ioTarget = ioMan->mIOThread->Target();
   if (!ioTarget) {
     return false;
   }
@@ -218,7 +219,7 @@ CacheFileHandle::~CacheFileHandle() {
 
   MOZ_ASSERT(CacheFileIOManager::IsOnIOThreadOrCeased());
 
-  RefPtr<CacheFileIOManager> ioMan = CacheFileIOManager::gInstance;
+  RefPtr<CacheFileIOManager> ioMan = CacheFileIOManager::GetInstance();
   if (!IsClosed() && ioMan) {
     ioMan->CloseHandleInternal(this);
   }
@@ -669,7 +670,7 @@ class OpenFileEvent : public Runnable {
         mFlags(aFlags),
         mCallback(aCallback),
         mKey(aKey) {
-    mIOMan = CacheFileIOManager::gInstance;
+    mIOMan = CacheFileIOManager::GetInstance();
   }
 
  protected:
@@ -893,7 +894,7 @@ class DoomFileByKeyEvent : public Runnable {
     sum.update(aKey.BeginReading(), aKey.Length());
     sum.finish(mHash);
 
-    mIOMan = CacheFileIOManager::gInstance;
+    mIOMan = CacheFileIOManager::GetInstance();
   }
 
  protected:
@@ -1151,23 +1152,15 @@ class MetadataWriteScheduleEvent : public Runnable {
   virtual ~MetadataWriteScheduleEvent() = default;
 
   NS_IMETHOD Run() override {
-    RefPtr<CacheFileIOManager> ioMan = CacheFileIOManager::gInstance;
-    if (!ioMan) {
-      NS_WARNING(
-          "CacheFileIOManager already gone in "
-          "MetadataWriteScheduleEvent::Run()");
-      return NS_OK;
-    }
-
     switch (mMode) {
       case SCHEDULE:
-        ioMan->ScheduleMetadataWriteInternal(mFile);
+        mIOMan->ScheduleMetadataWriteInternal(mFile);
         break;
       case UNSCHEDULE:
-        ioMan->UnscheduleMetadataWriteInternal(mFile);
+        mIOMan->UnscheduleMetadataWriteInternal(mFile);
         break;
       case SHUTDOWN:
-        ioMan->ShutdownMetadataWriteSchedulingInternal();
+        mIOMan->ShutdownMetadataWriteSchedulingInternal();
         break;
     }
     return NS_OK;
@@ -1175,6 +1168,13 @@ class MetadataWriteScheduleEvent : public Runnable {
 };
 
 StaticRefPtr<CacheFileIOManager> CacheFileIOManager::gInstance;
+StaticMutex CacheFileIOManager::sInstanceLock;
+
+// static
+already_AddRefed<CacheFileIOManager> CacheFileIOManager::GetInstance() {
+  StaticMutexAutoLock lock(sInstanceLock);
+  return do_AddRef(gInstance);
+}
 
 NS_IMPL_ISUPPORTS(CacheFileIOManager, nsITimerCallback, nsINamed)
 
@@ -1204,7 +1204,10 @@ nsresult CacheFileIOManager::Init() {
   nsresult rv = ioMan->InitInternal();
   NS_ENSURE_SUCCESS(rv, rv);
 
-  gInstance = std::move(ioMan);
+  {
+    StaticMutexAutoLock lock(sInstanceLock);
+    gInstance = std::move(ioMan);
+  }
 
   // Ensure that transport service is initialized on the main thread.
   nsCOMPtr<nsIEventTarget> target =
@@ -1261,7 +1264,11 @@ nsresult CacheFileIOManager::Shutdown() {
     gInstance->SyncRemoveAllCacheFiles();
   }
 
-  gInstance = nullptr;
+  RefPtr<CacheFileIOManager> ioMan;
+  {
+    StaticMutexAutoLock lock(sInstanceLock);
+    ioMan = gInstance.forget();
+  }
 
   return NS_OK;
 }
@@ -1344,7 +1351,7 @@ void CacheFileIOManager::ShutdownInternal() {
 nsresult CacheFileIOManager::OnProfile() {
   LOG(("CacheFileIOManager::OnProfile() [gInstance=%p]", gInstance.get()));
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   if (!ioMan) {
     // CacheFileIOManager::Init() failed, probably could not create the IO
     // thread, just go with it...
@@ -1456,7 +1463,7 @@ nsresult CacheFileIOManager::OnDelayedStartupFinished() {
     return NS_OK;
   }
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   nsCOMPtr<nsIEventTarget> target = IOTarget();
   if (NS_WARN_IF(!ioMan || !target)) {
     return NS_ERROR_NOT_AVAILABLE;
@@ -1482,7 +1489,7 @@ nsresult CacheFileIOManager::OnIdleDaily() {
     return NS_OK;
   }
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   nsCOMPtr<nsIFile> parentDir;
   nsresult rv = ioMan->mCacheDirectory->GetParent(getter_AddRefs(parentDir));
   if (NS_FAILED(rv) || !parentDir) {
@@ -1543,8 +1550,9 @@ nsresult CacheFileIOManager::OnIdleDaily() {
 // static
 already_AddRefed<nsIEventTarget> CacheFileIOManager::IOTarget() {
   nsCOMPtr<nsIEventTarget> target;
-  if (gInstance && gInstance->mIOThread) {
-    target = gInstance->mIOThread->Target();
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (ioMan && ioMan->mIOThread) {
+    target = ioMan->mIOThread->Target();
   }
 
   return target.forget();
@@ -1553,8 +1561,9 @@ already_AddRefed<nsIEventTarget> CacheFileIOManager::IOTarget() {
 // static
 already_AddRefed<CacheIOThread> CacheFileIOManager::IOThread() {
   RefPtr<CacheIOThread> thread;
-  if (gInstance) {
-    thread = gInstance->mIOThread;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (ioMan) {
+    thread = ioMan->mIOThread;
   }
 
   return thread.forget();
@@ -1562,7 +1571,7 @@ already_AddRefed<CacheIOThread> CacheFileIOManager::IOThread() {
 
 // static
 bool CacheFileIOManager::IsOnIOThread() {
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   if (ioMan && ioMan->mIOThread) {
     return ioMan->mIOThread->IsCurrentThread();
   }
@@ -1572,7 +1581,7 @@ bool CacheFileIOManager::IsOnIOThread() {
 
 // static
 bool CacheFileIOManager::IsOnIOThreadOrCeased() {
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   if (ioMan && ioMan->mIOThread) {
     return ioMan->mIOThread->IsCurrentThread();
   }
@@ -1583,15 +1592,16 @@ bool CacheFileIOManager::IsOnIOThreadOrCeased() {
 
 // static
 bool CacheFileIOManager::IsShutdown() {
-  if (!gInstance) {
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
     return true;
   }
-  return gInstance->mShuttingDown;
+  return ioMan->mShuttingDown;
 }
 
 // static
 nsresult CacheFileIOManager::ScheduleMetadataWrite(CacheFile* aFile) {
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   NS_ENSURE_TRUE(ioMan, NS_ERROR_NOT_INITIALIZED);
 
   NS_ENSURE_TRUE(!ioMan->mShuttingDown, NS_ERROR_NOT_INITIALIZED);
@@ -1607,6 +1617,16 @@ nsresult CacheFileIOManager::ScheduleMetadataWriteInternal(CacheFile* aFile) {
   MOZ_ASSERT(IsOnIOThreadOrCeased());
 
   nsresult rv;
+
+  // This may have been requested before ShutdownMetadataWriteScheduling()
+  // was called. Don't re-arm the timer after it ran, since nothing would
+  // cancel it; write the metadata now instead, unless handles are closed.
+  if (mMetadataWritesShutdown) {
+    if (!mShuttingDown) {
+      aFile->WriteMetadataIfNeeded();
+    }
+    return NS_OK;
+  }
 
   if (!mMetadataWritesTimer) {
     rv = NS_NewTimerWithCallback(getter_AddRefs(mMetadataWritesTimer), this,
@@ -1626,7 +1646,7 @@ nsresult CacheFileIOManager::ScheduleMetadataWriteInternal(CacheFile* aFile) {
 
 // static
 nsresult CacheFileIOManager::UnscheduleMetadataWrite(CacheFile* aFile) {
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   NS_ENSURE_TRUE(ioMan, NS_ERROR_NOT_INITIALIZED);
 
   NS_ENSURE_TRUE(!ioMan->mShuttingDown, NS_ERROR_NOT_INITIALIZED);
@@ -1651,7 +1671,7 @@ void CacheFileIOManager::UnscheduleMetadataWriteInternal(CacheFile* aFile) {
 
 // static
 nsresult CacheFileIOManager::ShutdownMetadataWriteScheduling() {
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   NS_ENSURE_TRUE(ioMan, NS_ERROR_NOT_INITIALIZED);
 
   RefPtr<MetadataWriteScheduleEvent> event = new MetadataWriteScheduleEvent(
@@ -1663,6 +1683,8 @@ nsresult CacheFileIOManager::ShutdownMetadataWriteScheduling() {
 
 void CacheFileIOManager::ShutdownMetadataWriteSchedulingInternal() {
   MOZ_ASSERT(IsOnIOThreadOrCeased());
+
+  mMetadataWritesShutdown = true;
 
   nsTArray<RefPtr<CacheFile>> files = std::move(mScheduledMetadataWrites);
   for (uint32_t i = 0; i < files.Length(); ++i) {
@@ -1705,7 +1727,7 @@ nsresult CacheFileIOManager::OpenFile(const nsACString& aKey, uint32_t aFlags,
        PromiseFlatCString(aKey).get(), aFlags, aCallback));
 
   nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
 
   if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
@@ -2013,17 +2035,20 @@ nsresult CacheFileIOManager::Read(CacheFileHandle* aHandle, int64_t aOffset,
     return NS_ERROR_NULL_POINTER;
   }
 
-  nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  if (aHandle->IsClosed()) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
 
-  if (aHandle->IsClosed() || !ioMan) {
+  nsresult rv;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
   }
 
   RefPtr<ReadEvent> ev =
       new ReadEvent(aHandle, aOffset, aBuf, aCount, aCallback);
 #if defined(MOZ_CACHE_ASYNC_IO)
-  if (IsOnIOThread()) {
+  if (ioMan->mIOThread->IsCurrentThread()) {
     // If we are already on the IO thread, we can run the event
     // inline. However, preserve the behavior that OnDataRead will be
     // called async when read operation is unsucessful in case the
@@ -2116,7 +2141,8 @@ nsresult CacheFileIOManager::ReadInternal(CacheFileHandle* aHandle,
       NS_NewRunnableFunction(
           "CacheFileIOManager::ReadInternal",
           [fd, autoFd = std::move(autoFd), aBuf, aCount, aOffset,
-           readevent = RefPtr(aReadEvent), isPriority]() mutable {
+           readevent = RefPtr(aReadEvent), isPriority,
+           ioThread = RefPtr(mIOThread)]() mutable {
             nsresult rv = NS_OK;
             int64_t offset = PR_Seek64(fd, aOffset, PR_SEEK_SET);
             if (offset == -1) {
@@ -2140,7 +2166,7 @@ nsresult CacheFileIOManager::ReadInternal(CacheFileHandle* aHandle,
 
             // Post completion back to the cache IO thread at the READ level,
             // so that test suspensions at READ properly block completion.
-            DebugOnly<nsresult> rv_dispatch = gInstance->mIOThread->Dispatch(
+            DebugOnly<nsresult> rv_dispatch = ioThread->Dispatch(
                 NewRunnableMethod<nsresult>(
                     "CacheFileIOManager::ReadEvent::OnComplete", readevent,
                     &ReadEvent::OnComplete, rv),
@@ -2169,9 +2195,12 @@ nsresult CacheFileIOManager::Write(CacheFileHandle* aHandle, int64_t aOffset,
 
   MOZ_ASSERT(aCallback);
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  if (aHandle->IsClosed() || aCallback->IsKilled()) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
 
-  if (aHandle->IsClosed() || aCallback->IsKilled() || !ioMan) {
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
   }
 
@@ -2193,9 +2222,8 @@ nsresult CacheFileIOManager::WriteWithoutCallback(CacheFileHandle* aHandle,
        "validate=%d, truncate=%d]",
        aHandle, aOffset, aCount, aValidate, aTruncate));
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
-
-  if (aHandle->IsClosed() || !ioMan) {
+  RefPtr<CacheFileIOManager> ioMan;
+  if (aHandle->IsClosed() || !(ioMan = GetInstance())) {
     // When no callback is provided, CacheFileIOManager is responsible for
     // releasing the buffer. We must release it even in case of failure.
     free(aBuf);
@@ -2401,10 +2429,13 @@ nsresult CacheFileIOManager::DoomFile(CacheFileHandle* aHandle,
   LOG(("CacheFileIOManager::DoomFile() [handle=%p, listener=%p]", aHandle,
        aCallback));
 
-  nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  if (aHandle->IsClosed()) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
 
-  if (aHandle->IsClosed() || !ioMan) {
+  nsresult rv;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
   }
 
@@ -2525,7 +2556,7 @@ nsresult CacheFileIOManager::DoomFileByKey(const nsACString& aKey,
        PromiseFlatCString(aKey).get(), aCallback));
 
   nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
 
   if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
@@ -2609,10 +2640,13 @@ nsresult CacheFileIOManager::DoomFileByKeyInternal(const SHA1Sum::Hash* aHash) {
 nsresult CacheFileIOManager::ReleaseNSPRHandle(CacheFileHandle* aHandle) {
   LOG(("CacheFileIOManager::ReleaseNSPRHandle() [handle=%p]", aHandle));
 
-  nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  if (aHandle->IsClosed()) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
 
-  if (aHandle->IsClosed() || !ioMan) {
+  nsresult rv;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
   }
 
@@ -2713,10 +2747,13 @@ nsresult CacheFileIOManager::TruncateSeekSetEOF(
        "EOFPos=%" PRId64 ", listener=%p]",
        aHandle, aTruncatePos, aEOFPos, aCallback));
 
-  nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  if (aHandle->IsClosed() || (aCallback && aCallback->IsKilled())) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
 
-  if (aHandle->IsClosed() || (aCallback && aCallback->IsKilled()) || !ioMan) {
+  nsresult rv;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
   }
 
@@ -2734,7 +2771,7 @@ nsresult CacheFileIOManager::TruncateSeekSetEOF(
 void CacheFileIOManager::GetCacheDirectory(nsIFile** result) {
   *result = nullptr;
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   if (!ioMan || !ioMan->mCacheDirectory) {
     return;
   }
@@ -2748,7 +2785,7 @@ void CacheFileIOManager::GetCacheDirectory(nsIFile** result) {
 void CacheFileIOManager::GetProfilelessCacheDirectory(nsIFile** result) {
   *result = nullptr;
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   if (!ioMan || !ioMan->mCacheProfilelessDirectory) {
     return;
   }
@@ -2766,7 +2803,7 @@ nsresult CacheFileIOManager::GetEntryInfo(
 
   nsresult rv;
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
   if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
   }
@@ -2955,15 +2992,18 @@ nsresult CacheFileIOManager::RenameFile(CacheFileHandle* aHandle,
   LOG(("CacheFileIOManager::RenameFile() [handle=%p, newName=%s, listener=%p]",
        aHandle, PromiseFlatCString(aNewName).get(), aCallback));
 
-  nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
-
-  if (aHandle->IsClosed() || !ioMan) {
+  if (aHandle->IsClosed()) {
     return NS_ERROR_NOT_INITIALIZED;
   }
 
   if (!aHandle->IsSpecialFile()) {
     return NS_ERROR_UNEXPECTED;
+  }
+
+  nsresult rv;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
+    return NS_ERROR_NOT_INITIALIZED;
   }
 
   RefPtr<RenameFileEvent> ev =
@@ -3042,7 +3082,7 @@ nsresult CacheFileIOManager::EvictIfOverLimit() {
   LOG(("CacheFileIOManager::EvictIfOverLimit()"));
 
   nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
 
   if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
@@ -3263,7 +3303,7 @@ nsresult CacheFileIOManager::EvictAll() {
   LOG(("CacheFileIOManager::EvictAll()"));
 
   nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
 
   if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
@@ -3382,7 +3422,7 @@ nsresult CacheFileIOManager::EvictByContext(
 
   // XXX evict dictionary data from memory cache
   nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
 
   if (!ioMan) {
     return NS_ERROR_NOT_INITIALIZED;
@@ -3703,7 +3743,7 @@ void CacheFileIOManager::OnTrashTimer(nsITimer* aTimer, void* aClosure) {
   LOG(("CacheFileIOManager::OnTrashTimer() [timer=%p, closure=%p]", aTimer,
        aClosure));
 
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
 
   if (!ioMan) {
     return;
@@ -3935,15 +3975,18 @@ nsresult CacheFileIOManager::InitIndexEntry(CacheFileHandle* aHandle,
        "anonymous=%d, pinning=%d]",
        aHandle, aOriginAttrsHash, aAnonymous, aPinning));
 
-  nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
-
-  if (aHandle->IsClosed() || !ioMan) {
+  if (aHandle->IsClosed()) {
     return NS_ERROR_NOT_INITIALIZED;
   }
 
   if (aHandle->IsSpecialFile()) {
     return NS_ERROR_UNEXPECTED;
+  }
+
+  nsresult rv;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
+    return NS_ERROR_NOT_INITIALIZED;
   }
 
   RefPtr<InitIndexEntryEvent> ev =
@@ -3972,15 +4015,18 @@ nsresult CacheFileIOManager::UpdateIndexEntry(CacheFileHandle* aHandle,
        aFetchCount ? nsPrintfCString("%u", *aFetchCount).get() : "",
        aContentType ? nsPrintfCString("%u", *aContentType).get() : ""));
 
-  nsresult rv;
-  RefPtr<CacheFileIOManager> ioMan = gInstance;
-
-  if (aHandle->IsClosed() || !ioMan) {
+  if (aHandle->IsClosed()) {
     return NS_ERROR_NOT_INITIALIZED;
   }
 
   if (aHandle->IsSpecialFile()) {
     return NS_ERROR_UNEXPECTED;
+  }
+
+  nsresult rv;
+  RefPtr<CacheFileIOManager> ioMan = GetInstance();
+  if (!ioMan) {
+    return NS_ERROR_NOT_INITIALIZED;
   }
 
   RefPtr<UpdateIndexEntryEvent> ev = new UpdateIndexEntryEvent(
