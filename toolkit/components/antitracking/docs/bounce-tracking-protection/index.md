@@ -102,10 +102,10 @@ Gecko handles this as follows:
   left behind holds no record, so closing it, as happens for a blank tab which
   only existed for the load, classifies nothing. The move is skipped if that tab
   has started another navigation meanwhile.
-- Every bounce is recorded with the `OriginAttributes` it ran in: a server side
-  hop with those of its redirect, a client side hop with those of the tab being
-  left. It is classified, exempted by user activation and purged in that
-  container only.
+- Every site of the record is a `BounceTrackingSite`: the site together with
+  the `OriginAttributes` it ran in. For a server side hop those are the ones of
+  its redirect, for a client side hop the ones of the tab being left. A bounce
+  is classified, exempted by user activation and purged in that container only.
 - The initial and final host are exempt only in the container their document
   ran in. Having been on a site in one container does not exempt that site's
   bounces in another, which would otherwise let a tracker collect state in a
@@ -162,7 +162,8 @@ classDiagram
 
     class BounceTrackingStateGlobal {
         - mUserActivation: nsTHashMap&lt;nsCStringHashKey, PRTime&gt;
-        - mBounceTrackers: nsTHashMap&lt;nsCStringHashKey, PRTime&gt;
+        - mBounceTrackers: nsTHashMap&lt;nsCStringHashKey, BounceTrackerCandidate&gt;
+        - mRecentPurges: nsTHashMap&lt;nsCStringHashKey, nsTArray&lt;RefPtr&lt;BounceTrackingPurgeEntry&gt;&gt;&gt;
         - mOriginAttributes: OriginAttributes
     }
 
@@ -175,16 +176,30 @@ classDiagram
     }
 
 
+    class BounceTrackingPurgeEntry {
+        - mSite: BounceTrackingSite
+        - mChainRecord: BounceTrackingRecord
+    }
+
+    note for BounceTrackingPurgeEntry "Purge log entry, keeps the bounce chain
+                                       which got the site classified."
+
     class BounceTrackingRecord {
-        - mInitialHost: nsAutoCString
-        - mInitialOriginAttributes: OriginAttributes
-        - mBounceHosts: nsTHashMap&lt;OriginAttributesHashKey, nsTHashSet&lt;nsCStringHashKey&gt;&gt;
-        - mFinalHost: nsAutoCString
-        - mFinalOriginAttributes: OriginAttributes
+        - mInitialSite: BounceTrackingSite
+        - mBounceSites: nsTHashSet&lt;BounceTrackingSiteHashKey&gt;
+        - mFinalSite: BounceTrackingSite
     }
 
     note for BounceTrackingRecord "Encapsulates the per-tab navigation state
                                    during an extended navigation."
+
+    class BounceTrackingSite {
+        - mSiteHost: nsCString
+        - mOriginAttributes: OriginAttributes
+    }
+
+    note for BounceTrackingSite "A site together with the storage partition it
+                                 ran in, or the null site for untracked documents."
 
     class BounceTrackingState {
         - mBounceTrackingProtection: BounceTrackingProtection
@@ -210,6 +225,9 @@ classDiagram
     BounceTrackingState --o BounceTrackingProtection
     BounceTrackingState --> BounceTrackingProtection : RecordStatefulBounces() on extended nav end
     BounceTrackingState *-- BounceTrackingRecord
+    BounceTrackingRecord *-- BounceTrackingSite
+    BounceTrackingPurgeEntry *-- BounceTrackingSite
+    BounceTrackingStateGlobal *-- BounceTrackingPurgeEntry
     BrowsingContextWebProgress *-- BounceTrackingState
     BounceTrackingStateGlobal --* BounceTrackingProtectionStorage
     BounceTrackingStateGlobal --> BounceTrackingProtectionStorage : Persists state changes in storage.
