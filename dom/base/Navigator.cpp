@@ -26,6 +26,7 @@
 #include "nsIContentPolicy.h"
 #include "nsIHttpProtocolHandler.h"
 #include "nsISupportsPriority.h"
+#include "nsITimedChannel.h"
 #include "nsIWebProtocolHandlerRegistrar.h"
 #include "nsIXULAppInfo.h"
 #include "nsMimeTypeArray.h"
@@ -1375,6 +1376,10 @@ bool Navigator::SendBeaconInternal(const nsAString& aUrl,
   nsCOMPtr<nsIClassOfService> cos(do_QueryInterface(channel));
   if (cos) {
     cos->AddClassFlags(nsIClassOfService::Background);
+  }
+
+  if (nsCOMPtr<nsITimedChannel> timedChannel = do_QueryInterface(channel)) {
+    timedChannel->SetInitiatorType(u"beacon"_ns);
   }
 
   // The channel needs to have a loadgroup associated with it, so that we can
