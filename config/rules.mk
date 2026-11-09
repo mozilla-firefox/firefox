@@ -528,10 +528,6 @@ ifneq (,$(filter $(DIST)/bin/gtest%,$(FINAL_TARGET)))
 DUMP_SYMBOLS_FLAGS += --symbols-dir=crashreporter-symbols-gtest
 endif
 
-ifneq (,$(filter $(DIST)/bin%,$(FINAL_TARGET)))
-DUMP_SYMS_TARGETS := $(filter-out $(MOZBUILD_NON_DEFAULT_TARGETS),$(SHARED_LIBRARY) $(PROGRAM) $(SIMPLE_PROGRAMS) $(RUST_PROGRAMS))
-endif
-
 ifdef MOZ_AUTOMATION
 ifeq (,$(filter 1,$(MOZ_AUTOMATION_BUILD_SYMBOLS)))
 DUMP_SYMS_TARGETS :=

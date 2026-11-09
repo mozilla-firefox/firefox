@@ -9,6 +9,8 @@ def Program(name):
 
 DIRS += [
     "dist-bin",
+    "dist-bin-sibling",
+    "dist-bin-simple",
     "dist-subdir",
     "final-target",
     "not-installed",

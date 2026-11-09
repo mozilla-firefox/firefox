@@ -1,0 +1,11 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+
+@template
+def SimplePrograms(names):
+    SIMPLE_PROGRAMS += names
+    SOURCES += [f"{n}.cpp" for n in names]
+
+
+SimplePrograms(["simple"])
