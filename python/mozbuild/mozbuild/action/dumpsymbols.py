@@ -116,14 +116,27 @@ def main(argv):
     )
     parser.add_argument("library_or_program", help="Path to library or program")
     parser.add_argument("tracking_file", help="Tracking file")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
-    return dump_symbols(
+    dump_symbols(
         args.library_or_program,
         args.tracking_file,
         args.count_ctors,
         args.symbols_dir,
     )
+
+    substs = buildconfig.substs
+    if substs.get("OS_ARCH") != "WINNT" or not substs.get("WINCHECKSEC"):
+        return 0
+    try:
+        subprocess.check_call([
+            sys.executable,
+            os.path.join(buildconfig.topsrcdir, "build", "win32", "autowinchecksec.py"),
+            args.library_or_program,
+        ])
+    except subprocess.CalledProcessError as e:
+        return e.returncode
+    return 0
 
 
 if __name__ == "__main__":

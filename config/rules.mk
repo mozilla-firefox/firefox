@@ -480,11 +480,6 @@ define syms_template
 $(2): $(1)
 ifdef MOZ_CRASHREPORTER
 	$$(call py_action,dumpsymbols $$@,$$(abspath $$<) $$(abspath $$@) $$(DUMP_SYMBOLS_FLAGS))
-ifeq ($(OS_ARCH),WINNT)
-ifdef WINCHECKSEC
-	$$(PYTHON3) $$(topsrcdir)/build/win32/autowinchecksec.py $$<
-endif # WINCHECKSEC
-endif # WINNT
 endif
 endef
 
