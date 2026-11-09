@@ -407,15 +407,9 @@ class ProjectPlugin : Plugin<Project> {
                     // Classfile, because javac has a bug with MethodParameters attributes
                     // with Java 7. https://bugs.openjdk.java.net/browse/JDK-8190452
                     "-Xlint:-classfile",
+                    "-Werror",
                 ),
             )
-
-            // In GeckoView java projects only, turn all remaining warnings
-            // into errors unless marked by @SuppressWarnings.
-            val werrorProjects = setOf("annotations", "messaging_example", "port_messaging_example", "test_runner")
-            if (project.name.startsWith("geckoview") || project.name in werrorProjects) {
-                options.compilerArgs.add("-Werror")
-            }
         }
         project.pluginManager.withPlugin("com.android.base") {
             project.tasks.withType<JavaCompile>().configureEach {
