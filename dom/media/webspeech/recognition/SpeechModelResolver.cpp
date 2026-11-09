@@ -118,16 +118,17 @@ SpeechModelResolver::AuthorizeDownload(
   }
 
   // Nothing to download means nothing to consent to.
-  CheckInstalled(model,
-                 [model, bc, progressToken,
-                  resolve = std::move(resolve)](bool aInstalled) mutable {
-                   if (aInstalled) {
-                     resolve(true);
-                     return;
-                   }
-                   ShowSpeechModelDownloadConsent(model, bc, progressToken,
-                                                  std::move(resolve));
-                 });
+  CheckInstalled(
+      model,
+      [model, bc = std::move(bc), progressToken = std::move(progressToken),
+       resolve = std::move(resolve)](bool aInstalled) mutable {
+        if (aInstalled) {
+          resolve(true);
+          return;
+        }
+        ShowSpeechModelDownloadConsent(model, bc, progressToken,
+                                       std::move(resolve));
+      });
   return NS_OK;
 }
 
