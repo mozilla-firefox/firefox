@@ -8,6 +8,12 @@ Program("zucchini-gtest")
 
 DisableStlWrapping()
 
+# checked_iterators.h opens libc++'s std namespace with _LIBCPP_BEGIN_NAMESPACE_STD
+# to specialize internal traits; newer libc++ pushes ABI attributes there that
+# go unused, tripping -Wpragma-clang-attribute.
+if CONFIG["CC_TYPE"] in ("clang", "clang-cl"):
+    CXXFLAGS += ["-Wno-pragma-clang-attribute"]
+
 LOCAL_INCLUDES += [
     "/third_party/abseil-cpp/",
     "/third_party/googletest/googletest",
