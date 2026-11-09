@@ -84,6 +84,56 @@ bool AllocationIntegrityState::record() {
     }
   }
 
+  // Check that if an output reuses an input, no other input in the output's
+  // register class is used at start, unless another output reuses it, as with
+  // the other half of an int64 or boxed pair.
+  //
+  // An input used at start may share its register with an output. When the
+  // reused input stays live after the instruction, the allocator copies it into
+  // the reusing output's register before the instruction, which overwrites any
+  // input used at start that shares that register (bug 2082277).
+  for (size_t i = 0; i < graph.numBlocks(); i++) {
+    LBlock* block = graph.getBlock(i);
+    for (LInstructionIterator iter = block->begin(); iter != block->end();
+         iter++) {
+      LInstruction* ins = *iter;
+      auto isReused = [ins](uint32_t vreg) {
+        for (size_t k = 0; k < ins->numDefs(); k++) {
+          LDefinition* def = ins->getDef(k);
+          if (def->policy() == LDefinition::MUST_REUSE_INPUT &&
+              ins->getOperand(def->getReusedInput())
+                      ->toUse()
+                      ->virtualRegister() == vreg) {
+            return true;
+          }
+        }
+        return false;
+      };
+      for (size_t k = 0; k < ins->numDefs(); k++) {
+        LDefinition* def = ins->getDef(k);
+        if (def->policy() != LDefinition::MUST_REUSE_INPUT) {
+          continue;
+        }
+        uint32_t reused =
+            ins->getOperand(def->getReusedInput())->toUse()->virtualRegister();
+        for (size_t j = 0; j < ins->numOperands(); j++) {
+          LAllocation* a = ins->getOperand(j);
+          if (!a->isUse() || !a->toUse()->usedAtStart() ||
+              isReused(a->toUse()->virtualRegister())) {
+            continue;
+          }
+          LDefinition* other = virtualRegisters[a->toUse()->virtualRegister()];
+          if (other->isFloatReg() != def->isFloatReg()) {
+            continue;
+          }
+          MOZ_CRASH_UNSAFE_PRINTF(
+              "%s: at-start use of v%u alongside output reusing v%u",
+              ins->opName(), a->toUse()->virtualRegister(), reused);
+        }
+      }
+    }
+  }
+
   return true;
 }
 
