@@ -468,6 +468,7 @@ tasks:
         download-firefox-${vars.channel}:
           use:
             - wpt-base
+          priority: very-high
           command: "./wpt install --download-only --destination /home/test/artifacts/ --channel=${vars.channel}  --rename=firefox-${vars.channel} firefox browser"
 
   - lint:
@@ -642,5 +643,6 @@ tasks:
       use:
         - wpt-base
         - trigger-pr
+      priority: highest
       command: "./wpt tc-sink-task --github-checks-text-file=/home/test/artifacts/checkrun.md"
       requires: all-resolved

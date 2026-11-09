@@ -51,6 +51,7 @@ tasks:
           deadline: {$fromNow: '24 hours'}
           provisionerId: proj-wpt
           workerType: ci-gw
+          priority: very-high
           metadata:
             name: "wpt-decision-task"
             description: "The task that creates all of the other tasks in the task graph"
