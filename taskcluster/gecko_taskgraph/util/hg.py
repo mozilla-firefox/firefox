@@ -59,12 +59,19 @@ def find_hg_revision_push_info(repository, revision):
 
 
 @functools.cache
-def get_push_data(repository, project, push_id_start, push_id_end):
+def get_push_data(repository, project, push_id_start, push_id_end, full=False):
+    """Return the pushlog entries of the pushes from ``push_id_start`` to
+    ``push_id_end`` (inclusive), keyed by pushlog id, or None on failure.
+
+    Each entry lists its changesets as nodes, or with ``full`` as objects
+    describing them (``node``, ``desc``, ``author``, ...)."""
     url = PUSHLOG_PUSHES_TMPL.format(
         repository=repository,
         push_id_start=push_id_start - 1,
         push_id_end=push_id_end,
     )
+    if full:
+        url += "&full=1"
 
     try:
         pushes = _query_pushlog(url)

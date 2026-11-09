@@ -5,6 +5,7 @@ This section documents some of the [optimization] strategies available in
 
 ```{toctree}
 schedules
+perf-batching
 ```
 
 ## Other Strategies

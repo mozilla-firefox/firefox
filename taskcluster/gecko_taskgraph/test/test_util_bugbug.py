@@ -3,11 +3,15 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+import time
+
 import mozunit
 import pytest
 
 from gecko_taskgraph.util.bugbug import (
     BUGBUG_BASE_URL,
+    BugbugTimeoutException,
+    push_perf_risk,
     push_schedules,
     start_push_schedules,
 )
@@ -80,6 +84,30 @@ def test_start_push_schedules_failure(responses):
     future = start_push_schedules(branch, rev)
     with pytest.raises(Exception):
         future.result(timeout=10)
+
+
+def test_push_perf_risk(monkeypatch, responses):
+    push_perf_risk.cache_clear()
+    monkeypatch.setattr(time, "sleep", lambda i: None)
+    url = BUGBUG_BASE_URL + "/perfregressionpredictor/predict/push/autoland/abcdef"
+    prediction = {"risk_score": 0.2, "commits": [{"risk_score": 0.2}]}
+
+    responses.add(responses.GET, url, json={"ready": False}, status=202)
+    responses.add(responses.GET, url, json=prediction, status=200)
+
+    assert push_perf_risk("autoland", "abcdef") == prediction
+    assert len(responses.calls) == 2
+
+
+def test_push_perf_risk_timeout(monkeypatch, responses):
+    push_perf_risk.cache_clear()
+    monkeypatch.setattr(time, "sleep", lambda i: None)
+    url = BUGBUG_BASE_URL + "/perfregressionpredictor/predict/push/autoland/abcdef"
+
+    responses.add(responses.GET, url, json={"ready": False}, status=202)
+
+    with pytest.raises(BugbugTimeoutException):
+        push_perf_risk("autoland", "abcdef")
 
 
 if __name__ == "__main__":

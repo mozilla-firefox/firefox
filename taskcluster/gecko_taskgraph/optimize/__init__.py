@@ -14,8 +14,9 @@ See ``taskcluster/docs/optimization.rst`` for more information.
 from taskgraph.optimize.base import Alias, All, Any, Not, register_strategy
 from taskgraph.util.python_path import import_sibling_modules
 
-from gecko_taskgraph.optimize.backstop import SkipUnlessPushInterval
 from gecko_taskgraph.optimize.perf_batching import (
+    SkipUnlessPushesSinceLastBatch,
+    SkipUnlessRiskThreshold,
     SkipUnlessTimeSinceLastBatch,
     perf_batch_overrides,
 )
@@ -295,70 +296,48 @@ class experimental:
     }
     """Runs task containing tests in the same directories as modified files."""
 
-    perf_fixed_batch_10 = perf_batch_overrides(
-        project.autoland, SkipUnlessPushInterval(10)
+    # The perf batching parameters come from replaying each strategy over
+    # autoland's history with bugbug's perf scheduling simulator, on calibrated
+    # risk scores; see taskcluster/docs/optimization/perf-batching.md.
+    perf_fixed_batch = perf_batch_overrides(
+        project.autoland, SkipUnlessPushesSinceLastBatch(18, "perf_fixed_batch")
     )
-    """Runs all performance tests every 10 pushes, other tasks as on autoland."""
+    """Runs all performance tests when 18 pushes have been made since the last
+    batch, other tasks as on autoland."""
 
-    perf_fixed_batch_20 = perf_batch_overrides(
-        project.autoland, SkipUnlessPushInterval(20)
+    perf_time_batch = perf_batch_overrides(
+        project.autoland, SkipUnlessTimeSinceLastBatch(3, "perf_time_batch")
     )
-    """Runs all performance tests every 20 pushes, other tasks as on autoland."""
+    """Runs all performance tests when 3 hours have passed since the last
+    batch, other tasks as on autoland."""
 
-    perf_fixed_batch_30 = perf_batch_overrides(
-        project.autoland, SkipUnlessPushInterval(30)
+    perf_rasb = perf_batch_overrides(
+        project.autoland, SkipUnlessRiskThreshold(0.28, "product", "perf_rasb")
     )
-    """Runs all performance tests every 30 pushes, other tasks as on autoland."""
+    """Risk-aware stream batching (RASB): runs all performance tests when the
+    probability that a commit pushed since the last batch regressed
+    performance reaches 0.28, other tasks as on autoland."""
 
-    perf_fixed_batch_40 = perf_batch_overrides(
-        project.autoland, SkipUnlessPushInterval(40)
+    perf_rasb_la = perf_batch_overrides(
+        project.autoland, SkipUnlessRiskThreshold(0.32, "linear", "perf_rasb_la")
     )
-    """Runs all performance tests every 40 pushes, other tasks as on autoland."""
+    """RASB with linear aggregation: runs all performance tests when the sum of
+    the risk scores of the commits pushed since the last batch reaches 0.32,
+    other tasks as on autoland."""
 
-    perf_fixed_batch_50 = perf_batch_overrides(
-        project.autoland, SkipUnlessPushInterval(50)
+    perf_rapb = perf_batch_overrides(
+        project.autoland,
+        SkipUnlessRiskThreshold(0.6, "product", "perf_rapb", aging_rate=0.02),
     )
-    """Runs all performance tests every 50 pushes, other tasks as on autoland."""
+    """Risk-aged priority batching (RAPB): RASB with commit risk scores aged
+    at a rate of 0.02 per hour waited, and a threshold of 0.6."""
 
-    perf_fixed_batch_60 = perf_batch_overrides(
-        project.autoland, SkipUnlessPushInterval(60)
+    perf_rapb_la = perf_batch_overrides(
+        project.autoland,
+        SkipUnlessRiskThreshold(0.55, "linear", "perf_rapb_la", aging_rate=0.01),
     )
-    """Runs all performance tests every 60 pushes, other tasks as on autoland."""
-
-    perf_time_batch_3h = perf_batch_overrides(
-        project.autoland, SkipUnlessTimeSinceLastBatch(3, "perf_time_batch_3h")
-    )
-    """Runs all performance tests when 3 hours have passed since the last batch."""
-
-    perf_time_batch_4h = perf_batch_overrides(
-        project.autoland, SkipUnlessTimeSinceLastBatch(4, "perf_time_batch_4h")
-    )
-    """Runs all performance tests when 4 hours have passed since the last batch."""
-
-    perf_time_batch_5h = perf_batch_overrides(
-        project.autoland, SkipUnlessTimeSinceLastBatch(5, "perf_time_batch_5h")
-    )
-    """Runs all performance tests when 5 hours have passed since the last batch."""
-
-    perf_time_batch_5_5h = perf_batch_overrides(
-        project.autoland, SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch_5_5h")
-    )
-    """Runs all performance tests when 5.5 hours have passed since the last batch."""
-
-    perf_time_batch_6h = perf_batch_overrides(
-        project.autoland, SkipUnlessTimeSinceLastBatch(6, "perf_time_batch_6h")
-    )
-    """Runs all performance tests when 6 hours have passed since the last batch."""
-
-    perf_time_batch_6_5h = perf_batch_overrides(
-        project.autoland, SkipUnlessTimeSinceLastBatch(6.5, "perf_time_batch_6_5h")
-    )
-    """Runs all performance tests when 6.5 hours have passed since the last batch."""
-
-    perf_time_batch_7h = perf_batch_overrides(
-        project.autoland, SkipUnlessTimeSinceLastBatch(7, "perf_time_batch_7h")
-    )
-    """Runs all performance tests when 7 hours have passed since the last batch."""
+    """RAPB with linear aggregation: RASB-la with commit risk scores aged at a
+    rate of 0.01 per hour waited, and a threshold of 0.55."""
 
 
 def _mirror_test_strategy(overrides):

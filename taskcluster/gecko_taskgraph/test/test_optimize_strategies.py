@@ -3,6 +3,7 @@
 
 
 import json
+import math
 import time
 from datetime import datetime
 from time import mktime
@@ -29,6 +30,8 @@ from gecko_taskgraph.optimize.docs import SkipUnlessSphinxJs
 from gecko_taskgraph.optimize.mozlint import SkipUnlessMozlint
 from gecko_taskgraph.optimize.perf_batching import (
     PERF_CADENCE_STRATEGIES,
+    SkipUnlessPushesSinceLastBatch,
+    SkipUnlessRiskThreshold,
     SkipUnlessTimeSinceLastBatch,
 )
 from gecko_taskgraph.optimize.strategies import SkipUnlessMissing, SkipUnlessSchedules
@@ -712,55 +715,374 @@ def test_perf_cadence_default_mirrors_test():
 
 
 def test_perf_batch_overrides():
-    overrides = experimental.perf_fixed_batch_10
+    overrides = experimental.perf_fixed_batch
     assert overrides["build"] is project.autoland["build"]
     assert overrides["test"] is project.autoland["test"]
 
     batch = overrides["perf-cadence-expanded"]
-    assert isinstance(batch, SkipUnlessPushInterval)
-    assert batch.push_interval == 10
+    assert isinstance(batch, SkipUnlessPushesSinceLastBatch)
     for name in PERF_CADENCE_STRATEGIES:
         assert overrides[name] is batch
 
 
-def test_skip_unless_time_since_last_batch(monkeypatch, params):
-    saved = []
-    monkeypatch.setattr(perf_batching, "save_state", saved.append)
+HOUR = 3600
+PUSHDATE = 1000000
 
-    def set_state(state):
-        monkeypatch.setattr(perf_batching, "load_state", lambda *args: state)
 
-    task = perf_batch_tasks[0]
-    params["pushdate"] = 1000000
+class FakeBatchState:
+    """Stands in for the artifacts carrying the perf batching state:
+    `loaded` is what load_state returns and `saved` collects what save_state
+    is given."""
 
-    # Cold start: kept, the current push becomes the last batch.
-    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch_5_5h")
+    def __init__(self, monkeypatch):
+        self.loaded = None
+        self.saved = []
+        monkeypatch.setattr(perf_batching, "load_state", lambda *args: self.loaded)
+        monkeypatch.setattr(perf_batching, "save_state", self.saved.append)
+
+    def set_batches(self, *batches):
+        """Make the loaded state record batches at the given
+        (pushlog_id, pushdate) pairs."""
+        self.loaded = {
+            "batches": [
+                {"pushlog_id": pushlog_id, "pushdate": pushdate, "head_rev": None}
+                for pushlog_id, pushdate in batches
+            ]
+        }
+
+
+@pytest.fixture
+def batch_state(monkeypatch):
+    return FakeBatchState(monkeypatch)
+
+
+class FakePushlog(dict):
+    """Push dates served in place of the pushlog, keyed by pushlog id. The
+    revision of push N is "revN"; pushes in `dontbuild` say DONTBUILD."""
+
+    def __init__(self):
+        super().__init__()
+        self.dontbuild = set()
+
+    def get_push_data(self, repository, project, start, end, full=False):
+        assert full
+        return {
+            pushlog_id: {
+                "date": self[pushlog_id],
+                "changesets": [
+                    {
+                        "node": f"rev{pushlog_id}",
+                        "desc": "Bug 1 - Change"
+                        + (" DONTBUILD" if pushlog_id in self.dontbuild else ""),
+                    }
+                ],
+            }
+            for pushlog_id in range(start, end + 1)
+        }
+
+
+@pytest.fixture
+def pushlog(monkeypatch):
+    pushdates = FakePushlog()
+    monkeypatch.setattr(perf_batching, "get_push_data", pushdates.get_push_data)
+    return pushdates
+
+
+@pytest.fixture
+def risks(monkeypatch):
+    """Commit risk scores served in place of bugbug's, keyed by push
+    revision. None stands for a commit bugbug ignores."""
+    risks = {}
+
+    def push_perf_risk(branch, rev):
+        return {
+            "commits": [
+                {
+                    "risk_score": risk,
+                    "ignored_reason": "backout" if risk is None else None,
+                }
+                for risk in risks.get(rev, [])
+            ]
+        }
+
+    monkeypatch.setattr(perf_batching, "push_perf_risk", push_perf_risk)
+    return risks
+
+
+def batch_ids(state):
+    return [batch["pushlog_id"] for batch in state["batches"]]
+
+
+def test_push_batch_cold_start(batch_state, params):
+    opt = SkipUnlessPushesSinceLastBatch(64, "perf_fixed_batch")
     params["pushlog_id"] = 100
-    set_state(None)
-    assert not opt.should_remove_task(task, params, None)
-    assert saved[-1]["batched"] and saved[-1]["cold_start"]
-    assert saved[-1]["last_batch"]["pushlog_id"] == 100
+    assert not opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    assert state["batched"] and state["cold_start"]
+    assert state["config"] == {"push_interval": 64}
+    assert batch_ids(state) == [100]
 
-    # Not enough time since the last batch: removed, last batch carried over.
-    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch_5_5h")
-    params["pushlog_id"] = 101
-    set_state({"last_batch": {"pushlog_id": 90, "pushdate": 1000000 - 19800 + 60}})
-    assert opt.should_remove_task(task, params, None)
-    assert not saved[-1]["batched"] and not saved[-1]["cold_start"]
-    assert saved[-1]["last_batch"]["pushlog_id"] == 90
 
-    # Interval elapsed: kept, the last batch advances to the current push.
-    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch_5_5h")
-    params["pushlog_id"] = 102
-    set_state({"last_batch": {"pushlog_id": 90, "pushdate": 1000000 - 19800}})
-    assert not opt.should_remove_task(task, params, None)
-    assert saved[-1]["batched"]
-    assert saved[-1]["last_batch"]["pushlog_id"] == 102
+@pytest.mark.parametrize("pushes,batched", [(63, False), (64, True)])
+def test_push_batch_interval(batch_state, params, pushes, batched):
+    opt = SkipUnlessPushesSinceLastBatch(64, "perf_fixed_batch")
+    batch_state.set_batches((100, PUSHDATE))
+    params["pushlog_id"] = 100 + pushes
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None) != batched
+    state = batch_state.saved[-1]
+    assert state["batched"] == batched and not state["cold_start"]
+    assert state["score"] == pushes
 
-    # The decision and state are computed once per push.
-    assert len(saved) == 3
-    assert not opt.should_remove_task(task, params, None)
-    assert len(saved) == 3
+
+def test_push_batch_replay_skips_dontbuild_pushes(batch_state, params, pushlog):
+    """A batch due on a DONTBUILD push is deferred, not lost: the count
+    restarts from the push that batched instead."""
+    opt = SkipUnlessPushesSinceLastBatch(3, "perf_fixed_batch")
+    batch_state.set_batches((90, PUSHDATE))
+    pushlog.update({pushlog_id: PUSHDATE for pushlog_id in range(91, 97)})
+    pushlog.dontbuild.add(93)
+    params["pushlog_id"] = 97
+    assert not opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    assert batch_ids(state) == [90, 94, 97]
+    assert state["score"] == 3
+
+
+def test_time_batch_cold_start(batch_state, params):
+    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch")
+    params["pushlog_id"] = 100
+    assert not opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    assert state["batched"] and state["cold_start"]
+    assert batch_ids(state) == [100]
+
+
+@pytest.mark.parametrize("elapsed_hours,batched", [(5.4, False), (5.5, True)])
+def test_time_batch_interval(batch_state, params, elapsed_hours, batched):
+    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch")
+    batch_state.set_batches((99, PUSHDATE - int(elapsed_hours * HOUR)))
+    params["pushlog_id"] = 100
+    params["pushdate"] = PUSHDATE
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None) != batched
+    state = batch_state.saved[-1]
+    assert state["batched"] == batched and not state["cold_start"]
+    assert state["score"] == pytest.approx(elapsed_hours)
+
+
+def test_time_batch_replays_batches_of_other_runs(batch_state, params, pushlog):
+    """A batch made by the run of an earlier push, whose state this run
+    could not load, is re-derived rather than batched again."""
+    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch")
+    batch_state.set_batches((90, PUSHDATE))
+    pushlog.update({
+        91: PUSHDATE + 2 * HOUR,
+        92: PUSHDATE + 6 * HOUR,
+        93: PUSHDATE + 7 * HOUR,
+    })
+    params["pushlog_id"] = 94
+    params["pushdate"] = PUSHDATE + 8 * HOUR
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    assert state["replayed_from"] == 90
+    assert batch_ids(state) == [90, 92]
+    assert state["score"] == pytest.approx(2)
+
+
+def test_time_batch_ignores_batches_after_push(batch_state, params, pushlog):
+    """The state of a run for a later push that finished first is replayed
+    from its last batch before this push."""
+    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch")
+    batch_state.set_batches((90, PUSHDATE), (95, PUSHDATE + 6 * HOUR))
+    pushlog.update({91: PUSHDATE + HOUR, 92: PUSHDATE + 2 * HOUR})
+    params["pushlog_id"] = 93
+    params["pushdate"] = PUSHDATE + 3 * HOUR
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    assert state["replayed_from"] == 90
+    assert batch_ids(state) == [90]
+
+
+def test_time_batch_replay_skips_dontbuild_pushes(batch_state, params, pushlog):
+    """No task runs on a DONTBUILD push, so a batch due there waits for the
+    next push."""
+    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch")
+    batch_state.set_batches((90, PUSHDATE))
+    pushlog.update({
+        91: PUSHDATE + 2 * HOUR,
+        92: PUSHDATE + 6 * HOUR,
+        93: PUSHDATE + 7 * HOUR,
+    })
+    pushlog.dontbuild.add(92)
+    params["pushlog_id"] = 94
+    params["pushdate"] = PUSHDATE + 8 * HOUR
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    assert batch_ids(state) == [90, 93]
+    assert state["score"] == pytest.approx(1)
+
+
+def test_risk_threshold_replay_skips_dontbuild_pushes(
+    batch_state, params, pushlog, risks
+):
+    """The commits of a DONTBUILD push count towards the next decision,
+    even though the push itself is never a batch."""
+    opt = SkipUnlessRiskThreshold(0.32, "product", "perf_risk")
+    batch_state.set_batches((90, PUSHDATE))
+    pushlog.update({91: PUSHDATE, 92: PUSHDATE, 93: PUSHDATE})
+    pushlog.dontbuild.add(92)
+    risks.update({
+        "rev91": [0.1],
+        "rev92": [0.3],
+        "rev93": [0.0],
+        params["head_rev"]: [0.1],
+    })
+    params["pushlog_id"] = 94
+    params["pushdate"] = PUSHDATE
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    # Push 92 brings the risk to 1 - 0.9 * 0.7 = 0.37, over the threshold,
+    # but cannot run anything; push 93 batches instead.
+    assert batch_ids(state) == [90, 93]
+    assert state["score"] == pytest.approx(0.1)
+
+
+def test_batch_too_many_pushes_to_replay(batch_state, params):
+    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch")
+    batch_state.set_batches((1, PUSHDATE))
+    params["pushlog_id"] = 2 + perf_batching.MAX_REPLAYED_PUSHES
+    assert not opt.should_remove_task(perf_batch_tasks[0], params, None)
+    assert batch_state.saved[-1]["cold_start"]
+
+
+def test_batch_decision_once_per_push(batch_state, params):
+    opt = SkipUnlessTimeSinceLastBatch(5.5, "perf_time_batch")
+    params["pushlog_id"] = 100
+    for task in perf_batch_tasks:
+        assert not opt.should_remove_task(task, params, None)
+    assert len(batch_state.saved) == 1
+
+
+@pytest.mark.parametrize(
+    "aggregation,threshold,commit_risks,batched,score",
+    [
+        pytest.param("product", 0.32, [0.2, 0.2], True, 0.36, id="product-due"),
+        pytest.param(
+            "product", 0.32, [0.1, 0.1, 0.1], False, 0.271, id="product-not-due"
+        ),
+        pytest.param("product", 0.32, [1.0], True, 1.0, id="product-certain"),
+        pytest.param("linear", 0.368, [0.2, 0.2], True, 0.4, id="linear-due"),
+        pytest.param("linear", 0.368, [0.1, 0.1, 0.1], False, 0.3, id="linear-not-due"),
+        pytest.param(
+            "linear", 0.368, [0.3, None, 0.05], False, 0.35, id="ignored-commit"
+        ),
+    ],
+)
+def test_risk_threshold_aggregation(
+    batch_state, params, risks, aggregation, threshold, commit_risks, batched, score
+):
+    opt = SkipUnlessRiskThreshold(threshold, aggregation, "perf_risk")
+    batch_state.set_batches((99, PUSHDATE))
+    params["pushlog_id"] = 100
+    params["pushdate"] = PUSHDATE
+    risks[params["head_rev"]] = commit_risks
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None) != batched
+    state = batch_state.saved[-1]
+    assert state["batched"] == batched
+    assert state["score"] == pytest.approx(score)
+    assert len(state["risk_prediction"]["commits"]) == len(commit_risks)
+
+
+def test_risk_threshold_accumulates_pushes_since_last_batch(
+    batch_state, params, pushlog, risks
+):
+    opt = SkipUnlessRiskThreshold(0.32, "product", "perf_risk")
+    batch_state.set_batches((97, PUSHDATE))
+    pushlog.update({98: PUSHDATE, 99: PUSHDATE})
+    risks.update({"rev98": [0.15], "rev99": [0.15], params["head_rev"]: [0.15]})
+    params["pushlog_id"] = 100
+    params["pushdate"] = PUSHDATE
+    assert not opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    assert state["score"] == pytest.approx(1 - 0.85**3)
+    assert batch_ids(state) == [97, 100]
+
+
+def test_risk_threshold_replays_batches_of_other_runs(
+    batch_state, params, pushlog, risks
+):
+    """Push 92 brings the risk over the threshold, so only the risk of the
+    pushes after it counts on push 94."""
+    opt = SkipUnlessRiskThreshold(0.32, "product", "perf_risk")
+    batch_state.set_batches((90, PUSHDATE))
+    pushlog.update({91: PUSHDATE, 92: PUSHDATE, 93: PUSHDATE})
+    risks.update({
+        "rev91": [0.1],
+        "rev92": [0.3],
+        "rev93": [0.1],
+        params["head_rev"]: [0.1],
+    })
+    params["pushlog_id"] = 94
+    params["pushdate"] = PUSHDATE
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None)
+    state = batch_state.saved[-1]
+    assert batch_ids(state) == [90, 92]
+    assert state["score"] == pytest.approx(1 - 0.9**2)
+
+
+@pytest.mark.parametrize(
+    "aging_rate,waited_hours,batched",
+    [(0.018, 81, False), (0.018, 82, True), (0, 1000, False)],
+)
+def test_risk_threshold_aging(
+    batch_state, params, pushlog, risks, aging_rate, waited_hours, batched
+):
+    """With aging, a commit without risk is eventually tested: its score
+    1 - exp(-0.018 * w) reaches 0.77 after about 81.65 hours."""
+    opt = SkipUnlessRiskThreshold(0.77, "product", "perf_risk", aging_rate=aging_rate)
+    batch_state.set_batches((98, PUSHDATE))
+    pushlog[99] = PUSHDATE
+    risks["rev99"] = [0.0]
+    params["pushlog_id"] = 100
+    params["pushdate"] = PUSHDATE + waited_hours * HOUR
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None) != batched
+    assert batch_state.saved[-1]["score"] == pytest.approx(
+        -math.expm1(-aging_rate * waited_hours)
+    )
+
+
+@pytest.mark.parametrize("commits,batched", [(2, False), (3, True)])
+def test_linear_risk_threshold_aging_saturates(
+    batch_state, params, pushlog, risks, commits, batched
+):
+    """Aged scores rise towards 1 each, so a linear threshold above 2 takes
+    at least 3 waiting commits to reach."""
+    opt = SkipUnlessRiskThreshold(2.773, "linear", "perf_risk", aging_rate=0.018)
+    batch_state.set_batches((98, PUSHDATE))
+    pushlog[99] = PUSHDATE
+    risks["rev99"] = [0.0] * commits
+    params["pushlog_id"] = 100
+    params["pushdate"] = PUSHDATE + 1000 * HOUR
+    assert opt.should_remove_task(perf_batch_tasks[0], params, None) != batched
+
+
+def test_risk_threshold_bugbug_timeout(monkeypatch, batch_state, params):
+    def push_perf_risk(branch, rev):
+        raise BugbugTimeoutException("timed out")
+
+    monkeypatch.setattr(perf_batching, "push_perf_risk", push_perf_risk)
+    opt = SkipUnlessRiskThreshold(0.32, "product", "perf_risk")
+    batch_state.set_batches((99, PUSHDATE))
+    params["pushlog_id"] = 100
+    with pytest.raises(BugbugTimeoutException):
+        opt.should_remove_task(perf_batch_tasks[0], params, None)
+    assert batch_state.saved == []
+
+
+def test_risk_threshold_invalid_arguments():
+    with pytest.raises(ValueError):
+        SkipUnlessRiskThreshold(0.5, "max", "perf_risk")
+    with pytest.raises(ValueError):
+        SkipUnlessRiskThreshold(2, "product", "perf_risk")
 
 
 def test_save_state(monkeypatch, tmp_path):
