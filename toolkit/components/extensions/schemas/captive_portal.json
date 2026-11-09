@@ -28,15 +28,45 @@
         "name": "getState",
         "type": "function",
         "description": "Returns the current portal state, one of `unknown`, `not_captive`, `unlocked_portal`, `locked_portal`.",
-        "async": true,
-        "parameters": []
+        "async": "callback",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "state",
+                "type": "string",
+                "enum": [
+                  "unknown",
+                  "not_captive",
+                  "unlocked_portal",
+                  "locked_portal"
+                ],
+                "description": "The current captive portal state."
+              }
+            ]
+          }
+        ]
       },
       {
         "name": "getLastChecked",
         "type": "function",
         "description": "Returns the time difference between NOW and the last time a request was completed in milliseconds.",
-        "async": true,
-        "parameters": []
+        "async": "callback",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "lastChecked",
+                "type": "integer",
+                "description": "The time in milliseconds since the last request was completed."
+              }
+            ]
+          }
+        ]
       }
     ],
     "events": [

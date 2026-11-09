@@ -914,7 +914,7 @@
         "type": "function",
         "description": "Captures an area of a specified tab. You must have $(topic:declare_permissions)[&lt;all_urls&gt;] permission to use this method.",
         "permissions": ["<all_urls>"],
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "type": "integer",
@@ -927,6 +927,17 @@
             "$ref": "extensionTypes.ImageDetails",
             "name": "options",
             "optional": true
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "type": "string",
+                "name": "dataUrl",
+                "description": "A data URL which encodes an image of the captured area of the tab."
+              }
+            ]
           }
         ]
       },

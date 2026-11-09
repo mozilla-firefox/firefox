@@ -102,7 +102,13 @@
                 "type": "function",
                 "description": "Called at the completion of the set operation.",
                 "optional": true,
-                "parameters": []
+                "parameters": [
+                  {
+                    "name": "result",
+                    "type": "boolean",
+                    "description": "True if the setting was modified, false otherwise."
+                  }
+                ]
               }
             ]
           },
@@ -129,7 +135,13 @@
                 "type": "function",
                 "description": "Called at the completion of the clear operation.",
                 "optional": true,
-                "parameters": []
+                "parameters": [
+                  {
+                    "name": "result",
+                    "type": "boolean",
+                    "description": "True if the setting was cleared, false otherwise."
+                  }
+                ]
               }
             ]
           }

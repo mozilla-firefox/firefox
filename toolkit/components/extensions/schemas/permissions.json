@@ -139,7 +139,13 @@
           {
             "name": "callback",
             "type": "function",
-            "parameters": []
+            "parameters": [
+              {
+                "name": "removed",
+                "type": "boolean",
+                "description": "True if the permissions were removed."
+              }
+            ]
           }
         ]
       }

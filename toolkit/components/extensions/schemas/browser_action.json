@@ -417,11 +417,22 @@
         "name": "getBadgeTextColor",
         "type": "function",
         "description": "Gets the text color of the browser action badge.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "details",
             "$ref": "Details"
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "$ref": "ColorArray",
+                "description": "The text color of the badge."
+              }
+            ]
           }
         ]
       },
@@ -471,7 +482,7 @@
         "name": "isEnabled",
         "type": "function",
         "description": "Checks whether the browser action is enabled.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "details",
@@ -482,6 +493,17 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "The id of the tab for which you want to query its enabled state."
+              }
+            ]
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "boolean",
+                "description": "Whether the browser action is enabled."
               }
             ]
           }

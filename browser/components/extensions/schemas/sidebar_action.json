@@ -89,7 +89,7 @@
         "name": "getTitle",
         "type": "function",
         "description": "Gets the title of the sidebar action.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "details",
@@ -107,6 +107,17 @@
                 "description": "Specify the window to get the title from. If no tab nor window is specified, the global title is returned."
               }
             }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "string",
+                "description": "The title of the sidebar action."
+              }
+            ]
           }
         ]
       },
@@ -194,7 +205,7 @@
         "name": "getPanel",
         "type": "function",
         "description": "Gets the url to the html document set as the panel for this sidebar action.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "details",
@@ -212,6 +223,17 @@
                 "description": "Specify the window to get the panel from. If no tab nor window is specified, the global panel is returned."
               }
             }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "string",
+                "description": "The URL of the document set as the panel."
+              }
+            ]
           }
         ]
       },
@@ -243,7 +265,7 @@
         "name": "isOpen",
         "type": "function",
         "description": "Checks whether the sidebar action is open.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "details",
@@ -256,6 +278,17 @@
                 "description": "Specify the window to get the openness from."
               }
             }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "boolean",
+                "description": "Whether the sidebar action is open."
+              }
+            ]
           }
         ]
       }

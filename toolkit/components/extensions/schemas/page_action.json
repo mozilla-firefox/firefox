@@ -132,7 +132,7 @@
         "name": "isShown",
         "type": "function",
         "description": "Checks whether the page action is shown.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "details",
@@ -143,6 +143,17 @@
                 "description": "Specify the tab to get the shownness from."
               }
             }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "boolean",
+                "description": "Whether the page action is shown in the tab."
+              }
+            ]
           }
         ]
       },

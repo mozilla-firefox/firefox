@@ -21,7 +21,7 @@
       {
         "name": "find",
         "type": "function",
-        "async": true,
+        "async": "callback",
         "description": "Search for text in document and store found ranges in array, in document order.",
         "parameters": [
           {
@@ -67,6 +67,92 @@
                 "optional": true
               }
             }
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "results",
+                "type": "object",
+                "description": "The number of matches found, and the range and rectangle data if requested.",
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "description": "The number of matches found."
+                  },
+                  "rangeData": {
+                    "type": "array",
+                    "optional": true,
+                    "description": "Present if <code>includeRangeData</code> was set.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "framePos": {
+                          "type": "integer",
+                          "description": "The index of the frame that contains the match, counting only frames that have matches."
+                        },
+                        "text": {
+                          "type": "string",
+                          "description": "The text of the match."
+                        },
+                        "startTextNodePos": {
+                          "type": "integer",
+                          "description": "The index of the text node in which the match starts."
+                        },
+                        "startOffset": {
+                          "type": "integer",
+                          "description": "The offset of the start of the match in its start text node."
+                        },
+                        "endTextNodePos": {
+                          "type": "integer",
+                          "description": "The index of the text node in which the match ends."
+                        },
+                        "endOffset": {
+                          "type": "integer",
+                          "description": "The offset of the end of the match in its end text node."
+                        }
+                      }
+                    }
+                  },
+                  "rectData": {
+                    "type": "array",
+                    "optional": true,
+                    "description": "Present if <code>includeRectData</code> was set.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string",
+                          "description": "The text of the match."
+                        },
+                        "rectsAndTexts": {
+                          "type": "object",
+                          "properties": {
+                            "rectList": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "top": { "type": "number" },
+                                  "left": { "type": "number" },
+                                  "bottom": { "type": "number" },
+                                  "right": { "type": "number" }
+                                }
+                              }
+                            },
+                            "textList": {
+                              "type": "array",
+                              "items": { "type": "string" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ]
           }
         ]
       },

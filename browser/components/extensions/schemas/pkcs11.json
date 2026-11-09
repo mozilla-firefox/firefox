@@ -22,11 +22,22 @@
         "name": "isModuleInstalled",
         "type": "function",
         "description": "checks whether a PKCS#11 module, given by name, is installed",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "name",
             "type": "string"
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "boolean",
+                "description": "Whether the module is installed."
+              }
+            ]
           }
         ]
       },
@@ -63,11 +74,48 @@
         "name": "getModuleSlots",
         "type": "function",
         "description": "Enumerate a module's slots, each with their name and whether a token is present",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "name",
             "type": "string"
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "slots",
+                "type": "array",
+                "description": "The slots of the module.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "The name of the slot."
+                    },
+                    "token": {
+                      "choices": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "name": { "type": "string" },
+                            "manufacturer": { "type": "string" },
+                            "HWVersion": { "type": "string" },
+                            "FWVersion": { "type": "string" },
+                            "serial": { "type": "string" },
+                            "isLoggedIn": { "type": "boolean" }
+                          }
+                        },
+                        { "type": "null" }
+                      ],
+                      "description": "The token in the slot, or null if the slot is disabled or empty."
+                    }
+                  }
+                }
+              }
+            ]
           }
         ]
       }

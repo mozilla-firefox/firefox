@@ -206,7 +206,7 @@
         "name": "getTabValue",
         "type": "function",
         "description": "Retrieve a value that was set for a given key on a given tab.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "type": "integer",
@@ -218,6 +218,18 @@
             "type": "string",
             "name": "key",
             "description": "The key which corresponds to the value."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "value",
+                "type": "any",
+                "optional": true,
+                "description": "The value, or undefined if the key is not set."
+              }
+            ]
           }
         ]
       },
@@ -268,7 +280,7 @@
         "name": "getWindowValue",
         "type": "function",
         "description": "Retrieve a value that was set for a given key on a given window.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "type": "integer",
@@ -280,6 +292,18 @@
             "type": "string",
             "name": "key",
             "description": "The key which corresponds to the value."
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "value",
+                "type": "any",
+                "optional": true,
+                "description": "The value, or undefined if the key is not set."
+              }
+            ]
           }
         ]
       },

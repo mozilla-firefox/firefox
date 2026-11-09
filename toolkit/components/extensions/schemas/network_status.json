@@ -45,8 +45,20 @@
         "name": "getLinkInfo",
         "type": "function",
         "description": "Returns the $(ref:NetworkLinkInfo) of the current network connection.",
-        "async": true,
-        "parameters": []
+        "async": "callback",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "linkInfo",
+                "$ref": "NetworkLinkInfo",
+                "description": "The link info of the current network connection."
+              }
+            ]
+          }
+        ]
       }
     ],
     "events": [

@@ -142,22 +142,63 @@
         "name": "getProfile",
         "type": "function",
         "description": "Gathers the profile data from the current profiling session.",
-        "async": true,
-        "parameters": []
+        "async": "callback",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "profile",
+                "type": "object",
+                "additionalProperties": { "type": "any" },
+                "description": "The profile data, parsed from JSON."
+              }
+            ]
+          }
+        ]
       },
       {
         "name": "getProfileAsArrayBuffer",
         "type": "function",
         "description": "Gathers the profile data from the current profiling session. The returned promise resolves to an array buffer that contains a JSON string.",
-        "async": true,
-        "parameters": []
+        "async": "callback",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "profile",
+                "type": "object",
+                "isInstanceOf": "ArrayBuffer",
+                "additionalProperties": true,
+                "description": "An array buffer that contains the profile data as a JSON string."
+              }
+            ]
+          }
+        ]
       },
       {
         "name": "getProfileAsGzippedArrayBuffer",
         "type": "function",
         "description": "Gathers the profile data from the current profiling session. The returned promise resolves to an array buffer that contains a gzipped JSON string.",
-        "async": true,
-        "parameters": []
+        "async": "callback",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "profile",
+                "type": "object",
+                "isInstanceOf": "ArrayBuffer",
+                "additionalProperties": true,
+                "description": "An array buffer that contains the profile data as a gzipped JSON string."
+              }
+            ]
+          }
+        ]
       },
       {
         "name": "getSymbols",

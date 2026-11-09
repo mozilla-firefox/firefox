@@ -29,7 +29,7 @@
             "description": "The canonical hostname for this record.  this value is empty if the record was not fetched with the 'canonical_name' flag."
           },
           "isTRR": {
-            "type": "string",
+            "type": "boolean",
             "description": "Record retreived with TRR."
           },
           "addresses": {
@@ -63,7 +63,7 @@
         "name": "resolve",
         "type": "function",
         "description": "Resolves a hostname to a DNS record.",
-        "async": true,
+        "async": "callback",
         "parameters": [
           {
             "name": "hostname",
@@ -74,6 +74,17 @@
             "optional": true,
             "default": [],
             "$ref": "ResolveFlags"
+          },
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "record",
+                "$ref": "DNSRecord",
+                "description": "The DNS record for the hostname."
+              }
+            ]
           }
         ]
       }

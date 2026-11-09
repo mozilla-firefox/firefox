@@ -144,8 +144,20 @@
         "name": "canUpload",
         "type": "function",
         "description": "Checks if Telemetry upload is enabled.",
-        "parameters": [],
-        "async": true
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "boolean",
+                "description": "Whether Telemetry upload is enabled."
+              }
+            ]
+          }
+        ],
+        "async": "callback"
       },
       {
         "name": "scalarAdd",

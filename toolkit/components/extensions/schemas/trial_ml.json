@@ -81,8 +81,20 @@
         "type": "function",
         "allowedContexts": ["content"],
         "description": "Delete the models the extension downloaded.",
-        "async": true,
-        "parameters": []
+        "async": "callback",
+        "parameters": [
+          {
+            "type": "function",
+            "name": "callback",
+            "parameters": [
+              {
+                "name": "result",
+                "type": "boolean",
+                "description": "True once the models are deleted."
+              }
+            ]
+          }
+        ]
       }
     ]
   }
