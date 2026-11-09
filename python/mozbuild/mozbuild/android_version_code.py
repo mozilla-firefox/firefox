@@ -84,7 +84,8 @@ def android_version_code_v1(buildid, cpu_arch=None, min_sdk=0, max_sdk=0):
 
     def hours_since_cutoff(buildid):
         # The ID is formatted like YYYYMMDDHHMMSS (using
-        # datetime.now().strftime('%Y%m%d%H%M%S'); see build/variables.py).
+        # datetime.now().strftime('%Y%m%d%H%M%S'); see `write_buildid` in
+        # mozbuild/controller/building.py).
         # The inverse function is time.strptime.
         # N.B.: the time module expresses time as decimal seconds since the
         # epoch.

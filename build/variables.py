@@ -5,7 +5,6 @@
 import os
 import subprocess
 import sys
-from datetime import datetime
 
 SOURCESTAMP_FILENAME = "sourcestamp.txt"
 
@@ -18,13 +17,9 @@ def get_buildid():
     return buildid
 
 
-def buildid_header(output):
-    buildid = os.environ.get("MOZ_BUILD_DATE")
-    if buildid and len(buildid) != 14:
-        print("Ignoring invalid MOZ_BUILD_DATE: %s" % buildid, file=sys.stderr)
-        buildid = None
-    if not buildid:
-        buildid = datetime.now().strftime("%Y%m%d%H%M%S")
+def buildid_header(output, buildid_file):
+    with open(buildid_file, encoding="utf-8") as fh:
+        buildid = fh.read().rstrip()
     # If this output changes, be sure to update `get_buildid()`.
     output.write("#define MOZ_BUILDID %s\n" % buildid)
 
