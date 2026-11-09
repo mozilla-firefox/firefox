@@ -5,7 +5,6 @@
 toolkit.jar:
 % resource normandy %res/normandy/
   res/normandy/Normandy.sys.mjs (./Normandy.sys.mjs)
-  res/normandy/NormandyMigrations.sys.mjs (./NormandyMigrations.sys.mjs)
   res/normandy/lib/ (./lib/*)
   res/normandy/schemas/ (./schemas/*.schema.json)
 

@@ -6,9 +6,6 @@ http://creativecommons.org/publicdomain/zero/1.0/ */
 const { Normandy } = ChromeUtils.importESModule(
   "resource://normandy/Normandy.sys.mjs"
 );
-const { NormandyMigrations } = ChromeUtils.importESModule(
-  "resource://normandy/NormandyMigrations.sys.mjs"
-);
 const { NormandyTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/NormandyTestUtils.sys.mjs"
 );
@@ -23,16 +20,10 @@ const { decorate_task } = NormandyTestUtils;
 // startup before it's first await.
 decorate_task(
   NormandyTestUtils.withStub(Normandy, "finishInit"),
-  NormandyTestUtils.withStub(NormandyMigrations, "applyAll"),
-  async function test_normandy_init_applies_startup_prefs_synchronously({
-    applyAllStub,
-  }) {
+  async function test_normandy_init_applies_startup_prefs_synchronously() {
     let originalDeferred = Normandy.uiAvailableNotificationObserved;
     let mockUiAvailableDeferred = Promise.withResolvers();
     Normandy.uiAvailableNotificationObserved = mockUiAvailableDeferred;
-
-    let applyAllDeferred = Promise.withResolvers();
-    applyAllStub.returns(applyAllStub);
 
     let promiseResolvedCount = 0;
     mockUiAvailableDeferred.promise.then(() => promiseResolvedCount++);
@@ -42,8 +33,6 @@ decorate_task(
     Assert.equal(promiseResolvedCount, 0);
     Normandy.observe(null, "sessionstore-windows-restored");
     await TestUtils.waitForCondition(() => promiseResolvedCount === 1);
-
-    applyAllDeferred.resolve();
 
     await initPromise;
     await Normandy.uninit();

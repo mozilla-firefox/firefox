@@ -753,8 +753,7 @@ export const NimbusTestUtils = {
 
       return NimbusTestUtils.makeMigrationState({
         [Phase.INIT_STARTED]: "remove-normandy-databases",
-        [Phase.AFTER_STORE_INITIALIZED]:
-          "graduate-firefox-labs-jpeg-xl-all-channels",
+        [Phase.AFTER_STORE_INITIALIZED]: "remove-legacy-store",
         [Phase.AFTER_REMOTE_SETTINGS_UPDATE]: "firefox-labs-enrollments",
       });
     },
