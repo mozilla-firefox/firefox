@@ -68,6 +68,8 @@ skip-if = [
   "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && display == 'wayland' && debug",
 ]
 
+["browser_popupNotification_long_origin.js"]
+
 ["browser_popupNotification_no_anchors.js"]
 https_first_disabled = true
 skip-if = [

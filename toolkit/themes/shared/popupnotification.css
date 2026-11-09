@@ -57,11 +57,12 @@ popupnotificationcontent {
 
 /*
  * Ensure that host names in PopupNotifications wrap. This targets the "name"
- * element in the description container which is the "name" property of the
- * PopupNotification. Name is what gets substituted from the l10n string using
- * the placeholder <>.
+ * and "secondName" elements in the description container which are the "name"
+ * and "secondName" properties of the PopupNotification. They are what get
+ * substituted from the l10n string using the placeholders <> and {}.
  */
-.popup-notification-description-name {
+.popup-notification-description-name,
+.popup-notification-description-second-name {
   word-break: break-all;
 }
 
