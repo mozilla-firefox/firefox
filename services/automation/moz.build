@@ -5,6 +5,6 @@
 with Files("**"):
     BUG_COMPONENT = ("Firefox", "Sync")
 
-EXTRA_JS_MODULES["services-automation"] += [
+MOZ_SRC_FILES += [
     "ServicesAutomation.sys.mjs",
 ]

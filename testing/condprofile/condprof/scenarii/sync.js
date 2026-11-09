@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 const { triggerSync } = ChromeUtils.importESModule(
-  "resource://gre/modules/services-automation/ServicesAutomation.sys.mjs"
+  "moz-src:///services/automation/ServicesAutomation.sys.mjs"
 );
 
 // Arguments is expected to be provided in the scope that this file is loaded
