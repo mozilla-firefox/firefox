@@ -592,6 +592,9 @@ void KeyEventHandler::ConstructPrototype(dom::Element* aKeyElement,
 
     // We have a charcode.
     mMisc = 1;
+    // We don't support surrogate pair nor a grapheme cluster containing variant
+    // selectors. If we'd support it, we need to fix
+    // WidgetKeyboardEvent::GetShortcutKeyCandidates() too.
     mDetail = key[0];
     const uint8_t GTK2Modifiers = cShift | cControl | cShiftMask | cControlMask;
     if (mIsXULKey && (mKeyMask & GTK2Modifiers) == GTK2Modifiers &&

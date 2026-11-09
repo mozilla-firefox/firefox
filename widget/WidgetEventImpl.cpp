@@ -1398,6 +1398,13 @@ bool WidgetKeyboardEvent::ShouldCauseKeypressEvents() const {
   }
 }
 
+static bool AcceptableCharForShortcutKey(uint32_t aCharCode) {
+  constexpr static uint32_t kCharCodeDEL = 0x7F;
+  return aCharCode >= ' ' && aCharCode != kCharCodeDEL &&
+         // KeyEventHandler does not support surrogate pairs.
+         IsInBMP(aCharCode);
+}
+
 static bool HasASCIIDigit(const ShortcutKeyCandidateArray& aCandidates) {
   for (uint32_t i = 0; i < aCandidates.Length(); ++i) {
     uint32_t ch = aCandidates[i].mCharCode;
@@ -1455,10 +1462,9 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
   //   2: shiftedCharCodes[0]/ShiftState::Ignorable,
   //   3: shiftedCharCodes[1]/ShiftState::MatchExactly,
   //   4: shiftedCharCodes[1]/ShiftState::Ignorable...
-  uint32_t pseudoCharCode = PseudoCharCode();
-  if (pseudoCharCode) {
+  if (AcceptableCharForShortcutKey(PseudoCharCode())) {
     aCandidates.AppendElement(
-        ShortcutKeyCandidate(pseudoCharCode, ShiftState::MatchExactly,
+        ShortcutKeyCandidate(PseudoCharCode(), ShiftState::MatchExactly,
                              SkipIfEarlierHandlerDisabled::No));
   }
 
@@ -1466,7 +1472,7 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
   if (!IsShift()) {
     for (uint32_t i = 0; i < len; ++i) {
       uint32_t ch = mAlternativeCharCodes[i].mUnshiftedCharCode;
-      if (!ch) {
+      if (!AcceptableCharForShortcutKey(ch)) {
         continue;
       }
       if (!ContainsCharCaseInsensitive(aCandidates, ch)) {
@@ -1494,7 +1500,7 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
   } else {
     for (uint32_t i = 0; i < len; ++i) {
       uint32_t ch = mAlternativeCharCodes[i].mShiftedCharCode;
-      if (!ch) {
+      if (!AcceptableCharForShortcutKey(ch)) {
         continue;
       }
 
