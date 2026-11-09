@@ -292,7 +292,7 @@ class RestyleManager {
   void ContentAppended(nsIContent* aFirstNewContent);
 
   // Restyling for a content removal that is about to happen.
-  void ContentWillBeRemoved(nsIContent* aOldChild);
+  void ContentWillBeRemoved(nsIContent* aOldChild, const ContentRemoveInfo&);
 
   // Restyling for a ContentInserted (notification after insertion) or
   // for some CharacterDataChanged.
@@ -437,10 +437,7 @@ class RestyleManager {
    * Whether to clear all the style data (including the element itself), or just
    * the descendants' data.
    */
-  enum class IncludeRoot {
-    Yes,
-    No,
-  };
+  enum class IncludeRoot : bool { No, Yes };
 
   /**
    * Clears the ServoElementData and HasDirtyDescendants from all elements
