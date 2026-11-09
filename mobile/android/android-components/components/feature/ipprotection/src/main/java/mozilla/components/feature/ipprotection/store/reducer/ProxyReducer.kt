@@ -23,17 +23,11 @@ internal object ProxyReducer {
         when (action) {
             is IPProtectionAction.ProxyAction.ProxyStateChanged -> {
                 val newProxyStatus = action.proxyState.asProxyStatus()
-                val newPendingActivationRequest =
-                    state.newPendingActivationRequest(
-                        newProxyStatus = newProxyStatus,
-                        newServiceState = state.serviceStatus,
-                    )
                 val newProxyActivation = state.newProxyActivation(newProxyStatus)
 
                 state.copy(
                     proxyStatus = newProxyStatus,
                     proxyActivation = newProxyActivation,
-                    pendingActivationRequest = newPendingActivationRequest,
                     lastError = action.lastError,
                 )
             }

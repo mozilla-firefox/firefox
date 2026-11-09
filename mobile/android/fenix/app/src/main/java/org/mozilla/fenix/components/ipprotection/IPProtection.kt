@@ -13,6 +13,7 @@ import mozilla.components.feature.ipprotection.auth.gpi.IPProtectionGpiProvider
 import mozilla.components.feature.ipprotection.storage.DefaultIPProtectionLocationRepository
 import mozilla.components.feature.ipprotection.storage.IPProtectionStorageSynchronizer
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
+import mozilla.components.feature.ipprotection.store.middleware.IPProtectionEngineMiddleware
 import mozilla.components.feature.ipprotection.store.middleware.IPProtectionLocationMiddleware
 import mozilla.components.lib.integrity.googleplay.GooglePlayIntegrityClient
 import mozilla.components.service.fxa.manager.FxaAccountManager
@@ -68,6 +69,7 @@ class IPProtection(
                     IPProtectionTelemetryMiddleware(),
                     IPProtectionPreferencesMiddleware(ipProtectionRepository),
                     IPProtectionLocationMiddleware(repository = DefaultIPProtectionLocationRepository(context)),
+                    engineMiddleware,
                 )
         )
     }
@@ -90,6 +92,7 @@ class IPProtection(
             store = store,
             engine = engine,
             accountManager = authSources.fxaAccountManager.value,
+            engineMiddleware = engineMiddleware,
             extraAuthProvider = IPProtectionGpiProvider(authSources.integrityClient.value),
         )
     }
@@ -104,6 +107,8 @@ class IPProtection(
     }
 
     private val accountObserver by lazy { IPProtectionAccountObserver(ipProtectionRepository) }
+
+    private val engineMiddleware by lazy { IPProtectionEngineMiddleware() }
 
     private val snackbarMessages by lazy {
         IPProtectionSnackbarMessages(

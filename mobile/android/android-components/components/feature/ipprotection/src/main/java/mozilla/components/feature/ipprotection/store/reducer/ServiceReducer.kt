@@ -21,18 +21,12 @@ internal object ServiceReducer {
     ): IPProtectionState =
         when (action) {
             is IPProtectionAction.ServiceAction.ServiceStateChanged -> {
-                val newPendingActivationRequest =
-                    state.newPendingActivationRequest(
-                        newProxyStatus = state.proxyStatus,
-                        newServiceState = action.serviceState,
-                    )
                 val newAccountStatus = state.newAccountStatus(action.serviceState)
                 val newLocationState = state.newLocationState(action.serviceState)
 
                 state.copy(
                     serviceStatus = action.serviceState,
                     accountState = state.accountState.copy(status = newAccountStatus),
-                    pendingActivationRequest = newPendingActivationRequest,
                     locationState = newLocationState,
                 )
             }

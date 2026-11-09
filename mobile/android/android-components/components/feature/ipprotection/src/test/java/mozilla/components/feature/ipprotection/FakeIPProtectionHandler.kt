@@ -19,6 +19,7 @@ import mozilla.components.concept.engine.ipprotection.ServiceState
  * @property countryListResult Passed to the `onResult` of [updateCountryList].
  * @property enrollResult Passed to the `onResult` of [enroll].
  * @property serviceState Passed to the `onResult` of [getState].
+ * @property holdResults Whether the results of [activate] and [deactivate] wait for [releaseHeldResults].
  */
 internal class FakeIPProtectionHandler(
     var activateResult: Throwable? = null,
@@ -26,9 +27,12 @@ internal class FakeIPProtectionHandler(
     var countryListResult: Throwable? = null,
     var enrollResult: IPProtectionHandler.EnrollResult = IPProtectionHandler.EnrollResult(true),
     var serviceState: ServiceState = ServiceState.Uninitialized,
+    var holdResults: Boolean = false,
 ) : IPProtectionHandler {
 
-    /** Every request the feature made, in the order it made them. */
+    private val heldResults = mutableListOf<() -> Unit>()
+
+    /** Every request made on the handler, in the order it was made. */
     val calls = mutableListOf<Call>()
 
     var authProvider: IPProtectionHandler.AuthProvider? = null
@@ -37,14 +41,37 @@ internal class FakeIPProtectionHandler(
     var gpiProvider: IPProtectionHandler.GpiProvider? = null
         private set
 
+    /** The thread [activate] or [deactivate] was last called on. */
+    var lastProxyCallThread: Thread? = null
+        private set
+
     override fun activate(countryCode: String?, onResult: (Throwable?) -> Unit) {
         calls += Call.Activate(countryCode)
-        onResult(activateResult)
+        lastProxyCallThread = Thread.currentThread()
+        val result = activateResult
+        reply { onResult(result) }
     }
 
     override fun deactivate(onResult: (Throwable?) -> Unit) {
         calls += Call.Deactivate
-        onResult(deactivateResult)
+        lastProxyCallThread = Thread.currentThread()
+        val result = deactivateResult
+        reply { onResult(result) }
+    }
+
+    /** Delivers the held results of [activate] and [deactivate], in the order the requests were made. */
+    fun releaseHeldResults() {
+        val results = heldResults.toList()
+        heldResults.clear()
+        results.forEach { it() }
+    }
+
+    private fun reply(result: () -> Unit) {
+        if (holdResults) {
+            heldResults += result
+        } else {
+            result()
+        }
     }
 
     override fun enroll(onResult: (IPProtectionHandler.EnrollResult) -> Unit) {
@@ -82,7 +109,7 @@ internal class FakeIPProtectionHandler(
         calls += Call.NotifyAccountStatus(signedIn)
     }
 
-    /** A request the feature made on the handler. */
+    /** A request made on the handler. */
     sealed interface Call {
         data class Activate(val countryCode: String?) : Call
 

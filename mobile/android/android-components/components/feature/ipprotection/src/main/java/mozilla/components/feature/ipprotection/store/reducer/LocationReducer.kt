@@ -8,12 +8,10 @@ package mozilla.components.feature.ipprotection.store.reducer
 
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
-import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.LocationListUpdateState
 import mozilla.components.feature.ipprotection.store.state.LocationState
-import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.feature.ipprotection.store.state.Recommended
 
 internal object LocationReducer {
@@ -40,12 +38,11 @@ internal object LocationReducer {
 
             is IPProtectionAction.LocationAction.LocationSwitchFailed -> {
                 state.copy(
-                    pendingActivationRequest = null,
                     locationState =
                         state.locationState.copy(
                             selectedLocation = state.locationState.previousLocation ?: Recommended,
                             previousLocation = null,
-                        ),
+                        )
                 )
             }
 
@@ -71,24 +68,13 @@ internal object LocationReducer {
 
             is IPProtectionAction.LocationAction.LocationChanged ->
                 state.copy(
-                    pendingActivationRequest =
-                        // Authorized.Activating state could be problematic here: if the user turns vpn on and that
-                        // toggle is taking a lot of time, then changing a country won't make an additional request,
-                        // but the UI will be showing the newly selected country. The location picker is disabled
-                        // while an activation is in flight so the user cannot reach this, but a location restored
-                        // from the cache still can.
-                        if (state.proxyStatus == Authorized.Active) {
-                            PendingActivationRequest.Activate(action.location.countryCode, isLocationSwitch = true)
-                        } else {
-                            state.pendingActivationRequest
-                        },
                     locationState =
                         LocationState(
                             selectedLocation = action.location,
                             locations = state.locationState.locations,
                             previousLocation = state.locationState.selectedLocation,
                             updateState = state.locationState.updateState,
-                        ),
+                        )
                 )
 
             is IPProtectionAction.LocationAction.LocationReset ->

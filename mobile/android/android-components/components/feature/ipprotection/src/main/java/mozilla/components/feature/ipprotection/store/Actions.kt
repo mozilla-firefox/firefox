@@ -14,8 +14,8 @@ import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.Location
-import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
+import mozilla.components.feature.ipprotection.store.state.ProxyRequest
 import mozilla.components.lib.state.Action
 
 /** Actions that can be dispatched to [IPProtectionStore]. */
@@ -136,12 +136,18 @@ sealed class IPProtectionAction : Action {
         ) : ActivationAction()
 
         /**
-         * Reports that the engine accepted a queued activation request.
+         * Reports that [mozilla.components.feature.ipprotection.store.middleware.IPProtectionEngineMiddleware] started
+         * sending a proxy request.
          *
-         * @property request The request the engine accepted, so that a request queued after it is not cleared by
-         *   mistake.
+         * @property request The [ProxyRequest] the middleware started sending.
          */
-        data class ActivationRequestCompleted(val request: PendingActivationRequest.Activate) : ActivationAction()
+        data class ProxyRequestStarted(val request: ProxyRequest) : ActivationAction()
+
+        /**
+         * Reports that [mozilla.components.feature.ipprotection.store.middleware.IPProtectionEngineMiddleware] finished
+         * or cancelled the proxy request it was sending.
+         */
+        data object ProxyRequestFinished : ActivationAction()
     }
 
     /** [IPProtectionAction]s related to the selected location and the list of available locations. */

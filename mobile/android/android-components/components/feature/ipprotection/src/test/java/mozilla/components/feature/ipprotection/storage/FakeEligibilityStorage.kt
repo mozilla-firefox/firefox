@@ -18,8 +18,8 @@ import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.LocationListUpdateState
 import mozilla.components.feature.ipprotection.store.state.LocationState
-import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
+import mozilla.components.feature.ipprotection.store.state.ProxyRequest
 import mozilla.components.feature.ipprotection.store.state.ProxyStatus
 import mozilla.components.feature.ipprotection.store.state.Uninitialized
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
@@ -57,7 +57,7 @@ internal fun buildIPProtectionState(
     proxyStatus: ProxyStatus = Uninitialized,
     eligibilityStatus: EligibilityStatus = EligibilityStatus.Unknown,
     updateState: LocationListUpdateState = LocationListUpdateState.NotRequested,
-    pendingActivationRequest: PendingActivationRequest? = null,
+    proxyRequest: ProxyRequest? = null,
     proxyActivation: ProxyActivation = ProxyActivation.Idle,
 ): IPProtectionState {
     return IPProtectionState(
@@ -67,6 +67,6 @@ internal fun buildIPProtectionState(
         eligibilityStatus = eligibilityStatus,
         locationState = LocationState(updateState = updateState),
         proxyActivation = proxyActivation,
-        pendingActivationRequest = pendingActivationRequest,
+        proxyRequest = proxyRequest,
     )
 }

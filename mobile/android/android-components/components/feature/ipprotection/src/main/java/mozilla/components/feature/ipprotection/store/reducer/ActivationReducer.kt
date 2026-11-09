@@ -10,16 +10,11 @@ import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
-import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
-import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
-import mozilla.components.feature.ipprotection.store.state.ProxyStatus
-import mozilla.components.feature.ipprotection.store.state.Uninitialized
-import mozilla.components.feature.ipprotection.store.state.isActivationInFlight
 
 internal object ActivationReducer {
-    @Suppress("CognitiveComplexMethod", "LongMethod", "ForbiddenSuppress")
+    @Suppress("CognitiveComplexMethod", "ForbiddenSuppress")
     // FIXME(IPP) break this up into more smaller parts only if the changes are meaningful.
     fun reduce(
         state: IPProtectionState,
@@ -29,30 +24,9 @@ internal object ActivationReducer {
             is IPProtectionAction.ActivationAction.Toggle -> {
                 when (state.serviceStatus) {
                     ServiceState.Unavailable,
-                    ServiceState.Uninitialized -> {
-                        return state
-                    }
-
+                    ServiceState.Uninitialized,
                     ServiceState.Ready -> {
-                        return when (state.proxyStatus) {
-                            Authorized.Idle -> {
-                                state.copy(
-                                    pendingActivationRequest =
-                                        PendingActivationRequest.Activate(
-                                            selectedLocationCode = state.locationState.selectedLocation.countryCode
-                                        )
-                                )
-                            }
-
-                            Authorized.ConnectionError,
-                            Authorized.Active -> {
-                                state.copy(pendingActivationRequest = PendingActivationRequest.Deactivate)
-                            }
-
-                            Authorized.Activating,
-                            Authorized.DataLimitReached,
-                            Uninitialized -> state
-                        }
+                        return state
                     }
 
                     ServiceState.Unauthenticated -> {
@@ -124,49 +98,15 @@ internal object ActivationReducer {
                         state.accountState
                     }
 
-                // Reset `activate` so the next Toggle reads as a fresh edge in observeToggle().
-                state.copy(pendingActivationRequest = null, accountState = accountState)
+                state.copy(accountState = accountState)
             }
 
-            is IPProtectionAction.ActivationAction.ActivationRequestCompleted -> {
-                // Only clear the request this reply is for. A different one may have been queued in the meantime.
-                if (state.pendingActivationRequest == action.request) {
-                    state.copy(pendingActivationRequest = null)
-                } else {
-                    state
-                }
+            is IPProtectionAction.ActivationAction.ProxyRequestStarted -> {
+                state.copy(proxyRequest = action.request)
+            }
+
+            is IPProtectionAction.ActivationAction.ProxyRequestFinished -> {
+                state.copy(proxyRequest = null)
             }
         }
-}
-
-private fun IPProtectionState.maybeDeactivate(): PendingActivationRequest.Deactivate? {
-    if (isActivationInFlight) {
-        return PendingActivationRequest.Deactivate
-    }
-
-    return when (proxyStatus) {
-        Authorized.Active,
-        Authorized.ConnectionError,
-        Authorized.DataLimitReached -> PendingActivationRequest.Deactivate
-        else -> null
-    }
-}
-
-internal fun IPProtectionState.newPendingActivationRequest(
-    newProxyStatus: ProxyStatus,
-    newServiceState: ServiceState,
-): PendingActivationRequest? {
-    // Clear `activate` once the engine settles so a re-request reads as a new transition.
-    return when (newServiceState) {
-        ServiceState.Uninitialized -> null
-
-        ServiceState.Unavailable,
-        ServiceState.Unauthenticated -> maybeDeactivate()
-
-        ServiceState.Ready ->
-            when (newProxyStatus) {
-                Authorized.Activating -> pendingActivationRequest
-                else -> null
-            }
-    }
 }

@@ -38,7 +38,7 @@ import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.DataVolume
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
-import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
+import mozilla.components.feature.ipprotection.store.state.ProxyRequest
 import mozilla.components.feature.ipprotection.store.state.UsageQuota
 import mozilla.components.feature.ipprotection.store.state.gigabytes
 import mozilla.components.feature.ipprotection.store.state.used
@@ -115,14 +115,19 @@ fun IPProtectionStateDebugContent(
             AccountSection(state = state)
 
             DebugSection(title = stringResource(R.string.mozac_feature_ipprotection_vpn_ui)) {
+                val proxyRequest = state.proxyRequest
                 DebugRow(
                     stringResource(R.string.mozac_feature_ipprotection_activation_state),
-                    state.pendingActivationRequest?.javaClass?.simpleName ?: "null",
+                    proxyRequest?.javaClass?.simpleName ?: "null",
                 )
                 DebugRow(
                     stringResource(R.string.mozac_feature_ipprotection_selected_location_code),
-                    (state.pendingActivationRequest as? PendingActivationRequest.Activate)?.selectedLocationCode
-                        ?: "null",
+                    when (proxyRequest) {
+                        is ProxyRequest.Activate -> proxyRequest.countryCode ?: "recommended"
+                        is ProxyRequest.SwitchLocation -> proxyRequest.countryCode ?: "recommended"
+                        ProxyRequest.Deactivate -> "null"
+                        null -> "null"
+                    },
                 )
             }
         }
@@ -236,7 +241,7 @@ private fun IPProtectionStateDebugPreview() {
                         ),
                     accountState = AccountState(status = AccountStatus.EnrolledAndEntitled),
                     lastError = "invalid_response",
-                    pendingActivationRequest = PendingActivationRequest.Activate(null),
+                    proxyRequest = ProxyRequest.Activate(null),
                 )
         )
     }

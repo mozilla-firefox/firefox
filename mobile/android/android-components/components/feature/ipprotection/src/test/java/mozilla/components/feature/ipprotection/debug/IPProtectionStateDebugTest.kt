@@ -20,7 +20,7 @@ import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.DataVolume
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
-import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
+import mozilla.components.feature.ipprotection.store.state.ProxyRequest
 import mozilla.components.feature.ipprotection.store.state.UsageQuota
 import org.junit.Rule
 import org.junit.Test
@@ -82,6 +82,17 @@ class IPProtectionStateDebugTest {
     }
 
     @Test
+    fun `WHEN the running request goes through the recommended location THEN the location code shows recommended`() {
+        composeTestRule.setContent {
+            AcornTheme {
+                IPProtectionStateDebugContent(state = IPProtectionState(proxyRequest = ProxyRequest.Activate(null)))
+            }
+        }
+
+        composeTestRule.onNodeWithText("recommended").assertExists()
+    }
+
+    @Test
     fun `WHEN lastError has a value THEN that value is displayed`() {
         composeTestRule.setContent {
             AcornTheme {
@@ -105,6 +116,6 @@ class IPProtectionStateDebugTest {
                 ),
             accountState = AccountState(status = AccountStatus.EnrolledAndEntitled),
             lastError = null,
-            pendingActivationRequest = PendingActivationRequest.Activate("JP"),
+            proxyRequest = ProxyRequest.Activate("JP"),
         )
 }

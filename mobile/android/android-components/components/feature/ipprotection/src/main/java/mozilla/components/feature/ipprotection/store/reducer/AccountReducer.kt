@@ -11,7 +11,6 @@ import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.LocationState
-import mozilla.components.feature.ipprotection.store.state.PendingActivationRequest
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
 
 internal object AccountReducer {
@@ -116,7 +115,6 @@ private fun IPProtectionState.clearProfileData(
     return copy(
         usageQuota = null,
         proxyActivation = ProxyActivation.Idle,
-        pendingActivationRequest = PendingActivationRequest.Deactivate,
         accountState = accountState.copy(status = action.status),
         locationState = LocationState(),
     )
@@ -126,11 +124,7 @@ private fun IPProtectionState.handleFinishingEnrollment(
     action: IPProtectionAction.AccountAction.FinishingEnrollment
 ): IPProtectionState {
     return if (action.success) {
-        copy(
-            accountState = accountState.copy(status = AccountStatus.EnrolledAndEntitled),
-            pendingActivationRequest =
-                PendingActivationRequest.Activate(selectedLocationCode = locationState.selectedLocation.countryCode),
-        )
+        copy(accountState = accountState.copy(status = AccountStatus.EnrolledAndEntitled))
     } else {
         copy(accountState = accountState.copy(status = AccountStatus.NeedsAuthorization))
     }

@@ -28,10 +28,10 @@ enum class IPProtectionStatus {
     /** The service is unauthenticated. */
     AuthRequired,
 
-    /** The proxy is idle and no activation has been requested. */
+    /** The proxy is idle and no activation is running. */
     Disabled,
 
-    /** The proxy is activating, or is idle with an activation requested. */
+    /** The proxy is activating, or is idle while an activation is running. */
     Activating,
 
     /** The proxy is active. */
@@ -44,7 +44,7 @@ enum class IPProtectionStatus {
     ConnectionError,
 }
 
-/** The [IPProtectionStatus] computed from the eligibility, service, account, proxy and pending activation request. */
+/** The [IPProtectionStatus] computed from the eligibility, service, account, proxy and running proxy request. */
 val IPProtectionState.ipProtectionStatus: IPProtectionStatus
     get() =
         when {
@@ -57,7 +57,7 @@ val IPProtectionState.ipProtectionStatus: IPProtectionStatus
 
             serviceStatus == ServiceState.Unauthenticated -> accountState.status.toUnauthenticatedStatus()
 
-            else -> proxyStatus.toReadyStatus(pendingActivationRequest)
+            else -> proxyStatus.toReadyStatus(proxyRequest)
         }
 
 private fun AccountStatus.toUnauthenticatedStatus() =
@@ -79,11 +79,11 @@ private fun AccountStatus.toUnauthenticatedStatus() =
         AccountStatus.TryAgain -> IPProtectionStatus.AuthRequired
     }
 
-private fun ProxyStatus.toReadyStatus(pendingActivationRequest: PendingActivationRequest?) =
+private fun ProxyStatus.toReadyStatus(proxyRequest: ProxyRequest?) =
     when (this) {
         Uninitialized -> IPProtectionStatus.Uninitialized
         Authorized.Idle ->
-            if (pendingActivationRequest is PendingActivationRequest.Activate) {
+            if (proxyRequest is ProxyRequest.Activate) {
                 IPProtectionStatus.Activating
             } else {
                 IPProtectionStatus.Disabled

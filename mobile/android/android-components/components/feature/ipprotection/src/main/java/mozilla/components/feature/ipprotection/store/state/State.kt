@@ -23,7 +23,9 @@ import mozilla.components.lib.state.State
  * @property accountState The state of the authenticator being used.
  * @property lastError The last error received from the IPProtection service.
  * @property proxyActivation Tracks recent activation or deactivation state changes. See [ProxyActivation].
- * @property pendingActivationRequest The activation state - handles activation and deactivation of the proxy.
+ * @property proxyRequest The proxy request
+ *   [mozilla.components.feature.ipprotection.store.middleware.IPProtectionEngineMiddleware] is running, or null when it
+ *   runs none.
  * @property locationState The location selection state.
  */
 data class IPProtectionState(
@@ -34,7 +36,7 @@ data class IPProtectionState(
     val accountState: AccountState = AccountState(),
     val lastError: String? = null,
     val proxyActivation: ProxyActivation = ProxyActivation.Idle,
-    val pendingActivationRequest: PendingActivationRequest? = null,
+    val proxyRequest: ProxyRequest? = null,
     val locationState: LocationState = LocationState(),
 ) : State
 
@@ -46,12 +48,16 @@ val IPProtectionState.isEligible
  * Whether we are waiting on the VPN to connect, either because it is being turned on or because the country is being
  * changed.
  *
- * This is true from the moment we queue the request, which is earlier than [proxyStatus] becoming
- * [Authorized.Activating] - that only happens once the engine replies. We cannot change where the VPN is connecting
- * during that time, so anything that lets the user try should be disabled while this is true.
+ * This is true from the moment [mozilla.components.feature.ipprotection.store.middleware.IPProtectionEngineMiddleware]
+ * starts sending the request, which is earlier than [proxyStatus] becoming [Authorized.Activating] - that only happens
+ * once the engine replies. We cannot change where the VPN is connecting during that time, so anything that lets the
+ * user try should be disabled while this is true.
  */
 val IPProtectionState.isActivationInFlight
-    get() = proxyStatus == Authorized.Activating || pendingActivationRequest is PendingActivationRequest.Activate
+    get() =
+        proxyStatus == Authorized.Activating ||
+            proxyRequest is ProxyRequest.Activate ||
+            proxyRequest is ProxyRequest.SwitchLocation
 
 /**
  * The combined state of an FxA account pertinent to IP Protection.
@@ -125,22 +131,26 @@ sealed class LocationListUpdateState {
     data object Failed : LocationListUpdateState()
 }
 
-/** Represents a pending proxy activation request. */
-sealed class PendingActivationRequest {
+/** A proxy request run by [mozilla.components.feature.ipprotection.store.middleware.IPProtectionEngineMiddleware]. */
+sealed class ProxyRequest {
     /**
-     * Requesting proxy activation.
+     * Turning the proxy on.
      *
-     * @property selectedLocationCode ISO 3166-1 alpha-2 country code for the desired proxy location, or null to use the
-     *   recommended default.
-     * @property isLocationSwitch Whether the proxy was already running, meaning a failure rolls the selection back.
+     * @property countryCode ISO 3166-1 alpha-2 country code for the proxy location, or null to use the recommended
+     *   default.
      */
-    data class Activate(
-        val selectedLocationCode: String?,
-        val isLocationSwitch: Boolean = false,
-    ) : PendingActivationRequest()
+    data class Activate(val countryCode: String?) : ProxyRequest()
 
-    /** Requesting proxy deactivation. */
-    object Deactivate : PendingActivationRequest()
+    /** Turning the proxy off. */
+    data object Deactivate : ProxyRequest()
+
+    /**
+     * Moving the running proxy to another location.
+     *
+     * @property countryCode ISO 3166-1 alpha-2 country code for the proxy location, or null to use the recommended
+     *   default.
+     */
+    data class SwitchLocation(val countryCode: String?) : ProxyRequest()
 }
 
 /**
