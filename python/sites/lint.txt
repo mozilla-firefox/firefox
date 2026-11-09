@@ -12,7 +12,7 @@ pypi:pluggy==0.13.1
 pypi:psutil==5.9.4
 pypi:py==1.11.0
 pypi:pytz==2022.7.1
-pypi:ruff==0.16.3
+pypi:ruff==0.17.4
 pypi:rumdl==0.1.96
 pypi:snowballstemmer==2.2.0
 pypi:sphinxcontrib-applehelp==1.0.4

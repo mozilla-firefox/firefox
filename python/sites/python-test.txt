@@ -12,7 +12,7 @@ pypi:pytest-mock==3.15.0
 pypi:pytest-taskgraph==0.2.0
 pypi:pytest==8.4.2
 pypi:pytz==2022.7.1
-pypi:ruff==0.16.3
+pypi:ruff==0.17.4
 pypi:rumdl==0.1.96
 pypi:snowballstemmer==2.2.0
 pypi:sphinxcontrib-applehelp==1.0.4
