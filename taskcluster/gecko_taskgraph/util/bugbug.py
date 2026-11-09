@@ -28,13 +28,19 @@ RETRY_TIMEOUT = 9 * 60  # seconds
 RETRY_INTERVAL = 10  # seconds
 
 # Preset confidence thresholds.
+CT_VERY_LOW = 0.3
 CT_LOW = 0.7
 CT_MEDIUM = 0.8
 CT_HIGH = 0.9
 
 # The confidence levels of the preset thresholds, for which bugbug can return the thresholds to
 # use with its current models.
-CT_LEVELS = {CT_LOW: "low", CT_MEDIUM: "medium", CT_HIGH: "high"}
+CT_LEVELS = {
+    CT_VERY_LOW: "very_low",
+    CT_LOW: "low",
+    CT_MEDIUM: "medium",
+    CT_HIGH: "high",
+}
 
 GROUP_TRANSLATIONS = {
     "testing/web-platform/tests": "",

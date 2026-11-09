@@ -13,6 +13,7 @@ from gecko_taskgraph.util.bugbug import (
     CT_HIGH,
     CT_LOW,
     CT_MEDIUM,
+    CT_VERY_LOW,
     BugbugTimeoutException,
     get_confidence_threshold,
     push_schedules,
@@ -88,7 +89,7 @@ def merge_bugbug_replies(data, new_data):
 )
 @register_strategy(
     "bugbug-reduced-manifests-fallback-last-10-pushes",
-    args=(0.3, False, True, FALLBACK, 10),
+    args=(CT_VERY_LOW, False, True, FALLBACK, 10),
 )
 class BugBugPushSchedules(OptimizationStrategy):
     """Query the 'bugbug' service to retrieve relevant tasks and manifests.

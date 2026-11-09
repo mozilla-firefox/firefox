@@ -37,6 +37,7 @@ from gecko_taskgraph.util.bugbug import (
     BUGBUG_BASE_URL,
     CT_LOW,
     CT_MEDIUM,
+    CT_VERY_LOW,
     BugbugTimeoutException,
     push_schedules,
 )
@@ -310,6 +311,15 @@ def test_optimization_strategy_remove(params, opt, tasks, arg, expected):
                 "confidence_thresholds": {"tasks": {"medium": 0.3}},
             },
             ["task-2-label"],
+        ),
+        # the very low groups threshold returned by bugbug replaces the preset one
+        pytest.param(
+            (CT_VERY_LOW,),
+            {
+                "groups": {"foo/test.ini": 0.65, "bar/test.ini": 0.55},
+                "confidence_thresholds": {"groups": {"very_low": 0.6, "low": 0.7}},
+            },
+            ["task-0-label"],
         ),
         # the thresholds returned by bugbug are only used for the preset ones
         pytest.param(
