@@ -24,6 +24,7 @@ Logging Crash Information <Logging-Crash-Information.md>
 Metric Feature Tags <Metric-Feature-Tags.md>
 Debug settings menu instructions <Secret-settings-debug-menu-instructions.md>
 Tabs Tray Item Animations <Tabs-Tray-Item-Animations.md>
+Tech Principles <Tech-Principles.md>
 Telemetry - Implementation, Reviews, Renewals <Telemetry-implementation,-reviews,-renewals.md>
 Test Telemetry Pings <Test-telemetry-pings.md>
 Working with Strings <Working-with-Strings.md>
