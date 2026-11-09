@@ -18,10 +18,15 @@ CacheIndexIterator::CacheIndexIterator(CacheIndex* aIndex, bool aAddNew)
 
 CacheIndexIterator::~CacheIndexIterator() {
   LOG(("CacheIndexIterator::~CacheIndexIterator() [this=%p]", this));
+}
 
-  StaticMutexAutoLock lock(CacheIndex::sLock);
-  ClearRecords(lock);
-  CloseInternal(NS_ERROR_NOT_AVAILABLE);
+void CacheIndexIterator::Destroy() {
+  {
+    StaticMutexAutoLock lock(CacheIndex::sLock);
+    ClearRecords(lock);
+    CloseInternal(NS_ERROR_NOT_AVAILABLE);
+  }
+  delete this;
 }
 
 nsresult CacheIndexIterator::GetNextHash(SHA1Sum::Hash* aHash) {

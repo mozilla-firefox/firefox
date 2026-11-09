@@ -18,12 +18,18 @@ class CacheIndexRecordWrapper;
 
 class CacheIndexIterator {
  public:
-  NS_INLINE_DECL_THREADSAFE_REFCOUNTING(CacheIndexIterator)
+  NS_INLINE_DECL_THREADSAFE_REFCOUNTING_WITH_DESTROY(CacheIndexIterator,
+                                                     Destroy())
 
   CacheIndexIterator(CacheIndex* aIndex, bool aAddNew);
 
  protected:
   virtual ~CacheIndexIterator();
+
+ private:
+  // Unregisters from CacheIndex under sLock before destruction starts, so
+  // CacheIndex can't call into a partially destroyed iterator.
+  void Destroy();
 
  public:
   // Returns a hash of a next entry. If there is no entry NS_ERROR_NOT_AVAILABLE
