@@ -144,10 +144,12 @@ RTCRtpReceiver::RTCRtpReceiver(
   PrincipalHandle principalHandle = GetPrincipalHandle(aWindow, aPrivacy);
   const bool isAudio = aConduit->type() == MediaSessionConduit::AUDIO;
 
+  // The remote track is not rendered until it is attached to a sink, so the
+  // graph does not need to start with an AudioCallbackDriver. CheckDriver()
+  // creates one when it is needed.
   MediaTrackGraph* graph = MediaTrackGraph::GetInstance(
-      isAudio ? MediaTrackGraph::AUDIO_THREAD_DRIVER
-              : MediaTrackGraph::SYSTEM_THREAD_DRIVER,
-      aWindow, MediaTrackGraph::REQUEST_DEFAULT_SAMPLE_RATE,
+      MediaTrackGraph::SYSTEM_THREAD_DRIVER, aWindow,
+      MediaTrackGraph::REQUEST_DEFAULT_SAMPLE_RATE,
       MediaTrackGraph::DEFAULT_OUTPUT_DEVICE);
 
   if (isAudio) {
