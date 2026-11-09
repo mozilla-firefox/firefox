@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<script>
+  // A labels list whose root is a label labeling the element.
+  const label = document.createElement("label");
+  const input = document.createElement("input");
+  label.append(input);
+  input.labels[0];
+  input.labels[0];
+  label.htmlFor = "nope";
+  input.labels.length;
+</script>
+<form id="form"><label><input id="removed"></label></form>
+<script>
+  // Same, but by resetting the root of an existing list on removal.
+  const removed = document.getElementById("removed");
+  removed.labels[0];
+  form.innerHTML = "";
+  removed.labels[0];
+  removed.labels[0];
+</script>

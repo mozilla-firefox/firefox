@@ -352,13 +352,12 @@ uint32_t ContentList::Length() {
 
 Element* ContentList::Item(uint32_t aIndex) {
   uint32_t count = mElements.Length();
+  MOZ_ASSERT_IF(mState == State::Dirty, !count);
   if (aIndex >= count && mState != State::UpToDate) {
     // Prefetch progressively more elements if access is sequential
     uint32_t prefetch = aIndex == count ? std::min(count, 64u) : 0;
     PopulateSelf(std::min(aIndex, UINT32_MAX - 1 - prefetch) + prefetch + 1);
   }
-  MOZ_ASSERT(mState != State::Dirty,
-             "mElements should've been cleared if dirty");
 
   ASSERT_IN_SYNC;
   NS_ASSERTION(!mRootNode || mState != State::Dirty,
@@ -776,8 +775,7 @@ nsINode* ContentList::GetNextNode(nsINode* aCurrent) {
   return aCurrent->GetNextNode(mRootNode);
 }
 
-void ContentList::PopulateSelf(uint32_t aNeededLength,
-                               uint32_t aExpectedElementsIfDirty) {
+void ContentList::PopulateSelf(uint32_t aNeededLength) {
   if (!mRootNode) {
     return;
   }
@@ -785,11 +783,13 @@ void ContentList::PopulateSelf(uint32_t aNeededLength,
   ASSERT_IN_SYNC;
 
   uint32_t count = mElements.Length();
-  NS_ASSERTION(mState != State::Dirty || count == aExpectedElementsIfDirty,
+  NS_ASSERTION(mState != State::Dirty || count == 0,
                "Reset() not called when setting state to State::Dirty?");
 
-  if (count >= aNeededLength)  // We're all set
+  if (count >= aNeededLength) {
+    // An override may already have appended elements.
     return;
+  }
 
   uint32_t elementsToAppend = aNeededLength - count;
 #ifdef DEBUG
@@ -1206,8 +1206,7 @@ nsINode* LabelsNodeList::GetNextNode(nsINode* aCurrent) {
   return next;
 }
 
-void LabelsNodeList::PopulateSelf(uint32_t aNeededLength,
-                                  uint32_t aExpectedElementsIfDirty) {
+void LabelsNodeList::PopulateSelf(uint32_t aNeededLength) {
   if (!mRootNode) {
     return;
   }
@@ -1216,10 +1215,11 @@ void LabelsNodeList::PopulateSelf(uint32_t aNeededLength,
   nsINode* cur = mRootNode;
   if (mElements.IsEmpty() && cur->IsElement() && Match(cur->AsElement())) {
     mElements.AppendElement(cur->AsElement());
-    ++aExpectedElementsIfDirty;
+    mState = State::Lazy;
+    SetEnabledCallbacks(nsIMutationObserver::kAll);
   }
 
-  ContentList::PopulateSelf(aNeededLength, aExpectedElementsIfDirty);
+  ContentList::PopulateSelf(aNeededLength);
 }
 
 void LabelsNodeList::DisconnectFromRoot() {
