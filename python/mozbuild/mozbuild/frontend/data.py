@@ -1602,6 +1602,10 @@ class GeneratedFile(ContextDerived):
             "android_apks",
             ".profdata",
             ".webidl",
+            # .air and .metallib are compiled Metal shader outputs used to
+            # generate a header consumed by native compilation.
+            ".air",
+            ".metallib",
         ]
 
         try:
