@@ -683,8 +683,7 @@ class PHC : public BaseAllocClass {
     }
 
     // We know `this` is heap allocated.
-    aInfo.mMetadataBytes = MozJemalloc::malloc_usable_size(this) +
-                           mAllocPages.SizeOfExcludingThis();
+    aInfo.mMetadataBytes = MallocSize() + mAllocPages.SizeOfExcludingThis();
   }
 
   void SetPageInUse(uintptr_t aIndex, const Maybe<arena_id_t>& aArenaId,

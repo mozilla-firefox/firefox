@@ -159,6 +159,8 @@ struct BaseAllocClass {
 
   void operator delete(void* aPtr) { sBaseAlloc.free(aPtr); }
   void operator delete[](void* aPtr) { sBaseAlloc.free(aPtr); }
+
+  size_t MallocSize() { return sBaseAlloc.usable_size(this); }
 };
 
 #endif /* ! BASEALLOC_H */
