@@ -8,6 +8,7 @@
 #include "mozilla/LookAndFeel.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/TextEvents.h"
+#include "mozilla/Utf16.h"
 #include "mozilla/dom/Document.h"
 #include "nsContentUtils.h"
 #include "nsIPrincipal.h"
@@ -139,6 +140,75 @@ void KeyboardEvent::GetInitDict(KeyboardEventInit& aParam) {
   // EventInit
   aParam.mBubbles = internalEvent->mFlags.mBubbles;
   aParam.mCancelable = internalEvent->mFlags.mCancelable;
+}
+
+static uint32_t ConvertCharCodeToUpperCaseIfSafe(uint32_t aCharCode) {
+  if (!IsInBMP(aCharCode)) {
+    return aCharCode;
+  }
+  const uint32_t upperCh = ToUpperCase(aCharCode);
+  if (upperCh == aCharCode) {
+    return aCharCode;
+  }
+  const uint32_t lowerCh = ToLowerCase(upperCh);
+  return lowerCh == aCharCode ? upperCh : aCharCode;
+}
+
+void KeyboardEvent::GetRegisterableShortcutKeys(
+    nsTArray<RegisterableShortcutKey>& aCandidates) const {
+  if (!IsTrusted() || !mEvent ||
+      (mEvent->mMessage != eKeyDown && mEvent->mMessage != eKeyPress)) {
+    return;
+  }
+  MOZ_DIAGNOSTIC_ASSERT(mEvent->AsKeyboardEvent());
+  const WidgetKeyboardEvent& widgetKeyboardEvent =
+      static_cast<WidgetKeyboardEvent&>(*mEvent);
+  // We cannot register a key combination as a shortcut key if it introduces a
+  // dead character or this event was processed by IME.
+  if (widgetKeyboardEvent.mKeyNameIndex == KEY_NAME_INDEX_Dead ||
+      widgetKeyboardEvent.mKeyNameIndex == KEY_NAME_INDEX_Process) {
+    return;
+  }
+  // If the event is a non-printable key like `Backspace`, `Enter`, F1`, etc,
+  // we should set only `mKeyCode`.
+  if (!widgetKeyboardEvent.PseudoCharCode()) {
+    if (widgetKeyboardEvent.IsModifierKeyEvent() ||
+        !widgetKeyboardEvent.mKeyCode) {
+      return;
+    }
+    RegisterableShortcutKey& shortcutKey = *aCandidates.AppendElement();
+    shortcutKey.mKeyCode = widgetKeyboardEvent.mKeyCode;
+    shortcutKey.mAltKey = widgetKeyboardEvent.IsAlt();
+    shortcutKey.mCtrlKey = widgetKeyboardEvent.IsControl();
+    shortcutKey.mMetaKey = widgetKeyboardEvent.IsMeta();
+    shortcutKey.mShiftKey = widgetKeyboardEvent.IsShift();
+    return;
+  }
+  // Otherwise, we need to return candidates with checking the alternative char
+  // codes because the character introduced with current keyboard layout may not
+  // be available with other keyboard layouts. E.g., the key introduces a
+  // Unicode character like Arabic, Cyrillic, Greek or Hebrew, but the user may
+  // want to use the key combination when they change the layout to ASCII
+  // capable keyboard layout like QWERTY en-US layout.
+  using ShiftState = ShortcutKeyCandidate::ShiftState;
+  AutoShortcutKeyCandidateArray candidates;
+  widgetKeyboardEvent.GetRegisterableShortcutKeys(candidates);
+  for (const auto& candidate : candidates) {
+    MOZ_DIAGNOSTIC_ASSERT(candidate.mCharCode);
+    RegisterableShortcutKey& shortcutKey = *aCandidates.AppendElement();
+    AppendUCS4ToUTF16(
+        // UI should display the character in uppercase if it can be converted
+        // back to the original lowercase character (i.e., candidate.mCharCode).
+        // To ensure shortcut character matching uses the same logic as
+        // KeyEventHandler, perform the conversion here rather than in JS.
+        ConvertCharCodeToUpperCaseIfSafe(candidate.mCharCode),
+        shortcutKey.mKey);
+    shortcutKey.mAltKey = widgetKeyboardEvent.IsAlt();
+    shortcutKey.mCtrlKey = widgetKeyboardEvent.IsControl();
+    shortcutKey.mMetaKey = widgetKeyboardEvent.IsMeta();
+    shortcutKey.mShiftKey = widgetKeyboardEvent.IsShift() &&
+                            candidate.mShiftState == ShiftState::MatchExactly;
+  }
 }
 
 bool KeyboardEvent::ShouldUseSameValueForCharCodeAndKeyCode(

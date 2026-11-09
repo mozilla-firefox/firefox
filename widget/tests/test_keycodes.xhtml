@@ -5982,6 +5982,1131 @@ async function runAltRightKeyOnWindows() {
   button.addEventListener("keyup", pushEvent);
 }
 
+async function runRegisterableShortcutKeysTests() {
+  const button = document.getElementById("button");
+
+  async function test(aEvent, aExpectedShortcutKeys) {
+    button.focus();
+
+    let shortcutKeys;
+    function onKeyDown(aKeyDownEvent) {
+      shortcutKeys = aKeyDownEvent.getRegisterableShortcutKeys();
+      aKeyDownEvent.preventDefault();
+    }
+    button.addEventListener("keydown", onKeyDown, true);
+    await promiseSynthesizeNativeKey(aEvent, "button");
+    button.removeEventListener("keydown", onKeyDown, true);
+    function stringifyShortcutKeyArray(aArray) {
+      function stringifyShortcutKey(aShortcutKey) {
+        return `{ keyCode: ${aShortcutKey.keyCode || 0}, key: "${
+          aShortcutKey.key
+        }", shiftKey: ${aShortcutKey.shiftKey || false}, altKey: ${
+          aShortcutKey.altKey || false
+        }, ctrlKey: ${aShortcutKey.ctrlKey || false}, metaKey: ${
+          aShortcutKey.metaKey || false
+        } }`;
+      }
+      if (!aArray.length) {
+        return "[]";
+      }
+      let result = "[\n";
+      for (const shortcutKey of aArray) {
+        result += `  ${stringifyShortcutKey(shortcutKey)},\n`;
+      }
+      return result += "]\n";
+    }
+    is(
+      stringifyShortcutKeyArray(shortcutKeys),
+      stringifyShortcutKeyArray(aExpectedShortcutKeys),
+      `runRegisterableShortcutKeysTests: ${
+        eventToString(aEvent)
+      } should return expected shortcut keys in the order`
+    );
+    // TODO: Test where all candidates match can be executable with a <key>
+    // element once bug 1333781 is fixed.
+  }
+
+  async function runRegisterableShortcutKeysTestsOnMacOS() {
+    // Enter
+    // Ctrl + Enter and Ctrl + Shift + Enter opens context menu so that they
+    // won't be fired.
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_Return,
+        modifiers: { altKey: 1 },
+        chars:"\u000d", unmodifiedChars:"\u000d",
+      },
+      [{ keyCode: KeyboardEvent.DOM_VK_RETURN, key: "", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_Return,
+        modifiers: { altKey: 1, shiftKey: 1 },
+        chars:"\u000d", unmodifiedChars:"\u000d",
+      },
+      [{ keyCode: KeyboardEvent.DOM_VK_RETURN, key: "", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_Return,
+        modifiers: { metaKey: 1 },
+        chars:"\u000d", unmodifiedChars:"\u000d",
+      },
+      [{ keyCode: KeyboardEvent.DOM_VK_RETURN, key: "", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_Return,
+        modifiers: { metaKey: 1, shiftKey: 1 },
+        chars:"\u000d", unmodifiedChars:"\u000d",
+      },
+      [{ keyCode: KeyboardEvent.DOM_VK_RETURN, key: "", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { ctrlKey: 1 },
+        chars: "\u0001", unmodifiedChars: "a",
+      },
+      [{ key: "A", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "\u0001", unmodifiedChars:"A",
+      },
+      [{ key: "A", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { ctrlKey: 1, capsLockKey: 1 },
+        chars: "\u0001", unmodifiedChars: "a",
+      },
+      [{ key: "A", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { ctrlKey: 1, shiftKey: 1, capsLockKey: 1 },
+        chars: "\u0001", unmodifiedChars: "A",
+      },
+      [{ key: "A", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { altKey: 1 },
+        chars: "\u00e5", unmodifiedChars: "a",
+      },
+      [
+        // ASCII alphabet should be suggested first because it's accessible
+        // with any keyboard layouts.
+        { key: "A", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u00c5", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "\u00c5", unmodifiedChars: "A",
+      },
+      [
+        { key: "A", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u00c5", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { altKey: 1, ctrlKey: 1 },
+        chars: "\u0001", unmodifiedChars: "a",
+      },
+      [{ key: "A", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { altKey: 1, ctrlKey: 1, shiftKey: 1 },
+        chars: "\u0001", unmodifiedChars: "A",
+      },
+      [{ key: "A", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { metaKey: 1 },
+        chars: "a", unmodifiedChars: "a",
+      },
+      [{ key: "A", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_A, modifiers: { metaKey: 1, shiftKey: 1 },
+        chars: "a", unmodifiedChars: "a",
+      },
+      [{ key: "A", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_1, modifiers: { ctrlKey: 1 },
+        chars: "1", unmodifiedChars: "1",
+      },
+      [{ key: "1", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_1, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "1", unmodifiedChars: "!",
+      },
+      [
+        // "1" is suggested by the pseudo charCode different from Windows.
+        // On the other hand, "1" is more generic than "!" across keyboard layouts. So,
+        // we should prefer it on macOS.
+        { key: "1", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "!", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "!", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_1, modifiers: { altKey: 1 },
+        chars: "\u00a1", unmodifiedChars: "1",
+      },
+      [
+        { key: "1", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u00a1", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_1, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "\u2044", unmodifiedChars: "!",
+      },
+      [
+        // ASCII punctuation can match without Shift state and some keyboard
+        // layouts may be installed which produces the character without Shift
+        // state. To make the shortcut accessible from the keyboard layout, we
+        // should suggest unshifted version first.
+        { key: "!", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "!", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+        // "\u2044" is introduced by the pseudo char code so that the Shift
+        // state needs strictly to match.
+        { key: "\u2044", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_1, modifiers: { altKey: 1, ctrlKey: 1 },
+        chars: "1", unmodifiedChars: "1",
+      },
+      [{ key: "1", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_1, modifiers: { altKey: 1, ctrlKey: 1, shiftKey: 1 },
+        chars: "1", unmodifiedChars: "!",
+      },
+      [
+        // "1" is suggested by the pseudo charCode different from Windows.
+        // On the other hand, "1" is more generic than "!" across keyboard layouts. So,
+        // we should prefer it on macOS.
+        { key: "1", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "!", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "!", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_1, modifiers: { metaKey: 1 },
+        chars: "1", unmodifiedChars: "1",
+      },
+      [{ key: "1", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_1, modifiers: { metaKey: 1, shiftKey: 1 },
+        chars: "1", unmodifiedChars: "1",
+      },
+      [
+        { key: "!", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "!", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_Grave, modifiers: { ctrlKey: 1 },
+        chars: "`", unmodifiedChars: "`",
+      },
+      [{ key: "`", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_Grave, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars:"`", unmodifiedChars:"~",
+      },
+      [
+        { key: "`", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "~", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "~", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_Grave, modifiers: { altKey: 1 },
+        chars: "", unmodifiedChars: "`"
+      },
+      // Combination for a dead key shouldn't be registerable.
+      []
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_Grave, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "`", unmodifiedChars: "~",
+      },
+      [
+        { key: "`", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "~", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "~", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_Grave, modifiers: { altKey: 1, ctrlKey: 1 },
+        chars: "`", unmodifiedChars: "`",
+      },
+      // Alt + Grave is a dead key combination so that it shouldn't be registerable.
+      []
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_Grave, modifiers: { altKey: 1, ctrlKey: 1, shiftKey: 1 },
+        chars: "`", unmodifiedChars: "~",
+      },
+      [
+        { key: "`", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "~", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "~", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_Grave, modifiers: { metaKey: 1 },
+        chars: "`", unmodifiedChars: "`",
+      },
+      [{ key: "`", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_Grave, modifiers: { metaKey: 1, shiftKey: 1 },
+        chars: "`", unmodifiedChars: "`",
+      },
+      [
+        { key: "~", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "~", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true },
+      ]
+    );
+    // AZERTY
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_1, modifiers: { ctrlKey: 1 },
+        chars: "1", unmodifiedChars: "&",
+      },
+      [
+        // macOS suggests "1" as the char, but we prefer "&" on Windows. So,
+        // this order is different from Windows, but this difference is same as
+        // prioritizing to perform a shortcut too. Therefore, "1" should be
+        // preferred on macOS.
+        { key: "1", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "&", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_1, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "1", unmodifiedChars: "1",
+      },
+      [
+        { key: "1", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "1", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_1, modifiers: { altKey: 1 },
+        chars: "\uf8ff", unmodifiedChars: "&",
+      },
+      [
+        // macOS suggests U+F8FF as the char, but we prefer ASCII characters
+        // because they are accessible across keyboard layouts. Then, "1" is
+        // appended as lower priority for AZERTY keyboard hack. Therefore, "&"
+        // is preferred than "1".
+        { key: "&", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "1", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\uf8ff", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_1, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "", unmodifiedChars: "1",
+      },
+      []
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_1, modifiers: { altKey: 1, ctrlKey: 1 },
+        chars: "1", unmodifiedChars: "&",
+      },
+      [
+        // macOS suggests "1" as the char, but we prefer "&" on Windows. So,
+        // this order is different from Windows, but this difference is same as
+        // prioritizing to perform a shortcut too. Therefore, "1" should be
+        // preferred on macOS.
+        { key: "1", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "&", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_1, modifiers: { altKey: 1, ctrlKey: 1, shiftKey: 1 },
+        chars: "1", unmodifiedChars: "1",
+      },
+      []
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_1, modifiers: { metaKey: 1 },
+        chars: "&", unmodifiedChars: "&",
+      },
+      [
+        { key: "&", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "1", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_1, modifiers: { metaKey: 1, shiftKey: 1 },
+        chars: "1", unmodifiedChars: "1",
+      },
+      [
+        { key: "1", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "1", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_2, modifiers: { ctrlKey: 1 },
+        chars: "2", unmodifiedChars: "\u00e9",
+      },
+      [
+        // macOS suggests "2" as the char, but we prefer e with acute on Windows.
+        // So, this order is different from Windows, but this difference is same as
+        // prioritizing to perform a shortcut too. Therefore, "2" should be
+        // preferred on macOS.
+        { key: "2", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u00c9", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_2, modifiers: { altKey: 1 },
+        chars: "\u00eb", unmodifiedChars: "\u00e9",
+      },
+      [
+        { key: "2", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u00cb", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u00c9", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: MAC_VK_ANSI_2, modifiers: { metaKey: 1 },
+        chars: "\u00e9", unmodifiedChars: "\u00e9",
+      },
+      [
+        { key: "2", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "\u00c9", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+      ]
+    );
+    // Greek
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GREEK,
+        keyCode: MAC_VK_ANSI_A, modifiers: { ctrlKey: 1 },
+        chars: "\u0001", unmodifiedChars: "\u03b1",
+      },
+      [
+        { key: "A", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u0391", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GREEK,
+        keyCode: MAC_VK_ANSI_A, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "\u0001", unmodifiedChars: "\u0391",
+      },
+      [
+        { key: "A", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u0391", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout:KEYBOARD_LAYOUT_GREEK,
+        keyCode:MAC_VK_ANSI_A, modifiers: { metaKey: 1 },
+        chars: "a", unmodifiedChars: "\u03b1",
+      },
+      [
+        { key: "A", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "\u0391", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GREEK,
+        keyCode: MAC_VK_ANSI_A, modifiers: { metaKey: 1, shiftKey: 1 },
+        chars: "a", unmodifiedChars: "\u0391",
+      },
+      [
+        { key: "A", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "\u0391", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GREEK,
+        keyCode: MAC_VK_ANSI_A, modifiers: { metaKey: 1, altKey: 1 },
+        chars: "\u00a8", unmodifiedChars: "\u03b1",
+      },
+      [
+        { key: "A", shiftKey: false, altKey: true, ctrlKey: false, metaKey: true },
+        { key: "\u00a8", shiftKey: false, altKey: true, ctrlKey: false, metaKey: true },
+        { key: "\u0391", shiftKey: false, altKey: true, ctrlKey: false, metaKey: true },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GREEK,
+        keyCode: MAC_VK_ANSI_A, modifiers: { metaKey: 1, altKey: 1, shiftKey: 1 },
+        chars: "\u00b9", unmodifiedChars: "\u0391",
+      },
+      [
+        { key: "A", shiftKey: true, altKey: true, ctrlKey: false, metaKey: true },
+        { key: "\u00b9", shiftKey: true, altKey: true, ctrlKey: false, metaKey: true },
+        { key: "\u0391", shiftKey: true, altKey: true, ctrlKey: false, metaKey: true },
+      ]
+    );
+    // German
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: MAC_VK_ANSI_Minus, modifiers: { ctrlKey: 1 },
+        chars: "\u00df", unmodifiedChars: "\u00df",
+      },
+      [{ key: "\u00df", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: MAC_VK_ANSI_Minus, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "?", unmodifiedChars: "?",
+      },
+      [
+        { key: "?", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "?", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+        // Cmd + Shift + eszett switches the layout from "?" to "/". So, "/" may
+        // be intended.
+        { key: "/", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "/", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: MAC_VK_ANSI_Minus, modifiers: { altKey: 1 },
+        chars: "\u00bf", unmodifiedChars: "\u00df",
+      },
+      [
+        { key: "\u00bf", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u00df", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: MAC_VK_ANSI_Minus, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "\u02d9", unmodifiedChars: "?",
+      },
+      [
+        { key: "?", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "?", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "/", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "/", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u02d9", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: MAC_VK_ANSI_Minus, modifiers: { altKey: 1, ctrlKey: 1 },
+        chars: "\u00bf", unmodifiedChars: "\u00df",
+      },
+      [
+        { key: "\u00bf", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "\u00df", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: MAC_VK_ANSI_Minus, modifiers: { altKey: 1, ctrlKey: 1, shiftKey: 1 },
+        chars: "\u02d9", unmodifiedChars: "?",
+      },
+      [
+        { key: "?", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "?", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "/", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "/", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false },
+        { key: "\u02d9", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: MAC_VK_ANSI_Minus, modifiers: { metaKey: 1 },
+        chars: "\u00df", unmodifiedChars: "\u00df",
+      },
+      [{ key: "\u00df", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: MAC_VK_ANSI_Minus, modifiers: { metaKey: 1, shiftKey: 1 },
+        chars: "/", unmodifiedChars: "?",
+      },
+      [
+        { key: "?", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "?", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true },
+        // Cmd + Shift + eszett switches the layout from "?" to "/".
+        { key: "/", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
+        { key: "/", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true },
+      ]
+    );
+  }
+  // eslint-disable-next-line complexity
+  async function runRegisterableShortcutKeysTestsOnWindows() {
+    // Enter
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_RETURN,
+        modifiers: { ctrlKey: 1 },
+        chars: "\n",
+      },
+      [{ keyCode: KeyboardEvent.DOM_VK_RETURN, key: "", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_RETURN,
+        modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "\n",
+      },
+      [{ keyCode: KeyboardEvent.DOM_VK_RETURN, key: "", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_RETURN,
+        modifiers: { altKey: 1 },
+        chars: "\r",
+      },
+      [{ keyCode: KeyboardEvent.DOM_VK_RETURN, key: "", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_RETURN,
+        modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "\r",
+      },
+      [{ keyCode: KeyboardEvent.DOM_VK_RETURN, key: "", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_A, modifiers: { ctrlKey: 1 },
+        chars: "\u0001",
+      },
+      [{ key: "A", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_A, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "\u0001",
+      },
+      [{ key: "A", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_A, modifiers: { altKey: 1 },
+        chars: "a",
+      },
+      [{ key: "A", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_A, modifiers: { altKey: 1, shiftKey: 1 },
+        chars:"A"
+      },
+      [{ key: "A", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_A, modifiers: { altKey: 1, ctrlKey: 1 },
+        chars: "",
+      },
+      [{ key: "A", shiftKey: false, altKey: true, ctrlKey: true, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_A, modifiers: { altKey: 1, ctrlKey: 1, shiftKey: 1 },
+        chars: "",
+      },
+      [{ key: "A", shiftKey: true, altKey: true, ctrlKey: true, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_1, modifiers: { ctrlKey: 1 },
+        chars: "",
+      },
+      [{ key: "1", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_1, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "",
+      },
+      [
+        // ASCII punctuation can match without Shift state and some keyboard
+        // layouts may be installed which produces the punctuation without
+        // Shift state. To make the shortcut accessible from the keyboard layout,
+        // we should suggest unshifted version first.
+        { key: "!", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }, // Ctrl + !
+        { key: "!", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },  // Ctrl + Shift + !
+      ],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_1, modifiers: { altKey: 1 },
+        chars: "1",
+      },
+      [{ key: "1", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_1,
+        modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "!",
+      },
+      [
+        { key: "!", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }, // Alt + !
+        { key: "!", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },  // Alt + Shift + !
+      ],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_OEM_MINUS, modifiers: { ctrlKey: 1 },
+        chars: "",
+      },
+      [{ key: "-", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_OEM_MINUS, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "\u001f",
+      },
+      [
+        { key: "_", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }, // Ctrl + _
+        { key: "_", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },  // Ctrl + Shift + _
+      ],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_OEM_MINUS, modifiers: { altKey: 1 },
+        chars: "-",
+      },
+      [{ key: "-", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: WIN_VK_OEM_MINUS, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "_",
+      },
+      [
+        { key: "_", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }, // Alt + _
+        { key: "_", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },  // Alt + Shift + _
+      ],
+    );
+    // AZERTY
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: WIN_VK_1, modifiers: { ctrlKey: 1 },
+        chars: "",
+      },
+      [
+        { key: "&", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        // Numeric key value should be suggested as an optional shortcut key.
+        { key: "1", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+      ],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: WIN_VK_1, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "",
+      },
+      [
+        { key: "1", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "1", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: WIN_VK_1, modifiers: { altKey: 1 },
+        chars: "&",
+      },
+      [
+        { key: "&", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "1", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: WIN_VK_1, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "1",
+      },
+      [
+        { key: "1", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "1", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ],
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_FRENCH,
+        keyCode: WIN_VK_2, modifiers: { ctrlKey: 1 },
+        chars: "",
+      },
+      [
+        { key: "2", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u00c9", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+      ],
+    );
+    // German
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: WIN_VK_OEM_4, modifiers: { ctrlKey: 1 },
+        chars: "",
+      },
+      [{ key: "\u00df", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: WIN_VK_OEM_4, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "",
+      },
+      [
+        { key: "?", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "?", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: WIN_VK_OEM_4, modifiers: { altKey: 1 },
+        chars: "\u00df",
+      },
+      [{ key: "\u00df", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_GERMAN,
+        keyCode: WIN_VK_OEM_4, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "?",
+      },
+      [
+        { key: "?", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "?", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    // Hebrew
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_HEBREW,
+        keyCode: WIN_VK_A, modifiers: { ctrlKey: 1 },
+        chars: "\u0001",
+      },
+      [
+        // The key introduces "\u05e9" without Shift and "A" with Shift. Then,
+        // Ctrl + A should be suggested first because it's accessible with other
+        // non-Hebrew keyboard layout.
+        { key: "A", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u05e9", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_HEBREW,
+        keyCode: WIN_VK_A, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "",
+      },
+      [{ key: "A", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false }]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_HEBREW,
+        keyCode: WIN_VK_A, modifiers: { altKey: 1 },
+        chars: "\u05e9",
+      },
+      [
+        { key: "A", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u05e9", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_HEBREW,
+        keyCode: WIN_VK_A, modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "A",
+      },
+      [{ key: "A", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false }]
+    );
+    // Japanese
+    if (isJapanese106KeyboardDriverLoaded()) {
+      await test(
+        {
+          layout: KEYBOARD_LAYOUT_JAPANESE,
+          keyCode: WIN_VK_OEM_PLUS,
+          modifiers: { ctrlKey: 1 },
+          chars:"",
+        },
+        [{ key: ";", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false }]
+      );
+      await test(
+        {
+          layout: KEYBOARD_LAYOUT_JAPANESE,
+          keyCode: WIN_VK_OEM_PLUS,
+          modifiers: { altKey: 1 },
+          chars:";",
+        },
+        [{ key: ";", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false }]
+      );
+    } else {
+      todo(
+        false,
+        "VK_OEM_PLUS test with Japanese keyboard layout requires 106 keyboard layout driver"
+      );
+    }
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_JAPANESE,
+        keyCode: WIN_VK_OEM_PLUS,
+        modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars:"",
+      },
+      [
+        { key: "+", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "+", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_JAPANESE,
+        keyCode: WIN_VK_OEM_PLUS,
+        modifiers: { altKey: 1, shiftKey: 1 },
+        chars:"+",
+      },
+      [
+        { key: "+", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "+", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    // Thai
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_THAI,
+        keyCode: WIN_VK_1,
+        modifiers: { ctrlKey: 1 },
+        chars:"",
+      },
+      [
+        // Different from AZERTY keyboard layout, the numeric key does not
+        // introduce a numeric. However, the numeric is suggested for the
+        // computed DOM key code. Therefore, it's preferred rather than the
+        // Thai character.
+        { key: "1", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u0e45", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        // Ctrl + Shift + 1 introduces "+", but the key code is not WIN_VK_PLUS.
+        // Therefore, "+" shouldn't be suggested.
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_THAI,
+        keyCode: WIN_VK_1,
+        modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "",
+      },
+      [
+        { key: "+", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "+", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_THAI,
+        keyCode: WIN_VK_1,
+        modifiers: { altKey: 1 },
+        chars:"\u0e45",
+      },
+      [
+        { key: "1", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u0e45", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_THAI,
+        keyCode: WIN_VK_1,
+        modifiers: { altKey: 1, shiftKey: 1 },
+        chars: "+",
+      },
+      [
+        { key: "+", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "+", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_THAI,
+        keyCode: WIN_VK_OEM_PLUS,
+        modifiers: { ctrlKey: 1 },
+        chars: "",
+      },
+      [
+        // WIN_VK_OEM_PLUS does not introduce "=", but the DOM key code is
+        // computed as VK_EQUALS because of unshifted character of en-US QWERTY
+        // keyboard layout. Therefore, Ctrl + = can be triggered.
+        { key: "=", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        // WIN_VK_OEM_PLUS key does not introduce "+", but the key code
+        // indicates it's a key to introduce "+". So, Ctrl + + should be
+        // suggested.
+        { key: "+", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u0e0a", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_THAI,
+        keyCode: WIN_VK_OEM_PLUS,
+        modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars:"",
+      },
+      [
+        { key: "+", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u0e59", shiftKey: false, altKey: false, ctrlKey: true, metaKey: false },
+        { key: "\u0e59", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_THAI,
+        keyCode: WIN_VK_OEM_PLUS,
+        modifiers: { altKey: 1 },
+        chars: "\u0e0a",
+      },
+      [
+        { key: "=", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "+", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u0e0a", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_THAI,
+        keyCode: WIN_VK_OEM_PLUS,
+        modifiers: { altKey: 1, shiftKey: 1 },
+        chars:"\u0e59",
+      },
+      [
+        { key: "+", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u0e59", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u0e59", shiftKey: true, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+  }
+
+  if (IS_MAC) {
+    await runRegisterableShortcutKeysTestsOnMacOS();
+  } else if (IS_WIN) {
+    await runRegisterableShortcutKeysTestsOnWindows();
+  }
+}
+
 async function runAllTests() {
   await runKeyEventTests();
   await runAccessKeyTests();
@@ -5989,6 +7114,7 @@ async function runAllTests() {
   await runReservedKeyTests();
   await runTextInputTests();
   await runAltRightKeyOnWindows();
+  await runRegisterableShortcutKeysTests();
 
   SimpleTest.finish();
 }

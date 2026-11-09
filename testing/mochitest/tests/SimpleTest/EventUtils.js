@@ -2238,6 +2238,28 @@ function synthesizeNativeKey(
   return true;
 }
 
+/**
+ * Check whether 106 keyboard layout for Japanese is loaded or not.
+ * If this returns false, synthesizeNativeKey cannot work with JIS
+ * keyboard layout.
+ */
+function isJapanese106KeyboardDriverLoaded() {
+  if (!_EU_isWin) {
+    throw new Error("This is not available on the platform");
+  }
+
+  const { WindowsRegistry } = _EU_ChromeUtils.importESModule(
+    "resource://gre/modules/WindowsRegistry.sys.mjs"
+  );
+  const driverName = WindowsRegistry.readRegKey(
+    _EU_Ci.nsIWindowsRegKey.ROOT_KEY_LOCAL_MACHINE,
+    "SYSTEM\\CurrentControlSet\\Services\\i8042prt\\Parameters",
+    "LayerDriver JPN",
+    _EU_Ci.nsIWindowsRegKey.WOW64_64
+  );
+  return driverName == "kbd106.dll";
+}
+
 var _gSeenEvent = false;
 
 /**

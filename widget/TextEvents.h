@@ -695,12 +695,31 @@ class WidgetKeyboardEvent final : public WidgetInputEvent {
   }
 
   /**
-   * Get the candidates for shortcut key.
+   * Get the candidates for shortcut key to check whether this event matches
+   * with a shortcut.
    *
    * @param aCandidates [out] the candidate shortcut key combination list.
    *                          the first item is most preferred.
    */
-  void GetShortcutKeyCandidates(ShortcutKeyCandidateArray& aCandidates) const;
+  void GetShortcutKeyCandidates(ShortcutKeyCandidateArray& aCandidates) const {
+    GetShortcutKeyCandidatesInternal(ShortcutKeyPriority::UserIntention,
+                                     aCandidates);
+  }
+
+  /**
+   * Get a list of shortcut keys which may match with this event. So, this is
+   * useful to suggest the user to consider a registering shortcut with a key
+   * press.
+   *
+   * @param aCandidates [out] The first element is the most preferred shortcut
+   *                          which may be available with other keyboard
+   *                          layouts.
+   */
+  void GetRegisterableShortcutKeys(
+      ShortcutKeyCandidateArray& aCandidates) const {
+    GetShortcutKeyCandidatesInternal(
+        ShortcutKeyPriority::AccessibleFromAnyKeyboardLayouts, aCandidates);
+  }
 
   /**
    * Get the candidates for access key.
@@ -939,6 +958,26 @@ class WidgetKeyboardEvent final : public WidgetInputEvent {
         MOZ_MAKE_COMPILER_ASSUME_IS_UNREACHABLE(
             "Invalid native key binding type");
     }
+  }
+
+  enum class ShortcutKeyPriority {
+    // Return the shortcut key candidates in the order of user's intention.
+    UserIntention,
+    // Return the shortcut key candidates in the order of easier to access from
+    // any keyboard layouts.
+    AccessibleFromAnyKeyboardLayouts,
+  };
+  void GetShortcutKeyCandidatesInternal(ShortcutKeyPriority,
+                                        ShortcutKeyCandidateArray&) const;
+
+  friend auto format_as(ShortcutKeyPriority aPriority) {
+    return aPriority == ShortcutKeyPriority::UserIntention
+               ? "UserIntention"
+               : "AccessibleFromAnyKeyboardLayouts";
+  }
+  friend std::ostream& operator<<(std::ostream& aStream,
+                                  ShortcutKeyPriority aPriority) {
+    return aStream << format_as(aPriority);
   }
 };
 

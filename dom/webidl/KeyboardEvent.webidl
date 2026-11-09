@@ -55,6 +55,24 @@ interface KeyboardEvent : UIEvent
   // same-type keyboard event
   [Cached, ChromeOnly, Constant]
   readonly attribute KeyboardEventInit initDict;
+
+  // Return an array of RegisterableShortcutKey dictionaries whose fields
+  // represents a shortcut key which matches with the event. The first one in
+  // the array is the most preferred shortcut which would be accessible with
+  // any keyboard layouts. NOTE: users may install multiple keyboard layouts,
+  // for example, if the user's language text is written with Unicode characters
+  // (like Greek, Cyrillic, Arabic, Hebrew), they installed an ASCII capable
+  // keyboard layout too. ASCII alphabet should be accessible with both keyboard
+  // layouts, but ASCII punctuations may be accessible with different Shift
+  // state or completely inaccessible. So, users need to choose for their
+  // environment from the result.
+  //
+  // For example,
+  // { key: "A", altKey: true, ctrlKey: true }:  Alt + Ctrl + A
+  // { key: "/", altKey: true, shiftKey: true }: Alt + Shift + /
+  // { key: ";", metaKey: true }: Meta + ;
+  [ChromeOnly]
+  sequence<RegisterableShortcutKey> getRegisterableShortcutKeys();
 };
 
 dictionary KeyboardEventInit : EventModifierInit
@@ -71,6 +89,16 @@ dictionary KeyboardEventInit : EventModifierInit
   unsigned long  charCode      = 0;
   unsigned long  keyCode       = 0;
   unsigned long  which         = 0;
+};
+
+// See KeyboardEvent.getRegisterableShortcutKeys()
+dictionary RegisterableShortcutKey {
+  unsigned long keyCode = 0;
+  DOMString key = "";
+  boolean altKey = false;
+  boolean ctrlKey = false;
+  boolean metaKey = false;
+  boolean shiftKey = false;
 };
 
 // Mozilla extensions

@@ -68,6 +68,9 @@ class KeyboardEvent : public UIEvent {
                            bool aCtrlKey, bool aAltKey, bool aShiftKey,
                            bool aMetaKey);
 
+  void GetRegisterableShortcutKeys(
+      nsTArray<RegisterableShortcutKey>& aCandidates) const;
+
  protected:
   ~KeyboardEvent() = default;
 
