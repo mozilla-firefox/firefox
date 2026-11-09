@@ -2123,7 +2123,7 @@ export var PlacesUtils = {
   },
 
   /**
-   * Creates a console logger.
+   * Creates a console logger, which logs to the "Places" MOZ_LOG module.
    * Logging level can be controlled through the `places.loglevel` preference.
    *
    * @param {object} [options]
@@ -2137,7 +2137,8 @@ export var PlacesUtils = {
     let logger = this._loggers.get(prefix);
     if (!logger) {
       logger = console.createInstance({
-        logModule: `Places${prefix ? " - " + prefix : ""}`,
+        logModule: "Places",
+        prefix,
         maxLogLevelPref: "places.loglevel",
       });
       this._loggers.set(prefix, logger);
