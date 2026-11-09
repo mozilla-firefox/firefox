@@ -4171,7 +4171,7 @@ inline bool RecordedFontData::PlayEvent(Translator* aTranslator) const {
     }
 
     gfxOTSExpandingMemoryStream<gfxOTSMozAlloc> output(lengthHint);
-    gfxOTSContext otsContext;
+    gfxOTSContext otsContext(/* aDropShapingTables = */ true);
     if (!otsContext.Process(&output, data, length)) {
       gfxCriticalNote << "Failed sanitizing recorded font of size " << length;
       return false;

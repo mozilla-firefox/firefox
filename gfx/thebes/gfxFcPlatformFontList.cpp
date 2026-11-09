@@ -7,6 +7,7 @@
 #include "gfxFcPlatformFontList.h"
 #include "gfxFont.h"
 #include "gfxFT2Utils.h"
+#include "gfxOTSUtils.h"
 #include "gfxPlatform.h"
 #include "nsPresContext.h"
 #include "mozilla/dom/ContentChild.h"
@@ -2390,7 +2391,22 @@ already_AddRefed<gfxFontEntry> gfxFcPlatformFontList::MakePlatformFont(
     const nsACString& aFontName, WeightRange aWeightForEntry,
     StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
     FontData* aFontData) {
-  RefPtr<FTUserFontData> ufd = new FTUserFontData(aFontData);
+  // Make a copy of the font data with shaping tables stripped, and use this
+  // to instantiate the FreeType face; we only need this face to support
+  // rasterization, not shaping behaviors.
+  // We disable validation because the resource was already sanitized when
+  // initially downloaded; we're re-running OTS here purely to filter out the
+  // shaping-related tables.
+  gfxOTSExpandingMemoryStream<> output(aFontData->Length());
+  gfxOTSContext otsContext(/* aDropShapingTables = */ true,
+                           /* aDisableValidation = */ true);
+  if (!otsContext.Process(&output, aFontData->Data(), aFontData->Length())) {
+    return nullptr;
+  }
+  uint32_t length = output.Tell();
+  RefPtr ftFontData = MakeRefPtr<FontData>(
+      static_cast<const uint8_t*>(output.forget()), length);
+  RefPtr<FTUserFontData> ufd = new FTUserFontData(ftFontData);
   RefPtr<SharedFTFace> face = ufd->CloneFace();
   if (!face) {
     return nullptr;
