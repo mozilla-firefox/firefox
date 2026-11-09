@@ -33,6 +33,12 @@
       let anchorButton, panelList, submenuHost;
 
       add_setup(async function setup() {
+        // The real pointer may sit where the submenu parent appears, and
+        // hovering it opens the submenu.
+        window.windowUtils.disableNonTestMouseEvents(true);
+        SimpleTest.registerCleanupFunction(() =>
+          window.windowUtils.disableNonTestMouseEvents(false)
+        );
         await customElements.whenDefined("panel-list");
         await customElements.whenDefined("panel-item");
         panelList = document.getElementById("panel-list");
