@@ -380,20 +380,14 @@ RefPtr<MP4TrackDemuxer::SeekPromise> MP4TrackDemuxer::Seek(
 
   mIterator->Seek(seekTime);
 
-#ifdef MOZ_APPLEMEDIA
   bool hasSeenValidSamples = false, seekingFromFirstSyncSample = false;
-#endif
   // Check what time we actually seeked to.
   do {
     auto next = GetNextSample();
     if (next.isErr()) {
       auto error = next.unwrapErr();
-#ifdef MOZ_APPLEMEDIA
-      // On macOS VideoToolbox can return a bad data error if a non-IDR I-frame
-      // (H.264) or a CRA frame (HEVC) is the first sample fed after seeking.
-      // GetNextSample() strips those from being keyframes, so if we reached EOS
-      // without finding one we retry from the first sync sample in the stss,
-      // which is always an IDR.
+      // If we reached EOS without finding an IDR I-frame we retry from the
+      // first sync sample in the stss, which is always an IDR.
       if ((mType == kH264 || mType == kHEVC) &&
           error == NS_ERROR_DOM_MEDIA_END_OF_STREAM && hasSeenValidSamples &&
           !seekingFromFirstSyncSample) {
@@ -403,7 +397,6 @@ RefPtr<MP4TrackDemuxer::SeekPromise> MP4TrackDemuxer::Seek(
         mIterator->Seek(seekTime, SampleIterator::SyncSampleMode::First);
         continue;
       }
-#endif
       return SeekPromise::CreateAndReject(error, __func__);
     }
     RefPtr<MediaRawData> sample = next.unwrap();
@@ -416,9 +409,7 @@ RefPtr<MP4TrackDemuxer::SeekPromise> MP4TrackDemuxer::Seek(
       mQueuedSample = sample;
       seekTime = mQueuedSample->mTime;
     }
-#ifdef MOZ_APPLEMEDIA
     hasSeenValidSamples = true;
-#endif
   } while (!mQueuedSample);
 
   SetNextKeyFrameTime();
