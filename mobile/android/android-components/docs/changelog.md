@@ -6,13 +6,15 @@ permalink: /changelog/
 
 # 162.0 (In Development)
 * **concept-engine**
-    * Added an optional `title` to `HitResult.IMAGE_SRC`.
-* **support-locale**
-    * Added a new API `LocaleManager#onAttachBaseContext` that applies only the configuration changes for the locale without cached values. Should only be used in `attachBaseContext` overrides for `Application` and `Activity` classes.
-        *  The API, similar to the others in `LocaleManager` assumes `enableSplit` is disabled for App Bundle splits; languages will be in the base package.
-    * ⚠️ **Breaking change**: Renamed `LocaleManager#updateResources` to `LocaleManager#onConfigurationChanged` to make it's API use case clear. Should only be used in `onConfigurationChanged` overrides typically in `Application`, `Activity`, `Fragment` classes.
+  * Added an optional `title` to `HitResult.IMAGE_SRC`.
 * **support-utils**
-    * 🆕 Added `String.validateCreditCardNumber()`, which checks that a credit card number has only digits, matches a known card network and passes the Luhn check. It moved here from Fenix. [Bug 2090313](https://bugzilla.mozilla.org/show_bug.cgi?id=2090313)
+  * 🆕 Added `String.validateCreditCardNumber()`, which checks that a credit card number has only digits, matches a known card network and passes the Luhn check. It moved here from Fenix. [Bug 2090313](https://bugzilla.mozilla.org/show_bug.cgi?id=2090313)
+* **support-locale**
+  * Added a new API `LocaleManager#onAttachBaseContext` that applies only the configuration changes for the locale without cached values. Should only be used in `attachBaseContext` overrides for `Application` and `Activity` classes.
+    *  The API, similar to the others in `LocaleManager` assumes `enableSplit` is disabled for App Bundle splits; languages will be in the base package.
+  * ⚠️ **Breaking change**: Renamed `LocaleManager#updateResources` to `LocaleManager#onConfigurationChanged` to make it's API use case clear. Should only be used in `onConfigurationChanged` overrides typically in `Application`, `Activity`, `Fragment` classes.
+* **support-test**
+  * 🆕 Added `assertNoUncaughtException`.
 
 # 161.0
 * **browser-state**
