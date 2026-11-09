@@ -102,7 +102,7 @@ void MacroAssembler::andPtr(Imm32 imm, const Address& dest) {
 }
 
 void MacroAssembler::and64(Imm64 imm, Register64 dest) {
-  if (INT32_MIN <= int64_t(imm.value) && int64_t(imm.value) <= INT32_MAX) {
+  if (INT32_MIN <= imm.value && imm.value <= INT32_MAX) {
     if (int32_t(imm.value) >= 0) {
       andl(Imm32(imm.value), dest.reg);
     } else {
@@ -116,7 +116,7 @@ void MacroAssembler::and64(Imm64 imm, Register64 dest) {
 }
 
 void MacroAssembler::or64(Imm64 imm, Register64 dest) {
-  if (INT32_MIN <= int64_t(imm.value) && int64_t(imm.value) <= INT32_MAX) {
+  if (INT32_MIN <= imm.value && imm.value <= INT32_MAX) {
     orq(Imm32(imm.value), dest.reg);
   } else {
     ScratchRegisterScope scratch(*this);
@@ -126,7 +126,7 @@ void MacroAssembler::or64(Imm64 imm, Register64 dest) {
 }
 
 void MacroAssembler::xor64(Imm64 imm, Register64 dest) {
-  if (INT32_MIN <= int64_t(imm.value) && int64_t(imm.value) <= INT32_MAX) {
+  if (INT32_MIN <= imm.value && imm.value <= INT32_MAX) {
     xorq(Imm32(imm.value), dest.reg);
   } else {
     ScratchRegisterScope scratch(*this);
@@ -317,8 +317,8 @@ void MacroAssembler::mul64(Imm64 imm, const Register64& dest,
 }
 
 void MacroAssembler::mul64(Imm64 imm, const Register64& dest) {
-  if (INT32_MIN <= int64_t(imm.value) && int64_t(imm.value) <= INT32_MAX) {
-    imulq(Imm32((int32_t)imm.value), dest.reg, dest.reg);
+  if (INT32_MIN <= imm.value && imm.value <= INT32_MAX) {
+    imulq(Imm32(imm.value), dest.reg, dest.reg);
   } else {
     movq(ImmWord(uintptr_t(imm.value)), ScratchReg);
     imulq(ScratchReg, dest.reg);

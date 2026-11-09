@@ -7,6 +7,8 @@
 // found in the LICENSE file.
 #include "jit/riscv64/MacroAssembler-riscv64.h"
 
+#include "mozilla/Casting.h"
+
 #include <bit>
 
 #include "jit/Bailouts.h"
@@ -5730,10 +5732,10 @@ void MacroAssemblerRiscv64::ma_sub32(Register rd, Register rs, Imm32 rt) {
 void MacroAssemblerRiscv64::ma_sub64(Register rd, Register rs, Imm64 rt) {
   if (rt.value == 0) {
     ma_mv(rd, rs);
-  } else if (is_int12(-rt.value)) {
+  } else if (is_int12(int64_t(-uint64_t(rt.value)))) {
     // No subi instr, use addi(x, y, -imm).
     addi(rd, rs, static_cast<int32_t>(-rt.value));
-  } else if (is_two_int12(-rt.value)) {
+  } else if (is_two_int12(int64_t(-uint64_t(rt.value)))) {
     auto [first, second] = ToTwoInt12(-rt.value);
     addi(rd, rs, first);
     addi(rd, rd, second);
@@ -5780,11 +5782,11 @@ void MacroAssemblerRiscv64::ma_and(Register rd, Register rs, Imm64 rt) {
       //  For example: `x & 0xffff` is `slli rd, rs, 48; srli rd, rd, 48`.
       slli(rd, rs, 64 - shift);
       srli(rd, rd, 64 - shift);
-    } else if (rt.value == uint64_t(0x8000'0000)) {
+    } else if (rt.value == 0x8000'0000) {
       // Int32 sign extraction can be expressed as two shifts.
       srliw(rd, rs, 31);
       slli(rd, rd, 31);
-    } else if (rt.value == uint64_t(0x8000'0000'0000'0000)) {
+    } else if (rt.value == int64_t(0x8000'0000'0000'0000)) {
       // Int64 sign extraction can be expressed as two shifts.
       srli(rd, rs, 63);
       slli(rd, rd, 63);
@@ -5990,7 +5992,7 @@ void MacroAssemblerRiscv64::ma_mulhu32(Register rd, Register rs, Imm32 rt) {
 }
 
 void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
-  switch (int64_t(rt.value)) {
+  switch (rt.value) {
     case -1:
       neg(rd, rs);
       return;
@@ -6009,10 +6011,11 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
       break;
   }
 
-  if (int64_t(rt.value) > 0) {
+  if (rt.value > 0) {
+    const uint64_t uvalue = static_cast<uint64_t>(rt.value);
     if (HasZbaExtension()) {
       int ctz = std::countr_zero(uint32_t(rt.value));
-      if ((rt.value >> ctz) == 3) {
+      if ((uvalue >> ctz) == 3) {
         // rd = (rs * 2 + rs) << ctz
         sh1add(rd, rs, rs);
         if (ctz) {
@@ -6020,7 +6023,7 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
         }
         return;
       }
-      if ((rt.value >> ctz) == 5) {
+      if ((uvalue >> ctz) == 5) {
         // rd = (rs * 4 + rs) << ctz
         sh2add(rd, rs, rs);
         if (ctz) {
@@ -6028,7 +6031,7 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
         }
         return;
       }
-      if ((rt.value >> ctz) == 9) {
+      if ((uvalue >> ctz) == 9) {
         // rd = (rs * 8 + rs) << ctz
         sh3add(rd, rs, rs);
         if (ctz) {
@@ -6038,8 +6041,8 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
       }
     }
 
-    if (std::has_single_bit(rt.value + 1)) {
-      int32_t shift = std::countr_zero(rt.value + 1);
+    if (std::has_single_bit(uvalue + 1)) {
+      int32_t shift = std::countr_zero(uvalue + 1);
 
       UseScratchRegisterScope temps(this);
       Register savedRs = rs;
@@ -6052,8 +6055,8 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
       return;
     }
 
-    if (std::has_single_bit(rt.value - 1)) {
-      int32_t shift = std::countr_zero(rt.value - 1);
+    if (std::has_single_bit(uvalue - 1)) {
+      int32_t shift = std::countr_zero(uvalue - 1);
 
       UseScratchRegisterScope temps(this);
       Register savedRs = rs;
@@ -6067,8 +6070,8 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
     }
 
     // Use shift if constant is power of 2.
-    if (std::has_single_bit(rt.value)) {
-      uint8_t shift = std::countr_zero(rt.value);
+    if (std::has_single_bit(uvalue)) {
+      uint8_t shift = std::countr_zero(uvalue);
       slli(rd, rs, shift);
       return;
     }

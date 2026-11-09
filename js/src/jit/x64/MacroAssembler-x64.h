@@ -541,8 +541,8 @@ class MacroAssemblerX64 : public MacroAssemblerX86Shared {
   void testPtr(const Operand& lhs, Imm32 rhs) { testq(rhs, lhs); }
   void test64(Register lhs, Register rhs) { testq(rhs, lhs); }
   void test64(Register lhs, const Imm64 rhs) {
-    if ((intptr_t)rhs.value <= INT32_MAX && (intptr_t)rhs.value >= INT32_MIN) {
-      testq(Imm32((int32_t)rhs.value), lhs);
+    if (rhs.value <= INT32_MAX && rhs.value >= INT32_MIN) {
+      testq(Imm32(rhs.value), lhs);
     } else {
       ScratchRegisterScope scratch(asMasm());
       movq(ImmWord(rhs.value), scratch);
