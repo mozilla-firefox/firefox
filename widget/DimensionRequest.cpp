@@ -5,7 +5,6 @@
 #include "DimensionRequest.h"
 
 #include "mozilla/Try.h"
-#include "nsIAppWindow.h"
 #include "nsIBaseWindow.h"
 
 namespace mozilla {
@@ -21,10 +20,9 @@ nsresult DimensionRequest::SupplementFrom(nsIBaseWindow* aSource) {
     return NS_OK;
   }
 
-  MOZ_TRY(aSource->GetDimensions(mDimensionKind, needsPosition ? &x : nullptr,
-                                 needsPosition ? &y : nullptr,
-                                 needsSize ? &width : nullptr,
-                                 needsSize ? &height : nullptr));
+  MOZ_TRY(aSource->GetDimensions(
+      needsPosition ? &x : nullptr, needsPosition ? &y : nullptr,
+      needsSize ? &width : nullptr, needsSize ? &height : nullptr));
 
   if (needsPosition) {
     if (mX.isNothing()) {
@@ -54,10 +52,6 @@ nsresult DimensionRequest::ApplyOuterTo(nsIBaseWindow* aTarget) {
              "Missing dimensions should have been completed.");
   MOZ_ASSERT(mWidth.isSome() == mHeight.isSome(),
              "Missing dimensions should have been completed.");
-  if (mDimensionKind != DimensionKind::Outer) {
-    MOZ_ASSERT_UNREACHABLE("Expected outer dimensions.");
-    return NS_ERROR_UNEXPECTED;
-  }
 
   bool havePosition = mX.isSome() && mY.isSome();
   bool haveSize = mWidth.isSome() && mHeight.isSome();
@@ -76,41 +70,6 @@ nsresult DimensionRequest::ApplyOuterTo(nsIBaseWindow* aTarget) {
 
   if (haveSize) {
     return aTarget->SetSize(*mWidth, *mHeight, true);
-  }
-
-  MOZ_ASSERT_UNREACHABLE();
-  return NS_ERROR_UNEXPECTED;
-}
-
-nsresult DimensionRequest::ApplyInnerTo(nsIAppWindow* aTarget,
-                                        bool aAsRootShell) {
-  NS_ENSURE_ARG_POINTER(aTarget);
-  MOZ_ASSERT(mX.isSome() == mY.isSome(),
-             "Missing dimensions should have been completed.");
-  MOZ_ASSERT(mWidth.isSome() == mHeight.isSome(),
-             "Missing dimensions should have been completed.");
-  if (mDimensionKind != DimensionKind::Inner) {
-    MOZ_ASSERT_UNREACHABLE("Expected inner dimensions.");
-    return NS_ERROR_UNEXPECTED;
-  }
-
-  bool havePosition = mX.isSome() && mY.isSome();
-  bool haveSize = mWidth.isSome() && mHeight.isSome();
-
-  if (!havePosition && !haveSize) {
-    return NS_OK;
-  }
-
-  if (havePosition) {
-    MOZ_ASSERT_UNREACHABLE("Inner position is not implemented.");
-    return NS_ERROR_NOT_IMPLEMENTED;
-  }
-
-  if (haveSize) {
-    if (aAsRootShell) {
-      return aTarget->SetRootShellSize(*mWidth, *mHeight);
-    }
-    return aTarget->SetPrimaryContentSize(*mWidth, *mHeight);
   }
 
   MOZ_ASSERT_UNREACHABLE();

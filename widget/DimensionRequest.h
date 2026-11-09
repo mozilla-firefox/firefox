@@ -9,11 +9,8 @@
 #include "mozilla/Maybe.h"
 
 class nsIBaseWindow;
-class nsIAppWindow;
 
 namespace mozilla {
-
-enum class DimensionKind { Inner, Outer };
 
 /**
  * DimensionRequest allows to request the change of some dimensions without
@@ -30,40 +27,27 @@ enum class DimensionKind { Inner, Outer };
  * before crafting the second one. Although on Linux even the parent process
  * doesn't have immediate access to the results of the last change.
  *
- * Note: The concept of an inner position is not present on
- * nsIAppWindow and nsIBaseWindow. A request specifying an inner
- * position will return an NS_ERROR_NOT_IMPLEMENTED.
+ * All dimensions refer to the outer window.
  */
 struct DimensionRequest {
-  DimensionKind mDimensionKind;
   Maybe<LayoutDeviceIntCoord> mX;
   Maybe<LayoutDeviceIntCoord> mY;
   Maybe<LayoutDeviceIntCoord> mWidth;
   Maybe<LayoutDeviceIntCoord> mHeight;
 
   /**
-   * Fills the missing dimensions with values obtained from `aSource`. Whether
-   * inner dimensions are supported depends on the implementation of
-   * `nsIBaseWindow::GetDimensions` for `aSource`.
+   * Fills the missing dimensions with values obtained from `aSource`.
    *
    * @param aSource  The source for the missing dimensions.
    */
   nsresult SupplementFrom(nsIBaseWindow* aSource);
 
   /**
-   * Changes the outer size and or position of `aTarget`. Only outer dimensions
-   * are supported.
+   * Changes the outer size and or position of `aTarget`.
    *
    * @param aTarget  The target whose size or position we want to change.
    */
   nsresult ApplyOuterTo(nsIBaseWindow* aTarget);
-
-  /**
-   * Changes the inner size of `aTarget`. Only inner dimensions are supported.
-   *
-   * @param aTarget  The target whose size we want to change.
-   */
-  nsresult ApplyInnerTo(nsIAppWindow* aTarget, bool aAsRootShell);
 };
 
 }  // namespace mozilla

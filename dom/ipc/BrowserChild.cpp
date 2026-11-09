@@ -655,15 +655,9 @@ BrowserChild::SetDimensions(DimensionRequest&& aRequest) {
 }
 
 NS_IMETHODIMP
-BrowserChild::GetDimensions(DimensionKind aDimensionKind, int32_t* aX,
-                            int32_t* aY, int32_t* aCx, int32_t* aCy) {
+BrowserChild::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCx,
+                            int32_t* aCy) {
   LayoutDeviceIntRect rect = GetOuterRect();
-  if (aDimensionKind == DimensionKind::Inner) {
-    if (aX || aY) {
-      return NS_ERROR_NOT_IMPLEMENTED;
-    }
-    rect.SizeTo(GetInnerSize());
-  }
   if (aX) {
     *aX = rect.x;
   }

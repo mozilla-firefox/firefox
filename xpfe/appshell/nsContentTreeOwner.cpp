@@ -37,7 +37,6 @@
 #endif
 
 #include "mozilla/Preferences.h"
-#include "mozilla/Try.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/UserActivation.h"
@@ -256,25 +255,14 @@ NS_IMETHODIMP nsContentTreeOwner::GetPositionAndSize(int32_t* aX, int32_t* aY,
 NS_IMETHODIMP
 nsContentTreeOwner::SetDimensions(DimensionRequest&& aRequest) {
   NS_ENSURE_STATE(mAppWindow);
-  if (aRequest.mDimensionKind == DimensionKind::Outer) {
-    return mAppWindow->SetDimensions(std::move(aRequest));
-  }
-
-  MOZ_TRY(aRequest.SupplementFrom(this));
-  return aRequest.ApplyInnerTo(mAppWindow, /* aAsRootShell */ false);
+  return mAppWindow->SetDimensions(std::move(aRequest));
 }
 
 NS_IMETHODIMP
-nsContentTreeOwner::GetDimensions(DimensionKind aDimensionKind, int32_t* aX,
-                                  int32_t* aY, int32_t* aCX, int32_t* aCY) {
+nsContentTreeOwner::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX,
+                                  int32_t* aCY) {
   NS_ENSURE_STATE(mAppWindow);
-  if (aDimensionKind == DimensionKind::Outer) {
-    return mAppWindow->GetDimensions(aDimensionKind, aX, aY, aCX, aCY);
-  }
-  if (aY || aX) {
-    return NS_ERROR_NOT_IMPLEMENTED;
-  }
-  return mAppWindow->GetPrimaryContentSize(aCX, aCY);
+  return mAppWindow->GetDimensions(aX, aY, aCX, aCY);
 }
 
 NS_IMETHODIMP nsContentTreeOwner::GetParentWidget(nsIWidget** aParentWidget) {

@@ -593,7 +593,7 @@ parent:
      * Sent by the child to the parent to inform it that an update to the
      * dimensions has been requested.
      *
-     * @param aRequest  The requested change of inner or outer dimensions.
+     * @param aRequest  The requested change of dimensions.
      * @param aScale    The scale at the time of the request. This is to allow
      *                  the parent to recompute the dimensions in case of an
      *                  ongoing scale change.

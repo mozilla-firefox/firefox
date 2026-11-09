@@ -1143,9 +1143,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvSetDimensions(
   // Nothing further down keeps the size near the size of the screen that the
   // window is on, so do it here. We allow twice the screen size because the
   // size we get for a screen is not always accurate, on Wayland in particular,
-  // and all we need is to keep the size in a range the window can be given. For
-  // a request that carries inner dimensions this is a looser bound than it
-  // looks, since the outer size is larger.
+  // and all we need is to keep the size in a range the window can be given.
   nsCOMPtr<nsIWidget> mainWidget;
   treeOwnerAsWin->GetMainWidget(getter_AddRefs(mainWidget));
   if (mainWidget) {
@@ -1161,10 +1159,7 @@ mozilla::ipc::IPCResult BrowserParent::RecvSetDimensions(
     }
   }
 
-  // treeOwner is the chrome tree owner, but we wan't the content tree owner.
-  nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome = do_GetInterface(treeOwner);
-  NS_ENSURE_TRUE(webBrowserChrome, IPC_OK());
-  webBrowserChrome->SetDimensions(std::move(aRequest));
+  treeOwnerAsWin->SetDimensions(std::move(aRequest));
   return IPC_OK();
 }
 

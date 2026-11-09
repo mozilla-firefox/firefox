@@ -17,7 +17,6 @@
 
 typedef voidPtr nativeWindow;
 native DimensionRequest(mozilla::DimensionRequest&&);
-native DimensionKind(mozilla::DimensionKind);
 
 /**
  * The nsIBaseWindow describes a generic window and basic operations that
@@ -117,38 +116,19 @@ interface nsIBaseWindow : nsISupports
    *
    * @param aRequest - The requested change. A request to change only the width
    *                   may look like:
-   *                   {DimensionKind::Outer, Nothing(), Nothing(), Some(20), Nothing()}
-   *
-   * Note: Inner position is not supported.
+   *                   {Nothing(), Nothing(), Some(20), Nothing()}
    *
    * @see DimensionRequest
    */
   [noscript] void setDimensions(in DimensionRequest aRequest);
 
   /**
-   * Gets the dimensions of the window. The caller may pass nullptr for any
-   * value it is uninterested in receiving.
-   *
-   * @param aDimensionKind  Specifies whether the dimensions are in reference
-   *                        to the inner or outer dimensions.
-   * @param aX              Left hand corner of the outer area; or nullptr.
-   * @param aY              Top corner of the outer area; or nullptr.
-   * @param aCX             Width of the inner or outer area; or nullptr.
-   * @param aCY             Height of the inner or outer area; or nullptr.
-   *
-   * Note: Inner position is not supported.
+   * Gets the outer dimensions of the window. The caller may pass nullptr for
+   * any value it is uninterested in receiving.
    *
    * @see DimensionRequest
    */
-  [noscript] void getDimensions(in DimensionKind aDimensionKind, out long aX, out long aY, out long aCX, out long aCY);
-
-%{C++
-  mozilla::LayoutDeviceIntRect GetDimensions(mozilla::DimensionKind aDimensionKind) {
-    int32_t x = 0, y = 0, w = 0, h = 0;
-    GetDimensions(aDimensionKind, &x, &y, &w, &h);
-    return mozilla::LayoutDeviceIntRect(x, y, w, h);
-  }
-%}
+  [noscript] void getDimensions(out long aX, out long aY, out long aCX, out long aCY);
 
   /*
   This is the parenting widget for the control.

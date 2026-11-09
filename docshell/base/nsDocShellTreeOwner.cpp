@@ -425,37 +425,34 @@ nsDocShellTreeOwner::SetPositionDesktopPix(int32_t aX, int32_t aY) {
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::SetPosition(int32_t aX, int32_t aY) {
-  return SetDimensions(
-      {DimensionKind::Outer, Some(aX), Some(aY), Nothing(), Nothing()});
+  return SetDimensions({Some(aX), Some(aY), Nothing(), Nothing()});
 }
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetPosition(int32_t* aX, int32_t* aY) {
-  return GetDimensions(DimensionKind::Outer, aX, aY, nullptr, nullptr);
+  return GetDimensions(aX, aY, nullptr, nullptr);
 }
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::SetSize(int32_t aCX, int32_t aCY, bool /*aRepaint*/) {
-  return SetDimensions(
-      {DimensionKind::Outer, Nothing(), Nothing(), Some(aCX), Some(aCY)});
+  return SetDimensions({Nothing(), Nothing(), Some(aCX), Some(aCY)});
 }
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetSize(int32_t* aCX, int32_t* aCY) {
-  return GetDimensions(DimensionKind::Outer, nullptr, nullptr, aCX, aCY);
+  return GetDimensions(nullptr, nullptr, aCX, aCY);
 }
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::SetPositionAndSize(int32_t aX, int32_t aY, int32_t aCX,
                                         int32_t aCY, uint32_t /*aFlags*/) {
-  return SetDimensions(
-      {DimensionKind::Outer, Some(aX), Some(aY), Some(aCX), Some(aCY)});
+  return SetDimensions({Some(aX), Some(aY), Some(aCX), Some(aCY)});
 }
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetPositionAndSize(int32_t* aX, int32_t* aY, int32_t* aCX,
                                         int32_t* aCY) {
-  return GetDimensions(DimensionKind::Outer, aX, aY, aCX, aCY);
+  return GetDimensions(aX, aY, aCX, aCY);
 }
 
 NS_IMETHODIMP
@@ -471,16 +468,16 @@ nsDocShellTreeOwner::SetDimensions(DimensionRequest&& aRequest) {
 }
 
 NS_IMETHODIMP
-nsDocShellTreeOwner::GetDimensions(DimensionKind aDimensionKind, int32_t* aX,
-                                   int32_t* aY, int32_t* aCX, int32_t* aCY) {
+nsDocShellTreeOwner::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX,
+                                   int32_t* aCY) {
   nsCOMPtr<nsIBaseWindow> ownerWin = GetOwnerWin();
   if (ownerWin) {
-    return ownerWin->GetDimensions(aDimensionKind, aX, aY, aCX, aCY);
+    return ownerWin->GetDimensions(aX, aY, aCX, aCY);
   }
 
   nsCOMPtr<nsIWebBrowserChrome> webBrowserChrome = GetWebBrowserChrome();
   NS_ENSURE_STATE(webBrowserChrome);
-  return webBrowserChrome->GetDimensions(aDimensionKind, aX, aY, aCX, aCY);
+  return webBrowserChrome->GetDimensions(aX, aY, aCX, aCY);
 }
 
 NS_IMETHODIMP

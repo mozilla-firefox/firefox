@@ -4819,8 +4819,8 @@ nsDocShell::SetDimensions(DimensionRequest&& /*aRequest*/) {
 }
 
 NS_IMETHODIMP
-nsDocShell::GetDimensions(DimensionKind /*aDimensionKind*/, int32_t* /*aX*/,
-                          int32_t* /*aY*/, int32_t* /*aCX*/, int32_t* /*aCY*/) {
+nsDocShell::GetDimensions(int32_t* /*aX*/, int32_t* /*aY*/, int32_t* /*aCX*/,
+                          int32_t* /*aCY*/) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 

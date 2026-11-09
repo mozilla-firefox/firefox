@@ -228,8 +228,8 @@ WebBrowserChrome2Stub::GetInterface(const nsIID& aIID, void** aSink) {
 }
 
 NS_IMETHODIMP
-WebBrowserChrome2Stub::GetDimensions(DimensionKind aDimensionKind, int32_t* aX,
-                                     int32_t* aY, int32_t* aCX, int32_t* aCY) {
+WebBrowserChrome2Stub::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX,
+                                     int32_t* aCY) {
   if (aX) {
     *aX = 0;
   }
@@ -249,8 +249,6 @@ NS_IMETHODIMP
 WebBrowserChrome2Stub::SetDimensions(DimensionRequest&& aRequest) {
   nsCOMPtr<nsIBaseWindow> window(do_QueryInterface(mBrowser));
   NS_ENSURE_STATE(window);
-  // Inner and outer dimensions are equal.
-  aRequest.mDimensionKind = DimensionKind::Outer;
   MOZ_TRY(aRequest.SupplementFrom(window));
   return aRequest.ApplyOuterTo(window);
 }

@@ -104,15 +104,8 @@ struct ParamTraits<TouchPointerState>
     : public BitFlagsEnumSerializer<TouchPointerState,
                                     TouchPointerState::ALL_BITS> {};
 
-template <>
-struct ParamTraits<mozilla::DimensionKind>
-    : public ContiguousEnumSerializerInclusive<mozilla::DimensionKind,
-                                               mozilla::DimensionKind::Inner,
-                                               mozilla::DimensionKind::Outer> {
-};
-
-DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::DimensionRequest, mDimensionKind, mX,
-                                  mY, mWidth, mHeight);
+DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::DimensionRequest, mX, mY, mWidth,
+                                  mHeight);
 
 template <>
 struct ParamTraits<nsIClipboard::ClipboardType>

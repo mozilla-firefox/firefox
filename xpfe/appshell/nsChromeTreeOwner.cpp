@@ -15,7 +15,6 @@
 #include "nsIPrompt.h"
 #include "nsIAuthPrompt.h"
 #include "nsIWidget.h"
-#include "mozilla/Try.h"
 #include "mozilla/dom/Element.h"
 
 using namespace mozilla;
@@ -170,25 +169,14 @@ NS_IMETHODIMP nsChromeTreeOwner::GetPositionAndSize(int32_t* x, int32_t* y,
 NS_IMETHODIMP
 nsChromeTreeOwner::SetDimensions(DimensionRequest&& aRequest) {
   NS_ENSURE_STATE(mAppWindow);
-  if (aRequest.mDimensionKind == DimensionKind::Outer) {
-    return mAppWindow->SetDimensions(std::move(aRequest));
-  }
-
-  MOZ_TRY(aRequest.SupplementFrom(this));
-  return aRequest.ApplyInnerTo(mAppWindow, /* aAsRootShell */ true);
+  return mAppWindow->SetDimensions(std::move(aRequest));
 }
 
 NS_IMETHODIMP
-nsChromeTreeOwner::GetDimensions(DimensionKind aDimensionKind, int32_t* aX,
-                                 int32_t* aY, int32_t* aCX, int32_t* aCY) {
+nsChromeTreeOwner::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX,
+                                 int32_t* aCY) {
   NS_ENSURE_STATE(mAppWindow);
-  if (aDimensionKind == DimensionKind::Outer) {
-    return mAppWindow->GetDimensions(aDimensionKind, aX, aY, aCX, aCY);
-  }
-  if (aY || aX) {
-    return NS_ERROR_NOT_IMPLEMENTED;
-  }
-  return mAppWindow->GetRootShellSize(aCX, aCY);
+  return mAppWindow->GetDimensions(aX, aY, aCX, aCY);
 }
 
 NS_IMETHODIMP nsChromeTreeOwner::GetParentWidget(nsIWidget** aParentWidget) {
