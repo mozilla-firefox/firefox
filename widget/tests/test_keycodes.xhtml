@@ -36,6 +36,7 @@
   <!-- for some reason, if we don't have 'accesskey' here, adding it dynamically later
        doesn't work! -->
   <button id="button" accesskey="z">Hello</button>
+  <span id="shortcutKeyTarget" tabindex="-1">target</span>
   <input type="text" id="textbox" value=""/>
 </p>
 <div id="content" style="display: none">
@@ -6022,8 +6023,87 @@ async function runRegisterableShortcutKeysTests() {
         eventToString(aEvent)
       } should return expected shortcut keys in the order`
     );
-    // TODO: Test where all candidates match can be executable with a <key>
-    // element once bug 1333781 is fixed.
+    await testShortcutKeysRunCommand(aEvent, shortcutKeys);
+  }
+
+  const keyCodeNames = new Map();
+  for (const name in KeyboardEvent) {
+    if (name.startsWith("DOM_VK_")) {
+      keyCodeNames.set(KeyboardEvent[name], name.substring("DOM_".length));
+    }
+  }
+
+  // Every returned shortcut key should run the command of a <key> element
+  // registered with it when the same key combination is pressed again.
+  // <key> elements are read only when their <keyset> is inserted into the
+  // document, so each shortcut key gets a new <keyset>. The <keyset> used by
+  // the other tests is removed meanwhile so that it cannot handle the key
+  // press first.
+  async function testShortcutKeysRunCommand(aEvent, aShortcutKeys) {
+    const otherKeyset = document.querySelector("keyset");
+    const keysetParent = otherKeyset.parentNode;
+    const otherKeysetNextSibling = otherKeyset.nextSibling;
+    otherKeyset.remove();
+    // Keep an unhandled key press away from the native menus.
+    function preventDefaultAction(aKeyPressEvent) {
+      aKeyPressEvent.preventDefault();
+    }
+    SpecialPowers.wrap(window).addEventListener("keypress", preventDefaultAction, {
+      mozSystemGroup: true,
+    });
+    try {
+      for (const shortcutKey of aShortcutKeys) {
+        const keyset = document.createXULElement("keyset");
+        const keyElement = document.createXULElement("key");
+        if (shortcutKey.keyCode) {
+          keyElement.setAttribute(
+            "keycode",
+            keyCodeNames.get(shortcutKey.keyCode)
+          );
+        } else {
+          keyElement.setAttribute("key", shortcutKey.key);
+        }
+        const modifiers = [];
+        if (shortcutKey.altKey) {
+          modifiers.push("alt");
+        }
+        if (shortcutKey.ctrlKey) {
+          modifiers.push("control");
+        }
+        if (shortcutKey.metaKey) {
+          modifiers.push("meta");
+        }
+        if (shortcutKey.shiftKey) {
+          modifiers.push("shift");
+        }
+        keyElement.setAttribute("modifiers", modifiers.join(","));
+        let commandCount = 0;
+        keyElement.addEventListener("command", () => commandCount++);
+        keyset.appendChild(keyElement);
+        keysetParent.appendChild(keyset);
+        // A focused <button> handles Enter by itself.
+        await promiseSynthesizeNativeKey(aEvent, "shortcutKeyTarget");
+        keyset.remove();
+        is(
+          commandCount,
+          1,
+          `runRegisterableShortcutKeysTests: ${eventToString(
+            aEvent
+          )} should run <key ${
+            shortcutKey.keyCode
+              ? `keycode="${keyCodeNames.get(shortcutKey.keyCode)}"`
+              : `key="${shortcutKey.key}"`
+          } modifiers="${modifiers.join(",")}">`
+        );
+      }
+    } finally {
+      SpecialPowers.wrap(window).removeEventListener(
+        "keypress",
+        preventDefaultAction,
+        { mozSystemGroup: true }
+      );
+      keysetParent.insertBefore(otherKeyset, otherKeysetNextSibling);
+    }
   }
 
   async function runRegisterableShortcutKeysTestsOnMacOS() {
@@ -6627,6 +6707,30 @@ async function runRegisterableShortcutKeysTests() {
         { key: "/", shiftKey: false, altKey: false, ctrlKey: false, metaKey: true },
         { key: "/", shiftKey: true, altKey: false, ctrlKey: false, metaKey: true },
       ]
+    );
+    // The upper case of the micro sign (U+00B5) is the Greek capital mu
+    // (U+039C), whose lower case is the Greek small mu (U+03BC). So, a <key>
+    // element with the upper case does not match the micro sign.
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_M, modifiers: { altKey: 1 },
+        chars: "\u00b5", unmodifiedChars: "m",
+      },
+      [
+        { key: "M", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+        { key: "\u00b5", shiftKey: false, altKey: true, ctrlKey: false, metaKey: false },
+      ]
+    );
+    // If the key introduces the same character with and without Shift, the
+    // event should not match with a shortcut key without Shift.
+    await test(
+      {
+        layout: KEYBOARD_LAYOUT_EN_US,
+        keyCode: MAC_VK_ANSI_KeypadPlus, modifiers: { ctrlKey: 1, shiftKey: 1 },
+        chars: "+", unmodifiedChars: "+",
+      },
+      [{ key: "+", shiftKey: true, altKey: false, ctrlKey: true, metaKey: false }]
     );
   }
   // eslint-disable-next-line complexity
