@@ -1221,6 +1221,10 @@ void CacheStorageService::NoteNoVarySearchEntry(const nsACString& aContextKey,
                                                 const nsACString& aBasePath,
                                                 const nsACString& aFullKey) {
   StaticMutexAutoLock lock(sLock);
+  if (mShutdown) {
+    return;
+  }
+
   CacheEntryTable* entries = sGlobalEntryTables->Get(aContextKey);
   if (entries) {
     entries->NoteNoVarySearchEntry(aBasePath, aFullKey);
