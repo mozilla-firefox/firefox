@@ -580,6 +580,7 @@ public class IPProtectionController {
 
   /** Exception type for IP proxy errors. */
   public static class IPProxyException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
 
     /** An unexpected error occurred. */
     public static final int ERROR_UNKNOWN = -1;

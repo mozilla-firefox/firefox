@@ -1610,6 +1610,8 @@ public class WebExtension {
    * (e.g. when metadata properties in the bundle are not matching the type expected by GeckoView).
    */
   public static class InvalidMetaDataException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     /** For testing */
     protected InvalidMetaDataException() {
       super("InvalidMetaDataException");
@@ -1625,6 +1627,8 @@ public class WebExtension {
 
   /** Extension thrown when an error occurs during extension installation. */
   public static class InstallException extends Exception {
+    private static final long serialVersionUID = 1L;
+
     /** Error code definitions for extension installation failures. */
     public static class ErrorCodes {
       /** The download failed due to network problems. */

@@ -32,6 +32,8 @@ public class UiThreadUtils {
   }
 
   public static class TimeoutException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public TimeoutException(final String detailMessage) {
       super(detailMessage);
     }

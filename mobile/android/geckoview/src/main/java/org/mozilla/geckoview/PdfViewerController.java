@@ -69,6 +69,7 @@ public class PdfViewerController {
    * a document.
    */
   public static class PdfViewerException extends Exception {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Construct a [PdfViewerException]

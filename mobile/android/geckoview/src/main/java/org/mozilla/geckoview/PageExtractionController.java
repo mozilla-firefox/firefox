@@ -200,6 +200,7 @@ public class PageExtractionController {
 
   /** The exception thrown when a page extraction fails */
   public static class PageExtractionException extends Exception {
+    private static final long serialVersionUID = 1L;
 
     /** An error identifier for when the result is unexpectedly null */
     public static final String ERROR_NULL_RESULT = "NULL_RESULT";

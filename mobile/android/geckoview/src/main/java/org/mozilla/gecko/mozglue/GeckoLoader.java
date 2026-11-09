@@ -241,11 +241,6 @@ public final class GeckoLoader {
     sNSSLibsLoaded = true;
   }
 
-  @SuppressWarnings("deprecation")
-  private static String getCPUABI() {
-    return android.os.Build.CPU_ABI;
-  }
-
   /**
    * Copy a library out of our APK.
    *
@@ -393,8 +388,9 @@ public final class GeckoLoader {
     loadGeckoLibsNative();
   }
 
-  @SuppressWarnings("serial")
   public static class AbortException extends Exception {
+    private static final long serialVersionUID = 1L;
+
     public AbortException(final String msg) {
       super(msg);
     }

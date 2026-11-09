@@ -38,6 +38,8 @@ public class DebugConfig {
   protected List<String> args;
 
   public static class ConfigException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public ConfigException(final String message) {
       super(message);
     }

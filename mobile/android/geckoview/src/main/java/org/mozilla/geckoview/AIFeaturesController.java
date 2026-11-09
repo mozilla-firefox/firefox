@@ -285,6 +285,7 @@ public class AIFeaturesController {
 
   /** An exception for when there is an issue communicating with the AI features toolkit. */
   public static class AIFeaturesException extends Exception {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Construct an [AIFeaturesException]

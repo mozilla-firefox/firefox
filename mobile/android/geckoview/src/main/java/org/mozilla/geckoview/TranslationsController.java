@@ -1364,6 +1364,7 @@ public class TranslationsController {
    * translations toolkit engine.
    */
   public static class TranslationsException extends Exception {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Construct a [TranslationsException]

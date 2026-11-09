@@ -421,6 +421,8 @@ public class WebAuthnUtils {
   }
 
   public static class Exception extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public Exception(final String error) {
       super(error);
     }

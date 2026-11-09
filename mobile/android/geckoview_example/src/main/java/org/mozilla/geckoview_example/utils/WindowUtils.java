@@ -62,7 +62,7 @@ public class WindowUtils {
    *
    * <p>This only works on Android P and below. On newer versions calling this will result in no-op.
    */
-  @SuppressWarnings("DEPRECATION")
+  @SuppressWarnings("deprecation")
   public static void setupImeBehavior(Window window) {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
       window.setSoftInputMode(

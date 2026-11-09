@@ -266,7 +266,6 @@ public class GeckoSessionTestRule implements TestRule {
         mType = (Class<?>) genericType.getActualTypeArguments()[0];
       }
 
-      @SuppressWarnings("unchecked")
       public void set(final GeckoSessionSettings settings, final String value) {
         try {
           if (boolean.class.equals(mType) || Boolean.class.equals(mType)) {
@@ -380,13 +379,17 @@ public class GeckoSessionTestRule implements TestRule {
   }
 
   public static class ChildCrashedException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public ChildCrashedException(final String detailMessage) {
       super(detailMessage);
     }
   }
 
   public static class RejectedPromiseException extends RuntimeException {
-    private final Object mReason;
+    private static final long serialVersionUID = 1L;
+
+    private final transient Object mReason;
 
     /* package */ RejectedPromiseException(final Object reason) {
       super(String.valueOf(reason));
@@ -557,14 +560,12 @@ public class GeckoSessionTestRule implements TestRule {
       mRegister = register;
       mUnregister = unregister;
 
-      @SuppressWarnings("unchecked")
-      final T delegateProxy =
-          (T)
+      mProxy =
+          delegate.cast(
               Proxy.newProxyInstance(
                   getClass().getClassLoader(),
                   impl.getClass().getInterfaces(),
-                  Proxy.getInvocationHandler(mCallbackProxy));
-      mProxy = delegateProxy;
+                  Proxy.getInvocationHandler(mCallbackProxy)));
     }
 
     @Override
@@ -2513,6 +2514,8 @@ public class GeckoSessionTestRule implements TestRule {
     }
 
     public class PortDisconnectException extends RuntimeException {
+      private static final long serialVersionUID = 1L;
+
       public PortDisconnectException() {
         super(
             "The port disconnected before a message could be received."

@@ -236,7 +236,9 @@ public final class EventDispatcher extends JNIObject {
   }
 
   public static class QueryException extends Exception {
-    public final Object data;
+    private static final long serialVersionUID = 1L;
+
+    public final transient Object data;
 
     public QueryException(final String type, final Object data) {
       super("Failed on message type: " + type);

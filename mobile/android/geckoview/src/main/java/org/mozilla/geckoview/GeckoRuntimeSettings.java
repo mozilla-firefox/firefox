@@ -2624,12 +2624,8 @@ public final class GeckoRuntimeSettings extends RuntimeSettings {
     final String crashHandlerName = source.readString();
     if (crashHandlerName != null) {
       try {
-        @SuppressWarnings("unchecked")
-        final Class<? extends Service> handler =
-            (Class<? extends Service>) Class.forName(crashHandlerName);
-
-        mCrashHandler = handler;
-      } catch (final ClassNotFoundException e) {
+        mCrashHandler = Class.forName(crashHandlerName).asSubclass(Service.class);
+      } catch (final ClassNotFoundException | ClassCastException e) {
       }
     }
 

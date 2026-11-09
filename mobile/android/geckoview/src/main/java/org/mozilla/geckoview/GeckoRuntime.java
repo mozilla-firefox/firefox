@@ -7,7 +7,6 @@ package org.mozilla.geckoview;
 import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -449,9 +448,7 @@ public final class GeckoRuntime implements Parcelable {
     }
 
     try {
-      @SuppressWarnings("unchecked")
-      final Class<? extends Service> cls =
-          (Class<? extends Service>) Class.forName("org.mozilla.gecko.crashhelper.CrashHelper");
+      final Class<?> cls = Class.forName("org.mozilla.gecko.crashhelper.CrashHelper");
       final Intent i = new Intent(context, cls);
       final File minidumps = new File(context.getFilesDir(), "minidumps");
       context.bindService(

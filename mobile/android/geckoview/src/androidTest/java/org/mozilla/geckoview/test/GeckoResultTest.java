@@ -30,7 +30,9 @@ import org.mozilla.geckoview.test.util.UiThreadUtils;
 @RunWith(AndroidJUnit4.class)
 @MediumTest
 public class GeckoResultTest {
-  private static class MockException extends RuntimeException {}
+  private static class MockException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+  }
 
   private boolean mDone;
 

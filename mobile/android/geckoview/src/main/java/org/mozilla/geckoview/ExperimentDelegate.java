@@ -126,6 +126,7 @@ public interface ExperimentDelegate {
    * experiment framework.
    */
   class ExperimentException extends Exception {
+    private static final long serialVersionUID = 1L;
 
     /**
      * Construct an [ExperimentException]

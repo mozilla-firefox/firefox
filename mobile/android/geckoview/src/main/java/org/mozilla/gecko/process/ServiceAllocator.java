@@ -58,6 +58,8 @@ import org.mozilla.gecko.util.XPCOMEventTarget;
   }
 
   public static final class BindException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public BindException(@NonNull final String msg) {
       super(msg);
     }

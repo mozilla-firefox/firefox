@@ -193,6 +193,8 @@ public final class GeckoProcessManager {
   }
 
   private static final class IncompleteChildConnectionException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public IncompleteChildConnectionException(@NonNull final String msg) {
       super(msg);
     }
@@ -926,6 +928,8 @@ public final class GeckoProcessManager {
   }
 
   private static class StartException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public final int errorCode;
 
     public StartException(final int errorCode, final int pid) {
@@ -971,6 +975,8 @@ public final class GeckoProcessManager {
   }
 
   private static class UnbindException extends RuntimeException {
+    private static final long serialVersionUID = 1L;
+
     public UnbindException(final Throwable cause) {
       super(cause);
     }

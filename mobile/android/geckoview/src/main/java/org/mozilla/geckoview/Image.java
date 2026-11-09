@@ -40,6 +40,9 @@ public class Image {
   /** Thrown whenever an image cannot be processed by {@link #getBitmap} */
   @WrapForJNI
   public static class ImageProcessingException extends RuntimeException {
+    @WrapForJNI(skip = true)
+    private static final long serialVersionUID = 1L;
+
     /**
      * Build an instance of this class.
      *

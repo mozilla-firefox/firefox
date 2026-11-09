@@ -402,10 +402,8 @@ class ProjectPlugin : Plugin<Project> {
                     "-Xlint:all",
                     // Deprecation, because we do use deprecated API for compatibility.
                     "-Xlint:-deprecation",
-                    // Serial, because we don't use Java serialization.
-                    "-Xlint:-serial",
-                    // Classfile, because javac has a bug with MethodParameters attributes
-                    // with Java 7. https://bugs.openjdk.java.net/browse/JDK-8190452
+                    // Classfile, because it only reports defects in third-party class files, such as
+                    // media3 referencing annotations it doesn't ship, which we can't fix.
                     "-Xlint:-classfile",
                     "-Werror",
                 ),
