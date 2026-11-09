@@ -240,7 +240,8 @@ nsresult AppWindow::Initialize(nsIAppWindow* aParent, nsIAppWindow* aOpener,
   NS_ENSURE_TRUE(mDocShell->GetDocument(), NS_ERROR_FAILURE);
 
   // Attach a WebProgress listener.during initialization...
-  mDocShell->AddProgressListener(this, nsIWebProgress::NOTIFY_STATE_NETWORK);
+  mDocShell->AddProgressListener(this, nsIWebProgress::NOTIFY_STATE_NETWORK |
+                                           nsIWebProgress::NOTIFY_LOCATION);
 
   mWindow->MaybeDispatchInitialFocusEvent();
 
@@ -2930,7 +2931,10 @@ AppWindow::OnStateChange(nsIWebProgress* aProgress, nsIRequest* aRequest,
 NS_IMETHODIMP
 AppWindow::OnLocationChange(nsIWebProgress* aProgress, nsIRequest* aRequest,
                             nsIURI* aURI, uint32_t aFlags) {
-  MOZ_ASSERT_UNREACHABLE("notification excluded in AddProgressListener(...)");
+  // If our top document is navigating, reset our loading state.
+  if (aProgress == static_cast<nsIWebProgress*>(mDocShell)) {
+    mChromeLoaded = false;
+  }
   return NS_OK;
 }
 

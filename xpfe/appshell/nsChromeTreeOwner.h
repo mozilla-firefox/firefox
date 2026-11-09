@@ -14,7 +14,6 @@
 #include "nsIDocShellTreeOwner.h"
 #include "nsIInterfaceRequestor.h"
 #include "nsIInterfaceRequestorUtils.h"
-#include "nsIWebProgressListener.h"
 #include "nsWeakReference.h"
 
 namespace mozilla {
@@ -24,7 +23,6 @@ class AppWindow;
 class nsChromeTreeOwner : public nsIDocShellTreeOwner,
                           public nsIBaseWindow,
                           public nsIInterfaceRequestor,
-                          public nsIWebProgressListener,
                           public nsSupportsWeakReference {
   friend class mozilla::AppWindow;
 
@@ -34,7 +32,6 @@ class nsChromeTreeOwner : public nsIDocShellTreeOwner,
   NS_DECL_NSIINTERFACEREQUESTOR
   NS_DECL_NSIBASEWINDOW
   NS_DECL_NSIDOCSHELLTREEOWNER
-  NS_DECL_NSIWEBPROGRESSLISTENER
 
  protected:
   nsChromeTreeOwner();

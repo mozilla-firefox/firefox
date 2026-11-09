@@ -14,7 +14,6 @@
 // Interfaces needed to include
 #include "nsIPrompt.h"
 #include "nsIAuthPrompt.h"
-#include "nsIWebProgress.h"
 #include "nsIWidget.h"
 #include "mozilla/Try.h"
 #include "mozilla/dom/Element.h"
@@ -31,7 +30,6 @@ NS_INTERFACE_MAP_BEGIN(nsChromeTreeOwner)
   NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIDocShellTreeOwner)
   NS_INTERFACE_MAP_ENTRY(nsIDocShellTreeOwner)
   NS_INTERFACE_MAP_ENTRY(nsIBaseWindow)
-  NS_INTERFACE_MAP_ENTRY(nsIWebProgressListener)
   NS_INTERFACE_MAP_ENTRY(nsIInterfaceRequestor)
   NS_INTERFACE_MAP_ENTRY(nsISupportsWeakReference)
 NS_INTERFACE_MAP_END
@@ -246,69 +244,6 @@ NS_IMETHODIMP nsChromeTreeOwner::GetTitle(nsAString& aTitle) {
 NS_IMETHODIMP nsChromeTreeOwner::SetTitle(const nsAString& aTitle) {
   NS_ENSURE_STATE(mAppWindow);
   return mAppWindow->SetTitle(aTitle);
-}
-
-//*****************************************************************************
-// nsChromeTreeOwner::nsIWebProgressListener
-//*****************************************************************************
-
-NS_IMETHODIMP
-nsChromeTreeOwner::OnProgressChange(nsIWebProgress* aWebProgress,
-                                    nsIRequest* aRequest,
-                                    int32_t aCurSelfProgress,
-                                    int32_t aMaxSelfProgress,
-                                    int32_t aCurTotalProgress,
-                                    int32_t aMaxTotalProgress) {
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::OnStateChange(nsIWebProgress* aWebProgress,
-                                 nsIRequest* aRequest,
-                                 uint32_t aProgressStateFlags,
-                                 nsresult aStatus) {
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::OnLocationChange(nsIWebProgress* aWebProgress,
-                                    nsIRequest* aRequest, nsIURI* aLocation,
-                                    uint32_t aFlags) {
-  NS_ENSURE_STATE(mAppWindow);
-
-  // If loading a new root .xul document, then redo chrome.
-  if (aWebProgress) {
-    nsCOMPtr<nsIDocShell> docshell;
-    mAppWindow->GetDocShell(getter_AddRefs(docshell));
-
-    nsCOMPtr<nsIWebProgress> webProgress(do_QueryInterface(docshell));
-    if (webProgress != aWebProgress) {
-      return NS_OK;
-    }
-  }
-
-  mAppWindow->mChromeLoaded = false;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::OnStatusChange(nsIWebProgress* aWebProgress,
-                                  nsIRequest* aRequest, nsresult aStatus,
-                                  const char16_t* aMessage) {
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::OnSecurityChange(nsIWebProgress* aWebProgress,
-                                    nsIRequest* aRequest, uint32_t aState) {
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsChromeTreeOwner::OnContentBlockingEvent(nsIWebProgress* aWebProgress,
-                                          nsIRequest* aRequest,
-                                          uint32_t aEvent) {
-  return NS_OK;
 }
 
 void nsChromeTreeOwner::AppWindow(mozilla::AppWindow* aAppWindow) {
