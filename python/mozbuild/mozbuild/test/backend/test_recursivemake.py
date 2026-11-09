@@ -2033,6 +2033,49 @@ class TestRecursiveMakeBackend(BackendTester):
             for line in lines:
                 self.assertNotIn("LIB_IS_C_ONLY", line)
 
+    def _cpp_unit_tests_lines(self, substs=None):
+        env = self._get_environment("cpp-unit-tests", substs=substs)
+        self._consume("cpp-unit-tests", RecursiveMakeBackend, env=env)
+
+        with open(os.path.join(env.topobjdir, "backend.mk")) as fh:
+            return [
+                l.rstrip()
+                for l in fh
+                if l.startswith((
+                    "SIMPLE_PROGRAMS",
+                    "CPP_UNIT_TESTS",
+                    "INSTALL_TARGETS",
+                ))
+            ]
+
+    def test_cpp_unit_tests(self):
+        self.assertEqual(
+            self._cpp_unit_tests_lines(),
+            [
+                "SIMPLE_PROGRAMS += TestOne",
+                "CPP_UNIT_TESTS += TestOne",
+                "CPP_UNIT_TESTS_FILES += TestOne",
+                "CPP_UNIT_TESTS_DEST := $(DIST)/cppunittests",
+                "CPP_UNIT_TESTS_TARGET := target",
+                "INSTALL_TARGETS += CPP_UNIT_TESTS",
+                "SIMPLE_PROGRAMS += TestTwo",
+                "CPP_UNIT_TESTS += TestTwo",
+                "CPP_UNIT_TESTS_FILES += TestTwo",
+            ],
+        )
+
+    def test_cpp_unit_tests_profile_generate(self):
+        self.assertEqual(self._cpp_unit_tests_lines({"MOZ_PROFILE_GENERATE": "1"}), [])
+
+    def test_simple_programs_profile_generate(self):
+        env = self._get_environment(
+            "program-paths", substs={"MOZ_PROFILE_GENERATE": "1"}
+        )
+        self._consume("program-paths", RecursiveMakeBackend, env=env)
+
+        with open(os.path.join(env.topobjdir, "dist-bin-simple", "backend.mk")) as fh:
+            self.assertNotIn("SIMPLE_PROGRAMS", fh.read())
+
     def test_linkage(self):
         env = self._consume("linkage", RecursiveMakeBackend)
         expected_linkage = {

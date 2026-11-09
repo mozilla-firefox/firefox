@@ -545,14 +545,6 @@ class SimpleProgram(BaseProgram):
     SUFFIX_VAR = "BIN_SUFFIX"
     KIND = "target"
 
-    @property
-    def dump_syms(self):
-        """A profile generate build does not build simple programs, so it has
-        no symbols to dump for them."""
-        if self.config.substs.get("MOZ_PROFILE_GENERATE"):
-            return False
-        return super().dump_syms
-
     def source_files(self):
         for srcs in self.sources.values():
             for f in srcs:

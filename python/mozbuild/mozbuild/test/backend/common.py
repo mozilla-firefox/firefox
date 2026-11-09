@@ -340,6 +340,13 @@ CONFIGS = defaultdict(
                 "BIN_SUFFIX": "",
             },
         },
+        "cpp-unit-tests": {
+            "defines": {},
+            "substs": {
+                "COMPILE_ENVIRONMENT": "1",
+                "BIN_SUFFIX": "",
+            },
+        },
         "gn-processor": {
             "defines": {},
             "substs": {

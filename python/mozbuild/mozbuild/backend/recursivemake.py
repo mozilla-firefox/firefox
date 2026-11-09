@@ -1522,13 +1522,22 @@ class RecursiveMakeBackend(MakeBackend):
         rules.dump(backend_file.fh)
 
     def _process_simple_program(self, obj, backend_file):
+        # Don't build SIMPLE_PROGRAMS during the MOZ_PROFILE_GENERATE pass, and do
+        # not attempt to install them
+        if self.environment.substs.get("MOZ_PROFILE_GENERATE"):
+            return
+        backend_file.write(f"SIMPLE_PROGRAMS += {obj.program}\n")
         if obj.is_unit_test:
-            backend_file.write("CPP_UNIT_TESTS += %s\n" % obj.program)
+            # Compile the tests along with the other SIMPLE_PROGRAMS, and also
+            # install them to $(DIST)/cppunittests.
+            backend_file.write(f"CPP_UNIT_TESTS += {obj.program}\n")
+            backend_file.write(f"CPP_UNIT_TESTS_FILES += {obj.program}\n")
+            backend_file.write_once("CPP_UNIT_TESTS_DEST := $(DIST)/cppunittests\n")
+            backend_file.write_once("CPP_UNIT_TESTS_TARGET := target\n")
+            backend_file.write_once("INSTALL_TARGETS += CPP_UNIT_TESTS\n")
             assert obj.cxx_link
-        else:
-            backend_file.write("SIMPLE_PROGRAMS += %s\n" % obj.program)
-            if not obj.cxx_link and not self.environment.bin_suffix:
-                backend_file.write("PROG_IS_C_ONLY_%s := 1\n" % obj.program)
+        elif not obj.cxx_link and not self.environment.bin_suffix:
+            backend_file.write(f"PROG_IS_C_ONLY_{obj.program} := 1\n")
         self._add_lto_object_path_flags(obj, obj.program, backend_file)
         self._add_dump_syms_target(obj, obj.program, backend_file)
 

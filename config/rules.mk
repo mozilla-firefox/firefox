@@ -37,31 +37,6 @@ endif
 
 EXEC			= exec
 
-################################################################################
-# Testing frameworks support
-################################################################################
-
-ifdef ENABLE_TESTS
-ifdef CPP_UNIT_TESTS
-ifdef COMPILE_ENVIRONMENT
-
-# Compile the tests to $(DIST)/bin.  Make lots of niceties available by default
-# through TestHarness.h, by modifying the list of includes and the libs against
-# which stuff links.
-SIMPLE_PROGRAMS += $(CPP_UNIT_TESTS)
-
-ifndef MOZ_PROFILE_GENERATE
-CPP_UNIT_TESTS_FILES = $(CPP_UNIT_TESTS)
-CPP_UNIT_TESTS_DEST = $(DIST)/cppunittests
-CPP_UNIT_TESTS_TARGET = target
-INSTALL_TARGETS += CPP_UNIT_TESTS
-endif
-
-endif # COMPILE_ENVIRONMENT
-endif # CPP_UNIT_TESTS
-endif # ENABLE_TESTS
-
-
 #
 # Library rules
 #
@@ -115,14 +90,6 @@ HOST_PDBFILE=$(basename $(@F)).pdb
 HOST_PDB_FLAG ?= -PDB:$(HOST_PDBFILE)
 HOST_C_LDFLAGS += -DEBUG $(HOST_PDB_FLAG)
 HOST_CXX_LDFLAGS += -DEBUG $(HOST_PDB_FLAG)
-endif
-
-# Don't build SIMPLE_PROGRAMS during the MOZ_PROFILE_GENERATE pass, and do not
-# attempt to install them
-ifdef MOZ_PROFILE_GENERATE
-$(foreach category,$(INSTALL_TARGETS),\
-  $(eval $(category)_FILES := $(foreach file,$($(category)_FILES),$(if $(filter $(SIMPLE_PROGRAMS),$(notdir $(file))),,$(file)))))
-SIMPLE_PROGRAMS :=
 endif
 
 ifdef COMPILE_ENVIRONMENT
