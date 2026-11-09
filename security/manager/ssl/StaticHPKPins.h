@@ -317,6 +317,7 @@ static const TransportSecurityPreload kPublicKeyPinningPreloadList[] = {
   { "ggpht.com", true, false, false, -1, &kPinset_google_root_pems },
   { "gmail.co.ug", true, false, false, -1, &kPinset_google_root_pems },
   { "gmail.com", false, false, false, -1, &kPinset_google_root_pems },
+  { "gmail.kz", true, false, false, -1, &kPinset_google_root_pems },
   { "goo.gl", true, false, false, -1, &kPinset_google_root_pems },
   { "google", true, false, false, -1, &kPinset_google_root_pems },
   { "google-analytics.com", true, false, false, -1, &kPinset_google_root_pems },
@@ -410,6 +411,7 @@ static const TransportSecurityPreload kPublicKeyPinningPreloadList[] = {
   { "google.com.jo", true, false, false, -1, &kPinset_google_root_pems },
   { "google.com.kh", true, false, false, -1, &kPinset_google_root_pems },
   { "google.com.kw", true, false, false, -1, &kPinset_google_root_pems },
+  { "google.com.kz", true, false, false, -1, &kPinset_google_root_pems },
   { "google.com.lb", true, false, false, -1, &kPinset_google_root_pems },
   { "google.com.ly", true, false, false, -1, &kPinset_google_root_pems },
   { "google.com.mm", true, false, false, -1, &kPinset_google_root_pems },
@@ -588,12 +590,14 @@ static const TransportSecurityPreload kPublicKeyPinningPreloadList[] = {
   { "youtube-nocookie.com", true, false, false, -1, &kPinset_google_root_pems },
   { "youtube.co.ug", true, false, false, -1, &kPinset_google_root_pems },
   { "youtube.com", true, false, false, -1, &kPinset_google_root_pems },
+  { "youtube.com.kz", true, false, false, -1, &kPinset_google_root_pems },
+  { "youtube.kz", true, false, false, -1, &kPinset_google_root_pems },
   { "youtube.ug", true, false, false, -1, &kPinset_google_root_pems },
   { "ytimg.com", true, false, false, -1, &kPinset_google_root_pems },
 };
 
-// Pinning Preload List Length = 310;
+// Pinning Preload List Length = 314;
 
 static const int32_t kUnknownId = -1;
 
-static const PRTime kPreloadPKPinsExpirationTime = INT64_C(1802073775127000);
+static const PRTime kPreloadPKPinsExpirationTime = INT64_C(1802678183949000);
