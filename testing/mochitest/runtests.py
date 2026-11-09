@@ -1505,7 +1505,7 @@ class MochitestDesktop:
         """
         tests = self.getActiveTests(options)
         for test in tests:
-            if "parakeet-asr" in test.get("tags", ""):
+            if "parakeet-asr" in test.get("tags", "") and "disabled" not in test:
                 return True
         return False
 
