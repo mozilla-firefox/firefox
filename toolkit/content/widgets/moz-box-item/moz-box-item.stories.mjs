@@ -35,7 +35,7 @@ export default {
     },
   },
   parameters: {
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-box-item-label =
   .label = I'm a box item

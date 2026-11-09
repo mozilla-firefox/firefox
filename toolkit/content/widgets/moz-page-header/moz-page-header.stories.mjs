@@ -20,7 +20,7 @@ export default {
     },
   },
   parameters: {
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-page-header-heading =
   .heading = This is the page heading

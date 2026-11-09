@@ -19,7 +19,7 @@ export default {
     },
   },
   parameters: {
-    status: "in-development",
+    status: "stable",
     handles: ["change", "input"],
     fluent: `
 moz-textarea-label =

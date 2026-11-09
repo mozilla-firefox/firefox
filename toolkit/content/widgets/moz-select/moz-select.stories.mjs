@@ -26,7 +26,7 @@ export default {
     description: { table: { disable: true } },
   },
   parameters: {
-    status: "in-development",
+    status: "stable",
     handles: ["change", "input"],
     fluent: `
 moz-select-label =

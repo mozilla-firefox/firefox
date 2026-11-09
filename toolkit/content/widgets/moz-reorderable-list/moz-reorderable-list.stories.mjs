@@ -20,7 +20,7 @@ export default {
     },
   },
   parameters: {
-    status: "in-development",
+    status: "stable",
     actions: {
       handles: ["reorder"],
     },

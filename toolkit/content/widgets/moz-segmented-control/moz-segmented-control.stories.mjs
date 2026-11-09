@@ -38,7 +38,7 @@ export default {
     actions: {
       handles: ["change", "input"],
     },
-    status: "in-development",
+    status: "stable",
     fluent: `
 control-option1 = Option 1
 control-option2 = Option 2

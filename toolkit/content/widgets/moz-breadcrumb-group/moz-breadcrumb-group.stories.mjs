@@ -9,7 +9,7 @@ export default {
   title: "UI Widgets/Breadcrumb Group",
   component: "moz-breadcrumbs-group",
   parameters: {
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-breadcrumb-first =
   .label = First page

@@ -9,7 +9,7 @@ export default {
   title: "UI Widgets/Page Nav",
   component: "moz-page-nav",
   parameters: {
-    status: "in-development",
+    status: "stable",
     actions: {
       handles: ["change-view"],
     },

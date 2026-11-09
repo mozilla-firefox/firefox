@@ -9,7 +9,7 @@ export default {
   title: "UI Widgets/Five Star",
   component: "moz-five-star",
   parameters: {
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-five-star-title =
   .title = This is the title

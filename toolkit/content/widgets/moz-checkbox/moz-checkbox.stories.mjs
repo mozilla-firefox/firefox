@@ -20,7 +20,7 @@ export default {
     },
   },
   parameters: {
-    status: "in-development",
+    status: "stable",
     handles: ["click", "input", "change"],
     fluent: `
 moz-checkbox-label =

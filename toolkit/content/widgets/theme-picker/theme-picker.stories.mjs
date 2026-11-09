@@ -14,6 +14,9 @@ export default {
       control: { type: "select" },
     },
   },
+  parameters: {
+    status: "stable",
+  },
 };
 
 const Template = ({ layout, showLabels, showNativeThemeOption }) => html`

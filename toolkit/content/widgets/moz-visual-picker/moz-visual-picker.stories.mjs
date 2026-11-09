@@ -35,7 +35,7 @@ export default {
     actions: {
       handles: ["click", "input", "change"],
     },
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-visual-picker =
   .label = Pick something

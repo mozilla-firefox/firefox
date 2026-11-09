@@ -10,7 +10,7 @@ export default {
   component: "moz-input-color",
   argTypes: {},
   parameters: {
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-input-color-label =
   .label = Background

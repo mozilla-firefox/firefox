@@ -57,7 +57,7 @@ export default {
     },
   },
   parameters: {
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-promo-message =
   .message = Information about a new feature to check out

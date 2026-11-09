@@ -15,7 +15,7 @@ export default {
     },
   },
   parameters: {
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-badge =
     .label = BADGE

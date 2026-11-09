@@ -48,7 +48,7 @@ export default {
     actions: {
       handles: ["click", "input", "change"],
     },
-    status: "in-development",
+    status: "stable",
     fluent: `
 moz-radio-group =
   .label = This is the group label
