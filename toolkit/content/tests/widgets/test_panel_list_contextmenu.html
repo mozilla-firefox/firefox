@@ -32,7 +32,10 @@
         await customElements.whenDefined("panel-item");
         panelList = document.getElementById("panel-list");
         anchorButton = document.getElementById("anchor-button");
-        anchorButton.addEventListener("contextmenu", e => panelList.show(e));
+        anchorButton.addEventListener("contextmenu", e => {
+          e.preventDefault();
+          panelList.show(e);
+        });
       });
 
       // A contextmenu event is dispatched during the button press on most
