@@ -492,21 +492,16 @@ gfxFontconfigFontEntry::AutoHBFace gfxFontconfigFontEntry::GetHBFace() {
       index &= 0xFFFF;
       face = hb_face_create_from_file_or_fail((const char*)filename, index);
     } else {
-      // If we have an FT_Font with webfont user data attached, we can use
-      // hb_face_create to wrap that.
-      if (mFTFaceInitialized) {
-        if (const FTUserFontData* ufd = GetUserFontData()) {
-          if (ufd->FontData()) {
-            hb_blob_t* blob = hb_blob_create(
-                (const char*)ufd->FontData(), ufd->FontDataLength(),
-                HB_MEMORY_MODE_READONLY, nullptr, nullptr);
-            // Currently the face index is always zero, as we don't support
-            // collections as webfonts.
-            face = hb_face_create(blob, 0);
-            // Drop our blob reference; the face will hold on to it.
-            hb_blob_destroy(blob);
-          }
-        }
+      // If we have webfont user data, we can use hb_face_create to wrap that.
+      if (const auto* ufd = GetUserFontData()) {
+        hb_blob_t* blob =
+            hb_blob_create((const char*)ufd->Data(), ufd->Length(),
+                           HB_MEMORY_MODE_READONLY, nullptr, nullptr);
+        // Currently the face index is always zero, as we don't support
+        // collections as webfonts.
+        face = hb_face_create(blob, 0);
+        // Drop our blob reference; the face will hold on to it.
+        hb_blob_destroy(blob);
       }
     }
     if (!face) {
@@ -628,20 +623,16 @@ bool gfxFontconfigFontEntry::TestCharacterMap(uint32_t aCh) {
 }
 
 bool gfxFontconfigFontEntry::HasFontTable(uint32_t aTableTag) {
-  if (FTUserFontData* ufd = GetUserFontData()) {
-    if (ufd->FontData()) {
-      return !!gfxFontUtils::FindTableDirEntry(ufd->FontData(), aTableTag);
-    }
+  if (auto* ufd = GetUserFontData()) {
+    return !!gfxFontUtils::FindTableDirEntry(ufd->Data(), aTableTag);
   }
   return gfxFT2FontEntryBase::FaceHasTable(GetFTFace(), aTableTag);
 }
 
 hb_blob_t* gfxFontconfigFontEntry::GetFontTable(uint32_t aTableTag) {
   // for data fonts, read directly from the font data
-  if (FTUserFontData* ufd = GetUserFontData()) {
-    if (ufd->FontData()) {
-      return gfxFontUtils::GetTableFromFontData(ufd->FontData(), aTableTag);
-    }
+  if (auto* ufd = GetUserFontData()) {
+    return gfxFontUtils::GetTableFromFontData(ufd->Data(), aTableTag);
   }
 
   // Use the cache only if it has already been created.
@@ -1094,10 +1085,9 @@ SharedFTFace* gfxFontconfigFontEntry::GetFTFace() {
   return mFTFace;
 }
 
-FTUserFontData* gfxFontconfigFontEntry::GetUserFontData() {
-  auto* face = GetFTFace();
-  if (face && face->GetData()) {
-    return static_cast<FTUserFontData*>(face->GetData());
+FontData* gfxFontconfigFontEntry::GetUserFontData() {
+  if (mUserFontData) {
+    return mUserFontData->mFontData;
   }
   return nullptr;
 }
@@ -2399,8 +2389,8 @@ already_AddRefed<gfxFontEntry> gfxFcPlatformFontList::LookupLocalFont(
 already_AddRefed<gfxFontEntry> gfxFcPlatformFontList::MakePlatformFont(
     const nsACString& aFontName, WeightRange aWeightForEntry,
     StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
-    const uint8_t* aFontData, uint32_t aLength) {
-  RefPtr<FTUserFontData> ufd = new FTUserFontData(aFontData, aLength, 0);
+    FontData* aFontData) {
+  RefPtr<FTUserFontData> ufd = new FTUserFontData(aFontData);
   RefPtr<SharedFTFace> face = ufd->CloneFace();
   if (!face) {
     return nullptr;

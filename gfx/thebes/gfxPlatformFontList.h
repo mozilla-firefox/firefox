@@ -509,13 +509,13 @@ class gfxPlatformFontList : public gfxFontInfoLoader {
    * values to be recorded in the new font entry and used for face selection,
    * in place of whatever inherent style attributes the resource may have.
    *
-   * This method takes ownership of the data block passed in as aFontData,
-   * and must ensure it is free()'d when no longer required.
+   * If the entry or the platform font instance wants to make sure the buffer
+   * persists, it should take a strong ref to aFontData.
    */
   virtual already_AddRefed<gfxFontEntry> MakePlatformFont(
       const nsACString& aFontName, WeightRange aWeightForEntry,
       StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
-      const uint8_t* aFontData, uint32_t aLength) = 0;
+      FontData* aFontData) = 0;
 
   // get the standard family name on the platform for a given font name
   // (platforms may override, eg Mac)

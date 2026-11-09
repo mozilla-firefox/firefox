@@ -1024,13 +1024,14 @@ already_AddRefed<gfxFontEntry> gfxDWriteFontList::LookupLocalFont(
 already_AddRefed<gfxFontEntry> gfxDWriteFontList::MakePlatformFont(
     const nsACString& aFontName, WeightRange aWeightForEntry,
     StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
-    const uint8_t* aFontData, uint32_t aLength) {
+    FontData* aFontData) {
   RefPtr<gfxDWriteFontFileStream> fontFileStream;
   RefPtr<IDWriteFontFile> fontFile;
+  // This will create a gfxDWriteFontFileStream that wraps aFontData and
+  // retains a reference to it as long as required.
   HRESULT hr = gfxDWriteFontFileLoader::CreateCustomFontFile(
-      aFontData, aLength, getter_AddRefs(fontFile),
-      getter_AddRefs(fontFileStream));
-  free((void*)aFontData);
+      aFontData, getter_AddRefs(fontFile), getter_AddRefs(fontFileStream));
+
   NS_ASSERTION(SUCCEEDED(hr), "Failed to create font file reference");
   if (FAILED(hr)) {
     return nullptr;

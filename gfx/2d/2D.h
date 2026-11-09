@@ -31,7 +31,7 @@
 #include "mozilla/StaticPtr.h"
 #include "mozilla/ThreadSafeWeakPtr.h"
 #include "mozilla/Atomics.h"
-
+#include "mozilla/gfx/FontData.h"
 #include "nsRegionFwd.h"
 
 #if defined(MOZ_WIDGET_ANDROID) || defined(MOZ_WIDGET_GTK)
@@ -1189,28 +1189,25 @@ class FTUserFontData final
  public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(FTUserFontData)
 
-  FTUserFontData(const uint8_t* aData, uint32_t aLength, int aFaceIndex)
-      : mFontData(aData), mLength(aLength), mFaceIndex(aFaceIndex) {}
+  explicit FTUserFontData(FontData* aFontData) : mFontData(aFontData) {}
   explicit FTUserFontData(const char* aFilename, int aFaceIndex)
       : mFilename(aFilename), mFaceIndex(aFaceIndex) {}
 
-  const uint8_t* FontData() const { return mFontData; }
-  uint32_t FontDataLength() const { return mLength; }
+  const uint8_t* GetData() const {
+    return mFontData ? mFontData->Data() : nullptr;
+  }
+  uint32_t Length() const { return mFontData ? mFontData->Length() : 0; }
+
   const char* GetFilename() const override { return mFilename.c_str(); }
   int GetFaceIndex() const override { return mFaceIndex; }
 
   already_AddRefed<mozilla::gfx::SharedFTFace> CloneFace() override;
 
  private:
-  ~FTUserFontData() {
-    if (mFontData) {
-      free((void*)mFontData);
-    }
-  }
+  ~FTUserFontData() = default;
 
   std::string mFilename;
-  const uint8_t* mFontData = nullptr;
-  uint32_t mLength = 0;
+  RefPtr<FontData> mFontData;
   int mFaceIndex = 0;
 };
 
@@ -2377,10 +2374,10 @@ class GFX2D_API Factory {
                                                         const char* aFilename,
                                                         int aFaceIndex);
   static FT_Face NewFTFaceFromData(FT_Library aFTLibrary, const uint8_t* aData,
-                                   size_t aDataSize, int aFaceIndex);
+                                   uint32_t aLength, int aFaceIndex);
   static already_AddRefed<SharedFTFace> NewSharedFTFaceFromData(
-      FT_Library aFTLibrary, const uint8_t* aData, size_t aDataSize,
-      int aFaceIndex, SharedFTFaceData* aSharedData = nullptr);
+      FT_Library aFTLibrary, FontData* aData, int aFaceIndex, 
+      SharedFTFaceData* aSharedData = nullptr);
   static void ReleaseFTFace(FT_Face aFace);
   static FT_Error LoadFTGlyph(FT_Face aFace, uint32_t aGlyphIndex,
                               int32_t aFlags);

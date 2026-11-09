@@ -287,8 +287,8 @@ nsFontFaceLoader::OnStreamComplete(nsIStreamLoader* aLoader,
 
   // FontDataDownloadComplete will load the platform font on a worker thread,
   // and will call FontLoadComplete when it has finished its work.
-  mUserFontEntry->FontDataDownloadComplete(mSrcIndex, aString, aStringLen,
-                                           aStatus, this);
+  mUserFontEntry->FontDataDownloadComplete(mSrcIndex, std::move(aString),
+                                           aStringLen, aStatus, this);
   return NS_SUCCESS_ADOPTED_DATA;
 }
 

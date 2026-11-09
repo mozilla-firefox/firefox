@@ -41,7 +41,7 @@ class FT2FontEntry final : public gfxFT2FontEntryBase {
   // create a font entry for a downloaded font
   static already_AddRefed<FT2FontEntry> CreateFontEntry(
       const nsACString& aFontName, WeightRange aWeight, StretchRange aStretch,
-      SlantStyleRange aStyle, const uint8_t* aFontData, uint32_t aLength);
+      SlantStyleRange aStyle, FontData* aFontData);
 
   // create a font entry representing an installed font, identified by
   // a FontListEntry; the freetype and cairo faces will not be instantiated
@@ -81,7 +81,7 @@ class FT2FontEntry final : public gfxFT2FontEntryBase {
   void CheckForBrokenFont(const nsACString& aFamilyKey);
 
   already_AddRefed<mozilla::gfx::SharedFTFace> GetFTFace(bool aCommit = false);
-  FTUserFontData* GetUserFontData() override;
+  FontData* GetUserFontData() override;
 
   FT_MM_Var* GetMMVar() override;
 
@@ -175,7 +175,7 @@ class gfxFT2FontList final : public gfxPlatformFontList {
   already_AddRefed<gfxFontEntry> MakePlatformFont(
       const nsACString& aFontName, WeightRange aWeightForEntry,
       StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
-      const uint8_t* aFontData, uint32_t aLength) override;
+      FontData* aFontData) override;
 
   void WriteCache();
 

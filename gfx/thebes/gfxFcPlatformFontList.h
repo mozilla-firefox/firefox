@@ -94,7 +94,7 @@ class gfxFontconfigFontEntry final : public gfxFT2FontEntryBase {
   bool TestCharacterMap(uint32_t aCh) override;
 
   mozilla::gfx::SharedFTFace* GetFTFace();
-  FTUserFontData* GetUserFontData() override;
+  FontData* GetUserFontData() override;
 
   FT_MM_Var* GetMMVar() override;
 
@@ -283,7 +283,7 @@ class gfxFcPlatformFontList final : public gfxPlatformFontList {
   already_AddRefed<gfxFontEntry> MakePlatformFont(
       const nsACString& aFontName, WeightRange aWeightForEntry,
       StretchRange aStretchForEntry, SlantStyleRange aStyleForEntry,
-      const uint8_t* aFontData, uint32_t aLength) override;
+      FontData* aFontData) override;
 
   bool FindAndAddFamiliesLocked(
       FontVisibilityProvider* aFontVisibilityProvider,

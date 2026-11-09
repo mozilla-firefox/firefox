@@ -31,7 +31,7 @@ class gfxFT2FontEntryBase : public gfxFontEntry {
   static nsresult CopyFaceTable(mozilla::gfx::SharedFTFace*, uint32_t aTableTag,
                                 nsTArray<uint8_t>&);
 
-  virtual mozilla::gfx::FTUserFontData* GetUserFontData() = 0;
+  virtual FontData* GetUserFontData() = 0;
 
   size_t ComputedSizeOfExcludingThis(
       mozilla::MallocSizeOf aMallocSizeOf) override;

@@ -5,6 +5,7 @@
 #ifndef GFX_PLATFORM_H
 #define GFX_PLATFORM_H
 
+#include "mozilla/gfx/FontData.h"
 #include "mozilla/gfx/Types.h"
 #include "mozilla/intl/UnicodeScriptCodes.h"
 #include "nsTArray.h"
@@ -415,8 +416,7 @@ class gfxPlatform : public mozilla::layers::MemoryPressureListener {
   already_AddRefed<gfxFontEntry> MakePlatformFont(
       const nsACString& aFontName, const WeightRange& aWeightForEntry,
       const StretchRange& aStretchForEntry,
-      const SlantStyleRange& aStyleForEntry, const uint8_t* aFontData,
-      uint32_t aLength);
+      const SlantStyleRange& aStyleForEntry, FontData* aFontData);
 
   /**
    * Whether to allow downloadable fonts via @font-face rules
