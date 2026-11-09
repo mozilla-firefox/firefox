@@ -440,11 +440,9 @@ class EdgePool {
     mSentinelAndBlocks[1].block = nullptr;
   }
 
-#ifdef DEBUG
   bool IsEmpty() {
     return !mSentinelAndBlocks[0].block && !mSentinelAndBlocks[1].block;
   }
-#endif
 
  private:
   struct EdgeBlock;
@@ -697,9 +695,7 @@ class NodePool {
     mLast = nullptr;
   }
 
-#ifdef DEBUG
   bool IsEmpty() { return !mBlocks && !mLast; }
-#endif
 
   class Builder;
   friend class Builder;
@@ -849,12 +845,10 @@ struct CCGraph {
     mOutOfMemory = false;
   }
 
-#ifdef DEBUG
   bool IsEmpty() {
     return mNodes.IsEmpty() && mEdges.IsEmpty() && mWeakMaps.IsEmpty() &&
            mRootCount == 0 && mPtrInfoMap.empty();
   }
-#endif
 
   PtrInfo* FindNode(void* aPtr);
   void RemoveObjectFromMap(void* aObject);
@@ -3278,29 +3272,28 @@ void nsCycleCollector::ScanRoots(bool aFullySynchGraphBuild) {
 
 class WhiteNode {
  public:
-  explicit WhiteNode(PtrInfo* aPInfo) : mPInfo(aPInfo) {}
+  explicit WhiteNode(PtrInfo* aPInfo)
+      : mPointer(aPInfo->mPointer), mParticipant(aPInfo->mParticipant) {
+    MOZ_ASSERT(mParticipant,
+               "Unlink shouldn't see objects removed from graph.");
+  }
 
-  void Root() { mPInfo->mParticipant->Root(mPInfo->mPointer); }
+  void Root() { mParticipant->Root(mPointer); }
 
   void Unlink(CycleCollectedJSRuntime* aCCJSRuntime) {
-    MOZ_ASSERT(mPInfo->mParticipant,
-               "Unlink shouldn't see objects removed from graph.");
-    mPInfo->mParticipant->Unlink(mPInfo->mPointer);
+    mParticipant->Unlink(mPointer);
 #ifdef DEBUG
     if (aCCJSRuntime) {
-      aCCJSRuntime->AssertNoObjectsToTrace(mPInfo->mPointer);
+      aCCJSRuntime->AssertNoObjectsToTrace(mPointer);
     }
 #endif
   }
 
-  void Unroot() {
-    MOZ_ASSERT(mPInfo->mParticipant,
-               "Unroot shouldn't see objects removed from graph.");
-    mPInfo->mParticipant->Unroot(mPInfo->mPointer);
-  }
+  void Unroot() { mParticipant->Unroot(mPointer); }
 
  private:
-  PtrInfo* mPInfo;
+  void* mPointer;
+  nsCycleCollectionParticipant* mParticipant;
 };
 
 bool nsCycleCollector::CollectWhite() {
@@ -3318,8 +3311,6 @@ bool nsCycleCollector::CollectWhite() {
   //   - Unlink(whites), which drops outgoing links on each white.
   //   - Unroot(whites), which returns the whites to normal GC.
 
-  ClearWhiteJSWeakRefTargets();
-
   // Segments are 4 KiB on 32-bit and 8 KiB on 64-bit.
   static const size_t kSegmentSize = sizeof(void*) * 1024;
   SegmentedVector<WhiteNode, kSegmentSize, InfallibleAllocPolicy> whiteNodes(
@@ -3334,6 +3325,8 @@ bool nsCycleCollector::CollectWhite() {
 
   {
     JS::AutoAssertNoGC nogc;
+    ClearWhiteJSWeakRefTargets();
+
     bool hasJSRuntime = !!mCCJSRuntime;
     nsCycleCollectionParticipant* zoneParticipant =
         hasJSRuntime ? mCCJSRuntime->ZoneParticipant() : nullptr;
@@ -3370,6 +3363,11 @@ bool nsCycleCollector::CollectWhite() {
   mResults.mFreedJSZones += numWhiteJSZones;
 
   timeLog.Checkpoint("CollectWhite::Root");
+
+  // Unlink can trigger a GC, so we clear the graph here to make sure that
+  // we don't have any pointers to dead objects sitting around.
+  mGraph.Clear();
+  timeLog.Checkpoint("CollectWhite::mGraph.Clear()");
 
   if (mBeforeUnlinkCB) {
     mBeforeUnlinkCB();
@@ -3648,8 +3646,7 @@ void nsCycleCollector::CleanupAfterCollection() {
   TimeLog timeLog;
   MOZ_ASSERT(mIncrementalPhase == CleanupPhase);
   MOZ_RELEASE_ASSERT(!mScanInProgress);
-  mGraph.Clear();
-  timeLog.Checkpoint("CleanupAfterCollection::mGraph.Clear()");
+  MOZ_ASSERT(mGraph.IsEmpty());
 
   FreeSnowWhite(true);
   timeLog.Checkpoint("Collect::FreeSnowWhite");
@@ -3765,12 +3762,9 @@ bool nsCycleCollector::Collect(CCReason aReason, ccIsManual aIsManual,
   bool startedIdle = IsIdle();
   bool collectedAny = false;
 
-  // If the CC started idle, it will call BeginCollection, which
-  // will do FreeSnowWhite, so it doesn't need to be done here.
-  //
-  // If we're in CleanupPhase, we want to clear the graph before
-  // FreeSnowWhite runs, so that we don't need to remove objects from the graph
-  // one by one. CleanupAfterCollection will call FreeSnowWhite.
+  // If the CC started idle, it will call BeginCollection, which will do
+  // FreeSnowWhite, so it doesn't need to be done here. If we're in
+  // CleanupPhase, CleanupAfterCollection will call FreeSnowWhite.
   if (!startedIdle && mIncrementalPhase != CleanupPhase) {
     TimeLog timeLog;
     FreeSnowWhite(true);
@@ -3877,13 +3871,9 @@ void nsCycleCollector::FinishAnyCurrentCollection(CCReason aReason) {
   // Use CCIsNotManual because we only want to finish the CC in progress.
   Collect(aReason, ccIsManual::CCIsNotManual, unlimitedBudget, nullptr);
 
-  // It is only okay for Collect() to have failed to finish the
-  // current CC if we're reentering the CC at some point past
-  // graph building. We need to be past the point where the CC will
-  // look at JS objects so that it is safe to GC.
-  MOZ_ASSERT(IsIdle() || (mActivelyCollecting &&
-                          mIncrementalPhase != GraphBuildingPhase),
-             "Reentered CC during graph building");
+  // We need to be past the point where the CC will look at JS objects so that
+  // it is safe to GC.
+  MOZ_RELEASE_ASSERT(mGraph.IsEmpty(), "Failed to finish CC before GC");
 }
 
 // Don't merge too many times in a row, and do at least a minimum
