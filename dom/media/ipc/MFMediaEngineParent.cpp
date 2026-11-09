@@ -91,6 +91,20 @@ already_AddRefed<MFMediaEngineParent> MFMediaEngineParent::GetMediaEngineById(
   return engine.forget();
 }
 
+/* static */
+bool MFMediaEngineParent::IsMediaEngineIdAllowed(
+    uint64_t aId, const RemoteMediaManagerParent* aManager) {
+  MOZ_ASSERT(RemoteMediaManagerParent::OnManagerThread());
+  MOZ_ASSERT(aManager);
+  if (aId == 0 || aId > sMediaEngineIdx) {
+    return false;
+  }
+  StaticMutexAutoLock lock(sMediaEnginesLock);
+  MFMediaEngineParent* engine =
+      sMediaEngines ? sMediaEngines->Get(aId) : nullptr;
+  return !engine || engine->mManager.get() == aManager;
+}
+
 MFMediaEngineParent::MFMediaEngineParent(RemoteMediaManagerParent* aManager,
                                          nsISerialEventTarget* aManagerThread)
     : mMediaEngineId(++sMediaEngineIdx),

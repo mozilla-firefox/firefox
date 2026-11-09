@@ -51,6 +51,11 @@ class MFMediaEngineParent final : public PMFMediaEngineParent {
 
   static already_AddRefed<MFMediaEngineParent> GetMediaEngineById(uint64_t aId);
 
+  // Return true if aId has been allocated and its engine, if still alive, was
+  // created by aManager.
+  static bool IsMediaEngineIdAllowed(uint64_t aId,
+                                     const RemoteMediaManagerParent* aManager);
+
   MFMediaEngineStreamWrapper* GetMediaEngineStream(
       TrackType aType, const CreateDecoderParams& aParam);
 
