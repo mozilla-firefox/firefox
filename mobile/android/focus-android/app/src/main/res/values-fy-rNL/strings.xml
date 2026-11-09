@@ -300,7 +300,7 @@
   <string name="search_add_manually_string">Te brûken sykterm</string>
   <string name="search_add_manually_save">Bewarje</string>
   <!-- Example of search engine url. %s represents the search query and should be kept as-is. -->
-  <string name="search_add_manually_example">Bygelyls: example.com/search/?q=%s</string>
+  <string name="search_add_manually_example">Bygelyks: example.com/search/?q=%s</string>
   <string name="search_add_confirmation">Nije sykmasine tafoege.</string>
   <string name="search_add_error_empty_name">Fier namme fan sykmasine yn</string>
   <string name="search_add_error_duplicate_name">Dizze namme wurdt al troch in ynstallearre sykmasine brûkt.</string>
@@ -337,7 +337,7 @@
 
     %1$s is the app name and build variant (for example "Firefox Focus", "Firefox Klar Nightly").
   -->
-  <string name="onboarding_first_screen_title">Wolkom bij %1$s</string>
+  <string name="onboarding_first_screen_title">Wolkom by %1$s</string>
   <!-- New Onboarding flow first screen subtitle the one that appears under title -->
   <string name="onboarding_first_screen_subtitle">Fluch. Privee. Gjin ôflieding.</string>
   <!--
@@ -410,7 +410,7 @@
   <!-- Label for the option in the Focus "tabs tray" to clos the other tabs except the current tab. -->
   <string name="tabs_tray_action_erase_other">Oare ljepblêden slute</string>
   <!-- Label for the option in the Focus "tabs tray" to add a new tab. -->
-  <string name="tabs_tray_action_add_new_tab">Nije ljepblêd tafoegje</string>
+  <string name="tabs_tray_action_add_new_tab">Nij ljepblêd tafoegje</string>
   <!--
     If the user decides to open the current page in another browser and if Firefox is not installed then we show this
     item in the list of browsers. Clicking it will open the app store installed on the device (usually that's Google Play).

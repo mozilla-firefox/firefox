@@ -71,7 +71,7 @@
   <!-- Description for the "history" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_history_description">Browserskiednis benaderje</string>
   <!-- Description for the "management" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_management_description">Utwreidigsgebrûk kontrolearje en tema’s beheare</string>
+  <string name="mozac_feature_addons_permissions_management_description">Utwreidingsgebrûk kontrolearje en tema’s beheare</string>
   <!-- Description for the "nativeMessaging" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_native_messaging_description">Berjochten mei oare apps as dizze útwikselje</string>
   <!-- Description for the "notifications" WebExtensions API permission. -->
@@ -125,7 +125,7 @@
   <!-- Description for the "history" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_history_description_for_update">Browserskiednis benaderje.</string>
   <!-- Description for the "management" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_management_description_for_update">Utwreidigsgebrûk kontrolearje en tema’s beheare.</string>
+  <string name="mozac_feature_addons_permissions_management_description_for_update">Utwreidingsgebrûk kontrolearje en tema’s beheare.</string>
   <!-- Description for the "nativeMessaging" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_native_messaging_description_for_update">Berjochten mei oare apps as dizze útwikselje.</string>
   <!-- Description for the "notifications" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
@@ -225,7 +225,7 @@
   <!-- Long description for the searchTerms data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_searchTerms_long_description">Syktermen diele mei útwreidingsûntwikkeler</string>
   <!-- Long description for the technicalAndInteraction data collection permission -->
-  <string name="mozac_feature_addons_permissions_data_collection_technicalAndInteraction_long_description">Technyske en ynteraksjegegevens diele mei útwreidingûntwikkeler</string>
+  <string name="mozac_feature_addons_permissions_data_collection_technicalAndInteraction_long_description">Technyske en ynteraksjegegevens diele mei útwreidingsûntwikkeler</string>
   <!-- Long description for the websiteActivity data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_websiteActivity_long_description">Website-aktiviteit diele mei útwreidingsûntwikkeler</string>
   <!-- Long description for the websiteContent data collection permission -->
@@ -299,7 +299,7 @@
   <!-- Text link to learn more about permission requests on the add-on permissions dialog . -->
   <string name="mozac_feature_addons_permissions_dialog_learn_more">Mear ynfo</string>
   <!-- This is the text for the "technical and interaction" checkbox shown in the add-on permissions dialog. -->
-  <string name="mozac_feature_addons_permissions_dialog_technical_and_interaction_data">Technyske en ynteraksjegegevens mei útwreidingûntwikkeler diele</string>
+  <string name="mozac_feature_addons_permissions_dialog_technical_and_interaction_data">Technyske en ynteraksjegegevens mei útwreidingsûntwikkeler diele</string>
   <!-- This is a button to cancel the add-on installation . -->
   <string name="mozac_feature_addons_permissions_dialog_cancel">Annulearje</string>
   <!-- Accessibility content description to install add-on button. %1$s is the add-on name. -->
@@ -395,7 +395,7 @@
   <!-- Text shown after failed to enable an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_enable">Ynskeakeljen fan %1$s mislearre</string>
   <!-- Text shown after failed to disable an add-on. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_failed_to_disable">Utskeakeljen %1$s mislearre</string>
+  <string name="mozac_feature_addons_failed_to_disable">Utskeakeljen fan %1$s mislearre</string>
   <!-- Text shown after failed to uninstall an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_uninstall">Deynstallearjen fan %1$s mislearre</string>
   <!-- Text shown after successfully removed an add-on. %1$s is the add-on name. -->

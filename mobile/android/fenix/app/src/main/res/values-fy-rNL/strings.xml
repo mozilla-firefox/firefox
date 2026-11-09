@@ -372,7 +372,7 @@
   <!-- Link text to see what AI enhancements are and aren’t included -->
   <string name="ai_controls_see_whats_included">Besjoch wat wol en net ynbegrepen is</string>
   <!-- Banner text shown when AI enhancements are blocked -->
-  <string name="ai_controls_blocked_info_banner">Nije en aktuele AI-ferbetteringen wurde standert blokkearre. Deblokkearje hjirûnder spesifike funksje.</string>
+  <string name="ai_controls_blocked_info_banner">Nije en aktuele AI-ferbetteringen wurde standert blokkearre. Deblokkearje hjirûnder spesifike funksjes.</string>
   <!-- Section header for the AI-powered features list -->
   <string name="ai_controls_ai_powered_features">AI-oandreaune funksjes</string>
   <!-- Title for the translations AI feature toggle -->
@@ -445,7 +445,7 @@
   -->
   <string name="search_engine_selector_content_description">%s: sykmasineselektor</string>
   <!-- Text for the snackbar shown to confirm the deletion of a single browsing history item. %1$s is the shortened URL of the deleted history entry or the the actual deleted search term. Only one such item is deleted at a time. -->
-  <string name="search_suggestions_delete_history_item_snackbar">%1$s út skiednis fuortsmite</string>
+  <string name="search_suggestions_delete_history_item_snackbar">%1$s út skiednis fuortsmiten</string>
   <!-- Content description (not visible, for screen readers etc.): Button shown near a history search result allowing to delete it from browsing history. -->
   <string name="mozac_browser_awesomebar_remove_suggestion" tools:ignore="UnusedResources">Dizze skiednisfermelding fuortsmite</string>
   <!-- Button in the app links prompt that keeps the user in the browser instead of opening the external app. %1$s is the name of the app (for example "Firefox"). -->
@@ -467,7 +467,7 @@
   <!-- Title for the startup crash page. %s is the name of the app (for example "Firefox") -->
   <string name="startup_crash_title">%s moat opnij opstarte wurde</string>
   <!-- Body text for the startup crash page. %s is the name of the app (for example "Firefox") -->
-  <string name="startup_crash_body">Der is in probleem bard by it iepenjen fan %s.\n\nIt ferstjoeren fan in ûngelokrapport helpe ús problemen mei de browser te analysearjen en op te lossen. Rapporten kinne persoanlike of gefoelige gegevens befetsje.</string>
+  <string name="startup_crash_body">Der is in probleem bard by it iepenjen fan %s.\n\nIt ferstjoeren fan in ûngelokrapport helpt ús problemen mei de browser te analysearjen en op te lossen. Rapporten kinne persoanlike of gefoelige gegevens befetsje.</string>
   <!-- Button text to submit a startup crash report -->
   <string name="startup_crash_positive">Ungelokrapport ferstjoere</string>
   <!-- Button text to continue and not send a startup crash report -->
@@ -831,7 +831,7 @@
   <!-- Preference for developers -->
   <string name="preferences_remote_debugging">Remote debugging fia USB</string>
   <!-- Preference title for switch preference to show search suggestions -->
-  <string name="preferences_show_search_suggestions">Syksuggesjes toane</string>
+  <string name="preferences_show_search_suggestions">Syksuggestjes toane</string>
   <!-- Preference title for switch preference to show voice search button -->
   <string name="preferences_show_voice_search">Sprutsen sykopdracht toane</string>
   <!-- Preference title for switch preference to show search suggestions also in private mode -->
@@ -910,7 +910,7 @@
   <string name="preferences_downloads_delete_from_device">Fan apparaat fuortsmite</string>
   <string name="preferences_downloads_delete_from_device_description">Bestân is fan jo apparaat en út downloadskiednis fuortsmiten</string>
   <string name="preferences_downloads_remove_from_download_history">Ut downloadskiednis fuortsmite</string>
-  <string name="preferences_downloads_remove_from_download_history_description">Bestân is fuortsmiten út jo downloadskeiednis, mar noch hieltyd bewarre op jo apparaat</string>
+  <string name="preferences_downloads_remove_from_download_history_description">Bestân is fuortsmiten út jo downloadskiednis, mar noch hieltyd bewarre op jo apparaat</string>
   <string name="preferences_downloads_ask_when_to_delete_files">Freegje wannear’t ik bestannen fuortsmyt</string>
   <!-- Preference for downloads -->
   <string name="preferences_downloads_2">Downloadynstellingen</string>
@@ -1166,7 +1166,7 @@
   <!-- Preference for syncing passwords -->
   <string name="preferences_sync_logins_2">Wachtwurden</string>
   <!-- Preference for syncing tabs -->
-  <string name="preferences_sync_tabs_2">Iepen ljeplêden</string>
+  <string name="preferences_sync_tabs_2">Iepen ljepblêden</string>
   <!-- Preference for signing out -->
   <string name="preferences_sign_out">Ofmelde</string>
   <!-- Preference displays and allows changing current FxA device name -->
@@ -1681,7 +1681,7 @@
     <item quantity="other">%2$d ljepblêden oan ljepblêdgroep %1$s tafoegje, kleur %3$s</item>
   </plurals>
   <!-- Content description for the grabber/handle of the tab group bottom sheet. -->
-  <string name="tab_group_sheet_dismiss_description">Ljepbêdgroep besjen, sleepgreep ynklappe</string>
+  <string name="tab_group_sheet_dismiss_description">Ljepblêdgroep besjen, sleepgreep ynklappe</string>
   <plurals name="expanded_tab_group_header_description">
     <!--
       Accessibility description for the header of an expanded tab group.
@@ -2065,7 +2065,7 @@
   <!-- Unsubmitted crash dialog title, %s is the name of the app (for example "Firefox"). -->
   <string name="unsubmitted_crash_dialog_title_2">%s is ferûngelokke. In rapport ferstjoere?</string>
   <!-- Single unsubmitted crash matching remote settings. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="unsubmitted_crash_requested_by_devs_dialog_title">Jo hawwe in net-ferstjoerde ûngelokrapport relatearre oan ûngelokken dy’t ûndersocht wurde. It ferstjoeren dêrfan sil ús helpe om %1$s te ferbetterjen. As jo dizze notifikaasje slute, wurdt dit rapport negearre.</string>
+  <string name="unsubmitted_crash_requested_by_devs_dialog_title">Jo hawwe in net-ferstjoerd ûngelokrapport relatearre oan ûngelokken dy’t ûndersocht wurde. It ferstjoeren dêrfan sil ús helpe om %1$s te ferbetterjen. As jo dizze notifikaasje slute, wurdt dit rapport negearre.</string>
   <!-- Multiple unsubmitted crashes matching remote settings. %1$d is the number of unsent crash reports, %2$s is the name of the app (for example "Firefox"). -->
   <string name="unsubmitted_crashes_requested_by_devs_dialog_title">Jo hawwe net-ferstjoerde ûngelokrapporten (%1$d) relatearre oan ûngelokken dy’t ûndersocht wurde. It ferstjoeren dêrfan sil ús helpe %2$s te ferbetterjen. As jo dizze notifikaasje slute, wurde dizze rapporten negearre.</string>
   <!-- Unsubmitted crash dialog checkbox label for automatically sending reports in the future -->
@@ -2124,7 +2124,7 @@
   <!-- Bookmark overflow menu open all in tabs button -->
   <string name="bookmark_menu_open_all_in_tabs_button">Alles yn nije ljepblêden iepenje</string>
   <!-- Bookmark overflow menu open all in private tabs button -->
-  <string name="bookmark_menu_open_all_in_private_tabs_button">Alles yn proveeljepblêden iepenje</string>
+  <string name="bookmark_menu_open_all_in_private_tabs_button">Alles yn priveeljepblêden iepenje</string>
   <!-- Bookmark overflow menu delete button -->
   <string name="bookmark_menu_delete_button">Fuortsmite</string>
   <!-- Accessibility label for sorting options -->
@@ -2326,7 +2326,7 @@
   <!-- Button to select all tabs in the "select tabs" step of the collection creator -->
   <string name="create_collection_select_all">Alles selektearje</string>
   <!-- Button to deselect all tabs in the "select tabs" step of the collection creator -->
-  <string name="create_collection_deselect_all">Alle deselektearje</string>
+  <string name="create_collection_deselect_all">Alles deselektearje</string>
   <!-- Text to prompt users to select the tabs to save in the "select tabs" step of the collection creator -->
   <string name="create_collection_save_to_collection_empty">Selektearje ljepblêden om te bewarjen</string>
   <!--
@@ -2698,7 +2698,7 @@
   -->
   <string name="preference_enhanced_tracking_protection_allow_list_dialog_title">Binne jo wis dat jo oplossingen útskeakelje wolle?</string>
   <!-- Message for the dialog that appears after disabling the baseline exceptions preference under Strict or Custom tracking protection. %1$s is the name of the application (e.g. Fenix). -->
-  <string name="preference_enhanced_tracking_protection_allow_list_dialog_message">Dizze ynstelling helpt de meast foarkommende websiteproblemen op te lossen. As jo de funskje útskeakelje, wurkje guon siden miskien net, en kin %1$s net helpe by it oplossen fan dy problemen.</string>
+  <string name="preference_enhanced_tracking_protection_allow_list_dialog_message">Dizze ynstelling helpt de meast foarkommende websiteproblemen op te lossen. As jo de funksje útskeakelje, wurkje guon siden miskien net, en kin %1$s net helpe by it oplossen fan dy problemen.</string>
   <!-- Confirmation button text for the dialog that appears after disabling the baseline exceptions preference under Strict or Custom tracking protection -->
   <string name="preference_enhanced_tracking_protection_allow_list_dialog_confirm">Oplossingen útskeakelje</string>
   <!-- Cancel button text for the dialog that appears after disabling the baseline exceptions preference under Strict or Custom tracking protection. This dismisses the dialog and re-enables the preference. -->
@@ -3900,7 +3900,7 @@
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Ynskeakeljen fan Beskerming tsjin folgjen wurdt oanrekommandearre.</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
-  <string name="protection_panel_etp_disabled_no_trackers_blocked">Trackers wirde net blokkearre</string>
+  <string name="protection_panel_etp_disabled_no_trackers_blocked">Trackers wurde net blokkearre</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
   <string name="protection_panel_privacy_and_security_settings_2">Privacyynstellingen</string>
   <!-- Title text for the protection panel permissions section. -->
@@ -4293,7 +4293,7 @@
   -->
   <string name="setup_checklist_subtitle_3_steps_initial_state">Foltôgje dizze 3 stappen om %1$s yn te stellen foar de bêste sneupûnderfining.</string>
   <!-- Subtitle for a setup checklist with 3 steps when the first task is completed. -->
-  <string name="setup_checklist_subtitle_3_steps_first_step">Goed j! Jo hawwe 1 fan de 3 stappen foltôge.</string>
+  <string name="setup_checklist_subtitle_3_steps_first_step">Goed begjin! Jo hawwe 1 fan de 3 stappen foltôge.</string>
   <!-- Subtitle for a setup checklist with 3 steps when two of the tasks are completed. -->
   <string name="setup_checklist_subtitle_3_steps_second_step">Hast klear! Twa stappen foltôge en noch ien te gean.</string>
   <!-- Subtitle for a setup checklist with 3 steps completed state. %1$s is the name of the app (for example "Firefox"). -->
@@ -4305,7 +4305,7 @@
   -->
   <string name="setup_checklist_subtitle_6_steps_initial_state">Foltôgje alle 6 stappen om %1$s yn te stellen foar de bêste sneupûnderfining.</string>
   <!-- Subtitle for a setup checklist with 6 steps when the first task is completed. -->
-  <string name="setup_checklist_subtitle_6_steps_first_step">Goed j! Jo hawwe 1 fan de 6 stappen foltôge.</string>
+  <string name="setup_checklist_subtitle_6_steps_first_step">Goed begjin! Jo hawwe 1 fan de 6 stappen foltôge.</string>
   <!-- Subtitle for the setup checklist when the second task is completed. -->
   <string name="setup_checklist_subtitle_6_steps_second_step">Jo hawwe 2 fan de 6 stappen foltôge. Grutte foarútgong!</string>
   <!-- Subtitle for a setup checklist with 6 steps when three of the tasks are completed. -->
@@ -4323,7 +4323,7 @@
   -->
   <string name="setup_checklist_subtitle_5_steps_initial_state">Foltôgje alle 5 stappen om %1$s yn te stellen foar de bêste sneupûnderfining.</string>
   <!-- Subtitle for a setup checklist with 5 steps when the first task is completed. -->
-  <string name="setup_checklist_subtitle_5_steps_first_step">Goed j! Jo hawwe 1 fan de 5 stappen foltôge.</string>
+  <string name="setup_checklist_subtitle_5_steps_first_step">Goed begjin! Jo hawwe 1 fan de 5 stappen foltôge.</string>
   <!-- Subtitle for the setup checklist when the second task is completed. -->
   <string name="setup_checklist_subtitle_5_steps_second_step">Jo hawwe 2 fan de 5 stappen foltôge. Grutte foarútgong!</string>
   <!-- Subtitle for a setup checklist with 5 steps when three of the tasks are completed. -->
@@ -4552,7 +4552,7 @@
     %1$s is replaced by an active link using privacy_notice_updated_homepage_message_privacy_notice as text (Privacy Notice)
     %2$s is replaced by an active link using privacy_notice_updated_homepage_message_learn_more as text (Learn more)
   -->
-  <string name="privacy_notice_updated_homepage_message" tools:ignore="BrandUsage,UnusedResources">Wy hawwe ús %1$s bywurke om de nijste funksjes yn Firefox te wer te jaan. %2$s</string>
+  <string name="privacy_notice_updated_homepage_message" tools:ignore="BrandUsage,UnusedResources">Wy hawwe ús %1$s bywurke om de nijste funksjes yn Firefox wer te jaan. %2$s</string>
   <!-- The first active link used in privacy_notice_updated_homepage_message -->
   <string name="privacy_notice_updated_homepage_message_privacy_notice" tools:ignore="UnusedResources">Privacyferklearring</string>
   <!-- The second active link used in privacy_notice_updated_homepage_message -->

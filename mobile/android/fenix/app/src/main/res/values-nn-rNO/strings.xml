@@ -717,6 +717,8 @@
   <string name="preferences_search">Søk</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Søkjemotorar</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Legg til søkje-widget på startskjerm</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Startskjerm-widget</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -974,6 +976,8 @@
     Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
   -->
   <string name="addon_remove_dialog_title">Fjerne %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Dette fjerner utvidinga og innstillingane frå denne eininga.</string>
   <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
   <string name="addon_remove_dialog_confirm">Fjern</string>
   <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
@@ -4529,6 +4533,10 @@
   <string name="wrex_widget_error_connection_offline_description">Kontroller internett-tilkoplinga di og prøv på nytt.</string>
   <!-- Sports widget error card title shown when match data fails to load. -->
   <string name="wrex_widget_error_load_failed_title">Kan ikkje vise kampinformasjon akkurat no</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Resultata kan ikkje visast akkurat no</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Lag vert bestemt seinare</string>
   <!--
     Privacy notice homepage banner
 

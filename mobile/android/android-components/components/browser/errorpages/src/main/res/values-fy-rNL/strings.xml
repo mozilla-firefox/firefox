@@ -15,7 +15,7 @@
     The text shown underneath the archive button, explaining what the button does. The %1$s will be replaced by
     the app name and %2$s will be replaced by the name of the archive service as a link
   -->
-  <string name="mozac_browser_errorpages_archive_description">%1$s kin in eardere ferzje fan dizze side sykje fan %2$s út fan the Internet Archive.</string>
+  <string name="mozac_browser_errorpages_archive_description">%1$s kin in eardere ferzje fan dizze side sykje fan %2$s fan it Internet Archive út.</string>
   <!--
     The name of the Internet Archive service, shown as a link at the end of
     mozac_browser_errorpages_archive_description.
@@ -72,7 +72,7 @@
   <!-- The document title and heading of the error page shown when a website could not be reached. -->
   <string name="mozac_browser_errorpages_connection_failure_title">Kin gjin ferbining meitsje</string>
   <!-- The error message shown when a website could not be reached. -->
-  <string name="mozac_browser_errorpages_connection_failure_message"><![CDATA[<ul>\n<li>Miskien is de website tydlik net beskikber of oerbelêste. Probearje it oer inkelde mominten opnij.</li>\n<li>As jo gjin inkelde side lade kinne, kontrolearje dan de gegevens- of wifi-ferbining fan jo apparaat.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_connection_failure_message"><![CDATA[<ul>\n<li>Miskien is de website tydlik net beskikber of oerbelêst. Probearje it oer inkelde mominten opnij.</li>\n<li>As jo gjin inkelde side lade kinne, kontrolearje dan de gegevens- of wifi-ferbining fan jo apparaat.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when a website responds in an unexpected way and the browser cannot continue. -->
   <string name="mozac_browser_errorpages_unknown_socket_type_title">Unferwacht antwurd fan de server</string>
   <!-- The error message shown when a website responds in an unexpected way and the browser cannot continue. -->
@@ -80,7 +80,7 @@
   <!-- The document title and heading of the error page shown when the browser gets stuck in an infinite loop when loading a website. -->
   <string name="mozac_browser_errorpages_redirect_loop_title">De side ferwiist net op in krekte wize troch</string>
   <!-- The error message shown when the browser gets stuck in an infinite loop when loading a website. -->
-  <string name="mozac_browser_errorpages_redirect_loop_message"><![CDATA[<p>De browser is stoppe mei te probearjen it opfrege item op te heljen. It website ferwiist de oanfraach troch op in manier dy’t nea dien wêze sil.</p>\n<ul>\n<li>Hawwe jo cookies dy’t nedich binne foar dizze website útskeakele of blokkearre?</li>\n<li>As it akseptearjen fan cookies fan dizze website it probleem net oplost is it wierskynlik in serverkonfiguraasjeprobleem en net jo apparaat.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_redirect_loop_message"><![CDATA[<p>De browser is stoppe mei te probearjen it opfrege item op te heljen. De website ferwiist de oanfraach troch op in manier dy’t nea dien wêze sil.</p>\n<ul>\n<li>Hawwe jo cookies dy’t nedich binne foar dizze website útskeakele of blokkearre?</li>\n<li>As it akseptearjen fan cookies fan dizze website it probleem net oplost is it wierskynlik in serverkonfiguraasjeprobleem en net jo apparaat.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when a website cannot be loaded because the browser is in offline mode. -->
   <string name="mozac_browser_errorpages_offline_title">Offlinemodus</string>
   <!-- The error message shown when a website cannot be loaded because the browser is in offline mode. -->
@@ -128,7 +128,7 @@
   <string name="mozac_browser_errorpages_malformed_uri_message_alternative"><![CDATA[<ul>\n<li>Webadressen wurde trochgeans skreaun as <strong>http://www.example.com/</strong></li>\n<li>Let der op dat jo foarweartse slashes brûke (d.y. <strong>/</strong>).</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_unknown_protocol_title">Unbekend protokol</string>
-  <string name="mozac_browser_errorpages_unknown_protocol_message"><![CDATA[<p>It adres spesifisearret in protokol (byg. <q>wxyz://</q>) dat de browser net werkend, wêrtroch de browser net op in krekte manier mei de website ferbine kin.</p>\n<ul>\n<li>Probearje jo tagong te krijen ta multimedia- of oare net-tekstservices? Kontrolearje de website op ekstra nedichheden.</li>\n<li>Guon protokollen kinne programmatuer of ynstekkers fan tredden fereaskje foardat de browser se werkenne kin.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_unknown_protocol_message"><![CDATA[<p>It adres spesifisearret in protokol (byg. <q>wxyz://</q>) dat de browser net werkent, wêrtroch de browser net op in krekte manier mei de website ferbine kin.</p>\n<ul>\n<li>Probearje jo tagong te krijen ta multimedia- of oare net-tekstservices? Kontrolearje de website op ekstra nedichheden.</li>\n<li>Guon protokollen kinne programmatuer of ynstekkers fan tredden fereaskje foardat de browser se werkenne kin.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_not_found_title">Bestân net fûn</string>
   <string name="mozac_browser_errorpages_file_not_found_message"><![CDATA[<ul>\n<li>Kin it item omneamd, fuortsmiten of ferpleatst wêze?</li>\n<li>Stiet der in stavering-, haadletter- of oare typografyske flater yn it adres?</li>\n<li>Hawwe jo genôch tagongsrjochten foar it opfrege item?</li>\n</ul>]]></string>
@@ -137,7 +137,7 @@
   <string name="mozac_browser_errorpages_file_access_denied_message"><![CDATA[<ul>\n<li>It kin fuortsmiten wêze, ferpleatst, of bestânsmachtigingen kinne tagong tsjingean.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_proxy_connection_refused_title">Proxyserver wegere de ferbining</string>
-  <string name="mozac_browser_errorpages_proxy_connection_refused_message"><![CDATA[<p>De browser is konfigurearre om in proxyserver te brûken, mar de proxy wegere in ferbining.</p>\n<ul>\n<li>Is de proxykonfiguraasje fan de browser in oarder? Kontrolearje de ynstellingen en probearje it opnij.</li>\n<li>Stiet de proxyservice ferbiningen fan dit netwurk ta?</li>\n<li>Hawwe jo noch hieltyd problemen? Freegje jo netwurkbehearder of ynternetprovider foar assistinsje.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_proxy_connection_refused_message"><![CDATA[<p>De browser is konfigurearre om in proxyserver te brûken, mar de proxy wegere in ferbining.</p>\n<ul>\n<li>Is de proxykonfiguraasje fan de browser yn oarder? Kontrolearje de ynstellingen en probearje it opnij.</li>\n<li>Stiet de proxyservice ferbiningen fan dit netwurk ta?</li>\n<li>Hawwe jo noch hieltyd problemen? Freegje jo netwurkbehearder of ynternetprovider foar assistinsje.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_unknown_proxy_host_title">Proxyserver net fûn</string>
   <string name="mozac_browser_errorpages_unknown_proxy_host_message"><![CDATA[<p>De browser is konfigurearre om in proxyserver te brûken, mar de proxy koe net fûn wurde.</p>\n<ul>\n<li>Is de proxykonfiguraasje fan de browser yn oarder? Kontrolearje de ynstellingen en probearje it opnij.</li>\n<li>Is it apparaat ferbûn mei in aktyf netwurk?</li>\n<li>Hawwe jo noch hieltyd problemen? Freegje jo netwurkbehearder of ynternetprovider foar assistinsje.</li>\n</ul>]]></string>

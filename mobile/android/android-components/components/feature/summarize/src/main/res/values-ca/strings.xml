@@ -95,4 +95,10 @@
   <string name="mozac_ai_controls_page_summary_description">Les pàgines i els resums no s’emmagatzemen mai.</string>
   <!-- Button text for the Error dismiss button on Shake to Summarize -->
   <string name="mozac_summarize_error_dissmiss">Descarta</string>
+  <!-- Title for the Mozilla account sign-in screen, shown when summarization results in a connection failure. -->
+  <string name="mozac_summarize_fxa_sign_in_title">Inicieu la sessió per a resumir</string>
+  <!-- Message on the sign-in screen, inviting the user to continue with an existing Mozilla account or create a new one -->
+  <string xmlns:ns0="http://schemas.android.com/tools" name="mozac_summarize_fxa_sign_in_message" ns0:ignore="BrandUsage">Feu servir el vostre compte de Mozilla per a continuar, o creeu-ne un per a començar.</string>
+  <!-- Label for the button that starts the sign-in flow -->
+  <string name="mozac_summarize_fxa_sign_in_button_positive">Inicia la sessió</string>
 </resources>
