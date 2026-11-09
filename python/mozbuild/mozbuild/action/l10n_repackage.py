@@ -274,7 +274,7 @@ def main(argv: list[str]) -> int:
         required=True,
         type=Path,
         help="L10n staging root, wiped and re-populated each run "
-        "(typically <topobjdir>/dist/l10n-stage/)",
+        "(typically <topobjdir>/dist/l10n-stage/<ab_cd>/)",
     )
     parser.add_argument(
         "--unpack-distdir",

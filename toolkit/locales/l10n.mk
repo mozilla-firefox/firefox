@@ -40,17 +40,19 @@ clobber-%:
 
 PACKAGER_NO_LIBS = 1
 
+L10N_STAGE = $(ABS_DIST)/l10n-stage/$(AB_CD)
+
 ifeq (cocoa,$(MOZ_WIDGET_TOOLKIT))
-STAGEDIST = $(ABS_DIST)/l10n-stage/$(MOZ_PKG_DIR)/$(MOZ_PKG_RESPATH)
+STAGEDIST = $(L10N_STAGE)/$(MOZ_PKG_DIR)/$(MOZ_PKG_RESPATH)
 else
-STAGEDIST = $(ABS_DIST)/l10n-stage/$(MOZ_PKG_DIR)
+STAGEDIST = $(L10N_STAGE)/$(MOZ_PKG_DIR)
 endif
 
 include $(MOZILLA_DIR)/toolkit/mozapps/installer/packager.mk
 
 repackage-zip-%: AB_CD=$*
 repackage-zip-%:
-	$(call py_action,l10n_repackage,--locale=$* --mach=$(topsrcdir)/mach --l10n-stage='$(DIST)/l10n-stage' --unpack-distdir='$(DIST)/l10n-stage/$(MOZ_PKG_DIR)' --en-us-package='$(foreach AB_CD,en-US,$(ABS_DIST)/$(PACKAGE))' --stagedist='$(STAGEDIST)' --xpi-stage='$(ABS_DIST)/xpi-stage/locale-$*' --pkg-dir='$(MOZ_PKG_DIR)' --pkg-format=$(MOZ_PKG_FORMAT) --pkg-filename='$(PACKAGE)' --tar=$(TAR) --output='$(ZIP_OUT)' --moz-widget-toolkit=$(MOZ_WIDGET_TOOLKIT) --os-arch=$(OS_ARCH) --installer-dir='$(DEPTH)/$(MOZ_BUILD_APP)/installer/windows' --real-locale-mergedir='$(REAL_LOCALE_MERGEDIR)' $(addprefix --extra-l10n=,$(MOZ_PKG_EXTRAL10N)) $(if $(filter omni,$(MOZ_PACKAGER_FORMAT)),$(addprefix --non-resource=,$(NON_OMNIJAR_FILES))) $(if $(MOZ_PACKAGER_MINIFY),--minify) $(MOZ_PACKAGE_EXTRA_ARGS))
+	$(call py_action,l10n_repackage,--locale=$* --mach=$(topsrcdir)/mach --l10n-stage='$(L10N_STAGE)' --unpack-distdir='$(L10N_STAGE)/$(MOZ_PKG_DIR)' --en-us-package='$(foreach AB_CD,en-US,$(ABS_DIST)/$(PACKAGE))' --stagedist='$(STAGEDIST)' --xpi-stage='$(ABS_DIST)/xpi-stage/locale-$*' --pkg-dir='$(MOZ_PKG_DIR)' --pkg-format=$(MOZ_PKG_FORMAT) --pkg-filename='$(PACKAGE)' --tar=$(TAR) --output='$(ZIP_OUT)' --moz-widget-toolkit=$(MOZ_WIDGET_TOOLKIT) --os-arch=$(OS_ARCH) --installer-dir='$(DEPTH)/$(MOZ_BUILD_APP)/installer/windows' --real-locale-mergedir='$(REAL_LOCALE_MERGEDIR)' $(addprefix --extra-l10n=,$(MOZ_PKG_EXTRAL10N)) $(if $(filter omni,$(MOZ_PACKAGER_FORMAT)),$(addprefix --non-resource=,$(NON_OMNIJAR_FILES))) $(if $(MOZ_PACKAGER_MINIFY),--minify) $(MOZ_PACKAGE_EXTRA_ARGS))
 
 # Dealing with app sub dirs: If DIST_SUBDIRS is defined it contains a
 # listing of app sub-dirs we should include in langpack xpis. If not,
