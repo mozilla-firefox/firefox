@@ -1789,6 +1789,7 @@ public class GeckoSession {
    *
    * @param settings The settings to configure this GeckoSession, or null to use defaults.
    */
+  @SuppressWarnings("this-escape")
   public GeckoSession(final @Nullable GeckoSessionSettings settings) {
     mSettings = new GeckoSessionSettings(settings, this);
     mListener.registerListeners();

@@ -110,6 +110,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
    * @param aAppContext A Context for retrieving application information.
    * @param aHandlerService Service receiving native code crashes
    */
+  @SuppressWarnings("this-escape")
   public CrashHandler(
       @Nullable final Context aAppContext,
       @Nullable final Class<? extends Service> aHandlerService) {
@@ -137,6 +138,7 @@ public class CrashHandler implements Thread.UncaughtExceptionHandler {
    * @param aAppContext A Context for retrieving application information.
    * @param aHandlerService Service receiving native code crashes
    */
+  @SuppressWarnings("this-escape")
   public CrashHandler(
       @Nullable final Thread thread,
       final Context aAppContext,

@@ -321,6 +321,7 @@ public class GeckoResult<T> {
    *
    * @param from The {@link GeckoResult} to copy.
    */
+  @SuppressWarnings("this-escape")
   public GeckoResult(final GeckoResult<T> from) {
     this();
     completeFrom(from);

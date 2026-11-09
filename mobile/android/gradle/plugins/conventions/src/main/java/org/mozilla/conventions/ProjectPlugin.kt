@@ -407,8 +407,6 @@ class ProjectPlugin : Plugin<Project> {
                     // Classfile, because javac has a bug with MethodParameters attributes
                     // with Java 7. https://bugs.openjdk.java.net/browse/JDK-8190452
                     "-Xlint:-classfile",
-                    // This-escape, because GeckoView API classes pass `this` out of their constructors.
-                    "-Xlint:-this-escape",
                 ),
             )
 
