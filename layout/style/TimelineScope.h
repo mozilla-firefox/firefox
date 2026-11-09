@@ -37,6 +37,7 @@ class TimelineScope final : public LinkedListElement<TimelineScope> {
   void SetNames(nsTArray<RefPtr<const nsAtom>>&& aNames) {
     mNames = std::move(aNames);
   }
+  const nsTArray<RefPtr<const nsAtom>>& Names() const { return mNames; }
   // An empty list represents `timeline-scope: all`.
   bool ScopesAll() const { return mNames.IsEmpty(); }
   bool Scopes(const nsAtom* aName) const {

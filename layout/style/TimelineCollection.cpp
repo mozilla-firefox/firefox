@@ -29,9 +29,6 @@ TimelineCollection<TimelineType>::~TimelineCollection() {
     }
   }
 
-  // FIXME: Bug 1774060. We have to restyle the animations which use the
-  // timelines associtated with this TimelineCollection.
-
   LinkedListElement<SelfType>::remove();
 }
 

@@ -6,6 +6,7 @@
 
 #include "AnimationCommon.h"
 #include "mozilla/Keyframe.h"
+#include "mozilla/Span.h"
 #include "mozilla/dom/CSSAnimation.h"
 #include "nsISupportsImpl.h"
 #include "nsTHashSet.h"
@@ -52,14 +53,24 @@ class nsAnimationManager final
                                     mozilla::dom::CSSAnimation* aAnimation);
 
   void UpdateDeferredTimelineChanges();
-  /* Update animations referring to named timelines, when some element
-   * starts/stops providing timeline of that name. Note that we only
-   * care about the name, because we cannot early-reject name changes
-   * based on the cascade level of the scoped name; we need to do the
-   * actual lookup. */
-  void UpdateNamedTimelineAnimations(
-      const nsTArray<RefPtr<const nsAtom>>& aChanged);
-  void UpdateAllNamedTimelineAnimations();
+  /* Request that animations referring to the given timeline names (or to any
+   * named timeline) look their timeline up again, because some element
+   * started/stopped providing or scoping a timeline of that name. The lookups
+   * run in FlushPendingNamedTimelineUpdates(), once the style traversal has
+   * registered all of its timelines. Note that we only care about the name,
+   * because we cannot early-reject name changes based on the cascade level of
+   * the scoped name; we need to do the actual lookup. */
+  void MarkNamedTimelineAnimationForUpdate(const nsAtom* aName);
+  void MarkNamedTimelineAnimationsForUpdate(
+      mozilla::Span<const RefPtr<const nsAtom>> aNames);
+  void MarkAllNamedTimelineAnimationsForUpdate() {
+    mAllNamedTimelineAnimationsPending = true;
+  }
+  bool HasPendingNamedTimelineUpdates() const {
+    return mAllNamedTimelineAnimationsPending ||
+           !mTimelineNamesPendingUpdate.IsEmpty();
+  }
+  void FlushPendingNamedTimelineUpdates();
 
   // Utility function to walk through |aIter| to find the Keyframe with
   // matching offset and timing function but stopping as soon as the offset
@@ -144,6 +155,14 @@ class nsAnimationManager final
   // Animations with updates to named timeline that may result in a null or
   // inactive timeline attachment.
   nsTHashSet<RefPtr<mozilla::dom::CSSAnimation>> mAnimationsWithDeferredUpdate;
+  // Timeline names whose animations need a new lookup, see
+  // MarkNamedTimelineAnimationsForUpdate().
+  nsTHashSet<RefPtr<const nsAtom>> mTimelineNamesPendingUpdate;
+  bool mAllNamedTimelineAnimationsPending = false;
+
+  void UpdateNamedTimelineAnimations(
+      const nsTHashSet<RefPtr<const nsAtom>>& aChanged);
+  void UpdateAllNamedTimelineAnimations();
 
   void DoUpdateAnimations(const mozilla::NonOwningAnimationTarget& aTarget,
                           const nsStyleUIReset& aStyle,

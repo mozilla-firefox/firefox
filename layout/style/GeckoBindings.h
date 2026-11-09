@@ -240,6 +240,11 @@ void Gecko_UpdateAnimations(const mozilla::dom::Element* aElementOrPseudo,
                             const mozilla::ComputedStyle* aComputedValues,
                             mozilla::UpdateAnimationsTasks aTasks);
 
+// Runs the named timeline lookups that Gecko_UpdateAnimations() deferred.
+// Called by the traversal of aRoot's subtree once its sequential tasks have
+// run, so every element of the traversal has registered its timelines.
+void Gecko_FlushPendingNamedTimelineUpdates(const mozilla::dom::Element* aRoot);
+
 size_t Gecko_GetAnimationEffectCount(
     const mozilla::dom::Element* aElementOrPseudo);
 bool Gecko_ElementHasAnimations(const mozilla::dom::Element* aElementOrPseudo);
