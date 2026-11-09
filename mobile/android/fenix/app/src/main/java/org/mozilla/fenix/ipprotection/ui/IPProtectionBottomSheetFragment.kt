@@ -16,21 +16,18 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.R as materialR
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import java.time.LocalDate
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import org.mozilla.fenix.NavGraphDirections
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.ext.requireComponents
-import org.mozilla.fenix.ipprotection.helpers.IsoPromoDeadline
-import org.mozilla.fenix.ipprotection.helpers.formatPromoDateOrCatch
 import org.mozilla.fenix.ipprotection.store.IPProtectionPromptAction
 import org.mozilla.fenix.ipprotection.store.IPProtectionPromptPreferencesMiddleware
 import org.mozilla.fenix.ipprotection.store.IPProtectionPromptState
+import org.mozilla.fenix.ipprotection.store.IPProtectionPromptState.PromptDetails
 import org.mozilla.fenix.ipprotection.store.IPProtectionPromptStore
 import org.mozilla.fenix.ipprotection.store.IPProtectionPromptTelemetryMiddleware
 import org.mozilla.fenix.ipprotection.store.Surface
-import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.theme.FirefoxTheme
 
@@ -41,19 +38,21 @@ class IPProtectionBottomSheetFragment : BottomSheetDialogFragment() {
 
     private var isAlreadyShowing: Boolean = false
 
-    private val ipProtectionPromptStore by
-        fragmentStore(IPProtectionPromptState) {
-            IPProtectionPromptStore(
-                initialState = it,
-                middleware =
-                    listOf(
-                        IPProtectionPromptPreferencesMiddleware(
-                            repository = requireComponents.ipProtectionPromptRepository
+    private val ipProtectionPromptStore by lazy {
+        fragmentStore(IPProtectionPromptState(args.promptDetails)) {
+                IPProtectionPromptStore(
+                    initialState = it,
+                    middleware =
+                        listOf(
+                            IPProtectionPromptPreferencesMiddleware(
+                                repository = requireComponents.ipProtectionPromptRepository
+                            ),
+                            IPProtectionPromptTelemetryMiddleware(),
                         ),
-                        IPProtectionPromptTelemetryMiddleware(),
-                    ),
-            )
-        }
+                )
+            }
+            .value
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,18 +86,10 @@ class IPProtectionBottomSheetFragment : BottomSheetDialogFragment() {
     ): View {
         isAlreadyShowing = savedInstanceState?.getBoolean(IS_ALREADY_SHOW_KEY) ?: false
         ipProtectionPromptStore.dispatch(IPProtectionPromptAction.OnPromptCreated)
-        val maxGib = FxNimbus.features.ipProtection.value().dataLimitGigabyte
-        val formattedPromoDate =
-            FxNimbus.features.ipProtection.value().promoDeadline.let { promoDate ->
-                IsoPromoDeadline(promoDate)
-                    .formatPromoDateOrCatch { requireComponents.analytics.crashReporter.submitCaughtException(it) }
-                    ?.takeIf { LocalDate.now() <= LocalDate.parse(promoDate) }
-            }
         return content {
             FirefoxTheme {
                 IPProtectionBottomSheet(
-                    maxGib = maxGib,
-                    formattedPromoDate = formattedPromoDate,
+                    state = ipProtectionPromptStore.state,
                     onDismiss = { dismiss() },
                     onDismissRequest = {
                         ipProtectionPromptStore.dispatch(
@@ -157,14 +148,22 @@ class IPProtectionBottomSheetFragment : BottomSheetDialogFragment() {
          *
          * @param fragment The [Fragment] whose fragment manager shows the prompt.
          * @param surface The [Surface] the prompt is shown on.
+         * @param promptDetails The details of the onboarding prompt to display.
          */
-        fun showPrompt(fragment: Fragment, surface: Surface) {
+        fun showPrompt(fragment: Fragment, surface: Surface, promptDetails: PromptDetails) {
             if (fragment.parentFragmentManager.findFragmentByTag(TAG) != null) {
                 return
             }
 
             IPProtectionBottomSheetFragment()
-                .apply { arguments = IPProtectionBottomSheetFragmentArgs(surface).toBundle() }
+                .apply {
+                    arguments =
+                        IPProtectionBottomSheetFragmentArgs(
+                                surface = surface,
+                                promptDetails = promptDetails,
+                            )
+                            .toBundle()
+                }
                 .showNow(fragment.parentFragmentManager, TAG)
         }
     }

@@ -27,6 +27,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ipprotection.store.IPProtectionOnboardingPrompt
 import org.mozilla.fenix.ipprotection.store.IPProtectionPromptRepository
+import org.mozilla.fenix.ipprotection.store.IPProtectionPromptState.PromptDetails
 import org.mozilla.fenix.onboarding.DismissedMethod
 import org.mozilla.fenix.onboarding.OnboardingTelemetryRecorder
 import org.mozilla.fenix.onboarding.OnboardingTelemetryRecorder.Companion.ET_CARD_CLOSE_BUTTON
@@ -46,7 +47,7 @@ import org.mozilla.fenix.utils.Settings
 class IPProtectionOnboardingConfig(
     val store: IPProtectionStore,
     val promptRepository: IPProtectionPromptRepository,
-    val navigateToIpProtection: () -> Unit,
+    val navigateToIpProtection: (PromptDetails) -> Unit,
 )
 
 /**
@@ -81,11 +82,13 @@ class ContinuousOnboardingFeature(
     private val ipProtectionBinding =
         IPProtectionOnboardingPrompt(
             repository = ipProtectionOnboardingConfig.promptRepository,
+            crashReporter = activity.components.analytics.crashReporter,
             mainDispatcher = ipProtectionMainDispatcher,
             store = ipProtectionOnboardingConfig.store,
-            onShowOnboarding = {
-                logger.info("Showing IP Protection onboarding prompt.")
-                ipProtectionOnboardingConfig.navigateToIpProtection()
+            onShowOnboarding = { promptDetails ->
+                logger.info("Showing IP Protection onboarding prompt: $promptDetails")
+                // Invalid Nimbus config: skip the prompt but still complete the stage.
+                promptDetails?.let { ipProtectionOnboardingConfig.navigateToIpProtection(it) }
                 completeDaySeven()
             },
             onIneligible = {
@@ -442,7 +445,7 @@ class ContinuousOnboardingFeature(
          * @param launcher The [ActivityResultLauncher] used to request system roles.
          * @param telemetryRecorder Used to record onboarding telemetry.
          * @param navigateToSyncSignIn Invoked when the user chooses to sign in to Firefox Sync.
-         * @param navigateToIpProtection Invoked when the IP Protection onboarding prompt should be shown.
+         * @param navigateToIpProtection Invoked with the IP Protection onboarding prompt details.
          */
         fun register(
             fragment: Fragment,
@@ -450,7 +453,7 @@ class ContinuousOnboardingFeature(
             launcher: ActivityResultLauncher<Intent>,
             telemetryRecorder: OnboardingTelemetryRecorder,
             navigateToSyncSignIn: () -> Unit,
-            navigateToIpProtection: () -> Unit,
+            navigateToIpProtection: (PromptDetails) -> Unit,
         ) {
             val components = fragment.requireContext().components
             val settings = components.settings

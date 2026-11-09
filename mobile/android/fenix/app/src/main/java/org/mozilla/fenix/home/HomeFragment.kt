@@ -1647,8 +1647,12 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                             ),
                     )
             },
-            navigateToIpProtection = {
-                IPProtectionBottomSheetFragment.showPrompt(fragment = this, surface = IPProtectionSurface.HOMEPAGE)
+            navigateToIpProtection = { promptDetails ->
+                IPProtectionBottomSheetFragment.showPrompt(
+                    fragment = this,
+                    surface = IPProtectionSurface.HOMEPAGE,
+                    promptDetails = promptDetails,
+                )
             },
         )
     }

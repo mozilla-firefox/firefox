@@ -4,13 +4,40 @@
 
 package org.mozilla.fenix.ipprotection.store
 
+import android.os.Parcelable
+import androidx.compose.runtime.Stable
+import java.time.LocalDate
+import kotlinx.parcelize.Parcelize
 import mozilla.components.lib.state.Action
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.State
 import mozilla.components.lib.state.Store
 
-/** [State] for the IP Protection prompt. */
-data object IPProtectionPromptState : State
+/**
+ * [State] for the IP Protection prompt.
+ *
+ * @property details The details of the onboarding prompt to display.
+ */
+data class IPProtectionPromptState(val details: PromptDetails) : State {
+    /** Details of an IP Protection onboarding prompt. */
+    @Stable
+    sealed interface PromptDetails : Parcelable {
+
+        /**
+         * Details for a regular IP Protection onboarding prompt.
+         *
+         * @property dataLimitGigabytes The data limit in gigabytes to show in the prompt
+         */
+        @Parcelize data class Regular(val dataLimitGigabytes: Int) : PromptDetails
+
+        /**
+         * Details for an unlimited data promo prompt.
+         *
+         * @property promoDeadline The date object representing the end of the promotion
+         */
+        @Parcelize data class UnlimitedDataPromo(val promoDeadline: LocalDate) : PromptDetails
+    }
+}
 
 /** [Action] related to [IPProtectionPromptStore]. */
 sealed interface IPProtectionPromptAction : Action {
@@ -59,11 +86,11 @@ sealed interface IPProtectionPromptAction : Action {
 
 /** A [Store] that holds the [IPProtectionPromptState]. */
 class IPProtectionPromptStore(
-    initialState: IPProtectionPromptState = IPProtectionPromptState,
+    initialState: IPProtectionPromptState,
     middleware: List<Middleware<IPProtectionPromptState, IPProtectionPromptAction>>,
 ) :
     Store<IPProtectionPromptState, IPProtectionPromptAction>(
         initialState = initialState,
-        reducer = { _, _ -> IPProtectionPromptState },
+        reducer = { state, _ -> state },
         middleware = middleware,
     )

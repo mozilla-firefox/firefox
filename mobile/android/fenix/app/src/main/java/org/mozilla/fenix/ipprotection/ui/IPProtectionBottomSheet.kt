@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import kotlinx.coroutines.launch
 import mozilla.components.compose.base.LinkText
 import mozilla.components.compose.base.LinkTextState
@@ -49,6 +50,9 @@ import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import org.mozilla.fenix.R
+import org.mozilla.fenix.ipprotection.helpers.formatPromoDate
+import org.mozilla.fenix.ipprotection.store.IPProtectionPromptState
+import org.mozilla.fenix.ipprotection.store.IPProtectionPromptState.PromptDetails
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val bannerImageSize = 170.dp
@@ -58,10 +62,7 @@ private val sheetMaxWidth = 450.dp
 /**
  * The IP Protection onboarding prompt.
  *
- * @param maxGib The total monthly allowance in GB for unpaid users.
- * @param formattedPromoDate Locale-formatted end date for the promo copy shown when [maxGib] is 0. `null` means the
- *   promo cannot be rendered (e.g. Nimbus shipped a malformed date) and the sheet should fall back to the standard
- *   onboarding copy.
+ * @param state The state representing the onboarding prompt.
  * @param onDismiss The callback to invoke when the prompt is dismissed.
  * @param onDismissRequest The callback to invoke when the user clicks outside of the bottom sheet, after sheet animates
  *   to Hidden. See [ModalBottomSheet].
@@ -74,8 +75,7 @@ private val sheetMaxWidth = 450.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IPProtectionBottomSheet(
-    maxGib: Int,
-    formattedPromoDate: String?,
+    state: IPProtectionPromptState,
     onDismiss: () -> Unit,
     onDismissRequest: () -> Unit,
     onLearnMoreClicked: () -> Unit,
@@ -89,8 +89,7 @@ fun IPProtectionBottomSheet(
     }
 
     BottomSheet(
-        maxGib = maxGib,
-        formattedPromoDate = formattedPromoDate,
+        details = state.details,
         sheetState = sheetState,
         onDismiss = onDismiss,
         onDismissRequest = onDismissRequest,
@@ -103,8 +102,7 @@ fun IPProtectionBottomSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BottomSheet(
-    maxGib: Int,
-    formattedPromoDate: String?,
+    details: PromptDetails,
     sheetState: SheetState,
     onDismiss: () -> Unit = {},
     onDismissRequest: () -> Unit = {},
@@ -119,8 +117,7 @@ private fun BottomSheet(
         containerColor = MaterialTheme.colorScheme.surface,
     ) {
         BottomSheetContent(
-            maxGib = maxGib,
-            formattedPromoDate = formattedPromoDate,
+            details = details,
             sheetState = sheetState,
             onDismiss = onDismiss,
             onLearnMoreClicked = onLearnMoreClicked,
@@ -133,8 +130,7 @@ private fun BottomSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BottomSheetContent(
-    maxGib: Int,
-    formattedPromoDate: String?,
+    details: PromptDetails,
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onLearnMoreClicked: () -> Unit,
@@ -162,20 +158,17 @@ private fun BottomSheetContent(
 
                 Spacer(Modifier.height(16.dp))
 
-                if (formattedPromoDate != null) {
-                    IPProtectionPromoContent(
-                        formattedDate = formattedPromoDate,
-                        onLearnMoreClicked = onLearnMoreClicked,
-                    )
-                } else if (maxGib > 0) {
-                    IPProtectionContent(
-                        maxGib = maxGib,
-                        onLearnMoreClicked = onLearnMoreClicked,
-                    )
-                } else {
-                    // We don't want to render incorrect content if we don't have
-                    // these two data sources, so we fallback to nothing which is better
-                    // than promoting an incorrect metered or unmetered feature.
+                when (details) {
+                    is PromptDetails.UnlimitedDataPromo ->
+                        IPProtectionPromoContent(
+                            formattedDate = details.promoDeadline.formatPromoDate(),
+                            onLearnMoreClicked = onLearnMoreClicked,
+                        )
+                    is PromptDetails.Regular ->
+                        IPProtectionContent(
+                            maxGib = details.dataLimitGigabytes,
+                            onLearnMoreClicked = onLearnMoreClicked,
+                        )
                 }
             }
         }
@@ -320,14 +313,27 @@ private fun BetaBadge() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @FlexibleWindowPreview
 @Composable
 private fun IPProtectionBottomSheetPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
     FirefoxTheme(theme = theme) {
         IPProtectionBottomSheet(
-            maxGib = 50,
-            formattedPromoDate = "Jun 9",
+            state = IPProtectionPromptState(PromptDetails.Regular(dataLimitGigabytes = 50)),
+            onDismiss = {},
+            onDismissRequest = {},
+            onGetStartedClicked = {},
+            onLearnMoreClicked = {},
+            onNotNowClicked = {},
+        )
+    }
+}
+
+@FlexibleWindowPreview
+@Composable
+private fun IPProtectionPromoBottomSheetPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
+    FirefoxTheme(theme = theme) {
+        IPProtectionBottomSheet(
+            state = IPProtectionPromptState(PromptDetails.UnlimitedDataPromo(LocalDate.parse("2026-06-09"))),
             onDismiss = {},
             onDismissRequest = {},
             onGetStartedClicked = {},

@@ -399,8 +399,12 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
                             ),
                     )
             },
-            navigateToIpProtection = {
-                IPProtectionBottomSheetFragment.showPrompt(fragment = this, surface = IPProtectionSurface.BROWSER)
+            navigateToIpProtection = { promptDetails ->
+                IPProtectionBottomSheetFragment.showPrompt(
+                    fragment = this,
+                    surface = IPProtectionSurface.BROWSER,
+                    promptDetails = promptDetails,
+                )
             },
         )
     }

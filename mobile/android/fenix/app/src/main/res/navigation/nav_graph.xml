@@ -382,6 +382,10 @@
             android:name="surface"
             app:argType="org.mozilla.fenix.ipprotection.store.Surface"
             app:nullable="false" />
+        <argument
+            android:name="promptDetails"
+            app:argType="org.mozilla.fenix.ipprotection.store.IPProtectionPromptState$PromptDetails"
+            app:nullable="false" />
     </dialog>
 
     <dialog

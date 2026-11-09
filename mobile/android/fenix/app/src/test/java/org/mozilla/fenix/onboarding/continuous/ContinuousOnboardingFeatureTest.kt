@@ -36,6 +36,9 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.ipprotection.FakeIPProtectionPromptRepository
+import org.mozilla.fenix.ipprotection.store.IPProtectionPromptState.PromptDetails
+import org.mozilla.fenix.nimbus.FxNimbus
+import org.mozilla.fenix.nimbus.IpProtection
 import org.mozilla.fenix.onboarding.OnboardingReason
 import org.mozilla.fenix.onboarding.OnboardingTelemetryRecorder
 import org.mozilla.fenix.onboarding.view.Action
@@ -64,6 +67,7 @@ class ContinuousOnboardingFeatureTest {
 
     @Before
     fun setup() {
+        FxNimbus.features.ipProtection.withCachedValue(IpProtection(promoDeadline = "", dataLimitGigabyte = 50))
         activity = Robolectric.buildActivity(AppCompatActivity::class.java).create().get()
         settings = Settings(testContext)
         telemetryRecorder =
@@ -374,7 +378,7 @@ class ContinuousOnboardingFeatureTest {
     fun `WHEN stage is DAY_7 AND eligibility and account become ready AND repository allows THEN navigateToIpProtection is invoked and seventh day timestamp is saved`() =
         runTest(testDispatcher) {
             settings.continuousOnboardingFeatureEnabled = true
-            var navigateToIpProtectionInvoked = false
+            var actualPromptDetails: PromptDetails? = null
             val feature =
                 ContinuousOnboardingFeature(
                     activity = activity,
@@ -388,7 +392,9 @@ class ContinuousOnboardingFeatureTest {
                         IPProtectionOnboardingConfig(
                             store = ipProtectionStore,
                             promptRepository = ipProtectionPromptRepository,
-                            navigateToIpProtection = { navigateToIpProtectionInvoked = true },
+                            navigateToIpProtection = { promptDetails ->
+                                actualPromptDetails = promptDetails
+                            },
                         ),
                     ipProtectionMainDispatcher = testDispatcher,
                 )
@@ -400,7 +406,7 @@ class ContinuousOnboardingFeatureTest {
             ipProtectionStore.dispatch(IPProtectionAction.AccountAction.AccountStateChanged(AccountStatus.NoAccount))
             testDispatcher.scheduler.advanceUntilIdle()
 
-            assertTrue(navigateToIpProtectionInvoked)
+            assertEquals(PromptDetails.Regular(50), actualPromptDetails)
             assertEquals(dateTimeProvider.currentTimeMillis(), settings.seventhDayOnboardingCompletedTimestamp)
         }
 
