@@ -98,6 +98,9 @@ with Files("test/browser-tabcrashed/**"):
 with Files("test/browser-touch/**"):
     BUG_COMPONENT = ("Firefox", "General")
 
+with Files("test/browser-trustPanel/**"):
+    BUG_COMPONENT = ("Firefox", "Protections UI")
+
 with Files("test/browser-utilityOverlay/**"):
     BUG_COMPONENT = ("Firefox", "Tabbed Browser")
 

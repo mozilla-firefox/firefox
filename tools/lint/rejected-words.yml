@@ -51,6 +51,10 @@ avoid-blacklist-and-whitelist:
         - browser/base/content/test/browser-protectionsUI/browser_protectionsUI_subview_shim.js
         - browser/base/content/test/browser-safebrowsing/browser_whitelisted.js
         - browser/base/content/test/browser-siteIdentity/browser_no_mcb_for_loopback.js
+        - browser/base/content/test/browser-trustPanel/browser_trust_panel.js
+        - browser/base/content/test/browser-trustPanel/browser_trust_panel_icon.js
+        - browser/base/content/test/browser-trustPanel/browser_trust_panel_privacy_metrics_alignment.js
+        - browser/base/content/test/browser-trustPanel/browser_trust_panel_telemetry.js
         - browser/components/enterprisepolicies/Policies.sys.mjs
         - browser/components/migration/ChromeMigrationUtils.sys.mjs
         - browser/components/migration/ChromeProfileMigrator.sys.mjs
@@ -62,10 +66,6 @@ avoid-blacklist-and-whitelist:
         - browser/components/tabbrowser/test/browser/tabs/browser_new_file_whitelisted_http_tab.js
         - browser/components/tabbrowser/test/browser/tabs/browser_tab_drag_drop_perwindow.js
         - browser/components/urlbar/tests/browser-search/browser_searchSingleWordNotification.js
-        - browser/components/urlbar/tests/browser-trustPanel/browser_trust_panel.js
-        - browser/components/urlbar/tests/browser-trustPanel/browser_trust_panel_icon.js
-        - browser/components/urlbar/tests/browser-trustPanel/browser_trust_panel_privacy_metrics_alignment.js
-        - browser/components/urlbar/tests/browser-trustPanel/browser_trust_panel_telemetry.js
         - browser/components/urlbar/tests/browser-UrlbarInput/browser_trimURLs.js
         - browser/components/urlbar/tests/unit/test_providerHeuristicFallback.js
         - browser/components/urlbar/tests/unit/test_search_suggestions.js

@@ -34,7 +34,7 @@ const OTHER_HOST_TRACKING_PAGE =
 // given a ?redirect=<url> query.
 const NO_CONTENT_URL =
   // eslint-disable-next-line sdl/no-insecure-url
-  "http://another-tracking.example.net/browser/browser/components/urlbar/tests/browser-trustPanel/navigation.sjs";
+  "http://another-tracking.example.net/browser/browser/base/content/test/browser-trustPanel/navigation.sjs";
 
 const TEST_BREACH = {
   // Make sure the breach is a recent one, since breaches older than a year are not taken into account:

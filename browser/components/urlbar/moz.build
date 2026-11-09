@@ -111,7 +111,6 @@ BROWSER_CHROME_MANIFESTS += [
     "tests/browser-telemetry/browser.toml",
     "tests/browser-tips/browser.toml",
     "tests/browser-tips/suppress-tips/browser.toml",
-    "tests/browser-trustPanel/browser.toml",
     "tests/browser-updateResults/browser.toml",
     "tests/browser-UrlbarInput/browser.toml",
     "tests/browser-UrlbarView/browser.toml",
