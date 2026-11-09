@@ -18,6 +18,7 @@ from datetime import datetime
 from itertools import dropwhile, islice, takewhile
 from pathlib import Path
 from textwrap import TextWrapper
+from types import SimpleNamespace
 
 from mach.logging import BUILD_ERROR, SUPPRESSED_WARNING, THIRD_PARTY_WARNING
 from mach.site import CommandSiteManager
@@ -32,6 +33,13 @@ import mozpack.path as mozpath
 from mach.mixin.logging import LoggingMixin
 from mach.util import get_state_dir, get_virtualenv_base_dir
 from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
+from mozversioncontrol import (
+    InvalidRepoPath,
+    MissingVCSInfo,
+    MissingVCSTool,
+    StaleWorkspaceError,
+    get_repository_from_build_config,
+)
 from rich.console import Console
 from rich.live import Live
 from rich.text import Text
@@ -1265,6 +1273,56 @@ def write_buildid(topobjdir, substs, environ, what=None):
         fh.write(f"{buildid}\n")
 
 
+SOURCE_REPO_FILE = "source-repo.txt"
+SOURCESTAMP_FILENAME = "sourcestamp.txt"
+
+
+def get_info_from_sourcestamp(sourcestamp_path):
+    """Return the repository and changeset from a sourcestamp file, or
+    (None, None) when it does not hold a build id and then a source URL.
+    """
+    with open(sourcestamp_path) as f:
+        lines = f.read().splitlines()
+
+    if len(lines) != 2 or not lines[1].startswith("http"):
+        return None, None
+
+    for separator in ["/rev/", "/commit/"]:
+        if separator in lines[1]:
+            return lines[1].split(separator)
+    return None, None
+
+
+def write_source_repo(topobjdir, topsrcdir, substs):
+    # We allow the source repo and changeset to be specified via the
+    # environment (see configure)
+    repo = substs.get("MOZ_SOURCE_REPO")
+    changeset = substs.get("MOZ_SOURCE_CHANGESET")
+    if not repo:
+        sourcestamp_path = mozpath.join(topsrcdir, SOURCESTAMP_FILENAME)
+        if os.path.exists(sourcestamp_path):
+            repo, changeset = get_info_from_sourcestamp(sourcestamp_path)
+    elif not changeset:
+        try:
+            changeset = get_repository_from_build_config(
+                SimpleNamespace(topsrcdir=topsrcdir, substs=substs)
+            ).head_rev
+        except (
+            InvalidRepoPath,
+            MissingVCSInfo,
+            MissingVCSTool,
+            StaleWorkspaceError,
+            subprocess.CalledProcessError,
+        ):
+            pass
+        if not changeset:
+            raise Exception(
+                "could not resolve changeset; try setting MOZ_SOURCE_CHANGESET"
+            )
+    with FileAvoidWrite(mozpath.join(topobjdir, SOURCE_REPO_FILE)) as fh:
+        fh.write(f"{changeset or ''}\n{repo or ''}\n")
+
+
 class BuildDriver(MozbuildObject):
     """Provides a high-level API for build actions."""
 
@@ -1468,6 +1526,7 @@ class BuildDriver(MozbuildObject):
                 self.ensure_backend_current()
 
             write_buildid(self.topobjdir, substs, os.environ, what)
+            write_source_repo(self.topobjdir, self.topsrcdir, substs)
 
             jobs = self.resolve_num_jobs(jobs, job_size)
 
