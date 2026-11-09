@@ -3369,6 +3369,127 @@ TEST(EncodeAPI, HighbdEncoderI420ImageMismatch) {
 TEST(EncodeAPI, NonHighbdEncoderI42016ImageMismatch) {
   TestEncoderImageMismatch(false);
 }
+
+// Verifies that validate_img() rejects high bit-depth images whose plane
+// pointers or byte strides are not 2-byte aligned.
+// Bug: 578678096
+TEST(EncodeAPI, HighbdMisalignedPlanesAndStrides) {
+  vpx_codec_iface_t *const iface = vpx_codec_vp9_cx();
+  vpx_codec_ctx_t enc;
+  vpx_codec_enc_cfg_t cfg;
+
+  ASSERT_EQ(vpx_codec_enc_config_default(iface, &cfg, /*usage=*/0),
+            VPX_CODEC_OK);
+
+  const unsigned int kWidth = 72;
+  const unsigned int kHeight = 72;
+  const int kStride = 256;
+  cfg.g_w = kWidth;
+  cfg.g_h = kHeight;
+  cfg.g_profile = 2;
+  cfg.g_bit_depth = VPX_BITS_10;
+  cfg.g_input_bit_depth = 10;
+  cfg.g_pass = VPX_RC_ONE_PASS;
+  cfg.g_lag_in_frames = 0;
+  cfg.rc_end_usage = VPX_Q;
+  cfg.rc_min_quantizer = 0;
+  cfg.rc_max_quantizer = 0;
+
+  ASSERT_EQ(vpx_codec_enc_init(&enc, iface, &cfg, VPX_CODEC_USE_HIGHBITDEPTH),
+            VPX_CODEC_OK);
+  ASSERT_EQ(vpx_codec_control(&enc, VP8E_SET_CPUUSED, 6), VPX_CODEC_OK);
+  ASSERT_EQ(vpx_codec_control(&enc, VP8E_SET_CQ_LEVEL, 0), VPX_CODEC_OK);
+
+  std::vector<uint8_t> buf(kStride * kHeight * 3 + 16, 0);
+  // Ensure base is 2-byte aligned so base + 1 is guaranteed to be odd and
+  // base + 2 is guaranteed to be even.
+  uint8_t *base = buf.data();
+  if (reinterpret_cast<uintptr_t>(base) & 1) {
+    ++base;
+  }
+
+  // Populate a 4x4 checkerboard pattern of [0x00, 0x7F] / [0x00, 0x80] in the
+  // right-most 8x8 column. At base + 1 (odd), these 16-bit little-endian words
+  // are 0x007F / 0x0080 (< 1024); at base + 0 (even), they are 0x7F00 / 0x8000.
+  for (unsigned int y = 0; y < kHeight; ++y) {
+    for (unsigned int x = 64; x < kWidth; ++x) {
+      const size_t idx = y * kStride + x * 2;
+      const bool sx = (x & 3) < 2;
+      const bool sy = (y & 3) < 2;
+      base[idx] = 0x00;
+      base[idx + 1] = (sx ^ sy) ? 0x80 : 0x7F;
+    }
+  }
+
+  vpx_image_t img;
+  memset(&img, 0, sizeof(img));
+  ASSERT_EQ(vpx_img_wrap(&img, VPX_IMG_FMT_I42016, kWidth, kHeight, 1, base),
+            &img);
+  uint8_t *const aligned_y = base + 2;
+  uint8_t *const aligned_u = base + kStride * kHeight + 2;
+  uint8_t *const aligned_v = base + kStride * kHeight * 2 + 2;
+  auto reset_valid_img = [&]() {
+    img.planes[VPX_PLANE_Y] = aligned_y;
+    img.planes[VPX_PLANE_U] = aligned_u;
+    img.planes[VPX_PLANE_V] = aligned_v;
+    img.stride[VPX_PLANE_Y] = kStride;
+    img.stride[VPX_PLANE_U] = kStride;
+    img.stride[VPX_PLANE_V] = kStride;
+  };
+
+  // 1. Odd plane pointers on Y, U, or V must be rejected.
+  for (int plane = 0; plane < 3; ++plane) {
+    reset_valid_img();
+    img.planes[plane] -= 1;  // Odd byte address.
+    EXPECT_EQ(vpx_codec_encode(&enc, &img, /*pts=*/0, /*duration=*/1,
+                               /*flags=*/VPX_EFLAG_FORCE_KF, VPX_DL_REALTIME),
+              VPX_CODEC_INVALID_PARAM);
+  }
+
+  // 2. Odd byte strides on Y or U/V must be rejected.
+  reset_valid_img();
+  img.stride[VPX_PLANE_Y] = kStride + 1;
+  EXPECT_EQ(vpx_codec_encode(&enc, &img, /*pts=*/0, /*duration=*/1,
+                             /*flags=*/VPX_EFLAG_FORCE_KF, VPX_DL_REALTIME),
+            VPX_CODEC_INVALID_PARAM);
+
+  reset_valid_img();
+  img.stride[VPX_PLANE_U] = kStride + 1;
+  img.stride[VPX_PLANE_V] = kStride + 1;
+  EXPECT_EQ(vpx_codec_encode(&enc, &img, /*pts=*/0, /*duration=*/1,
+                             /*flags=*/VPX_EFLAG_FORCE_KF, VPX_DL_REALTIME),
+            VPX_CODEC_INVALID_PARAM);
+
+  // 3. Even with VP9E_SET_VALIDATE_HBD_INPUT disabled, odd plane pointers and
+  // strides must still be rejected because CONVERT_TO_BYTEPTR and stride >>= 1
+  // require 2-byte alignment.
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_VALIDATE_HBD_INPUT, 0),
+            VPX_CODEC_OK);
+  reset_valid_img();
+  img.planes[VPX_PLANE_Y] -= 1;
+  EXPECT_EQ(vpx_codec_encode(&enc, &img, /*pts=*/0, /*duration=*/1,
+                             /*flags=*/VPX_EFLAG_FORCE_KF, VPX_DL_REALTIME),
+            VPX_CODEC_INVALID_PARAM);
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_VALIDATE_HBD_INPUT, 1),
+            VPX_CODEC_OK);
+
+  // 4. At the 2-byte aligned address (base + 2), the crafted bytes read as
+  // 0x7F00 / 0x8000 (>= 1024) and are rejected by validate_hbd_input.
+  // Moving the valid 10-bit samples (0x007F / 0x0080) to the 2-byte aligned
+  // plane address allows the frame to encode cleanly.
+  reset_valid_img();
+  EXPECT_EQ(vpx_codec_encode(&enc, &img, /*pts=*/0, /*duration=*/1,
+                             /*flags=*/VPX_EFLAG_FORCE_KF, VPX_DL_REALTIME),
+            VPX_CODEC_INVALID_PARAM);
+
+  memmove(base, base + 1, kStride * kHeight * 3);
+  reset_valid_img();
+  EXPECT_EQ(vpx_codec_encode(&enc, &img, /*pts=*/0, /*duration=*/1,
+                             /*flags=*/VPX_EFLAG_FORCE_KF, VPX_DL_REALTIME),
+            VPX_CODEC_OK);
+
+  ASSERT_EQ(vpx_codec_destroy(&enc), VPX_CODEC_OK);
+}
 #endif
 
 TEST(EncodeAPI, SvcTestInvalidInputs) {
@@ -3901,6 +4022,36 @@ TEST(EncodeAPI, Vp9SvcEmptySuperframe) {
   ASSERT_EQ(vpx_codec_destroy(&codec), VPX_CODEC_OK);
 }
 
+// Increase the resolution with vpx_codec_enc_config_set() to a size whose
+// context buffers exceed VPX_MAX_ALLOCABLE_MEMORY, then destroy the encoder.
+// The failed reallocation must not leave freed buffers referenced by the
+// encoder. The allocation limit is only low enough to fail deterministically
+// when size_t is 32 bits.
+#if SIZE_MAX <= UINT32_MAX
+TEST(EncodeAPI, ConfigResizeAllocFailureVp9) {
+  vpx_codec_iface_t *const iface = vpx_codec_vp9_cx();
+  vpx_codec_enc_cfg_t cfg;
+  vpx_codec_ctx_t enc;
+
+  ASSERT_EQ(vpx_codec_enc_config_default(iface, &cfg, 0), VPX_CODEC_OK);
+  EXPECT_NO_FATAL_FAILURE(InitCodec(*iface, 64, 64, &enc, &cfg));
+
+  vpx_image_t *img = CreateImage(VPX_BITS_8, VPX_IMG_FMT_I420, 64, 64);
+  ASSERT_NE(img, nullptr);
+  ASSERT_EQ(vpx_codec_encode(&enc, img, 0, 1, 0, VPX_DL_REALTIME),
+            VPX_CODEC_OK);
+  vpx_img_free(img);
+
+  // 46340 is the largest size whose square fits in an int, as frame size
+  // computations in the encoder require.
+  cfg.g_w = 46340;
+  cfg.g_h = 46340;
+  EXPECT_EQ(vpx_codec_enc_config_set(&enc, &cfg), VPX_CODEC_MEM_ERROR);
+
+  EXPECT_EQ(vpx_codec_destroy(&enc), VPX_CODEC_OK);
+}
+#endif  // SIZE_MAX <= UINT32_MAX
+
 // Encode one pass VBR with nonzero-lookahead, with resize and realtime mode.
 // Test for the re-allocation of count_arf_frame_usage and
 // count_lastgolden_frame_usage. Bug: 515433297.
@@ -4406,6 +4557,124 @@ TEST(EncodeAPI, SvcResizeUnscaledReferenceMotionSearch) {
     }
     vpx_img_free(img);
   }
+
+  ASSERT_EQ(vpx_codec_destroy(&enc), VPX_CODEC_OK);
+}
+
+// Bug: 575903327.
+// Test that dynamically enabling a higher spatial layer (with SL0 disabled)
+// in 1-pass CBR flexible SVC mode at speed 8 does not use a stale/freed
+// reference buffer pointer in get_estimated_pred() when the new spatial
+// layer's LAST_FRAME buffer slot is unallocated (NULL).
+TEST(EncodeAPI, SvcGetEstimatedPredStaleReference) {
+  vpx_codec_iface_t *const iface = vpx_codec_vp9_cx();
+  vpx_codec_enc_cfg_t cfg;
+  ASSERT_EQ(vpx_codec_enc_config_default(iface, &cfg, 0), VPX_CODEC_OK);
+
+  cfg.g_w = 64;
+  cfg.g_h = 36;
+  cfg.g_lag_in_frames = 0;
+  cfg.g_pass = VPX_RC_ONE_PASS;
+  cfg.rc_end_usage = VPX_CBR;
+  cfg.rc_target_bitrate = 60;
+  cfg.g_threads = 2;
+  cfg.ss_number_layers = 3;
+  cfg.ts_number_layers = 1;
+  cfg.temporal_layering_mode = VP9E_TEMPORAL_LAYERING_MODE_BYPASS;
+  cfg.ss_target_bitrate[0] = 60;
+  cfg.layer_target_bitrate[0] = 60;
+  cfg.ss_target_bitrate[1] = 0;
+  cfg.layer_target_bitrate[1] = 0;
+  cfg.ss_target_bitrate[2] = 0;
+  cfg.layer_target_bitrate[2] = 0;
+  cfg.ts_rate_decimator[0] = 1;
+
+  vpx_codec_ctx_t enc;
+  ASSERT_EQ(vpx_codec_enc_init(&enc, iface, &cfg, 0), VPX_CODEC_OK);
+  ASSERT_EQ(vpx_codec_control(&enc, VP8E_SET_CPUUSED, 8), VPX_CODEC_OK);
+
+  vpx_svc_extra_cfg_t svc_cfg = {};
+  for (int i = 0; i < VPX_MAX_LAYERS; ++i) {
+    svc_cfg.max_quantizers[i] = 56;
+    svc_cfg.min_quantizers[i] = 2;
+    svc_cfg.scaling_factor_num[i] = 1;
+    svc_cfg.scaling_factor_den[i] = 1;
+    svc_cfg.speed_per_layer[i] = 8;
+  }
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_SVC_PARAMETERS, &svc_cfg),
+            VPX_CODEC_OK);
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_SVC, 1), VPX_CODEC_OK);
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_SVC_INTER_LAYER_PRED,
+                              INTER_LAYER_PRED_OFF),
+            VPX_CODEC_OK);
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_ROW_MT, 1), VPX_CODEC_OK);
+
+  // Encode 2 frames on SL0 (64x36) using buffer slot 0.
+  vpx_image_t *img = CreateImage(VPX_BITS_8, VPX_IMG_FMT_I420, 64, 36);
+  ASSERT_NE(img, nullptr);
+  vpx_codec_pts_t pts = 0;
+  for (int i = 0; i < 2; ++i) {
+    vpx_svc_layer_id_t layer_id = {};
+    layer_id.spatial_layer_id = 0;
+    ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_SVC_LAYER_ID, &layer_id),
+              VPX_CODEC_OK);
+
+    vpx_svc_ref_frame_config_t ref_cfg = {};
+    ref_cfg.lst_fb_idx[0] = 0;
+    ref_cfg.reference_last[0] = (i > 0) ? 1 : 0;
+    ref_cfg.update_buffer_slot[0] = (1 << 0);
+    ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_SVC_REF_FRAME_CONFIG, &ref_cfg),
+              VPX_CODEC_OK);
+
+    ASSERT_EQ(
+        vpx_codec_encode(&enc, img, pts++, 1, (i == 0) ? VPX_EFLAG_FORCE_KF : 0,
+                         VPX_DL_REALTIME),
+        VPX_CODEC_OK);
+  }
+  vpx_img_free(img);
+
+  // Disable SL0 (64x36) and enable SL1 (128x72) and SL2 (256x144) on
+  // previously unused buffer slots 1 and 2 without forcing a keyframe.
+  cfg.g_w = 256;
+  cfg.g_h = 144;
+  cfg.rc_target_bitrate = 670;
+  cfg.ss_target_bitrate[0] = 0;
+  cfg.layer_target_bitrate[0] = 0;
+  cfg.ss_target_bitrate[1] = 170;
+  cfg.layer_target_bitrate[1] = 170;
+  cfg.ss_target_bitrate[2] = 500;
+  cfg.layer_target_bitrate[2] = 500;
+
+  svc_cfg.scaling_factor_num[0] = 1;
+  svc_cfg.scaling_factor_den[0] = 4;
+  svc_cfg.scaling_factor_num[1] = 1;
+  svc_cfg.scaling_factor_den[1] = 2;
+  svc_cfg.scaling_factor_num[2] = 1;
+  svc_cfg.scaling_factor_den[2] = 1;
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_SVC_PARAMETERS, &svc_cfg),
+            VPX_CODEC_OK);
+  ASSERT_EQ(vpx_codec_enc_config_set(&enc, &cfg), VPX_CODEC_OK);
+
+  vpx_svc_layer_id_t layer_id = {};
+  layer_id.spatial_layer_id = 1;
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_SVC_LAYER_ID, &layer_id),
+            VPX_CODEC_OK);
+
+  vpx_svc_ref_frame_config_t ref_cfg = {};
+  ref_cfg.lst_fb_idx[1] = 1;
+  ref_cfg.reference_last[1] = 0;
+  ref_cfg.update_buffer_slot[1] = (1 << 1);
+  ref_cfg.lst_fb_idx[2] = 2;
+  ref_cfg.reference_last[2] = 0;
+  ref_cfg.update_buffer_slot[2] = (1 << 2);
+  ASSERT_EQ(vpx_codec_control(&enc, VP9E_SET_SVC_REF_FRAME_CONFIG, &ref_cfg),
+            VPX_CODEC_OK);
+
+  img = CreateImage(VPX_BITS_8, VPX_IMG_FMT_I420, 256, 144);
+  ASSERT_NE(img, nullptr);
+  ASSERT_EQ(vpx_codec_encode(&enc, img, pts++, 1, 0, VPX_DL_REALTIME),
+            VPX_CODEC_OK);
+  vpx_img_free(img);
 
   ASSERT_EQ(vpx_codec_destroy(&enc), VPX_CODEC_OK);
 }

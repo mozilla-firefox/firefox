@@ -106,8 +106,12 @@ generate_filter() {
                         Include="$f"
                     # Separate file names with Condition?
                     tag_content ObjectFileName "\$(IntDir)$objf"
-                    # Check for AVX and turn it on to avoid warnings.
-                    if [[ $f =~ avx.?\.c$ ]]; then
+                    # Set the appropriate /arch option for AVX/AVX2/AVX-512 files.
+                    if [[ $f =~ avx512\.c$ ]]; then
+                        tag_content AdditionalOptions "/arch:AVX512"
+                    elif [[ $f =~ avx2\.c$ ]]; then
+                        tag_content AdditionalOptions "/arch:AVX2"
+                    elif [[ $f =~ avx\.c$ ]]; then
                         tag_content AdditionalOptions "/arch:AVX"
                     fi
                     close_tag ClCompile

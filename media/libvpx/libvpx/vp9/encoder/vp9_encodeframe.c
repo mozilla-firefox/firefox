@@ -1248,6 +1248,30 @@ static uint64_t avg_source_sad(VP9_COMP *cpi, MACROBLOCK *x, int shift,
   return tmp_sad;
 }
 
+// Check whether the current frame should be treated as a key frame for the
+// purpose of superblock partitioning. Under SVC mode, treat the frame as key if
+// the base layer frame is a key frame, or if LAST_FRAME is NULL or has a
+// different resolution than the current frame (e.g., when enhancement spatial
+// layers are enabled dynamically and the only reference is GOLDEN).
+static INLINE int is_key_frame_for_partition(const VP9_COMP *const cpi) {
+  const VP9_COMMON *const cm = &cpi->common;
+  const YV12_BUFFER_CONFIG *ref;
+  if (frame_is_intra_only(cm) ||
+      (is_one_pass_svc(cpi) &&
+       cpi->svc.layer_context[cpi->svc.temporal_layer_id].is_key_frame)) {
+    return 1;
+  }
+  ref = get_ref_frame_buffer(cpi, LAST_FRAME);
+  if (ref == NULL ||
+      cm->frame_refs[LAST_FRAME - 1].sf.x_scale_fp == REF_INVALID_SCALE ||
+      cm->frame_refs[LAST_FRAME - 1].sf.y_scale_fp == REF_INVALID_SCALE ||
+      (cpi->use_svc &&
+       (ref->y_crop_height != cm->height || ref->y_crop_width != cm->width))) {
+    return 1;
+  }
+  return 0;
+}
+
 // This function chooses partitioning based on the variance between source and
 // reconstructed last, where variance is computed for down-sampled inputs.
 static int choose_partitioning(VP9_COMP *cpi, const TileInfo *const tile,
@@ -1287,19 +1311,7 @@ static int choose_partitioning(VP9_COMP *cpi, const TileInfo *const tile,
                        (cpi->oxcf.content == VP9E_CONTENT_SCREEN &&
                         cpi->compute_source_sad_onepass &&
                         cpi->sf.use_source_sad && !x->zero_temp_sad_source);
-
-  // For the variance computation under SVC mode, we treat the frame as key if
-  // the reference (base layer frame) is key frame (i.e., is_key_frame == 1).
-  int is_key_frame =
-      (frame_is_intra_only(cm) ||
-       (is_one_pass_svc(cpi) &&
-        cpi->svc.layer_context[cpi->svc.temporal_layer_id].is_key_frame));
-
-  if (!is_key_frame) {
-    if (cm->frame_refs[LAST_FRAME - 1].sf.x_scale_fp == REF_INVALID_SCALE ||
-        cm->frame_refs[LAST_FRAME - 1].sf.y_scale_fp == REF_INVALID_SCALE)
-      is_key_frame = 1;
-  }
+  const int is_key_frame = is_key_frame_for_partition(cpi);
 
   // Allow for sub8x8 (4x4) partition on key frames, but only for hybrid mode
   // (i.e., sf->nonrd_keyframe = 0), where for small blocks rd intra pickmode
@@ -1312,19 +1324,6 @@ static int choose_partitioning(VP9_COMP *cpi, const TileInfo *const tile,
   int variance4x4downsample[16];
   int segment_id;
   int sb_offset = (cm->mi_stride >> 3) * (mi_row >> 3) + (mi_col >> 3);
-
-  // For SVC: check if LAST frame is NULL or if the resolution of LAST is
-  // different than the current frame resolution, and if so, treat this frame
-  // as a key frame, for the purpose of the superblock partitioning.
-  // LAST == NULL can happen in some cases where enhancement spatial layers are
-  // enabled dyanmically in the stream and the only reference is the spatial
-  // reference (GOLDEN).
-  if (cpi->use_svc) {
-    const YV12_BUFFER_CONFIG *const ref = get_ref_frame_buffer(cpi, LAST_FRAME);
-    if (ref == NULL || ref->y_crop_height != cm->height ||
-        ref->y_crop_width != cm->width)
-      is_key_frame = 1;
-  }
 
   set_offsets(cpi, tile, x, mi_row, mi_col, BLOCK_64X64);
   set_segment_index(cpi, x, mi_row, mi_col, BLOCK_64X64, 0);
@@ -5112,7 +5111,8 @@ static void nonrd_use_partition(VP9_COMP *cpi, ThreadData *td,
 static void get_estimated_pred(VP9_COMP *cpi, const TileInfo *const tile,
                                MACROBLOCK *x, int mi_row, int mi_col) {
   VP9_COMMON *const cm = &cpi->common;
-  const int is_key_frame = frame_is_intra_only(cm);
+  const int is_key_frame = is_key_frame_for_partition(cpi) ||
+                           !(cpi->ref_frame_flags & VP9_LAST_FLAG);
   MACROBLOCKD *xd = &x->e_mbd;
 
   set_offsets(cpi, tile, x, mi_row, mi_col, BLOCK_64X64);

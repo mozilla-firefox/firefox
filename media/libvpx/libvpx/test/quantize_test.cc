@@ -228,7 +228,8 @@ INSTANTIATE_TEST_SUITE_P(
 #if HAVE_LSX
 INSTANTIATE_TEST_SUITE_P(
     LSX, QuantizeTest,
-    ::testing::Values(make_tuple(&vp8_regular_quantize_b_lsx,
-                                 &vp8_regular_quantize_b_c)));
+    ::testing::Values(
+        make_tuple(&vp8_fast_quantize_b_lsx, &vp8_fast_quantize_b_c),
+        make_tuple(&vp8_regular_quantize_b_lsx, &vp8_regular_quantize_b_c)));
 #endif  // HAVE_LSX
 }  // namespace

@@ -69,7 +69,7 @@ specialize qw/vp8_loop_filter_bh neon dspr2 msa mmi lsx/, "$sse2_asm";
 
 
 add_proto qw/void vp8_loop_filter_simple_mbv/, "unsigned char *y_ptr, int y_stride, const unsigned char *blimit";
-specialize qw/vp8_loop_filter_simple_mbv neon msa mmi/, "$sse2_asm";
+specialize qw/vp8_loop_filter_simple_mbv neon msa mmi lsx/, "$sse2_asm";
 $vp8_loop_filter_simple_mbv_c=vp8_loop_filter_simple_vertical_edge_c;
 if (vpx_config("HAVE_X86_ASM") eq "yes") {
   $vp8_loop_filter_simple_mbv_sse2=vp8_loop_filter_simple_vertical_edge_sse2;
@@ -77,9 +77,10 @@ if (vpx_config("HAVE_X86_ASM") eq "yes") {
 $vp8_loop_filter_simple_mbv_neon=vp8_loop_filter_mbvs_neon;
 $vp8_loop_filter_simple_mbv_msa=vp8_loop_filter_simple_vertical_edge_msa;
 $vp8_loop_filter_simple_mbv_mmi=vp8_loop_filter_simple_vertical_edge_mmi;
+$vp8_loop_filter_simple_mbv_lsx=vp8_loop_filter_simple_vertical_edge_lsx;
 
 add_proto qw/void vp8_loop_filter_simple_mbh/, "unsigned char *y_ptr, int y_stride, const unsigned char *blimit";
-specialize qw/vp8_loop_filter_simple_mbh neon msa mmi/, "$sse2_asm";
+specialize qw/vp8_loop_filter_simple_mbh neon msa mmi lsx/, "$sse2_asm";
 $vp8_loop_filter_simple_mbh_c=vp8_loop_filter_simple_horizontal_edge_c;
 if (vpx_config("HAVE_X86_ASM") eq "yes") {
   $vp8_loop_filter_simple_mbh_sse2=vp8_loop_filter_simple_horizontal_edge_sse2;
@@ -87,9 +88,10 @@ if (vpx_config("HAVE_X86_ASM") eq "yes") {
 $vp8_loop_filter_simple_mbh_neon=vp8_loop_filter_mbhs_neon;
 $vp8_loop_filter_simple_mbh_msa=vp8_loop_filter_simple_horizontal_edge_msa;
 $vp8_loop_filter_simple_mbh_mmi=vp8_loop_filter_simple_horizontal_edge_mmi;
+$vp8_loop_filter_simple_mbh_lsx=vp8_loop_filter_simple_horizontal_edge_lsx;
 
 add_proto qw/void vp8_loop_filter_simple_bv/, "unsigned char *y_ptr, int y_stride, const unsigned char *blimit";
-specialize qw/vp8_loop_filter_simple_bv neon msa mmi/, "$sse2_asm";
+specialize qw/vp8_loop_filter_simple_bv neon msa mmi lsx/, "$sse2_asm";
 $vp8_loop_filter_simple_bv_c=vp8_loop_filter_bvs_c;
 if (vpx_config("HAVE_X86_ASM") eq "yes") {
   $vp8_loop_filter_simple_bv_sse2=vp8_loop_filter_bvs_sse2;
@@ -97,9 +99,10 @@ if (vpx_config("HAVE_X86_ASM") eq "yes") {
 $vp8_loop_filter_simple_bv_neon=vp8_loop_filter_bvs_neon;
 $vp8_loop_filter_simple_bv_msa=vp8_loop_filter_bvs_msa;
 $vp8_loop_filter_simple_bv_mmi=vp8_loop_filter_bvs_mmi;
+$vp8_loop_filter_simple_bv_lsx=vp8_loop_filter_bvs_lsx;
 
 add_proto qw/void vp8_loop_filter_simple_bh/, "unsigned char *y_ptr, int y_stride, const unsigned char *blimit";
-specialize qw/vp8_loop_filter_simple_bh neon msa mmi/, "$sse2_asm";
+specialize qw/vp8_loop_filter_simple_bh neon msa mmi lsx/, "$sse2_asm";
 $vp8_loop_filter_simple_bh_c=vp8_loop_filter_bhs_c;
 if (vpx_config("HAVE_X86_ASM") eq "yes") {
   $vp8_loop_filter_simple_bh_sse2=vp8_loop_filter_bhs_sse2;
@@ -107,6 +110,7 @@ if (vpx_config("HAVE_X86_ASM") eq "yes") {
 $vp8_loop_filter_simple_bh_neon=vp8_loop_filter_bhs_neon;
 $vp8_loop_filter_simple_bh_msa=vp8_loop_filter_bhs_msa;
 $vp8_loop_filter_simple_bh_mmi=vp8_loop_filter_bhs_mmi;
+$vp8_loop_filter_simple_bh_lsx=vp8_loop_filter_bhs_lsx;
 
 #
 # IDCT
@@ -210,7 +214,7 @@ add_proto qw/void vp8_regular_quantize_b/, "struct block *, struct blockd *";
 specialize qw/vp8_regular_quantize_b sse2 sse4_1 msa mmi lsx/;
 
 add_proto qw/void vp8_fast_quantize_b/, "struct block *, struct blockd *";
-specialize qw/vp8_fast_quantize_b sse2 ssse3 neon msa mmi/;
+specialize qw/vp8_fast_quantize_b sse2 ssse3 neon msa mmi lsx/;
 
 #
 # Block subtraction

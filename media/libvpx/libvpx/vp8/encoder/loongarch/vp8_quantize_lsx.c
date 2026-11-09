@@ -12,6 +12,8 @@
 #include "./vp8_rtcd.h"
 #include "vpx_util/loongson_intrinsics.h"
 #include "vp8/encoder/block.h"
+#include "vpx_ports/bitops.h"
+#include "vpx_ports/mem.h"
 
 #define BOOST_QUANT1(_in0, _in1, _in2, _ui)               \
   {                                                       \
@@ -142,4 +144,47 @@ void vp8_regular_quantize_b_lsx(BLOCK *b, BLOCKD *d) {
   *d->eob = exact_regular_quantize_b_lsx(
       zbin_boost_ptr, coeff_ptr, zbin_ptr, round_ptr, quant_ptr,
       quant_shift_ptr, dequant_ptr, zbin_oq_value, qcoeff_ptr, dqcoeff_ptr);
+}
+
+void vp8_fast_quantize_b_lsx(BLOCK *b, BLOCKD *d) {
+  const int16_t *coeff_ptr = b->coeff;
+  const int16_t *round_ptr = b->round;
+  const int16_t *quant_ptr = b->quant_fast;
+  const int16_t *dequant_ptr = d->dequant;
+  int16_t *qcoeff_ptr = d->qcoeff;
+  int16_t *dqcoeff_ptr = d->dqcoeff;
+  DECLARE_ALIGNED(16, static const uint8_t,
+                  zig_zag_idx[16]) = { 0, 1,  4,  8,  5, 2,  3,  6,
+                                       9, 12, 13, 10, 7, 11, 14, 15 };
+  const __m128i zig_zag = __lsx_vld(zig_zag_idx, 0);
+  const __m128i zero = __lsx_vldi(0);
+  uint32_t mask;
+  __m128i c0, c1, s0, s1, x0, x1, y0, y1, a0, a1, dq0, dq1;
+
+  c0 = __lsx_vld(coeff_ptr, 0);
+  c1 = __lsx_vld(coeff_ptr, 16);
+  s0 = __lsx_vsrai_h(c0, 15);
+  s1 = __lsx_vsrai_h(c1, 15);
+  x0 = __lsx_vsub_h(__lsx_vxor_v(c0, s0), s0);
+  x1 = __lsx_vsub_h(__lsx_vxor_v(c1, s1), s1);
+  x0 = __lsx_vadd_h(x0, __lsx_vld(round_ptr, 0));
+  x1 = __lsx_vadd_h(x1, __lsx_vld(round_ptr, 16));
+  y0 = __lsx_vmuh_hu(x0, __lsx_vld(quant_ptr, 0));
+  y1 = __lsx_vmuh_hu(x1, __lsx_vld(quant_ptr, 16));
+  a0 = y0;
+  a1 = y1;
+  y0 = __lsx_vsub_h(__lsx_vxor_v(y0, s0), s0);
+  y1 = __lsx_vsub_h(__lsx_vxor_v(y1, s1), s1);
+  __lsx_vst(y0, qcoeff_ptr, 0);
+  __lsx_vst(y1, qcoeff_ptr, 16);
+  dq0 = __lsx_vmul_h(y0, __lsx_vld(dequant_ptr, 0));
+  dq1 = __lsx_vmul_h(y1, __lsx_vld(dequant_ptr, 16));
+  __lsx_vst(dq0, dqcoeff_ptr, 0);
+  __lsx_vst(dq1, dqcoeff_ptr, 16);
+  y0 = __lsx_vslt_h(zero, a0);
+  y1 = __lsx_vslt_h(zero, a1);
+  y0 = __lsx_vpickev_b(y1, y0);
+  y0 = __lsx_vshuf_b(y0, y0, zig_zag);
+  mask = (uint32_t)__lsx_vpickve2gr_w(__lsx_vmskltz_b(y0), 0);
+  *d->eob = (char)get_msb(mask * 2 + 1);
 }

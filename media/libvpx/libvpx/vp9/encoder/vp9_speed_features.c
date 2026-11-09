@@ -762,7 +762,8 @@ static void set_rt_speed_feature_framesize_independent(
     if (cpi->row_mt && cpi->oxcf.max_threads > 1)
       sf->adaptive_rd_thresh_row_mt = 1;
     // Enable ML based partition for low res.
-    if (!frame_is_intra_only(cm) && cm->width * cm->height <= 352 * 288) {
+    if (!frame_is_intra_only(cm) && !cpi->use_svc &&
+        cm->width * cm->height <= 352 * 288) {
       sf->nonrd_use_ml_partition = 1;
     }
 #if CONFIG_VP9_HIGHBITDEPTH

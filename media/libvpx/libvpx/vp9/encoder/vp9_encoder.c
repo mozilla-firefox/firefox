@@ -1389,6 +1389,7 @@ static void alloc_compressor_data(VP9_COMP *cpi) {
   alloc_context_buffers_ext(cpi);
 
   vpx_free(cpi->tile_tok[0][0]);
+  cpi->tile_tok[0][0] = NULL;
 
   {
     int64_t tokens = get_token_alloc(cm->mb_rows, cm->mb_cols);
@@ -2170,6 +2171,7 @@ void vp9_change_config(struct VP9_COMP *cpi, const VP9EncoderConfig *oxcf) {
     vp9_free_context_buffers(cm);
     vp9_free_pc_tree(&cpi->td);
     vpx_free(cpi->mbmi_ext_base);
+    cpi->mbmi_ext_base = NULL;
     vpx_free(cpi->content_state_sb_fd);
     cpi->content_state_sb_fd = NULL;
     alloc_compressor_data(cpi);
