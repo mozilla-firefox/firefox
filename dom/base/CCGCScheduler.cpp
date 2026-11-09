@@ -563,11 +563,11 @@ TimeDuration CCGCScheduler::ComputeMinimumBudgetForRunner(
     TimeDuration aBaseValue) {
   // If the main thread was too busy to find idle for the whole last collection,
   // allow a very short budget this time.
-  return mPreferFasterCollection ? TimeDuration::FromMilliseconds(1)
-                                 : TimeDuration::FromMilliseconds(std::max(
-                                       nsRefreshDriver::HighRateMultiplier() *
-                                           aBaseValue.ToMilliseconds(),
-                                       1.0));
+  return mPreferFasterCollection
+             ? TimeDuration::FromMilliseconds(1)
+             : TimeDuration::Max(
+                   aBaseValue.MultDouble(nsRefreshDriver::HighRateMultiplier()),
+                   TimeDuration::FromMilliseconds(1));
 }
 
 void CCGCScheduler::EnsureGCRunner(TimeDuration aDelay) {

@@ -4,6 +4,8 @@
 
 #include "MediaTimer.h"
 
+#include <type_traits>
+
 #include "mozilla/AwakeTimeStamp.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/RefPtr.h"
@@ -190,8 +192,12 @@ void MediaTimer<T>::ArmTimer(const T& aTarget, const T& aNow) {
   const typename T::DurationType delay = aTarget - aNow;
   TIMER_LOG("MediaTimer::ArmTimer delay={:.3f}ms", delay.ToMilliseconds());
   mCurrentTimerTarget.emplace(aTarget);
-  TimeDuration duration =
-      TimeDuration::FromMicroseconds(delay.ToMicroseconds());
+  TimeDuration duration;
+  if constexpr (std::is_same_v<typename T::DurationType, TimeDuration>) {
+    duration = delay;
+  } else {
+    duration = TimeDuration::FromMicroseconds(delay.ToMicroseconds());
+  }
   MOZ_ALWAYS_SUCCEEDS(mTimer->InitHighResolutionWithNamedFuncCallback(
       &TimerCallback, this, duration, nsITimer::TYPE_ONE_SHOT,
       "MediaTimer::TimerCallback"_ns));

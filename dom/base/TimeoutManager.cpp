@@ -708,8 +708,7 @@ void TimeoutManager::RunTimeout(const TimeStamp& aNow,
 
   // Allow up to 25% of our total time budget to be used figuring out which
   // timers need to run.  This is the initial loop in this method.
-  const TimeDuration initialTimeLimit =
-      TimeDuration::FromMilliseconds(totalTimeLimit.ToMilliseconds() / 4);
+  const TimeDuration initialTimeLimit = totalTimeLimit / int64_t(4);
 
   // Ammortize overhead from from calling TimeStamp::Now() in the initial
   // loop, though, by only checking for an elapsed limit every N timeouts.
