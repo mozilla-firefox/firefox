@@ -63,7 +63,7 @@ from mozpack.mozjar import JarReader, JarWriter
 from mozpack.packager.unpack import UnpackFinder
 from mozversioncontrol import get_repository_object
 
-from mozbuild.artifact_builds import JOB_CHOICES
+from mozbuild.artifact_builds import GECKO_ESR_TREES, GECKO_NIGHTLY_TREES, JOB_CHOICES
 from mozbuild.artifact_cache import ArtifactCache
 from mozbuild.build_markers import build_marker
 from mozbuild.dirutils import ensureParentDir, mkdir
@@ -131,19 +131,11 @@ class GeckoJobConfiguration:
     default_candidate_trees = [
         "releases/mozilla-release",
     ]
-    nightly_candidate_trees = [
-        "mozilla-central",
-        "integration/autoland",
-    ]
+    nightly_candidate_trees = GECKO_NIGHTLY_TREES
     beta_candidate_trees = [
         "releases/mozilla-beta",
     ]
-    # The list below should be updated when we have new ESRs.
-    esr_candidate_trees = [
-        "releases/mozilla-esr153",
-        "releases/mozilla-esr140",
-        "releases/mozilla-esr115",
-    ]
+    esr_candidate_trees = GECKO_ESR_TREES
     try_tree = "try"
 
 

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 
 import mozversioncontrol
 import requests
+from mozbuild.artifact_builds import GECKO_ESR_TREES, GECKO_NIGHTLY_TREES
 
 try:
     from cStringIO import StringIO as BytesIO
@@ -63,11 +64,7 @@ def taskcluster_url(logger, commits):
     artifact_path = "/artifacts/public/manifests.tar.gz"
 
     repos = {
-        "mozilla-central": "mozilla-central",
-        "integration/autoland": "autoland",
-        "releases/mozilla-esr115": "mozilla-esr115",
-        "releases/mozilla-esr140": "mozilla-esr140",
-        "releases/mozilla-esr153": "mozilla-esr153",
+        tree: tree.split("/")[-1] for tree in GECKO_NIGHTLY_TREES + GECKO_ESR_TREES
     }
     cset_url = (
         "https://hg.mozilla.org/{repo}/json-pushes?"

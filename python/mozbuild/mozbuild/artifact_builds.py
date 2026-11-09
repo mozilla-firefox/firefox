@@ -29,3 +29,15 @@ JOB_CHOICES = {
     "win64-aarch64-opt",
     "win64-aarch64-debug",
 }
+
+GECKO_NIGHTLY_TREES = [
+    "mozilla-central",
+    "integration/autoland",
+]
+
+# The list below should be updated when we have new ESRs.
+GECKO_ESR_TREES = [
+    "releases/mozilla-esr153",
+    "releases/mozilla-esr140",
+    "releases/mozilla-esr115",
+]
