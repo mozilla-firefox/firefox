@@ -16,6 +16,24 @@ def applink_job():
     }
 
 
+@pytest.mark.parametrize("resource", ["background", "foreground"])
+def test_resource_profile_from_try_config(run_transform, resource):
+    job = {
+        "name": f"hw-a55-{resource}-resource-fenix",
+        "run": {"command": f"./mach perftest {resource}-resource"},
+        "treeherder": {"symbol": f"perftest-fenix({resource}-rsrc)"},
+    }
+    params = {"try_task_config": {"gecko-profile": True}, "target_tasks_method": "try"}
+    [task] = list(
+        run_transform(setup_gecko_profile_from_try_config, [job], params=params)
+    )
+
+    assert "--simpleperf" in task["run"]["command"]
+    assert "--geckoprofiler" not in task["run"]["command"]
+    assert "linux64-android-simpleperf-linux-repack" in task["fetches"]["toolchain"]
+    assert task["treeherder"]["symbol"].endswith("-p)")
+
+
 @pytest.mark.parametrize(
     "params,expected",
     (

@@ -16,7 +16,14 @@ from .util import combine_task_graph_files, create_tasks, fetch_graph_and_labels
 
 PUSHLOG_TMPL = "{}/json-pushes?version=2&startID={}&endID={}"
 INDEX_TMPL = "gecko.v2.{}.pushlog-id.{}.decision"
-SIMPLEPERF_COMPATIBLE_TESTS = ["-homeview-", "-applink-", "-restore-"]
+SIMPLEPERF_COMPATIBLE_TESTS = [
+    "-homeview-",
+    "-applink-",
+    "-restore-",
+    "-background-resource-",
+    "-foreground-resource-",
+]
+RESOURCE_TESTS = ["-background-resource-", "-foreground-resource-"]
 
 SIMPLEPERF_DEPENDENCY = {
     "artifact": "project/gecko/android-simpleperf/android-simpleperf.tar.zst",
@@ -169,9 +176,16 @@ def geckoprofile_action(parameters, graph_config, input, task_group_id, task_id)
                 profiling_command_flags = ["--gecko-profile"]
 
                 if task_kind == "perftest":
+                    is_resource_test = any(test in label for test in RESOURCE_TESTS)
+                    if is_resource_test:
+                        env["PERF_FLAGS"] = (
+                            perf_flags
+                            + " simpleperf simpleperf-path=$MOZ_FETCHES_DIR/android-simpleperf"
+                        ).strip()
+                        profiling_command_flags = []
                     # Add "gecko-profile" to PERF_FLAGS if missing and then add remaining
                     # Gecko Profiler customizations via MOZ_PROFILER_STARTUP_* env overrides.
-                    if "gecko-profile" not in perf_flags:
+                    elif "gecko-profile" not in perf_flags:
                         env["PERF_FLAGS"] = (perf_flags + " gecko-profile").strip()
 
                     if interval is not None:
@@ -180,7 +194,9 @@ def geckoprofile_action(parameters, graph_config, input, task_group_id, task_id)
                         env["MOZ_PROFILER_STARTUP_FEATURES"] = features
                     if threads is not None:
                         env["MOZ_PROFILER_STARTUP_FILTERS"] = threads
-                    if any(test in label for test in SIMPLEPERF_COMPATIBLE_TESTS):
+                    if not is_resource_test and any(
+                        test in label for test in SIMPLEPERF_COMPATIBLE_TESTS
+                    ):
                         #  We will need to unify the options for enabling gecko_profiling across test harnesses, see bug 2000281
                         env["PERF_FLAGS"] = (
                             perf_flags

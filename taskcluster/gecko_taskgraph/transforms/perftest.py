@@ -284,10 +284,16 @@ def setup_gecko_profile_from_try_config(config, jobs):
         config.params.get("try_task_config", {}).get("gecko-profile", False)
         or config.params.get("target_tasks_method") in PROFILING_TARGET_TASKS_METHODS
     )
-    simpleperf_compatible_tests = ["-homeview-", "-applink-", "-restore-"]
+    resource_tests = ["-background-resource-", "-foreground-resource-"]
+    simpleperf_compatible_tests = [
+        "-homeview-",
+        "-applink-",
+        "-restore-",
+        *resource_tests,
+    ]
 
     for job in jobs:
-        # For simpleperf-compatible startup tests, add simpleperf support
+        # For simpleperf-compatible tests, add simpleperf support
         if (
             any(test in job["name"] for test in simpleperf_compatible_tests)
             and gecko_profile
@@ -298,8 +304,9 @@ def setup_gecko_profile_from_try_config(config, jobs):
                 "--simpleperf",
                 "--simpleperf-path",
                 "$MOZ_FETCHES_DIR/android-simpleperf",
-                "--geckoprofiler",
             ]
+            if not any(test in job["name"] for test in resource_tests):
+                simpleperf_args.append("--geckoprofiler")
             job["run"]["command"] += " " + " ".join(simpleperf_args)
 
             # Add required toolchain dependencies

@@ -9,6 +9,10 @@
 # Options: {"default": {"perfherder": true, "perfherder-metrics": [{ "name": "time", "unit": "s" }, { "name": "rss-memory", "unit": "s" }, { "name": "pss-memory", "unit": "s" }]}} #noqa
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+if [ "$MOZPERFTEST_SIMPLEPERF" = "1" ] && [ -z "$RESOURCE_PROFILING_WRAPPED" ]; then
+    export RESOURCE_PROFILING_WRAPPED=1
+    exec "$PYTHON_PATH_SHELL_SCRIPT" "$SCRIPT_DIR/profile_resource_usage.py" "$0"
+fi
 TEST_TIME=600
 export RUN_BACKGROUND=False
 
