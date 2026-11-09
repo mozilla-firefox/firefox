@@ -394,15 +394,19 @@ async def test_click_navigation(
         assert event["url"] == destination
 
 
-@pytest.mark.parametrize("x, y, event_count", [
-    (0, 0, 0),
-    (1, 0, 1),
-    (0, 1, 1),
+@pytest.mark.parametrize("x, y", [
+    (0, 0),
+    (1, 0),
+    (0, 1),
 ], ids=["default value", "x", "y"])
 async def test_move_to_position_in_viewport(
-    bidi_session, load_static_test_page, top_context, x, y, event_count
+    bidi_session, load_static_test_page, top_context, x, y
 ):
     await load_static_test_page(page="test_actions.html")
+
+    # A new pointer input source is at (0, 0), so moving there dispatches no
+    # event: https://w3c.github.io/webdriver/#dfn-perform-a-pointer-move
+    expected_count = 0 if (x, y) == (0, 0) else 1
 
     actions = Actions()
     actions.add_pointer().pointer_move(x=x, y=y)
@@ -412,7 +416,7 @@ async def test_move_to_position_in_viewport(
     )
 
     events = await get_events(bidi_session, top_context["context"])
-    assert len(events) == event_count
+    assert len(events) == expected_count
 
     # Move again to check that no further mouse move event is emitted.
     actions = Actions()
@@ -423,7 +427,7 @@ async def test_move_to_position_in_viewport(
     )
 
     events = await get_events(bidi_session, top_context["context"])
-    assert len(events) == event_count
+    assert len(events) == expected_count
 
 
 @pytest.mark.parametrize("origin", ["viewport", "pointer", "element"])
