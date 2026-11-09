@@ -10,6 +10,7 @@
 
 #include "mozilla/Maybe.h"
 
+#include <bit>
 #include <type_traits>
 
 #include "jit/MoveResolver.h"
@@ -937,13 +938,33 @@ class MacroAssemblerRiscv64Compat : public MacroAssemblerRiscv64 {
     Register scratch = temps.Acquire();
     MOZ_ASSERT(scratch != dest);
     loadPtr(src, dest);
-    movePtr(ImmWord(JS::detail::ValueGCThingPayloadChunkMask), scratch);
-    and_(dest, dest, scratch);
+    andValueGCThingPayloadChunkMask(dest, scratch, dest);
   }
   void getGCThingValueChunk(const ValueOperand& src, Register dest) {
     MOZ_ASSERT(src.valueReg() != dest);
-    movePtr(ImmWord(JS::detail::ValueGCThingPayloadChunkMask), dest);
-    and_(dest, dest, src.valueReg());
+    andValueGCThingPayloadChunkMask(src.valueReg(), dest, dest);
+  }
+  // Ands src with ValueGCThingPayloadChunkMask into dest, using temp, which
+  // may be dest but not src, for the mask.
+  void andValueGCThingPayloadChunkMask(Register src, Register temp,
+                                       Register dest) {
+    MOZ_ASSERT(temp != src);
+    if (HasZbbExtension()) {
+      // The complement of the mask is a run of ones from bit 47 around to bit
+      // 19, which rotated right by ChunkShift is a value lui loads. So RV_li
+      // builds the complement with lui and rori (ExtractLuiRotateInfo in
+      // AssemblerMatInt.cpp), one instruction fewer than the mask takes, and
+      // andn clears its bits.
+      constexpr uint64_t NotMask = ~JS::detail::ValueGCThingPayloadChunkMask;
+      constexpr int64_t Rotated = int64_t(std::rotr(NotMask, gc::ChunkShift));
+      static_assert(Rotated == int32_t(Rotated) && (Rotated & 0xfff) == 0,
+                    "lui loads the rotated complement of the mask");
+      movePtr(ImmWord(NotMask), temp);
+      andn(dest, src, temp);
+      return;
+    }
+    movePtr(ImmWord(JS::detail::ValueGCThingPayloadChunkMask), temp);
+    and_(dest, src, temp);
   }
 
   void unboxInt32(const ValueOperand& operand, Register dest);
