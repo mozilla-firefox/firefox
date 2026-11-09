@@ -36,10 +36,6 @@ const MAX_SQUARE_DOT_WIDTH: f32 = 2.0;
 //           all the border structs with hashable
 //           variants...
 
-// `BorderRadiusAu` now lives in `webrender_api` so builder-side interning keys
-// can reference it. Re-exported here to keep existing references working.
-pub use api::key_types::BorderRadiusAu;
-
 // `BorderSideAu` (with its `From` conversions to/from the api border types) now
 // lives in `webrender_api::key_types` so builder-side interning keys can
 // reference it. Re-exported to keep existing references working. (`NormalBorderAu`

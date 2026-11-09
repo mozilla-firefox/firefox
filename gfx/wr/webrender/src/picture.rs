@@ -121,7 +121,7 @@ use crate::visibility::{BackdropCaptureIndex, PrimitiveDrawHeader};
 use crate::prim_store::{PrimitiveScratchBuffer, ClipTaskIndex, ClipMaskKind};
 use crate::prim_store::storage;
 use crate::print_tree::PrintTreePrinter;
-use crate::render_backend::DataStores;
+use crate::render_backend::{DataStores, DlStores};
 use crate::render_task_graph::RenderTaskId;
 use crate::render_task::{RenderTask, RenderTaskLocation};
 use crate::render_task::{StaticRenderTaskSurface, RenderTaskKind, EmptyTask};
@@ -2526,6 +2526,7 @@ pub fn prepare_picture_primitive(
     frame_state: &mut FrameBuildingState,
     scratch: &mut PrimitiveScratchBuffer,
     data_stores: &DataStores,
+    dl_stores: &DlStores,
     pic_context: &PictureContext,
     pic_scratch_handle: StorageIndex<PictureScratch>,
     prim_info: &PrimitiveDrawHeader,
@@ -2577,7 +2578,7 @@ pub fn prepare_picture_primitive(
             pic_scratch,
             &mut scratch.frame.clip_mask_instances,
             prim_spatial_node_index,
-            &data_stores.clip,
+            &dl_stores.clips,
             use_quads,
             &mut composite_clips,
             pic_context,

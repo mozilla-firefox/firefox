@@ -14,16 +14,19 @@
 
 use crate::serde::{Serialize, Deserialize};
 use crate::{
-    AlphaMode, AlphaType, BoxShadowClipMode, ColorDepth, ColorRange, ColorU, ExtendMode,
-    FontInstanceKey, GlyphOptions, GlyphShadowMode, ImageKey, ImageRendering, LineOrientation,
-    LineStyle, PropertyBinding, RasterSpace, YuvColorSpace, YuvFormat,
+    AlphaMode, AlphaType, BorderRadius, BorderSide, BorderStyle, BoxShadowClipMode, ClipMode,
+    ColorDepth, ColorF, ColorRange, ColorU, ExtendMode, FillRule, FontInstanceKey, GlyphOptions, GlyphShadowMode, ImageKey, ImageMask,
+    ImageRendering, LineOrientation, LineStyle, NormalBorder, PropertyBinding, RasterSpace, YuvColorSpace,
+    YuvFormat,
 };
+use crate::interning::Handle;
+use crate::path::Path;
 use crate::key_types::{
     BorderRadiusAu, ConicGradientParams, GlyphInstanceAu, GradientStopKey, NinePatchDescriptor,
-    NormalBorderAu, PrimKeyCommonData, RadialGradientParams, SizeKey, StretchSizeKey,
-    SubRectKey, VectorKey,
+    NormalBorderAu, PolygonKey, PrimKeyCommonData, RadialGradientParams, SizeKey,
+    StretchSizeKey, SubRectKey, VectorKey,
 };
-use crate::units::{LayoutSideOffsetsAu, TileOffset};
+use crate::units::{AuHelpers, LayoutPointAu, LayoutSideOffsets, LayoutSideOffsetsAu, TileOffset};
 use app_units::Au;
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
 
@@ -319,4 +322,83 @@ impl ConicGradientKey {
             nine_patch: conic_grad.nine_patch,
         }
     }
+}
+
+/// The shape of a clip, without its rect: the rect and the spatial node are
+/// per instance and stay on the clip tree node, so most rectangle clips on a
+/// page share one entry. For rounded-rect clips the stored radii are
+/// unclamped; each consumer clamps against the instance clip rect as needed.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, MallocSizeOf, Serialize, Deserialize)]
+pub enum ClipItemKeyKind {
+    Rectangle(ClipMode),
+    RoundedRectangle(BorderRadiusAu, LayoutSideOffsetsAu, ClipMode),
+    /// The polygon handle is into the same builder's polygon interner, so it
+    /// shares the clip's namespace on the receiver.
+    ImageMask(ImageKey, Option<Handle<PolygonKey>>),
+    /// The path handle is into the same builder's path interner, so it shares
+    /// the clip's namespace on the receiver. A handle names one entry for the
+    /// life of the builder, so a recycled path slot gives a different key.
+    ///
+    /// The point is the origin of the clip's rect, which positions the path.
+    /// Clip rects are snapped to the device pixel grid, but the path stays at
+    /// its unsnapped position.
+    Path(Handle<Path>, FillRule, LayoutPointAu),
+    Border(BorderClipKey),
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, MallocSizeOf, Serialize, Deserialize)]
+pub struct BorderClipKey {
+    pub styles: [BorderStyle; 4],
+    pub radius: BorderRadiusAu,
+    pub widths: LayoutSideOffsetsAu,
+    pub inset: LayoutSideOffsetsAu,
+}
+
+impl BorderClipKey {
+    pub fn new(border: &NormalBorder, widths: LayoutSideOffsets) -> Self {
+        Self {
+            styles: [border.top.style, border.right.style, border.bottom.style, border.left.style],
+            radius: border.radius.into(),
+            widths: widths.to_au(),
+            inset: border.inset.to_au(),
+        }
+    }
+
+    pub fn border(self) -> NormalBorder {
+        let side = |style| BorderSide { color: ColorF::WHITE, style };
+        let mut border = NormalBorder {
+            top: side(self.styles[0]), right: side(self.styles[1]),
+            bottom: side(self.styles[2]), left: side(self.styles[3]),
+            radius: self.radius.into(),
+            inset: LayoutSideOffsets::from_au(self.inset),
+            do_aa: true,
+        };
+        border.normalize(&LayoutSideOffsets::from_au(self.widths));
+        border
+    }
+}
+
+impl ClipItemKeyKind {
+    pub fn rectangle(mode: ClipMode) -> Self {
+        ClipItemKeyKind::Rectangle(mode)
+    }
+
+    /// Zero radii are a plain rectangle, folded here so both render the same
+    /// and intern to one entry.
+    pub fn rounded_rect(radii: BorderRadius, inset: LayoutSideOffsets, mode: ClipMode) -> Self {
+        if radii.is_zero() {
+            ClipItemKeyKind::rectangle(mode)
+        } else {
+            ClipItemKeyKind::RoundedRectangle(radii.into(), inset.to_au(), mode)
+        }
+    }
+
+    pub fn image_mask(image_mask: &ImageMask, polygon: Option<Handle<PolygonKey>>) -> Self {
+        ClipItemKeyKind::ImageMask(image_mask.image, polygon)
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, MallocSizeOf, Serialize, Deserialize)]
+pub struct ClipItemKey {
+    pub kind: ClipItemKeyKind,
 }

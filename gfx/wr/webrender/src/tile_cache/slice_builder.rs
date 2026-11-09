@@ -577,7 +577,7 @@ fn create_tile_cache(
         let is_rcs = spatial_tree.is_root_coord_system(node.spatial_node_index);
 
         let node_valid = if is_rcs {
-            match clip_node_data.key.kind {
+            match clip_node_data.kind {
                 ClipItemKeyKind::ImageMask(..) |
                 ClipItemKeyKind::Path(..) |
                 ClipItemKeyKind::Border(_) |
@@ -623,7 +623,7 @@ fn create_tile_cache(
                 // correct spatial transforms is performed in pre_update; here we just
                 // verify the clips are geometrically compatible in their local spaces
                 // to decide whether to keep both in the shared clip chain.
-                let can_combine = match (accumulated_rounded_rect, clip_node_data.key.kind) {
+                let can_combine = match (accumulated_rounded_rect, clip_node_data.kind) {
                     (
                         Some((acc_rect, acc_radius)),
                         ClipItemKeyKind::RoundedRectangle(radius, _, ClipMode::Clip),
@@ -648,7 +648,7 @@ fn create_tile_cache(
                     // Can't combine, drop children and keep only this clip.
                     shared_clip_node_id = current_node_id;
                     rounded_rect_count = 1;
-                    if let ClipItemKeyKind::RoundedRectangle(radius, _, ClipMode::Clip) = clip_node_data.key.kind {
+                    if let ClipItemKeyKind::RoundedRectangle(radius, _, ClipMode::Clip) = clip_node_data.kind {
                         let radius = clamped_radius(&BorderRadius::from(radius), node.unsnapped_clip_rect.size());
                         accumulated_rounded_rect = Some((node.unsnapped_clip_rect, radius));
                     }

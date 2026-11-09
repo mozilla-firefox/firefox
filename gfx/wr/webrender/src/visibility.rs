@@ -843,7 +843,7 @@ pub fn update_prim_visibility(
                 clip_root,
                 snapped_local_clip_rect,
                 &frame_context.spatial_tree,
-                &frame_state.data_stores.clip,
+                &frame_state.dl_stores.clips,
                 frame_state.clip_tree,
             );
 
@@ -856,7 +856,7 @@ pub fn update_prim_visibility(
                     &mut frame_state.frame_gpu_data.f32,
                     frame_state.resource_cache,
                     &surface_culling_rect,
-                    &frame_state.data_stores.clip,
+                    &frame_state.dl_stores.clips,
                     frame_state.rg_builder,
                     true,
                 );
@@ -914,7 +914,6 @@ pub fn update_prim_visibility(
                         // have inflation anyway.
                         local_coverage_rect,
                         frame_context,
-                        frame_state.data_stores,
                         frame_state.dl_stores,
                         frame_state.clip_store,
                         &store.pictures,

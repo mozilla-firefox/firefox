@@ -443,15 +443,15 @@ impl<I: Internable> ops::Index<Handle<I>> for Interner<I> {
 macro_rules! enumerate_interners {
     ($macro_name: ident) => {
         $macro_name! {
-            clip: ClipIntern,
-            // Every primitive that comes from a display item is interned by the
-            // content display list builder now, so none of them has a slot
-            // here. See doc/dl-builder-interning.md.
+            // Everything that comes from a display item - every primitive,
+            // clips and clip-path polygons - is interned by the content display
+            // list builder now, so none of it has a slot here. What is left is
+            // what the scene builder synthesises. See
+            // doc/dl-builder-interning.md.
             picture: Picture,
             filter_data: FilterDataIntern,
             backdrop_capture: BackdropCapture,
             backdrop_render: BackdropRender,
-            polygon: PolygonIntern,
         }
     }
 }

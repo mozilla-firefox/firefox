@@ -25,15 +25,16 @@ use crate::color::{ColorF, ColorU};
 use crate::font::{FontInstanceKey, GlyphInstance, GlyphOptions};
 use crate::image::{ColorDepth, ImageKey};
 use crate::interned_prims::{
-    BoxShadow, BoxShadowKey, ConicGradientKey, Image, ImageBorder, ImageBorderKey, ImagePrimKey,
-    LineDecoration, LineDecorationKey, LinearGradientKey, NormalBorderKey, NormalBorderPrim,
-    RadialGradientKey, RectangleKey, RectanglePrim, TextRunKey, YuvImage, YuvImagePrimKey,
+    BorderClipKey, BoxShadow, BoxShadowKey, ClipItemKey, ClipItemKeyKind, ConicGradientKey, Image,
+    ImageBorder, ImageBorderKey, ImagePrimKey, LineDecoration, LineDecorationKey, LinearGradientKey,
+    NormalBorderKey, NormalBorderPrim, RadialGradientKey, RectangleKey, RectanglePrim, TextRunKey,
+    YuvImage, YuvImagePrimKey,
 };
 use crate::interning::{self, DlDelta};
 use crate::path::Path;
 use crate::key_types::{
-    EdgeMask, GlyphInstanceAu, GradientStopKey, NinePatchDescriptor, PointKey, PrimKeyCommonData,
-    StretchSizeKey, SubRectKey,
+    EdgeMask, GlyphInstanceAu, GradientStopKey, NinePatchDescriptor, PointKey, PolygonKey,
+    PrimKeyCommonData, StretchSizeKey, SubRectKey,
 };
 use crate::prim_geometry::{
     apply_gradient_local_clip, conic_gradient_prim, image_stretch_size, linear_gradient_prim,
@@ -356,10 +357,6 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                     DisplayListBuilder::push_iter_impl(&mut temp, stops);
                     Real::SetGradientStops
                 },
-                Debug::SetPoints(points) => {
-                    DisplayListBuilder::push_iter_impl(&mut temp, points);
-                    Real::SetPoints
-                },
                 Debug::RectClip(v) => Real::RectClip(v),
                 Debug::RoundedRectClip(v) => Real::RoundedRectClip(v),
                 Debug::BorderClip(v) => Real::BorderClip(v),
@@ -428,7 +425,6 @@ pub struct BuiltDisplayListIter<'a> {
     cur_filters: ItemRange<'a, di::FilterOp>,
     cur_filter_data: Vec<TempFilterData<'a>>,
     cur_clip_chain_items: ItemRange<'a, di::ClipId>,
-    cur_points: ItemRange<'a, LayoutPoint>,
     peeking: Peek,
     /// Should just be initialized but never populated in release builds
     debug_stats: DebugStats,
@@ -516,10 +512,6 @@ impl<'a, 'b> DisplayItemRef<'a, 'b> {
 
     pub fn clip_chain_items(&self) -> ItemRange<di::ClipId> {
         self.iter.cur_clip_chain_items
-    }
-
-    pub fn points(&self) -> ItemRange<LayoutPoint> {
-        self.iter.cur_points
     }
 
     pub fn gradient_stops(&self) -> ItemRange<di::GradientStop> {
@@ -693,9 +685,6 @@ impl BuiltDisplayList {
                 Real::SetGradientStops => Debug::SetGradientStops(
                     item.iter.cur_stops.iter().collect()
                 ),
-                Real::SetPoints => Debug::SetPoints(
-                    item.iter.cur_points.iter().collect()
-                ),
                 Real::RectClip(v) => Debug::RectClip(v),
                 Real::RoundedRectClip(v) => Debug::RoundedRectClip(v),
                 Real::BorderClip(v) => Debug::BorderClip(v),
@@ -739,7 +728,6 @@ impl<'a> BuiltDisplayListIter<'a> {
             cur_filters: ItemRange::default(),
             cur_filter_data: Vec::new(),
             cur_clip_chain_items: ItemRange::default(),
-            cur_points: ItemRange::default(),
             peeking: Peek::NotPeeking,
             debug_stats: DebugStats {
                 last_addr: data.as_ptr() as usize,
@@ -781,7 +769,6 @@ impl<'a> BuiltDisplayListIter<'a> {
         // Don't let these bleed into another item
         self.cur_stops = ItemRange::default();
         self.cur_clip_chain_items = ItemRange::default();
-        self.cur_points = ItemRange::default();
         self.cur_filters = ItemRange::default();
         self.cur_filter_data.clear();
 
@@ -790,8 +777,7 @@ impl<'a> BuiltDisplayListIter<'a> {
             match self.cur_item {
                 SetGradientStops |
                 SetFilterOps |
-                SetFilterData |
-                SetPoints => {
+                SetFilterData => {
                     // These are marker items for populating other display items, don't yield them.
                     continue;
                 }
@@ -844,10 +830,6 @@ impl<'a> BuiltDisplayListIter<'a> {
                 self.debug_stats.log_slice("set_filter_data.g_values", &data.g_values);
                 self.debug_stats.log_slice("set_filter_data.b_values", &data.b_values);
                 self.debug_stats.log_slice("set_filter_data.a_values", &data.a_values);
-            }
-            SetPoints => {
-                self.cur_points = self.skip_slice("set_points.points");
-                self.debug_stats.log_slice("set_points.points", &self.cur_points);
             }
             ClipChain(_) => {
                 self.cur_clip_chain_items = self.skip_slice("clip_chain.clip_ids");
@@ -3145,31 +3127,27 @@ impl DisplayListBuilder {
         fill_rule: di::FillRule,
     ) -> di::ClipId {
         let id = self.generate_clip_index();
-        let offset = self.accumulated_scroll_offset(spatial_id);
+        let rect = self.normalize_rect(image_mask.rect, spatial_id);
 
-        let mut image_mask = image_mask;
-        image_mask.rect = self.shift_rect(image_mask.rect, offset);
-
-        let item = di::DisplayItem::ImageMaskClip(di::ImageMaskClipDisplayItem {
-            id,
-            spatial_id,
-            image_mask,
-            fill_rule,
+        // Three points is the minimum for a polygon; fewer means a plain mask.
+        // The points are relative to the mask rect's origin, not in the
+        // spatial node's space (see `polygon_contains_point`), so they carry
+        // no external scroll offset and are interned as given.
+        let polygon = if points.len() >= 3 {
+            Some(self.interners.intern(&PolygonKey::new(points, fill_rule)))
+        } else {
+            None
+        };
+        let clip = self.interners.intern(&ClipItemKey {
+            kind: ClipItemKeyKind::image_mask(&image_mask, polygon),
         });
 
-        // We only need to supply points if there are at least 3, which is the
-        // minimum to specify a polygon. BuiltDisplayListIter.next ensures that points
-        // are cleared between processing other display items, so we'll correctly get
-        // zero points when no SetPoints item has been pushed.
-        //
-        // The points are relative to the mask rect's origin, not in the spatial
-        // node's space (see `polygon_contains_point`), so they carry no external
-        // scroll offset and must not be normalized - the rect above already was.
-        if points.len() >= 3 {
-            self.push_item(&di::DisplayItem::SetPoints);
-            self.push_iter(points);
-        }
-        self.push_item(&item);
+        self.push_item(&di::DisplayItem::ImageMaskClip(di::ImageMaskClipDisplayItem {
+            id,
+            spatial_id,
+            rect,
+            clip,
+        }));
         id
     }
 
@@ -3181,17 +3159,18 @@ impl DisplayListBuilder {
         fill_rule: di::FillRule,
     ) -> di::ClipId {
         let id = self.generate_clip_index();
+        let rect = self.normalize_rect(rect, spatial_id);
         let path = self.interners.intern(path);
-
-        let item = di::DisplayItem::PathClip(di::PathClipDisplayItem {
-            id,
-            spatial_id,
-            path,
-            rect: self.normalize_rect(rect, spatial_id),
-            fill_rule,
+        let clip = self.interners.intern(&ClipItemKey {
+            kind: ClipItemKeyKind::Path(path, fill_rule, rect.min.to_au()),
         });
 
-        self.push_item(&item);
+        self.push_item(&di::DisplayItem::PathClip(di::PathClipDisplayItem {
+            id,
+            spatial_id,
+            rect,
+            clip,
+        }));
         id
     }
 
@@ -3220,16 +3199,25 @@ impl DisplayListBuilder {
         anti_aliased: bool,
     ) -> di::ClipId {
         let id = self.generate_clip_index();
+        let clip_rect = self.normalize_rect(clip_rect, spatial_id);
+        let clip = self.intern_rect_clip();
 
-        let item = di::DisplayItem::RectClip(di::RectClipDisplayItem {
+        self.push_item(&di::DisplayItem::RectClip(di::RectClipDisplayItem {
             id,
             spatial_id,
-            clip_rect: self.normalize_rect(clip_rect, spatial_id),
+            clip_rect,
+            clip,
             anti_aliased,
-        });
-
-        self.push_item(&item);
+        }));
         id
+    }
+
+    /// Every rectangle clip in clip mode is the same shape, so this is one
+    /// entry per builder however many clips it defines.
+    fn intern_rect_clip(&mut self) -> interning::Handle<ClipItemKey> {
+        self.interners.intern(&ClipItemKey {
+            kind: ClipItemKeyKind::rectangle(di::ClipMode::Clip),
+        })
     }
 
     pub fn define_clip_rounded_rect(
@@ -3255,23 +3243,24 @@ impl DisplayListBuilder {
     fn define_clip_rounded_rect_impl(
         &mut self,
         spatial_id: di::SpatialId,
-        mut clip: di::ComplexClipRegion,
+        clip: di::ComplexClipRegion,
         snap_outset: f32,
         anti_aliased: bool,
     ) -> di::ClipId {
         let id = self.generate_clip_index();
+        let rect = self.normalize_rect(clip.rect, spatial_id);
+        let clip = self.interners.intern(&ClipItemKey {
+            kind: ClipItemKeyKind::rounded_rect(clip.radii, clip.inset, clip.mode),
+        });
 
-        clip.rect = self.normalize_rect(clip.rect, spatial_id);
-
-        let item = di::DisplayItem::RoundedRectClip(di::RoundedRectClipDisplayItem {
+        self.push_item(&di::DisplayItem::RoundedRectClip(di::RoundedRectClipDisplayItem {
             id,
             spatial_id,
+            rect,
             clip,
             snap_outset,
             anti_aliased,
-        });
-
-        self.push_item(&item);
+        }));
         id
     }
 
@@ -3283,14 +3272,16 @@ impl DisplayListBuilder {
         widths: LayoutSideOffsets,
     ) -> di::ClipId {
         let id = self.generate_clip_index();
-        let item = di::DisplayItem::BorderClip(di::BorderClipDisplayItem {
+        let clip_rect = self.normalize_rect(clip_rect, spatial_id);
+        let clip = self.interners.intern(&ClipItemKey {
+            kind: ClipItemKeyKind::Border(BorderClipKey::new(&border, widths)),
+        });
+        self.push_item(&di::DisplayItem::BorderClip(di::BorderClipDisplayItem {
             id,
             spatial_id,
-            clip_rect: self.normalize_rect(clip_rect, spatial_id),
-            border,
-            widths,
-        });
-        self.push_item(&item);
+            clip_rect,
+            clip,
+        }));
         id
     }
 
@@ -3343,9 +3334,11 @@ impl DisplayListBuilder {
         ignore_missing_pipeline: bool
     ) {
         let offset = self.accumulated_scroll_offset(space_and_clip.spatial_id);
+        let clip = self.intern_rect_clip();
         let item = di::DisplayItem::Iframe(di::IframeDisplayItem {
             bounds: self.shift_rect(bounds, offset),
             clip_rect: self.shift_rect(clip_rect, offset),
+            clip,
             space_and_clip: *space_and_clip,
             pipeline_id,
             ignore_missing_pipeline,
@@ -3398,7 +3391,6 @@ impl DisplayListBuilder {
             Definition {
                 item: di::DisplayItem,
                 clip_ids: Vec<di::ClipId>,
-                points: Vec<LayoutPoint>,
             },
             Draw(DrawEntry),
         }
@@ -3425,7 +3417,6 @@ impl DisplayListBuilder {
                     | di::DisplayItem::ClipChain(..)) => Parsed::Definition {
                         item: *def,
                         clip_ids: item.clip_chain_items().iter().collect(),
-                        points: item.points().iter().collect(),
                     },
                     draw => Parsed::Draw(DrawEntry {
                         item: *draw,
@@ -3453,11 +3444,7 @@ impl DisplayListBuilder {
         // 1. Clip / clip-chain definitions, verbatim and in order, before the
         //    shadows so their ids resolve for both copies and originals.
         for p in &parsed {
-            if let Parsed::Definition { item, clip_ids, points } = p {
-                if !points.is_empty() {
-                    self.push_item(&di::DisplayItem::SetPoints);
-                    self.push_iter(points);
-                }
+            if let Parsed::Definition { item, clip_ids } = p {
                 self.push_item(item);
                 if matches!(item, di::DisplayItem::ClipChain(..)) {
                     self.push_iter(clip_ids);
@@ -5163,6 +5150,100 @@ mod text_interning_tests {
         let (_, dl) = builder.end();
         assert_eq!(dl.delta().text_runs.adds.len(), 2);
         assert_eq!(text_items(&dl).len(), 2);
+    }
+}
+
+#[cfg(test)]
+mod clip_interning_tests {
+    use super::*;
+    use crate::IdNamespace;
+
+    const RECT: LayoutRect = LayoutRect {
+        min: LayoutPoint::new(10.0, 10.0),
+        max: LayoutPoint::new(110.0, 60.0),
+    };
+
+    fn spatial() -> di::SpatialId {
+        di::SpatialId::root_scroll_node(PipelineId::dummy())
+    }
+
+    fn rounded(radius: f32) -> di::ComplexClipRegion {
+        di::ComplexClipRegion {
+            rect: RECT,
+            radii: di::BorderRadius::uniform(radius),
+            inset: LayoutSideOffsets::zero(),
+            mode: di::ClipMode::Clip,
+        }
+    }
+
+    fn mask() -> di::ImageMask {
+        di::ImageMask { image: ImageKey::new(IdNamespace(1), 9), rect: RECT }
+    }
+
+    #[test]
+    fn every_rect_clip_is_one_entry() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        // The rect is per instance, so all rectangle clips in clip mode - and
+        // the iframe root clip, and a rounded clip with no radius - share it.
+        builder.define_clip_rect(spatial(), RECT);
+        builder.define_clip_rect(spatial(), RECT.translate(LayoutVector2D::new(500.0, 0.0)));
+        builder.define_clip_rounded_rect(spatial(), rounded(0.0));
+        builder.push_iframe(
+            RECT,
+            RECT,
+            &di::SpaceAndClipInfo::root_scroll(PipelineId::dummy()),
+            PipelineId(1, 1),
+            false,
+        );
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().clips.adds.len(), 1);
+        assert_eq!(
+            dl.delta().clips.adds[0].key.kind,
+            ClipItemKeyKind::Rectangle(di::ClipMode::Clip),
+        );
+        assert!(dl.delta().polygons.is_empty());
+    }
+
+    #[test]
+    fn rounded_clips_key_on_their_radii() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        builder.define_clip_rounded_rect(spatial(), rounded(4.0));
+        builder.define_clip_rounded_rect(spatial(), rounded(4.0));
+        builder.define_clip_rounded_rect(spatial(), rounded(8.0));
+
+        let (_, dl) = builder.end();
+        assert_eq!(dl.delta().clips.adds.len(), 2);
+    }
+
+    #[test]
+    fn an_image_mask_with_points_interns_a_polygon() {
+        let mut builder = DisplayListBuilder::new(PipelineId::dummy());
+        builder.begin(60.0);
+
+        let points = [
+            LayoutPoint::new(0.0, 0.0),
+            LayoutPoint::new(100.0, 0.0),
+            LayoutPoint::new(50.0, 50.0),
+        ];
+        builder.define_clip_image_mask(spatial(), mask(), &points, di::FillRule::Nonzero);
+        // Two points are not a polygon.
+        builder.define_clip_image_mask(spatial(), mask(), &points[..2], di::FillRule::Nonzero);
+
+        let (_, dl) = builder.end();
+        let polygons = &dl.delta().polygons.adds;
+        assert_eq!(polygons.len(), 1);
+        assert_eq!(polygons[0].key.point_count, 3);
+        let clips = &dl.delta().clips.adds;
+        assert_eq!(clips.len(), 2, "with and without a polygon are different clips");
+        let with_polygon = clips.iter().filter(|add| {
+            matches!(add.key.kind, ClipItemKeyKind::ImageMask(_, Some(polygon)) if polygon.slot() == polygons[0].slot)
+        }).count();
+        assert_eq!(with_polygon, 1, "the clip names the polygon it was interned with");
     }
 }
 

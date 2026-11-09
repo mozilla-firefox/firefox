@@ -28,7 +28,7 @@ use crate::picture_textures::PictureTextures;
 use crate::render_api::{MemoryReport, TransactionMsg, ResourceUpdate, ApiMsg, FrameMsg, ClearCache, DebugCommand, ResourceCacheInit, WindowRegistration};
 use crate::texture_cache::TextureCache;
 use glyph_rasterizer::GlyphRasterizer;
-use crate::clip::{ClipIntern, PolygonIntern, ClipStoreScratchBuffer};
+use crate::clip::ClipStoreScratchBuffer;
 use crate::filterdata::FilterDataIntern;
 #[cfg(any(feature = "capture", feature = "replay"))]
 use crate::capture::CaptureConfig;

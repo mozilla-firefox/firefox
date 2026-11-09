@@ -6,10 +6,10 @@ use api::{BorderRadius, ClipMode, HitTestResultItem, HitTestResult, ItemTag, Pri
 use api::{PipelineId, ApiHitTester, FillRule, Path, PathEvent};
 use api::units::*;
 use crate::bezier;
-use crate::clip::{rounded_rectangle_contains_point, ClipNodeId, ClipTreeBuilder};
+use crate::clip::{rounded_rectangle_contains_point, ClipDataHandle, ClipNodeId, ClipTreeBuilder};
 use crate::clip::{ClipItemKey, ClipItemKeyKind};
 use crate::prim_store::PolygonKey;
-use crate::scene_builder_thread::{Interners, SceneDlStores};
+use crate::scene_builder_thread::SceneDlStores;
 use crate::spatial_tree::{SpatialNodeIndex, SpatialTree};
 use crate::internal_types::{FastHashMap, LayoutPrimitiveInfo};
 use std::sync::{Arc, Mutex};
@@ -75,9 +75,9 @@ struct HitTestClipNode {
 impl HitTestClipNode {
     fn new(
         item: &ClipItemKey,
+        handle: ClipDataHandle,
         clip_rect: LayoutRect,
-        interners: &Interners,
-        dl_stores: &SceneDlStores,
+        stores: &SceneDlStores,
         parent: ClipNodeId,
         spatial_node_index: SpatialNodeIndex,
     ) -> Self {
@@ -92,17 +92,23 @@ impl HitTestClipNode {
                 // TODO(wsmind): implement hit-testing for corner-shape
                 HitTestRegion::RoundedRectangle(clip_rect, radius.into(), mode)
             }
-            ClipItemKeyKind::ImageMask(_, polygon_handle) => {
-                if let Some(handle) = polygon_handle {
-                    // Retrieve the polygon data from the interner.
-                    let polygon = &interners.polygon[handle];
+            ClipItemKeyKind::ImageMask(_, polygon) => {
+                if let Some(polygon) = polygon {
+                    // The polygon was interned by the same builder as the
+                    // clip, so it lives in the clip's namespace.
+                    let polygon = &stores.polygons[handle.sibling(polygon.slot())];
                     HitTestRegion::Polygon(clip_rect, *polygon)
                 } else {
                     HitTestRegion::Rectangle(clip_rect, ClipMode::Clip)
                 }
             }
-            ClipItemKeyKind::Path(path, _, fill_rule, _) => {
-                HitTestRegion::Path(clip_rect, dl_stores.path[path].clone(), fill_rule)
+            ClipItemKeyKind::Path(path, fill_rule, _) => {
+                // A path the scene builder could not find has an empty clip
+                // rect, so it hits nothing either way.
+                match stores.path.get(handle.sibling(path.slot())) {
+                    Some(path) => HitTestRegion::Path(clip_rect, path.clone(), fill_rule),
+                    None => HitTestRegion::Rectangle(clip_rect, ClipMode::Clip),
+                }
             }
         };
 
@@ -200,8 +206,7 @@ impl HitTestingScene {
         &mut self,
         clip_node_id: ClipNodeId,
         clip_tree_builder: &ClipTreeBuilder,
-        interners: &Interners,
-        dl_stores: &SceneDlStores,
+        stores: &SceneDlStores,
     ) {
         if clip_node_id == ClipNodeId::NONE {
             return;
@@ -209,7 +214,7 @@ impl HitTestingScene {
 
         if !self.clip_nodes.contains_key(&clip_node_id) {
             let src_clip_node = clip_tree_builder.get_node(clip_node_id);
-            let clip_item = &interners.clip[src_clip_node.handle];
+            let clip_item = &stores.clips[src_clip_node.handle];
 
             // SNAPTODO: Scene-build hit-test scene captures the unsnapped
             // clip rect. Snapping happens against frame-time spatial state
@@ -217,10 +222,10 @@ impl HitTestingScene {
             // confirm using the unsnapped value is correct for hit
             // semantics, or apply a frame-time snap before testing.
             let clip_node = HitTestClipNode::new(
-                &clip_item.key,
+                clip_item,
+                src_clip_node.handle,
                 src_clip_node.unsnapped_clip_rect,
-                interners,
-                dl_stores,
+                stores,
                 src_clip_node.parent,
                 src_clip_node.spatial_node_index,
             );
@@ -230,8 +235,7 @@ impl HitTestingScene {
             self.add_clip_node(
                 src_clip_node.parent,
                 clip_tree_builder,
-                interners,
-                dl_stores,
+                stores,
             );
         }
     }
@@ -245,14 +249,12 @@ impl HitTestingScene {
         spatial_node_index: SpatialNodeIndex,
         clip_node_id: ClipNodeId,
         clip_tree_builder: &ClipTreeBuilder,
-        interners: &Interners,
-        dl_stores: &SceneDlStores,
+        stores: &SceneDlStores,
     ) {
         self.add_clip_node(
             clip_node_id,
             clip_tree_builder,
-            interners,
-            dl_stores,
+            stores,
         );
 
         let item = HitTestingItem::new(

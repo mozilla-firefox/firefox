@@ -14,7 +14,6 @@ use crate::render_api::{ApiMsg, FrameMsg, SceneMsg, ResourceUpdate, TransactionM
 use crate::capture::CaptureConfig;
 use crate::frame_builder::FrameBuilderConfig;
 use crate::scene_building::{SceneBuilder, SceneRecycler};
-use crate::clip::{ClipIntern, PolygonIntern};
 use crate::dl_interner::{DeltaAction, DlBuilderMap, DlNamespace, DlResolveContext};
 use crate::filterdata::FilterDataIntern;
 use glyph_rasterizer::SharedFontResources;

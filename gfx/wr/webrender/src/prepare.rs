@@ -279,8 +279,8 @@ fn prepare_prim_for_render(
                 quad_clips,
                 &prim_info.clip_chain,
                 &frame_state.surfaces[pic_context.surface_index.0],
-                &data_stores.clip,
-                frame_context.dl_stores,
+                &dl_stores.clips,
+                dl_stores,
             );
 
             quad::prepare_quad(
@@ -382,7 +382,7 @@ fn prepare_prim_for_render(
                 pic_context,
                 frame_context,
                 frame_state,
-                &data_stores.clip,
+                &dl_stores.clips,
                 scratch,
             ) {
                 return;
@@ -401,8 +401,8 @@ fn prepare_prim_for_render(
         quad_clips,
         &prim_info.clip_chain,
         &frame_state.surfaces[pic_context.surface_index.0],
-        &data_stores.clip,
-        frame_context.dl_stores,
+        &dl_stores.clips,
+        dl_stores,
     );
 
     match &mut prim_instance.kind {
@@ -1057,6 +1057,7 @@ fn prepare_prim_for_render(
                 frame_state,
                 scratch,
                 data_stores,
+                dl_stores,
                 pic_context,
                 pic_scratch_handle,
                 &prim_info,

@@ -49,6 +49,7 @@ macro_rules! enumerate_dl_stores {
             normal_borders: api::interned_prims::NormalBorderKey => crate::prim_store::borders::NormalBorderTemplate, INTERNED_NORMAL_BORDERS, normal_border,
             image_borders: api::interned_prims::ImageBorderKey => crate::prim_store::borders::ImageBorderTemplate, INTERNED_IMAGE_BORDERS, image_border,
             text_runs: api::interned_prims::TextRunKey => crate::prim_store::text_run::TextRunTemplate, INTERNED_TEXT_RUNS, text_run,
+            clips: api::interned_prims::ClipItemKey => crate::clip::ClipNode, INTERNED_CLIPS, clip,
         }
     }
 }
@@ -56,8 +57,11 @@ macro_rules! enumerate_dl_stores {
 /// The follower stores the scene builder itself reads, in the same shape as
 /// `enumerate_dl_stores!` minus the gauge. Every primitive type has one
 /// holding its `PrimPlacement`, since a primitive's display item carries only
-/// the handle, the spatial id and the clip chain. Clips will need their key,
-/// since clip chain building, slice partitioning and hit testing read it.
+/// the handle, the spatial id and the clip chain. Clips have one holding the
+/// key as content sent it, since clip chain building, slice partitioning and
+/// hit testing read it, and so do the clip-path polygons the hit tester reads;
+/// frame building never looks at a polygon, so they have no render backend
+/// store. The clip stores on both sides report under `clip`.
 #[macro_export]
 macro_rules! enumerate_scene_dl_stores {
     ($macro_name: ident) => {
@@ -74,6 +78,8 @@ macro_rules! enumerate_scene_dl_stores {
             normal_borders: api::interned_prims::NormalBorderKey => crate::prim_store::PrimPlacement, normal_border,
             image_borders: api::interned_prims::ImageBorderKey => crate::prim_store::PrimPlacement, image_border,
             text_runs: api::interned_prims::TextRunKey => crate::prim_store::PrimPlacement, text_run,
+            clips: api::interned_prims::ClipItemKey => api::interned_prims::ClipItemKey, clip,
+            polygons: api::key_types::PolygonKey => api::key_types::PolygonKey, polygon,
         }
     }
 }

@@ -34,7 +34,7 @@ use crate::picture::{get_relative_scale_offset, PictureInstance};
 use crate::picture::MAX_COMPOSITOR_SURFACES_SIZE;
 use crate::prim_store::{ClipSnap, PrimitiveInstance, PrimitiveKind, PrimitiveScratchBuffer, PictureIndex};
 use crate::print_tree::{PrintTreePrinter, PrintTree};
-use crate::{profiler, render_backend::{DataStores, DlStores}};
+use crate::{profiler, render_backend::DlStores};
 use crate::profiler::TransactionProfile;
 use crate::renderer::GpuBufferBuilderF;
 use crate::resource_cache::{ResourceCache, ImageRequest};
@@ -1423,7 +1423,7 @@ impl TileCacheInstance {
                 // A tile cache has no local clip rect of its own.
                 LayoutRect::max_rect(),
                 frame_context.spatial_tree,
-                &frame_state.data_stores.clip,
+                &frame_state.dl_stores.clips,
                 &frame_state.clip_tree,
             );
 
@@ -1434,7 +1434,7 @@ impl TileCacheInstance {
                 &mut frame_state.frame_gpu_data.f32,
                 frame_state.resource_cache,
                 &surface.culling_rect,
-                &frame_state.data_stores.clip,
+                &frame_state.dl_stores.clips,
                 frame_state.rg_builder,
                 true,
             );
@@ -1457,7 +1457,7 @@ impl TileCacheInstance {
                         let clip_instance = frame_state
                             .clip_store
                             .get_instance_from_range(&clip_chain.clips_range, i);
-                        let clip_node = &frame_state.data_stores.clip[clip_instance.handle];
+                        let clip_node = &frame_state.dl_stores.clips[clip_instance.handle];
 
                         if let ClipItemKind::RoundedRectangle { radius, inset: _, mode } = clip_node.item.kind {
                             assert_eq!(mode, ClipMode::Clip);
@@ -1511,7 +1511,7 @@ impl TileCacheInstance {
                                     rect: clip_instance.clip_rect,
                                     radius,
                                     spatial_node_index: clip_instance.spatial_node_index,
-                                    uid: clip_instance.handle.uid().get_uid(),
+                                    uid: frame_state.dl_stores.clips.uid(clip_instance.handle).get_uid(),
                                 });
                             }
                         }
@@ -1759,7 +1759,7 @@ impl TileCacheInstance {
         surface_kind: CompositorSurfaceKind,
         pic_coverage_rect: PictureRect,
         frame_context: &FrameVisibilityContext,
-        data_stores: &DataStores,
+        dl_stores: &DlStores,
         clip_store: &ClipStore,
         composite_state: &CompositeState,
         force_external_composition: bool,
@@ -1783,7 +1783,7 @@ impl TileCacheInstance {
                     if composite_state.compositor_kind.supports_rounded_clip_promotion() {
                         if prim_clip_chain.clips_range.count == 1 && self.compositor_clip.is_none() {
                             let clip_instance = clip_store.get_instance_from_range(&prim_clip_chain.clips_range, 0);
-                            let clip_node = &data_stores.clip[clip_instance.handle];
+                            let clip_node = &dl_stores.clips[clip_instance.handle];
 
                             if let ClipItemKind::RoundedRectangle { ref radius, mode: ClipMode::Clip, .. } = clip_node.item.kind {
                                 // Compositor rounded clips only support the default round
@@ -1928,7 +1928,7 @@ impl TileCacheInstance {
         prim_spatial_node_index: SpatialNodeIndex,
         pic_coverage_rect: PictureRect,
         frame_context: &FrameVisibilityContext,
-        data_stores: &DataStores,
+        dl_stores: &DlStores,
         clip_store: &ClipStore,
         image_dependencies: &[ImageDependency;3],
         api_keys: &[ImageKey; 3],
@@ -1964,7 +1964,7 @@ impl TileCacheInstance {
             prim_spatial_node_index,
             pic_coverage_rect,
             frame_context,
-            data_stores,
+            dl_stores,
             clip_store,
             ExternalSurfaceDependency::Yuv {
                 image_dependencies: *image_dependencies,
@@ -1992,7 +1992,7 @@ impl TileCacheInstance {
         prim_spatial_node_index: SpatialNodeIndex,
         pic_coverage_rect: PictureRect,
         frame_context: &FrameVisibilityContext,
-        data_stores: &DataStores,
+        dl_stores: &DlStores,
         clip_store: &ClipStore,
         image_dependency: ImageDependency,
         api_key: ImageKey,
@@ -2030,7 +2030,7 @@ impl TileCacheInstance {
             prim_spatial_node_index,
             pic_coverage_rect,
             frame_context,
-            data_stores,
+            dl_stores,
             clip_store,
             ExternalSurfaceDependency::Rgb {
                 image_dependency,
@@ -2057,7 +2057,7 @@ impl TileCacheInstance {
         prim_spatial_node_index: SpatialNodeIndex,
         pic_coverage_rect: PictureRect,
         frame_context: &FrameVisibilityContext,
-        data_stores: &DataStores,
+        dl_stores: &DlStores,
         clip_store: &ClipStore,
         dependency: ExternalSurfaceDependency,
         api_keys: &[ImageKey; 3],
@@ -2149,7 +2149,7 @@ impl TileCacheInstance {
             assert!(self.compositor_clip.is_none());
 
             let clip_instance = clip_store.get_instance_from_range(&prim_clip_chain.clips_range, 0);
-            let clip_node = &data_stores.clip[clip_instance.handle];
+            let clip_node = &dl_stores.clips[clip_instance.handle];
             if let ClipItemKind::RoundedRectangle { radius, mode: ClipMode::Clip, .. } = clip_node.item.kind {
                 let radius = clamped_radius(&radius, clip_instance.clip_rect.size());
 
@@ -2411,7 +2411,6 @@ impl TileCacheInstance {
         prim_spatial_node_index: SpatialNodeIndex,
         local_prim_rect: LayoutRect,
         frame_context: &FrameVisibilityContext,
-        data_stores: &DataStores,
         dl_stores: &DlStores,
         clip_store: &ClipStore,
         pictures: &[PictureInstance],
@@ -2622,7 +2621,7 @@ impl TileCacheInstance {
                             CompositorSurfaceKind::Overlay,
                             pic_coverage_rect,
                             frame_context,
-                            data_stores,
+                            dl_stores,
                             clip_store,
                             composite_state,
                             is_drm_source,
@@ -2649,7 +2648,7 @@ impl TileCacheInstance {
                             prim_spatial_node_index,
                             pic_coverage_rect,
                             frame_context,
-                            data_stores,
+                            dl_stores,
                             clip_store,
                             ImageDependency {
                                 key: image_data.key,
@@ -2760,7 +2759,7 @@ impl TileCacheInstance {
                                                         kind,
                                                         pic_coverage_rect,
                                                         frame_context,
-                                                        data_stores,
+                                                        dl_stores,
                                                         clip_store,
                                                         composite_state,
                                                         force_external_composition);
@@ -2807,7 +2806,7 @@ impl TileCacheInstance {
                             prim_spatial_node_index,
                             pic_coverage_rect,
                             frame_context,
-                            data_stores,
+                            dl_stores,
                             clip_store,
                             &image_dependencies,
                             &prim_data.kind.yuv_key,
@@ -3034,7 +3033,7 @@ impl TileCacheInstance {
                     backdrop_candidate.opaque_rect = clip_store
                         .get_inner_rect_for_clip_chain(
                             prim_clip_chain,
-                            &data_stores.clip,
+                            &dl_stores.clips,
                             frame_context.spatial_tree,
                         )
                         .unwrap_or(PictureRect::zero());
@@ -3097,7 +3096,7 @@ impl TileCacheInstance {
         // Compute scratch ranges for clips once, outside the tile loop.
         // Actual quantization into per-tile vert_data happens inside add_prim_dependency.
         for clip_instance in clip_instances {
-            let clip = &data_stores.clip[clip_instance.handle];
+            let clip = &dl_stores.clips[clip_instance.handle];
             let clip_local_rect = match clip.item.kind {
                 ClipItemKind::Rectangle { .. }
                 | ClipItemKind::RoundedRectangle { .. }
@@ -3115,7 +3114,7 @@ impl TileCacheInstance {
                 ),
                 None => VertRange::INVALID,
             };
-            prim_info.clips.push((clip_instance.handle.uid(), clip_scratch));
+            prim_info.clips.push((dl_stores.clips.uid(clip_instance.handle), clip_scratch));
         }
 
         // For unclamped primitives, push prim + coverage into curr_verts once.

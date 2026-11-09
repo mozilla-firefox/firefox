@@ -92,20 +92,19 @@
 //! [segment.rs]: ../segment/index.html
 //!
 
-use api::{BorderRadius, ClipMode, ImageMask, ClipId, ClipChainId};
+use api::{BorderRadius, ClipMode, ClipId, ClipChainId};
 use api::{FillRule, ImageKey, ImageRendering, Path};
-use api::{BorderStyle, BorderSide, ColorF, NormalBorder};
+use api::interning::Handle;
 use api::units::*;
+use crate::dl_interner::{DlHandle, DlResolve, DlResolveContext, DlStore};
 use crate::image_tiling::{self, Repetition};
-use crate::border::BorderRadiusAu;
 use crate::renderer::GpuBufferBuilderF;
 use crate::spatial_tree::{SceneSpatialTree, SpatialTree, SpatialNodeIndex};
 use crate::surface::SurfaceInfo;
 use crate::ellipse::Ellipse;
-use crate::dl_interner::DlHandle;
 use crate::render_backend::DlStores;
-use crate::intern::{self, ItemUid};
 use crate::internal_types::{FastHashMap, FastHashSet};
+use crate::scene_building::validate_image_key;
 use crate::prim_store::{VisibleMaskImageTile};
 use crate::quad_clip::{QuadClipStack, QuadMaskTile};
 use crate::prim_store::{ClipSnap, RectKey, PolygonKey};
@@ -789,9 +788,7 @@ impl ClipTreeBuilder {
         let clip_chain = &self.clip_chains[clip_chain_index];
 
         for clip_entry in &clip_chain.clips {
-            let clip_info = &clips[clip_entry.handle];
-
-            if let ClipNodeKind::Complex = clip_info.key.kind.node_kind() {
+            if let ClipNodeKind::Complex = ClipNodeKind::of(&clips[clip_entry.handle].kind) {
                 return true;
             }
         }
@@ -852,9 +849,7 @@ impl ClipTreeBuilder {
             let clip_chain = &self.clip_chains[index];
 
             for clip_entry in &clip_chain.clips {
-                let clip_info = &clips[clip_entry.handle];
-
-                match clip_info.key.kind {
+                match clips[clip_entry.handle].kind {
                     ClipItemKeyKind::Rectangle(ClipMode::Clip) => {}
                     ClipItemKeyKind::RoundedRectangle(_, _, ClipMode::Clip) => {
                         if !spatial_tree.is_root_coord_system(clip_entry.spatial_node_index) {
@@ -882,9 +877,7 @@ impl ClipTreeBuilder {
 
         while current != ClipNodeId::NONE {
             let node = &self.tree.nodes[current.0 as usize];
-            let clip_info = &clips[node.handle];
-
-            if let ClipNodeKind::Complex = clip_info.key.kind.node_kind() {
+            if let ClipNodeKind::Complex = ClipNodeKind::of(&clips[node.handle].kind) {
                 return true;
             }
 
@@ -975,18 +968,18 @@ impl ClipTreeBuilder {
     }
 }
 
-// Type definitions for interning clip nodes.
+// Type definitions for the interned clips. The content display list builder
+// interns them; see doc/dl-builder-interning.md.
 
-#[derive(Copy, Clone, Debug, MallocSizeOf, PartialEq, Eq, Hash)]
-#[cfg_attr(any(feature = "serde"), derive(Deserialize, Serialize))]
-pub enum ClipIntern {}
-
-pub type ClipDataStore = intern::DataStore<ClipIntern>;
-pub type ClipDataHandle = intern::Handle<ClipIntern>;
+/// The render backend's clip store.
+pub type ClipDataStore = DlStore<ClipItemKey, ClipNode>;
+pub type ClipDataHandle = DlHandle<ClipItemKey>;
 
 /// The scene builder's view of the interned clips, which clip chain building,
-/// slice partitioning and hit testing read for the clip's key.
-pub type SceneClipStore = intern::Interner<ClipIntern>;
+/// slice partitioning and hit testing read for the clip's key. The clip-path
+/// polygons the hit tester reads sit beside it in `SceneDlStores`; frame
+/// building never looks at one, so they have no render backend store.
+pub type SceneClipStore = DlStore<ClipItemKey, ClipItemKey>;
 
 /// Helper to identify simple clips (normal rects) from other kinds of clips,
 /// which can often be handled via fast code paths.
@@ -1019,9 +1012,42 @@ enum ClipResult {
 #[derive(Debug)]
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
-#[derive(MallocSizeOf)]
+#[derive(MallocSizeOf, Clone)]
 pub struct ClipNode {
     pub item: ClipItem,
+}
+
+/// Sanitise an interned clip key for the render backend's store: an image mask
+/// naming another namespace's image becomes one of `ImageKey::DUMMY`, so no
+/// resource is looked up across namespaces at frame time (bug 2054652). The
+/// scene builder makes the same check on the raw key when it defines the node
+/// and gives a failing mask an empty rect, which clips everything out; see
+/// `SceneBuilder::add_image_mask_clip_node`.
+impl DlResolve<ClipItemKey> for ClipNode {
+    fn resolve(key: &ClipItemKey, ctx: &DlResolveContext) -> Self {
+        let key = match key.kind {
+            ClipItemKeyKind::ImageMask(image, polygon) if !validate_image_key(image, ctx.id_namespace) => {
+                ClipItemKey { kind: ClipItemKeyKind::ImageMask(ImageKey::DUMMY, polygon) }
+            }
+            _ => *key,
+        };
+        ClipNode::from(key)
+    }
+}
+
+/// The scene builder keeps the key as content sent it, so that it can tell a
+/// mask that fails the namespace check from one that legitimately names no
+/// image (`ImageKey::DUMMY`, which wrench uses).
+impl DlResolve<ClipItemKey> for ClipItemKey {
+    fn resolve(key: &ClipItemKey, _ctx: &DlResolveContext) -> Self {
+        *key
+    }
+}
+
+impl DlResolve<PolygonKey> for PolygonKey {
+    fn resolve(key: &PolygonKey, _ctx: &DlResolveContext) -> Self {
+        *key
+    }
 }
 
 // Convert from an interning key for a clip item
@@ -1048,7 +1074,7 @@ impl From<ClipItemKey> for ClipNode {
                     image,
                 }
             }
-            ClipItemKeyKind::Path(path, _, fill_rule, origin) => {
+            ClipItemKeyKind::Path(path, fill_rule, origin) => {
                 ClipItemKind::Path {
                     path,
                     fill_rule,
@@ -1496,7 +1522,7 @@ impl ClipStore {
         interned_clips: &ClipDataStore,
         dl_stores: &DlStores,
     ) {
-        let uid = instance.handle.uid().get_uid();
+        let uid = interned_clips.uid(instance.handle).get_uid();
 
         match interned_clips[instance.handle].item.kind {
             ClipItemKind::Rectangle { mode } => {
@@ -1532,14 +1558,24 @@ impl ClipStore {
                 );
             }
             ClipItemKind::Path { path, fill_rule, origin } => {
-                dest.push_path(
-                    instance.clip_rect,
-                    dl_stores.path[path].clone(),
-                    fill_rule,
-                    origin,
-                    instance.spatial_node_index,
-                    uid,
-                );
+                // The scene builder gave a clip naming an unknown path an empty
+                // rect, which clips everything out.
+                match dl_stores.path.get(instance.handle.sibling(path.slot())) {
+                    Some(path) => dest.push_path(
+                        instance.clip_rect,
+                        path.clone(),
+                        fill_rule,
+                        origin,
+                        instance.spatial_node_index,
+                        uid,
+                    ),
+                    None => dest.push_rect(
+                        LayoutRect::zero(),
+                        ClipMode::Clip,
+                        instance.spatial_node_index,
+                        uid,
+                    ),
+                }
             }
         }
     }
@@ -1878,87 +1914,13 @@ impl Default for ClipStore {
 // with the same shape but different positioning or size can share
 // interned data. For rounded-rect clips the stored radii are unclamped;
 // each consumer clamps against the instance clip rect as needed.
-// TODO(gw): Maybe we should consider constructing these directly
-//           in the DL builder?
-#[derive(Copy, Debug, Clone, Eq, MallocSizeOf, PartialEq, Hash)]
-#[cfg_attr(feature = "capture", derive(Serialize))]
-#[cfg_attr(feature = "replay", derive(Deserialize))]
-pub enum ClipItemKeyKind {
-    Rectangle(ClipMode),
-    RoundedRectangle(BorderRadiusAu, LayoutSideOffsetsAu, ClipMode),
-    ImageMask(ImageKey, Option<PolygonDataHandle>),
-    /// The uid is the path's `DlStore::uid`. The handle alone does not
-    /// identify the path: content recycles slots, and a retained clip entry
-    /// keyed on a recycled slot would keep the uid of the path it replaced.
-    ///
-    /// The point is the origin of the clip's rect, which positions the path.
-    /// Clip rects are snapped to the device pixel grid, but the path stays at
-    /// its unsnapped position.
-    Path(DlHandle<Path>, ItemUid, FillRule, LayoutPointAu),
-    Border(BorderClipKey),
-}
+// `ClipItemKey` and `ClipItemKeyKind` live in `webrender_api::interned_prims`,
+// since the content display list builder interns them.
+pub use api::interned_prims::{BorderClipKey, ClipItemKey, ClipItemKeyKind};
 
-#[derive(Copy, Debug, Clone, Eq, MallocSizeOf, PartialEq, Hash)]
-#[cfg_attr(feature = "capture", derive(Serialize))]
-#[cfg_attr(feature = "replay", derive(Deserialize))]
-pub struct BorderClipKey {
-    pub styles: [BorderStyle; 4],
-    pub radius: BorderRadiusAu,
-    pub widths: LayoutSideOffsetsAu,
-    pub inset: LayoutSideOffsetsAu,
-}
-
-impl BorderClipKey {
-    pub fn new(border: &NormalBorder, widths: LayoutSideOffsets) -> Self {
-        Self {
-            styles: [border.top.style, border.right.style, border.bottom.style, border.left.style],
-            radius: border.radius.into(),
-            widths: widths.to_au(),
-            inset: border.inset.to_au(),
-        }
-    }
-
-    pub fn border(self) -> NormalBorder {
-        let side = |style| BorderSide { color: ColorF::WHITE, style };
-        let mut border = NormalBorder {
-            top: side(self.styles[0]), right: side(self.styles[1]),
-            bottom: side(self.styles[2]), left: side(self.styles[3]),
-            radius: self.radius.into(),
-            inset: LayoutSideOffsets::from_au(self.inset),
-            do_aa: true,
-        };
-        border.normalize(&LayoutSideOffsets::from_au(self.widths));
-        border
-    }
-}
-
-impl ClipItemKeyKind {
-    pub fn rectangle(mode: ClipMode) -> Self {
-        ClipItemKeyKind::Rectangle(mode)
-    }
-
-    pub fn rounded_rect(radii: BorderRadius, inset: LayoutSideOffsets, mode: ClipMode) -> Self {
-        if radii.is_zero() {
-            ClipItemKeyKind::rectangle(mode)
-        } else {
-            ClipItemKeyKind::RoundedRectangle(
-                radii.into(),
-                inset.to_au(),
-                mode,
-            )
-        }
-    }
-
-    pub fn image_mask(image_mask: &ImageMask,
-                      polygon_handle: Option<PolygonDataHandle>) -> Self {
-        ClipItemKeyKind::ImageMask(
-            image_mask.image,
-            polygon_handle,
-        )
-    }
-
-    pub fn node_kind(&self) -> ClipNodeKind {
-        match *self {
+impl ClipNodeKind {
+    pub fn of(kind: &ClipItemKeyKind) -> Self {
+        match *kind {
             ClipItemKeyKind::Rectangle(ClipMode::Clip) => ClipNodeKind::Rectangle,
 
             ClipItemKeyKind::Rectangle(ClipMode::ClipOut) |
@@ -1970,31 +1932,7 @@ impl ClipItemKeyKind {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, MallocSizeOf, PartialEq, Hash)]
-#[cfg_attr(feature = "capture", derive(Serialize))]
-#[cfg_attr(feature = "replay", derive(Deserialize))]
-pub struct ClipItemKey {
-    pub kind: ClipItemKeyKind,
-}
-
-/// The data available about an interned clip node during scene building
-#[derive(Debug, MallocSizeOf)]
-#[cfg_attr(feature = "capture", derive(Serialize))]
-#[cfg_attr(feature = "replay", derive(Deserialize))]
-pub struct ClipInternData {
-    pub key: ClipItemKey,
-}
-
-impl intern::InternDebug for ClipItemKey {}
-
-impl intern::Internable for ClipIntern {
-    type Key = ClipItemKey;
-    type StoreData = ClipNode;
-    type InternData = ClipInternData;
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_CLIPS;
-}
-
-#[derive(Debug, MallocSizeOf)]
+#[derive(Debug, MallocSizeOf, Clone)]
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
 pub enum ClipItemKind {
@@ -2013,14 +1951,15 @@ pub enum ClipItemKind {
         image: ImageKey,
     },
     Path {
-        path: DlHandle<Path>,
+        /// Resolved in the clip's namespace, see `ClipItemKeyKind::Path`.
+        path: Handle<Path>,
         fill_rule: FillRule,
         /// See `ClipItemKeyKind::Path`.
         origin: LayoutPoint,
     },
 }
 
-#[derive(Debug, MallocSizeOf)]
+#[derive(Debug, MallocSizeOf, Clone)]
 #[cfg_attr(feature = "capture", derive(Serialize))]
 #[cfg_attr(feature = "replay", derive(Deserialize))]
 pub struct ClipItem {
@@ -2709,23 +2648,3 @@ fn corner_encroaches(
     r.width > dx && r.height > dy
 }
 
-/// PolygonKeys get interned, because it's a convenient way to move the data
-/// for the polygons out of the ClipItemKind and ClipItemKeyKind enums. The
-/// polygon data is both interned and retrieved by the scene builder, and not
-/// accessed at all by the frame builder. Another oddity is that the
-/// PolygonKey contains the totality of the information about the polygon, so
-/// the InternData and StoreData types are both PolygonKey.
-#[derive(Copy, Clone, Debug, Hash, MallocSizeOf, PartialEq, Eq)]
-#[cfg_attr(any(feature = "serde"), derive(Deserialize, Serialize))]
-pub enum PolygonIntern {}
-
-pub type PolygonDataHandle = intern::Handle<PolygonIntern>;
-
-impl intern::InternDebug for PolygonKey {}
-
-impl intern::Internable for PolygonIntern {
-    type Key = PolygonKey;
-    type StoreData = PolygonKey;
-    type InternData = PolygonKey;
-    const PROFILE_COUNTER: usize = crate::profiler::INTERNED_POLYGONS;
-}
