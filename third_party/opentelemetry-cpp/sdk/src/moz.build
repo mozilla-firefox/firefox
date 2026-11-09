@@ -6,6 +6,7 @@
 
 DIRS += [
     "common",
+    "instrumentationscope",
     "resource",
     "trace",
     "version",

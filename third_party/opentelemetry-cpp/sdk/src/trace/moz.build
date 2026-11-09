@@ -6,6 +6,9 @@
 
 include("/third_party/opentelemetry-cpp/opentelemetry-config.mozbuild")
 
+if CONFIG["CC_TYPE"] in ("clang", "clang-cl", "gcc"):
+    CXXFLAGS += ["-Wno-unused-function"]
+
 LOCAL_INCLUDES += [
   "/third_party/opentelemetry-cpp/sdk"
 ]
@@ -20,6 +23,7 @@ UNIFIED_SOURCES += [
   "simple_processor_factory.cc",
   "span.cc",
   "span_data.cc",
+  "span_limits.cc",
   "tracer.cc",
   "tracer_config.cc",
   "tracer_context.cc",
