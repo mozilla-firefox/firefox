@@ -2195,6 +2195,28 @@ BigInt* BigInt::mod(JSContext* cx, HandleBigInt x, HandleBigInt y) {
 
     return createFromDigit(cx, remainderDigit, x->isNegative());
   } else {
+    uint32_t k;
+    Digit c;
+    if (shouldModuloByCrandallReduction(y, &k, &c)) {
+      RootedBigInt result(cx, modCrandall(cx, x, k, c));
+#ifdef DEBUG
+      if (result) {
+        RootedBigInt expected(cx);
+        if (absoluteDivWithBigIntDivisor(cx, x, y, Nothing(), Some(&expected),
+                                         x->isNegative()) &&
+            (expected = destructivelyTrimHighZeroDigits(cx, expected))) {
+          MOZ_ASSERT(equal(result, expected));
+        } else {
+          // Could be OOM, or it could be that schoolbook needed more scratch
+          // space than crandall, which pushed it over the max bigint size.
+          // Clear the exn generically instead of recoverFromOutOfMemory.
+          cx->clearPendingException();
+        }
+      }
+#endif
+      return result;
+    }
+
     RootedBigInt remainder(cx);
     if (!absoluteDivWithBigIntDivisor(cx, x, y, Nothing(), Some(&remainder),
                                       x->isNegative())) {
@@ -2203,6 +2225,146 @@ BigInt* BigInt::mod(JSContext* cx, HandleBigInt x, HandleBigInt y) {
     MOZ_ASSERT(remainder);
     return destructivelyTrimHighZeroDigits(cx, remainder);
   }
+}
+
+bool BigInt::shouldModuloByCrandallReduction(const BigInt* m, uint32_t* k,
+                                             Digit* c) {
+  // `m` is `2^k - c` for a single-digit `c` if all of its bits above the low
+  // digit are set and the low digit is non-zero.
+  auto mDigits = m->digits();
+  size_t n = mDigits.size();
+  if (n < 2) {
+    return false;
+  }
+
+  // High digit is all ones followed by zeroes in the high bits.
+  Digit top = mDigits[n - 1];
+  if (top & (top + 1)) {
+    return false;
+  }
+
+  // Middle digits are all ones.
+  for (size_t i = 1; i < n - 1; i++) {
+    if (mDigits[i] != Digit(-1)) {
+      return false;
+    }
+  }
+
+  // Low digit is non-zero.
+  if (!mDigits[0]) {
+    return false;
+  }
+
+  unsigned topBits = DigitBits - std::countl_zero(top);
+  Digit cValue = -mDigits[0];
+  uint32_t kValue = (n - 1) * DigitBits + topBits;
+
+  // Crandall reduction is always possible if the preceding conditions hold.
+  // But for some one- and two-digit divisors, it's not profitable.
+  unsigned cBits = DigitBits - std::countl_zero(cValue);
+  if (2 * cBits > kValue) {
+    return false;
+  }
+
+  *k = kValue;
+  *c = cValue;
+  return true;
+}
+
+// See "Handbook of Applied Cryptography" by A. Menezes, P. van Oorschot and
+// S. Vanstone, §14.3.4. `r` is an in-out parameter: it starts as the dividend
+// and is incrementally mutated into the modulo.
+void BigInt::modDigitsInPlaceByCrandallReduction(Digits r, uint32_t k,
+                                                 Digit c) {
+  // For single-digit `c`, the divisor has three parts: a bottom digit whose
+  // value is `-c`, a string of all-ones middle digits, and a high digit with a
+  // string of `kHighDigitBits` ones. The bottom and middle digits are together
+  // the low digits.
+  const size_t kLowDigitCount = k / DigitBits;
+  const unsigned kHighDigitBits = k % DigitBits;
+  const Digit kHighDigitMask = (Digit(1) << kHighDigitBits) - 1;
+  MOZ_RELEASE_ASSERT(kLowDigitCount > 0);
+  // If r is smaller, it is already reduced, and the caller should just return
+  // it without copying.
+  MOZ_RELEASE_ASSERT(r.size() >= kLowDigitCount);
+
+  // Consider that `(x + y) mod z = ((x mod z) + y) mod z`. This congruence
+  // holds also for multiplication. We can replace any part of the dividend with
+  // a smaller value that is congruent to it modulo `2^k - c`, without changing
+  // the result.
+  //
+  // Consider also that `2^k mod (2^k - c) = c`. Therefore, if the bits of a
+  // digit at or above bit `k` have value `d` and start at bit `k + s`, they
+  // contribute `d * 2^(k + s)` to the dividend, which is congruent to `d * c *
+  // 2^s`. We clear those bits and add `d * c` at bit `s` instead.
+  //
+  // We do this from the top digit down. Each fold decreases the dividend, so it
+  // never carries above the digit being cleared, but it may carry into that
+  // digit, which is then folded again. Once all bits at or above bit `k` are
+  // clear, the dividend is less than `2^k`, so at most one subtraction of `2^k
+  // - c` remains.
+  for (size_t j = r.size(); j-- > kLowDigitCount;) {
+    const unsigned shift = j == kLowDigitCount ? kHighDigitBits : 0;
+    while (Digit d = r[j] >> shift) {
+      r[j] &= (Digit(1) << shift) - 1;
+      const size_t s = j * DigitBits + shift - k;
+      const unsigned sb = s % DigitBits;
+      // `d * c`...
+      Digit high;
+      Digit low = digitMul(d, c, &high);
+      // ...at bit `s`.
+      Digit t0 = low << sb;
+      Digit t1 = sb ? (high << sb) | (low >> (DigitBits - sb)) : high;
+      Digit t2 = sb ? high >> (DigitBits - sb) : 0;
+      size_t i = s / DigitBits;
+      // Finally, add `d * c * 2^s` back into dividend.
+      Digit carry;
+      r[i] = digitAdd(r[i], t0, &carry);
+      i++;
+      r[i] = digitAdd3(r[i], t1, carry, &carry);
+      i++;
+      if (i < r.size()) {
+        r[i] = digitAdd3(r[i], t2, carry, &carry);
+        for (i++; carry; i++) {
+          r[i] = digitAdd(r[i], carry, &carry);
+        }
+      } else {
+        MOZ_ASSERT(!t2 && !carry);
+      }
+    }
+  }
+
+  // Now `r < 2^k`, so at most one subtraction of `2^k - c` is needed, which is
+  // the case if `r + c >= 2^k`.
+  Digit carry = c;
+  for (size_t i = 0; carry && i < kLowDigitCount; i++) {
+    r[i] = digitAdd(r[i], carry, &carry);
+  }
+  if (kLowDigitCount < r.size()) {
+    Digit top = r[kLowDigitCount] + carry;
+    r[kLowDigitCount] = top & kHighDigitMask;
+    carry = top >> kHighDigitBits;
+  }
+  if (carry) {
+    return;
+  }
+  Digit borrow = c;
+  for (size_t i = 0; borrow; i++) {
+    r[i] = digitSub(r[i], borrow, &borrow);
+  }
+}
+
+BigInt* BigInt::modCrandall(JSContext* cx, HandleBigInt x, uint32_t k,
+                            Digit c) {
+  if (x->digitLength() * DigitBits < k) {
+    return x;
+  }
+  RootedBigInt r(cx, copy(cx, x));
+  if (!r) {
+    return nullptr;
+  }
+  modDigitsInPlaceByCrandallReduction(r->unguardedDigits(), k, c);
+  return destructivelyTrimHighZeroDigits(cx, r);
 }
 
 bool BigInt::divmod(JSContext* cx, Handle<BigInt*> x, Handle<BigInt*> y,

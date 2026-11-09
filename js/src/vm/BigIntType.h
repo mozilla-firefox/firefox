@@ -263,6 +263,15 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
                      MutableHandle<BigInt*> quotient,
                      MutableHandle<BigInt*> remainder);
 
+  // When computing modulo by `m`, there is a short-cut if `|m|` is of the form
+  // `2^k - c`, where `c` is a single digit.  If we should use the "Crandall
+  // reduction" short-cut, store `k` and `c` and return true.
+  static bool shouldModuloByCrandallReduction(const BigInt* m, uint32_t* k,
+                                              Digit* c);
+  // Return `x % (2^k - c)`.
+  static BigInt* modCrandall(JSContext* cx, Handle<BigInt*> x, uint32_t k,
+                             Digit c);
+
   static bool powIntPtr(intptr_t x, intptr_t y, intptr_t* result);
 
   static int64_t toInt64(const BigInt* x);
@@ -437,6 +446,9 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   // the remainder. See the definition for full preconditions.
   static void divideDigitsInPlace(Digits u, ConstDigits v, Digits q,
                                   Digits qhatv);
+  // Reduce `r` modulo `2^k - c` in place.
+  static void modDigitsInPlaceByCrandallReduction(Digits r, uint32_t k,
+                                                  Digit c);
 
   enum class LeftShiftMode { SameSizeResult, AlwaysAddOneDigit };
 
