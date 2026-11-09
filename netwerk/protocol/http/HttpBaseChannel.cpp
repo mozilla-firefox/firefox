@@ -1288,6 +1288,15 @@ nsresult HttpBaseChannel::InternalSetUploadStream(
   // StorageStream) because it's consumed incrementally. Skip normalization
   // entirely and use the pipe as-is.
   if (LoadUploadStreamIsStreaming()) {
+    // A seekable streaming body, such as a Blob's stream, can be rewound here
+    // for a redirect or auth retry, so nsHttpTransaction must be able to read
+    // a clone of it.
+    nsCOMPtr<nsISeekableStream> seekable = do_QueryInterface(aUploadStream);
+    if (XRE_IsParentProcess() && seekable &&
+        !NS_InputStreamIsCloneable(aUploadStream)) {
+      return NS_ERROR_INVALID_ARG;
+    }
+
     mUploadStream = aUploadStream;
     // mReqContentLength stays 0: the length genuinely is not known yet.
     // nsHttpTransaction::Init consults RequestBodyIsStreaming() so that it
