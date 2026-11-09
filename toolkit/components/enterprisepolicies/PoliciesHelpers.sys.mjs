@@ -4,6 +4,10 @@
 
 const lazy = {};
 
+ChromeUtils.defineESModuleGetters(lazy, {
+  SitePolicyUtils: "resource://gre/modules/SitePolicyUtils.sys.mjs",
+});
+
 const PREF_LOGLEVEL = "browser.policies.loglevel";
 
 ChromeUtils.defineLazyGetter(lazy, "log", () => {
@@ -181,7 +185,7 @@ function trailingDotPrincipal(aPrincipal) {
     return null;
   }
 
-  let bareHost = host.replace(/\.+$/, "");
+  let bareHost = lazy.SitePolicyUtils.stripTrailingDots(host);
   let otherHost = bareHost == host ? `${host}.` : bareHost;
 
   try {
