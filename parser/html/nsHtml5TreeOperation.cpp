@@ -718,7 +718,8 @@ nsIContent* nsHtml5TreeOperation::CreateHTMLElement(
 
   // 7. Let definition be the result of looking up a custom element definition
   // given registry, namespace, localName, and is.
-  const bool isCustomElement = aCreator == NS_NewCustomElement || isAtom;
+  const bool isCustomElementName = !aCreator;
+  const bool isCustomElement = isCustomElementName || isAtom;
   RefPtr<CustomElementDefinition> customElementDefinition;
 
   /// customElementDefinition is only used if willExecuteScript is true,
@@ -727,8 +728,7 @@ nsIContent* nsHtml5TreeOperation::CreateHTMLElement(
   /// parsing, as it's wasted work.
   if (isCustomElement && aFromParser != FROM_PARSER_FRAGMENT) {
     RefPtr<nsAtom> tagAtom = nodeInfo->NameAtom();
-    RefPtr<nsAtom> typeAtom =
-        aCreator == NS_NewCustomElement ? tagAtom : isAtom;
+    RefPtr<nsAtom> typeAtom = isCustomElementName ? tagAtom : isAtom;
 
     MOZ_ASSERT(nodeInfo->NameAtom()->Equals(nodeInfo->LocalName()));
     // https://html.spec.whatwg.org/#create-an-element-for-the-token

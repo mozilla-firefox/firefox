@@ -228,14 +228,14 @@ class nsHtml5ElementName {
     this->name = name;
     this->camelCaseName = name;
     if (custom) {
-      this->htmlCreator = NS_NewCustomElement;
+      this->htmlCreator = nullptr;
     } else {
       this->htmlCreator = NS_NewHTMLUnknownElement;
     }
     MOZ_ASSERT(this->flags == nsHtml5ElementName::NOT_INTERNED);
   }
 
-  inline bool isCustom() { return this->htmlCreator == NS_NewCustomElement; }
+  inline bool isCustom() { return !this->htmlCreator; }
 
   static nsHtml5ElementName* ELT_ANNOTATION_XML;
   static nsHtml5ElementName* ELT_DIV;

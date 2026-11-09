@@ -297,7 +297,7 @@ public final class ElementName
         this.name = name;
         this.camelCaseName = name;
         // CPPONLY: if (custom) {
-        // CPPONLY: this.htmlCreator = NS_NewCustomElement;
+        // CPPONLY: this.htmlCreator = null;
         // CPPONLY: } else {
         // CPPONLY: this.htmlCreator = NS_NewHTMLUnknownElement;
         // CPPONLY: }
@@ -308,7 +308,7 @@ public final class ElementName
     }
 
     // CPPONLY: @Inline public boolean isCustom() {
-    // CPPONLY: return this.htmlCreator == NS_NewCustomElement;
+    // CPPONLY: return this.htmlCreator == null;
     // CPPONLY: }
 
     public static final ElementName ANNOTATION_XML = new ElementName(
