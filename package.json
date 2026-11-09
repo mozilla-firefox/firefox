@@ -6,9 +6,13 @@
   "license": "MPL-2.0",
   "devDependencies": {
     "@eslint/json": "2.1.1",
+    "@mdn/browser-compat-data": "7.3.17",
     "@stylistic/stylelint-plugin": "3.1.1",
     "@types/node": "26.6.5",
+    "@types/webidl2": "24.4.4",
+    "@typescript/dom-lib-generator": "github:microsoft/TypeScript-DOM-lib-generator#@types/web@0.0.349",
     "@typescript/lib-dom": "file:tools/@types",
+    "bcd-idl-mapper": "3.0.1",
     "eslint": "9.39.1",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-eslint-plugin": "7.6.2",
@@ -28,9 +32,13 @@
     "globals": "17.13.0",
     "jest": "30.5.2",
     "jsdoc": "4.0.5",
+    "jsonc-parser": "3.3.1",
+    "kdljs": "0.3.0",
     "license-checker-rseidelsohn": "5.0.1",
     "lit": "3.3.3",
+    "peggy": "5.1.0",
     "prettier": "3.8.5",
+    "print-diff": "2.0.0",
     "stylelint": "16.14.1",
     "stylelint-config-recommended": "14.0.1",
     "stylelint-config-standard-scss": "14.0.0",
@@ -39,7 +47,9 @@
     "typescript": "6.0.3"
   },
   "scripts": {
-    "prepare": "ts-patch install -s"
+    "postinstall": "npm explore @typescript/dom-lib-generator -- tsc --noEmit false --rootDir ./src --types node",
+    "prepare": "ts-patch install -s",
+    "test:ts": "node --experimental-vm-modules node_modules/jest/bin/jest.js --rootDir tools/ts"
   },
   "notes(private)": "We don't want to publish to npm, so this is marked as private",
   "private": true

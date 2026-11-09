@@ -39,6 +39,7 @@ node-licenses:
     known-packages:
         # Acceptable exceptions on a per-package basis.
         argparse: Python-2.0  # bug 1777245
+        webidl2: W3C  # bug 1980964
     support-files:
         - 'tools/lint/node-licenses/**'
     type: external
