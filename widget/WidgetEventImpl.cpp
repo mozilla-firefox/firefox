@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <fmt/format.h>
+
 #include "BasicEvents.h"
 #include "ContentEvents.h"
 #include "MiscEvents.h"
@@ -1415,6 +1417,8 @@ static bool IsCaseChangeableChar(uint32_t aChar) {
                                ToUpperCase(static_cast<char16_t>(aChar));
 }
 
+LazyLogModule gShortcutKeyCandidateLog("ShortcutKeyCandidates");
+
 void WidgetKeyboardEvent::GetShortcutKeyCandidates(
     ShortcutKeyCandidateArray& aCandidates) const {
   MOZ_ASSERT(aCandidates.IsEmpty(), "aCandidates must be empty");
@@ -1521,6 +1525,19 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
     ShortcutKeyCandidate spaceKey(' ', ShiftState::MatchExactly,
                                   SkipIfEarlierHandlerDisabled::No);
     aCandidates.AppendElement(spaceKey);
+  }
+
+  if (MOZ_LOG_TEST(gShortcutKeyCandidateLog, LogLevel::Info)) {
+    nsAutoString domKeyValue;
+    GetDOMKeyName(domKeyValue);
+    MOZ_LOG_FMT(gShortcutKeyCandidateLog, LogLevel::Info,
+                "key=\"{}\", isShift={}, isAlt={}, isCtrl={}, isMeta={}",
+                NS_ConvertUTF16toUTF8(domKeyValue), IsShift(), IsAlt(),
+                IsControl(), IsMeta());
+    MOZ_LOG_FMT(gShortcutKeyCandidateLog, LogLevel::Info, "  result:");
+    for (const auto& candidate : aCandidates) {
+      MOZ_LOG_FMT(gShortcutKeyCandidateLog, LogLevel::Info, "  {}", candidate);
+    }
   }
 }
 
@@ -2487,6 +2504,25 @@ void InternalAnimationEvent::AssignAnimationEventData(
   mElapsedTime = aEvent.mElapsedTime;
   mPseudoElement = aEvent.mPseudoElement;
   mAnimation = aEvent.mAnimation;
+}
+
+/*****************************************************************************
+ * Logging helpers
+ *****************************************************************************/
+
+std::string format_as(const ShortcutKeyCandidate& aCandidate) {
+  return fmt::format(
+      "{{ mCharCode=0x{:08X}{}, mShiftState={}, "
+      "mSkipIfEarlierHandlerDisabled={} }}",
+      aCandidate.mCharCode,
+      aCandidate.mCharCode >= ' ' && IsInBMP(aCandidate.mCharCode)
+          ? fmt::format(
+                " (\"{}\")",
+                NS_ConvertUTF16toUTF8(
+                    nsAutoString(static_cast<char16_t>(aCandidate.mCharCode)))
+                    .get())
+          : "",
+      aCandidate.mShiftState, aCandidate.mSkipIfEarlierHandlerDisabled);
 }
 
 }  // namespace mozilla

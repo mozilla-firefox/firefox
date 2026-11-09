@@ -27,7 +27,6 @@
 #include "nsIFrame.h"
 #include "nsISelectionListener.h"
 #include "nsITransferable.h"
-#include "nsRect.h"
 #include "nsString.h"
 #include "nsTArray.h"
 
@@ -107,6 +106,12 @@ struct ShortcutKeyCandidate {
     // keyboard layout never matches with Ctrl + Shift + `;` shortcut.
     MatchExactly,
   };
+  friend auto format_as(ShiftState aState) {
+    return aState == ShiftState::MatchExactly ? "MatchExactly" : "Ignorable";
+  }
+  friend std::ostream& operator<<(std::ostream& aStream, ShiftState aState) {
+    return aStream << format_as(aState);
+  }
 
   enum class SkipIfEarlierHandlerDisabled : bool {
     // Even if an earlier handler is disabled, this may match with another
@@ -120,6 +125,13 @@ struct ShortcutKeyCandidate {
     // without Shift, and Shift + Digit6 introduces `6`).
     Yes,
   };
+  friend auto format_as(SkipIfEarlierHandlerDisabled aSkippable) {
+    return aSkippable == SkipIfEarlierHandlerDisabled::No ? "No" : "Yes";
+  }
+  friend std::ostream& operator<<(std::ostream& aStream,
+                                  SkipIfEarlierHandlerDisabled aSkippable) {
+    return aStream << format_as(aSkippable);
+  }
 
   ShortcutKeyCandidate() = default;
   ShortcutKeyCandidate(
@@ -135,6 +147,12 @@ struct ShortcutKeyCandidate {
   ShiftState mShiftState = ShiftState::MatchExactly;
   SkipIfEarlierHandlerDisabled mSkipIfEarlierHandlerDisabled =
       SkipIfEarlierHandlerDisabled::No;
+
+  friend std::string format_as(const ShortcutKeyCandidate& aCandidate);
+  friend std::ostream& operator<<(std::ostream& aStream,
+                                  const ShortcutKeyCandidate& aCandidate) {
+    return aStream << format_as(aCandidate);
+  }
 };
 
 /******************************************************************************
@@ -646,14 +664,14 @@ class WidgetKeyboardEvent final : public WidgetInputEvent {
     }
   }
 
-  void GetDOMKeyName(nsAString& aKeyName) {
+  void GetDOMKeyName(nsAString& aKeyName) const {
     if (mKeyNameIndex == KEY_NAME_INDEX_USE_STRING) {
       aKeyName = mKeyValue;
       return;
     }
     GetDOMKeyName(mKeyNameIndex, aKeyName);
   }
-  void GetDOMCodeName(nsAString& aCodeName) {
+  void GetDOMCodeName(nsAString& aCodeName) const {
     if (mCodeNameIndex == CODE_NAME_INDEX_USE_STRING) {
       aCodeName = mCodeValue;
       return;
