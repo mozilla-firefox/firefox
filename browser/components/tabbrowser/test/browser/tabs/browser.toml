@@ -451,9 +451,6 @@ tags = "vertical-tabs"
 
 ["browser_tabCloseProbes.js"]
 tags = "vertical-tabs"
-fail-if = [
-  "vertical_tab", # Bug 1976110, fails in the "vertical-tabs" variant
-]
 
 ["browser_tabCloseSpacer.js"]
 skip-if = [
@@ -677,6 +674,9 @@ skip-if = [
 
 ["browser_url_prefilled_on_startup.js"]
 support-files = ["startup-delayed-redirect.sjs"]
+
+["browser_vertical_tab_animations.js"]
+tags = "vertical-tabs"
 
 ["browser_viewSourceInTabOnViewSource.js"]
 

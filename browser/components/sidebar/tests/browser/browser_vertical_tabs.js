@@ -606,6 +606,7 @@ add_task(async function test_vertical_tabs_min_width() {
   let tabStyles = window.getComputedStyle(tabbrowserTabs);
   let tabMinWidthVal = tabStyles.getPropertyValue("--tab-min-width-pref");
 
+  await BrowserTestUtils.allTabOpenAnimationsFinished(window);
   is(
     window.getComputedStyle(gBrowser.visibleTabs[0]).minWidth,
     tabMinWidthVal,

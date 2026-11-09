@@ -440,12 +440,18 @@ tab-split-view-wrapper[dragtarget] {
 .tab-icon-image:not([fadein]),
 .tab-close-button:not([fadein]),
 .tab-background:not([fadein]) {
-  visibility: hidden;
+  #tabbrowser-tabs[orient="horizontal"] .tabbrowser-tab &,
+  #tabbrowser-tabs[orient="vertical"] .tabbrowser-tab:not([fadein], [height-animating]) & {
+    visibility: hidden;
+  }
 }
 
 .tab-label:not([fadein]),
 .tab-throbber:not([fadein]) {
-  display: none;
+  #tabbrowser-tabs[orient="horizontal"] .tabbrowser-tab &,
+  #tabbrowser-tabs[orient="vertical"] .tabbrowser-tab:not([fadein], [height-animating]) & {
+    display: none;
+  }
 }
 
 /* Width/height & margins apply on tab icon stack children */
@@ -3047,9 +3053,37 @@ tab-group {
     padding-inline: 0;
     padding-block: var(--tab-padding-block-start) var(--tab-padding-block-end);
 
+    &:not(tab-split-view-wrapper > .tabbrowser-tab) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 1fr;
+
+      > .tab-stack {
+        min-block-size: 0;
+      }
+    }
+
     /* prevent the shadow of the close button from being cutoff by the toolbar on the first tab */
     &:nth-child(1 of :not([hidden], [pinned])) {
-      padding-block-start: max(var(--space-xsmall), var(--tab-close-button-overhang));
+      --tab-padding-block-start: max(var(--space-xsmall), var(--tab-close-button-overhang));
+    }
+
+    &:not(tab-split-view-wrapper > .tabbrowser-tab)[height-animating] {
+      min-height: 0;
+      overflow-clip-margin: 0;
+      transition-property: grid-template-rows, padding-block-start, padding-block-end;
+      transition-duration: var(--sidebar-motion-duration-enter);
+      transition-timing-function: var(--sidebar-motion-easing);
+
+      &:not([fadein]) {
+        grid-template-rows: 0fr;
+        padding-block: 0;
+        transition-duration: var(--sidebar-motion-duration-exit);
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
     }
   }
 

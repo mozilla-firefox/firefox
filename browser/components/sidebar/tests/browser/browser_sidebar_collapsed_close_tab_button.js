@@ -5,7 +5,10 @@
 
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
-    set: [[VERTICAL_TABS_PREF, true]],
+    set: [
+      [VERTICAL_TABS_PREF, true],
+      ["browser.tabs.hoverPreview.enabled", false],
+    ],
   });
   await SidebarTestUtils.waitForTabstripOrientation(window, "vertical");
   Assert.equal(
@@ -32,7 +35,12 @@ add_task(async function test_toggle_collapse_close_button() {
   let newTabButton = document.getElementById("tabs-newtab-button");
   info("Open a new tab using the new tab button.");
   newTabButton.click();
-  is(gBrowser.tabs.length, 2, "Tabstrip now has two tabs");
+  await BrowserTestUtils.waitForMutationCondition(
+    gBrowser.tabContainer,
+    { childList: true, subtree: true },
+    () => gBrowser.tabs.length == 2,
+    { msg: "Tabstrip now has two tabs" }
+  );
 
   let firstTab = gBrowser.visibleTabs[0];
   let selectedTab = gBrowser.selectedTab.querySelector(".tab-close-button");
@@ -98,7 +106,12 @@ add_task(async function test_toggle_collapse_close_button() {
   // Close the active tab
   firstTab.querySelector(".tab-close-button").click();
   AccessibilityUtils.resetEnv();
-  is(gBrowser.tabs.length, 1, "Tabstrip now has one tab");
+  await BrowserTestUtils.waitForMutationCondition(
+    gBrowser.tabContainer,
+    { childList: true, subtree: true },
+    () => gBrowser.tabs.length == 1,
+    { msg: "Tabstrip now has one tab" }
+  );
 
   // Expand the sidebar and make sure the collased close button no longer shows
   await SidebarController.updateUIState({ launcherExpanded: true });

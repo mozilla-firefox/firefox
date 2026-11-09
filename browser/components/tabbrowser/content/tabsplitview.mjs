@@ -489,7 +489,9 @@ export class MozTabSplitViewWrapper extends MozXULElement {
       });
     }
     this.#isClosing = true;
-    gBrowser.removeTabs(this.#tabs);
+    gBrowser.removeTabs(this.#tabs, {
+      animate: !gBrowser.tabContainer.verticalMode,
+    });
   }
 
   /**
