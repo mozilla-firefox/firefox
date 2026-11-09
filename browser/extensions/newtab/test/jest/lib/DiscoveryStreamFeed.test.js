@@ -120,7 +120,7 @@ describe("DiscoveryStreamFeed", () => {
       getUtcOffset: () => 0,
     };
 
-    services = mockServices(["locale", "obs", "prefs", "uuid"]);
+    services = mockServices(["locale", "obs", "prefs", "uuid", "vc"]);
     services.uuid.generateUUID.mockReturnValue(FAKE_UUID);
     services.prefs.getBoolPref.mockImplementation(name =>
       name === "browser.newtabpage.activity-stream.discoverystream.enabled"
@@ -1304,6 +1304,106 @@ describe("DiscoveryStreamFeed", () => {
       });
 
       const ADS_CLIENT = {
+        requestSpocOrImageAds: jest.fn().mockResolvedValue(
+          new Map([
+            [
+              "newtab_stories_1",
+              [
+                {
+                  v0: {
+                    format: "spoc",
+                    url: "https://spoc.example/",
+                    imageUrl: "https://spoc.example/img.png",
+                    callbacks: { click: "https://spoc.example/click" },
+                    title: "Spoc 1",
+                    domain: "spoc.example",
+                    excerpt: "Excerpt",
+                    sponsor: "Sponsor",
+                    sponsoredByOverride: null,
+                    blockKey: "spocblock1",
+                    caps: { capKey: "cap1", day: 5 },
+                    ranking: {
+                      itemScore: 0.5,
+                      personalizationModels: new Map([
+                        ["arts_and_entertainment", 1],
+                        ["travel", 1],
+                      ]),
+                      priority: 2,
+                    },
+                  },
+                },
+              ],
+            ],
+          ])
+        ),
+      };
+
+      const REQUEST_OPTIONS = {
+        flags: new Map(),
+        ohttp: true,
+      };
+
+      const AdsClient = {
+        isEnabled: jest.fn().mockReturnValue(true),
+        getClient: jest.fn().mockReturnValue(ADS_CLIENT),
+        requestOptions: jest.fn().mockReturnValue(REQUEST_OPTIONS),
+      };
+
+      globalThis.AdsClient = AdsClient;
+
+      await feed.onAction({
+        type: at.INIT,
+      });
+      expect(AdsClient.isEnabled).toHaveBeenCalledTimes(1);
+      expect(AdsClient.getClient).toHaveBeenCalledTimes(1);
+
+      /**
+       * @backward-compat { version 161 }
+       * `Services.vc.compare` in the loadSpocs function is used to alternate between `requestSpocOrImageAds`
+       * or `requestSpocAds`. This tests the former, the subsequent test tests the latter.
+       * This line isn't strictly necessary (the default mock for Services.vc.compare is 0), but helpful to contrast
+       * to the subsequent test.
+       */
+      jest.spyOn(Services.vc, "compare").mockReturnValue(0);
+
+      await feed.loadSpocs(feed.store.dispatch);
+
+      // The flags in adsBackendConfig only reach MARS if the prefs are passed.
+      expect(AdsClient.requestOptions).toHaveBeenCalledWith(
+        feed.store.getState().Prefs.values
+      );
+      expect(ADS_CLIENT.requestSpocOrImageAds).toHaveBeenCalledTimes(1);
+      expect(ADS_CLIENT.requestSpocOrImageAds).toHaveBeenCalledWith(
+        [expect.anything()],
+        REQUEST_OPTIONS
+      );
+    });
+
+    /**
+     * @backward-compat { version 161 }
+     * `Services.vc.compare` in the loadSpocs function is used to alternate between `requestSpocOrImageAds`
+     * or `requestSpocAds`. This tests that the latter is used when 'Services.vc.compare' < 0 (and this version
+     * is too early). The test is mostly identical to the preceding one.
+     */
+
+    it("should use requestSpocAds if version is before 161", async () => {
+      expectConsoleError();
+
+      jest.spyOn(feed.cache, "get").mockReturnValue(Promise.resolve());
+      jest.spyOn(feed.cache, "set").mockReturnValue(Promise.resolve());
+
+      feed.store = createStore(combineReducers(reducers), {
+        Prefs: {
+          values: {
+            "unifiedAds.blockedAds": "",
+            "unifiedAds.spocs.enabled": true,
+            "discoverystream.placements.spocs": "newtab_stories_1",
+            "discoverystream.placements.spocs.counts": "1",
+          },
+        },
+      });
+
+      const ADS_CLIENT = {
         requestSpocAds: jest.fn().mockResolvedValue(
           new Map([
             [
@@ -1349,18 +1449,14 @@ describe("DiscoveryStreamFeed", () => {
 
       globalThis.AdsClient = AdsClient;
 
+      // Services.vc.compare provides a different result here.
+      jest.spyOn(Services.vc, "compare").mockReturnValue(-1);
+
       await feed.onAction({
         type: at.INIT,
       });
-      expect(AdsClient.isEnabled).toHaveBeenCalledTimes(1);
-      expect(AdsClient.getClient).toHaveBeenCalledTimes(1);
-
       await feed.loadSpocs(feed.store.dispatch);
 
-      // The flags in adsBackendConfig only reach MARS if the prefs are passed.
-      expect(AdsClient.requestOptions).toHaveBeenCalledWith(
-        feed.store.getState().Prefs.values
-      );
       expect(ADS_CLIENT.requestSpocAds).toHaveBeenCalledTimes(1);
       expect(ADS_CLIENT.requestSpocAds).toHaveBeenCalledWith(
         [expect.anything()],
@@ -1387,10 +1483,10 @@ describe("DiscoveryStreamFeed", () => {
       });
 
       const ADS_CLIENT = {
-        requestSpocAds: jest
+        requestSpocOrImageAds: jest
           .fn()
           .mockResolvedValue(
-            new Map([["newtab_stories_1", [{ blockKey: "b1" }]]])
+            new Map([["newtab_stories_1", [{ v0: { blockKey: "b1" } }]]])
           ),
       };
       globalThis.AdsClient = {
@@ -1406,9 +1502,9 @@ describe("DiscoveryStreamFeed", () => {
 
       // A later, unrelated read happens while processing the results, so it is
       // the ordering that shows the guarded read was skipped.
-      expect(ADS_CLIENT.requestSpocAds).toHaveBeenCalledTimes(1);
+      expect(ADS_CLIENT.requestSpocOrImageAds).toHaveBeenCalledTimes(1);
       expect(
-        ADS_CLIENT.requestSpocAds.mock.invocationCallOrder[0]
+        ADS_CLIENT.requestSpocOrImageAds.mock.invocationCallOrder[0]
       ).toBeLessThan(feed.cache.get.mock.invocationCallOrder[0]);
       expect(feed.cache.set.mock.calls.some(([key]) => key === "spocs")).toBe(
         false
@@ -1425,7 +1521,7 @@ describe("DiscoveryStreamFeed", () => {
 
     it("should seed placements the ads client omitted with empty arrays", async () => {
       feed.adsClient = {
-        requestSpocAds: jest
+        requestSpocOrImageAds: jest
           .fn()
           .mockResolvedValue(new Map([["newtab_stories_1", []]])),
       };

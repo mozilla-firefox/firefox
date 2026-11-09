@@ -35,6 +35,10 @@ ChromeUtils.defineESModuleGetters(lazy, {
 const { setTimeout, clearTimeout } = ChromeUtils.importESModule(
   "resource://gre/modules/Timer.sys.mjs"
 );
+// eslint-disable-next-line mozilla/use-static-import
+const { AppConstants } = ChromeUtils.importESModule(
+  "resource://gre/modules/AppConstants.sys.mjs"
+);
 import {
   actionTypes as at,
   actionCreators as ac,
@@ -662,40 +666,63 @@ export class DiscoveryStreamFeed {
       );
     }
 
-    const spocs = await this.adsClient.requestSpocAds(requests, options);
+    /**
+     * @backward-compat { version 161 }
+     * `requestSpocOrImageAds` can return images and spocs (with similar structures) unlike `requestSpocAds`
+     * which invalidly drops would-be images returned from MARS. This requires a vendor of A-S
+     * for the function to exist, and another for it to behave correctly (using the latter).
+     */
+    const adsClientUpdated =
+      Services.vc.compare(AppConstants.MOZ_APP_VERSION, "161.0a1") >= 0;
+    let spocs;
+    if (adsClientUpdated) {
+      spocs = await this.adsClient.requestSpocOrImageAds(requests, options);
+    } else {
+      spocs = await this.adsClient.requestSpocAds(requests, options);
+    }
 
     // The ads-client omits placements it has no ads for; MARS returns them as
     // empty arrays, and loadSpocs concats by placement, so a missing key folds
     // an undefined into the spocs list.
+    // `requestSpocOrImageAds` returns wrapped spocs (under field 'v0').
     return {
       ...Object.fromEntries(placements.map(p => [p.placement, []])),
       ...Object.fromEntries(
         spocs.entries().map(([placementId, placementSpocs]) => [
           placementId,
-          placementSpocs.map(spoc => ({
-            format: spoc.format,
-            url: spoc.url,
-            callbacks: spoc.callbacks,
-            image_url: spoc.imageUrl,
-            title: spoc.title,
-            domain: spoc.domain,
-            excerpt: spoc.excerpt,
-            sponsor: spoc.sponsor,
-            sponsored_by_override: spoc.sponsoredByOverride,
-            block_key: spoc.blockKey,
-            caps: spoc.caps
-              ? { cap_key: spoc.caps.capKey, day: spoc.caps.day }
-              : undefined,
-            ranking: spoc.ranking
-              ? {
-                  item_score: spoc.ranking.itemScore,
-                  personalization_models: Object.fromEntries(
-                    spoc.ranking.personalizationModels ?? []
-                  ),
-                  priority: spoc.ranking.priority,
-                }
-              : undefined,
-          })),
+          placementSpocs
+            .map(spocWrapped => {
+              if (adsClientUpdated) {
+                return spocWrapped.v0;
+              }
+              return spocWrapped;
+            })
+            .filter(Boolean)
+            .map(spoc => ({
+              alt_text: spoc.altText,
+              format: spoc.format,
+              url: spoc.url,
+              callbacks: spoc.callbacks,
+              image_url: spoc.imageUrl,
+              title: spoc.title,
+              domain: spoc.domain,
+              excerpt: spoc.excerpt,
+              sponsor: spoc.sponsor,
+              sponsored_by_override: spoc.sponsoredByOverride,
+              block_key: spoc.blockKey,
+              caps: spoc.caps
+                ? { cap_key: spoc.caps.capKey, day: spoc.caps.day }
+                : undefined,
+              ranking: spoc.ranking
+                ? {
+                    item_score: spoc.ranking.itemScore,
+                    personalization_models: Object.fromEntries(
+                      spoc.ranking.personalizationModels ?? []
+                    ),
+                    priority: spoc.ranking.priority,
+                  }
+                : undefined,
+            })),
         ])
       ),
     };
