@@ -1,6 +1,7 @@
 {
   "plugins": [
     "jsdoc-plugins/accept-typescript-types.mjs",
+    "jsdoc-plugins/keep-type-descriptions.mjs",
     "jsdoc-plugins/skip-anonymous-locals.mjs",
     "jsdoc-plugins/skip-private-members.mjs",
     "jsdoc-plugins/skip-type-casts.mjs",
