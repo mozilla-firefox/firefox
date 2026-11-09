@@ -1,5 +1,7 @@
 "use strict";
 
+/* globals ProcessHangMonitor */
+
 const DEFAULT_PROCESS_COUNT = Services.prefs
   .getDefaultBranch(null)
   .getIntPref("dom.ipc.processCount");
@@ -23,6 +25,13 @@ add_task(async function test_slow_content_script() {
       ["dom.max_script_run_time.require_critical_input", false],
     ],
   });
+
+  // Registered before loading the extension so that it runs before the
+  // extension is unloaded, and the content script does not keep running if
+  // the test fails.
+  registerCleanupFunction(() =>
+    ProcessHangMonitor.stopAllHangs("test-cleanup")
+  );
 
   let extension = ExtensionTestUtils.loadExtension({
     useAddonManager: "temporary",
@@ -61,7 +70,9 @@ add_task(async function test_slow_content_script() {
 
   ok(text.includes("\u201cSlow Script Extension\u201d"), "Label is correct");
 
-  let stopButton = notification.buttonContainer.querySelector("[label='Stop']");
+  let stopButton = notification.buttonContainer.querySelector(
+    "[data-l10n-id='process-hang-stop-button']"
+  );
   stopButton.click();
 
   BrowserTestUtils.removeTab(gBrowser.selectedTab);

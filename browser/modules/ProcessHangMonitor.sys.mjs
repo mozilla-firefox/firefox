@@ -467,7 +467,13 @@ export var ProcessHangMonitor = {
         Ci.nsIAddonPolicyService
       );
 
-      let addonName = aps.getExtensionName(report.addonId);
+      let addonName;
+      try {
+        addonName = aps.getExtensionName(report.addonId);
+      } catch (e) {
+        // The extension may have been unloaded while its script is hung.
+        addonName = report.addonId;
+      }
 
       message = {
         "l10n-id": "process-hang-addon-message",
