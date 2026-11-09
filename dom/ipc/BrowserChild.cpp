@@ -752,8 +752,9 @@ void BrowserChild::DestroyWindow() {
     data.reset();
   }
 
-  nsCOMPtr<nsIBaseWindow> baseWindow = do_QueryInterface(WebNavigation());
-  if (baseWindow) baseWindow->Destroy();
+  if (mWebBrowser) {
+    mWebBrowser->Close();
+  }
 
   if (mPuppetWidget) {
     mPuppetWidget->Destroy();
@@ -1071,13 +1072,13 @@ mozilla::ipc::IPCResult BrowserChild::RecvShow(
 
   mPuppetWidget->SetSizeMode(aOwnerInfo.sizeMode());
   if (!mDidFakeShow) {
-    nsCOMPtr<nsIBaseWindow> baseWindow = do_QueryInterface(WebNavigation());
-    if (!baseWindow) {
-      NS_ERROR("WebNavigation() doesn't QI to nsIBaseWindow");
+    if (!mWebBrowser) {
       return IPC_FAIL_NO_REASON(this);
     }
 
-    baseWindow->SetVisibility(true);
+    if (RefPtr<nsDocShell> docShell = mWebBrowser->GetDocShell()) {
+      docShell->SetVisibility(true);
+    }
     res = InitBrowserChildMessageManager();
   }
 
@@ -1159,9 +1160,9 @@ mozilla::ipc::IPCResult BrowserChild::RecvUpdateDimensions(
   // MobileViewportManager needs the content viewer size to be updated before
   // the reflow, otherwise it gets a stale size when it computes a new CSS
   // viewport.
-  nsCOMPtr<nsIBaseWindow> baseWin = do_QueryInterface(WebNavigation());
-  baseWin->SetPositionAndSize(0, 0, innerSize.width, innerSize.height,
-                              nsIBaseWindow::eRepaint);
+  RefPtr<nsDocShell> docShell = mWebBrowser->GetDocShell();
+  docShell->SetPositionAndSize(0, 0, innerSize.width, innerSize.height,
+                               nsIBaseWindow::eRepaint);
 
   const LayoutDeviceIntRect widgetRect(
       GetOuterRect().TopLeft() + mClientOffset + mChromeOffset, innerSize);
@@ -3642,9 +3643,9 @@ mozilla::ipc::IPCResult BrowserChild::RecvUIResolutionChanged(
   const LayoutDeviceIntSize innerSize = GetInnerSize();
   if (mHasValidInnerSize && oldInnerSize != innerSize) {
     // See RecvUpdateDimensions for the order of these operations.
-    nsCOMPtr<nsIBaseWindow> baseWin = do_QueryInterface(WebNavigation());
-    baseWin->SetPositionAndSize(0, 0, innerSize.width, innerSize.height,
-                                nsIBaseWindow::eRepaint);
+    RefPtr<nsDocShell> docShell = mWebBrowser->GetDocShell();
+    docShell->SetPositionAndSize(0, 0, innerSize.width, innerSize.height,
+                                 nsIBaseWindow::eRepaint);
 
     const LayoutDeviceIntRect widgetRect(
         GetOuterRect().TopLeft() + mClientOffset + mChromeOffset, innerSize);

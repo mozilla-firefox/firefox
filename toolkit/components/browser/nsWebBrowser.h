@@ -32,17 +32,6 @@
 
 class nsIOpenWindowInfo;
 
-class nsWebBrowserInitInfo {
- public:
-  // nsIBaseWindow Stuff
-  int32_t x;
-  int32_t y;
-  int32_t cx;
-  int32_t cy;
-  bool visible;
-  nsString name;
-};
-
 //  {cda5863a-aa9c-411e-be49-ea0d525ab4b5} -
 #define NS_WEBBROWSER_CID \
   {0xcda5863a, 0xaa9c, 0x411e, {0xbe, 0x49, 0xea, 0x0d, 0x52, 0x5a, 0xb4, 0xb5}}
@@ -59,7 +48,6 @@ class WindowGlobalChild;
 class nsWebBrowser final : public nsIWebBrowser,
                            public nsIWebNavigation,
                            public nsIDocShellTreeItem,
-                           public nsIBaseWindow,
                            public nsIInterfaceRequestor,
                            public nsSupportsWeakReference {
   friend class nsDocShellTreeOwner;
@@ -68,12 +56,13 @@ class nsWebBrowser final : public nsIWebBrowser,
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
   NS_DECL_CYCLE_COLLECTION_CLASS_AMBIGUOUS(nsWebBrowser, nsIWebBrowser)
 
-  NS_DECL_NSIBASEWINDOW
   NS_DECL_NSIDOCSHELLTREEITEM
   NS_DECL_NSIINTERFACEREQUESTOR
   NS_DECL_NSIWEBBROWSER
   NS_DECL_NSIWEBNAVIGATION
 
+  nsDocShell* GetDocShell() const { return mDocShell; }
+  void Close() { InternalDestroy(); }
   void SetAllowDNSPrefetch(bool aAllowPrefetch);
   // TODO: Convert FocusDeactivate() to MOZ_CAN_RUN_SCRIPT
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void FocusActivate(uint64_t aActionId);

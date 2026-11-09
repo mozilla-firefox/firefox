@@ -33,8 +33,7 @@ interface nsIWebBrowser : nsISupports
      * The chrome object associated with the browser instance. The embedder
      * must create one chrome object for <I>each</I> browser object
      * that is instantiated. The embedder must associate the two by setting
-     * this property to point to the chrome object before creating the browser
-     * window via the browser's <CODE>nsIBaseWindow</CODE> interface.
+     * this property to point to the chrome object.
      *
      * The chrome may optionally implement <CODE>nsIInterfaceRequestor</CODE>,
      * <CODE>nsIContextMenuListener</CODE> and
@@ -52,7 +51,6 @@ interface nsIWebBrowser : nsISupports
      *       to nullptr if the chrome object is destroyed before the browser
      *       object.
      *
-     * @see nsIBaseWindow
      * @see nsIWebBrowserChrome
      * @see nsIInterfaceRequestor
      * @see nsIContextMenuListener

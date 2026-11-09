@@ -398,26 +398,19 @@ nsDocShellTreeOwner::Destroy() {
 }
 
 double nsDocShellTreeOwner::GetWidgetCSSToDeviceScale() {
-  return mWebBrowser ? mWebBrowser->GetWidgetCSSToDeviceScale() : 1.0;
+  nsIWidget* widget = mWebBrowser ? mWebBrowser->mParentWidget : nullptr;
+  return widget ? widget->GetDefaultScale().scale : 1.0;
 }
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::GetDevicePixelsPerDesktopPixel(double* aScale) {
-  if (mWebBrowser) {
-    return mWebBrowser->GetDevicePixelsPerDesktopPixel(aScale);
-  }
-
-  *aScale = 1.0;
+  nsIWidget* widget = mWebBrowser ? mWebBrowser->mParentWidget : nullptr;
+  *aScale = widget ? widget->GetDesktopToDeviceScale().scale : 1.0;
   return NS_OK;
 }
 
 NS_IMETHODIMP
 nsDocShellTreeOwner::SetPositionDesktopPix(int32_t aX, int32_t aY) {
-  if (mWebBrowser) {
-    nsresult rv = mWebBrowser->SetPositionDesktopPix(aX, aY);
-    NS_ENSURE_SUCCESS(rv, rv);
-  }
-
   double scale = 1.0;
   GetDevicePixelsPerDesktopPixel(&scale);
   return SetPosition(NSToIntRound(aX * scale), NSToIntRound(aY * scale));

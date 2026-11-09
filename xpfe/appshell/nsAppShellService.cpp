@@ -178,11 +178,11 @@ class WebBrowserChrome2Stub final : public nsIWebBrowserChrome,
                                     public nsIInterfaceRequestor,
                                     public nsSupportsWeakReference {
  protected:
-  nsCOMPtr<nsIWebBrowser> mBrowser;
+  RefPtr<nsWebBrowser> mBrowser;
   virtual ~WebBrowserChrome2Stub() = default;
 
  public:
-  void SetBrowser(nsIWebBrowser* aBrowser) { mBrowser = aBrowser; }
+  void SetBrowser(nsWebBrowser* aBrowser) { mBrowser = aBrowser; }
 
   NS_DECL_ISUPPORTS
   NS_DECL_NSIWEBBROWSERCHROME
@@ -247,10 +247,10 @@ WebBrowserChrome2Stub::GetDimensions(int32_t* aX, int32_t* aY, int32_t* aCX,
 
 NS_IMETHODIMP
 WebBrowserChrome2Stub::SetDimensions(DimensionRequest&& aRequest) {
-  nsCOMPtr<nsIBaseWindow> window(do_QueryInterface(mBrowser));
-  NS_ENSURE_STATE(window);
-  MOZ_TRY(aRequest.SupplementFrom(window));
-  return aRequest.ApplyOuterTo(window);
+  RefPtr<nsDocShell> docShell = mBrowser ? mBrowser->GetDocShell() : nullptr;
+  NS_ENSURE_STATE(docShell);
+  MOZ_TRY(aRequest.SupplementFrom(docShell));
+  return aRequest.ApplyOuterTo(docShell);
 }
 
 NS_IMETHODIMP
@@ -258,14 +258,14 @@ WebBrowserChrome2Stub::Blur() { return NS_ERROR_NOT_IMPLEMENTED; }
 
 class BrowserDestroyer final : public Runnable {
  public:
-  BrowserDestroyer(nsIWebBrowser* aBrowser, nsISupports* aContainer)
+  BrowserDestroyer(nsWebBrowser* aBrowser, nsISupports* aContainer)
       : mozilla::Runnable("BrowserDestroyer"),
         mBrowser(aBrowser),
         mContainer(aContainer) {}
 
-  static nsresult Destroy(nsIWebBrowser* aBrowser) {
-    nsCOMPtr<nsIBaseWindow> window(do_QueryInterface(aBrowser));
-    return window->Destroy();
+  static nsresult Destroy(nsWebBrowser* aBrowser) {
+    aBrowser->Close();
+    return NS_OK;
   }
 
   NS_IMETHOD
@@ -278,7 +278,7 @@ class BrowserDestroyer final : public Runnable {
   virtual ~BrowserDestroyer() = default;
 
  private:
-  nsCOMPtr<nsIWebBrowser> mBrowser;
+  RefPtr<nsWebBrowser> mBrowser;
   nsCOMPtr<nsISupports> mContainer;
 };
 
@@ -290,10 +290,10 @@ class BrowserDestroyer final : public Runnable {
 class WindowlessBrowser final : public nsIWindowlessBrowser,
                                 public nsIInterfaceRequestor {
  public:
-  WindowlessBrowser(nsIWebBrowser* aBrowser, nsISupports* aContainer)
+  WindowlessBrowser(nsWebBrowser* aBrowser, nsISupports* aContainer)
       : mBrowser(aBrowser), mContainer(aContainer), mClosed(false) {
-    mWebNavigation = do_QueryInterface(aBrowser);
-    mInterfaceRequestor = do_QueryInterface(aBrowser);
+    mWebNavigation = aBrowser;
+    mInterfaceRequestor = aBrowser;
   }
   NS_DECL_ISUPPORTS
   NS_DECL_NSIWINDOWLESSBROWSER
@@ -316,7 +316,7 @@ class WindowlessBrowser final : public nsIWindowlessBrowser,
     nsContentUtils::AddScriptRunner(runnable.forget());
   }
 
-  nsCOMPtr<nsIWebBrowser> mBrowser;
+  RefPtr<nsWebBrowser> mBrowser;
   nsCOMPtr<nsIWebNavigation> mWebNavigation;
   nsCOMPtr<nsIInterfaceRequestor> mInterfaceRequestor;
   // we don't use the container but just hold a reference to it.
@@ -343,11 +343,10 @@ WindowlessBrowser::Close() {
 
 NS_IMETHODIMP
 WindowlessBrowser::GetBrowsingContext(BrowsingContext** aBrowsingContext) {
-  nsCOMPtr<nsIDocShellTreeItem> docShellTreeItem = do_QueryInterface(mBrowser);
-  if (!docShellTreeItem) {
+  if (!mBrowser) {
     return NS_ERROR_NOT_INITIALIZED;
   }
-  return docShellTreeItem->GetBrowsingContextXPCOM(aBrowsingContext);
+  return mBrowser->GetBrowsingContextXPCOM(aBrowsingContext);
 }
 
 NS_IMETHODIMP
