@@ -1,0 +1,26 @@
+---
+root:
+  items:
+    -
+      type: stacking-context
+      bounds: 50 50 171 226
+      transform: rotate(-6)
+      items:
+        - type: clip
+          id: 2
+          complex:
+            - rect: [0, 0, 171, 226]
+              radius: [[71.82, 94.92], [51.3, 85.88], [94.05, 131.08], [70.11, 133.34]]
+        - type: rect
+          bounds: 0 0 171 226
+          color: [255, 200, 200, 1]
+          clip-chain: [2]
+        -
+          type: stacking-context
+          bounds: 56 93 38 28
+          transform: rotate(18)
+          items:
+            - type: rect
+              bounds: 0 0 38 28
+              color: blue
+              clip-chain: [2]

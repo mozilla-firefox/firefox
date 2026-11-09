@@ -39,3 +39,4 @@ fuzzy(86,4200) fuzzy-if(platform(swgl),108,4200) fuzzy-if(platform(android),108,
 == path-fractional-rect.yaml path-fractional-rect-ref.yaml
 == path-conflation.yaml path-conflation-ref.yaml
 == path-fill-direct.yaml path-fill-direct-ref.yaml
+fuzzy(106,4) == nested-rotation-elliptical-clip.yaml nested-rotation-elliptical-clip-ref.yaml
