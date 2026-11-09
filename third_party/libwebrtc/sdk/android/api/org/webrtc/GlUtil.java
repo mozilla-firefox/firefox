@@ -22,6 +22,7 @@ import java.nio.FloatBuffer;
 public class GlUtil {
   private GlUtil() {}
 
+  @SuppressWarnings("serial")
   public static class GlOutOfMemoryException extends GLException {
     public GlOutOfMemoryException(int error, String msg) {
       super(error, msg);

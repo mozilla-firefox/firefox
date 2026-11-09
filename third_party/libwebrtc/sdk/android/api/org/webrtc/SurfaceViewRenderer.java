@@ -44,6 +44,7 @@ public class SurfaceViewRenderer extends SurfaceView
   /**
    * Standard View constructor. In order to render something, you must first call init().
    */
+  @SuppressWarnings("this-escape")
   public SurfaceViewRenderer(Context context) {
     super(context);
     this.resourceName = getResourceName();
@@ -55,6 +56,7 @@ public class SurfaceViewRenderer extends SurfaceView
   /**
    * Standard View constructor. In order to render something, you must first call init().
    */
+  @SuppressWarnings("this-escape")
   public SurfaceViewRenderer(Context context, AttributeSet attrs) {
     super(context, attrs);
     this.resourceName = getResourceName();
