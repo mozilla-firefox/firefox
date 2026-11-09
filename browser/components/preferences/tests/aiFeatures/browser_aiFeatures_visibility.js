@@ -5,6 +5,13 @@
 
 requestLongerTimeout(3);
 
+const { sinon } = ChromeUtils.importESModule(
+  "resource://testing-common/Sinon.sys.mjs"
+);
+const { LinkPreview } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/genai/LinkPreview.sys.mjs"
+);
+
 describe("settings ai features", () => {
   let doc, win;
 
@@ -28,6 +35,18 @@ describe("settings ai features", () => {
   }
 
   describe("AI Controls visibility on General pane", () => {
+    let canRunOnDeviceStub;
+
+    beforeEach(() => {
+      canRunOnDeviceStub = sinon
+        .stub(LinkPreview, "canRunOnDevice")
+        .get(() => true);
+    });
+
+    afterEach(() => {
+      canRunOnDeviceStub.restore();
+    });
+
     it("hides Link Preview setting when globally blocked via AI Controls toggle", async () => {
       await SpecialPowers.pushPrefEnv({
         set: [
@@ -46,9 +65,12 @@ describe("settings ai features", () => {
       let generalWin = generalDoc.documentGlobal;
       await maybeNavigateToPane("tabsBrowsing", generalWin);
 
-      let linkPreviewSetting =
-        generalWin.Preferences.getSetting("linkPreviewEnabled");
-      let linkPreviewControl = generalDoc.getElementById("linkPreviewEnabled");
+      let linkPreviewSetting = generalWin.Preferences.getSetting(
+        "linkPreviewKeyPoints"
+      );
+      let linkPreviewControl = generalDoc.getElementById(
+        "linkPreviewKeyPoints"
+      );
       Assert.ok(
         BrowserTestUtils.isVisible(linkPreviewControl),
         "Link Preview control is visible"
@@ -73,6 +95,12 @@ describe("settings ai features", () => {
       Assert.ok(
         !BrowserTestUtils.isVisible(linkPreviewControl),
         "Link Preview control is hidden after blocking"
+      );
+      Assert.ok(
+        BrowserTestUtils.isVisible(
+          generalDoc.getElementById("linkPreviewEnabled")
+        ),
+        "Link Preview toggle is still visible after blocking"
       );
 
       // Explicitly enable Link Preview while globally blocked
@@ -264,9 +292,12 @@ describe("settings ai features", () => {
       let generalWin = generalDoc.documentGlobal;
       await maybeNavigateToPane("tabsBrowsing", generalWin);
 
-      let linkPreviewSetting =
-        generalWin.Preferences.getSetting("linkPreviewEnabled");
-      let linkPreviewControl = generalDoc.getElementById("linkPreviewEnabled");
+      let linkPreviewSetting = generalWin.Preferences.getSetting(
+        "linkPreviewKeyPoints"
+      );
+      let linkPreviewControl = generalDoc.getElementById(
+        "linkPreviewKeyPoints"
+      );
       Assert.ok(
         !BrowserTestUtils.isVisible(linkPreviewControl),
         "Link Preview control is hidden when blocked"
