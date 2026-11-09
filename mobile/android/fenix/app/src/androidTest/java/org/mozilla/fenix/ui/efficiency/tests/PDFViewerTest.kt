@@ -5,7 +5,6 @@
 package org.mozilla.fenix.ui.efficiency.tests
 
 import org.junit.Test
-import org.mozilla.fenix.Config
 import org.mozilla.fenix.customannotations.Critical
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.Constants
@@ -43,9 +42,7 @@ class PDFViewerTest : BaseTest() {
     @Test
     fun verifyPDFViewerDownloadButtonTest() {
         val genericURL = mockWebServer.getGenericAsset(3)
-        // Bug 2071966 will improve the naming situation
-        val downloadFilePrefix = if (Config.channel.isNightlyOrDebug) "Untitled document - " else ""
-        val downloadFile = "${downloadFilePrefix}pdfForm.pdf"
+        val downloadFile = "pdfForm.pdf"
 
         on.browserPage.navigateToPage(genericURL.url.toString())
         on.browserPage.mozClick(BrowserPageSelectors.PAGE_CONTENT("PDF form file"))

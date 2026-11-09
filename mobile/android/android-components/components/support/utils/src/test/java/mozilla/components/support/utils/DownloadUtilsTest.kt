@@ -6,6 +6,7 @@ package mozilla.components.support.utils
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -21,17 +22,47 @@ class DownloadUtilsTest {
 
     @Test
     fun makePdfContentDisposition() {
-        assertEquals("attachment; filename=foo.pdf;", DownloadUtils.makePdfContentDisposition("foo"))
-        assertEquals("attachment; filename=foo.html.pdf;", DownloadUtils.makePdfContentDisposition("foo.html"))
-        assertEquals("attachment; filename=foo.pdf;", DownloadUtils.makePdfContentDisposition("foo.pdf"))
+        assertEquals("attachment; filename=\"foo.pdf\";", DownloadUtils.makePdfContentDisposition("foo"))
+        assertEquals("attachment; filename=\"foo.html.pdf\";", DownloadUtils.makePdfContentDisposition("foo.html"))
+        assertEquals("attachment; filename=\"foo.pdf\";", DownloadUtils.makePdfContentDisposition("foo.pdf"))
+        assertEquals("attachment; filename=\"foo.pdf\";", DownloadUtils.makePdfContentDisposition("foo.PDF"))
         assertEquals(
-            "attachment; filename=${"a".repeat(251)}.pdf;",
+            "attachment; filename=\"${"a".repeat(251)}.pdf\";",
             DownloadUtils.makePdfContentDisposition("a".repeat(260)),
         )
         assertEquals(
-            "attachment; filename=${"a".repeat(251)}.pdf;",
+            "attachment; filename=\"${"a".repeat(251)}.pdf\";",
             DownloadUtils.makePdfContentDisposition("a".repeat(260) + ".pdf"),
         )
+        assertEquals("attachment; filename=\"foo bar.pdf\";", DownloadUtils.makePdfContentDisposition("foo bar"))
+        assertEquals("attachment; filename=\"a;b.pdf\";", DownloadUtils.makePdfContentDisposition("a;b"))
+        assertEquals("attachment; filename=\"a\\\"b.pdf\";", DownloadUtils.makePdfContentDisposition("a\"b"))
+        assertEquals(
+            "a;b.pdf",
+            DownloadUtils.extractFileNameFromUrl(DownloadUtils.makePdfContentDisposition("a;b.pdf"), url = null),
+        )
+        assertEquals(
+            "a'b.pdf",
+            DownloadUtils.extractFileNameFromUrl(DownloadUtils.makePdfContentDisposition("a'b.pdf"), url = null),
+        )
+        assertEquals(
+            "utf-8''notes; draft.pdf",
+            DownloadUtils.extractFileNameFromUrl(
+                DownloadUtils.makePdfContentDisposition("utf-8''notes; draft.pdf"),
+                url = null,
+            ),
+        )
+    }
+
+    @Test
+    fun `WHEN no usable filename is found THEN extractFileNameFromUrl returns the default filename`() {
+        val noUsableFilename = "attachment; filename=\".pdf\""
+        assertEquals(
+            DownloadUtils.DEFAULT_FILE_NAME,
+            DownloadUtils.extractFileNameFromUrl(noUsableFilename, url = null),
+        )
+        assertNull(DownloadUtils.extractFileNameFromUrlOrNull(noUsableFilename, url = null))
+        assertNull(DownloadUtils.extractFileNameFromUrlOrNull(contentDisposition = null, url = null))
     }
 
     @Test

@@ -6,7 +6,6 @@ package org.mozilla.fenix.ui
 
 import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule as AndroidComposeTestRuleV2
 import androidx.core.net.toUri
-import mozilla.components.support.ktx.kotlin.truncateMiddle
 import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.Config
@@ -155,10 +154,8 @@ class PDFViewerTest {
     @Test
     fun verifyDownloadedPDFIsOpenedInFirefoxTest() {
         val genericURL = mockWebServer.getGenericAsset(3)
-        // Bug 2071966 will improve the naming situation
-        val downloadFilePrefix = if (Config.channel.isNightlyOrDebug) "Untitled document - " else ""
-        val downloadFile = "${downloadFilePrefix}pdfForm.pdf"
-        val secondDownloadNotificationTitle = "${downloadFilePrefix}pdfForm(1).pdf".truncateMiddle(maxLength = 25)
+        val downloadFile = "pdfForm.pdf"
+        val secondDownloadNotificationTitle = "pdfForm(1).pdf"
 
         navigationToolbar(composeTestRule) {}
             .enterURLAndEnterToBrowser(genericURL.url) {
