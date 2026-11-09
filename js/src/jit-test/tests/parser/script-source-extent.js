@@ -208,13 +208,10 @@ testSourceExtent(`let C = class extends class { } { constructor() { } }`,
 // Class field initializers lambdas.
 // NOTE: These are an implementation detail and may be optimized away in future.
 testSourceExtent(`class C { field }`,
-                 `          ^----^ `,
                  `^----------------`);
 testSourceExtent(`class C { field; }`,
-                 `          ^----^  `,
                  `^-----------------`);
 testSourceExtent(`class C { "field" }`,
-                 `          ^------^ `,
                  `^------------------`);
 testSourceExtent(`class C { 0 }`,
                  `          ^^ `,
@@ -274,7 +271,6 @@ testSourceExtent(`class C { static set prop(v) {} }`,
 // Private class field initializer lambdas.
 // NOTE: These are an implementation detail and may be optimized away in future.
 testSourceExtent(`class C { #field }`,
-                 `          ^-----^ `,
                  `^-----------------`);
 testSourceExtent(`class C { #field = 1 }`,
                  `^---------------------`);

@@ -130,6 +130,9 @@ static bool GetInlinableValue(ParseNode* node, InlinedFieldValueKind* kind,
     case ParseNodeKind::NullExpr:
       *kind = InlinedFieldValueKind::Null;
       return true;
+    case ParseNodeKind::RawUndefinedExpr:
+      *kind = InlinedFieldValueKind::Undefined;
+      return true;
     case ParseNodeKind::ArrayExpr:
       *kind = InlinedFieldValueKind::EmptyArray;
       return node->as<ListNode>().empty();

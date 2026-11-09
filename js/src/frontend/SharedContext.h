@@ -315,6 +315,7 @@ enum class InlinedFieldValueKind : uint8_t {
   True,
   False,
   Null,
+  Undefined,
   EmptyArray,
   EmptyObject,
 };

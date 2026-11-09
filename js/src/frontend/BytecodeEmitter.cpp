@@ -11066,6 +11066,8 @@ bool BytecodeEmitter::emitInlinedFieldValue(const InlinedField& field) {
       return emit1(JSOp::False);
     case InlinedFieldValueKind::Null:
       return emit1(JSOp::Null);
+    case InlinedFieldValueKind::Undefined:
+      return emit1(JSOp::Undefined);
     case InlinedFieldValueKind::EmptyArray:
       return emitUint32Operand(JSOp::NewArray, 0);
     case InlinedFieldValueKind::EmptyObject: {
