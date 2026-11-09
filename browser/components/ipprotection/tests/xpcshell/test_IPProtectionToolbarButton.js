@@ -29,12 +29,17 @@ function createFakeToolbarButton() {
     document,
   };
 
+  const toolbarItem = document.createXULElement("toolbaritem");
+  const icon = document.createXULElement("image");
+  icon.classList.add("toolbarbutton-icon");
+  toolbarItem.appendChild(icon);
+
   return {
     toolbarButton: new IPProtectionToolbarButton(
       fakeWindow,
       "test-toolbarbutton"
     ),
-    toolbarItem: document.createXULElement("toolbaritem"),
+    toolbarItem,
   };
 }
 

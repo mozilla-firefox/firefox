@@ -179,6 +179,63 @@ add_task(async function toolbar_icon_status() {
 });
 
 /**
+ * Tests that the toolbar icon layers are built when the widget is re-added
+ * while the proxy is already paused.
+ */
+add_task(async function toolbar_icon_paused_after_readded() {
+  IPPProxyManager.reset();
+
+  const usage = makeUsage("5368709120", "0", "2027-01-01T00:00:00.000Z");
+  setupService({
+    isReady: true,
+    usageInfo: usage,
+  });
+  IPProtectionService.updateState();
+
+  await openPanel();
+
+  IPPProxyManager.refreshUsage();
+  await waitForProxyState(IPPProxyStates.PAUSED);
+
+  await closePanel();
+
+  Services.prefs.clearUserPref("browser.ipProtection.enabled");
+  Assert.equal(
+    document.getElementById(IPProtectionWidget.WIDGET_ID),
+    null,
+    "IP Protection widget is removed"
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ipProtection.enabled", true]],
+  });
+  await waitForProxyState(IPPProxyStates.PAUSED);
+
+  let button = document.getElementById(IPProtectionWidget.WIDGET_ID);
+  Assert.ok(
+    BrowserTestUtils.isVisible(button),
+    "IP Protection widget should be added back to the navbar"
+  );
+  Assert.ok(
+    button.classList.contains("ipprotection-paused"),
+    "Toolbar icon should show paused status"
+  );
+  let pausedLayer = button.querySelector(
+    ".ipprotection-icon-layer[data-state='paused']"
+  );
+  Assert.ok(pausedLayer, "Paused-state overlay layer should exist");
+  Assert.equal(
+    getComputedStyle(pausedLayer).opacity,
+    "1",
+    "Paused layer should be revealed when paused"
+  );
+
+  IPPProxyManager.reset();
+  cleanupService();
+  IPProtectionService.updateState();
+});
+
+/**
  * Tests that the panel opens when the toolbar button is activated via the
  * Enter or Space keys. Bug 2027922 — on macOS, native XUL toolbarbutton key
  * handling does not fire `command` for Enter, so we rely on the explicit

@@ -547,8 +547,10 @@ export class IPProtectionToolbarButton {
 
     let icon = toolbaritem.querySelector(".toolbarbutton-icon");
     if (!icon) {
-      // The button hasn't rendered its DOM yet; try again on the next update.
-      return;
+      // The button may not be connected yet, so force render() to create its
+      // children before building stack
+      toolbaritem.render();
+      icon = toolbaritem.querySelector(".toolbarbutton-icon");
     }
 
     let doc = toolbaritem.ownerDocument;
