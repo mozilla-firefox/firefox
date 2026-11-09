@@ -205,6 +205,31 @@ add_task(async function disabled_allSuggestions() {
   await cleanUpSuggestions();
 });
 
+// The searchbar shows form history even when remote suggestions are disabled.
+add_task(async function disabled_allSuggestions_searchbar() {
+  Services.prefs.setBoolPref(SUGGEST_PREF, true);
+  Services.prefs.setBoolPref(SUGGEST_ENABLED_PREF, false);
+
+  for (let isPrivate of [false, true]) {
+    let context = createContext(SEARCH_STRING, {
+      isPrivate,
+      sapName: "searchbar",
+    });
+    await check_results({
+      context,
+      matches: [
+        makeSearchResult(context, {
+          engineName: SUGGESTIONS_ENGINE_NAME,
+          heuristic: true,
+        }),
+        ...makeFormHistoryResults(context, MAX_RESULTS - 1),
+      ],
+    });
+  }
+
+  await cleanUpSuggestions();
+});
+
 add_task(async function disabled_privateWindow() {
   Services.prefs.setBoolPref(SUGGEST_PREF, true);
   Services.prefs.setBoolPref(SUGGEST_ENABLED_PREF, true);

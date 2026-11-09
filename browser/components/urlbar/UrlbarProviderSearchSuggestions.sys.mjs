@@ -164,9 +164,13 @@ export class UrlbarProviderSearchSuggestions extends UrlbarProvider {
       (queryContext.sapName == "urlbar" &&
         !lazy.UrlbarPrefs.get("suggest.searches") &&
         !this._isTokenOrRestrictionPresent(queryContext)) ||
-      !lazy.UrlbarPrefs.get("browser.search.suggest.enabled") ||
-      (queryContext.isPrivate &&
-        !lazy.UrlbarPrefs.get("browser.search.suggest.enabled.private"))
+      // In the search bar, `browser.search.suggest.enabled` turns off only the
+      // remote suggestions, which `SearchSuggestionController` takes care of,
+      // and form history is shown regardless.
+      (queryContext.sapName != "searchbar" &&
+        (!lazy.UrlbarPrefs.get("browser.search.suggest.enabled") ||
+          (queryContext.isPrivate &&
+            !lazy.UrlbarPrefs.get("browser.search.suggest.enabled.private"))))
     ) {
       return false;
     }

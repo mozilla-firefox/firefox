@@ -119,8 +119,18 @@ add_task(async function test_allowSuggestions() {
     sources: [UrlbarUtils.RESULT_SOURCE.SEARCH],
   });
   Assert.ok(
-    !suggestionsProvider._allowSuggestions(context),
-    "Suggestions in the urlbar should be disabled"
+    suggestionsProvider._allowSuggestions(context),
+    "Form history in the searchbar should still be enabled"
+  );
+
+  context = createContext("bacon eggs", {
+    isPrivate: true,
+    sapName: "searchbar",
+    sources: [UrlbarUtils.RESULT_SOURCE.SEARCH],
+  });
+  Assert.ok(
+    suggestionsProvider._allowSuggestions(context),
+    "Form history in the searchbar should still be enabled in private windows"
   );
 
   Services.prefs.clearUserPref(SUGGEST_ENABLED);
