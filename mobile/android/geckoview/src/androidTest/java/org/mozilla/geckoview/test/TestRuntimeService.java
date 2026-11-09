@@ -11,6 +11,7 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
@@ -60,6 +61,10 @@ public class TestRuntimeService extends Service
   private Messenger mClient;
 
   private class TestHandler extends Handler {
+    TestHandler() {
+      super(Looper.myLooper());
+    }
+
     @Override
     public void handleMessage(@NonNull final Message msg) {
       final Bundle msgData = msg.getData();
@@ -245,6 +250,10 @@ public class TestRuntimeService extends Service
     }
 
     class ClientHandler extends Handler implements ServiceConnection {
+      ClientHandler() {
+        super(Looper.myLooper());
+      }
+
       @Override
       public void handleMessage(@NonNull Message msg) {
         switch (msg.what) {

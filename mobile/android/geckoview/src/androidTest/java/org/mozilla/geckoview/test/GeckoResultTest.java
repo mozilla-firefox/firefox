@@ -3,8 +3,8 @@ http://creativecommons.org/publicdomain/zero/1.0/ */
 
 package org.mozilla.geckoview.test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -468,7 +468,7 @@ public class GeckoResultTest {
               Looper.prepare();
 
               try {
-                queue.put(new Handler());
+                queue.put(new Handler(Looper.myLooper()));
               } catch (final InterruptedException e) {
                 throw new RuntimeException(e);
               }
@@ -645,7 +645,7 @@ public class GeckoResultTest {
             .then(value -> createCancellableResult())
             .then(value -> new GeckoResult<Integer>());
 
-    final Handler handler = new Handler();
+    final Handler handler = new Handler(Looper.myLooper());
     handler.post(
         () -> {
           result

@@ -6,13 +6,11 @@ package org.mozilla.gecko.util;
 import static org.junit.Assert.*;
 
 import android.net.Uri;
-import android.test.suitebuilder.annotation.SmallTest;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 @RunWith(RobolectricTestRunner.class)
-@SmallTest
 public class IntentUtilsTest {
 
   @Test

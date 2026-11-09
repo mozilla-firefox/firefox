@@ -3,8 +3,8 @@ http://creativecommons.org/publicdomain/zero/1.0/ */
 
 package org.mozilla.geckoview.test.rule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 import android.app.Instrumentation;
@@ -2312,6 +2312,7 @@ public class GeckoSessionTestRule implements TestRule {
     }
 
     /** Adds a mock location provider that can have locations manually set. */
+    @SuppressWarnings("deprecation")
     private void addMockLocationProvider() {
       // Ensures that only one location provider with this name exists
       removeMockLocationProvider();

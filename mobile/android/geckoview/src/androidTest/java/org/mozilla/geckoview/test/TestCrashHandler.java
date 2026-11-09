@@ -185,7 +185,9 @@ public class TestCrashHandler extends Service {
     private String mExpectedProcessType;
     private String mExpectedRemoteType;
 
-    MessageHandler() {}
+    MessageHandler() {
+      super(Looper.myLooper());
+    }
 
     @Override
     public void handleMessage(final Message msg) {
