@@ -367,7 +367,7 @@ tasks:
         symbol: I(leap-raw)
         definition: opensuse-leap-raw
         args:
-            BASE_IMAGE: opensuse/leap:15.6
+            BASE_IMAGE: opensuse/leap:16.0
     opensuse-leap-base:
         symbol: I(leap-base)
         definition: opensuse-leap-base
@@ -376,7 +376,7 @@ tasks:
         symbol: I(leap-a64-raw)
         definition: opensuse-leap-raw
         args:
-            BASE_IMAGE: opensuse/leap:15.6
+            BASE_IMAGE: opensuse/leap:16.0
         arch: arm64
     opensuse-leap-arm64-base:
         symbol: I(leap-a64-base)

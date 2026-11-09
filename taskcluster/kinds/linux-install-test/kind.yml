@@ -18,7 +18,6 @@ task-defaults:
         substitution-fields:
             - description
     run:
-        clone-with: hg
         using: run-task
         run-as-root: true
         cwd: '{checkout}'
@@ -90,7 +89,7 @@ distros:
 
     opensuse-leap:
         symbol: leap
-        pre-install: zypper refresh && zypper install -y curl wget tar xz
+        pre-install: zypper refresh && zypper install -y curl wget tar xz findutils
         docker-image:
             x64: {in-tree: opensuse-leap-base}
             a64: {in-tree: opensuse-leap-arm64-base}  # both arches tested intentionally
