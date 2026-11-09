@@ -1793,11 +1793,7 @@ void MacroAssembler::mul64(const Register64& src, const Register64& dest,
 }
 
 void MacroAssembler::mulBy3(Register src, Register dest) {
-  UseScratchRegisterScope temps(this);
-  Register scratch = temps.Acquire();
-  MOZ_ASSERT(src != scratch);
-  add(scratch, src, src);
-  add(dest, scratch, src);
+  ma_mul64(dest, src, Imm64(3));
 }
 void MacroAssembler::mulDouble(FloatRegister src, FloatRegister dest) {
   fmul_d(dest, dest, src);
