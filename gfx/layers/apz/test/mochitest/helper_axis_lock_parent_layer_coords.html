@@ -66,15 +66,9 @@ async function test() {
 }
 
 window.onload = async () => {
-  if (getPlatform() == "linux") {
-    // SpecialPowers.isHeadless is broken on Linux (bug 1889039).
-    ok(true, "Skipping test on Linux because of bug 1889039");
-    subtestDone();
-  } else {
-    waitUntilApzStable()
-    .then(async () => test())
-    .then(subtestDone, subtestFailed);
-  }
+  waitUntilApzStable()
+  .then(async () => test())
+  .then(subtestDone, subtestFailed);
 };
 </script>
 </html>
