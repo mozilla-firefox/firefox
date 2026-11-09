@@ -14,7 +14,6 @@
 // clang-format off
 /******************************************************************************
 The following accessible states aren't translated, just ignored:
-  STATE_READONLY:        Supported indirectly via EXT_STATE_EDITABLE
   STATE_HOTTRACKED:      No ATK equivalent.  No known use case.
                          The nsIAccessible state is not currently supported.
   STATE_FLOATING:        No ATK equivalent.  No known use case.
@@ -66,7 +65,7 @@ static const AtkStateMap
   { ATK_STATE_PRESSED,                        kMapDirectly },   // states::PRESSED                 = 1 << 3
   { ATK_STATE_CHECKED,                        kMapDirectly },   // states::CHECKED                 = 1 << 4
   { ATK_STATE_INDETERMINATE,                  kMapDirectly },   // states::MIXED                   = 1 << 5
-  { kNone,                                    kMapDirectly },   // states::READONLY                = 1 << 6
+  { ATK_STATE_READ_ONLY,                      kMapDirectly },   // states::READONLY                = 1 << 6
   { kNone,                                    kMapDirectly },   // states::HOTTRACKED              = 1 << 7
   { ATK_STATE_DEFAULT,                        kMapDirectly },   // states::DEFAULT                 = 1 << 8
   { ATK_STATE_EXPANDED,                       kMapDirectly },   // states::EXPANDED                = 1 << 9

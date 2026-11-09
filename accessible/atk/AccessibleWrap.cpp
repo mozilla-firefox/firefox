@@ -751,11 +751,19 @@ gint getIndexInParentCB(AtkObject* aAtkObj) {
 
 static void TranslateStates(uint64_t aState, roles::Role aRole,
                             AtkStateSet* aStateSet) {
-  // atk doesn't have a read only state so read only things shouldn't be
-  // editable. However, we don't do this for list items because Gecko always
-  // exposes those as read only.
-  if ((aState & states::READONLY) && aRole != roles::LISTITEM) {
-    aState &= ~states::EDITABLE;
+  // https://w3c.github.io/aria/core-aam/#ariaReadonlyTrue
+  if ((aState & states::READONLY)) {
+    // If an accessible is read-only it should not have an editable state.
+    if (aRole != roles::LISTITEM) {
+      // ...however, we don't do this for list items because Gecko always
+      // exposes those as read only.
+      aState &= ~states::EDITABLE;
+    } else {
+      aState &= ~states::READONLY;
+    }
+
+    // A read-only accessible should not be checkable either.
+    aState &= ~states::CHECKABLE;
   }
 
   // Convert every state to an entry in AtkStateMap
