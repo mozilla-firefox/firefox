@@ -1095,6 +1095,21 @@ newtab-clock-widget-input-nickname =
     .label = Nickname (optional)
     .placeholder = Add a nickname
     .aria-label = Nickname (optional)
+# "Nickname (optional)" refers to a custom, user-defined label for a saved location
+# (e.g., "Home", "Office", or "School") to make it easier to recognize.
+# Not to be translated as a legal name, username, or alias used for identity verification.
+# The description counts down as the user types.
+# Variables:
+#   $count (number) - How many more characters the nickname can have.
+newtab-clock-widget-input-nickname2 =
+    .label = Nickname (optional)
+    .placeholder = Add a nickname
+    .aria-label = Nickname (optional)
+    .description =
+        { $count ->
+            [one] { $count } character left
+           *[other] { $count } characters left
+        }
 # "Add new clock" is an icon-only button in the widget toolbar — the
 # attributes are consumed as tooltip/screen-reader label only. The button
 # never renders visible text.
