@@ -1,0 +1,42 @@
+<!DOCTYPE HTML>
+<html>
+<!--
+https://bugzilla.mozilla.org/show_bug.cgi?id=2084355
+-->
+<head>
+  <title>Test for Bug 2084355</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script type="application/javascript">
+
+const {addDebuggerToGlobal} = ChromeUtils.importESModule("moz-src:///devtools/platform/jsdebugger.sys.mjs");
+addDebuggerToGlobal(globalThis);
+
+SimpleTest.waitForExplicitFinish();
+
+window.onload = function() {
+  const iframe = document.createElement("iframe");
+  iframe.src = "http://mochi.test:8888/tests/dom/base/test/file_bug2084355.html";
+  iframe.onload = function() {
+    const dbg = new Debugger(iframe.contentWindow);
+    dbg.onDebuggerStatement = () => {
+      Promise.resolve().then(() => {});
+    };
+
+    iframe.contentWindow.wrappedJSObject.go();
+
+    setTimeout(() => {
+      dbg.removeAllDebuggees();
+      ok(iframe.contentWindow.wrappedJSObject.secondJobRan,
+         "Suppressed microtask should eventually run");
+      SimpleTest.finish();
+    }, 0);
+  };
+  document.body.appendChild(iframe);
+};
+
+</script>
+</body>
+</html>

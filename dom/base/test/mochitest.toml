@@ -74,6 +74,7 @@ support-files = [
   "file_bug1091883_frame.html",
   "file_bug1091883_subframe.html",
   "file_bug1091883_target.html",
+  "file_bug2084355.html",
   "file_bug28293.sjs",
   "file_bug326337.xml",
   "file_bug326337_inner.html",

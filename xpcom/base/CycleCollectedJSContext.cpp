@@ -1257,6 +1257,9 @@ bool CycleCollectedJSContext::PerformMicroTaskCheckPoint(bool aForce) {
         mSuppressedMicroTaskList
             ? MaybeUnwrapTaskToRunnable(job) == mSuppressedMicroTaskList
             : false;
+    if (isSuppressionJob) {
+      mSuppressedMicroTaskList->mIsQueued = false;
+    }
 
     // No need to check Suppressed if there aren't ongoing sync operations nor
     // pending mSuppressedMicroTasks.s
@@ -1308,11 +1311,15 @@ bool CycleCollectedJSContext::PerformMicroTaskCheckPoint(bool aForce) {
     // owned happens, inside of RunMicroTask, the remaining ref will be
     // dropped, and the code will be cleaned up.
     //
-    // This should work generally, as if you re-enqueue the task list (we have
-    // no code to prevent this!) you'll just have more refs in the queue,
-    // all of which is good.
-    if (!EnqueueMicroTask(cx, do_AddRef(mSuppressedMicroTaskList))) {
-      MOZ_CRASH("Failed to re-enqueue suppressed microtask list");
+    // The list must only be in the queue once: a stale duplicate would be
+    // dequeued after a newer list replaced this one. This matters for nested
+    // checkpoints run by AutoDebuggerJobQueueInterruption, where the list may
+    // already be sitting in the saved queue.
+    if (!mSuppressedMicroTaskList->mIsQueued) {
+      if (!EnqueueMicroTask(cx, do_AddRef(mSuppressedMicroTaskList))) {
+        MOZ_CRASH("Failed to re-enqueue suppressed microtask list");
+      }
+      mSuppressedMicroTaskList->mIsQueued = true;
     }
   }
 

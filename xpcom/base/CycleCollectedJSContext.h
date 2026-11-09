@@ -256,6 +256,10 @@ class SuppressedMicroTaskList final : public MicroTaskRunnable {
 
   CycleCollectedJSContext* mContext = nullptr;
   uint64_t mSuppressionGeneration = 0;
+  // True while this list is sitting in a microtask queue (including a queue
+  // saved by AutoDebuggerJobQueueInterruption), so that we never enqueue it
+  // twice.
+  bool mIsQueued = false;
   JS::PersistentRooted<JS::GCVector<MustConsumeMicroTask>>
       mSuppressedMicroTaskRunnables;
 

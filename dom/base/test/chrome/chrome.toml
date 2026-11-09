@@ -73,6 +73,8 @@ support-files = ["../file_bug357450.js"]
 
 ["test_bug765993.html"]
 
+["test_bug2084355.html"]
+
 ["test_bug780199.xhtml"]
 
 ["test_bug780529.xhtml"]

@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script>
+function syncXHR() {
+  const xhr = new XMLHttpRequest();
+  xhr.open("GET", location.href, false);
+  xhr.send();
+}
+
+var secondJobRan = false;
+
+function go() {
+  Promise.resolve().then(() => syncXHR());
+  Promise.resolve().then(() => {
+    secondJobRan = true;
+  });
+  syncXHR();
+  // eslint-disable-next-line no-debugger
+  debugger;
+}
+</script>
+</head>
+<body></body>
+</html>
