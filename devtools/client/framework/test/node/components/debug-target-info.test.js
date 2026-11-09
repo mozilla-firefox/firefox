@@ -70,13 +70,13 @@ const TEST_TOOLBOX_NO_NAME = {
 
 const USB_DEVICE_DESCRIPTION = {
   deviceName: "usbDeviceName",
-  icon: "chrome://devtools/skin/images/aboutdebugging-firefox-release.svg",
+  icon: "chrome://browser/content/logos/firefox.svg",
   name: "usbRuntimeBrandName",
   version: "1.0.0",
 };
 
 const THIS_FIREFOX_DEVICE_DESCRIPTION = {
-  icon: "chrome://devtools/skin/images/aboutdebugging-firefox-release.svg",
+  icon: "chrome://browser/content/logos/firefox.svg",
   version: "1.0.0",
   name: "thisFirefoxRuntimeBrandName",
 };

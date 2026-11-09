@@ -18,7 +18,7 @@ exports[`DebugTargetInfo component Connection info renders the expected snapshot
   >
     <img
       className="channel-icon qa-runtime-icon"
-      src="chrome://devtools/skin/images/aboutdebugging-firefox-release.svg"
+      src="chrome://browser/content/logos/firefox.svg"
     />
     <b
       className="devtools-ellipsis-text"
@@ -115,7 +115,7 @@ exports[`DebugTargetInfo component Target icon renders the expected snapshot for
   >
     <img
       className="channel-icon qa-runtime-icon"
-      src="chrome://devtools/skin/images/aboutdebugging-firefox-release.svg"
+      src="chrome://browser/content/logos/firefox.svg"
     />
     <b
       className="devtools-ellipsis-text"
@@ -171,7 +171,7 @@ exports[`DebugTargetInfo component Target icon renders the expected snapshot for
   >
     <img
       className="channel-icon qa-runtime-icon"
-      src="chrome://devtools/skin/images/aboutdebugging-firefox-release.svg"
+      src="chrome://browser/content/logos/firefox.svg"
     />
     <b
       className="devtools-ellipsis-text"
@@ -268,7 +268,7 @@ exports[`DebugTargetInfo component Target icon renders the expected snapshot for
   >
     <img
       className="channel-icon qa-runtime-icon"
-      src="chrome://devtools/skin/images/aboutdebugging-firefox-release.svg"
+      src="chrome://browser/content/logos/firefox.svg"
     />
     <b
       className="devtools-ellipsis-text"
@@ -324,7 +324,7 @@ exports[`DebugTargetInfo component Target icon renders the expected snapshot for
   >
     <img
       className="channel-icon qa-runtime-icon"
-      src="chrome://devtools/skin/images/aboutdebugging-firefox-release.svg"
+      src="chrome://browser/content/logos/firefox.svg"
     />
     <b
       className="devtools-ellipsis-text"
@@ -419,7 +419,7 @@ exports[`DebugTargetInfo component Target title renders the expected snapshot fo
   >
     <img
       className="channel-icon qa-runtime-icon"
-      src="chrome://devtools/skin/images/aboutdebugging-firefox-release.svg"
+      src="chrome://browser/content/logos/firefox.svg"
     />
     <b
       className="devtools-ellipsis-text"
@@ -505,7 +505,7 @@ exports[`DebugTargetInfo component Target title renders the expected snapshot fo
   >
     <img
       className="channel-icon qa-runtime-icon"
-      src="chrome://devtools/skin/images/aboutdebugging-firefox-release.svg"
+      src="chrome://browser/content/logos/firefox.svg"
     />
     <b
       className="devtools-ellipsis-text"

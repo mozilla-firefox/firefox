@@ -387,7 +387,6 @@ devtools.jar:
     skin/images/aboutdebugging-firefox-beta.svg (themes/images/aboutdebugging-firefox-beta.svg)
     skin/images/aboutdebugging-firefox-logo.svg (themes/images/aboutdebugging-firefox-logo.svg)
     skin/images/aboutdebugging-firefox-nightly.svg (themes/images/aboutdebugging-firefox-nightly.svg)
-    skin/images/aboutdebugging-firefox-release.svg (themes/images/aboutdebugging-firefox-release.svg)
     skin/images/aboutdebugging-globe-icon.svg (themes/images/aboutdebugging-globe-icon.svg)
     skin/images/aboutdebugging-information.svg (themes/images/aboutdebugging-information.svg)
     skin/images/aboutdebugging-process-icon.svg (themes/images/aboutdebugging-process-icon.svg)

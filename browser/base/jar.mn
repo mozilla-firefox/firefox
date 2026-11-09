@@ -15,6 +15,7 @@ browser.jar:
         content/browser/aboutRobots.css               (content/aboutRobots.css)
         content/browser/logos/etp-mobile.svg          (content/logos/etp-mobile.svg)
         content/browser/logos/firefox-enterprise.svg  (content/logos/firefox-enterprise.svg)
+        content/browser/logos/firefox.svg             (content/logos/firefox.svg)
         content/browser/logos/lockwise.svg            (content/logos/lockwise.svg)
         content/browser/logos/monitor.svg             (content/logos/monitor.svg)
         content/browser/logos/passkey.svg             (content/logos/passkey.svg)

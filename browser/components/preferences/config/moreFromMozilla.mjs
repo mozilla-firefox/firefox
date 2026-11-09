@@ -226,7 +226,7 @@ SettingGroupManager.registerGroups({
         id: "promoGroup",
         control: "moz-fieldset",
         l10nId: "more-from-moz-firefox-mobile",
-        iconSrc: "chrome://branding/content/about-logo.svg",
+        iconSrc: "chrome://browser/content/logos/firefox.svg",
         headingLevel: 2,
         items: [
           {
