@@ -100,6 +100,10 @@ sysroot-wasm32-wasi-clang-22:
         resources:
             - taskcluster/scripts/misc/wasi-sdk-compat.patch
             - taskcluster/scripts/misc/wasi-sdk-no-llvm-patches.patch
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default: sysroot-wasm32-wasi
         toolchain-artifact: public/build/sysroot-wasm32-wasi.tar.zst
     fetches:
         fetch:
@@ -120,10 +124,6 @@ sysroot-wasm32-wasi-clang-23:
             - wasi-sdk-compat.patch
         resources:
             - taskcluster/scripts/misc/wasi-sdk-compat.patch
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default: sysroot-wasm32-wasi
         toolchain-artifact: public/build/sysroot-wasm32-wasi.tar.zst
     fetches:
         fetch:

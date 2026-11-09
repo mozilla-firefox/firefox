@@ -395,7 +395,7 @@ def check_and_add_warning_impl(warning, compiler=None, when=None, check=True):
 
 # When changing this version, please check that no warning support have been
 # removed.
-clang_latest_release = dependable("24.1.0")
+clang_latest_release = dependable("23.1.0")
 
 
 @depends(c_compiler, clang_latest_release, when=moz_automation)

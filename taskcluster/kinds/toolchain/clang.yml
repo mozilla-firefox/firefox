@@ -59,6 +59,10 @@ linux64-clang-22-mingw-x86:
             - 'x86'
         resources:
             - 'taskcluster/scripts/misc/mingw-*.patch'
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default: linux64-clang-mingw-x86
         toolchain-artifact: public/build/clangmingw.tar.zst
     fetches:
         fetch:
@@ -79,6 +83,10 @@ linux64-clang-22-mingw-x64:
             - 'x64'
         resources:
             - 'taskcluster/scripts/misc/mingw-*.patch'
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default: linux64-clang-mingw-x64
         toolchain-artifact: public/build/clangmingw.tar.zst
     fetches:
         fetch:
@@ -102,6 +110,10 @@ linux64-clang-22-stage1:
             - 'build/build-clang/use-system-clang.json'
             - 'build/build-clang/clang-22.json'
             - 'build/build-clang/stage-1.json'
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default: linux64-clang-toolchain
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         fetch:
@@ -170,6 +182,10 @@ linux64-clang-22:
         max-run-time: 600
     run:
         script: repack-clang.sh
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default: linux64-clang
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -228,6 +244,10 @@ linux64-aarch64-clang-22:
         max-run-time: 600
     run:
         script: repack-clang.sh
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default: linux64-aarch64-clang
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -344,6 +364,12 @@ macosx64-clang-22:
         max-run-time: 600
     run:
         script: repack-clang.sh
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default:
+                    - macosx64-clang
+                    - macosx64-clang-toolchain
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -460,6 +486,10 @@ macosx64-aarch64-clang-22:
         max-run-time: 600
     run:
         script: repack-clang.sh
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default: macosx64-aarch64-clang
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -577,6 +607,12 @@ win64-clang-22:
         max-run-time: 600
     run:
         script: repack-clang.sh
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default:
+                    - win64-clang
+                    - win64-clang-toolchain
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -638,6 +674,10 @@ win64-aarch64-clang-22:
         max-run-time: 600
     run:
         script: repack-clang.sh
+        toolchain-alias:
+            by-project:
+                toolchains: null
+                default: win64-aarch64-clang
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -670,10 +710,6 @@ linux64-clang-23-mingw-x86:
             - 'x86'
         resources:
             - 'taskcluster/scripts/misc/mingw-*.patch'
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default: linux64-clang-mingw-x86
         toolchain-artifact: public/build/clangmingw.tar.zst
     fetches:
         fetch:
@@ -694,10 +730,6 @@ linux64-clang-23-mingw-x64:
             - 'x64'
         resources:
             - 'taskcluster/scripts/misc/mingw-*.patch'
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default: linux64-clang-mingw-x64
         toolchain-artifact: public/build/clangmingw.tar.zst
     fetches:
         fetch:
@@ -721,10 +753,6 @@ linux64-clang-23-stage1:
             - 'build/build-clang/use-system-clang.json'
             - 'build/build-clang/clang-23.json'
             - 'build/build-clang/stage-1.json'
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default: linux64-clang-toolchain
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         fetch:
@@ -793,10 +821,6 @@ linux64-clang-23:
         max-run-time: 600
     run:
         script: repack-clang.sh
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default: linux64-clang
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -855,10 +879,6 @@ linux64-aarch64-clang-23:
         max-run-time: 600
     run:
         script: repack-clang.sh
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default: linux64-aarch64-clang
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -975,12 +995,6 @@ macosx64-clang-23:
         max-run-time: 600
     run:
         script: repack-clang.sh
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default:
-                    - macosx64-clang
-                    - macosx64-clang-toolchain
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -1097,10 +1111,6 @@ macosx64-aarch64-clang-23:
         max-run-time: 600
     run:
         script: repack-clang.sh
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default: macosx64-aarch64-clang
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -1218,12 +1228,6 @@ win64-clang-23:
         max-run-time: 600
     run:
         script: repack-clang.sh
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default:
-                    - win64-clang
-                    - win64-clang-toolchain
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
@@ -1285,10 +1289,6 @@ win64-aarch64-clang-23:
         max-run-time: 600
     run:
         script: repack-clang.sh
-        toolchain-alias:
-            by-project:
-                toolchains: null
-                default: win64-aarch64-clang
         toolchain-artifact: public/build/clang.tar.zst
     fetches:
         toolchain:
