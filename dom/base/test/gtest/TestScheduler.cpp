@@ -268,7 +268,7 @@ void TestNonIdleCC::RunSlice(TimeStamp aCCStartTime, TimeStamp aPrevSliceEnd,
     EXPECT_FALSE(budget.isUnlimited());
     // This slice is delayed, slice time should be increased.
     EXPECT_NEAR(budget.timeBudget().ToMilliseconds(),
-                MainThreadIdlePeriod::GetLongIdlePeriod() / 2, 0.5);
+                MainThreadIdlePeriod::GetLongIdlePeriod() / 2.0, 0.5);
   } else {
     // We're not overrunning kMaxICCDuration, so we don't go unlimited.
     EXPECT_FALSE(budget.isUnlimited());

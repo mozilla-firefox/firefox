@@ -31,7 +31,7 @@ class DecryptThroughputLimit {
     // We should only have one decrypt request being processed at once.
     MOZ_RELEASE_ASSERT(!mThrottleScheduler.IsScheduled());
 
-    const TimeDuration WindowSize = TimeDuration::FromSeconds(0.1);
+    const TimeDuration WindowSize = TimeDuration::FromMilliseconds(100);
     const TimeDuration MaxThroughput =
         TimeDuration::FromSeconds(mMaxThroughput);
 

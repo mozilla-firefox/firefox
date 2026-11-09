@@ -110,8 +110,7 @@ void midirMIDIPlatformService::CheckAndReceive(const nsString* aId,
   nsTArray<uint8_t> data;
   data.AppendElements(aData, aLength);
   const TimeStamp* openTime = reinterpret_cast<const TimeStamp*>(aTimeStamp);
-  TimeStamp timestamp =
-      *openTime + TimeDuration::FromMicroseconds(static_cast<double>(aMicros));
+  TimeStamp timestamp = *openTime + TimeDuration::FromMicroseconds(aMicros);
   MIDIMessage message(data, timestamp);
   LogMIDIMessage(message, *aId, MIDIPortType::Input);
   nsTArray<MIDIMessage> messages;

@@ -18,7 +18,7 @@ namespace layers {
  */
 class ImageComposite {
  public:
-  static const float BIAS_TIME_MS;
+  static const int32_t BIAS_TIME_MS;
 
   explicit ImageComposite();
   virtual ~ImageComposite();

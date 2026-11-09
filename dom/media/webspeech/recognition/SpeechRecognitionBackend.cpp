@@ -495,7 +495,7 @@ TimeStamp SpeechRecognitionBackend::CaptureTimeForTrackPosition(
     return TimeStamp();
   }
   TimeStamp refTimeStamp = TimeStamp::ProcessCreation() +
-                           TimeDuration::FromMicroseconds(double(ref.mTimeUs));
+                           TimeDuration::FromMicroseconds(ref.mTimeUs);
   return EstimateSampleTimeStamp(ref.mPosition, refTimeStamp, aPosition,
                                  mGraphRate);
 }

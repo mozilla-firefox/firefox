@@ -640,7 +640,7 @@ void ClearKeySessionManager::QueryOutputProtectionStatusIfNeeded() {
   // of time has passed since the last check with the host, another should be
   // performed (provided the first check has been handled).
   static const mozilla::TimeDuration kOutputProtectionQueryInterval =
-      mozilla::TimeDuration::FromSeconds(0.2);
+      mozilla::TimeDuration::FromMilliseconds(200);
   // The number of kOutputProtectionQueryInterval intervals we can miss before
   // we decide a check has failed. I.e. if this value is 2, if we have not
   // received a reply to a check after kOutputProtectionQueryInterval * 2

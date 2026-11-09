@@ -22,7 +22,7 @@ namespace widget {
 // Maximum time between two consecutive data points to consider resampling
 // between them.
 // Values between 1x and 5x of the touch sampling interval are reasonable.
-static const double kTouchResampleWindowSize = 40.0;
+static const int32_t kTouchResampleWindowSize = 40;
 
 // These next two values constrain the sampling timestamp.
 // Our caller will usually adjust frame timestamps to be slightly in the past,
@@ -30,15 +30,15 @@ static const double kTouchResampleWindowSize = 40.0;
 // maximally need to predict by [touch sampling rate] minus 5ms.
 // So we would like kTouchResampleMaxPredictMs to satisfy the following:
 // kTouchResampleMaxPredictMs + [frame time adjust] > [touch sampling rate]
-static const double kTouchResampleMaxPredictMs = 8.0;
+static const int32_t kTouchResampleMaxPredictMs = 8;
 // This one is a protection against very outdated frame timestamps.
 // Values larger than the touch sampling interval and less than 3x of the vsync
 // interval are reasonable.
-static const double kTouchResampleMaxBacksampleMs = 20.0;
+static const int32_t kTouchResampleMaxBacksampleMs = 20;
 
 // The maximum age of the most recent data point to consider resampling.
 // Should be between 1x and 3x of the touch sampling interval.
-static const double kTouchResampleOldTouchThresholdMs = 17.0;
+static const int32_t kTouchResampleOldTouchThresholdMs = 17;
 
 uint64_t TouchResampler::ProcessEvent(MultiTouchInput&& aInput) {
   mCurrentTouches.UpdateFromEvent(aInput);

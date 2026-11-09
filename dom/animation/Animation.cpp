@@ -448,7 +448,7 @@ bool Animation::SetTimelineNoUpdate(AnimationTimeline* aTimeline,
           mStartTime.IsNull()) {
         // If we don't have the start time aligned, and no valid (normalized)
         // time.
-        return Some(TimeDuration::FromMilliseconds(0.0));
+        return Some(TimeDuration::Zero());
       }
 
       if (previousProgress.IsNull()) {

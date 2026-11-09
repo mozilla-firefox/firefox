@@ -1282,7 +1282,7 @@ bool CCGCScheduler::CCRunnerFired(TimeStamp aDeadline) {
   } else if (mPreferFasterCollection) {
     // We found some idle time, try to utilize that a bit more given that
     // we're in a mode where idle time is rare.
-    aDeadline = aDeadline + TimeDuration::FromMilliseconds(5.0);
+    aDeadline = aDeadline + TimeDuration::FromMilliseconds(5);
   }
 
   bool didDoWork = false;

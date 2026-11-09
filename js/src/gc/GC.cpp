@@ -620,7 +620,7 @@ static bool ParseTimeDuration(const CharRange& text,
   const char* str = text.begin().get();
   char* end;
   long millis = strtol(str, &end, 10);
-  *durationOut = TimeDuration::FromMilliseconds(double(millis));
+  *durationOut = TimeDuration::FromMilliseconds(millis);
   return str != end && end == text.end().get();
 }
 

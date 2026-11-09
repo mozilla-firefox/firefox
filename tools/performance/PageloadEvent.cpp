@@ -174,7 +174,7 @@ static constexpr PRTime kActiveClientMinHistoryAge =
 static constexpr uint32_t kActiveClientMinPages = 5;
 
 // How long to wait before asking again once a profile has failed to qualify.
-static constexpr double kActiveClientRecheckSeconds = 60 * 60;
+static constexpr int32_t kActiveClientRecheckSeconds = 60 * 60;
 
 static bool IsActiveClientFromPlaces() {
   nsCOMPtr<nsINavHistoryService> history =

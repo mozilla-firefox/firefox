@@ -441,8 +441,7 @@ static int32_t PerformWait(Instance* instance, uint32_t memoryIndex,
 
   mozilla::Maybe<mozilla::TimeDuration> timeout;
   if (timeout_ns >= 0) {
-    timeout = mozilla::Some(
-        mozilla::TimeDuration::FromMicroseconds(double(timeout_ns) / 1000));
+    timeout = mozilla::Some(mozilla::TimeDuration::FromNanoseconds(timeout_ns));
   }
 
   MOZ_ASSERT(byteOffset <= SIZE_MAX, "Bounds check is broken");

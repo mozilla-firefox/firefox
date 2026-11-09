@@ -475,11 +475,8 @@ void WebRenderLayerManager::EndTransactionWithoutLayer(
             ? wr::GeckoDisplayListType::Full(aGeckoDLBuildTime)
             : wr::GeckoDisplayListType::Partial(aGeckoDLBuildTime);
 
-    // convert from nanoseconds to microseconds
-    auto duration = TimeDuration::FromMicroseconds(
-        double(dlData.mDLDesc.builder_finish_time -
-               dlData.mDLDesc.builder_start_time) /
-        1000.);
+    auto duration = TimeDuration::FromNanoseconds(
+        dlData.mDLDesc.builder_finish_time - dlData.mDLDesc.builder_start_time);
     PerfStats::RecordMeasurement(PerfStats::Metric::WrDisplayListBuilding,
                                  duration);
     WrBridge()->EndTransaction(

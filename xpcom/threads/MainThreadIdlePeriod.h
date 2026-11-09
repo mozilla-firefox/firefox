@@ -16,7 +16,8 @@ class MainThreadIdlePeriod final : public IdlePeriod {
 
   MainThreadIdlePeriod() : mLastIdleDeadline(TimeStamp::Now()) {}
 
-  static float GetLongIdlePeriod();
+  // In milliseconds.
+  static int32_t GetLongIdlePeriod();
 
  private:
   virtual ~MainThreadIdlePeriod() = default;

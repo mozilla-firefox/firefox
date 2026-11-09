@@ -184,11 +184,11 @@ TimeStamp FrameAnimator::GetCurrentImgFrameEndTime(
     // RequestRefresh() below.
     // XXX(seth): It'd be preferable to make our logic work correctly with
     // infinitely long timeouts.
-    return TimeStamp::NowLoRes() + TimeDuration::FromMilliseconds(31536000.0);
+    return TimeStamp::NowLoRes() + TimeDuration::FromMilliseconds(31536000);
   }
 
   TimeDuration durationOfTimeout =
-      TimeDuration::FromMilliseconds(double(aCurrentTimeout.AsMilliseconds()));
+      TimeDuration::FromMilliseconds(aCurrentTimeout.AsMilliseconds());
   return aState.mCurrentAnimationFrameTime + durationOfTimeout;
 }
 

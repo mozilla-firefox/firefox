@@ -492,7 +492,7 @@ static bool SetMozLog(JSContext* cx, unsigned argc, Value* vp) {
  * Limit the timeout to 30 minutes to prevent an overflow on platfoms
  * that represent the time internally in microseconds using 32-bit int.
  */
-static const double MAX_TIMEOUT_SECONDS = 1800.0;
+static const int32_t MAX_TIMEOUT_SECONDS = 1800;
 
 // Not necessarily in sync with the browser
 #ifdef ENABLE_SHARED_MEMORY
@@ -4868,7 +4868,7 @@ static bool Sleep_fn(JSContext* cx, unsigned argc, Value* vp) {
   ShellContext* sc = GetShellContext(cx);
   CallArgs args = CallArgsFromVp(argc, vp);
 
-  TimeDuration duration = TimeDuration::FromSeconds(0.0);
+  TimeDuration duration = TimeDuration::Zero();
   if (args.length() > 0) {
     double t_secs;
     if (!ToNumber(cx, args[0], &t_secs)) {
@@ -4963,7 +4963,7 @@ static void WatchdogMain(JSContext* cx) {
         }
 
         TimeDuration sleepDuration = sc->watchdogTimeout
-                                         ? TimeDuration::FromSeconds(0.1)
+                                         ? TimeDuration::FromMilliseconds(100)
                                          : TimeDuration::Forever();
         sc->watchdogWakeup.wait_for(guard, sleepDuration);
       }

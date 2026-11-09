@@ -1075,7 +1075,7 @@ void VRManager::Shutdown() {
     TimeStamp now = TimeStamp::Now();
     mEarliestRestartTime =
         now + TimeDuration::FromMilliseconds(
-                  (double)mDisplayInfo.mDisplayState.minRestartInterval);
+                  mDisplayInfo.mDisplayState.minRestartInterval);
   }
 
   StopAllHaptics();

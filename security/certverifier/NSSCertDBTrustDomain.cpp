@@ -664,8 +664,8 @@ static void RecordCRLiteNotCoveredCertAge(
     return;
   }
   mozilla::glean::cert_verifier::crlite_not_covered_cert_age
-      .AccumulateRawDuration(TimeDuration::FromMilliseconds(
-          static_cast<double>(timeMs - mostRecentMs)));
+      .AccumulateRawDuration(
+          TimeDuration::FromMilliseconds(timeMs - mostRecentMs));
 }
 
 Result NSSCertDBTrustDomain::CheckCRLite(

@@ -584,7 +584,7 @@ Result<HangDetails, nsresult> ReadHangDetailsFromFile(nsIFile* aFile) {
 
   HangDetails result;
   uint32_t duration = MOZ_TRY(ReadUint(fd));
-  result.duration() = TimeDuration::FromMilliseconds(double(duration));
+  result.duration() = TimeDuration::FromMilliseconds(duration);
   result.threadName() = MOZ_TRY(ReadTString<char>(fd));
   result.runnableName() = MOZ_TRY(ReadTString<char>(fd));
   result.process() = MOZ_TRY(ReadTString<char>(fd));

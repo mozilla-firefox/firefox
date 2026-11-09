@@ -137,7 +137,7 @@ void WinCompositorWindowThread::ShutDown() {
     // Waiting on a monitor that has already been notified.
     StaticMonitorAutoLock lock(sShutdownMonitor);
 
-    static const TimeDuration TIMEOUT = TimeDuration::FromSeconds(2.0);
+    static const TimeDuration TIMEOUT = TimeDuration::FromSeconds(2);
     RefPtr<Runnable> runnable =
         NewRunnableMethod("WinCompositorWindowThread::ShutDownTask",
                           sWinCompositorWindowThread.get(),

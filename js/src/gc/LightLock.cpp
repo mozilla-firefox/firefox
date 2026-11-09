@@ -75,7 +75,7 @@ bool js::LightLock::tryBlockUntilWoken(JSRuntime* runtime) {
   };
 
 #ifdef DEBUG
-  mozilla::TimeDuration duration = mozilla::TimeDuration::FromSeconds(10.0);
+  mozilla::TimeDuration duration = mozilla::TimeDuration::FromSeconds(10);
   if (!llrt->condVar.wait_for(lock, duration, wasWoken)) {
     MOZ_CRASH_UNSAFE_PRINTF("Timeout waiting on LightLock in state %u\n",
                             unsigned(state));

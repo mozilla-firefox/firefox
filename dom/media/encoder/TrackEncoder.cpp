@@ -683,7 +683,7 @@ void VideoTrackEncoder::AdvanceCurrentTime(const TimeStamp& aTime) {
       while ((aUpTo - previousChunk->mTimeStamp).ToSeconds() > 1.0) {
         // We encode at least one frame per second, even if there are none
         // flowing.
-        previousChunk->mTimeStamp += TimeDuration::FromSeconds(1.0);
+        previousChunk->mTimeStamp += TimeDuration::FromSeconds(1);
         tempSegment.AppendFrame(
             do_AddRef(previousChunk->mFrame.GetImage()),
             previousChunk->mFrame.GetIntrinsicSize(),

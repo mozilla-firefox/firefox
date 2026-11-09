@@ -1506,7 +1506,7 @@ void nsRefreshDriver::AdvanceTimeAndRefresh(int64_t aMilliseconds) {
     }
   }
 
-  mMostRecentRefresh += TimeDuration::FromMilliseconds((double)aMilliseconds);
+  mMostRecentRefresh += TimeDuration::FromMilliseconds(aMilliseconds);
 
   mozilla::dom::AutoNoJSAPI nojsapi;
   DoTick();
@@ -1985,7 +1985,7 @@ bool nsRefreshDriver::
   if (mBeforeFirstContentfulPaintTimerRunningLimit.IsNull()) {
     // Don't let the timer to run forever, so limit to 4s for now.
     mBeforeFirstContentfulPaintTimerRunningLimit =
-        TimeStamp::Now() + TimeDuration::FromSeconds(4.0f);
+        TimeStamp::Now() + TimeDuration::FromSeconds(4);
   }
 
   return TimeStamp::Now() <= mBeforeFirstContentfulPaintTimerRunningLimit;

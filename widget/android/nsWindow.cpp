@@ -135,7 +135,7 @@ static mozilla::LazyLogModule sGVSupportLog("GeckoViewSupport");
 // one.
 constinit static nsTArray<nsWindow*> gTopLevelWindows;
 
-static const double kTouchResampleVsyncAdjustMs = 5.0;
+static const int32_t kTouchResampleVsyncAdjustMs = 5;
 
 static const int32_t INPUT_RESULT_UNHANDLED =
     java::PanZoomController::INPUT_RESULT_UNHANDLED;

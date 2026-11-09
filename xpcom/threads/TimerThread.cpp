@@ -836,7 +836,7 @@ TimerThread::Run() {
       waitFor = TimeDuration::FromMilliseconds(milliseconds);
 
       // Don't need to wake up precisely when "sleeping"
-      static constexpr double sWaitToleranceWhenSleeping_ms = 32.0;
+      static constexpr int32_t sWaitToleranceWhenSleeping_ms = 32;
       waitTolerance =
           TimeDuration::FromMilliseconds(sWaitToleranceWhenSleeping_ms);
     }

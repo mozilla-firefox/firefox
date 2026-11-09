@@ -192,7 +192,7 @@ MFBT_API TimeStamp TimeStamp::ProcessCreation() {
       TimeStamp now = Now();
       uint64_t uptime = ComputeProcessUptime();
 
-      ts = now - TimeDuration::FromMicroseconds(static_cast<double>(uptime));
+      ts = now - TimeDuration::FromMicroseconds(uptime);
 
       if ((ts > sInitOnce.mFirstTimeStamp) || (uptime == 0)) {
         ts = sInitOnce.mFirstTimeStamp;

@@ -16,7 +16,7 @@ using namespace gfx;
 
 namespace layers {
 
-/* static */ const float ImageComposite::BIAS_TIME_MS = 1.0f;
+/* static */ const int32_t ImageComposite::BIAS_TIME_MS = 1;
 
 ImageComposite::ImageComposite() = default;
 
@@ -56,7 +56,7 @@ void ImageComposite::UpdateBias(size_t aImageIndex, bool aFrameChanged) {
     mBias = ImageComposite::BIAS_NONE;
     return;
   }
-  TimeDuration threshold = TimeDuration::FromMilliseconds(1.5);
+  TimeDuration threshold = TimeDuration::FromMicroseconds(1500);
   if (compositionTime - compositedImageTime < threshold &&
       compositionTime - compositedImageTime > -threshold) {
     // The chosen frame's time is very close to the composition time (probably

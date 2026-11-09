@@ -1657,7 +1657,7 @@ class D3DVsyncSource final : public VsyncSource {
     const int microseconds = 1000000;
     int64_t adjust = qpcNow.QuadPart - vblankTime.qpcVBlank;
     int64_t usAdjust = (adjust * microseconds) / frequency.QuadPart;
-    vsync -= TimeDuration::FromMicroseconds((double)usAdjust);
+    vsync -= TimeDuration::FromMicroseconds(usAdjust);
 
     // On Windows 10 and on, DWMGetCompositionTimingInfo, mostly
     // reports the upcoming vsync time, which is in the future.

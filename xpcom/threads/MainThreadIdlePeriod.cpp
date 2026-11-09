@@ -12,7 +12,7 @@
 #include "nsThreadUtils.h"
 
 // The amount of idle time (milliseconds) reserved for a long idle period.
-static const double kLongIdlePeriodMS = 50.0;
+static const int32_t kLongIdlePeriodMS = 50;
 
 // The minimum amount of time (milliseconds) required for an idle period to be
 // scheduled on the main thread. N.B. layout.idle_period.time_limit adds
@@ -69,6 +69,6 @@ MainThreadIdlePeriod::GetIdlePeriodHint(TimeStamp* aIdleDeadline) {
 }
 
 /* static */
-float MainThreadIdlePeriod::GetLongIdlePeriod() { return kLongIdlePeriodMS; }
+int32_t MainThreadIdlePeriod::GetLongIdlePeriod() { return kLongIdlePeriodMS; }
 
 }  // namespace mozilla

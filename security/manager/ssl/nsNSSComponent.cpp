@@ -569,8 +569,7 @@ nsresult CheckForSmartCardChanges() {
     StaticMutexAutoLock lock(sCheckForSmartCardChangesMutex);
     // Do this at most once every 3 seconds.
     TimeStamp now = TimeStamp::Now();
-    if (now - sLastCheckedForSmartCardChanges <
-        TimeDuration::FromSeconds(3.0)) {
+    if (now - sLastCheckedForSmartCardChanges < TimeDuration::FromSeconds(3)) {
       return NS_OK;
     }
     sLastCheckedForSmartCardChanges = now;

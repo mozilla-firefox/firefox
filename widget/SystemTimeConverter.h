@@ -108,7 +108,7 @@ class SystemTimeConverter {
     bool newer = IsTimeNewerThanTimestamp(aTime, roughlyNow, &timeAsTimeStamp);
 
     // Tolerance when detecting clock skew.
-    static const TimeDuration kTolerance = TimeDuration::FromMilliseconds(30.0);
+    static const TimeDuration kTolerance = TimeDuration::FromMilliseconds(30);
 
     // Check for forwards skew
     if (newer) {
