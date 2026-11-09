@@ -337,8 +337,10 @@ pub const VIS_CLIP_INDETERMINATE: usize = 145;
 pub const INTERNED_PATHS: usize = 146;
 /// Primitives filled with `QuadRenderStrategy::Path` this frame.
 pub const PATH_FILLS: usize = 147;
+/// Path clip mask sub-tasks rasterized this frame.
+pub const PATH_CLIPS: usize = 148;
 
-pub const NUM_PROFILER_EVENTS: usize = 148;
+pub const NUM_PROFILER_EVENTS: usize = 149;
 
 pub struct Profiler {
     counters: Vec<Counter>,
@@ -568,6 +570,7 @@ impl Profiler {
             int("Vis clip indeterminate", "", VIS_CLIP_INDETERMINATE, Expected::none()),
             int("Interned paths", "", INTERNED_PATHS, Expected::none()),
             int("Path fills", "", PATH_FILLS, Expected::none()),
+            int("Path clips", "", PATH_CLIPS, expected(0..200)),
         ];
 
         let mut counters = Vec::with_capacity(profile_counters.len());

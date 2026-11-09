@@ -848,6 +848,7 @@ impl FrameBuilder {
                     tile_caches,
                     root_spatial_node_index: spatial_tree.root_reference_frame_index(),
                     frame_memory: &mut frame_memory,
+                    profile,
                 };
 
                 let pass = build_render_pass(
@@ -885,6 +886,7 @@ impl FrameBuilder {
                     tile_caches,
                     root_spatial_node_index: spatial_tree.root_reference_frame_index(),
                     frame_memory: &mut frame_memory,
+                    profile,
                 };
 
                 self.build_composite_pass(
@@ -1319,7 +1321,6 @@ pub fn build_render_pass(
                             batcher,
                             task_visible_rect,
                             pic_task.content_origin,
-                            &ctx.frame_memory,
                         );
                         path_tiler.begin_target(DeviceIntRect::from_size(target_rect.size()));
 

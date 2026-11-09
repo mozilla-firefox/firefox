@@ -88,6 +88,7 @@ use euclid::{point2, Transform2D, Transform3D};
 
 use api::PremultipliedColorF;
 use crate::bezier;
+use crate::gpu_types::PrimitiveInstanceData;
 use crate::renderer::BlendMode;
 use crate::internal_types::FrameVec;
 use crate::renderer::{GpuBufferAddress, GpuBufferBlockEdge, GpuBufferBuilderI, GpuBufferWriterI, PathEdgeBufferBuilder};
@@ -345,10 +346,11 @@ pub struct PathPrimitive {
 pub struct PathTilerOutput<'l> {
     /// The frame's global edge buffer.
     pub edges: &'l mut PathEdgeBufferBuilder,
-    pub tiles: &'l mut FrameVec<PathTileInstance>,
+    /// Encoded `PathTileInstance`s.
+    pub tiles: &'l mut FrameVec<PrimitiveInstanceData>,
     /// If set, receives the tiles that have no edges instead of `tiles`.
     /// These tiles are fully covered by the path.
-    pub solid_tiles: Option<&'l mut FrameVec<PathTileInstance>>,
+    pub solid_tiles: Option<&'l mut FrameVec<PrimitiveInstanceData>>,
 }
 
 pub struct PathTiler {
@@ -990,7 +992,7 @@ impl PathTiler {
             first_edge,
             edge_count,
             path_index,
-        }.encode());
+        }.encode().into());
     }
 
     fn generate_tiles(&mut self, fill_rule: FillRule, inverted: bool, path_index: u32, output: &mut PathTilerOutput) {
@@ -1148,7 +1150,7 @@ impl PathTiler {
             first_edge: 0,
             edge_count: 0,
             path_index,
-        }.encode());
+        }.encode().into());
     }
 }
 
