@@ -1055,10 +1055,19 @@ static vpx_codec_err_t vp8e_encode(vpx_codec_alg_priv_t *ctx,
 
       res = image2yuvconfig(img, &sd);
 
-      if (vp8_receive_raw_frame(ctx->cpi, ctx->next_frame_flag | lib_flags, &sd,
-                                dst_time_stamp, dst_end_time_stamp)) {
-        VP8_COMP *cpi = (VP8_COMP *)ctx->cpi;
-        res = update_error_state(ctx, &cpi->common.error);
+      if (sd.y_width != ctx->cfg.g_w || sd.y_height != ctx->cfg.g_h) {
+        /* from vpx_encoder.h for g_w/g_h:
+           "Note that the frames passed as input to the encoder must have this
+           resolution"
+        */
+        ctx->base.err_detail = "Invalid input frame resolution";
+        res = VPX_CODEC_INVALID_PARAM;
+      } else {
+        if (vp8_receive_raw_frame(ctx->cpi, ctx->next_frame_flag | lib_flags,
+                                  &sd, dst_time_stamp, dst_end_time_stamp)) {
+          VP8_COMP *cpi = (VP8_COMP *)ctx->cpi;
+          res = update_error_state(ctx, &cpi->common.error);
+        }
       }
 
       /* reset for next frame */

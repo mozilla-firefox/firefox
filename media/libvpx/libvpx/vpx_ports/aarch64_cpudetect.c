@@ -16,7 +16,7 @@
 #include <sys/sysctl.h>
 #endif
 
-#if !CONFIG_RUNTIME_CPU_DETECT
+#if !CONFIG_RUNTIME_CPU_DETECT || defined(__OpenBSD__)
 
 static int arm_get_cpu_caps(void) {
   // This function should actually be a no-op. There is no way to adjust any of
@@ -29,7 +29,7 @@ static int arm_get_cpu_caps(void) {
   return flags;
 }
 
-#elif defined(__APPLE__)  // end !CONFIG_RUNTIME_CPU_DETECT
+#elif defined(__APPLE__)  // end !CONFIG_RUNTIME_CPU_DETECT || defined(__OpenBSD__)
 
 // sysctlbyname() parameter documentation for instruction set characteristics:
 // https://developer.apple.com/documentation/kernel/1387446-sysctlbyname/determining_instruction_set_characteristics
