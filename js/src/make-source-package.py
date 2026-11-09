@@ -186,6 +186,7 @@ rsync_filter_list = """
 + /testing/test/**
 + /testing/web-platform/*.ini
 + /testing/web-platform/*.py
++ /testing/web-platform/python.toml
 + /testing/web-platform/meta/streams/**
 + /testing/web-platform/mozilla/**
 + /testing/web-platform/tests/resources/**

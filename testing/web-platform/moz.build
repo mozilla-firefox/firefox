@@ -10,8 +10,6 @@ TEST_HARNESS_FILES["web-platform"] += [
     "wptrunner.ini",
 ]
 
-PYTHON_UNITTEST_MANIFESTS += ["python.toml"]
-
 with Files("**"):
     SCHEDULES.exclusive = [
         "web-platform-tests",
