@@ -140,6 +140,7 @@ public final class Clipboard {
    *
    * @param context application context
    * @param text a plain text to set to clipboard
+   * @param isPrivateData whether to mark the clip as sensitive
    * @return true if copy is successful.
    */
   @WrapForJNI(calledFrom = "gecko")

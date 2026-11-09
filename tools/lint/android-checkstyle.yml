@@ -27,7 +27,6 @@ android-checkstyle:
         - 'third_party/application-services/.buildconfig-android.yml'
         - 'third_party/application-services/**/*.gradle'
         - 'mobile/android/geckoview/checkstyle.xml'
-        - 'mobile/android/geckoview/checkstyle-suppressions.xml'
         - 'mobile/android/gradle.py'
         - 'mobile/android/mach_commands.py'
         - 'tools/lint/android/lints.py'

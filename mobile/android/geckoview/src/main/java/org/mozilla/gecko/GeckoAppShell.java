@@ -547,7 +547,13 @@ public class GeckoAppShell {
   private static native void notifyAlertListener(
       String name, String topic, String action, String origin);
 
-  /** Called by the NotificationListener to notify Gecko that a notification has shown. */
+  /**
+   * Called by the NotificationListener to notify Gecko that a notification has shown.
+   *
+   * @param name the notification name
+   * @param cookie the notification cookie
+   * @param origin the origin that created the notification
+   */
   public static void onNotificationShow(
       final String name, final String cookie, @NotNull final String origin) {
     if (GeckoThread.isRunning()) {
@@ -558,6 +564,9 @@ public class GeckoAppShell {
   /**
    * Called by the NotificationListener to notify Gecko that a previously shown notification has
    * been closed.
+   *
+   * @param name the notification name
+   * @param origin the origin that created the notification
    */
   public static void onNotificationClose(@NotNull final String name, @NotNull final String origin) {
     if (GeckoThread.isRunning()) {
@@ -568,6 +577,10 @@ public class GeckoAppShell {
   /**
    * Called by the NotificationListener to notify Gecko that a previously shown notification has
    * been clicked on.
+   *
+   * @param name the notification name
+   * @param action the action that was clicked, or null for the notification itself
+   * @param origin the origin that created the notification
    */
   public static void onNotificationClick(
       @NotNull final String name, @Nullable final String action, @NotNull final String origin) {

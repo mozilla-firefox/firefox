@@ -37,6 +37,7 @@ public interface EventCallback {
    * Resolve this Event callback with the result from the {@link GeckoResult}.
    *
    * @param response the result that will be used for this callback.
+   * @param <T> the type of the result
    */
   default <T> void resolveTo(final @Nullable GeckoResult<T> response) {
     if (response == null) {

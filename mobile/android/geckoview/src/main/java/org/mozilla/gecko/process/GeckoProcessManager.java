@@ -90,6 +90,9 @@ public final class GeckoProcessManager {
    * Returns the surface allocator interface to be used by the client process to allocate Surfaces.
    * The service bound to the returned interface may live in either the GPU process or parent
    * process.
+   *
+   * @param client the binder of the client process
+   * @return the surface allocator
    */
   public ISurfaceAllocator getSurfaceAllocator(final IBinder client) {
     final boolean gpuEnabled = GeckoAppShell.isGpuProcessEnabled();
@@ -688,12 +691,20 @@ public final class GeckoProcessManager {
     }
   }
 
-  /** Sets whether the content service runs on isolated process. */
+  /**
+   * Sets whether the content service runs on isolated process.
+   *
+   * @param enabled whether to use isolated processes
+   */
   public void setIsolatedProcessEnabled(final boolean enabled) {
     mIsolatedProcess = enabled;
   }
 
-  /** Sets whether the content service runs on isolated process with app Zygote preloading. */
+  /**
+   * Sets whether the content service runs on isolated process with app Zygote preloading.
+   *
+   * @param enabled whether to use app Zygote preloading
+   */
   public void setAppZygoteEnabled(final boolean enabled) {
     mAppZygote = enabled;
   }

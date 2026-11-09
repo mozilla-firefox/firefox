@@ -323,8 +323,11 @@ public class GeckoJavaSampler {
    * Public method to add a new marker to Gecko profiler. This can be used to add a marker *inside*
    * the geckoview code, but ideally ProfilerController methods should be used instead.
    *
-   * @see Marker#Marker(long, String, Double, Double, String) for information about the parameter
-   *     options.
+   * @param aMarkerName Identifier of the marker as a string.
+   * @param aStartTime Start time as Double. It can be null if you want to mark a point of time.
+   * @param aEndTime End time as Double. If it's null, this function implicitly gets the end time.
+   * @param aText An optional string field for more information about the marker.
+   * @see Marker#Marker(long, String, Double, Double, String)
    */
   public static void addMarker(
       @NonNull final String aMarkerName,
@@ -495,7 +498,13 @@ public class GeckoJavaSampler {
     return null;
   }
 
-  /** Returns the source line number of a frame, or a negative value if unknown. */
+  /**
+   * Returns the source line number of a frame, or a negative value if unknown.
+   *
+   * @param aSampleId the index of the sample
+   * @param aFrameId the index of the frame within the sample
+   * @return the line number
+   */
   @WrapForJNI
   public static synchronized int getFrameLineNumber(final int aSampleId, final int aFrameId) {
     final Sample sample = getSample(aSampleId);
@@ -859,7 +868,11 @@ public class GeckoJavaSampler {
 
   private static volatile String sProguardUuid;
 
-  /** Sets the UUID of the embedding app's R8/ProGuard mapping file, recorded in profiles. */
+  /**
+   * Sets the UUID of the embedding app's R8/ProGuard mapping file, recorded in profiles.
+   *
+   * @param proguardUuid the mapping file UUID
+   */
   public static void setProguardUuid(final String proguardUuid) {
     sProguardUuid = proguardUuid;
   }

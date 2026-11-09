@@ -7,10 +7,6 @@
     "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <module name="Checker">
-    <module name="SuppressionFilter">
-      <property name="file" value="${config_loc}/checkstyle-suppressions.xml"/>
-    </module>
-
     <module name="TreeWalker">
         <module name="FinalParameters">
           <property name="tokens" value="METHOD_DEF, CTOR_DEF, LITERAL_CATCH, FOR_EACH_CLAUSE"/>

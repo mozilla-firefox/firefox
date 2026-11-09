@@ -220,6 +220,7 @@ public final class GeckoBundle implements Parcelable {
    * exist.
    *
    * @param key Key to look for.
+   * @param defaultValue Value to return if mapping does not exist.
    * @return Double value
    */
   public Double getDoubleObject(final String key, final Double defaultValue) {

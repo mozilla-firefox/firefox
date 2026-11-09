@@ -83,13 +83,21 @@ public class GeckoScreenOrientation {
     update();
   }
 
-  /** Add a listener that will be notified when the screen orientation has changed. */
+  /**
+   * Add a listener that will be notified when the screen orientation has changed.
+   *
+   * @param aListener the listener to add
+   */
   public void addListener(final OrientationChangeListener aListener) {
     ThreadUtils.assertOnUiThread();
     mListeners.add(aListener);
   }
 
-  /** Remove a OrientationChangeListener again. */
+  /**
+   * Remove a OrientationChangeListener again.
+   *
+   * @param aListener the listener to remove
+   */
   public void removeListener(final OrientationChangeListener aListener) {
     ThreadUtils.assertOnUiThread();
     mListeners.remove(aListener);

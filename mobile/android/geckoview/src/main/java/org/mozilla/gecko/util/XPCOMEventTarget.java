@@ -41,6 +41,8 @@ public final class XPCOMEventTarget extends JNIObject implements IXPCOMEventTarg
   /**
    * Runs the provided runnable on the launcher thread. If this method is called from the launcher
    * thread itself, the runnable will be executed immediately and synchronously.
+   *
+   * @param runnable the runnable to run
    */
   public static void runOnLauncherThread(@NonNull final Runnable runnable) {
     final IXPCOMEventTarget launcherThread = launcherThread();

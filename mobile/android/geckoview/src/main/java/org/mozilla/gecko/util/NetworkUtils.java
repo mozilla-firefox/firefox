@@ -73,7 +73,12 @@ public class NetworkUtils {
     return networkInfo != null && networkInfo.isConnected();
   }
 
-  /** For mobile connections, maps particular connection subtype to a general 2G, 3G, 4G bucket. */
+  /**
+   * For mobile connections, maps particular connection subtype to a general 2G, 3G, 4G bucket.
+   *
+   * @param connectivityManager the connectivity manager, may be null
+   * @return the connection subtype
+   */
   public static ConnectionSubType getConnectionSubType(
       final ConnectivityManager connectivityManager) {
     if (connectivityManager == null) {

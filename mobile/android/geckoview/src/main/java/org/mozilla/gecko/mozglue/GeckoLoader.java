@@ -354,7 +354,9 @@ public final class GeckoLoader {
   /**
    * The first two attempts at loading a library: directly, and then using the app library path.
    *
-   * <p>Returns null or the cause exception.
+   * @param context the application context
+   * @param lib the library name, without the "lib" prefix or ".so" suffix
+   * @return null; a failed load throws a RuntimeException instead
    */
   public static Throwable doLoadLibrary(final Context context, final String lib) {
     try {
