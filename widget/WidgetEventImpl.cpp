@@ -1417,6 +1417,20 @@ static bool IsCaseChangeableChar(uint32_t aChar) {
                                ToUpperCase(static_cast<char16_t>(aChar));
 }
 
+static bool ContainsCharCaseInsensitive(
+    const ShortcutKeyCandidateArray& aCandidates, uint32_t aCharCode,
+    const Maybe<ShortcutKeyCandidate::ShiftState>& aShiftState = Nothing()) {
+  for (const auto& candidate : aCandidates) {
+    if (aShiftState && candidate.mShiftState != aShiftState.value()) {
+      continue;
+    }
+    if (CharsCaseInsensitiveEqual(candidate.mCharCode, aCharCode)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 LazyLogModule gShortcutKeyCandidateLog("ShortcutKeyCandidates");
 
 void WidgetKeyboardEvent::GetShortcutKeyCandidates(
@@ -1443,21 +1457,22 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
   //   4: shiftedCharCodes[1]/ShiftState::Ignorable...
   uint32_t pseudoCharCode = PseudoCharCode();
   if (pseudoCharCode) {
-    ShortcutKeyCandidate key(pseudoCharCode, ShiftState::MatchExactly,
-                             SkipIfEarlierHandlerDisabled::No);
-    aCandidates.AppendElement(key);
+    aCandidates.AppendElement(
+        ShortcutKeyCandidate(pseudoCharCode, ShiftState::MatchExactly,
+                             SkipIfEarlierHandlerDisabled::No));
   }
 
   uint32_t len = mAlternativeCharCodes.Length();
   if (!IsShift()) {
     for (uint32_t i = 0; i < len; ++i) {
       uint32_t ch = mAlternativeCharCodes[i].mUnshiftedCharCode;
-      if (!ch || ch == pseudoCharCode) {
+      if (!ch) {
         continue;
       }
-      ShortcutKeyCandidate key(ch, ShiftState::MatchExactly,
-                               SkipIfEarlierHandlerDisabled::No);
-      aCandidates.AppendElement(key);
+      if (!ContainsCharCaseInsensitive(aCandidates, ch)) {
+        aCandidates.AppendElement(ShortcutKeyCandidate(
+            ch, ShiftState::MatchExactly, SkipIfEarlierHandlerDisabled::No));
+      }
     }
     // If unshiftedCharCodes doesn't have numeric but shiftedCharCode has it,
     // this keyboard layout is AZERTY or similar layout, probably.
@@ -1467,12 +1482,11 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
       for (uint32_t i = 0; i < len; ++i) {
         uint32_t ch = mAlternativeCharCodes[i].mShiftedCharCode;
         if (ch >= '0' && ch <= '9') {
-          ShortcutKeyCandidate key(
+          aCandidates.AppendElement(ShortcutKeyCandidate(
               ch, ShiftState::MatchExactly,
               // Ctrl + `-` in the French keyboard layout should not match with
               // Ctrl + `6` shortcut when it's already fully zoomed out.
-              SkipIfEarlierHandlerDisabled::Yes);
-          aCandidates.AppendElement(key);
+              SkipIfEarlierHandlerDisabled::Yes));
           break;
         }
       }
@@ -1484,10 +1498,16 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
         continue;
       }
 
-      if (ch != pseudoCharCode) {
-        ShortcutKeyCandidate key(ch, ShiftState::MatchExactly,
-                                 SkipIfEarlierHandlerDisabled::No);
-        aCandidates.AppendElement(key);
+      if (!ContainsCharCaseInsensitive(aCandidates, ch)) {
+        aCandidates.AppendElement(ShortcutKeyCandidate(
+            ch, ShiftState::MatchExactly, SkipIfEarlierHandlerDisabled::No));
+      }
+
+      // We may need to append {ch, ShiftState::Ignorable}, let's check whether
+      // it's already in the result first.
+      if (ContainsCharCaseInsensitive(aCandidates, ch,
+                                      Some(ShiftState::Ignorable))) {
+        continue;
       }
 
       // If the char is an alphabet, the shift key state should not be
@@ -1509,9 +1529,8 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
 
       // Setting the alternative charCode candidates for retry without shift
       // key state only when the shift key is pressed.
-      ShortcutKeyCandidate key(ch, ShiftState::Ignorable,
-                               SkipIfEarlierHandlerDisabled::No);
-      aCandidates.AppendElement(key);
+      aCandidates.AppendElement(ShortcutKeyCandidate(
+          ch, ShiftState::Ignorable, SkipIfEarlierHandlerDisabled::No));
     }
   }
 
@@ -1521,10 +1540,10 @@ void WidgetKeyboardEvent::GetShortcutKeyCandidates(
   // press.  However, if the space key is assigned to a function key, it
   // shouldn't work as a space key.
   if (mKeyNameIndex == KEY_NAME_INDEX_USE_STRING &&
-      mCodeNameIndex == CODE_NAME_INDEX_Space && pseudoCharCode != ' ') {
-    ShortcutKeyCandidate spaceKey(' ', ShiftState::MatchExactly,
-                                  SkipIfEarlierHandlerDisabled::No);
-    aCandidates.AppendElement(spaceKey);
+      mCodeNameIndex == CODE_NAME_INDEX_Space &&
+      !ContainsCharCaseInsensitive(aCandidates, ' ')) {
+    aCandidates.AppendElement(ShortcutKeyCandidate(
+        ' ', ShiftState::MatchExactly, SkipIfEarlierHandlerDisabled::No));
   }
 
   if (MOZ_LOG_TEST(gShortcutKeyCandidateLog, LogLevel::Info)) {
