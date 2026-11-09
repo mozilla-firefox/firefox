@@ -80,16 +80,3 @@ macosx64-node-22:
     fetches:
         fetch:
             - nodejs-22-macosx64
-
-win32-node-22:
-    # There is no official 32-bit Windows build of Node 23 and later.
-    treeherder:
-        symbol: TW32(node-22)
-    attributes:
-        local-toolchain: false
-    run:
-        toolchain-alias:
-            - win32-node
-    fetches:
-        fetch:
-            - nodejs-22-win32
