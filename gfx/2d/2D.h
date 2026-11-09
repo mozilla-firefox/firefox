@@ -2376,7 +2376,7 @@ class GFX2D_API Factory {
   static FT_Face NewFTFaceFromData(FT_Library aFTLibrary, const uint8_t* aData,
                                    uint32_t aLength, int aFaceIndex);
   static already_AddRefed<SharedFTFace> NewSharedFTFaceFromData(
-      FT_Library aFTLibrary, FontData* aData, int aFaceIndex, 
+      FT_Library aFTLibrary, FontData* aData, int aFaceIndex,
       SharedFTFaceData* aSharedData = nullptr);
   static void ReleaseFTFace(FT_Face aFace);
   static FT_Error LoadFTGlyph(FT_Face aFace, uint32_t aGlyphIndex,

@@ -582,7 +582,7 @@ void gfxUserFontEntry::DoLoadNextSrc(bool aIsContinue) {
           if (NS_SUCCEEDED(rv) &&
               LoadPlatformFontSync(
                   mCurrentSrcIndex,
-                  std::move(static_cast<const uint8_t*>(buffer)), 
+                  std::move(static_cast<const uint8_t*>(buffer)),
                   bufferLength)) {
             SetLoadState(STATUS_LOADED);
             glean::webfont::srctype.AccumulateSingleSample(currSrc.mSourceType +
@@ -638,7 +638,7 @@ void gfxUserFontEntry::DoLoadNextSrc(bool aIsContinue) {
       currSrc.mBuffer->TakeBuffer(buffer, bufferLength);
       if (buffer &&
           LoadPlatformFontSync(mCurrentSrcIndex,
-                               std::move(static_cast<const uint8_t*>(buffer)), 
+                               std::move(static_cast<const uint8_t*>(buffer)),
                                bufferLength)) {
         // LoadPlatformFontSync takes ownership of the buffer, so no need
         // to free it here.

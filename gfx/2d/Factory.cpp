@@ -568,7 +568,7 @@ FT_Face Factory::NewFTFaceFromData(FT_Library aFTLibrary, const uint8_t* aData,
 }
 
 already_AddRefed<SharedFTFace> Factory::NewSharedFTFaceFromData(
-    FT_Library aFTLibrary, FontData* aFontData, int aFaceIndex, 
+    FT_Library aFTLibrary, FontData* aFontData, int aFaceIndex,
     SharedFTFaceData* aSharedData) {
   if (FT_Face face = NewFTFaceFromData(aFTLibrary, aFontData->Data(),
                                        aFontData->Length(), aFaceIndex)) {

@@ -32,4 +32,3 @@ class FontData final {
 };
 
 #endif  // GFX_FONT_DATA_H
-
