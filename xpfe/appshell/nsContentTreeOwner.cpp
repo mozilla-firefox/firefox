@@ -329,7 +329,8 @@ NS_IMETHODIMP nsContentTreeOwner::GetTitle(nsAString& aTitle) {
 }
 
 NS_IMETHODIMP nsContentTreeOwner::SetTitle(const nsAString& aTitle) {
-  return NS_OK;
+  NS_ENSURE_STATE(mAppWindow);
+  return mAppWindow->SetTitle(aTitle);
 }
 
 //*****************************************************************************

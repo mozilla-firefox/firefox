@@ -5012,9 +5012,9 @@ nsDocShell::SetTitle(const nsAString& aTitle) {
   mTitle = aTitle;
   mTitleValidForCurrentURI = true;
 
-  // When title is set on the top object it should then be passed to the
-  // tree owner.
-  if (mBrowsingContext->IsTop()) {
+  // When title is set on the top chrome object it should then be passed to the
+  // tree owner, so that it becomes the window title.
+  if (mBrowsingContext->IsTop() && mBrowsingContext->IsChrome()) {
     nsCOMPtr<nsIBaseWindow> treeOwnerAsWin(do_QueryInterface(mTreeOwner));
     if (treeOwnerAsWin) {
       treeOwnerAsWin->SetTitle(aTitle);
