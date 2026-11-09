@@ -102,9 +102,6 @@ class BounceTrackingState : public nsIWebProgressListener,
                                dom::CanonicalBrowsingContext* aTarget,
                                uint64_t aLoadId);
 
-  // Whether the given principal should be tracked for bounce tracking.
-  static bool ShouldTrackPrincipal(nsIPrincipal* aPrincipal);
-
   // Check if there is a BounceTrackingState which current browsing context is
   // associated with aSite. The partition is taken into account for isolation
   // between normal browsing, private browsing and containers.

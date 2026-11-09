@@ -47,11 +47,6 @@ class BounceTrackingProtectionStorage final : public nsIObserver,
   // Initialises the storage including the on-disk database.
   [[nodiscard]] nsresult Init();
 
-  // BTP state is partitioned by neither first party domain nor partition key.
-  // Returns the OriginAttributes BTP keys its state on.
-  static OriginAttributes NormalizeOriginAttributes(
-      const OriginAttributes& aOriginAttributes);
-
   // Getters for mStateGlobal.
   RefPtr<BounceTrackingStateGlobal> GetStateGlobal(
       const OriginAttributes& aOriginAttributes);

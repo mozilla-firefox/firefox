@@ -3,7 +3,6 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "BounceTrackingRecord.h"
-#include "BounceTrackingProtectionStorage.h"
 #include "mozilla/Logging.h"
 
 namespace mozilla {
@@ -42,8 +41,7 @@ const BounceTrackingRecord::BounceSiteSet& BounceTrackingRecord::BounceSites()
 void BounceTrackingRecord::RemoveBounceSites(
     const OriginAttributes& aOriginAttributes) {
   OriginAttributes originAttributes =
-      BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-          aOriginAttributes);
+      BounceTrackingSite::NormalizeOriginAttributes(aOriginAttributes);
   mBounceSites.RemoveIf([&](const BounceTrackingSite& aSite) {
     return !aSite.IsNull() && aSite.OriginAttributesRef() == originAttributes;
   });

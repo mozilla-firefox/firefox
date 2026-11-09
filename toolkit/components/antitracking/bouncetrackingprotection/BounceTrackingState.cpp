@@ -218,9 +218,8 @@ nsresult BounceTrackingState::Init(
   // having to hold a reference to the BC. We don't need first party domain.
   // Many things in BTP are keyed by OriginAttributes and we don't want to
   // create unnecessary partitions.
-  mOriginAttributes =
-      BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-          browsingContext->OriginAttributesRef());
+  mOriginAttributes = BounceTrackingSite::NormalizeOriginAttributes(
+      browsingContext->OriginAttributesRef());
 
   // Add a listener for window load. See BounceTrackingState::OnStateChange for
   // the listener code.
@@ -280,8 +279,7 @@ void BounceTrackingState::Reset(const OriginAttributes* aOriginAttributes,
   Maybe<OriginAttributes> originAttributes;
   if (aOriginAttributes) {
     originAttributes.emplace(
-        BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-            *aOriginAttributes));
+        BounceTrackingSite::NormalizeOriginAttributes(*aOriginAttributes));
   }
   auto matches = [&](const OriginAttributes& aCandidate) {
     if (originAttributes) {
@@ -344,23 +342,6 @@ bool BounceTrackingState::ShouldCreateBounceTrackingStateForWebProgress(
 }
 
 // static
-bool BounceTrackingState::ShouldTrackPrincipal(nsIPrincipal* aPrincipal) {
-  MOZ_ASSERT(aPrincipal);
-
-  // Only track content principals.
-  if (!aPrincipal->GetIsContentPrincipal()) {
-    return false;
-  }
-
-  // Skip non http(s) schemes.
-  if (!net::SchemeIsHttpOrHttps(aPrincipal)) {
-    return false;
-  }
-
-  return true;
-}
-
-// static
 nsresult BounceTrackingState::HasBounceTrackingStateForSite(
     const BounceTrackingSite& aSite, bool& aResult) {
   aResult = false;
@@ -416,7 +397,7 @@ nsresult BounceTrackingState::HasBounceTrackingStateForSite(
     // non-http(s) documents (e.g. about:, moz-extension:) are not partitioned
     // like the http(s) content BTP records bounces for. See Bug 2054941.
     MOZ_ASSERT(
-        !ShouldTrackPrincipal(principal) ||
+        !BounceTrackingSite::ShouldTrackPrincipal(principal) ||
             principal->OriginAttributesRef().EqualsIgnoringFPD(
                 state->mOriginAttributes),
         "BTP: active-site purge guard sees a live document whose container "
@@ -539,7 +520,7 @@ nsresult BounceTrackingState::OnDocumentStartRequest(nsIChannel* aChannel) {
 
   // A load which switched container is retargeted into a new tab.
   OriginAttributes loadOriginAttributes =
-      BounceTrackingProtectionStorage::NormalizeOriginAttributes(
+      BounceTrackingSite::NormalizeOriginAttributes(
           loadInfo->GetOriginAttributes());
   if (loadOriginAttributes != mOriginAttributes) {
     mRetargetedOriginAttributes = Some(loadOriginAttributes);
@@ -607,7 +588,8 @@ BounceTrackingState::OnStateChange(nsIWebProgress* aWebProgress,
   // not partitioned like the http(s) content BTP records bounces for. See the
   // note in OnDocumentStartRequest and Bug 2054941.
   MOZ_ASSERT(
-      !documentPrincipal || !ShouldTrackPrincipal(documentPrincipal) ||
+      !documentPrincipal ||
+          !BounceTrackingSite::ShouldTrackPrincipal(documentPrincipal) ||
           documentPrincipal->OriginAttributesRef().EqualsIgnoringFPD(
               mOriginAttributes),
       "BTP: committed document OriginAttributes (userContextId/PBM) diverged "
@@ -987,15 +969,14 @@ nsresult BounceTrackingState::OnDocumentLoaded(
                 "{}: origin: {}, this: {}", __FUNCTION__, origin, *this);
   }
 
-  bool shouldTrackPrincipal =
-      BounceTrackingState::ShouldTrackPrincipal(aDocumentPrincipal);
+  BounceTrackingSite finalSite =
+      MOZ_TRY(BounceTrackingSite::FromPrincipal(aDocumentPrincipal));
 
   // Check if we need to log a warning to the DevTools console because we have
   // previously purged this site. This is only relevant to check if we actually
-  // monitor this principal for bounce tracking.
-  if (shouldTrackPrincipal) {
-    mBounceTrackingProtection->MaybeLogPurgedWarningForSite(aDocumentPrincipal,
-                                                            this);
+  // monitor this site for bounce tracking.
+  if (!finalSite.IsNull()) {
+    mBounceTrackingProtection->MaybeLogPurgedWarningForSite(finalSite, this);
   }
 
   // Assert: navigable’s bounce tracking record is not null. It gets created in
@@ -1004,9 +985,6 @@ nsresult BounceTrackingState::OnDocumentLoaded(
   if (NS_WARN_IF(!mBounceTrackingRecord)) {
     return NS_ERROR_FAILURE;
   }
-
-  BounceTrackingSite finalSite =
-      MOZ_TRY(BounceTrackingSite::FromPrincipal(aDocumentPrincipal));
 
   // Set the navigable’s bounce tracking record's final host to the host of
   // finalSite.

@@ -43,6 +43,20 @@ class BounceTrackingSite final {
   static BounceTrackingSite FromSiteHost(
       const nsACString& aSiteHost, const OriginAttributes& aOriginAttributes);
 
+  // BTP state is partitioned by neither first party domain nor partition key.
+  // Returns the OriginAttributes BTP keys its state on.
+  static OriginAttributes NormalizeOriginAttributes(
+      const OriginAttributes& aOriginAttributes) {
+    OriginAttributes oa = aOriginAttributes;
+    oa.StripAttributes(OriginAttributes::STRIP_FIRST_PARTY_DOMAIN |
+                       OriginAttributes::STRIP_PARTITION_KEY);
+    return oa;
+  }
+
+  // Whether BTP keeps state for aPrincipal's site. Only http(s) content
+  // principals have one.
+  static bool ShouldTrackPrincipal(nsIPrincipal* aPrincipal);
+
   bool IsNull() const { return mSiteHost.IsEmpty(); }
 
   // Empty for the null site.

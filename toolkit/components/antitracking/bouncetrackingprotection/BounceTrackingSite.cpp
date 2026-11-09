@@ -4,8 +4,6 @@
 
 #include "BounceTrackingSite.h"
 
-#include "BounceTrackingProtectionStorage.h"
-#include "BounceTrackingState.h"
 #include "nsIEffectiveTLDService.h"
 #include "nsIPrincipal.h"
 #include "nsIURI.h"
@@ -18,10 +16,25 @@ BounceTrackingSite::BounceTrackingSite(
     const nsACString& aSiteHost, const OriginAttributes& aOriginAttributes)
     : mSiteHost(aSiteHost) {
   if (!IsNull()) {
-    mOriginAttributes =
-        BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-            aOriginAttributes);
+    mOriginAttributes = NormalizeOriginAttributes(aOriginAttributes);
   }
+}
+
+// static
+bool BounceTrackingSite::ShouldTrackPrincipal(nsIPrincipal* aPrincipal) {
+  MOZ_ASSERT(aPrincipal);
+
+  // Only track content principals.
+  if (!aPrincipal->GetIsContentPrincipal()) {
+    return false;
+  }
+
+  // Skip non http(s) schemes.
+  if (!net::SchemeIsHttpOrHttps(aPrincipal)) {
+    return false;
+  }
+
+  return true;
 }
 
 // static
@@ -29,7 +42,7 @@ Result<BounceTrackingSite, nsresult> BounceTrackingSite::FromPrincipal(
     nsIPrincipal* aPrincipal) {
   NS_ENSURE_TRUE(aPrincipal, Err(NS_ERROR_INVALID_ARG));
 
-  if (!BounceTrackingState::ShouldTrackPrincipal(aPrincipal)) {
+  if (!ShouldTrackPrincipal(aPrincipal)) {
     return BounceTrackingSite();
   }
 

@@ -40,15 +40,6 @@ BounceTrackingProtectionStorage::BounceTrackingProtectionStorage()
     : mMutex("mozilla::BounceTrackingProtectionStorage::mMutex"),
       mPendingWrites(0) {};
 
-// static
-OriginAttributes BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-    const OriginAttributes& aOriginAttributes) {
-  OriginAttributes oa = aOriginAttributes;
-  oa.StripAttributes(OriginAttributes::STRIP_FIRST_PARTY_DOMAIN |
-                     OriginAttributes::STRIP_PARTITION_KEY);
-  return oa;
-}
-
 RefPtr<BounceTrackingStateGlobal>
 BounceTrackingProtectionStorage::GetStateGlobal(nsIPrincipal* aPrincipal) {
   MOZ_ASSERT(aPrincipal);
@@ -58,7 +49,8 @@ BounceTrackingProtectionStorage::GetStateGlobal(nsIPrincipal* aPrincipal) {
 RefPtr<BounceTrackingStateGlobal>
 BounceTrackingProtectionStorage::GetStateGlobal(
     const OriginAttributes& aOriginAttributes) {
-  return mStateGlobal.Get(NormalizeOriginAttributes(aOriginAttributes));
+  return mStateGlobal.Get(
+      BounceTrackingSite::NormalizeOriginAttributes(aOriginAttributes));
 }
 
 RefPtr<BounceTrackingStateGlobal>
@@ -71,7 +63,8 @@ BounceTrackingProtectionStorage::GetOrCreateStateGlobal(
 RefPtr<BounceTrackingStateGlobal>
 BounceTrackingProtectionStorage::GetOrCreateStateGlobal(
     const OriginAttributes& aOriginAttributes) {
-  OriginAttributes oa = NormalizeOriginAttributes(aOriginAttributes);
+  OriginAttributes oa =
+      BounceTrackingSite::NormalizeOriginAttributes(aOriginAttributes);
   return mStateGlobal.GetOrInsertNew(oa, this, oa);
 }
 
@@ -108,7 +101,8 @@ nsresult BounceTrackingProtectionStorage::ClearBySiteHost(
 
   Maybe<OriginAttributes> originAttributes;
   if (aOriginAttributes) {
-    originAttributes.emplace(NormalizeOriginAttributes(*aOriginAttributes));
+    originAttributes.emplace(
+        BounceTrackingSite::NormalizeOriginAttributes(*aOriginAttributes));
   }
 
   DropChainRecordsInAllStateGlobals(
