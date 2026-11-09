@@ -1,4 +1,6 @@
 [DEFAULT]
 subsuite = "mozbase"
 
+["test_manifestdownload.py"]
+
 ["test_metamerge.py"]

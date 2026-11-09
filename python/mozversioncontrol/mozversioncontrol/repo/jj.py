@@ -502,6 +502,10 @@ class JujutsuRepository(Repository):
 
         return list(reversed(self._run_read_only(*cmd).splitlines()))
 
+    def get_ancestors(self, limit: int = 20) -> list[str]:
+        """Return the SHAs of the head commit and its ancestors, newest first."""
+        return self._git.get_ancestors(self.head_rev, limit)
+
     def _looks_like_change_id(self, id):
         return len(id) > 0 and all(letter >= "k" and letter <= "z" for letter in id)
 

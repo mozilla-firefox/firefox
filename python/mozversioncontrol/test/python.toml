@@ -11,6 +11,8 @@ subsuite = "mozversioncontrol"
 
 ["test_diff_stream.py"]
 
+["test_get_ancestors.py"]
+
 ["test_get_commits.py"]
 
 ["test_get_commit_patches.py"]

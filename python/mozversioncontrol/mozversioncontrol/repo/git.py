@@ -462,6 +462,12 @@ class GitRepository(Repository):
             cmd += ["--", *follow]
         return self._run(*cmd).splitlines()
 
+    def get_ancestors(self, head: str = "HEAD", limit: int = 20) -> list[str]:
+        """Return the SHAs of `head` and its ancestors, newest first."""
+        return self._run(
+            "rev-list", "--topo-order", f"--max-count={limit}", head
+        ).splitlines()
+
     def get_commit_patches(self, nodes: list[str]) -> list[bytes]:
         """Return the contents of the patch `node` in the VCS' standard format."""
         return [
