@@ -64,3 +64,5 @@ BROWSER_CHROME_MANIFESTS += [
 XPCSHELL_TESTS_MANIFESTS += ["test/xpcshell/xpcshell.toml"]
 
 MARIONETTE_MANIFESTS += ["test/marionette/manifest.toml"]
+
+TEST_DIRS += ["test/gtest"]
