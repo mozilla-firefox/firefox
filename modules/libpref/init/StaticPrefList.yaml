@@ -16097,11 +16097,7 @@
 # Lifetime (in seconds) of a negative DNS cache entry.
 - name: network.dnsNegativeCacheExpiration
   type: RelaxedAtomicUint32
-#if defined(NIGHTLY_BUILD)
-  value: 300
-#else
   value: 60
-#endif
   mirror: always
 
 # Grace period (in seconds) for a negative DNS cache entry. During the grace
