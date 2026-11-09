@@ -368,10 +368,11 @@
     padding: var(--space-large);
     box-sizing: border-box;
 
-    // The comps' fixed size.
+    // A fixed size, narrower for an image: 277px wide inside the border, so
+    // the image fits exactly.
     /* stylelint-disable stylelint-plugin-mozilla/use-design-tokens */
     inline-size: 291px;
-    block-size: 296px;
+    block-size: 258px;
     /* stylelint-enable stylelint-plugin-mozilla/use-design-tokens */
 
     // The selected tab's accent border. Its token is chrome-only, and
@@ -414,6 +415,11 @@
 
     &:dir(rtl)::after {
       rotate: -45deg;
+    }
+
+    &:has(.spaces-preview-image) {
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+      inline-size: 279px;
     }
   }
 
