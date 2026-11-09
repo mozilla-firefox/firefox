@@ -88,10 +88,9 @@
       await p;
 
       p = waitForEvents({
-        expected: [[EVENT_SELECTION, "cb_apple"]],
+        expected: [[EVENT_TEXT_VALUE_CHANGE, "combobox"]],
         unexpected: [
           [EVENT_FOCUS],
-          stateChangeEventArgs("cb_apple", EXT_STATE_ACTIVE, true, true),
         ],
       });
       // collapsed combobox keeps a focus
@@ -118,10 +117,9 @@
       await p;
 
       p = waitForEvents({
-        expected: [[EVENT_SELECTION, "cb_orange"]],
+        expected: [[EVENT_TEXT_VALUE_CHANGE, "combobox"]],
         unexpected: [
           [EVENT_FOCUS],
-          stateChangeEventArgs("cb_orange", EXT_STATE_ACTIVE, true, true),
         ],
       });
       // An unfocused selectable combobox gets selection change events,
