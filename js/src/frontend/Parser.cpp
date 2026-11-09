@@ -118,6 +118,30 @@ static bool GetInlinableNumber(ParseNode* node, double* initialValue) {
   return true;
 }
 
+static bool GetInlinableValue(ParseNode* node, InlinedFieldValueKind* kind,
+                              double* initialValue) {
+  switch (node->getKind()) {
+    case ParseNodeKind::TrueExpr:
+      *kind = InlinedFieldValueKind::True;
+      return true;
+    case ParseNodeKind::FalseExpr:
+      *kind = InlinedFieldValueKind::False;
+      return true;
+    case ParseNodeKind::NullExpr:
+      *kind = InlinedFieldValueKind::Null;
+      return true;
+    case ParseNodeKind::ArrayExpr:
+      *kind = InlinedFieldValueKind::EmptyArray;
+      return node->as<ListNode>().empty();
+    case ParseNodeKind::ObjectExpr:
+      *kind = InlinedFieldValueKind::EmptyObject;
+      return node->as<ListNode>().empty();
+    default:
+      *kind = InlinedFieldValueKind::Number;
+      return GetInlinableNumber(node, initialValue);
+  }
+}
+
 template <class ParseHandler, typename Unit>
 inline typename GeneralParser<ParseHandler, Unit>::FinalParser*
 GeneralParser<ParseHandler, Unit>::asFinalParser() {
@@ -8787,15 +8811,16 @@ GeneralParser<ParseHandler, Unit>::fieldInitializerOpt(
       bool isPlainName = propAtom && (isPrivate || !this->parserAtoms().isIndex(
                                                        propAtom, &index));
 
-      double literalValue;
-      bool isInlinableNumber =
-          GetInlinableNumber(initializerExpr, &literalValue);
+      InlinedFieldValueKind valueKind;
+      double literalValue = 0;
+      bool isInlinableValue =
+          GetInlinableValue(initializerExpr, &valueKind, &literalValue);
       bool hasMaxInlinedFields =
           classInitializedMembers.inlinableFields.length() >=
           MemberInitializers::MaxInlinedFields;
-      if (isPlainName && isInlinableNumber && !hasMaxInlinedFields) {
+      if (isPlainName && isInlinableValue && !hasMaxInlinedFields) {
         if (!classInitializedMembers.inlinableFields.append(
-                InlinedField{propAtom, isPrivate, literalValue})) {
+                InlinedField{propAtom, isPrivate, valueKind, literalValue})) {
           js::ReportOutOfMemory(fc_);
           return errorResult();
         }

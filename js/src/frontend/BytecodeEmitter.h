@@ -675,6 +675,7 @@ struct MOZ_STACK_CLASS BytecodeEmitter {
 #endif
   );
   const MemberInitializers& findMemberInitializersForCall() const;
+  [[nodiscard]] bool emitInlinedFieldValue(const InlinedField& field);
   [[nodiscard]] bool emitInitializeInstanceMembers(
       bool isDerivedClassConstructor);
   [[nodiscard]] bool emitInitializeStaticFields(ListNode* classMembers);

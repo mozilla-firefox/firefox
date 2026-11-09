@@ -11056,6 +11056,32 @@ const MemberInitializers& BytecodeEmitter::findMemberInitializersForCall()
   return *compilationState.scopeContext.memberInitializers;
 }
 
+bool BytecodeEmitter::emitInlinedFieldValue(const InlinedField& field) {
+  switch (field.valueKind) {
+    case InlinedFieldValueKind::Number:
+      return emitNumberOp(field.initialValue);
+    case InlinedFieldValueKind::True:
+      return emit1(JSOp::True);
+    case InlinedFieldValueKind::False:
+      return emit1(JSOp::False);
+    case InlinedFieldValueKind::Null:
+      return emit1(JSOp::Null);
+    case InlinedFieldValueKind::EmptyArray:
+      return emitUint32Operand(JSOp::NewArray, 0);
+    case InlinedFieldValueKind::EmptyObject: {
+      // Same as emitObject for a non-singleton `{}`: an empty-shape ObjLiteral.
+      ObjLiteralWriter writer;
+      writer.beginShape(JSOp::NewObject);
+      GCThingIndex index;
+      if (!addObjLiteralData(writer, &index)) {
+        return false;
+      }
+      return emitGCIndexOp(JSOp::NewObject, index);
+    }
+  }
+  MOZ_CRASH("unexpected InlinedFieldValueKind");
+}
+
 bool BytecodeEmitter::emitInitializeInstanceMembers(
     bool isDerivedClassConstructor) {
   const MemberInitializers& memberInitializers =
@@ -11120,7 +11146,7 @@ bool BytecodeEmitter::emitInitializeInstanceMembers(
           //            [stack] THIS KEY
           return false;
         }
-        if (!emitNumberOp(field.initialValue)) {
+        if (!emitInlinedFieldValue(field)) {
           //            [stack] THIS KEY VALUE
           return false;
         }
@@ -11129,7 +11155,7 @@ bool BytecodeEmitter::emitInitializeInstanceMembers(
           return false;
         }
       } else {
-        if (!emitNumberOp(field.initialValue)) {
+        if (!emitInlinedFieldValue(field)) {
           //            [stack] THIS VALUE
           return false;
         }

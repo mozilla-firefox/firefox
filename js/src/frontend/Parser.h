@@ -1281,7 +1281,7 @@ class MOZ_STACK_CLASS GeneralParser : public PerHandlerParser<ParseHandler> {
     // The number of instance class private accessors.
     size_t privateAccessors = 0;
 
-    // Checks if every instance field is a number literal, optionally negated.
+    // Checks if every instance field is a simple constant.
     bool hasOnlyInlinableFields = true;
     Vector<InlinedField, MemberInitializers::MaxInlinedFields,
            SystemAllocPolicy>
