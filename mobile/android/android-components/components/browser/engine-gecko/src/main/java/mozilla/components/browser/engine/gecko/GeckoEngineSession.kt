@@ -315,12 +315,24 @@ class GeckoEngineSession(
         pdfToDownload()
             .then(
                 { webResponse ->
-                    if (webResponse?.body == null) {
+                    val body = webResponse?.body
+                    if (body == null) {
                         onException(IllegalStateException("No PDF available"))
                         return@then GeckoResult<Void>()
                     }
 
-                    onResult(webResponse.toResponse())
+                    onResult(
+                        Response(
+                            url = webResponse.uri,
+                            status = RESPONSE_CODE_SUCCESS,
+                            headers =
+                                MutableHeaders(
+                                    CONTENT_TYPE to "application/pdf",
+                                    CONTENT_DISPOSITION to contentDispositionForPdf(webResponse),
+                                ),
+                            body = Response.Body(body),
+                        )
+                    )
                     GeckoResult()
                 },
                 { throwable ->

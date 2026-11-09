@@ -21,6 +21,7 @@ import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.content.ShareResourceState
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.fetch.Client
+import mozilla.components.concept.fetch.Headers.Names.CONTENT_DISPOSITION
 import mozilla.components.concept.fetch.Headers.Names.CONTENT_TYPE
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Request
@@ -358,6 +359,79 @@ class ShareResourceFeatureTest {
             assertTrue(result.name.endsWith(".$DEFAULT_IMAGE_EXTENSION"))
             assertEquals(cacheDirName, result.parentFile?.name)
             assertEquals("test", result.inputStream().bufferedReader().use { it.readText() })
+        }
+
+    @Test
+    fun `downloadDirectResource() will name the file after its Content-Disposition`() =
+        runTest(testDispatcher) {
+            val shareFeature = createFeature()
+            val response = createPdfResponse(MutableHeaders(CONTENT_DISPOSITION to "attachment; filename=Test.pdf;"))
+
+            val result = shareFeature.downloadDirectResource(response)
+
+            assertEquals("Test.pdf", result.name)
+            assertEquals(cacheDirName, result.parentFile?.parentFile?.name)
+            assertEquals("%PDF-1.4", result.inputStream().bufferedReader().use { it.readText() })
+        }
+
+    @Test
+    fun `downloadDirectResource() will use a random name without a Content-Disposition`() =
+        runTest(testDispatcher) {
+            val shareFeature = createFeature()
+            val response = createPdfResponse(MutableHeaders(CONTENT_TYPE to "application/pdf"))
+
+            val result = shareFeature.downloadDirectResource(response)
+
+            assertTrue(result.name.matches(Regex("\\d+\\.pdf")))
+            assertEquals(cacheDirName, result.parentFile?.name)
+        }
+
+    @Test
+    fun `downloadDirectResource() will use a random name when the Content-Disposition name is empty`() =
+        runTest(testDispatcher) {
+            val shareFeature = createFeature()
+            val response =
+                createPdfResponse(
+                    MutableHeaders(
+                        CONTENT_TYPE to "application/pdf",
+                        CONTENT_DISPOSITION to "attachment; filename=\" \"",
+                    )
+                )
+
+            val result = shareFeature.downloadDirectResource(response)
+
+            assertTrue(result.name.matches(Regex("\\d+\\.pdf")))
+            assertEquals("%PDF-1.4", result.inputStream().bufferedReader().use { it.readText() })
+        }
+
+    @Test
+    fun `downloadDirectResource() will use a random name when the Content-Disposition name is too long to save`() =
+        runTest(testDispatcher) {
+            val shareFeature = createFeature()
+            val longName = "a".repeat(300) + ".pdf"
+            val response =
+                createPdfResponse(
+                    MutableHeaders(
+                        CONTENT_TYPE to "application/pdf",
+                        CONTENT_DISPOSITION to "attachment; filename=$longName;",
+                    )
+                )
+
+            val result = shareFeature.downloadDirectResource(response)
+
+            assertTrue(result.name.matches(Regex("\\d+\\.pdf")))
+            assertEquals("%PDF-1.4", result.inputStream().bufferedReader().use { it.readText() })
+            assertTrue(
+                "No empty folder is left behind.",
+                shareFeature.getMediaShareCacheDirectory().listFiles().orEmpty().none { it.isDirectory },
+            )
+        }
+
+    private fun createPdfResponse(headers: MutableHeaders) =
+        mock<Response>().apply {
+            doReturn(Response.Body("%PDF-1.4".byteInputStream(StandardCharsets.UTF_8))).`when`(this).body
+            doReturn(Response.SUCCESS).`when`(this).status
+            doReturn(headers).`when`(this).headers
         }
 
     @Test(expected = RuntimeException::class)

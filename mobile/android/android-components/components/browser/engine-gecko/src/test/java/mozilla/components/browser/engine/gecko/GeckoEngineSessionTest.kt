@@ -44,6 +44,7 @@ import mozilla.components.concept.engine.translate.TranslationError
 import mozilla.components.concept.engine.translate.TranslationOperation
 import mozilla.components.concept.engine.window.WindowRequest
 import mozilla.components.concept.fetch.Headers
+import mozilla.components.concept.fetch.Headers.Names.CONTENT_DISPOSITION
 import mozilla.components.concept.fetch.Response
 import mozilla.components.concept.storage.PageVisit
 import mozilla.components.concept.storage.RedirectSource
@@ -5130,6 +5131,34 @@ class GeckoEngineSessionTest {
         shadowOf(getMainLooper()).idle()
 
         assertEquals("attachment; filename=\"Mozilla.pdf\";", seenContentDisposition)
+    }
+
+    @Test
+    fun `GIVEN a PDF is showing the document WHEN requestPdfToShare THEN the response is given a filename`() {
+        val engineSession = GeckoEngineSession(runtime = mock(), geckoSessionProvider = geckoSessionProvider)
+        val pdfFileSaver = mock<SessionPdfFileSaver>()
+        whenever(pdfFileSaver.save())
+            .thenReturn(
+                GeckoResult.fromValue(
+                    WebResponse.Builder("blob:resource://pdf.js/0123")
+                        .statusCode(200)
+                        .addHeader("Content-Disposition", "attachment; filename=\"Test.pdf\"")
+                        .body("%PDF-1.4".byteInputStream())
+                        .build()
+                )
+            )
+        whenever(geckoSession.pdfFileSaver).thenReturn(pdfFileSaver)
+        whenever(geckoSession.isPdfJs).thenReturn(GeckoResult.fromValue(true))
+        var sharedResponse: Response? = null
+
+        engineSession.requestPdfToShare(onResult = { sharedResponse = it }, onException = {})
+        shadowOf(getMainLooper()).idle()
+
+        assertEquals(
+            listOf("attachment; filename=\"Test.pdf\";"),
+            sharedResponse?.headers?.getAll(CONTENT_DISPOSITION),
+        )
+        assertEquals("application/pdf", sharedResponse?.headers?.get(Headers.Names.CONTENT_TYPE))
     }
 
     @Test
