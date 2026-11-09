@@ -190,6 +190,9 @@ fail-if =  [
   "vertical_tab", # Bug 1932787, fails in the "vertical-tabs" variant
 ]
 
+["browser_moveTab.js"]
+tags = "vertical-tabs"
+
 ["browser_move_externally_opened_tabs_telemetry.js"]
 
 ["browser_multiselect_tabs_active_tab_selected_by_default.js"]
