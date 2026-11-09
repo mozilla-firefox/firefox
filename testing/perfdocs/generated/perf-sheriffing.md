@@ -822,6 +822,16 @@ Here are some scenarios which duplication will be seen:
 
 In Alert Manager it is good to acknowledge the alert and use the reassign or downstream actions. This helps us keep track of alerts across branches whenever we need to investigate in the future.
 
+#### Which alert summaries can be set as downstream to autoland alerts?
+
+Changes land on autoland first and are later merged to other branches, so alert summaries generated on the following branches can be set as downstream to the autoland alert summary that originally caught the regression or improvement:
+
+- mozilla-central
+- mozilla-beta
+- mozilla-release
+
+For mozilla-beta and mozilla-release alerts, the change usually reached the branch through a merge or an uplift several weeks after it landed on autoland, so search autoland for the original alert summary using the test, platform and magnitude of the alert rather than the push date.
+
 ### What are weekend spikes?
 
 On weekends (Saturday/Sunday) and many holidays, we find that the volume of pushes are much smaller. This results in much fewer tests to be run. For many tests, especially ones that are noisier than others, we find that the few data points we collect on a [weekend are much less noisy](https://elvis314.wordpress.com/2014/10/30/a-case-of-the-weekends/) (either falling to the top or bottom of the noise range).
