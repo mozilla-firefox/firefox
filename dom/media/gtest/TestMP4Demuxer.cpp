@@ -645,6 +645,7 @@ TEST(MP4Demuxer, SeekHEVC)
   // VideoToolbox can return a bad data error when a CRA is the first sample
   // fed to a fresh decode session, analogous to non-IDR I-frames for H.264.
   // The demuxer must only mark IDR frames as keyframes on macOS.
+  // On other platforms the seek should resolve to a CRA_NUT sample.
   const TimeUnit seekTime = TimeUnit::FromSeconds(2.0);
 
   binding->RunTestAndWait([binding, seekTime]() {
@@ -662,11 +663,18 @@ TEST(MP4Demuxer, SeekHEVC)
                 RefPtr<MediaRawData> first = aSamples->GetSamples()[0];
                 EXPECT_TRUE(first->mKeyframe);
                 EXPECT_EQ(first->mTime, aActualTime);
+
+                auto isIDR = H265::IsKeyFrame(first);
+                EXPECT_TRUE(isIDR.isOk());
 #ifdef MOZ_APPLEMEDIA
                 // CRA keyframe flags are stripped on Apple platforms, so the
                 // seek falls back to the preceding IDR.
-                auto isIDR = H265::IsKeyFrame(first);
-                EXPECT_TRUE(isIDR.isOk() && isIDR.unwrap());
+                EXPECT_TRUE(isIDR.unwrap());
+#else
+                // On other platforms it should not resolve to the first IDR.
+                EXPECT_FALSE(isIDR.unwrap());
+                auto isRAP = H265::IsRandomAccessPoint(first);
+                EXPECT_TRUE(isRAP.isOk() && isRAP.unwrap());
 #endif
                 binding->mTaskQueue->BeginShutdown();
               },
