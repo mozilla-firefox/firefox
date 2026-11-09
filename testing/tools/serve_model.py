@@ -24,6 +24,7 @@ Usage:
 
 import http.server
 import os
+import socketserver
 import urllib.request
 from pathlib import Path
 
@@ -116,5 +117,15 @@ print(
     flush=True,
 )
 
-httpd = http.server.ThreadingHTTPServer(("localhost", PORT), CORSHandler)
+
+class Server(http.server.ThreadingHTTPServer):
+    def server_bind(self):
+        # HTTPServer.server_bind() resolves socket.getfqdn(host), a reverse DNS
+        # lookup we don't need. It takes ~36s to time out on the macOS VMs.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = "localhost"
+        self.server_port = self.server_address[1]
+
+
+httpd = Server(("localhost", PORT), CORSHandler)
 httpd.serve_forever()
