@@ -20,8 +20,7 @@ static bool HasEglImageExtensions(const GLContextEGL& gl) {
   const auto& egl = *(gl.mEgl);
   return egl.HasKHRImageBase() &&
          egl.IsExtensionSupported(EGLExtension::KHR_gl_texture_2D_image) &&
-         (gl.IsExtensionSupported(GLContext::OES_EGL_image_external) ||
-          gl.IsExtensionSupported(GLContext::OES_EGL_image));
+         gl.IsExtensionSupported(GLContext::OES_EGL_image);
 }
 
 /*static*/

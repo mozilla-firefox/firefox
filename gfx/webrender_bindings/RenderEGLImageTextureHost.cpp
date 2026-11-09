@@ -71,6 +71,11 @@ RefPtr<layers::TextureSource> RenderEGLImageTextureHost::CreateTextureSource(
     mGL = gl;
   }
 
+  if (!gl->IsExtensionSupported(gl::GLContext::OES_EGL_image)) {
+    gfxCriticalNoteOnce << "EGLImage texture source without OES_EGL_image";
+    return nullptr;
+  }
+
   if (!WaitSync()) {
     return nullptr;
   }
@@ -129,6 +134,11 @@ void RenderEGLImageTextureHost::UnmapPlanes() {
 bool RenderEGLImageTextureHost::CreateTextureHandle() {
   if (mTextureHandle) {
     return true;
+  }
+
+  if (!mGL->IsExtensionSupported(gl::GLContext::OES_EGL_image)) {
+    gfxCriticalNoteOnce << "EGLImage texture handle without OES_EGL_image";
+    return false;
   }
 
   mTextureTarget = mGL->GetPreferredEGLImageTextureTarget();
