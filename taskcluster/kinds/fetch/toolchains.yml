@@ -703,7 +703,7 @@ symbol-scrapers:
     fetch:
         type: git
         repo: https://github.com/mozilla/symbol-scrapers
-        revision: ff50ee2e950b59e29ca0483707c51ae361b5926c
+        revision: ccaf667c6fc72745ce116fed4b29316b881d3e4c
 
 openssl-1.1.1w:
     description: openssl 1.1.1w source code
