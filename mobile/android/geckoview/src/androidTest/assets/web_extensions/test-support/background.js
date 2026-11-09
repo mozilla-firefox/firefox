@@ -59,6 +59,9 @@ const APIS = {
   GetActive({ tab }) {
     return browser.test.getActive(tab.id);
   },
+  GetPrimary({ tab }) {
+    return browser.test.getPrimary(tab.id);
+  },
   RemoveAllCertOverrides() {
     browser.test.removeAllCertOverrides();
   },

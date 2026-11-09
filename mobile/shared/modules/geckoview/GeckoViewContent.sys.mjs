@@ -6,6 +6,9 @@ import { GeckoViewModule } from "resource://gre/modules/GeckoViewModule.sys.mjs"
 
 export class GeckoViewContent extends GeckoViewModule {
   onInit() {
+    // Tracks whether the embedder has focused this session (GeckoView:SetFocused).
+    // Kept separate from the "primary" attribute, which tracks activeness.
+    this._focused = false;
     this.registerListener([
       "GeckoViewContent:ExitFullScreen",
       "GeckoView:ClearMatches",
@@ -250,13 +253,24 @@ export class GeckoViewContent extends GeckoViewModule {
         break;
       case "GeckoView:SetActive":
         this.browser.docShellIsActive = !!aData.active;
+        // Toggle "primary" to re-register this browser as the primary tab. The
+        // registration (RemoteTabRemoved/RemoteTabAdded via
+        // nsFrameLoader::AttributeChanged) only re-runs on an actual mutation,
+        // and setAttribute with an unchanged value fires no notification, so the
+        // attribute must be removed first. Do not simplify the removal away.
+        // The tree owner tracks the primary tab per AppWindow and each GeckoView
+        // session has its own window, so this only re-registers this browser in
+        // its own window; it does not affect another session's primary tab.
+        this.browser.removeAttribute("primary");
+        if (aData.active) {
+          this.browser.setAttribute("primary", "true");
+        }
         break;
       case "GeckoView:SetFocused":
+        this._focused = !!aData.focused;
         if (aData.focused) {
           this.browser.focus();
-          this.browser.setAttribute("primary", "true");
         } else {
-          this.browser.removeAttribute("primary");
           this.browser.blur();
         }
         break;
@@ -304,7 +318,7 @@ export class GeckoViewContent extends GeckoViewModule {
         if (this.browser != aEvent.target) {
           return;
         }
-        if (this.browser.hasAttribute("primary")) {
+        if (this._focused) {
           return;
         }
         this.eventDispatcher.sendRequest("GeckoView:FocusRequest");

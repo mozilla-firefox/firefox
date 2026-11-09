@@ -169,6 +169,18 @@
         ]
       },
       {
+        "name": "getPrimary",
+        "type": "function",
+        "async": true,
+        "description": "Returns true if the browser has the primary attribute for given tab.",
+        "parameters": [
+          {
+            "type": "number",
+            "name": "tabId"
+          }
+        ]
+      },
+      {
         "name": "getPidForTab",
         "type": "function",
         "async": true,

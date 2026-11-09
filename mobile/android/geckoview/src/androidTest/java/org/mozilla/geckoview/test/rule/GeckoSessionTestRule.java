@@ -2634,6 +2634,10 @@ public class GeckoSessionTestRule implements TestRule {
     return (Boolean) webExtensionApiCall(session, "GetActive", null);
   }
 
+  public boolean getPrimary(final @NonNull GeckoSession session) {
+    return (Boolean) webExtensionApiCall(session, "GetPrimary", null);
+  }
+
   public void triggerTranslationsOffer(final @NonNull GeckoSession session) {
     webExtensionApiCall(session, "TriggerTranslationsOffer", null);
   }
