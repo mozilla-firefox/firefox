@@ -5,23 +5,19 @@
 #include <memory>
 #include <unordered_map>
 
-#include "opentelemetry/exporters/otlp/otlp_log_recordable.h"
 #include "opentelemetry/exporters/otlp/otlp_populate_attribute_utils.h"
 #include "opentelemetry/exporters/otlp/otlp_recordable.h"
 #include "opentelemetry/exporters/otlp/otlp_recordable_utils.h"
 #include "opentelemetry/nostd/span.h"
 #include "opentelemetry/sdk/instrumentationscope/instrumentation_scope.h"
-#include "opentelemetry/sdk/logs/recordable.h"
 #include "opentelemetry/sdk/resource/resource.h"
 #include "opentelemetry/sdk/trace/recordable.h"
 #include "opentelemetry/version.h"
 
 // clang-format off
 #include "opentelemetry/exporters/otlp/protobuf_include_prefix.h"  // IWYU pragma: keep
-#include "opentelemetry/proto/collector/logs/v1/logs_service.pb.h"
 #include "opentelemetry/proto/collector/trace/v1/trace_service.pb.h"
 #include "opentelemetry/proto/common/v1/common.pb.h"
-#include "opentelemetry/proto/logs/v1/logs.pb.h"
 #include "opentelemetry/proto/resource/v1/resource.pb.h"           // IWYU pragma: keep
 #include "opentelemetry/proto/trace/v1/trace.pb.h"
 #include "opentelemetry/exporters/otlp/protobuf_include_suffix.h"  // IWYU pragma: keep
@@ -135,66 +131,6 @@ void OtlpRecordableUtils::PopulateRequest(
   }
 }
 
-void OtlpRecordableUtils::PopulateRequest(
-    const opentelemetry::nostd::span<std::unique_ptr<opentelemetry::sdk::logs::Recordable>> &logs,
-    proto::collector::logs::v1::ExportLogsServiceRequest *request) noexcept
-{
-  if (nullptr == request)
-  {
-    return;
-  }
-
-  using ScopeLogsMap =
-      std::unordered_map<const opentelemetry::sdk::instrumentationscope::InstrumentationScope *,
-                         proto::logs::v1::ScopeLogs *, InstrumentationScopePointerHasher,
-                         InstrumentationScopePointerEqual>;
-  struct ResourceLogsEntry
-  {
-    proto::logs::v1::ResourceLogs *resource_logs = nullptr;
-    ScopeLogsMap scope_logs;
-  };
-  std::unordered_map<const opentelemetry::sdk::resource::Resource *, ResourceLogsEntry>
-      resource_logs_index;
-
-  for (const auto &recordable : logs)
-  {
-    const auto *otlp_recordable = static_cast<const OtlpLogRecordable *>(recordable.get());
-    const auto *instrumentation = &otlp_recordable->GetInstrumentationScope();
-    const auto *resource        = &otlp_recordable->GetResource();
-
-    // Find or create the ResourceLogs entry for this recordable's resource
-    auto &resource_entry = resource_logs_index[resource];
-    if (resource_entry.resource_logs == nullptr)
-    {
-      resource_entry.resource_logs = request->add_resource_logs();
-      if (resource != nullptr)
-      {
-        // Populate the resource attributes and schema url
-        OtlpPopulateAttributeUtils::PopulateAttribute(
-            resource_entry.resource_logs->mutable_resource(), *resource);
-        resource_entry.resource_logs->set_schema_url(resource->GetSchemaURL());
-      }
-    }
-
-    // Find or create the ScopeLogs entry for this recordable's instrumentation scope
-    auto &scope_logs = resource_entry.scope_logs[instrumentation];
-    if (scope_logs == nullptr)
-    {
-      scope_logs = resource_entry.resource_logs->add_scope_logs();
-      if (instrumentation != nullptr)
-      {
-        auto proto_scope = scope_logs->mutable_scope();
-        proto_scope->set_name(instrumentation->GetName());
-        proto_scope->set_version(instrumentation->GetVersion());
-        OtlpPopulateAttributeUtils::PopulateAttribute(proto_scope, *instrumentation);
-        scope_logs->set_schema_url(instrumentation->GetSchemaURL());
-      }
-    }
-
-    // The recordable log can only be copied here since the request message is Arena allocated.
-    scope_logs->add_log_records()->CopyFrom(otlp_recordable->log_record());
-  }
-}
 }  // namespace otlp
 }  // namespace exporter
 OPENTELEMETRY_END_NAMESPACE
