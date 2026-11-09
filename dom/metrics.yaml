@@ -155,10 +155,6 @@ perf:
           histograms. Absent when the document was replaced before its load
           event fired.
         type: boolean
-      using_webdriver:
-        description: |
-          If true, a webdriver is running on the client.
-        type: boolean
       http_ver:
         description: |
           Version of HTTP protocol used.
@@ -185,10 +181,6 @@ perf:
             1 - assistive technology in use
         type: quantity
         unit: integer
-      has_ssd:
-        description: |
-          Whether the user has SSD in their hardware or not. Only available on Windows, after startup-idle-tasks are done
-        type: boolean
       cache_disposition:
         description: |
           cache disposition for the top level document

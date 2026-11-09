@@ -347,11 +347,6 @@
 #  include "mozilla/fuzzing/IPCFuzzController.h"
 #endif
 
-#ifdef ENABLE_WEBDRIVER
-#  include "nsIMarionette.h"
-#  include "nsIRemoteAgent.h"
-#endif
-
 #include "mozilla/RemoteDecodeUtils.h"
 #include "nsIToolkitProfile.h"
 #include "nsIToolkitProfileService.h"
@@ -6250,30 +6245,6 @@ mozilla::ipc::IPCResult ContentParent::RecvRecordDiscardedData(
   return IPC_OK();
 }
 
-static bool WebDriverSessionRunning() {
-#ifdef ENABLE_WEBDRIVER
-  nsCOMPtr<nsIMarionette> marionette = do_GetService(NS_MARIONETTE_CONTRACTID);
-  if (marionette) {
-    bool isBrowserAutomationRunning = false;
-    marionette->GetIsBrowserAutomationRunning(&isBrowserAutomationRunning);
-    if (isBrowserAutomationRunning) {
-      return true;
-    }
-  }
-
-  nsCOMPtr<nsIRemoteAgent> agent = do_GetService(NS_REMOTEAGENT_CONTRACTID);
-  if (agent) {
-    bool isBrowserAutomationRunning = false;
-    agent->GetIsBrowserAutomationRunning(&isBrowserAutomationRunning);
-    if (isBrowserAutomationRunning) {
-      return true;
-    }
-  }
-#endif
-
-  return false;
-}
-
 #ifdef MOZ_GECKOVIEW_HISTORY
 // Local midnight (start of the current day in local time) as milliseconds since
 // the Unix epoch.
@@ -6385,9 +6356,6 @@ mozilla::ipc::IPCResult ContentParent::RecvRecordPageLoadEvent(
         aPageloadEventData,
     const TimeStamp& aNavigationStartTime,
     const MaybeDiscarded<BrowsingContext>& aBrowsingContext) {
-  // Check whether a webdriver is running.
-  aPageloadEventData.set_usingWebdriver(WebDriverSessionRunning());
-
 #ifndef MOZ_GECKOVIEW_HISTORY
   aPageloadEventData.set_isActiveClient(
       mozilla::performance::pageload_event::IsActiveClient());
@@ -6396,22 +6364,6 @@ mozilla::ipc::IPCResult ContentParent::RecvRecordPageLoadEvent(
 #if defined(ANDROID)
   // Get network link type iff android.
   aPageloadEventData.set_networkType(UpdateNetworkLinkType());
-#endif
-
-#if defined(XP_WIN)
-  // The "hasSSD" property is only set on Windows during the first
-  // call to nsISystemInfo.diskInfo - which is done before
-  // browser-startup-idle-tasks-finished
-  // Other platforms do not compute hasSSD, so there's no reason to
-  // query this on other platforms.
-  nsresult rv;
-  nsCOMPtr<nsIPropertyBag2> infoService =
-      mozilla::components::SystemInfo::Service();
-  bool hasSSD;
-  rv = infoService->GetPropertyAsBool(u"hasSSD"_ns, &hasSSD);
-  if (NS_SUCCEEDED(rv)) {
-    aPageloadEventData.set_hasSsd(hasSSD);
-  }
 #endif
 
 #ifdef ANDROID

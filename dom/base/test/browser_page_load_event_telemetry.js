@@ -476,10 +476,6 @@ add_task(async function () {
         Assert.equal(entry.name, "page_load");
         Assert.greater(parseInt(entry.extra.load_time), 0);
         Assert.ok(
-          entry.extra.using_webdriver,
-          "Webdriver field should be set to true."
-        );
-        Assert.ok(
           "is_active_client" in entry.extra,
           "Active client field should be recorded."
         );

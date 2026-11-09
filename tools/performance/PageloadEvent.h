@@ -34,7 +34,6 @@ struct PageLoadDomainExtra;
   _(dnsLookupTime, uint32_t)                   \
   _(documentFeatures, uint32_t)                \
   _(fcpTime, uint32_t)                         \
-  _(hasSsd, bool)                              \
   _(httpVer, uint32_t)                         \
   _(isActiveClient, bool)                      \
   _(jsExecTime, uint32_t)                      \
@@ -52,7 +51,6 @@ struct PageLoadDomainExtra;
   _(tlsHandshakeTime, uint32_t)                \
   _(trrDomain, nsCString)                      \
   _(userFeatures, uint32_t)                    \
-  _(usingWebdriver, bool)                      \
   _(cacheDisposition, uint32_t)                \
   _(scriptFromNeckoText, uint32_t)             \
   _(scriptFromNeckoSerialized, uint32_t)       \
