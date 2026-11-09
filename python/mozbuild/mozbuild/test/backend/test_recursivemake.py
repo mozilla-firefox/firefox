@@ -1295,6 +1295,14 @@ class TestRecursiveMakeBackend(BackendTester):
             open(backend_path).read(),
         )
 
+    def _cargo_deps(self, var, spec, *inputs):
+        return " ".join((
+            f"{var} := {spec}",
+            "$(topsrcdir)/python/mozbuild/mozbuild/rust_commands.py",
+            "$(topsrcdir)/python/mozbuild/mozbuild/action/run_cargo.py",
+            *inputs,
+        ))
+
     def test_rust_library(self):
         """Test that a Rust library is written to backend.mk correctly."""
         env = self._consume("rust-library", RecursiveMakeBackend)
@@ -1311,6 +1319,7 @@ class TestRecursiveMakeBackend(BackendTester):
             "RUST_LIBRARY_FILE := x86_64-unknown-linux-gnu/release/libtest_library.a",
             "CARGO_FILE := $(srcdir)/Cargo.toml",
             "CARGO_TARGET_DIR := %s" % env.topobjdir,
+            self._cargo_deps("CARGO_LIBRARY_DEPS", ".cargo-library-spec.json"),
         ]
 
         self.assertEqual(lines, expected)
@@ -1332,6 +1341,7 @@ class TestRecursiveMakeBackend(BackendTester):
             "x86_64-unknown-linux-gnu/release-custom/libprofile_library.a",
             "CARGO_FILE := $(srcdir)/Cargo.toml",
             f"CARGO_TARGET_DIR := {env.topobjdir}",
+            self._cargo_deps("CARGO_LIBRARY_DEPS", ".cargo-library-spec.json"),
         ]
 
         self.assertEqual(lines, expected)
@@ -1521,6 +1531,9 @@ class TestRecursiveMakeBackend(BackendTester):
             "HOST_RUST_LIBRARY_FILE := x86_64-unknown-linux-gnu/release/libhostrusttool.a",
             "CARGO_FILE := $(srcdir)/Cargo.toml",
             "CARGO_TARGET_DIR := %s" % env.topobjdir,
+            self._cargo_deps(
+                "CARGO_HOST_LIBRARY_DEPS", ".cargo-host-library-spec.json"
+            ),
         ]
 
         self.assertEqual(lines, expected)
@@ -1549,6 +1562,9 @@ class TestRecursiveMakeBackend(BackendTester):
             "HOST_RUST_LIBRARY_FILE := x86_64-unknown-linux-gnu/release/libhostrusttool.a",
             "CARGO_FILE := $(srcdir)/Cargo.toml",
             "CARGO_TARGET_DIR := %s" % env.topobjdir,
+            self._cargo_deps(
+                "CARGO_HOST_LIBRARY_DEPS", ".cargo-host-library-spec.json"
+            ),
         ]
 
         self.assertEqual(lines, expected)
@@ -1569,6 +1585,7 @@ class TestRecursiveMakeBackend(BackendTester):
             "RUST_LIBRARY_FILE := x86_64-unknown-linux-gnu/release/libfeature_library.a",
             "CARGO_FILE := $(srcdir)/Cargo.toml",
             "CARGO_TARGET_DIR := %s" % env.topobjdir,
+            self._cargo_deps("CARGO_LIBRARY_DEPS", ".cargo-library-spec.json"),
         ]
 
         self.assertEqual(lines, expected)
@@ -1592,6 +1609,7 @@ class TestRecursiveMakeBackend(BackendTester):
             "RUST_CARGO_PROGRAMS += test-program-features",
             "DUMP_SYMS_TARGETS += "
             "$(DEPTH)/i686-pc-windows-msvc/release/test-program-features.exe",
+            self._cargo_deps("CARGO_PROGRAM_DEPS", ".cargo-program-spec.json"),
         ]
 
         self.assertEqual(lines, expected)
@@ -1613,6 +1631,9 @@ class TestRecursiveMakeBackend(BackendTester):
             f"CARGO_TARGET_DIR := {env.topobjdir}",
             "HOST_RUST_PROGRAMS += $(DEPTH)/i686-pc-windows-msvc/release/test-host-program-features.exe",
             "HOST_RUST_CARGO_PROGRAMS += test-host-program-features",
+            self._cargo_deps(
+                "CARGO_HOST_PROGRAM_DEPS", ".cargo-host-program-spec.json"
+            ),
         ]
 
         self.assertEqual(lines, expected)
@@ -1637,6 +1658,12 @@ class TestRecursiveMakeBackend(BackendTester):
             "DUMP_SYMS_TARGETS += $(DEPTH)/i686-pc-windows-msvc/release/target.exe",
             "HOST_RUST_PROGRAMS += $(DEPTH)/i686-pc-windows-msvc/release/host.exe",
             "HOST_RUST_CARGO_PROGRAMS += host",
+            self._cargo_deps(
+                "CARGO_PROGRAM_DEPS", ".cargo-program-spec.json", "module.res"
+            ),
+            self._cargo_deps(
+                "CARGO_HOST_PROGRAM_DEPS", ".cargo-host-program-spec.json"
+            ),
         ]
 
         self.assertEqual(lines, expected)
@@ -1666,12 +1693,14 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertEqual(target["outputs"], ["i686-pc-windows-msvc/release/target.exe"])
         code = mozpath.normsep(mozpath.join(env.topobjdir, "code"))
         self.assertEqual(target["rustc_flags"], ["-C", f"link-arg={code}/module.res"])
+        self.assertEqual(target["inputs"], ["code/module.res"])
 
         host = self._cargo_spec(env, "code/.cargo-host-program-spec.json")["edge"]
         self.assertEqual(host["kind"], "host-program")
         self.assertEqual(host["names"], ["host"])
         self.assertEqual(host["outputs"], ["i686-pc-windows-msvc/release/host.exe"])
         self.assertEqual(host["rustc_flags"], [])
+        self.assertEqual(host["inputs"], [])
 
     def test_host_rust_program_output_category(self):
         """Test that a host Rust program with output_category is written correctly."""
@@ -1692,6 +1721,9 @@ class TestRecursiveMakeBackend(BackendTester):
             "test-category:: $(DEPTH)/i686-pc-windows-msvc/release/test-host-program-output-category.exe",
             "MOZBUILD_NON_DEFAULT_TARGETS += $(DEPTH)/i686-pc-windows-msvc/release/test-host-program-output-category.exe",
             "HOST_RUST_PROGRAM_OUTPUT_CATEGORY := test-category",
+            self._cargo_deps(
+                "CARGO_HOST_PROGRAM_DEPS", ".cargo-host-program-spec.json"
+            ),
         ]
 
         self.assertEqual(lines, expected)

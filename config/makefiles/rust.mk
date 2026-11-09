@@ -19,9 +19,6 @@ endef
 # Rust build edges forward timing and keep-going signals. Test edges do not.
 cargo_action_rustc_flags = $(if $(BUILDSTATUS),--timings) $(if $(findstring k,$(firstword -$(MAKEFLAGS))),--keep-going)
 
-cargo_action_deps := $(topsrcdir)/python/mozbuild/mozbuild/rust_commands.py
-cargo_action_deps += $(topsrcdir)/python/mozbuild/mozbuild/action/run_cargo.py
-
 define make_default_rule
 $(1):
 
@@ -70,7 +67,7 @@ force-cargo-library-build:
 	$(call RUN_CARGO_ACTION,.cargo-library-spec.json,$(cargo_action_rustc_flags))
 	$(call BUILDSTATUS,END_Rust $(notdir $(RUST_LIBRARY_FILE)))
 
-$(eval $(call make_cargo_rule,$(RUST_LIBRARY_FILE),force-cargo-library-build,.cargo-library-spec.json $(cargo_action_deps)))
+$(eval $(call make_cargo_rule,$(RUST_LIBRARY_FILE),force-cargo-library-build,$(CARGO_LIBRARY_DEPS)))
 
 endif # RUST_LIBRARY_FILE
 
@@ -88,18 +85,18 @@ force-cargo-host-library-build:
 	$(call RUN_CARGO_ACTION,.cargo-host-library-spec.json,$(cargo_action_rustc_flags))
 	$(call BUILDSTATUS,END_Rust $(notdir $(HOST_RUST_LIBRARY_FILE)))
 
-$(eval $(call make_cargo_rule,$(HOST_RUST_LIBRARY_FILE),force-cargo-host-library-build,.cargo-host-library-spec.json $(cargo_action_deps)))
+$(eval $(call make_cargo_rule,$(HOST_RUST_LIBRARY_FILE),force-cargo-host-library-build,$(CARGO_HOST_LIBRARY_DEPS)))
 
 endif # HOST_RUST_LIBRARY_FILE
 
 ifdef RUST_PROGRAMS
 
-force-cargo-program-build: $(call resfile,module)
+force-cargo-program-build: $(CARGO_PROGRAM_DEPS)
 	$(call BUILDSTATUS,START_Rust $(RUST_CARGO_PROGRAMS))
 	$(call RUN_CARGO_ACTION,.cargo-program-spec.json,$(cargo_action_rustc_flags))
 	$(call BUILDSTATUS,END_Rust $(RUST_CARGO_PROGRAMS))
 
-$(foreach RUST_PROGRAM,$(RUST_PROGRAMS), $(eval $(call make_cargo_rule,$(RUST_PROGRAM),force-cargo-program-build,$(call resfile,module) .cargo-program-spec.json $(cargo_action_deps))))
+$(foreach RUST_PROGRAM,$(RUST_PROGRAMS), $(eval $(call make_cargo_rule,$(RUST_PROGRAM),force-cargo-program-build,$(CARGO_PROGRAM_DEPS))))
 
 endif # RUST_PROGRAMS
 
@@ -110,6 +107,6 @@ force-cargo-host-program-build:
 	$(call RUN_CARGO_ACTION,.cargo-host-program-spec.json,$(cargo_action_rustc_flags))
 	$(call BUILDSTATUS,END_Rust $(HOST_RUST_CARGO_PROGRAMS))
 
-$(foreach HOST_RUST_PROGRAM,$(HOST_RUST_PROGRAMS), $(eval $(call make_cargo_rule,$(HOST_RUST_PROGRAM),force-cargo-host-program-build,.cargo-host-program-spec.json $(cargo_action_deps))))
+$(foreach HOST_RUST_PROGRAM,$(HOST_RUST_PROGRAMS), $(eval $(call make_cargo_rule,$(HOST_RUST_PROGRAM),force-cargo-host-program-build,$(CARGO_HOST_PROGRAM_DEPS))))
 
 endif # HOST_RUST_PROGRAMS

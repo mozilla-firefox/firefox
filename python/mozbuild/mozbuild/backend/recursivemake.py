@@ -1470,6 +1470,20 @@ class RecursiveMakeBackend(MakeBackend):
             obj, backend_file, "HOST_RUST_PROGRAMS", "HOST_RUST_CARGO_PROGRAMS"
         )
 
+    def _write_rust_command(self, path, command):
+        super()._write_rust_command(path, command)
+        if command.kind == "test":
+            return
+        backend_file = self._backend_files[mozpath.dirname(path)]
+        deps = [
+            mozpath.basename(path),
+            "$(topsrcdir)/python/mozbuild/mozbuild/rust_commands.py",
+            "$(topsrcdir)/python/mozbuild/mozbuild/action/run_cargo.py",
+            *(mozpath.relpath(i, backend_file.relobjdir) for i in command.inputs),
+        ]
+        var = f"CARGO_{command.kind.upper().replace('-', '_')}_DEPS"
+        backend_file.write(f"{var} := {' '.join(deps)}\n")
+
     def _process_rust_tests(self, obj, backend_file):
         if obj.config.substs.get("MOZ_RUST_TESTS"):
             # If --enable-rust-tests has been set, run these as a part of

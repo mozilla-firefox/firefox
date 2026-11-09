@@ -272,6 +272,7 @@ class CommonBackend(BuildBackend):
         first = programs[0]
         objdir = mozpath.normsep(first.objdir)
         rustc_flags = ()
+        inputs = ()
         # Windows programs link a version resource generated in the object
         # directory.
         if (
@@ -279,11 +280,13 @@ class CommonBackend(BuildBackend):
             and self.environment.substs.get("MOZ_WIDGET_TOOLKIT") == "windows"
         ):
             rustc_flags = ("-C", f"link-arg={objdir}/module.res")
+            inputs = (mozpath.join(first.relobjdir, "module.res"),)
         return CargoCommand(
             kind=kind,
             manifest_path=mozpath.normsep(first.cargo_file),
             names=tuple(program.name for program in programs),
             outputs=tuple(mozpath.normsep(program.location) for program in programs),
+            inputs=inputs,
             features=first.features or (),
             cargo_profile_suffix=profile_suffix,
             working_directory=objdir,
