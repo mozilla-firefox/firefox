@@ -98,7 +98,7 @@ async function testDeleteAll(
     await testPreflightCached(browser, PREFLIGHT_URL_B, token, !clearedAll);
   });
 
-  SiteDataTestUtils.clear();
+  await SiteDataTestUtils.clear();
 }
 
 add_task(async function test_deleteAll() {

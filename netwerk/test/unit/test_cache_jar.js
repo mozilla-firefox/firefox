@@ -53,8 +53,11 @@ async function run_all_tests() {
     return;
   }
 
-  Services.clearData.deleteDataFromOriginAttributesPattern({
-    userContextId: 1,
+  await new Promise(resolve => {
+    Services.clearData.deleteDataFromOriginAttributesPattern(
+      { userContextId: 1 },
+      resolve
+    );
   });
 
   for (let test of secondTests) {

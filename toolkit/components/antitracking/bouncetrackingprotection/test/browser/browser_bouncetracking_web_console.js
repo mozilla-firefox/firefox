@@ -107,5 +107,5 @@ add_task(async function test_bounce_tracker_web_console_messages() {
     "@mozilla.org/bounce-tracking-protection;1"
   ].getService(Ci.nsIBounceTrackingProtection);
   bounceTrackingProtection.clearAll();
-  SiteDataTestUtils.clear();
+  await SiteDataTestUtils.clear();
 });

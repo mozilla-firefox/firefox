@@ -15,8 +15,12 @@
 
 var chromeScript;
 chromeScript = SpecialPowers.loadChromeScript(_ => {
-  Services.clearData.deleteData(Ci.nsIClearDataService.CLEAR_ALL, value => resolve());
+  /* eslint-env mozilla/chrome-script */
+  Services.clearData.deleteData(Ci.nsIClearDataService.CLEAR_ALL, () => {
+    sendAsyncMessage("dataCleared");
+  });
 });
+let dataClearedPromise = chromeScript.promiseOneMessage("dataCleared");
 
 SimpleTest.waitForExplicitFinish();
 SimpleTest.requestLongerTimeout(2);
@@ -36,7 +40,10 @@ function next() {
   }
 }
 
-onload = next;
+onload = async () => {
+  await dataClearedPromise;
+  next();
+};
 
 let iframe;
 let proxyWindow;

@@ -72,7 +72,7 @@ async function runTest({ deleteBy, hasUserInput }) {
   info(
     `Clear AuthTokensCleaner data for ${deleteBy}, hasUserInput: ${hasUserInput}`
   );
-  clearData({ deleteBy, hasUserInput });
+  await clearData({ deleteBy, hasUserInput });
 
   // The auth tokens cleaner cannot delete by principal or baseDomain
   // (yet). If this method is called, it will check whether the used requested
