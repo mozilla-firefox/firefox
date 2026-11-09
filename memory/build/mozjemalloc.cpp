@@ -1650,9 +1650,10 @@ bool arena_t::PurgeInfo::ScanForFirstDirtyPage() {
     } else {
       arena_run_t* run =
           reinterpret_cast<arena_run_t*>(run_bits & ~gPageSizeMask);
-      MOZ_ASSERT(run == reinterpret_cast<arena_run_t*>(
-                            reinterpret_cast<uintptr_t>(mChunk) +
-                            (run_idx << gPageSize2Pow)));
+      MOZ_DIAGNOSTIC_ASSERT(run == reinterpret_cast<arena_run_t*>(
+                                       reinterpret_cast<uintptr_t>(mChunk) +
+                                       (run_idx << gPageSize2Pow)));
+      MOZ_DIAGNOSTIC_ASSERT(run->mMagic == ARENA_RUN_MAGIC);
       run_pages = run->mBin->mRunSizePages;
     }
     MOZ_ASSERT(run_pages > 0);
