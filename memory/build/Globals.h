@@ -161,7 +161,7 @@ extern size_t opt_dirty_max;
 
 #define OPT_JUNK_DEFAULT false
 #define OPT_ZERO_DEFAULT false
-#ifdef EARLY_BETA_OR_EARLIER
+#ifdef NIGHTLY_BUILD
 #  define OPT_POISON_DEFAULT ALL
 #else
 #  define OPT_POISON_DEFAULT SOME
