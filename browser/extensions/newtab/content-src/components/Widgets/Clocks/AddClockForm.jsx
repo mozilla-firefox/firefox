@@ -89,7 +89,9 @@ export function AddClockForm({
   const [selectedCityId, setSelectedCityId] = useState(
     initialClock?.cityId || ""
   );
-  const [nickname, setNickname] = useState(initialClock?.label || "");
+  const [nickname, setNickname] = useState(
+    initialClock?.label?.slice(0, MAX_NICKNAME_LENGTH) || ""
+  );
   const [customMode, setCustomMode] = useState(false);
   const [customCity, setCustomCity] = useState("");
   const [customZone, setCustomZone] = useState("");
@@ -97,6 +99,9 @@ export function AddClockForm({
   // Hides the results when focus leaves the field and its list; typing shows
   // them again.
   const [resultsOpen, setResultsOpen] = useState(true);
+  const nicknameL10nArgs = JSON.stringify({
+    count: MAX_NICKNAME_LENGTH - nickname.length,
+  });
 
   const searchInputRef = useRef(null);
   const customCityRef = useRef(null);
@@ -413,7 +418,8 @@ export function AddClockForm({
           </div>
           <moz-input-text
             className="clocks-nickname-input"
-            data-l10n-id="newtab-clock-widget-input-nickname"
+            data-l10n-id="newtab-clock-widget-input-nickname2"
+            data-l10n-args={nicknameL10nArgs}
             id="clocks-custom-nickname-input"
             value={nickname}
             onInput={handleNicknameInput}
@@ -538,7 +544,8 @@ export function AddClockForm({
           </div>
           <moz-input-text
             className="clocks-nickname-input"
-            data-l10n-id="newtab-clock-widget-input-nickname"
+            data-l10n-id="newtab-clock-widget-input-nickname2"
+            data-l10n-args={nicknameL10nArgs}
             id="clocks-nickname-input"
             value={nickname}
             onInput={handleNicknameInput}

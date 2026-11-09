@@ -420,6 +420,41 @@ describe("<AddClockForm>", () => {
       expect(savedZone.label.length).toBe(11);
     });
 
+    it("counts down the characters left as the nickname is typed", async () => {
+      const { container } = await renderForm();
+      const nicknameInput = container.querySelector(".clocks-nickname-input");
+      const countLeft = () =>
+        JSON.parse(nicknameInput.getAttribute("data-l10n-args")).count;
+      expect(nicknameInput.getAttribute("data-l10n-id")).toBe(
+        "newtab-clock-widget-input-nickname2"
+      );
+      expect(countLeft()).toBe(11);
+      Object.defineProperty(nicknameInput, "value", {
+        configurable: true,
+        writable: true,
+        value: "Home",
+      });
+      fireEvent.input(nicknameInput);
+      expect(countLeft()).toBe(7);
+    });
+
+    it("shows a saved nickname over the limit cut to what will be saved", async () => {
+      const { container } = await renderForm({
+        isEditing: true,
+        initialClock: {
+          timeZone: "Europe/Berlin",
+          city: "Berlin",
+          label: "Way too long nickname here",
+          labelColor: "purple",
+        },
+      });
+      const nicknameInput = container.querySelector(".clocks-nickname-input");
+      expect(nicknameInput.getAttribute("value")).toBe("Way too lon");
+      expect(
+        JSON.parse(nicknameInput.getAttribute("data-l10n-args")).count
+      ).toBe(0);
+    });
+
     it("preserves the existing labelColor when editing the same zone", async () => {
       const { container, props } = await renderForm({
         isEditing: true,
