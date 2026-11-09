@@ -34,6 +34,7 @@ use crate::stylesheets::{
     NestedDeclarationsRule, PageRule, PageSelectors, PositionTryRule, RulesMutateError,
     StartingStyleRule, StyleRule, StylesheetLoader, SupportsRule, ViewTransitionRule,
 };
+use crate::url::UrlInitiator;
 use crate::values::computed::font::FamilyName;
 use crate::values::{CssUrl, CustomIdent, DashedIdent, KeyframesName};
 use crate::{Atom, Namespace, Prefix};
@@ -423,8 +424,12 @@ impl<'a, 'i> AtRuleParser<'i> for TopLevelRuleParser<'a, 'i> {
                 }
 
                 let url_string = input.expect_url_or_string()?.as_ref().to_owned();
-                let url =
-                    CssUrl::new_from_untainted_string(url_string, &self.context, CorsMode::None);
+                let url = CssUrl::new_from_untainted_string(
+                    url_string,
+                    &self.context,
+                    CorsMode::None,
+                    UrlInitiator::Css,
+                );
 
                 let (layer, supports) =
                     ImportRule::parse_layer_and_supports(input, &mut self.context);

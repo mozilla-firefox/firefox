@@ -4,6 +4,7 @@
 
 //! Common handling for the specified value CSS url() values.
 
+use crate::derives::*;
 use crate::parser::{Parse, ParserContext};
 use crate::stylesheets::CorsMode;
 use cssparser::Parser;
@@ -17,6 +18,17 @@ pub use gecko::{ComputedUrl, CssUrl, SpecifiedUrl};
 pub mod servo;
 #[cfg(feature = "servo")]
 pub use servo::{ComputedUrl, CssUrl, SpecifiedUrl};
+
+/// What caused a CSS url() to be loaded, which determines the Resource Timing
+/// initiator type of the load.
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ToShmem)]
+pub enum UrlInitiator {
+    /// A regular CSS url().
+    Css,
+    /// The background attribute of a <body> element.
+    Body,
+}
 
 impl CssUrl {
     /// Parse a URL with a particular CORS mode.
@@ -47,7 +59,12 @@ impl CssUrl {
         if context.disallow_urls_in_range(&range) {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
-        Ok(Self::new_from_string(url, context, cors_mode))
+        Ok(Self::new_from_string(
+            url,
+            context,
+            cors_mode,
+            UrlInitiator::Css,
+        ))
     }
 
     /// Create a new CSS URL that is attr()-untainted given a valid CSS token for a URL.
@@ -58,9 +75,10 @@ impl CssUrl {
         url: String,
         context: &ParserContext,
         cors_mode: CorsMode,
+        initiator: UrlInitiator,
     ) -> Self {
         debug_assert!(context.attr_tainted_regions.is_empty());
-        Self::new_from_string(url, context, cors_mode)
+        Self::new_from_string(url, context, cors_mode, initiator)
     }
 }
 

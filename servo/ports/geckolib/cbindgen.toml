@@ -1051,6 +1051,7 @@ renaming_overrides_prefixing = true
   inline bool IsLocalRef() const;
   inline bool HasRef() const;
   inline StyleCorsMode CorsMode() const;
+  inline StyleUrlInitiator Initiator() const;
 
   // Only relevant for images.
   inline bool IsImageResolved() const;

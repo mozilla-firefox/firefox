@@ -9,6 +9,7 @@ use crate::gecko_bindings::bindings;
 use crate::gecko_bindings::structs;
 use crate::parser::ParserContext;
 use crate::stylesheets::{CorsMode, UrlExtraData};
+use crate::url::UrlInitiator;
 use crate::values::computed::{Context, ToComputedValue};
 use hashbrown::HashMap;
 use malloc_size_of::{MallocSizeOf, MallocSizeOfOps};
@@ -43,6 +44,10 @@ pub struct CssUrlData {
     /// The CORS mode that will be used for the load.
     #[css(skip)]
     cors_mode: CorsMode,
+
+    /// What caused this URL to be loaded.
+    #[css(skip)]
+    initiator: UrlInitiator,
 
     /// Data to trigger a load from Gecko. This is mutable in C++.
     ///
@@ -106,6 +111,7 @@ impl CssUrl {
         url: String,
         context: &ParserContext,
         cors_mode: CorsMode,
+        initiator: UrlInitiator,
     ) -> Self {
         use crate::use_counters::CustomUseCounter;
         if let Some(counters) = context.use_counters
@@ -134,6 +140,7 @@ impl CssUrl {
             serialization: url.into(),
             extra_data: context.url_data.clone(),
             cors_mode,
+            initiator,
             load_data: LoadDataSource::Owned(LoadData::default()),
         }))
     }

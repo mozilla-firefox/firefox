@@ -477,6 +477,9 @@ inline StyleLoadData& StyleComputedUrl::MutLoadData() const {
 inline StyleCorsMode StyleComputedUrl::CorsMode() const {
   return _0._0->cors_mode;
 }
+inline StyleUrlInitiator StyleComputedUrl::Initiator() const {
+  return _0._0->initiator;
+}
 inline nsIURI* StyleComputedUrl::GetURI() const { return _0.GetURI(); }
 
 inline bool StyleComputedUrl::IsLocalRef() const {

@@ -34,7 +34,11 @@ void MappedDeclarationsBuilder::SetBackgroundImage(const nsAttrValue& aValue) {
     CopyUTF16toUTF8(str, utf8);
   }
   Servo_DeclarationBlock_SetBackgroundImage(
-      &EnsureDecls(), &utf8, mDocument.DefaultStyleAttrURLData());
+      &EnsureDecls(), &utf8, mDocument.DefaultStyleAttrURLData(),
+      // Only <body background> gets the "body" initiator type, see
+      // https://github.com/w3c/resource-timing/issues/438
+      mElement.IsHTMLElement(nsGkAtoms::body) ? StyleUrlInitiator::Body
+                                              : StyleUrlInitiator::Css);
 }
 
 }  // namespace mozilla

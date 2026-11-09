@@ -7101,6 +7101,7 @@ pub unsafe extern "C" fn Servo_DeclarationBlock_SetBackgroundImage(
     declarations: &LockedDeclarationBlock,
     value: &nsACString,
     raw_extra_data: *mut URLExtraData,
+    initiator: url::UrlInitiator,
 ) {
     use style::properties::PropertyDeclaration;
     use style::properties::longhands::background_image::SpecifiedValue as BackgroundImage;
@@ -7121,7 +7122,8 @@ pub unsafe extern "C" fn Servo_DeclarationBlock_SetBackgroundImage(
         None,
         /* attr_taint */ Default::default(),
     );
-    let url = SpecifiedUrl::new_from_untainted_string(string.into(), &context, CorsMode::None);
+    let url =
+        SpecifiedUrl::new_from_untainted_string(string.into(), &context, CorsMode::None, initiator);
     let decl = PropertyDeclaration::BackgroundImage(BackgroundImage(vec![Image::Url(url)].into()));
     write_locked_arc(declarations, |decls: &mut PropertyDeclarationBlock| {
         decls.push(decl, Importance::Normal);
