@@ -388,31 +388,6 @@ const uint32_t NOT_VISITED = UINT32_MAX;
 const uint32_t IN_MUTED_CYCLE = 1;
 }  // namespace
 
-bool MediaTrackGraphImpl::AudioTrackPresent() {
-  MOZ_ASSERT(OnGraphThreadOrNotRunning());
-
-  bool audioTrackPresent = false;
-  for (MediaTrack* track : mTracks) {
-    if (track->AsAudioNodeTrack()) {
-      audioTrackPresent = true;
-      break;
-    }
-
-    if (track->mType == MediaSegment::AUDIO && !track->mNotifiedEnded) {
-      audioTrackPresent = true;
-      break;
-    }
-  }
-
-  // We may not have audio input device when we only have AudioNodeTracks. But
-  // if audioTrackPresent is false, we must have no input device.
-  MOZ_DIAGNOSTIC_ASSERT_IF(
-      !audioTrackPresent,
-      !mDeviceInputTrackManagerGraphThread.GetNativeInputTrack());
-
-  return audioTrackPresent;
-}
-
 void MediaTrackGraphImpl::CheckDriver() {
   MOZ_ASSERT(OnGraphThread());
   // An offline graph has only one driver.
@@ -429,11 +404,29 @@ void MediaTrackGraphImpl::CheckDriver() {
     mPendingResumeOperations.Clear();
   }
 
-  // Note that this looks for any audio tracks, input or output, and switches
-  // to a SystemClockDriver if there are none active or no resume operations
-  // to make any active.
+  // An AudioCallbackDriver is needed when there are active audio tracks and an
+  // audio device for them to drive: a native input device, or at least one
+  // track output to an output device. Audio tracks with neither, such as a
+  // remote WebRTC track that is not attached to a sink, run on a
+  // SystemClockDriver so that no output device is opened while nothing is
+  // audible. The output of a suspended or ended track, such as the destination
+  // track of an AudioContext that is not allowed to start, renders only
+  // silence and does not count. Pending resume operations always need an
+  // AudioCallbackDriver.
+  bool hasAudioDevice =
+      mDeviceInputTrackManagerGraphThread.GetNativeInputTrack() ||
+      std::any_of(mOutputDevices.begin(), mOutputDevices.end(),
+                  [](const OutputDeviceEntry& aDevice) {
+                    return std::any_of(
+                        aDevice.mTrackOutputs.begin(),
+                        aDevice.mTrackOutputs.end(),
+                        [](const TrackAndVolume& aOutput) {
+                          return !aOutput.mTrack->IsSuspended() &&
+                                 !aOutput.mTrack->mNotifiedEnded;
+                        });
+                  });
   bool needAudioCallbackDriver =
-      !mPendingResumeOperations.IsEmpty() || AudioTrackPresent();
+      !mPendingResumeOperations.IsEmpty() || hasAudioDevice;
   if (!needAudioCallbackDriver) {
     if (audioCallbackDriver && audioCallbackDriver->IsStarted()) {
       SwitchAtNextIteration(

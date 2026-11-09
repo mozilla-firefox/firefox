@@ -405,11 +405,6 @@ class MediaTrackGraphImpl : public MediaTrackGraph,
       AudioContextOperationControlMessage* aMessage);
 
   /**
-   * Determine if we have any audio tracks, or are about to add any audiotracks.
-   */
-  bool AudioTrackPresent();
-
-  /**
    * Schedules a replacement GraphDriver in mNextDriver, if necessary.
    */
   void CheckDriver();

@@ -115,9 +115,11 @@ class TestDecodedStream : public Test {
       track->QueueSetAutoend(false);
     }
 
-    // Resume the dummy track because a suspended audio track will not use
-    // an AudioCallbackDriver.
+    // Resume the dummy track and add an audio output to it, because only an
+    // active audio track with an output device uses an AudioCallbackDriver.
     mDummyTrack->mTrack->Resume();
+    mDummyTrack->mTrack->AddAudioOutput(reinterpret_cast<void*>(1),
+                                        mGraph->PrimaryOutputDeviceID(), 0);
 
     RefPtr fallbackListener = new OnFallbackListener(mDummyTrack->mTrack);
     mDummyTrack->mTrack->AddListener(fallbackListener);
