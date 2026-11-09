@@ -118,6 +118,18 @@ def test_license_ref_spdx_expression_is_accepted(lint, paths):
     assert lint(paths("good/assigned.mozbuild")) == []
 
 
+def test_moz_yaml_lints_the_moz_build_files_it_covers(lint, paths):
+    results = lint(paths(mozpath.join("bad", "vendored", "moz.yaml")))
+
+    assert [(r.relpath, r.lineno) for r in results] == [
+        (mozpath.join("bad", "vendored", "vendored.build"), 4)
+    ]
+
+
+def test_moz_yaml_is_not_read_as_a_moz_build(lint, paths):
+    assert lint(paths(mozpath.join("good", "vendored", "moz.yaml"))) == []
+
+
 def test_id_declared_twice_is_left_to_the_build(lint, paths):
     # mozbuild.licenses rejects it, within one moz.build and across two.
     assert lint(paths("bad/duplicate.build")) == []

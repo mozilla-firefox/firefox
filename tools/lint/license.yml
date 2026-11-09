@@ -136,13 +136,15 @@ license-declarations:
         # Fixture moz.builds for the build system's own tests, which reuse the
         # same license ids across unrelated fixture trees.
         - python/mozbuild/mozbuild/test
+    # A moz.yaml stands for the moz.build files it covers, rather than being a
+    # support file whose change would relint the entire tree.
     extensions:
         - build
         - mozbuild
+        - yaml
     support-files:
         - 'tools/lint/license/**'
         - 'python/mozbuild/mozbuild/licenses.py'
-        - '**/moz.yaml'
     # The declared set is gathered from the whole tree on every run, so this
     # wants the paths in one job rather than once per parallel chunk.
     type: global

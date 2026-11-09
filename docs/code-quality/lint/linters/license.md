@@ -75,7 +75,8 @@ them both; which one reports depends on the kind of file passed.
 ### Configuration
 
 This linter is enabled on the whole code base. It gathers the declared set from
-the entire tree on every run, so it always runs as a single job.
+the entire tree on every run, so it always runs as a single job. A `moz.yaml`
+passed to it, or modified, lints the `moz.build` files at or below it.
 
 ### Autofix
 

@@ -171,7 +171,14 @@ def _on_disk_spelling(root, path):
 def lint(paths, config, **lintargs):
     root = lintargs["root"]
 
-    targets = {_on_disk_spelling(root, p) for p in paths}
+    # A manifest is only read for the moz.build files at or below it, so a
+    # change to one only needs those linted, not the rest of the tree.
+    targets = {
+        _on_disk_spelling(
+            root, mozpath.dirname(p) if mozpath.basename(p) == "moz.yaml" else p
+        )
+        for p in paths
+    }
     prefixes = tuple(f"{p.rstrip('/')}/" for p in targets if os.path.isdir(p))
 
     def linted(path):
@@ -196,6 +203,8 @@ def lint(paths, config, **lintargs):
 
     parsed = {}
     for path in expand_exclusions([root], config, root):
+        if path.endswith(".yaml"):
+            continue
         try:
             parsed[path] = _declarations(Path(path))
         except SyntaxError as e:
