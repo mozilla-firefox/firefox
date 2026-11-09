@@ -1,0 +1,179 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test seeking between keyframes with missing or incomplete stss</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+  <script type="text/javascript" src="manifest.js"></script>
+  <script type="text/javascript" src="seek_support.js.js"></script>
+</head>
+<body>
+<script class="testbody" type="text/javascript">
+
+
+// Tests that the correct frame is displayed after seeking
+// before the first, after the last and between keyframes.
+function doTest(filePath, codecStr, seekTimes, clampTime, expectedColor) {
+  return async () => {
+    info("Running with file " + filePath)
+    const v = document.createElement('video');
+    if (!v.canPlayType(`video/mp4; codecs="${codecStr}, mp4a.40.2"`)) {
+      ok(true, "Skipping unsupported codec " + codecStr);
+      return;
+    }
+    v.src = filePath;
+    const { promise: errorPromise, resolve: resolveError } = Promise.withResolvers();
+    let notSupported = false;
+    v.addEventListener("error", (e) => {
+      if (e.target.error.code == e.target.error.MEDIA_ERR_DECODE) {
+        notSupported = true;
+        resolveError();
+      } else {
+        ok(false, "should not throw any errors: " + e.message)
+      }
+    });
+
+    await Promise.race([once(v, 'loadeddata'), errorPromise]);
+    if (notSupported) {
+      ok(true, "Skipping unsupported codec " + codecStr);
+      return;
+    }
+
+    const canvas = document.createElement("canvas");
+    document.body.appendChild(v);
+    document.body.appendChild(canvas);
+    canvas.width = v.videoWidth;
+    canvas.height = v.videoHeight;
+
+
+    const ctx = canvas.getContext("2d");
+
+    // Bug 2081479
+    // On some Mac OS platforms we get values in [16-235] from getImageData,
+    // not [0-255] for full range. Whatever the cause, it's not the point of
+    // this test, so just adjust expected values.
+    let colorRangeWorkaround = false;
+    if (navigator.platform.includes('Mac')) {
+      await v.play();
+      v.pause();
+      await once(v, 'pause');
+      ctx.drawImage(v, 0, 0);
+      // the frame is solid 0x0000ff
+      const actual = ctx.getImageData(1, 1, 1, 1).data;
+      const thresh = [9, 9, 242];
+      if (actual[0] >= thresh[0] || actual[1] >= thresh[1] || actual[2] <= thresh[2]) {
+        info("Enabling MacOS color range workaround hack");
+        colorRangeWorkaround = true;
+      }
+    }
+
+    for (const whilePlaying of [true, false]) {
+      info("Seek while playing: " + whilePlaying);
+      for (const time of seekTimes) {
+        if (whilePlaying) {
+          await v.play();
+          v.currentTime = time;
+          await once(v, 'seeked');
+          v.pause()
+          await once(v, 'pause');
+        } else {
+          v.currentTime = time;
+          await once(v, 'seeked');
+        }
+
+        const expectedTime = Math.min(time, clampTime);
+        isfuzzy(v.currentTime, expectedTime, 0.1, 'must seek to correct time');
+
+        ctx.drawImage(v, 0, 0);
+        let actual = ctx.getImageData(1, 1, 1, 1).data;
+        is(actual[3], 255, 'alpha must be 1.0');
+        const expected = expectedColor(time);
+        for (let i = 0; i < 3; i += 1) {
+          if (colorRangeWorkaround) {
+            actual = actual.map(x => {
+              if (x < 25) { return 0; }
+              if (x > 230) { return 255; }
+              return x;
+            });
+          }
+          isfuzzy(actual[i], expected[i], 4, 'must display correct frame (seeked to ' + time + ')');
+        }
+      }
+    }
+    document.body.removeChild(v);
+    document.body.removeChild(canvas);
+  }
+}
+
+function expectedColor1(time) {
+  if (time < 1.0) { return [0x00, 0x00, 0xff]; }
+  if (time < 2.0) { return [0x00, 0xff, 0x00]; }
+  if (time < 3.0) { return [0xff, 0x00, 0x00]; }
+  return [0xff, 0xff, 0x00];
+}
+const seekTimes = [
+  3.15,
+  0.0, // First PTS is 0.02, so 0.0 is before the first frame
+  2.1,
+  0.05,
+  1.1,
+  0.1,
+  3.9,
+  2.9,
+  1.9,
+  0.9,
+  8.0, // Past the end
+  0.0,
+  3.22,
+  1.08,
+];
+const duration1 = 4.0;
+
+// Missing stss
+add_task(doTest("no-stss-4-keyframes/h264.mp4", "avc1.64000d", seekTimes, duration1, expectedColor1));
+add_task(doTest("no-stss-4-keyframes/h265.mp4", "hvc1.1.6.L63.B0", seekTimes, duration1, expectedColor1));
+add_task(doTest("no-stss-4-keyframes/av1.mp4", "av01.0.00M.08", seekTimes, duration1, expectedColor1));
+add_task(doTest("no-stss-4-keyframes/vp9.mp4", "vp09.00.20.08", seekTimes, duration1, expectedColor1));
+
+// stss exists, but doesn't contain the second keyframe but instead
+// a non-IDR I-frame.
+add_task(doTest("bad-stss/stss-2nd-wrong-h264.mp4", "avc1.64000d", seekTimes, duration1, expectedColor1));
+add_task(doTest("bad-stss/stss-2nd-wrong-h265.mp4", "hvc1.1.6.L63.B0", seekTimes, duration1, expectedColor1));
+
+// stss exists but lists a non-IDR I-frame instead of the first IDR.
+add_task(doTest("bad-stss/stss-1st-wrong-h264.mp4", "avc1.64000d", seekTimes, duration1, expectedColor1));
+add_task(doTest("bad-stss/stss-1st-wrong-h265.mp4", "hvc1.1.6.L63.B0", seekTimes, duration1, expectedColor1));
+
+function expectedColor2(time) {
+  if (time < 0.5) { return [0x00, 0x00, 0xff]; }
+  if (time < 1.0) { return [0x00, 0xff, 0x00]; }
+  if (time < 3.0) { return [0xff, 0x00, 0x00]; }
+  return [0xff, 0xff, 0x00];
+}
+const seekTimes2 = [
+  3.15,
+  0.0, // First PTS is 0.02, so 0.0 is before the first frame
+  2.1,
+  0.05,
+  1.1,
+  0.1,
+  3.9,
+  5.9,
+  1.9,
+  0.9,
+  8.0, // Past the end
+  0.0,
+  3.22,
+  0.0,
+  6.8,
+  1.08,
+];
+const duration2 = 7.0;
+
+// stss is complete with 2 additional non-IDR stss entries
+add_task(doTest("bad-stss/stss-extra-entries-h264.mp4", "avc1.64000d", seekTimes2, duration2, expectedColor2));
+add_task(doTest("bad-stss/stss-extra-entries-h265.mp4", "hvc1.1.6.L63.B0", seekTimes2, duration2, expectedColor2));
+
+</script>
+</body>
+</html>

@@ -527,6 +527,31 @@ support-files = [
   "no-stss-1-keyframe/h265.mp4^headers^",
   "no-stss-1-keyframe/vp9.mp4",
   "no-stss-1-keyframe/vp9.mp4^headers^",
+  # generated with no-stss-4-keyframes/generate.sh
+  "no-stss-4-keyframes/av1.mp4",
+  "no-stss-4-keyframes/av1.mp4^headers^",
+  "no-stss-4-keyframes/h264.mp4",
+  "no-stss-4-keyframes/h264.mp4^headers^",
+  "no-stss-4-keyframes/h265.mp4",
+  "no-stss-4-keyframes/h265.mp4^headers^",
+  "no-stss-4-keyframes/vp9.mp4",
+  "no-stss-4-keyframes/vp9.mp4^headers^",
+  # generated with bad-stss/generate.sh
+  # 1st stss entry points to non-IDR (=first keyframe not listed)
+  "bad-stss/stss-1st-wrong-h264.mp4",
+  "bad-stss/stss-1st-wrong-h264.mp4^headers^",
+  "bad-stss/stss-1st-wrong-h265.mp4",
+  "bad-stss/stss-1st-wrong-h265.mp4^headers^",
+  # 2nd stss entry points to non-IDR
+  "bad-stss/stss-2nd-wrong-h264.mp4",
+  "bad-stss/stss-2nd-wrong-h264.mp4^headers^",
+  "bad-stss/stss-2nd-wrong-h265.mp4",
+  "bad-stss/stss-2nd-wrong-h265.mp4^headers^",
+  # 2 non-IDR stss entries between the first 2 IDR frames
+  "bad-stss/stss-extra-entries-h264.mp4",
+  "bad-stss/stss-extra-entries-h264.mp4^headers^",
+  "bad-stss/stss-extra-entries-h265.mp4",
+  "bad-stss/stss-extra-entries-h265.mp4^headers^",
   "notags.mp3",
   "notags.mp3^headers^",
   "opus-mapping2.mp4",
@@ -782,6 +807,11 @@ skip-if = [
   "os == 'android'", # bug 1329391, android(bug 1232305)
 ]
 tags = "seektonextframe"
+
+["test_seek_between_keyframes.html"]
+skip-if = [
+  "os == 'android'", # android(bug 2081479)
+]
 
 ["test_seek_duration.html"]
 

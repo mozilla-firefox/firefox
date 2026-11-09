@@ -11,6 +11,7 @@ if CONFIG["OS_TARGET"] != "Android":
 
 SOURCES += [
     "TestInterval.cpp",
+    "TestKeyframeMap.cpp",
 ]
 
 TEST_HARNESS_FILES.gtest += [

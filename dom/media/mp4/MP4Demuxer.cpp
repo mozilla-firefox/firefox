@@ -29,6 +29,10 @@
   DDMOZ_LOG_FMT(gMediaDemuxerLog, mozilla::LogLevel::Debug, "::{}: " arg, \
                 __func__, ##__VA_ARGS__)
 
+#define LOGV(arg, ...)                                                      \
+  DDMOZ_LOG_FMT(gMediaDemuxerLog, mozilla::LogLevel::Verbose, "::{}: " arg, \
+                __func__, ##__VA_ARGS__)
+
 namespace mozilla {
 
 using TimeUnit = media::TimeUnit;
@@ -62,7 +66,12 @@ class MP4TrackDemuxer : public MediaTrackDemuxer,
   void NotifyDataArrived();
 
  private:
-  Result<already_AddRefed<MediaRawData>, MediaResult> GetNextSample();
+  // Read sample from mIterator and do codec-specific keyframe check if
+  // required.
+  // If aKeyframeFlagWasWrong is not null, the out param indicates whether the
+  // check changed the keyframe flag.
+  Result<already_AddRefed<MediaRawData>, MediaResult> GetNextSample(
+      bool* aKeyframeFlagWasWrong = nullptr);
   void EnsureUpToDateIndex();
   void SetNextKeyFrameTime();
   RefPtr<MediaResource> mResource;
@@ -375,50 +384,122 @@ void MP4TrackDemuxer::EnsureUpToDateIndex() {
 
 RefPtr<MP4TrackDemuxer::SeekPromise> MP4TrackDemuxer::Seek(
     const TimeUnit& aTime) {
-  auto seekTime = aTime;
+  LOGV("Seek to {}", aTime.ToString());
   mQueuedSample = nullptr;
-
-  mIterator->Seek(seekTime);
-
-  bool hasSeenValidSamples = false, seekingFromFirstSyncSample = false;
-  // Check what time we actually seeked to.
+  bool oldKeyframeInfoWasWrong = false;
+  bool doExhaustiveScan = false;
+  SampleIterator currClosestIter(*mIterator);
+  RefPtr<MediaRawData> currClosestSample;
+  // If stss entries are accurate, mIterator will correctly seek to the last
+  // usable keyframe before the target time. Otherwise, falsely marked
+  // keyframes are detected in GetNextSample and the search continues.
+  // The result of the keyframe analysis is saved, so that mIterator->Seek
+  // will yield each false positive at most once.
+  // The loop retries earlier keyframe map entries until one is confirmed or
+  // there are none left.
   do {
-    auto next = GetNextSample();
+    mIterator->Seek(aTime);
+    auto next = GetNextSample(&oldKeyframeInfoWasWrong);
     if (next.isErr()) {
       auto error = next.unwrapErr();
-      // If we reached EOS without finding an IDR I-frame we retry from the
-      // first sync sample in the stss, which is always an IDR.
-      if ((mType == kH264 || mType == kHEVC) &&
-          error == NS_ERROR_DOM_MEDIA_END_OF_STREAM && hasSeenValidSamples &&
-          !seekingFromFirstSyncSample) {
-        LOG("Can not find a key frame from the closet sync sample, try again "
-            "from the first sync sample");
-        seekingFromFirstSyncSample = true;
-        mIterator->Seek(seekTime, SampleIterator::SyncSampleMode::First);
-        continue;
+      if (error == nsresult::NS_ERROR_DOM_MEDIA_END_OF_STREAM) {
+        LOG("Seeked to keyframe map entry and hit End of Stream.");
+        break;
       }
       return SeekPromise::CreateAndReject(error, __func__);
     }
+    if (oldKeyframeInfoWasWrong) {
+      LOG("Keyframe info was wrong, enable exhaustive scan");
+      doExhaustiveScan = true;
+    }
     RefPtr<MediaRawData> sample = next.unwrap();
-    if (!sample->Size()) {
-      // This sample can't be decoded, continue searching.
+    if (!sample->mKeyframe || !sample->Size()) {
       continue;
     }
-    if (sample->mKeyframe) {
-      MOZ_DIAGNOSTIC_ASSERT(sample->HasValidTime());
+    if (!doExhaustiveScan) {
       mQueuedSample = sample;
-      seekTime = mQueuedSample->mTime;
+      break;
+    } else {
+      currClosestSample = sample;
+      currClosestIter = *mIterator;
+      break;
     }
-    hasSeenValidSamples = true;
-  } while (!mQueuedSample);
+  } while (oldKeyframeInfoWasWrong);
+
+  // For exhaustive search, check all samples up to the next keyframe at or
+  // after the target time to ensure the seek resolves to the closest keyframe.
+  if (doExhaustiveScan || !mQueuedSample) {
+    mIterator->Seek(aTime);  // seek will reset and do nothing else
+    do {
+      auto next = GetNextSample();
+      if (next.isErr()) {
+        auto error = next.unwrapErr();
+        if (error == nsresult::NS_ERROR_DOM_MEDIA_END_OF_STREAM &&
+            currClosestSample) {
+          LOG("Exhaustive search hit End of Stream, use saved sample at {}",
+              currClosestSample->mTime.ToString());
+          break;
+        }
+        return SeekPromise::CreateAndReject(error, __func__);
+      }
+      RefPtr<MediaRawData> sample = next.unwrap();
+
+      if (!sample->Size() || !sample->mKeyframe) {
+        // This sample can't be decoded, continue searching.
+        continue;
+      }
+      if (sample->mTime == aTime || mInfo->IsAudio()) {
+        mQueuedSample = sample;
+        break;
+      }
+
+      if (!currClosestSample && sample->mTime > aTime) {
+        LOG("No keyframe before target, use keyframe at {}",
+            sample->mTime.ToString());
+        mQueuedSample = sample;
+        break;
+      } else if (!currClosestSample) {
+        currClosestSample = sample;
+        currClosestIter = *mIterator;
+        continue;
+      }
+
+      const auto oldTime = currClosestSample->mTime;
+      // If both are before the target, the later one is closer.
+      // Otherwise the earlier keyframe is preferred.
+      if (sample->mTime < aTime && oldTime < aTime && oldTime < sample->mTime) {
+        currClosestSample = sample;
+        currClosestIter = *mIterator;
+      } else if (sample->mTime < oldTime) {
+        currClosestSample = sample;
+        currClosestIter = *mIterator;
+      }
+      if (aTime < sample->mTime) {
+        LOG("Sample {} past target, use last saved sample at {}",
+            sample->mTime.ToString(), oldTime.ToString());
+        mQueuedSample = currClosestSample;
+        *mIterator = currClosestIter;
+        break;
+      }
+    } while (!mQueuedSample);
+  }
+  MOZ_ASSERT_DEBUG_OR_FUZZING(mQueuedSample || currClosestSample);
+
+  if (!mQueuedSample && currClosestSample) {
+    mQueuedSample = currClosestSample;
+    *mIterator = currClosestIter;
+  }
+
+  MOZ_ASSERT_DEBUG_OR_FUZZING(mQueuedSample->mKeyframe);
+  MOZ_ASSERT_DEBUG_OR_FUZZING(mQueuedSample->Size() > 0);
 
   SetNextKeyFrameTime();
 
-  return SeekPromise::CreateAndResolve(seekTime, __func__);
+  return SeekPromise::CreateAndResolve(mQueuedSample->mTime, __func__);
 }
 
 Result<already_AddRefed<MediaRawData>, MediaResult>
-MP4TrackDemuxer::GetNextSample() {
+MP4TrackDemuxer::GetNextSample(bool* aKeyframeFlagWasWrong) {
   auto next = mIterator->GetNext();
   if (next.isErr()) {
     return next;
@@ -427,86 +508,99 @@ MP4TrackDemuxer::GetNextSample() {
 
   if (mInfo->GetAsVideoInfo()) {
     sample->mExtraData = mInfo->GetAsVideoInfo()->mExtraData;
-    if (mType == kH264 && !sample->mCrypto.IsEncrypted()) {
-      H264::FrameType type = H264::GetFrameType(sample);
-      switch (type) {
-        case H264::FrameType::I_FRAME_IDR:
-        case H264::FrameType::I_FRAME_OTHER:
-        case H264::FrameType::OTHER: {
-          bool keyframe = type == H264::FrameType::I_FRAME_IDR;
-          if (sample->mKeyframe != keyframe) {
-            NS_WARNING(nsPrintfCString("Frame incorrectly marked as %skeyframe "
-                                       "@ pts:%" PRId64 " dur:%" PRId64
-                                       " dts:%" PRId64,
-                                       keyframe ? "" : "non-",
+    if (Maybe<bool> knownKeyframe = mIndex->IsKeyframe(sample->mTime)) {
+      sample->mKeyframe = knownKeyframe.value();
+      if (aKeyframeFlagWasWrong) {
+        *aKeyframeFlagWasWrong = false;
+      }
+    } else {
+      const bool oldIsKeyframe = sample->mKeyframe;
+      if (mType == kH264 && !sample->mCrypto.IsEncrypted()) {
+        H264::FrameType type = H264::GetFrameType(sample);
+        switch (type) {
+          case H264::FrameType::I_FRAME_IDR:
+          case H264::FrameType::I_FRAME_OTHER:
+          case H264::FrameType::OTHER: {
+            bool keyframe = type == H264::FrameType::I_FRAME_IDR;
+            if (sample->mKeyframe != keyframe) {
+              NS_WARNING(nsPrintfCString(
+                             "Frame incorrectly marked as %skeyframe "
+                             "@ pts:%" PRId64 " dur:%" PRId64 " dts:%" PRId64,
+                             keyframe ? "" : "non-",
+                             sample->mTime.ToMicroseconds(),
+                             sample->mDuration.ToMicroseconds(),
+                             sample->mTimecode.ToMicroseconds())
+                             .get());
+              sample->mKeyframe = keyframe;
+            }
+            break;
+          }
+          case H264::FrameType::INVALID:
+            NS_WARNING(nsPrintfCString("Invalid H264 frame @ pts:%" PRId64
+                                       " dur:%" PRId64 " dts:%" PRId64,
                                        sample->mTime.ToMicroseconds(),
                                        sample->mDuration.ToMicroseconds(),
                                        sample->mTimecode.ToMicroseconds())
                            .get());
-            sample->mKeyframe = keyframe;
-          }
-          break;
+            // We could reject the sample now, however demuxer errors are fatal.
+            // So we keep the invalid frame, relying on the H264 decoder to
+            // handle the error later.
+            // TODO: make demuxer errors non-fatal.
+            break;
         }
-        case H264::FrameType::INVALID:
-          NS_WARNING(nsPrintfCString("Invalid H264 frame @ pts:%" PRId64
-                                     " dur:%" PRId64 " dts:%" PRId64,
-                                     sample->mTime.ToMicroseconds(),
-                                     sample->mDuration.ToMicroseconds(),
-                                     sample->mTimecode.ToMicroseconds())
-                         .get());
-          // We could reject the sample now, however demuxer errors are fatal.
-          // So we keep the invalid frame, relying on the H264 decoder to
-          // handle the error later.
-          // TODO: make demuxer errors non-fatal.
-          break;
-      }
-    } else if (mType == kHEVC && !sample->mCrypto.IsEncrypted()) {
+      } else if (mType == kHEVC && !sample->mCrypto.IsEncrypted()) {
 #ifdef MOZ_APPLEMEDIA
-      // VideoToolbox can return a bad data error if a CRA frame is the first
-      // sample after a seek. Only IDR_W_RADL/IDR_N_LP are safe starting points.
-      auto isKeyframe = H265::IsKeyFrame(sample);
+        // VideoToolbox can return a bad data error if a CRA frame is the first
+        // sample after a seek. Only IDR_W_RADL/IDR_N_LP are safe starting
+        // points.
+        auto isKeyframe = H265::IsKeyFrame(sample);
 #else
-      // On non-Apple platforms, the other RAP types are acceptable.
-      auto isKeyframe = H265::IsRandomAccessPoint(sample);
+        // On non-Apple platforms, the other RAP types are acceptable.
+        auto isKeyframe = H265::IsRandomAccessPoint(sample);
 #endif
-      bool keyframe = isKeyframe.isOk() && isKeyframe.unwrap();
-      if (sample->mKeyframe != keyframe) {
-        NS_WARNING(nsPrintfCString(
-                       "HEVC frame incorrectly marked as %skeyframe "
-                       "@ pts:%" PRId64 " dur:%" PRId64 " dts:%" PRId64,
-                       keyframe ? "" : "non-", sample->mTime.ToMicroseconds(),
-                       sample->mDuration.ToMicroseconds(),
-                       sample->mTimecode.ToMicroseconds())
-                       .get());
-        sample->mKeyframe = keyframe;
+        bool keyframe = isKeyframe.isOk() && isKeyframe.unwrap();
+        if (sample->mKeyframe != keyframe) {
+          NS_WARNING(nsPrintfCString(
+                         "HEVC frame incorrectly marked as %skeyframe "
+                         "@ pts:%" PRId64 " dur:%" PRId64 " dts:%" PRId64,
+                         keyframe ? "" : "non-", sample->mTime.ToMicroseconds(),
+                         sample->mDuration.ToMicroseconds(),
+                         sample->mTimecode.ToMicroseconds())
+                         .get());
+          sample->mKeyframe = keyframe;
+        }
+      } else if (mType == kVP9 && !sample->mCrypto.IsEncrypted()) {
+        bool keyframe = VPXDecoder::IsKeyframe(
+            Span<const uint8_t>(sample->Data(), sample->Size()),
+            VPXDecoder::Codec::VP9);
+        if (sample->mKeyframe != keyframe) {
+          NS_WARNING(nsPrintfCString(
+                         "Frame incorrectly marked as %skeyframe "
+                         "@ pts:%" PRId64 " dur:%" PRId64 " dts:%" PRId64,
+                         keyframe ? "" : "non-", sample->mTime.ToMicroseconds(),
+                         sample->mDuration.ToMicroseconds(),
+                         sample->mTimecode.ToMicroseconds())
+                         .get());
+          sample->mKeyframe = keyframe;
+        }
+      } else if (mType == kAV1 && !sample->mCrypto.IsEncrypted()) {
+        bool keyframe = AOMDecoder::IsKeyframe(
+            Span<const uint8_t>(sample->Data(), sample->Size()));
+        if (sample->mKeyframe != keyframe) {
+          NS_WARNING(nsPrintfCString(
+                         "Frame incorrectly marked as %skeyframe "
+                         "@ pts:%" PRId64 " dur:%" PRId64 " dts:%" PRId64,
+                         keyframe ? "" : "non-", sample->mTime.ToMicroseconds(),
+                         sample->mDuration.ToMicroseconds(),
+                         sample->mTimecode.ToMicroseconds())
+                         .get());
+          sample->mKeyframe = keyframe;
+        }
       }
-    } else if (mType == kVP9 && !sample->mCrypto.IsEncrypted()) {
-      bool keyframe = VPXDecoder::IsKeyframe(
-          Span<const uint8_t>(sample->Data(), sample->Size()),
-          VPXDecoder::Codec::VP9);
-      if (sample->mKeyframe != keyframe) {
-        NS_WARNING(nsPrintfCString(
-                       "Frame incorrectly marked as %skeyframe "
-                       "@ pts:%" PRId64 " dur:%" PRId64 " dts:%" PRId64,
-                       keyframe ? "" : "non-", sample->mTime.ToMicroseconds(),
-                       sample->mDuration.ToMicroseconds(),
-                       sample->mTimecode.ToMicroseconds())
-                       .get());
-        sample->mKeyframe = keyframe;
+      if (aKeyframeFlagWasWrong) {
+        *aKeyframeFlagWasWrong = sample->mKeyframe != oldIsKeyframe;
       }
-    } else if (mType == kAV1 && !sample->mCrypto.IsEncrypted()) {
-      bool keyframe = AOMDecoder::IsKeyframe(
-          Span<const uint8_t>(sample->Data(), sample->Size()));
-      if (sample->mKeyframe != keyframe) {
-        NS_WARNING(nsPrintfCString(
-                       "Frame incorrectly marked as %skeyframe "
-                       "@ pts:%" PRId64 " dur:%" PRId64 " dts:%" PRId64,
-                       keyframe ? "" : "non-", sample->mTime.ToMicroseconds(),
-                       sample->mDuration.ToMicroseconds(),
-                       sample->mTimecode.ToMicroseconds())
-                       .get());
-        sample->mKeyframe = keyframe;
-      }
+      mIterator->ConfirmCurrentIsKeyframe(sample->mKeyframe);
     }
   }
 
@@ -638,28 +732,50 @@ nsresult MP4TrackDemuxer::GetNextRandomAccessPoint(TimeUnit* aTime) {
 RefPtr<MP4TrackDemuxer::SkipAccessPointPromise>
 MP4TrackDemuxer::SkipToNextRandomAccessPoint(const TimeUnit& aTimeThreshold) {
   mQueuedSample = nullptr;
-  // Loop until we reach the next keyframe after the threshold.
-  uint32_t parsed = 0;
+  uint32_t skipped = 0;
   Maybe<SkipFailureHolder> failure;
-  while (true) {
-    auto next = GetNextSample();
-    if (next.isErr()) {
-      failure.emplace(next.unwrapErr(), parsed);
-      break;
-    }
+  SampleIterator savedIterator(*mIterator);
+  SampleLocation oldPos = mIterator->CurrentPosition();
+
+  // Skip to the next keyframe according to currently known keyframe map.
+  mIterator->TrySkipToNextKeyframe(aTimeThreshold);
+  auto next = GetNextSample();
+  skipped = AssertedCast<uint32_t>(
+      mIndex->NumSamplesBetween(oldPos, mIterator->CurrentPosition()));
+  if (next.isErr()) {
+    failure.emplace(next.unwrapErr(), skipped);
+  } else {
     RefPtr<MediaRawData> sample = next.unwrap();
-    parsed++;
     MOZ_DIAGNOSTIC_ASSERT(sample->HasValidTime());
-    if (sample->mKeyframe && sample->mTime >= aTimeThreshold) {
+    if (sample->mKeyframe) {
       mQueuedSample = sample;
-      break;
     }
   }
+  if (!mQueuedSample && !failure) {
+    // Fallback search from initial iterator position if skipping didn't work
+    *mIterator = savedIterator;
+    do {
+      auto next = GetNextSample();
+      if (next.isErr()) {
+        failure.emplace(next.unwrapErr(), skipped);
+        break;
+      }
+      skipped = AssertedCast<uint32_t>(
+          mIndex->NumSamplesBetween(oldPos, mIterator->CurrentPosition()));
+      RefPtr<MediaRawData> sample = next.unwrap();
+      MOZ_DIAGNOSTIC_ASSERT(sample->HasValidTime());
+      if (sample->mKeyframe && sample->mTime >= aTimeThreshold) {
+        mQueuedSample = sample;
+      }
+    } while (!mQueuedSample);
+  }
+  MOZ_ASSERT_DEBUG_OR_FUZZING(mQueuedSample || failure);
+
   SetNextKeyFrameTime();
   if (failure.isSome()) {
     return SkipAccessPointPromise::CreateAndReject(failure.extract(), __func__);
   }
-  return SkipAccessPointPromise::CreateAndResolve(parsed, __func__);
+  return SkipAccessPointPromise::CreateAndResolve(skipped, __func__);
 }
 
 TimeIntervals MP4TrackDemuxer::GetBuffered() {

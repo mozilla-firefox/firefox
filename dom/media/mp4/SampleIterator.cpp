@@ -14,6 +14,14 @@
 #include "SinfParser.h"
 #include "mozilla/RefPtr.h"
 
+#define LOG(arg, ...)                                                     \
+  DDMOZ_LOG_FMT(gMediaDemuxerLog, mozilla::LogLevel::Debug, "::{}: " arg, \
+                __func__, ##__VA_ARGS__)
+
+#define LOGV(arg, ...)                                                      \
+  DDMOZ_LOG_FMT(gMediaDemuxerLog, mozilla::LogLevel::Verbose, "::{}: " arg, \
+                __func__, ##__VA_ARGS__)
+
 using namespace mozilla::media;
 
 namespace mozilla {
@@ -70,6 +78,98 @@ bool RangeFinder::Contains(const MediaByteRange& aByteRange) {
   }
 
   return false;
+}
+
+Maybe<KeyframeMap::Entry> KeyframeMap::GetNearestUpTo(
+    const TimeUnit& aTime) const {
+  const auto ub = mMap.upper_bound(aTime);
+  if (ub != mMap.cbegin()) {
+    return Some(std::prev(ub)->second);
+  }
+  return Nothing();
+}
+
+Maybe<KeyframeMap::Entry> KeyframeMap::GetNextAfter(
+    const TimeUnit& aTime) const {
+  const auto lb = mMap.lower_bound(aTime);
+  if (lb != mMap.cend()) {
+    return Some(lb->second);
+  }
+  return Nothing();
+}
+
+Maybe<KeyframeMap::Entry> KeyframeMap::GetNextAfter(
+    const TimeUnit& aTime, const SampleLocation& aLocation) const {
+  for (auto it = mMap.lower_bound(aTime); it != mMap.cend(); ++it) {
+    if (aLocation <= it->second.mLocation) {
+      return Some(it->second);
+    }
+  }
+  return Nothing();
+}
+
+Maybe<KeyframeMap::Entry> KeyframeMap::Get(const media::TimeUnit& aTime) const {
+  const auto found = mMap.find(aTime);
+  if (found != mMap.cend()) {
+    return Some(found->second);
+  }
+  return Nothing();
+}
+
+void KeyframeMap::MarkKeyframe(const Interval& aCompositionRange,
+                               SampleLocation aLocation, KeyframeInfo aSource) {
+  if (!mMinSampleTime || aCompositionRange.mStart < mMinSampleTime.value()) {
+    mMinSampleTime = Some(aCompositionRange.mStart);
+  }
+  if (!mMaxSampleTime || mMaxSampleTime.value() < aCompositionRange.mEnd) {
+    mMaxSampleTime = Some(aCompositionRange.mEnd);
+  }
+  if (aSource == KeyframeInfo::Container &&
+      mCheckedIntervals.Contains(aCompositionRange)) {
+    // already have `Codec` info, ignore
+    return;
+  }
+  LOGV("Mark keyframe at PTS {} in moof {}, sample {} ({})",
+       aCompositionRange.mStart.ToMicroseconds(), aLocation.mMoof,
+       aLocation.mSample, EnumValueToString(aSource));
+  const Entry entry{aCompositionRange, aLocation, aSource};
+  if (aSource == KeyframeMap::KeyframeInfo::Codec) {
+    mCheckedIntervals.Add(aCompositionRange);
+    mMap.insert_or_assign(aCompositionRange.mStart, entry);
+  } else {
+    mMap.emplace(aCompositionRange.mStart, entry);
+  }
+}
+
+void KeyframeMap::MarkNotKeyframe(const Interval& aCompositionRange,
+                                  KeyframeInfo aSource) {
+  if (!mMinSampleTime || aCompositionRange.mStart < mMinSampleTime.value()) {
+    mMinSampleTime = Some(aCompositionRange.mStart);
+  }
+  if (!mMaxSampleTime || mMaxSampleTime.value() < aCompositionRange.mEnd) {
+    mMaxSampleTime = Some(aCompositionRange.mEnd);
+  }
+  if (aSource == KeyframeInfo::Container) {
+    // `Container` can not remove a `Codec` keyframe
+    const auto existing = mMap.find(aCompositionRange.mStart);
+    if (existing != mMap.cend() &&
+        existing->second.mSource == KeyframeInfo::Codec) {
+      return;
+    }
+  } else if (aSource == KeyframeInfo::Codec) {
+    mCheckedIntervals.Add(aCompositionRange);
+  }
+  LOGV("Mark not keyframe at PTS {} ({})",
+       aCompositionRange.mStart.ToMicroseconds(), EnumValueToString(aSource));
+  mMap.erase(aCompositionRange.mStart);
+}
+
+void KeyframeMap::Clear() {
+  LOGV("");
+  mCheckedIntervals.Clear();
+  mMinSampleTime.reset();
+  mMaxSampleTime.reset();
+  mMap.clear();
 }
 
 SampleIterator::SampleIterator(MP4SampleIndex* aIndex)
@@ -290,6 +390,31 @@ Result<already_AddRefed<MediaRawData>, MediaResult> SampleIterator::GetNext() {
   return sample.forget();
 }
 
+SampleLocation SampleIterator::CurrentPosition() const {
+  return {mCurrentMoof, mCurrentSample};
+}
+
+void SampleIterator::ConfirmCurrentIsKeyframe(bool aIsKeyframe) {
+  // must be called after GetNext(), which incremented mCurrentSample in Next()
+  if (NS_WARN_IF(mCurrentSample == 0) || NS_WARN_IF(mIndex->mIsAudio)) {
+    return;
+  }
+  SampleLocation location{mCurrentMoof, mCurrentSample - 1};
+  const Sample& sample = mIndex->mMoofParser
+                             ? mIndex->mMoofParser->Moofs()[location.mMoof]
+                                   .mIndex[location.mSample]
+                             : mIndex->mIndex[location.mSample];
+  KeyframeMap::Interval interval(sample.mCompositionRange.start,
+                                 sample.mCompositionRange.end);
+  if (aIsKeyframe) {
+    mIndex->mKeyframeMap.MarkKeyframe(interval, location,
+                                      KeyframeMap::KeyframeInfo::Codec);
+  } else {
+    mIndex->mKeyframeMap.MarkNotKeyframe(interval,
+                                         KeyframeMap::KeyframeInfo::Codec);
+  }
+}
+
 SampleDescriptionEntry* SampleIterator::GetSampleDescriptionEntry() {
   nsTArray<Moof>& moofs = mIndex->mMoofParser->Moofs();
   Moof& currentMoof = moofs[mCurrentMoof];
@@ -377,7 +502,7 @@ Result<Sample*, nsresult> SampleIterator::Get() {
   nsTArray<Moof>& moofs = mIndex->mMoofParser->Moofs();
   while (true) {
     if (mCurrentMoof == moofs.Length()) {
-      nsresult rv = mIndex->mMoofParser->BlockingReadNextMoof();
+      nsresult rv = mIndex->BlockingReadNextMoof();
       if (NS_FAILED(rv)) {
         return Err(rv);
       }
@@ -394,38 +519,121 @@ Result<Sample*, nsresult> SampleIterator::Get() {
 
 void SampleIterator::Next() { ++mCurrentSample; }
 
-void SampleIterator::Seek(const TimeUnit& aTime, SyncSampleMode aMode) {
-  size_t syncMoof = 0;
-  size_t syncSample = 0;
-  mCurrentMoof = 0;
+void SampleIterator::Seek(const TimeUnit& aTime) {
   mCurrentSample = 0;
-  while (Sample* sample = Get().unwrapOr(nullptr)) {
-    if (sample->mCompositionRange.start > aTime) {
-      break;
+  mCurrentMoof = 0;
+  if (!mIndex->mIsAudio) {
+    auto entry = mIndex->mKeyframeMap.GetNearestUpTo(aTime);
+    if (!entry && mIndex->HaveCheckedSurroundingKeyframes(aTime)) {
+      LOG("No keyframe before target {}, seek to next one after",
+          aTime.ToString());
+      entry = mIndex->mKeyframeMap.GetNextAfter(aTime);
     }
-    if (sample->mSync) {
-      syncMoof = mCurrentMoof;
-      syncSample = mCurrentSample;
-      if (aMode == SyncSampleMode::First) {
+    if (entry) {
+      const auto kfLoc = entry.value().mLocation;
+      mCurrentSample = kfLoc.mSample;
+      mCurrentMoof = kfLoc.mMoof;
+      MOZ_ASSERT_DEBUG_OR_FUZZING(!mIndex->mMoofParser ||
+                                  mCurrentMoof <
+                                      mIndex->mMoofParser->Moofs().Length());
+      return;
+    }
+  } else {
+    size_t prevMoof = mCurrentMoof;
+    size_t prevSample = mCurrentSample;
+    while (Sample* sample = Get().unwrapOr(nullptr)) {
+      if (sample->mCompositionRange.start == aTime) {
         break;
       }
+      if (sample->mCompositionRange.start > aTime) {
+        mCurrentSample = prevSample;
+        mCurrentMoof = prevMoof;
+        break;
+      }
+      prevSample = mCurrentSample;
+      prevMoof = mCurrentMoof;
+      Next();
     }
-    if (sample->mCompositionRange.start == aTime) {
+    if (!Get().unwrapOr(nullptr)) {
+      // go back if we seeked past the last sample
+      mCurrentSample = prevSample;
+      mCurrentMoof = prevMoof;
+    }
+    if (!mIndex->mIsAudio) {
+      LOGV("Fallback linear search: moof {}, sample {}", mCurrentMoof,
+           mCurrentSample);
+    }
+  }
+}
+
+void SampleIterator::TrySkipToNextKeyframe(const TimeUnit& aTimeThreshold) {
+  LOGV("Time threshold: {}", aTimeThreshold.ToString());
+  if (!mIndex->mIsAudio) {
+    bool doRetryLookup;
+    do {
+      doRetryLookup = false;
+      auto entry = mIndex->mKeyframeMap.GetNextAfter(
+          aTimeThreshold, SampleLocation(mCurrentMoof, mCurrentSample));
+      if (entry) {
+        mCurrentSample = entry.value().mLocation.mSample;
+        mCurrentMoof = entry.value().mLocation.mMoof;
+        LOGV("Skip to keyframe at moof {}, sample {}", mCurrentMoof,
+             mCurrentSample);
+        MOZ_ASSERT_DEBUG_OR_FUZZING(!mIndex->mMoofParser ||
+                                    mCurrentMoof <
+                                        mIndex->mMoofParser->Moofs().Length());
+        return;
+      } else if (mIndex->mMoofParser) {
+        // If the time threshold falls after the last moof, fetch the next one
+        // and try using the keyframe map again.
+        // This avoids the fallback search for well-formed fragmented files.
+        if (auto lastBefore =
+                mIndex->mKeyframeMap.GetNearestUpTo(aTimeThreshold)) {
+          const size_t threshMoof =
+              std::max(mCurrentMoof, lastBefore.value().mLocation.mMoof);
+          if (threshMoof + 1 == mIndex->mMoofParser->Moofs().Length()) {
+            if (NS_SUCCEEDED(mIndex->BlockingReadNextMoof())) {
+              LOGV("Loaded next moof, retry skip");
+              doRetryLookup = true;
+            }
+          }
+        }
+      } else if (mIndex->HaveCheckedSurroundingKeyframes(aTimeThreshold)) {
+        // We know there is no next keyframe, advance to the end.
+        mCurrentSample = mIndex->mIndex.Length();
+        return;
+      }
+    } while (doRetryLookup);
+  }
+  // Otherwise fall back to full search in the demuxer.
+  LOG("Fall back to exhaustive search");
+  while (Sample* sample = Get().unwrapOr(nullptr)) {
+    if (sample->mCompositionRange.start >= aTimeThreshold) {
       break;
     }
     Next();
   }
-  mCurrentMoof = syncMoof;
-  mCurrentSample = syncSample;
 }
 
 TimeUnit SampleIterator::GetNextKeyframeTime() {
   SampleIterator itr(*this);
-  while (Sample* sample = itr.Get().unwrapOr(nullptr)) {
-    if (sample->mSync) {
+  const Sample* sample = itr.Get().unwrapOr(nullptr);
+  if (sample) {
+    if (mIndex->mIsAudio) {
       return sample->mCompositionRange.start;
     }
-    itr.Next();
+    bool doRetry = mIndex->IsFragmented();
+    do {
+      if (auto entry = mIndex->mKeyframeMap.GetNextAfter(
+              sample->mCompositionRange.start)) {
+        return entry.value().mCompositionRange.mStart;
+      }
+      if (doRetry) {
+        // If fragmented, the next keyframe might be in a not yet loaded
+        // fragment.
+        doRetry = NS_SUCCEEDED(mIndex->BlockingReadNextMoof());
+      }
+    } while (doRetry);
   }
   return TimeUnit::Invalid();
 }
@@ -444,7 +652,6 @@ MP4SampleIndex::MP4SampleIndex(const IndiceWrapper& aIndices,
     }
     media::IntervalSet<TimeUnit> intervalTime;
     MediaByteRange intervalRange;
-    bool haveSync = false;
     bool progressive = true;
     int64_t lastOffset = 0;
     for (size_t i = 0; i < aIndices.Length(); i++) {
@@ -458,12 +665,6 @@ MP4SampleIndex::MP4SampleIndex(const IndiceWrapper& aIndices,
           indice.end_offset > uint64_t(INT64_MAX)) {
         mDataOffset.Clear();
         return;
-      }
-      if (indice.sync || mIsAudio) {
-        haveSync = true;
-      }
-      if (!haveSync) {
-        continue;
       }
       Sample sample;
       sample.mByteRange =
@@ -501,9 +702,21 @@ MP4SampleIndex::MP4SampleIndex(const IndiceWrapper& aIndices,
         intervalTime = media::IntervalSet<TimeUnit>();
         intervalRange = MediaByteRange();
       }
-      intervalTime += media::Interval<TimeUnit>(sample.mCompositionRange.start,
-                                                sample.mCompositionRange.end);
+      const media::Interval<TimeUnit> sampleInterval(
+          sample.mCompositionRange.start, sample.mCompositionRange.end);
+      intervalTime += sampleInterval;
       intervalRange = intervalRange.Span(sample.mByteRange);
+
+      if (!mIsAudio && sample.mSync) {
+        // prepopulate keyframe map using sync sample flags
+        mKeyframeMap.MarkKeyframe(sampleInterval, {0, mIndex.Length() - 1},
+                                  KeyframeMap::KeyframeInfo::Container);
+      } else if (!mIsAudio) {
+        mKeyframeMap.MarkNotKeyframe(
+            KeyframeMap::Interval(TimeUnit(indice.start_composition, timescale),
+                                  TimeUnit(indice.end_composition, timescale)),
+            KeyframeMap::KeyframeInfo::Container);
+      }
     }
 
     if (mDataOffset.Length() && progressive) {
@@ -525,6 +738,33 @@ MP4SampleIndex::MP4SampleIndex(const IndiceWrapper& aIndices,
 }
 
 MP4SampleIndex::~MP4SampleIndex() = default;
+
+nsresult MP4SampleIndex::BlockingReadNextMoof() {
+  MOZ_ASSERT_DEBUG_OR_FUZZING(mMoofParser);
+  if (!mMoofParser) {
+    return NS_ERROR_FAILURE;
+  }
+  LOGV("");
+  nsresult rv = mMoofParser->BlockingReadNextMoof();
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  const auto& moofIndex = mMoofParser->Moofs().LastElement().mIndex;
+  for (size_t i = 0; i < moofIndex.Length(); ++i) {
+    const auto& sample = moofIndex[i];
+    KeyframeMap::Interval interval(sample.mCompositionRange.start,
+                                   sample.mCompositionRange.end);
+    if (sample.mSync) {
+      mKeyframeMap.MarkKeyframe(
+          interval, SampleLocation{mMoofParser->Moofs().Length() - 1, i},
+          KeyframeMap::KeyframeInfo::Container);
+    } else {
+      mKeyframeMap.MarkNotKeyframe(interval,
+                                   KeyframeMap::KeyframeInfo::Container);
+    }
+  }
+  return rv;
+}
 
 void MP4SampleIndex::UpdateMoofIndex(const MediaByteRangeSet& aByteRanges) {
   UpdateMoofIndex(aByteRanges, false);
@@ -549,11 +789,32 @@ void MP4SampleIndex::UpdateMoofIndex(const MediaByteRangeSet& aByteRanges,
       break;
     }
   }
+  if (canEvict) {
+    mKeyframeMap.Clear();
+  }
   mMoofParser->RebuildFragmentedIndex(aByteRanges, &canEvict);
   if (canEvict) {
     // The moofparser got trimmed. Adjust all registered iterators.
     for (SampleIterator* iterator : mIterators) {
       iterator->mCurrentMoof -= moofs - 1;
+    }
+  }
+  if (!mIsAudio) {
+    for (size_t moofIdx = 0; moofIdx < mMoofParser->Moofs().Length();
+         ++moofIdx) {
+      const auto& moof = mMoofParser->Moofs()[moofIdx];
+      for (size_t i = 0; i < moof.mIndex.Length(); ++i) {
+        const auto& sample = moof.mIndex[i];
+        KeyframeMap::Interval interval(sample.mCompositionRange.start,
+                                       sample.mCompositionRange.end);
+        if (sample.mSync) {
+          mKeyframeMap.MarkKeyframe(interval, SampleLocation{moofIdx, i},
+                                    KeyframeMap::KeyframeInfo::Container);
+        } else {
+          mKeyframeMap.MarkNotKeyframe(interval,
+                                       KeyframeMap::KeyframeInfo::Container);
+        }
+      }
     }
   }
 }
@@ -694,6 +955,67 @@ uint64_t MP4SampleIndex::GetEvictionOffset(const TimeUnit& aTime) {
   return offset;
 }
 
+Maybe<bool> MP4SampleIndex::IsKeyframe(const TimeUnit& aTime) const {
+  if (!mKeyframeMap.HaveChecked(aTime)) {
+    return Nothing();
+  }
+  return Some(mKeyframeMap.Get(aTime).isSome());
+}
+
+size_t MP4SampleIndex::NumSamplesBetween(const SampleLocation& aStart,
+                                         const SampleLocation& aEnd) const {
+  MOZ_ASSERT_DEBUG_OR_FUZZING(aStart <= aEnd);
+  if (aStart > aEnd) {
+    return 0;
+  }
+  if (mMoofParser) {
+    const auto nMoofs = mMoofParser->Moofs().Length();
+    MOZ_ASSERT_DEBUG_OR_FUZZING(aEnd.mMoof < nMoofs);
+    if (aEnd.mMoof >= nMoofs) {
+      return 0;
+    }
+    const size_t startMoofLen =
+        mMoofParser->Moofs()[aStart.mMoof].mIndex.Length();
+    const size_t endMoofLen = mMoofParser->Moofs()[aEnd.mMoof].mIndex.Length();
+    MOZ_ASSERT_DEBUG_OR_FUZZING(aStart.mSample <= startMoofLen &&
+                                aEnd.mSample <= endMoofLen);
+    size_t count = startMoofLen - std::min(startMoofLen, aStart.mSample) +
+                   std::min(endMoofLen, aEnd.mSample);
+    for (size_t moof = aStart.mMoof + 1; moof < aEnd.mMoof; ++moof) {
+      count += mMoofParser->Moofs()[moof].mIndex.Length();
+    }
+    return count;
+  } else {
+    MOZ_ASSERT_DEBUG_OR_FUZZING(aEnd.mSample <= mIndex.Length());
+    if (aEnd.mSample > mIndex.Length()) {
+      return 0;
+    }
+    return aEnd.mSample - aStart.mSample;
+  }
+}
+
+bool MP4SampleIndex::HaveCheckedSurroundingKeyframes(
+    const TimeUnit& aTime) const {
+  const auto firstSample = mKeyframeMap.MinSampleTime();
+  const auto lastSample = mKeyframeMap.MaxSampleTime();
+  if (!firstSample || !lastSample) {
+    return false;
+  }
+  const Maybe<TimeUnit> nextAfter = mKeyframeMap.GetNextAfter(aTime).map(
+      [](KeyframeMap::Entry entry) { return entry.mCompositionRange.mEnd; });
+  if (mMoofParser && !nextAfter) {
+    // Past the last keyframe, but there might be more fragments after.
+    return false;
+  }
+  const TimeUnit rangeEnd = nextAfter.valueOr(lastSample.value());
+  const TimeUnit rangeStart = mKeyframeMap.GetNearestUpTo(aTime)
+                                  .map([](KeyframeMap::Entry entry) {
+                                    return entry.mCompositionRange.mStart;
+                                  })
+                                  .valueOr(firstSample.value());
+  return mKeyframeMap.HaveChecked(KeyframeMap::Interval(rangeStart, rangeEnd));
+}
+
 void MP4SampleIndex::RegisterIterator(SampleIterator* aIterator) {
   mIterators.AppendElement(aIterator);
 }
@@ -703,3 +1025,5 @@ void MP4SampleIndex::UnregisterIterator(SampleIterator* aIterator) {
 }
 
 }  // namespace mozilla
+
+#undef LOG
