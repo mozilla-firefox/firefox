@@ -2,23 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
-
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
   NimbusTelemetry: "resource://nimbus/lib/Telemetry.sys.mjs",
-  RecipeRunner: "resource://normandy/lib/RecipeRunner.sys.mjs",
   UnenrollmentCause: "resource://nimbus/lib/ExperimentManager.sys.mjs",
 });
 
 const SHIELD_LEARN_MORE_URL_PREF = "app.normandy.shieldLearnMoreUrl";
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "gOptOutStudiesEnabled",
-  "app.shield.optoutstudies.enabled"
-);
 
 /**
  * The module exported by this file.
@@ -103,13 +95,11 @@ ChromeUtils.defineLazyGetter(
       }
 
       /**
-       * Get if studies are enabled. This has to be in the parent process,
-       * since RecipeRunner is stateful, and can't be interacted with from
-       * content processes safely.
+       * Return whether or not studies are enabled.
        */
       async getStudiesEnabled() {
-        await lazy.RecipeRunner.initializedPromise.promise;
-        return lazy.RecipeRunner.enabled && lazy.gOptOutStudiesEnabled;
+        await lazy.ExperimentAPI.ready();
+        return lazy.ExperimentAPI.studiesEnabled;
       }
 
       async removeMessagingSystemExperiment(slug) {

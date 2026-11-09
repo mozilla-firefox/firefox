@@ -15,6 +15,9 @@ const lazy = XPCOMUtils.declareLazy({
   ExperimentManager: "resource://nimbus/lib/ExperimentManager.sys.mjs",
   FeatureManifest: "resource://nimbus/FeatureManifest.sys.mjs",
   FirstStartup: "resource://gre/modules/FirstStartup.sys.mjs",
+  LegacyHeartbeatFeature:
+    // eslint-disable-next-line mozilla/no-browser-refs-in-toolkit
+    "moz-src:///browser/components/nimbus/LegacyHeartbeatFeature.sys.mjs",
   NimbusMigrations: "resource://nimbus/lib/Migrations.sys.mjs",
   NimbusTelemetry: "resource://nimbus/lib/Telemetry.sys.mjs",
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
@@ -453,6 +456,10 @@ export const ExperimentAPI = new (class {
   _resetForTests() {
     this.#experimentLoader?.disable();
     this.#experimentLoader = null;
+
+    if (AppConstants.MOZ_APP_NAME === "firefox") {
+      lazy.LegacyHeartbeatFeature.uninit();
+    }
 
     lazy.AsyncShutdown.appShutdownConfirmed.removeBlocker(
       this._removeCrashReportAnnotator

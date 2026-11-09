@@ -1781,7 +1781,6 @@ export default [
       "toolkit/components/formautofill/FormAutofillPreferences.sys.mjs",
       "toolkit/components/formautofill/default/FormAutofillPrompter.sys.mjs",
       "toolkit/components/messaging-system/lib/SpecialMessageActions.sys.mjs",
-      "toolkit/components/normandy/actions/ShowHeartbeatAction.sys.mjs",
       "toolkit/components/passwordmgr/LoginAutoComplete.sys.mjs",
       "toolkit/components/passwordmgr/LoginHelper.sys.mjs",
       "toolkit/components/passwordmgr/LoginManagerParent.sys.mjs",

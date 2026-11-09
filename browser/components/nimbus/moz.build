@@ -9,6 +9,9 @@ MOZ_SRC_FILES += [
     "AboutStudies.sys.mjs",
     "AboutStudiesChild.sys.mjs",
     "AboutStudiesParent.sys.mjs",
+    "Heartbeat.sys.mjs",
+    "HeartbeatSurvey.sys.mjs",
+    "LegacyHeartbeatFeature.sys.mjs",
 ]
 
 JAR_MANIFESTS += ["jar.mn"]

@@ -7,6 +7,9 @@
 const { AboutStudies } = ChromeUtils.importESModule(
   "moz-src:///browser/components/nimbus/AboutStudies.sys.mjs"
 );
+const { HeartbeatSurvey } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/nimbus/HeartbeatSurvey.sys.mjs"
+);
 const { sinon } = ChromeUtils.importESModule(
   "resource://testing-common/Sinon.sys.mjs"
 );
@@ -16,7 +19,7 @@ sinon.assert.fail = function (message) {
   ok(false, message);
 };
 
-this.withPrefEnv = function (inPrefs) {
+function withPrefEnv(inPrefs) {
   return function wrapper(testFunc) {
     return async function inner(args) {
       await SpecialPowers.pushPrefEnv(inPrefs);
@@ -27,7 +30,7 @@ this.withPrefEnv = function (inPrefs) {
       }
     };
   };
-};
+}
 
 /**
  * Combine a list of functions right to left. The rightmost function is passed
@@ -43,7 +46,7 @@ this.withPrefEnv = function (inPrefs) {
  * @param {...Function} args
  *   Functions to compose from left to right.
  */
-this.decorate = function (...args) {
+function decorate(...args) {
   const funcs = Array.from(args);
   let decorated = funcs.pop();
   const origName = decorated.name;
@@ -53,7 +56,7 @@ this.decorate = function (...args) {
   }
   Object.defineProperty(decorated, "name", { value: origName });
   return decorated;
-};
+}
 
 /**
  * Wrapper around add_task for declaring tests that use several with-style
@@ -66,6 +69,63 @@ this.decorate = function (...args) {
  * @param {...Function} args
  *   Wrapper functions followed by the test function.
  */
-this.decorate_task = function (...args) {
+function decorate_task(...args) {
   return add_task(decorate(...args));
-};
+}
+
+let _recipeId = 1;
+function recipeFactory(overrides = {}) {
+  return Object.assign(
+    {
+      id: _recipeId++,
+      arguments: overrides.arguments || {},
+    },
+    overrides
+  );
+}
+
+class MockHeartbeat {
+  constructor() {
+    this.eventEmitter = new MockEventEmitter();
+  }
+}
+
+class MockEventEmitter {
+  constructor() {
+    this.once = sinon.stub();
+  }
+}
+
+function withStubbedHeartbeat() {
+  return function (testFunction) {
+    return async function wrappedTestFunction(args) {
+      const heartbeatInstanceStub = new MockHeartbeat();
+      const heartbeatClassStub = sinon.stub();
+      heartbeatClassStub.returns(heartbeatInstanceStub);
+      HeartbeatSurvey.overrideHeartbeatForTests(heartbeatClassStub);
+
+      try {
+        await testFunction({
+          ...args,
+          heartbeatClassStub,
+          heartbeatInstanceStub,
+        });
+      } finally {
+        HeartbeatSurvey.overrideHeartbeatForTests();
+      }
+    };
+  };
+}
+
+function withClearStorage() {
+  return function (testFunction) {
+    return async function wrappedTestFunction(args) {
+      await HeartbeatSurvey._clearAllStorage();
+      try {
+        await testFunction(args);
+      } finally {
+        await HeartbeatSurvey._clearAllStorage();
+      }
+    };
+  };
+}

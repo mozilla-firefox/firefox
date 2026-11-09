@@ -10,7 +10,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
   AttributionCode:
     "moz-src:///browser/components/attribution/AttributionCode.sys.mjs",
-  NormandyUtils: "resource://normandy/lib/NormandyUtils.sys.mjs",
   Region: "resource://gre/modules/Region.sys.mjs",
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   ShellService: "moz-src:///browser/components/shell/ShellService.sys.mjs",
@@ -125,7 +124,7 @@ export class ClientEnvironmentBase {
   static get legacyRandomizationId() {
     let id = Services.prefs.getCharPref("app.normandy.user_id", "");
     if (!id) {
-      id = lazy.NormandyUtils.generateUuid();
+      id = Services.uuid.generateUUID().toString().slice(1, -1);
       Services.prefs.setCharPref("app.normandy.user_id", id);
     }
     return id;

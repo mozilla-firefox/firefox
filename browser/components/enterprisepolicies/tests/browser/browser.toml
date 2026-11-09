@@ -96,8 +96,6 @@ support-files = [
 
 ["browser_policy_disable_safemode.js"]
 
-["browser_policy_disable_shield.js"]
-
 ["browser_policy_disable_telemetry.js"]
 
 ["browser_policy_display_bookmarks.js"]

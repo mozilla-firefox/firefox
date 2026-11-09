@@ -7,3 +7,6 @@ browser.jar:
   content/nimbus/about-studies/about-studies.html (content/about-studies/about-studies.html)
   content/nimbus/about-studies/about-studies.css (content/about-studies/about-studies.css)
   content/nimbus/about-studies/about-studies.js (content/about-studies/about-studies.js)
+  content/nimbus/shared/Heartbeat.css (shared/Heartbeat.css)
+  content/nimbus/shared/heartbeat-icon.svg (shared/heartbeat-icon.svg)
+  content/nimbus/schemas/LegacyHeartbeat.schema.json (schemas/LegacyHeartbeat.schema.json)

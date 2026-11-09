@@ -9,12 +9,12 @@ const { Normandy } = ChromeUtils.importESModule(
 const { NormandyMigrations } = ChromeUtils.importESModule(
   "resource://normandy/NormandyMigrations.sys.mjs"
 );
+const { NormandyTestUtils } = ChromeUtils.importESModule(
+  "resource://testing-common/NormandyTestUtils.sys.mjs"
+);
 ChromeUtils.defineESModuleGetters(this, {
   TestUtils: "resource://testing-common/TestUtils.sys.mjs",
 });
-
-/* import-globals-from utils.js */
-load("utils.js");
 
 NormandyTestUtils.init({ add_task });
 const { decorate_task } = NormandyTestUtils;

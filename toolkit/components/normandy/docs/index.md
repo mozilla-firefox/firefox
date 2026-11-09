@@ -20,8 +20,6 @@ at the *Remote Settings* level (integrity) and at the *Normandy* level
 :maxdepth: 1
 
 data-collection
-execution-model
-suitabilities
 services
 ```
 

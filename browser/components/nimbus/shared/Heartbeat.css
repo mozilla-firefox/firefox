@@ -44,7 +44,7 @@
 
 .messageImage.heartbeat {
   /* Needed for the animation to not get clipped when pulsing. */
-  margin-inline: 8px;
+  margin-inline: var(--space-small);
 }
 
 .messageImage.heartbeat.pulse-onshow {

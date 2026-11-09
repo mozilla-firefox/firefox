@@ -469,7 +469,6 @@ export default [
       "testing/web-platform/tests/webrtc/third_party/sdp/sdp.js",
       "testing/xpcshell/moz-http2/moz-http2-child.js",
       "testing/xpcshell/moz-http2/moz-http2.js",
-      "toolkit/components/normandy/actions/schemas/export_json.js",
       "toolkit/themes/shared/design-system/config/*.js",
       "toolkit/themes/shared/design-system/tests/try-runner.js",
       "tools/lint/stylelint/stylelint-plugin-mozilla/helpers.mjs",

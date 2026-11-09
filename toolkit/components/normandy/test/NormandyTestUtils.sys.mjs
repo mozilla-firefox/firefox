@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { Preferences } from "resource://gre/modules/Preferences.sys.mjs";
-import { RecipeRunner } from "resource://normandy/lib/RecipeRunner.sys.mjs";
 import { sinon } from "resource://testing-common/Sinon.sys.mjs";
 
 const UUID_REGEX =
@@ -69,70 +68,6 @@ export const NormandyTestUtils = {
 
   isUuid(s) {
     return UUID_REGEX.test(s);
-  },
-
-  withMockRecipeCollection(recipes = []) {
-    return function wrapper(testFunc) {
-      return async function inner(args) {
-        let recipeIds = new Set();
-        for (const recipe of recipes) {
-          if (!recipe.id || recipeIds.has(recipe.id)) {
-            throw new Error(
-              "To use withMockRecipeCollection each recipe must have a unique ID"
-            );
-          }
-          recipeIds.add(recipe.id);
-        }
-
-        let db = await RecipeRunner._remoteSettingsClientForTesting.db;
-        await db.clear();
-        const fakeSig = { signature: "abc" };
-
-        for (const recipe of recipes) {
-          await db.create({
-            id: `recipe-${recipe.id}`,
-            recipe,
-            signature: fakeSig,
-          });
-        }
-
-        // last modified needs to be some positive integer
-        let lastModified = await db.getLastModified();
-        await db.importChanges({}, lastModified + 1);
-
-        const mockRecipeCollection = {
-          async addRecipes(newRecipes) {
-            for (const recipe of newRecipes) {
-              if (!recipe.id || recipeIds.has(recipe)) {
-                throw new Error(
-                  "To use withMockRecipeCollection each recipe must have a unique ID"
-                );
-              }
-            }
-            db = await RecipeRunner._remoteSettingsClientForTesting.db;
-            for (const recipe of newRecipes) {
-              recipeIds.add(recipe.id);
-              await db.create({
-                id: `recipe-${recipe.id}`,
-                recipe,
-                signature: fakeSig,
-              });
-            }
-            lastModified = (await db.getLastModified()) || 0;
-            await db.importChanges({}, lastModified + 1);
-          },
-        };
-
-        try {
-          await testFunc({ ...args, mockRecipeCollection });
-        } finally {
-          db = await RecipeRunner._remoteSettingsClientForTesting.db;
-          await db.clear();
-          lastModified = await db.getLastModified();
-          await db.importChanges({}, lastModified + 1);
-        }
-      };
-    };
   },
 
   MockPreferences: class {

@@ -9,7 +9,6 @@ node-package-names:
         # properties.
         # If they are third party packages. then they should be listed in
         # ThirdPartyPaths.txt.
-        - toolkit/components/normandy/actions/schemas/package.json
         - tools/lint/eslint/eslint-plugin-mozilla/package.json
         - devtools/client/shared/components/reps/package.json
     extensions: ['json']

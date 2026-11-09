@@ -7,9 +7,6 @@ toolkit.jar:
   res/normandy/Normandy.sys.mjs (./Normandy.sys.mjs)
   res/normandy/NormandyMigrations.sys.mjs (./NormandyMigrations.sys.mjs)
   res/normandy/lib/ (./lib/*)
-  res/normandy/skin/  (./skin/*)
-  res/normandy/actions/ (./actions/*.sys.mjs)
-  res/normandy/actions/schemas/index.sys.mjs (./actions/schemas/index.sys.mjs)
   res/normandy/schemas/ (./schemas/*.schema.json)
 
 % resource normandy-vendor %res/normandy/vendor/ contentaccessible=yes

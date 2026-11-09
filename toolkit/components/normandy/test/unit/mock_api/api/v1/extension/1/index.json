@@ -1,9 +1,0 @@
-{
-  "id": 1,
-  "name": "Normandy Fixture",
-  "xpi": "http://example.com/browser/toolkit/components/normandy/test/browser/fixtures/normandy.xpi",
-  "extension_id": "normandydriver@example.com",
-  "version": "1.0",
-  "hash": "ade1c14196ec4fe0aa0a6ba40ac433d7c8d1ec985581a8a94d43dc58991b5171",
-  "hash_algorithm": "sha256"
-}

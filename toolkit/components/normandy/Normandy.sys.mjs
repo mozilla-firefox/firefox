@@ -12,7 +12,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
   LogManager: "resource://normandy/lib/LogManager.sys.mjs",
   NormandyMigrations: "resource://normandy/NormandyMigrations.sys.mjs",
-  RecipeRunner: "resource://normandy/lib/RecipeRunner.sys.mjs",
 });
 
 const UI_AVAILABLE_NOTIFICATION = "sessionstore-windows-restored";
@@ -79,7 +78,6 @@ export var Normandy = {
 
     await lazy.ExperimentAPI.init();
 
-    await lazy.RecipeRunner.init();
     Services.obs.notifyObservers(null, SHIELD_INIT_NOTIFICATION);
   },
 

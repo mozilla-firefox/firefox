@@ -1,13 +1,7 @@
 "use strict";
 
-const { BaseAction } = ChromeUtils.importESModule(
-  "resource://normandy/actions/BaseAction.sys.mjs"
-);
 const { ClientEnvironmentBase } = ChromeUtils.importESModule(
   "resource://gre/modules/components-utils/ClientEnvironment.sys.mjs"
-);
-const { Heartbeat } = ChromeUtils.importESModule(
-  "resource://normandy/lib/Heartbeat.sys.mjs"
 );
 
 const { NormandyTestUtils } = ChromeUtils.importESModule(
@@ -26,9 +20,9 @@ function heartbeatRecipeFactory(overrides = {}) {
       message: "test message",
       engagementButtonLabel: "",
       thanksMessage: "thanks!",
-      postAnswerUrl: "http://example.com",
+      postAnswerUrl: "https://example.com",
       learnMoreMessage: "Learn More",
-      learnMoreUrl: "http://example.com",
+      learnMoreUrl: "https://example.com",
       repeatOption: "once",
     },
   };
@@ -47,15 +41,8 @@ decorate_task(
   withClearStorage(),
   async function testHappyPath({ heartbeatClassStub, heartbeatInstanceStub }) {
     const recipe = heartbeatRecipeFactory();
-    const action = new ShowHeartbeatAction();
-    await action.processRecipe(recipe, BaseAction.suitability.FILTER_MATCH);
-    await action.finalize();
-    is(
-      action.state,
-      ShowHeartbeatAction.STATE_FINALIZED,
-      "Action should be finalized"
-    );
-    is(action.lastError, null, "No errors should have been thrown");
+    const survey = new HeartbeatSurvey();
+    await survey.run(recipe);
 
     const options = heartbeatClassStub.args[0][1];
     Assert.deepEqual(
@@ -100,12 +87,11 @@ decorate_task(
   withStubbedHeartbeat(),
   withClearStorage(),
   async function testRepeatGeneral({ heartbeatClassStub }) {
-    await ShowHeartbeatAction._setLastShown("recipe0", Date.now());
+    await HeartbeatSurvey._setLastShown("recipe0", Date.now());
     const recipe = heartbeatRecipeFactory();
 
-    const action = new ShowHeartbeatAction();
-    await action.processRecipe(recipe, BaseAction.suitability.FILTER_MATCH);
-    is(action.lastError, null, "No errors should have been thrown");
+    const survey = new HeartbeatSurvey();
+    await survey.run(recipe);
 
     is(
       heartbeatClassStub.args.length,
@@ -120,15 +106,14 @@ decorate_task(
   withStubbedHeartbeat(),
   withClearStorage(),
   async function testRepeatUnrelated({ heartbeatClassStub }) {
-    await ShowHeartbeatAction._setLastShown(
+    await HeartbeatSurvey._setLastShown(
       "recipe0",
       Date.now() - 25 * HOUR_IN_MS
     );
     const recipe = heartbeatRecipeFactory();
 
-    const action = new ShowHeartbeatAction();
-    await action.processRecipe(recipe, BaseAction.suitability.FILTER_MATCH);
-    is(action.lastError, null, "No errors should have been thrown");
+    const survey = new HeartbeatSurvey();
+    await survey.run(recipe);
 
     is(heartbeatClassStub.args.length, 1, "Heartbeat should be called once");
   }
@@ -142,14 +127,13 @@ decorate_task(
     const recipe = heartbeatRecipeFactory({
       arguments: { repeatOption: "once" },
     });
-    await ShowHeartbeatAction._setLastShown(
+    await HeartbeatSurvey._setLastShown(
       recipe.id,
       Date.now() - 25 * HOUR_IN_MS
     );
 
-    const action = new ShowHeartbeatAction();
-    await action.processRecipe(recipe, BaseAction.suitability.FILTER_MATCH);
-    is(action.lastError, null, "No errors should have been thrown");
+    const survey = new HeartbeatSurvey();
+    await survey.run(recipe);
 
     is(heartbeatClassStub.args.length, 0, "Heartbeat should not be called");
   }
@@ -167,21 +151,19 @@ decorate_task(
       },
     });
 
-    await ShowHeartbeatAction._setLastShown(
+    await HeartbeatSurvey._setLastShown(
       recipe.id,
       Date.now() - 25 * HOUR_IN_MS
     );
-    const action = new ShowHeartbeatAction();
-    await action.processRecipe(recipe, BaseAction.suitability.FILTER_MATCH);
-    is(action.lastError, null, "No errors should have been thrown");
+    const survey = new HeartbeatSurvey();
+    await survey.run(recipe);
     is(heartbeatClassStub.args.length, 0, "Heartbeat should not be called");
 
-    await ShowHeartbeatAction._setLastShown(
+    await HeartbeatSurvey._setLastShown(
       recipe.id,
       Date.now() - 50 * HOUR_IN_MS
     );
-    await action.processRecipe(recipe, BaseAction.suitability.FILTER_MATCH);
-    is(action.lastError, null, "No errors should have been thrown");
+    await survey.run(recipe);
     is(
       heartbeatClassStub.args.length,
       1,
@@ -193,9 +175,9 @@ decorate_task(
 /* generatePostAnswerURL shouldn't annotate empty strings */
 add_task(async function postAnswerEmptyString() {
   const recipe = heartbeatRecipeFactory({ arguments: { postAnswerUrl: "" } });
-  const action = new ShowHeartbeatAction();
+  const survey = new HeartbeatSurvey();
   is(
-    await action.generatePostAnswerURL(recipe),
+    await survey.generatePostAnswerURL(recipe),
     "",
     "an empty string should not be annotated"
   );
@@ -210,8 +192,8 @@ add_task(async function postAnswerUrl() {
       message: "Hello, World!",
     },
   });
-  const action = new ShowHeartbeatAction();
-  const url = new URL(await action.generatePostAnswerURL(recipe));
+  const survey = new HeartbeatSurvey();
+  const url = new URL(await survey.generatePostAnswerURL(recipe));
 
   is(
     url.searchParams.get("survey_id"),
@@ -263,8 +245,8 @@ add_task(async function postAnswerUrlNoOverwite() {
         "https://example.com/survey?utm_source=shady_tims_firey_fox",
     },
   });
-  const action = new ShowHeartbeatAction();
-  const url = new URL(await action.generatePostAnswerURL(recipe));
+  const survey = new HeartbeatSurvey();
+  const url = new URL(await survey.generatePostAnswerURL(recipe));
   is(
     url.searchParams.get("utm_source"),
     "shady_tims_firey_fox",
@@ -280,9 +262,9 @@ add_task(async function postAnswerUrlUserIdIfRequested() {
   const recipeWithoutId = heartbeatRecipeFactory({
     arguments: { includeTelemetryUUID: false },
   });
-  const action = new ShowHeartbeatAction();
+  const survey = new HeartbeatSurvey();
 
-  const urlWithId = new URL(await action.generatePostAnswerURL(recipeWithId));
+  const urlWithId = new URL(await survey.generatePostAnswerURL(recipeWithId));
   is(
     urlWithId.searchParams.get("userId"),
     ClientEnvironmentBase.legacyRandomizationId,
@@ -290,7 +272,7 @@ add_task(async function postAnswerUrlUserIdIfRequested() {
   );
 
   const urlWithoutId = new URL(
-    await action.generatePostAnswerURL(recipeWithoutId)
+    await survey.generatePostAnswerURL(recipeWithoutId)
   );
   ok(!urlWithoutId.searchParams.has("userId"), "userId should not be included");
 });
@@ -306,14 +288,14 @@ decorate_task(
     const recipeWithId = heartbeatRecipeFactory({
       arguments: { surveyId: "test-id", includeTelemetryUUID: true },
     });
-    const action = new ShowHeartbeatAction();
+    const survey = new HeartbeatSurvey();
     is(
-      action.generateSurveyId(recipeWithoutId),
+      survey.generateSurveyId(recipeWithoutId),
       "test-id",
       "userId should not be included if not requested"
     );
     is(
-      action.generateSurveyId(recipeWithId),
+      survey.generateSurveyId(recipeWithId),
       `test-id::${ClientEnvironmentBase.legacyRandomizationId}`,
       "userId should be included if requested"
     );
@@ -325,27 +307,27 @@ decorate_task(
   withClearStorage(),
   async function testProfileDatastoreServiceStorage() {
     // Make sure values return null before being set
-    Assert.equal(await ShowHeartbeatAction._getLastShown(), null);
-    Assert.equal(await ShowHeartbeatAction._getLastInteraction(), null);
+    Assert.equal(await HeartbeatSurvey._getLastShown(), null);
+    Assert.equal(await HeartbeatSurvey._getLastInteraction(), null);
 
     // Set values to check
-    await ShowHeartbeatAction._setLastShown("recipe1", 1);
-    await ShowHeartbeatAction._setLastShown("recipe2", 2);
-    await ShowHeartbeatAction._setLastInteraction("recipe1", 3);
-    await ShowHeartbeatAction._setLastInteraction("recipe2", 4);
+    await HeartbeatSurvey._setLastShown("recipe1", 1);
+    await HeartbeatSurvey._setLastShown("recipe2", 2);
+    await HeartbeatSurvey._setLastInteraction("recipe1", 3);
+    await HeartbeatSurvey._setLastInteraction("recipe2", 4);
 
     // Check that they are available
-    Assert.equal(await ShowHeartbeatAction._getLastShown("recipe1"), 1);
-    Assert.equal(await ShowHeartbeatAction._getLastShown("recipe2"), 2);
-    Assert.equal(await ShowHeartbeatAction._getLastShown(), 2);
-    Assert.equal(await ShowHeartbeatAction._getLastInteraction("recipe1"), 3);
-    Assert.equal(await ShowHeartbeatAction._getLastInteraction("recipe2"), 4);
-    Assert.equal(await ShowHeartbeatAction._getLastInteraction(), 4);
+    Assert.equal(await HeartbeatSurvey._getLastShown("recipe1"), 1);
+    Assert.equal(await HeartbeatSurvey._getLastShown("recipe2"), 2);
+    Assert.equal(await HeartbeatSurvey._getLastShown(), 2);
+    Assert.equal(await HeartbeatSurvey._getLastInteraction("recipe1"), 3);
+    Assert.equal(await HeartbeatSurvey._getLastInteraction("recipe2"), 4);
+    Assert.equal(await HeartbeatSurvey._getLastInteraction(), 4);
 
     // Check that clearing the storage removes data from multiple prefixes.
-    await ShowHeartbeatAction._clearAllStorage();
-    Assert.equal(await ShowHeartbeatAction._getLastShown("recipe1"), null);
-    Assert.equal(await ShowHeartbeatAction._getLastShown("recipe2"), null);
-    Assert.equal(await ShowHeartbeatAction._getLastShown(), null);
+    await HeartbeatSurvey._clearAllStorage();
+    Assert.equal(await HeartbeatSurvey._getLastShown("recipe1"), null);
+    Assert.equal(await HeartbeatSurvey._getLastShown("recipe2"), null);
+    Assert.equal(await HeartbeatSurvey._getLastShown(), null);
   }
 );

@@ -6,8 +6,8 @@ const { TelemetryUtils } = ChromeUtils.importESModule(
 const { Normandy } = ChromeUtils.importESModule(
   "resource://normandy/Normandy.sys.mjs"
 );
-const { RecipeRunner } = ChromeUtils.importESModule(
-  "resource://normandy/lib/RecipeRunner.sys.mjs"
+const { ExperimentAPI } = ChromeUtils.importESModule(
+  "resource://nimbus/ExperimentAPI.sys.mjs"
 );
 
 decorate_task(
@@ -36,9 +36,9 @@ decorate_task(
   }
 );
 
-decorate_task(withStub(RecipeRunner, "init"), async function testStartup() {
+decorate_task(withStub(ExperimentAPI, "init"), async function testStartup() {
   const initObserved = TestUtils.topicObserved("shield-init-complete");
   await Normandy.finishInit();
-  ok(RecipeRunner.init.called, "startup calls RecipeRunner.init");
+  ok(ExperimentAPI.init.called, "startup calls ExperimentAPI.init");
   await initObserved;
 });

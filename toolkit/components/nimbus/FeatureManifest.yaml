@@ -4342,8 +4342,8 @@ legacyHeartbeat:
   owner: beth@mozilla.com
   hasExposure: false
   schema:
-    uri: "resource://normandy/schemas/LegacyHeartbeat.schema.json"
-    path: "toolkit/components/normandy/schemas/LegacyHeartbeat.schema.json"
+    uri: "chrome://nimbus/content/schemas/LegacyHeartbeat.schema.json"
+    path: "browser/components/nimbus/schemas/LegacyHeartbeat.schema.json"
   variables:
     survey:
       type: json

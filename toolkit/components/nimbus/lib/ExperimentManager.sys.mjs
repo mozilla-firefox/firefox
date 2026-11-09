@@ -11,10 +11,12 @@ const lazy = XPCOMUtils.declareLazy({
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
   ExperimentStore: "resource://nimbus/lib/ExperimentStore.sys.mjs",
   FirstStartup: "resource://gre/modules/FirstStartup.sys.mjs",
+  LegacyHeartbeatFeature:
+    // eslint-disable-next-line mozilla/no-browser-refs-in-toolkit
+    "moz-src:///browser/components/nimbus/LegacyHeartbeatFeature.sys.mjs",
   NimbusEnrollments: "resource://nimbus/lib/Enrollments.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   NimbusTelemetry: "resource://nimbus/lib/Telemetry.sys.mjs",
-  NormandyUtils: "resource://normandy/lib/NormandyUtils.sys.mjs",
   PrefFlipsFeature: "resource://nimbus/lib/PrefFlipsFeature.sys.mjs",
   PrefUtils: "moz-src:///toolkit/modules/PrefUtils.sys.mjs",
   EnrollmentsContext:
@@ -392,6 +394,8 @@ export class ExperimentManager {
 
       Services.fog.applyServerKnobsConfig(JSON.stringify(cfg));
     });
+
+    lazy.LegacyHeartbeatFeature.init();
   }
 
   /**
@@ -1450,7 +1454,7 @@ export class ExperimentManager {
     }
 
     while (Object.keys(branchValues).length < branches.length + includeNot) {
-      const id = lazy.NormandyUtils.generateUuid();
+      const id = Services.uuid.generateUUID().toString().slice(1, -1);
       const enrolls = await lazy.Sampling.bucketSample(
         [id, namespace],
         start,

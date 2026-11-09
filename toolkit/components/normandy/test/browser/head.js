@@ -1,12 +1,6 @@
 const { Preferences } = ChromeUtils.importESModule(
   "resource://gre/modules/Preferences.sys.mjs"
 );
-const { NormandyApi } = ChromeUtils.importESModule(
-  "resource://normandy/lib/NormandyApi.sys.mjs"
-);
-const { ShowHeartbeatAction } = ChromeUtils.importESModule(
-  "resource://normandy/actions/ShowHeartbeatAction.sys.mjs"
-);
 
 const { sinon } = ChromeUtils.importESModule(
   "resource://testing-common/Sinon.sys.mjs"
@@ -15,36 +9,6 @@ const { sinon } = ChromeUtils.importESModule(
 // Make sinon assertions fail in a way that mochitest understands
 sinon.assert.fail = function (message) {
   ok(false, message);
-};
-
-this.withMockNormandyApi = function () {
-  return function (testFunction) {
-    return async function inner(args) {
-      const mockNormandyApi = {
-        actions: [],
-        recipes: [],
-        implementations: {},
-        extensionDetails: {},
-      };
-
-      // Use callsFake instead of resolves so that the current values in mockApi are used.
-      mockNormandyApi.fetchExtensionDetails = sinon
-        .stub(NormandyApi, "fetchExtensionDetails")
-        .callsFake(async extensionId => {
-          const details = mockNormandyApi.extensionDetails[extensionId];
-          if (!details) {
-            throw new Error(`Missing extension details for ${extensionId}`);
-          }
-          return details;
-        });
-
-      try {
-        await testFunction({ ...args, mockNormandyApi });
-      } finally {
-        mockNormandyApi.fetchExtensionDetails.restore();
-      }
-    };
-  };
 };
 
 const preferenceBranches = {
@@ -212,60 +176,3 @@ this.withSpy = function (object, method, { as = `${method}Spy` } = {}) {
     };
   };
 };
-
-let _recipeId = 1;
-this.recipeFactory = function (overrides = {}) {
-  return Object.assign(
-    {
-      id: _recipeId++,
-      arguments: overrides.arguments || {},
-    },
-    overrides
-  );
-};
-
-class MockHeartbeat {
-  constructor() {
-    this.eventEmitter = new MockEventEmitter();
-  }
-}
-
-class MockEventEmitter {
-  constructor() {
-    this.once = sinon.stub();
-  }
-}
-
-function withStubbedHeartbeat() {
-  return function (testFunction) {
-    return async function wrappedTestFunction(args) {
-      const heartbeatInstanceStub = new MockHeartbeat();
-      const heartbeatClassStub = sinon.stub();
-      heartbeatClassStub.returns(heartbeatInstanceStub);
-      ShowHeartbeatAction.overrideHeartbeatForTests(heartbeatClassStub);
-
-      try {
-        await testFunction({
-          ...args,
-          heartbeatClassStub,
-          heartbeatInstanceStub,
-        });
-      } finally {
-        ShowHeartbeatAction.overrideHeartbeatForTests();
-      }
-    };
-  };
-}
-
-function withClearStorage() {
-  return function (testFunction) {
-    return async function wrappedTestFunction(args) {
-      ShowHeartbeatAction._clearAllStorage();
-      try {
-        await testFunction(args);
-      } finally {
-        ShowHeartbeatAction._clearAllStorage();
-      }
-    };
-  };
-}

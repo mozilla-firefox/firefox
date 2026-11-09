@@ -2,6 +2,12 @@
 tags = "nimbus"
 head = "head.js"
 
+["browser_Heartbeat.js"]
+
+["browser_HeartbeatSurvey.js"]
+
+["browser_LegacyHeartbeatFeature.js"]
+
 ["browser_about_preferences.js"]
 
 ["browser_about_studies.js"]

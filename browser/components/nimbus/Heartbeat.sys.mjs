@@ -2,33 +2,41 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { AsyncShutdown } from "resource://gre/modules/AsyncShutdown.sys.mjs";
 import { TelemetryController } from "resource://gre/modules/TelemetryController.sys.mjs";
 import { clearTimeout, setTimeout } from "resource://gre/modules/Timer.sys.mjs";
-import { CleanupManager } from "resource://normandy/lib/CleanupManager.sys.mjs";
-import { EventEmitter } from "resource://normandy/lib/EventEmitter.sys.mjs";
-import { LogManager } from "resource://normandy/lib/LogManager.sys.mjs";
+import { EventEmitter } from "resource://gre/modules/EventEmitter.sys.mjs";
 
 const PREF_SURVEY_DURATION = "browser.uitour.surveyDuration";
 const NOTIFICATION_TIME = 3000;
 const HEARTBEAT_CSS_URI = Services.io.newURI(
-  "resource://normandy/skin/shared/Heartbeat.css"
+  "chrome://nimbus/content/shared/Heartbeat.css"
 );
-const log = LogManager.getLogger("heartbeat");
+const lazy = {};
+
+ChromeUtils.defineLazyGetter(lazy, "log", () => {
+  const { Logger } = ChromeUtils.importESModule(
+    "resource://messaging-system/lib/Logger.sys.mjs"
+  );
+  return new Logger("Heartbeat");
+});
 const windowsWithInjectedCss = new WeakSet();
 let anyWindowsWithInjectedCss = false;
 
-// Add cleanup handler for CSS injected into windows by Heartbeat
-CleanupManager.addCleanupHandler(() => {
-  if (anyWindowsWithInjectedCss) {
-    for (let window of Services.wm.getEnumerator("navigator:browser")) {
-      if (windowsWithInjectedCss.has(window)) {
-        const utils = window.windowUtils;
-        utils.removeSheet(HEARTBEAT_CSS_URI, window.AGENT_SHEET);
-        windowsWithInjectedCss.delete(window);
+AsyncShutdown.appShutdownConfirmed.addBlocker(
+  "LegacyHeartbeatFeature: cleaning up injected CSS",
+  () => {
+    if (anyWindowsWithInjectedCss) {
+      for (let window of Services.wm.getEnumerator("navigator:browser")) {
+        if (windowsWithInjectedCss.has(window)) {
+          const utils = window.windowUtils;
+          utils.removeSheet(HEARTBEAT_CSS_URI, window.AGENT_SHEET);
+          windowsWithInjectedCss.delete(window);
+        }
       }
     }
   }
-});
+);
 
 /**
  * Show the Heartbeat UI to request user feedback.
@@ -174,7 +182,7 @@ export var Heartbeat = class {
           "heartbeat-" + this.options.flowId,
           {
             label: this.options.message,
-            image: "resource://normandy/skin/shared/heartbeat-icon.svg",
+            image: "chrome://nimbus/content/shared/heartbeat-icon.svg",
             priority: this.notificationBox.PRIORITY_SYSTEM,
             eventCallback: eventType => {
               if (eventType !== "removed") {
@@ -211,12 +219,16 @@ export var Heartbeat = class {
       this.close();
     }, surveyDuration);
 
-    CleanupManager.addCleanupHandler(this.close);
+    this.shutdownBlocker = () => this.close();
+    AsyncShutdown.appShutdownConfirmed.addBlocker(
+      "LegacyHeartbeatFeature: closing survey",
+      this.shutdownBlocker
+    );
   }
 
   maybeNotifyHeartbeat(name, data = {}) {
     if (this.pingSent) {
-      log.warn(
+      lazy.log.warn(
         "Heartbeat event received after Telemetry ping sent. name:",
         name,
         "data:",
@@ -260,7 +272,7 @@ export var Heartbeat = class {
         sendPing = true;
       },
       default: () => {
-        log.error("Unrecognized Heartbeat event:", name);
+        lazy.log.error("Unrecognized Heartbeat event:", name);
       },
     };
 
@@ -279,7 +291,7 @@ export var Heartbeat = class {
         }
       }
 
-      log.debug("Sending telemetry");
+      lazy.log.debug("Sending telemetry");
       TelemetryController.submitExternalPing("heartbeat", payload, {
         addClientId: true,
         addEnvironment: true,
@@ -366,7 +378,7 @@ export var Heartbeat = class {
   }
 
   close() {
-    this.noticePromise.then(noticeEl =>
+    return this.noticePromise.then(noticeEl =>
       this.notificationBox.removeNotification(noticeEl)
     );
   }
@@ -386,7 +398,9 @@ export var Heartbeat = class {
     this.noticePromise = null;
     this.ratingContainer = null;
     this.eventEmitter = null;
-    // Ensure we don't re-enter and release the CleanupManager's reference to us:
-    CleanupManager.removeCleanupHandler(this.close);
+    if (this.shutdownBlocker) {
+      AsyncShutdown.appShutdownConfirmed.removeBlocker(this.shutdownBlocker);
+      this.shutdownBlocker = null;
+    }
   }
 };

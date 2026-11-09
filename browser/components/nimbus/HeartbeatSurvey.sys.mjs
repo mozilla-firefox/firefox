@@ -1,20 +1,15 @@
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-
-import { BaseAction } from "resource://normandy/actions/BaseAction.sys.mjs";
-
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  ActionSchemas: "resource://normandy/actions/schemas/index.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
   ConfigSearchEngine:
     "moz-src:///toolkit/components/search/ConfigSearchEngine.sys.mjs",
   ClientEnvironmentBase:
     "resource://gre/modules/components-utils/ClientEnvironment.sys.mjs",
-  Heartbeat: "resource://normandy/lib/Heartbeat.sys.mjs",
-  NormandyUtils: "resource://normandy/lib/NormandyUtils.sys.mjs",
+  Heartbeat: "moz-src:///browser/components/nimbus/Heartbeat.sys.mjs",
   ProfilesDatastoreService:
     "moz-src:///toolkit/profile/ProfilesDatastoreService.sys.mjs",
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
@@ -22,10 +17,17 @@ ChromeUtils.defineESModuleGetters(lazy, {
   UpdateUtils: "resource://gre/modules/UpdateUtils.sys.mjs",
 });
 
+ChromeUtils.defineLazyGetter(lazy, "log", () => {
+  const { Logger } = ChromeUtils.importESModule(
+    "resource://messaging-system/lib/Logger.sys.mjs"
+  );
+  return new Logger("HeartbeatSurvey");
+});
+
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const HEARTBEAT_THROTTLE = 1 * DAY_IN_MS;
 
-export class ShowHeartbeatAction extends BaseAction {
+export class HeartbeatSurvey {
   static Heartbeat = lazy.Heartbeat;
 
   static overrideHeartbeatForTests(newHeartbeat) {
@@ -36,11 +38,7 @@ export class ShowHeartbeatAction extends BaseAction {
     }
   }
 
-  get schema() {
-    return lazy.ActionSchemas["show-heartbeat"];
-  }
-
-  async _run(recipe) {
+  async run(recipe) {
     const {
       message,
       engagementButtonLabel,
@@ -53,7 +51,7 @@ export class ShowHeartbeatAction extends BaseAction {
       return;
     }
 
-    this.log.debug(
+    lazy.log.debug(
       `Heartbeat for recipe ${recipe.id} showing prompt "${message}"`
     );
     const targetWindow = lazy.BrowserWindowTracker.getTopWindow({
@@ -64,7 +62,7 @@ export class ShowHeartbeatAction extends BaseAction {
       throw new Error("No window to show heartbeat in");
     }
 
-    const heartbeat = new ShowHeartbeatAction.Heartbeat(targetWindow, {
+    const heartbeat = new HeartbeatSurvey.Heartbeat(targetWindow, {
       surveyId: this.generateSurveyId(recipe),
       message,
       engagementButtonLabel,
@@ -72,7 +70,7 @@ export class ShowHeartbeatAction extends BaseAction {
       learnMoreMessage,
       learnMoreUrl,
       postAnswerUrl: await this.generatePostAnswerURL(recipe),
-      flowId: lazy.NormandyUtils.generateUuid(),
+      flowId: Services.uuid.generateUUID().toString().slice(1, -1),
       surveyVersion: recipe.revision_id,
     });
 
@@ -89,13 +87,13 @@ export class ShowHeartbeatAction extends BaseAction {
   async shouldShow(recipe) {
     const { repeatOption, repeatEvery } = recipe.arguments;
     // Don't show any heartbeats to a user more than once per throttle period
-    let lastShown = await ShowHeartbeatAction._getLastShown();
+    let lastShown = await HeartbeatSurvey._getLastShown();
     if (lastShown) {
       const duration = new Date() - lastShown;
       if (duration < HEARTBEAT_THROTTLE) {
         // show the number of hours since the last heartbeat, with at most 1 decimal point.
         const hoursAgo = Math.floor(duration / 1000 / 60 / 6) / 10;
-        this.log.debug(
+        lazy.log.debug(
           `A heartbeat was shown too recently (${hoursAgo} hours), skipping recipe ${recipe.id}.`
         );
         return false;
@@ -105,8 +103,8 @@ export class ShowHeartbeatAction extends BaseAction {
     switch (repeatOption) {
       case "once": {
         // Don't show if we've ever shown before
-        if (await ShowHeartbeatAction._getLastShown(recipe.id)) {
-          this.log.debug(
+        if (await HeartbeatSurvey._getLastShown(recipe.id)) {
+          lazy.log.debug(
             `Heartbeat for "once" recipe ${recipe.id} has been shown before, skipping.`
           );
           return false;
@@ -128,7 +126,7 @@ export class ShowHeartbeatAction extends BaseAction {
           if (duration < repeatEvery * DAY_IN_MS) {
             // show the number of hours since the last time this hearbeat was shown, with at most 1 decimal point.
             const hoursAgo = Math.floor(duration / 1000 / 60 / 6) / 10;
-            this.log.debug(
+            lazy.log.debug(
               `Heartbeat for "xdays" recipe ${recipe.id} ran in the last ${repeatEvery} days, skipping. (${hoursAgo} hours ago)`
             );
             return false;
@@ -138,7 +136,7 @@ export class ShowHeartbeatAction extends BaseAction {
     }
 
     let now = Date.now();
-    await ShowHeartbeatAction._setLastShown(recipe.id, now);
+    await HeartbeatSurvey._setLastShown(recipe.id, now);
 
     return true;
   }
@@ -211,7 +209,7 @@ export class ShowHeartbeatAction extends BaseAction {
   }
 
   updateLastInteraction(recipeId) {
-    ShowHeartbeatAction._setLastInteraction(recipeId, Date.now());
+    HeartbeatSurvey._setLastInteraction(recipeId, Date.now());
   }
 
   /**

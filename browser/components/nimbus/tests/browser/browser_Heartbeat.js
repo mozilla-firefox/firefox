@@ -1,7 +1,7 @@
 "use strict";
 
 const { Heartbeat } = ChromeUtils.importESModule(
-  "resource://normandy/lib/Heartbeat.sys.mjs"
+  "moz-src:///browser/components/nimbus/Heartbeat.sys.mjs"
 );
 
 /**
@@ -75,7 +75,7 @@ async function assertTelemetrySent(hb, eventNames) {
     },
     async () => {
       return new Promise(resolve => {
-        hb.eventEmitter.once("TelemetrySent", payload => {
+        hb.eventEmitter.once("TelemetrySent", (_event, payload) => {
           const events = [0];
           for (const name of eventNames) {
             Assert.equal(
