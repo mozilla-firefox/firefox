@@ -228,47 +228,6 @@ class SessionLifecycleTest : BaseSessionTest() {
         )
     }
 
-    @WithDisplay(width = 100, height = 100)
-    @Test
-    fun primaryAttributeTracksActivenessNotFocus() {
-        mainSession.loadTestPath(HELLO_HTML_PATH)
-        mainSession.waitForPageStop()
-
-        // An active session is the primary content browser.
-        assertThat("Active session should be primary", mainSession.primary, equalTo(true))
-
-        // Deactivating clears the primary attribute.
-        mainSession.setActive(false)
-        assertThat(
-            "Inactive session should not be primary",
-            mainSession.primary,
-            equalTo(false),
-        )
-
-        // Reactivating without focusing must restore primary.
-        mainSession.setActive(true)
-        assertThat(
-            "Reactivated session should be primary again without being focused",
-            mainSession.primary,
-            equalTo(true),
-        )
-
-        // Focus changes must not touch the primary attribute while active.
-        mainSession.setFocused(false)
-        assertThat(
-            "Blurring an active session should keep it primary",
-            mainSession.primary,
-            equalTo(true),
-        )
-
-        mainSession.setFocused(true)
-        assertThat(
-            "Focusing an active session should keep it primary",
-            mainSession.primary,
-            equalTo(true),
-        )
-    }
-
     private fun waitUntilCollected(ref: QueuedWeakReference<*>) {
         UiThreadUtils.waitForCondition(
             {

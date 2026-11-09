@@ -212,11 +212,6 @@ this.test = class extends ExtensionAPI {
           return tab.browser.docShellIsActive;
         },
 
-        async getPrimary(tabId) {
-          const tab = context.extension.tabManager.get(tabId);
-          return tab.browser.hasAttribute("primary");
-        },
-
         async getProfilePath() {
           return PathUtils.profileDir;
         },

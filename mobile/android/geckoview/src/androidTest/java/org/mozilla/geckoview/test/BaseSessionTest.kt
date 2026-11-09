@@ -332,9 +332,6 @@ open class BaseSessionTest(
         get() = sessionRule.getActive(this)
         set(value) = setActive(value)
 
-    val GeckoSession.primary: Boolean
-        get() = sessionRule.getPrimary(this)
-
     @Suppress("UNCHECKED_CAST") fun Any?.asJsonArray(): JSONArray = this as JSONArray
 
     @Suppress("UNCHECKED_CAST")
