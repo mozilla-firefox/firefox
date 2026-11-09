@@ -32,6 +32,8 @@ const OTHER_CONTAINER = 1;
 const OA_DEFAULT = {};
 const OA_BOUND = { userContextId: BOUND_CONTAINER };
 const OA_OTHER = { userContextId: OTHER_CONTAINER };
+// A container no tab in this file runs in.
+const OA_UNUSED = { userContextId: 3 };
 
 // A host under SITE_B, to which an association can be bound on its own.
 const SITE_SUB_B = `test1.${SITE_B}`;
@@ -1003,6 +1005,233 @@ add_task(async function test_record_follows_two_switches() {
       BrowserTestUtils.removeTab(tab);
     }
   );
+});
+
+/**
+ * Navigates from example.com in container 1 to example.org, which is bound to
+ * container 2, without ending the extended navigation.
+ *
+ * @param {boolean} aBounce - Whether to bounce through itisatracker.org with a
+ * server redirect on the way.
+ * @returns {Promise<Array<MozTabbrowserTab>>} The tab the navigation started in
+ * and the tab it was retargeted into.
+ */
+async function navigateIntoBoundContainer(aBounce) {
+  let tab = await openTabIn(OTHER_CONTAINER);
+  let targetURL = new URL(url(ORIGIN_B));
+  let retargeted = await navigateRetargeted(
+    tab.linkedBrowser,
+    aBounce ? getBounceURL({ bounceType: "server", targetURL }) : targetURL,
+    targetURL
+  );
+  is(
+    retargeted.userContextId,
+    BOUND_CONTAINER,
+    "The destination landed in the container it is bound to"
+  );
+  return [tab, retargeted];
+}
+
+// example.com (container 1) -> itisatracker.org (server) -> example.org
+// (container 2, new tab), then container 3 is cleared
+//
+// Control for the task below: the tab the load was retargeted into holds the
+// bounce which ran in container 1, and clearing a container its record does not
+// touch leaves the record alone.
+add_task(async function test_clearing_another_container_keeps_moved_bounces() {
+  await withSiteAssociations([[SITE_B, BOUND_CONTAINER]], async () => {
+    assertNoBTPState("Before the bounce");
+
+    let [tab, retargeted] = await navigateIntoBoundContainer(true);
+
+    bounceTrackingProtection.clearByOriginAttributesPattern(
+      JSON.stringify(OA_UNUSED)
+    );
+
+    Assert.deepEqual(
+      await endExtendedNavigationByClosing(retargeted),
+      [1],
+      "The tab the load was retargeted into kept its record and classified " +
+        "the tracker"
+    );
+    Assert.deepEqual(
+      candidateHosts(OA_OTHER),
+      [SITE_TRACKER],
+      `${SITE_TRACKER} is classified in the container its hop ran in`
+    );
+    assertNoBTPState("Nothing else is classified", [OTHER_CONTAINER]);
+
+    BrowserTestUtils.removeTab(tab);
+  });
+});
+
+// example.com (container 1) -> itisatracker.org (server) -> example.org
+// (container 2, new tab)
+//
+// The tab the load was retargeted into holds bounces which ran in the container
+// the navigation started in. Clearing that container's data has to drop that
+// tab's record too, or ending the extended navigation would classify the cleared
+// sites in it again.
+add_task(async function test_clearing_a_container_clears_moved_bounces() {
+  await withSiteAssociations([[SITE_B, BOUND_CONTAINER]], async () => {
+    assertNoBTPState("Before the bounce");
+
+    let [tab, retargeted] = await navigateIntoBoundContainer(true);
+
+    bounceTrackingProtection.clearByOriginAttributesPattern(
+      JSON.stringify(OA_OTHER)
+    );
+
+    Assert.deepEqual(
+      await endExtendedNavigationByClosing(retargeted),
+      [],
+      "The tab holding bounces of the cleared container dropped its record"
+    );
+
+    assertNoBTPState(
+      `${SITE_TRACKER} bounced in container ${OTHER_CONTAINER} before its data ` +
+        `was cleared, so it must not be classified anywhere`
+    );
+
+    BrowserTestUtils.removeTab(tab);
+  });
+});
+
+// example.com (container 1) -> example.org (container 2, new tab)
+//
+// A record can touch a container through its initial site alone. Clearing that
+// container has to drop the record as well.
+add_task(
+  async function test_clearing_the_initial_sites_container_drops_record() {
+    await withSiteAssociations([[SITE_B, BOUND_CONTAINER]], async () => {
+      let [tab, retargeted] = await navigateIntoBoundContainer(false);
+      Assert.deepEqual(
+        await endExtendedNavigationByClosing(retargeted),
+        [0],
+        "Without a clear, the tab the load was retargeted into holds a record " +
+          "which classifies nothing"
+      );
+      BrowserTestUtils.removeTab(tab);
+
+      [tab, retargeted] = await navigateIntoBoundContainer(false);
+
+      bounceTrackingProtection.clearByOriginAttributesPattern(
+        JSON.stringify(OA_OTHER)
+      );
+
+      Assert.deepEqual(
+        await endExtendedNavigationByClosing(retargeted),
+        [],
+        `Clearing container ${OTHER_CONTAINER}, where the initial site ran, ` +
+          `dropped the record`
+      );
+
+      BrowserTestUtils.removeTab(tab);
+    });
+  }
+);
+
+/**
+ * Runs example.com (container 1) -> itisatracker.org -> example.org (container
+ * 2, new tab) -> example.net and purges, so that one bounce chain record is
+ * held by purge log entries in both containers.
+ */
+async function purgeChainAcrossContainers() {
+  let tab = await openTabIn(OTHER_CONTAINER);
+  let finalURL = new URL(url(ORIGIN_C));
+
+  let boundHopURL = new URL(url(ORIGIN_B, "file_bounce.sjs"));
+  boundHopURL.searchParams.set("statusCode", 302);
+  boundHopURL.searchParams.set("target", finalURL.href);
+
+  let retargeted = await navigateRetargeted(
+    tab.linkedBrowser,
+    getBounceURL({ bounceType: "server", targetURL: boundHopURL }),
+    finalURL
+  );
+  await endExtendedNavigation(tab.linkedBrowser);
+  await endExtendedNavigationByClosing(retargeted);
+  BrowserTestUtils.removeTab(tab);
+
+  Assert.deepEqual(
+    (await bounceTrackingProtection.testRunPurgeBounceTrackers()).sort(),
+    [SITE_B, SITE_TRACKER],
+    "The tracker and the bound hop are purged, each in its own container"
+  );
+  Assert.equal(
+    bounceTrackingProtection.getRecentPurgedChainEntriesForSite(SITE_A).length,
+    2,
+    `Both purge log entries name ${SITE_A} as the initial site of their chain`
+  );
+}
+
+// example.com (container 1) -> itisatracker.org -> example.org (container 2,
+// new tab) -> example.net, then container 1 is cleared
+//
+// The chain record is kept with the purge log entries of both containers, and
+// Report Broken Site sends it. Clearing a container must not leave its sites in
+// the records another container holds.
+add_task(async function test_clearing_a_container_drops_its_chain_records() {
+  await withSiteAssociations([[SITE_B, BOUND_CONTAINER]], async () => {
+    await purgeChainAcrossContainers();
+
+    bounceTrackingProtection.clearByOriginAttributesPattern(
+      JSON.stringify(OA_OTHER)
+    );
+
+    Assert.deepEqual(
+      bounceTrackingProtection.getRecentPurgedChainEntriesForSite(SITE_A),
+      [],
+      `No purge log entry names ${SITE_A} after its container was cleared`
+    );
+    Assert.deepEqual(
+      bounceTrackingProtection.getRecentPurgedChainEntriesForSite(SITE_TRACKER),
+      [],
+      `No purge log entry names ${SITE_TRACKER} after its container was cleared`
+    );
+    let [entry, ...rest] =
+      bounceTrackingProtection.testGetRecentlyPurgedTrackers(OA_BOUND);
+    is(rest.length, 0, "The other container keeps its purge log entry");
+    is(entry.siteHost, SITE_B, `for ${SITE_B}`);
+    is(entry.bounceTrackingRecord, null, "but no longer its chain record");
+  });
+});
+
+// example.com (container 1) -> itisatracker.org -> example.org (container 2,
+// new tab) -> example.net, then example.com is cleared in container 1
+//
+// Clearing a site must drop the chain records which name it, also those another
+// container holds, but only where the site ran in a cleared container.
+add_task(async function test_clearing_a_site_drops_its_chain_records() {
+  await withSiteAssociations([[SITE_B, BOUND_CONTAINER]], async () => {
+    await purgeChainAcrossContainers();
+
+    bounceTrackingProtection.clearBySiteHostAndOriginAttributes(
+      SITE_A,
+      OA_BOUND
+    );
+    Assert.equal(
+      bounceTrackingProtection.getRecentPurgedChainEntriesForSite(SITE_A)
+        .length,
+      2,
+      `Clearing ${SITE_A} in a container it did not run in keeps the records`
+    );
+
+    bounceTrackingProtection.clearBySiteHostAndOriginAttributes(
+      SITE_A,
+      OA_OTHER
+    );
+    Assert.deepEqual(
+      bounceTrackingProtection.getRecentPurgedChainEntriesForSite(SITE_A),
+      [],
+      `No purge log entry names ${SITE_A} after it was cleared where it ran`
+    );
+    for (let oa of [OA_OTHER, OA_BOUND]) {
+      let entries = bounceTrackingProtection.testGetRecentlyPurgedTrackers(oa);
+      is(entries.length, 1, "Each container keeps its purge log entry");
+      is(entries[0].bounceTrackingRecord, null, "but not its chain record");
+    }
+  });
 });
 
 // example.com -> itisatracker.org -> example.org, all in container 1
