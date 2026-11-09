@@ -122,7 +122,7 @@ class Differences:
         self.deleted = []
         self.modified = []
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.added or self.deleted or self.modified)
 
     def __str__(self):
