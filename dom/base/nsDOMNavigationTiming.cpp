@@ -452,11 +452,6 @@ void nsDOMNavigationTiming::NotifyContentfulCompositeForRootContentDocument(
                                        TTI_WINDOW_SIZE_MS,
                                        nsITimer::TYPE_ONE_SHOT_LOW_PRIORITY,
                                        "nsDOMNavigationTiming::TTITimeout"_ns);
-
-  if (mDocShellHasBeenActiveSinceNavigationStart) {
-    glean::performance_time::to_first_contentful_paint.AccumulateRawDuration(
-        mContentfulComposite - mNavigationStart);
-  }
 }
 
 void nsDOMNavigationTiming::NotifyLargestContentfulRenderForRootContentDocument(
