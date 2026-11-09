@@ -1767,19 +1767,15 @@ void MacroAssembler::branchTestUndefined(Condition cond,
 
 void MacroAssembler::branchTestUndefined(Condition cond, const Address& address,
                                          Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestUndefined(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_UNDEFINED, label);
 }
 
 void MacroAssembler::branchTestUndefined(Condition cond,
                                          const BaseIndex& address,
                                          Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestUndefined(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_UNDEFINED, label);
 }
 
 void MacroAssembler::branchTestInt32(Condition cond, Register tag,
@@ -1798,18 +1794,14 @@ void MacroAssembler::branchTestInt32(Condition cond, const ValueOperand& value,
 
 void MacroAssembler::branchTestInt32(Condition cond, const Address& address,
                                      Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestInt32(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_INT32, label);
 }
 
 void MacroAssembler::branchTestInt32(Condition cond, const BaseIndex& address,
                                      Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestInt32(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_INT32, label);
 }
 
 void MacroAssembler::branchTestInt32Truthy(bool b, const ValueOperand& value,
@@ -1837,18 +1829,19 @@ void MacroAssembler::branchTestDouble(Condition cond, const ValueOperand& value,
 
 void MacroAssembler::branchTestDouble(Condition cond, const Address& address,
                                       Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestDouble(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  // Doubles have the lowest tags, so the upper word of a double is below that
+  // of the first non-double tag.
+  branchTestTagUpperWord((cond == Equal) ? Below : AboveOrEqual, address,
+                         JSValueTag(JSVAL_TAG_MAX_DOUBLE + 1), label);
 }
 
 void MacroAssembler::branchTestDouble(Condition cond, const BaseIndex& address,
                                       Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestDouble(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  // Ditto.
+  branchTestTagUpperWord((cond == Equal) ? Below : AboveOrEqual, address,
+                         JSValueTag(JSVAL_TAG_MAX_DOUBLE + 1), label);
 }
 
 void MacroAssembler::branchTestDoubleTruthy(bool b, FloatRegister value,
@@ -1891,18 +1884,14 @@ void MacroAssembler::branchTestBoolean(Condition cond,
 
 void MacroAssembler::branchTestBoolean(Condition cond, const Address& address,
                                        Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestBoolean(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_BOOLEAN, label);
 }
 
 void MacroAssembler::branchTestBoolean(Condition cond, const BaseIndex& address,
                                        Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestBoolean(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_BOOLEAN, label);
 }
 
 void MacroAssembler::branchTestBooleanTruthy(bool b, const ValueOperand& value,
@@ -2070,18 +2059,14 @@ void MacroAssembler::branchTestNullOrUndefined(Condition cond,
 
 void MacroAssembler::branchTestNull(Condition cond, const Address& address,
                                     Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestNull(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_NULL, label);
 }
 
 void MacroAssembler::branchTestNull(Condition cond, const BaseIndex& address,
                                     Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestNull(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_NULL, label);
 }
 
 void MacroAssembler::branchTestObject(Condition cond, Register tag,
@@ -2132,12 +2117,16 @@ void MacroAssembler::branchTestGCThing(Condition cond, Register tag,
 
 void MacroAssembler::branchTestGCThing(Condition cond, const Address& address,
                                        Label* label) {
-  branchTestGCThingImpl(cond, address, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord((cond == Equal) ? AboveOrEqual : Below, address,
+                         JS::detail::ValueLowerInclGCThingTag, label);
 }
 
 void MacroAssembler::branchTestGCThing(Condition cond, const BaseIndex& address,
                                        Label* label) {
-  branchTestGCThingImpl(cond, address, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord((cond == Equal) ? AboveOrEqual : Below, address,
+                         JS::detail::ValueLowerInclGCThingTag, label);
 }
 
 void MacroAssembler::branchTestGCThing(Condition cond,
@@ -2172,18 +2161,14 @@ void MacroAssembler::branchTestMagic(Condition cond, Register tag,
 
 void MacroAssembler::branchTestMagic(Condition cond, const Address& address,
                                      Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestMagic(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_MAGIC, label);
 }
 
 void MacroAssembler::branchTestMagic(Condition cond, const BaseIndex& address,
                                      Label* label) {
-  UseScratchRegisterScope temps(*this);
-  Register scratch = temps.Acquire();
-  Register tag = extractTag(address, scratch);
-  branchTestMagic(cond, tag, label);
+  MOZ_ASSERT(cond == Equal || cond == NotEqual);
+  branchTestTagUpperWord(cond, address, JSVAL_TAG_MAGIC, label);
 }
 
 void MacroAssembler::branchTestMagic(Condition cond, const ValueOperand& value,
