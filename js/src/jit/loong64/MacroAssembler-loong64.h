@@ -573,6 +573,9 @@ class MacroAssemblerLOONG64Compat : public MacroAssemblerLOONG64 {
   Address computeScaledAddress(const BaseIndex& address,
                                UseScratchRegisterScope& temps);
 
+  Address computeAbsoluteAddress(AbsoluteAddress address,
+                                 UseScratchRegisterScope& temps);
+
   void j(Label* dest) { ma_b(dest); }
 
   void mov(Register src, Register dest) { ma_move(dest, src); }

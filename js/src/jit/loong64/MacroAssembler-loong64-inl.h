@@ -543,12 +543,11 @@ void MacroAssembler::mulDoublePtr(ImmPtr imm, Register temp,
 
 void MacroAssembler::inc64(AbsoluteAddress dest) {
   UseScratchRegisterScope temps(asMasm());
+  Address address = computeAbsoluteAddress(dest, temps);
   Register scratch = temps.Acquire();
-  Register scratch2 = temps.Acquire();
-  ma_li(scratch, ImmWord(uintptr_t(dest.addr)));
-  as_ld_d(scratch2, scratch, 0);
-  as_addi_d(scratch2, scratch2, 1);
-  as_st_d(scratch2, scratch, 0);
+  ma_ld_d(scratch, address);
+  as_addi_d(scratch, scratch, 1);
+  ma_st_d(scratch, address);
 }
 
 void MacroAssembler::quotient32(Register lhs, Register rhs, Register dest,
