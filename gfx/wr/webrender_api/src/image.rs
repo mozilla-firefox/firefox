@@ -280,6 +280,9 @@ bitflags! {
         ///
         /// See https://github.com/servo/webrender/pull/2555/
         const ALLOW_MIPMAPS = 2;
+        /// The image originates from DRM video and should preferentially use
+        /// external composition. This does not imply hardware-protected storage.
+        const IS_DRM_SOURCE = 4;
     }
 }
 
@@ -344,6 +347,11 @@ impl ImageDescriptor {
     /// Returns true if this descriptor is opaque
     pub fn is_opaque(&self) -> bool {
         self.flags.contains(ImageDescriptorFlags::IS_OPAQUE)
+    }
+
+    /// Returns true if this image originates from DRM video.
+    pub fn is_drm_source(&self) -> bool {
+        self.flags.contains(ImageDescriptorFlags::IS_DRM_SOURCE)
     }
 
     /// Returns true if this descriptor allows mipmaps

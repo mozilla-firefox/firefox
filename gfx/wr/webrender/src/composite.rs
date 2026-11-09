@@ -294,6 +294,8 @@ pub enum ResolvedExternalSurfaceColorData {
         color_space: YuvRangedColorSpace,
         format: YuvFormat,
         channel_bit_depth: u32,
+        // Exempts DRM video from the SDR YUV external-composite limit.
+        is_drm_source: bool,
     },
     Rgb {
         image_dependency: ImageDependency,
@@ -1266,7 +1268,10 @@ impl CompositeState {
 
         match external_surface.dependency {
             ExternalSurfaceDependency::Yuv{ color_space, format, channel_bit_depth, .. } => {
-
+                let is_drm_source = image_dependencies.iter().take(required_plane_count).any(|dep| {
+                    resource_cache.get_image_properties(dep.key)
+                        .map_or(false, |properties| properties.descriptor.is_drm_source())
+                });
                 let image_buffer_kind = planes[0].texture.image_buffer_kind();
 
                 self.external_surfaces.push(ResolvedExternalSurface {
@@ -1276,6 +1281,7 @@ impl CompositeState {
                         color_space,
                         format,
                         channel_bit_depth,
+                        is_drm_source,
                         },
                     image_buffer_kind,
                     update_params,

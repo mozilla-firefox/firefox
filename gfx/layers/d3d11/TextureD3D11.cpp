@@ -1172,6 +1172,7 @@ void DXGITextureHostD3D11::PushResourceUpdates(
                                  wr::ImageBufferKind::TextureRect)
                            : wr::ExternalImageType::TextureHandle(
                                  wr::ImageBufferKind::TextureExternal);
+      descriptor.is_drm_source = bool(mFlags & TextureFlags::DRM_SOURCE);
       (aResources.*method)(aImageKeys[0], descriptor, aExtID, imageType, 0,
                            /* aNormalizedUvs */ false);
       break;
@@ -1203,6 +1204,8 @@ void DXGITextureHostD3D11::PushResourceUpdates(
                                  wr::ImageBufferKind::TextureRect)
                            : wr::ExternalImageType::TextureHandle(
                                  wr::ImageBufferKind::TextureExternal);
+      descriptor0.is_drm_source = bool(mFlags & TextureFlags::DRM_SOURCE);
+      descriptor1.is_drm_source = bool(mFlags & TextureFlags::DRM_SOURCE);
       (aResources.*method)(aImageKeys[0], descriptor0, aExtID, imageType, 0,
                            /* aNormalizedUvs */ false);
       (aResources.*method)(aImageKeys[1], descriptor1, aExtID, imageType, 1,
@@ -1220,7 +1223,8 @@ void DXGITextureHostD3D11::PushDisplayItems(
     const wr::LayoutRect& aClip, wr::ImageRendering aFilter,
     const Range<wr::ImageKey>& aImageKeys, PushDisplayItemFlagSet aFlags) {
   bool preferCompositorSurface =
-      aFlags.contains(PushDisplayItemFlag::PREFER_COMPOSITOR_SURFACE);
+      aFlags.contains(PushDisplayItemFlag::PREFER_COMPOSITOR_SURFACE) ||
+      bool(mFlags & TextureFlags::DRM_SOURCE);
   if (!gfx::gfxVars::UseWebRenderANGLE()) {
     MOZ_ASSERT_UNREACHABLE("unexpected to be called without ANGLE");
     return;
@@ -1468,6 +1472,8 @@ void DXGIYCbCrTextureHostD3D11::PushResourceUpdates(
   // cb and cr
   wr::ImageDescriptor descriptor1(mDescriptor.sizeCbCr(), wr::ImageFormat::R8,
                                   wr::OpacityType::HasAlphaChannel);
+  descriptor0.is_drm_source = bool(mFlags & TextureFlags::DRM_SOURCE);
+  descriptor1.is_drm_source = bool(mFlags & TextureFlags::DRM_SOURCE);
   (aResources.*method)(aImageKeys[0], descriptor0, aExtID, imageType, 0,
                        /* aNormalizedUvs */ false);
   (aResources.*method)(aImageKeys[1], descriptor1, aExtID, imageType, 1,
@@ -1495,7 +1501,8 @@ void DXGIYCbCrTextureHostD3D11::PushDisplayItems(
       wr::ToWrColorDepth(mDescriptor.colorDepth()),
       wr::ToWrYuvColorSpace(mDescriptor.yUVColorSpace()),
       wr::ToWrColorRange(mDescriptor.colorRange()), aFilter,
-      aFlags.contains(PushDisplayItemFlag::PREFER_COMPOSITOR_SURFACE),
+      aFlags.contains(PushDisplayItemFlag::PREFER_COMPOSITOR_SURFACE) ||
+          bool(mFlags & TextureFlags::DRM_SOURCE),
       SupportsExternalCompositing(aBuilder.GetBackendType()));
 }
 

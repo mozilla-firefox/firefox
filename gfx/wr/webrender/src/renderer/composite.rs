@@ -576,7 +576,8 @@ impl Renderer {
             external_content_surfaces: Vec::new(),
         };
 
-        // Select among surfaces that could otherwise be externally composited.
+        // Select the largest non-DRM SDR YUV surface eligible for external composition.
+        // DRM surfaces are exempt and do not consume this slot.
         let mut largest_sdr_yuv_tile = None;
         if self.limit_sdr_yuv_external_composites
             && layer_mode == LayerMode::Swapchains
@@ -595,7 +596,11 @@ impl Renderer {
                 if surface.external_image_id.is_none()
                     || !matches!(
                         surface.color_data,
-                        ResolvedExternalSurfaceColorData::Yuv { channel_bit_depth: 8, .. }
+                        ResolvedExternalSurfaceColorData::Yuv {
+                            channel_bit_depth: 8,
+                            is_drm_source: false,
+                            ..
+                        }
                     )
                 {
                     continue;
@@ -702,11 +707,15 @@ impl Renderer {
                 if self.limit_sdr_yuv_external_composites
                     && matches!(
                         surface.color_data,
-                        ResolvedExternalSurfaceColorData::Yuv { channel_bit_depth: 8, .. }
+                        ResolvedExternalSurfaceColorData::Yuv {
+                            channel_bit_depth: 8,
+                            is_drm_source: false,
+                            ..
+                        }
                     )
                     && largest_sdr_yuv_tile != Some(idx)
                 {
-                    // Fall back to the existing Content path. HDR and RGB
+                    // Fall back to the existing Content path. DRM, HDR and RGB
                     // surfaces are not affected by the SDR YUV limit.
                     disable_external_composite = true;
                 }
