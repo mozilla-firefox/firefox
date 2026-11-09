@@ -170,4 +170,9 @@ interface nsIAppWindow : nsISupports
    * navigation right now for the initial viewer.
    */
   void showInitialViewer();
+
+  /**
+   * Title of the window.
+   */
+  attribute AString title;
 };

@@ -685,24 +685,6 @@ nsWebBrowser::GetMainWidget(nsIWidget** aMainWidget) {
   return NS_OK;
 }
 
-NS_IMETHODIMP
-nsWebBrowser::GetTitle(nsAString& aTitle) {
-  NS_ENSURE_STATE(mDocShell);
-
-  NS_ENSURE_SUCCESS(mDocShell->GetTitle(aTitle), NS_ERROR_FAILURE);
-
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsWebBrowser::SetTitle(const nsAString& aTitle) {
-  NS_ENSURE_STATE(mDocShell);
-
-  NS_ENSURE_SUCCESS(mDocShell->SetTitle(aTitle), NS_ERROR_FAILURE);
-
-  return NS_OK;
-}
-
 //*****************************************************************************
 // nsWebBrowser: Listener Helpers
 //*****************************************************************************

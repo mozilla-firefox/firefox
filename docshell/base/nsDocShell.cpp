@@ -4988,32 +4988,16 @@ nsDocShell::GetMainWidget(nsIWidget** aMainWidget) {
   return GetParentWidget(aMainWidget);
 }
 
-NS_IMETHODIMP
-nsDocShell::GetTitle(nsAString& aTitle) {
-  aTitle = mTitle;
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsDocShell::SetTitle(const nsAString& aTitle) {
+void nsDocShell::SetTitle(const nsAString& aTitle) {
   // Avoid unnecessary updates of the title if the URI and the title haven't
   // changed.
   if (mTitleValidForCurrentURI && mTitle == aTitle) {
-    return NS_OK;
+    return;
   }
 
   // Store local title
   mTitle = aTitle;
   mTitleValidForCurrentURI = true;
-
-  // When title is set on the top chrome object it should then be passed to the
-  // tree owner, so that it becomes the window title.
-  if (mBrowsingContext->IsTop() && mBrowsingContext->IsChrome()) {
-    nsCOMPtr<nsIBaseWindow> treeOwnerAsWin(do_QueryInterface(mTreeOwner));
-    if (treeOwnerAsWin) {
-      treeOwnerAsWin->SetTitle(aTitle);
-    }
-  }
 
   if (mCurrentURI && mLoadType != LOAD_ERROR_PAGE) {
     UpdateGlobalHistoryTitle(mCurrentURI);
@@ -5023,8 +5007,6 @@ nsDocShell::SetTitle(const nsAString& aTitle) {
   if (mLoadType != LOAD_BYPASS_HISTORY && mLoadType != LOAD_ERROR_PAGE) {
     SetTitleOnHistoryEntry(true);
   }
-
-  return NS_OK;
 }
 
 void nsDocShell::SetTitleOnHistoryEntry(bool aUpdateEntryInSessionHistory) {
@@ -6985,21 +6967,19 @@ void nsDocShell::ReportBFCacheComboTelemetry(uint32_t aCombo) {
     // recorded as unload
     UNLOAD = mozilla::dom::BFCacheStatus::UNLOAD_LISTENER,
     UNLOAD_REQUEST = mozilla::dom::BFCacheStatus::UNLOAD_LISTENER |
-                     mozilla::dom::BFCacheStatus::REQUEST,
+        mozilla::dom::BFCacheStatus::REQUEST,
     REQUEST = mozilla::dom::BFCacheStatus::REQUEST,
     UNLOAD_REQUEST_PEER = mozilla::dom::BFCacheStatus::UNLOAD_LISTENER |
-                          mozilla::dom::BFCacheStatus::REQUEST |
-                          mozilla::dom::BFCacheStatus::ACTIVE_PEER_CONNECTION,
-    UNLOAD_REQUEST_PEER_MSE =
-        mozilla::dom::BFCacheStatus::UNLOAD_LISTENER |
+        mozilla::dom::BFCacheStatus::REQUEST |
+        mozilla::dom::BFCacheStatus::ACTIVE_PEER_CONNECTION,
+    UNLOAD_REQUEST_PEER_MSE = mozilla::dom::BFCacheStatus::UNLOAD_LISTENER |
         mozilla::dom::BFCacheStatus::REQUEST |
         mozilla::dom::BFCacheStatus::ACTIVE_PEER_CONNECTION |
         mozilla::dom::BFCacheStatus::CONTAINS_MSE_CONTENT,
     UNLOAD_REQUEST_MSE = mozilla::dom::BFCacheStatus::UNLOAD_LISTENER |
-                         mozilla::dom::BFCacheStatus::REQUEST |
-                         mozilla::dom::BFCacheStatus::CONTAINS_MSE_CONTENT,
-    SUSPENDED_UNLOAD_REQUEST_PEER =
-        mozilla::dom::BFCacheStatus::SUSPENDED |
+        mozilla::dom::BFCacheStatus::REQUEST |
+        mozilla::dom::BFCacheStatus::CONTAINS_MSE_CONTENT,
+    SUSPENDED_UNLOAD_REQUEST_PEER = mozilla::dom::BFCacheStatus::SUSPENDED |
         mozilla::dom::BFCacheStatus::UNLOAD_LISTENER |
         mozilla::dom::BFCacheStatus::REQUEST |
         mozilla::dom::BFCacheStatus::ACTIVE_PEER_CONNECTION,

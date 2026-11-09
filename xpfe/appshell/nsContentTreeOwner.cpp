@@ -310,17 +310,6 @@ NS_IMETHODIMP nsContentTreeOwner::GetMainWidget(nsIWidget** aMainWidget) {
   return NS_OK;
 }
 
-NS_IMETHODIMP nsContentTreeOwner::GetTitle(nsAString& aTitle) {
-  NS_ENSURE_STATE(mAppWindow);
-
-  return mAppWindow->GetTitle(aTitle);
-}
-
-NS_IMETHODIMP nsContentTreeOwner::SetTitle(const nsAString& aTitle) {
-  NS_ENSURE_STATE(mAppWindow);
-  return mAppWindow->SetTitle(aTitle);
-}
-
 //*****************************************************************************
 // nsContentTreeOwner: nsIWindowProvider
 //*****************************************************************************

@@ -910,8 +910,7 @@ NS_IMETHODIMP AppWindow::SetTitle(const nsAString& aTitle) {
   NS_ENSURE_STATE(mWindow);
   mTitle.Assign(aTitle);
   mTitle.StripCRLF();
-  NS_ENSURE_SUCCESS(mWindow->SetTitle(mTitle), NS_ERROR_FAILURE);
-  return NS_OK;
+  return mWindow->SetTitle(mTitle);
 }
 
 //*****************************************************************************

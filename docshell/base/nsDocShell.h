@@ -173,6 +173,10 @@ class nsDocShell final : public nsDocLoader,
 
   using nsIBaseWindow::GetMainWidget;
 
+  // Called when the title of our document changes.
+  void SetTitle(const nsAString& aTitle);
+  void GetTitle(nsAString& aTitle) const { aTitle = mTitle; }
+
   // Create a new nsDocShell object.
   static already_AddRefed<nsDocShell> Create(
       mozilla::dom::BrowsingContext* aBrowsingContext,

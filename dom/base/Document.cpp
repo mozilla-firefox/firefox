@@ -361,7 +361,6 @@
 #include "nsIAuthPrompt.h"
 #include "nsIAuthPrompt2.h"
 #include "nsIBFCacheEntry.h"
-#include "nsIBaseWindow.h"
 #include "nsIBrowserChild.h"
 #include "nsIBrowserUsage.h"
 #include "nsICSSLoaderObserver.h"
@@ -10389,14 +10388,11 @@ void Document::DoNotifyPossibleTitleChange() {
   nsAutoString title;
   GetTitle(title);
 
-  if (RefPtr<PresShell> presShell = GetPresShell()) {
-    nsCOMPtr<nsISupports> container =
-        presShell->GetPresContext()->GetContainerWeak();
-    if (container) {
-      if (nsCOMPtr<nsIBaseWindow> docShellWin = do_QueryInterface(container)) {
-        docShellWin->SetTitle(title);
-      }
-    }
+  if (RefPtr<nsDocShell> docShell = nsDocShell::Cast(GetDocShell())) {
+    docShell->SetTitle(title);
+  }
+  if (nsCOMPtr<nsIAppWindow> appWin = GetAppWindowIfToplevelChrome()) {
+    appWin->SetTitle(title);
   }
 
   if (WindowGlobalChild* child = GetWindowGlobalChild()) {

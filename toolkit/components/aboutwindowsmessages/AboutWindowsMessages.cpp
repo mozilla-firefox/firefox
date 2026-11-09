@@ -11,10 +11,7 @@
 #include "nsPIDOMWindow.h"
 #include "nsServiceManagerUtils.h"
 #include "nsIWindowMediator.h"
-#include "nsIAppWindow.h"
-#include "nsIBaseWindow.h"
-#include "nsIDocShell.h"
-#include "nsDocShellTreeOwner.h"
+#include "nsDocShell.h"
 #include "nsPIDOMWindowInlines.h"
 #include "mozilla/WidgetUtils.h"
 #include "mozilla/widget/nsWindowLoggedMessages.h"
@@ -37,15 +34,12 @@ already_AddRefed<AboutWindowsMessages> AboutWindowsMessages::GetSingleton() {
 
 static bool GetWindowTitleFromWindow(const nsCOMPtr<nsPIDOMWindowOuter>& window,
                                      nsAutoString& title) {
-  nsIDocShell* docShell = window->GetDocShell();
-  if (docShell) {
-    nsCOMPtr<nsIDocShellTreeOwner> parentTreeOwner;
-    docShell->GetTreeOwner(getter_AddRefs(parentTreeOwner));
-    nsCOMPtr<nsIBaseWindow> baseWindow(do_QueryInterface(parentTreeOwner));
-    baseWindow->GetTitle(title);
-    return true;
+  nsDocShell* docShell = nsDocShell::Cast(window->GetDocShell());
+  if (!docShell) {
+    return false;
   }
-  return false;
+  docShell->GetTitle(title);
+  return true;
 }
 
 NS_IMETHODIMP

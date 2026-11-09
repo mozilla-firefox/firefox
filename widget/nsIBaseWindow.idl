@@ -216,9 +216,4 @@ interface nsIBaseWindow : nsISupports
     return UnscaledDevicePixelsPerCSSPixel() / DevicePixelsPerDesktopPixel();
   }
 %}
-
-  /*
-  Title of the window.
-  */
-  attribute AString title;
 };

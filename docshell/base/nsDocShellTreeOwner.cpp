@@ -526,24 +526,6 @@ nsDocShellTreeOwner::GetMainWidget(nsIWidget** /*aMainWidget*/) {
   return NS_ERROR_NULL_POINTER;
 }
 
-NS_IMETHODIMP
-nsDocShellTreeOwner::GetTitle(nsAString& aTitle) {
-  nsCOMPtr<nsIBaseWindow> ownerWin = GetOwnerWin();
-  if (ownerWin) {
-    return ownerWin->GetTitle(aTitle);
-  }
-  return NS_ERROR_NULL_POINTER;
-}
-
-NS_IMETHODIMP
-nsDocShellTreeOwner::SetTitle(const nsAString& aTitle) {
-  nsCOMPtr<nsIBaseWindow> ownerWin = GetOwnerWin();
-  if (ownerWin) {
-    return ownerWin->SetTitle(aTitle);
-  }
-  return NS_ERROR_NULL_POINTER;
-}
-
 //*****************************************************************************
 // nsDocShellTreeOwner::nsIWebProgressListener
 //*****************************************************************************
