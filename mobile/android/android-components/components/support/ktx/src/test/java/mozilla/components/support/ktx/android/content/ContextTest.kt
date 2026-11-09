@@ -84,7 +84,7 @@ class ContextTest {
 
     @Test
     fun `isPermissionGranted() returns same service as checkSelfPermission()`() {
-        val application = ShadowApplication()
+        val application = shadowOf(testContext as Application)
 
         assertEquals(
             testContext.isPermissionGranted(WRITE_EXTERNAL_STORAGE),
@@ -93,6 +93,7 @@ class ContextTest {
 
         application.grantPermissions(WRITE_EXTERNAL_STORAGE)
 
+        assertTrue(testContext.isPermissionGranted(WRITE_EXTERNAL_STORAGE))
         assertEquals(
             testContext.isPermissionGranted(WRITE_EXTERNAL_STORAGE),
             testContext.checkSelfPermission(WRITE_EXTERNAL_STORAGE) == PERMISSION_GRANTED,
