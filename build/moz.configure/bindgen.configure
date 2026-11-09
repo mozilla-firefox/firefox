@@ -318,9 +318,10 @@ set_config("MOZ_CLANG_PATH", bindgen_config_paths.clang_path)
     bindgen_cflags_android,
     bindgen_config_paths.clang_flags,
     all_clang_arm_flags,
+    macos_target,
 )
 def basic_bindgen_cflags(
-    target, compiler_info, android_cflags, clang_flags, all_arm_flags
+    target, compiler_info, android_cflags, clang_flags, all_arm_flags, macos_target
 ):
     args = [
         "-x",
@@ -337,7 +338,7 @@ def basic_bindgen_cflags(
         args += android_cflags
 
     # libc++ in the macOS 27 SDK emits a #warning when the deployment target is below 11.0.
-    if target.os == "OSX" and target.cpu == "x86_64":
+    if macos_target and Version(macos_target) < "11.0":
         args.append("-Wno-cpp")
 
     args += {
