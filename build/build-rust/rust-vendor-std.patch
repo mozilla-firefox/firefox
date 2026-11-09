@@ -9,29 +9,39 @@ Since then, things have changed in cargo, such that it is now possible to use
 a simpler approach that only relies on tweaking what is shipped in rust.
 
 diff --git a/src/bootstrap/src/core/build_steps/dist.rs b/src/bootstrap/src/core/build_steps/dist.rs
-index 43ac42a8158..d918ad6e07d 100644
+index 5cfaa6a7c77..65c8abcb4f8 100644
 --- a/src/bootstrap/src/core/build_steps/dist.rs
 +++ b/src/bootstrap/src/core/build_steps/dist.rs
-@@ -1220,6 +1220,87 @@ fn run(self, builder: &Builder<'_>) -> GeneratedTarball {
-         builder.create_dir(&library_cargo_config_dir);
-         builder.create(&library_cargo_config_dir.join("config.toml"), &vendor.config_library);
+@@ -1016,6 +1016,97 @@ fn run(self, builder: &Builder<'_>) -> GeneratedTarball {
+             &dst_src,
+         );
  
 +        // cargo's -Z build-std doesn't work properly alongside vendoring.
-+        // To work around the issue, we alter libstd's Cargo.toml to contain
-+        // patch.crates-io entries pointing to the versions vendored above.
++        // To work around the issue, we vendor the libstd dependencies in the
++        // rust-src package, and alter libstd's Cargo.toml to contain
++        // patch.crates-io entries pointing to the vendored versions.
 +        let root_dir = dst_src.join("library");
-+        if root_dir.exists() {
++        let root_lock = root_dir.join("Cargo.lock");
++        if root_lock.exists() {
 +            use std::collections::HashMap;
 +
 +            use toml::map::Map;
 +            use toml::Value;
 +
-+            let cargo_toml_path = root_dir.join("Cargo.toml");
-+            let dst_vendor = root_dir.join("vendor");
++            let dst_vendor = dst_src.join("vendor");
 +
-+            // Ideally, we would add the .cargo/config.toml produced above, but
-+            // cargo doesn't read it when building libstd. So instead, we add
++            let mut cmd = command(&builder.initial_cargo);
++            cmd.arg("vendor").arg(&dst_vendor).current_dir(&root_dir);
++            // library/std/Cargo.toml uses the `public-dependency` nightly cargo feature.
++            cmd.env("RUSTC_BOOTSTRAP", "1");
++            builder.info("Dist src");
++            let _time = timeit(builder);
++            cmd.run(builder);
++
++            // Ideally, we would add the .cargo/config.toml that `cargo vendor` outputs,
++            // but cargo doesn't read it when building libstd. So instead, we add
 +            // [patch.crates-io] entries to Cargo.toml for all vendored packages.
++            let cargo_toml_path = root_lock.with_extension("toml");
 +            let cargo_toml_str = t!(std::fs::read_to_string(&cargo_toml_path));
 +            let mut manifest: Value = t!(toml::from_str(&cargo_toml_str));
 +
@@ -72,19 +82,19 @@ index 43ac42a8158..d918ad6e07d 100644
 +                for dir_name in dirs.iter() {
 +                    // What we want in the normal case:
 +                    //   [patch.crates-io.crate]
-+                    //   path = "vendor/crate"
++                    //   path = "../vendor/crate"
 +                    // When the directory name is different (usually when it contains a
 +                    // version) we want the following:
 +                    //   [patch.crates-io.crate-version]
 +                    //   package = "crate"
-+                    //   path = "vendor/crate-version"
++                    //   path = "../vendor/crate-version"
 +                    let mut patch_value = Map::new();
 +                    let name = dir_name.replace('.', "_").replace('+', "_");
 +                    if &name != pkg_name {
 +                        patch_value.insert("package".to_string(), pkg_name.clone().into());
 +                    }
 +                    patch_value
-+                        .insert("path".to_string(), format!("vendor/{}", dir_name).into());
++                        .insert("path".to_string(), format!("../vendor/{}", dir_name).into());
 +                    patch_table.insert(name, patch_value.into());
 +                }
 +            }

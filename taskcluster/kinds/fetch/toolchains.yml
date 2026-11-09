@@ -390,13 +390,13 @@ clang-trunk:
 # We build stable rust from source so the resulting compiler acts as a nightly
 # rust compiler, allowing to use unstable features like -Zbuild-std and
 # sanitizers.
-rust-1.99.1:
-    description: Rust 1.99.1 source code
+rust-1.95.0:
+    description: Rust 1.95.0 source code
     fetch:
         type: git
         include-dot-git: true
         repo: https://github.com/rust-lang/rust/
-        revision: 58cf8f9c35b355199727627d07ae34a4e2846d67
+        revision: 59807616e1fa2540724bfbac14d7976d7e4a3860
 
 rust-nightly:
     description: Rust nightly source code

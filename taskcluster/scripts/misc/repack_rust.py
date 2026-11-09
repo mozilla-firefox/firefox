@@ -434,7 +434,7 @@ def build_src(install_dir, host, targets, patches):
         f"""
         [rust]
         {omit_git_hash} = false
-        bootstrap-override-lld = true
+        use-lld = true
 
         [install]
         prefix = "/"
