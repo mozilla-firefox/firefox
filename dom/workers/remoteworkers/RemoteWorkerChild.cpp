@@ -295,6 +295,10 @@ nsresult RemoteWorkerChild::ExecWorkerOnMainThread(
   auto scopeExit =
       MakeScopeExit([&] { ExceptionalErrorTransitionDuringExecWorker(); });
 
+  if (NS_WARN_IF(!aData.baseScriptURL() || !aData.resolvedScriptURL())) {
+    return NS_ERROR_FAILURE;
+  }
+
   auto principalOrErr = PrincipalInfoToPrincipal(aData.principalInfo());
   if (NS_WARN_IF(principalOrErr.isErr())) {
     return principalOrErr.unwrapErr();
@@ -324,8 +328,8 @@ nsresult RemoteWorkerChild::ExecWorkerOnMainThread(
   }
 
   WorkerLoadInfo info;
-  info.mBaseURI = DeserializeURI(aData.baseScriptURL());
-  info.mResolvedScriptURI = DeserializeURI(aData.resolvedScriptURL());
+  info.mBaseURI = aData.baseScriptURL();
+  info.mResolvedScriptURI = aData.resolvedScriptURL();
 
   info.mPrincipalInfo = std::make_unique<PrincipalInfo>(aData.principalInfo());
   info.mPartitionedPrincipalInfo =

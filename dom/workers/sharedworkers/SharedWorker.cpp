@@ -237,12 +237,6 @@ already_AddRefed<SharedWorker> SharedWorker::Constructor(
   UniqueMessagePortId portIdentifier;
   channel->Port1()->CloneAndDisentangle(portIdentifier);
 
-  URIParams resolvedScriptURL;
-  SerializeURI(loadInfo.mResolvedScriptURI, resolvedScriptURL);
-
-  URIParams baseURL;
-  SerializeURI(loadInfo.mBaseURI, baseURL);
-
   // Register this component to PBackground.
   bool isSecureContext = JS::GetIsSecureContext(js::GetContextRealm(cx));
 
@@ -265,11 +259,11 @@ already_AddRefed<SharedWorker> SharedWorker::Constructor(
   }
 
   RemoteWorkerData remoteWorkerData(
-      nsString(*compliantString), baseURL, resolvedScriptURL, aOptions,
-      loadingPrincipalInfo, principalInfo, partitionedPrincipalInfo,
-      loadInfo.mUseRegularPrincipal, loadInfo.mUsingStorageAccess, cjsData,
-      loadInfo.mDomain, isSecureContext, clientInfo->ToIPC(),
-      loadInfo.mReferrerInfo, storageAllowed,
+      nsString(*compliantString), loadInfo.mBaseURI,
+      loadInfo.mResolvedScriptURI, aOptions, loadingPrincipalInfo,
+      principalInfo, partitionedPrincipalInfo, loadInfo.mUseRegularPrincipal,
+      loadInfo.mUsingStorageAccess, cjsData, loadInfo.mDomain, isSecureContext,
+      clientInfo->ToIPC(), loadInfo.mReferrerInfo, storageAllowed,
       AntiTrackingUtils::IsThirdPartyWindow(window, nullptr),
       loadInfo.mShouldResistFingerprinting, overriddenFingerprintingSettingsArg,
       loadInfo.mIsOn3PCBExceptionList,

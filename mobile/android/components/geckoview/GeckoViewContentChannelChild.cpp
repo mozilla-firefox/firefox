@@ -90,7 +90,7 @@ GeckoViewContentChannelChild::AsyncOpen(nsIStreamListener* aListener) {
   GetLoadFlags(&loadFlags);
 
   GeckoViewContentChannelOpenArgs openArgs;
-  ipc::SerializeURI(nsBaseChannel::URI(), openArgs.uri());
+  openArgs.uri() = nsBaseChannel::URI();
   openArgs.loadFlags() = loadFlags;
 
   nsCOMPtr<nsILoadInfo> loadInfo = nsBaseChannel::LoadInfo();

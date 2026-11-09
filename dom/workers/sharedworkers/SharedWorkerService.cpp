@@ -259,9 +259,8 @@ void SharedWorkerService::GetOrCreateWorkerManagerOnMainThread(
     effectiveStoragePrincipal = loadingPrincipal;
   }
 
-  nsCOMPtr<nsIURI> resolvedScriptURL =
-      DeserializeURI(aData.resolvedScriptURL());
-  if (!resolvedScriptURL) {
+  nsCOMPtr<nsIURI> resolvedScriptURL(aData.resolvedScriptURL());
+  if (!resolvedScriptURL || !aData.baseScriptURL()) {
     ErrorPropagationOnMainThread(aBackgroundEventTarget, aActor,
                                  NS_ERROR_FAILURE);
     return;

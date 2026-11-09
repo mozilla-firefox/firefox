@@ -157,7 +157,7 @@ bool GeckoViewContentChannelParent::Init(
     }
   });
 
-  nsCOMPtr<nsIURI> uri = ipc::DeserializeURI(aArgs.uri());
+  nsCOMPtr<nsIURI> uri(aArgs.uri());
 
   if (!uri || !uri->SchemeIs("content")) {
     rv = NS_ERROR_UNKNOWN_PROTOCOL;

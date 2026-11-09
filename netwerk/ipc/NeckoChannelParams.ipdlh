@@ -4,7 +4,6 @@
 
 include protocol PHttpChannel;
 include ClientIPCTypes;
-include URIParams;
 include IPCServiceWorkerDescriptor;
 include IPCStream;
 include PBackgroundSharedTypes;
@@ -106,7 +105,7 @@ struct PreferredAlternativeDataTypeParams
 struct RedirectHistoryEntryInfo
 {
   PrincipalInfo       principalInfo;
-  URIParams?          referrerUri;
+  nullable nsIURI     referrerUri;
   nsCString           remoteAddress;
 };
 
@@ -124,7 +123,7 @@ struct LoadInfoArgs
   PrincipalInfo               triggeringPrincipalInfo;
   PrincipalInfo?              principalToInheritInfo;
   PrincipalInfo?              topLevelPrincipalInfo;
-  URIParams?                  resultPrincipalURI;
+  nullable nsIURI             resultPrincipalURI;
   RemoteType                  triggeringRemoteType;
   nsID                        sandboxedNullPrincipalID;
   uint32_t                    securityFlags;
@@ -569,31 +568,6 @@ struct ResourceTimingStructArgs {
 };
 
 //-----------------------------------------------------------------------------
-// GIO IPDL structs
-//-----------------------------------------------------------------------------
-
-struct GIOChannelOpenArgs
-{
-  URIParams                 uri;
-  uint64_t                  startPos;
-  nsCString                 entityID;
-  IPCStream?                uploadStream;
-  LoadInfoArgs              loadInfo;
-  uint32_t                  loadFlags;
-};
-
-struct GIOChannelConnectArgs
-{
-  uint32_t channelId;
-};
-
-union GIOChannelCreationArgs
-{
-  GIOChannelOpenArgs;      // For AsyncOpen: the common case.
-  GIOChannelConnectArgs;   // Used for redirected-to channels
-};
-
-//-----------------------------------------------------------------------------
 // File IPDL structs
 //-----------------------------------------------------------------------------
 
@@ -613,7 +587,7 @@ struct FileChannelInfo
 
 struct GeckoViewContentChannelOpenArgs
 {
-  URIParams uri;
+  nullable nsIURI uri;
   LoadInfoArgs loadInfo;
   uint32_t loadFlags;
 };

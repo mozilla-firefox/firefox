@@ -42,7 +42,7 @@ SharedWorkerManager::SharedWorkerManager(
       mLoadingPrincipal(aLoadingPrincipal),
       mDomain(aData.domain()),
       mEffectiveStoragePrincipalAttrs(aEffectiveStoragePrincipalAttrs),
-      mResolvedScriptURL(DeserializeURI(aData.resolvedScriptURL())),
+      mResolvedScriptURL(aData.resolvedScriptURL()),
       mWorkerOptions(aData.workerOptions()),
       mIsSecureContext(aData.isSecureContext()),
       mSuspended(false),

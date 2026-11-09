@@ -374,10 +374,8 @@ already_AddRefed<nsIRedirectHistoryEntry> RHEntryInfoToRHEntry(
   }
 
   nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
-  nsCOMPtr<nsIURI> referrerUri = DeserializeURI(aRHEntryInfo.referrerUri());
-
   nsCOMPtr<nsIRedirectHistoryEntry> entry = new nsRedirectHistoryEntry(
-      principal, referrerUri, aRHEntryInfo.remoteAddress());
+      principal, aRHEntryInfo.referrerUri(), aRHEntryInfo.remoteAddress());
 
   return entry.forget();
 }
@@ -390,10 +388,8 @@ nsresult RHEntryToRHEntryInfo(nsIRedirectHistoryEntry* aRHEntry,
   nsresult rv;
   aRHEntry->GetRemoteAddress(aRHEntryInfo->remoteAddress());
 
-  nsCOMPtr<nsIURI> referrerUri;
-  rv = aRHEntry->GetReferrerURI(getter_AddRefs(referrerUri));
+  rv = aRHEntry->GetReferrerURI(getter_AddRefs(aRHEntryInfo->referrerUri()));
   NS_ENSURE_SUCCESS(rv, rv);
-  SerializeURI(referrerUri, aRHEntryInfo->referrerUri());
 
   nsCOMPtr<nsIPrincipal> principal;
   rv = aRHEntry->GetPrincipal(getter_AddRefs(principal));
@@ -432,12 +428,8 @@ nsresult LoadInfoToLoadInfoArgs(nsILoadInfo* aLoadInfo,
     NS_ENSURE_SUCCESS(rv, rv);
   }
 
-  Maybe<URIParams> optionalResultPrincipalURI;
   nsCOMPtr<nsIURI> resultPrincipalURI;
   (void)aLoadInfo->GetResultPrincipalURI(getter_AddRefs(resultPrincipalURI));
-  if (resultPrincipalURI) {
-    SerializeURI(resultPrincipalURI, optionalResultPrincipalURI);
-  }
 
   RemoteType triggeringRemoteType;
   rv = aLoadInfo->GetTriggeringRemoteType(triggeringRemoteType);
@@ -558,7 +550,7 @@ nsresult LoadInfoToLoadInfoArgs(nsILoadInfo* aLoadInfo,
 
   *outLoadInfoArgs = LoadInfoArgs(
       loadingPrincipalInfo, triggeringPrincipalInfo, principalToInheritInfo,
-      topLevelPrincipalInfo, optionalResultPrincipalURI, triggeringRemoteType,
+      topLevelPrincipalInfo, resultPrincipalURI, triggeringRemoteType,
       aLoadInfo->GetSandboxedNullPrincipalID(), aLoadInfo->GetSecurityFlags(),
       aLoadInfo->GetSandboxFlags(), aLoadInfo->GetTriggeringSandboxFlags(),
       aLoadInfo->GetTriggeringWindowId(),
@@ -711,11 +703,7 @@ nsresult LoadInfoArgsToLoadInfo(const LoadInfoArgs& loadInfoArgs,
     topLevelPrincipal = topLevelPrincipalOrErr.unwrap();
   }
 
-  nsCOMPtr<nsIURI> resultPrincipalURI;
-  if (loadInfoArgs.resultPrincipalURI().isSome()) {
-    resultPrincipalURI = DeserializeURI(loadInfoArgs.resultPrincipalURI());
-    NS_ENSURE_TRUE(resultPrincipalURI, NS_ERROR_UNEXPECTED);
-  }
+  nsCOMPtr<nsIURI> resultPrincipalURI(loadInfoArgs.resultPrincipalURI());
 
   // If we received this message from a content process, reset
   // triggeringRemoteType to the process which sent us the message. If the

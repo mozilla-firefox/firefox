@@ -566,9 +566,6 @@ nsresult ServiceWorkerPrivate::Initialize() {
     return fail("the principal has no URI", NS_ERROR_FAILURE);
   }
 
-  URIParams baseScriptURL;
-  SerializeURI(uri, baseScriptURL);
-
   nsString id;
   rv = mInfo->GetId(id);
 
@@ -805,8 +802,7 @@ nsresult ServiceWorkerPrivate::Initialize() {
   ipcClientInfo.SetPolicyContainerArgs(policyContainerArgs);
 
   mRemoteWorkerData = RemoteWorkerData(
-      NS_ConvertUTF8toUTF16(mInfo->ScriptSpec()), baseScriptURL, baseScriptURL,
-      workerOptions,
+      NS_ConvertUTF8toUTF16(mInfo->ScriptSpec()), uri, uri, workerOptions,
       /* loading principal */ principalInfo, principalInfo,
       partitionedPrincipalInfo,
       /* useRegularPrincipal */ true,

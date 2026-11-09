@@ -6,7 +6,6 @@ include ClientIPCTypes;
 include IPCServiceWorkerDescriptor;
 include IPCServiceWorkerRegistrationDescriptor;
 include PBackgroundSharedTypes;
-include URIParams;
 include DOMTypes;
 include NeckoChannelParams;
 include ProtocolTypes;
@@ -45,16 +44,16 @@ struct RemoteWorkerData
   // This should only be used for devtools.
   nsString originalScriptURL;
 
-  // It is important to pass these as URIParams instead of strings for blob
-  // URLs: they carry an additional bit of state with them (mIsRevoked) that
+  // It is important to pass these as nsIURI instead of strings for blob
+  // URLs: they carry an additional bit of state with them (mRevoked) that
   // gives us a chance to use them, even after they've been revoked. Because
   // we're asynchronously calling into the parent process before potentially
   // loading the worker, it is important to keep this state. Note that this
   // isn't a panacea: once the URL has been revoked, it'll give the worker 5
   // seconds to actually load it; so it's possible to still fail to load the
   // blob URL if it takes too long to do the round trip.
-  URIParams baseScriptURL;
-  URIParams resolvedScriptURL;
+  nullable nsIURI baseScriptURL;
+  nullable nsIURI resolvedScriptURL;
 
   WorkerOptions workerOptions;
 

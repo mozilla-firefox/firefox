@@ -24,6 +24,3 @@ avoid-ipdl-uriparams:
     exclude:
         # The definition of URIParams.
         - ipc/glue/URIParams.ipdlh
-        # Existing uses that should eventually be migrated to nsIURI.
-        - dom/workers/remoteworkers/RemoteWorkerTypes.ipdlh
-        - netwerk/ipc/NeckoChannelParams.ipdlh
