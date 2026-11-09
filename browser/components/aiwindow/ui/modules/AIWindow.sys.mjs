@@ -224,6 +224,7 @@ export const AIWindow = {
     );
     Services.obs.addObserver(this, "tabstrip-orientation-change");
     Services.obs.addObserver(this, "browser-region-updated");
+    Services.obs.addObserver(this, "intl:app-locales-changed");
     Services.prefs.addObserver(PREF_AGENT_SUPPORTED_REGIONS, this);
     Services.prefs.addObserver(PREF_AUTO_TAB_GROUPING_LOCALES, this);
     lazy.SmartWindowTelemetry.init();
@@ -272,6 +273,7 @@ export const AIWindow = {
     );
     Services.obs.removeObserver(this, "tabstrip-orientation-change");
     Services.obs.removeObserver(this, "browser-region-updated");
+    Services.obs.removeObserver(this, "intl:app-locales-changed");
     Services.prefs.removeObserver(PREF_AGENT_SUPPORTED_REGIONS, this);
     Services.prefs.removeObserver(PREF_AUTO_TAB_GROUPING_LOCALES, this);
 
@@ -308,9 +310,11 @@ export const AIWindow = {
       this._updateGroupTabsButtons();
     } else if (
       topic === "browser-region-updated" ||
+      topic === "intl:app-locales-changed" ||
       topic === "nsPref:changed"
     ) {
-      // Both inputs to the region gate on the monitor button.
+      // The supported markets, the home region and the app locale are all
+      // inputs to the region gate on the monitor button.
       this._updateMonitorWidgetRegistration();
     } else if (topic === lazy.MONITOR_CONDITION_MET_TOPIC) {
       this.showMonitorAttention(data);

@@ -6402,14 +6402,6 @@ smartWindowAgentWatch:
       description: >-
         Enables the Smart Window Agent Watch feature when true. Set to false
         to disable the rollout.
-    supportedRegions:
-      type: string
-      setPref:
-        branch: default
-        pref: browser.smartwindow.agent.supportedRegions
-      description: >-
-        Comma-separated list of region codes where the agent watch command is
-        available, for example "US,CA".
     monitorAnnouncement:
       type: boolean
       setPref:

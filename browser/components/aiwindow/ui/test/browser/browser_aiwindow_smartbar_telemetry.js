@@ -14,6 +14,8 @@
  * @import { SmartbarAction } from "chrome://browser/content/aiwindow/components/input-cta/input-cta.mjs"
  */
 
+const TEST_MARKETS = JSON.stringify([["US", ["en-*"]]]);
+
 let expectedModel;
 
 add_setup(async function () {
@@ -761,7 +763,7 @@ add_task(async function test_smartbar_telemetry_agent_command_start() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.agent.enabled", true],
-      ["browser.smartwindow.agent.supportedRegions", "US"],
+      ["browser.smartwindow.agent.supportedRegions", TEST_MARKETS],
     ],
   });
   const originalRegion = Region.home;
@@ -816,7 +818,7 @@ add_task(async function test_smartbar_telemetry_agent_command_select() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.agent.enabled", true],
-      ["browser.smartwindow.agent.supportedRegions", "US"],
+      ["browser.smartwindow.agent.supportedRegions", TEST_MARKETS],
     ],
   });
   const originalRegion = Region.home;
@@ -882,7 +884,7 @@ add_task(async function test_smartbar_telemetry_agent_command_select_typed() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.agent.enabled", true],
-      ["browser.smartwindow.agent.supportedRegions", "US"],
+      ["browser.smartwindow.agent.supportedRegions", TEST_MARKETS],
     ],
   });
   const originalRegion = Region.home;
@@ -936,7 +938,7 @@ add_task(async function test_smartbar_telemetry_agent_command_remove() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.agent.enabled", true],
-      ["browser.smartwindow.agent.supportedRegions", "US"],
+      ["browser.smartwindow.agent.supportedRegions", TEST_MARKETS],
     ],
   });
   const originalRegion = Region.home;

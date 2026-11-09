@@ -9,6 +9,8 @@ const PREF_MONITOR_ANNOUNCEMENT =
   "browser.smartwindow.agent.monitorAnnouncement";
 const SUPPORTED_REGIONS_PREF = "browser.smartwindow.agent.supportedRegions";
 const TEST_REGION = "US";
+const TEST_MARKETS = JSON.stringify([[TEST_REGION, ["en-*"]]]);
+const UNSUPPORTED_MARKETS = JSON.stringify([["DE", ["de"]]]);
 
 function clearAttentionPrefs() {
   Services.prefs.clearUserPref(PREF_MONITOR_ATTENTION);
@@ -50,7 +52,7 @@ add_setup(async function setup() {
       ["browser.smartwindow.enabled", true],
       ["browser.smartwindow.agent.enabled", true],
       ["browser.smartwindow.agent.toolbar.enabled", true],
-      ["browser.smartwindow.agent.supportedRegions", TEST_REGION],
+      ["browser.smartwindow.agent.supportedRegions", TEST_MARKETS],
     ],
   });
 
@@ -600,13 +602,55 @@ add_task(async function test_monitor_button_pref_gates() {
 });
 
 /**
+ * The gate pairs the home region with the app locale, so switching Firefox to
+ * a language the market does not cover has to take the button away again
+ * rather than leaving a button that cannot create a monitor.
+ */
+add_task(async function test_monitor_button_locale_gate() {
+  const originalAvailable = Services.locale.availableLocales;
+  const originalRequested = Services.locale.requestedLocales;
+  Services.locale.availableLocales = ["en-US", "fr"];
+
+  await SpecialPowers.pushPrefEnv({
+    set: [[SUPPORTED_REGIONS_PREF, TEST_MARKETS]],
+  });
+
+  AIWindow._updateMonitorWidgetRegistration();
+  const win = await openAIWindow();
+  try {
+    Assert.ok(
+      getMonitorButton(win),
+      "Monitor button is present in a supported region and locale"
+    );
+
+    Services.locale.requestedLocales = ["fr"];
+    await TestUtils.waitForCondition(
+      () => !getMonitorButton(win),
+      "Monitor button goes away once the app locale leaves the market"
+    );
+
+    Services.locale.requestedLocales = ["en-US"];
+    await TestUtils.waitForCondition(
+      () => getMonitorButton(win),
+      "Monitor button comes back when the app locale returns to the market"
+    );
+  } finally {
+    await BrowserTestUtils.closeWindow(win);
+    await SpecialPowers.popPrefEnv();
+    Services.locale.requestedLocales = originalRequested;
+    Services.locale.availableLocales = originalAvailable;
+    AIWindow._updateMonitorWidgetRegistration();
+  }
+});
+
+/**
  * The button is the toolbar surface of a feature that cannot create a monitor
  * outside its supported regions, so it follows the same region gate as the
  * /watch command and the tasks page rather than offering a dead button.
  */
 add_task(async function test_monitor_button_region_gate() {
   await SpecialPowers.pushPrefEnv({
-    set: [[SUPPORTED_REGIONS_PREF, "CA"]],
+    set: [[SUPPORTED_REGIONS_PREF, UNSUPPORTED_MARKETS]],
   });
 
   AIWindow._updateMonitorWidgetRegistration();
@@ -615,7 +659,7 @@ add_task(async function test_monitor_button_region_gate() {
     Assert.equal(
       getMonitorButton(win),
       null,
-      "Monitor button is absent when the home region is unsupported"
+      "Monitor button is absent when no market covers the home region"
     );
     Assert.ok(
       !CustomizableUI.getUnusedWidgets(win.gNavToolbox.palette).some(

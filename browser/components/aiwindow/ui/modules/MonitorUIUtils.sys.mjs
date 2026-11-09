@@ -9,6 +9,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/agents/MonitorAgent.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   Region: "resource://gre/modules/Region.sys.mjs",
+  RegionLocaleMap: "moz-src:///toolkit/modules/RegionLocaleMap.sys.mjs",
   SCHEDULE_TYPES:
     "moz-src:///browser/components/aiwindow/models/agents/Schedule.sys.mjs",
   URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
@@ -25,11 +26,24 @@ const localization = new Localization(
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
+const SUPPORTED_REGIONS_DEFAULT = [
+  ["US", ["*"]],
+  ["CA", ["en-*"]],
+  ["GB", ["en-*"]],
+];
+
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "monitorSupportedRegions",
   "browser.smartwindow.agent.supportedRegions",
-  ""
+  JSON.stringify(SUPPORTED_REGIONS_DEFAULT),
+  null,
+  json =>
+    lazy.RegionLocaleMap.fromJSON(json, {
+      fallback: SUPPORTED_REGIONS_DEFAULT,
+      onInvalid: value =>
+        console.warn("Invalid JSON in supportedRegions pref:", value),
+    })
 );
 
 /**
@@ -394,20 +408,16 @@ export const MonitorUIUtils = {
   },
 
   /**
-   * Check whether the user's home region is allowed to use monitors.
-   * The allowed regions are read from the
-   * `browser.smartwindow.agent.supportedRegions` pref as a comma-separated
-   * list of region codes.
+   * Check whether the user's region is allowed to use monitors. The
+   * 'browser.smartwindow.agent.supportedRegions' pref pairs each region with
+   * the app locales it covers, so a supported region on its own is not enough.
    *
-   * @returns {boolean} True if the home region is in the supported list
+   * @returns {boolean} True if the home region and app locale are supported
    */
   isMonitorRegionSupported() {
-    const supportedRegions = lazy.monitorSupportedRegions
-      .split(",")
-      .map(region => region.trim().toUpperCase())
-      .filter(Boolean);
-
-    const homeRegion = lazy.Region.home?.toUpperCase();
-    return Boolean(homeRegion && supportedRegions.includes(homeRegion));
+    return lazy.monitorSupportedRegions.matches(
+      lazy.Region.home,
+      Services.locale.appLocaleAsBCP47
+    );
   },
 };

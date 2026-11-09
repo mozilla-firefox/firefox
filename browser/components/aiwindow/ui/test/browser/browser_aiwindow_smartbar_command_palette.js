@@ -9,6 +9,7 @@ const { Region } = ChromeUtils.importESModule(
 
 const SUPPORTED_REGIONS_PREF = "browser.smartwindow.agent.supportedRegions";
 const TEST_REGION = "US";
+const TEST_MARKETS = JSON.stringify([[TEST_REGION, ["en-*"]]]);
 
 add_setup(async function () {
   const originalRegion = Region.home;
@@ -21,7 +22,7 @@ add_setup(async function () {
       ["browser.search.suggest.enabled", false],
       ["browser.smartwindow.endpoint", "http://localhost:0/v1"],
       ["browser.smartwindow.agent.enabled", true],
-      [SUPPORTED_REGIONS_PREF, TEST_REGION],
+      [SUPPORTED_REGIONS_PREF, TEST_MARKETS],
     ],
   });
 });

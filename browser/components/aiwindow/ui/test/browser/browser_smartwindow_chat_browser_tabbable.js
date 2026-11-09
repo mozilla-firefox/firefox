@@ -115,7 +115,10 @@ add_task(async function test_aichat_browser_tabbable_after_sidebar_command() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.agent.enabled", true],
-      ["browser.smartwindow.agent.supportedRegions", "US"],
+      [
+        "browser.smartwindow.agent.supportedRegions",
+        JSON.stringify([["US", ["en-*"]]]),
+      ],
     ],
   });
 

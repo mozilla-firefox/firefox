@@ -6,6 +6,7 @@
 const WIDGET_ID = "smartwindow-monitor-button";
 const PANEL_ID = "smartwindow-monitor-panel";
 const TEST_REGION = "US";
+const TEST_MARKETS = JSON.stringify([[TEST_REGION, ["en-*"]]]);
 
 const {
   TOTAL_NUM_MONITORS,
@@ -45,7 +46,7 @@ add_setup(async function setup() {
       ["browser.smartwindow.enabled", true],
       ["browser.smartwindow.agent.enabled", true],
       ["browser.smartwindow.agent.toolbar.enabled", true],
-      ["browser.smartwindow.agent.supportedRegions", TEST_REGION],
+      ["browser.smartwindow.agent.supportedRegions", TEST_MARKETS],
     ],
   });
 

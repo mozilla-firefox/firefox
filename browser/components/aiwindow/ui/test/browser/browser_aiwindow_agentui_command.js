@@ -22,6 +22,7 @@ const { Region } = ChromeUtils.importESModule(
 const PREF_AGENT_ENABLED = "browser.smartwindow.agent.enabled";
 const SUPPORTED_REGIONS_PREF = "browser.smartwindow.agent.supportedRegions";
 const TEST_REGION = "US";
+const TEST_MARKETS = JSON.stringify([[TEST_REGION, ["en-*"]]]);
 
 const WATCH_COMMAND = `/${AGENT_COMMANDS.WATCH}`;
 
@@ -31,7 +32,7 @@ add_setup(async function () {
   const originalRegion = Region.home;
   Region._setHomeRegion(TEST_REGION, false);
   await SpecialPowers.pushPrefEnv({
-    set: [[SUPPORTED_REGIONS_PREF, TEST_REGION]],
+    set: [[SUPPORTED_REGIONS_PREF, TEST_MARKETS]],
   });
   registerCleanupFunction(() => {
     Region._setHomeRegion(originalRegion, false);
@@ -569,7 +570,13 @@ add_task(async function test_watch_command_handled_in_secondary_region() {
   await SpecialPowers.pushPrefEnv({
     set: [
       [PREF_AGENT_ENABLED, true],
-      [SUPPORTED_REGIONS_PREF, "US,CA"],
+      [
+        SUPPORTED_REGIONS_PREF,
+        JSON.stringify([
+          ["US", ["en-*"]],
+          ["CA", ["en-*"]],
+        ]),
+      ],
     ],
   });
   await MonitorAgent._resetForTesting();
@@ -605,7 +612,7 @@ add_task(async function test_watch_command_ignored_when_agent_disabled() {
   await SpecialPowers.pushPrefEnv({
     set: [
       [PREF_AGENT_ENABLED, false],
-      [SUPPORTED_REGIONS_PREF, TEST_REGION],
+      [SUPPORTED_REGIONS_PREF, TEST_MARKETS],
     ],
   });
   await MonitorAgent._resetForTesting();

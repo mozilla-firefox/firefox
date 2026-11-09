@@ -19,7 +19,13 @@ const { PlacesTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/PlacesTestUtils.sys.mjs"
 );
 
+const { Region } = ChromeUtils.importESModule(
+  "resource://gre/modules/Region.sys.mjs"
+);
+
 const originalDelete = MonitorAgent.deleteMonitor;
+
+const SUPPORTED_REGIONS_PREF = "browser.smartwindow.agent.supportedRegions";
 
 /**
  * Test that deleteMonitorWithConfirmation returns correct values when confirmation is skipped
@@ -260,4 +266,84 @@ add_task(function test_getScheduleL10n() {
     "ai-tasks-alert-schedule-daily-at",
     "A daily schedule uses the daily string"
   );
+});
+
+/**
+ * Makes locales available so a task can switch the app locale through
+ * Services.locale.requestedLocales.
+ *
+ * @param {string[]} locales
+ * @returns {Function} Restores the original available and requested locales.
+ */
+function useAppLocales(locales) {
+  const { availableLocales, requestedLocales } = Services.locale;
+  Services.locale.availableLocales = locales;
+  return () => {
+    Services.locale.availableLocales = availableLocales;
+    Services.locale.requestedLocales = requestedLocales;
+  };
+}
+
+/**
+ * The gate takes a home region and an app locale, so a supported region on its
+ * own is not enough and neither is a supported locale.
+ */
+add_task(function test_isMonitorRegionSupported_pairsRegionWithLocale() {
+  const originalRegion = Region.home;
+  const restoreLocales = useAppLocales(["en-US", "fr"]);
+  // A list made up for this test, not the markets the feature ships to.
+  Services.prefs.setCharPref(
+    SUPPORTED_REGIONS_PREF,
+    JSON.stringify([["US", ["en-*"]]])
+  );
+  const cases = [
+    ["US", "en-US", true],
+    ["US", "fr", false],
+  ];
+
+  try {
+    for (const [region, locale, expected] of cases) {
+      Region._setHomeRegion(region, false);
+      Services.locale.requestedLocales = [locale];
+      Assert.equal(
+        MonitorUIUtils.isMonitorRegionSupported(),
+        expected,
+        `${region} / ${locale} is ${expected ? "" : "not "}supported`
+      );
+    }
+  } finally {
+    Region._setHomeRegion(originalRegion, false);
+    restoreLocales();
+    Services.prefs.clearUserPref(SUPPORTED_REGIONS_PREF);
+  }
+});
+
+/**
+ * An empty pref is how the feature gets switched off everywhere, while an
+ * unparseable one falls back to the built-in markets rather than taking the
+ * feature away from everybody.
+ */
+add_task(function test_isMonitorRegionSupported_emptyAndMalformedPref() {
+  const originalRegion = Region.home;
+  const restoreLocales = useAppLocales(["en-US"]);
+  Region._setHomeRegion("US", false);
+  Services.locale.requestedLocales = ["en-US"];
+
+  try {
+    Services.prefs.setCharPref(SUPPORTED_REGIONS_PREF, "");
+    Assert.ok(
+      !MonitorUIUtils.isMonitorRegionSupported(),
+      "An empty pref switches the feature off"
+    );
+
+    Services.prefs.setCharPref(SUPPORTED_REGIONS_PREF, "US,CA");
+    Assert.ok(
+      MonitorUIUtils.isMonitorRegionSupported(),
+      "An unparseable pref falls back to the built-in markets"
+    );
+  } finally {
+    Region._setHomeRegion(originalRegion, false);
+    restoreLocales();
+    Services.prefs.clearUserPref(SUPPORTED_REGIONS_PREF);
+  }
 });

@@ -12,9 +12,11 @@ const PREF_RESUME_ACTIVITY_ENABLED =
 const PREF_SMARTWINDOW_ENABLED = "browser.smartwindow.enabled";
 const PREF_AUTH_IMPL = "browser.smartwindow.auth.impl";
 const PREF_AGENT_ENABLED = "browser.smartwindow.agent.enabled";
-const PREF_AGENT_SUPPORTED_REGIONS =
-  "browser.smartwindow.agent.supportedRegions";
 const PREF_AITAB_MENUS = "browser.smartwindow.aitab.menus";
+
+const { MonitorUIUtils } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/MonitorUIUtils.sys.mjs"
+);
 
 add_task(async function test_nimbus_enables_aitab_menus() {
   await SpecialPowers.pushPrefEnv({
@@ -200,26 +202,16 @@ add_task(async function test_nimbus_agent_watch_sets_and_restores_prefs() {
     true,
     "agent.enabled defaults to true before enrollment"
   );
-  is(
-    Services.prefs.getCharPref(PREF_AGENT_SUPPORTED_REGIONS),
-    "US,CA",
-    "agent.supportedRegions defaults to US,CA before enrollment"
-  );
 
   const cleanup = await NimbusTestUtils.enrollWithFeatureConfig({
     featureId: "smartWindowAgentWatch",
-    value: { enabled: false, supportedRegions: "GB" },
+    value: { enabled: false },
   });
 
   is(
     Services.prefs.getBoolPref(PREF_AGENT_ENABLED),
     false,
     "agent.enabled reflects the enrolled value"
-  );
-  is(
-    Services.prefs.getCharPref(PREF_AGENT_SUPPORTED_REGIONS),
-    "GB",
-    "agent.supportedRegions reflects the enrolled value"
   );
 
   await cleanup();
@@ -228,11 +220,6 @@ add_task(async function test_nimbus_agent_watch_sets_and_restores_prefs() {
     Services.prefs.getBoolPref(PREF_AGENT_ENABLED),
     true,
     "agent.enabled is restored to its default after unenrollment"
-  );
-  is(
-    Services.prefs.getCharPref(PREF_AGENT_SUPPORTED_REGIONS),
-    "US,CA",
-    "agent.supportedRegions is restored to its default after unenrollment"
   );
 });
 

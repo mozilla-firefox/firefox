@@ -89,7 +89,10 @@ describe("when the user copies an assistant message", () => {
     await SpecialPowers.pushPrefEnv({
       set: [
         ["browser.smartwindow.agent.enabled", true],
-        ["browser.smartwindow.agent.supportedRegions", "US"],
+        [
+          "browser.smartwindow.agent.supportedRegions",
+          JSON.stringify([["US", ["en-*"]]]),
+        ],
       ],
     });
     gRestoreSignIn = skipSignIn();

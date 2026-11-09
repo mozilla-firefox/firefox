@@ -2492,7 +2492,7 @@ pref("browser.smartwindow.manageTabs.includeChatTab", false);
 
 // Smart Window Agent
 pref("browser.smartwindow.agent.enabled", true);
-pref("browser.smartwindow.agent.supportedRegions", "US,CA");
+pref("browser.smartwindow.agent.supportedRegions", '[["US",["*"]],["CA",["en-*"]],["GB",["en-*"]]]');
 // Toolbar button that opens the monitor creation panel (bug 2062113).
 pref("browser.smartwindow.agent.toolbar.enabled", true);
 // Announces the monitor agent as a new feature with a dot on the toolbar

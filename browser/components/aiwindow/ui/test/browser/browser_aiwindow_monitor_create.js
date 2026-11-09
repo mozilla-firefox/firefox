@@ -13,6 +13,7 @@ const { Region } = ChromeUtils.importESModule(
 
 const SUPPORTED_REGIONS_PREF = "browser.smartwindow.agent.supportedRegions";
 const TEST_REGION = "US";
+const TEST_MARKETS = JSON.stringify([[TEST_REGION, ["en-*"]]]);
 
 /**
  * Tests for monitor creation in ai-tasks component
@@ -33,7 +34,7 @@ add_task(async function test_ai_tasks_page_loads() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.enabled", true],
-      [SUPPORTED_REGIONS_PREF, TEST_REGION],
+      [SUPPORTED_REGIONS_PREF, TEST_MARKETS],
     ],
   });
 
@@ -74,7 +75,7 @@ add_task(async function test_dialog_opens() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.enabled", true],
-      [SUPPORTED_REGIONS_PREF, TEST_REGION],
+      [SUPPORTED_REGIONS_PREF, TEST_MARKETS],
     ],
   });
 
@@ -166,7 +167,7 @@ add_task(async function test_form_validation() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.enabled", true],
-      [SUPPORTED_REGIONS_PREF, TEST_REGION],
+      [SUPPORTED_REGIONS_PREF, TEST_MARKETS],
     ],
   });
 
@@ -316,7 +317,7 @@ add_task(async function test_monitor_creation() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.enabled", true],
-      [SUPPORTED_REGIONS_PREF, TEST_REGION],
+      [SUPPORTED_REGIONS_PREF, TEST_MARKETS],
     ],
   });
 
@@ -521,7 +522,7 @@ add_task(async function test_add_button_shown_when_region_supported() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.enabled", true],
-      [SUPPORTED_REGIONS_PREF, TEST_REGION],
+      [SUPPORTED_REGIONS_PREF, TEST_MARKETS],
     ],
   });
 
@@ -582,7 +583,13 @@ add_task(async function test_add_button_shown_for_secondary_region() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.enabled", true],
-      [SUPPORTED_REGIONS_PREF, "US,CA"],
+      [
+        SUPPORTED_REGIONS_PREF,
+        JSON.stringify([
+          ["US", ["en-*"]],
+          ["CA", ["en-*"]],
+        ]),
+      ],
     ],
   });
 
@@ -612,7 +619,7 @@ add_task(async function test_add_button_shown_for_secondary_region() {
 
       Assert.ok(
         aiTasksJS._constants.isMonitorRegionSupported,
-        "A home region of CA in the US,CA list resolves to supported"
+        "A home region of CA covered by the markets resolves to supported"
       );
       await aiTasksJS.updateComplete;
 
@@ -633,7 +640,7 @@ add_task(async function test_added_page_chip_shows_open_tab_title() {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["browser.smartwindow.enabled", true],
-      [SUPPORTED_REGIONS_PREF, TEST_REGION],
+      [SUPPORTED_REGIONS_PREF, TEST_MARKETS],
     ],
   });
   const OPEN_URL =
