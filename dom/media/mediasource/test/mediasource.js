@@ -29,7 +29,9 @@ function addMSEPrefs(...prefs) {
 }
 
 async function runWithMSE(testFunction) {
-  await once(window, "load");
+  if (document.readyState !== "complete") {
+    await once(window, "load");
+  }
   await SpecialPowers.pushPrefEnv({ set: gMSETestPrefs });
 
   const ms = new MediaSource();
