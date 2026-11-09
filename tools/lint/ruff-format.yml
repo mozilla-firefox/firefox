@@ -16,5 +16,6 @@ ruff-format:
         - '**/.ruff.toml'
         - '**/ruff.toml'
         - '**/pyproject.toml'
+        - 'python/sites/lint.txt'
     type: external
     payload: python.ruff:format

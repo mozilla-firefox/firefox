@@ -12,6 +12,7 @@ ruff:
         - "**/ruff.toml"
         - "**/pyproject.toml"
         - "tools/lint/python/ruff.py"
+        - "python/sites/lint.txt"
     # Rules that should result in warnings rather than errors.
     warning-rules: [PLW0603, PLW1641, PLW2901, UP031]
     type: external

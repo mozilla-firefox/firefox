@@ -92,5 +92,6 @@ codespell:
         - ftl
     support-files:
         - 'tools/lint/spell/**'
+        - 'python/sites/lint.txt'
     type: external
     payload: spell:lint

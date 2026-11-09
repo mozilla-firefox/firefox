@@ -53,6 +53,7 @@ codespell:
             - '**/*.rst'
             - '**/*.ftl'
             - 'tools/lint/codespell.yml'
+            - 'python/sites/lint.txt'
 
 
 rejected-words:
@@ -479,6 +480,7 @@ py-ruff-format:
             - 'pyproject.toml'
             - 'tools/lint/ruff-format.yml'
             - 'tools/lint/python/ruff.py'
+            - 'python/sites/lint.txt'
 
 py-ruff:
     description: Run ruff over the gecko codebase
@@ -494,6 +496,7 @@ py-ruff:
             - 'pyproject.toml'
             - 'tools/lint/ruff.yml'
             - 'tools/lint/python/ruff.py'
+            - 'python/sites/lint.txt'
 
 
 python-sites:
@@ -618,6 +621,7 @@ md:
             - 'tools/lint/md.yml'
             - 'tools/lint/rumdl.toml'
             - 'tools/lint/python/rumdl.py'
+            - 'python/sites/lint.txt'
 
 shellcheck:
     description: shellcheck run over the gecko codebase

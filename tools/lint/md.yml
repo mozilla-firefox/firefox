@@ -43,5 +43,6 @@ rumdl:
         - '**/.rumdl.toml'
         - '**/rumdl.toml'
         - 'tools/lint/python/rumdl.py'
+        - 'python/sites/lint.txt'
     type: external
     payload: python.rumdl:lint
