@@ -17,3 +17,4 @@ nsstring = { path = "../../../../xpcom/rust/nsstring" }
 static_prefs = { path = "../../../../modules/libpref/init/static_prefs" }
 xpcom = { path = "../../../../xpcom/rust/xpcom" }
 thin-vec = { version = "0.2.1", features = ["gecko-ffi"] }
+tracing = "0.1"
