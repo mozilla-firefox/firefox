@@ -720,6 +720,8 @@
   <string name="preferences_search">Поиск</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Поисковые системы</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Добавить виджет поиска на домашний экран</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Виджет домашнего экрана</string>
   <!-- Preference for settings related to Search engines suggestions -->
