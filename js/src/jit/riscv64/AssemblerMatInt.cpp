@@ -340,6 +340,32 @@ static unsigned ExtractRotateInfo(int64_t Val) {
   return 0;
 }
 
+// Mozilla change: Return the amount by which |Val| rotated left is a value
+// that LUI loads, a 32-bit value whose low 12 bits are zero, or zero if there
+// is none. Boxed constant Values, such as true, and the complements of masks
+// that wrap around bit 63 are such values.
+static unsigned ExtractLuiRotateInfo(int64_t Val) {
+  // Rotated left by the result, Val is 12 zero bits, 20 bits of payload and 32
+  // copies of the payload's top bit. Going upwards circularly, Val therefore
+  // contains either a run of at least 33 ones ending at bit 63 - Rotate or a
+  // run of at least 44 zeros ending at bit 11 - Rotate. A run that long
+  // contains bit 0 or bit 32, so its end is found by counting the trailing
+  // ones from one of those bits. Try both for each sign of the payload.
+  for (bool Negative : {true, false}) {
+    uint64_t Run = Negative ? Val : ~Val;
+    int RunTop = Negative ? 63 : 11;
+    for (int RunEnd :
+         {std::countr_one(Run) - 1, 31 + std::countr_one(Hi_32(Run))}) {
+      unsigned Rotate = (RunTop - RunEnd) & 63;
+      int64_t Rotated = std::rotl<uint64_t>(Val, Rotate);
+      if (Rotate != 0 && is_int32(Rotated) && (Rotated & 0xfff) == 0) {
+        return Rotate;
+      }
+    }
+  }
+  return 0;
+}
+
 static void GenerateInstSeqLeadingZeros(Register rd, int64_t Val,
                                         InstSeq& result) {
   MOZ_ASSERT(Val > 0, "Expected positive val");
@@ -581,6 +607,14 @@ static void GenerateInstSeq(Register rd, int64_t Val, InstSeq& result) {
       uint64_t NegImm12 = std::rotl<uint64_t>(Val, Rotate);
       MOZ_ASSERT(is_int12(NegImm12));
       tmpSeq.addi(rd, zero_reg, NegImm12);
+      tmpSeq.rori(rd, rd, Rotate);
+      result = tmpSeq;
+    } else if (unsigned Rotate = ExtractLuiRotateInfo(Val)) {
+      // Mozilla change: Also rotate a value LUI loads, which LLVM doesn't try.
+      InstSeq tmpSeq;
+      int64_t Hi32 = std::rotl<uint64_t>(Val, Rotate);
+      MOZ_ASSERT(is_int32(Hi32) && (Hi32 & 0xfff) == 0);
+      tmpSeq.lui(rd, ToHigh20Low12(int32_t(Hi32)).high20);
       tmpSeq.rori(rd, rd, Rotate);
       result = tmpSeq;
     }
