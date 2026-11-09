@@ -7222,9 +7222,10 @@ nsresult nsDocShell::CreateDocumentViewer(const nsACString& aContentType,
           .map([](auto type) { return type == NavigationType::Replace; })
           .valueOr(false);
   if (isReplace) {
-    nsCOMPtr<nsIURI> uri = mActiveEntry->GetURIOrInheritedForAboutBlank();
+    nsCOMPtr<nsIURI> uri =
+        mActiveEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
     nsCOMPtr<nsIURI> targetURI =
-        mLoadingEntry->mInfo.GetURIOrInheritedForAboutBlank();
+        mLoadingEntry->mInfo.GetURIOrInheritedForAboutBlankOrSrcdoc();
     bool sameOrigin =
         NS_SUCCEEDED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
             targetURI, uri, false, false));
@@ -11592,9 +11593,10 @@ void nsDocShell::MaybeFireTraverseHistory(nsDocShellLoadState* aLoadState) {
     return;
   }
 
-  nsCOMPtr activeURI = mActiveEntry->GetURIOrInheritedForAboutBlank();
-  nsCOMPtr<nsIURI> loadingURI = aLoadState->GetLoadingSessionHistoryInfo()
-                                    ->mInfo.GetURIOrInheritedForAboutBlank();
+  nsCOMPtr activeURI = mActiveEntry->GetURIOrInheritedForAboutBlankOrSrcdoc();
+  nsCOMPtr<nsIURI> loadingURI =
+      aLoadState->GetLoadingSessionHistoryInfo()
+          ->mInfo.GetURIOrInheritedForAboutBlankOrSrcdoc();
   if (NS_FAILED(nsContentUtils::GetSecurityManager()->CheckSameOriginURI(
           activeURI, loadingURI,
           /*reportError=*/false,

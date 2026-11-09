@@ -2816,6 +2816,13 @@ bool NS_IsAboutSrcdoc(nsIURI* uri) {
   return spec.EqualsLiteral("about:srcdoc");
 }
 
+bool NS_IsAboutBlankOrSrcdoc(nsIURI* uri) {
+  nsAutoCString name;
+  return uri->SchemeIs("about") &&
+         NS_SUCCEEDED(NS_GetAboutModuleName(uri, name)) &&
+         (name.EqualsLiteral("blank") || name.EqualsLiteral("srcdoc"));
+}
+
 // https://fetch.spec.whatwg.org/#fetch-scheme
 bool NS_IsFetchScheme(nsIURI* uri) {
   for (const auto& scheme : {
