@@ -57,6 +57,8 @@ prefs = [
 
 ["browser_history_sidebar.js"]
 
+["browser_history_sidebar_card_context_menu.js"]
+
 ["browser_history_sidebar_drag_and_drop.js"]
 
 ["browser_history_sidebar_glean.js"]
