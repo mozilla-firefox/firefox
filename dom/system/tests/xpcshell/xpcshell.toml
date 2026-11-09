@@ -1,0 +1,24 @@
+[DEFAULT]
+head = "head.js"
+
+["test_imei_provider_linux.js"]
+run-if = ["os == 'linux'"]
+environment = [
+  # The GTK app shell connects to the system bus at startup, so the address of
+  # the bus serving the fake ModemManager has to be known before the test
+  # starts.
+  "DBUS_SYSTEM_BUS_ADDRESS=unix:abstract=firefox-xpcshell-modemmanager-mock",
+  # The following prevents gsettings from initializing dbus before our mock is
+  # ready.
+  "GSETTINGS_BACKEND=memory",
+]
+tags = "portal"
+
+["test_imei_provider_not_implemented.js"]
+run-if = [
+  "os == 'mac'",
+  "os == 'android'",
+]
+
+["test_imei_provider_windows.js"]
+run-if = ["os == 'win'"]

@@ -6,6 +6,14 @@ SOURCES += [
     "AndroidLocationProvider.cpp",
 ]
 
+if CONFIG["MOZ_ENTERPRISE"]:
+    UNIFIED_SOURCES += ["AndroidImeiProvider.cpp"]
+    SOURCE_HEADERS += ["AndroidImeiProvider.h"]
+
+    XPCOM_MANIFESTS += [
+        "components.conf",
+    ]
+
 include("/ipc/chromium/chromium-config.mozbuild")
 
 FINAL_LIBRARY = "xul"

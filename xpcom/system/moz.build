@@ -14,6 +14,9 @@ XPIDL_SOURCES += [
     "nsIXULRuntime.idl",
 ]
 
+if CONFIG["MOZ_ENTERPRISE"]:
+    XPIDL_SOURCES += ["nsIImeiProvider.idl"]
+
 XPIDL_MODULE = "xpcom_system"
 
 with Files("nsIBlocklistService.idl"):

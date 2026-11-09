@@ -19,6 +19,16 @@ LOCAL_INCLUDES += [
     "/dom/system/windows/location",
 ]
 
+if CONFIG["MOZ_ENTERPRISE"]:
+    UNIFIED_SOURCES += ["MobileBroadbandImeiProvider.cpp"]
+    SOURCE_HEADERS += ["MobileBroadbandImeiProvider.h"]
+
+    XPCOM_MANIFESTS += [
+        "components.conf",
+    ]
+
+    TEST_DIRS += ["gtest"]
+
 DIRS += ["location"]
 
 include("/ipc/chromium/chromium-config.mozbuild")

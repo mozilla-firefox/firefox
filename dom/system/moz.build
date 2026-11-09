@@ -85,3 +85,6 @@ LOCAL_INCLUDES += [
 ]
 
 MOCHITEST_MANIFESTS += ["tests/mochitest.toml"]
+
+if CONFIG["MOZ_ENTERPRISE"]:
+    XPCSHELL_TESTS_MANIFESTS += ["tests/xpcshell/xpcshell.toml"]
