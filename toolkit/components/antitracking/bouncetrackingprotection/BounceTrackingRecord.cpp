@@ -12,76 +12,50 @@ extern LazyLogModule gBounceTrackingProtectionLog;
 
 NS_IMPL_ISUPPORTS(BounceTrackingRecord, nsIBounceTrackingRecord);
 
-void BounceTrackingRecord::SetInitialHost(
-    const nsACString& aHost, const OriginAttributes& aOriginAttributes) {
-  mInitialHost = aHost;
-  mInitialOriginAttributes =
-      BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-          aOriginAttributes);
+void BounceTrackingRecord::SetInitialSite(const BounceTrackingSite& aSite) {
+  mInitialSite = aSite;
 }
 
-const nsACString& BounceTrackingRecord::GetInitialHost() const {
-  return mInitialHost;
+const BounceTrackingSite& BounceTrackingRecord::InitialSite() const {
+  return mInitialSite;
 }
 
-void BounceTrackingRecord::SetFinalHost(
-    const nsACString& aHost, const OriginAttributes& aOriginAttributes) {
-  mFinalHost = aHost;
-  mFinalOriginAttributes =
-      BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-          aOriginAttributes);
+void BounceTrackingRecord::SetFinalSite(const BounceTrackingSite& aSite) {
+  mFinalSite = aSite;
 }
 
-bool BounceTrackingRecord::IsInitialSite(
-    const nsACString& aHost, const OriginAttributes& aOriginAttributes) const {
-  return aHost == mInitialHost && aOriginAttributes == mInitialOriginAttributes;
+const BounceTrackingSite& BounceTrackingRecord::FinalSite() const {
+  return mFinalSite;
 }
 
-bool BounceTrackingRecord::IsFinalSite(
-    const nsACString& aHost, const OriginAttributes& aOriginAttributes) const {
-  return aHost == mFinalHost && aOriginAttributes == mFinalOriginAttributes;
-}
-
-const nsACString& BounceTrackingRecord::GetFinalHost() const {
-  return mFinalHost;
-}
-
-void BounceTrackingRecord::AddBounceHost(
-    const nsACString& aHost, const OriginAttributes& aOriginAttributes) {
-  MOZ_ASSERT(!aHost.IsEmpty());
-
-  mBounceHosts
-      .LookupOrInsert(
-          BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-              aOriginAttributes))
-      .Insert(aHost);
+void BounceTrackingRecord::AddBounceSite(const BounceTrackingSite& aSite) {
+  mBounceSites.Insert(aSite);
   MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug, "{}: {}",
               __FUNCTION__, *this);
 }
 
-void BounceTrackingRecord::RemoveBounceHosts(
+const BounceTrackingRecord::BounceSiteSet& BounceTrackingRecord::BounceSites()
+    const {
+  return mBounceSites;
+}
+
+void BounceTrackingRecord::RemoveBounceSites(
     const OriginAttributes& aOriginAttributes) {
-  mBounceHosts.Remove(
+  OriginAttributes originAttributes =
       BounceTrackingProtectionStorage::NormalizeOriginAttributes(
-          aOriginAttributes));
+          aOriginAttributes);
+  mBounceSites.RemoveIf([&](const BounceTrackingSite& aSite) {
+    return !aSite.IsNull() && aSite.OriginAttributesRef() == originAttributes;
+  });
   MOZ_LOG_FMT(gBounceTrackingProtectionLog, LogLevel::Debug, "{}: {}",
               __FUNCTION__, *this);
 }
 
-void BounceTrackingRecord::AddUserActivationHost(const nsACString& aHost) {
-  if (!aHost.IsEmpty()) {
-    mUserActivationHosts.Insert(aHost);
-  }
-}
-
-const BounceTrackingRecord::BounceHostMap&
-BounceTrackingRecord::GetBounceHosts() const {
-  return mBounceHosts;
-}
-
-bool BounceTrackingRecord::HasBounceHost(const nsACString& aHost) const {
-  for (const auto& hosts : mBounceHosts.Values()) {
-    if (hosts.Contains(aHost)) {
+bool BounceTrackingRecord::HasBounceSiteHost(
+    const nsACString& aSiteHost) const {
+  MOZ_ASSERT(!aSiteHost.IsEmpty());
+  for (const BounceTrackingSite& site : mBounceSites) {
+    if (site.SiteHost() == aSiteHost) {
       return true;
     }
   }
@@ -90,35 +64,43 @@ bool BounceTrackingRecord::HasBounceHost(const nsACString& aHost) const {
 
 bool BounceTrackingRecord::HasOriginAttributesMatching(
     OriginAttributesPredicate aPredicate) const {
-  if ((!mInitialHost.IsEmpty() && aPredicate(mInitialOriginAttributes)) ||
-      (!mFinalHost.IsEmpty() && aPredicate(mFinalOriginAttributes))) {
+  auto matches = [&](const BounceTrackingSite& aSite) {
+    return !aSite.IsNull() && aPredicate(aSite.OriginAttributesRef());
+  };
+  if (matches(mInitialSite) || matches(mFinalSite)) {
     return true;
   }
-  for (const auto& entry : mBounceHosts) {
-    if (!aPredicate(entry.GetKey())) {
-      continue;
-    }
-    for (const nsACString& host : entry.GetData()) {
-      if (!host.EqualsLiteral("null")) {
-        return true;
-      }
+  for (const BounceTrackingSite& site : mBounceSites) {
+    if (matches(site)) {
+      return true;
     }
   }
   return false;
 }
 
 bool BounceTrackingRecord::HasSiteHost(
-    const nsACString& aHost, OriginAttributesPredicate aPredicate) const {
-  if ((aHost == mInitialHost && aPredicate(mInitialOriginAttributes)) ||
-      (aHost == mFinalHost && aPredicate(mFinalOriginAttributes))) {
+    const nsACString& aSiteHost, OriginAttributesPredicate aPredicate) const {
+  MOZ_ASSERT(!aSiteHost.IsEmpty());
+  auto matches = [&](const BounceTrackingSite& aSite) {
+    return aSite.SiteHost() == aSiteHost &&
+           aPredicate(aSite.OriginAttributesRef());
+  };
+  if (matches(mInitialSite) || matches(mFinalSite)) {
     return true;
   }
-  for (const auto& entry : mBounceHosts) {
-    if (aPredicate(entry.GetKey()) && entry.GetData().Contains(aHost)) {
+  for (const BounceTrackingSite& site : mBounceSites) {
+    if (matches(site)) {
       return true;
     }
   }
   return false;
+}
+
+void BounceTrackingRecord::AddUserActivationSite(
+    const BounceTrackingSite& aSite) {
+  if (!aSite.IsNull()) {
+    mUserActivationHosts.Insert(aSite.SiteHost());
+  }
 }
 
 const nsTHashSet<nsCStringHashKey>&
@@ -133,22 +115,20 @@ void BounceTrackingRecord::ClearUserActivationHosts() {
 // nsIBounceTrackingRecord
 
 NS_IMETHODIMP BounceTrackingRecord::GetInitialHost(nsACString& aResult) {
-  aResult = mInitialHost;
+  aResult = mInitialSite.SiteHost();
   return NS_OK;
 }
 
 NS_IMETHODIMP BounceTrackingRecord::GetFinalHost(nsACString& aResult) {
-  aResult = mFinalHost;
+  aResult = mFinalSite.SiteHost();
   return NS_OK;
 }
 
 NS_IMETHODIMP BounceTrackingRecord::GetBounceHosts(
     nsTArray<nsCString>& aResult) {
-  for (const auto& hosts : mBounceHosts.Values()) {
-    for (const auto& host : hosts) {
-      if (!host.EqualsLiteral("null") && !aResult.Contains(host)) {
-        aResult.AppendElement(host);
-      }
+  for (const BounceTrackingSite& site : mBounceSites) {
+    if (!site.IsNull() && !aResult.Contains(site.SiteHost())) {
+      aResult.AppendElement(site.SiteHost());
     }
   }
   return NS_OK;

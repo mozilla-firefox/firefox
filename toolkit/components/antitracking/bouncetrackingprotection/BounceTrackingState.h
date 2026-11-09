@@ -106,14 +106,13 @@ class BounceTrackingState : public nsIWebProgressListener,
   static bool ShouldTrackPrincipal(nsIPrincipal* aPrincipal);
 
   // Check if there is a BounceTrackingState which current browsing context is
-  // associated with aSiteHost. Also takes OriginAttributes into account for
-  // isolation between normal browsing, private browsing and containers.
+  // associated with aSite. The partition is taken into account for isolation
+  // between normal browsing, private browsing and containers.
   // This is an approximation for checking if a given site is currently loaded
   // in the top level context, e.g. in a tab. See Bug 1842047 for adding a more
   // accurate check that calls into the browser implementations.
   [[nodiscard]] static nsresult HasBounceTrackingStateForSite(
-      const nsACString& aSiteHost, const OriginAttributes& aOriginAttributes,
-      bool& aResult);
+      const BounceTrackingSite& aSite, bool& aResult);
 
   // Get the currently associated BrowsingContext. Returns nullptr if it has not
   // been attached yet.
@@ -125,7 +124,7 @@ class BounceTrackingState : public nsIWebProgressListener,
 
   // Record sites which have user activation in the current extended
   // navigation.
-  [[nodiscard]] nsresult OnUserActivation(const nsACString& aSiteHost);
+  [[nodiscard]] nsresult OnUserActivation(const BounceTrackingSite& aSite);
 
   // Drops the hops of a load retargeted into another container from the record
   // if the record is classified or continued here before OnLoadRetargeted could
@@ -181,16 +180,10 @@ class BounceTrackingState : public nsIWebProgressListener,
   // Init to be called after creation, attaches nsIWebProgressListener.
   [[nodiscard]] nsresult Init(dom::BrowsingContextWebProgress* aWebProgress);
 
-  struct SiteListEntry {
-    nsCString mSiteHost;
-    // The storage partition the hop ran in.
-    OriginAttributes mOriginAttributes;
-  };
-
   // When the response is received at the end of a navigation, fill the
   // bounce set.
   [[nodiscard]] nsresult OnResponseReceived(
-      const nsTArray<SiteListEntry>& aSiteList);
+      const nsTArray<BounceTrackingSite>& aSiteList);
 
   [[nodiscard]] nsresult StartClientBounceDetectionTimeout();
 
