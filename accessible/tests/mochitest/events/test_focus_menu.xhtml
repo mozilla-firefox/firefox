@@ -43,10 +43,14 @@
       // mouseover and click on menuitem makes it active before menubar is
       // active
       let focused = waitForEvent(EVENT_FOCUS, "fruit");
+      const fruitPopupShown = new Promise(resolve =>
+        getNode("fruit").menupopup.addEventListener("popupshown", resolve, {
+          once: true,
+        })
+      );
       synthesizeMouseAtCenter(getNode("fruit"), {});
       await focused;
-
-      await new Promise(resolve => requestAnimationFrame(resolve));
+      await fruitPopupShown;
 
       // mouseover on menuitem when menubar is active
       focused = waitForEvent(EVENT_FOCUS, "apple");
