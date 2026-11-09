@@ -323,7 +323,7 @@ already_AddRefed<Promise> TextGenerator::Generate(
   const uint32_t chunkTokens = request.bufferLength();
   mActor->SendGenerate(request)->Then(
       GetMainThreadSerialEventTarget(), __func__,
-      [promise, self, generateStart, stats,
+      [promise, self, generateStart, stats = std::move(stats),
        chunkTokens](const GenerateResponse& aResponse) {
         self->OnGenerateSettled();
         if (aResponse.type() == GenerateResponse::TGenerateError) {
