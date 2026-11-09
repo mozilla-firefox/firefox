@@ -365,7 +365,7 @@ def setup_browsertime(config, tasks):
                 "windows.*aarch64.*": [
                     "browsertime",
                     "win32-geckodriver",
-                    "win32-node",
+                    "win64-aarch64-node",
                 ],
                 "windows.*-64.*": ["browsertime", "win64-geckodriver", "win64-node"],
             },
