@@ -721,6 +721,13 @@ export class PrefsFeed {
     // computed in main process
     values.isPrivateBrowsingEnabled = lazy.PrivateBrowsingUtils.enabled;
     values.platform = AppConstants.platform;
+    /**
+     * @backward-compat { version 161 }
+     * MozAdsReportReason only has SCAM, MISLEADING and OFFENSIVE from 161, so
+     * ReportContent keeps showing the legacy ad report reasons before that.
+     */
+    values.adsNewReportReasonsSupported =
+      Services.vc.compare(AppConstants.MOZ_APP_VERSION, "161.0a1") >= 0;
 
     // Save the geo pref if we have it
     if (lazy.Region.home) {

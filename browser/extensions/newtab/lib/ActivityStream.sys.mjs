@@ -1372,6 +1372,13 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
+    "discoverystream.reportAds.newReasons.enabled",
+    {
+      title: "Boolean flag to enable updated reporting reasons for ads",
+      value: false,
+    },
+  ],
+  [
     "discoverystream.sections.following",
     {
       title: "A comma-separated list of strings of followed section topics",

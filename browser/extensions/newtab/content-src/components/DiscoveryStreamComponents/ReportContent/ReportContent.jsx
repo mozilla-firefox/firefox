@@ -5,12 +5,51 @@ import React, { useRef, useEffect, useCallback, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { actionTypes as at, actionCreators as ac } from "common/Actions.mjs";
 
+export const PREF_REPORT_ADS_NEW_REASONS_ENABLED =
+  "discoverystream.reportAds.newReasons.enabled";
+
+const LEGACY_AD_REPORT_REASONS = [
+  {
+    l10nId: "newtab-report-ads-reason-not-interested",
+    value: "not_interested",
+  },
+  { l10nId: "newtab-report-ads-reason-inappropriate", value: "inappropriate" },
+  {
+    l10nId: "newtab-report-ads-reason-seen-it-too-many-times",
+    value: "seen_too_many_times",
+  },
+];
+
+/**
+ * @backward-compat { version 161 }
+ * The main process maps these values to MozAdsReportReason, which only has
+ * SCAM, MISLEADING and OFFENSIVE from Firefox 161. On older versions reports
+ * sent through the ads client are dropped, so only use this list when both
+ * PREF_REPORT_ADS_NEW_REASONS_ENABLED and adsNewReportReasonsSupported (set by
+ * PrefsFeed from the Firefox version) are true.
+ */
+const AD_REPORT_REASONS = [
+  { l10nId: "newtab-report-ads-reason-scam", value: "scam" },
+  { l10nId: "newtab-report-ads-reason-misleading", value: "misleading" },
+  { l10nId: "newtab-report-ads-reason-offensive", value: "offensive" },
+];
+
 export const ReportContent = spocs => {
   const dispatch = useDispatch();
   const modal = useRef(null);
   const radioGroupRef = useRef(null);
   const submitButtonRef = useRef(null);
   const report = useSelector(state => state.DiscoveryStream.report);
+  const newReportReasonsEnabled = useSelector(
+    state => state.Prefs.values[PREF_REPORT_ADS_NEW_REASONS_ENABLED]
+  );
+  const newReportReasonsSupported = useSelector(
+    state => state.Prefs.values.adsNewReportReasonsSupported
+  );
+  const adReportReasons =
+    newReportReasonsEnabled && newReportReasonsSupported
+      ? AD_REPORT_REASONS
+      : LEGACY_AD_REPORT_REASONS;
   const [valueSelected, setValueSelected] = useState(false);
   const [selectedReason, setSelectedReason] = useState(null);
   const spocData = spocs.spocs.data;
@@ -188,18 +227,13 @@ export const ReportContent = spocs => {
               className="report-ads-options"
               headingLevel="3"
             >
-              <moz-radio
-                data-l10n-id="newtab-report-ads-reason-not-interested"
-                value="not_interested"
-              ></moz-radio>
-              <moz-radio
-                data-l10n-id="newtab-report-ads-reason-inappropriate"
-                value="inappropriate"
-              ></moz-radio>
-              <moz-radio
-                data-l10n-id="newtab-report-ads-reason-seen-it-too-many-times"
-                value="seen_too_many_times"
-              ></moz-radio>
+              {adReportReasons.map(({ l10nId, value }) => (
+                <moz-radio
+                  key={value}
+                  data-l10n-id={l10nId}
+                  value={value}
+                ></moz-radio>
+              ))}
             </moz-radio-group>
           </>
         ) : (

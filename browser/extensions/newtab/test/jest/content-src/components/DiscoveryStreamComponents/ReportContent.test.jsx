@@ -1,6 +1,9 @@
 import { fireEvent, render } from "@testing-library/react";
 import { INITIAL_STATE, reducers } from "common/Reducers.sys.mjs";
-import { ReportContent } from "content-src/components/DiscoveryStreamComponents/ReportContent/ReportContent";
+import {
+  PREF_REPORT_ADS_NEW_REASONS_ENABLED,
+  ReportContent,
+} from "content-src/components/DiscoveryStreamComponents/ReportContent/ReportContent";
 import { combineReducers, createStore } from "redux";
 import { Provider } from "react-redux";
 import { actionCreators as ac } from "common/Actions.mjs";
@@ -24,9 +27,12 @@ const BASE_REPORT = {
   reporting_url: "https://example.com/report",
 };
 
-function testState({ card_type, visible }) {
+function testState({ card_type, visible, prefs = {} }) {
   return {
-    Prefs: DEFAULT_PROPS.prefs,
+    Prefs: {
+      ...DEFAULT_PROPS.prefs,
+      values: { ...DEFAULT_PROPS.prefs.values, ...prefs },
+    },
     DiscoveryStream: {
       ...INITIAL_STATE.DiscoveryStream,
       report: {
@@ -130,6 +136,69 @@ describe("Discovery Stream <ReportContent>", () => {
     expect(
       wrapper.container.querySelectorAll(".report-content-options").length
     ).toBe(0);
+  });
+
+  function renderAdReport(prefs = {}) {
+    const state = testState({ card_type: "spoc", visible: true, prefs });
+    wrapper = render(
+      <WrapWithProvider state={state} dispatch={dispatch}>
+        <ReportContent spocs={{ spocs: { data: {} } }} />
+      </WrapWithProvider>
+    );
+  }
+
+  function adReasonValues() {
+    return [
+      ...wrapper.container.querySelectorAll(".report-ads-options moz-radio"),
+    ].map(radio => radio.getAttribute("value"));
+  }
+
+  const LEGACY_AD_REASON_VALUES = [
+    "not_interested",
+    "inappropriate",
+    "seen_too_many_times",
+  ];
+  const NEW_REASONS_ON = {
+    [PREF_REPORT_ADS_NEW_REASONS_ENABLED]: true,
+    adsNewReportReasonsSupported: true,
+  };
+
+  it("should render legacy ad reporting reasons when new reasons pref is off", () => {
+    renderAdReport();
+    expect(adReasonValues()).toEqual(LEGACY_AD_REASON_VALUES);
+  });
+
+  it("should render new ad reporting reasons when new reasons pref is on", () => {
+    renderAdReport(NEW_REASONS_ON);
+    expect(adReasonValues()).toEqual(["scam", "misleading", "offensive"]);
+  });
+
+  it("should render legacy ad reporting reasons when new reasons are not supported", () => {
+    renderAdReport({ ...NEW_REASONS_ON, adsNewReportReasonsSupported: false });
+    expect(adReasonValues()).toEqual(LEGACY_AD_REASON_VALUES);
+  });
+
+  it("should dispatch REPORT_AD_SUBMIT with the selected new reason", () => {
+    renderAdReport(NEW_REASONS_ON);
+
+    const scamRadio = wrapper.container.querySelector(
+      'moz-radio[value="scam"]'
+    );
+    // moz-radio isn't defined in jsdom, so set .value directly and dispatch
+    // a bubbling change event for the radio group's listener to pick up.
+    scamRadio.value = "scam";
+    fireEvent(scamRadio, new Event("change", { bubbles: true }));
+    fireEvent.click(
+      wrapper.container.querySelector("moz-button.submit-report-btn")
+    );
+
+    const [firstCall] = dispatch.mock.calls;
+    expect(firstCall[0]).toMatchObject(
+      ac.AlsoToMain({
+        type: "REPORT_AD_SUBMIT",
+        data: { report_reason: "scam" },
+      })
+    );
   });
 
   it("should render content reporting options if card_type is organic", () => {

@@ -59,7 +59,7 @@ describe("PrefsFeed", () => {
       ["baz", { value: 1, skipBroadcast: true }],
       ["qux", { value: 1, skipBroadcast: true, alsoToPreloaded: true }],
     ]);
-    services = mockServices(["prefs", "obs"]);
+    services = mockServices(["prefs", "obs", "vc"]);
     nimbusFeatures = mockNimbusFeatures();
     region = { home: "US", REGION_TOPIC: "browser-region-updated" };
     selectableProfileService = {
@@ -166,6 +166,24 @@ describe("PrefsFeed", () => {
     expect(data.foo).toBe(1);
     expect(data.bar).toBe(2);
     expect(data.isPrivateBrowsingEnabled).toBe(true);
+  });
+  describe(".adsNewReportReasonsSupported", () => {
+    it("should be true on 161 and newer", () => {
+      services.vc.compare.mockReturnValue(0);
+      feed.onAction({ type: at.INIT });
+      const [[{ data }]] = feed.store.dispatch.mock.calls;
+      expect(services.vc.compare).toHaveBeenCalledWith(
+        expect.anything(),
+        "161.0a1"
+      );
+      expect(data.adsNewReportReasonsSupported).toBe(true);
+    });
+    it("should be false before 161", () => {
+      services.vc.compare.mockReturnValue(-1);
+      feed.onAction({ type: at.INIT });
+      const [[{ data }]] = feed.store.dispatch.mock.calls;
+      expect(data.adsNewReportReasonsSupported).toBe(false);
+    });
   });
   it("should dispatch PREFS_INITIAL_VALUES with a .featureConfig", () => {
     nimbusFeatures.newtab.getAllVariables.mockReturnValue({
