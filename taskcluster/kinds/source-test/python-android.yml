@@ -32,9 +32,7 @@ android-gradle-build-mach: &android-gradle-build
             MOZ_ARTIFACT_ALLOW_NON_SHIPPABLE: '1'
             PYTEST_ADDOPTS: '-m "not app_build"'
         max-run-time: 7200
-    run-on-repo-type: [hg]
     run:
-        clone-with: hg
         using: run-task
         command: >
             ln -s $MOZ_FETCHES_DIR/android-gradle-dependencies $GECKO_PATH &&
