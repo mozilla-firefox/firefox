@@ -43,7 +43,12 @@ const lazy = XPCOMUtils.declareLazy({
 export class MozTabbrowserTabs extends MozElements.TabsBase {
   static observedAttributes = ["orient"];
 
-  #animatingGroups = new Set();
+  /**
+   * Number of collapse or expand animations still running, by tab group id.
+   *
+   * @type {Map<string, number>}
+   */
+  #animatingGroups = new Map();
 
   /** @type {Set<MozTabbrowserTab>} */
   #openingTabs = new Set();
@@ -381,21 +386,46 @@ export class MozTabbrowserTabs extends MozElements.TabsBase {
 
   on_TabGroupExpand(event) {
     this._invalidateCachedVisibleTabs();
-    this.#animatingGroups.add(event.target.id);
+    this.#startGroupAnimation(event.target.id);
   }
 
   on_TabGroupCollapse(event) {
     this._invalidateCachedVisibleTabs();
     this._unlockTabSizing();
-    this.#animatingGroups.add(event.target.id);
+    this.#startGroupAnimation(event.target.id);
+  }
+
+  #startGroupAnimation(id) {
+    this.#animatingGroups.set(id, (this.#animatingGroups.get(id) ?? 0) + 1);
   }
 
   on_TabGroupAnimationComplete(event) {
     // Delay clearing the animating flag so overflow/underflow handlers
     // triggered by the size change can observe it and skip auto-scroll.
-    window.requestAnimationFrame(() => {
-      this.#animatingGroups.delete(event.target.id);
-    });
+    // arrowscrollbox dispatches those from a requestAnimationFrame callback
+    // that its ResizeObserver queues after the layout flush, so queue ours
+    // after the layout flush the animation's last frame leaves pending.
+    let { id } = event.target;
+    let endAnimation = () => {
+      // A group restored collapsed completes an animation whose start
+      // happened before it was in the tab strip.
+      if (!this.#animatingGroups.has(id)) {
+        return;
+      }
+      let count = this.#animatingGroups.get(id) - 1;
+      if (count) {
+        this.#animatingGroups.set(id, count);
+      } else {
+        this.#animatingGroups.delete(id);
+      }
+    };
+    window
+      .promiseDocumentFlushed(() => {})
+      .then(
+        () => window.requestAnimationFrame(endAnimation),
+        // Without a pres shell, there is no overflow to wait for.
+        endAnimation
+      );
   }
 
   on_TabGroupCreate() {
