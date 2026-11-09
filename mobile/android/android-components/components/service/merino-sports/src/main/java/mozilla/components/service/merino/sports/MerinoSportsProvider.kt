@@ -6,8 +6,6 @@ package mozilla.components.service.merino.sports
 
 import androidx.annotation.WorkerThread
 import androidx.core.net.toUri
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
 import mozilla.components.concept.base.crash.Breadcrumb
 import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.concept.fetch.Client
@@ -31,10 +29,6 @@ class MerinoSportsProvider(
 ) {
 
     private val logger = Logger("MerinoSportsProvider")
-    private val json = Json {
-        ignoreUnknownKeys = true
-        useAlternativeNames = false
-    }
 
     /**
      * Fetches the previous, current and upcoming matches from [matchesEndPointUrl].
@@ -49,8 +43,8 @@ class MerinoSportsProvider(
 
         return client.fetchBodyOrNull(request = request, logger = logger)?.let { response ->
             try {
-                json.decodeFromString<MerinoMatches>(response)
-            } catch (e: SerializationException) {
+                merinoSportsJson.decodeFromString<MerinoMatches>(response)
+            } catch (e: IllegalArgumentException) {
                 val message = "MerinoSportsProvider - Failed to deserialize matches"
                 logger.error(message = message, throwable = e)
                 crashReporter?.recordCrashBreadcrumb(Breadcrumb(message = message))

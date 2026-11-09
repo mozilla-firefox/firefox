@@ -17,13 +17,15 @@ dependencies {
     implementation project(':components:support-base')
 
     implementation libs.androidx.core
+    implementation libs.androidx.datastore
+    implementation libs.kotlinx.coroutines
     implementation libs.kotlinx.serialization.json
 
     testImplementation project(':components:support-test')
 
     testImplementation libs.androidx.test.junit
     testImplementation libs.kotlin.test
-    testImplementation libs.kotlinx.coroutines
+    testImplementation libs.kotlinx.coroutines.test
     testImplementation libs.robolectric
 }
 
