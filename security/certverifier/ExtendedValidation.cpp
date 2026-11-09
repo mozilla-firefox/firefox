@@ -653,6 +653,32 @@ static const struct EVInfo kEVInfos[] = {
     "DdPjvGz5a7E=",
   },
   {
+    // CN=Hellenic Academic and Research Institutions ECC RootCA 2015,O=Hellenic Academic and Research Institutions Cert. Authority,L=Athens,C=GR
+    "2.23.140.1.1",
+    "CA/Browser Forum EV OID",
+    { 0x44, 0xB5, 0x45, 0xAA, 0x8A, 0x25, 0xE6, 0x5A, 0x73, 0xCA, 0x15,
+      0xDC, 0x27, 0xFC, 0x36, 0xD2, 0x4C, 0x1C, 0xB9, 0x95, 0x3A, 0x06,
+      0x65, 0x39, 0xB1, 0x15, 0x82, 0xDC, 0x48, 0x7B, 0x48, 0x33 },
+    "MIGqMQswCQYDVQQGEwJHUjEPMA0GA1UEBxMGQXRoZW5zMUQwQgYDVQQKEztIZWxs"
+    "ZW5pYyBBY2FkZW1pYyBhbmQgUmVzZWFyY2ggSW5zdGl0dXRpb25zIENlcnQuIEF1"
+    "dGhvcml0eTFEMEIGA1UEAxM7SGVsbGVuaWMgQWNhZGVtaWMgYW5kIFJlc2VhcmNo"
+    "IEluc3RpdHV0aW9ucyBFQ0MgUm9vdENBIDIwMTU=",
+    "AA==",
+  },
+  {
+    // CN=Hellenic Academic and Research Institutions RootCA 2015,O=Hellenic Academic and Research Institutions Cert. Authority,L=Athens,C=GR
+    "2.23.140.1.1",
+    "CA/Browser Forum EV OID",
+    { 0xA0, 0x40, 0x92, 0x9A, 0x02, 0xCE, 0x53, 0xB4, 0xAC, 0xF4, 0xF2,
+      0xFF, 0xC6, 0x98, 0x1C, 0xE4, 0x49, 0x6F, 0x75, 0x5E, 0x6D, 0x45,
+      0xFE, 0x0B, 0x2A, 0x69, 0x2B, 0xCD, 0x52, 0x52, 0x3F, 0x36 },
+    "MIGmMQswCQYDVQQGEwJHUjEPMA0GA1UEBxMGQXRoZW5zMUQwQgYDVQQKEztIZWxs"
+    "ZW5pYyBBY2FkZW1pYyBhbmQgUmVzZWFyY2ggSW5zdGl0dXRpb25zIENlcnQuIEF1"
+    "dGhvcml0eTFAMD4GA1UEAxM3SGVsbGVuaWMgQWNhZGVtaWMgYW5kIFJlc2VhcmNo"
+    "IEluc3RpdHV0aW9ucyBSb290Q0EgMjAxNQ==",
+    "AA==",
+  },
+  {
     // CN=HARICA TLS RSA Root CA 2021,O=Hellenic Academic and Research Institutions CA,C=GR
     "2.23.140.1.1",
     "CA/Browser Forum EV OID",
