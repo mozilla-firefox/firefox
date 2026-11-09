@@ -91,6 +91,9 @@ class UnscaledFontFontconfig : public UnscaledFontFreeType {
 
   FontType GetType() const override { return FontType::FONTCONFIG; }
 
+  static bool ValidateFontDescriptor(const uint8_t* aName, size_t aNameLength,
+                                     nsCString& aResultName, uint32_t& aIndex);
+
   static already_AddRefed<UnscaledFont> CreateFromFontDescriptor(
       const uint8_t* aData, uint32_t aDataLength, uint32_t aIndex);
 
