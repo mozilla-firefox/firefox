@@ -18324,10 +18324,10 @@
   mirror: always
 
 # Retarget a top-level navigation to a site bound to a container into a new tab
-# in that container. Disabled by default.
+# in that container.
 - name: privacy.containers.switchDuringNavigation.enabled
   type: RelaxedAtomicBool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 # First Party Isolation (double keying), disabled by default.
