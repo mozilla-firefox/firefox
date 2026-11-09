@@ -457,6 +457,7 @@ void nsAnimationManager::UpdateAnimations(
 void nsAnimationManager::RemoveNamedTimelineAnimation(
     const nsAtom* aName, mozilla::dom::CSSAnimation* aAnimation) {
   RemoveCorrespondingAnimation(aName, aAnimation, mAnimationsWithNamedTimeline);
+  mAnimationsWithDeferredUpdate.Remove(aAnimation);
 }
 
 /**
@@ -585,12 +586,13 @@ void nsAnimationManager::DoUpdateAnimations(
 
   nsAutoAnimationMutationBatch mb(aTarget.mElement->OwnerDoc());
 
-  // Build the updated animations list. Even if we remove entries in
-  // `mAnimationsWithNamedTimeline` in this function later, entries are added
-  // when we build the list, breaking the symmetry. This is unfortunate, but
-  // unavoidable, because `newAmimations.Length()` does not necessarily equal to
-  // the length of animations defined in `aStyle`, e.g. when a referenced
-  // `animiation-name` does not exist.
+  // Build the updated animations list. Even if cancelling the removed
+  // animations later in this function drops their entries from
+  // `mAnimationsWithNamedTimeline`, entries are added when we build the list,
+  // breaking the symmetry. This is unfortunate, but unavoidable, because
+  // `newAmimations.Length()` does not necessarily equal to the length of
+  // animations defined in `aStyle`, e.g. when a referenced `animiation-name`
+  // does not exist.
   //
   // Old entries in `collection` may be reused. If they are, they are removed
   // from `collection` and put into `newAnimations`.
@@ -600,13 +602,6 @@ void nsAnimationManager::DoUpdateAnimations(
 
   if (newAnimations.IsEmpty()) {
     if (collection) {
-      for (const auto& animation : collection->mAnimations) {
-        if (!RefersToNamedTimeline(animation)) {
-          continue;
-        }
-        RemoveCorrespondingAnimation(animation->GetTimelineName().mName,
-                                     animation, mAnimationsWithNamedTimeline);
-      }
       collection->Destroy();
     }
     return;
@@ -627,9 +622,5 @@ void nsAnimationManager::DoUpdateAnimations(
     const auto& anim = newAnimations[newAnimIdx];
     aBuilder.NotifyNewOrRemovedAnimation(*anim);
     newAnimations[newAnimIdx]->CancelFromStyle(PostRestyleMode::IfNeeded);
-    if (RefersToNamedTimeline(anim)) {
-      RemoveCorrespondingAnimation(anim->GetTimelineName().mName, anim,
-                                   mAnimationsWithNamedTimeline);
-    }
   }
 }

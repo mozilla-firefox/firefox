@@ -138,8 +138,6 @@ class Animation : public DOMEventTargetHelper,
   virtual void SetEffect(AnimationEffect* aEffect);
   void SetEffectNoUpdate(AnimationEffect* aEffect);
 
-  void RemovedNamedTimelineReferenceFromJS(const nsAtom* aName);
-
   AnimationTimeline* GetTimelineFromJS() const {
     auto* timeline = GetTimeline();
     if (timeline && timeline->IsUnresolvedTimeline()) {

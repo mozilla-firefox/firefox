@@ -277,35 +277,17 @@ static TimeStamp EnsurePaintIsScheduled(Document& aDoc) {
   return rd->MostRecentRefresh();
 }
 
-void Animation::RemovedNamedTimelineReferenceFromJS(const nsAtom* aName) {
-  if (!AsCSSAnimation()) {
-    MOZ_ASSERT_UNREACHABLE("How?");
-    return;
-  }
-  auto* animationManager = [&]() -> nsAnimationManager* {
-    auto* doc = GetRenderedDocument();
-    if (!doc) {
-      return nullptr;
-    }
-    auto* presContext = doc->GetPresContext();
-    if (!presContext) {
-      return nullptr;
-    }
-    return presContext->AnimationManager();
-  }();
-  if (!animationManager) {
-    return;
-  }
-  animationManager->RemoveNamedTimelineAnimation(aName, AsCSSAnimation());
-}
-
 void Animation::SetTimelineFromJS(AnimationTimeline* aTimeline) {
   PropertiesWillSetFromJS(CSSAnimationProperties::Timeline);
   // Can't refer to timeline by name from JS side.
   const auto prevTimelineName = GetTimelineName();
   SetTimeline(aTimeline, {}, FromJS::Yes);
   if (prevTimelineName.mName) {
-    RemovedNamedTimelineReferenceFromJS(prevTimelineName.mName);
+    // Only CSS animations are tracked by name in nsAnimationManager. Other
+    // animations get the name from the timeline they share with one.
+    if (auto* cssAnimation = AsCSSAnimation()) {
+      cssAnimation->RemovedNamedTimelineReference(prevTimelineName.mName);
+    }
   }
 }
 

@@ -71,6 +71,8 @@ class TimelineCollection final
   static TimelineCollection* Get(const dom::Element* aElement,
                                  const PseudoStyleRequest& aPseudoRequest);
   const TimelineMap& Timelines() const { return mTimelines; }
+  dom::Element& OwningElement() const { return mElement; }
+  const PseudoStyleRequest& PseudoRequest() const { return mPseudo; }
 
  private:
   // The element. Weak reference is fine since it owns us.
