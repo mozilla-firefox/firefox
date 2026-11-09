@@ -318,11 +318,6 @@ typedef struct sslOptionsStr {
     unsigned int enablePlaintextResumptionExport : 1;
 } sslOptions;
 
-typedef enum { sslHandshakingUndetermined = 0,
-               sslHandshakingAsClient,
-               sslHandshakingAsServer
-} sslHandshakingType;
-
 #define SSL_LOCK_RANK_SPEC 255
 
 /* These are the valid values for shutdownHow.
@@ -1183,8 +1178,6 @@ struct sslSocketStr {
     PRThread *writerThread; /* thread holds SSL_LOCK_WRITER lock */
 
     PRUint16 shutdownHow; /* See ssl_SHUTDOWN defines below. */
-
-    sslHandshakingType handshaking;
 
     /* Gather object used for gathering data */
     sslGather gs; /*recvBufLock*/

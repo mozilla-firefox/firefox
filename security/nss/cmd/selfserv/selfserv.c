@@ -142,7 +142,9 @@ char *echParamsStr = NULL;
 
 static PRThread *acceptorThread;
 
+#ifdef PR_LOGGING
 static PRLogModuleInfo *lm;
+#endif
 
 #define PRINTF   \
     if (verbose) \
@@ -3098,7 +3100,9 @@ main(int argc, char **argv)
         }
     }
 
+#ifdef PR_LOGGING
     lm = PR_NewLogModule("TestCase");
+#endif
 
     if (fileName)
         readBigFile(fileName);

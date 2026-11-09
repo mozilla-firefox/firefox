@@ -15,6 +15,7 @@
         'cert_unittest.cc',
         'crl_unittest.cc',
         'decode_certs_unittest.cc',
+        'name_constraints_unittest.cc',
         'smime_profile_unittest.cc',
         '<(DEPTH)/gtests/common/gtests.cc'
       ],

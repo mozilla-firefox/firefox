@@ -16,6 +16,7 @@
 #include "gtest/gtest.h"
 
 #include "der_encode.h"
+#include "nss_scoped_ptrs.h"
 #include "nss.h"
 #include "p12.h"
 #include "plarena.h"
@@ -456,18 +457,19 @@ static const SEC_ASN1Template SMIMECapabilitiesTemplate[] = {
     {SEC_ASN1_SEQUENCE_OF, 0, SMIMECapabilityTemplate}};
 
 TEST_F(SMimeTest, SMIMECapabilitiesIncludeGCM) {
-  PLArenaPool* arena = PORT_NewArena(1024);
+  ScopedPLArenaPool arena(PORT_NewArena(1024));
   ASSERT_NE(nullptr, arena);
 
   SECItem encoded = {siBuffer, nullptr, 0};
-  ASSERT_EQ(SECSuccess, NSS_SMIMEUtil_CreateSMIMECapabilities(arena, &encoded));
+  ASSERT_EQ(SECSuccess,
+            NSS_SMIMEUtil_CreateSMIMECapabilities(arena.get(), &encoded));
 
   // Decode the DER back into structured capabilities
   SMIMECapability** caps = nullptr;
   ASSERT_EQ(
       SECSuccess,
       SEC_QuickDERDecodeItem(
-          arena,
+          arena.get(),
           static_cast<void*>(
               &caps),  // NOLINT(bugprone-multi-level-implicit-pointer-conversion)
           SMIMECapabilitiesTemplate, &encoded));
@@ -504,8 +506,6 @@ TEST_F(SMimeTest, SMIMECapabilitiesIncludeGCM) {
   if (idx128gcm >= 0 && idx128cbc >= 0) {
     EXPECT_LT(idx128gcm, idx128cbc) << "AES-128-GCM should precede AES-128-CBC";
   }
-
-  PORT_FreeArena(arena, PR_FALSE);
 }
 
 // Helper functions for DeepNestingRejected and ShallowNestingNotRejected

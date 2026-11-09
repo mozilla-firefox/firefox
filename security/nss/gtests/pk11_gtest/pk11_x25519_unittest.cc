@@ -93,16 +93,14 @@ TEST_P(Pkcs11X25519Test, ImportExportPkcs8) {
   ScopedSECKEYPrivateKey key = ImportPrivateKey(GetParam().pkcs8_);
   EXPECT_EQ(key.get()->keyType, ecMontKey);
 
-  SECKEYPrivateKeyInfo* pkInfo =
-      nss_test::ExportPrivKeyInfo(key.get(), nullptr);
+  ScopedSECKEYPrivateKeyInfo pkInfo(
+      nss_test::ExportPrivKeyInfo(key.get(), nullptr));
   ASSERT_TRUE(pkInfo);
   /* empty parameters for X25519*/
   ASSERT_EQ(pkInfo->algorithm.parameters.len, (unsigned int)0);
   ASSERT_TRUE(CheckAlgIsX25519(&pkInfo->algorithm.algorithm));
   ExportPrivateKey(&key, exported);
   EXPECT_EQ(GetParam().pkcs8_, exported);
-
-  SECKEY_DestroyPrivateKeyInfo(pkInfo, PR_TRUE);
 }
 
 TEST_P(Pkcs11X25519Test, ImportExportSpki) {
@@ -277,8 +275,8 @@ TEST_P(Pkcs11X25519Test, KeyGeneration) {
   ASSERT_TRUE(priv);
   ASSERT_TRUE(pub);
 
-  SECKEYPrivateKeyInfo* pkInfo =
-      nss_test::ExportPrivKeyInfo(priv.get(), nullptr);
+  ScopedSECKEYPrivateKeyInfo pkInfo(
+      nss_test::ExportPrivKeyInfo(priv.get(), nullptr));
   ASSERT_TRUE(pkInfo);
   /* 0x04 + len +  32 bytes the key */
   ASSERT_EQ(pkInfo->privateKey.len, (unsigned int)34);
@@ -291,8 +289,6 @@ TEST_P(Pkcs11X25519Test, KeyGeneration) {
   ASSERT_TRUE(CheckAlgIsX25519(&spki->algorithm.algorithm));
   /* empty parameters for X25519*/
   ASSERT_EQ(spki->algorithm.parameters.len, (unsigned int)0);
-
-  SECKEY_DestroyPrivateKeyInfo(pkInfo, PR_TRUE);
 }
 
 /* Public Key ASN.1 encoding errors */

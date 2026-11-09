@@ -111,13 +111,11 @@ TEST_F(SMimeProfileTest, FindSMimeProfileTempCert) {
   SECStatus rv = CERT_SaveSMimeProfile(cert.get(), &emailProfile, &profileTime);
   ASSERT_EQ(SECSuccess, rv);
 
-  SECItem* found = CERT_FindSMimeProfile(cert.get());
+  ScopedSECItem found(CERT_FindSMimeProfile(cert.get()));
   ASSERT_NE(nullptr, found);
   ASSERT_NE(nullptr, found->data);
   ASSERT_EQ(sizeof(profileData), found->len);
   EXPECT_EQ(0, memcmp(found->data, profileData, sizeof(profileData)));
-
-  SECITEM_FreeItem(found, PR_TRUE);
 }
 
 }  // namespace nss_test

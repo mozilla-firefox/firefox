@@ -13,6 +13,7 @@
 #include "cert.h"
 #include "certdb.h"
 #include "der_encode.h"
+#include "nss_scoped_ptrs.h"
 #include "prerror.h"
 #include "secerr.h"
 #include "secasn1t.h"
@@ -113,13 +114,12 @@ TEST_F(CrlDecodeTest, KeyFromDERCrl) {
   auto crl_der = MakeSignedCrl(3);
   SECItem item = {siBuffer, crl_der.data(),
                   static_cast<unsigned int>(crl_der.size())};
-  PLArenaPool* arena = PORT_NewArena(1024);
+  ScopedPLArenaPool arena(PORT_NewArena(1024));
   ASSERT_NE(nullptr, arena);
   SECItem key = {siBuffer, nullptr, 0};
-  ASSERT_EQ(SECSuccess, CERT_KeyFromDERCrl(arena, &item, &key));
+  ASSERT_EQ(SECSuccess, CERT_KeyFromDERCrl(arena.get(), &item, &key));
   ASSERT_EQ(sizeof(kIssuerName), key.len);
   EXPECT_EQ(0, memcmp(kIssuerName, key.data, key.len));
-  PORT_FreeArena(arena, PR_FALSE);
 }
 
 TEST_F(CrlDecodeTest, CrlDecodeSkipEntriesThenComplete) {

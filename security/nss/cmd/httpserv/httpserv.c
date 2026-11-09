@@ -55,7 +55,9 @@ static int verbose;
 
 static PRThread *acceptorThread;
 
+#ifdef PR_LOGGING
 static PRLogModuleInfo *lm;
+#endif
 
 #define PRINTF   \
     if (verbose) \
@@ -320,7 +322,7 @@ terminateWorkerThreads(void)
 
     /* The worker threads empty the jobQ before they terminate. */
     PR_Lock(qLock);
-    PORT_Assert(threadCount == 0);
+    PORT_AssertArg(threadCount == 0);
     PORT_Assert(PR_CLIST_IS_EMPTY(&jobQ));
     PR_Unlock(qLock);
 
@@ -1336,7 +1338,9 @@ main(int argc, char **argv)
     if (prStatus != PR_SUCCESS)
         errExit("PR_SetFDInheritable");
 
+#ifdef PR_LOGGING
     lm = PR_NewLogModule("TestCase");
+#endif
 
     /* set our password function */
     PK11_SetPasswordFunc(SECU_GetModulePassword);

@@ -332,12 +332,10 @@ TEST_F(Pkcs11MlDsaLifetimeTest, DestroyKeyDuringSignOperation) {
 }
 
 TEST_F(Pkcs11MlDsaLifetimeTest, AbandonedSignOperationDoesNotLeak) {
-  PK11Context* ctx = StartSigning();
+  ScopedPK11Context ctx(StartSigning());
   ASSERT_TRUE(ctx);
 
-  ASSERT_EQ(SECSuccess, PK11_DigestOp(ctx, kMsg, sizeof(kMsg)));
-
-  PK11_DestroyContext(ctx, PR_TRUE);
+  ASSERT_EQ(SECSuccess, PK11_DigestOp(ctx.get(), kMsg, sizeof(kMsg)));
 }
 
 // The mechanism and key type tables. These are one-line mappings, but every

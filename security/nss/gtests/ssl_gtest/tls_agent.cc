@@ -450,22 +450,21 @@ bool TlsAgent::CheckClientAuthCallbacksCompleted(uint8_t expected) {
 }
 
 bool TlsAgent::GetPeerChainLength(size_t* count) {
-  SECItemArray* chain = nullptr;
-  SECStatus rv = SSL_PeerCertificateChainDER(ssl_fd(), &chain);
+  SECItemArray* rawChain = nullptr;
+  SECStatus rv = SSL_PeerCertificateChainDER(ssl_fd(), &rawChain);
+  ScopedSECItemArray chain(rawChain);
   if (rv != SECSuccess) return false;
 
   *count = chain->len;
-
-  SECITEM_FreeArray(chain, true);
-
   return true;
 }
 
 void TlsAgent::CheckPeerChainFunctionConsistency() {
-  SECItemArray* derChain = nullptr;
-  SECStatus rv = SSL_PeerCertificateChainDER(ssl_fd(), &derChain);
+  SECItemArray* rawDerChain = nullptr;
+  SECStatus rv = SSL_PeerCertificateChainDER(ssl_fd(), &rawDerChain);
+  ScopedSECItemArray derChain(rawDerChain);
   PRErrorCode err1 = PR_GetError();
-  CERTCertList* chain = SSL_PeerCertificateChain(ssl_fd());
+  ScopedCERTCertList chain(SSL_PeerCertificateChain(ssl_fd()));
   PRErrorCode err2 = PR_GetError();
   if (rv != SECSuccess) {
     ASSERT_EQ(nullptr, chain);
@@ -487,9 +486,6 @@ void TlsAgent::CheckPeerChainFunctionConsistency() {
     ++count;
   }
   ASSERT_EQ(count, derChain->len);
-
-  SECITEM_FreeArray(derChain, true);
-  CERT_DestroyCertList(chain);
 }
 
 void TlsAgent::CheckCipherSuite(uint16_t suite) {

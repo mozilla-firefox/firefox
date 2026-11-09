@@ -169,12 +169,11 @@ SSL_ResetHandshake(PRFileDesc *s, PRBool asServer)
 
     ss->firstHsDone = PR_FALSE;
     ss->enoughFirstHsDone = PR_FALSE;
+    ss->sec.isServer = asServer;
     if (asServer) {
         ss->handshake = ssl_BeginServerHandshake;
-        ss->handshaking = sslHandshakingAsServer;
     } else {
         ss->handshake = ssl_BeginClientHandshake;
-        ss->handshaking = sslHandshakingAsClient;
     }
 
     ssl_GetRecvBufLock(ss);
@@ -696,12 +695,11 @@ ssl_SecureConnect(sslSocket *ss, const PRNetAddr *sa)
     PRFileDesc *osfd = ss->fd->lower;
     int rv;
 
+    ss->sec.isServer = ss->opt.handshakeAsServer ? PR_TRUE : PR_FALSE;
     if (ss->opt.handshakeAsServer) {
         ss->handshake = ssl_BeginServerHandshake;
-        ss->handshaking = sslHandshakingAsServer;
     } else {
         ss->handshake = ssl_BeginClientHandshake;
-        ss->handshaking = sslHandshakingAsClient;
     }
 
     /* connect to server */

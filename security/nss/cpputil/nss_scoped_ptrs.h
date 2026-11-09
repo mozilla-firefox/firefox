@@ -51,6 +51,7 @@ struct ScopedDelete {
     SECKEY_DestroyEncryptedPrivateKeyInfo(e, true);
   }
   void operator()(SECItem* item) { SECITEM_FreeItem(item, true); }
+  void operator()(SECItemArray* array) { SECITEM_FreeArray(array, true); }
   void operator()(SECKEYPublicKey* key) { SECKEY_DestroyPublicKey(key); }
   void operator()(SECKEYPrivateKey* key) { SECKEY_DestroyPrivateKey(key); }
   void operator()(SECKEYPrivateKeyList* list) {
@@ -108,6 +109,7 @@ SCOPED(PQGParams);
 SCOPED(PRFileDesc);
 SCOPED(SECAlgorithmID);
 SCOPED(SECItem);
+SCOPED(SECItemArray);
 SCOPED(SECKEYEncryptedPrivateKeyInfo);
 SCOPED(SECKEYPrivateKey);
 SCOPED(SECKEYPrivateKeyList);

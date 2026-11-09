@@ -11,6 +11,7 @@
 #include "cpputil.h"
 
 #include "gtest/gtest.h"
+#include "nss_scoped_ptrs.h"
 #include "pk11_import.h"
 
 namespace nss_test {
@@ -52,26 +53,7 @@ class TlsPrfTest : public ::testing::Test {
       : params_({siBuffer, nullptr, 0}),
         pms_item_({siBuffer, toUcharPtr(kPmsData), kPmsSize}),
         key_mech_(0),
-        slot_(nullptr),
-        pms_(nullptr),
-        ms_(nullptr),
         pms_version_({0, 0}) {}
-
-  ~TlsPrfTest() {
-    if (slot_) {
-      PK11_FreeSlot(slot_);
-    }
-    ClearTempVars();
-  }
-
-  void ClearTempVars() {
-    if (pms_) {
-      PK11_FreeSymKey(pms_);
-    }
-    if (ms_) {
-      PK11_FreeSymKey(ms_);
-    }
-  }
 
   void Init() {
     params_.type = siBuffer;
@@ -80,8 +62,8 @@ class TlsPrfTest : public ::testing::Test {
     pms_item_.data =
         const_cast<unsigned char*>(static_cast<const unsigned char*>(kPmsData));
 
-    slot_ = PK11_GetInternalSlot();
-    ASSERT_NE(nullptr, slot_);
+    slot_.reset(PK11_GetInternalSlot());
+    ASSERT_NE(nullptr, slot_.get());
   }
 
   void CheckForError(CK_MECHANISM_TYPE hash_mech, size_t seed_len,
@@ -114,8 +96,6 @@ class TlsPrfTest : public ::testing::Test {
   void Inner(CK_MECHANISM_TYPE derive_mech, CK_MECHANISM_TYPE hash_mech,
              size_t seed_len, size_t pms_len, size_t output_len,
              CK_VERSION* version, const uint8_t* expected) {
-    ClearTempVars();
-
     // Infer the key mechanism from the hash type
     switch (hash_mech) {
       case CKM_TLS_PRF:
@@ -137,24 +117,26 @@ class TlsPrfTest : public ::testing::Test {
 
     // Import the PMS
     pms_item_.len = pms_len;
-    pms_ = nss_test::ImportSymKey(slot_, derive_mech, PK11_OriginUnwrap,
-                                  CKA_DERIVE, &pms_item_, NULL);
-    ASSERT_NE(nullptr, pms_);
+    pms_.reset(nss_test::ImportSymKey(slot_.get(), derive_mech,
+                                      PK11_OriginUnwrap, CKA_DERIVE, &pms_item_,
+                                      NULL));
+    ASSERT_NE(nullptr, pms_.get());
 
     // Compute the EMS
-    ms_ = PK11_DeriveWithFlags(pms_, derive_mech, &params_, key_mech_,
-                               CKA_DERIVE, output_len, CKF_SIGN | CKF_VERIFY);
+    ms_.reset(PK11_DeriveWithFlags(pms_.get(), derive_mech, &params_, key_mech_,
+                                   CKA_DERIVE, output_len,
+                                   CKF_SIGN | CKF_VERIFY));
 
     // Verify the EMS has the expected value (null or otherwise)
     if (!expected) {
-      EXPECT_EQ(nullptr, ms_);
+      EXPECT_EQ(nullptr, ms_.get());
     } else {
-      ASSERT_NE(nullptr, ms_);
+      ASSERT_NE(nullptr, ms_.get());
 
-      SECStatus rv = nss_test::ExtractKeyValue(ms_);
+      SECStatus rv = nss_test::ExtractKeyValue(ms_.get());
       ASSERT_EQ(SECSuccess, rv);
 
-      SECItem* msData = nss_test::GetKeyData(ms_);
+      SECItem* msData = nss_test::GetKeyData(ms_.get());
       ASSERT_NE(nullptr, msData);
 
       ASSERT_EQ(kMasterSecretSize, msData->len);
@@ -166,9 +148,9 @@ class TlsPrfTest : public ::testing::Test {
   SECItem params_;
   SECItem pms_item_;
   CK_MECHANISM_TYPE key_mech_;
-  PK11SlotInfo* slot_;
-  PK11SymKey* pms_;
-  PK11SymKey* ms_;
+  ScopedPK11SlotInfo slot_;
+  ScopedPK11SymKey pms_;
+  ScopedPK11SymKey ms_;
   CK_VERSION pms_version_;
 };
 

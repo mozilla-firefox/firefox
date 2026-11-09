@@ -2348,6 +2348,7 @@ sftk_ClearSession(SFTKSession *session)
     PR_Lock(slot->objectLock);
     for (op = session->objects[0]; op != NULL; op = next) {
         next = op->next;
+        PORT_ReleaseAssert(!next || next->prev == op);
         /* Unlink by hand: we are discarding the whole list, so there is no
          * point patching neighbours. */
         op->next = op->prev = NULL;

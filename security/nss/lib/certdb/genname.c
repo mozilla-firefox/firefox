@@ -1276,6 +1276,76 @@ compareRFC822N2C(const SECItem *name, const SECItem *constraint)
     return SECFailure;
 }
 
+/* Returns SECSuccess if name is inside the permitted directoryName subtree
+** constraint, per RFC 5280 section 4.2.1.10: the constraint is a prefix of
+** name, i.e. name has at least as many RDNs as the constraint, and each RDN
+** of the constraint is equal to the RDN at the same position in name.  A
+** constraint with no RDNs matches every name.  An empty name (an empty
+** subject) is not subject to directoryName constraints and matches too.
+** SECFailure otherwise.
+*/
+static SECStatus
+comparePermittedDirectoryNameN2C(const CERTName *name,
+                                 const CERTName *constraint)
+{
+    CERTRDN **nRDNs = name->rdns;
+    CERTRDN **cRDNs = constraint->rdns;
+
+    if (!nRDNs || !*nRDNs) {
+        return SECSuccess;
+    }
+    while (cRDNs && *cRDNs) {
+        if (!nRDNs || !*nRDNs) {
+            return SECFailure; /* name is shorter than the constraint */
+        }
+        if (CERT_CompareRDN(*cRDNs++, *nRDNs++) != SECEqual) {
+            return SECFailure;
+        }
+    }
+    return SECSuccess;
+}
+
+/* Returns SECSuccess if name is inside the excluded directoryName subtree
+** constraint.  This match is broader than the prefix match above: RDNs are
+** compared only as far as both names go, and a name RDN matches when it holds
+** every attribute of the constraint RDN.  It covers every name the prefix
+** match covers, so an excluded subtree never lets out a name that is inside
+** it.  SECFailure otherwise.
+*/
+static SECStatus
+compareExcludedDirectoryNameN2C(const CERTName *name,
+                                const CERTName *constraint)
+{
+    /* status defaults to SECEqual, so that a constraint with
+    ** no AVAs will be a wildcard, matching all directory names.
+    */
+    SECComparison status = SECEqual;
+    const CERTRDN **cRDNs = (const CERTRDN **)constraint->rdns;
+    const CERTRDN **nRDNs = (const CERTRDN **)name->rdns;
+    while (cRDNs && *cRDNs && nRDNs && *nRDNs) {
+        /* loop over name RDNs and constraint RDNs in lock step
+         */
+        const CERTRDN *cRDN = *cRDNs++;
+        const CERTRDN *nRDN = *nRDNs++;
+        CERTAVA **cAVAs = cRDN->avas;
+        while (cAVAs && *cAVAs) { /* loop over constraint AVAs */
+            CERTAVA *cAVA = *cAVAs++;
+            CERTAVA **nAVAs = nRDN->avas;
+            while (nAVAs && *nAVAs) { /* loop over name AVAs */
+                CERTAVA *nAVA = *nAVAs++;
+                status = CERT_CompareAVA(cAVA, nAVA);
+                if (status == SECEqual)
+                    break;
+            } /* loop over name AVAs */
+            if (status != SECEqual)
+                break;
+        } /* loop over constraint AVAs */
+        if (status != SECEqual)
+            break;
+    } /* loop over name RDNs and constraint RDNs */
+    return (status == SECEqual) ? SECSuccess : SECFailure;
+}
+
 /* name contains either a 4 byte IPv4 address or a 16 byte IPv6 address.
 ** constraint contains an address of the same length, and a subnet mask
 ** of the same length.  Compare name's address to the constraint's
@@ -1405,43 +1475,13 @@ cert_CompareNameWithConstraints(const CERTGeneralName *name,
             } break;
 
             case certDirectoryName:
-                /* Determine if the constraint directory name is a "prefix"
-                ** for the directory name being tested.
-                */
-                {
-                    /* status defaults to SECEqual, so that a constraint with
-                    ** no AVAs will be a wildcard, matching all directory names.
-                    */
-                    SECComparison status = SECEqual;
-                    const CERTRDN **cRDNs =
-                        (const CERTRDN **)current->name.name.directoryName.rdns;
-                    const CERTRDN **nRDNs =
-                        (const CERTRDN **)name->name.directoryName.rdns;
-                    while (cRDNs && *cRDNs && nRDNs && *nRDNs) {
-                        /* loop over name RDNs and constraint RDNs in lock step
-                         */
-                        const CERTRDN *cRDN = *cRDNs++;
-                        const CERTRDN *nRDN = *nRDNs++;
-                        CERTAVA **cAVAs = cRDN->avas;
-                        while (cAVAs &&
-                               *cAVAs) { /* loop over constraint AVAs */
-                            CERTAVA *cAVA = *cAVAs++;
-                            CERTAVA **nAVAs = nRDN->avas;
-                            while (nAVAs && *nAVAs) { /* loop over name AVAs */
-                                CERTAVA *nAVA = *nAVAs++;
-                                status = CERT_CompareAVA(cAVA, nAVA);
-                                if (status == SECEqual)
-                                    break;
-                            } /* loop over name AVAs */
-                            if (status != SECEqual)
-                                break;
-                        } /* loop over constraint AVAs */
-                        if (status != SECEqual)
-                            break;
-                    } /* loop over name RDNs and constraint RDNs */
-                    matched = (status == SECEqual) ? SECSuccess : SECFailure;
-                    break;
-                }
+                matched = excluded ? compareExcludedDirectoryNameN2C(
+                                         &name->name.directoryName,
+                                         &current->name.name.directoryName)
+                                   : comparePermittedDirectoryNameN2C(
+                                         &name->name.directoryName,
+                                         &current->name.name.directoryName);
+                break;
 
             case certIPAddress: /* type 8 */
                 matched = compareIPaddrN2C(&name->name.other,

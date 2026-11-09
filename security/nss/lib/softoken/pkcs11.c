@@ -4642,6 +4642,7 @@ NSC_InitToken(CK_SLOT_ID slotID, CK_CHAR_PTR pPin,
             if (object) {
                 SFTKSessionObject *so = sftk_narrowToSessionObject(object);
 
+                sftkqueue_check_links(object, slot->sessObjHashTable[i]);
                 slot->sessObjHashTable[i] = object->next;
 
                 if (object->next)
