@@ -979,7 +979,11 @@ void StartServer(void* data) {
     return;
   }
 
-  if (PR_Listen(listen_socket.get(), 1) != PR_SUCCESS) {
+  // Tests can open many connections at once, and a single thread accepts them.
+  // Connects that overflow the backlog are reset (macOS) or delayed by SYN
+  // retransmits (Linux); resets can exhaust necko's retries. 128 is SOMAXCONN
+  // on macOS.
+  if (PR_Listen(listen_socket.get(), 128) != PR_SUCCESS) {
     LOG_ERROR(("failed to listen on socket\n"));
     SignalShutdown();
     return;
