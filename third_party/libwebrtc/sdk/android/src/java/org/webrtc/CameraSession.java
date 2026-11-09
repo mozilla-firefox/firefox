@@ -39,6 +39,7 @@ interface CameraSession {
    */
   void stop();
 
+  @SuppressWarnings("deprecation")
   static int getDeviceOrientation(Context context) {
     final WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
     switch (wm.getDefaultDisplay().getRotation()) {

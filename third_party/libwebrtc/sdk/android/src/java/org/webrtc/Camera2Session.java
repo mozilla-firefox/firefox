@@ -112,6 +112,7 @@ class Camera2Session implements CameraSession {
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public void onOpened(CameraDevice camera) {
       checkIsOnCameraThread();
 
@@ -276,6 +277,7 @@ class Camera2Session implements CameraSession {
         cameraId, width, height, framerate);
   }
 
+  @SuppressWarnings("deprecation")
   private Camera2Session(CreateSessionCallback callback, Events events, Context applicationContext,
       CameraManager cameraManager, SurfaceTextureHelper surfaceTextureHelper, String cameraId,
       int width, int height, int framerate) {

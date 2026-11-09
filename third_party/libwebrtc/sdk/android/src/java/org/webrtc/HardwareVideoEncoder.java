@@ -595,6 +595,7 @@ class HardwareVideoEncoder implements VideoEncoder {
   }
 
   // Visible for testing.
+  @SuppressWarnings("deprecation")
   protected void deliverEncodedImage() {
     outputThreadChecker.checkIsOnValidThread();
     try {
@@ -800,6 +801,7 @@ class HardwareVideoEncoder implements VideoEncoder {
     i420.release();
   }
 
+  @SuppressWarnings("deprecation")
   protected boolean isSemiPlanar(int colorFormat) {
     switch (colorFormat) {
       case MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar:

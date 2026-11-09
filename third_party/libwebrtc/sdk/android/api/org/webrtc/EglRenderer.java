@@ -633,6 +633,7 @@ public class EglRenderer implements VideoSink {
     }
   }
 
+  @SuppressWarnings("deprecation")
   private void swapBuffersOnRenderThread(final VideoFrame frame, long swapBuffersStartTimeNs) {
     synchronized (threadLock) {
       if (eglThread == null) {

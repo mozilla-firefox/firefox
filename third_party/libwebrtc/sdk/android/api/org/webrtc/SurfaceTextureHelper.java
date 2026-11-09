@@ -174,6 +174,7 @@ public class SurfaceTextureHelper {
     }
   };
 
+  @SuppressWarnings("deprecation")
   private SurfaceTextureHelper(Context sharedContext, Handler handler, boolean alignTimestamps,
       YuvConverter yuvConverter, FrameRefMonitor frameRefMonitor) {
     if (handler.getLooper().getThread() != Thread.currentThread()) {

@@ -187,6 +187,7 @@ public class VideoCaptureAndroid implements CameraVideoCapturer.CameraEventsHand
   }
 
   @WebRTCJNITarget
+  @SuppressWarnings("deprecation")
   private int getDeviceOrientation() {
     int orientation = 0;
     if (context != null) {

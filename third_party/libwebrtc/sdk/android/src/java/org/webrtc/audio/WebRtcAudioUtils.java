@@ -32,6 +32,7 @@ public final class WebRtcAudioUtils {
   private static final String TAG = "WebRtcAudioUtilsExternal";
 
   /** Helper method for building a string of thread information. */
+  @SuppressWarnings("deprecation")
   public static String getThreadInfo() {
     Thread current = Thread.currentThread();
     return "@[name=" + current.getName() + ", id=" + current.getId() + "]";
@@ -208,6 +209,7 @@ public final class WebRtcAudioUtils {
   }
 
   /** Reports basic audio statistics. */
+  @SuppressWarnings("deprecation")
   private static void logAudioStateBasic(String tag, Context context, AudioManager audioManager) {
     Logging.d(
         tag,

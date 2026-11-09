@@ -50,6 +50,7 @@ class RefCountDelegate implements RefCounted {
    * Tries to retain the object. Can be used in scenarios where it is unknown if the object has
    * already been released. Returns true if successful or false if the object was already released.
    */
+  @SuppressWarnings("deprecation")
   boolean safeRetain() {
     int currentRefCount = refCount.get();
     while (currentRefCount != 0) {
