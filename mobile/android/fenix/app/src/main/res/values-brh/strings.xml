@@ -174,6 +174,8 @@
   <string name="browser_menu_add_to_homescreen">ہوم اسکرین اے ات</string>
   <!-- Browser menu toggle that adds a PWA of the site on the device home screen. -->
   <string name="browser_menu_add_app_to_homescreen">ایپ اے ہوم اسکرین اے ات</string>
+  <!-- Content description (not visible, for screen readers etc.) for the Resync tabs button -->
+  <string name="resync_button_content_description">وا ہمگام کبو</string>
   <!-- Browser menu button that opens the find in page menu -->
   <string name="browser_menu_find_in_page">صفحہ اٹ پٹ</string>
   <!-- Browser menu button that opens the translations dialog, which has options to translate the current browser page. -->
@@ -197,6 +199,10 @@
   <string name="browser_menu_open_app_link">ایپ ٹی مل</string>
   <!-- Browser menu label to sign in to sync on the device using Mozilla accounts -->
   <string name="browser_menu_sign_in">سائن ان</string>
+  <!-- Browser menu label to sign back in to sync on the device when the user's account needs to be reauthenticated -->
+  <string name="browser_menu_sign_back_in_to_sync">ہمگام کننگ کن وا سائن ان کبو</string>
+  <!-- Browser menu caption label for the "Sign back in to sync" browser menu item described in `browser_menu_sign_back_in_to_sync` when there is an error in syncing -->
+  <string name="browser_menu_syncing_paused_caption">ہمگام سلوک اے</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">کلیت لوزاک</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -213,6 +219,10 @@
   <string name="browser_menu_summarize_page">صفحہ اے گونڈ کبو</string>
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">پوسکن</string>
+  <!-- Browser menu badge text for new, highlighted feature -->
+  <string name="browser_menu_page_badge_text">پوسکن</string>
+  <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
+  <string name="browser_menu_webcompat_reporter_2">پنوکا سائٹ اے رپورٹ کبو</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">مٹ مس</string>
   <!-- Browser menu label for the print feature -->
@@ -638,8 +648,14 @@
   <string name="download_content_type_filter_video">ویڈیوک</string>
   <!-- The button text for navigating to the SUMO link to learn more about reporting a broken site. -->
   <string name="webcompat_reporter_learn_more">پین ہیل کبو</string>
+  <!-- Unsubmitted crash dialog title, %s is the name of the app (for example "Firefox"). -->
+  <string name="unsubmitted_crash_dialog_title_2">%s پنا. رپورٹ اے رای کیرے؟</string>
+  <!-- Unsubmitted crash dialog checkbox label for automatically sending reports in the future -->
+  <string name="unsubmitted_crash_dialog_checkbox_label">تینٹ پننگ نا رپورٹ اتے رائ کے</string>
   <!-- Unsubmitted crash dialog negative button to dismiss the dialog -->
   <string name="unsubmitted_crash_dialog_negative_button">بند</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report -->
+  <string name="unsubmitted_crash_dialog_positive_button">پننگ نا رپورٹ اے رائی کبو</string>
   <!-- Snackbar title that confirms a bookmark was saved into a folder. %s is the name of the folder the bookmark was saved into. -->
   <string name="bookmark_saved_in_folder_snackbar">“%s” ٹی خوندی اے</string>
   <!-- Accessibility label for sorting options -->
@@ -714,10 +730,42 @@
   <string name="saved_login_reveal_password">کلیت لوز اے نشان ایت</string>
   <!-- Content Description (for screenreaders etc) read for the button to hide a password in logins -->
   <string name="saved_login_hide_password">کلیت لوز اے ڈک</string>
+  <!-- Browser menu button that adds a shortcut to the home fragment -->
+  <string name="browser_menu_add_to_shortcuts">شارٹ کٹ تے ٹی شاغبو</string>
   <!-- Title for recent search suggestions. -->
   <string name="recent_searches_header">زوتیاٹ پٹنگاک</string>
+  <!--
+    Translation request dialog
+
+    Title for the translation dialog that allows a user to translate the webpage.
+  -->
+  <string name="translations_bottom_sheet_title">صفحہ اے مٹ کیرے؟</string>
+  <!--
+    Title for the translation dialog after a translation was completed successfully.
+    %1$s is the name of the language that the page was translated from, for example, "French".
+    %2$s is the name of the language that the page was translated to, for example, "English".
+  -->
+  <string name="translations_bottom_sheet_title_translation_completed">صفحہ %1$s ان %2$s ٹی مٹ مس</string>
+  <!-- Title for the translation dialog that allows a user to translate the webpage when a user uses the translation feature the first time. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="translations_bottom_sheet_title_first_time">%1$s ٹی خاص مٹ و بدل اے اربو</string>
+  <!-- Additional information on the translation dialog that appears when a user uses the translation feature the first time. %1$s is a link using translations_bottom_sheet_info_message_learn_more as text. -->
+  <string name="translations_bottom_sheet_info_message">نما رازداری کن، مٹ اک نما ڈیوائس اے ہچ الیپسہ. پوسکنو دووی و بہتریک زو برسہ او! %1$s</string>
+  <!-- Label for the dropdown to select which language to translate from on the translations dialog. Usually the translate from language selected will be the same as the page language. -->
+  <string name="translations_bottom_sheet_translate_from">دووی ان مٹ</string>
+  <!-- Label for the dropdown to select which language to translate to on the translations dialog. Usually the translate to language selected will be the user's preferred language. -->
+  <string name="translations_bottom_sheet_translate_to">دووی ٹی مٹ</string>
+  <!-- Accessibility announcement (not visible, for screen readers etc.) for the translations dialog after restore button was pressed that indicates the original untranslated page was loaded. -->
+  <string name="translations_bottom_sheet_restore_accessibility_announcement">اصل بے مٹ آ صفحہ لوڈ مس</string>
+  <!-- Button text on the translations dialog to begin a translation of the website. -->
+  <string name="translations_bottom_sheet_positive_button">مٹ کبو</string>
+  <!-- Inactive button text on the translations dialog that indicates a translation is currently in progress. This button will be accompanied by a loading icon. -->
+  <string name="translations_bottom_sheet_translating_in_progress">مٹ مرسہ اے</string>
+  <!-- Button content description (not visible, for screen readers etc.) for the translations dialog translate button that indicates a translation is currently in progress. -->
+  <string name="translations_bottom_sheet_translating_in_progress_content_description">مٹ مرسہ اے</string>
   <!-- Default dropdown option when initially selecting a language from the translations dialog language selection dropdown. -->
   <string name="translations_bottom_sheet_default_dropdown_selection">دووی اس گچین کر</string>
+  <!-- Snackbar title shown if the user closes the Translation Request dialogue and a translation is in progress. -->
+  <string name="translation_in_progress_snackbar">مٹ مرسہ اے…</string>
   <!-- Button text for the button that will take the user to a website to learn more about how translations works in the given app. %1$s is the name of the app (for example "Firefox"). -->
   <string name="translation_option_bottom_sheet_about_translations">%1$s ٹی مٹ و بدل نا باروٹ</string>
   <!-- Button text for the button that will take the user to the download languages dialog. On the download languages dialog, the user can manage which languages they would like to download for translations. -->
@@ -728,12 +776,24 @@
   <string name="download_language_header_preference">دووی تے ڈاونلوڈ کبو</string>
   <!-- All languages list item. When the user presses this item, they can download all languages. -->
   <string name="download_language_all_languages_item_preference">کل دوویک</string>
+  <!-- Description text for the protection panel banner when the site is not secure. -->
+  <string name="protection_panel_banner_not_secure_description">نما کنیکشن محفوظ اف.</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">محفوظ کنیکشن</string>
+  <!-- Text for the connection security panel when the site is secure. -->
+  <string name="connection_security_panel_secure">محفوظ کنیکشن</string>
+  <!-- Text for the connection security panel when the site is not secure. -->
+  <string name="connection_security_panel_not_secure">کنیکشن محفوظ اف</string>
   <!--
     Review prompt
 
     Title for a prompt asking the user about their experience using the app. %1$s is the name of the app (for example "Firefox").
   -->
   <string name="review_prompt_pre_prompt_header">%1$s نا باروٹ انت پارے؟</string>
+  <!-- Image context menu entry that sends the long-pressed image to Google Lens -->
+  <string name="context_menu_open_image_with_google_lens">Google Lens تون پٹبو</string>
+  <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
+  <string name="lens_opt_out_title">Google Lens تون پٹبو</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">توار تون خواننگ</string>
 </resources>

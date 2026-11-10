@@ -127,7 +127,7 @@
     Preference category description for settings related to search, set default
     and autocomplete are settings a user can find and change inside the "search" settings screen
   -->
-  <string name="preference_search_summary">設為預設瀏覽器、自動完成</string>
+  <string name="preference_search_summary">設定預設搜尋引擎、自動完成</string>
   <!--
     Preference category description for settings screen for settings related to Mozilla
 
@@ -195,7 +195,7 @@
   <!-- "Hint" text for the "custom autocomplete URL" input field. Shown when the field is empty. -->
   <string name="preference_autocomplete_add_hint">貼上或輸入網址</string>
   <!-- Example how a custom domain autocomplete URL be added (e.g. without http://) -->
-  <string name="preference_autocomplete_add_example2" tools:ignore="BrandUsage">例如: mozilla.org</string>
+  <string name="preference_autocomplete_add_example2" tools:ignore="BrandUsage">例如：mozilla.org</string>
   <!-- Confirmation "snackbar" shown after a new custom autocomplete URL has been added. -->
   <string name="preference_autocomplete_add_confirmation">已新增自訂網址。</string>
   <!-- Menu item to remove existing autocomplete URLs. -->
@@ -293,14 +293,14 @@
   <!-- Action for dding an additional search engine to the list -->
   <string name="preference_search_add3">新增其他搜尋引擎</string>
   <!-- Explanation text above the list of search engines -->
-  <string name="preference_select_preferred_engine">選擇想使用的搜尋引擎:</string>
+  <string name="preference_select_preferred_engine">選擇想使用的搜尋引擎：</string>
   <!-- Clickable action text that shows when user long-presses on a search engine search field (this is similar to paste or copy when long-pressing a text field) -->
   <string name="action_option_add_search_engine">新增搜尋引擎</string>
   <string name="search_add_manually_name_hint">搜尋引擎名稱</string>
   <string name="search_add_manually_string">要使用的搜尋字串</string>
   <string name="search_add_manually_save">儲存</string>
   <!-- Example of search engine url. %s represents the search query and should be kept as-is. -->
-  <string name="search_add_manually_example">例如: example.com/search/?q=%s</string>
+  <string name="search_add_manually_example">例如：example.com/search/?q=%s</string>
   <string name="search_add_confirmation">已加入新搜尋引擎。</string>
   <string name="search_add_error_empty_name">輸入搜尋引擎名稱</string>
   <string name="search_add_error_duplicate_name">已有安裝的搜尋引擎使用該名稱。</string>
@@ -451,7 +451,7 @@
   <!-- Preference for autoplay -->
   <string name="preference_autoplay">自動播放</string>
   <!-- Heading for the instructions to allow a permission -->
-  <string name="phone_feature_blocked_intro">若要允許:</string>
+  <string name="phone_feature_blocked_intro">若要允許：</string>
   <!-- First step for the allowing a permission -->
   <string name="phone_feature_blocked_step_settings">1. 開啟 Android 設定</string>
   <!-- Second step for the allowing a permission -->

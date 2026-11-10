@@ -11,8 +11,42 @@
   <string name="mozac_feature_addons_permissions_geolocation_description">نما ڈس اے ہرنگ</string>
   <!-- Short description for the locationInfo data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_locationInfo_short_description">ڈس</string>
+  <!-- The version on of add-on. -->
+  <string name="mozac_feature_addons_version">ورژن</string>
+  <!-- The developer website (Homepage) of the add-on. -->
+  <string name="mozac_feature_addons_home_page">مون پنہ</string>
+  <!-- The settings of the add-on. -->
+  <string name="mozac_feature_addons_settings">سیٹنگاک</string>
+  <!-- Indicates the add-on is enabled. -->
+  <string name="mozac_feature_addons_settings_on">ملوک</string>
   <!-- Displays a page with all the permissions of an add-on. -->
   <string name="mozac_feature_addons_permissions">اجازت اک</string>
+  <!-- This is a button to remove (i.e. uninstall) an add-on. -->
+  <string name="mozac_feature_addons_remove">مٹائفبو</string>
+  <!-- This is a button to report an add-on. -->
+  <string name="mozac_feature_addons_report">رپورٹ کبو</string>
+  <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
+  <string name="mozac_feature_addons_permissions_dialog_title_2">%1$s اے شاغبو</string>
+  <!-- This is a button to allow the optional permissions requested by an add-on . -->
+  <string name="mozac_feature_addons_permissions_dialog_allow">اجازت ایتبو</string>
+  <!-- This is a button to deny the optional permissions requested by an add-on . -->
+  <string name="mozac_feature_addons_permissions_dialog_deny">منہ کبو</string>
+  <!-- Text link to learn more about permission requests on the add-on permissions dialog . -->
+  <string name="mozac_feature_addons_permissions_dialog_learn_more">پین ہیل کبو</string>
+  <!-- This is a button to cancel the add-on installation . -->
+  <string name="mozac_feature_addons_permissions_dialog_cancel">کینسل</string>
   <!-- Accessibility content description to install add-on button. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_install_addon_content_description_2">انسٹال کبو %1$s</string>
+  <!-- This is the label of a button to cancel an ongoing add-on installation. -->
+  <string name="mozac_feature_addons_install_addon_dialog_cancel">کینسل</string>
+  <!-- Text shown in not yet supported add-ons section. -->
+  <string name="mozac_feature_addons_unsupported_caption_2">1 ودنگ اس</string>
+  <!-- Text shown in not yet supported add-ons section - plural. %1$s is the number of unsupported extensions. -->
+  <string name="mozac_feature_addons_unsupported_caption_plural_2">%1$s ودنگاک</string>
+  <!-- Text link to a sumo page for learning more about unsupported add-ons. -->
+  <string name="mozac_feature_addons_unsupported_learn_more">پین ہیل کبو</string>
+  <!-- Displayed in the "Status" field for the updater when there was an error during the add-on update. -->
+  <string name="mozac_feature_addons_updater_status_error">ردی</string>
+  <!-- "Learn more" link displayed below an add-on status message. -->
+  <string name="mozac_feature_addons_status_learn_more">پین ہیل کبو</string>
 </resources>

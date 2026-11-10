@@ -395,7 +395,7 @@
   <!-- Text shown after failed to enable an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_enable">Inschakelen van %1$s mislukt</string>
   <!-- Text shown after failed to disable an add-on. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_failed_to_disable">Uitschakelen %1$s mislukt</string>
+  <string name="mozac_feature_addons_failed_to_disable">Uitschakelen van %1$s mislukt</string>
   <!-- Text shown after failed to uninstall an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_uninstall">Deïnstalleren van %1$s mislukt</string>
   <!-- Text shown after successfully removed an add-on. %1$s is the add-on name. -->

@@ -876,6 +876,12 @@
   <string name="notifications_allowed_summary">Permès</string>
   <!-- Summary for notification preference indicating notifications are not allowed -->
   <string name="notifications_not_allowed_summary">No permès</string>
+  <!-- Preference for local network access / nearby devices in Android 17 -->
+  <string name="preferences_local_network_access">Accés a la xarxa local / Dispositius propers</string>
+  <!-- Summary for local network access preference indicating access is allowed -->
+  <string name="local_network_access_allowed_summary">Permès</string>
+  <!-- Summary for local network access preference indicating access is not allowed -->
+  <string name="local_network_access_not_allowed_summary">No permès</string>
   <!--
     Add-on Permissions
 
@@ -933,6 +939,8 @@
   <string name="customize_toggle_pocket_sponsored">Articles patrocinats</string>
   <!-- Title for the opening wallpaper settings screen -->
   <string name="customize_wallpapers">Fons de pantalla</string>
+  <!-- Label for the menu item that opens the customize homepage settings screen. -->
+  <string name="browser_menu_customize_homepage">Personalitza la pàgina d’inici</string>
   <!-- Title for the customize home screen section with sponsored shortcuts. -->
   <string name="customize_toggle_contile">Dreceres patrocinades</string>
   <!--
@@ -1571,6 +1579,26 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Suprimeix el grup</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Cancel·la</string>
+  <!-- Content description for the three dot button next to a tab group" -->
+  <string name="tab_group_three_dot_button_content_description">Més opcions</string>
+  <!-- Text shown on the edit button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_edit">Edita</string>
+  <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_ungroup">Desagrupa</string>
+  <!-- Text shown on the delete button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_delete">Suprimeix</string>
+  <!-- Text shown on the close button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_close">Tanca</string>
+  <!-- Title for the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_title">Voleu desagrupar el grup de pestanyes?</string>
+  <!-- Text shown in the body of the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_body">Les pestanyes romandran obertes en aquest dispositiu, però el grup s\'eliminarà.</string>
+  <!-- Text shown on the Don't Ask Again checkbox button in the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_dont_ask_again">No m\'ho tornis a demanar</string>
+  <!-- Text shown on the confirm button in the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_confirm">Desagrupa</string>
+  <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_cancel">Cancel·la</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -1834,6 +1862,8 @@
   <string name="webcompat_reporter_description_error">Escriviu un mínim de 10 caràcters</string>
   <!-- The label/title of a mandatory field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_mandatory_description">Descriviu el problema detalladament per a ajudar-nos a investigar-lo</string>
+  <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
+  <string name="webcompat_reporter_label_optional_description">Descriviu el problema detalladament per a ajudar-nos a investigar-lo (opcional)</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Envia l’informe</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2948,6 +2978,14 @@
   <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">La ubicació no està disponible. Trieu-ne una altra.</string>
   <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
   <string name="ip_protection_location_unavailable_recommended_snackbar" tools:ignore="UnusedResources">La ubicació de la VPN seleccionada no està disponible. Connecteu-vos a la ubicació recomanada.</string>
+  <!-- Title for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_locations_unavailable_title">Les ubicacions no estan disponibles</string>
+  <!-- Description for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_locations_unavailable_description">S\'ha canviat a la ubicació recomanada.</string>
+  <!-- Title for the browser VPN location selection screen (displayed in the app bar) -->
+  <string name="ip_protection_locations_title">Trieu la ubicació de la VPN</string>
+  <!-- Content description for the browser VPN location selection screen top bar back button -->
+  <string name="ip_protection_locations_navigate_back_button_content_description">Vés enrere</string>
   <!--
     Autofill
 
@@ -4262,6 +4300,16 @@
   <string name="lens_camera_mode_qr">Escàner de QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">No s’ha trobat cap codi QR a la imatge</string>
+  <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
+  <string name="lens_opt_out_title">Cerca-ho amb el Google Lens</string>
+  <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
+  <string name="lens_opt_out_description">Trieu una imatge o feu servir la càmera per a obtenir resultats amb el Google Lens.</string>
+  <!-- Text of the link in the first-run Google Lens bottom sheet that opens the Search settings page -->
+  <string name="lens_opt_out_settings_link">Paràmetres del Google Lens</string>
+  <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->
+  <string name="lens_opt_out_try_it_now_button">Proveu-ho ara</string>
+  <!-- Button in the first-run Google Lens bottom sheet that leaves Google Lens without using it -->
+  <string name="lens_opt_out_not_now_button">Ara no</string>
   <!--
     Firefox Labs
 
