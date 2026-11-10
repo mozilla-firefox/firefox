@@ -2512,6 +2512,50 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
                                                   JS::PromiseState state,
                                                   HandleValue valueOrReason);
 
+// Set the result and settled state, then notify the debugger and rejection
+// tracker. Callers must save any reactions before this overwrites their slot,
+// then dispatch them after settlement.
+static void SettlePromise(JSContext* cx, Handle<PromiseObject*> promise,
+                          HandleValue valueOrReason, JS::PromiseState state,
+                          Handle<SavedFrame*> unwrappedRejectionStack) {
+  MOZ_ASSERT(promise->state() == JS::PromiseState::Pending);
+  MOZ_ASSERT(state != JS::PromiseState::Pending);
+
+  // FulfillPromise
+  // Step 3. Set promise.[[PromiseResult]] to value.
+  // RejectPromise
+  // Step 3. Set promise.[[PromiseResult]] to reason.
+  //
+  // Step 4. Set promise.[[PromiseFulfillReactions]] to undefined.
+  // Step 5. Set promise.[[PromiseRejectReactions]] to undefined.
+  //
+  // The same slot is used for the reactions list and the result, so setting
+  // the result also removes the reactions list.
+  promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT, valueOrReason);
+
+  // FulfillPromise
+  // Step 6. Set promise.[[PromiseState]] to fulfilled.
+  // RejectPromise
+  // Step 6. Set promise.[[PromiseState]] to rejected.
+  int32_t flags = promise->flags();
+  flags |= PROMISE_FLAG_RESOLVED;
+  if (state == JS::PromiseState::Fulfilled) {
+    flags |= PROMISE_FLAG_FULFILLED;
+  }
+  promise->setFixedSlotTyped(PromiseObject::FLAGS_SLOT, Int32Value(flags));
+
+  // Also null out the resolve/reject functions so they can be GC'd.
+  promise->setFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT,
+                             UndefinedValue());
+
+  // onSettled observes the settled state, so it must come last.
+  //
+  // RejectPromise
+  // Step 7. If promise.[[PromiseIsHandled]] is false, perform
+  //         HostPromiseRejectionTracker(promise, "reject").
+  PromiseObject::onSettled(cx, promise, unwrappedRejectionStack);
+}
+
 /**
  * ES2022 draft rev d03c1ec6e235a5180fa772b6178727c17974cb14
  *
@@ -2547,38 +2591,10 @@ static bool CanUseSameRealmEnqueue(JSContext* cx, HandleObject reactionObj,
   RootedValue reactionsVal(cx, promise->reactions());
 
   // FulfillPromise
-  // Step 3. Set promise.[[PromiseResult]] to value.
+  // Steps 3-6.
   // RejectPromise
-  // Step 3. Set promise.[[PromiseResult]] to reason.
-  //
-  // Step 4. Set promise.[[PromiseFulfillReactions]] to undefined.
-  // Step 5. Set promise.[[PromiseRejectReactions]] to undefined.
-  //
-  // The same slot is used for the reactions list and the result, so setting
-  // the result also removes the reactions list.
-  promise->setFixedSlot(PromiseObject::REACTIONS_OR_RESULT_SLOT, valueOrReason);
-
-  // FulfillPromise
-  // Step 6. Set promise.[[PromiseState]] to fulfilled.
-  // RejectPromise
-  // Step 6. Set promise.[[PromiseState]] to rejected.
-  int32_t flags = promise->flags();
-  flags |= PROMISE_FLAG_RESOLVED;
-  if (state == JS::PromiseState::Fulfilled) {
-    flags |= PROMISE_FLAG_FULFILLED;
-  }
-  promise->setFixedSlotTyped(PromiseObject::FLAGS_SLOT, Int32Value(flags));
-
-  // Also null out the resolve/reject functions so they can be GC'd.
-  promise->setFixedSlotTyped(PromiseObject::REJECT_FUNCTION_SLOT,
-                             UndefinedValue());
-
-  // Now that everything else is done, do the things the debugger needs.
-
-  // RejectPromise
-  // Step 7. If promise.[[PromiseIsHandled]] is false, perform
-  //         HostPromiseRejectionTracker(promise, "reject").
-  PromiseObject::onSettled(cx, promise, unwrappedRejectionStack);
+  // Steps 3-7.
+  SettlePromise(cx, promise, valueOrReason, state, unwrappedRejectionStack);
 
   // FulfillPromise
   // Step 7. Return TriggerPromiseReactions(reactions, value).
