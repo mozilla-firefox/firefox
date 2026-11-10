@@ -1,4 +1,5 @@
 [DEFAULT]
 subsuite = "integration"
+tags = "os_integration"
 
 ["test_delete_private_permanent_pbm.py"]
