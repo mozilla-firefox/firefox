@@ -159,7 +159,7 @@ browsertime-tp6m:
             geckoview: []
             fenix:
                 by-test-platform:
-                    android-hw-a55.*shippable.*: [trunk-only]
+                    android-hw-a55.*shippable.*: [autoland]
                     default: [mozilla-central]
             default: []
 
@@ -181,7 +181,7 @@ browsertime-tp6m-essential:
             geckoview: []
             fenix:
                 by-test-platform:
-                    android-hw-a55.*shippable.*: [trunk-only]
+                    android-hw-a55.*shippable.*: [autoland]
                     default: []
             default: []
     tier:

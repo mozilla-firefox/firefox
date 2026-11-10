@@ -135,7 +135,7 @@ browsertime-tp6:
             by-app:
                 firefox:
                     by-test-platform:
-                        .*64(?!.*nightlyasrelease).*shippable.*: [trunk]
+                        .*64(?!.*nightlyasrelease).*shippable.*: [autoland]
                         default: []
                 default: []
         treeherder-symbol: Btime(tp6)
@@ -191,7 +191,7 @@ browsertime-responsiveness:
         by-app:
             firefox:
                 by-test-platform:
-                    .*64(?!.*nightlyasrelease).*shippable.*: [trunk]
+                    .*64(?!.*nightlyasrelease).*shippable.*: [autoland]
                     default: []
             default: []
 
@@ -227,7 +227,7 @@ browsertime-tp6-essential:
             by-app:
                 firefox:
                     by-test-platform:
-                        (?!macosx1470).*64(?!.*nightlyasrelease).*shippable.*: [trunk]
+                        (?!macosx1470).*64(?!.*nightlyasrelease).*shippable.*: [autoland]
                         default: []
                 default: []
         tier:
@@ -257,7 +257,7 @@ browsertime-tp6-bytecode:
         by-app:
             firefox:
                 by-test-platform:
-                    .*64(?!.*nightlyasrelease).*shippable.*: [trunk]
+                    .*64(?!.*nightlyasrelease).*shippable.*: [autoland]
                     default: []
             default: []
     mozharness:
@@ -1373,7 +1373,7 @@ browsertime-tp6-webextensions:
             firefox:
                 by-test-platform:
                     macosx1100.*shippable.*: [mozilla-central]
-                    .*64(?!.*nightlyasrelease).*shippable.*: [trunk-only]
+                    .*64(?!.*nightlyasrelease).*shippable.*: [autoland]
                     default: []
             default: []
     mozharness:
