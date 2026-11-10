@@ -860,10 +860,57 @@ export class TabDragAndDrop {
 
     if (movingTab) {
       this.#startStaleDragCheck();
+      window.addEventListener("dragleave", this.#onWindowDragLeave, {
+        capture: true,
+      });
     } else {
       this.#stopStaleDragCheck();
+      window.removeEventListener("dragleave", this.#onWindowDragLeave, {
+        capture: true,
+      });
     }
   }
+
+  /**
+   * Clears the grouping and pinning feedback shown while dragging, without
+   * moving any tabs back.
+   */
+  #resetDragFeedback() {
+    for (let item of this._tabbrowserTabs.dragAndDropElements) {
+      this._resetGroupTarget(item);
+    }
+    this._clearDragOverGroupingTimer();
+    this.#resetPinnedDropIndicator();
+    this._tabbrowserTabs.removeAttribute("movingtab-group");
+    this._tabbrowserTabs.removeAttribute("movingtab-ungroup");
+    this._tabbrowserTabs.removeAttribute("movingtab-addToGroup");
+    this._setDragOverGroupColor(null);
+  }
+
+  /**
+   * A dragleave without a relatedTarget means the drag left this window.
+   * Clear the grouping and pinning feedback, which would otherwise keep
+   * reacting to the last position seen in this window. Tabs keep their
+   * positions so the strip still shows where the drop would land, and the
+   * next dragover re-evaluates the feedback if the drag comes back.
+   *
+   * @param {DragEvent} event
+   */
+  #onWindowDragLeave = event => {
+    if (event.relatedTarget) {
+      return;
+    }
+    this.#resetDragFeedback();
+
+    let dragData = event.dataTransfer?.mozGetDataAt(
+      TAB_DROP_TYPE,
+      0
+    )?._dragData;
+    if (dragData) {
+      delete dragData.shouldCreateGroupOnDrop;
+      delete dragData.shouldDropIntoCollapsedTabGroup;
+    }
+  };
 
   get #dragSession() {
     return Cc["@mozilla.org/widget/dragservice;1"]
@@ -2677,16 +2724,9 @@ export class TabDragAndDrop {
     this.#setMovingTabMode(false);
 
     for (let item of this._tabbrowserTabs.dragAndDropElements) {
-      this._resetGroupTarget(item);
-      item = elementToMove(item);
-      item.style.transform = "";
+      elementToMove(item).style.transform = "";
     }
-    this._tabbrowserTabs.removeAttribute("movingtab-group");
-    this._tabbrowserTabs.removeAttribute("movingtab-ungroup");
-    this._tabbrowserTabs.removeAttribute("movingtab-addToGroup");
-    this._setDragOverGroupColor(null);
-    this._clearDragOverGroupingTimer();
-    this.#resetPinnedDropIndicator();
+    this.#resetDragFeedback();
   }
 
   /**
