@@ -25,6 +25,20 @@ void MediaDrmRemoteCDMParent::InitializeStatics() {
   sCbMap = new DrmCallbackMap();
 }
 
+// Before Android 12, AMediaDrm_openSession returns AMEDIA_OK without a session
+// ID when the plugin fails to open a session, for example because the device is
+// not provisioned or because there are too many open sessions.
+static media_status_t OpenSession(AMediaDrm* aDrm, AMediaDrmSessionId* aId) {
+  *aId = {nullptr, 0};
+  media_status_t status = AMediaDrm_openSession(aDrm, aId);
+  if (!__builtin_available(android 31, *)) {
+    if (status == AMEDIA_OK && (!aId->ptr || !aId->length)) {
+      return AMEDIA_DRM_NOT_PROVISIONED;
+    }
+  }
+  return status;
+}
+
 static MediaResult OpenSessionError(media_status_t aStatus, const char* aFor) {
   if (aStatus == AMEDIA_DRM_RESOURCE_BUSY) {
     return MediaResult(NS_ERROR_DOM_QUOTA_EXCEEDED_ERR,
@@ -333,13 +347,13 @@ MediaDrmRemoteCDMParent::EnsureHasAMediaCrypto(
   EME_LOG("[{}] MediaDrmRemoteCDMParent::EnsureHasAMediaCrypto -- open session",
           fmt::ptr(this));
 
-  media_status_t status = AMediaDrm_openSession(mDrm, &mCryptoSessionId);
+  media_status_t status = OpenSession(mDrm, &mCryptoSessionId);
   if (status == AMEDIA_DRM_NOT_PROVISIONED) {
     if (aProvisioned) {
       return InternalPromise::CreateAndReject(
           MediaResult(NS_ERROR_DOM_INVALID_STATE_ERR,
-                      "AMediaDrm_openSession reports not provisioned after "
-                      "provisioning"_ns),
+                      "AMediaDrm_openSession failed for crypto after "
+                      "provisioning, not provisioned or no session ID"_ns),
           __func__);
     }
 
@@ -532,12 +546,13 @@ void MediaDrmRemoteCDMParent::DoCreateSession(
   };
 
   AMediaDrmSessionId sessionId;
-  media_status_t status = AMediaDrm_openSession(mDrm, &sessionId);
+  media_status_t status = OpenSession(mDrm, &sessionId);
   if (status == AMEDIA_DRM_NOT_PROVISIONED) {
     if (aProvisioned) {
-      aResolver(MediaResult(NS_ERROR_DOM_INVALID_STATE_ERR,
-                            "AMediaDrm_openSession reports not provisioned "
-                            "after provisioning"_ns));
+      aResolver(
+          MediaResult(NS_ERROR_DOM_INVALID_STATE_ERR,
+                      "AMediaDrm_openSession failed for session after "
+                      "provisioning, not provisioned or no session ID"_ns));
       return;
     }
     provisionThenRetry(std::move(aRequest), std::move(aResolver));
