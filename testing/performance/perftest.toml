@@ -1,9 +1,5 @@
 [DEFAULT]
 
-["perftest_WPT_chrome_init_file.js"]
-
-["perftest_WPT_firefox_init_file.js"]
-
 ["perftest_bbc_link.js"]
 
 ["perftest_facebook.js"]

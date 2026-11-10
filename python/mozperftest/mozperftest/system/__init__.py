@@ -96,8 +96,6 @@ def pick_system(env, flavor, mach_cmd):
         )
     if flavor == "mobile-browser":
         return Layers(env, mach_cmd, mobile_layers)
-    if flavor == "webpagetest":
-        return Layers(env, mach_cmd, (Profile,))
     if flavor == "custom-script":
         layers = [
             PingServer,  # needs to come before Profile

@@ -798,26 +798,6 @@ perftest_perfstats.js
 
 This test launches browsertime with the perfStats option (will collect low-overhead timings, see Bug 1553254). The test currently runs a short user journey. A selection of popular sites are visited, first as cold pageloads, and then as warm.
 
-perftest_WPT_chrome_init_file.js
-================================
-
-:owner: Performance Testing Team
-:name: webpagetest-chrome
-
-**Run webpagetest performance pageload tests on Chrome against Alexa top 50 websites**
-
-This mozperftest gets webpagetest to run pageload tests on Chrome against the 50 most popular websites and provide data. The full list of data returned from webpagetest: firstContentfulPaint, visualComplete90, firstPaint, visualComplete99, visualComplete, SpeedIndex, bytesIn,bytesOut, TTFB, fullyLoadedCPUms, fullyLoadedCPUpct, domElements, domContentLoadedEventStart, domContentLoadedEventEnd, loadEventStart, loadEventEnd
-
-perftest_WPT_firefox_init_file.js
-=================================
-
-:owner: Performance Testing Team
-:name: webpagetest-firefox
-
-**Run webpagetest performance pageload tests on Firefox against Alexa top 50 websites**
-
-This mozperftest gets webpagetest to run pageload tests on Firefox against the 50 most popular websites and provide data. The full list of data returned from webpagetest: firstContentfulPaint, timeToContentfulPaint, visualComplete90, firstPaint, visualComplete99, visualComplete, SpeedIndex, bytesIn, bytesOut, TTFB, fullyLoadedCPUms, fullyLoadedCPUpct, domElements, domContentLoadedEventStart, domContentLoadedEventEnd, loadEventStart, loadEventEnd
-
 
 ## toolkit/components/ml/tests/browser
 

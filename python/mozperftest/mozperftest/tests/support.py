@@ -25,7 +25,6 @@ EXAMPLE_XPCSHELL_DESTRUCTURED_TEST = Path(
 )
 EXAMPLE_MOCHITEST_TEST = Path(EXAMPLE_TESTS_DIR, "test_mochitest.html")
 EXAMPLE_MOCHITEST_TEST2 = Path(EXAMPLE_TESTS_DIR, "test_mochitest_multiscript.html")
-EXAMPLE_WPT_TEST = Path(EXAMPLE_TESTS_DIR, "test_perftest_WPT_init_file.js")
 EXAMPLE_SHELL_TEST = HERE / "data" / "samples" / "perftest_custom.sh"
 BT_DATA = Path(HERE, "data", "browsertime-results", "browsertime.json")
 BT_DATA_VIDEO = Path(HERE, "data", "browsertime-results-video", "browsertime.json")

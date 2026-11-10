@@ -69,10 +69,6 @@ Here are the active PerfTest components/modules and their respective owners:
 >   : - Owner: Sparky
 >     - Co-owner: Kash, Andrej
 >     - Description: Testing framework used to run Firefox-specific performance tests
-> - WebPageTest
->   : - Owner: Andrej
->     - Co-owner: Sparky
->     - Description: A test running in the MozPerftest framework used as a third party performance benchmark
 
 You can additionally reach out to our team on
 the [#perftest](https://matrix.to/#/#perftest:mozilla.org) channel on matrix

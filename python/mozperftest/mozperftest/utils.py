@@ -618,12 +618,11 @@ _URL = (
     "{0}/secrets/v1/secret/project"
     "{1}releng{1}gecko{1}build{1}level-{2}{1}conditioned-profiles"
 )
-_WPT_URL = "{0}/secrets/v1/secret/project/perftest/gecko/level-{1}/perftest-login"
 _DEFAULT_SERVER = "https://firefox-ci-tc.services.mozilla.com"
 
 
 @functools.cache
-def get_tc_secret(wpt=False):
+def get_tc_secret():
     """Returns the Taskcluster secret.
 
     Raises an OSError when not running on try
@@ -640,11 +639,6 @@ def get_tc_secret(wpt=False):
         "%2F",
         os.environ.get("MOZ_SCM_LEVEL", "1"),
     )
-    if wpt:
-        secrets_url = _WPT_URL.format(
-            os.environ.get("TASKCLUSTER_PROXY_URL", _DEFAULT_SERVER),
-            os.environ.get("MOZ_SCM_LEVEL", "1"),
-        )
     res = session.get(secrets_url, timeout=DOWNLOAD_TIMEOUT)
     res.raise_for_status()
     return res.json()["secret"]

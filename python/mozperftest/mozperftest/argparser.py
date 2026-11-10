@@ -28,7 +28,6 @@ FLAVORS = (
     "mobile-browser",
     "doc",
     "xpcshell",
-    "webpagetest",
     "mochitest",
     "eval-mochitest",
     "custom-script",

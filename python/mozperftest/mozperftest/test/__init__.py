@@ -7,7 +7,6 @@ from mozperftest.test.androidlog import AndroidLog
 from mozperftest.test.browsertime import BrowsertimeRunner
 from mozperftest.test.mochitest import EvalMochitest, PerfMochitest
 from mozperftest.test.shellscript import ShellScriptRunner
-from mozperftest.test.webpagetest import WebPageTest
 from mozperftest.test.xpcshell import XPCShell
 
 
@@ -16,7 +15,6 @@ def get_layers():
         BrowsertimeRunner,
         AndroidLog,
         XPCShell,
-        WebPageTest,
         PerfMochitest,
         ShellScriptRunner,
         AlertTestRunner,
@@ -30,8 +28,6 @@ def pick_test(env, flavor, mach_cmd):
         return Layers(env, mach_cmd, (BrowsertimeRunner,))
     if flavor == "mobile-browser":
         return Layers(env, mach_cmd, (BrowsertimeRunner, AndroidLog))
-    if flavor == "webpagetest":
-        return Layers(env, mach_cmd, (WebPageTest,))
     if flavor == "mochitest":
         return Layers(env, mach_cmd, (PerfMochitest,))
     if flavor == "eval-mochitest":
