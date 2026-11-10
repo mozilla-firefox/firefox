@@ -20,8 +20,9 @@ class Element;
 
 /**
  * A fast path for parsing innerHTML for a small subset of HTML: common tags
- * whose nesting can't trigger any of the tree builder's fix-ups, plain
- * attributes, comments and text without character references.
+ * whose nesting can't trigger any of the tree builder's fix-ups, attributes,
+ * comments, and text with the character references whose decoding doesn't
+ * depend on the context.
  *
  * It checks all of the input before it creates any node, so that callers can
  * fall back to the full parser for input outside the subset.
