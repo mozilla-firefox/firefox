@@ -4917,9 +4917,7 @@ pub unsafe extern "C" fn Servo_ComputedValues_Inherit(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Servo_ComputedValues_NeedsAnimationTraversal(
-    values: &ComputedValues,
-) -> bool {
+pub extern "C" fn Servo_ComputedValues_NeedsAnimationTraversal(values: &ComputedValues) -> bool {
     let ui = values.get_ui();
     ui.specifies_animations()
         || ui.specifies_transitions()
@@ -7432,22 +7430,22 @@ pub extern "C" fn Servo_ResolveStyleLazily(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn Servo_ReparentStyle(
-    style_to_reparent: &ComputedValues,
+    base_style: &ComputedValues,
     parent_style: &ComputedValues,
     layout_parent_style: &ComputedValues,
     element: Option<&RawGeckoElement>,
     raw_data: &PerDocumentStyleData,
 ) -> Strong<ComputedValues> {
-    use style::properties::FirstLineReparenting;
+    use style::properties::CascadeReparenting;
 
     let global_style_data = &*GLOBAL_STYLE_DATA;
     let guard = global_style_data.shared_lock.read();
     let doc_data = raw_data.borrow();
-    let inputs = CascadeInputs::new_from_style(style_to_reparent);
+    let inputs = CascadeInputs::new_from_style(base_style);
     let element = element.map(GeckoElement);
     // We need the pseudo-type to reparent stuff like anonymous boxes, but we don't store pseudo
     // identifiers in the style itself, so if there's no pseudo try the element as well.
-    let pseudo = style_to_reparent
+    let pseudo = base_style
         .pseudo()
         .or_else(|| element.and_then(|e| e.implemented_pseudo_element()));
 
@@ -7460,7 +7458,7 @@ pub extern "C" fn Servo_ReparentStyle(
             &StylesheetGuards::same(&guard),
             Some(parent_style),
             Some(layout_parent_style),
-            FirstLineReparenting::Yes { style_to_reparent },
+            CascadeReparenting::FirstLine { base_style },
             /* try_tactic = */ &Default::default(),
             /* rule_cache = */ None,
             &mut RuleCacheConditions::default(),

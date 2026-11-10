@@ -6,7 +6,7 @@
 
 <%namespace name="helpers" file="/helpers.mako.rs" />
 <% from itertools import groupby %>
-<% from data import PropertyRestrictions, to_camel_case, RULE_VALUES, SYSTEM_FONT_LONGHANDS, PRIORITARY_PROPERTIES, PRIORITARY_PROPERTY_DEPENDENCIES %>
+<% from data import PropertyRestrictions, to_camel_case, RULE_VALUES, POSITION_TRY_RULE, SYSTEM_FONT_LONGHANDS, PRIORITARY_PROPERTIES, PRIORITARY_PROPERTY_DEPENDENCIES %>
 
 use servo_arc::{Arc, UniqueArc};
 use std::{ops, ptr, fmt, mem};
@@ -717,6 +717,12 @@ impl LonghandIdSet {
     pub(super) fn late_group_only_inherited() -> &'static Self {
         static LATE_GROUP_ONLY_INHERITED: LonghandIdSet = ${longhand_id_set(lambda p: p.style_struct.inherited and not p.is_prioritary())};
         &LATE_GROUP_ONLY_INHERITED
+    }
+
+    #[inline]
+    pub(super) fn late_group_position_try() -> &'static Self {
+        static LATE_GROUP_POSITION_TRY: LonghandIdSet = ${longhand_id_set(lambda p: (p.rule_types_allowed & POSITION_TRY_RULE) and not p.is_prioritary())};
+        &LATE_GROUP_POSITION_TRY
     }
 
     #[inline]
@@ -2320,12 +2326,34 @@ impl<'a> StyleBuilder<'a> {
         }
     }
 
-    /// Copy the reset properties from `style`.
-    pub fn copy_reset_from(&mut self, style: &'a ComputedValues) {
+    /// Copy the reset properties from `style`. Note this only applies to non-custom properties.
+    pub fn copy_reset_longhands_from(&mut self, style: &'a ComputedValues) {
         % for style_struct in data.active_style_structs():
         % if not style_struct.inherited:
         self.${style_struct.ident} =
             StyleStructRef::Borrowed(style.get_${style_struct.name_lower}());
+        % endif
+        % endfor
+    }
+
+    /// Copy the inherited properties from `style`. Note this only applies to non-custom properties.
+    pub fn copy_inherited_longhands_from(&mut self, style: &'a ComputedValues) {
+        % for style_struct in data.active_style_structs():
+        % if style_struct.inherited:
+        self.${style_struct.ident} =
+            StyleStructRef::Borrowed(style.get_${style_struct.name_lower}());
+        % endif
+        % endfor
+    }
+
+    /// Resets all properties that apply to @position-try declarations.
+    /// This is necessary so that e.g. `margin: unset` works just fine there.
+    pub fn reset_position_try_properties(&mut self) {
+        % for property in data.longhands:
+        % if not property.logical:
+        % if property.rule_types_allowed & POSITION_TRY_RULE:
+        self.reset_${property.ident}();
+        % endif
         % endif
         % endfor
     }
@@ -2353,7 +2381,7 @@ impl<'a> StyleBuilder<'a> {
         self.${property.style_struct.ident}.mutate()
             .copy_${property.ident}_from(inherited_struct);
     }
-    % else:
+    % endif
     /// Reset `${property.ident}` to the initial value.
     #[allow(non_snake_case)]
     pub fn reset_${property.ident}(&mut self) {
@@ -2367,7 +2395,6 @@ impl<'a> StyleBuilder<'a> {
         self.${property.style_struct.ident}.mutate()
             .reset_${property.ident}(reset_struct);
     }
-    % endif
 
     % if not property.vector or property.vector.simple_bindings or engine == "servo":
     /// Set the `${property.ident}` to the computed value `value`.
