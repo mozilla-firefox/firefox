@@ -52,6 +52,7 @@ updatebot:
         enabled: true
         frequency: every
     try-preset: android-frontend
+    artifact-build: true
 
 vendoring:
   url: https://github.com/mozilla/application-services

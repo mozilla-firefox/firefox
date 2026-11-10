@@ -277,6 +277,12 @@ updatebot:
   # omitted then ./mach try auto will be used
   fuzzy-paths: ['media']
 
+  # Optional: Pass --artifact to ./mach try, so the try push uses artifact builds where
+  # possible. Only use this if the library's updates don't change compiled Gecko code:
+  # artifact builds reuse binaries built from mozilla-central, so compiled changes would
+  # not be tested. Defaults to False.
+  artifact-build: True
+
   # The tasks that Updatebot can run. Only one of each task is currently permitted
   # optional
   tasks:

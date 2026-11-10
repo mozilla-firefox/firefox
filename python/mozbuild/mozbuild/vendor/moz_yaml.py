@@ -181,6 +181,7 @@ def _schema_1():
             "try-preset": All(str, Length(min=1)),
             "fuzzy-query": All(str, Length(min=1)),
             "fuzzy-paths": All([str], Length(min=1)),
+            "artifact-build": Boolean(),
             "tasks": All(
                 UpdatebotTasks(),
                 [
