@@ -296,21 +296,15 @@ class Auth0Config:
 
         raise ValueError("Timed out waiting for Auth0 device code authentication!")
 
-    def get_token(self, token_file: Path) -> dict:
-        """Retrieve an access token for authentication.
-
-        If a cached token is found in `token_file` and can be confirmed to be
-        valid, return it. Otherwise, perform the Device Code Flow authorization
-        to request a new token, validate it and save it to `token_file`.
-        """
-        # Load a cached token and validate it if one is available.
+    def get_cached_token(self, token_file: Path) -> dict | None:
+        """Return the token cached in `token_file` if it can be validated."""
         cached_token = load_token_from_disk(token_file)
-        user_token = self.validate_token(cached_token) if cached_token else None
+        return self.validate_token(cached_token) if cached_token else None
 
-        # Login with the Device Authorization Flow if an existing token isn't found.
-        if not user_token:
-            new_token = self.device_authorization_flow()
-            user_token = self.validate_token(new_token)
+    def login(self, token_file: Path) -> dict:
+        """Request a new token with the Device Code Flow and save it to `token_file`."""
+        new_token = self.device_authorization_flow()
+        user_token = self.validate_token(new_token)
 
         if not user_token:
             raise ValueError("Could not get an Auth0 token.")
@@ -325,8 +319,9 @@ class Auth0Config:
 class LandoAPIException(Exception):
     """Raised when Lando throws an exception."""
 
-    def __init__(self, detail: str | None = None):
+    def __init__(self, detail: str | None = None, status_code: int | None = None):
         super().__init__(detail or "")
+        self.status_code = status_code
 
 
 @dataclass
@@ -337,6 +332,9 @@ class LandoAPI:
     api_url: str
     instance_id: str
     verify_tls: bool = True
+    auth0: Auth0Config | None = None
+    token_file: Path | None = None
+    token_from_cache: bool = False
 
     @property
     def lando_try_api_url(self) -> str:
@@ -381,17 +379,45 @@ class LandoAPI:
         )
 
         instance_id = parser.get(section, "instance_id", fallback=section)
-        token = auth0.get_token(get_token_file(instance_id))
+        token_file = get_token_file(instance_id)
+        token = auth0.get_cached_token(token_file)
+        token_from_cache = token is not None
+        if not token:
+            token = auth0.login(token_file)
 
         return LandoAPI(
             api_url=parser.get(section, "api_domain"),
             access_token=token["access_token"],
             instance_id=instance_id,
             verify_tls=parser.getboolean(section, "verify_tls", fallback=True),
+            auth0=auth0,
+            token_file=token_file,
+            token_from_cache=token_from_cache,
         )
 
     def post(self, url: str, body: dict) -> dict:
-        """Make a POST request to Lando."""
+        """Make a POST request to Lando.
+
+        If Lando refuses the request, the token may predate a change
+        in the user's access, so discard it. If it came from the cache, log in
+        again and retry.
+        """
+        try:
+            return self._post(url, body)
+        except LandoAPIException as exc:
+            if exc.status_code != 403:
+                raise
+            if self.token_file:
+                self.token_file.unlink(missing_ok=True)
+            if not (self.auth0 and self.token_file and self.token_from_cache):
+                raise
+            print(f"{exc}\nRe-authenticating to refresh your Lando permissions.")
+            token = self.auth0.login(self.token_file)
+            self.access_token = token["access_token"]
+            self.token_from_cache = False
+            return self.post(url, body)
+
+    def _post(self, url: str, body: dict) -> dict:
         response = requests.post(
             url, headers=self.api_headers, json=body, verify=self.verify_tls
         )
@@ -413,7 +439,7 @@ class LandoAPI:
                         " This is likely a transient server-side issue; "
                         "please try again in a few moments."
                     )
-                raise LandoAPIException(detail=detail)
+                raise LandoAPIException(detail=detail, status_code=response.status_code)
 
             # The response wasn't JSON but the status was valid.
             raise LandoAPIException(
@@ -421,7 +447,9 @@ class LandoAPI:
             )
 
         if response.status_code >= 400:
-            raise LandoAPIException(detail=response_json["detail"])
+            raise LandoAPIException(
+                detail=response_json["detail"], status_code=response.status_code
+            )
 
         return response_json
 

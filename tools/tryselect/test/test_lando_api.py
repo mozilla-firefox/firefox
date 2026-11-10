@@ -67,6 +67,88 @@ def test_post_json_error_status_raises_detail(post: mock.Mock):
         _make_api().post("https://lando.example.net/try/patches", {})
 
 
+def _make_json_response(status_code: int, json_body: dict) -> mock.Mock:
+    response = mock.Mock()
+    response.status_code = status_code
+    response.json.return_value = json_body
+    return response
+
+
+def _make_refreshable_api(tmp_path) -> LandoAPI:
+    token_file = tmp_path / "token.json"
+    token_file.write_text("{}")
+    api = _make_api()
+
+    def login(path):
+        path.write_text("{}")
+        return {"access_token": "new-token"}
+
+    api.auth0 = mock.Mock()
+    api.auth0.login.side_effect = login
+    api.token_file = token_file
+    api.token_from_cache = True
+    return api
+
+
+MISSING_PERMISSIONS = {"detail": "Missing permissions: main.scm_level_1"}
+
+
+@mock.patch("tryselect.lando.requests.post")
+def test_post_missing_permissions_refreshes_token(post: mock.Mock, tmp_path):
+    post.side_effect = [
+        _make_json_response(403, MISSING_PERMISSIONS),
+        _make_json_response(200, {"id": 42}),
+    ]
+    api = _make_refreshable_api(tmp_path)
+
+    assert api.post("https://lando.example.net/try/patches", {}) == {"id": 42}
+
+    api.auth0.login.assert_called_once_with(api.token_file)
+    assert api.token_file.exists()
+    assert post.call_count == 2
+    assert post.call_args.kwargs["headers"]["Authorization"] == "Bearer new-token"
+
+
+@mock.patch("tryselect.lando.requests.post")
+def test_post_missing_permissions_deletes_token(post: mock.Mock, tmp_path):
+    post.return_value = _make_json_response(403, MISSING_PERMISSIONS)
+    api = _make_refreshable_api(tmp_path)
+
+    with pytest.raises(LandoAPIException, match="Missing permissions"):
+        api.post("https://lando.example.net/try/patches", {})
+
+    assert api.auth0.login.call_count == 1
+    assert post.call_count == 2
+    assert not api.token_file.exists()
+
+
+@mock.patch("tryselect.lando.requests.post")
+def test_post_missing_permissions_fresh_token_no_login(post: mock.Mock, tmp_path):
+    post.return_value = _make_json_response(403, MISSING_PERMISSIONS)
+    api = _make_refreshable_api(tmp_path)
+    api.token_from_cache = False
+
+    with pytest.raises(LandoAPIException, match="Missing permissions"):
+        api.post("https://lando.example.net/try/patches", {})
+
+    api.auth0.login.assert_not_called()
+    assert post.call_count == 1
+    assert not api.token_file.exists()
+
+
+@mock.patch("tryselect.lando.requests.post")
+def test_post_other_error_keeps_token(post: mock.Mock, tmp_path):
+    post.return_value = _make_json_response(400, {"detail": "Bad Request"})
+    api = _make_refreshable_api(tmp_path)
+
+    with pytest.raises(LandoAPIException, match="Bad Request"):
+        api.post("https://lando.example.net/try/patches", {})
+
+    api.auth0.login.assert_not_called()
+    assert post.call_count == 1
+    assert api.token_file.exists()
+
+
 @mock.patch("tryselect.lando.Auth0Config")
 @pytest.mark.parametrize(
     "section,expected_instance_id",
