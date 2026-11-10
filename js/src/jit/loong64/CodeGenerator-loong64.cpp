@@ -3581,8 +3581,8 @@ void CodeGenerator::visitWasmReplaceLaneSimd128(LWasmReplaceLaneSimd128* ins) {
 void CodeGenerator::visitWasmMoveLaneSimd128(LWasmMoveLaneSimd128* ins) {
 #ifdef ENABLE_JIT_SIMD
   MOZ_ASSERT(ToFloatRegister(ins->lhs()) == ToFloatRegister(ins->output()));
-  const FloatRegister lhsDest = ToFloatRegister(ins->lhs());
-  const FloatRegister src = ToFloatRegister(ins->rhs());
+  const VRegister lhsDest = ToFloatRegister(ins->lhs()).toV();
+  const VRegister src = ToFloatRegister(ins->rhs()).toV();
   const uint32_t laneIndex = ins->mir()->laneIndex();
   const uint32_t srcLaneIndex = ins->mir()->srcLaneIndex();
 
@@ -3944,19 +3944,19 @@ void CodeGenerator::visitWasmReduceAndBranchSimd128(
 
   switch (ins->simdOp()) {
     case wasm::SimdOp::V128AnyTrue:
-      masm.as_vsetnez_v(Assembler::FCC0, src);
+      masm.as_vsetnez_v(Assembler::FCC0, src.toV());
       break;
     case wasm::SimdOp::I8x16AllTrue:
-      masm.as_vsetallnez_b(Assembler::FCC0, src);
+      masm.as_vsetallnez_b(Assembler::FCC0, src.toV());
       break;
     case wasm::SimdOp::I16x8AllTrue:
-      masm.as_vsetallnez_h(Assembler::FCC0, src);
+      masm.as_vsetallnez_h(Assembler::FCC0, src.toV());
       break;
     case wasm::SimdOp::I32x4AllTrue:
-      masm.as_vsetallnez_w(Assembler::FCC0, src);
+      masm.as_vsetallnez_w(Assembler::FCC0, src.toV());
       break;
     case wasm::SimdOp::I64x2AllTrue:
-      masm.as_vsetallnez_d(Assembler::FCC0, src);
+      masm.as_vsetallnez_d(Assembler::FCC0, src.toV());
       break;
     case wasm::SimdOp::I16x8Bitmask: {
       UseScratchRegisterScope temps(&masm);

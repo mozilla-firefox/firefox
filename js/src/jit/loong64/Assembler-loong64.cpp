@@ -110,6 +110,14 @@ uint32_t js::jit::FD(FloatRegister r) { return r.encoding() << RDShift; }
 
 uint32_t js::jit::FA(FloatRegister r) { return r.encoding() << FAShift; }
 
+uint32_t js::jit::VJ(VRegister r) { return r.encoding() << RJShift; }
+
+uint32_t js::jit::VK(VRegister r) { return r.encoding() << RKShift; }
+
+uint32_t js::jit::VD(VRegister r) { return r.encoding() << RDShift; }
+
+uint32_t js::jit::VA(VRegister r) { return r.encoding() << FAShift; }
+
 uint32_t js::jit::SA2(uint32_t value) {
   MOZ_ASSERT(value < 4);
   return (value & SA2Mask) << SAShift;
@@ -2001,1441 +2009,1378 @@ BufferOffset AssemblerLOONG64::as_fstx_d(FloatRegister fd, Register rj,
 
 /* LSX (128-bit SIMD) instructions. */
 
-BufferOffset AssemblerLOONG64::as_vfmadd_s(FloatRegister vd, FloatRegister vj,
-                                           FloatRegister vk, FloatRegister va) {
+BufferOffset AssemblerLOONG64::as_vfmadd_s(VRegister vd, VRegister vj,
+                                           VRegister vk, VRegister va) {
   return emit(InstReg(op_vfmadd_s, va, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfmadd_d(FloatRegister vd, FloatRegister vj,
-                                           FloatRegister vk, FloatRegister va) {
+BufferOffset AssemblerLOONG64::as_vfmadd_d(VRegister vd, VRegister vj,
+                                           VRegister vk, VRegister va) {
   return emit(InstReg(op_vfmadd_d, va, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfnmsub_s(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk,
-                                            FloatRegister va) {
+BufferOffset AssemblerLOONG64::as_vfnmsub_s(VRegister vd, VRegister vj,
+                                            VRegister vk, VRegister va) {
   return emit(InstReg(op_vfnmsub_s, va, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfnmsub_d(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk,
-                                            FloatRegister va) {
+BufferOffset AssemblerLOONG64::as_vfnmsub_d(VRegister vd, VRegister vj,
+                                            VRegister vk, VRegister va) {
   return emit(InstReg(op_vfnmsub_d, va, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfcmp_cond_s(FPUCondition cond,
-                                               FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfcmp_cond_s(FPUCondition cond, VRegister vd,
+                                               VRegister vj, VRegister vk) {
   return emit(InstReg(op_vfcmp_cond_s, cond, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfcmp_cond_d(FPUCondition cond,
-                                               FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfcmp_cond_d(FPUCondition cond, VRegister vd,
+                                               VRegister vj, VRegister vk) {
   return emit(InstReg(op_vfcmp_cond_d, cond, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vbitsel_v(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk,
-                                            FloatRegister va) {
+BufferOffset AssemblerLOONG64::as_vbitsel_v(VRegister vd, VRegister vj,
+                                            VRegister vk, VRegister va) {
   return emit(InstReg(op_vbitsel_v, va, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vshuf_b(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk, FloatRegister va) {
+BufferOffset AssemblerLOONG64::as_vshuf_b(VRegister vd, VRegister vj,
+                                          VRegister vk, VRegister va) {
   return emit(InstReg(op_vshuf_b, va, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vld(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vld(VRegister vd, Register rj,
                                       uint32_t imm12) {
   return emit(InstImm(op_vld, imm12, rj, vd, 12).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vst(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vst(VRegister vd, Register rj,
                                       uint32_t imm12) {
   return emit(InstImm(op_vst, imm12, rj, vd, 12).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vldrepl_d(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vldrepl_d(VRegister vd, Register rj,
                                             uint32_t imm9) {
   return emit(InstImm(op_vldrepl_d, imm9, rj, vd, 9).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vldrepl_w(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vldrepl_w(VRegister vd, Register rj,
                                             uint32_t imm10) {
   return emit(InstImm(op_vldrepl_w, imm10, rj, vd, 10).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vldrepl_h(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vldrepl_h(VRegister vd, Register rj,
                                             uint32_t imm11) {
   return emit(InstImm(op_vldrepl_h, imm11, rj, vd, 11).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vldrepl_b(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vldrepl_b(VRegister vd, Register rj,
                                             uint32_t imm12) {
   return emit(InstImm(op_vldrepl_b, imm12, rj, vd, 12).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vstelm_d(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vstelm_d(VRegister vd, Register rj,
                                            int32_t si8, uint32_t lane) {
   return emit(InstImm(op_vstelm_d, si8, lane, 1, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vstelm_w(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vstelm_w(VRegister vd, Register rj,
                                            int32_t si8, uint32_t lane) {
   return emit(InstImm(op_vstelm_w, si8, lane, 2, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vstelm_h(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vstelm_h(VRegister vd, Register rj,
                                            int32_t si8, uint32_t lane) {
   return emit(InstImm(op_vstelm_h, si8, lane, 3, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vstelm_b(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vstelm_b(VRegister vd, Register rj,
                                            int32_t si8, uint32_t lane) {
   return emit(InstImm(op_vstelm_b, si8, lane, 4, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vldx(FloatRegister vd, Register rj,
-                                       Register rk) {
+BufferOffset AssemblerLOONG64::as_vldx(VRegister vd, Register rj, Register rk) {
   return emit(InstReg(op_vldx, rk, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vstx(FloatRegister vd, Register rj,
-                                       Register rk) {
+BufferOffset AssemblerLOONG64::as_vstx(VRegister vd, Register rj, Register rk) {
   return emit(InstReg(op_vstx, rk, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vseq_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vseq_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vseq_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vseq_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vseq_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vseq_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vseq_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vseq_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vseq_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vseq_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vseq_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vseq_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsle_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsle_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsle_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsle_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsle_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsle_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsle_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsle_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsle_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsle_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsle_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsle_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsle_bu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsle_bu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vsle_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsle_hu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsle_hu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vsle_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsle_wu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsle_wu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vsle_wu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslt_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vslt_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vslt_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslt_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vslt_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vslt_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslt_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vslt_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vslt_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslt_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vslt_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vslt_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslt_bu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vslt_bu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vslt_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslt_hu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vslt_hu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vslt_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslt_wu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vslt_wu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vslt_wu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vadd_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vadd_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vadd_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vadd_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vadd_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vadd_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vadd_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vadd_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vadd_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vadd_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vadd_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vadd_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsub_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsub_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsub_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsub_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsub_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsub_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsub_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsub_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsub_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsub_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsub_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsub_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsadd_b(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsadd_b(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vsadd_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsadd_h(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsadd_h(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vsadd_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vssub_b(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vssub_b(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vssub_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vssub_h(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vssub_h(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vssub_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsadd_bu(FloatRegister vd, FloatRegister vj,
-                                           FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsadd_bu(VRegister vd, VRegister vj,
+                                           VRegister vk) {
   return emit(InstReg(op_vsadd_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsadd_hu(FloatRegister vd, FloatRegister vj,
-                                           FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsadd_hu(VRegister vd, VRegister vj,
+                                           VRegister vk) {
   return emit(InstReg(op_vsadd_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vssub_bu(FloatRegister vd, FloatRegister vj,
-                                           FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vssub_bu(VRegister vd, VRegister vj,
+                                           VRegister vk) {
   return emit(InstReg(op_vssub_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vssub_hu(FloatRegister vd, FloatRegister vj,
-                                           FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vssub_hu(VRegister vd, VRegister vj,
+                                           VRegister vk) {
   return emit(InstReg(op_vssub_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vhaddw_h_b(FloatRegister vd, FloatRegister vj,
-                                             FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vhaddw_h_b(VRegister vd, VRegister vj,
+                                             VRegister vk) {
   return emit(InstReg(op_vhaddw_h_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vhaddw_w_h(FloatRegister vd, FloatRegister vj,
-                                             FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vhaddw_w_h(VRegister vd, VRegister vj,
+                                             VRegister vk) {
   return emit(InstReg(op_vhaddw_w_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vhaddw_hu_bu(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vhaddw_hu_bu(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vhaddw_hu_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vhaddw_wu_hu(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vhaddw_wu_hu(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vhaddw_wu_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vadda_b(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vadda_b(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vadda_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vadda_h(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vadda_h(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vadda_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vadda_w(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vadda_w(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vadda_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vadda_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vadda_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vadda_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vavgr_bu(FloatRegister vd, FloatRegister vj,
-                                           FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vavgr_bu(VRegister vd, VRegister vj,
+                                           VRegister vk) {
   return emit(InstReg(op_vavgr_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vavgr_hu(FloatRegister vd, FloatRegister vj,
-                                           FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vavgr_hu(VRegister vd, VRegister vj,
+                                           VRegister vk) {
   return emit(InstReg(op_vavgr_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmax_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmax_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmax_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmax_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmax_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmax_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmax_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmax_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmax_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmin_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmin_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmin_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmin_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmin_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmin_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmin_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmin_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmin_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmax_bu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmax_bu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vmax_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmax_hu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmax_hu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vmax_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmax_wu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmax_wu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vmax_wu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmin_bu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmin_bu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vmin_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmin_hu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmin_hu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vmin_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmin_wu(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmin_wu(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vmin_wu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmul_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmul_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmul_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmul_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmul_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmul_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmul_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmul_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vmul_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwev_h_b(FloatRegister vd,
-                                              FloatRegister vj,
-                                              FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwev_h_b(VRegister vd, VRegister vj,
+                                              VRegister vk) {
   return emit(InstReg(op_vmulwev_h_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwev_w_h(FloatRegister vd,
-                                              FloatRegister vj,
-                                              FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwev_w_h(VRegister vd, VRegister vj,
+                                              VRegister vk) {
   return emit(InstReg(op_vmulwev_w_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwev_d_w(FloatRegister vd,
-                                              FloatRegister vj,
-                                              FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwev_d_w(VRegister vd, VRegister vj,
+                                              VRegister vk) {
   return emit(InstReg(op_vmulwev_d_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwod_h_b(FloatRegister vd,
-                                              FloatRegister vj,
-                                              FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwod_h_b(VRegister vd, VRegister vj,
+                                              VRegister vk) {
   return emit(InstReg(op_vmulwod_h_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwod_w_h(FloatRegister vd,
-                                              FloatRegister vj,
-                                              FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwod_w_h(VRegister vd, VRegister vj,
+                                              VRegister vk) {
   return emit(InstReg(op_vmulwod_w_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwod_d_w(FloatRegister vd,
-                                              FloatRegister vj,
-                                              FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwod_d_w(VRegister vd, VRegister vj,
+                                              VRegister vk) {
   return emit(InstReg(op_vmulwod_d_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwev_h_bu(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwev_h_bu(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vmulwev_h_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwev_w_hu(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwev_w_hu(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vmulwev_w_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwev_d_wu(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwev_d_wu(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vmulwev_d_wu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwod_h_bu(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwod_h_bu(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vmulwod_h_bu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwod_w_hu(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwod_w_hu(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vmulwod_w_hu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmulwod_d_wu(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmulwod_d_wu(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vmulwod_d_wu, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmaddwev_w_h(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmaddwev_w_h(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vmaddwev_w_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmaddwod_w_h(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vmaddwod_w_h(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vmaddwod_w_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsll_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsll_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsll_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsll_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsll_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsll_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsll_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsll_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsll_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsll_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsll_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsll_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrl_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsrl_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsrl_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrl_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsrl_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsrl_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrl_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsrl_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsrl_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrl_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsrl_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsrl_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsra_b(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsra_b(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsra_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsra_h(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsra_h(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsra_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsra_w(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsra_w(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsra_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsra_d(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsra_d(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vsra_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpackev_b(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpackev_b(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpackev_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpackev_h(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpackev_h(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpackev_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpackev_w(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpackev_w(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpackev_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpackod_b(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpackod_b(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpackod_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpackod_h(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpackod_h(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpackod_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpackod_w(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpackod_w(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpackod_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vilvl_b(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vilvl_b(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vilvl_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vilvl_h(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vilvl_h(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vilvl_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vilvl_w(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vilvl_w(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vilvl_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vilvl_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vilvl_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vilvl_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vilvh_b(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vilvh_b(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vilvh_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vilvh_h(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vilvh_h(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vilvh_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vilvh_w(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vilvh_w(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vilvh_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vilvh_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vilvh_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vilvh_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickev_b(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpickev_b(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpickev_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickev_h(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpickev_h(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpickev_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickev_w(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpickev_w(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpickev_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickod_b(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpickod_b(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpickod_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickod_h(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpickod_h(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpickod_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickod_w(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vpickod_w(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vpickod_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vand_v(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vand_v(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vand_v, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vor_v(FloatRegister vd, FloatRegister vj,
-                                        FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vor_v(VRegister vd, VRegister vj,
+                                        VRegister vk) {
   return emit(InstReg(op_vor_v, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vxor_v(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vxor_v(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vxor_v, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vnor_v(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vnor_v(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vnor_v, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vandn_v(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vandn_v(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vandn_v, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vorn_v(FloatRegister vd, FloatRegister vj,
-                                         FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vorn_v(VRegister vd, VRegister vj,
+                                         VRegister vk) {
   return emit(InstReg(op_vorn_v, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsigncov_b(FloatRegister vd, FloatRegister vj,
-                                             FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsigncov_b(VRegister vd, VRegister vj,
+                                             VRegister vk) {
   return emit(InstReg(op_vsigncov_b, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsigncov_h(FloatRegister vd, FloatRegister vj,
-                                             FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsigncov_h(VRegister vd, VRegister vj,
+                                             VRegister vk) {
   return emit(InstReg(op_vsigncov_h, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsigncov_w(FloatRegister vd, FloatRegister vj,
-                                             FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsigncov_w(VRegister vd, VRegister vj,
+                                             VRegister vk) {
   return emit(InstReg(op_vsigncov_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsigncov_d(FloatRegister vd, FloatRegister vj,
-                                             FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vsigncov_d(VRegister vd, VRegister vj,
+                                             VRegister vk) {
   return emit(InstReg(op_vsigncov_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfadd_s(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfadd_s(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfadd_s, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfadd_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfadd_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfadd_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfsub_s(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfsub_s(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfsub_s, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfsub_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfsub_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfsub_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfmul_s(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfmul_s(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfmul_s, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfmul_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfmul_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfmul_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfdiv_s(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfdiv_s(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfdiv_s, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfdiv_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfdiv_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfdiv_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfmax_s(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfmax_s(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfmax_s, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfmax_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfmax_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfmax_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfmin_s(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfmin_s(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfmin_s, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfmin_d(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfmin_d(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vfmin_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfcvt_s_d(FloatRegister vd, FloatRegister vj,
-                                            FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vfcvt_s_d(VRegister vd, VRegister vj,
+                                            VRegister vk) {
   return emit(InstReg(op_vfcvt_s_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vftintrz_w_d(FloatRegister vd,
-                                               FloatRegister vj,
-                                               FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vftintrz_w_d(VRegister vd, VRegister vj,
+                                               VRegister vk) {
   return emit(InstReg(op_vftintrz_w_d, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vshuf_w(FloatRegister vd, FloatRegister vj,
-                                          FloatRegister vk) {
+BufferOffset AssemblerLOONG64::as_vshuf_w(VRegister vd, VRegister vj,
+                                          VRegister vk) {
   return emit(InstReg(op_vshuf_w, vk, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslei_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslei_b(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vslei_b, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslei_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslei_h(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vslei_h, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslei_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslei_w(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vslei_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslei_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslei_d(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vslei_d, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslei_bu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslei_bu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vslei_bu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslei_hu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslei_hu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vslei_hu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslei_wu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslei_wu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vslei_wu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslei_du(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslei_du(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vslei_du, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vaddi_bu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vaddi_bu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vaddi_bu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vseqi_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vseqi_b(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vseqi_b, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vseqi_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vseqi_h(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vseqi_h, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vseqi_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vseqi_w(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vseqi_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vseqi_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vseqi_d(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vseqi_d, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslti_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslti_b(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vslti_b, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslti_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslti_h(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vslti_h, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslti_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslti_w(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vslti_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslti_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslti_d(VRegister vd, VRegister vj,
                                           int32_t imm5) {
   return emit(InstImm(op_vslti_d, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslti_bu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslti_bu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vslti_bu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslti_hu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslti_hu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vslti_hu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslti_wu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslti_wu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vslti_wu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslti_du(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslti_du(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vslti_du, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vaddi_hu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vaddi_hu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vaddi_hu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vaddi_wu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vaddi_wu(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vaddi_wu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vaddi_du(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vaddi_du(VRegister vd, VRegister vj,
                                            uint32_t imm5) {
   return emit(InstImm(op_vaddi_du, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vbsll_v(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vbsll_v(VRegister vd, VRegister vj,
                                           uint32_t imm5) {
   return emit(InstImm(op_vbsll_v, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vbsrl_v(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vbsrl_v(VRegister vd, VRegister vj,
                                           uint32_t imm5) {
   return emit(InstImm(op_vbsrl_v, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpcnt_b(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vpcnt_b(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vpcnt_b, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpcnt_h(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vpcnt_h(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vpcnt_h, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpcnt_w(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vpcnt_w(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vpcnt_w, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpcnt_d(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vpcnt_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vpcnt_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vneg_b(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vneg_b(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vneg_b, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vneg_h(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vneg_h(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vneg_h, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vneg_w(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vneg_w(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vneg_w, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vneg_d(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vneg_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vneg_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmskltz_b(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vmskltz_b(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vmskltz_b, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmskltz_h(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vmskltz_h(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vmskltz_h, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmskltz_w(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vmskltz_w(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vmskltz_w, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmskltz_d(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vmskltz_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vmskltz_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmskgez_b(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vmskgez_b(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vmskgez_b, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vmsknz_b(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vmsknz_b(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vmsknz_b, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsetnez_v(FPConditionBit cd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vsetnez_v(FPConditionBit cd, VRegister vj) {
   return emit(InstReg(op_vsetnez_v, vj, cd).encode());
 }
 
 BufferOffset AssemblerLOONG64::as_vsetallnez_b(FPConditionBit cd,
-                                               FloatRegister vj) {
+                                               VRegister vj) {
   return emit(InstReg(op_vsetallnez_b, vj, cd).encode());
 }
 
 BufferOffset AssemblerLOONG64::as_vsetallnez_h(FPConditionBit cd,
-                                               FloatRegister vj) {
+                                               VRegister vj) {
   return emit(InstReg(op_vsetallnez_h, vj, cd).encode());
 }
 
 BufferOffset AssemblerLOONG64::as_vsetallnez_w(FPConditionBit cd,
-                                               FloatRegister vj) {
+                                               VRegister vj) {
   return emit(InstReg(op_vsetallnez_w, vj, cd).encode());
 }
 
 BufferOffset AssemblerLOONG64::as_vsetallnez_d(FPConditionBit cd,
-                                               FloatRegister vj) {
+                                               VRegister vj) {
   return emit(InstReg(op_vsetallnez_d, vj, cd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfsqrt_s(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfsqrt_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfsqrt_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfsqrt_d(FloatRegister vd, FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfsqrt_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfsqrt_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrecip_s(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrecip_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrecip_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrsqrt_s(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrsqrt_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrsqrt_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrintrm_s(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrintrm_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrintrm_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrintrm_d(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrintrm_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrintrm_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrintrp_s(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrintrp_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrintrp_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrintrp_d(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrintrp_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrintrp_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrintrz_s(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrintrz_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrintrz_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrintrz_d(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrintrz_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrintrz_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrintrne_s(FloatRegister vd,
-                                              FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrintrne_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrintrne_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfrintrne_d(FloatRegister vd,
-                                              FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfrintrne_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfrintrne_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vfcvtl_d_s(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vfcvtl_d_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vfcvtl_d_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vffint_s_w(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vffint_s_w(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vffint_s_w, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vffint_s_wu(FloatRegister vd,
-                                              FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vffint_s_wu(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vffint_s_wu, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vffint_d_l(FloatRegister vd,
-                                             FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vffint_d_l(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vffint_d_l, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vffint_d_lu(FloatRegister vd,
-                                              FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vffint_d_lu(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vffint_d_lu, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vffintl_d_w(FloatRegister vd,
-                                              FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vffintl_d_w(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vffintl_d_w, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vftintrz_w_s(FloatRegister vd,
-                                               FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vftintrz_w_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vftintrz_w_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vftintrz_l_d(FloatRegister vd,
-                                               FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vftintrz_l_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vftintrz_l_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vftintrz_wu_s(FloatRegister vd,
-                                                FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vftintrz_wu_s(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vftintrz_wu_s, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vftintrz_lu_d(FloatRegister vd,
-                                                FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vftintrz_lu_d(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vftintrz_lu_d, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vexth_h_b(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vexth_h_b(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vexth_h_b, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vexth_w_h(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vexth_w_h(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vexth_w_h, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vexth_d_w(FloatRegister vd,
-                                            FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vexth_d_w(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vexth_d_w, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vexth_hu_bu(FloatRegister vd,
-                                              FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vexth_hu_bu(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vexth_hu_bu, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vexth_wu_hu(FloatRegister vd,
-                                              FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vexth_wu_hu(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vexth_wu_hu, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vexth_du_wu(FloatRegister vd,
-                                              FloatRegister vj) {
+BufferOffset AssemblerLOONG64::as_vexth_du_wu(VRegister vd, VRegister vj) {
   return emit(InstReg(op_vexth_du_wu, vj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vreplgr2vr_b(FloatRegister vd, Register rj) {
+BufferOffset AssemblerLOONG64::as_vreplgr2vr_b(VRegister vd, Register rj) {
   return emit(InstReg(op_vreplgr2vr_b, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vreplgr2vr_h(FloatRegister vd, Register rj) {
+BufferOffset AssemblerLOONG64::as_vreplgr2vr_h(VRegister vd, Register rj) {
   return emit(InstReg(op_vreplgr2vr_h, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vreplgr2vr_w(FloatRegister vd, Register rj) {
+BufferOffset AssemblerLOONG64::as_vreplgr2vr_w(VRegister vd, Register rj) {
   return emit(InstReg(op_vreplgr2vr_w, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vreplgr2vr_d(FloatRegister vd, Register rj) {
+BufferOffset AssemblerLOONG64::as_vreplgr2vr_d(VRegister vd, Register rj) {
   return emit(InstReg(op_vreplgr2vr_d, rj, vd).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vinsgr2vr_b(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vinsgr2vr_b(VRegister vd, Register rj,
                                               uint32_t imm4) {
   return emit(InstImm(op_vinsgr2vr_b, imm4, rj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vinsgr2vr_h(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vinsgr2vr_h(VRegister vd, Register rj,
                                               uint32_t imm3) {
   return emit(InstImm(op_vinsgr2vr_h, imm3, rj, vd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vinsgr2vr_w(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vinsgr2vr_w(VRegister vd, Register rj,
                                               uint32_t imm2) {
   return emit(InstImm(op_vinsgr2vr_w, imm2, rj, vd, 2).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vinsgr2vr_d(FloatRegister vd, Register rj,
+BufferOffset AssemblerLOONG64::as_vinsgr2vr_d(VRegister vd, Register rj,
                                               uint32_t imm1) {
   return emit(InstImm(op_vinsgr2vr_d, imm1, rj, vd, 1).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickve2gr_b(Register rd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vpickve2gr_b(Register rd, VRegister vj,
                                                uint32_t imm4) {
   return emit(InstImm(op_vpickve2gr_b, imm4, vj, rd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickve2gr_h(Register rd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vpickve2gr_h(Register rd, VRegister vj,
                                                uint32_t imm3) {
   return emit(InstImm(op_vpickve2gr_h, imm3, vj, rd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickve2gr_w(Register rd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vpickve2gr_w(Register rd, VRegister vj,
                                                uint32_t imm2) {
   return emit(InstImm(op_vpickve2gr_w, imm2, vj, rd, 2).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickve2gr_d(Register rd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vpickve2gr_d(Register rd, VRegister vj,
                                                uint32_t imm1) {
   return emit(InstImm(op_vpickve2gr_d, imm1, vj, rd, 1).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickve2gr_bu(Register rd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vpickve2gr_bu(Register rd, VRegister vj,
                                                 uint32_t imm4) {
   return emit(InstImm(op_vpickve2gr_bu, imm4, vj, rd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickve2gr_hu(Register rd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vpickve2gr_hu(Register rd, VRegister vj,
                                                 uint32_t imm3) {
   return emit(InstImm(op_vpickve2gr_hu, imm3, vj, rd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vpickve2gr_wu(Register rd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vpickve2gr_wu(Register rd, VRegister vj,
                                                 uint32_t imm2) {
   return emit(InstImm(op_vpickve2gr_wu, imm2, vj, rd, 2).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vreplvei_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vreplvei_b(VRegister vd, VRegister vj,
                                              uint32_t imm4) {
   return emit(InstImm(op_vreplvei_b, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vreplvei_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vreplvei_h(VRegister vd, VRegister vj,
                                              uint32_t imm3) {
   return emit(InstImm(op_vreplvei_h, imm3, vj, vd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vreplvei_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vreplvei_w(VRegister vd, VRegister vj,
                                              uint32_t imm2) {
   return emit(InstImm(op_vreplvei_w, imm2, vj, vd, 2).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vreplvei_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vreplvei_d(VRegister vd, VRegister vj,
                                              uint32_t imm1) {
   return emit(InstImm(op_vreplvei_d, imm1, vj, vd, 1).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsllwil_h_b(FloatRegister vd,
-                                              FloatRegister vj, uint32_t imm3) {
+BufferOffset AssemblerLOONG64::as_vsllwil_h_b(VRegister vd, VRegister vj,
+                                              uint32_t imm3) {
   return emit(InstImm(op_vsllwil_h_b, imm3, vj, vd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsllwil_w_h(FloatRegister vd,
-                                              FloatRegister vj, uint32_t imm4) {
+BufferOffset AssemblerLOONG64::as_vsllwil_w_h(VRegister vd, VRegister vj,
+                                              uint32_t imm4) {
   return emit(InstImm(op_vsllwil_w_h, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsllwil_d_w(FloatRegister vd,
-                                              FloatRegister vj, uint32_t imm5) {
+BufferOffset AssemblerLOONG64::as_vsllwil_d_w(VRegister vd, VRegister vj,
+                                              uint32_t imm5) {
   return emit(InstImm(op_vsllwil_d_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsllwil_hu_bu(FloatRegister vd,
-                                                FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsllwil_hu_bu(VRegister vd, VRegister vj,
                                                 uint32_t imm3) {
   return emit(InstImm(op_vsllwil_hu_bu, imm3, vj, vd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsllwil_wu_hu(FloatRegister vd,
-                                                FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsllwil_wu_hu(VRegister vd, VRegister vj,
                                                 uint32_t imm4) {
   return emit(InstImm(op_vsllwil_wu_hu, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsllwil_du_wu(FloatRegister vd,
-                                                FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsllwil_du_wu(VRegister vd, VRegister vj,
                                                 uint32_t imm5) {
   return emit(InstImm(op_vsllwil_du_wu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vbitclri_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vbitclri_w(VRegister vd, VRegister vj,
                                              uint32_t imm5) {
   return emit(InstImm(op_vbitclri_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vbitclri_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vbitclri_d(VRegister vd, VRegister vj,
                                              uint32_t imm6) {
   return emit(InstImm(op_vbitclri_d, imm6, vj, vd, 6).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vbitseti_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vbitseti_w(VRegister vd, VRegister vj,
                                              uint32_t imm5) {
   return emit(InstImm(op_vbitseti_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vbitrevi_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vbitrevi_w(VRegister vd, VRegister vj,
                                              uint32_t imm5) {
   return emit(InstImm(op_vbitrevi_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vbitrevi_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vbitrevi_d(VRegister vd, VRegister vj,
                                              uint32_t imm6) {
   return emit(InstImm(op_vbitrevi_d, imm6, vj, vd, 6).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsat_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsat_h(VRegister vd, VRegister vj,
                                          uint32_t imm4) {
   return emit(InstImm(op_vsat_h, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsat_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsat_w(VRegister vd, VRegister vj,
                                          uint32_t imm5) {
   return emit(InstImm(op_vsat_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsat_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsat_d(VRegister vd, VRegister vj,
                                          uint32_t imm6) {
   return emit(InstImm(op_vsat_d, imm6, vj, vd, 6).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsat_hu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsat_hu(VRegister vd, VRegister vj,
                                           uint32_t imm4) {
   return emit(InstImm(op_vsat_hu, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsat_wu(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsat_wu(VRegister vd, VRegister vj,
                                           uint32_t imm5) {
   return emit(InstImm(op_vsat_wu, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsat_du(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsat_du(VRegister vd, VRegister vj,
                                           uint32_t imm6) {
   return emit(InstImm(op_vsat_du, imm6, vj, vd, 6).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslli_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslli_b(VRegister vd, VRegister vj,
                                           uint32_t imm3) {
   return emit(InstImm(op_vslli_b, imm3, vj, vd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslli_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslli_h(VRegister vd, VRegister vj,
                                           uint32_t imm4) {
   return emit(InstImm(op_vslli_h, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslli_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslli_w(VRegister vd, VRegister vj,
                                           uint32_t imm5) {
   return emit(InstImm(op_vslli_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vslli_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vslli_d(VRegister vd, VRegister vj,
                                           uint32_t imm6) {
   return emit(InstImm(op_vslli_d, imm6, vj, vd, 6).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrli_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsrli_b(VRegister vd, VRegister vj,
                                           uint32_t imm3) {
   return emit(InstImm(op_vsrli_b, imm3, vj, vd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrli_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsrli_h(VRegister vd, VRegister vj,
                                           uint32_t imm4) {
   return emit(InstImm(op_vsrli_h, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrli_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsrli_w(VRegister vd, VRegister vj,
                                           uint32_t imm5) {
   return emit(InstImm(op_vsrli_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrli_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsrli_d(VRegister vd, VRegister vj,
                                           uint32_t imm6) {
   return emit(InstImm(op_vsrli_d, imm6, vj, vd, 6).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrai_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsrai_b(VRegister vd, VRegister vj,
                                           uint32_t imm3) {
   return emit(InstImm(op_vsrai_b, imm3, vj, vd, 3).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrai_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsrai_h(VRegister vd, VRegister vj,
                                           uint32_t imm4) {
   return emit(InstImm(op_vsrai_h, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrai_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsrai_w(VRegister vd, VRegister vj,
                                           uint32_t imm5) {
   return emit(InstImm(op_vsrai_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vsrai_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vsrai_d(VRegister vd, VRegister vj,
                                           uint32_t imm6) {
   return emit(InstImm(op_vsrai_d, imm6, vj, vd, 6).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vssrani_b_h(FloatRegister vd,
-                                              FloatRegister vj, uint32_t imm4) {
+BufferOffset AssemblerLOONG64::as_vssrani_b_h(VRegister vd, VRegister vj,
+                                              uint32_t imm4) {
   return emit(InstImm(op_vssrani_b_h, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vssrani_h_w(FloatRegister vd,
-                                              FloatRegister vj, uint32_t imm5) {
+BufferOffset AssemblerLOONG64::as_vssrani_h_w(VRegister vd, VRegister vj,
+                                              uint32_t imm5) {
   return emit(InstImm(op_vssrani_h_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vssrani_bu_h(FloatRegister vd,
-                                               FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vssrani_bu_h(VRegister vd, VRegister vj,
                                                uint32_t imm4) {
   return emit(InstImm(op_vssrani_bu_h, imm4, vj, vd, 4).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vssrani_hu_w(FloatRegister vd,
-                                               FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vssrani_hu_w(VRegister vd, VRegister vj,
                                                uint32_t imm5) {
   return emit(InstImm(op_vssrani_hu_w, imm5, vj, vd, 5).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vextrins_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vextrins_d(VRegister vd, VRegister vj,
                                              uint32_t imm8) {
   return emit(InstImm(op_vextrins_d, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vextrins_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vextrins_w(VRegister vd, VRegister vj,
                                              uint32_t imm8) {
   return emit(InstImm(op_vextrins_w, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vextrins_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vextrins_h(VRegister vd, VRegister vj,
                                              uint32_t imm8) {
   return emit(InstImm(op_vextrins_h, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vextrins_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vextrins_b(VRegister vd, VRegister vj,
                                              uint32_t imm8) {
   return emit(InstImm(op_vextrins_b, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vshuf4i_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vshuf4i_b(VRegister vd, VRegister vj,
                                             uint32_t imm8) {
   return emit(InstImm(op_vshuf4i_b, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vshuf4i_h(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vshuf4i_h(VRegister vd, VRegister vj,
                                             uint32_t imm8) {
   return emit(InstImm(op_vshuf4i_h, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vshuf4i_w(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vshuf4i_w(VRegister vd, VRegister vj,
                                             uint32_t imm8) {
   return emit(InstImm(op_vshuf4i_w, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vshuf4i_d(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vshuf4i_d(VRegister vd, VRegister vj,
                                             uint32_t imm8) {
   return emit(InstImm(op_vshuf4i_d, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vori_b(FloatRegister vd, FloatRegister vj,
+BufferOffset AssemblerLOONG64::as_vori_b(VRegister vd, VRegister vj,
                                          uint32_t imm8) {
   return emit(InstImm(op_vori_b, imm8, vj, vd, 8).encode());
 }
 
-BufferOffset AssemblerLOONG64::as_vldi(FloatRegister vd, int32_t imm13) {
+BufferOffset AssemblerLOONG64::as_vldi(VRegister vd, int32_t imm13) {
   return emit(InstImm(op_vldi, imm13, vd).encode());
 }
 

@@ -1479,8 +1479,7 @@ FaultingCodeRange MacroAssemblerLOONG64::ma_fst_d(FloatRegister src,
   return fcr;
 }
 
-FaultingCodeRange MacroAssemblerLOONG64::ma_vld(FloatRegister vd,
-                                                Address address) {
+FaultingCodeRange MacroAssemblerLOONG64::ma_vld(VRegister vd, Address address) {
   int32_t offset = address.offset;
   Register base = address.base;
   js::wasm::FaultingCodeRange fcr;
@@ -1499,8 +1498,7 @@ FaultingCodeRange MacroAssemblerLOONG64::ma_vld(FloatRegister vd,
   return fcr;
 }
 
-FaultingCodeRange MacroAssemblerLOONG64::ma_vst(FloatRegister vd,
-                                                Address address) {
+FaultingCodeRange MacroAssemblerLOONG64::ma_vst(VRegister vd, Address address) {
   int32_t offset = address.offset;
   Register base = address.base;
   js::wasm::FaultingCodeRange fcr;
@@ -2691,7 +2689,7 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
         const Register scratch = temps.Acquire();
         as_add_d(scratch, memoryBase, ptr);
         fcr = FaultingCodeRange(currentOffset());
-        as_vldrepl_b(output.fpu(), scratch, 0);
+        as_vldrepl_b(output.fpu().toV(), scratch, 0);
       } else {
         as_ldx_bu(output.gpr(), ptr, memoryBase);
       }
@@ -2705,7 +2703,7 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
         const Register scratch = temps.Acquire();
         as_add_d(scratch, memoryBase, ptr);
         fcr = FaultingCodeRange(currentOffset());
-        as_vldrepl_h(output.fpu(), scratch, 0);
+        as_vldrepl_h(output.fpu().toV(), scratch, 0);
       } else {
         as_ldx_hu(output.gpr(), ptr, memoryBase);
       }
@@ -2725,14 +2723,14 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
         const Register scratch = temps.Acquire();
         as_add_d(scratch, memoryBase, ptr);
         fcr = FaultingCodeRange(currentOffset());
-        as_vldrepl_w(output.fpu(), scratch, 0);
+        as_vldrepl_w(output.fpu().toV(), scratch, 0);
       } else if (access.isZeroExtendSimd128Load()) {
         UseScratchRegisterScope temps(asMasm());
         const Register scratch = temps.Acquire();
-        as_vldi(output.fpu(), 0);
+        as_vldi(output.fpu().toV(), 0);
         fcr = FaultingCodeRange(currentOffset());
         as_ldx_wu(scratch, ptr, memoryBase);
-        as_vinsgr2vr_w(output.fpu(), scratch, 0);
+        as_vinsgr2vr_w(output.fpu().toV(), scratch, 0);
       } else {
         as_fldx_s(output.fpu(), ptr, memoryBase);
       }
@@ -2743,7 +2741,7 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
         const Register scratch = temps.Acquire();
         as_add_d(scratch, memoryBase, ptr);
         fcr = FaultingCodeRange(currentOffset());
-        as_vldrepl_d(output.fpu(), scratch, 0);
+        as_vldrepl_d(output.fpu().toV(), scratch, 0);
       } else if (access.isWidenSimd128Load()) {
         as_fldx_d(output.fpu(), ptr, memoryBase);
         switch (access.widenSimdOp()) {
@@ -2771,16 +2769,16 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
       } else if (access.isZeroExtendSimd128Load()) {
         UseScratchRegisterScope temps(asMasm());
         const Register scratch = temps.Acquire();
-        as_vldi(output.fpu(), 0);
+        as_vldi(output.fpu().toV(), 0);
         fcr = FaultingCodeRange(currentOffset());
         as_ldx_d(scratch, ptr, memoryBase);
-        as_vinsgr2vr_d(output.fpu(), scratch, 0);
+        as_vinsgr2vr_d(output.fpu().toV(), scratch, 0);
       } else {
         as_fldx_d(output.fpu(), ptr, memoryBase);
       }
       break;
     case Scalar::Simd128:
-      as_vldx(output.fpu(), ptr, memoryBase);
+      as_vldx(output.fpu().toV(), ptr, memoryBase);
       break;
     default:
       MOZ_CRASH("unexpected array type");
@@ -2825,7 +2823,7 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
           offset = 0;
         }
         fcr = FaultingCodeRange(currentOffset());
-        as_vldrepl_b(output.fpu(), base, static_cast<uint32_t>(offset));
+        as_vldrepl_b(output.fpu().toV(), base, static_cast<uint32_t>(offset));
       } else {
         fcr = ma_load(output.gpr(), address, SizeByte, ZeroExtend);
       }
@@ -2847,7 +2845,7 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
           offset = 0;
         }
         fcr = FaultingCodeRange(currentOffset());
-        as_vldrepl_h(output.fpu(), base, static_cast<uint32_t>(offset));
+        as_vldrepl_h(output.fpu().toV(), base, static_cast<uint32_t>(offset));
       } else {
         fcr = ma_load(output.gpr(), address, SizeHalfWord, ZeroExtend);
       }
@@ -2875,7 +2873,7 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
           offset = 0;
         }
         fcr = FaultingCodeRange(currentOffset());
-        as_vldrepl_d(output.fpu(), base, static_cast<uint32_t>(offset));
+        as_vldrepl_d(output.fpu().toV(), base, static_cast<uint32_t>(offset));
       } else if (access.isWidenSimd128Load()) {
         fcr = ma_fld_d(output.fpu(), address);
         switch (access.widenSimdOp()) {
@@ -2903,9 +2901,9 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
       } else if (access.isZeroExtendSimd128Load()) {
         UseScratchRegisterScope temps(asMasm());
         const Register scratch = temps.Acquire();
-        as_vldi(output.fpu(), 0);
+        as_vldi(output.fpu().toV(), 0);
         fcr = ma_load(scratch, address, SizeDouble, ZeroExtend);
-        as_vinsgr2vr_d(output.fpu(), scratch, 0);
+        as_vinsgr2vr_d(output.fpu().toV(), scratch, 0);
       } else {
         fcr = ma_fld_d(output.fpu(), address);
       }
@@ -2924,19 +2922,19 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmLoadImpl(
           offset = 0;
         }
         fcr = FaultingCodeRange(currentOffset());
-        as_vldrepl_w(output.fpu(), base, static_cast<uint32_t>(offset));
+        as_vldrepl_w(output.fpu().toV(), base, static_cast<uint32_t>(offset));
       } else if (access.isZeroExtendSimd128Load()) {
         UseScratchRegisterScope temps(asMasm());
         const Register scratch = temps.Acquire();
-        as_vldi(output.fpu(), 0);
+        as_vldi(output.fpu().toV(), 0);
         fcr = ma_load(scratch, address, SizeWord, ZeroExtend);
-        as_vinsgr2vr_w(output.fpu(), scratch, 0);
+        as_vinsgr2vr_w(output.fpu().toV(), scratch, 0);
       } else {
         fcr = ma_fld_s(output.fpu(), address);
       }
       break;
     case Scalar::Simd128:
-      fcr = ma_vld(output.fpu(), address);
+      fcr = ma_vld(output.fpu().toV(), address);
       break;
     default:
       MOZ_CRASH("unexpected array type");
@@ -3006,7 +3004,7 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmStoreImpl(
       as_fstx_s(value.fpu(), ptr, memoryBase);
       break;
     case Scalar::Simd128:
-      as_vstx(value.fpu(), ptr, memoryBase);
+      as_vstx(value.fpu().toV(), ptr, memoryBase);
       break;
     default:
       MOZ_CRASH("unexpected array type");
@@ -3047,7 +3045,7 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmStoreImpl(
       fcr = ma_fst_s(value.fpu(), address);
       break;
     case Scalar::Simd128:
-      fcr = ma_vst(value.fpu(), address);
+      fcr = ma_vst(value.fpu().toV(), address);
       break;
     default:
       MOZ_CRASH("unexpected array type");
@@ -3113,16 +3111,16 @@ FaultingCodeRange MacroAssemblerLOONG64::wasmStoreLane(
   FaultingCodeRange fcr(currentOffset());
   switch (laneSize) {
     case 1:
-      as_vstelm_b(src, scratch, si8, laneIndex);
+      as_vstelm_b(src.toV(), scratch, si8, laneIndex);
       break;
     case 2:
-      as_vstelm_h(src, scratch, si8, laneIndex);
+      as_vstelm_h(src.toV(), scratch, si8, laneIndex);
       break;
     case 4:
-      as_vstelm_w(src, scratch, si8, laneIndex);
+      as_vstelm_w(src.toV(), scratch, si8, laneIndex);
       break;
     case 8:
-      as_vstelm_d(src, scratch, si8, laneIndex);
+      as_vstelm_d(src.toV(), scratch, si8, laneIndex);
       break;
     default:
       MOZ_CRASH("unsupported lane size");

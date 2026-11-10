@@ -66,7 +66,7 @@ void MacroAssembler::moveGPR64ToDouble(Register64 src, FloatRegister dest) {
 
 void MacroAssembler::moveSimd128(FloatRegister src, FloatRegister dest) {
   if (src != dest) {
-    as_vori_b(dest, src, 0);
+    as_vori_b(dest.toV(), src.toV(), 0);
   }
 }
 
@@ -2441,12 +2441,12 @@ FaultingCodeRange MacroAssembler::storeDouble(FloatRegister src,
 
 FaultingCodeRange MacroAssembler::loadUnalignedSimd128(const Address& src,
                                                        FloatRegister dest) {
-  return ma_vld(dest, src);
+  return ma_vld(dest.toV(), src);
 }
 
 FaultingCodeRange MacroAssembler::storeUnalignedSimd128(FloatRegister src,
                                                         const Address& dest) {
-  return ma_vst(src, dest);
+  return ma_vst(src.toV(), dest);
 }
 
 FaultingCodeRange MacroAssembler::storeFloat16(FloatRegister src,
@@ -2547,7 +2547,7 @@ void MacroAssembler::loadConstantSimd128(const SimdConstant& v,
                                          FloatRegister dest) {
   if (const std::optional<uint16_t> imm13 =
           AssemblerLOONG64::EncodeVldiImmediate(v)) {
-    as_vldi(dest, static_cast<int32_t>(SignExtend64<13>(*imm13)));
+    as_vldi(dest.toV(), static_cast<int32_t>(SignExtend64<13>(*imm13)));
     return;
   }
 
@@ -2558,95 +2558,95 @@ void MacroAssembler::loadConstantSimd128(const SimdConstant& v,
   UseScratchRegisterScope temps(*this);
   const Register scratch = temps.Acquire();
   ma_li(scratch, ImmWord(static_cast<uint64_t>(lanes[0])));
-  as_vreplgr2vr_d(dest, scratch);
+  as_vreplgr2vr_d(dest.toV(), scratch);
   if (lanes[0] != lanes[1]) {
     ma_li(scratch, ImmWord(static_cast<uint64_t>(lanes[1])));
-    as_vinsgr2vr_d(dest, scratch, 1);
+    as_vinsgr2vr_d(dest.toV(), scratch, 1);
   }
 }
 
 void MacroAssembler::splatX16(Register src, FloatRegister dest) {
-  as_vreplgr2vr_b(dest, src);
+  as_vreplgr2vr_b(dest.toV(), src);
 }
 
 void MacroAssembler::splatX16(uint32_t srcLane, FloatRegister src,
                               FloatRegister dest) {
-  as_vreplvei_b(dest, src, srcLane);
+  as_vreplvei_b(dest.toV(), src.toV(), srcLane);
 }
 
 void MacroAssembler::splatX8(Register src, FloatRegister dest) {
-  as_vreplgr2vr_h(dest, src);
+  as_vreplgr2vr_h(dest.toV(), src);
 }
 
 void MacroAssembler::splatX8(uint32_t srcLane, FloatRegister src,
                              FloatRegister dest) {
-  as_vreplvei_h(dest, src, srcLane);
+  as_vreplvei_h(dest.toV(), src.toV(), srcLane);
 }
 
 void MacroAssembler::splatX4(Register src, FloatRegister dest) {
-  as_vreplgr2vr_w(dest, src);
+  as_vreplgr2vr_w(dest.toV(), src);
 }
 
 void MacroAssembler::splatX4(FloatRegister src, FloatRegister dest) {
   // Splat |src[0]| to all 4 lanes in |dest|.
-  as_vreplvei_w(dest, src, 0);
+  as_vreplvei_w(dest.toV(), src.toV(), 0);
 }
 
 void MacroAssembler::splatX2(FloatRegister src, FloatRegister dest) {
   // Splat |src[0]| to all 2 lanes in |dest|.
-  as_vreplvei_d(dest, src, 0);
+  as_vreplvei_d(dest.toV(), src.toV(), 0);
 }
 
 void MacroAssembler::extractLaneInt8x16(uint32_t lane, FloatRegister src,
                                         Register dest) {
-  as_vpickve2gr_b(dest, src, lane);
+  as_vpickve2gr_b(dest, src.toV(), lane);
 }
 
 void MacroAssembler::unsignedExtractLaneInt8x16(uint32_t lane,
                                                 FloatRegister src,
                                                 Register dest) {
-  as_vpickve2gr_bu(dest, src, lane);
+  as_vpickve2gr_bu(dest, src.toV(), lane);
 }
 
 void MacroAssembler::extractLaneInt16x8(uint32_t lane, FloatRegister src,
                                         Register dest) {
-  as_vpickve2gr_h(dest, src, lane);
+  as_vpickve2gr_h(dest, src.toV(), lane);
 }
 
 void MacroAssembler::unsignedExtractLaneInt16x8(uint32_t lane,
                                                 FloatRegister src,
                                                 Register dest) {
-  as_vpickve2gr_hu(dest, src, lane);
+  as_vpickve2gr_hu(dest, src.toV(), lane);
 }
 
 void MacroAssembler::extractLaneInt32x4(uint32_t lane, FloatRegister src,
                                         Register dest) {
-  as_vpickve2gr_wu(dest, src, lane);
+  as_vpickve2gr_wu(dest, src.toV(), lane);
 }
 
 void MacroAssembler::extractLaneFloat32x4(uint32_t lane, FloatRegister src,
                                           FloatRegister dest) {
-  as_vreplvei_w(dest, src, lane);
+  as_vreplvei_w(dest.toV(), src.toV(), lane);
 }
 
 void MacroAssembler::extractLaneFloat64x2(uint32_t lane, FloatRegister src,
                                           FloatRegister dest) {
-  as_vreplvei_d(dest, src, lane);
+  as_vreplvei_d(dest.toV(), src.toV(), lane);
 }
 
 void MacroAssembler::replaceLaneInt8x16(unsigned lane, Register rhs,
                                         FloatRegister lhsDest) {
-  as_vinsgr2vr_b(lhsDest, rhs, lane);
+  as_vinsgr2vr_b(lhsDest.toV(), rhs, lane);
 }
 
 void MacroAssembler::replaceLaneInt16x8(unsigned lane, Register rhs,
                                         FloatRegister lhsDest) {
-  as_vinsgr2vr_h(lhsDest, rhs, lane);
+  as_vinsgr2vr_h(lhsDest.toV(), rhs, lane);
 }
 
 void MacroAssembler::replaceLaneInt32x4(unsigned lane, Register rhs,
                                         FloatRegister lhsDest) {
-  as_vinsgr2vr_w(lhsDest, rhs, lane);
+  as_vinsgr2vr_w(lhsDest.toV(), rhs, lane);
 }
 
 void MacroAssembler::replaceLaneFloat32x4(unsigned lane, FloatRegister rhs,
@@ -2654,14 +2654,14 @@ void MacroAssembler::replaceLaneFloat32x4(unsigned lane, FloatRegister rhs,
   // The upper 4 bits selects which lane in |lhsDest| gets replaced, and the
   // lower 4 bits selects which lane from |rhs| to replace.
   // <https://jia.je/unofficial-loongarch-intrinsics-guide/lsx/misc/#__m128i-__lsx_vextrins_w-__m128i-a-__m128i-b-imm0_255-imm>
-  as_vextrins_w(lhsDest, rhs, lane << 4);
+  as_vextrins_w(lhsDest.toV(), rhs.toV(), lane << 4);
 }
 
 void MacroAssembler::replaceLaneFloat64x2(unsigned lane, FloatRegister rhs,
                                           FloatRegister lhsDest) {
   // Ditto.
   // <https://jia.je/unofficial-loongarch-intrinsics-guide/lsx/misc/#__m128i-__lsx_vextrins_d-__m128i-a-__m128i-b-imm0_255-imm>
-  as_vextrins_d(lhsDest, rhs, lane << 4);
+  as_vextrins_d(lhsDest.toV(), rhs.toV(), lane << 4);
 }
 
 void MacroAssembler::shuffleInt8x16(const uint8_t lanes[16], FloatRegister rhs,
@@ -2674,7 +2674,7 @@ void MacroAssembler::shuffleInt8x16(const uint8_t lanes[16], FloatRegister lhs,
   ScratchSimd128Scope scratch(*this);
   loadConstantSimd128(
       SimdConstant::CreateX16(reinterpret_cast<const int8_t*>(lanes)), scratch);
-  as_vshuf_b(dest, rhs, lhs, scratch);
+  as_vshuf_b(dest.toV(), rhs.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::blendInt8x16(const uint8_t lanes[16], FloatRegister lhs,
@@ -2682,7 +2682,7 @@ void MacroAssembler::blendInt8x16(const uint8_t lanes[16], FloatRegister lhs,
   ScratchSimd128Scope scratch(*this);
   loadConstantSimd128(
       SimdConstant::CreateX16(reinterpret_cast<const int8_t*>(lanes)), scratch);
-  as_vbitsel_v(dest, lhs, rhs, scratch);
+  as_vbitsel_v(dest.toV(), lhs.toV(), rhs.toV(), scratch);
 }
 
 void MacroAssembler::blendInt16x8(const uint16_t lanes[8], FloatRegister lhs,
@@ -2693,52 +2693,52 @@ void MacroAssembler::blendInt16x8(const uint16_t lanes[8], FloatRegister lhs,
   }
   ScratchSimd128Scope scratch(*this);
   loadConstantSimd128(SimdConstant::CreateX16(mask.data()), scratch);
-  as_vbitsel_v(dest, lhs, rhs, scratch);
+  as_vbitsel_v(dest.toV(), lhs.toV(), rhs.toV(), scratch);
 }
 
 void MacroAssembler::laneSelectSimd128(FloatRegister mask, FloatRegister lhs,
                                        FloatRegister rhs, FloatRegister dest) {
-  as_vbitsel_v(dest, rhs, lhs, mask);
+  as_vbitsel_v(dest.toV(), rhs.toV(), lhs.toV(), mask.toV());
 }
 
 void MacroAssembler::interleaveHighInt8x16(FloatRegister lhs, FloatRegister rhs,
                                            FloatRegister dest) {
-  as_vilvh_b(dest, rhs, lhs);
+  as_vilvh_b(dest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::interleaveHighInt16x8(FloatRegister lhs, FloatRegister rhs,
                                            FloatRegister dest) {
-  as_vilvh_h(dest, rhs, lhs);
+  as_vilvh_h(dest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::interleaveHighInt32x4(FloatRegister lhs, FloatRegister rhs,
                                            FloatRegister dest) {
-  as_vilvh_w(dest, rhs, lhs);
+  as_vilvh_w(dest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::interleaveHighInt64x2(FloatRegister lhs, FloatRegister rhs,
                                            FloatRegister dest) {
-  as_vilvh_d(dest, rhs, lhs);
+  as_vilvh_d(dest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::interleaveLowInt8x16(FloatRegister lhs, FloatRegister rhs,
                                           FloatRegister dest) {
-  as_vilvl_b(dest, rhs, lhs);
+  as_vilvl_b(dest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::interleaveLowInt16x8(FloatRegister lhs, FloatRegister rhs,
                                           FloatRegister dest) {
-  as_vilvl_h(dest, rhs, lhs);
+  as_vilvl_h(dest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::interleaveLowInt32x4(FloatRegister lhs, FloatRegister rhs,
                                           FloatRegister dest) {
-  as_vilvl_w(dest, rhs, lhs);
+  as_vilvl_w(dest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::interleaveLowInt64x2(FloatRegister lhs, FloatRegister rhs,
                                           FloatRegister dest) {
-  as_vilvl_d(dest, rhs, lhs);
+  as_vilvl_d(dest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::permuteInt8x16(const uint8_t lanes[16], FloatRegister src,
@@ -2751,7 +2751,7 @@ void MacroAssembler::permuteInt8x16(const uint8_t lanes[16], FloatRegister src,
   ScratchSimd128Scope scratch(*this);
   loadConstantSimd128(
       SimdConstant::CreateX16(reinterpret_cast<const int8_t*>(lanes)), scratch);
-  as_vshuf_b(dest, src, src, scratch);
+  as_vshuf_b(dest.toV(), src.toV(), src.toV(), scratch);
 }
 
 void MacroAssembler::permuteInt16x8(const uint16_t lanes[8], FloatRegister src,
@@ -2780,7 +2780,7 @@ void MacroAssembler::permuteInt16x8(const uint16_t lanes[8], FloatRegister src,
 #endif
     const uint8_t imm =
         lanes[0] | (lanes[1] << 2) | (lanes[2] << 4) | (lanes[3] << 6);
-    as_vshuf4i_h(dest, src, imm);
+    as_vshuf4i_h(dest.toV(), src.toV(), imm);
     return;
   }
 
@@ -2802,7 +2802,7 @@ void MacroAssembler::permuteInt32x4(const uint32_t lanes[4], FloatRegister src,
 #endif
   const uint8_t imm =
       lanes[0] | (lanes[1] << 2) | (lanes[2] << 4) | (lanes[3] << 6);
-  as_vshuf4i_w(dest, src, imm);
+  as_vshuf4i_w(dest.toV(), src.toV(), imm);
 }
 
 void MacroAssembler::concatAndRightShiftSimd128(FloatRegister lhs,
@@ -2810,9 +2810,9 @@ void MacroAssembler::concatAndRightShiftSimd128(FloatRegister lhs,
                                                 FloatRegister dest,
                                                 uint32_t shift) {
   ScratchSimd128Scope scratch(*this);
-  as_vbsll_v(scratch, lhs, 16 - shift);
-  as_vbsrl_v(dest, rhs, shift);
-  as_vor_v(dest, dest, scratch);
+  as_vbsll_v(scratch, lhs.toV(), 16 - shift);
+  as_vbsrl_v(dest.toV(), rhs.toV(), shift);
+  as_vor_v(dest.toV(), dest.toV(), scratch);
 }
 
 void MacroAssembler::rotateRightSimd128(FloatRegister src, FloatRegister dest,
@@ -2822,12 +2822,12 @@ void MacroAssembler::rotateRightSimd128(FloatRegister src, FloatRegister dest,
 
 void MacroAssembler::leftShiftSimd128(Imm32 count, FloatRegister src,
                                       FloatRegister dest) {
-  as_vbsll_v(dest, src, count.value);
+  as_vbsll_v(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::rightShiftSimd128(Imm32 count, FloatRegister src,
                                        FloatRegister dest) {
-  as_vbsrl_v(dest, src, count.value);
+  as_vbsrl_v(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::zeroExtend8x16To16x8(FloatRegister src,
@@ -2865,17 +2865,17 @@ void MacroAssembler::zeroExtend32x4To64x2(FloatRegister src,
 }
 
 void MacroAssembler::reverseInt16x8(FloatRegister src, FloatRegister dest) {
-  as_vshuf4i_b(dest, src, 0b10110001);
+  as_vshuf4i_b(dest.toV(), src.toV(), 0b10110001);
 }
 
 void MacroAssembler::reverseInt32x4(FloatRegister src, FloatRegister dest) {
-  as_vshuf4i_b(dest, src, 0b00011011);
+  as_vshuf4i_b(dest.toV(), src.toV(), 0b00011011);
 }
 
 void MacroAssembler::reverseInt64x2(FloatRegister src, FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vshuf4i_w(scratch, src, 0b10110001);
-  as_vshuf4i_b(dest, scratch, 0b00011011);
+  as_vshuf4i_w(scratch, src.toV(), 0b10110001);
+  as_vshuf4i_b(dest.toV(), scratch, 0b00011011);
 }
 
 void MacroAssembler::swizzleInt8x16(FloatRegister lhs, FloatRegister rhs,
@@ -2885,9 +2885,9 @@ void MacroAssembler::swizzleInt8x16(FloatRegister lhs, FloatRegister rhs,
   // mask enforces the zeroing required by the swizzle semantics.
   // <https://jia.je/unofficial-loongarch-intrinsics-guide/lsx/shuffling/#__m128i-__lsx_vshuf_b-__m128i-a-__m128i-b-__m128i-c>
   ScratchSimd128Scope scratch(*this);
-  as_vslei_bu(scratch, rhs, 15);
-  as_vshuf_b(dest, lhs, lhs, rhs);
-  as_vand_v(dest, dest, scratch);
+  as_vslei_bu(scratch, rhs.toV(), 15);
+  as_vshuf_b(dest.toV(), lhs.toV(), lhs.toV(), rhs.toV());
+  as_vand_v(dest.toV(), dest.toV(), scratch);
 }
 
 void MacroAssembler::swizzleInt8x16Relaxed(FloatRegister lhs, FloatRegister rhs,
@@ -2897,154 +2897,154 @@ void MacroAssembler::swizzleInt8x16Relaxed(FloatRegister lhs, FloatRegister rhs,
 
 void MacroAssembler::addInt8x16(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vadd_b(dest, lhs, rhs);
+  as_vadd_b(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::addInt16x8(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vadd_h(dest, lhs, rhs);
+  as_vadd_h(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::addInt32x4(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vadd_w(dest, lhs, rhs);
+  as_vadd_w(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::addInt64x2(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vadd_d(dest, lhs, rhs);
+  as_vadd_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::subInt8x16(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vsub_b(dest, lhs, rhs);
+  as_vsub_b(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::subInt16x8(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vsub_h(dest, lhs, rhs);
+  as_vsub_h(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::subInt32x4(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vsub_w(dest, lhs, rhs);
+  as_vsub_w(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::subInt64x2(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vsub_d(dest, lhs, rhs);
+  as_vsub_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::mulInt16x8(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmul_h(dest, lhs, rhs);
+  as_vmul_h(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::mulInt32x4(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmul_w(dest, lhs, rhs);
+  as_vmul_w(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::extMulLowInt8x16(FloatRegister lhs, FloatRegister rhs,
                                       FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_h_b(scratch, lhs, rhs);
-  as_vmulwev_h_b(dest, lhs, rhs);
-  as_vilvl_h(dest, scratch, dest);
+  as_vmulwod_h_b(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_h_b(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvl_h(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::extMulHighInt8x16(FloatRegister lhs, FloatRegister rhs,
                                        FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_h_b(scratch, lhs, rhs);
-  as_vmulwev_h_b(dest, lhs, rhs);
-  as_vilvh_h(dest, scratch, dest);
+  as_vmulwod_h_b(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_h_b(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvh_h(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::unsignedExtMulLowInt8x16(FloatRegister lhs,
                                               FloatRegister rhs,
                                               FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_h_bu(scratch, lhs, rhs);
-  as_vmulwev_h_bu(dest, lhs, rhs);
-  as_vilvl_h(dest, scratch, dest);
+  as_vmulwod_h_bu(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_h_bu(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvl_h(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::unsignedExtMulHighInt8x16(FloatRegister lhs,
                                                FloatRegister rhs,
                                                FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_h_bu(scratch, lhs, rhs);
-  as_vmulwev_h_bu(dest, lhs, rhs);
-  as_vilvh_h(dest, scratch, dest);
+  as_vmulwod_h_bu(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_h_bu(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvh_h(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::extMulLowInt16x8(FloatRegister lhs, FloatRegister rhs,
                                       FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_w_h(scratch, lhs, rhs);
-  as_vmulwev_w_h(dest, lhs, rhs);
-  as_vilvl_w(dest, scratch, dest);
+  as_vmulwod_w_h(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_w_h(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvl_w(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::extMulHighInt16x8(FloatRegister lhs, FloatRegister rhs,
                                        FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_w_h(scratch, lhs, rhs);
-  as_vmulwev_w_h(dest, lhs, rhs);
-  as_vilvh_w(dest, scratch, dest);
+  as_vmulwod_w_h(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_w_h(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvh_w(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::unsignedExtMulLowInt16x8(FloatRegister lhs,
                                               FloatRegister rhs,
                                               FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_w_hu(scratch, lhs, rhs);
-  as_vmulwev_w_hu(dest, lhs, rhs);
-  as_vilvl_w(dest, scratch, dest);
+  as_vmulwod_w_hu(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_w_hu(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvl_w(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::unsignedExtMulHighInt16x8(FloatRegister lhs,
                                                FloatRegister rhs,
                                                FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_w_hu(scratch, lhs, rhs);
-  as_vmulwev_w_hu(dest, lhs, rhs);
-  as_vilvh_w(dest, scratch, dest);
+  as_vmulwod_w_hu(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_w_hu(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvh_w(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::extMulLowInt32x4(FloatRegister lhs, FloatRegister rhs,
                                       FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_d_w(scratch, lhs, rhs);
-  as_vmulwev_d_w(dest, lhs, rhs);
-  as_vilvl_d(dest, scratch, dest);
+  as_vmulwod_d_w(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_d_w(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvl_d(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::extMulHighInt32x4(FloatRegister lhs, FloatRegister rhs,
                                        FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_d_w(scratch, lhs, rhs);
-  as_vmulwev_d_w(dest, lhs, rhs);
-  as_vilvh_d(dest, scratch, dest);
+  as_vmulwod_d_w(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_d_w(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvh_d(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::unsignedExtMulLowInt32x4(FloatRegister lhs,
                                               FloatRegister rhs,
                                               FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_d_wu(scratch, lhs, rhs);
-  as_vmulwev_d_wu(dest, lhs, rhs);
-  as_vilvl_d(dest, scratch, dest);
+  as_vmulwod_d_wu(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_d_wu(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvl_d(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::unsignedExtMulHighInt32x4(FloatRegister lhs,
                                                FloatRegister rhs,
                                                FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwod_d_wu(scratch, lhs, rhs);
-  as_vmulwev_d_wu(dest, lhs, rhs);
-  as_vilvh_d(dest, scratch, dest);
+  as_vmulwod_d_wu(scratch, lhs.toV(), rhs.toV());
+  as_vmulwev_d_wu(dest.toV(), lhs.toV(), rhs.toV());
+  as_vilvh_d(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::q15MulrSatInt16x8(FloatRegister lhs, FloatRegister rhs,
@@ -3052,284 +3052,284 @@ void MacroAssembler::q15MulrSatInt16x8(FloatRegister lhs, FloatRegister rhs,
   ScratchSimd128Scope scratch(*this);
   ScratchSimd128Scope2 scratch2(*this);
   loadConstantSimd128(SimdConstant::SplatX4(0x4000), scratch);
-  as_vmaddwod_w_h(scratch, lhs, rhs);
+  as_vmaddwod_w_h(scratch, lhs.toV(), rhs.toV());
   loadConstantSimd128(SimdConstant::SplatX4(0x4000), scratch2);
-  as_vmaddwev_w_h(scratch2, lhs, rhs);
+  as_vmaddwev_w_h(scratch2, lhs.toV(), rhs.toV());
   as_vssrani_h_w(scratch, scratch, 15);
   as_vssrani_h_w(scratch2, scratch2, 15);
-  as_vilvl_h(dest, scratch, scratch2);
+  as_vilvl_h(dest.toV(), scratch, scratch2);
 }
 
 void MacroAssembler::negInt8x16(FloatRegister src, FloatRegister dest) {
-  as_vneg_b(dest, src);
+  as_vneg_b(dest.toV(), src.toV());
 }
 
 void MacroAssembler::negInt16x8(FloatRegister src, FloatRegister dest) {
-  as_vneg_h(dest, src);
+  as_vneg_h(dest.toV(), src.toV());
 }
 
 void MacroAssembler::negInt32x4(FloatRegister src, FloatRegister dest) {
-  as_vneg_w(dest, src);
+  as_vneg_w(dest.toV(), src.toV());
 }
 
 void MacroAssembler::negInt64x2(FloatRegister src, FloatRegister dest) {
-  as_vneg_d(dest, src);
+  as_vneg_d(dest.toV(), src.toV());
 }
 
 void MacroAssembler::addSatInt8x16(FloatRegister lhs, FloatRegister rhs,
                                    FloatRegister dest) {
-  as_vsadd_b(dest, lhs, rhs);
+  as_vsadd_b(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedAddSatInt8x16(FloatRegister lhs, FloatRegister rhs,
                                            FloatRegister dest) {
-  as_vsadd_bu(dest, lhs, rhs);
+  as_vsadd_bu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::addSatInt16x8(FloatRegister lhs, FloatRegister rhs,
                                    FloatRegister dest) {
-  as_vsadd_h(dest, lhs, rhs);
+  as_vsadd_h(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedAddSatInt16x8(FloatRegister lhs, FloatRegister rhs,
                                            FloatRegister dest) {
-  as_vsadd_hu(dest, lhs, rhs);
+  as_vsadd_hu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::subSatInt8x16(FloatRegister lhs, FloatRegister rhs,
                                    FloatRegister dest) {
-  as_vssub_b(dest, lhs, rhs);
+  as_vssub_b(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedSubSatInt8x16(FloatRegister lhs, FloatRegister rhs,
                                            FloatRegister dest) {
-  as_vssub_bu(dest, lhs, rhs);
+  as_vssub_bu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::subSatInt16x8(FloatRegister lhs, FloatRegister rhs,
                                    FloatRegister dest) {
-  as_vssub_h(dest, lhs, rhs);
+  as_vssub_h(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedSubSatInt16x8(FloatRegister lhs, FloatRegister rhs,
                                            FloatRegister dest) {
-  as_vssub_hu(dest, lhs, rhs);
+  as_vssub_hu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::minInt8x16(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmin_b(dest, lhs, rhs);
+  as_vmin_b(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedMinInt8x16(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
-  as_vmin_bu(dest, lhs, rhs);
+  as_vmin_bu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::minInt16x8(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmin_h(dest, lhs, rhs);
+  as_vmin_h(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedMinInt16x8(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
-  as_vmin_hu(dest, lhs, rhs);
+  as_vmin_hu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::minInt32x4(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmin_w(dest, lhs, rhs);
+  as_vmin_w(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedMinInt32x4(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
-  as_vmin_wu(dest, lhs, rhs);
+  as_vmin_wu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::maxInt8x16(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmax_b(dest, lhs, rhs);
+  as_vmax_b(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedMaxInt8x16(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
-  as_vmax_bu(dest, lhs, rhs);
+  as_vmax_bu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::maxInt16x8(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmax_h(dest, lhs, rhs);
+  as_vmax_h(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedMaxInt16x8(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
-  as_vmax_hu(dest, lhs, rhs);
+  as_vmax_hu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::maxInt32x4(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmax_w(dest, lhs, rhs);
+  as_vmax_w(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedMaxInt32x4(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
-  as_vmax_wu(dest, lhs, rhs);
+  as_vmax_wu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedAverageInt8x16(FloatRegister lhs,
                                             FloatRegister rhs,
                                             FloatRegister dest) {
-  as_vavgr_bu(dest, lhs, rhs);
+  as_vavgr_bu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::unsignedAverageInt16x8(FloatRegister lhs,
                                             FloatRegister rhs,
                                             FloatRegister dest) {
-  as_vavgr_hu(dest, lhs, rhs);
+  as_vavgr_hu(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::absInt8x16(FloatRegister src, FloatRegister dest) {
-  as_vsigncov_b(dest, src, src);
+  as_vsigncov_b(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::absInt16x8(FloatRegister src, FloatRegister dest) {
-  as_vsigncov_h(dest, src, src);
+  as_vsigncov_h(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::absInt32x4(FloatRegister src, FloatRegister dest) {
-  as_vsigncov_w(dest, src, src);
+  as_vsigncov_w(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::absInt64x2(FloatRegister src, FloatRegister dest) {
-  as_vsigncov_d(dest, src, src);
+  as_vsigncov_d(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::leftShiftInt8x16(Imm32 count, FloatRegister src,
                                       FloatRegister dest) {
-  as_vslli_b(dest, src, count.value);
+  as_vslli_b(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::leftShiftInt16x8(Imm32 count, FloatRegister src,
                                       FloatRegister dest) {
-  as_vslli_h(dest, src, count.value);
+  as_vslli_h(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::leftShiftInt32x4(Imm32 count, FloatRegister src,
                                       FloatRegister dest) {
-  as_vslli_w(dest, src, count.value);
+  as_vslli_w(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::leftShiftInt64x2(Imm32 count, FloatRegister src,
                                       FloatRegister dest) {
-  as_vslli_d(dest, src, count.value);
+  as_vslli_d(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::rightShiftInt8x16(Imm32 count, FloatRegister src,
                                        FloatRegister dest) {
-  as_vsrai_b(dest, src, count.value);
+  as_vsrai_b(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::unsignedRightShiftInt8x16(Imm32 count, FloatRegister src,
                                                FloatRegister dest) {
-  as_vsrli_b(dest, src, count.value);
+  as_vsrli_b(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::rightShiftInt16x8(Imm32 count, FloatRegister src,
                                        FloatRegister dest) {
-  as_vsrai_h(dest, src, count.value);
+  as_vsrai_h(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::unsignedRightShiftInt16x8(Imm32 count, FloatRegister src,
                                                FloatRegister dest) {
-  as_vsrli_h(dest, src, count.value);
+  as_vsrli_h(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::rightShiftInt32x4(Imm32 count, FloatRegister src,
                                        FloatRegister dest) {
-  as_vsrai_w(dest, src, count.value);
+  as_vsrai_w(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::unsignedRightShiftInt32x4(Imm32 count, FloatRegister src,
                                                FloatRegister dest) {
-  as_vsrli_w(dest, src, count.value);
+  as_vsrli_w(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::rightShiftInt64x2(Imm32 count, FloatRegister src,
                                        FloatRegister dest) {
-  as_vsrai_d(dest, src, count.value);
+  as_vsrai_d(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::unsignedRightShiftInt64x2(Imm32 count, FloatRegister src,
                                                FloatRegister dest) {
-  as_vsrli_d(dest, src, count.value);
+  as_vsrli_d(dest.toV(), src.toV(), count.value);
 }
 
 void MacroAssembler::bitwiseAndSimd128(FloatRegister rhs,
                                        FloatRegister lhsDest) {
-  as_vand_v(lhsDest, lhsDest, rhs);
+  as_vand_v(lhsDest.toV(), lhsDest.toV(), rhs.toV());
 }
 
 void MacroAssembler::bitwiseAndSimd128(FloatRegister lhs, FloatRegister rhs,
                                        FloatRegister dest) {
-  as_vand_v(dest, lhs, rhs);
+  as_vand_v(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::bitwiseOrSimd128(FloatRegister rhs,
                                       FloatRegister lhsDest) {
-  as_vor_v(lhsDest, lhsDest, rhs);
+  as_vor_v(lhsDest.toV(), lhsDest.toV(), rhs.toV());
 }
 
 void MacroAssembler::bitwiseOrSimd128(FloatRegister lhs, FloatRegister rhs,
                                       FloatRegister dest) {
-  as_vor_v(dest, lhs, rhs);
+  as_vor_v(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::bitwiseXorSimd128(FloatRegister rhs,
                                        FloatRegister lhsDest) {
-  as_vxor_v(lhsDest, lhsDest, rhs);
+  as_vxor_v(lhsDest.toV(), lhsDest.toV(), rhs.toV());
 }
 
 void MacroAssembler::bitwiseXorSimd128(FloatRegister lhs, FloatRegister rhs,
                                        FloatRegister dest) {
-  as_vxor_v(dest, lhs, rhs);
+  as_vxor_v(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::bitwiseNotSimd128(FloatRegister src, FloatRegister dest) {
-  as_vnor_v(dest, src, src);
+  as_vnor_v(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::bitwiseAndNotSimd128(FloatRegister lhs, FloatRegister rhs,
                                           FloatRegister lhsDest) {
-  as_vandn_v(lhsDest, rhs, lhs);
+  as_vandn_v(lhsDest.toV(), rhs.toV(), lhs.toV());
 }
 
 void MacroAssembler::bitwiseNotAndSimd128(FloatRegister rhs,
                                           FloatRegister lhsDest) {
-  as_vandn_v(lhsDest, lhsDest, rhs);
+  as_vandn_v(lhsDest.toV(), lhsDest.toV(), rhs.toV());
 }
 
 void MacroAssembler::anyTrueSimd128(FloatRegister src, Register dest) {
-  as_vsetnez_v(FCC0, src);
+  as_vsetnez_v(FCC0, src.toV());
   as_movcf2gr(dest, FCC0);
 }
 
 void MacroAssembler::allTrueInt8x16(FloatRegister src, Register dest) {
-  as_vsetallnez_b(FCC0, src);
+  as_vsetallnez_b(FCC0, src.toV());
   as_movcf2gr(dest, FCC0);
 }
 
 void MacroAssembler::allTrueInt16x8(FloatRegister src, Register dest) {
-  as_vsetallnez_h(FCC0, src);
+  as_vsetallnez_h(FCC0, src.toV());
   as_movcf2gr(dest, FCC0);
 }
 
 void MacroAssembler::allTrueInt32x4(FloatRegister src, Register dest) {
-  as_vsetallnez_w(FCC0, src);
+  as_vsetallnez_w(FCC0, src.toV());
   as_movcf2gr(dest, FCC0);
 }
 
 void MacroAssembler::allTrueInt64x2(FloatRegister src, Register dest) {
-  as_vsetallnez_d(FCC0, src);
+  as_vsetallnez_d(FCC0, src.toV());
   as_movcf2gr(dest, FCC0);
 }
 
@@ -3343,35 +3343,35 @@ void MacroAssembler::compareInt8x16(Assembler::Condition cond,
                                     FloatRegister dest) {
   switch (cond) {
     case Assembler::Equal:
-      as_vseq_b(dest, lhs, rhs);
+      as_vseq_b(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::NotEqual:
-      as_vseq_b(dest, lhs, rhs);
-      as_vnor_v(dest, dest, dest);
+      as_vseq_b(dest.toV(), lhs.toV(), rhs.toV());
+      as_vnor_v(dest.toV(), dest.toV(), dest.toV());
       break;
     case Assembler::LessThan:
-      as_vslt_b(dest, lhs, rhs);
+      as_vslt_b(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::LessThanOrEqual:
-      as_vsle_b(dest, lhs, rhs);
+      as_vsle_b(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::GreaterThan:
-      as_vslt_b(dest, rhs, lhs);
+      as_vslt_b(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::GreaterThanOrEqual:
-      as_vsle_b(dest, rhs, lhs);
+      as_vsle_b(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::Below:
-      as_vslt_bu(dest, lhs, rhs);
+      as_vslt_bu(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::BelowOrEqual:
-      as_vsle_bu(dest, lhs, rhs);
+      as_vsle_bu(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::Above:
-      as_vslt_bu(dest, rhs, lhs);
+      as_vslt_bu(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::AboveOrEqual:
-      as_vsle_bu(dest, rhs, lhs);
+      as_vsle_bu(dest.toV(), rhs.toV(), lhs.toV());
       break;
     default:
       MOZ_CRASH("unexpected condition");
@@ -3385,40 +3385,40 @@ void MacroAssembler::compareInt8x16(Assembler::Condition cond,
           AssemblerLOONG64::EncodeSimdCompareImmediate<int8_t>(rhs, cond)) {
     switch (cond) {
       case Assembler::Equal:
-        as_vseqi_b(dest, lhs, *imm);
+        as_vseqi_b(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::NotEqual:
-        as_vseqi_b(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vseqi_b(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::LessThan:
-        as_vslti_b(dest, lhs, *imm);
+        as_vslti_b(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::LessThanOrEqual:
-        as_vslei_b(dest, lhs, *imm);
+        as_vslei_b(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::GreaterThan:
-        as_vslei_b(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslei_b(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::GreaterThanOrEqual:
-        as_vslti_b(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslti_b(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::Below:
         if (*imm == 0) {
           // x <u 0 is always false.
           loadConstantSimd128(SimdConstant::SplatX16(0), dest);
         } else {
-          as_vslti_bu(dest, lhs, *imm);
+          as_vslti_bu(dest.toV(), lhs.toV(), *imm);
         }
         break;
       case Assembler::BelowOrEqual:
-        as_vslei_bu(dest, lhs, *imm);
+        as_vslei_bu(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::Above:
-        as_vslei_bu(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslei_bu(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::AboveOrEqual:
         if (*imm == 0) {
@@ -3427,8 +3427,8 @@ void MacroAssembler::compareInt8x16(Assembler::Condition cond,
                                   mozilla::BitwiseCast<int8_t>(uint8_t(0xff))),
                               dest);
         } else {
-          as_vslti_bu(dest, lhs, *imm);
-          as_vnor_v(dest, dest, dest);
+          as_vslti_bu(dest.toV(), lhs.toV(), *imm);
+          as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         }
         break;
       default:
@@ -3451,35 +3451,35 @@ void MacroAssembler::compareInt16x8(Assembler::Condition cond,
                                     FloatRegister dest) {
   switch (cond) {
     case Assembler::Equal:
-      as_vseq_h(dest, lhs, rhs);
+      as_vseq_h(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::NotEqual:
-      as_vseq_h(dest, lhs, rhs);
-      as_vnor_v(dest, dest, dest);
+      as_vseq_h(dest.toV(), lhs.toV(), rhs.toV());
+      as_vnor_v(dest.toV(), dest.toV(), dest.toV());
       break;
     case Assembler::LessThan:
-      as_vslt_h(dest, lhs, rhs);
+      as_vslt_h(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::LessThanOrEqual:
-      as_vsle_h(dest, lhs, rhs);
+      as_vsle_h(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::GreaterThan:
-      as_vslt_h(dest, rhs, lhs);
+      as_vslt_h(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::GreaterThanOrEqual:
-      as_vsle_h(dest, rhs, lhs);
+      as_vsle_h(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::Below:
-      as_vslt_hu(dest, lhs, rhs);
+      as_vslt_hu(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::BelowOrEqual:
-      as_vsle_hu(dest, lhs, rhs);
+      as_vsle_hu(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::Above:
-      as_vslt_hu(dest, rhs, lhs);
+      as_vslt_hu(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::AboveOrEqual:
-      as_vsle_hu(dest, rhs, lhs);
+      as_vsle_hu(dest.toV(), rhs.toV(), lhs.toV());
       break;
     default:
       MOZ_CRASH("unexpected condition");
@@ -3493,40 +3493,40 @@ void MacroAssembler::compareInt16x8(Assembler::Condition cond,
           AssemblerLOONG64::EncodeSimdCompareImmediate<int16_t>(rhs, cond)) {
     switch (cond) {
       case Assembler::Equal:
-        as_vseqi_h(dest, lhs, *imm);
+        as_vseqi_h(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::NotEqual:
-        as_vseqi_h(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vseqi_h(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::LessThan:
-        as_vslti_h(dest, lhs, *imm);
+        as_vslti_h(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::LessThanOrEqual:
-        as_vslei_h(dest, lhs, *imm);
+        as_vslei_h(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::GreaterThan:
-        as_vslei_h(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslei_h(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::GreaterThanOrEqual:
-        as_vslti_h(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslti_h(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::Below:
         if (*imm == 0) {
           // x <u 0 is always false.
           loadConstantSimd128(SimdConstant::SplatX8(0), dest);
         } else {
-          as_vslti_hu(dest, lhs, *imm);
+          as_vslti_hu(dest.toV(), lhs.toV(), *imm);
         }
         break;
       case Assembler::BelowOrEqual:
-        as_vslei_hu(dest, lhs, *imm);
+        as_vslei_hu(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::Above:
-        as_vslei_hu(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslei_hu(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::AboveOrEqual:
         if (*imm == 0) {
@@ -3536,8 +3536,8 @@ void MacroAssembler::compareInt16x8(Assembler::Condition cond,
                   mozilla::BitwiseCast<int16_t>(uint16_t(0xffff))),
               dest);
         } else {
-          as_vslti_hu(dest, lhs, *imm);
-          as_vnor_v(dest, dest, dest);
+          as_vslti_hu(dest.toV(), lhs.toV(), *imm);
+          as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         }
         break;
       default:
@@ -3560,35 +3560,35 @@ void MacroAssembler::compareInt32x4(Assembler::Condition cond,
                                     FloatRegister dest) {
   switch (cond) {
     case Assembler::Equal:
-      as_vseq_w(dest, lhs, rhs);
+      as_vseq_w(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::NotEqual:
-      as_vseq_w(dest, lhs, rhs);
-      as_vnor_v(dest, dest, dest);
+      as_vseq_w(dest.toV(), lhs.toV(), rhs.toV());
+      as_vnor_v(dest.toV(), dest.toV(), dest.toV());
       break;
     case Assembler::LessThan:
-      as_vslt_w(dest, lhs, rhs);
+      as_vslt_w(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::LessThanOrEqual:
-      as_vsle_w(dest, lhs, rhs);
+      as_vsle_w(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::GreaterThan:
-      as_vslt_w(dest, rhs, lhs);
+      as_vslt_w(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::GreaterThanOrEqual:
-      as_vsle_w(dest, rhs, lhs);
+      as_vsle_w(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::Below:
-      as_vslt_wu(dest, lhs, rhs);
+      as_vslt_wu(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::BelowOrEqual:
-      as_vsle_wu(dest, lhs, rhs);
+      as_vsle_wu(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::Above:
-      as_vslt_wu(dest, rhs, lhs);
+      as_vslt_wu(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::AboveOrEqual:
-      as_vsle_wu(dest, rhs, lhs);
+      as_vsle_wu(dest.toV(), rhs.toV(), lhs.toV());
       break;
     default:
       MOZ_CRASH("unexpected condition");
@@ -3602,40 +3602,40 @@ void MacroAssembler::compareInt32x4(Assembler::Condition cond,
           AssemblerLOONG64::EncodeSimdCompareImmediate<int32_t>(rhs, cond)) {
     switch (cond) {
       case Assembler::Equal:
-        as_vseqi_w(dest, lhs, *imm);
+        as_vseqi_w(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::NotEqual:
-        as_vseqi_w(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vseqi_w(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::LessThan:
-        as_vslti_w(dest, lhs, *imm);
+        as_vslti_w(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::LessThanOrEqual:
-        as_vslei_w(dest, lhs, *imm);
+        as_vslei_w(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::GreaterThan:
-        as_vslei_w(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslei_w(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::GreaterThanOrEqual:
-        as_vslti_w(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslti_w(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::Below:
         if (*imm == 0) {
           // x <u 0 is always false.
           loadConstantSimd128(SimdConstant::SplatX4(0), dest);
         } else {
-          as_vslti_wu(dest, lhs, *imm);
+          as_vslti_wu(dest.toV(), lhs.toV(), *imm);
         }
         break;
       case Assembler::BelowOrEqual:
-        as_vslei_wu(dest, lhs, *imm);
+        as_vslei_wu(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::Above:
-        as_vslei_wu(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslei_wu(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::AboveOrEqual:
         if (*imm == 0) {
@@ -3645,8 +3645,8 @@ void MacroAssembler::compareInt32x4(Assembler::Condition cond,
                   mozilla::BitwiseCast<int32_t>(uint32_t(0xffffffff))),
               dest);
         } else {
-          as_vslti_wu(dest, lhs, *imm);
-          as_vnor_v(dest, dest, dest);
+          as_vslti_wu(dest.toV(), lhs.toV(), *imm);
+          as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         }
         break;
       default:
@@ -3670,22 +3670,22 @@ void MacroAssembler::compareFloat32x4(Assembler::Condition cond,
                                       FloatRegister dest) {
   switch (cond) {
     case Assembler::Equal:
-      as_vfcmp_cond_s(CEQ, dest, lhs, rhs);
+      as_vfcmp_cond_s(CEQ, dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::NotEqual:
-      as_vfcmp_cond_s(CUNE, dest, lhs, rhs);
+      as_vfcmp_cond_s(CUNE, dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::LessThan:
-      as_vfcmp_cond_s(CLT, dest, lhs, rhs);
+      as_vfcmp_cond_s(CLT, dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::LessThanOrEqual:
-      as_vfcmp_cond_s(CLE, dest, lhs, rhs);
+      as_vfcmp_cond_s(CLE, dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::GreaterThan:
-      as_vfcmp_cond_s(CLT, dest, rhs, lhs);
+      as_vfcmp_cond_s(CLT, dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::GreaterThanOrEqual:
-      as_vfcmp_cond_s(CLE, dest, rhs, lhs);
+      as_vfcmp_cond_s(CLE, dest.toV(), rhs.toV(), lhs.toV());
       break;
     default:
       MOZ_CRASH("unexpected condition");
@@ -3703,22 +3703,22 @@ void MacroAssembler::compareFloat64x2(Assembler::Condition cond,
                                       FloatRegister dest) {
   switch (cond) {
     case Assembler::Equal:
-      as_vfcmp_cond_d(CEQ, dest, lhs, rhs);
+      as_vfcmp_cond_d(CEQ, dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::NotEqual:
-      as_vfcmp_cond_d(CUNE, dest, lhs, rhs);
+      as_vfcmp_cond_d(CUNE, dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::LessThan:
-      as_vfcmp_cond_d(CLT, dest, lhs, rhs);
+      as_vfcmp_cond_d(CLT, dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::LessThanOrEqual:
-      as_vfcmp_cond_d(CLE, dest, lhs, rhs);
+      as_vfcmp_cond_d(CLE, dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::GreaterThan:
-      as_vfcmp_cond_d(CLT, dest, rhs, lhs);
+      as_vfcmp_cond_d(CLT, dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::GreaterThanOrEqual:
-      as_vfcmp_cond_d(CLE, dest, rhs, lhs);
+      as_vfcmp_cond_d(CLE, dest.toV(), rhs.toV(), lhs.toV());
       break;
     default:
       MOZ_CRASH("unexpected condition");
@@ -3729,119 +3729,119 @@ FaultingCodeRange MacroAssembler::loadUnalignedSimd128(const BaseIndex& src,
                                                        FloatRegister dest) {
   UseScratchRegisterScope temps(*this);
   Address address = computeScaledAddress(src, temps);
-  return ma_vld(dest, address);
+  return ma_vld(dest.toV(), address);
 }
 
 FaultingCodeRange MacroAssembler::storeUnalignedSimd128(FloatRegister src,
                                                         const BaseIndex& dest) {
   UseScratchRegisterScope temps(*this);
   Address address = computeScaledAddress(dest, temps);
-  return ma_vst(src, address);
+  return ma_vst(src.toV(), address);
 }
 
 void MacroAssembler::negFloat32x4(FloatRegister src, FloatRegister dest) {
-  as_vbitrevi_w(dest, src, 31);
+  as_vbitrevi_w(dest.toV(), src.toV(), 31);
 }
 
 void MacroAssembler::negFloat64x2(FloatRegister src, FloatRegister dest) {
-  as_vbitrevi_d(dest, src, 63);
+  as_vbitrevi_d(dest.toV(), src.toV(), 63);
 }
 
 void MacroAssembler::absFloat32x4(FloatRegister src, FloatRegister dest) {
-  as_vbitclri_w(dest, src, 31);
+  as_vbitclri_w(dest.toV(), src.toV(), 31);
 }
 
 void MacroAssembler::absFloat64x2(FloatRegister src, FloatRegister dest) {
-  as_vbitclri_d(dest, src, 63);
+  as_vbitclri_d(dest.toV(), src.toV(), 63);
 }
 
 void MacroAssembler::addFloat32x4(FloatRegister lhs, FloatRegister rhs,
                                   FloatRegister dest) {
-  as_vfadd_s(dest, lhs, rhs);
+  as_vfadd_s(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::addFloat64x2(FloatRegister lhs, FloatRegister rhs,
                                   FloatRegister dest) {
-  as_vfadd_d(dest, lhs, rhs);
+  as_vfadd_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::subFloat32x4(FloatRegister lhs, FloatRegister rhs,
                                   FloatRegister dest) {
-  as_vfsub_s(dest, lhs, rhs);
+  as_vfsub_s(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::subFloat64x2(FloatRegister lhs, FloatRegister rhs,
                                   FloatRegister dest) {
-  as_vfsub_d(dest, lhs, rhs);
+  as_vfsub_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::divFloat32x4(FloatRegister lhs, FloatRegister rhs,
                                   FloatRegister dest) {
-  as_vfdiv_s(dest, lhs, rhs);
+  as_vfdiv_s(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::divFloat64x2(FloatRegister lhs, FloatRegister rhs,
                                   FloatRegister dest) {
-  as_vfdiv_d(dest, lhs, rhs);
+  as_vfdiv_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::mulFloat32x4(FloatRegister lhs, FloatRegister rhs,
                                   FloatRegister dest) {
-  as_vfmul_s(dest, lhs, rhs);
+  as_vfmul_s(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::mulFloat64x2(FloatRegister lhs, FloatRegister rhs,
                                   FloatRegister dest) {
-  as_vfmul_d(dest, lhs, rhs);
+  as_vfmul_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::extAddPairwiseInt8x16(FloatRegister src,
                                            FloatRegister dest) {
-  as_vhaddw_h_b(dest, src, src);
+  as_vhaddw_h_b(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedExtAddPairwiseInt8x16(FloatRegister src,
                                                    FloatRegister dest) {
-  as_vhaddw_hu_bu(dest, src, src);
+  as_vhaddw_hu_bu(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::extAddPairwiseInt16x8(FloatRegister src,
                                            FloatRegister dest) {
-  as_vhaddw_w_h(dest, src, src);
+  as_vhaddw_w_h(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedExtAddPairwiseInt16x8(FloatRegister src,
                                                    FloatRegister dest) {
-  as_vhaddw_wu_hu(dest, src, src);
+  as_vhaddw_wu_hu(dest.toV(), src.toV(), src.toV());
 }
 
 void MacroAssembler::sqrtFloat32x4(FloatRegister src, FloatRegister dest) {
-  as_vfsqrt_s(dest, src);
+  as_vfsqrt_s(dest.toV(), src.toV());
 }
 
 void MacroAssembler::sqrtFloat64x2(FloatRegister src, FloatRegister dest) {
-  as_vfsqrt_d(dest, src);
+  as_vfsqrt_d(dest.toV(), src.toV());
 }
 
 void MacroAssembler::convertInt32x4ToFloat32x4(FloatRegister src,
                                                FloatRegister dest) {
-  as_vffint_s_w(dest, src);
+  as_vffint_s_w(dest.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedConvertInt32x4ToFloat32x4(FloatRegister src,
                                                        FloatRegister dest) {
-  as_vffint_s_wu(dest, src);
+  as_vffint_s_wu(dest.toV(), src.toV());
 }
 
 void MacroAssembler::convertInt32x4ToFloat64x2(FloatRegister src,
                                                FloatRegister dest) {
-  as_vffintl_d_w(dest, src);
+  as_vffintl_d_w(dest.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedConvertInt32x4ToFloat64x2(FloatRegister src,
                                                        FloatRegister dest) {
-  as_vsllwil_du_wu(dest, src, 0);
-  as_vffint_d_lu(dest, dest);
+  as_vsllwil_du_wu(dest.toV(), src.toV(), 0);
+  as_vffint_d_lu(dest.toV(), dest.toV());
 }
 
 void MacroAssembler::truncSatFloat32x4ToInt32x4(FloatRegister src,
@@ -3860,16 +3860,16 @@ void MacroAssembler::truncSatFloat32x4ToInt32x4(FloatRegister src,
   // Normalize NaNs.
   // dest = (0.f for i in LANES if IsNaN(src[i]) else src[i])
   as_vldi(scratch2, 0);
-  as_vfcmp_cond_s(CUN, scratch, src, src);
-  as_vbitsel_v(dest, src, scratch2, scratch);
+  as_vfcmp_cond_s(CUN, scratch, src.toV(), src.toV());
+  as_vbitsel_v(dest.toV(), src.toV(), scratch2, scratch);
 
   // Normalize too small lanes.
   // dest = (INT32_MIN.f for i in LANES if dest[i] < INT32_MIN.f else dest[i])
   loadConstantSimd128(SimdConstant::SplatX4(static_cast<float>(
                           std::numeric_limits<int32_t>::min())),
                       scratch);
-  as_vfcmp_cond_s(CLT, temp, dest, scratch);
-  as_vbitsel_v(dest, dest, scratch, temp);
+  as_vfcmp_cond_s(CLT, temp.toV(), dest.toV(), scratch);
+  as_vbitsel_v(dest.toV(), dest.toV(), scratch, temp.toV());
 
   // Find too big lanes.
   // scratch = (
@@ -3879,15 +3879,15 @@ void MacroAssembler::truncSatFloat32x4ToInt32x4(FloatRegister src,
       SimdConstant::SplatX4(static_cast<float>(
           static_cast<int64_t>(std::numeric_limits<int32_t>::max()) + 1)),
       scratch);
-  as_vfcmp_cond_s(CLE, scratch2, scratch, dest);
+  as_vfcmp_cond_s(CLE, scratch2, scratch, dest.toV());
 
-  as_vftintrz_w_s(dest, dest);
+  as_vftintrz_w_s(dest.toV(), dest.toV());
 
   // Normalize too big lanes.
   // dest = (dest[i] for i in LANES if scratch2[i] == 0 else INT32_MAX)
   loadConstantSimd128(
       SimdConstant::SplatX4(std::numeric_limits<int32_t>::max()), scratch);
-  as_vbitsel_v(dest, dest, scratch, scratch2);
+  as_vbitsel_v(dest.toV(), dest.toV(), scratch, scratch2);
 }
 
 void MacroAssembler::truncSatFloat64x2ToInt32x4(FloatRegister src,
@@ -3904,28 +3904,28 @@ void MacroAssembler::truncSatFloat64x2ToInt32x4(FloatRegister src,
   // Normalize NaNs.
   // dest = (0.d for i in LANES if IsNaN(src[i]) else src[i])
   as_vldi(scratch2, 0);
-  as_vfcmp_cond_d(CUN, scratch, src, src);
-  as_vbitsel_v(dest, src, scratch2, scratch);
+  as_vfcmp_cond_d(CUN, scratch, src.toV(), src.toV());
+  as_vbitsel_v(dest.toV(), src.toV(), scratch2, scratch);
 
   // Normalize too big lanes.
   // dest = (INT32_MAX.d for i in LANES if INT32_MAX.d <= dest[i] else dest[i])
   loadConstantSimd128(SimdConstant::SplatX2(static_cast<double>(
                           std::numeric_limits<int32_t>::max())),
                       temp);
-  as_vfcmp_cond_d(CLE, scratch, temp, dest);
-  as_vbitsel_v(dest, dest, temp, scratch);
+  as_vfcmp_cond_d(CLE, scratch, temp.toV(), dest.toV());
+  as_vbitsel_v(dest.toV(), dest.toV(), temp.toV(), scratch);
 
   // Normalize too small lanes.
   // dest = (INT32_MIN.d for i in LANES if dest[i] < INT32_MIN.d else dest[i])
   loadConstantSimd128(SimdConstant::SplatX2(static_cast<double>(
                           std::numeric_limits<int32_t>::min())),
                       temp);
-  as_vfcmp_cond_d(CLT, scratch2, dest, temp);
-  as_vbitsel_v(dest, dest, temp, scratch2);
+  as_vfcmp_cond_d(CLT, scratch2, dest.toV(), temp.toV());
+  as_vbitsel_v(dest.toV(), dest.toV(), temp.toV(), scratch2);
 
   as_vldi(scratch, 0);
   // dest = (dest[0].i32, dest[1].i32, 0.i32, 0.i32)
-  as_vftintrz_w_d(dest, scratch, dest);
+  as_vftintrz_w_d(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::unsignedTruncSatFloat64x2ToInt32x4(FloatRegister src,
@@ -3942,13 +3942,13 @@ void MacroAssembler::unsignedTruncSatFloat64x2ToInt32x4(FloatRegister src,
   // Normalize NaNs.
   // dest = (0.d for i in LANES if IsNaN(src[i]) else src[i])
   as_vldi(scratch2, 0);
-  as_vfcmp_cond_d(CUN, scratch, src, src);
-  as_vbitsel_v(dest, src, scratch2, scratch);
+  as_vfcmp_cond_d(CUN, scratch, src.toV(), src.toV());
+  as_vbitsel_v(dest.toV(), src.toV(), scratch2, scratch);
 
   // Normalize too small lanes.
   // dest = (0.d for i in LANES if dest[i] < 0.d else dest[i])
-  as_vfcmp_cond_d(CLT, scratch, dest, scratch2);
-  as_vbitsel_v(dest, dest, scratch2, scratch);
+  as_vfcmp_cond_d(CLT, scratch, dest.toV(), scratch2);
+  as_vbitsel_v(dest.toV(), dest.toV(), scratch2, scratch);
 
   // Normalize too big lanes.
   // dest = (
@@ -3958,31 +3958,31 @@ void MacroAssembler::unsignedTruncSatFloat64x2ToInt32x4(FloatRegister src,
   loadConstantSimd128(SimdConstant::SplatX2(static_cast<double>(
                           std::numeric_limits<uint32_t>::max())),
                       scratch);
-  as_vfcmp_cond_d(CLE, scratch2, scratch, dest);
-  as_vbitsel_v(dest, dest, scratch, scratch2);
+  as_vfcmp_cond_d(CLE, scratch2, scratch, dest.toV());
+  as_vbitsel_v(dest.toV(), dest.toV(), scratch, scratch2);
 
   // There is no such thing as "vftintrz.wu.d".
-  as_vftintrz_lu_d(dest, dest);
+  as_vftintrz_lu_d(dest.toV(), dest.toV());
 
   as_vldi(scratch, 0);
-  as_vpickev_w(dest, scratch, dest);
+  as_vpickev_w(dest.toV(), scratch, dest.toV());
 }
 
 void MacroAssembler::truncFloat32x4ToInt32x4Relaxed(FloatRegister src,
                                                     FloatRegister dest) {
-  as_vftintrz_w_s(dest, src);
+  as_vftintrz_w_s(dest.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedTruncFloat32x4ToInt32x4Relaxed(
     FloatRegister src, FloatRegister dest) {
-  as_vftintrz_wu_s(dest, src);
+  as_vftintrz_wu_s(dest.toV(), src.toV());
 }
 
 void MacroAssembler::truncFloat64x2ToInt32x4Relaxed(FloatRegister src,
                                                     FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vldi(scratch, 0);
-  as_vftintrz_w_d(dest, scratch, src);
+  as_vftintrz_w_d(dest.toV(), scratch, src.toV());
 }
 
 void MacroAssembler::unsignedTruncFloat64x2ToInt32x4Relaxed(
@@ -3990,20 +3990,20 @@ void MacroAssembler::unsignedTruncFloat64x2ToInt32x4Relaxed(
   ScratchSimd128Scope scratch(*this);
   ScratchSimd128Scope2 scratch2(*this);
   as_vldi(scratch, 0);
-  as_vftintrz_lu_d(scratch2, src);
-  as_vpickev_w(dest, scratch, scratch2);
+  as_vftintrz_lu_d(scratch2, src.toV());
+  as_vpickev_w(dest.toV(), scratch, scratch2);
 }
 
 void MacroAssembler::convertFloat64x2ToFloat32x4(FloatRegister src,
                                                  FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vldi(scratch, 0);
-  as_vfcvt_s_d(dest, scratch, src);
+  as_vfcvt_s_d(dest.toV(), scratch, src.toV());
 }
 
 void MacroAssembler::convertFloat32x4ToFloat64x2(FloatRegister src,
                                                  FloatRegister dest) {
-  as_vfcvtl_d_s(dest, src);
+  as_vfcvtl_d_s(dest.toV(), src.toV());
 }
 
 void MacroAssembler::narrowInt16x8(FloatRegister lhs, FloatRegister rhs,
@@ -4015,14 +4015,14 @@ void MacroAssembler::narrowInt16x8(FloatRegister lhs, FloatRegister rhs,
     // We should not clobber |rhs|.
     ScratchSimd128Scope scratch(*this);
     moveSimd128(rhs, scratch);
-    as_vssrani_b_h(scratch, lhs, 0);
+    as_vssrani_b_h(scratch, lhs.toV(), 0);
     moveSimd128(scratch, dest);
   } else {
     // We can use |dest| as the scratch register.
     if (dest != rhs) {
       moveSimd128(rhs, dest);
     }
-    as_vssrani_b_h(dest, lhs, 0);
+    as_vssrani_b_h(dest.toV(), lhs.toV(), 0);
   }
 }
 
@@ -4032,13 +4032,13 @@ void MacroAssembler::unsignedNarrowInt16x8(FloatRegister lhs, FloatRegister rhs,
   if (dest == lhs) {
     ScratchSimd128Scope scratch(*this);
     moveSimd128(rhs, scratch);
-    as_vssrani_bu_h(scratch, lhs, 0);
+    as_vssrani_bu_h(scratch, lhs.toV(), 0);
     moveSimd128(scratch, dest);
   } else {
     if (dest != rhs) {
       moveSimd128(rhs, dest);
     }
-    as_vssrani_bu_h(dest, lhs, 0);
+    as_vssrani_bu_h(dest.toV(), lhs.toV(), 0);
   }
 }
 
@@ -4048,13 +4048,13 @@ void MacroAssembler::narrowInt32x4(FloatRegister lhs, FloatRegister rhs,
   if (dest == lhs) {
     ScratchSimd128Scope scratch(*this);
     moveSimd128(rhs, scratch);
-    as_vssrani_h_w(scratch, lhs, 0);
+    as_vssrani_h_w(scratch, lhs.toV(), 0);
     moveSimd128(scratch, dest);
   } else {
     if (dest != rhs) {
       moveSimd128(rhs, dest);
     }
-    as_vssrani_h_w(dest, lhs, 0);
+    as_vssrani_h_w(dest.toV(), lhs.toV(), 0);
   }
 }
 
@@ -4064,232 +4064,236 @@ void MacroAssembler::unsignedNarrowInt32x4(FloatRegister lhs, FloatRegister rhs,
   if (dest == lhs) {
     ScratchSimd128Scope scratch(*this);
     moveSimd128(rhs, scratch);
-    as_vssrani_hu_w(scratch, lhs, 0);
+    as_vssrani_hu_w(scratch, lhs.toV(), 0);
     moveSimd128(scratch, dest);
   } else {
     if (dest != rhs) {
       moveSimd128(rhs, dest);
     }
-    as_vssrani_hu_w(dest, lhs, 0);
+    as_vssrani_hu_w(dest.toV(), lhs.toV(), 0);
   }
 }
 
 void MacroAssembler::widenLowInt8x16(FloatRegister src, FloatRegister dest) {
-  as_vsllwil_h_b(dest, src, 0);
+  as_vsllwil_h_b(dest.toV(), src.toV(), 0);
 }
 
 void MacroAssembler::widenHighInt8x16(FloatRegister src, FloatRegister dest) {
-  as_vexth_h_b(dest, src);
+  as_vexth_h_b(dest.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedWidenLowInt8x16(FloatRegister src,
                                              FloatRegister dest) {
-  as_vsllwil_hu_bu(dest, src, 0);
+  as_vsllwil_hu_bu(dest.toV(), src.toV(), 0);
 }
 
 void MacroAssembler::unsignedWidenHighInt8x16(FloatRegister src,
                                               FloatRegister dest) {
-  as_vexth_hu_bu(dest, src);
+  as_vexth_hu_bu(dest.toV(), src.toV());
 }
 
 void MacroAssembler::widenLowInt16x8(FloatRegister src, FloatRegister dest) {
-  as_vsllwil_w_h(dest, src, 0);
+  as_vsllwil_w_h(dest.toV(), src.toV(), 0);
 }
 
 void MacroAssembler::widenHighInt16x8(FloatRegister src, FloatRegister dest) {
-  as_vexth_w_h(dest, src);
+  as_vexth_w_h(dest.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedWidenLowInt16x8(FloatRegister src,
                                              FloatRegister dest) {
-  as_vsllwil_wu_hu(dest, src, 0);
+  as_vsllwil_wu_hu(dest.toV(), src.toV(), 0);
 }
 
 void MacroAssembler::unsignedWidenHighInt16x8(FloatRegister src,
                                               FloatRegister dest) {
-  as_vexth_wu_hu(dest, src);
+  as_vexth_wu_hu(dest.toV(), src.toV());
 }
 
 void MacroAssembler::widenLowInt32x4(FloatRegister src, FloatRegister dest) {
-  as_vsllwil_d_w(dest, src, 0);
+  as_vsllwil_d_w(dest.toV(), src.toV(), 0);
 }
 
 void MacroAssembler::unsignedWidenLowInt32x4(FloatRegister src,
                                              FloatRegister dest) {
-  as_vsllwil_du_wu(dest, src, 0);
+  as_vsllwil_du_wu(dest.toV(), src.toV(), 0);
 }
 
 void MacroAssembler::widenHighInt32x4(FloatRegister src, FloatRegister dest) {
-  as_vexth_d_w(dest, src);
+  as_vexth_d_w(dest.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedWidenHighInt32x4(FloatRegister src,
                                               FloatRegister dest) {
-  as_vexth_du_wu(dest, src);
+  as_vexth_du_wu(dest.toV(), src.toV());
 }
 
 void MacroAssembler::pseudoMinFloat32x4(FloatRegister rhsOrRhsDest,
                                         FloatRegister lhsOrLhsDest) {
   ScratchSimd128Scope scratch(*this);
-  as_vfcmp_cond_s(CLT, scratch, rhsOrRhsDest, lhsOrLhsDest);
-  as_vbitsel_v(lhsOrLhsDest, lhsOrLhsDest, rhsOrRhsDest, scratch);
+  as_vfcmp_cond_s(CLT, scratch, rhsOrRhsDest.toV(), lhsOrLhsDest.toV());
+  as_vbitsel_v(lhsOrLhsDest.toV(), lhsOrLhsDest.toV(), rhsOrRhsDest.toV(),
+               scratch);
 }
 
 void MacroAssembler::pseudoMinFloat32x4(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vfcmp_cond_s(CLT, scratch, rhs, lhs);
-  as_vbitsel_v(dest, lhs, rhs, scratch);
+  as_vfcmp_cond_s(CLT, scratch, rhs.toV(), lhs.toV());
+  as_vbitsel_v(dest.toV(), lhs.toV(), rhs.toV(), scratch);
 }
 
 void MacroAssembler::pseudoMinFloat64x2(FloatRegister rhsOrRhsDest,
                                         FloatRegister lhsOrLhsDest) {
   ScratchSimd128Scope scratch(*this);
-  as_vfcmp_cond_d(CLT, scratch, rhsOrRhsDest, lhsOrLhsDest);
-  as_vbitsel_v(lhsOrLhsDest, lhsOrLhsDest, rhsOrRhsDest, scratch);
+  as_vfcmp_cond_d(CLT, scratch, rhsOrRhsDest.toV(), lhsOrLhsDest.toV());
+  as_vbitsel_v(lhsOrLhsDest.toV(), lhsOrLhsDest.toV(), rhsOrRhsDest.toV(),
+               scratch);
 }
 
 void MacroAssembler::pseudoMinFloat64x2(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vfcmp_cond_d(CLT, scratch, rhs, lhs);
-  as_vbitsel_v(dest, lhs, rhs, scratch);
+  as_vfcmp_cond_d(CLT, scratch, rhs.toV(), lhs.toV());
+  as_vbitsel_v(dest.toV(), lhs.toV(), rhs.toV(), scratch);
 }
 
 void MacroAssembler::pseudoMaxFloat32x4(FloatRegister rhsOrRhsDest,
                                         FloatRegister lhsOrLhsDest) {
   ScratchSimd128Scope scratch(*this);
-  as_vfcmp_cond_s(CLT, scratch, lhsOrLhsDest, rhsOrRhsDest);
-  as_vbitsel_v(lhsOrLhsDest, lhsOrLhsDest, rhsOrRhsDest, scratch);
+  as_vfcmp_cond_s(CLT, scratch, lhsOrLhsDest.toV(), rhsOrRhsDest.toV());
+  as_vbitsel_v(lhsOrLhsDest.toV(), lhsOrLhsDest.toV(), rhsOrRhsDest.toV(),
+               scratch);
 }
 
 void MacroAssembler::pseudoMaxFloat32x4(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vfcmp_cond_s(CLT, scratch, lhs, rhs);
-  as_vbitsel_v(dest, lhs, rhs, scratch);
+  as_vfcmp_cond_s(CLT, scratch, lhs.toV(), rhs.toV());
+  as_vbitsel_v(dest.toV(), lhs.toV(), rhs.toV(), scratch);
 }
 
 void MacroAssembler::pseudoMaxFloat64x2(FloatRegister rhsOrRhsDest,
                                         FloatRegister lhsOrLhsDest) {
   ScratchSimd128Scope scratch(*this);
-  as_vfcmp_cond_d(CLT, scratch, lhsOrLhsDest, rhsOrRhsDest);
-  as_vbitsel_v(lhsOrLhsDest, lhsOrLhsDest, rhsOrRhsDest, scratch);
+  as_vfcmp_cond_d(CLT, scratch, lhsOrLhsDest.toV(), rhsOrRhsDest.toV());
+  as_vbitsel_v(lhsOrLhsDest.toV(), lhsOrLhsDest.toV(), rhsOrRhsDest.toV(),
+               scratch);
 }
 
 void MacroAssembler::pseudoMaxFloat64x2(FloatRegister lhs, FloatRegister rhs,
                                         FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vfcmp_cond_d(CLT, scratch, lhs, rhs);
-  as_vbitsel_v(dest, lhs, rhs, scratch);
+  as_vfcmp_cond_d(CLT, scratch, lhs.toV(), rhs.toV());
+  as_vbitsel_v(dest.toV(), lhs.toV(), rhs.toV(), scratch);
 }
 
 void MacroAssembler::widenDotInt16x8(FloatRegister lhs, FloatRegister rhs,
                                      FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwev_w_h(scratch, lhs, rhs);
-  as_vmulwod_w_h(dest, lhs, rhs);
-  as_vadd_w(dest, dest, scratch);
+  as_vmulwev_w_h(scratch, lhs.toV(), rhs.toV());
+  as_vmulwod_w_h(dest.toV(), lhs.toV(), rhs.toV());
+  as_vadd_w(dest.toV(), dest.toV(), scratch);
 }
 
 void MacroAssembler::dotInt8x16Int7x16(FloatRegister lhs, FloatRegister rhs,
                                        FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwev_h_b(scratch, lhs, rhs);
-  as_vmulwod_h_b(dest, lhs, rhs);
-  as_vadd_h(dest, dest, scratch);
+  as_vmulwev_h_b(scratch, lhs.toV(), rhs.toV());
+  as_vmulwod_h_b(dest.toV(), lhs.toV(), rhs.toV());
+  as_vadd_h(dest.toV(), dest.toV(), scratch);
 }
 
 void MacroAssembler::ceilFloat32x4(FloatRegister src, FloatRegister dest) {
-  as_vfrintrp_s(dest, src);
+  as_vfrintrp_s(dest.toV(), src.toV());
 }
 
 void MacroAssembler::ceilFloat64x2(FloatRegister src, FloatRegister dest) {
-  as_vfrintrp_d(dest, src);
+  as_vfrintrp_d(dest.toV(), src.toV());
 }
 
 void MacroAssembler::floorFloat32x4(FloatRegister src, FloatRegister dest) {
-  as_vfrintrm_s(dest, src);
+  as_vfrintrm_s(dest.toV(), src.toV());
 }
 
 void MacroAssembler::floorFloat64x2(FloatRegister src, FloatRegister dest) {
-  as_vfrintrm_d(dest, src);
+  as_vfrintrm_d(dest.toV(), src.toV());
 }
 
 void MacroAssembler::truncFloat32x4(FloatRegister src, FloatRegister dest) {
-  as_vfrintrz_s(dest, src);
+  as_vfrintrz_s(dest.toV(), src.toV());
 }
 
 void MacroAssembler::truncFloat64x2(FloatRegister src, FloatRegister dest) {
-  as_vfrintrz_d(dest, src);
+  as_vfrintrz_d(dest.toV(), src.toV());
 }
 
 void MacroAssembler::nearestFloat32x4(FloatRegister src, FloatRegister dest) {
-  as_vfrintrne_s(dest, src);
+  as_vfrintrne_s(dest.toV(), src.toV());
 }
 
 void MacroAssembler::nearestFloat64x2(FloatRegister src, FloatRegister dest) {
-  as_vfrintrne_d(dest, src);
+  as_vfrintrne_d(dest.toV(), src.toV());
 }
 
 void MacroAssembler::fmaFloat32x4(FloatRegister src1, FloatRegister src2,
                                   FloatRegister srcDest) {
-  as_vfmadd_s(srcDest, src1, src2, srcDest);
+  as_vfmadd_s(srcDest.toV(), src1.toV(), src2.toV(), srcDest.toV());
 }
 
 void MacroAssembler::fnmaFloat32x4(FloatRegister src1, FloatRegister src2,
                                    FloatRegister srcDest) {
-  as_vfnmsub_s(srcDest, src1, src2, srcDest);
+  as_vfnmsub_s(srcDest.toV(), src1.toV(), src2.toV(), srcDest.toV());
 }
 
 void MacroAssembler::fmaFloat64x2(FloatRegister src1, FloatRegister src2,
                                   FloatRegister srcDest) {
-  as_vfmadd_d(srcDest, src1, src2, srcDest);
+  as_vfmadd_d(srcDest.toV(), src1.toV(), src2.toV(), srcDest.toV());
 }
 
 void MacroAssembler::fnmaFloat64x2(FloatRegister src1, FloatRegister src2,
                                    FloatRegister srcDest) {
-  as_vfnmsub_d(srcDest, src1, src2, srcDest);
+  as_vfnmsub_d(srcDest.toV(), src1.toV(), src2.toV(), srcDest.toV());
 }
 
 void MacroAssembler::minFloat32x4Relaxed(FloatRegister src,
                                          FloatRegister srcDest) {
-  as_vfmin_s(srcDest, srcDest, src);
+  as_vfmin_s(srcDest.toV(), srcDest.toV(), src.toV());
 }
 
 void MacroAssembler::minFloat32x4Relaxed(FloatRegister lhs, FloatRegister rhs,
                                          FloatRegister dest) {
-  as_vfmin_s(dest, lhs, rhs);
+  as_vfmin_s(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::maxFloat32x4Relaxed(FloatRegister src,
                                          FloatRegister srcDest) {
-  as_vfmax_s(srcDest, srcDest, src);
+  as_vfmax_s(srcDest.toV(), srcDest.toV(), src.toV());
 }
 
 void MacroAssembler::maxFloat32x4Relaxed(FloatRegister lhs, FloatRegister rhs,
                                          FloatRegister dest) {
-  as_vfmax_s(dest, lhs, rhs);
+  as_vfmax_s(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::minFloat64x2Relaxed(FloatRegister src,
                                          FloatRegister srcDest) {
-  as_vfmin_d(srcDest, srcDest, src);
+  as_vfmin_d(srcDest.toV(), srcDest.toV(), src.toV());
 }
 
 void MacroAssembler::minFloat64x2Relaxed(FloatRegister lhs, FloatRegister rhs,
                                          FloatRegister dest) {
-  as_vfmin_d(dest, lhs, rhs);
+  as_vfmin_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::maxFloat64x2Relaxed(FloatRegister src,
                                          FloatRegister srcDest) {
-  as_vfmax_d(srcDest, srcDest, src);
+  as_vfmax_d(srcDest.toV(), srcDest.toV(), src.toV());
 }
 
 void MacroAssembler::maxFloat64x2Relaxed(FloatRegister lhs, FloatRegister rhs,
                                          FloatRegister dest) {
-  as_vfmax_d(dest, lhs, rhs);
+  as_vfmax_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::q15MulrInt16x8Relaxed(FloatRegister lhs, FloatRegister rhs,
@@ -4298,106 +4302,106 @@ void MacroAssembler::q15MulrInt16x8Relaxed(FloatRegister lhs, FloatRegister rhs,
 }
 
 void MacroAssembler::splatX2(Register64 src, FloatRegister dest) {
-  as_vreplgr2vr_d(dest, src.reg);
+  as_vreplgr2vr_d(dest.toV(), src.reg);
 }
 
 void MacroAssembler::extractLaneInt64x2(uint32_t lane, FloatRegister src,
                                         Register64 dest) {
-  as_vpickve2gr_d(dest.reg, src, lane);
+  as_vpickve2gr_d(dest.reg, src.toV(), lane);
 }
 
 void MacroAssembler::replaceLaneInt64x2(unsigned lane, Register64 rhs,
                                         FloatRegister lhsDest) {
-  as_vinsgr2vr_d(lhsDest, rhs.reg, lane);
+  as_vinsgr2vr_d(lhsDest.toV(), rhs.reg, lane);
 }
 
 void MacroAssembler::leftShiftInt8x16(FloatRegister lhs, Register rhs,
                                       FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_b(scratch, rhs);
-  as_vsll_b(dest, lhs, scratch);
+  as_vsll_b(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::leftShiftInt16x8(FloatRegister lhs, Register rhs,
                                       FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_h(scratch, rhs);
-  as_vsll_h(dest, lhs, scratch);
+  as_vsll_h(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::leftShiftInt32x4(FloatRegister lhs, Register rhs,
                                       FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_w(scratch, rhs);
-  as_vsll_w(dest, lhs, scratch);
+  as_vsll_w(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::leftShiftInt64x2(FloatRegister lhs, Register rhs,
                                       FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_d(scratch, rhs);
-  as_vsll_d(dest, lhs, scratch);
+  as_vsll_d(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::rightShiftInt8x16(FloatRegister lhs, Register rhs,
                                        FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_b(scratch, rhs);
-  as_vsra_b(dest, lhs, scratch);
+  as_vsra_b(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::rightShiftInt16x8(FloatRegister lhs, Register rhs,
                                        FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_h(scratch, rhs);
-  as_vsra_h(dest, lhs, scratch);
+  as_vsra_h(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::rightShiftInt32x4(FloatRegister lhs, Register rhs,
                                        FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_w(scratch, rhs);
-  as_vsra_w(dest, lhs, scratch);
+  as_vsra_w(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::rightShiftInt64x2(FloatRegister lhs, Register rhs,
                                        FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_d(scratch, rhs);
-  as_vsra_d(dest, lhs, scratch);
+  as_vsra_d(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::unsignedRightShiftInt8x16(FloatRegister lhs, Register rhs,
                                                FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_b(scratch, rhs);
-  as_vsrl_b(dest, lhs, scratch);
+  as_vsrl_b(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::unsignedRightShiftInt16x8(FloatRegister lhs, Register rhs,
                                                FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_h(scratch, rhs);
-  as_vsrl_h(dest, lhs, scratch);
+  as_vsrl_h(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::unsignedRightShiftInt32x4(FloatRegister lhs, Register rhs,
                                                FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_w(scratch, rhs);
-  as_vsrl_w(dest, lhs, scratch);
+  as_vsrl_w(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::unsignedRightShiftInt64x2(FloatRegister lhs, Register rhs,
                                                FloatRegister dest) {
   ScratchSimd128Scope scratch(*this);
   as_vreplgr2vr_d(scratch, rhs);
-  as_vsrl_d(dest, lhs, scratch);
+  as_vsrl_d(dest.toV(), lhs.toV(), scratch);
 }
 
 void MacroAssembler::mulInt64x2(FloatRegister lhs, FloatRegister rhs,
                                 FloatRegister dest) {
-  as_vmul_d(dest, lhs, rhs);
+  as_vmul_d(dest.toV(), lhs.toV(), rhs.toV());
 }
 
 void MacroAssembler::minFloat32x4(FloatRegister rhs, FloatRegister lhsDest) {
@@ -4418,23 +4422,23 @@ void MacroAssembler::minFloat32x4(FloatRegister lhs, FloatRegister rhs,
   // Normalize (+0, -0) ties. Select lhs on numerically equal lanes, then
   // bitwise OR with rhs to force the sign bit on.
   // scratch = (lhs[i] for i in LANES if lhs[i] == rhs[i] else rhs[i]) | rhs
-  as_vfcmp_cond_s(CEQ, scratch, lhs, rhs);
-  as_vbitsel_v(scratch, rhs, lhs, scratch);
-  as_vor_v(scratch2, scratch, rhs);
+  as_vfcmp_cond_s(CEQ, scratch, lhs.toV(), rhs.toV());
+  as_vbitsel_v(scratch, rhs.toV(), lhs.toV(), scratch);
+  as_vor_v(scratch2, scratch, rhs.toV());
 
   // Select the smaller lane.
   // scratch = (lhs[i] for i in LANES if lhs[i] < scratch[i] else scratch[i])
-  as_vfcmp_cond_s(CLT, scratch, lhs, scratch2);
-  as_vbitsel_v(scratch2, scratch2, lhs, scratch);
+  as_vfcmp_cond_s(CLT, scratch, lhs.toV(), scratch2);
+  as_vbitsel_v(scratch2, scratch2, lhs.toV(), scratch);
 
   // Normalize NaNs.
   // dest = (
   //   FPUDefaultQNaN.f for i in LANES if IsUnordered(lhs[i], rhs[i])
   //   else scratch[i]
   // )
-  as_vfcmp_cond_s(CUN, scratch, lhs, rhs);
+  as_vfcmp_cond_s(CUN, scratch, lhs.toV(), rhs.toV());
   loadConstantSimd128(SimdConstant::SplatX4(FPUDefaultQNaN<float>()), dest);
-  as_vbitsel_v(dest, scratch2, dest, scratch);
+  as_vbitsel_v(dest.toV(), scratch2, dest.toV(), scratch);
 }
 
 void MacroAssembler::minFloat64x2(FloatRegister rhs, FloatRegister lhsDest) {
@@ -4451,18 +4455,18 @@ void MacroAssembler::minFloat64x2(FloatRegister lhs, FloatRegister rhs,
   ScratchSimd128Scope2 scratch2(*this);
 
   // Normalize (+0, -0) ties.
-  as_vfcmp_cond_d(CEQ, scratch, lhs, rhs);
-  as_vbitsel_v(scratch, rhs, lhs, scratch);
-  as_vor_v(scratch2, scratch, rhs);
+  as_vfcmp_cond_d(CEQ, scratch, lhs.toV(), rhs.toV());
+  as_vbitsel_v(scratch, rhs.toV(), lhs.toV(), scratch);
+  as_vor_v(scratch2, scratch, rhs.toV());
 
   // Select the smaller lane.
-  as_vfcmp_cond_d(CLT, scratch, lhs, scratch2);
-  as_vbitsel_v(scratch2, scratch2, lhs, scratch);
+  as_vfcmp_cond_d(CLT, scratch, lhs.toV(), scratch2);
+  as_vbitsel_v(scratch2, scratch2, lhs.toV(), scratch);
 
   // Normalize NaNs.
-  as_vfcmp_cond_d(CUN, scratch, lhs, rhs);
+  as_vfcmp_cond_d(CUN, scratch, lhs.toV(), rhs.toV());
   loadConstantSimd128(SimdConstant::SplatX2(FPUDefaultQNaN<double>()), dest);
-  as_vbitsel_v(dest, scratch2, dest, scratch);
+  as_vbitsel_v(dest.toV(), scratch2, dest.toV(), scratch);
 }
 
 void MacroAssembler::maxFloat32x4(FloatRegister rhs, FloatRegister lhsDest) {
@@ -4479,18 +4483,18 @@ void MacroAssembler::maxFloat32x4(FloatRegister lhs, FloatRegister rhs,
   ScratchSimd128Scope2 scratch2(*this);
 
   // Normalize (+0, -0) ties.
-  as_vfcmp_cond_s(CEQ, scratch, lhs, rhs);
-  as_vbitsel_v(scratch, rhs, lhs, scratch);
-  as_vand_v(scratch2, scratch, rhs);
+  as_vfcmp_cond_s(CEQ, scratch, lhs.toV(), rhs.toV());
+  as_vbitsel_v(scratch, rhs.toV(), lhs.toV(), scratch);
+  as_vand_v(scratch2, scratch, rhs.toV());
 
   // Select the larger lane.
-  as_vfcmp_cond_s(CLT, scratch, scratch2, lhs);
-  as_vbitsel_v(scratch2, scratch2, lhs, scratch);
+  as_vfcmp_cond_s(CLT, scratch, scratch2, lhs.toV());
+  as_vbitsel_v(scratch2, scratch2, lhs.toV(), scratch);
 
   // Normalize NaNs.
-  as_vfcmp_cond_s(CUN, scratch, lhs, rhs);
+  as_vfcmp_cond_s(CUN, scratch, lhs.toV(), rhs.toV());
   loadConstantSimd128(SimdConstant::SplatX4(FPUDefaultQNaN<float>()), dest);
-  as_vbitsel_v(dest, scratch2, dest, scratch);
+  as_vbitsel_v(dest.toV(), scratch2, dest.toV(), scratch);
 }
 
 void MacroAssembler::maxFloat64x2(FloatRegister rhs, FloatRegister lhsDest) {
@@ -4507,23 +4511,23 @@ void MacroAssembler::maxFloat64x2(FloatRegister lhs, FloatRegister rhs,
   ScratchSimd128Scope2 scratch2(*this);
 
   // Normalize (+0, -0) ties.
-  as_vfcmp_cond_d(CEQ, scratch, lhs, rhs);
-  as_vbitsel_v(scratch, rhs, lhs, scratch);
-  as_vand_v(scratch2, scratch, rhs);
+  as_vfcmp_cond_d(CEQ, scratch, lhs.toV(), rhs.toV());
+  as_vbitsel_v(scratch, rhs.toV(), lhs.toV(), scratch);
+  as_vand_v(scratch2, scratch, rhs.toV());
 
   // Select the larger lane.
-  as_vfcmp_cond_d(CLT, scratch, scratch2, lhs);
-  as_vbitsel_v(scratch2, scratch2, lhs, scratch);
+  as_vfcmp_cond_d(CLT, scratch, scratch2, lhs.toV());
+  as_vbitsel_v(scratch2, scratch2, lhs.toV(), scratch);
 
   // Normalize NaNs.
-  as_vfcmp_cond_d(CUN, scratch, lhs, rhs);
+  as_vfcmp_cond_d(CUN, scratch, lhs.toV(), rhs.toV());
   loadConstantSimd128(SimdConstant::SplatX2(FPUDefaultQNaN<double>()), dest);
-  as_vbitsel_v(dest, scratch2, dest, scratch);
+  as_vbitsel_v(dest.toV(), scratch2, dest.toV(), scratch);
 }
 
 void MacroAssembler::bitmaskInt8x16(FloatRegister src, Register dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmskltz_b(scratch, src);
+  as_vmskltz_b(scratch, src.toV());
   // Lane i correspond to LSB i in |scratch|, and other bits are zeroed. Since
   // we only have 16 lanes, sign-extending on bit 31 is correct.
   // <https://jia.je/unofficial-loongarch-intrinsics-guide/lsx/misc/#__m128i-__lsx_vmskltz_b-__m128i-a>
@@ -4532,27 +4536,27 @@ void MacroAssembler::bitmaskInt8x16(FloatRegister src, Register dest) {
 
 void MacroAssembler::bitmaskInt16x8(FloatRegister src, Register dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmskltz_h(scratch, src);
+  as_vmskltz_h(scratch, src.toV());
   // Ditto. See MacroAssembler::bitmaskInt8x16().
   as_movfr2gr_s(dest, scratch);
 }
 
 void MacroAssembler::bitmaskInt32x4(FloatRegister src, Register dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmskltz_w(scratch, src);
+  as_vmskltz_w(scratch, src.toV());
   // Ditto. See MacroAssembler::bitmaskInt8x16().
   as_movfr2gr_s(dest, scratch);
 }
 
 void MacroAssembler::bitmaskInt64x2(FloatRegister src, Register dest) {
   ScratchSimd128Scope scratch(*this);
-  as_vmskltz_d(scratch, src);
+  as_vmskltz_d(scratch, src.toV());
   // Ditto. See MacroAssembler::bitmaskInt8x16().
   as_movfr2gr_s(dest, scratch);
 }
 
 void MacroAssembler::popcntInt8x16(FloatRegister src, FloatRegister dest) {
-  as_vpcnt_b(dest, src);
+  as_vpcnt_b(dest.toV(), src.toV());
 }
 
 void MacroAssembler::unsignedTruncSatFloat32x4ToInt32x4(FloatRegister src,
@@ -4568,13 +4572,13 @@ void MacroAssembler::unsignedTruncSatFloat32x4ToInt32x4(FloatRegister src,
   // Normalize NaNs.
   // dest = (0.f for i in LANES if IsNaN(src[i]) else src[i])
   as_vldi(scratch2, 0);
-  as_vfcmp_cond_s(CUN, scratch, src, src);
-  as_vbitsel_v(dest, src, scratch2, scratch);
+  as_vfcmp_cond_s(CUN, scratch, src.toV(), src.toV());
+  as_vbitsel_v(dest.toV(), src.toV(), scratch2, scratch);
 
   // Normalize too small lanes.
   // dest = (0.f for i in LANES if dest[i] < 0.f else dest[i])
-  as_vfcmp_cond_s(CLT, scratch, dest, scratch2);
-  as_vbitsel_v(dest, dest, scratch2, scratch);
+  as_vfcmp_cond_s(CLT, scratch, dest.toV(), scratch2);
+  as_vbitsel_v(dest.toV(), dest.toV(), scratch2, scratch);
 
   // Normalize too big lanes.
   // dest = (
@@ -4584,10 +4588,10 @@ void MacroAssembler::unsignedTruncSatFloat32x4ToInt32x4(FloatRegister src,
   loadConstantSimd128(SimdConstant::SplatX4(static_cast<float>(
                           std::numeric_limits<uint32_t>::max())),
                       scratch);
-  as_vfcmp_cond_s(CLE, scratch2, scratch, dest);
-  as_vbitsel_v(dest, dest, scratch, scratch2);
+  as_vfcmp_cond_s(CLE, scratch2, scratch, dest.toV());
+  as_vbitsel_v(dest.toV(), dest.toV(), scratch, scratch2);
 
-  as_vftintrz_wu_s(dest, dest);
+  as_vftintrz_wu_s(dest.toV(), dest.toV());
 }
 
 void MacroAssembler::compareInt64x2(Assembler::Condition cond,
@@ -4600,23 +4604,23 @@ void MacroAssembler::compareInt64x2(Assembler::Condition cond,
                                     FloatRegister dest) {
   switch (cond) {
     case Assembler::Equal:
-      as_vseq_d(dest, lhs, rhs);
+      as_vseq_d(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::NotEqual:
-      as_vseq_d(dest, lhs, rhs);
-      as_vnor_v(dest, dest, dest);
+      as_vseq_d(dest.toV(), lhs.toV(), rhs.toV());
+      as_vnor_v(dest.toV(), dest.toV(), dest.toV());
       break;
     case Assembler::LessThan:
-      as_vslt_d(dest, lhs, rhs);
+      as_vslt_d(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::LessThanOrEqual:
-      as_vsle_d(dest, lhs, rhs);
+      as_vsle_d(dest.toV(), lhs.toV(), rhs.toV());
       break;
     case Assembler::GreaterThan:
-      as_vslt_d(dest, rhs, lhs);
+      as_vslt_d(dest.toV(), rhs.toV(), lhs.toV());
       break;
     case Assembler::GreaterThanOrEqual:
-      as_vsle_d(dest, rhs, lhs);
+      as_vsle_d(dest.toV(), rhs.toV(), lhs.toV());
       break;
     default:
       MOZ_CRASH("unexpected condition");
@@ -4630,25 +4634,25 @@ void MacroAssembler::compareInt64x2(Assembler::Condition cond,
           AssemblerLOONG64::EncodeSimdCompareImmediate<int64_t>(rhs, cond)) {
     switch (cond) {
       case Assembler::Equal:
-        as_vseqi_d(dest, lhs, *imm);
+        as_vseqi_d(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::NotEqual:
-        as_vseqi_d(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vseqi_d(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::LessThan:
-        as_vslti_d(dest, lhs, *imm);
+        as_vslti_d(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::LessThanOrEqual:
-        as_vslei_d(dest, lhs, *imm);
+        as_vslei_d(dest.toV(), lhs.toV(), *imm);
         break;
       case Assembler::GreaterThan:
-        as_vslei_d(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslei_d(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       case Assembler::GreaterThanOrEqual:
-        as_vslti_d(dest, lhs, *imm);
-        as_vnor_v(dest, dest, dest);
+        as_vslti_d(dest.toV(), lhs.toV(), *imm);
+        as_vnor_v(dest.toV(), dest.toV(), dest.toV());
         break;
       default:
         MOZ_CRASH("unexpected condition");
@@ -4663,7 +4667,7 @@ void MacroAssembler::compareInt64x2(Assembler::Condition cond,
 void MacroAssembler::bitwiseSelectSimd128(FloatRegister onTrue,
                                           FloatRegister onFalse,
                                           FloatRegister maskDest) {
-  as_vbitsel_v(maskDest, onFalse, onTrue, maskDest);
+  as_vbitsel_v(maskDest.toV(), onFalse.toV(), onTrue.toV(), maskDest.toV());
 }
 
 void MacroAssembler::dotInt8x16Int7x16ThenAdd(FloatRegister lhs,
@@ -4671,11 +4675,11 @@ void MacroAssembler::dotInt8x16Int7x16ThenAdd(FloatRegister lhs,
                                               FloatRegister dest,
                                               FloatRegister temp) {
   ScratchSimd128Scope scratch(*this);
-  as_vmulwev_h_b(scratch, lhs, rhs);
-  as_vmulwod_h_b(temp, lhs, rhs);
-  as_vadd_h(temp, temp, scratch);
-  as_vhaddw_w_h(temp, temp, temp);
-  as_vadd_w(dest, dest, temp);
+  as_vmulwev_h_b(scratch, lhs.toV(), rhs.toV());
+  as_vmulwod_h_b(temp.toV(), lhs.toV(), rhs.toV());
+  as_vadd_h(temp.toV(), temp.toV(), scratch);
+  as_vhaddw_w_h(temp.toV(), temp.toV(), temp.toV());
+  as_vadd_w(dest.toV(), dest.toV(), temp.toV());
 }
 
 //}}} check_macroassembler_style
