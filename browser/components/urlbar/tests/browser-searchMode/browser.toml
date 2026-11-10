@@ -77,6 +77,8 @@ support-files = ["has-a-link.html"]
 
 ["browser_searchModeSwitcher_keyNavigation.js"]
 
+["browser_searchModeSwitcher_keyboardShortcuts.js"]
+
 ["browser_searchModeSwitcher_newBadge.js"]
 
 ["browser_searchModeSwitcher_opensearchInstall.js"]

@@ -12,6 +12,9 @@ const ENGINE_TEST_URL =
   "http://mochi.test:8888/browser/browser/components/search/test/browser/opensearch.html";
 
 add_setup(async function () {
+  await SearchTestUtils.updateRemoteSettingsConfig([
+    { identifier: "defaultEngine" },
+  ]);
   // This page defines multiple opensearch engines.
   // We only use the first which has the name "Foo".
   await BrowserTestUtils.loadURIString({

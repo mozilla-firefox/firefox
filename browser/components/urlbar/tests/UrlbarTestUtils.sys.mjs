@@ -1213,6 +1213,13 @@ export class UrlbarInputBaseTestUtils {
       // the expected state, which the assertions below report precisely.
     });
 
+    // Wait for current query because we will inspect the results.
+    let lastQuery;
+    while (lastQuery != this.#urlbar(window).lastQueryContextPromise) {
+      lastQuery = this.#urlbar(window).lastQueryContextPromise;
+      await lastQuery;
+    }
+
     this.Assert.equal(
       !!this.#urlbar(window).searchMode,
       this.#urlbar(window).hasAttribute("searchmode"),
@@ -1226,13 +1233,13 @@ export class UrlbarInputBaseTestUtils {
     );
 
     let results = this.#urlbar(window).querySelector(".urlbarView-results");
-    await lazy.TestUtils.waitForCondition(
-      () =>
-        results.hasAttribute("actionmode") ==
-        (this.#urlbar(window).searchMode?.source ==
-          UrlbarShared.RESULT_SOURCE.ACTIONS)
+    this.Assert.equal(
+      results.hasAttribute("actionmode"),
+      this.#urlbar(window).searchMode?.source ==
+        UrlbarShared.RESULT_SOURCE.ACTIONS &&
+        !!this.getResultsContainer(window).children.length,
+      "Urlbar results have proper actionmode attribute"
     );
-    this.Assert.ok(true, "Urlbar results have proper actionmode attribute");
 
     if (!expectedSearchMode) {
       // Check the input's placeholder.

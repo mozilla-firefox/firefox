@@ -122,6 +122,10 @@ async function testSearchEngine(engineOrRestrict, telemetry, expected) {
     expected
   );
 
+  await TestUtils.waitForCondition(
+    () => gURLBar.searchMode,
+    "Entered search mode"
+  );
   gURLBar.querySelector(".searchmode-switcher-close").click();
   await UrlbarTestUtils.assertSearchMode(window, null);
 }

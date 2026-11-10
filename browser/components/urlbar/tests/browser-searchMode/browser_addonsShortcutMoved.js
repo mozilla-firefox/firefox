@@ -39,7 +39,6 @@ add_task(async function testMenuItem() {
     source: gURLBar.searchModeForToken("%").source,
     entry: "historymenu",
   });
-  await UrlbarTestUtils.promiseSearchComplete(window);
   ok(!(await findResult()), "No result when Search Tabs is used from the menu");
   await resetUrlbar();
   Services.prefs.clearUserPref(LAST_USED_PREF);
@@ -177,7 +176,6 @@ async function pressSearchTabsShortcut() {
     source: gURLBar.searchModeForToken("%").source,
     entry: "shortcut",
   });
-  await UrlbarTestUtils.promiseSearchComplete(window);
 }
 
 async function resetUrlbar() {

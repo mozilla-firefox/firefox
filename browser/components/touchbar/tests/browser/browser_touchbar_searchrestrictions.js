@@ -59,6 +59,12 @@ async function searchAndCheckState({ input, token }) {
   await UrlbarTestUtils.promisePopupClose(window);
 }
 
+add_setup(async function () {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.autoFill", false]],
+  });
+});
+
 add_task(async function insertTokens() {
   const tests = [
     {
