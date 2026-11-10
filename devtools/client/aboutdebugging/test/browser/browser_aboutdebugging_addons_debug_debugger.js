@@ -29,9 +29,6 @@ add_task(async function testOpenDebuggerReload() {
 
   const { document, tab, window } = await openAboutDebugging();
   await selectThisFirefoxPage(document, window.AboutDebugging.store);
-  const isStylesheetsInDebuggerEnabled = Services.prefs.getBoolPref(
-    "devtools.debugger.features.stylesheets-in-debugger"
-  );
   await installTemporaryExtensionFromXPI(
     {
       background() {
@@ -56,7 +53,6 @@ add_task(async function testOpenDebuggerReload() {
   );
   const toolbox = getToolbox(devtoolsWindow);
   const { panelWin } = toolbox.getCurrentPanel();
-  const dbg = createDebuggerContext(toolbox);
 
   info("Check the state of redux");
   ok(
@@ -98,13 +94,8 @@ add_task(async function testOpenDebuggerReload() {
   info("Reload the addon using a toolbox reload shortcut");
   toolbox.win.focus();
   synthesizeKeyShortcut(L10N.getStr("toolbox.reload.key"), toolbox.win);
-
   await onDomCompleteResource;
-  if (isStylesheetsInDebuggerEnabled) {
-    // The background page is now the 5 entry in the source tree because
-    // of the added styles to the tree, and is no longer automatically expanded.
-    await clickElement(dbg, "sourceDirectoryLabel", 5);
-  }
+
   info("Wait until a new background log message is logged");
   await waitFor(() => {
     // As React may re-create a new sources-list element,
@@ -145,9 +136,6 @@ add_task(async function testAddAndRemoveBreakpoint() {
     window,
     EXTENSION_NAME
   );
-  const isStylesheetsInDebuggerEnabled = Services.prefs.getBoolPref(
-    "devtools.debugger.features.stylesheets-in-debugger"
-  );
   const toolbox = getToolbox(devtoolsWindow);
   const dbg = createDebuggerContext(toolbox);
 
@@ -155,8 +143,8 @@ add_task(async function testAddAndRemoveBreakpoint() {
   const sourceTreeThreads = findAllElements(dbg, "sourceTreeThreads");
   is(
     sourceTreeThreads.length,
-    isStylesheetsInDebuggerEnabled ? 2 : 1,
-    "There are two threads with source in the Source Tree"
+    1,
+    "There is one thread with source in the Source Tree"
   );
   is(
     sourceTreeThreads[sourceTreeThreads.length - 1].textContent,
