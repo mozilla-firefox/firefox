@@ -88,6 +88,8 @@ class LIRGeneratorRiscv64 : public LIRGeneratorShared {
 
   void lowerAtomicLoad64(MLoadUnboxedScalar* ins);
   void lowerAtomicStore64(MStoreUnboxedScalar* ins);
+
+  bool canStoreConstantWithoutRegister(MDefinition* value);
 };
 
 typedef LIRGeneratorRiscv64 LIRGeneratorSpecific;

@@ -597,6 +597,12 @@ void LIRGeneratorRiscv64::lowerAtomicStore64(MStoreUnboxedScalar* ins) {
   add(new (alloc()) LAtomicStore64(elements, index, value), ins);
 }
 
+// A constant zero is stored from zero.
+bool LIRGeneratorRiscv64::canStoreConstantWithoutRegister(MDefinition* value) {
+  return value->isConstant() &&
+         (value->toConstant()->isInt32(0) || value->toConstant()->isInt64(0));
+}
+
 void LIRGenerator::visitBox(MBox* ins) {
   MDefinition* opd = ins->getOperand(0);
 
