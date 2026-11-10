@@ -1254,8 +1254,9 @@ static Realm* GetFunctionRealmIfSimple(JSObject* obj) {
   return obj->as<JSFunction>().realm();
 }
 
-// A reaction to an already settled promise, held on the stack rather than
-// allocated as a PromiseReactionRecord.
+// A reaction held on the stack rather than allocated as a
+// PromiseReactionRecord. It can be enqueued for a settled promise; otherwise
+// its fields are copied into a PromiseReactionRecord.
 //
 // When the reaction is simple enough (see fitsInline), it is enqueued
 // as a MicroTask of kind InlinePromiseReaction, which holds the reaction flags
@@ -7206,35 +7207,29 @@ template <typename ExtraStep>
     JSContext* cx, Handle<PromiseObject*> promise,
     Handle<PromiseCapability> resultCapability, HandleValue onFulfilled,
     HandleValue onRejected, ExtraStep extraStep) {
+  // Steps 7-8. Create the combined fulfill and reject reaction record.
+  //
+  // Initialize on the stack for both pending and settled promises. Settled
+  // reactions can be enqueued inline; otherwise allocate a reaction record.
+  StackPromiseReaction data(cx);
+  if (!InitPromiseReaction(cx, &data, resultCapability, onFulfilled,
+                           onRejected)) {
+    return false;
+  }
+  extraStep(&data);
+
   JS::PromiseState state = promise->state();
-  // For settled promises, try to enqueue inline.
   if (state != JS::PromiseState::Pending) {
-    StackPromiseReaction data(cx);
-    if (!InitPromiseReaction(cx, &data, resultCapability, onFulfilled,
-                             onRejected)) {
-      return false;
-    }
-    extraStep(&data);
     if (MOZ_LIKELY(data.fitsInline(cx->realm(), state))) {
       return PerformPromiseThenWithSettledReaction(cx, promise, &data);
     }
-
-    Rooted<PromiseReactionRecord*> reaction(
-        cx, NewReactionRecordFromStack(cx, data));
-    if (!reaction) {
-      return false;
-    }
-    return PerformPromiseThenWithReaction(cx, promise, reaction);
   }
 
-  // Steps 7-8. Create the combined fulfill and reject reaction record.
-  Rooted<PromiseReactionRecord*> reaction(
-      cx, NewReactionRecord(cx, resultCapability, onFulfilled, onRejected));
+  Rooted<PromiseReactionRecord*> reaction(cx,
+                                          NewReactionRecordFromStack(cx, data));
   if (!reaction) {
     return false;
   }
-
-  extraStep(reaction);
   return PerformPromiseThenWithReaction(cx, promise, reaction);
 }
 
