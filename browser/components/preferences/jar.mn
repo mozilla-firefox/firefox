@@ -51,7 +51,6 @@ browser.jar:
    content/browser/preferences/config/SettingPaneManager.mjs            (config/SettingPaneManager.mjs)
    content/browser/preferences/widgets/browser-language-restart-message.mjs          (widgets/browser-language-restart-message/browser-language-restart-message.mjs)
    content/browser/preferences/widgets/browser-language-restart-message.css          (widgets/browser-language-restart-message/browser-language-restart-message.css)
-   content/browser/preferences/widgets/dialog-button.mjs                (widgets/dialog-button/dialog-button.mjs)
    content/browser/preferences/widgets/placeholder-message.mjs          (widgets/placeholder-message/placeholder-message.mjs)
    content/browser/preferences/widgets/placeholder-message.css          (widgets/placeholder-message/placeholder-message.css)
    content/browser/preferences/widgets/nav-notice.mjs                   (widgets/nav-notice/nav-notice.mjs)

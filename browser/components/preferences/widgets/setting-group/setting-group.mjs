@@ -33,7 +33,6 @@ import { SettingGroupManager } from "chrome://browser/content/preferences/config
 /** @typedef {SettingElementConfig & SettingGroupConfigExtensions} SettingGroupConfig */
 
 const CLICK_HANDLERS = new Set([
-  "dialog-button",
   "moz-box-button",
   "moz-box-item",
   "moz-box-link",

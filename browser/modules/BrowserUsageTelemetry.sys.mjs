@@ -103,7 +103,6 @@ const UI_TARGET_COMMAND_ELEMENTS = new Set([
   "moz-button",
   "moz-box-button",
   "moz-box-link",
-  "dialog-button",
 ]);
 const UI_TARGET_ELEMENTS = new Map([
   ["change", UI_TARGET_CHANGE_ELEMENTS],
