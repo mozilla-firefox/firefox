@@ -2344,16 +2344,16 @@ UniquePtr<SelectionDetails> Selection::LookUpSelection(
 
 NS_IMETHODIMP
 Selection::Repaint(nsPresContext* aPresContext) {
-  int32_t arrCount = (int32_t)mStyledRanges.Length();
+  if (mStyledRanges.mRanges.IsEmpty()) {
+    return NS_OK;
+  }
 
-  if (arrCount < 1) return NS_OK;
-
-  int32_t i;
-
-  for (i = 0; i < arrCount; i++) {
-    MOZ_ASSERT(mStyledRanges.GetAbstractRangeAt(i));
-    nsresult rv =
-        SelectFrames(aPresContext, *mStyledRanges.GetAbstractRangeAt(i), true);
+  // SelectFrames() can cause mStyledRanges to be modified, so let's iterate
+  // over a snapshot.
+  nsTArray<RefPtr<AbstractRange>> ranges{mStyledRanges.Ranges()};
+  for (const auto& range : ranges) {
+    MOZ_ASSERT(range);
+    nsresult rv = SelectFrames(aPresContext, *range, true);
 
     if (NS_FAILED(rv)) {
       return rv;
