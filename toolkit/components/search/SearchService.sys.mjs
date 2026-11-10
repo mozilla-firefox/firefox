@@ -1081,16 +1081,14 @@ export const SearchService = new (class SearchService {
   }
 
   /**
-   * @typedef {object} ParseSubmissionResult
-   * @property {?SearchEngine} engine
-   *   The search engine associated with the URL passed in to
-   *   ``parseSubmissionURL``, or null if the URL does not represent a search
-   *   submission.
+   * @typedef {object} ParseSubmissionResultTerms
    * @property {string} terms
    *   String containing the sought terms. This can be an empty string in case
    *   no terms were specified or the URL does not represent a search submission.
-   * @property {string} termsParameterName
-   *   The name of the query parameter used by `engine` for queries. E.g. "q".
+   */
+
+  /**
+   * @typedef {submissionMapEntry & ParseSubmissionResultTerms} ParseSubmissionResult
    */
 
   /**
@@ -1109,11 +1107,18 @@ export const SearchService = new (class SearchService {
    * @returns {ParseSubmissionResult}
    */
   parseSubmissionURL(url) {
+    let emptyResult = {
+      engine: null,
+      terms: "",
+      termsParameterName: "",
+      partnerCodeParameterName: "",
+    };
+
     if (!this.hasSuccessfullyInitialized) {
       // If search is not initialized or failed initializing, do nothing.
       // This allows us to use this function early in telemetry.
       // The only other consumer of this (places) uses it much later.
-      return { engine: null, terms: "", termsParameterName: "" };
+      return emptyResult;
     }
 
     if (!this.#parseSubmissionMap) {
@@ -1127,7 +1132,7 @@ export const SearchService = new (class SearchService {
 
       // Exclude any URL that is not HTTP or HTTPS from the beginning.
       if (!soughtUrl.schemeIs("http") && !soughtUrl.schemeIs("https")) {
-        return { engine: null, terms: "", termsParameterName: "" };
+        return emptyResult;
       }
 
       // Reading these URL properties may fail and raise an exception.
@@ -1135,13 +1140,13 @@ export const SearchService = new (class SearchService {
       soughtQuery = soughtUrl.query;
     } catch (ex) {
       // Errors while parsing the URL or accessing the properties are not fatal.
-      return { engine: null, terms: "", termsParameterName: "" };
+      return emptyResult;
     }
 
     // Look up the domain and path in the map to identify the search engine.
     let mapEntry = this.#parseSubmissionMap.get(soughtKey);
     if (!mapEntry) {
-      return { engine: null, terms: "", termsParameterName: "" };
+      return emptyResult;
     }
 
     // Extract the search terms from the parameter, for example "caff%C3%A8"
@@ -1161,7 +1166,7 @@ export const SearchService = new (class SearchService {
       }
     }
     if (encodedTerms === null) {
-      return { engine: null, terms: "", termsParameterName: "" };
+      return emptyResult;
     }
 
     // Decode the terms using the charset defined in the search engine.
@@ -1173,13 +1178,14 @@ export const SearchService = new (class SearchService {
       );
     } catch (ex) {
       // Decoding errors will cause this match to be ignored.
-      return { engine: null, terms: "", termsParameterName: "" };
+      return emptyResult;
     }
 
     return {
       engine: mapEntry.engine,
       terms,
       termsParameterName: mapEntry.termsParameterName,
+      partnerCodeParameterName: mapEntry.partnerCodeParameterName,
     };
   }
 
@@ -1343,6 +1349,8 @@ export const SearchService = new (class SearchService {
    *   The search engine.
    * @property {string} termsParameterName
    *   The search term parameter name.
+   * @property {string} partnerCodeParameterName
+   *   The partner code parameter name.
    */
 
   /**
@@ -3843,6 +3851,7 @@ export const SearchService = new (class SearchService {
       let mapValueForEngine = {
         engine,
         termsParameterName: urlParsingInfo.termsParameterName,
+        partnerCodeParameterName: urlParsingInfo.partnerCodeParameterName,
       };
 
       let processDomain = (domain, isAlternate) => {

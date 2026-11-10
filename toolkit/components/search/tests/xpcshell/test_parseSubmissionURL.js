@@ -9,6 +9,27 @@
 
 add_setup(async function () {
   useHttpServer("");
+
+  SearchTestUtils.setRemoteSettingsConfig([
+    {
+      identifier: "mainengine",
+      partnerCode: "mainenginepc",
+      base: {
+        urls: {
+          search: {
+            base: "https://example.com/searchBar",
+            params: [
+              {
+                name: "partnerCode",
+                value: "{partnerCode}",
+              },
+            ],
+            searchTermParamName: "foo",
+          },
+        },
+      },
+    },
+  ]);
 });
 
 add_task(async function test_parseSubmissionURL() {
@@ -46,13 +67,6 @@ add_task(async function test_parseSubmissionURL() {
     search_url: "https://www.bacon.moz/search?q=",
     search_url_get_params: "",
   });
-
-  await SearchService.setDefault(engine1, SearchService.CHANGE_REASON.UNKNOWN);
-
-  // Hide the default engines to prevent them from being used in the search.
-  for (let engine of await SearchService.getAppProvidedEngines()) {
-    await SearchService.removeEngine(engine);
-  }
 
   // Test the first engine, whose URLs use UTF-8 encoding.
   // This also tests the query parameter in a different position not being the
@@ -174,4 +188,13 @@ add_task(async function test_parseSubmissionURL() {
   result = SearchService.parseSubmissionURL("file://localhost/search?q=test");
   Assert.equal(result.engine, null);
   Assert.equal(result.terms, "");
+
+  let mainEngine = SearchService.getEngineById("mainengine");
+  result = SearchService.parseSubmissionURL(
+    "https://example.com/searchBar?partnerCode=mainenginepc&foo=test"
+  );
+  Assert.equal(result.engine, mainEngine);
+  Assert.equal(result.terms, "test");
+  Assert.equal(result.partnerCodeParameterName, "partnerCode");
+  Assert.equal(result.termsParameterName, "foo");
 });

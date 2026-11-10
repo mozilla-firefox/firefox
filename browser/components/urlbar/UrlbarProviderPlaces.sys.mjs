@@ -899,14 +899,14 @@ class Search {
       this.#searchTokens.map(t => t.value).join(" ")
     );
 
-    // We ignore termsParameterName when checking for a subset because we
-    // already checked that the typed query is a subset of the search history
-    // query above with this.#searchTokens.every(...).
+    // We ignore termsParameterName and partnerCodeParameterName when checking
+    // for a subset because we already checked that the typed query is a subset
+    // of the search history query above with this.#searchTokens.every(...).
     if (
       !lazy.UrlbarSearchUtils.serpsAreEquivalent(
         historyUrl,
         generatedSuggestionUrl,
-        [parseResult.termsParameterName]
+        [parseResult.termsParameterName, parseResult.partnerCodeParameterName]
       )
     ) {
       return false;

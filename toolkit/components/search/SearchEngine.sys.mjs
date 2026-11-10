@@ -180,6 +180,13 @@ export class EngineURL {
   #searchTermParam = null;
 
   /**
+   * The name of the parameter used for the partner code, if any.
+   *
+   * @type {?string}
+   */
+  #partnerCodeParameterName = null;
+
+  /**
    * Creates an EngineURL.
    *
    * @param {object} options
@@ -279,6 +286,9 @@ export class EngineURL {
       this.setSearchTermParamName(param.name);
       return;
     }
+    if (param.value == "{partnerCode}") {
+      this.#partnerCodeParameterName = param.name;
+    }
     this.params.push(param);
   }
 
@@ -320,6 +330,17 @@ export class EngineURL {
    */
   get searchTermParamName() {
     return this.#searchTermParam;
+  }
+
+  /**
+   * Returns the name of the parameter used for the partner code term.
+   *
+   * @returns {?string}
+   *   A string which is the name of the parameter, or null if no parameter
+   *   was be found.
+   */
+  get partnerCodeParameterName() {
+    return this.#partnerCodeParameterName;
   }
 
   /**
@@ -1524,7 +1545,7 @@ export class SearchEngine {
 
     // The partner code can vary depending on the SAP source, so only check
     // for the presence of its parameter.
-    let partnerCodeParamNames = new Set(
+    let partnerCodeParameterNameNames = new Set(
       [...engineParams]
         .filter(([, value]) => value == "{partnerCode}")
         .map(([name]) => name)
@@ -1543,7 +1564,10 @@ export class SearchEngine {
     for (let [name, value] of uriParams.entries()) {
       // Don't check the name matching the search
       // query because its value will differ.
-      if (name == termsParameterName || partnerCodeParamNames.has(name)) {
+      if (
+        name == termsParameterName ||
+        partnerCodeParameterNameNames.has(name)
+      ) {
         continue;
       }
       // All params of an input must have a matching
@@ -1643,8 +1667,8 @@ export class SearchEngine {
   }
 
   /**
-   * @returns {object}
-   *   URL parsing properties used by _buildParseSubmissionMap.
+   * @returns {{mainDomain: string, path: string, termsParameterName: string, partnerCodeParameterName: string}}
+   *   URL parsing properties used by `SearchService.#buildParseSubmissionMap`.
    */
   getURLParsingInfo() {
     let url = this.getURLOfType(lazy.SearchUtils.URL_TYPE.SEARCH);
@@ -1662,6 +1686,7 @@ export class SearchEngine {
       mainDomain: templateUrl.host,
       path: templateUrl.filePath.toLowerCase(),
       termsParameterName,
+      partnerCodeParameterName: url.partnerCodeParameterName,
     };
   }
 
