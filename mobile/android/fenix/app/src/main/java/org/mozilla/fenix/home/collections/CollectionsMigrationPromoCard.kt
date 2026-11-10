@@ -70,6 +70,8 @@ fun CollectionsMigrationPromoCard(
                 backgroundColor = MaterialTheme.colorScheme.primaryContainer,
                 actionsTextColor = MaterialTheme.colorScheme.tertiary,
             ),
+        closeButtonContentDescription =
+            stringResource(R.string.collections_migration_card_close_button_content_description),
         onDismiss = onDismiss,
     )
 }
