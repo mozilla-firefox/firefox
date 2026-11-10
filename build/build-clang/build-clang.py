@@ -713,6 +713,10 @@ def main():
         extra_cflags2 = []
         extra_cxxflags2 = []
         extra_asmflags = []
+        # libc++ in the macOS 27 SDK emits a #warning when the deployment target is below 11.0.
+        if not target.startswith("aarch64"):
+            extra_cxxflags = ["-Wno-cpp"]
+            extra_cxxflags2 = ["-Wno-cpp"]
         # It's unfortunately required to specify the linker used here because
         # the linker flags are used in LLVM's configure step before
         # -DLLVM_ENABLE_LLD is actually processed.

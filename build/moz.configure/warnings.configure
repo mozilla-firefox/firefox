@@ -339,6 +339,13 @@ check_and_add_warning(
     "-Werror=unguarded-availability-new", when=target_is_osx, min_clang_version="5.0.0"
 )
 
+# libc++ in the macOS 27 SDK emits a #warning when the deployment target is below 11.0.
+check_and_add_warning(
+    "-Wno-cpp",
+    when=depends(macos_target)(lambda v: v and Version(v) < "11.0"),
+    min_clang_version="4.0.0",
+)
+
 # clang 17 warns about builtins being redefined and... well, we do that in
 # multiple places, some of which are third-party. Until the situation is
 # fixed, disable the new warning.
