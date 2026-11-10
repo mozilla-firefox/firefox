@@ -367,6 +367,8 @@ nsresult nsXMLContentSink::OnTransformDone(Document* aSourceDocument,
     // Transform succeeded, or it failed and we have an error document to
     // display.
     mDocument = aResultDocument;
+    // Layout state from the source document doesn't apply to the result.
+    mLayoutStarted = false;
     aResultDocument->SetDocWriteDisabled(false);
 
     // Notify document observers that all the content has been stuck

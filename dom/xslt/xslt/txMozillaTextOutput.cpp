@@ -139,6 +139,7 @@ nsresult txMozillaTextOutput::createResultDocument(bool aLoadedAsData) {
       mDocument->GetReadyStateEnum() == Document::READYSTATE_UNINITIALIZED,
       "Bad readyState");
   mDocument->SetReadyStateInternal(Document::READYSTATE_LOADING);
+  mDocument->SetMayStartLayout(false);
   bool hasHadScriptObject = false;
   nsIScriptGlobalObject* sgo =
       mSourceDocument->GetScriptHandlingObject(hasHadScriptObject);
