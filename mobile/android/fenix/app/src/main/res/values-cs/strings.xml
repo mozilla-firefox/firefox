@@ -1143,6 +1143,10 @@
   <string name="preferences_sync_category">Vyberte, co chcete synchronizovat</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Synchronizované údaje</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Synchronizovat toto zařízení</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Vaše data jsou zálohována a k dispozici na synchronizovaných zařízeních.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Spravujte obsah, který se synchronizuje na vašich připojených zařízeních</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -3909,6 +3913,8 @@
   <string name="protection_panel_permissions_title">Oprávnění</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Zabezpečené připojení</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">Značka důvěry EU</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4510,6 +4516,8 @@
   <string name="wrex_widget_wallpapers">Tapety</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Odebrat widget</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Poločasová přestávka</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Další možnosti</string>
   <!--

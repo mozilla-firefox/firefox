@@ -788,6 +788,8 @@
   <string name="preferences_toolbar_select_shortcut">Миёнбуреро интихоб кунед</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Таҳрир кардани миёнбур</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Меню</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Ишораҳо</string>
   <!-- Preference for settings related to visual options -->
@@ -948,6 +950,10 @@
   <string name="customize_addon_collection_user_hint">Соҳиби маҷмуа (ID-и корбар)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Маҷмуаи васеъшавиҳо тағйир ёфт. Барои татбиқ кардани тағйирот барнома бояд хомӯш карда шавад…</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Тоза кардан</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Бекор кардан</string>
   <!--
     Customize Home
 
@@ -4403,6 +4409,14 @@
   <string name="terms_of_use_prompt_body_line_two_alternative" tools:ignore="UnusedResources">Шумо метавонед аз %1$s маълумоти бештар гиред.</string>
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">ин ҷой</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Нав кардан</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Натиҷаҳо</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Тасвирҳои замина</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Тоза кардани виҷет</string>
   <!--
     Privacy notice homepage banner
 

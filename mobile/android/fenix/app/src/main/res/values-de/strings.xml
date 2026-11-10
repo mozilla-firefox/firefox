@@ -629,7 +629,7 @@
     Marketing onboarding additional body text. 'Firefox' is intentionally hardcoded.
     “Allowing” refers to the main button “Allow and Continue”; the ask for the user is to allow communicating back to the platform.
   -->
-  <string name="nova_onboarding_marketing_body_line_three" tools:ignore="BrandUsage">Bitte überlegen Sie, ob Sie mit dieser Erlaubnis zum Erfolg verhelfen dürfen.</string>
+  <string name="nova_onboarding_marketing_body_line_three" tools:ignore="BrandUsage">Bitte überlegen Sie, ob Sie Firefox mit dieser Erlaubnis zum Erfolg verhelfen möchten.</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text">Wie wir die Daten nutzen</string>
   <!-- Marketing onboarding body link text. -->
@@ -2929,7 +2929,7 @@
   <!-- Preference for autofilling saved logins in Firefox (in web content), %1$s will be replaced with the app name -->
   <string name="preferences_passwords_autofill2">Automatisches Ausfüllen in %1$s</string>
   <!-- Description for the preference for autofilling saved logins in Firefox (in web content), %1$s will be replaced with the app name -->
-  <string name="preferences_passwords_autofill_description">Benutzernamen und Passwörter auf Webseiten bei Nutzung von %1$s automatisch ausfüllen.</string>
+  <string name="preferences_passwords_autofill_description">Benutzernamen und Passwörter auf Webseiten bei Nutzung von %1$s ausfüllen und speichern.</string>
   <!-- Preference for autofilling logins from Fenix in other apps (e.g. autofilling the Twitter app) -->
   <string name="preferences_android_autofill">Automatisches Ausfüllen in anderen Apps</string>
   <!-- Description for the preference for autofilling logins from Fenix in other apps (e.g. autofilling the Twitter app) -->
@@ -3896,7 +3896,7 @@
   <!-- Toggle if Enhanced Tracking Protection is turned off -->
   <string name="protection_panel_etp_toggle_off">Aus</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is enabled. -->
-  <string name="protection_panel_etp_toggle_enabled_description_2">Wenn etwas auf dieser Website beschädigt aussieht, deaktivieren Sie ihn.</string>
+  <string name="protection_panel_etp_toggle_enabled_description_2">Wenn etwas auf dieser Website fehlerhaft aussieht, versuchen Sie, ihn zu deaktivieren.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Es wird empfohlen, den Schutz vor Aktivitätenverfolgung zu aktivieren.</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
@@ -3907,6 +3907,8 @@
   <string name="protection_panel_permissions_title">Berechtigungen</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Sichere Verbindung</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">EU-Vertrauenssiegel</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4257,7 +4259,7 @@
   <!-- Homepage card title about old Firefox version. "Update" is a verb. -->
   <string name="certificate_warning_homepage_card_hcr1_title" tools:ignore="UnusedResources">Aktualisieren Sie vor dem 14. März</string>
   <!-- Homepage card message about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
-  <string name="certificate_warning_homepage_card_hcr1_message" tools:ignore="BrandUsage,UnusedResources">Ein Stammzertifikat läuft ab, und Ihre Firefox-Version funktioniert nicht mehr richtig.</string>
+  <string name="certificate_warning_homepage_card_hcr1_message" tools:ignore="BrandUsage,UnusedResources">Ein Stammzertifikat läuft ab, weshalb Ihre Firefox-Version nicht mehr richtig funktioniert.</string>
   <!-- Homepage card title about old Firefox version -->
   <string name="certificate_warning_homepage_card_hcw2_title" tools:ignore="UnusedResources">Es verbleiben weniger als 7 Tage für die Aktualisierung</string>
   <!-- Homepage card message about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
@@ -4501,7 +4503,7 @@
   <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
   <string name="wrex_widget_match_extra_time_short">Verlängerung</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
-  <string name="wrex_widget_match_penalties">Elfmeterschließen</string>
+  <string name="wrex_widget_match_penalties">Elfmeterschießen</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Weitere Optionen</string>
   <!--
@@ -4616,7 +4618,7 @@
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Finden Sie es mit Google Lens</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
-  <string name="lens_opt_out_description">Wählen Sie eine Grafik aus oder verwenden Sie Ihre Kamera, um mit Google Lens Ergebnisse zu erhalten.</string>
+  <string name="lens_opt_out_description">Wählen Sie ein Bild aus oder verwenden Sie Ihre Kamera, um mit Google Lens Ergebnisse zu erhalten.</string>
   <!-- Text of the link in the first-run Google Lens bottom sheet that opens the Search settings page -->
   <string name="lens_opt_out_settings_link">Google-Lens-Einstellungen</string>
   <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->

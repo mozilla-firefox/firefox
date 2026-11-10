@@ -69,7 +69,7 @@
   <!-- Description for the "geolocation" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_geolocation_description">Auf Ihren Standort zugreifen</string>
   <!-- Description for the "history" WebExtensions API permission. -->
-  <string name="mozac_feature_addons_permissions_history_description">Auf Chronik zugreifen</string>
+  <string name="mozac_feature_addons_permissions_history_description">Auf die Surf-Chronik zugreifen</string>
   <!-- Description for the "management" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_management_description">Erweiterungsnutzung überwachen und Themes verwalten</string>
   <!-- Description for the "nativeMessaging" WebExtensions API permission. -->
@@ -119,7 +119,7 @@
   <!-- Description for the "downloads.open" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_downloads_open_description_for_update">Auf Ihr Gerät heruntergeladene Dateien öffnen.</string>
   <!-- Description for the "find" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_find_description_for_update">Auf Texte aller offenen Tabs zugreifen.</string>
+  <string name="mozac_feature_addons_permissions_find_description_for_update">Den Text aller offenen Tabs lesen.</string>
   <!-- Description for the "geolocation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_geolocation_description_for_update">Auf Ihren Standort zugreifen.</string>
   <!-- Description for the "history" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
