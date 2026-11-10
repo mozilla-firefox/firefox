@@ -19100,6 +19100,18 @@
   value: true
   mirror: always
 
+# Enable support for the CSP 'strict-dynamic-url' keyword.
+- name: security.csp.strict-dynamic-url.enabled
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
+# Enable support for CSP url hashes (url-hash-source, e.g. 'url-sha256-...').
+- name: security.csp.url-hashes.enabled
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 #ifdef DEBUG
 # Crash on CSP violations on internal pages (i.e. chrome:)
 - name: security.csp.testing.allow_internal_csp_violation
