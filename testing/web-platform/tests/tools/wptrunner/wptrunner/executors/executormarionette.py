@@ -1499,3 +1499,13 @@ class MarionettePytestExecutor(PytestExecutor):
         for option in ["androidPackage", "androidDeviceSerial", "env"]:
             if hasattr(browser, option):
                 self.capabilities["moz:firefoxOptions"][option] = getattr(browser, option)
+
+    @property
+    def session_config(self):
+        config = super().session_config
+        if hasattr(self.browser, "adb_binary"):
+            config["android"] = {
+                "adb_binary": self.browser.adb_binary,
+                "device_serial": self.browser.androidDeviceSerial,
+            }
+        return config
