@@ -93,7 +93,7 @@ add_task(async function select_non_default_engine_and_search() {
   EventUtils.synthesizeKey("KEY_Enter");
   await browserLoadedPromise;
 
-  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
+  assertSearchStringIsInUrlbar(SEARCH_STRING);
 
   BrowserTestUtils.removeTab(tab);
 });

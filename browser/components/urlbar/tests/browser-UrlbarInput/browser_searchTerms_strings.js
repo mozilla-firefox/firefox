@@ -59,7 +59,7 @@ add_task(async function search_strings() {
     );
     BrowserTestUtils.startLoadingURIString(gBrowser, searchUrl);
     await browserLoadedPromise;
-    UrlbarTestUtils.assertSearchStringIsInUrlbar(window, searchString);
+    assertSearchStringIsInUrlbar(searchString);
 
     info("Check that no formatting is applied.");
     await UrlbarTestUtils.checkFormatting(window, searchString);

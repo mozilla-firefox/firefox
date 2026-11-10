@@ -40,4 +40,5 @@ add_task(async function test_search_mode_app_provided_engines() {
   await UrlbarTestUtils.assertSearchMode(window, null);
 
   cleanup();
+  await resetApplicationProvidedEngines();
 });

@@ -223,6 +223,14 @@ async function installPersistTestEngines(globalDefault = "Example") {
   };
 }
 
+async function resetApplicationProvidedEngines() {
+  let settingsWritten = SearchTestUtils.promiseSearchNotification(
+    "write-settings-to-disk-complete"
+  );
+  await SearchTestUtils.updateRemoteSettingsConfig();
+  await settingsWritten;
+}
+
 /**
  * Wait for 10 idle dispatches. This function should not be used in new tests.
  * Bug 2032010 will investigate removing it.

@@ -46,7 +46,7 @@ add_task(async function ctrl_open() {
   // Find the background tab that was created, and switch to it.
   let backgroundTab = await newTabPromise;
   await BrowserTestUtils.switchTab(gBrowser, backgroundTab);
-  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
+  assertSearchStringIsInUrlbar(SEARCH_STRING);
 
   BrowserTestUtils.removeTab(backgroundTab);
 });
