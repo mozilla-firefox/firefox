@@ -12,11 +12,15 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mozilla.components.concept.fileimporter.FileImporter
+import mozilla.components.concept.fileimporter.FileImporterError
+import mozilla.components.concept.fileimporter.FileImporterException
 import mozilla.components.concept.fileimporter.ImportResult
 import mozilla.components.concept.fileparser.FileParser
+import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.password.parser.PasswordsParseResult
 import mozilla.components.concept.storage.LoginsStorage
 import mozilla.components.lib.password.parser.csv.CsvPasswordsFileParser
+import mozilla.components.lib.password.parser.csv.PasswordsParseError
 
 /**
  * Creates a [FileImporter] that imports passwords from CSV password files.
@@ -69,12 +73,30 @@ internal class CsvPasswordsFileImporter(
     override val mimeType = "text/comma-separated-values"
 
     override suspend fun importFromUri(uri: Uri): Result<PasswordsImportResult> = runCatching {
-        val inputStream = uriOpener.open(uri).getOrThrow()
-        val parseResult = inputStream.use { parser.parse(it) }.getOrThrow()
-        val imported = loginsStorage.addMany(parseResult.logins).count { it.isSuccess }
+        val inputStream =
+            uriOpener.open(uri).getOrThrowError { FileImporterException(FileImporterError.ReadError, cause = it) }
+        val parseResult =
+            inputStream
+                .use { parser.parse(it) }
+                .getOrThrowError {
+                    val parseError = (it as? FileParserException)?.errorType ?: PasswordsParseError.Unexpected
+                    FileImporterException(FileImporterError.ParseError(parseError), cause = it)
+                }
+        val imported = runCatching {
+            loginsStorage.addMany(parseResult.logins)
+        }
+            .getOrThrowError { FileImporterException(FileImporterError.SaveError, cause = it) }
+            .count { it.isSuccess }
         PasswordsImportResult(count = imported)
     }
         .onFailure {
             if (it is CancellationException) throw it
         }
+
+    private inline fun <T> Result<T>.getOrThrowError(map: (Throwable) -> FileImporterException): T {
+        return getOrElse {
+            if (it is CancellationException || it is FileImporterException) throw it
+            throw map(it)
+        }
+    }
 }

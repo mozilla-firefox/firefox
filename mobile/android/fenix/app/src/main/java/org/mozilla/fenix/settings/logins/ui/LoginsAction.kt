@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.settings.logins.ui
 
+import mozilla.components.concept.fileimporter.FileImporterError
 import mozilla.components.lib.state.Action
 
 /** Actions relating to the Logins list screen and its various subscreens. */
@@ -32,7 +33,17 @@ internal data object ImportPasswordsOverflowMenuClicked : LoginsAction
 
 internal data object ImportPasswordsOverflowMenuDismissed : LoginsAction
 
-internal data object ImportFileClicked : LoginsAction
+internal sealed class ImportAction : LoginsAction {
+    internal data object ImportFileClicked : ImportAction()
+
+    internal data object ImportStarted : ImportAction()
+
+    internal data class ImportSucceeded(val count: Int) : ImportAction()
+
+    internal data class ImportFailed(val error: FileImporterError) : ImportAction()
+
+    internal data object ImportCancelled : ImportAction()
+}
 
 internal data object LearnMoreAboutSync : LoginsAction
 

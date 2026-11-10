@@ -259,6 +259,20 @@ class CsvPasswordsFileParserTest {
     }
 
     @Test
+    fun `GIVEN no recognizable login columns WHEN parsing input THEN throw an unsupported content type error`() =
+        runTest {
+            val csv = "title,author\nAlice in Wonderland,Lewis Carroll"
+
+            val result = parser.parse(csv.byteInputStream())
+
+            assertTrue(result.isFailure)
+            assertEquals(
+                PasswordsParseError.UnsupportedContentType,
+                (result.exceptionOrNull() as? FileParserException)?.errorType,
+            )
+        }
+
+    @Test
     fun `GIVEN one of the required columns is missing WHEN parsing input THEN throw`() = runTest {
         CsvFormatType.entries.forEach { format ->
             REQUIRED_COLUMN_VARIANTS.forEach { columnVariants ->

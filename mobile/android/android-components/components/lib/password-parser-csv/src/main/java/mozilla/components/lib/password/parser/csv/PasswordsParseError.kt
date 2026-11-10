@@ -11,6 +11,9 @@ import mozilla.components.concept.fileparser.FileParserError
 @Parcelize
 sealed interface PasswordsParseError : FileParserError {
 
+    /** The file has no recognizable login columns, so it is not a passwords file. */
+    data object UnsupportedContentType : PasswordsParseError
+
     /** The file is missing a required column and can not be parsed. */
     data object FileFormat : PasswordsParseError
 

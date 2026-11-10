@@ -120,9 +120,15 @@ internal class LoginsMiddleware(
             is EditLoginAction.SaveEditClicked -> {
                 store.handleEditLogin(loginItem = action.login)
             }
-            is ImportFileClicked -> {
+            is ImportAction.ImportFileClicked -> {
                 navigateToImportDialog()
             }
+            is ImportAction.ImportSucceeded -> {
+                store.loadLoginsList()
+            }
+            is ImportAction.ImportStarted,
+            is ImportAction.ImportFailed,
+            is ImportAction.ImportCancelled,
             is LoginsLoaded,
             is EditLoginAction.UsernameChanged,
             is EditLoginAction.PasswordChanged,

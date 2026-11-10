@@ -18,6 +18,7 @@ class PasswordsParseErrorTest {
     fun `GIVEN each error WHEN written to and read from a parcel THEN the same error is restored`() {
         val errors: List<FileParserError> =
             listOf(
+                PasswordsParseError.UnsupportedContentType,
                 PasswordsParseError.FileFormat,
                 PasswordsParseError.ConflictingColumns,
                 PasswordsParseError.Unexpected,

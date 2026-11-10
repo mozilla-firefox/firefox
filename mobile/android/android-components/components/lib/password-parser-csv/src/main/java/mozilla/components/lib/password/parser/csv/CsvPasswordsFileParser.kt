@@ -106,7 +106,7 @@ class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dis
     private fun validateHeaderIndices(indices: Map<String, Int>, hasRows: Boolean) {
         if (indices.isEmpty()) {
             throw FileParserException(
-                errorType = PasswordsParseError.FileFormat,
+                errorType = PasswordsParseError.UnsupportedContentType,
                 message = "No recognizable login columns in CSV header",
             )
         }

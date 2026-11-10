@@ -10052,6 +10052,110 @@ logins:
     metadata:
       tags:
         - Logins
+  import_from_file_menu_click:
+    type: event
+    description: |
+      The user clicks the menu entry point to import passwords from a file.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2041577
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D337978
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Logins
+  import_started:
+    type: event
+    description: |
+      The import of passwords from a file started.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2041577
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D337978
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Logins
+  import_successful:
+    type: event
+    description: |
+      The user successfully imports passwords from a file.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2041577
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D337978
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    extra_keys:
+      logins_count:
+        description: The number of logins imported.
+        type: quantity
+    metadata:
+      tags:
+        - Logins
+  import_cancelled:
+    type: event
+    description: |
+      The user cancels the import of passwords from a file.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2041577
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D337978
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - Logins
+  import_failed:
+    type: event
+    description: |
+      The import of passwords from a file failed.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2041577
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D337978
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    extra_keys:
+      error_code:
+        description: |
+          The error code describing what occurred during import.
+          Current values are:
+            1xxx - errors imply a file reading error
+            1001 - file read error
+
+            2xxx - errors imply an error encountered during parsing
+            2001 - parsing error - unsupported content type (a file with no recognizable login columns)
+            2002 - parsing error - invalid format (a required column is missing)
+            2003 - parsing error - an unexpected error related to parsing
+            2004 - parsing error - conflicting columns (two columns map to the same field)
+
+            3xxx - errors imply an error encountered during password insertion
+            3001 - passwords save error
+
+            4xxx - other errors not yet handled/classified
+            4001 - general unknown error
+        type: string
+    metadata:
+      tags:
+        - Logins
 
 email_mask:
   prompt_shown:

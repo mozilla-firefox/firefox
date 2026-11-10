@@ -5,6 +5,8 @@
 package org.mozilla.fenix.settings.logins.ui
 
 import kotlin.test.assertNotNull
+import mozilla.components.concept.fileimporter.FileImporterError
+import mozilla.components.lib.password.parser.csv.PasswordsParseError
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -195,6 +197,67 @@ class LoginsTelemetryMiddlewareTest {
         assertNotNull(Logins.deleted.testGetValue())
         val snapshotDeletedLogin = Logins.deleted.testGetValue()!!
         assertEquals(1, snapshotDeletedLogin)
+    }
+
+    @Test
+    fun `WHEN the user clicks import from file THEN record the import menu click telemetry`() {
+        val store = createStore()
+
+        store.dispatch(ImportAction.ImportFileClicked)
+
+        assertEquals(1, Logins.importFromFileMenuClick.testGetValue()?.size)
+    }
+
+    @Test
+    fun `WHEN an import starts THEN record the import started telemetry`() {
+        val store = createStore()
+
+        store.dispatch(ImportAction.ImportStarted)
+
+        assertEquals(1, Logins.importStarted.testGetValue()?.size)
+    }
+
+    @Test
+    fun `WHEN an import succeeds THEN record the import successful telemetry with the logins count`() {
+        val store = createStore()
+
+        store.dispatch(ImportAction.ImportSucceeded(count = 5))
+
+        assertEquals("5", Logins.importSuccessful.testGetValue()?.single()?.extra?.get("logins_count"))
+    }
+
+    @Test
+    fun `WHEN an import is cancelled THEN record the import cancelled telemetry`() {
+        val store = createStore()
+
+        store.dispatch(ImportAction.ImportCancelled)
+
+        assertEquals(1, Logins.importCancelled.testGetValue()?.size)
+    }
+
+    @Test
+    fun `WHEN imports fail with each error type THEN record the matching error codes`() {
+        val store = createStore()
+        val expectedCodes =
+            listOf(
+                FileImporterError.ReadError to ImportErrorCode.FILE_READ_ERROR,
+                FileImporterError.ParseError(PasswordsParseError.UnsupportedContentType) to
+                    ImportErrorCode.PARSE_ERROR_UNSUPPORTED_CONTENT_TYPE,
+                FileImporterError.ParseError(PasswordsParseError.FileFormat) to
+                    ImportErrorCode.PARSE_ERROR_INVALID_FORMAT,
+                FileImporterError.ParseError(PasswordsParseError.ConflictingColumns) to
+                    ImportErrorCode.PARSE_ERROR_CONFLICTING_COLUMNS,
+                FileImporterError.ParseError(PasswordsParseError.Unexpected) to ImportErrorCode.PARSE_ERROR_UNKNOWN,
+                FileImporterError.SaveError to ImportErrorCode.PASSWORDS_SAVE_ERROR,
+                FileImporterError.UnknownError to ImportErrorCode.UNKNOWN_ERROR,
+            )
+
+        expectedCodes.forEach { (error, _) -> store.dispatch(ImportAction.ImportFailed(error = error)) }
+
+        assertEquals(
+            expectedCodes.map { it.second.toString() },
+            Logins.importFailed.testGetValue()?.map { it.extra?.get("error_code") },
+        )
     }
 
     private fun createStore(loginsState: LoginsState = LoginsState.default) =

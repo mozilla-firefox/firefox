@@ -7,13 +7,16 @@ package mozilla.components.lib.passwords.file
 import android.net.Uri
 import java.io.ByteArrayInputStream
 import java.io.IOException
-import kotlin.test.assertIs
 import kotlinx.coroutines.test.runTest
+import mozilla.components.concept.fileimporter.FileImporterError
+import mozilla.components.concept.fileimporter.FileImporterException
 import mozilla.components.concept.fileparser.FileParser
+import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.password.parser.PasswordsParseResult
 import mozilla.components.concept.storage.Login
 import mozilla.components.concept.storage.LoginEntry
 import mozilla.components.concept.storage.LoginsStorage
+import mozilla.components.lib.password.parser.csv.PasswordsParseError
 import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
@@ -52,7 +55,7 @@ class CsvPasswordsFileImporterTest {
         val result = importer.importFromUri(testUri)
 
         assertTrue(result.isFailure)
-        assertIs<IOException>(result.exceptionOrNull())
+        assertEquals(FileImporterError.ReadError, (result.exceptionOrNull() as? FileImporterException)?.errorType)
     }
 
     @Test
@@ -62,6 +65,10 @@ class CsvPasswordsFileImporterTest {
         val result = importer.importFromUri(testUri)
 
         assertTrue(result.isFailure)
+        assertEquals(
+            FileImporterError.ParseError(PasswordsParseError.Unexpected),
+            (result.exceptionOrNull() as? FileImporterException)?.errorType,
+        )
     }
 
     @Test
@@ -85,6 +92,33 @@ class CsvPasswordsFileImporterTest {
         val result = importer.importFromUri(testUri).getOrThrow()
 
         assertEquals(2, result.count)
+    }
+
+    @Test
+    fun `GIVEN the parser fails with a FileParserException WHEN importing THEN the parser error is reported`() =
+        runTest {
+            val importer =
+                createImporter(
+                    parser = FileParser.fakeFailure(FileParserException(PasswordsParseError.ConflictingColumns))
+                )
+
+            val result = importer.importFromUri(testUri)
+
+            assertEquals(
+                FileImporterError.ParseError(PasswordsParseError.ConflictingColumns),
+                (result.exceptionOrNull() as? FileImporterException)?.errorType,
+            )
+        }
+
+    @Test
+    fun `GIVEN storage fails WHEN importing THEN a save error is reported`() = runTest {
+        val storage: LoginsStorage = mock()
+        whenever(storage.addMany(any())).thenThrow(RuntimeException("storage failed"))
+        val importer = createImporter(loginsStorage = storage)
+
+        val result = importer.importFromUri(testUri)
+
+        assertEquals(FileImporterError.SaveError, (result.exceptionOrNull() as? FileImporterException)?.errorType)
     }
 
     private fun threeLogins() =

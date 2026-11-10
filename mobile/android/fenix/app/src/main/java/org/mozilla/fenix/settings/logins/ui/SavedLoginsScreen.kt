@@ -446,7 +446,7 @@ private fun ImportPasswordsOverflowMenu(store: LoginsStore) {
         listOf(
             MenuItem.TextItem(
                 text = Text.Resource(R.string.passwords_import_menu_button),
-                onClick = { store.dispatch(ImportFileClicked) },
+                onClick = { store.dispatch(ImportAction.ImportFileClicked) },
             )
         )
 
