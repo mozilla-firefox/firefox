@@ -8,6 +8,7 @@
 #include "mozilla/Logging.h"
 #include "mozilla/net/DNS.h"
 #include "nsCRT.h"
+#include "nsDNSService2.h"
 #include "nsICancelable.h"
 #include "nsIDNSListener.h"
 #include "nsIDNSRecord.h"
@@ -411,9 +412,14 @@ PRStatus nsSOCKSSocketInfo::StartDNS(PRFileDesc* fd) {
   MOZ_ASSERT(!mDnsRec && mState == SOCKS_INITIAL,
              "Must be in initial state to make DNS Lookup");
 
-  nsCOMPtr<nsIDNSService> dns;
-  dns = mozilla::components::DNS::Service();
-  if (!dns) return PR_FAILURE;
+  // We are on the socket thread, where the DNS service can't be created
+  // directly, so make sure it gets created on the main thread if needed.
+  nsCOMPtr<nsIDNSService> dns = GetOrInitDNSService();
+  if (!dns) {
+    LOGERROR(("socks: DNS service unavailable"));
+    PR_SetError(PR_BAD_ADDRESS_ERROR, 0);
+    return PR_FAILURE;
+  }
 
   nsCString proxyHost;
   mProxy->GetHost(proxyHost);
@@ -428,6 +434,7 @@ PRStatus nsSOCKSSocketInfo::StartDNS(PRFileDesc* fd) {
 
   if (NS_FAILED(rv)) {
     LOGERROR(("socks: DNS lookup for SOCKS proxy %s failed", proxyHost.get()));
+    PR_SetError(PR_BAD_ADDRESS_ERROR, 0);
     return PR_FAILURE;
   }
   mState = SOCKS_DNS_IN_PROGRESS;
