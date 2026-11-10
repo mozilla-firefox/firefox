@@ -675,6 +675,8 @@ internal object IntegrityCheckingUniffiLib {
     internal fun ensureInitialized() = Unit
     external fun uniffi_init_rust_components_checksum_func_initialize(
     ): Int
+    external fun uniffi_init_rust_components_checksum_func_initialize_glean(
+    ): Int
     external fun ffi_init_rust_components_uniffi_contract_version(
     ): Int
 
@@ -691,6 +693,8 @@ internal object UniffiLib {
 
     internal fun ensureInitialized() = Unit
     external fun uniffi_init_rust_components_fn_func_initialize(uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
+    external fun uniffi_init_rust_components_fn_func_initialize_glean(uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
     external fun ffi_init_rust_components_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
@@ -968,6 +972,21 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
         = 
     uniffiRustCall() { _status ->
     UniffiLib.uniffi_init_rust_components_fn_func_initialize(
+    
+        _status)
+}
+    
+    
+
+        /**
+         * Initialize Glean telemetry
+         *
+         * This is called in [initialize], but it's also split out so that you can call it separately if
+         * you want. It's safe to call both `initialize_glean()` and `initialize()` during startup.
+         */ fun `initializeGlean`()
+        = 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_init_rust_components_fn_func_initialize_glean(
     
         _status)
 }

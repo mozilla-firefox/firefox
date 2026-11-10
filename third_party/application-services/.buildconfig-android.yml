@@ -180,3 +180,10 @@ projects:
     - name: db-crypto
       type: aar
     description: Database encryption support
+  context_id:
+    path: components/context_id/android
+    artifactId: context_id
+    publications:
+    - name: context_id
+      type: aar
+    description: Generate context IDs

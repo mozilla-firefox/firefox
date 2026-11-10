@@ -43,13 +43,31 @@ export var UnitTestObjs = {
  * done here.
  * @param {string} profilePath
  */
-export async function initialize(
+export function initialize(
     profilePath) {
    
 FfiConverterString.checkType(profilePath);
-const result = await UniFFIScaffolding.callAsyncWrapper(
+const result = UniFFIScaffolding.callSync(
     23, // uniffi_init_rust_components_fn_func_initialize
     FfiConverterString.lower(profilePath),
+)
+return handleRustResult(
+    result,
+    (result) => undefined,
+    null,
+)
+}
+
+/**
+ * Initialize Glean telemetry
+ * 
+ * This is called in [initialize], but it's also split out so that you can call it separately if
+ * you want. It's safe to call both `initialize_glean()` and `initialize()` during startup.
+ */
+export function initializeGlean() {
+   
+const result = UniFFIScaffolding.callSync(
+    24, // uniffi_init_rust_components_fn_func_initialize_glean
 )
 return handleRustResult(
     result,

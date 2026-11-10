@@ -3,9 +3,6 @@ apply plugin: 'com.android.library'
 if (!gradle.hasProperty("mozconfig")) {
     apply plugin: 'kotlin-android'
     apply plugin: 'org.mozilla.rust-android-gradle.rust-android'
-    kotlin {
-        jvmToolchain(rootProject.config.jvmTargetCompatibility)
-    }
 }
 
 android {

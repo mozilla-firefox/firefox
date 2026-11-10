@@ -728,7 +728,19 @@ impl ApiClient for ViaductApiClient {
     }
 
     fn fetch_cert(&mut self, x5u: &str) -> Result<Vec<u8>> {
-        let resp = self.make_request(Url::parse(x5u)?)?;
+        let resp = self
+            .make_request(Url::parse(x5u)?)
+            .map_err(|err| Error::CertificateError(Box::new(err)))?;
+        let content_type = resp
+            .headers
+            .get(viaduct::header_names::CONTENT_TYPE)
+            .unwrap_or_default();
+        if !content_type.contains("text/plain") {
+            return Err(Error::CertificateError(Box::new(Error::ResponseError {
+                url: resp.url.to_string(),
+                message: format!("unexpected content-type: {content_type:?}"),
+            })));
+        }
         Ok(resp.body)
     }
 }
@@ -992,6 +1004,61 @@ mod viaduct_client_tests {
         api_client.fetch_changeset(Some(42)).unwrap();
 
         changeset.assert();
+    }
+
+    fn api_client() -> ViaductApiClient {
+        ViaductApiClient::new(
+            BaseUrl::parse(&format!("{}/v2", mockito::server_url())).unwrap(),
+            "main",
+            "test-collection",
+        )
+    }
+
+    #[test]
+    fn test_fetch_cert_success() {
+        viaduct_dev::init_backend_dev();
+        let _m = mockito::mock("GET", "/chains/ok.pem")
+            .with_status(200)
+            .with_header("content-type", "text/plain; charset=utf-8")
+            .with_body("PEM")
+            .create();
+        let x5u = format!("{}/chains/ok.pem", mockito::server_url());
+        assert_eq!(api_client().fetch_cert(&x5u).unwrap(), b"PEM");
+    }
+
+    #[test]
+    fn test_fetch_cert_not_found() {
+        viaduct_dev::init_backend_dev();
+        let _m = mockito::mock("GET", "/chains/missing.pem")
+            .with_status(404)
+            .create();
+        let x5u = format!("{}/chains/missing.pem", mockito::server_url());
+        let err = api_client().fetch_cert(&x5u).unwrap_err();
+        assert!(matches!(err, Error::CertificateError(_)), "{err:?}");
+    }
+
+    #[test]
+    fn test_fetch_cert_bad_content_type() {
+        viaduct_dev::init_backend_dev();
+        let _m = mockito::mock("GET", "/chains/html.pem")
+            .with_status(200)
+            .with_header("content-type", "text/html")
+            .with_body("<html></html>")
+            .create();
+        let x5u = format!("{}/chains/html.pem", mockito::server_url());
+        let err = api_client().fetch_cert(&x5u).unwrap_err();
+        assert!(matches!(err, Error::CertificateError(_)), "{err:?}");
+    }
+
+    #[test]
+    fn test_fetch_cert_server_error() {
+        viaduct_dev::init_backend_dev();
+        let _m = mockito::mock("GET", "/chains/broken.pem")
+            .with_status(500)
+            .create();
+        let x5u = format!("{}/chains/broken.pem", mockito::server_url());
+        let err = api_client().fetch_cert(&x5u).unwrap_err();
+        assert!(matches!(err, Error::CertificateError(_)), "{err:?}");
     }
 }
 

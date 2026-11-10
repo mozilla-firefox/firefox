@@ -118,7 +118,7 @@ The following instructions assume that you are building `application-services` f
       1. NDK (Side by side) version 29.0.14206865 [as configured](https://github.com/mozilla/application-services/blob/bb8cde8a5/taskcluster/docker/linux/Dockerfile#L25)
       1. Android SDK Command-line Tools (latest)
    1. Set environment variables based on the boostrapped code and the downloaded NDK. Add it to your rc file (either `.zshrc` or `.bashrc` depending on your shell) to make it permanent
-      1. Set `JAVA_HOME` to point to the bootstraped JDK 17 installation directory. Ex: `export JAVA_HOME=~/.mozbuild/jdk/jdk-17.0.18+8/` (or `export JAVA_HOME=~/.mozbuild/jdk/jdk-17.0.18+8/Contents/Home` on Mac).
+      1. Set `JAVA_HOME` to point to the bootstraped JDK 25 installation directory. Ex: `export JAVA_HOME=~/.mozbuild/jdk/jdk-25.0.5+8/` (or `export JAVA_HOME=~/.mozbuild/jdk/jdk-25.0.5+8/Contents/Home` on Mac).
       1. Set `ANDROID_HOME` to the bootstraped Android SDK. As an example:
             ```shell
             export ANDROID_HOME=~/.mozbuild/android-sdk-linux

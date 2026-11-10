@@ -216,7 +216,8 @@ lift = "new Date({} * 1000)"
 lower = "{}.getTime() / 1000"
 
 [init_rust_components.async_wrappers]
-"initialize" = "AsyncWrapped"
+"initialize" = "Sync"
+"initialize_glean" = "Sync"
 
 [db_crypto.async_wrappers]
 ManagedEncryptorDecryptor = "AsyncWrapped"
@@ -245,3 +246,6 @@ LoginsBridgedEngine = "AsyncWrapped"
 
 [breach_alerts.async_wrappers]
 BreachAlertsStore = "AsyncWrapped"
+
+[interrupt_support.async_wrappers]
+"shutdown" = "Sync"

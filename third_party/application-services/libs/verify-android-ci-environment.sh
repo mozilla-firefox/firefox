@@ -53,9 +53,9 @@ location of your Java installation."
 fi
 
 JAVA_VERSION=$("$JAVACMD" -version 2>&1 | grep -i version | cut -d'"' -f2 | cut -d'.' -f1-2)
-if [[ "${JAVA_VERSION}" != "17.0" ]]; then
-  echo "Incompatible java version: ${JAVA_VERSION}. JDK 17 must be installed."
-  echo "Try switching versions and re-running. Using sdkman: sdk install java 17.0.7-tem || sdk use 17.0.7-tem"
+if [[ "${JAVA_VERSION}" != "25.0" ]]; then
+  echo "Incompatible java version: ${JAVA_VERSION}. JDK 25 must be installed."
+  echo "Try switching versions and re-running. Using sdkman: sdk install java 25.0.5.0+8-tem || sdk use 25.0.5.0+8-tem"
   exit 1
 fi
 

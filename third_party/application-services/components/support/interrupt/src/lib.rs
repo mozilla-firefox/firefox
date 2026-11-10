@@ -14,3 +14,5 @@ pub use error::Interrupted;
 pub use interruptee::*;
 pub use shutdown::*;
 pub use sql::*;
+
+uniffi::include_scaffolding!("interrupt_support");

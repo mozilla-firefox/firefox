@@ -16,9 +16,6 @@ apply plugin: 'com.android.library'
 // an older AGP that requires it.
 if (!gradle.hasProperty("mozconfig")) {
     apply plugin: 'kotlin-android'
-    kotlin {
-        jvmToolchain(rootProject.config.jvmTargetCompatibility)
-    }
 }
 
 // Typed task used in the standalone app-services build, where the megazord

@@ -65,6 +65,9 @@ pub enum Error {
     #[cfg(feature = "signatures")]
     #[error("Signature could not be verified: {0}")]
     SignatureError(#[from] rc_crypto::Error),
+    /// The certificate chain URL is unreachable or has invalid content-type.
+    #[error("Certificate chain could not be fetched: {0}")]
+    CertificateError(Box<Error>),
 }
 
 /// Error payload returned by the Remote Settings server (Kinto).

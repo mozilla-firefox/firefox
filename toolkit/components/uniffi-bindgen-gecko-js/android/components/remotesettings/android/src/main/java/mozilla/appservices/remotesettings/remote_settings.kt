@@ -3074,6 +3074,10 @@ enum class SyncStatus {
      */
     SIGNATURE_ERROR,
     /**
+     * The certificate chain URL is unreachable or has invalid content-type.
+     */
+    CERTIFICATE_ERROR,
+    /**
      * Server error (5xx status)
      */
     SERVER_ERROR,

@@ -44,6 +44,7 @@ uniffi = { version = "0.32" }
 # and needs static mozpkix + pure_virtual on top of the NSS dylibs.
 rc_crypto = { path = "../../components/support/rc_crypto" }
 db-crypto = { path = "../../components/support/db-crypto" }
+context_id = { path = "../../components/context_id" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 # Only activate glean-sym when we're building for Android

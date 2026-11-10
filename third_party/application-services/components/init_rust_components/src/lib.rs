@@ -16,7 +16,7 @@ uniffi::setup_scaffolding!();
 #[cfg(not(feature = "keydb"))]
 #[uniffi::export]
 pub fn initialize() {
-    error_support::initialize();
+    initialize_glean();
 
     #[cfg(feature = "nss")]
     nss_as::ensure_initialized();
@@ -39,6 +39,8 @@ pub fn initialize() {
 #[cfg(feature = "keydb")]
 #[uniffi::export]
 pub fn initialize(profile_path: String) {
+    initialize_glean();
+
     nss_as::ensure_initialized_with_profile_dir(profile_path);
 
     #[cfg(feature = "ohttp")]
@@ -46,4 +48,13 @@ pub fn initialize(profile_path: String) {
         configure_default_ohttp_channels()
             .expect("We pass down hard coded Strings for the relays, if this fails, we have a typo in the config we pass down.");
     }
+}
+
+/// Initialize Glean telemetry
+///
+/// This is called in [initialize], but it's also split out so that you can call it separately if
+/// you want. It's safe to call both `initialize_glean()` and `initialize()` during startup.
+#[uniffi::export]
+pub fn initialize_glean() {
+    error_support::initialize();
 }
