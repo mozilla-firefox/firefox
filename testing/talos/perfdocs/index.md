@@ -173,8 +173,7 @@ Different tests measure different things:
 
 ### Startup
 
-[Startup
-tests](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/startup_test)
+{searchfox}`Startup tests <testing/talos/talos/startup_test>`
 launch Firefox and measure the time to the onload or paint events. We
 run this in a series of cycles (default is 20) to generate a full set of
 data. Tests that currently are startup tests are:
@@ -201,7 +200,7 @@ https://www.mozilla.com
 ```
 
 Example:
-[svgx.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/svgx/svgx.manifest)
+{searchfox}`svgx.manifest <testing/talos/talos/tests/svgx/svgx.manifest>`
 
 Manifests may also specify that a test computes its own data by
 prepending a `%` in front of the line:
@@ -212,10 +211,10 @@ prepending a `%` in front of the line:
 ```
 
 Example:
-[v8.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/v8_7/v8.manifest)
+{searchfox}`v8.manifest <testing/talos/talos/tests/v8_7/v8.manifest>`
 
 The file you created should be referenced in your test config inside of
-[test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l607).
+{searchfox}`test.py <testing/talos/talos/test.py>`.
 For example, open test.py, and look for the line referring to the test
 you want to run:
 
@@ -381,7 +380,7 @@ This test no longer exists
 - contact: :davidb
 
 - source:
-  [tpaint-window.html](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/startup_test/tpaint.html)
+  {searchfox}`tpaint-window.html <testing/talos/talos/startup_test/tpaint.html>`
 
 - type: [Startup]
 
@@ -390,8 +389,7 @@ This test no longer exists
 
 - summarization:
 
-  - subtest: [ignore first] **5** data points, then take the [median] of the remaining 15; [source:
-    test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l190)
+  - subtest: [ignore first] **5** data points, then take the [median] of the remaining 15; {searchfox}`source: test.py <testing/talos/talos/test.py>`
   - suite: identical to subtest
 
 ```{eval-rst}
@@ -423,8 +421,7 @@ create and display a window in the running instance of the browser.
 ### xperf
 
 - contact: perftest team
-- source: [xperf
-  instrumentation](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/xtalos)
+- source: {searchfox}`xperf instrumentation <testing/talos/talos/xtalos>`
 - type: [Page load] (tp5n) / [Startup]
 - measuring: IO counters from windows (currently, only startup IO is in
   scope)
@@ -447,7 +444,7 @@ is not found, use the following on the query page:
 
 Talos will turn orange for 'x' jobs on windows 7 if your changeset
 accesses files which are not predefined in the
-[allowlist](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/xtalos/xperf_allowlist.json)
+{searchfox}`allowlist <testing/talos/talos/xtalos/xperf_allowlist.json>`
 during startup; specifically, before the
 "[sessionstore-windows-restored](https://hg.mozilla.org/mozilla-central/file/0eebc33d8593/toolkit/components/startup/nsAppStartup.cpp#l631)"
 Firefox event. If your job turns orange, you will see a list of files in
@@ -470,13 +467,11 @@ by your changeset, then we can add them to the
 Xperf runs tp5 while collecting xperf metrics for disk IO and network
 IO. The providers we listen for are:
 
-- ['PROC_THREAD', 'LOADER', 'HARD_FAULTS', 'FILENAME', 'FILE_IO',
-  'FILE_IO_INIT'](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/xperf.config#l10)
+- {searchfox}`'PROC_THREAD', 'LOADER', 'HARD_FAULTS', 'FILENAME', 'FILE_IO', 'FILE_IO_INIT' <testing/talos/talos/test.py>`
 
 The values we collect during stackwalk are:
 
-- ['FileRead', 'FileWrite',
-  'FileFlush'](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/xperf.config#l11)
+- {searchfox}`'FileRead', 'FileWrite', 'FileFlush' <testing/talos/talos/test.py>`
 
 Notes:
 
@@ -523,12 +518,11 @@ optimizations](https://blog.mozilla.org/tglek/2010/05/27/startup-backward-constr
 
 - contact: :hsivonen
 - source:
-  [TestStrings.cpp](https://dxr.mozilla.org/mozilla-central/source/xpcom/tests/gtest/TestStrings.cpp)
+  {searchfox}`TestStrings.cpp <xpcom/tests/gtest/TestStrings.cpp>`
 - type: [Microbench]
 - reporting: intervals in ms (lower is better)
 - data: each test is run and measured 5 times
-- summarization: take the [median] of the 5 data points; [source:
-  MozGTestBench.cpp](https://dxr.mozilla.org/mozilla-central/source/testing/gtest/mozilla/MozGTestBench.cpp#43-46)
+- summarization: take the [median] of the 5 data points; {searchfox}`source: MozGTestBench.cpp <testing/gtest/mozilla/MozGTestBench.cpp>`
 
 Test whose name starts with PerfIsASCII test the performance of the
 XPCOM string IsASCII function with ASCII inputs if different lengths.
@@ -547,7 +541,7 @@ string IsUTF8 function with ASCII inputs if different lengths.
 
 - contact: :bholley
 - source:
-  [MozGTestBench.cpp](https://dxr.mozilla.org/mozilla-central/source/testing/gtest/mozilla/MozGTestBench.cpp)
+  {searchfox}`MozGTestBench.cpp <testing/gtest/mozilla/MozGTestBench.cpp>`
 - type: Custom GTest micro-benchmarking
 - data: Time taken for a GTest function to execute
 - summarization: Not a Talos test. This suite is provides a way to add
@@ -558,7 +552,7 @@ string IsUTF8 function with ASCII inputs if different lengths.
 
 - contact: :davidb
 - source:
-  <https://dxr.mozilla.org/mozilla-central/source/xpcom/tests/gtest/TestStrings.cpp>
+  {searchfox}`xpcom/tests/gtest/TestStrings.cpp`
 - type: [Microbench]
 - reporting: execution time in ms (lower is better) for 100k function
   calls
@@ -581,12 +575,11 @@ PerfStripCharsCRLF() - call StripChars("rn") on 5 different test cases
 
 - contact: :bholley, :SimonSapin
 - source:
-  [gtest](https://dxr.mozilla.org/mozilla-central/source/layout/style/test/gtest)
+  {searchfox}`gtest <layout/style/test/gtest>`
 - type: [Microbench]
 - reporting: intervals in ms (lower is better)
 - data: each test is run and measured 5 times
-- summarization: take the [median] of the 5 data points; [source:
-  MozGTestBench.cpp](https://dxr.mozilla.org/mozilla-central/source/testing/gtest/mozilla/MozGTestBench.cpp#43-46)
+- summarization: take the [median] of the 5 data points; {searchfox}`source: MozGTestBench.cpp <testing/gtest/mozilla/MozGTestBench.cpp>`
 
 Servo_StyleSheet_FromUTF8Bytes_Bench parses a sample stylesheet 20 times
 with Stylo’s CSS parser that is written in Rust. It starts from an

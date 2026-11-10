@@ -11,21 +11,20 @@ suites:
         tests:
             ARES6: >
                 - contact: :jandem and SpiderMonkey Team
-                - source: [ARES-6](https://searchfox.org/firefox-main/source/third_party/webkit/PerformanceTests/ARES-6)
+                - source: {searchfox}`ARES-6 <third_party/webkit/PerformanceTests/ARES-6>`
                 - type: [Page load]
                 - data: 6 cycles of the entire benchmark
-                    * [geometric mean](https://searchfox.org/firefox-main/source/testing/talos/talos/output.py#259) self reported from the benchmark
+                    * {searchfox}`geometric mean <testing/talos/talos/output.py>` self reported from the benchmark
                 - **Lower is better**
                 - unit: geometric mean / benchmark score
             JetStream: >
                 - contact: :jandem and SpiderMonkey Team
-                - source: [jetstream.manifest](https://searchfox.org/firefox-main/source/testing/talos/talos/tests/jetstream/jetstream.manifest) and jetstream.zip from tooltool
+                - source: {searchfox}`jetstream.manifest <testing/talos/talos/tests/jetstream/jetstream.manifest>` and jetstream.zip from tooltool
                 - type: [Page load]
                 - measuring: JavaScript performance
                 - reporting: geometric mean from the benchmark
                 - data: internal benchmark
-                    * suite: [geometric
-                        mean](https://searchfox.org/firefox-main/source/testing/talos/talos/output.py#259)
+                    * suite: {searchfox}`geometric mean <testing/talos/talos/output.py>`
                         provided by the benchmark
                 - description:
                       | This is the [JetStream](http://browserbench.org/JetStream/in-depth.html)
@@ -33,13 +32,12 @@ suites:
                         our pageloader extension and Talos harness.
             a11yr: >
                 - contact: :jamie and accessibility team
-                - source: [a11y.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/a11y)
+                - source: {searchfox}`a11y.manifest <testing/talos/talos/tests/a11y>`
                 - type: [Page load]
                 - measuring: ???
                 - data: we load 2 pages 25 times each, collect 2 sets of 25 data points
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 24; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l627)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 24; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 2 subtest results.
                 - reporting: test time in ms (lower is better)
                 - description:
@@ -49,12 +47,12 @@ suites:
                     * 1;tablemutation.html;398;385;389;391;387;387;385;387;388;385;384;31746;386;387;384;387;389;387;387;387;388;391;386;387;388 |
             about_preferences_basic: >
                 - contact: :jaws and :gijs
-                - source: [about_preferences_basic.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/about-preferences/about_preferences_basic.manifest)
+                - source: {searchfox}`about_preferences_basic.manifest <testing/talos/talos/tests/about-preferences/about_preferences_basic.manifest>`
                 - type: [Page load]
                 - measuring: first-non-blank-paint
                 - data: We load 5 urls 1 time each, and repeat for 25 cycles; collecting 25 sets of 5 data points
                 - summarization:
-                    * subtest: [ignore first] five data points, then take the [median] of the rest; [source: test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l627)
+                    * subtest: [ignore first] five data points, then take the [median] of the rest; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the the subtest results.
                 - reporting: test time in ms (lower is better)
                 - description:
@@ -85,11 +83,11 @@ suites:
                     * 5;preferences#home;141;111;130;131;138;128;133;122;138;138;131;139;139;132;133;141;143;139;138;135;136;128;134;140;135
             basic_compositor_video: >
                 - contact: :b0bh00d, :jeffm, and gfx
-                - source: [video](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/video)
+                - source: {searchfox}`video <testing/talos/talos/tests/video>`
                 - type: [Page load]
                 - data: 12 cycles of the entire benchmark, each subtest will have 12 data points (see below)
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 11; [source: test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l522)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 11; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 24 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -119,12 +117,11 @@ suites:
                     * ;23;1080p.60fps.mp4_scale_2_inclip;6.757;6.694;6.672;6.669;6.737;6.831;6.716;6.715;6.832;6.670;6.672;6.759
             canvas2dvideo: >
                 - contact: :aosmond and gfx
-                - source: [canvas2dvideo](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/canvas2d/benchmarks/video)
+                - source: {searchfox}`canvas2dvideo <testing/talos/talos/tests/canvas2d/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: Canvas2D video texture update with 1080p video. Measures mean tick time across 100 ticks.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l522)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -137,12 +134,11 @@ suites:
                         the first found. Lower results are better.
             offscreencanvas_webcodecs_main_webgl_h264: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_main_webgl_h264](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_main_webgl_h264 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas WebGL video texture update with WebCodecs and 1080p H264 video on the main thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -155,12 +151,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_main_webgl_vp9: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_main_webgl_vp9](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_main_webgl_vp9 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas WebGL video texture update with WebCodecs and 1080p VP9 video on the main thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -173,12 +168,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_main_webgl_av1: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_main_webgl_av1](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_main_webgl_av1 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas WebGL video texture update with WebCodecs and 1080p AV1 video on the main thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -191,12 +185,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_worker_webgl_h264: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_worker_webgl_h264](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_worker_webgl_h264 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas WebGL video texture update with WebCodecs and 1080p H264 video on a DOM worker thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -209,12 +202,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_worker_webgl_vp9: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_worker_webgl_vp9](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_worker_webgl_vp9 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas WebGL video texture update with WebCodecs and 1080p VP9 video on a DOM worker thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -227,12 +219,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_worker_webgl_av1: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_worker_webgl_av1](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_worker_webgl_av1 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas WebGL video texture update with WebCodecs and 1080p AV1 video on a DOM worker thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -245,12 +236,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_main_2d_h264: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_main_2d_h264](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_main_2d_h264 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas 2D video texture update with WebCodecs and 1080p H264 video on the main thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -263,12 +253,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_main_2d_vp9: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_main_2d_vp9](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_main_2d_vp9 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas 2D video texture update with WebCodecs and 1080p VP9 video on the main thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l819)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -281,12 +270,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_main_2d_av1: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_main_2d_av1](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_main_2d_av1 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas 2D video texture update with WebCodecs and 1080p AV1 video on the main thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l843)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -299,12 +287,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_worker_2d_h264: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_worker_2d_h264](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_worker_2d_h264 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas 2D video texture update with WebCodecs and 1080p H264 video on a DOM worker thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -317,12 +304,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_worker_2d_vp9: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_worker_2d_vp9](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_worker_2d_vp9 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas 2D video texture update with WebCodecs and 1080p VP9 video on a DOM worker thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -335,12 +321,11 @@ suites:
                         results are better.
             offscreencanvas_webcodecs_worker_2d_av1: >
                 - contact: :aosmond and gfx
-                - source: [offscreencanvas_webcodecs_worker_2d_av1](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/offscreencanvas/benchmarks/video)
+                - source: {searchfox}`offscreencanvas_webcodecs_worker_2d_av1 <testing/talos/talos/tests/offscreencanvas/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: OffscreenCanvas 2D video texture update with WebCodecs and 1080p AV1 video on a DOM worker thread. Measures mean frame time across 100 frames.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l795)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -354,7 +339,7 @@ suites:
             cpstartup: >
                 - contact: :mconley, Firefox Desktop Front-end team, Gijs, fqueze, and dthayer
                 - measuring: Time from opening a new tab (which creates a new content process) to having that new content process be ready to load URLs.
-                - source: [cpstartup](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/cpstartup)
+                - source: {searchfox}`cpstartup <testing/talos/talos/tests/cpstartup>`
                 - type: [Page load]
                 - bug: [bug 1336389](https://bugzilla.mozilla.org/show_bug.cgi?id=1336389)
                 - data: 20 cycles of the entire benchmark
@@ -364,7 +349,7 @@ suites:
             cross_origin_pageload: >
                 - contact: :sefeng, :jesup, and perf eng team
                 - measuring: The time it takes to load a page which has 20 cross origin iframes
-                - source: [cross_origin_pageload](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/cross_origin_pageload)
+                - source: {searchfox}`cross_origin_pageload <testing/talos/talos/tests/cross_origin_pageload>`
                 - type: [Page load]
                 - bug: [bug 1701989](https://bugzilla.mozilla.org/show_bug.cgi?id=1701989)
                 - data: 10 cycles of the entire benchmark
@@ -373,13 +358,13 @@ suites:
                     * 0;/index.html;194.42;154.12;141.38;145.88;136.92;147.64;152.54;138.02;145.5;143.62
             damp: >
                 - contact: :ochameau and devtools team
-                - source: [damp](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/devtools)
+                - source: {searchfox}`damp <testing/talos/talos/tests/devtools>`
                 - type: [Page load]
                 - measuring: Developer Tools toolbox performance. Split in test suites covering different DevTools areas (inspector, webconsole, other).
                 - reporting: intervals in ms (lower is better) - see below for details
                 - data: there are 36 reported subtests from DAMP which we load 25 times, resulting in 36 sets of 25 data points.
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 24 data points; [source: test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l356)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 24 data points; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: No value for the suite, only individual subtests are relevant.
                 - description:
                       | To run this locally, you'll need to pull down the [tp5 page
@@ -424,11 +409,11 @@ suites:
                     * 35;complicated.netmonitor.close.DAMP;1042.98;920.21;928.19;940.38;950.25;1043.61;1078.16;1077.38;1132.91;1095.05;1176.31;1256.83;1143.14;1234.61;1248.97;1242.29;1378.63;1312.74;1371.48;1373.15;1544.55;1422.51;1549.48;1616.55;1506.58
             displaylist_mutate: >
                 - contact: :miko and gfx
-                - source: [displaylist_mutate.html](https://searchfox.org/firefox-main/source/testing/talos/talos/tests/layout/benchmarks/displaylist_mutate.html)
+                - source: {searchfox}`displaylist_mutate.html <testing/talos/talos/tests/layout/benchmarks/displaylist_mutate.html>`
                 - type: [Page load]
                 - data: we load the displaylist_mutate.html page five times, measuring pageload each time, generating 5 data points.
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source: test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l986)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                 - description:
                       | This measures the amount of time it takes to render a page after
                         changing its display list. The page has a large number of display list
@@ -454,7 +439,7 @@ suites:
                       geometric mean of the scores for its tests.
             dromaeo_css: >
                 - contact: :emilio, and css/layout team
-                - source: [css.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/dromaeo)
+                - source: {searchfox}`css.manifest <testing/talos/talos/tests/dromaeo>`
                 - type: [Page load]
                 - reporting: speed in test runs per second (higher is better)
                 - data: Dromaeo has 6 subtests which run internal benchmarks, each benchmark reports about 180 raw data points each
@@ -467,8 +452,7 @@ suites:
                         for each 5 data points we take the mean, leaving 36 data points to
                         represent the subtest (assuming 180 points). These 36 micro test
                         means, are then run through a geometric_mean to produce a single
-                        number for the dromaeo subtest. [source:
-                        filter.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l527)
+                        number for the dromaeo subtest. {searchfox}`source: filter.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 6 subtest results.
                 - description:
                       | Each page in the manifest is part of the dromaeo css benchmark. Each
@@ -484,7 +468,7 @@ suites:
                     * 5;yui.html;569.72;602.22;627.02;647.49;692.84;9978.30;10117.54;10121.70;10129.75;10137.24;9278.68;9291.44;9349.00;9370.53;9375.86;475.79;481.92;606.51;607.42;618.73;617.68;618.89;623.30;626.58;631.85;501.81;649.76;653.22;655.69;656.71;510.62;645.56;657.42;657.88;658.39;475.53;476.77;476.80;476.92;476.96;9895.16;9976.15;9988.25;9989.85;9996.40;9483.15;9545.75;9676.37;9808.51;10360.22;8331.29;8397.87;8538.06;8714.69;8803.78;2748.93;2800.93;2802.59;2857.33;2864.46;33757.16;33804.83;33859.32;33931.00;33991.32;7818.65;7846.92;7892.09;8170.55;8217.75;13691.38;13692.86;13693.25;13698.73;13706.66;5378.70;5517.83;5615.86;5616.16;5624.00;2985.63;3002.97;3003.07;3037.73;3038.87;2459.10;2502.52;2504.91;2507.07;2507.26;396.62;405.78;411.43;412.03;412.56;543.45;550.75;568.50;578.59;592.25;6762.21;6901.72;6984.27;7064.22;7122.29;454.78;519.40;539.29;543.96;566.16;3235.39;3266.13;3453.26;3498.79;3518.54;39079.22;39722.80;41350.59;41422.38;41540.17;34435.14;34606.31;34623.31;34661.00;34672.48;29449.12;29530.11;30507.24;31938.52;31961.52;7449.33;7524.62;7629.73;7712.96;7796.42;22917.43;23319.00;23441.41;23582.88;23583.53;29780.40;30272.55;31761.00;31765.84;31839.36;6112.45;6218.35;6476.68;6603.54;6793.66;10385.79;10471.69;10518.53;10552.74;10644.95;9563.52;9571.33;9617.09;9946.35;9976.80;9406.11;9518.48;9806.46;10102.44;10173.19;9482.43;9550.28;9878.21;9902.90;9951.45;8343.17;8511.00;8606.00;8750.21;8869.29;8234.96;8462.70;8473.49;8499.58;8808.91
             dromaeo_dom: >
                 - contact: :peterv and dom team
-                - source: [dom.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/dromaeo)
+                - source: {searchfox}`dom.manifest <testing/talos/talos/tests/dromaeo>`
                 - type: [Page load]
                 - data: see Dromaeo DOM
                 - reporting: speed in test runs per second (higher is better)
@@ -513,12 +497,11 @@ suites:
                      Please see [dromaeo_css](#dromaeo_css) for examples of data.
             glterrain: >
                 - contact: :jgilbert and gfx
-                - source: [glterrain](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/webgl/benchmarks/terrain)
+                - source: {searchfox}`glterrain <testing/talos/talos/tests/webgl/benchmarks/terrain>`
                 - type: [Page load]
                 - data: we load the perftest.html page (which generates 4 metrics to track) 25 times, resulting in 4 sets of 25 data points
                 - summarization: Measures average frames interval while animating a simple WebGL scene
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 24; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l381)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 24; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - description:
                       | This tests animates a simple WebGL scene (static textured landscape, one
@@ -534,12 +517,11 @@ suites:
                     * 3;3.WebGL-terrain-alpha-yes-AA-yes;25.91375;25.87005;25.64875;25.15615;25.5475;24.497449;24.56385;25.57529;25.54889;26.31559;24.143949;25.09895;24.75049;25.2087;25.52385;25.9017;25.4439;24.3495;25.9269;25.734449;26.4126;25.547449;25.667249;25.679349;25.9565
             glvideo: >
                 - contact: :jgilbert and gfx
-                - source: [glvideo](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/webgl/benchmarks/video)
+                - source: {searchfox}`glvideo <testing/talos/talos/tests/webgl/benchmarks/video>`
                 - type: [Page load]
                 - data: 5 cycles of the entire benchmark, each subtest will have 5 data points (see below)
                 - summarization: WebGL video texture update with 1080p video. Measures mean tick time across 100 ticks.
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l522)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 4 subtest results.
                 - **Lower is better**
                 - **Example Data**
@@ -552,7 +534,7 @@ suites:
                         the first found. Lower results are better.
             kraken: >
                 - contact: :sdetar, jandem, and SpiderMonkey Team
-                - source: [kraken.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/kraken)
+                - source: {searchfox}`kraken.manifest <testing/talos/talos/tests/kraken>`
                 - type: [Page load]
                 - measuring: JavaScript performance
                 - reporting: Total time for all tests, in ms (lower is better)
@@ -583,7 +565,7 @@ suites:
                     * 13;stanford-crypto-sha256-iterative;86;85;83;84;86;85;85;86;83;83
             motionmark_animometer: >
                 - contact: :b0bh00d, :jeffm, and gfx
-                - source: [source](https://searchfox.org/firefox-main/source/third_party/webkit/PerformanceTests/MotionMark) [manifests](https://searchfox.org/firefox-main/source/testing/talos/talos/tests/motionmark)
+                - source: {searchfox}`source <third_party/webkit/PerformanceTests/MotionMark>` {searchfox}`manifests <testing/talos/talos/tests/motionmark>`
                 - type: [Page load]
                 - measuring: benchmark measuring the time to animate complex scenes
                 - summarization:
@@ -595,7 +577,7 @@ suites:
                 - contact: :jrmuizel and graphics(gfx) team
             motionmark_webgl: >
                 - contact: :jgilbert and gfx
-                - source: [source](https://searchfox.org/firefox-main/source/third_party/webkit/PerformanceTests/MotionMark) [manifest](https://searchfox.org/firefox-main/source/testing/talos/talos/tests/motionmark/webgl.manifest)
+                - source: {searchfox}`source <third_party/webkit/PerformanceTests/MotionMark>` {searchfox}`manifest <testing/talos/talos/tests/motionmark/webgl.manifest>`
                 - type: [Page load]
                 - measuring: Draw call performance in WebGL
                 - summarization:
@@ -640,13 +622,12 @@ suites:
                         (pdfjs.disableWorkerRendering=true, pdfjs.enableHWA=false).
             perf_reftest: >
                 - contact: :emilio and css/layout team
-                - source: [perf-reftest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/perf-reftest)
+                - source: {searchfox}`perf-reftest <testing/talos/talos/tests/perf-reftest>`
                 - type: [Page load]
                 - reporting: intervals in ms (lower is better)
                 - data: each test loads 25 times
                 - summarization:
-                    * subtest: [ignore first] 5 data points, then take the [median] of the remaining 20 data points; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l734)
+                    * subtest: [ignore first] 5 data points, then take the [median] of the remaining 20 data points; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: identical to subtest
                 - description:
                       | **Important note:** This test now requires an 'opt' build. If the
@@ -687,13 +668,12 @@ suites:
                         166.64499999999998, 165.68, 167.64499999999998, 167.12, 168.15, 166.575, 166.335],
             perf_reftest_singletons: >
                 - contact: :emilio and Layout team
-                - source: [perf-reftest-singletons](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/perf-reftest-singletons)
+                - source: {searchfox}`perf-reftest-singletons <testing/talos/talos/tests/perf-reftest-singletons>`
                 - type: [Page load]
                 - reporting: intervals in ms (lower is better)
                 - data: each test loads 25 times
                 - summarization:
-                    * subtest: [ignore first] 5 data points, then take the [median] of the remaining 20 data points; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l734)
+                    * subtest: [ignore first] 5 data points, then take the [median] of the remaining 20 data points; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: identical to subtest
                 - description:
                       | Individual style system performance tests. The perf-reftest-singletons
@@ -710,12 +690,11 @@ suites:
                     * 86.72500000000001;95.665;100.67;101.095;94.32;91.87
             rasterflood_gradient: >
                 - contact: :jrmuizel, :jimm, and gfx
-                - source: [rasterflood_gradient.html](https://searchfox.org/firefox-main/source/testing/talos/talos/tests/gfx/benchmarks/rasterflood_gradient.html)
+                - source: {searchfox}`rasterflood_gradient.html <testing/talos/talos/tests/gfx/benchmarks/rasterflood_gradient.html>`
                 - type: [Page load]
                 - data: we load the rasterflood_gradient.html page ten times, computing a score each time, generating 10 data points.
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 9; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l986)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 9; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                 - description:
                       | This page animates some complex gradient patterns in a
                         requestAnimationFrame callback. However, it also churns the CPU during
@@ -731,12 +710,11 @@ suites:
                       will affect this benchmark.
             rasterflood_svg: >
                 - contact: :jrmuizel, :jimm, and gfx
-                - source: [rasterflood_svg.html](https://searchfox.org/firefox-main/source/testing/talos/talos/tests/gfx/benchmarks/rasterflood_svg.html)
+                - source: {searchfox}`rasterflood_svg.html <testing/talos/talos/tests/gfx/benchmarks/rasterflood_svg.html>`
                 - type: [Page load]
                 - data: we load the rasterflood_svg.html page ten times, measuring pageload each time, generating 10 data points.
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 9; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l986)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 9; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                 - description:
                       | This page animates some complex SVG patterns in a requestAnimationFrame
                         callback. However, it also churns the CPU during each callback, spinning
@@ -751,7 +729,7 @@ suites:
                       likely to affect this benchmark.
             sessionrestore: >
                 - contact: :dale, :dao, :farre, session restore module owners/peers, and DOM team
-                - source: [talos/sessionrestore](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/startup_test/sessionrestore)
+                - source: {searchfox}`talos/sessionrestore <testing/talos/talos/startup_test/sessionrestore>`
                 - bug: [bug 936630](https://bugzilla.mozilla.org/show_bug.cgi?id=936630),
                      [bug 1331937](https://bugzilla.mozilla.org/show_bug.cgi?id=1331937),
                      [bug 1531520](https://bugzilla.mozilla.org/show_bug.cgi?id=1531520)
@@ -760,8 +738,7 @@ suites:
                 - reporting: interval in ms (lower is better).
                 - data: we load the session restore index page 10 times to collect 1 set of 10 data points.
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 9 data points; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l305)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 9 data points; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: identical to subtest
                 - description:
                       | Three tests measure the time spent reading and restoring the session
@@ -808,13 +785,13 @@ suites:
                     * [1503.0, 1497.0, 1523.0, 1536.0, 1511.0, 1485.0, 1594.0, 1580.0, 1531.0, 1471.0, 1502.0, 1520.0, 1488.0, 1533.0, 1531.0, 1502.0, 1486.0, 1489.0, 1487.0, 1475.0]
             stylebench: >
                 - contact: :emilio and Layout team
-                - source: [stylebench.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/stylebench/stylebench.manifest)
+                - source: {searchfox}`stylebench.manifest <testing/talos/talos/tests/stylebench/stylebench.manifest>`
                 - type: [Page load]
                 - measuring: speed of dynamic style recalculation
                 - reporting: runs/minute score
             tabpaint: >
                 - contact: :mconley, Firefox Desktop Front-end team, :gijs, :fqueze, and :dthayer
-                - source: [tabpaint](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/tabpaint)
+                - source: {searchfox}`tabpaint <testing/talos/talos/tests/tabpaint>`
                 - bug: https://bugzilla.mozilla.org/show_bug.cgi?id=1253382
                 - type: [Page load]
                 - measuring:
@@ -837,7 +814,7 @@ suites:
                     * suite: geometric_mean(subtests)
             tabswitch: >
                 - contact: :mconley, Firefox Desktop Front-end team, :gijs, :fqueze, and :dthayer
-                - source: [tabswitch](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/tabswitch)
+                - source: {searchfox}`tabswitch <testing/talos/talos/tests/tabswitch>`
                 - bug: https://bugzilla.mozilla.org/show_bug.cgi?id=1166132
                 - type: [Page load]
                 - measuring:
@@ -846,8 +823,7 @@ suites:
                 - data: we load 50 web pages 5 times each, resulting in 50 sets of 5 data points.
                 - **To run it locally**, you'd need [tp5n.zip](#page-sets).
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 4 data points; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l305)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 4 data points; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 50 subtest results.
                 - **Example Data**
                     * 0;amazon.com/www.amazon.com/Kindle-Wireless-Reader-Wifi-Graphite/dp/B002Y27P3M/507846.html;66.34;54.15;53.08;55.79;49.12
@@ -902,14 +878,13 @@ suites:
                     * 49;people.com.cn/people.com.cn/index.html;96.49;103.64;115.12;66.05;117.84
             tart: >
                 - contact: :mconley, Firefox Desktop Front-end team, :gijs, :fqueze, and :dthayer
-                - source: [tart](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/tart)
+                - source: {searchfox}`tart <testing/talos/talos/tests/tart>`
                 - type: [Page load]
                 - measuring: Desktop Firefox UI animation speed and smoothness
                 - reporting: intervals in ms (lower is better) - see below for details
                 - data: there are 30 reported subtests from TART which we load 25 times, resulting in 30 sets of 25 data points.
                 - summarization:
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 24 data points; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l305)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 24 data points; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 30 subtest results.
                 - TART is the **Tab Animation Regression Test**.
                 - TART tests tab animation on these cases:
@@ -974,8 +949,7 @@ suites:
                 - data: we load each of the 51 tp5o pages 25 times, resulting in 51 sets of 25 data points.
                 - **To run it locally**, you'd need [tp5n.zip](#page-sets).
                 - summarization: tp5 with limited pageset (48 pages as others have too much noise)
-                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l449)
+                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 51 subtest results.
                 - description:
                       | Tests the time it takes Firefox to load the [tp5 web page test
@@ -1059,8 +1033,7 @@ suites:
                 - data: we load each of the 51 tp5o pages 12 times, resulting in 51 sets of 12 data points.
                 - **To run it locally**, you'd need [tp5n.zip](#page-sets).
                 - summarization: Measures average frames interval while scrolling the pages of the tp5o set
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 11; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l470)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 11; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 51 subtest results.
                 - description:
                       | This test is identical to tscrollx, but it scrolls the 50 pages of the
@@ -1134,13 +1107,12 @@ suites:
                 - contact: :mixedpuppy and webextension team
             tresize: >
                 - contact: :gcp and platform integration
-                - source: [tresize-test.html](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/startup_test/tresize/addon/content/tresize-test.html)
+                - source: {searchfox}`tresize-test.html <testing/talos/talos/tests/tresize/addon/chrome/tresize-test.html>`
                 - type: Startup_
                 - measuring: Time to do XUL resize, in ms (lower is better).
                 - data: we run the tresize test page 20 times, resulting in 1 set of 20 data points.
                 - summarization:
-                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 15 data points; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l205)
+                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 15 data points; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: same as subtest result
                 - description:
                       | A purer form of paint measurement than tpaint. This test opens a single
@@ -1161,15 +1133,14 @@ suites:
                     * introduction of more spurious MozAfterPaint events - see [bug 1471961](https://bugzilla.mozilla.org/show_bug.cgi?id=1471961)
             ts_paint: >
                 - contact: :mconley, Firefox Desktop Front-end team,
-                - source: [tspaint_test.html](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/startup_test/tspaint_test.html)
+                - source: {searchfox}`tspaint_test.html <testing/talos/talos/startup_test/tspaint_test.html>`
                 - Perfomatic: "Ts, Paint"
                 - type: Startup_
                 - data: 20 times we start the browser and time how long it takes to
                      paint the startup test page, resulting in 1 set of 20 data points.
                 - summarization:
                     * subtest: identical to suite
-                    * suite: [ignore first] data point, then take the [median] of the remaining 19 data points; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l135)
+                    * suite: [ignore first] data point, then take the [median] of the remaining 19 data points; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                 - description:
                       | Starts the browser to display tspaint_test.html with the start time in
                         the url, waits for [MozAfterPaint and onLoad](#paint) to fire, then
@@ -1187,14 +1158,13 @@ suites:
                 - contact: :mconley, Firefox Desktop Front-end team,
             tscrollx: >
                 - contact: :jrmuizel and gfx
-                - source: [scroll.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/scroll)
+                - source: {searchfox}`scroll.manifest <testing/talos/talos/tests/scroll>`
                 - type: [Page load]
                 - measuring: Scroll performance
                 - reporting: Average frame interval (1 ÷ fps). Lower is better.
                 - data: we load 6 pages 25 times each, collecting 6 sets of 25 data points
                 - summarization: [Replacing tscroll,tsvg with tscrollx,tsvgx](https://groups.google.com/d/topic/mozilla.dev.platform/RICw5SJhNMo/discussion)
-                    * subtest: [ignore first] data point, then take the [median] of the remaining 24; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l623)
+                    * subtest: [ignore first] data point, then take the [median] of the remaining 24; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 6 subtest results.
                 - description:
                       | This test scrolls several pages where each represent a different known
@@ -1215,7 +1185,7 @@ suites:
                     * 5;reader.htm;10.72;10.62;10.23;10.48;10.42;10.64;10.40;10.40;10.14;10.60;10.51;10.36;10.57;10.41;10.52;10.75;10.19;10.72;10.44;9.75;10.49;10.07;10.54;10.46;10.44
             tscrollx_paint_skip: >
                 - contact: :hiro, :botond, and layout team
-                - source: [scroll.manifest](https://searchfox.org/mozilla-central/source/testing/talos/talos/tests/scroll)
+                - source: {searchfox}`scroll.manifest <testing/talos/talos/tests/scroll>`
                 - type: [Page load]
                 - measuring: Scroll performance with APZ paint skipping enabled
                 - reporting: Average frame interval (1 ÷ fps). Lower is better.
@@ -1230,12 +1200,11 @@ suites:
                         the effect of paint skipping on scroll throughput.
             tsvg_static: >
                 - contact: :jwatt, :dholbert
-                - source: [svg_static](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/svg_static/)
+                - source: {searchfox}`svg_static <testing/talos/talos/tests/svg_static>`
                 - type: [Page load]
                 - data: we load the 5 svg pages 25 times, resulting in 5 sets of 25 data points
                 - summarization: An svg-only number that measures SVG rendering performance of some complex (but static) SVG content.
-                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l623)
+                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 5 subtest results.
                 - **Example Data**
                     * 0;gearflowers.svg;262;184;184;198;197;187;181;186;177;192;196;194;194;186;195;190;237;193;188;182;188;196;191;194;184
@@ -1249,12 +1218,11 @@ suites:
                 - add test details
             tsvgr_opacity: >
                 - contact: :jwatt, :dholbert
-                - source: [svg_opacity.manifest](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/svg_opacity/svg_opacity.manifest)
+                - source: {searchfox}`svg_opacity.manifest <testing/talos/talos/tests/svg_opacity/svg_opacity.manifest>`
                 - type: [Page load]
                 - data: we load the 2 svg opacity pages 25 times, resulting in 2 sets of 25 data points
                 - summarization: [Row Major](#row-major-vs-column-major) and 25 cycles/page.
-                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l623)
+                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 2 subtest results.
                 - description:
                       | Renders many semi-transparent, partially overlapping SVG rectangles, and
@@ -1274,12 +1242,11 @@ suites:
                     * 1;small-group-opacity-2500.svg;585;436;387;441;512;438;440;380;443;391;450;386;459;383;445;388;450;436;485;443;383;438;528;444;441
             tsvgx: >
                 - contact: :jwatt, :dholbert
-                - source: [svgx](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/svgx)
+                - source: {searchfox}`svgx <testing/talos/talos/tests/svgx>`
                 - type: [Page load]
                 - data: we load the 7 svg pages 25 times, resulting in 7 sets of 25 data points
                 - summarization: [Replacing tscroll,tsvg with tscrollx,tsvgx](https://groups.google.com/d/topic/mozilla.dev.platform/RICw5SJhNMo/discussion)
-                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l623)
+                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 20; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: [geometric mean] of the 7 subtest results.
                 - description:
                       | An svg-only number that measures SVG rendering performance, with
@@ -1307,12 +1274,11 @@ suites:
                         expectations from the test.
             twinopen: >
                 - contact: :gcp and platform integration
-                - source: [twinopen](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/tests/twinopen)
+                - source: {searchfox}`twinopen <testing/talos/talos/tests/twinopen>`
                 - type: Startup_
                 - data: we open a new browser window 20 times, resulting in 1 set of 20 data points.
                 - summarization: Time from calling OpenBrowserWindow until the chrome of the new window has [painted](https://developer.mozilla.org/en-US/docs/Web/Events#MozAfterPaint).
-                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 15; [source:
-                        test.py](https://dxr.mozilla.org/mozilla-central/source/testing/talos/talos/test.py#l190)
+                    * subtest: [ignore first] **5** data points, then take the [median] of the remaining 15; {searchfox}`source: test.py <testing/talos/talos/test.py>`
                     * suite: identical to subtest
                 - description:
                       | Tests the amount of time it takes the open a new window from a currently
