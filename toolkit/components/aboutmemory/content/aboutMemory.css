@@ -142,7 +142,7 @@ div.treemap {
 a.treemapEntry {
   display: block;
   position: absolute;
-  color: FieldText;
+  color: var(--text-color);
   text-decoration: none;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-small);
@@ -197,7 +197,7 @@ a.treemapEntry {
 }
 
 .treeline {
-  color: FieldText;
+  color: var(--text-color);
   opacity: 0.5;
 }
 
@@ -272,7 +272,7 @@ a.treemapEntry {
 }
 
 .ccgcLogProcess {
-  color: FieldText;
+  color: var(--text-color);
   text-decoration: none;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-small);
@@ -304,7 +304,7 @@ a.treemapEntry {
 }
 
 .ccgcLogAnalyzer {
-  color: FieldText;
+  color: var(--text-color);
   text-decoration: none;
 
   border: 1px solid var(--border-color);
@@ -351,7 +351,7 @@ a.treemapEntry {
 .inspector.path > .pathInspector {
   position: relative;
   display: flex;
-  color: FieldText;
+  color: var(--text-color);
   height: 44em;
   overflow: auto;
   flex-direction: column;
@@ -360,7 +360,7 @@ a.treemapEntry {
 
 .inspector.node > .nodeInspector {
   position: relative;
-  color: FieldText;
+  color: var(--text-color);
   height: 40em;
   overflow: auto;
   display: grid;
