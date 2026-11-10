@@ -106,6 +106,9 @@ run-if = [
 
 ["TestLinkedList"]
 
+["TestMARFindItem"]
+skip-if = ["os == 'android'"] # Not built on Android.
+
 ["TestMMPolicy"]
 run-if = [
   "os == 'win'",

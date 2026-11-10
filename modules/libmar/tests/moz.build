@@ -8,3 +8,16 @@ if CONFIG["OS_TARGET"] != "Android" and CONFIG["COMPILE_ENVIRONMENT"]:
     TEST_HARNESS_FILES.xpcshell.modules.libmar.tests.unit += [
         "!/dist/bin/signmar%s" % CONFIG["BIN_SUFFIX"],
     ]
+
+    CppUnitTests(["TestMARFindItem"])
+
+    USE_LIBS += [
+        "mar",
+        "updatecommon",
+    ]
+
+    DisableStlWrapping()
+
+    if CONFIG["OS_ARCH"] == "WINNT":
+        USE_STATIC_MSVCRT = True
+        OS_LIBS += ["ws2_32"]
