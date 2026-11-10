@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!--
+  Any copyright is dedicated to the Public Domain.
+  http://creativecommons.org/publicdomain/zero/1.0/
+-->
+<window title="Test for terminating a worker from a Debugger.onNewScript hook"
+        xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"/>
+  <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"/>
+  <script type="application/javascript" src="dom_worker_helper.js"/>
+
+  <script type="application/javascript">
+  <![CDATA[
+
+    const WORKER_URL = "WorkerDebugger_terminate_in_onNewScript_worker.js";
+    const DEBUGGER_URL = BASE_URL + "WorkerDebugger_terminate_in_onNewScript_debugger.js";
+
+    addTaskWithBothWorkerDebuggers(
+      async function () {
+        info("Create a worker, wait for its debugger to be registered, and " +
+             "initialize it.");
+        let promise = waitForRegister(WORKER_URL, DEBUGGER_URL);
+        let worker = new Worker(WORKER_URL);
+        let dbg = await promise;
+
+        info("Wait for the debugger's onNewScript hook to run from inside the " +
+             "compile of the worker's main script, then terminate the worker " +
+             "while that hook is still running (bug 2044428).");
+        await waitForDebuggerMessage(dbg, "onNewScript");
+        promise = waitForDebuggerClose(dbg);
+        worker.terminate();
+
+        info("Wait for the worker to shut down.");
+        await promise;
+      }
+    );
+
+  ]]>
+  </script>
+
+  <body xmlns="http://www.w3.org/1999/xhtml">
+    <p id="display"></p>
+    <div id="content" style="display:none;"></div>
+    <pre id="test"></pre>
+  </body>
+  <label id="test-result"/>
+</window>

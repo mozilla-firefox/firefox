@@ -32,6 +32,8 @@ support-files = [
   "WorkerDebugger_sharedWorker.js",
   "WorkerDebugger_suspended_debugger.js",
   "WorkerDebugger_suspended_worker.js",
+  "WorkerDebugger_terminate_in_onNewScript_debugger.js",
+  "WorkerDebugger_terminate_in_onNewScript_worker.js",
   "WorkerDebugger_worker.js",
   "WorkerTest.sys.mjs",
   "WorkerTest_subworker.js",
@@ -80,6 +82,8 @@ support-files = [
 ["test_WorkerDebugger_promise.xhtml"]
 
 ["test_WorkerDebugger_suspended.xhtml"]
+
+["test_WorkerDebugger_terminate_in_onNewScript.xhtml"]
 
 ["test_bug1062920.xhtml"]
 

@@ -157,6 +157,10 @@ class WorkerScriptLoader : public JS::loader::ScriptLoaderInterface,
   bool mExecutionAborted = false;
   bool mMutedErrorFlag = false;
 
+  // Number of scripts currently being evaluated by EvaluateScript().
+  // This member should be accessed on worker thread.
+  uint32_t mEvaluatingScriptCount = 0;
+
   // Count of loading module requests. mLoadingRequests doesn't keep track of
   // child module requests.
   // This member should be accessed on worker thread.
@@ -228,7 +232,8 @@ class WorkerScriptLoader : public JS::loader::ScriptLoaderInterface,
   bool ProcessPendingRequests(JSContext* aCx);
 
   bool AllScriptsExecuted() {
-    return mLoadingRequests.isEmpty() && mLoadedRequests.isEmpty();
+    return mEvaluatingScriptCount == 0 && mLoadingRequests.isEmpty() &&
+           mLoadedRequests.isEmpty();
   }
 
   bool IsDebuggerScript() const { return mWorkerScriptType == DebuggerScript; }
