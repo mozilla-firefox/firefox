@@ -73,6 +73,8 @@ if CONFIG["OS_TARGET"] == "WINNT":
         "TestNamedPipeService.cpp",
         "TestNetworkLinkIdHashingWindows.cpp",
     ]
+    # Not unified: windows headers define a GetAddrInfo macro.
+    SOURCES += ["TestPlatformDNSWin.cpp"]
 
 # run the test on mac only
 if CONFIG["TARGET_OS"] == "OSX":

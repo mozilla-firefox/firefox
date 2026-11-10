@@ -84,6 +84,10 @@ class DNSPacket {
                              bool aAllowRFC1918 = true);
   void SetNativePacket(bool aNative) { mNativePacket = aNative; }
 
+  // Returns true if both DNS names are equal, ignoring case (RFC 4343) and a
+  // trailing root dot.
+  static bool IsSameName(const nsACString& aName, const nsACString& aOther);
+
   static nsresult GetQname(nsACString& aQname, unsigned int& aIndex,
                            const unsigned char* aBuffer,
                            unsigned int aBodySize);

@@ -217,6 +217,16 @@ nsresult DNSPacket::PassQName(unsigned int& index,
   return NS_OK;
 }
 
+// static
+bool DNSPacket::IsSameName(const nsACString& aName, const nsACString& aOther) {
+  auto withoutRootDot = [](const nsACString& aStr) {
+    return StringEndsWith(aStr, "."_ns) ? Substring(aStr, 0, aStr.Length() - 1)
+                                        : Substring(aStr, 0);
+  };
+  return withoutRootDot(aName).Equals(withoutRootDot(aOther),
+                                      nsCaseInsensitiveCStringComparator);
+}
+
 // GetQname: retrieves the qname (stores in 'aQname') and stores the index
 // after qname was parsed into the 'aIndex'.
 // static
@@ -755,10 +765,7 @@ nsresult DNSPacket::DecodeInternal(
 
     // We check if the qname is a case-insensitive match for the host or the
     // FQDN version of the host
-    bool responseMatchesQuestion =
-        (qname.Length() == aHost.Length() ||
-         (aHost.Length() == qname.Length() + 1 && aHost.Last() == '.')) &&
-        StringBeginsWith(aHost, qname, nsCaseInsensitiveCStringComparator);
+    bool responseMatchesQuestion = IsSameName(qname, aHost);
 
     if (responseMatchesQuestion) {
       // RDATA

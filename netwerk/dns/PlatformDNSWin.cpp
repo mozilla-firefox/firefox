@@ -26,47 +26,23 @@ namespace mozilla::net {
 #define LOG(msg, ...) \
   MOZ_LOG(gGetAddrInfoLog, LogLevel::Debug, ("[DNS]: " msg, ##__VA_ARGS__))
 
-nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
-                                nsIDNSService::DNSFlags aFlags,
-                                TypeRecordResultType& aResult, uint32_t& aTTL,
-                                HTTPSAliasTarget& aAlias) {
+nsresult ParseHTTPSRecordList(const DNS_RECORDA* aRecords,
+                              const nsACString& aHost,
+                              TypeRecordResultType& aResult, uint32_t& aTTL,
+                              HTTPSAliasTarget& aAlias) {
   nsAutoCString host(aHost);
-  PDNS_RECORD result = nullptr;
   nsAutoCString cname;
   // True when |cname| came from an HTTPS AliasMode record rather than a CNAME.
   bool cnameIsAlias = false;
   aTTL = UINT32_MAX;
 
-  if (xpc::IsInAutomation() &&
-      !StaticPrefs::network_dns_native_https_query_in_automation()) {
-    return NS_ERROR_UNKNOWN_HOST;
-  }
-
-  TimeStamp startTime = TimeStamp::Now();
-
-  DNS_STATUS status =
-      DnsQuery_A(host.get(), nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
-                 DNS_QUERY_STANDARD, nullptr, &result, nullptr);
-
-  mozilla::glean::networking::dns_native_https_call_time.AccumulateRawDuration(
-      TimeStamp::Now() - startTime);
-
-  if (status != ERROR_SUCCESS) {
-    LOG("DnsQuery_A failed with error: %ld\n", status);
-    return NS_ERROR_UNKNOWN_HOST;
-  }
-
-  // This will free the record if we exit early from this function.
-  auto freeDnsRecord =
-      MakeScopeExit([&]() { DnsRecordListFree(result, DnsFreeRecordList); });
-
   auto CheckRecords = [&aResult, &cname, &cnameIsAlias, &aTTL](
-                          PDNS_RECORD result,
+                          const DNS_RECORDA* result,
                           const nsCString& aHost) -> nsresult {
-    PDNS_RECORD current = result;
-
-    for (current = result; current; current = current->pNext) {
-      if (strcmp(current->pName, aHost.get()) != 0) {
+    for (const DNS_RECORDA* current = result; current;
+         current = current->pNext) {
+      if (!current->pName ||
+          !DNSPacket::IsSameName(nsDependentCString(current->pName), aHost)) {
         continue;
       }
       if (current->wType == nsIDNSService::RESOLVE_TYPE_HTTPSSVC) {
@@ -116,7 +92,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
   while (loopCount > 0 && aResult.is<Nothing>()) {
     loopCount--;
 
-    nsresult rv = CheckRecords(result, host);
+    nsresult rv = CheckRecords(aRecords, host);
     if (NS_FAILED(rv)) {
       return rv;
     }
@@ -157,6 +133,38 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
     aTTL = 60;  // Defaults to 60 seconds
   }
   return NS_OK;
+}
+
+nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
+                                nsIDNSService::DNSFlags aFlags,
+                                TypeRecordResultType& aResult, uint32_t& aTTL,
+                                HTTPSAliasTarget& aAlias) {
+  nsAutoCString host(aHost);
+  PDNS_RECORD result = nullptr;
+
+  if (xpc::IsInAutomation() &&
+      !StaticPrefs::network_dns_native_https_query_in_automation()) {
+    return NS_ERROR_UNKNOWN_HOST;
+  }
+
+  TimeStamp startTime = TimeStamp::Now();
+
+  DNS_STATUS status =
+      DnsQuery_A(host.get(), nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
+                 DNS_QUERY_STANDARD, nullptr, &result, nullptr);
+
+  mozilla::glean::networking::dns_native_https_call_time.AccumulateRawDuration(
+      TimeStamp::Now() - startTime);
+
+  if (status != ERROR_SUCCESS) {
+    LOG("DnsQuery_A failed with error: %ld\n", status);
+    return NS_ERROR_UNKNOWN_HOST;
+  }
+
+  auto freeDnsRecord =
+      MakeScopeExit([&]() { DnsRecordListFree(result, DnsFreeRecordList); });
+
+  return ParseHTTPSRecordList(result, host, aResult, aTTL, aAlias);
 }
 
 void DNSThreadShutdown() {}
