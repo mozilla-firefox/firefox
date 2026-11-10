@@ -167,12 +167,6 @@ static SharedShape* CreateEnvironmentShapeForModuleExports(
         cx, cls, &map, &mapLength, id, propFlags, slotIndex, &objectFlags);
   };
 
-  // Add internal *namespace* property.
-  if (!addProperty(cx->names().star_namespace_star_)) {
-    return nullptr;
-  }
-  slotIndex++;
-
   for (JSAtom* exportName : exportNames) {
     if (!addProperty(exportName)) {
       return nullptr;
@@ -196,8 +190,6 @@ SharedShape* js::CreateEnvironmentShapeForSyntheticModule(
 SharedShape* js::CreateEnvironmentShapeForWasmModule(
     JSContext* cx, const JSClass* cls, uint32_t numSlots,
     Handle<ExportNameVector> exportNames) {
-  // TODO(Bug 2079881): *namespace* is a valid wasm export name that will
-  // be shadowed by us using *namespace* to represent ~NAMESPACE~.
   return CreateEnvironmentShapeForModuleExports(cx, cls, numSlots, exportNames);
 }
 

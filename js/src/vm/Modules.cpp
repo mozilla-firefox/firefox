@@ -1519,8 +1519,6 @@ static bool ComputeNamespaceBindings(JSContext* cx,
   Rooted<JSAtom*> name(cx);
   Rooted<Value> resolution(cx);
   Rooted<ResolvedBindingObject*> binding(cx);
-  Rooted<ModuleObject*> importedModule(cx);
-  Rooted<JSAtom*> bindingName(cx);
   for (JSAtom* atom : ns->exports()) {
     name = atom;
 
@@ -1530,9 +1528,7 @@ static bool ComputeNamespaceBindings(JSContext* cx,
 
     MOZ_ASSERT(IsResolvedBinding(cx, resolution));
     binding = &resolution.toObject().as<ResolvedBindingObject>();
-    importedModule = binding->module();
-    bindingName = binding->bindingName();
-    if (!ns->addBinding(cx, name, importedModule, bindingName)) {
+    if (!ns->addBinding(cx, name, binding)) {
       return false;
     }
   }
@@ -1683,7 +1679,6 @@ static bool ModuleInitializeEnvironment(JSContext* cx,
   Rooted<JSAtom*> exportName(cx);
   Rooted<Value> resolution(cx);
   Rooted<ResolvedBindingObject*> binding(cx);
-  Rooted<JSAtom*> bindingName(cx);
   Rooted<ModuleObject*> bindingModule(cx);
   Rooted<ModuleNamespaceObject*> bindingNs(cx);
   for (const ExportEntry& e : module->indirectExportEntries()) {
@@ -1705,28 +1700,23 @@ static bool ModuleInitializeEnvironment(JSContext* cx,
     }
 
     binding = &resolution.toObject().as<ResolvedBindingObject>();
-    bindingName = binding->bindingName();
 
     // https://tc39.es/ecma262/#sec-module-namespace-exotic-objects-get-p-receiver
     // ES2023 10.4.6.8 Module Namespace Exotic Object [[Get]]
-    if (bindingName == cx->names().star_namespace_star_ ||
-        bindingName == cx->names().star_deferred_namespace_star_) {
+    if (binding->isNamespace()) {
       bindingModule = binding->module();
-      ImportPhase phase = bindingName == cx->names().star_namespace_star_
-                              ? ImportPhase::Evaluation
-                              : ImportPhase::Deferred;
-      bindingNs = GetOrCreateModuleNamespace(cx, bindingModule, phase);
+      bindingNs = GetOrCreateModuleNamespace(cx, bindingModule,
+                                             binding->namespacePhase());
       if (!bindingNs) {
         return false;
       }
 
-      // The spec uses an immutable binding here but we have already generated
-      // bytecode for an indirect binding. Instead, use an indirect binding to
-      // "*namespace*" slot of the environment.
-      Rooted<ModuleEnvironmentObject*> env(
-          cx, &bindingModule->initialEnvironment());
-      InitNamespaceOrSourceBinding(cx, env, bindingName,
-                                   ObjectValue(*bindingNs));
+      // Module namespace [[Get]] returns GetModuleNamespace(targetModule) for a
+      // namespace binding. Namespace object bindings are indirect bindings, so
+      // store the namespace in the slot of the target module's environment for
+      // them to refer to.
+      bindingModule->initialEnvironment().initNamespaceSlot(
+          binding->namespacePhase(), bindingNs);
     }
   }
 
@@ -1812,19 +1802,15 @@ static bool ModuleInitializeEnvironment(JSContext* cx,
         return false;
       }
 
-      auto* binding = &resolution.toObject().as<ResolvedBindingObject>();
+      binding = &resolution.toObject().as<ResolvedBindingObject>();
       sourceModule = binding->module();
-      bindingName = binding->bindingName();
 
       // Step 7.d.iv. If resolution.[[BindingName]] is namespace or
       // deferred-namespace, then:
-      if (bindingName == cx->names().star_namespace_star_ ||
-          bindingName == cx->names().star_deferred_namespace_star_) {
+      if (binding->isNamespace()) {
         // Step.7.d.iv.1. If resolution.[[BindingName]] is namespace let phase
         // be evaluation, else let phase be defer.
-        ImportPhase phase = bindingName == cx->names().star_namespace_star_
-                                ? ImportPhase::Evaluation
-                                : ImportPhase::Deferred;
+        ImportPhase phase = binding->namespacePhase();
         // Step 7.d.iv.2. Let namespace be ?
         //                 GetModuleNamespace(resolution.[[Module]]).
         Rooted<ModuleNamespaceObject*> ns(
@@ -1833,29 +1819,26 @@ static bool ModuleInitializeEnvironment(JSContext* cx,
           return false;
         }
 
-        // Step 7.d.iv.2. Perform !
+        // Step 7.d.iv.3. Perform !
         //                env.CreateImmutableBinding(in.[[LocalName]], true).
-        // Step 7.d.iv.3. Perform ! env.InitializeBinding(in.[[LocalName]],
+        // Step 7.d.iv.4. Perform ! env.InitializeBinding(in.[[LocalName]],
         //                namespace).
         //
-        // This should be InitNamespaceBinding, but we have already generated
-        // bytecode assuming an indirect binding. Instead, ensure a special
-        // "*namespace*"" binding exists on the target module's environment. We
-        // then generate an indirect binding to this synthetic binding.
-        InitNamespaceOrSourceBinding(cx, &sourceModule->initialEnvironment(),
-                                     bindingName, ObjectValue(*ns));
-        if (!env->createImportBinding(cx, localName, sourceModule,
-                                      bindingName)) {
-          return false;
-        }
-      } else {
-        // Step 7.d.v. Else:
-        // Step 7.d.v.1. Perform env.CreateImportBinding(in.[[LocalName]],
-        //               resolution.[[Module]], resolution.[[BindingName]]).
-        if (!env->createImportBinding(cx, localName, sourceModule,
-                                      bindingName)) {
-          return false;
-        }
+        // We have already generated bytecode for an indirect binding to
+        // in.[[LocalName]], so instead of an immutable binding, store the
+        // namespace in a reserved slot of the target module's environment and
+        // create an indirect binding to that slot below.
+        sourceModule->initialEnvironment().initNamespaceSlot(phase, ns);
+      }
+
+      // Step 7.d.v. Else:
+      // Step 7.d.v.1. Perform env.CreateImportBinding(in.[[LocalName]],
+      //               resolution.[[Module]], resolution.[[BindingName]]).
+      //
+      // This is done for namespace imports too, since they also use an
+      // indirect binding, as described above.
+      if (!env->createImportBinding(cx, localName, binding)) {
+        return false;
       }
     }
   }

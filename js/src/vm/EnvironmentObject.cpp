@@ -532,14 +532,30 @@ IndirectBindingMap& ModuleEnvironmentObject::importBindings() const {
   return module().importBindings();
 }
 
-bool ModuleEnvironmentObject::createImportBinding(JSContext* cx,
-                                                  Handle<JSAtom*> importName,
-                                                  Handle<ModuleObject*> module,
-                                                  Handle<JSAtom*> localName) {
+bool ModuleEnvironmentObject::createImportBinding(
+    JSContext* cx, Handle<JSAtom*> importName,
+    Handle<ResolvedBindingObject*> binding) {
   RootedId importNameId(cx, AtomToId(importName));
-  RootedId localNameId(cx, AtomToId(localName));
-  Rooted<ModuleEnvironmentObject*> env(cx, &module->initialEnvironment());
-  return importBindings().put(cx, importNameId, env, localNameId);
+  return importBindings().put(cx, importNameId, binding);
+}
+
+/* static */
+uint32_t ModuleEnvironmentObject::namespaceSlotIndex(ImportPhase phase) {
+  MOZ_ASSERT(phase == ImportPhase::Evaluation ||
+             phase == ImportPhase::Deferred);
+  return phase == ImportPhase::Deferred ? DEFERRED_NAMESPACE_SLOT.index()
+                                        : NAMESPACE_SLOT.index();
+}
+
+void ModuleEnvironmentObject::initNamespaceSlot(ImportPhase phase,
+                                                ModuleNamespaceObject* ns) {
+  MOZ_ASSERT(phase == ImportPhase::Evaluation ||
+             phase == ImportPhase::Deferred);
+  auto slot =
+      phase == ImportPhase::Deferred ? DEFERRED_NAMESPACE_SLOT : NAMESPACE_SLOT;
+  MOZ_ASSERT(getReservedSlotTyped(slot).isUndefined() ||
+             &getReservedSlotTyped(slot).toObject() == ns);
+  setReservedSlotTyped(slot, ObjectValue(*ns));
 }
 
 bool ModuleEnvironmentObject::hasImportBinding(Handle<PropertyName*> name) {

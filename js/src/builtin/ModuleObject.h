@@ -256,8 +256,7 @@ class ResolvedBindingObject : public NativeObject {
   ModuleObject* module() const;
   BindingNameType bindingNameType() const;
   bool isNamespace() const;
-  // For a namespace binding, returns the name of the internal property of the
-  // target module environment that holds the namespace object.
+  // Only valid when bindingNameType() is BindingNameType::String.
   JSAtom* bindingName() const;
   // Only valid when isNamespace() is true.
   ImportPhase namespacePhase() const;
@@ -269,7 +268,7 @@ class IndirectBindingMap {
   void trace(JSTracer* trc);
 
   bool put(JSContext* cx, HandleId name,
-           Handle<ModuleEnvironmentObject*> environment, HandleId targetName);
+           Handle<ResolvedBindingObject*> binding);
 
   size_t count() const { return map_ ? map_->count() : 0; }
 
@@ -293,12 +292,18 @@ class IndirectBindingMap {
   struct Binding {
     Binding(ModuleEnvironmentObject* environment, jsid targetName,
             PropertyInfo prop);
+    Binding(ModuleEnvironmentObject* environment, uint32_t slot);
     HeapPtr<ModuleEnvironmentObject*> environment;
 #ifdef DEBUG
     HeapPtr<jsid> targetName;
+    // Whether this binds to a reserved slot of the environment rather than to
+    // the property named `targetName`.
+    bool isReservedSlot;
 #endif
     PropertyInfo prop;
   };
+
+  bool putBinding(JSContext* cx, HandleId name, Binding&& binding);
 
   using Map = mozilla::HashMap<PreBarriered<jsid>, Binding,
                                mozilla::DefaultHasher<PreBarriered<jsid>>,
@@ -334,8 +339,7 @@ class ModuleNamespaceObject : public ProxyObject {
   bool isDeferred() const;
 
   bool addBinding(JSContext* cx, Handle<JSAtom*> exportedName,
-                  Handle<ModuleObject*> targetModule,
-                  Handle<JSAtom*> targetName);
+                  Handle<ResolvedBindingObject*> binding);
 
  private:
   struct ProxyHandler : public BaseProxyHandler {
