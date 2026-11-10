@@ -39,4 +39,12 @@ add_task(async function () {
 
   info("Waiting for the console to open after session restore");
   await opened;
+
+  await safeCloseBrowserConsole();
+  BrowserConsoleManager.storeBrowserConsoleSessionState();
+  is(
+    BrowserConsoleManager.getBrowserConsoleSessionState(),
+    false,
+    "Session state reset to false once the Browser Console is closed"
+  );
 });
