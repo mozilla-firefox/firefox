@@ -217,6 +217,16 @@ panel-item[action="save"]::part(button) {
 }
 ```
 
+Items reserve space for an icon by default. Set the `no-icon` attribute on items
+that don't have an icon to remove that space.
+
+```html
+<panel-list>
+  <panel-item no-icon>New</panel-item>
+  <panel-item no-icon>Save</panel-item>
+</panel-list>
+```
+
 ### Badging
 
 There are two types of badging. Icons may be badged by setting the `badged`

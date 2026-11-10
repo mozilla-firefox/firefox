@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Test Panel Item no-icon attribute</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <link rel="stylesheet" href="chrome://global/skin/global.css" />
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+  </head>
+  <body>
+    <p id="display"></p>
+    <div id="content">
+      <panel-list>
+        <panel-item>Item</panel-item>
+        <panel-item no-icon="">No icon item</panel-item>
+      </panel-list>
+    </div>
+    <script class="testbody" type="application/javascript">
+      const getPadding = item => {
+        let style = getComputedStyle(item.shadowRoot.querySelector("button"));
+        return {
+          start: parseFloat(style.paddingInlineStart),
+          end: parseFloat(style.paddingInlineEnd),
+        };
+      };
+
+      add_task(async function () {
+        let [item, noIconItem] = document.querySelector("panel-list").children;
+
+        let itemPadding = getPadding(item);
+        ok(
+          itemPadding.start > itemPadding.end,
+          "An item reserves space for an icon by default"
+        );
+
+        let noIconPadding = getPadding(noIconItem);
+        is(
+          noIconPadding.end,
+          itemPadding.end,
+          "An item with no-icon keeps the default end padding"
+        );
+        is(
+          noIconPadding.start,
+          noIconPadding.end,
+          "An item with no-icon has the same padding on both sides"
+        );
+      });
+    </script>
+  </body>
+</html>

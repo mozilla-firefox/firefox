@@ -131,6 +131,8 @@ support-files = [
 
 ["test_panel_item_mouseup_click.html"]
 
+["test_panel_item_no_icon.html"]
+
 ["test_panel_item_shortcut.html"]
 
 ["test_panel_list_accessibility.html"]

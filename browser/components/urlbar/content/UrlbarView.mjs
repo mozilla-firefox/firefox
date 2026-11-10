@@ -4514,6 +4514,8 @@ export class UrlbarView {
       if (data.type == "checkbox") {
         menuitem.type = "checkbox";
         menuitem.checked = data.checked;
+      } else {
+        menuitem.toggleAttribute("no-icon", true);
       }
       panel.appendChild(menuitem);
     }
@@ -4576,6 +4578,7 @@ export class UrlbarView {
   #createContainerMenuItem(l10nId, onPick) {
     let menuitem = document.createElement("panel-item");
     document.l10n.setAttributes(menuitem, l10nId);
+    menuitem.toggleAttribute("no-icon", true);
     menuitem.addEventListener("click", onPick);
     return menuitem;
   }

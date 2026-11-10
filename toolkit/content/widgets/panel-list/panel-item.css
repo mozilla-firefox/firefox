@@ -64,6 +64,10 @@ button {
     background-image: url("chrome://global/skin/icons/check.svg");
   }
 
+  :host([no-icon]) & {
+    padding: var(--panel-item-button-padding);
+  }
+
   > moz-badge {
     flex: 0;
     display: inline-flex;
