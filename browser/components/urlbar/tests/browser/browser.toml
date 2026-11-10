@@ -102,6 +102,9 @@ fail-if = [
 
 ["browser_observers_for_strip_on_share.js"]
 
+["browser_pendingLoadProxyState.js"]
+support-files = ["slow-page.sjs"]
+
 ["browser_persist_searchMode.js"]
 
 ["browser_populateAfterPushState.js"]
