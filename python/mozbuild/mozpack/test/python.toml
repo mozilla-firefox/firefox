@@ -13,6 +13,8 @@ subsuite = "mozbuild"
 
 ["test_files.py"]
 
+["test_macho_linkedit.py"]
+
 ["test_manifests.py"]
 
 ["test_mozjar.py"]
