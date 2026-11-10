@@ -41,15 +41,22 @@ EXEC			= exec
 # Library rules
 #
 
-ifdef FORCE_SHARED_LIB
-ifdef MKSHLIB
-
+ifeq (clang-cl_WINNT,$(CC_TYPE)_$(OS_ARCH))
+MKSHLIB = $(LINKER) -NOLOGO -DLL -OUT:$@ $(DSO_LDOPTS)
+else
 ifdef LIB_IS_C_ONLY
-MKSHLIB			= $(MKCSHLIB)
+MKSHLIB = $(CC)
+ifneq (WINNT,$(OS_ARCH))
+MKSHLIB += $(COMPUTED_C_LDFLAGS)
 endif
-
-endif # MKSHLIB
-endif # FORCE_SHARED_LIB
+else
+MKSHLIB = $(CXX)
+ifneq (WINNT,$(OS_ARCH))
+MKSHLIB += $(COMPUTED_CXX_LDFLAGS)
+endif
+endif
+MKSHLIB += $(DSO_LDOPTS) -o $@
+endif
 
 ifeq ($(OS_ARCH),WINNT)
 

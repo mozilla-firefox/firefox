@@ -66,7 +66,6 @@ showbuild:
 		LD \
 		AR \
 		MKSHLIB \
-		MKCSHLIB \
 		RC \
 		CFLAGS \
 		OS_CFLAGS \

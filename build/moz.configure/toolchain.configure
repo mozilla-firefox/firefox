@@ -3661,47 +3661,6 @@ llvm_symbolizer = check_prog(
 )
 
 
-# Shared library building
-# ==============================================================
-
-
-# XXX: The use of makefile constructs in these variables is awful.
-@depends(target, c_compiler)
-def make_shared_library(target, compiler):
-    if target.os == "WINNT":
-        if compiler.type == "clang":
-            return namespace(
-                mkshlib=["$(CXX)", "$(DSO_LDOPTS)", "-o", "$@"],
-                mkcshlib=["$(CC)", "$(DSO_LDOPTS)", "-o", "$@"],
-            )
-        else:
-            linker = [
-                "$(LINKER)",
-                "-NOLOGO",
-                "-DLL",
-                "-OUT:$@",
-                "$(DSO_LDOPTS)",
-            ]
-            return namespace(
-                mkshlib=linker,
-                mkcshlib=linker,
-            )
-
-    cc = ["$(CC)", "$(COMPUTED_C_LDFLAGS)"]
-    cxx = ["$(CXX)", "$(COMPUTED_CXX_LDFLAGS)"]
-    flags = ["$(DSO_LDOPTS)"]
-    output = ["-o", "$@"]
-
-    return namespace(
-        mkshlib=cxx + flags + output,
-        mkcshlib=cc + flags + output,
-    )
-
-
-set_config("MKSHLIB", make_shared_library.mkshlib)
-set_config("MKCSHLIB", make_shared_library.mkcshlib)
-
-
 @depends(c_compiler, toolchain_prefix, when=target_is_windows)
 def rc_names(c_compiler, toolchain_prefix):
     if c_compiler.type in ("gcc", "clang"):
