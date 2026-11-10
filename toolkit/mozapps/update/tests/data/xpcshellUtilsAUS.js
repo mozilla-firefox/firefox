@@ -2076,7 +2076,10 @@ function removeUpdateInProgressLockFile(aDir) {
   Assert.ok(!file.exists(), MSG_SHOULD_NOT_EXIST + getMsgPath(file.path));
 }
 
-function stripQuarantineBitFromPath(aPath) {
+/**
+ * Tests should call setupTestAppBundle instead.
+ */
+function _stripQuarantineBitFromPath(aPath) {
   if (AppConstants.platform != "macosx") {
     do_throw("macOS-only function called by a different platform!");
   }
@@ -2089,9 +2092,17 @@ function stripQuarantineBitFromPath(aPath) {
   xattrBin.initWithPath("/usr/bin/xattr");
   stripQuarantineBitProcess.init(xattrBin);
   stripQuarantineBitProcess.run(true, args, args.length);
+  Assert.equal(
+    stripQuarantineBitProcess.exitValue,
+    0,
+    "xattr should succeed for " + aPath
+  );
 }
 
-function selfSignAppBundle(aPath) {
+/**
+ * Tests should call setupTestAppBundle instead.
+ */
+function _selfSignAppBundle(aPath) {
   if (AppConstants.platform != "macosx") {
     do_throw("macOS-only function called by a different platform!");
   }
@@ -2104,15 +2115,68 @@ function selfSignAppBundle(aPath) {
   codesignBin.initWithPath("/usr/bin/codesign");
   codesignProcess.init(codesignBin);
   codesignProcess.run(true, args, args.length);
+  Assert.equal(
+    codesignProcess.exitValue,
+    0,
+    "codesign should succeed for " + aPath
+  );
 }
 
 /**
+ * Tests should call setupTestAppBundle instead.
+ *
+ * Writes the test's application bundle Info.plist, unless the test has already
+ * set it up through gTestFiles, and ad-hoc signs the bundle.
+ */
+function _signTestAppBundle() {
+  if (AppConstants.platform != "macosx") {
+    do_throw("macOS-only function called by a different platform!");
+  }
+
+  let infoPlist = getApplyDirFile(DIR_CONTENTS + FILE_INFO_PLIST);
+  if (!infoPlist.exists()) {
+    writeFile(infoPlist, DIR_APP_INFO_PLIST_FILE_CONTENTS);
+  }
+  let bundlePath = getApplyDirFile().path;
+  _stripQuarantineBitFromPath(bundlePath);
+  _selfSignAppBundle(bundlePath);
+}
+
+/**
+ * Copies or symlinks the application files and the test updater into the
+ * test's application directory. On macOS it also makes the directory a valid,
+ * ad-hoc signed app bundle, since macOS can otherwise report the bundle as
+ * damaged and hold the launch of the updater inside it. Call this after every
+ * other file the test needs inside the bundle is in place, since changes made
+ * afterwards break the signature.
+ *
+ * @param options.requiresOmnijar when true, copy or symlink omnijars as well.
+ */
+async function setupTestAppBundle({ requiresOmnijar = false } = {}) {
+  await TestUtils.waitForCondition(() => {
+    try {
+      _setupAppFiles({ requiresOmnijar });
+      return true;
+    } catch (e) {
+      logTestInfo("exception when calling _setupAppFiles, Exception: " + e);
+    }
+    return false;
+  }, "Waiting to setup app files");
+
+  if (AppConstants.platform == "macosx") {
+    _signTestAppBundle();
+  }
+}
+
+/**
+ * Tests should call setupTestAppBundle instead.
+ *
  * Copies the test updater to the GRE binary directory and returns the nsIFile
  * for the copied test updater.
  *
  * @return  nsIFIle for the copied test updater.
  */
-function copyTestUpdaterToBinDir() {
+function _copyTestUpdaterToBinDir() {
   let testUpdater = getTestDirFile(FILE_UPDATER_BIN);
   let updater = getGREBinDir();
   updater.append(FILE_UPDATER_BIN);
@@ -2121,7 +2185,7 @@ function copyTestUpdaterToBinDir() {
   }
 
   if (AppConstants.platform == "macosx") {
-    stripQuarantineBitFromPath(updater.path);
+    _stripQuarantineBitFromPath(updater.path);
     updater.append("Contents");
     updater.append("MacOS");
     updater.append("org.mozilla.updater");
@@ -2262,7 +2326,7 @@ function runUpdate(
   }
 
   if (!gUpdateBin) {
-    gUpdateBin = copyTestUpdaterToBinDir();
+    gUpdateBin = _copyTestUpdaterToBinDir();
   }
 
   Assert.ok(
@@ -2731,6 +2795,8 @@ function isBinarySigned(aBinPath) {
 }
 
 /**
+ * Tests should call setupTestAppBundle instead.
+ *
  * Helper function for setting up the application files required to launch the
  * application for the updater tests by either copying or creating symlinks to
  * the files.
@@ -2739,7 +2805,7 @@ function isBinarySigned(aBinPath) {
  * This may be required to launch the updated application and have non-trivial
  * functionality available.
  */
-function setupAppFiles({ requiresOmnijar = false } = {}) {
+function _setupAppFiles({ requiresOmnijar = false } = {}) {
   debugDump(
     "start - copying or creating symlinks to application files " +
       "for the test"
@@ -2812,7 +2878,7 @@ function setupAppFiles({ requiresOmnijar = false } = {}) {
     copyFileToTestAppDir(aAppFile.relPath, aAppFile.inDir);
   });
 
-  copyTestUpdaterToBinDir();
+  _copyTestUpdaterToBinDir();
 
   debugDump(
     "finish - copying or creating symlinks to application files " +
@@ -3446,7 +3512,7 @@ async function setupUpdaterTest(
   // updater app bundle, so make sure it is in place now in case we want to
   // manipulate it.
   if (!gUpdateBin) {
-    gUpdateBin = copyTestUpdaterToBinDir();
+    gUpdateBin = _copyTestUpdaterToBinDir();
   }
 
   let filesWithCompareContents = [];
@@ -3588,20 +3654,9 @@ async function setupUpdaterTest(
     });
   }
 
-  await TestUtils.waitForCondition(() => {
-    try {
-      setupAppFiles({ requiresOmnijar });
-      return true;
-    } catch (e) {
-      logTestInfo("exception when calling setupAppFiles, Exception: " + e);
-    }
-    return false;
-  }, "Waiting to setup app files");
+  await setupTestAppBundle({ requiresOmnijar });
 
   if (AppConstants.platform == "macosx") {
-    let bundlePath = afterApplyBinDir.parent.parent.path;
-    stripQuarantineBitFromPath(bundlePath);
-    selfSignAppBundle(bundlePath);
     filesWithCompareContents.forEach(elem => {
       elem.memFile.originalContents = readFileBytes(elem.diskFile);
       elem.memFile.compareContents = elem.memFile.originalContents;

@@ -148,7 +148,7 @@ add_task(async function testLangpackStaged() {
   let stagingCall = mockLangpackUpdate();
 
   Services.prefs.setBoolPref(PREF_APP_UPDATE_STAGING_ENABLED, true);
-  copyTestUpdaterToBinDir();
+  await setupTestAppBundle();
 
   let greDir = getGREDir();
 
