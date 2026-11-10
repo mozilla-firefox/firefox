@@ -2634,6 +2634,60 @@ void WindowGlobalParent::DedupePrefetchRecords(
   }
 }
 
+/* static */
+void WindowGlobalParent::ClearPrefetchCache(
+    nsIPrincipal* aPartitionedPrincipal) {
+  // Implements "clear prefetch cache" for Clear-Site-Data "prefetchCache".
+  // Spec:
+  // https://wicg.github.io/nav-speculation/prefetch.html#clear-prefetch-cache
+  // Unlike the spec, which matches on origin alone, documents are matched on
+  // their partitioned principal so that a third-party response can't clear a
+  // first-party document's prefetches.
+  if (LOG_SPECRULES_ENABLED()) {
+    nsAutoCString origin;
+    aPartitionedPrincipal->GetOrigin(origin);
+    LOG_SPECRULES_FMT("WindowGlobalParent::ClearPrefetchCache: origin={}",
+                      origin);
+  }
+  // 1. For each top-level traversable traversable of the user agent's
+  // top-level traversable set:
+  nsTArray<RefPtr<BrowsingContextGroup>> groups;
+  BrowsingContextGroup::GetAllGroups(groups);
+  for (const auto& group : groups) {
+    for (const auto& top : group->Toplevels()) {
+      // 1.1. Let navigables be the inclusive descendant navigables of
+      // traversable's active document.
+      // 1.2. For each navigable in navigables:
+      top->PreOrderWalk([&](dom::BrowsingContext* aBC) {
+        // 1.2.1. Let activeDocument be the navigable's active document.
+        RefPtr<WindowGlobalParent> wgp =
+            aBC->Canonical()->GetCurrentWindowGlobal();
+        // 1.2.2. If activeDocument's origin is not same origin with origin,
+        // then continue.
+        if (!wgp || !wgp->DocumentPartitionedPrincipal()->Equals(
+                        aPartitionedPrincipal)) {
+          return;
+        }
+        // 1.2.3. For each prefetchRecord in activeDocument's prefetch records:
+        nsTArray<PPrefetchRecordParent*> managed;
+        wgp->ManagedPPrefetchRecordParent(managed);
+        if (!managed.IsEmpty()) {
+          LOG_SPECRULES_FMT(
+              "WindowGlobalParent::ClearPrefetchCache: wgp={} clearing {} "
+              "records",
+              fmt::ptr(wgp.get()), managed.Length());
+        }
+        for (auto* p : managed) {
+          // 1.2.3.1. is skipped: prerendering is not implemented, so a
+          // record's prerendering traversable is always null.
+          // 1.2.3.2. Cancel and discard prefetchRecord given activeDocument.
+          static_cast<PrefetchRecordParent*>(p)->MarkCanceled();
+        }
+      });
+    }
+  }
+}
+
 NS_IMPL_CYCLE_COLLECTION_CLASS(WindowGlobalParent)
 
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(WindowGlobalParent,

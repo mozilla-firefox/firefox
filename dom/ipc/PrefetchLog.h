@@ -31,6 +31,9 @@ extern LazyLogModule gSpeculationRulesLog;
 //   LOG_SPECRULES_V(("verbose %s", bar));  // Verbose level
 #define LOG_SPECRULES(args) \
   MOZ_LOG(mozilla::dom::gSpeculationRulesLog, mozilla::LogLevel::Debug, args)
+#define LOG_SPECRULES_FMT(...)                                              \
+  MOZ_LOG_FMT(mozilla::dom::gSpeculationRulesLog, mozilla::LogLevel::Debug, \
+              __VA_ARGS__)
 #define LOG_SPECRULES_V(args) \
   MOZ_LOG(mozilla::dom::gSpeculationRulesLog, mozilla::LogLevel::Verbose, args)
 #define LOG_SPECRULES_WARN(args) \

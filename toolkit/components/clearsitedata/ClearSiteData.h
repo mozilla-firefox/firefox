@@ -40,6 +40,7 @@ class ClearSiteData final : public nsIObserver {
     eCache = 0x01,
     eCookies = 0x02,
     eStorage = 0x04,
+    ePrefetchCache = 0x08,
   };
 
   // This method writes a console message when a cleanup operation is going to

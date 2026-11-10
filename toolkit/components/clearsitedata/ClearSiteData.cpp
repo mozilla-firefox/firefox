@@ -8,6 +8,8 @@
 #include "mozilla/OriginAttributes.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/Services.h"
+#include "mozilla/StaticPrefs_dom.h"
+#include "mozilla/dom/WindowGlobalParent.h"
 #include "nsASCIIMask.h"
 #include "nsCharSeparatedTokenizer.h"
 #include "nsContentSecurityManager.h"
@@ -214,6 +216,12 @@ void ClearSiteData::ClearDataFromChannel(nsIHttpChannel* aChannel) {
     cleanNetworkFlags |= nsIClearDataService::CLEAR_ALL_CACHES;
   }
 
+  if (StaticPrefs::dom_speculation_rules_enabled() &&
+      (flags & ePrefetchCache)) {
+    LogOpToConsole(aChannel, uri, ePrefetchCache);
+    dom::WindowGlobalParent::ClearPrefetchCache(partitionedPrincipal);
+  }
+
   if (flags & eCookies) {
     LogOpToConsole(aChannel, uri, eCookies);
     cleanFlags |= nsIClearDataService::CLEAR_COOKIES |
@@ -285,9 +293,14 @@ uint32_t ClearSiteData::ParseHeader(nsIHttpChannel* aChannel,
 
     if (StaticPrefs::privacy_clearSiteDataHeader_cache_enabled()) {
       if (value.EqualsLiteral("\"cache\"")) {
-        flags |= eCache;
+        flags |= eCache | ePrefetchCache;
         continue;
       }
+    }
+
+    if (value.EqualsLiteral("\"prefetchCache\"")) {
+      flags |= ePrefetchCache;
+      continue;
     }
 
     if (value.EqualsLiteral("\"cookies\"")) {
@@ -301,7 +314,7 @@ uint32_t ClearSiteData::ParseHeader(nsIHttpChannel* aChannel,
     }
 
     if (value.EqualsLiteral("\"*\"")) {
-      flags = eCookies | eStorage;
+      flags = eCookies | eStorage | ePrefetchCache;
       if (StaticPrefs::privacy_clearSiteDataHeader_cache_enabled()) {
         flags |= eCache;
       }
@@ -366,6 +379,10 @@ void ClearSiteData::TypeToString(Type aType, nsAString& aStr) const {
 
     case eStorage:
       aStr.AssignLiteral("storage");
+      break;
+
+    case ePrefetchCache:
+      aStr.AssignLiteral("prefetchCache");
       break;
 
     default:
