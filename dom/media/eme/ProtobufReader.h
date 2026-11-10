@@ -11,6 +11,7 @@
 #include <cstdint>
 
 #include "mozilla/Span.h"
+#include "nsTArray.h"
 
 namespace mozilla {
 
@@ -119,7 +120,21 @@ constexpr uint32_t kSignedMessageTypeField = 1;
 
 enum class SignedMessageType : uint8_t {
   ServiceCertificateRequest = 4,
+  ServiceCertificate = 5,
 };
+
+// The SignedMessage field that holds a License, the License field that holds a
+// KeyContainer and the KeyContainer fields that hold a key ID and its type.
+constexpr uint32_t kSignedMessageMsgField = 2;
+constexpr uint32_t kLicenseKeyField = 3;
+constexpr uint32_t kKeyContainerIdField = 1;
+constexpr uint32_t kKeyContainerTypeField = 4;
+
+// The KeyContainer type of a key that decrypts content.
+constexpr uint64_t kKeyTypeContent = 2;
+
+constexpr size_t kKeyIdSize = 16;
+constexpr size_t kMaxLicenseKeyIds = 256;
 
 // A SignedMessage that holds only its type is the tag of the type field and
 // the type as a one byte varint.
@@ -135,6 +150,14 @@ constexpr size_t kSignedMessageTypeOnlySize = 2;
 Span<const uint8_t> TrimKeyRequest(Span<const uint8_t> aRequest);
 
 bool IsServiceCertificateRequest(Span<const uint8_t> aRequest);
+
+bool IsServiceCertificateResponse(Span<const uint8_t> aResponse);
+
+// Returns the IDs of the content keys in a license response, which is
+// a SignedMessage (field 2: License). The License holds the KeyContainers
+// (field 3), each with the key ID in field 1 and its type in field 4. The
+// response is not trusted, so at most kMaxLicenseKeyIds are returned.
+nsTArray<nsTArray<uint8_t>> ParseLicenseKeyIds(Span<const uint8_t> aResponse);
 
 }  // namespace widevine
 

@@ -630,10 +630,10 @@ mozilla::ipc::IPCResult MediaDrmRemoteCDMParent::RecvUpdateSession(
   MOZ_ASSERT(mDrm);
   MOZ_ASSERT(HasCrypto());
 
+  Span<const uint8_t> response = aRequest.response();
   AMediaDrmKeySetId keySetId{};
   media_status_t status = AMediaDrm_provideKeyResponse(
-      mDrm, &i->second.id, aRequest.response().Elements(),
-      aRequest.response().Length(), &keySetId);
+      mDrm, &i->second.id, response.Elements(), response.Length(), &keySetId);
   if (NS_WARN_IF(status != AMEDIA_OK)) {
     aResolver(MediaResult(
         NS_ERROR_DOM_INVALID_STATE_ERR,
@@ -645,6 +645,25 @@ mozilla::ipc::IPCResult MediaDrmRemoteCDMParent::RecvUpdateSession(
     i->second.awaitingCertificate = false;
     if (!__builtin_available(android 29, *)) {
       mCertificateQueue.AppendElement(aRequest.sessionId());
+    }
+  }
+
+  // Android before 29 cannot report key statuses, so assume that the keys in
+  // a license are usable.
+  if (!__builtin_available(android 29, *)) {
+    if (!widevine::IsServiceCertificateResponse(response)) {
+      nsTArray<CDMKeyInfo> keyInfo;
+      for (auto& keyId : widevine::ParseLicenseKeyIds(response)) {
+        dom::Optional<dom::MediaKeyStatus> keyStatus;
+        keyStatus.Construct(dom::MediaKeyStatus::Usable);
+        keyInfo.AppendElement(
+            CDMKeyInfo(std::move(keyId), std::move(keyStatus)));
+      }
+
+      if (!keyInfo.IsEmpty()) {
+        (void)SendOnSessionKeyStatus(RemoteCDMKeyStatusIPDL(
+            nsString(aRequest.sessionId()), std::move(keyInfo)));
+      }
     }
   }
 
