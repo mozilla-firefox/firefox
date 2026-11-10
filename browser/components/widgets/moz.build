@@ -10,6 +10,7 @@ JAR_MANIFESTS += ["jar.mn"]
 MOZ_SRC_FILES += [
     "Tools.sys.mjs",
     "WidgetGenerator.sys.mjs",
+    "Workspace.sys.mjs",
 ]
 
 BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]

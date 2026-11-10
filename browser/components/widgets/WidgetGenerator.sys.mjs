@@ -2,10 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import {
-  WRITE_FILE,
-  WRITE_FILE_TOOL_CONFIG,
-} from "moz-src:///browser/components/widgets/Tools.sys.mjs";
+import { TOOLS } from "moz-src:///browser/components/widgets/Tools.sys.mjs";
+import { Workspace } from "moz-src:///browser/components/widgets/Workspace.sys.mjs";
 
 const lazy = {};
 
@@ -15,7 +13,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   Conversation:
     "moz-src:///browser/components/aiwindow/models/Conversation.sys.mjs",
   MODEL_FEATURES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
-  PURPOSES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
   SERVICE_TYPES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   openAIEngine:
@@ -44,7 +41,7 @@ const LOCAL_PROMPT_URL = "chrome://browser/content/widgets/prompt.md";
  * The record version this build reads. Bump it when the tools or file checks
  * change.
  */
-export const PROMPT_MAJOR_VERSION = 1;
+export const PROMPT_MAJOR_VERSION = 2;
 
 /**
  * The codes of a WidgetGeneratorError.
@@ -121,15 +118,13 @@ class _WidgetGenerator {
       engine,
       prompt,
     });
-    let files = await this.#writeFiles(conversation, { token, signal });
-
+    let files = await this.#runConversation(conversation, { token, signal });
     if (!files.size) {
       throw new WidgetGeneratorError(
         "The model wrote no files",
         GENERATION_ERRORS.GENERATION
       );
     }
-
     return files;
   }
 
@@ -202,7 +197,6 @@ class _WidgetGenerator {
         apiKey,
         feature: lazy.MODEL_FEATURES.WIDGET_GENERATION,
         serviceType: lazy.SERVICE_TYPES.WIDGET_GENERATION,
-        purpose: lazy.PURPOSES.WIDGET_GENERATION,
       });
     } catch (error) {
       throw new WidgetGeneratorError(
@@ -238,12 +232,11 @@ class _WidgetGenerator {
    *
    * @param {object} conversation - the conversation holding the request
    * @param {?string} token - null when the endpoint pref is set
-   * @param {object[]} tools - the tools the model can call
    * @returns {Promise<{finalOutput: string, toolCalls: object[]}>} the reply
    */
-  async #runTurn(conversation, token, tools) {
+  async #runTurn(conversation, token) {
     try {
-      return await conversation.run({ token, tools });
+      return await conversation.run({ token, tools: TOOLS });
     } catch (error) {
       throw new WidgetGeneratorError(
         "The model request failed",
@@ -254,47 +247,7 @@ class _WidgetGenerator {
   }
 
   /**
-   * Reads the path and content of a write_file call.
-   *
-   * @param {object} call - a tool call from the model's reply
-   * @returns {{file_path: string, content: string}} the file to write
-   */
-  #parseWrite(call) {
-    let name = call.function?.name;
-    if (name !== WRITE_FILE) {
-      throw new WidgetGeneratorError(
-        `The model called an unknown tool: ${name}`,
-        GENERATION_ERRORS.GENERATION
-      );
-    }
-    let write;
-    try {
-      write = JSON.parse(call.function.arguments);
-    } catch (error) {
-      throw new WidgetGeneratorError(
-        "The write_file arguments are not valid JSON",
-        GENERATION_ERRORS.GENERATION,
-        error
-      );
-    }
-    if (typeof write?.file_path !== "string" || !write.file_path) {
-      throw new WidgetGeneratorError(
-        "A write_file call has no path",
-        GENERATION_ERRORS.GENERATION
-      );
-    }
-    if (typeof write.content !== "string") {
-      throw new WidgetGeneratorError(
-        `A write_file call has no content: ${write.file_path}`,
-        GENERATION_ERRORS.GENERATION
-      );
-    }
-    return write;
-  }
-
-  /**
-   * Runs the conversation until a reply calls no tools, storing each file the
-   * model writes.
+   * Runs the conversation until a reply calls no tools.
    *
    * @param {object} conversation - the conversation holding the request
    * @param {object} options
@@ -302,13 +255,12 @@ class _WidgetGenerator {
    * @param {AbortSignal} [options.signal] - checked after each reply
    * @returns {Promise<Map<string, string>>} the files the model wrote, by path
    */
-  async #writeFiles(conversation, { token, signal }) {
-    let files = new Map();
-    let maxTurns = Services.prefs.getIntPref(MAX_TURNS_PREF, 20);
+  async #runConversation(conversation, { token, signal }) {
+    let workspace = new Workspace();
+    let lastError;
+    let maxTurns = Services.prefs.getIntPref(MAX_TURNS_PREF, 30);
     for (let turn = 0; turn < maxTurns; turn++) {
-      let response = await this.#runTurn(conversation, token, [
-        WRITE_FILE_TOOL_CONFIG,
-      ]);
+      let response = await this.#runTurn(conversation, token);
       signal?.throwIfAborted();
       let text = response?.finalOutput?.trim();
       if (text) {
@@ -316,21 +268,31 @@ class _WidgetGenerator {
       }
       let calls = response?.toolCalls ?? [];
       if (!calls.length) {
-        return files;
+        if (!workspace.changed && lastError) {
+          throw new WidgetGeneratorError(
+            lastError,
+            GENERATION_ERRORS.GENERATION
+          );
+        }
+        return workspace.files;
       }
       conversation.addAssistantMessage({}, { tool_calls: calls });
       for (let call of calls) {
-        let { file_path, content } = this.#parseWrite(call);
-        files.set(file_path, content);
+        let name = call.function?.name;
+        let { reply, error } = workspace.run(call);
+        lastError = error;
+        if (error) {
+          lazy.logger.debug(error, name, call.function?.arguments);
+        }
         conversation.addToolMessage({
           tool_call_id: call.id,
-          content: "ok",
-          name: call.function.name,
+          content: error ?? reply,
+          name,
         });
       }
     }
     throw new WidgetGeneratorError(
-      "The model was still writing files after the last turn",
+      "The model was still calling tools after the last turn",
       GENERATION_ERRORS.GENERATION
     );
   }

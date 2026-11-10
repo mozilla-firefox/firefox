@@ -2543,7 +2543,7 @@ pref("browser.widgets.generated.loglevel", "Warn");
 pref("browser.widgets.generated.endpoint", "");
 pref("browser.widgets.generated.apiKey", "");
 pref("browser.widgets.generated.model", "");
-pref("browser.widgets.generated.maxTurns", 20);
+pref("browser.widgets.generated.maxTurns", 30);
 pref("browser.widgets.generated.localPrompt", false);
 
 // Block insecure active content on https pages
