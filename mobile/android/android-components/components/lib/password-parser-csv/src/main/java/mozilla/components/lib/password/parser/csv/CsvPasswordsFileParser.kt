@@ -53,14 +53,31 @@ class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dis
                 skipped++
                 continue
             }
+
+            // This follows the validation rules from AS login.rs:
+            // https://github.com/mozilla/application-services/blob/af81da7208a53c47e3ada8b17a4a172a25bd9d87/components/logins/src/login.rs#L862-L868
+            // Exactly one of `httpRealm` and `formActionOrigin` must be present to be a valid login entry.
+            // If both are null, the record will throw. To avoid that, we set `formActionOrigin` to an empty string.
+            // It matches any form action on a webpage, and follows the desktop logic found in LoginHelper.sys.mjs:
+            // https://searchfox.org/firefox-main/rev/cf103b9362d64aa14c7adc0c0e4b9469ccbf6caa/toolkit/components/passwordmgr/LoginHelper.sys.mjs#296
+            // If both are present, the `httpRealm` will be cleared by the Rust code.
+            // So we should convert empty records to null and not to an empty string.
+            val httpRealm = row.cellAt(httpRealmIdx).ifEmpty { null }
+            val formActionCell = row.cellAt(formActionIdx)
+            val formActionOrigin =
+                when {
+                    formActionCell.isNotEmpty() -> formActionCell
+                    httpRealm == null -> ""
+                    else -> null
+                }
+
             logins +=
                 LoginEntry(
                     origin = origin,
                     username = row.cellAt(usernameIdx),
                     password = password,
-                    // Empty httpRealm signals a form login (matches desktop LoginCSVImport).
-                    httpRealm = row.cellAt(httpRealmIdx).ifEmpty { null },
-                    formActionOrigin = formActionIdx?.let { row.cellAt(it) },
+                    httpRealm = httpRealm,
+                    formActionOrigin = formActionOrigin,
                 )
         }
         return PasswordsParseResult(logins = logins, skippedRowCount = skipped)

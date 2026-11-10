@@ -12,7 +12,6 @@ import kotlinx.coroutines.test.runTest
 import mozilla.components.concept.password.parser.PasswordsParserError
 import mozilla.components.concept.storage.LoginEntry
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -33,16 +32,7 @@ class CsvPasswordsFileParserTest {
         val result = parser.parse(csv.byteInputStream()).getOrThrow()
 
         assertEquals(0, result.skippedRowCount)
-        assertEquals(
-            listOf(
-                LoginEntry(
-                    origin = "https://example.com",
-                    username = "alice",
-                    password = "hunter2",
-                )
-            ),
-            result.logins,
-        )
+        assertEquals(listOf(getDefaultLoginEntry()), result.logins)
     }
 
     @Test
@@ -61,19 +51,17 @@ class CsvPasswordsFileParserTest {
         assertEquals(0, result.skippedRowCount)
         assertEquals(
             listOf(
-                LoginEntry(
-                    origin = "https://example.com",
-                    username = "alice",
-                    password = "hun,ter2",
-                    httpRealm = null,
+                getDefaultLoginEntry(
                     formActionOrigin = "https://example.com/login",
+                    httpRealm = null,
+                    password = "hun,ter2",
                 ),
-                LoginEntry(
+                getDefaultLoginEntry(
                     origin = "https://intranet.example.com",
+                    formActionOrigin = null,
+                    httpRealm = "Corp Realm",
                     username = "carol",
                     password = "hunter3",
-                    httpRealm = "Corp Realm",
-                    formActionOrigin = "",
                 ),
             ),
             result.logins,
@@ -92,8 +80,8 @@ class CsvPasswordsFileParserTest {
         val result = parser.parse(csv.byteInputStream()).getOrThrow()
 
         assertEquals(
-            LoginEntry(
-                origin = "https://example.com",
+            getDefaultLoginEntry(
+                formActionOrigin = "",
                 username = "alice",
                 password = "hun\"ter2",
             ),
@@ -112,10 +100,7 @@ class CsvPasswordsFileParserTest {
 
         val result = parser.parse(csv.byteInputStream()).getOrThrow()
 
-        assertEquals(
-            LoginEntry(origin = "https://example.com", username = "alice", password = "hunter2"),
-            result.logins.single(),
-        )
+        assertEquals(getDefaultLoginEntry(), result.logins.single())
     }
 
     @Test
@@ -127,10 +112,7 @@ class CsvPasswordsFileParserTest {
 
         val result = parser.parse(csv.byteInputStream()).getOrThrow()
 
-        assertEquals(
-            LoginEntry(origin = "https://example.com", username = "alice", password = "hunter2"),
-            result.logins.single(),
-        )
+        assertEquals(getDefaultLoginEntry(), result.logins.single())
     }
 
     @Test
@@ -144,10 +126,7 @@ class CsvPasswordsFileParserTest {
 
         val result = parser.parse(csv.byteInputStream()).getOrThrow()
 
-        assertEquals(
-            LoginEntry(origin = "https://example.com", username = "alice", password = "hunter2"),
-            result.logins.single(),
-        )
+        assertEquals(getDefaultLoginEntry(), result.logins.single())
     }
 
     @Test
@@ -161,40 +140,56 @@ class CsvPasswordsFileParserTest {
 
         val result = parser.parse(csv.byteInputStream()).getOrThrow()
 
-        assertEquals(
-            LoginEntry(origin = "https://example.com", username = "alice", password = "hunter2"),
-            result.logins.single(),
-        )
+        assertEquals(getDefaultLoginEntry(), result.logins.single())
     }
 
     @Test
-    fun `empty httpRealm becomes null`() = runTest {
-        val csv =
-            """
-            url,username,password,httpRealm
-            https://example.com,alice,hunter2,
-            """
-                .trimIndent()
+    fun `GIVEN empty httpRealm and filled formActionOrigin WHEN parsing input THEN httpRealm converts to null and formActionOrigin converts to its value`() =
+        runTest {
+            val httpRealm = ""
+            val formActionOrigin = "https://example.com"
+            val csv = getTestCsvString(httpRealm = httpRealm, formActionOrigin = formActionOrigin).trimIndent()
 
-        val result = parser.parse(csv.byteInputStream()).getOrThrow()
+            val result = parser.parse(csv.byteInputStream()).getOrThrow().logins.single()
 
-        assertNull(result.logins.single().httpRealm)
-    }
+            assertEquals(getDefaultLoginEntry(httpRealm = null, formActionOrigin = formActionOrigin), result)
+        }
 
     @Test
-    fun `empty formActionOrigin is preserved as empty string`() = runTest {
-        // Matches desktop LoginCSVImport, which only null-coerces httpRealm.
-        val csv =
-            """
-            url,username,password,formActionOrigin
-            https://example.com,alice,hunter2,
-            """
-                .trimIndent()
+    fun `GIVEN empty formActionOrigin and filled httpRealm WHEN parsing input THEN formActionOrigin converts to null and httpRealm converts to its value`() =
+        runTest {
+            val formActionOrigin = ""
+            val httpRealm = "Login Required"
+            val csv = getTestCsvString(httpRealm = httpRealm, formActionOrigin = formActionOrigin).trimIndent()
 
-        val result = parser.parse(csv.byteInputStream()).getOrThrow()
+            val result = parser.parse(csv.byteInputStream()).getOrThrow().logins.single()
 
-        assertEquals("", result.logins.single().formActionOrigin)
-    }
+            assertEquals(getDefaultLoginEntry(formActionOrigin = null, httpRealm = httpRealm), result)
+        }
+
+    @Test
+    fun `GIVEN both httpRealm and formActionOrigin are empty WHEN parsing input THEN formActionOrigin converts to empty string and httpRealm converts to null`() =
+        runTest {
+            val formActionOrigin = ""
+            val httpRealm = ""
+            val csv = getTestCsvString(formActionOrigin = formActionOrigin, httpRealm = httpRealm).trimIndent()
+
+            val result = parser.parse(csv.byteInputStream()).getOrThrow().logins.single()
+
+            assertEquals(getDefaultLoginEntry(formActionOrigin = formActionOrigin, httpRealm = null), result)
+        }
+
+    @Test
+    fun `GIVEN both httpRealm and formActionOrigin are NOT empty WHEN parsing input THEN both convert to its value`() =
+        runTest {
+            val formActionOrigin = "https://example.com"
+            val httpRealm = "Login Required"
+            val csv = getTestCsvString(httpRealm = httpRealm, formActionOrigin = formActionOrigin).trimIndent()
+
+            val result = parser.parse(csv.byteInputStream()).getOrThrow().logins.single()
+
+            assertEquals(getDefaultLoginEntry(formActionOrigin = formActionOrigin, httpRealm = httpRealm), result)
+        }
 
     @Test
     fun `CRLF line endings are accepted`() = runTest {
@@ -202,10 +197,7 @@ class CsvPasswordsFileParserTest {
 
         val result = parser.parse(csv.byteInputStream()).getOrThrow()
 
-        assertEquals(
-            LoginEntry(origin = "https://example.com", username = "alice", password = "hunter2"),
-            result.logins.single(),
-        )
+        assertEquals(getDefaultLoginEntry(), result.logins.single())
     }
 
     @Test
@@ -214,10 +206,7 @@ class CsvPasswordsFileParserTest {
 
         val result = parser.parse(csv.byteInputStream()).getOrThrow()
 
-        assertEquals(
-            LoginEntry(origin = "https://example.com", username = "alice", password = "hunter2"),
-            result.logins.single(),
-        )
+        assertEquals(getDefaultLoginEntry(), result.logins.single())
     }
 
     @Test
@@ -312,4 +301,28 @@ class CsvPasswordsFileParserTest {
 
         assertIs<CancellationException>(caught)
     }
+
+    private fun getTestCsvString(
+        httpRealm: String,
+        formActionOrigin: String,
+    ) =
+        """
+            "url","username","password","httpRealm","formActionOrigin"
+            "https://example.com","alice","hunter2",$httpRealm,$formActionOrigin
+         """
+
+    private fun getDefaultLoginEntry(
+        origin: String = "https://example.com",
+        formActionOrigin: String? = "",
+        httpRealm: String? = null,
+        username: String = "alice",
+        password: String = "hunter2",
+    ) =
+        LoginEntry(
+            origin = origin,
+            formActionOrigin = formActionOrigin,
+            httpRealm = httpRealm,
+            username = username,
+            password = password,
+        )
 }
