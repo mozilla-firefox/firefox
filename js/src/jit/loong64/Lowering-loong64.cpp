@@ -1005,6 +1005,12 @@ void LIRGenerator::visitWasmAtomicBinopHeap(MWasmAtomicBinopHeap* ins) {
   define(lir, ins);
 }
 
+// A constant zero is stored from $zero.
+bool LIRGeneratorLOONG64::canStoreConstantWithoutRegister(MDefinition* value) {
+  return value->isConstant() &&
+         (value->toConstant()->isInt32(0) || value->toConstant()->isInt64(0));
+}
+
 #ifdef ENABLE_JIT_SIMD
 bool LIRGeneratorLOONG64::canFoldReduceSimd128AndBranch(wasm::SimdOp op) {
   switch (op) {
