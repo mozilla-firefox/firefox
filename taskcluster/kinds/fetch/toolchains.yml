@@ -871,12 +871,12 @@ stmo-cli:
         add-prefix: stmo-cli/
 
 treeherder-cli:
-    description: treeherder-cli 0.3.1 source code
+    description: treeherder-cli 0.3.2 source code
     fetch:
         type: static-url
-        url: https://crates.io/api/v1/crates/treeherder-cli/0.3.1/download
-        sha256: a44fbca9fa66907d2aa9f8491a923a7402e5619e55a508b3269ea74b77f96cd2
-        size: 141088
+        url: https://crates.io/api/v1/crates/treeherder-cli/0.3.2/download
+        sha256: d13af2a7de01c8b0097f266bd54461cf83d422c5845faeaec3037f2b41b02993
+        size: 138024
         artifact-name: treeherder-cli.tar.zst
         strip-components: 1
         add-prefix: treeherder-cli/
