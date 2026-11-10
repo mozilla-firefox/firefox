@@ -2660,3 +2660,4 @@ b4f712874bb3721456c5573673ab78f33f121b42 # Bug 2050591 - Replace ktlint with ktf
 60ad9d1eb17a2b32acc4f9febbc3481b8ac5ff31 # Bug 2066073 - Turn the tab group and split view elements into modules
 ada0b5fee70b94c3bdb62d4232fc608aea161309 # Bug 2070849 - Turn the tab strip element into a module
 8bde5d3521483dae31b7c5b5fb1e32696c6c3690 # Bug 2071355 - Turn the tab element into a module
+1505b21466517101808bf6db4a66985555d6e433 # Bug 2080403 - Load the tabbrowser window scripts renamed to .mjs as modules

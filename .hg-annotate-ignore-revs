@@ -448,3 +448,4 @@ c8e85315bea8fc02414231079712df31d7384ae3 - Emilio Cobos Álvarez - Bug 2067088 -
 dcb5eb5efca7f18696c9e230370a12ac59af84ec - Dão Gottwald - Bug 2066073 - Turn the tab group and split view elements into modules
 734f34d74cdb5ba00159dbe2a1ba79c292a3a19f - Dão Gottwald - Bug 2070849 - Turn the tab strip element into a module
 03e1d1b25d1200586c3c52579fd6d3a3191e75d4 - Dão Gottwald - Bug 2071355 - Turn the tab element into a module
+0347c067912632eed2c7e594b1b6b718263d6e37 - Dão Gottwald - Bug 2080403 - Load the tabbrowser window scripts renamed to .mjs as modules
