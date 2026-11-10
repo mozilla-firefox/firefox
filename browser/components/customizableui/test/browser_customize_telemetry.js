@@ -140,7 +140,7 @@ add_task(async function test_restore_defaults_and_undo() {
 
   let resetButton = document.getElementById("customization-reset-button");
   ok(!resetButton.disabled, "Reset button is enabled");
-  resetButton.doCommand();
+  resetButton.click();
   await TestUtils.waitForCondition(() => !gCustomizeMode.resetting);
   ok(CustomizableUI.inDefaultState, "In default state after reset");
 
@@ -157,7 +157,7 @@ add_task(async function test_restore_defaults_and_undo() {
 
   let undoButton = document.getElementById("customization-undo-reset-button");
   ok(!undoButton.hidden, "Undo button is visible");
-  undoButton.doCommand();
+  undoButton.click();
   await TestUtils.waitForCondition(() => !gCustomizeMode.resetting);
   ok(!CustomizableUI.inDefaultState, "Not in default state after undo");
 

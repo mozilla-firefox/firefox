@@ -77,6 +77,10 @@ toolbar[overflowable][customizing] > .customization-target {
   > .customization-link {
     margin-block: 0;
   }
+
+  > moz-button {
+    margin-inline-start: var(--space-small);
+  }
 }
 
 #customization-palette-container {
