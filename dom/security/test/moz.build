@@ -32,6 +32,7 @@ MOCHITEST_CHROME_MANIFESTS += [
 ]
 
 BROWSER_CHROME_MANIFESTS += [
+    "connection-allowlist/browser/browser.toml",
     "cors/browser.toml",
     "csp/browser.toml",
     "general/browser.toml",

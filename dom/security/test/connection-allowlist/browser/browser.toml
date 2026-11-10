@@ -1,0 +1,8 @@
+[DEFAULT]
+prefs = ["security.connection_allowlists.enabled=true"]
+support-files = [
+  "file_error_page.html",
+  "file_error_page.html^headers^",
+]
+
+["browser_error_page.js"]
