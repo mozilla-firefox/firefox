@@ -199,6 +199,8 @@ nsresult HappyEyeballsConnectionAttempt::CreateHappyEyeballs(
       happy_eyeballs::IpPreference::DualStackPreferV6;
   if (mConnInfo->GetIPv6Disabled()) {
     ipPref = happy_eyeballs::IpPreference::Ipv4Only;
+  } else if (mConnInfo->GetIPv4Disabled()) {
+    ipPref = happy_eyeballs::IpPreference::Ipv6Only;
   } else if (ent->PreferenceKnown() && ent->mPreferIPv4) {
     ipPref = happy_eyeballs::IpPreference::DualStackPreferV4;
   } else if (!ent->PreferenceKnown() &&
