@@ -499,6 +499,10 @@
         border: none;
         outline: none;
       }
+
+      &::after {
+        content: none;
+      }
     }
 
     .split-view-panel {
@@ -523,6 +527,19 @@
       /* The selected panel's dialogs need to sit above the non-selected tab panels. */
       &.deck-selected > .browserContainer {
         z-index: 1;
+        outline: none;
+      }
+
+      /* The page is composited over the container's own
+       * outline, and when the panel isn't aligned to device pixels the page's
+       * rounded clip doesn't line up with the snapped ring, so the page bleeds
+       * into the ring and thins it at the corners. */
+      &.deck-selected::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        border-radius: var(--border-radius-medium);
         outline: var(--focus-outline);
       }
     }
@@ -589,12 +606,15 @@
     border: var(--border-width) solid var(--chrome-content-separator-color);
   }
 
-  /* Set active panel border color to match the focus outline, and reduce the
-   * outline width by the border width so the two combined still total
-   * --focus-outline-width, keeping the same expected ring size. */
+  /* Set active panel border color to match the focus outline, and pull the
+   * outline in over the border so the ring keeps its expected size while
+   * being painted as a single shape. */
   #tabbrowser-tabpanels[splitview] .split-view-panel.deck-selected > .browserContainer {
     border-color: var(--focus-outline-color);
-    outline-width: calc(var(--focus-outline-width) - var(--border-width));
+  }
+
+  #tabbrowser-tabpanels[splitview] .split-view-panel.deck-selected::after {
+    outline-offset: calc(-1 * var(--border-width));
   }
 
   /* In split view the notification box is inside the panel's browserContainer.
