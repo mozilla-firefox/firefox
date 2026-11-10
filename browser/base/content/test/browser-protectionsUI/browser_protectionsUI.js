@@ -11,7 +11,7 @@ const TRACKING_PAGE =
 
 ChromeUtils.defineESModuleGetters(this, {
   ContentBlockingAllowList:
-    "resource://gre/modules/ContentBlockingAllowList.sys.mjs",
+    "moz-src:///toolkit/components/antitracking/ContentBlockingAllowList.sys.mjs",
 });
 
 const { CustomizableUITestUtils } = ChromeUtils.importESModule(

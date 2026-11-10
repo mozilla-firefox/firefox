@@ -5785,9 +5785,6 @@
       "resource://gre/modules/ContentAnalysisUtils.sys.mjs": [
         "../../../toolkit/components/contentanalysis/ContentAnalysisUtils.sys.mjs"
       ],
-      "resource://gre/modules/ContentBlockingAllowList.sys.mjs": [
-        "../../../toolkit/components/antitracking/ContentBlockingAllowList.sys.mjs"
-      ],
       "resource://gre/modules/ContentClassifierRemoteSettingsClient.sys.mjs": [
         "../../../toolkit/components/content-classifier/ContentClassifierRemoteSettingsClient.sys.mjs"
       ],
@@ -6511,9 +6508,6 @@
       "resource://gre/modules/Timer.sys.mjs": [
         "../../../toolkit/modules/Timer.sys.mjs"
       ],
-      "resource://gre/modules/TrackingDBService.sys.mjs": [
-        "../../../toolkit/components/antitracking/TrackingDBService.sys.mjs"
-      ],
       "resource://gre/modules/Troubleshoot.sys.mjs": [
         "../../../toolkit/modules/Troubleshoot.sys.mjs"
       ],
@@ -7108,44 +7102,11 @@
       "resource://normandy/Normandy.sys.mjs": [
         "../../../toolkit/components/normandy/Normandy.sys.mjs"
       ],
-      "resource://normandy/NormandyMigrations.sys.mjs": [
-        "../../../toolkit/components/normandy/NormandyMigrations.sys.mjs"
-      ],
-      "resource://normandy/actions/BaseAction.sys.mjs": [
-        "../../../toolkit/components/normandy/actions/BaseAction.sys.mjs"
-      ],
-      "resource://normandy/actions/ShowHeartbeatAction.sys.mjs": [
-        "../../../toolkit/components/normandy/actions/ShowHeartbeatAction.sys.mjs"
-      ],
-      "resource://normandy/actions/schemas/index.sys.mjs": [
-        "../../../toolkit/components/normandy/actions/schemas/index.sys.mjs"
-      ],
-      "resource://normandy/lib/ActionsManager.sys.mjs": [
-        "../../../toolkit/components/normandy/lib/ActionsManager.sys.mjs"
-      ],
       "resource://normandy/lib/CleanupManager.sys.mjs": [
         "../../../toolkit/components/normandy/lib/CleanupManager.sys.mjs"
       ],
-      "resource://normandy/lib/EventEmitter.sys.mjs": [
-        "../../../toolkit/components/normandy/lib/EventEmitter.sys.mjs"
-      ],
-      "resource://normandy/lib/Heartbeat.sys.mjs": [
-        "../../../toolkit/components/normandy/lib/Heartbeat.sys.mjs"
-      ],
-      "resource://normandy/lib/LegacyHeartbeat.sys.mjs": [
-        "../../../toolkit/components/normandy/lib/LegacyHeartbeat.sys.mjs"
-      ],
       "resource://normandy/lib/LogManager.sys.mjs": [
         "../../../toolkit/components/normandy/lib/LogManager.sys.mjs"
-      ],
-      "resource://normandy/lib/NormandyApi.sys.mjs": [
-        "../../../toolkit/components/normandy/lib/NormandyApi.sys.mjs"
-      ],
-      "resource://normandy/lib/NormandyUtils.sys.mjs": [
-        "../../../toolkit/components/normandy/lib/NormandyUtils.sys.mjs"
-      ],
-      "resource://normandy/lib/RecipeRunner.sys.mjs": [
-        "../../../toolkit/components/normandy/lib/RecipeRunner.sys.mjs"
       ],
       "resource://pdf.js/PdfEmbedFallbackStreamConverter.sys.mjs": [
         "../../../toolkit/components/pdfjs/content/PdfEmbedFallbackStreamConverter.sys.mjs"

@@ -227,13 +227,6 @@ services/sync/modules/sync_auth.sys.mjs
 services/sync/modules/telemetry.sys.mjs
 services/sync/modules/util.sys.mjs
 toolkit/components/DefaultCLH.sys.mjs
-toolkit/components/antitracking/ContentBlockingAllowList.sys.mjs
-toolkit/components/antitracking/PartitioningExceptionListService.sys.mjs
-toolkit/components/antitracking/PurgeTrackerService.sys.mjs
-toolkit/components/antitracking/TrackingDBService.sys.mjs
-toolkit/components/antitracking/URLDecorationAnnotationsService.sys.mjs
-toolkit/components/antitracking/URLQueryStrippingListService.sys.mjs
-toolkit/components/antitracking/bouncetrackingprotection/BTPRemoteExceptionList.sys.mjs
 toolkit/components/asyncshutdown/AsyncShutdown.sys.mjs
 toolkit/components/asyncshutdown/nsAsyncShutdown.sys.mjs
 toolkit/components/autocomplete/AutoCompleteSimpleSearch.sys.mjs

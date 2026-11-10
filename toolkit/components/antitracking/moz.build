@@ -29,7 +29,7 @@ EXTRA_COMPONENTS += [
     "antitracking.manifest",
 ]
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "ContentBlockingAllowList.sys.mjs",
     "PartitioningExceptionListService.sys.mjs",
     "PurgeTrackerService.sys.mjs",
