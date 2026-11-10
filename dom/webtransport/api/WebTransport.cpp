@@ -1503,21 +1503,33 @@ void WebTransport::Cleanup(WebTransportError* aError,
   // https://w3c.github.io/webtransport/#webtransport-cleanup
   // Step 1: Let sendStreams be a copy of transport.[[SendStreams]]
   // Step 2: Let receiveStreams be a copy of transport.[[ReceiveStreams]]
-  // Step 3: Let ready be transport.[[Ready]]  -> (mReady)
-  // Step 4: Let closed be transport.[[Closed]] -> (mClosed)
-  // Step 5: Let incomingBidirectionalStreams be
+  // Steps 3-4 and 11-13 (datagrams) are handled by
+  // WebTransportDatagramDuplexStream below.
+  // Step 5: Let ready be transport.[[Ready]].
+  // Step 6: Let closed be transport.[[Closed]].
+  // Step 7: Let incomingBidirectionalStreams be
   // transport.[[IncomingBidirectionalStreams]].
-  // Step 6: Let incomingUnidirectionalStreams be
+  // Step 8: Let incomingUnidirectionalStreams be
   // transport.[[IncomingUnidirectionalStreams]].
-  // Step 7: Set transport.[[SendStreams]] to an empty set.
-  // Step 8: Set transport.[[ReceiveStreams]] to an empty set.
+  // Step 9: Set transport.[[SendStreams]] to an empty set.
+  // Step 10: Set transport.[[ReceiveStreams]] to an empty set.
+  // Script can run synchronously (via a 'then' getter) when closed resolves
+  // and the incoming streams close, so nothing past this point may read
+  // transport's slots.
   LOG(("Cleanup started"));
   nsTHashMap<uint64_t, RefPtr<WebTransportSendStream>> sendStreams;
   sendStreams.SwapElements(mSendStreams);
   nsTHashMap<uint64_t, RefPtr<WebTransportReceiveStream>> receiveStreams;
   receiveStreams.SwapElements(mReceiveStreams);
+  RefPtr<Promise> ready = mReady;
+  RefPtr<Promise> closed = mClosed;
+  RefPtr<ReadableStream> incomingBidirectionalStreams =
+      mIncomingBidirectionalStreams;
+  RefPtr<ReadableStream> incomingUnidirectionalStreams =
+      mIncomingUnidirectionalStreams;
+  RefPtr<WebTransportDatagramDuplexStream> datagrams = mDatagrams;
 
-  // Step 9: If closeInfo is given, then set transport.[[State]] to "closed".
+  // Step 14: If closeInfo is given, then set transport.[[State]] to "closed".
   // Otherwise, set transport.[[State]] to "failed".
   mState = aCloseInfo ? WebTransportState::CLOSED : WebTransportState::FAILED;
 
@@ -1528,7 +1540,7 @@ void WebTransport::Cleanup(WebTransportError* aError,
         NS_ConvertUTF8toUTF16(aCloseInfo->mReason));
   }
 
-  // Step 10: For each sendStream in sendStreams, error sendStream with error.
+  // Step 15: For each stream in sendStreams, run the following steps:
   AutoJSAPI jsapi;
   if (!jsapi.Init(mGlobal)) {
     aRv.ThrowUnknownError("Internal error");
@@ -1544,42 +1556,43 @@ void WebTransport::Cleanup(WebTransportError* aError,
 
   for (const auto& stream : sendStreams.Values()) {
     // This MOZ_KnownLive is redundant, see bug 1620312
+    // Step 15.2: Error stream with error.
     MOZ_KnownLive(stream)->ErrorNative(cx, errorValue, IgnoreErrors());
   }
-  // Step 11: For each receiveStream in receiveStreams, error receiveStream with
-  // error.
+  // Step 16: For each stream in receiveStreams, error stream with error.
   for (const auto& stream : receiveStreams.Values()) {
     stream->ErrorNative(cx, errorValue, IgnoreErrors());
   }
-  // Step 12:
+  // Step 17:
   if (aCloseInfo) {
-    // 12.1: Resolve closed with closeInfo.
-    LOG(("Resolving mClosed with closeinfo"));
-    mClosed->MaybeResolve(*aCloseInfo);
-    // 12.2: Assert: ready is settled.
+    // 17.1: Resolve closed with closeInfo.
+    LOG(("Resolving closed with closeinfo"));
+    closed->MaybeResolve(*aCloseInfo);
+    // 17.2: Assert: ready is settled.
     // However, if the connection closes before maxDatagramSize is received,
     // ready may still be pending. Resolve it in that case.
-    if (mReady->State() == Promise::PromiseState::Pending) {
-      mReady->MaybeResolveWithUndefined();
+    if (ready->State() == Promise::PromiseState::Pending) {
+      ready->MaybeResolveWithUndefined();
     }
-    // 12.3: Close incomingBidirectionalStreams
-    // This keeps the clang-plugin happy
-    RefPtr<ReadableStream> stream = mIncomingBidirectionalStreams;
-    stream->CloseNative(cx, IgnoreErrors());
-    // 12.4: Close incomingUnidirectionalStreams
-    stream = mIncomingUnidirectionalStreams;
-    stream->CloseNative(cx, IgnoreErrors());
+    // 17.3: Close incomingBidirectionalStreams
+    incomingBidirectionalStreams->CloseNative(cx, IgnoreErrors());
+    // 17.4: Close incomingUnidirectionalStreams
+    incomingUnidirectionalStreams->CloseNative(cx, IgnoreErrors());
   } else {
-    // Step 13
-    // 13.1: Reject closed with error
-    LOG(("Rejecting mClosed"));
-    mClosed->MaybeReject(errorValue);
-    // 13.2: Reject ready with error
-    mReady->MaybeReject(errorValue);
-    // 13.3: Error incomingBidirectionalStreams with error
-    mIncomingBidirectionalStreams->ErrorNative(cx, errorValue, IgnoreErrors());
-    // 13.4: Error incomingUnidirectionalStreams with error
-    mIncomingUnidirectionalStreams->ErrorNative(cx, errorValue, IgnoreErrors());
+    // Step 18
+    // 18.1: Reject closed with error
+    LOG(("Rejecting closed"));
+    closed->MaybeReject(errorValue);
+    // 18.2: Set closed.[[PromiseIsHandled]] to true.
+    closed->SetSettledPromiseIsHandled();
+    // 18.3: Reject ready with error
+    ready->MaybeReject(errorValue);
+    // 18.4: Set ready.[[PromiseIsHandled]] to true.
+    ready->SetSettledPromiseIsHandled();
+    // 18.5: Error incomingBidirectionalStreams with error
+    incomingBidirectionalStreams->ErrorNative(cx, errorValue, IgnoreErrors());
+    // 18.6: Error incomingUnidirectionalStreams with error
+    incomingUnidirectionalStreams->ErrorNative(cx, errorValue, IgnoreErrors());
   }
   // Let go of the algorithms
   mIncomingBidirectionalAlgorithm = nullptr;
@@ -1591,7 +1604,7 @@ void WebTransport::Cleanup(WebTransportError* aError,
   // TODO: Cleanup() also resolves each writable's withheld write promise,
   // which the current spec doesn't do; see
   // https://github.com/w3c/webtransport/pull/790.
-  if (RefPtr<WebTransportDatagramDuplexStream> datagrams = mDatagrams) {
+  if (datagrams) {
     datagrams->Cleanup();
     datagrams->CloseOrErrorWritables(cx, !!aCloseInfo, errorValue);
   }
