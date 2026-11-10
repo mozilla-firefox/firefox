@@ -12,7 +12,6 @@ async function setupPrefs() {
   await setDefaultTopSites();
   await SpecialPowers.pushPrefEnv({
     set: [
-      ["browser.newtabpage.activity-stream.feeds.discoverystreamfeed", true],
       [
         "browser.newtabpage.activity-stream.discoverystream.config",
         JSON.stringify({

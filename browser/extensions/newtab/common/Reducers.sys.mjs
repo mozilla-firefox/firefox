@@ -818,13 +818,12 @@ function DiscoveryStream(prevState = INITIAL_STATE.DiscoveryStream, action) {
       ...prevState.feeds,
       data: Object.keys(prevState.feeds.data).reduce(
         (accumulator, feed_url) => {
-          const feedData = prevState.feeds.data[feed_url].data;
           accumulator[feed_url] = {
             data: {
-              ...feedData,
-              recommendations: Array.isArray(feedData.recommendations)
-                ? handleSites(feedData.recommendations)
-                : feedData.recommendations,
+              ...prevState.feeds.data[feed_url].data,
+              recommendations: handleSites(
+                prevState.feeds.data[feed_url].data.recommendations
+              ),
             },
           };
           return accumulator;

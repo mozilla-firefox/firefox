@@ -65,6 +65,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TimerFeed: "resource://newtab/lib/Widgets/TimerFeed.sys.mjs",
   TravelFeed: "resource://newtab/lib/Widgets/TravelFeed.sys.mjs",
   TopSitesFeed: "resource://newtab/lib/TopSitesFeed.sys.mjs",
+  TopStoriesFeed: "resource://newtab/lib/TopStoriesFeed.sys.mjs",
   WallpaperFeed: "resource://newtab/lib/Wallpapers/WallpaperFeed.sys.mjs",
   WeatherFeed: "resource://newtab/lib/WeatherFeed.sys.mjs",
   WebNotificationsFeed: "resource://newtab/lib/WebNotificationsFeed.sys.mjs",
@@ -730,34 +731,6 @@ export const PREFS_CONFIG = new Map([
       title:
         "User pref for showing web notifications on newtab. Only consulted when system.showWebNotifications is set",
       value: true,
-    },
-  ],
-  [
-    "feeds.system.topstories",
-    {
-      title:
-        "System pref that fetches content recommendations from a configurable content provider",
-      // Dynamically determine if stories should be shown for a geo / locale
-      getValue: ({ geo, locale }) => {
-        // If we don't have geo, we don't want to flash the screen with stories while geo loads.
-        // Best to display nothing until geo is ready.
-        if (!geo) {
-          return false;
-        }
-        const blockedRegions =
-          lazy.NimbusFeatures.pocketNewtab.getVariable("regionStoriesBlock") ||
-          "";
-        if (csvHasValue(blockedRegions, geo)) {
-          return false;
-        }
-        if (!locale) {
-          return false;
-        }
-        return (
-          storiesRegionLocaleMatches(geo, locale) ||
-          matchesLegacyRegionStoriesConfig(geo, locale)
-        );
-      },
     },
   ],
   [
@@ -2712,6 +2685,34 @@ const FEEDS_DATA = [
     factory: () => new lazy.HighlightsFeed(),
     title: "Fetches content recommendations from places db",
     value: false,
+  },
+  {
+    name: "system.topstories",
+    factory: () =>
+      new lazy.TopStoriesFeed(PREFS_CONFIG.get("discoverystream.config")),
+    title:
+      "System pref that fetches content recommendations from a configurable content provider",
+    // Dynamically determine if stories should be shown for a geo / locale
+    getValue: ({ geo, locale }) => {
+      // If we don't have geo, we don't want to flash the screen with stories while geo loads.
+      // Best to display nothing until geo is ready.
+      if (!geo) {
+        return false;
+      }
+      const blockedRegions =
+        lazy.NimbusFeatures.pocketNewtab.getVariable("regionStoriesBlock") ||
+        "";
+      if (csvHasValue(blockedRegions, geo)) {
+        return false;
+      }
+      if (!locale) {
+        return false;
+      }
+      return (
+        storiesRegionLocaleMatches(geo, locale) ||
+        matchesLegacyRegionStoriesConfig(geo, locale)
+      );
+    },
   },
   {
     name: "systemtick",

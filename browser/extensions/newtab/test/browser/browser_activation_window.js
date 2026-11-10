@@ -129,13 +129,6 @@ async function navigateToNewTabAndRunActivationWindowCheck(
 }
 
 add_setup(async () => {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      ["browser.newtabpage.activity-stream.feeds.discoverystreamfeed", true],
-    ],
-  });
-  registerCleanupFunction(() => SpecialPowers.popPrefEnv());
-
   NewTabPagePreloading.removePreloadedBrowser(window);
 
   await AboutNewTab.activityStreamPromise;

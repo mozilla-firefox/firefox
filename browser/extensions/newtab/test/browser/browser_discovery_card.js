@@ -12,7 +12,6 @@ test_newtab({
         "https://example.com/browser/browser/extensions/newtab/test/browser/topstories.json"
       );
     await pushPrefs(
-      ["browser.newtabpage.activity-stream.feeds.discoverystreamfeed", true],
       [
         "browser.newtabpage.activity-stream.discoverystream.config",
         JSON.stringify({
