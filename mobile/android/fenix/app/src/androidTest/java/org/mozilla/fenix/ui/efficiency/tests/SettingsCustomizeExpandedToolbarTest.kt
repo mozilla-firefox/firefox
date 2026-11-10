@@ -470,4 +470,32 @@ class SettingsCustomizeExpandedToolbarTest : BaseTest(LaunchConfig(shouldUseExpa
 
         setScreenOrientation(orientationRule, ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
     }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3333208
+    @Critical
+    @Test
+    fun verifyTappingTheExpandedToolbarFromAnOpenedTabTest() {
+        val firstWebPage = mockWebServer.getGenericAsset(1)
+
+        on.browserPage.navigateToPage(firstWebPage.url.toString())
+        on.searchBar
+            .navigateToPage()
+            .mozClick(SearchBarSelectors.CLEAR_BUTTON)
+            .mozEnterText("local", SearchBarSelectors.TOOLBAR_IN_EDIT_MODE)
+            .mozVerify(SearchBarSelectors.SEARCH_ENGINE_SELECTOR)
+            .mozVerify(SearchBarSelectors.VOICE_SEARCH_BUTTON)
+            .mozVerify(SearchBarSelectors.CLEAR_BUTTON)
+            .mozVerify(SearchBarSelectors.AWESOMEBAR_SUGGESTION)
+            .mozVerify(SearchBarSelectors.SEARCH_SUGGESTION_WITH_TEXT(firstWebPage.url.toString()))
+            .mozVerifyKeyboardVisible()
+            .mozClick(SearchBarSelectors.CLEAR_BUTTON)
+            .mozVerify(SearchBarSelectors.SEARCH_BAR_PLACEHOLDER)
+            .mozEnterText("host", SearchBarSelectors.TOOLBAR_IN_EDIT_MODE)
+            .mozVerify(SearchBarSelectors.SEARCH_ENGINE_SELECTOR)
+            .mozVerify(SearchBarSelectors.VOICE_SEARCH_BUTTON)
+            .mozVerify(SearchBarSelectors.CLEAR_BUTTON)
+            .mozVerify(SearchBarSelectors.AWESOMEBAR_SUGGESTION)
+            .mozVerify(SearchBarSelectors.SEARCH_SUGGESTION_WITH_TEXT(firstWebPage.url.toString()))
+            .mozVerifyKeyboardVisible()
+    }
 }
