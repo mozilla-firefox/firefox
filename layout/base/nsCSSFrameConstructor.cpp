@@ -7135,51 +7135,55 @@ void nsCSSFrameConstructor::CharacterDataChanged(
 
   // It's possible the frame whose content changed isn't inserted into the
   // frame hierarchy yet, or that there is no frame that maps the content
-  if (nsIFrame* frame = aContent->GetPrimaryFrame()) {
-#if 0
-    NS_FRAME_LOG(NS_FRAME_TRACE_CALLS,
-       ("nsCSSFrameConstructor::CharacterDataChanged: content=%p[%s] subcontent=%p frame=%p",
-        aContent, ContentTag(aContent, 0),
-        aSubContent, frame));
-#endif
+  nsIFrame* frame = aContent->GetPrimaryFrame();
+  if (!frame) {
+    return;
+  }
 
-    if (frame->HasAnyStateBits(NS_FRAME_IS_IN_SINGLE_CHAR_MI)) {
-      LAYOUT_PHASE_TEMP_EXIT();
-      RecreateFramesForContent(aContent, InsertionKind::Async);
-      LAYOUT_PHASE_TEMP_REENTER();
-      return;
-    }
+  LAYOUT_PHASE_TEMP_EXIT();
+  if (ShouldRebuildFrameTreeForReplicatedFrames(frame)) {
+    // NOTE: This also defers the destruction, effectively, unlike
+    // RecreateFramesForContent(). CharacterDataChanged may run during counter
+    // updates where tearing down the whole frame tree isn't safe.
+    RestyleManager()->PostRestyleEvent(mDocument->GetRootElement(),
+                                       RestyleHint{0},
+                                       nsChangeHint_ReconstructFrame);
+    LAYOUT_PHASE_TEMP_REENTER();
+    return;
+  }
+  if (frame->HasAnyStateBits(NS_FRAME_IS_IN_SINGLE_CHAR_MI)) {
+    RecreateFramesForContent(aContent, InsertionKind::Async);
+    LAYOUT_PHASE_TEMP_REENTER();
+    return;
+  }
+  LAYOUT_PHASE_TEMP_REENTER();
 
-    // Special check for text content that is a child of a letter frame.  If
-    // this happens, we should remove the letter frame, do whatever we're
-    // planning to do with this notification, then put the letter frame back.
-    // Note that this is basically what RecreateFramesForContent ends up doing;
-    // the reason we dont' want to call that here is that our text content
-    // could be native anonymous, in which case RecreateFramesForContent would
-    // completely barf on it.  And recreating the non-anonymous ancestor would
-    // just lead us to come back into this notification (e.g. if quotes or
-    // counters are involved), leading to a loop.
-    nsContainerFrame* block = GetFloatContainingBlock(frame);
-    bool haveFirstLetterStyle = false;
-    if (block) {
-      // See if the block has first-letter style applied to it.
-      haveFirstLetterStyle = HasFirstLetterStyle(block);
-      if (haveFirstLetterStyle) {
-        RemoveLetterFrames(mPresShell, block);
-        // Reget |frame|, since we might have killed it.
-        // Do we really need to call CharacterDataChanged in this case, though?
-        frame = aContent->GetPrimaryFrame();
-        NS_ASSERTION(frame, "Should have frame here!");
-      }
-    }
+  // Special check for text content that is a child of a letter frame.  If
+  // this happens, we should remove the letter frame, do whatever we're
+  // planning to do with this notification, then put the letter frame back.
+  // Note that this is basically what RecreateFramesForContent ends up doing;
+  // the reason we dont' want to call that here is that our text content
+  // could be native anonymous, in which case RecreateFramesForContent would
+  // completely barf on it.  And recreating the non-anonymous ancestor would
+  // just lead us to come back into this notification (e.g. if quotes or
+  // counters are involved), leading to a loop.
+  nsContainerFrame* block = GetFloatContainingBlock(frame);
+  // See if the block has first-letter style applied to it.
+  bool haveFirstLetterStyle = block && HasFirstLetterStyle(block);
+  if (haveFirstLetterStyle) {
+    RemoveLetterFrames(mPresShell, block);
+    // Reget |frame|, since we might have killed it.
+    // Do we really need to call CharacterDataChanged in this case, though?
+    frame = aContent->GetPrimaryFrame();
+    NS_ASSERTION(frame, "Should have frame here!");
+  }
 
-    // Notify the first frame that maps the content. It will generate a reflow
-    // command
-    frame->CharacterDataChanged(aInfo);
+  // Notify the first frame that maps the content. It will generate a reflow
+  // command
+  frame->CharacterDataChanged(aInfo);
 
-    if (haveFirstLetterStyle) {
-      RecoverLetterFrames(block);
-    }
+  if (haveFirstLetterStyle) {
+    RecoverLetterFrames(block);
   }
 }
 
@@ -7641,6 +7645,26 @@ static nsIFrame* CheckRubyContainers(nsIFrame* aFrame, nsIFrame* aParent) {
   return ancestor;
 }
 
+// Fragmented tables and replicated fixed-pos frames on subsequent pages
+// can't deal with removals. Rebuild the whole document instead, which also
+// makes sure that the new frames get reflowed, since paginated documents
+// don't do incremental reflow (see nsPageSequenceFrame::Reflow).
+bool nsCSSFrameConstructor::ShouldRebuildFrameTreeForReplicatedFrames(
+    nsIFrame* aFrame) {
+  if (!aFrame->PresContext()->IsPaginated()) {
+    return false;
+  }
+  if (aFrame->GetContent() == mDocument->GetRootElement()) {
+    return false;
+  }
+  nsIFrame* inFlowFrame = aFrame->HasAnyStateBits(NS_FRAME_OUT_OF_FLOW)
+                              ? aFrame->GetPlaceholderFrame()
+                              : aFrame;
+  return IsInFragmentedTable(inFlowFrame) ||
+         aFrame->IsInReplicatedFixedPosTree() ||
+         aFrame->ContainsReplicatedFixedPosPlaceholders();
+}
+
 bool nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(
     nsIFrame* aFrame) {
 #define TRACE(reason)                                                       \
@@ -7658,15 +7682,7 @@ bool nsCSSFrameConstructor::MaybeRecreateContainerForFrameRemoval(
   MOZ_ASSERT(inFlowFrame == inFlowFrame->FirstContinuation(),
              "placeholder for primary frame has previous continuations?");
 
-  if (aFrame->PresContext()->IsPaginated() &&
-      aFrame->GetContent() != mDocument->GetRootElement() &&
-      (IsInFragmentedTable(inFlowFrame) ||
-       aFrame->IsInReplicatedFixedPosTree() ||
-       aFrame->ContainsReplicatedFixedPosPlaceholders())) {
-    // Fragmented tables and replicated fixed-pos frames on subsequent pages
-    // can't deal with removals. Rebuild the whole document instead, which also
-    // makes sure that the new frames get reflowed, since paginated documents
-    // don't do incremental reflow (see nsPageSequenceFrame::Reflow).
+  if (ShouldRebuildFrameTreeForReplicatedFrames(aFrame)) {
     TRACE("Paginated fragmented content");
     RecreateFramesForContent(mDocument->GetRootElement(), InsertionKind::Async);
     return true;

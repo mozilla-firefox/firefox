@@ -1695,6 +1695,7 @@ class nsCSSFrameConstructor final : public nsFrameManager {
   // GetPrimaryFrame() call on a content node (which means its parent is also
   // not null).
   bool MaybeRecreateContainerForFrameRemoval(nsIFrame* aFrame);
+  bool ShouldRebuildFrameTreeForReplicatedFrames(nsIFrame*);
 
   nsIFrame* CreateContinuingOuterTableFrame(nsIFrame* aFrame,
                                             nsContainerFrame* aParentFrame,
