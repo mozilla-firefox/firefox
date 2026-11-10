@@ -759,7 +759,8 @@ static ModifiedContainingBlock ComputeContainingBlock(
     MOZ_ASSERT(aContainingBlockRects.mScrollable ==
                aContainingBlockRects.mLocal);
     containingBlock = scrollableContainingBlock =
-        viewport->GetContainingBlockAdjustedForScrollbars(aReflowInput);
+        viewport->GetContainingBlockAdjustedForScrollbars(aReflowInput,
+                                                          aKidFrame);
   }
 
   // https://drafts.csswg.org/css-position/#original-cb

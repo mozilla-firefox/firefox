@@ -14,6 +14,7 @@
 #include "PresShell.h"
 #include "StickyScrollContainer.h"
 #include "mozilla/ScrollContainerFrame.h"
+#include "mozilla/ViewportFrame.h"
 #include "mozilla/WritingModes.h"
 #include "mozilla/dom/HTMLInputElement.h"
 #include "nsBlockFrame.h"
@@ -1510,18 +1511,21 @@ void ReflowInput::CalculateHypotheticalPosition(
   if (cbFrame->IsViewportFrame()) {
     // When the containing block is the ViewportFrame, i.e. we are calculating
     // the static position for a fixed-positioned frame, we need to adjust the
-    // origin to exclude the scrollbar or scrollbar-gutter area. The
-    // ViewportFrame's containing block rect is adjusted in
-    // AbsoluteContainingBlock::ReflowAbsoluteFrame(), and it will add the
-    // rect's origin to the fixed-positioned frame's final position if needed.
+    // origin to exclude the scrollbar or scrollbar-gutter area for frames
+    // that don't cover them. The ViewportFrame's containing block rect is
+    // adjusted in AbsoluteContainingBlock::ReflowAbsoluteFrame(), and it will
+    // add the rect's origin to the fixed-positioned frame's final position if
+    // needed.
     //
     // Note: The origin of the containing block rect is adjusted in
-    // ViewportFrame::AdjustReflowInputForScrollbars(). Ensure the code there
-    // remains in sync with the logic here.
-    if (ScrollContainerFrame* sf =
-            do_QueryFrame(cbFrame->PrincipalChildList().FirstChild())) {
-      const nsMargin scrollbarSizes = sf->GetActualScrollbarSizes();
-      cbOffset.MoveBy(-scrollbarSizes.left, -scrollbarSizes.top);
+    // ViewportFrame::GetContainingBlockAdjustedForScrollbars(). Ensure the code
+    // there remains in sync with the logic here.
+    if (!ViewportFrame::ShouldCoverScrollbars(mFrame)) {
+      if (ScrollContainerFrame* sf =
+              do_QueryFrame(cbFrame->PrincipalChildList().FirstChild())) {
+        const nsMargin scrollbarSizes = sf->GetActualScrollbarSizes();
+        cbOffset.MoveBy(-scrollbarSizes.left, -scrollbarSizes.top);
+      }
     }
 
     // ViewportFrame has no border or padding, so the padding-box size is equal
