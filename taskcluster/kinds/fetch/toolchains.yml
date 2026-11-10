@@ -227,14 +227,14 @@ cctools-port:
     fetch:
         type: git
         repo: https://github.com/tpoechtrager/cctools-port
-        revision: 1cce4a06877992f708b2e0e2ab217a0cfb923a4f
+        revision: ef969083aecf77dee1814d6961a06b88af23edef
 
 libtapi:
     description: libtapi source code
     fetch:
         type: git
         repo: https://github.com/tpoechtrager/apple-libtapi
-        revision: 593d29141bf176d24021208c75af54a2ef23c38b
+        revision: 2a5705470a92691520fa2ff589482ea6c4039740
 
 libdispatch:
     description: libdispatch source code

@@ -23,7 +23,6 @@ mkdir -p $CROSSTOOLS_BUILD_DIR $LIBTAPI_BUILD_DIR $LIBDISPATCH_BUILD_DIR
 # Apply a minor libtapi tweak so cmake from outside of the srcdir works.
 cd $LIBTAPI_SOURCE_DIR
 patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/libtapi.patch
-patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/libtapi-arm64e-x1.patch
 
 # Build libtapi; the included build.sh is not sufficient for our purposes.
 cd $LIBTAPI_BUILD_DIR
@@ -76,15 +75,6 @@ export LDFLAGS="-fuse-ld=lld -lpthread -Wl,-rpath-link,$MOZ_FETCHES_DIR/sysroot/
 
 export CC="$CC --sysroot=$MOZ_FETCHES_DIR/sysroot"
 export CXX="$CXX --sysroot=$MOZ_FETCHES_DIR/sysroot"
-
-cd $CROSSTOOLS_SOURCE_DIR
-patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/cctools-llvm-c-headers.patch
-
-# Keep Rust compiler_builtins atoms live during LTO dead-strip so cross-language
-# LTO links (e.g. macOS shippable) don't drop symbols like __umodti3.
-patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/cctools-ld64-dead-strip-compiler-builtins.patch
-# Fix out-of-bounds read when a string fills a string pool buffer to its end
-patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/cctools-ld64-fix-out-of-bounds-read.patch
 
 # Configure crosstools-port
 cd $CROSSTOOLS_CCTOOLS_DIR
