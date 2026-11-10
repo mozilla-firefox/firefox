@@ -95,3 +95,49 @@ add_task(async function test_fill_creditCard_with_failed_decryption() {
     "Result was abort"
   );
 });
+
+add_task(async function test_save_prompt_with_an_undecryptable_card() {
+  if (RUST_CREDIT_CARD_STORE) {
+    // As in test_fill_creditCard_with_failed_decryption. The Rust store's
+    // coverage is test_a_card_another_key_wrote_is_no_duplicate.
+    info("The Rust store's key is not the one this test resets");
+    return;
+  }
+  if (!OSKeyStoreTestUtils.canTestOSKeyStoreLogin()) {
+    todo(
+      OSKeyStoreTestUtils.canTestOSKeyStoreLogin(),
+      "Cannot test OS key store login on official builds."
+    );
+    return;
+  }
+
+  await removeAllRecords();
+  await setStorage(TEST_CREDIT_CARD_2);
+
+  info("Resetting the OSKeyStore");
+  await OSKeyStoreTestUtils.cleanup();
+  OSKeyStoreTestUtils.setup();
+
+  let onChanged = waitForStorageChangedEvents("add");
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: CREDITCARD_FORM_URL },
+    async function (browser) {
+      let onPopupShown = waitForPopupShown();
+      await focusUpdateSubmitForm(browser, {
+        focusSelector: "#cc-name",
+        newValues: {
+          "#cc-name": TEST_CREDIT_CARD_2["cc-name"],
+          "#cc-number": TEST_CREDIT_CARD_2["cc-number"],
+        },
+      });
+
+      await onPopupShown;
+      await clickDoorhangerButton(MAIN_BUTTON);
+    }
+  );
+  await onChanged;
+
+  let creditCards = await getCreditCards();
+  is(creditCards.length, 2, "The submitted card is saved as a new one");
+  await removeAllRecords();
+});

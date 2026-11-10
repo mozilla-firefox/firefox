@@ -870,6 +870,39 @@ add_task(async function test_a_number_another_key_wrote_fails_the_read() {
   );
 });
 
+add_task(async function test_a_card_another_key_wrote_is_no_duplicate() {
+  const path = FileTestUtils.getTempFile(
+    "autofill-cc-adapter-dupebadkey.sqlite"
+  ).path;
+  await initRustComponents(PathUtils.profileDir);
+  const writer = new RustAutofillCreditCardsAdapter(
+    await createAutofillStoreWithStaticKeyManager(path, createAutofillKey())
+  );
+  await writer.add(TEST_RECORD);
+  const reader = new RustAutofillCreditCardsAdapter(
+    await createAutofillStoreWithStaticKeyManager(path, createAutofillKey())
+  );
+  reader._primaryPasswordLocked = () => false;
+  const readable = { ...TEST_RECORD, "cc-number": TEST_NUMBER_AMEX };
+  const guid = await reader.add(readable);
+
+  Assert.deepEqual(
+    await collect(reader.getDuplicateRecords(TEST_RECORD)),
+    [],
+    "the card the reader cannot decrypt is passed over"
+  );
+  Assert.deepEqual(
+    (await collect(reader.getDuplicateRecords(readable))).map(r => r.guid),
+    [guid],
+    "and the search still finds the card it can"
+  );
+  Assert.deepEqual(
+    (await collect(reader.getMatchRecords(readable))).map(r => r.guid),
+    [guid],
+    "as does the search for a match"
+  );
+});
+
 add_task(async function test_migration_export_refuses_a_scrubbed_record() {
   const { store, adapter } = await newAdapter(
     "autofill-cc-adapter-exportscrub.sqlite"

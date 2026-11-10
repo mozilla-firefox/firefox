@@ -472,10 +472,11 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
    * the store as it hands them over rather than through getAll().
    *
    * A card the store hands over without a number is passed over: it never had
-   * one, or it was scrubbed. This runs on every credit card submission, and one
-   * card without a number must not cost the user the save prompt for a
-   * different one. A key that is unavailable stops the search: it is not one
-   * card that cannot be read, it is all of them.
+   * one, or it was scrubbed. So is a card whose number the unlocked key cannot
+   * decrypt. This runs on every credit card submission, and one such card must
+   * not cost the user the save prompt for a different one, or for the one that
+   * replaces it. A key that is unavailable stops the search: it is not one card
+   * that cannot be read, it is all of them.
    *
    * @param {object} record A normalised credit card record.
    * @yields {object} Each stored record holding the same number.
@@ -485,14 +486,46 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
     if (!record["cc-number"]) {
       return;
     }
-    const cards = await this.#withKey(async () =>
-      this._getAll(await this._store())
-    );
+    const store = await this._store();
+    let cards;
+    try {
+      cards = await this.#withKey(() => this._getAll(store));
+    } catch (e) {
+      if (!(e instanceof lazy.CryptoError)) {
+        throw e;
+      }
+      cards = await this.#readableCards(store);
+    }
     for (const card of cards) {
       if (card.ccNumber && card.ccNumber == record["cc-number"]) {
         yield this._recordFromRust(card);
       }
     }
+  }
+
+  /**
+   * Every stored card the key can decrypt, read one at a time. The store fails
+   * a read of every card on any one it cannot decrypt, and that read has
+   * already recorded the store error, so these reads go to the store directly.
+   *
+   * @param {Store} store
+   * @returns {Promise<Array<CreditCard>>}
+   */
+  async #readableCards(store) {
+    const cards = [];
+    for (const { guid } of await store.listCreditCardCandidates()) {
+      try {
+        cards.push(await store.getCreditCard(guid));
+      } catch (e) {
+        if (
+          !(e instanceof lazy.CryptoError) &&
+          !(e instanceof lazy.NoSuchRecord)
+        ) {
+          throw e;
+        }
+      }
+    }
+    return cards;
   }
 
   /**

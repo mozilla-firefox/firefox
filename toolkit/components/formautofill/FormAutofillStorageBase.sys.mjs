@@ -2021,11 +2021,21 @@ export class CreditCardsBase extends AutofillRecords {
         continue;
       }
 
-      const decrypted = await lazy.OSKeyStore.decrypt(
-        recordInStorage["cc-number-encrypted"],
-        "formautofill_cc",
-        false
-      );
+      let decrypted;
+      try {
+        decrypted = await lazy.OSKeyStore.decrypt(
+          recordInStorage["cc-number-encrypted"],
+          "formautofill_cc",
+          false
+        );
+      } catch (ex) {
+        if (ex.result == Cr.NS_ERROR_ABORT) {
+          throw ex;
+        }
+        // A card whose number cannot be decrypted is no duplicate of anything,
+        // and must not stop the search for the others.
+        continue;
+      }
 
       if (decrypted == record["cc-number"]) {
         const clonedRecord = this._cloneAndCleanUp(recordInStorage);
