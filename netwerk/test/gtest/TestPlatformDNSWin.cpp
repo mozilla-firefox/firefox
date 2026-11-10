@@ -74,8 +74,8 @@ void ExpectOneServiceRecord(const RecordList& aRecords,
   TypeRecordResultType result = AsVariant(Nothing());
   uint32_t ttl = 0;
   HTTPSAliasTarget alias;
-  EXPECT_NS_SUCCEEDED(
-      ParseHTTPSRecordList(aRecords.Head(), aHost, result, ttl, alias));
+  EXPECT_NS_SUCCEEDED(ParseHTTPSRecordList(aRecords.Head(), aHost, Nothing(),
+                                           result, ttl, alias));
   ASSERT_TRUE(result.is<TypeRecordHTTPSSVC>());
   EXPECT_EQ(result.as<TypeRecordHTTPSSVC>().Length(), 1u);
   EXPECT_EQ(result.as<TypeRecordHTTPSSVC>()[0].mSvcFieldPriority, 1);

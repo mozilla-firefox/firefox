@@ -445,6 +445,7 @@ nsresult GetAddrInfo(const nsACString& aHost, uint16_t aAddressFamily,
 }
 
 bool FindHTTPSRecordOverride(const nsACString& aHost,
+                             const Maybe<nsCString>& aOriginHost,
                              TypeRecordResultType& aResult,
                              HTTPSAliasTarget& aAlias) {
   LOG("FindHTTPSRecordOverride aHost=%s", PromiseFlatCString(aHost).get());
@@ -468,6 +469,7 @@ bool FindHTTPSRecordOverride(const nsACString& aHost,
   // always return true and never fall through to a real lookup, even if the
   // override yields no usable record (aResult/aAlias carry the outcome).
   DNSPacket packet;
+  packet.SetOriginHost(aOriginHost);
   nsAutoCString host(aHost);
 
   LOG("resolving %s\n", host.get());
@@ -554,7 +556,8 @@ nsresult ParseHTTPSRecord(nsCString& aHost, DNSPacket& aDNSPacket,
 
 nsresult ResolveHTTPSRecord(const nsACString& aHost,
                             nsIDNSService::DNSFlags aFlags,
-                            TypeRecordResultType& aResult, uint32_t& aTTL) {
+                            TypeRecordResultType& aResult, uint32_t& aTTL,
+                            const Maybe<nsCString>& aOriginHost) {
   nsAutoCString host(aHost);
   // The last AliasMode (SvcPriority 0) TargetName we followed, if any.
   nsAutoCString aliasTarget;
@@ -566,12 +569,17 @@ nsresult ResolveHTTPSRecord(const nsACString& aHost,
   for (uint32_t i = 0; i < kMaxHTTPSAliasChain; i++) {
     aResult = AsVariant(Nothing());
     HTTPSAliasTarget alias;
+    // Once an alias was followed, "." refers to the alias target instead.
+    Maybe<nsCString> originHost =
+        aliasTarget.IsEmpty() ? aOriginHost : Nothing();
     nsresult rv;
-    if (gOverrideServiceUsed && FindHTTPSRecordOverride(host, aResult, alias)) {
+    if (gOverrideServiceUsed &&
+        FindHTTPSRecordOverride(host, originHost, aResult, alias)) {
       // The host has an override entry; treat it as authoritative.
       rv = NS_OK;
     } else {
-      rv = ResolveHTTPSRecordImpl(host, aFlags, aResult, aTTL, alias);
+      rv = ResolveHTTPSRecordImpl(host, originHost, aFlags, aResult, aTTL,
+                                  alias);
     }
 
     if (NS_FAILED(rv) && rv != NS_ERROR_UNKNOWN_HOST) {
@@ -761,6 +769,7 @@ NS_IMETHODIMP NativeDNSResolverOverride::ClearOverrides() {
 // we link a dummy implementation here.
 // Otherwise this is implemented in PlatformDNSWin/Linux/etc
 nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
+                                const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
                                 HTTPSAliasTarget& aAlias) {

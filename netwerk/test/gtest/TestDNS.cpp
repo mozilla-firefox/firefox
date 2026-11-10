@@ -269,3 +269,66 @@ TEST(TestDNS, HTTPSAliasTargetWithoutHTTPSRecord)
 
   override->ClearOverrides();
 }
+
+// For a port-prefixed query, a ServiceMode TargetName of "." must resolve to
+// the origin host rather than the prefixed name, like the TRR path does.
+TEST(TestDNS, HTTPSPortPrefixedServiceModeUsesOriginHost)
+{
+  nsCOMPtr<nsINativeDNSResolverOverride> override =
+      do_GetService("@mozilla.org/network/native-dns-override;1");
+  ASSERT_TRUE(override);
+
+  constexpr auto kPrefixed = "_8443._https.port-prefix.example"_ns;
+  constexpr auto kOrigin = "port-prefix.example"_ns;
+
+  AddHTTPSOverride(override, kPrefixed, BuildHTTPSServicePacket(kPrefixed));
+
+  TypeRecordResultType result = AsVariant(Nothing());
+  uint32_t ttl = 0;
+  nsresult rv =
+      ResolveHTTPSRecord(kPrefixed, nsIDNSService::RESOLVE_DEFAULT_FLAGS,
+                         result, ttl, Some(nsCString(kOrigin)));
+
+  EXPECT_NS_SUCCEEDED(rv);
+  ASSERT_TRUE(result.is<TypeRecordHTTPSSVC>());
+  const auto& records = result.as<TypeRecordHTTPSSVC>();
+  ASSERT_EQ(records.Length(), 1u);
+  EXPECT_TRUE(records[0].mSvcDomainName.Equals(kOrigin))
+      << records[0].mSvcDomainName.get();
+
+  override->ClearOverrides();
+}
+
+// Once an AliasMode record of a port-prefixed name is followed, a ServiceMode
+// TargetName of "." refers to the alias target (RFC 9460 section 2.5.2), not
+// to the origin host.
+TEST(TestDNS, HTTPSPortPrefixedAliasTargetUsesOwnerName)
+{
+  nsCOMPtr<nsINativeDNSResolverOverride> override =
+      do_GetService("@mozilla.org/network/native-dns-override;1");
+  ASSERT_TRUE(override);
+
+  constexpr auto kPrefixed = "_8443._https.port-alias.example"_ns;
+  constexpr auto kOrigin = "port-alias.example"_ns;
+  constexpr auto kTarget = "svc.cdn-port-alias.example"_ns;
+
+  AddHTTPSOverride(override, kPrefixed,
+                   BuildHTTPSAliasPacket(kPrefixed, kTarget));
+  AddHTTPSOverride(override, kTarget, BuildHTTPSServicePacket(kTarget));
+
+  TypeRecordResultType result = AsVariant(Nothing());
+  uint32_t ttl = 0;
+  nsresult rv =
+      ResolveHTTPSRecord(kPrefixed, nsIDNSService::RESOLVE_DEFAULT_FLAGS,
+                         result, ttl, Some(nsCString(kOrigin)));
+
+  EXPECT_NS_SUCCEEDED(rv);
+  ASSERT_TRUE(result.is<TypeRecordHTTPSSVC>());
+  const auto& records = result.as<TypeRecordHTTPSSVC>();
+  ASSERT_EQ(records.Length(), 1u);
+  EXPECT_EQ(records[0].mSvcFieldPriority, 1);
+  EXPECT_TRUE(records[0].mSvcDomainName.Equals(kTarget))
+      << records[0].mSvcDomainName.get();
+
+  override->ClearOverrides();
+}

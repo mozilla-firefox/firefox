@@ -21,6 +21,7 @@ struct DNSContext {
   nsresult mRv = NS_OK;
   TypeRecordResultType* mResult;
   nsCString mHost;
+  Maybe<nsCString> mOriginHost;
   uint32_t* mTTL;
   // Set to the TargetName when the response is an HTTPS AliasMode record.
   nsCString mAliasName;
@@ -66,9 +67,14 @@ void QueryCallback(DNSServiceRef aSDRef, DNSServiceFlags aFlags,
     fullname.Rebind(aFullname, fullname.Length() - 1);
   }
 
+  const nsACString& origin =
+      context->mOriginHost
+          ? static_cast<const nsACString&>(*context->mOriginHost)
+          : static_cast<const nsACString&>(fullname);
+
   struct SVCB parsed;
   nsresult rv = DNSPacket::ParseHTTPS(
-      aRDLen, parsed, 0, (const unsigned char*)aRdata, aRDLen, fullname);
+      aRDLen, parsed, 0, (const unsigned char*)aRdata, aRDLen, origin);
   if (NS_FAILED(rv)) {
     LOG("ParseHTTPS failed\n");
     context->mRv = rv;
@@ -103,6 +109,7 @@ void QueryCallback(DNSServiceRef aSDRef, DNSServiceFlags aFlags,
 }
 
 nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
+                                const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
                                 HTTPSAliasTarget& aAlias) {
@@ -120,6 +127,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
   struct DNSContext context{
       .mResult = &aResult,
       .mHost = host,
+      .mOriginHost = aOriginHost,
       .mTTL = &aTTL,
   };
 

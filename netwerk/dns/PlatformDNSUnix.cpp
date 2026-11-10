@@ -28,6 +28,7 @@ mozilla::StaticMutex sMutex MOZ_ANNOTATED;
   MOZ_LOG(gGetAddrInfoLog, LogLevel::Debug, ("[DNS]: " msg, ##__VA_ARGS__))
 
 nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
+                                const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
                                 HTTPSAliasTarget& aAlias) {
@@ -83,6 +84,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
     return NS_ERROR_UNKNOWN_HOST;
   }
 
+  packet.SetOriginHost(aOriginHost);
   return ParseHTTPSRecord(host, packet, aResult, aTTL, aAlias);
 }
 

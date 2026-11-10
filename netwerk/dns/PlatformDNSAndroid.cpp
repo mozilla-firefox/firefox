@@ -37,6 +37,7 @@ static Atomic<android_res_nresult_ptr> sAndroidResNResult;
   MOZ_LOG(gGetAddrInfoLog, LogLevel::Debug, ("[DNS]: " msg, ##__VA_ARGS__))
 
 nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
+                                const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
                                 HTTPSAliasTarget& aAlias) {
@@ -120,6 +121,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
     return rv;
   }
 
+  packet.SetOriginHost(aOriginHost);
   return ParseHTTPSRecord(host, packet, aResult, aTTL, aAlias);
 }
 

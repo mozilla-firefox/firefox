@@ -1883,7 +1883,13 @@ void nsHostResolver::ResolveHostTask() {
       LOG(("byType on DNS thread"));
       TypeRecordResultType result = AsVariant(mozilla::Nothing());
       uint32_t ttl = UINT32_MAX;
-      nsresult status = ResolveHTTPSRecord(rec->host, rec->flags, result, ttl);
+      Maybe<nsCString> originHost;
+      if (RefPtr<TypeHostRecord> typeRec = do_QueryObject(rec)) {
+        MutexAutoLock lock(typeRec->mResultsLock);
+        originHost = typeRec->mOriginHost;
+      }
+      nsresult status =
+          ResolveHTTPSRecord(rec->host, rec->flags, result, ttl, originHost);
       mozilla::glean::networking::dns_native_count
           .EnumGet(rec->pb
                        ? glean::networking::DnsNativeCountLabel::eHttpsPrivate

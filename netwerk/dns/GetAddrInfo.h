@@ -6,6 +6,7 @@
 #define netwerk_dns_GetAddrInfo_h
 
 #include "mozilla/Logging.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/RWLock.h"
 #include "mozilla/net/DNS.h"
 #include "nsError.h"
@@ -70,10 +71,14 @@ void DNSThreadShutdown();
 /**
  * Resolves a HTTPS record. Will check overrides before calling the
  * native OS implementation.
+ *
+ * aOriginHost is set when aHost is a port-prefixed name; it is then used as
+ * the TargetName of ServiceMode records whose TargetName is ".".
  */
 nsresult ResolveHTTPSRecord(const nsACString& aHost,
                             nsIDNSService::DNSFlags aFlags,
-                            TypeRecordResultType& aResult, uint32_t& aTTL);
+                            TypeRecordResultType& aResult, uint32_t& aTTL,
+                            const Maybe<nsCString>& aOriginHost = Nothing());
 
 /**
  * A target name that could not be resolved within the same response, along with
@@ -94,6 +99,7 @@ struct HTTPSAliasTarget {
  * aAlias is set to the target name so the caller can issue a fresh lookup.
  */
 nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
+                                const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
                                 HTTPSAliasTarget& aAlias);
@@ -109,6 +115,7 @@ nsresult ParseHTTPSRecord(nsCString& aHost, DNSPacket& aDNSPacket,
  */
 nsresult ParseHTTPSRecordList(const _DnsRecordA* aRecords,
                               const nsACString& aHost,
+                              const Maybe<nsCString>& aOriginHost,
                               TypeRecordResultType& aResult, uint32_t& aTTL,
                               HTTPSAliasTarget& aAlias);
 #endif
@@ -141,6 +148,7 @@ class NativeDNSResolverOverride : public nsINativeDNSResolverOverride {
                                nsIDNSService::DNSFlags aFlags,
                                AddrInfo** aAddrInfo);
   friend bool FindHTTPSRecordOverride(const nsACString& aHost,
+                                      const Maybe<nsCString>& aOriginHost,
                                       TypeRecordResultType& aResult,
                                       HTTPSAliasTarget& aAlias);
 };

@@ -28,6 +28,7 @@ namespace mozilla::net {
 
 nsresult ParseHTTPSRecordList(const DNS_RECORDA* aRecords,
                               const nsACString& aHost,
+                              const Maybe<nsCString>& aOriginHost,
                               TypeRecordResultType& aResult, uint32_t& aTTL,
                               HTTPSAliasTarget& aAlias) {
   nsAutoCString host(aHost);
@@ -36,7 +37,7 @@ nsresult ParseHTTPSRecordList(const DNS_RECORDA* aRecords,
   bool cnameIsAlias = false;
   aTTL = UINT32_MAX;
 
-  auto CheckRecords = [&aResult, &cname, &cnameIsAlias, &aTTL](
+  auto CheckRecords = [&aResult, &cname, &cnameIsAlias, &aTTL, &aOriginHost](
                           const DNS_RECORDA* result,
                           const nsCString& aHost) -> nsresult {
     for (const DNS_RECORDA* current = result; current;
@@ -49,7 +50,8 @@ nsresult ParseHTTPSRecordList(const DNS_RECORDA* aRecords,
         const unsigned char* ptr = (const unsigned char*)&(current->Data);
         struct SVCB parsed;
         nsresult rv = DNSPacket::ParseHTTPS(current->wDataLength, parsed, 0,
-                                            ptr, current->wDataLength, aHost);
+                                            ptr, current->wDataLength,
+                                            aOriginHost ? *aOriginHost : aHost);
         if (NS_FAILED(rv)) {
           return rv;
         }
@@ -136,6 +138,7 @@ nsresult ParseHTTPSRecordList(const DNS_RECORDA* aRecords,
 }
 
 nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
+                                const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
                                 HTTPSAliasTarget& aAlias) {
@@ -164,7 +167,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
   auto freeDnsRecord =
       MakeScopeExit([&]() { DnsRecordListFree(result, DnsFreeRecordList); });
 
-  return ParseHTTPSRecordList(result, host, aResult, aTTL, aAlias);
+  return ParseHTTPSRecordList(result, host, aOriginHost, aResult, aTTL, aAlias);
 }
 
 void DNSThreadShutdown() {}
