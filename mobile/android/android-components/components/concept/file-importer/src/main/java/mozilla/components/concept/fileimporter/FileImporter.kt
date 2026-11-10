@@ -24,4 +24,6 @@ interface FileImporter<T : ImportResult> {
      * @return A [Result] containing [T] data on success or an exception on failure.
      */
     suspend fun importFromUri(uri: Uri): Result<T>
+
+    companion object
 }

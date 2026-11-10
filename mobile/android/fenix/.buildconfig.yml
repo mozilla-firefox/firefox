@@ -24,15 +24,14 @@ projects:
     - components:concept-ai-controls
     - components:concept-awesomebar
     - components:concept-base
-    - components:concept-bookmarks-file
     - components:concept-bookmarks-parser
     - components:concept-engine
     - components:concept-fetch
+    - components:concept-file-importer
     - components:concept-file-parser
     - components:concept-integrity
     - components:concept-llm
     - components:concept-menu
-    - components:concept-passwords-file
     - components:concept-passwords-parser
     - components:concept-push
     - components:concept-storage
@@ -58,7 +57,6 @@ projects:
     - components:feature-listentopage
     - components:feature-logins
     - components:feature-media
-    - components:feature-password-importer
     - components:feature-privatemode
     - components:feature-prompts
     - components:feature-protection-dashboard

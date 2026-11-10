@@ -9,7 +9,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import mozilla.components.concept.password.parser.PasswordsParserError
+import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.storage.LoginEntry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -249,9 +249,10 @@ class CsvPasswordsFileParserTest {
                 val result = parser.parse(csv.byteInputStream())
 
                 assertTrue("format=$format, column=$conflictingColumn", result.isFailure)
-                assertIs<PasswordsParserError.ConflictingColumnsError>(
-                    result.exceptionOrNull(),
+                assertEquals(
                     "format=$format, column=$conflictingColumn",
+                    PasswordsParseError.ConflictingColumns,
+                    (result.exceptionOrNull() as? FileParserException)?.errorType,
                 )
             }
         }
@@ -271,9 +272,10 @@ class CsvPasswordsFileParserTest {
                 val result = parser.parse(csv.byteInputStream())
 
                 assertTrue("format=$format, columns=$columnVariants", result.isFailure)
-                assertIs<PasswordsParserError.FileFormatError>(
-                    result.exceptionOrNull(),
+                assertEquals(
                     "format=$format, columns=$columnVariants",
+                    PasswordsParseError.FileFormat,
+                    (result.exceptionOrNull() as? FileParserException)?.errorType,
                 )
             }
         }
@@ -310,7 +312,7 @@ class CsvPasswordsFileParserTest {
         val result = parser.parse(csv.byteInputStream())
 
         assertTrue(result.isFailure)
-        assertIs<PasswordsParserError.UnexpectedError>(result.exceptionOrNull())
+        assertEquals(PasswordsParseError.Unexpected, (result.exceptionOrNull() as? FileParserException)?.errorType)
     }
 
     @Test
@@ -321,7 +323,7 @@ class CsvPasswordsFileParserTest {
             val result = parser.parse(csv.byteInputStream())
 
             assertTrue(result.isFailure)
-            assertIs<PasswordsParserError.UnexpectedError>(result.exceptionOrNull())
+            assertEquals(PasswordsParseError.Unexpected, (result.exceptionOrNull() as? FileParserException)?.errorType)
         }
 
     @Test

@@ -13,7 +13,7 @@ import androidx.fragment.compose.content
 import androidx.navigation.NavHostController
 import androidx.navigation.fragment.findNavController
 import mozilla.components.concept.engine.EngineSession
-import mozilla.components.feature.password.importer.PasswordsImporterResult
+import mozilla.components.feature.importer.ImporterEvent
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import org.mozilla.fenix.Config
 import org.mozilla.fenix.SecureFragment
@@ -50,7 +50,7 @@ class SavedLoginsFragment : SecureFragment(), SystemInsetsPaddedFragment {
             ImportPasswordsDialogFragment.REQUEST_KEY,
             viewLifecycleOwner,
         ) { _, bundle ->
-            if (ImportPasswordsDialogFragment.decodeResult(bundle) is PasswordsImporterResult.Success) {
+            if (ImportPasswordsDialogFragment.decodeResult(bundle) is ImporterEvent.Success) {
                 loginsStore?.dispatch(LoginsListAppeared)
             }
         }

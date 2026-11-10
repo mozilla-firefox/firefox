@@ -11,33 +11,45 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import mozilla.components.concept.bookmark.parser.BookmarksFileParser
-import mozilla.components.concept.bookmarks.file.BookmarksFileImporter
-import mozilla.components.concept.bookmarks.file.BookmarksFileImporter.ImportResult
-import mozilla.components.concept.bookmarks.file.BookmarksImporterError
+import mozilla.components.concept.bookmark.parser.BookmarksParseResult
+import mozilla.components.concept.fileimporter.FileImporter
+import mozilla.components.concept.fileimporter.FileImporterError
+import mozilla.components.concept.fileimporter.FileImporterException
+import mozilla.components.concept.fileimporter.ImportResult
+import mozilla.components.concept.fileparser.FileParser
+import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.storage.bookmarks.BookmarkInserter
 import mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeRoot
+import mozilla.components.lib.bookmark.parser.jsoup.BookmarksParseError
 
 /**
- * Creates a [BookmarksFileImporter] that imports bookmarks from Netscape HTML bookmark files.
+ * Creates a [FileImporter] that imports bookmarks from Netscape HTML bookmark files.
  *
  * @param context Used to open an [InputStream] from the provided [Uri] via [Context.getContentResolver].
  * @param parser Parses the [InputStream] into a bookmark tree.
  * @param inserter Inserts the parsed bookmark tree into storage.
  */
-fun BookmarksFileImporter.Companion.htmlImporter(
+fun FileImporter.Companion.htmlImporter(
     context: Context,
     parentGuid: String,
-    parser: BookmarksFileParser,
+    parser: FileParser<BookmarksParseResult>,
     inserter: BookmarkInserter,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-): BookmarksFileImporter =
+): FileImporter<BookmarksImportResult> =
     HtmlBookmarksFileImporter(
         parentGuid = parentGuid,
         uriOpener = UriOpener.make(context, ioDispatcher),
         parser = parser,
         inserter = inserter,
     )
+
+/**
+ * The result of a bookmarks file import.
+ *
+ * @property guid The guid of the root of the imported bookmark tree.
+ * @property count The number of bookmarks imported.
+ */
+data class BookmarksImportResult(val guid: String, override val count: Int) : ImportResult
 
 /** Opens an [InputStream] from a [Uri]. */
 internal fun interface UriOpener {
@@ -65,29 +77,35 @@ internal fun interface UriOpener {
 internal class HtmlBookmarksFileImporter(
     private val parentGuid: String,
     private val uriOpener: UriOpener,
-    private val parser: BookmarksFileParser,
+    private val parser: FileParser<BookmarksParseResult>,
     private val inserter: BookmarkInserter,
-) : BookmarksFileImporter {
+) : FileImporter<BookmarksImportResult> {
 
-    override suspend fun importBookmarksFromUri(uri: Uri) = runCatching {
-        val inputStream = uriOpener.open(uri).getOrThrowError { BookmarksImporterError.FileReadError(it) }
+    override val mimeType = "text/html"
+
+    override suspend fun importFromUri(uri: Uri) = runCatching {
+        val inputStream =
+            uriOpener.open(uri).getOrThrowError { FileImporterException(FileImporterError.ReadError, cause = it) }
         val parseResult =
-            inputStream.use { parser.parse(it) }.getOrThrowError { BookmarksImporterError.FileParseError(it) }
+            inputStream
+                .use { parser.parse(it) }
+                .getOrThrowError {
+                    val parseError = (it as? FileParserException)?.errorType ?: BookmarksParseError.Unexpected
+                    FileImporterException(FileImporterError.ParseError(parseError), cause = it)
+                }
         val tree = InsertableBookmarkTreeRoot(parentGuid = parentGuid, rootFolder = parseResult.folder)
         val guid =
-            inserter.insertTree(tree).getOrThrowError {
-                BookmarksImporterError.BookmarksSaveError(it)
-            }
+            inserter.insertTree(tree).getOrThrowError { FileImporterException(FileImporterError.SaveError, cause = it) }
 
-        ImportResult(guid, parseResult.bookmarksCount)
+        BookmarksImportResult(guid = guid, count = parseResult.bookmarksCount)
     }
         .onFailure {
             if (it is CancellationException) throw it
         }
 
-    private inline fun <T> Result<T>.getOrThrowError(map: (Throwable) -> Throwable): T {
+    private inline fun <T> Result<T>.getOrThrowError(map: (Throwable) -> FileImporterException): T {
         return getOrElse {
-            if (it is CancellationException) throw it
+            if (it is CancellationException || it is FileImporterException) throw it
             throw map(it)
         }
     }

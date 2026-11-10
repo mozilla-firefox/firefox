@@ -9,16 +9,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.VisibleForTesting
+import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.compose.content
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.coroutineScope
 import androidx.lifecycle.withStarted
 import kotlinx.coroutines.launch
-import mozilla.components.concept.passwords.file.PasswordsFileImporter
-import mozilla.components.feature.password.importer.PasswordsImporter
-import mozilla.components.feature.password.importer.PasswordsImporterResult
+import mozilla.components.concept.fileimporter.FileImporter
+import mozilla.components.feature.importer.ImporterEvent
+import mozilla.components.feature.importer.ImporterScreen
+import mozilla.components.feature.importer.R as importerR
 import mozilla.components.lib.passwords.file.csvImporter
+import mozilla.components.support.utils.ext.getParcelableCompat
 import org.mozilla.fenix.ext.requireComponents
 
 internal class ImportPasswordsDialogFragment : DialogFragment() {
@@ -27,15 +30,19 @@ internal class ImportPasswordsDialogFragment : DialogFragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View = content {
-        PasswordsImporter(
+        ImporterScreen(
             importer =
-                PasswordsFileImporter.csvImporter(
+                FileImporter.csvImporter(
                     context = requireContext(),
                     loginsStorage = requireComponents.core.passwordsStorage,
                 ),
-            onFinished = { result ->
-                parentFragmentManager.setFragmentResult(REQUEST_KEY, encodeResult(result))
-                dismissWhenStarted(lifecycle) { dismiss() }
+            dialogTitle = stringResource(importerR.string.mozac_feature_passwords_importer_dialog_title),
+            onEventReceived = { event ->
+                parentFragmentManager.setFragmentResult(
+                    REQUEST_KEY,
+                    Bundle().apply { putParcelable(KEY_RESULT, event) },
+                )
+                dismissWhenFinished(event, lifecycle) { dismiss() }
             },
         )
     }
@@ -45,34 +52,17 @@ internal class ImportPasswordsDialogFragment : DialogFragment() {
         const val TAG = "import_passwords_dialog"
 
         private const val KEY_RESULT = "result"
-        private const val KEY_COUNT = "count"
-        private const val RESULT_SUCCESS = "success"
-        private const val RESULT_FAILURE = "failure"
-        private const val RESULT_CANCELLED = "cancelled"
 
-        fun decodeResult(bundle: Bundle): PasswordsImporterResult? =
-            when (bundle.getString(KEY_RESULT)) {
-                RESULT_SUCCESS -> PasswordsImporterResult.Success(importCount = bundle.getInt(KEY_COUNT))
-                RESULT_FAILURE -> PasswordsImporterResult.Failure
-                RESULT_CANCELLED -> PasswordsImporterResult.Canceled
-                else -> null
-            }
-
-        private fun encodeResult(result: PasswordsImporterResult): Bundle =
-            Bundle().apply {
-                when (result) {
-                    is PasswordsImporterResult.Success -> {
-                        putString(KEY_RESULT, RESULT_SUCCESS)
-                        putInt(KEY_COUNT, result.importCount)
-                    }
-                    PasswordsImporterResult.Failure -> putString(KEY_RESULT, RESULT_FAILURE)
-                    PasswordsImporterResult.Canceled -> putString(KEY_RESULT, RESULT_CANCELLED)
-                }
-            }
+        fun decodeResult(bundle: Bundle): ImporterEvent? =
+            bundle.getParcelableCompat(KEY_RESULT, ImporterEvent::class.java)
     }
 }
 
 @VisibleForTesting
-internal fun dismissWhenStarted(lifecycle: Lifecycle, dismiss: () -> Unit) {
+internal fun dismissWhenFinished(event: ImporterEvent, lifecycle: Lifecycle, dismiss: () -> Unit) {
+    if (event is ImporterEvent.Started) {
+        return
+    }
+
     lifecycle.coroutineScope.launch { lifecycle.withStarted(dismiss) }
 }

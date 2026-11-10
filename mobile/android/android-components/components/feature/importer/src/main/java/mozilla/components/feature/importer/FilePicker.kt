@@ -11,13 +11,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 
 @Composable
-internal fun FilePicker(onFileSelected: (Uri?) -> Unit) {
+internal fun FilePicker(
+    mimeType: String,
+    onFileSelected: (Uri?) -> Unit,
+) {
     val launcher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.GetContent()) { uri ->
             onFileSelected(uri)
         }
 
     LaunchedEffect(Unit) {
-        launcher.launch("text/html")
+        launcher.launch(mimeType)
     }
 }

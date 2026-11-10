@@ -4,8 +4,8 @@
 
 package org.mozilla.fenix.bookmarks
 
+import mozilla.components.concept.fileimporter.FileImporterError
 import mozilla.components.lib.state.Action
-import org.mozilla.fenix.bookmarks.importer.FenixBookmarkImporterError
 
 /** Actions relating to the Bookmarks list screen and its various subscreens. */
 internal sealed interface BookmarksAction : Action
@@ -234,7 +234,7 @@ internal sealed class ImportAction : BookmarksAction {
 
     internal data object ImportCancelled : ImportAction()
 
-    internal data class ImportFailed(val error: FenixBookmarkImporterError) : ImportAction()
+    internal data class ImportFailed(val error: FileImporterError) : ImportAction()
 
     internal data class ImportSucceeded(val count: Int) : ImportAction()
 

@@ -1115,8 +1115,9 @@ projects:
     publish: true
     upstream_dependencies:
     - components:concept-base
-    - components:concept-bookmarks-file
     - components:concept-fetch
+    - components:concept-file-importer
+    - components:concept-file-parser
     - components:lib-publicsuffixlist
     - components:lib-state
     - components:support-base
@@ -2051,9 +2052,11 @@ projects:
     path: components/lib/bookmarks-file
     publish: true
     upstream_dependencies:
-    - components:concept-bookmarks-file
     - components:concept-bookmarks-parser
+    - components:concept-file-importer
+    - components:concept-file-parser
     - components:concept-storage-bookmarks
+    - components:lib-bookmark-parser-jsoup
     - components:tooling-lint
   components:lib-crash:
     description: A generic crash reporter library that can report crashes to multiple
@@ -2206,8 +2209,8 @@ projects:
     upstream_dependencies:
     - components:concept-base
     - components:concept-fetch
+    - components:concept-file-importer
     - components:concept-file-parser
-    - components:concept-passwords-file
     - components:concept-passwords-parser
     - components:concept-storage
     - components:concept-storage-bookmarks

@@ -12,9 +12,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import mozilla.components.concept.bookmark.parser.BookmarksFileParser
 import mozilla.components.concept.bookmark.parser.BookmarksParseResult
-import mozilla.components.concept.bookmark.parser.BookmarksParserError
+import mozilla.components.concept.fileparser.FileParser
+import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeNode
 import org.jsoup.nodes.DocumentType
 import org.jsoup.nodes.Element
@@ -22,14 +22,14 @@ import org.jsoup.parser.Parser
 import org.jsoup.parser.StreamParser
 
 /**
- * A [BookmarksFileParser] that uses jsoup to parse HTML bookmark files in the Netscape Bookmark format.
+ * A [FileParser] that uses jsoup to parse HTML bookmark files in the Netscape Bookmark format.
  *
  * @param ioDispatcher Dispatcher used for parsing.
  */
 internal class JsoupBookmarksFileParser(
     private val rootFolderName: String = "root",
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : BookmarksFileParser {
+) : FileParser<BookmarksParseResult> {
 
     override suspend fun parse(inputStream: InputStream): Result<BookmarksParseResult> {
         return runCatching {
@@ -40,10 +40,11 @@ internal class JsoupBookmarksFileParser(
             }
             .recoverCatching { error ->
                 // rethrow errors already mapped to our domain error
-                if (error is BookmarksParserError) throw error
+                if (error is FileParserException) throw error
 
                 // wrap the other types of errors as unexpected rethrow them
-                throw BookmarksParserError.UnexpectedError(
+                throw FileParserException(
+                    errorType = BookmarksParseError.Unexpected,
                     message = "Failed to parse bookmarks file",
                     cause = error,
                 )
@@ -147,7 +148,10 @@ internal class JsoupBookmarksFileParser(
 
             if (!hasValidDocType) {
                 // we did not find a doc type, this is not a valid document
-                throw BookmarksParserError.UnsupportedContentType()
+                throw FileParserException(
+                    errorType = BookmarksParseError.UnsupportedContentType,
+                    message = "Expected a Netscape bookmark file doctype but found none",
+                )
             }
 
             BookmarksParseResult(
@@ -161,7 +165,10 @@ internal class JsoupBookmarksFileParser(
         val doctype = this.document().childNodes().filterIsInstance<DocumentType>().firstOrNull()
 
         if (doctype?.name() != expectedDocType) {
-            throw BookmarksParserError.UnsupportedContentType()
+            throw FileParserException(
+                errorType = BookmarksParseError.UnsupportedContentType,
+                message = "Expected the $expectedDocType doctype but found ${doctype?.name()}",
+            )
         }
         return true
     }
@@ -204,7 +211,10 @@ internal class JsoupBookmarksFileParser(
 
     private fun Element.bookmarkUrl(): String =
         this.attr("href").ifBlank {
-            throw BookmarksParserError.InvalidFormatError("Expected a non-empty href for but got an empty text")
+            throw FileParserException(
+                errorType = BookmarksParseError.InvalidFormat,
+                message = "Expected a non-empty href for but got an empty text",
+            )
         }
 
     private val Element.dateAdded: Long?
@@ -262,14 +272,14 @@ internal class JsoupBookmarksFileParser(
 }
 
 /**
- * API to create a [BookmarksFileParser] that uses jsoup to parse HTML bookmark files in the Netscape Bookmark format.
+ * API to create a [FileParser] that uses jsoup to parse HTML bookmark files in the Netscape Bookmark format.
  *
  * @param ioDispatcher Dispatcher used for I/O work.
  */
-fun BookmarksFileParser.Companion.jsoupParser(
+fun FileParser.Companion.jsoupParser(
     rootFolderName: String = "root",
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-): BookmarksFileParser {
+): FileParser<BookmarksParseResult> {
     return JsoupBookmarksFileParser(
         rootFolderName = rootFolderName,
         ioDispatcher = ioDispatcher,

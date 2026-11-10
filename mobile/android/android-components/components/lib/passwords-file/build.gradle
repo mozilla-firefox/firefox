@@ -11,10 +11,11 @@ android {
 }
 
 dependencies {
-    api project(':components:concept-passwords-file')
-    implementation project(':components:concept-passwords-parser')
+    api project(':components:concept-file-importer')
+    api project(':components:concept-file-parser')
+    api project(':components:concept-passwords-parser')
     implementation project(':components:concept-storage')
-    implementation project(':components:lib-password-parser-csv')
+    api project(':components:lib-password-parser-csv')
     implementation libs.kotlinx.coroutines
 
     testImplementation project(':components:support-test')

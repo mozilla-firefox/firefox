@@ -17,11 +17,13 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import mozilla.components.concept.bookmarks.file.BookmarksFileImporter
-import mozilla.components.concept.bookmarks.file.BookmarksImporterError
+import mozilla.components.concept.fileimporter.FileImporter
+import mozilla.components.concept.fileimporter.FileImporterError
+import mozilla.components.concept.fileimporter.FileImporterException
+import mozilla.components.concept.fileimporter.ImportResult
 import org.junit.runner.RunWith
 
-@OptIn(ExperimentalCoroutinesApi::class) // advanceTimeBy
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class ImporterMiddlewareTest {
 
@@ -95,7 +97,7 @@ class ImporterMiddlewareTest {
             val store = middleware.makeStore()
 
             // And that a file has been selected and the import succeeded
-            importer.expectedImportResult = Result.success(BookmarksFileImporter.ImportResult(guid = "123", count = 5))
+            importer.expectedImportResult = Result.success(TestImportResult(count = 5))
             store.dispatch(ImporterAction.FileSelected(uri = Uri.EMPTY))
 
             // And that the import has finished
@@ -111,27 +113,27 @@ class ImporterMiddlewareTest {
         }
 
     @Test
-    fun `when import fails with a BookmarksImporterError, the error is preserved`() = runTest {
+    fun `when import fails with a FileImporterException, its error type is preserved`() = runTest {
         // Given a store
         val store = middleware.makeStore()
 
         // And that a file has been selected and the import failed with a specific error
-        val error = BookmarksImporterError.FileReadError(cause = Throwable("cannot open file"))
+        val error = FileImporterException(FileImporterError.ReadError, cause = Throwable("cannot open file"))
         importer.expectedImportResult = Result.failure(error)
         store.dispatch(ImporterAction.FileSelected(uri = Uri.EMPTY))
 
         // And that the import has finished
         scope.advanceUntilIdle()
 
-        // Then verify that the state is "failed" and the original error is preserved
+        // Then verify that the state is "failed" and the error type is preserved
         val result = (store.state as? ImporterState.Finished)?.result
 
         assertIs<ImporterEvent.Failure>(result)
-        assertEquals(error, result.error)
+        assertEquals(FileImporterError.ReadError, result.error)
     }
 
     @Test
-    fun `when import fails with a generic error, it is wrapped as an UnknownImporterError`() = runTest {
+    fun `when import fails with a generic error, it is reported as an UnknownError`() = runTest {
         // Given a store
         val store = middleware.makeStore()
 
@@ -143,14 +145,23 @@ class ImporterMiddlewareTest {
         // And that the import has finished
         scope.advanceUntilIdle()
 
-        // Then verify that the result is a failure and the cause is wrapped as an UnknownImporterError
+        // Then verify that the result is a failure reported as an UnknownError
         val result = (store.state as? ImporterState.Finished)?.result
         assertIs<ImporterEvent.Failure>(result)
-
-        val error = result.error
-        assertIs<BookmarksImporterError.UnknownImporterError>(error)
-        assertEquals(cause, error.cause)
+        assertEquals(FileImporterError.UnknownError, result.error)
     }
+
+    @Test
+    fun `GIVEN no file was picked WHEN FileSelected is received THEN the import is not started and the state is Canceled`() =
+        runTest {
+            val store = middleware.makeStore()
+
+            store.dispatch(ImporterAction.FileSelected(uri = null))
+            scope.advanceUntilIdle()
+
+            assertEquals(0, importer.importCount)
+            assertEquals(ImporterState.Finished(result = ImporterEvent.Canceled), store.state)
+        }
 
     private fun ImporterMiddleware.makeStore(initialState: ImporterState = ImporterState.Inert): ImporterStore {
         return ImporterStore(
@@ -160,12 +171,18 @@ class ImporterMiddlewareTest {
         )
     }
 
-    private class TestImporter : BookmarksFileImporter {
+    private data class TestImportResult(override val count: Int) : ImportResult
 
-        var expectedImportResult: Result<BookmarksFileImporter.ImportResult> = Result.failure(Throwable("Uh uh"))
+    private class TestImporter : FileImporter<TestImportResult> {
+
+        override val mimeType = "text/plain"
+
+        var expectedImportResult: Result<TestImportResult> = Result.failure(Throwable("Uh uh"))
         var simulateSlowImport = false
+        var importCount = 0
 
-        override suspend fun importBookmarksFromUri(uri: Uri): Result<BookmarksFileImporter.ImportResult> {
+        override suspend fun importFromUri(uri: Uri): Result<TestImportResult> {
+            importCount++
             if (simulateSlowImport) {
                 delay(ImportDelay)
             }

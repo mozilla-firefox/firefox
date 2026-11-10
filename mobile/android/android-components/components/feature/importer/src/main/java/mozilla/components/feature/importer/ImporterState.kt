@@ -4,10 +4,12 @@
 
 package mozilla.components.feature.importer
 
-import mozilla.components.concept.bookmarks.file.BookmarksImporterError
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+import mozilla.components.concept.fileimporter.FileImporterError
 import mozilla.components.lib.state.State
 
-/** State for the bookmark importer feature. */
+/** State for the file importer feature. */
 sealed interface ImporterState : State {
     /** The importer has not yet been triggered. */
     object Inert : ImporterState
@@ -27,7 +29,8 @@ sealed interface ImporterState : State {
 }
 
 /** Represents a discrete event emitted by the importer during the import lifecycle. */
-sealed interface ImporterEvent {
+@Parcelize
+sealed interface ImporterEvent : Parcelable {
     /** The import process has started. */
     data object Started : ImporterEvent
 
@@ -38,9 +41,13 @@ sealed interface ImporterEvent {
      */
     data class Success(val importCount: Int) : ImporterEvent
 
-    /** The import failed due to an error. */
-    data class Failure(val error: BookmarksImporterError) : ImporterEvent
+    /**
+     * The import failed due to an error.
+     *
+     * @property error The [FileImporterError] describing the failure.
+     */
+    data class Failure(val error: FileImporterError) : ImporterEvent
 
-    /** The user cancelled the import. */
+    /** The user canceled the import. */
     data object Canceled : ImporterEvent
 }

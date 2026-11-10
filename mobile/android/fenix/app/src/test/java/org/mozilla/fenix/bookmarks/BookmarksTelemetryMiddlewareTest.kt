@@ -8,11 +8,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.test.runTest
+import mozilla.components.concept.fileimporter.FileImporterError
+import mozilla.components.lib.bookmark.parser.jsoup.BookmarksParseError
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Rule
 import org.junit.runner.RunWith
 import org.mozilla.fenix.GleanMetrics.BookmarksManagement
-import org.mozilla.fenix.bookmarks.importer.FenixBookmarkImporterError
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 
 @RunWith(AndroidJUnit4::class)
@@ -26,7 +27,7 @@ class BookmarksTelemetryMiddlewareTest {
     fun `GIVEN import failed action is received, an import failed event is recorded`() = runTest {
         val store = middleware.makeStore()
 
-        store.dispatch(ImportAction.ImportFailed(error = FenixBookmarkImporterError.PARSE_ERROR_UNKNOWN))
+        store.dispatch(ImportAction.ImportFailed(error = FileImporterError.ParseError(BookmarksParseError.Unexpected)))
 
         testScheduler.advanceUntilIdle()
 
@@ -34,10 +35,33 @@ class BookmarksTelemetryMiddlewareTest {
 
         assertEquals(1, events.size, "Expected 1 import failed event, but got ${events.size}")
         assertEquals(
-            expected = FenixBookmarkImporterError.PARSE_ERROR_UNKNOWN.code.toString(),
+            expected = ImportErrorCode.PARSE_ERROR_UNKNOWN.toString(),
             actual = events.first().extra?.get("error_code"),
-            message = "Expected error_code extra to match PARSE_ERROR_UNKNOWN",
+            message = "Expected error_code extra to match the unknown parse error code",
         )
+    }
+
+    @Test
+    fun `GIVEN import failed actions with each error type, the matching error codes are recorded`() = runTest {
+        val store = middleware.makeStore()
+        val expectedCodes =
+            listOf(
+                FileImporterError.ReadError to ImportErrorCode.FILE_READ_ERROR,
+                FileImporterError.ParseError(BookmarksParseError.UnsupportedContentType) to
+                    ImportErrorCode.PARSE_ERROR_UNSUPPORTED_CONTENT_TYPE,
+                FileImporterError.ParseError(BookmarksParseError.InvalidFormat) to
+                    ImportErrorCode.PARSE_ERROR_INVALID_FORMAT,
+                FileImporterError.ParseError(BookmarksParseError.Unexpected) to ImportErrorCode.PARSE_ERROR_UNKNOWN,
+                FileImporterError.SaveError to ImportErrorCode.BOOKMARKS_SAVE_ERROR,
+                FileImporterError.UnknownError to ImportErrorCode.UNKNOWN_ERROR,
+            )
+
+        expectedCodes.forEach { (error, _) -> store.dispatch(ImportAction.ImportFailed(error = error)) }
+        testScheduler.advanceUntilIdle()
+
+        val events = BookmarksManagement.importFailed.testGetValue() ?: emptyList()
+
+        assertEquals(expectedCodes.map { it.second.toString() }, events.map { it.extra?.get("error_code") })
     }
 
     @Test

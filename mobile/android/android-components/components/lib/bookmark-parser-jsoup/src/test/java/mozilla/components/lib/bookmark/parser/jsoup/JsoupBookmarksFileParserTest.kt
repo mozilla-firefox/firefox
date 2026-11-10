@@ -7,7 +7,7 @@ package mozilla.components.lib.bookmark.parser.jsoup
 import kotlin.test.assertIs
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
-import mozilla.components.concept.bookmark.parser.BookmarksParserError
+import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeNode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -197,7 +197,10 @@ class JsoupBookmarksFileParserTest {
         runTest(testDispatcher) {
             val result = parser.parse(inputStream = TestData.INVALID_HTML_CONTENT.byteInputStream())
 
-            assertIs<BookmarksParserError.UnsupportedContentType>(result.exceptionOrNull())
+            assertEquals(
+                BookmarksParseError.UnsupportedContentType,
+                (result.exceptionOrNull() as? FileParserException)?.errorType,
+            )
         }
 
     @Test
@@ -205,7 +208,10 @@ class JsoupBookmarksFileParserTest {
         runTest(testDispatcher) {
             val result = parser.parse(inputStream = TestData.VALID_HTML_BUT_INVALID_BOOKMARK_CONTENT.byteInputStream())
 
-            assertIs<BookmarksParserError.UnsupportedContentType>(result.exceptionOrNull())
+            assertEquals(
+                BookmarksParseError.UnsupportedContentType,
+                (result.exceptionOrNull() as? FileParserException)?.errorType,
+            )
         }
 
     // endregion
@@ -275,7 +281,10 @@ class JsoupBookmarksFileParserTest {
                 "Expected result to be a failure but got ${result.getOrNull()}",
                 result.isFailure,
             )
-            assertIs<BookmarksParserError.InvalidFormatError>(result.exceptionOrNull())
+            assertEquals(
+                BookmarksParseError.InvalidFormat,
+                (result.exceptionOrNull() as? FileParserException)?.errorType,
+            )
         }
 
     @Test

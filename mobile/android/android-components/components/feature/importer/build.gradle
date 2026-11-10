@@ -5,6 +5,7 @@
 plugins {
     id 'com.android.library'
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.parcelize)
 }
 
 android {
@@ -18,7 +19,7 @@ android {
 dependencies {
     implementation platform(libs.androidx.compose.bom)
     implementation project(':components:lib-state')
-    api project(':components:concept-bookmarks-file')
+    api project(':components:concept-file-importer')
 
     implementation libs.androidx.activity.compose
     implementation libs.androidx.compose.foundation

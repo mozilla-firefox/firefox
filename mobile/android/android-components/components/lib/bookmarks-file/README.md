@@ -1,6 +1,7 @@
-# [android-components](../../../README.md) > Lib > Bookmarks File Importer
+# [android-components](../../../README.md) > Lib > Bookmarks File
 
-A concrete implementation of [concept-bookmarks-file-importer](../../concept/bookmarks-file-importer/README.md) that parses bookmarks from Netscape HTML bookmark files.
+A concrete implementation of [concept-file-importer](../../concept/file-importer/README.md) that imports bookmarks
+from Netscape HTML bookmark files.
 
 ## Usage
 
@@ -9,18 +10,22 @@ A concrete implementation of [concept-bookmarks-file-importer](../../concept/boo
 Use Gradle to download the library from maven.mozilla.org:
 
 ```Groovy
-implementation "org.mozilla.components:lib-bookmarks-file-importer:{latest-version}"
+implementation "org.mozilla.components:lib-bookmarks-file:{latest-version}"
 ```
 
-### HtmlBookmarksFileImporter
+### Importing bookmarks
 
 ```kotlin
-val importer = HtmlBookmarksFileImporter(contentResolver = context.contentResolver)
+val importer = FileImporter.htmlImporter(
+    context = context,
+    parentGuid = BookmarkRoot.Mobile.id,
+    parser = FileParser.jsoupParser(rootFolderName = "Imported"),
+    inserter = bookmarksStorage,
+)
 
-when (val result = importer.importBookmarksFromUri(uri)) {
-    is BookmarksFileImporter.ImportResult.Success -> println("Imported ${result.bookmarksImported} bookmarks")
-    is BookmarksFileImporter.ImportResult.Failure -> println("Import failed: ${result.exception}")
-}
+importer.importFromUri(uri)
+    .onSuccess { println("Imported ${it.count} bookmarks") }
+    .onFailure { println("Import failed: ${(it as? FileImporterException)?.errorType}") }
 ```
 
 ## License

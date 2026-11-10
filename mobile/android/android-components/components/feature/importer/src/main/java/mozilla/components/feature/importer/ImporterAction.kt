@@ -5,7 +5,7 @@
 package mozilla.components.feature.importer
 
 import android.net.Uri
-import mozilla.components.concept.bookmarks.file.BookmarksImporterError
+import mozilla.components.concept.fileimporter.FileImporterError
 import mozilla.components.lib.state.Action
 
 /** Actions for the [ImporterStore]. */
@@ -14,11 +14,12 @@ sealed interface ImporterAction : Action {
     /** The import UI became visible. */
     data object ViewAppeared : ImporterAction
 
-    /** The user picked a file */
-    data class FileSelected(val uri: Uri) : ImporterAction
-
-    /** The user canceled picking a file */
-    data object FileSelectionCanceled : ImporterAction
+    /**
+     * The file picker returned.
+     *
+     * @property uri the picked file, or `null` if selection was canceled.
+     */
+    data class FileSelected(val uri: Uri?) : ImporterAction
 
     /** An import started. */
     data object ImportStarted : ImporterAction
@@ -26,12 +27,12 @@ sealed interface ImporterAction : Action {
     /**
      * The in-progress import completed successfully.
      *
-     * @property bookmarksImported the number of bookmarks imported
+     * @property itemsCount the number of items imported.
      */
-    data class ImportFinished(val bookmarksImported: Int) : ImporterAction
+    data class ImportFinished(val itemsCount: Int) : ImporterAction
 
     /** The in-progress import completed with a failure. */
-    data class ImportFailed(val error: BookmarksImporterError) : ImporterAction
+    data class ImportFailed(val error: FileImporterError) : ImporterAction
 
     /** The user canceled the in-progress import. */
     data object ImportCancelled : ImporterAction

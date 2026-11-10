@@ -8,6 +8,7 @@ import androidx.lifecycle.Lifecycle.State
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import mozilla.components.feature.importer.ImporterEvent
 import org.junit.runner.RunWith
 import org.mozilla.fenix.helpers.lifecycle.TestLifecycleOwner
 
@@ -20,7 +21,7 @@ class ImportPasswordsDialogFragmentTest {
     fun `GIVEN the fragment is started WHEN the import finishes THEN the dialog is dismissed`() {
         val owner = TestLifecycleOwner(State.STARTED)
 
-        dismissWhenStarted(owner.lifecycle) { dismissals++ }
+        dismissWhenFinished(ImporterEvent.Success(importCount = 3), owner.lifecycle) { dismissals++ }
 
         assertEquals(1, dismissals)
     }
@@ -29,7 +30,7 @@ class ImportPasswordsDialogFragmentTest {
     fun `GIVEN the fragment has stopped WHEN the import finishes THEN the dialog is not dismissed`() {
         val owner = TestLifecycleOwner(State.CREATED)
 
-        dismissWhenStarted(owner.lifecycle) { dismissals++ }
+        dismissWhenFinished(ImporterEvent.Success(importCount = 3), owner.lifecycle) { dismissals++ }
 
         assertEquals(0, dismissals)
     }
@@ -38,7 +39,7 @@ class ImportPasswordsDialogFragmentTest {
     fun `GIVEN the import finished while stopped WHEN the fragment starts again THEN it is dismissed once`() {
         val owner = TestLifecycleOwner(State.CREATED)
 
-        dismissWhenStarted(owner.lifecycle) { dismissals++ }
+        dismissWhenFinished(ImporterEvent.Success(importCount = 3), owner.lifecycle) { dismissals++ }
         owner.onStart()
 
         assertEquals(1, dismissals)
@@ -48,8 +49,17 @@ class ImportPasswordsDialogFragmentTest {
     fun `GIVEN the import finished while stopped WHEN the fragment is destroyed THEN it is not dismissed`() {
         val owner = TestLifecycleOwner(State.CREATED)
 
-        dismissWhenStarted(owner.lifecycle) { dismissals++ }
+        dismissWhenFinished(ImporterEvent.Success(importCount = 3), owner.lifecycle) { dismissals++ }
         owner.onDestroy()
+
+        assertEquals(0, dismissals)
+    }
+
+    @Test
+    fun `GIVEN the fragment is started WHEN the import only started THEN the dialog stays open`() {
+        val owner = TestLifecycleOwner(State.STARTED)
+
+        dismissWhenFinished(ImporterEvent.Started, owner.lifecycle) { dismissals++ }
 
         assertEquals(0, dismissals)
     }

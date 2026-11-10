@@ -4,6 +4,9 @@
 
 package org.mozilla.fenix.bookmarks
 
+import androidx.annotation.VisibleForTesting
+import mozilla.components.concept.fileimporter.FileImporterError
+import mozilla.components.lib.bookmark.parser.jsoup.BookmarksParseError
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.telemetry.glean.private.NoExtras
@@ -295,7 +298,7 @@ internal class BookmarksTelemetryMiddleware : Middleware<BookmarksState, Bookmar
         when (action) {
             is ImportAction.ImportFailed ->
                 BookmarksManagement.importFailed.record(
-                    extra = BookmarksManagement.ImportFailedExtra(errorCode = action.error.code.toString())
+                    extra = BookmarksManagement.ImportFailedExtra(errorCode = action.error.telemetryCode().toString())
                 )
             is ImportAction.ImportCancelled -> BookmarksManagement.importCancelled.record(NoExtras())
             is ImportAction.ImportFileClicked.FromMenu -> BookmarksManagement.importFromFileMenuClick.record(NoExtras())
@@ -308,4 +311,29 @@ internal class BookmarksTelemetryMiddleware : Middleware<BookmarksState, Bookmar
                 BookmarksManagement.importStarted.record(NoExtras())
             }
         }
+
+    private fun FileImporterError.telemetryCode(): Int =
+        when (this) {
+            is FileImporterError.ReadError -> ImportErrorCode.FILE_READ_ERROR
+            is FileImporterError.ParseError ->
+                // Parsing errors are folded into import errors as a subtype and have their own codes.
+                when (error) {
+                    BookmarksParseError.UnsupportedContentType -> ImportErrorCode.PARSE_ERROR_UNSUPPORTED_CONTENT_TYPE
+                    BookmarksParseError.InvalidFormat -> ImportErrorCode.PARSE_ERROR_INVALID_FORMAT
+                    else -> ImportErrorCode.PARSE_ERROR_UNKNOWN
+                }
+            is FileImporterError.SaveError -> ImportErrorCode.BOOKMARKS_SAVE_ERROR
+            else -> ImportErrorCode.UNKNOWN_ERROR
+        }
+}
+
+/** Error codes recorded with the `bookmarks_management.import_failed` event, as documented in metrics.yaml. */
+@VisibleForTesting
+internal object ImportErrorCode {
+    const val FILE_READ_ERROR = 1001
+    const val PARSE_ERROR_UNSUPPORTED_CONTENT_TYPE = 2001
+    const val PARSE_ERROR_INVALID_FORMAT = 2002
+    const val PARSE_ERROR_UNKNOWN = 2003
+    const val BOOKMARKS_SAVE_ERROR = 3001
+    const val UNKNOWN_ERROR = 4001
 }

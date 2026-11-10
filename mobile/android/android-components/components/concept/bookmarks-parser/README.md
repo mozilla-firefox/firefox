@@ -12,14 +12,16 @@ Use Gradle to download the library from maven.mozilla.org:
 implementation "org.mozilla.components:concept-bookmarks-parser:{latest-version}"
 ```
 
-### BookmarksFileParser
+### BookmarksParseResult
 
-`BookmarksFileParser` is a functional interface for parsing bookmark files into a tree of `InsertableBookmarkNode`s.
+`BookmarksParseResult` is the result of parsing a bookmark file with a `FileParser<BookmarksParseResult>`: a tree of
+`InsertableBookmarkTreeNode`s, plus the number of bookmarks and folders found. Parse failures are reported as a
+`FileParserException` carrying a `BookmarksParseError`.
 
 ```kotlin
-class HtmlBookmarksFileParser : BookmarksFileParser {
-    override suspend fun parse(inputStream: InputStream): Result<InsertableBookmarkNode> {
-        // Parse the HTML bookmark file and return the root node.
+class HtmlBookmarksFileParser : FileParser<BookmarksParseResult> {
+    override suspend fun parse(inputStream: InputStream): Result<BookmarksParseResult> {
+        // Parse the HTML bookmark file and return the result.
     }
 }
 ```

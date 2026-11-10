@@ -22,11 +22,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarState
 import mozilla.components.compose.browser.toolbar.store.BrowserToolbarStore
 import mozilla.components.compose.browser.toolbar.store.Mode
+import mozilla.components.feature.importer.ImporterEvent
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
-import org.mozilla.fenix.bookmarks.importer.FenixImporterEvent
 import org.mozilla.fenix.components.LensFeature
 import org.mozilla.fenix.components.QrScanFenixFeature
 import org.mozilla.fenix.components.VoiceSearchFeature
@@ -79,7 +79,7 @@ class BookmarkFragment : Fragment(), SystemInsetsPaddedFragment {
             lensFeature?.get()?.onCameraPermissionResult(isGranted)
         }
 
-    private val importResultFlow = MutableSharedFlow<FenixImporterEvent>(extraBufferCapacity = 1)
+    private val importResultFlow = MutableSharedFlow<ImporterEvent>(extraBufferCapacity = 1)
 
     @Suppress("LongMethod")
     override fun onCreateView(

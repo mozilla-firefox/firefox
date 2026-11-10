@@ -9,13 +9,14 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import mozilla.components.concept.password.parser.PasswordsFileParser
+import mozilla.components.concept.fileparser.FileParser
+import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.password.parser.PasswordsParseResult
-import mozilla.components.concept.password.parser.PasswordsParserError
 import mozilla.components.concept.storage.LoginEntry
 
-/** A [PasswordsFileParser] that reads CSV exports of password data. */
-class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) : PasswordsFileParser {
+/** A [FileParser] that reads CSV exports of password data. */
+class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) :
+    FileParser<PasswordsParseResult> {
 
     override suspend fun parse(inputStream: InputStream): Result<PasswordsParseResult> = runCatching {
         withContext(ioDispatcher) {
@@ -32,7 +33,11 @@ class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dis
             try {
                 readRows(text)
             } catch (e: ParsingFailedException) {
-                throw PasswordsParserError.UnexpectedError("Malformed CSV", e)
+                throw FileParserException(
+                    errorType = PasswordsParseError.Unexpected,
+                    message = "Malformed CSV",
+                    cause = e,
+                )
             }
         val header = rows.firstOrNull().orEmpty()
         val dataRows = if (rows.size > 1) rows.subList(1, rows.size) else emptyList()
@@ -88,8 +93,9 @@ class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dis
         for ((index, column) in header.withIndex()) {
             val field = COLUMN_TO_FIELD[column.lowercase()] ?: continue
             if (indices.put(field, index) != null) {
-                throw PasswordsParserError.ConflictingColumnsError(
-                    "Two CSV columns map to the same login field: $field"
+                throw FileParserException(
+                    errorType = PasswordsParseError.ConflictingColumns,
+                    message = "Two CSV columns map to the same login field: $field",
                 )
             }
         }
@@ -99,12 +105,18 @@ class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dis
 
     private fun validateHeaderIndices(indices: Map<String, Int>, hasRows: Boolean) {
         if (indices.isEmpty()) {
-            throw PasswordsParserError.FileFormatError("No recognizable login columns in CSV header")
+            throw FileParserException(
+                errorType = PasswordsParseError.FileFormat,
+                message = "No recognizable login columns in CSV header",
+            )
         }
         if (hasRows) {
             val missing = REQUIRED_FIELDS.filter { it !in indices }
             if (missing.isNotEmpty()) {
-                throw PasswordsParserError.FileFormatError("Missing required column(s): $missing")
+                throw FileParserException(
+                    errorType = PasswordsParseError.FileFormat,
+                    message = "Missing required column(s): $missing",
+                )
             }
         }
     }

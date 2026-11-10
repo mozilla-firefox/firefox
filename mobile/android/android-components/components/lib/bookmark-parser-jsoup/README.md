@@ -18,7 +18,7 @@ implementation "org.mozilla.components:lib-bookmark-parser-jsoup:{latest-version
 Jsoup.
 
 ```kotlin
-val parser = BookmarksFileParser.jsoupParser(...)
+val parser = FileParser.jsoupParser(...)
 
 lifecycleScope.launch {
     context.contentResolver.openInputStream(uri) { stream ->

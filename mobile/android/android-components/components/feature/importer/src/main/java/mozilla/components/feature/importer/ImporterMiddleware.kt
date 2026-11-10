@@ -9,18 +9,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import mozilla.components.concept.bookmarks.file.BookmarksFileImporter
-import mozilla.components.concept.bookmarks.file.BookmarksImporterError
+import mozilla.components.concept.fileimporter.FileImporter
+import mozilla.components.concept.fileimporter.FileImporterError
+import mozilla.components.concept.fileimporter.FileImporterException
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 
 /**
  * [Middleware] that handles side-effects for [ImporterAction]s.
  *
+ * @param importer The [FileImporter] that imports the selected file.
  * @param lifecycleScope [CoroutineScope] used to launch import work.
  */
 class ImporterMiddleware(
-    private val importer: BookmarksFileImporter,
+    private val importer: FileImporter<*>,
     private val lifecycleScope: CoroutineScope,
 ) : Middleware<ImporterState, ImporterAction> {
     private var importJob: Job? = null
@@ -33,27 +35,30 @@ class ImporterMiddleware(
         val actionResult =
             when (action) {
                 is ImporterAction.FileSelected -> {
-                    importJob = lifecycleScope.launch {
-                        // We want to make sure we stay in the loading state for at least one second
-                        // during an import to prevent the dialog from flashing before the user can
-                        // comprehend what is currently happening.
-                        // Previous implementation of this waiting strategy in bug 2035342 used
-                        // the async delay awaitAll approach.
-                        // However, we often ran into edge cases where users canceled within the
-                        // "minimum wait" time, and because we already started (maybe finished) inserting
-                        // the bookmarks, the cancelation had no effect, thereby, confusing the users
-                        // We will try and simplify using a simple delay to achieve a similar effect.
-                        delay(1.seconds)
-                        importer
-                            .importBookmarksFromUri(action.uri)
-                            .onFailure {
-                                val error =
-                                    (it as? BookmarksImporterError) ?: BookmarksImporterError.UnknownImporterError(it)
-                                store.dispatch(ImporterAction.ImportFailed(error))
-                            }
-                            .onSuccess {
-                                store.dispatch(ImporterAction.ImportFinished(it.count))
-                            }
+                    action.uri?.let {
+                        importJob = lifecycleScope.launch {
+                            // We want to make sure we stay in the loading state for at least one second
+                            // during an import to prevent the dialog from flashing before the user can
+                            // comprehend what is currently happening.
+                            // Previous implementation of this waiting strategy in bug 2035342 used
+                            // the async delay awaitAll approach.
+                            // However, we often ran into edge cases where users canceled within the
+                            // "minimum wait" time, and because we already started (maybe finished) inserting
+                            // the bookmarks, the cancelation had no effect, thereby, confusing the users
+                            // We will try and simplify using a simple delay to achieve a similar effect.
+                            delay(1.seconds)
+                            importer
+                                .importFromUri(it)
+                                .onFailure { exception ->
+                                    val error =
+                                        (exception as? FileImporterException)?.errorType
+                                            ?: FileImporterError.UnknownError
+                                    store.dispatch(ImporterAction.ImportFailed(error))
+                                }
+                                .onSuccess { importResult ->
+                                    store.dispatch(ImporterAction.ImportFinished(importResult.count))
+                                }
+                        }
                     }
                     ActionResult.ContinueChain
                 }
@@ -73,7 +78,6 @@ class ImporterMiddleware(
                     }
                 }
 
-                ImporterAction.FileSelectionCanceled,
                 ImporterAction.ImportStarted,
                 ImporterAction.ViewAppeared,
                 is ImporterAction.ImportFinished,

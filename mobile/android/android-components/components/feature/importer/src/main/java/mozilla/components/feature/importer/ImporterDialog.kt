@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 
 /**
- * A loading dialog for an in-progress import flow. Displays a spinner with fixed title/description while the importer
- * is working, and a cancel action that invokes [onCancel].
+ * A loading dialog for an in-progress import flow. Displays a spinner with the given [title] and a fixed description
+ * while the importer is working, and a cancel action that invokes [onCancel].
  *
  * When the dialog enters composition, [onImportStarted] is invoked exactly once to allow the caller to begin the import
  * operation.
@@ -29,6 +29,7 @@ import androidx.compose.ui.window.DialogProperties
  */
 @Composable
 internal fun ImporterDialog(
+    title: String,
     onImportStarted: () -> Unit,
     onCancel: () -> Unit,
 ) {
@@ -48,7 +49,7 @@ internal fun ImporterDialog(
         },
         title = {
             Text(
-                text = stringResource(R.string.mozac_feature_importer_dialog_title),
+                text = title,
                 style = MaterialTheme.typography.headlineSmall,
             )
         },
