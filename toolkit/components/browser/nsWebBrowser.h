@@ -5,9 +5,6 @@
 #ifndef nsWebBrowser_h_
 #define nsWebBrowser_h_
 
-// Local Includes
-#include "nsDocShellTreeOwner.h"
-
 // Core Includes
 #include "nsCOMPtr.h"
 #include "nsCycleCollectionParticipant.h"
@@ -16,12 +13,18 @@
 #include "nsIBaseWindow.h"
 #include "nsIDocShell.h"
 #include "nsIDocShellTreeItem.h"
+#include "nsIDocShellTreeOwner.h"
 #include "nsIInterfaceRequestor.h"
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsIWidget.h"
 #include "nsIWebProgress.h"
 #include "nsIWebBrowser.h"
 #include "nsIWebNavigation.h"
+#include "nsIWebProgressListener.h"
+#include "nsIDOMEventListener.h"
+#include "nsIWebBrowserChrome.h"
+#include "nsIPrompt.h"
+#include "nsIAuthPrompt.h"
 #include "nsIWindowWatcher.h"
 #include "nsIPrintSettings.h"
 #include "nsIWidgetListener.h"
@@ -38,6 +41,8 @@ class nsIOpenWindowInfo;
 
 class mozIDOMWindowProxy;
 class nsDocShell;
+class nsIRemoteTab;
+class ChromeTooltipListener;
 
 namespace mozilla {
 namespace dom {
@@ -48,18 +53,24 @@ class WindowGlobalChild;
 class nsWebBrowser final : public nsIWebBrowser,
                            public nsIWebNavigation,
                            public nsIDocShellTreeItem,
+                           public nsIDocShellTreeOwner,
+                           public nsIBaseWindow,
                            public nsIInterfaceRequestor,
+                           public nsIWebProgressListener,
+                           public nsIDOMEventListener,
                            public nsSupportsWeakReference {
-  friend class nsDocShellTreeOwner;
-
  public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
   NS_DECL_CYCLE_COLLECTION_CLASS_AMBIGUOUS(nsWebBrowser, nsIWebBrowser)
 
+  NS_DECL_NSIBASEWINDOW
   NS_DECL_NSIDOCSHELLTREEITEM
+  NS_DECL_NSIDOCSHELLTREEOWNER
   NS_DECL_NSIINTERFACEREQUESTOR
   NS_DECL_NSIWEBBROWSER
   NS_DECL_NSIWEBNAVIGATION
+  NS_DECL_NSIWEBPROGRESSLISTENER
+  NS_DECL_NSIDOMEVENTLISTENER
 
   nsDocShell* GetDocShell() const { return mDocShell; }
   void Close() { InternalDestroy(); }
@@ -82,13 +93,30 @@ class nsWebBrowser final : public nsIWebBrowser,
   void InternalDestroy();
 
   void SetDocShell(nsDocShell* aDocShell);
-  void EnsureDocShellTreeOwner();
 
   nsIWidget* EnsureWidget();
   explicit nsWebBrowser(int aItemType);
 
+  void SetWebBrowserChrome(nsIWebBrowserChrome* aWebBrowserChrome);
+  nsresult AddChromeListeners();
+  nsresult RemoveChromeListeners();
+
+  void EnsurePrompter();
+  void EnsureAuthPrompter();
+
+  void AddToWatcher();
+  void RemoveFromWatcher();
+
+  // These helper functions return the correct instances of the requested
+  // interfaces.  If the object passed to SetWebBrowserChrome() implements
+  // nsISupportsWeakReference, then these functions call QueryReferent on
+  // that object.  Otherwise, they return an addrefed pointer.  If the
+  // WebBrowserChrome object doesn't exist, they return nullptr.
+  already_AddRefed<nsIWebBrowserChrome> GetWebBrowserChrome();
+  already_AddRefed<nsIBaseWindow> GetOwnerWin();
+  already_AddRefed<nsIInterfaceRequestor> GetOwnerRequestor();
+
  protected:
-  RefPtr<nsDocShellTreeOwner> mDocShellTreeOwner;
   RefPtr<nsDocShell> mDocShell;
   mozilla::OriginAttributes mOriginAttributes;
 
@@ -97,6 +125,20 @@ class nsWebBrowser final : public nsIWebBrowser,
 
   // Weak Reference interfaces...
   nsIWidget* mParentWidget;
+  nsIDocShellTreeItem* mPrimaryContentShell;
+
+  nsIWebBrowserChrome* mWebBrowserChrome;
+  nsIBaseWindow* mOwnerWin;
+  nsIInterfaceRequestor* mOwnerRequestor;
+
+  nsWeakPtr mWebBrowserChromeWeak;  // nsIWebBrowserChrome
+
+  // Listens for the events needed to show tooltips in the embedding chrome.
+  RefPtr<ChromeTooltipListener> mChromeTooltipListener;
+
+  nsCOMPtr<nsIPrompt> mPrompter;
+  nsCOMPtr<nsIAuthPrompt> mAuthPrompter;
+  nsCOMPtr<nsIRemoteTab> mPrimaryRemoteTab;
 };
 
 #endif /* nsWebBrowser_h_ */
