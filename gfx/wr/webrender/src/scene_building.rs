@@ -1638,7 +1638,6 @@ impl<'a> SceneBuilder<'a> {
             }
 
             // Do nothing; these are dummy items for the display list parser
-            DisplayItem::SetGradientStops |
             DisplayItem::SetFilterOps |
             DisplayItem::SetFilterData => {}
 

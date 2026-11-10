@@ -353,10 +353,6 @@ impl<'de> Deserialize<'de> for BuiltDisplayList {
                     DisplayListBuilder::push_iter_impl(&mut temp, filter_data.a_values);
                     Real::SetFilterData
                 },
-                Debug::SetGradientStops(stops) => {
-                    DisplayListBuilder::push_iter_impl(&mut temp, stops);
-                    Real::SetGradientStops
-                },
                 Debug::RectClip(v) => Real::RectClip(v),
                 Debug::RoundedRectClip(v) => Real::RoundedRectClip(v),
                 Debug::BorderClip(v) => Real::BorderClip(v),
@@ -421,7 +417,6 @@ pub struct BuiltDisplayListIter<'a> {
     data_len: usize,
     parse_context: DlParseContext,
     cur_item: di::DisplayItem,
-    cur_stops: ItemRange<'a, di::GradientStop>,
     cur_filters: ItemRange<'a, di::FilterOp>,
     cur_filter_data: Vec<TempFilterData<'a>>,
     cur_clip_chain_items: ItemRange<'a, di::ClipId>,
@@ -512,10 +507,6 @@ impl<'a, 'b> DisplayItemRef<'a, 'b> {
 
     pub fn clip_chain_items(&self) -> ItemRange<di::ClipId> {
         self.iter.cur_clip_chain_items
-    }
-
-    pub fn gradient_stops(&self) -> ItemRange<di::GradientStop> {
-        self.iter.gradient_stops()
     }
 
     pub fn filters(&self) -> ItemRange<di::FilterOp> {
@@ -682,9 +673,6 @@ impl BuiltDisplayList {
                         a_values: temp_filter_data.a_values.iter().collect(),
                     })
                 },
-                Real::SetGradientStops => Debug::SetGradientStops(
-                    item.iter.cur_stops.iter().collect()
-                ),
                 Real::RectClip(v) => Debug::RectClip(v),
                 Real::RoundedRectClip(v) => Debug::RoundedRectClip(v),
                 Real::BorderClip(v) => Debug::BorderClip(v),
@@ -724,7 +712,6 @@ impl<'a> BuiltDisplayListIter<'a> {
             data_len: data.len(),
             parse_context: DlParseContext::default(),
             cur_item: di::DisplayItem::PopStackingContext,
-            cur_stops: ItemRange::default(),
             cur_filters: ItemRange::default(),
             cur_filter_data: Vec::new(),
             cur_clip_chain_items: ItemRange::default(),
@@ -748,10 +735,6 @@ impl<'a> BuiltDisplayListIter<'a> {
         &self.cur_item
     }
 
-    pub fn gradient_stops(&self) -> ItemRange<di::GradientStop> {
-        self.cur_stops
-    }
-
     pub fn next<'b>(&'b mut self) -> Option<DisplayItemRef<'a, 'b>> {
         use crate::DisplayItem::*;
 
@@ -767,7 +750,6 @@ impl<'a> BuiltDisplayListIter<'a> {
         }
 
         // Don't let these bleed into another item
-        self.cur_stops = ItemRange::default();
         self.cur_clip_chain_items = ItemRange::default();
         self.cur_filters = ItemRange::default();
         self.cur_filter_data.clear();
@@ -775,7 +757,6 @@ impl<'a> BuiltDisplayListIter<'a> {
         loop {
             self.next_raw()?;
             match self.cur_item {
-                SetGradientStops |
                 SetFilterOps |
                 SetFilterData => {
                     // These are marker items for populating other display items, don't yield them.
@@ -807,10 +788,6 @@ impl<'a> BuiltDisplayListIter<'a> {
         self.log_item_stats();
 
         match self.cur_item {
-            SetGradientStops => {
-                self.cur_stops = self.skip_slice("set_gradient_stops.stops");
-                self.debug_stats.log_slice("set_gradient_stops.stops", &self.cur_stops);
-            }
             SetFilterOps => {
                 self.cur_filters = self.skip_slice("set_filter_ops.ops");
                 self.debug_stats.log_slice("set_filter_ops.ops", &self.cur_filters);
@@ -1983,8 +1960,9 @@ impl DisplayListBuilder {
     ///
     /// This used to push the stops into the item stream itself, which is why
     /// gradients had to be pushed in the order they were created - and, since a
-    /// `SetGradientStops` overwrites the last one, really had to be created and
-    /// pushed strictly one at a time. Handing them back removes that hazard.
+    /// stops marker overwrote the last one, really had to be created and pushed
+    /// strictly one at a time. Handing them back removes that hazard; the stops
+    /// now reach the receiver inside the interned gradient.
     pub fn create_gradient(
         &mut self,
         start_point: LayoutVector2D,
@@ -2888,14 +2866,6 @@ impl DisplayListBuilder {
         self.push_item(&di::DisplayItem::PopStackingContext);
     }
 
-    pub fn push_stops(&mut self, stops: &[di::GradientStop]) {
-        if stops.is_empty() {
-            return;
-        }
-        self.push_item(&di::DisplayItem::SetGradientStops);
-        self.push_iter(stops);
-    }
-
     pub fn push_backdrop_filter(
         &mut self,
         common: &di::CommonItemProperties,
@@ -3713,7 +3683,7 @@ mod parse_failure_tests {
     fn a_corrupt_slice_length_reports_where_it_failed() {
         let mut builder = DisplayListBuilder::new(PipelineId::dummy());
         builder.begin(60.0);
-        builder.push_stops(&[di::GradientStop { offset: 0.0, color: ColorF::BLACK }]);
+        builder.define_clip_chain(None, [di::ClipId::root(PipelineId::dummy())]);
         let (_, mut dl) = builder.end();
 
         let data = &dl.payload.items_data;
@@ -3721,12 +3691,12 @@ mod parse_failure_tests {
         let mut item = di::DisplayItem::PopStackingContext;
         loop {
             let rest = peek_from_slice(&data[offset..], &mut item);
-            if item == di::DisplayItem::SetGradientStops {
+            if let di::DisplayItem::ClipChain(_) = item {
                 offset = data.len() - rest.len();
                 break;
             }
             let mut iter = BuiltDisplayListIter::new(&data[offset..]);
-            iter.next_raw().expect("no gradient stops in the display list");
+            iter.next_raw().expect("no clip chain in the display list");
             offset = data.len() - iter.data.len();
         }
 
@@ -4639,11 +4609,6 @@ mod gradient_interning_tests {
         assert_eq!(adds.len(), 2, "the stops are part of the key");
         assert_eq!(adds[0].key.stops.len(), 2);
         assert_eq!(count(&dl, |item| matches!(item, di::DisplayItem::Gradient(..))), 3);
-        assert_eq!(
-            count(&dl, |item| matches!(item, di::DisplayItem::SetGradientStops)),
-            0,
-            "the stops no longer ride the display list",
-        );
     }
 
     #[test]

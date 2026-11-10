@@ -454,7 +454,6 @@ impl YamlWriter {
 
                     // TODO(gw): Ignored elements - we should as support for
                     //           these as needed.
-                    DisplayItem::SetGradientStops => {}
                     DisplayItem::SetFilterOps => {}
                     DisplayItem::SetFilterData => {}
                     DisplayItem::YuvImage(..) => {}
