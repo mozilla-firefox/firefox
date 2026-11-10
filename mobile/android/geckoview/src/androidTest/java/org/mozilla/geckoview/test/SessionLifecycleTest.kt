@@ -228,6 +228,80 @@ class SessionLifecycleTest : BaseSessionTest() {
         )
     }
 
+    @WithDisplay(width = 100, height = 100)
+    @Test
+    fun primaryAttributeTracksActivenessNotFocus() {
+        mainSession.loadTestPath(HELLO_HTML_PATH)
+        mainSession.waitForPageStop()
+
+        // An active session is the primary content browser.
+        assertThat("Active session should be primary", mainSession.primary, equalTo(true))
+
+        // Deactivating clears the primary attribute.
+        mainSession.setActive(false)
+        assertThat(
+            "Inactive session should not be primary",
+            mainSession.primary,
+            equalTo(false),
+        )
+
+        // Reactivating without focusing must restore primary.
+        mainSession.setActive(true)
+        assertThat(
+            "Reactivated session should be primary again without being focused",
+            mainSession.primary,
+            equalTo(true),
+        )
+
+        // Focus changes must not touch the primary attribute while active.
+        mainSession.setFocused(false)
+        assertThat(
+            "Blurring an active session should keep it primary",
+            mainSession.primary,
+            equalTo(true),
+        )
+
+        mainSession.setFocused(true)
+        assertThat(
+            "Focusing an active session should keep it primary",
+            mainSession.primary,
+            equalTo(true),
+        )
+    }
+
+    // active (foreground) content must be able to focus itself even
+    // when the embedder has not focused the session. Otherwise framefocusrequested
+    // calls preventDefault and the focus is dropped, hanging focus-driven pages
+    @WithDisplay(width = 100, height = 100)
+    @Test
+    fun activeContentCanFocusItselfWhileNotEmbedderFocused() {
+        mainSession.loadTestPath(HELLO_HTML_PATH)
+        mainSession.waitForPageStop()
+
+        // Active, but not focused by the embedder.
+        mainSession.setActive(true)
+        mainSession.setFocused(false)
+
+        val focused =
+            mainSession.evaluateJS(
+                """
+                new Promise(resolve => {
+                    const input = document.createElement("input");
+                    document.body.appendChild(input);
+                    input.addEventListener("focus", () => resolve(true), { once: true });
+                    input.focus();
+                    setTimeout(() => resolve(document.activeElement === input), 1000);
+                });
+                """
+            ) as Boolean
+
+        assertThat(
+            "Active content should be able to focus an element without an embedder focus grant",
+            focused,
+            equalTo(true),
+        )
+    }
+
     private fun waitUntilCollected(ref: QueuedWeakReference<*>) {
         UiThreadUtils.waitForCondition(
             {
