@@ -8,6 +8,7 @@
 
 #include "mozilla/CheckedInt.h"
 #include "mozilla/EMEUtils.h"
+#include "mozilla/ProtobufReader.h"
 #include "mozilla/RemoteMediaManagerParent.h"
 
 namespace mozilla {
@@ -372,6 +373,19 @@ MediaDrmRemoteCDMParent::EnsureHasAMediaCrypto(
   return InternalPromise::CreateAndResolve(true, __func__);
 }
 
+static Span<const uint8_t> TrimKeyRequest(Span<const uint8_t> aRequest) {
+  if (__builtin_available(android 29, *)) {
+    return aRequest;
+  }
+
+  Span<const uint8_t> request = widevine::TrimKeyRequest(aRequest);
+  if (request.Length() != aRequest.Length()) {
+    EME_LOG("TrimKeyRequest -- removing {} bytes",
+            aRequest.Length() - request.Length());
+  }
+  return request;
+}
+
 RefPtr<MediaDrmRemoteCDMParent::InternalPromise>
 MediaDrmRemoteCDMParent::EnsureProvisioned() {
   if (NS_WARN_IF(!mDrm)) {
@@ -537,13 +551,13 @@ void MediaDrmRemoteCDMParent::DoCreateSession(
 
   NS_ConvertUTF16toUTF8 mimeType(aRequest.initDataType());
 
-  const uint8_t* keyRequest = nullptr;
+  const uint8_t* keyRequestData = nullptr;
   size_t keyRequestSize = 0;
   status =
       AMediaDrm_getKeyRequest(mDrm, &sessionId, aRequest.initData().Elements(),
                               aRequest.initData().Length(), mimeType.get(),
                               AMediaDrmKeyType::KEY_TYPE_STREAMING, nullptr, 0,
-                              &keyRequest, &keyRequestSize);
+                              &keyRequestData, &keyRequestSize);
 
   if (status == AMEDIA_DRM_NOT_PROVISIONED) {
     AMediaDrm_closeSession(mDrm, &sessionId);
@@ -565,13 +579,14 @@ void MediaDrmRemoteCDMParent::DoCreateSession(
     return;
   }
 
+  auto keyRequest = TrimKeyRequest(Span(keyRequestData, keyRequestSize));
+
   NS_ConvertUTF8toUTF16 sessionIdStr(
       reinterpret_cast<const char*>(sessionId.ptr), sessionId.length);
   mSessions[sessionIdStr] = {sessionId, std::move(mimeType)};
-  aResolver(RemoteCDMKeyMessageIPDL(
-      std::move(sessionIdStr), MediaKeyMessageType::License_request,
-      nsTArray<uint8_t>(reinterpret_cast<const uint8_t*>(keyRequest),
-                        keyRequestSize)));
+  aResolver(RemoteCDMKeyMessageIPDL(std::move(sessionIdStr),
+                                    MediaKeyMessageType::License_request,
+                                    nsTArray<uint8_t>(keyRequest)));
 }
 
 mozilla::ipc::IPCResult MediaDrmRemoteCDMParent::RecvLoadSession(
@@ -704,7 +719,7 @@ void MediaDrmRemoteCDMParent::HandleEvent(nsString&& aSessionId,
       EnsureProvisioned();
       break;
     case AMediaDrmEventType::EVENT_KEY_REQUIRED: {
-      const uint8_t* keyRequest = nullptr;
+      const uint8_t* keyRequestData = nullptr;
       size_t keyRequestSize = 0;
       AMediaDrmKeyRequestType keyRequestType =
           AMediaDrmKeyRequestType::KEY_REQUEST_TYPE_INITIAL;
@@ -714,12 +729,13 @@ void MediaDrmRemoteCDMParent::HandleEvent(nsString&& aSessionId,
         status = AMediaDrm_getKeyRequestWithDefaultUrlAndType(
             mDrm, &i->second.id, aData.Elements(), aData.Length(),
             i->second.mimeType.get(), AMediaDrmKeyType::KEY_TYPE_STREAMING,
-            nullptr, 0, &keyRequest, &keyRequestSize, nullptr, &keyRequestType);
+            nullptr, 0, &keyRequestData, &keyRequestSize, nullptr,
+            &keyRequestType);
       } else {
         status = AMediaDrm_getKeyRequest(
             mDrm, &i->second.id, aData.Elements(), aData.Length(),
             i->second.mimeType.get(), AMediaDrmKeyType::KEY_TYPE_STREAMING,
-            nullptr, 0, &keyRequest, &keyRequestSize);
+            nullptr, 0, &keyRequestData, &keyRequestSize);
       }
 
       if (status == AMEDIA_DRM_NOT_PROVISIONED) {
@@ -750,6 +766,8 @@ void MediaDrmRemoteCDMParent::HandleEvent(nsString&& aSessionId,
         return;
       }
 
+      auto keyRequest = TrimKeyRequest(Span(keyRequestData, keyRequestSize));
+
       dom::MediaKeyMessageType keyMessageType;
       switch (keyRequestType) {
         case AMediaDrmKeyRequestType::KEY_REQUEST_TYPE_NONE:
@@ -772,10 +790,9 @@ void MediaDrmRemoteCDMParent::HandleEvent(nsString&& aSessionId,
           break;
       }
 
-      (void)SendOnSessionKeyMessage(RemoteCDMKeyMessageIPDL(
-          std::move(aSessionId), keyMessageType,
-          nsTArray<uint8_t>(reinterpret_cast<const uint8_t*>(keyRequest),
-                            keyRequestSize)));
+      (void)SendOnSessionKeyMessage(
+          RemoteCDMKeyMessageIPDL(std::move(aSessionId), keyMessageType,
+                                  nsTArray<uint8_t>(keyRequest)));
     } break;
     case AMediaDrmEventType::EVENT_KEY_EXPIRED:
       break;

@@ -23,6 +23,7 @@ EXPORTS.mozilla += [
     "EMEOriginID.h",
     "EMEUtils.h",
     "KeySystemConfig.h",
+    "ProtobufReader.h",
 ]
 
 UNIFIED_SOURCES += [
@@ -39,6 +40,7 @@ UNIFIED_SOURCES += [
     "MediaKeySystemAccess.cpp",
     "MediaKeySystemAccessManager.cpp",
     "MediaKeySystemAccessPermissionRequest.cpp",
+    "ProtobufReader.cpp",
 ]
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "android":

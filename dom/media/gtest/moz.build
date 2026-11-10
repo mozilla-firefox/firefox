@@ -81,6 +81,7 @@ UNIFIED_SOURCES += [
     "TestOggWriter.cpp",
     "TestOpusParser.cpp",
     "TestPDMFactorySupport.cpp",
+    "TestProtobufReader.cpp",
     "TestQuantizableBuffer.cpp",
     "TestRemoteImageHolder.cpp",
     "TestRust.cpp",
