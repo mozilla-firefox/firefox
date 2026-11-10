@@ -6612,7 +6612,9 @@ HTMLEditor* Document::GetHTMLEditor() const {
 }
 
 nsresult Document::EditingStateChanged() {
-  if (mRemovedFromDocShell) {
+  // Don't allow editing on non-HTML/XHTML documents.  Return NS_OK so that the
+  // setter of designMode on non-HTML documents does not fail.
+  if (mRemovedFromDocShell || !IsHTMLOrXHTML()) {
     return NS_OK;
   }
 
@@ -6710,13 +6712,6 @@ nsresult Document::EditingStateChanged() {
   bool makeWindowEditable = mEditingState == EditingState::eOff;
   bool spellRecheckAll = false;
   bool putOffToRemoveScriptBlockerUntilModifyingEditingState = false;
-
-  if (makeWindowEditable && NS_WARN_IF(!IsHTMLOrXHTML())) {
-    // Don't allow editing on non-HTML/XHTML documents.
-    // Return NS_OK so that the setter of designMode on non-HTML documents
-    // does not fail.
-    return NS_OK;
-  }
 
   RefPtr<HTMLEditor> htmlEditor;
   {
