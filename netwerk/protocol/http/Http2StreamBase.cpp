@@ -165,13 +165,11 @@ nsresult Http2StreamBase::ReadSegments(nsAHttpSegmentReader* reader,
   nsresult rv = NS_ERROR_UNEXPECTED;
   mRequestBlockedOnRead = 0;
 
-  if (mRecvdFin || mRecvdReset) {
-    // Don't transmit any request frames if the peer cannot respond
-    LOG3(
-        ("Http2StreamBase %p ReadSegments request stream aborted due to"
-         " response side closure\n",
-         this));
-    return NS_ERROR_ABORT;
+  // Half-closed (remote) may still send (RFC 9113 section 5.1).
+  if (mRecvdReset) {
+    LOG3(("Http2StreamBase %p ReadSegments stop sending after reset\n", this));
+    *countRead = 0;
+    return NS_OK;
   }
 
   // avoid runt chunks if possible by anticipating
@@ -1146,6 +1144,7 @@ void Http2StreamBase::SetRecvdReset(bool aStatus) {
   mRecvdReset = aStatus ? 1 : 0;
   if (!aStatus) return;
   mState = CLOSED;
+  mBlockedOnRwin = false;
 }
 
 void Http2StreamBase::SetSentReset(bool aStatus) {

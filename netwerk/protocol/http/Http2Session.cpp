@@ -3144,6 +3144,10 @@ nsresult Http2Session::WriteSegmentsAgain(nsAHttpSegmentWriter* writer,
       mInputFrameDataStream->DisableSpdy();
       // actually allow restart by unsticking
       mInputFrameDataStream->MakeNonSticky();
+    } else if (mDownstreamRstReason == NO_HTTP_ERROR &&
+               mInputFrameDataStream->RecvdFin()) {
+      // Server asks to stop sending after a complete response (RFC 9113 8.1).
+      streamCleanupCode = NS_OK;
     } else if (mDownstreamRstReason == CANCEL_ERROR ||
                mDownstreamRstReason == NO_HTTP_ERROR) {
       // The server cancelled or gracefully closed this stream; do not retry.

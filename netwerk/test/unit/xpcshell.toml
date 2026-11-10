@@ -974,6 +974,9 @@ skip-if = [
 run-sequentially = ["true"] # node server exceptions dont replay well
 head = "head_channels.js head_cache.js head_cookies.js head_trr.js head_http3.js http2_test_common.js"
 
+["test_http2_fin_buffered.js"]
+requesttimeoutfactor = 2  # Slow on Android
+
 ["test_http2_proxy_concurrent_stream.js"]
 requesttimeoutfactor = 4  # Slow on Linux and Windows
 skip-if = [
