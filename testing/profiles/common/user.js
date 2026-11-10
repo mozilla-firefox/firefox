@@ -14,6 +14,7 @@ user_pref("browser.newtabpage.activity-stream.asrouter.providers.cfr", "null");
 user_pref("browser.newtabpage.activity-stream.asrouter.providers.message-groups", "null");
 user_pref("browser.newtabpage.activity-stream.asrouter.providers.messaging-experiments", "null");
 user_pref("browser.newtabpage.activity-stream.feeds.system.topstories", false);
+user_pref("browser.newtabpage.activity-stream.feeds.discoverystreamfeed", false);
 user_pref("browser.newtabpage.activity-stream.tippyTop.service.endpoint", "");
 user_pref("browser.newtabpage.activity-stream.discoverystream.config", "[]");
 user_pref("browser.newtabpage.activity-stream.unifiedAds.endpoint", "");

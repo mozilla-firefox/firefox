@@ -2118,8 +2118,7 @@ pref("messaging-system.askForFeedback", true);
 // It's enabled by default, but could be disabled to force ASRouter to use the local files.
 pref("browser.newtabpage.activity-stream.asrouter.useRemoteL10n", true);
 
-// These prefs control if Discovery Stream is enabled.
-pref("browser.newtabpage.activity-stream.discoverystream.enabled", true);
+// These prefs control Discovery Stream.
 pref("browser.newtabpage.activity-stream.discoverystream.hardcoded-basic-layout", false);
 pref("browser.newtabpage.activity-stream.discoverystream.hybridLayout.enabled", false);
 pref("browser.newtabpage.activity-stream.discoverystream.hideCardBackground.enabled", false);

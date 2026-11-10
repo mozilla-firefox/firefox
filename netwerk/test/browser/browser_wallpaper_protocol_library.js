@@ -41,7 +41,7 @@ add_task(async function test_library_paths_from_content() {
       ["browser.newtab.preload", false],
       ["browser.newtabpage.activity-stream.feeds.topsites", false],
       ["browser.newtabpage.activity-stream.feeds.system.topstories", false],
-      ["browser.newtabpage.activity-stream.discoverystream.enabled", false],
+      ["browser.newtabpage.activity-stream.feeds.discoverystreamfeed", false],
     ],
   });
 

@@ -32,7 +32,6 @@ function feedStubs() {
     SystemTickFeed: class SystemTickFeed {},
     TelemetryFeed: class TelemetryFeed {},
     TopSitesFeed: class TopSitesFeed {},
-    TopStoriesFeed: class TopStoriesFeed {},
   };
 }
 
@@ -260,10 +259,6 @@ describe("ActivityStream", () => {
     });
     it("should create a HighlightsFeed feed", () => {
       const feed = as.feeds.get("feeds.section.highlights")();
-      expect(feed).toBeTruthy();
-    });
-    it("should create a TopStoriesFeed feed", () => {
-      const feed = as.feeds.get("feeds.system.topstories")();
       expect(feed).toBeTruthy();
     });
     it("should create a AboutPreferences feed", () => {

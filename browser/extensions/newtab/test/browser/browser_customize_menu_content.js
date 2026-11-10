@@ -60,6 +60,7 @@ add_setup(async function () {
 test_newtab({
   async before({ pushPrefs }) {
     await pushPrefs(
+      ["browser.newtabpage.activity-stream.feeds.discoverystreamfeed", true],
       ["browser.newtabpage.activity-stream.feeds.topsites", false],
       ["browser.newtabpage.activity-stream.feeds.section.topstories", false]
     );
