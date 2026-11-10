@@ -897,6 +897,7 @@ toolbarbutton[constrain-size="true"][cui-areatype="panel"] > .toolbarbutton-badg
   & .fxa-menu-sign-in-promo-message {
     margin: 0;
     font-size: var(--font-size-small);
+    color: var(--text-color-deemphasized);
 
     :root[uidensity="compact"] & {
       display: none;
