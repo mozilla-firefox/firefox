@@ -116,6 +116,20 @@ class CsvPasswordsFileParserTest {
     }
 
     @Test
+    fun `parses Dashlane Android export using user_name alias`() = runTest {
+        val csv =
+            """
+            user_name,user_name_2,user_name_3,title,password,note,url,category,otp
+            alice,,,example.com,hunter2,,https://example.com,,null
+            """
+                .trimIndent()
+
+        val result = parser.parse(csv.byteInputStream()).getOrThrow()
+
+        assertEquals(getDefaultLoginEntry(), result.logins.single())
+    }
+
+    @Test
     fun `parses LastPass export`() = runTest {
         val csv =
             """

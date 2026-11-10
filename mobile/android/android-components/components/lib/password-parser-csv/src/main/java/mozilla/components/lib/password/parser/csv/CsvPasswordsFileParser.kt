@@ -110,7 +110,8 @@ class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dis
     }
 
     companion object {
-        // Column-name aliases mirror toolkit/components/passwordmgr/LoginCSVImport.sys.mjs.
+        // Column-name aliases mirror toolkit/components/passwordmgr/LoginCSVImport.sys.mjs,
+        // with an addition of "user_name" to support import from Dashlane that uses that format.
         // Unrecognized columns (including guid + timestamps from a Firefox export) are silently
         // ignored — LoginsStorage.add(LoginEntry) doesn't accept that metadata.
         private val COLUMN_TO_FIELD =
@@ -118,6 +119,7 @@ class CsvPasswordsFileParser(private val ioDispatcher: CoroutineDispatcher = Dis
                 "url" to "origin",
                 "login_uri" to "origin",
                 "username" to "username",
+                "user_name" to "username",
                 "login_username" to "username",
                 "password" to "password",
                 "login_password" to "password",
