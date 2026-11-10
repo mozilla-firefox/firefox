@@ -667,14 +667,16 @@ mozilla::ipc::IPCResult MediaDrmRemoteCDMParent::RecvSetServerCertificate(
       "setPropertyByteArray",
       fmt::ptr(this));
   media_status_t status = AMediaDrm_setPropertyByteArray(
-      mDrm, "certificate", aCertificate.Elements(), aCertificate.Length());
+      mDrm, "serviceCertificate", aCertificate.Elements(),
+      aCertificate.Length());
   EME_LOG("[{}] MediaDrmRemoteCDMParent::RecvSetServerCertificate -- status {}",
           fmt::ptr(this), static_cast<int>(status));
   if (NS_WARN_IF(status != AMEDIA_OK)) {
     aResolver(MediaResult(
         NS_ERROR_DOM_INVALID_STATE_ERR,
-        RESULT_DETAIL("AMediaDrm_setPropertyByteArray certificate failed %d",
-                      status)));
+        RESULT_DETAIL(
+            "AMediaDrm_setPropertyByteArray serviceCertificate failed %d",
+            status)));
     return IPC_OK();
   }
 

@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <title>Encrypted Media Extensions: Set a server certificate with DRM</title>
+    <link rel="help" href="https://w3c.github.io/encrypted-media/">
+
+    <script src=/resources/testharness.js></script>
+    <script src=/resources/testharnessreport.js></script>
+
+    <script src=/encrypted-media/util/utils.js></script>
+    <script src=/encrypted-media/content/content-metadata.js></script>
+  </head>
+  <body>
+    <div id='log'></div>
+
+    <script type="module">
+      // The Widevine service certificate of the DRMtoday staging server, a
+      // SignedDrmCertificate.
+      const kCertificate = Uint8Array.from(
+        atob(
+          "CrsCCAMSEKDc0WAwLAQT1SB2ogyBJEwYv4Tx7gUijgIwggEKAoIBAQC8Xc/GTRwZDtlnBThq8V382D1oJAM0F/YgCQtNDLz7vTWJ+QskNGi5Dd2qzO4s48Cnx5BLvL4H0xCRSw2Ed6ekHSdrRUwyoYOE+M/t1oIbccwlTQ7o+BpV1X6TB7fxFyx1jsBtRsBWphU65w121zqmSiwzZzJ4xsXVQCJpQnNI61gzHO42XZOMuxytMm0F6puNHTTqhyY3Z290YqvSDdOB+UY5QJuXJgjhvOUD9+oaLlvT+vwmV2/NJWxKqHBKdL9JqvOnNiQUF0hDI7Wf8Wb63RYSXKE27Ky31hKgx1wuq7TTWkA+kHnJTUrTEfQxfPR4dJTquE+IDLAi5yeVVxzbAgMBAAE6DGNhc3RsYWJzLmNvbUABEoADMmGXpXg/0qxUuwokpsqVIHZrJfu62ar+BF8UVUKdK5oYQoiTZd9OzK3kr29kqGGk3lSgM0/p499p/FUL8oHHzgsJ7Hajdsyzn0Vs3+VysAgaJAkXZ+k+N6Ka0WBiZlCtcunVJDiHQbz1sF9GvcePUUi2fM/h7hyskG5ZLAyJMzTvgnV3D8/I5Y6mCFBPb/+/Ri+9bEvquPF3Ff9ip3yEHu9mcQeEYCeGe9zR/27eI5MATX39gYtCnn7dDXVxo4/rCYK0A4VemC3HRai2X3pSGcsKY7+6we7h4IycjqtuGtYg8AbaigovcoURAZcr1d/G0rpREjLdVLG0Gjqk63Gx688W5gh3TKemsK3R1jV0dOfj3e6uV/kTpsNRL9KsD0v7ysBQVdUXEbJotcFz71tI5qc3jwr6GjYIPA3VzusD17PN6AGQniMwxJV12z/EgnUopcFB13osydpD2AaDsgWo5RWJcNf+fzCgtUQx/0Au9+xVm5LQBdv8Ja4f2oiHN3dw"
+        ),
+        c => c.charCodeAt(0)
+      );
+
+      const keysystem = await getSupportedKeySystem();
+      const contentitem = content["mp4-basic"];
+      const configuration = getSimpleConfigurationForContent(contentitem);
+
+      async function createMediaKeys() {
+        const access = await navigator.requestMediaKeySystemAccess(keysystem, [
+          configuration,
+        ]);
+        return access.createMediaKeys();
+      }
+
+      promise_test(async () => {
+        const mediaKeys = await createMediaKeys();
+        await mediaKeys.setServerCertificate(kCertificate);
+      }, "setServerCertificate accepts the Widevine service certificate");
+
+      promise_test(async t => {
+        const mediaKeys = await createMediaKeys();
+        await promise_rejects_dom(
+          t,
+          "InvalidStateError",
+          mediaKeys.setServerCertificate(new Uint8Array(200))
+        );
+      }, "setServerCertificate rejects data that is not a certificate");
+
+      promise_test(async () => {
+        const mediaKeys = await createMediaKeys();
+        await mediaKeys.setServerCertificate(kCertificate);
+
+        const session = mediaKeys.createSession();
+        const message = new Promise(resolve =>
+          session.addEventListener("message", resolve, { once: true })
+        );
+        await session.generateRequest(
+          contentitem.keys[0].initDataType,
+          Uint8Array.from(atob(contentitem.keys[0].initData), c =>
+            c.charCodeAt(0)
+          )
+        );
+        const event = await message;
+        assert_equals(event.messageType, "license-request");
+        assert_greater_than(
+          event.message.byteLength,
+          2,
+          "The first message is a license request, not a certificate request"
+        );
+      }, "The first message is a license request once the certificate is set");
+    </script>
+  </body>
+</html>
