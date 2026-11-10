@@ -78,7 +78,6 @@ add_task(async function test_persist_searchmode() {
   await UrlbarTestUtils.assertSearchMode(window, null);
 
   cleanup();
-  await resetApplicationProvidedEngines();
 });
 
 add_task(async function test_persist_searchmode_non_config_engine() {
@@ -171,5 +170,4 @@ add_task(async function test_escape_searchmode() {
   await UrlbarTestUtils.assertSearchMode(window, null);
 
   cleanup();
-  await resetApplicationProvidedEngines();
 });

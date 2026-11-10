@@ -27,13 +27,13 @@ add_task(async function change_tab() {
   let { tab: tab3 } = await searchWithTab("yet another keyword");
 
   await BrowserTestUtils.switchTab(gBrowser, tab1);
-  assertSearchStringIsInUrlbar(SEARCH_STRING);
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
 
   await BrowserTestUtils.switchTab(gBrowser, tab2);
-  assertSearchStringIsInUrlbar("another keyword");
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, "another keyword");
 
   await BrowserTestUtils.switchTab(gBrowser, tab3);
-  assertSearchStringIsInUrlbar("yet another keyword");
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, "yet another keyword");
 
   BrowserTestUtils.removeTab(tab1);
   BrowserTestUtils.removeTab(tab2);
@@ -112,7 +112,7 @@ add_task(async function user_overwrites_search_term_with_blank_string() {
 
   // Technically, the userTypedValue is a blank string instead of null because
   // they cleared it.
-  assertSearchStringIsInUrlbar(SEARCH_STRING);
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
 
   BrowserTestUtils.removeTab(tab1);
   BrowserTestUtils.removeTab(tab2);
