@@ -73,6 +73,8 @@ support-files = ["has-a-link.html"]
 
 ["browser_searchModeSwitcher_emptyInput.js"]
 
+["browser_searchModeSwitcher_icon.js"]
+
 ["browser_searchModeSwitcher_keyNavigation.js"]
 
 ["browser_searchModeSwitcher_newBadge.js"]
