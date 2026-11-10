@@ -254,6 +254,25 @@ def is_speedometer_task(label):
     return "shippable" in label and "speedometer3" in label
 
 
+def _normalize_test_paths(test_paths):
+    return {suite: sorted(paths) for suite, paths in (test_paths or {}).items()}
+
+
+def manifests_scope(task, test_manifests):
+    """Return "full" if `test_manifests` matches the manifests this task would
+    run on its own push, otherwise "partial".
+
+    Backfilled tasks run the manifests of the originating push, which can
+    differ from the chunk scheduled on the target push when chunking shifts.
+    """
+    own = task.task["payload"].get("env", {}).get("MOZHARNESS_TEST_PATHS")
+    if not own:
+        return "partial"
+    if _normalize_test_paths(json.loads(own)) == _normalize_test_paths(test_manifests):
+        return "full"
+    return "partial"
+
+
 def backfill_modifier(task, input, lower_priority=False):
     if lower_priority:
         task.task["priority"] = _lower_priority(task.task.get("priority"), "very-low")
@@ -278,6 +297,8 @@ def backfill_modifier(task, input, lower_priority=False):
     if test_manifests:
         revision = input.get("revision")
 
+        # Compute before MOZHARNESS_TEST_PATHS is overwritten below.
+        task.task["tags"]["manifests"] = manifests_scope(task, test_manifests)
         task.attributes["test_manifests"] = test_manifests
         task.task["payload"]["env"]["MOZHARNESS_TEST_PATHS"] = json.dumps(
             test_manifests

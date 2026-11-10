@@ -189,6 +189,7 @@ def confirm_modifier(task, input):
 
         task.task["metadata"]["name"] = task.label
         task.task["tags"]["action"] = "confirm-failure"
+        task.task["tags"]["manifests"] = "partial"
     return task
 
 

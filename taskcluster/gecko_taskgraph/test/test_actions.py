@@ -13,6 +13,7 @@ from taskgraph.util.taskcluster import _task_definitions_cache
 
 from gecko_taskgraph import decision
 from gecko_taskgraph.actions import trigger_action_callback
+from gecko_taskgraph.actions.confirm_failure import confirm_modifier
 
 ROOT_URL = "https://taskcluster.example.com"
 
@@ -553,6 +554,30 @@ def test_confirm_failures_retrigger(mocker, responses, run_action):
     run_action("confirm-failures", task_id=task_id)
 
     retrigger_mock.assert_called_once()
+
+
+def test_confirm_modifier_tags_partial_manifests():
+    task = make_task(
+        label="test-mochitest-cf",
+        task_def={
+            "payload": {"command": ["run-tests"], "env": {}},
+            "metadata": {"name": "test-mochitest-cf"},
+            "tags": {},
+        },
+    )
+
+    confirm_modifier(
+        task,
+        input={
+            "label": "test-mochitest-cf",
+            "suite": "mochitest-plain",
+            "test_path": "dom/tests/test_example.html",
+            "test_group": "dom/tests/mochitest.toml",
+        },
+    )
+
+    assert task.task["tags"]["action"] == "confirm-failure"
+    assert task.task["tags"]["manifests"] == "partial"
 
 
 def test_rerun(mocker, responses, run_action):
