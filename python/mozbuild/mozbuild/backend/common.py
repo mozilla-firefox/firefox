@@ -298,9 +298,9 @@ class CommonBackend(BuildBackend):
         """Build a Cargo test command using the directory's Cargo profile."""
         rustflags = ()
         substs = self.environment.substs
-        # Test executables load shared libraries from dist/bin. Other platforms
-        # use an rpath, while Windows stages the libraries next to the test
-        # binaries.
+        # Test executables load shared libraries from dist/bin. Outside Windows
+        # they use an rpath, and on Linux and Windows `compose_env` also adds
+        # dist/bin to the library search path.
         if substs.get("OS_TARGET") != "WINNT":
             dist_bin = mozpath.join(self.environment.topobjdir, "dist", "bin")
             rustflags = ("-C", f"link-arg=-Wl,-rpath,{dist_bin}")
