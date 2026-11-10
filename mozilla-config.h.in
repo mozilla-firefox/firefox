@@ -53,8 +53,10 @@
 #include <excpt.h>
 #define __try if(true)
 #define __except(x) else
-#undef GetExceptionCode
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmacro-redefined"
 #define GetExceptionCode() 0
+#pragma clang diagnostic pop
 
 #endif /* MOZ_NEUTER_SEH_FOR_MINGWCLANG && XP_WIN && __MINGW32__ */
 
