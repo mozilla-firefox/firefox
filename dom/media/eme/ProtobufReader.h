@@ -117,11 +117,24 @@ namespace widevine {
 // The field of a SignedMessage that holds its type.
 constexpr uint32_t kSignedMessageTypeField = 1;
 
+enum class SignedMessageType : uint8_t {
+  ServiceCertificateRequest = 4,
+};
+
+// A SignedMessage that holds only its type is the tag of the type field and
+// the type as a one byte varint.
+constexpr uint8_t kSignedMessageTypeTag =
+    static_cast<uint8_t>(ProtobufReader::MakeTag(
+        kSignedMessageTypeField, ProtobufReader::WireType::Varint));
+constexpr size_t kSignedMessageTypeOnlySize = 2;
+
 // Before Android 10, AMediaDrm_getKeyRequest returns the key request followed
 // by the previous one. Both are SignedMessages, which start with the type in
 // field 1, so the request ends where field 1 repeats. Returns the first
 // request, or all of aRequest if it cannot be parsed.
 Span<const uint8_t> TrimKeyRequest(Span<const uint8_t> aRequest);
+
+bool IsServiceCertificateRequest(Span<const uint8_t> aRequest);
 
 }  // namespace widevine
 

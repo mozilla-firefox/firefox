@@ -31,4 +31,11 @@ Span<const uint8_t> TrimKeyRequest(Span<const uint8_t> aRequest) {
   return aRequest;
 }
 
+bool IsServiceCertificateRequest(Span<const uint8_t> aRequest) {
+  return aRequest.Length() == kSignedMessageTypeOnlySize &&
+         aRequest[0] == kSignedMessageTypeTag &&
+         aRequest[1] ==
+             static_cast<uint8_t>(SignedMessageType::ServiceCertificateRequest);
+}
+
 }  // namespace mozilla::widevine

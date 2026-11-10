@@ -199,6 +199,7 @@ void MediaDrmRemoteCDMParent::Destroy() {
     AMediaDrm_closeSession(mDrm, &i.second.id);
   }
   mSessions.clear();
+  mCertificateQueue.Clear();
 
   {
     MutexAutoLock lock(mMutex);
@@ -598,7 +599,9 @@ void MediaDrmRemoteCDMParent::DoCreateSession(
 
   NS_ConvertUTF8toUTF16 sessionIdStr(
       reinterpret_cast<const char*>(sessionId.ptr), sessionId.length);
-  mSessions[sessionIdStr] = {sessionId, std::move(mimeType)};
+  SessionEntry entry{sessionId, std::move(mimeType)};
+  entry.awaitingCertificate = widevine::IsServiceCertificateRequest(keyRequest);
+  mSessions[sessionIdStr] = std::move(entry);
   aResolver(RemoteCDMKeyMessageIPDL(std::move(sessionIdStr),
                                     MediaKeyMessageType::License_request,
                                     nsTArray<uint8_t>(keyRequest)));
@@ -636,6 +639,13 @@ mozilla::ipc::IPCResult MediaDrmRemoteCDMParent::RecvUpdateSession(
         NS_ERROR_DOM_INVALID_STATE_ERR,
         RESULT_DETAIL("AMediaDrm_provideKeyResponse failed %d", status)));
     return IPC_OK();
+  }
+
+  if (i->second.awaitingCertificate) {
+    i->second.awaitingCertificate = false;
+    if (!__builtin_available(android 29, *)) {
+      mCertificateQueue.AppendElement(aRequest.sessionId());
+    }
   }
 
   aResolver(MediaResult(NS_OK));
@@ -676,6 +686,7 @@ mozilla::ipc::IPCResult MediaDrmRemoteCDMParent::RecvCloseSession(
     aResolver(MediaResult(NS_OK));
   }
 
+  mCertificateQueue.RemoveElement(aSessionId);
   mSessions.erase(i);
   return IPC_OK();
 }
@@ -718,6 +729,22 @@ void MediaDrmRemoteCDMParent::HandleEvent(nsString&& aSessionId,
                                           AMediaDrmEventType aEventType,
                                           int aExtra, nsTArray<uint8_t>&& aData,
                                           bool aProvisioned) {
+  // Before Android 10, key request events have no session ID, so use the
+  // session that was given a service certificate first.
+  if (!__builtin_available(android 29, *)) {
+    if (aSessionId.IsEmpty() &&
+        aEventType == AMediaDrmEventType::EVENT_KEY_REQUIRED) {
+      if (mCertificateQueue.IsEmpty()) {
+        EME_LOG(
+            "[{}] MediaDrmRemoteCDMParent::HandleEvent -- no session for event",
+            fmt::ptr(this));
+        return;
+      }
+      aSessionId = std::move(mCertificateQueue[0]);
+      mCertificateQueue.RemoveElementAt(0);
+    }
+  }
+
   const auto i = mSessions.find(aSessionId);
   if (i == mSessions.end()) {
     EME_LOG("[{}] MediaDrmRemoteCDMParent::HandleEvent -- session not found",

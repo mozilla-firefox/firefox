@@ -251,3 +251,24 @@ TEST(Widevine, TrimKeyRequestEmpty)
 {
   EXPECT_TRUE(widevine::TrimKeyRequest(Span<const uint8_t>{}).IsEmpty());
 }
+
+TEST(Widevine, IsServiceCertificateRequest)
+{
+  const uint8_t request[] = {0x08, 0x04};
+  EXPECT_TRUE(widevine::IsServiceCertificateRequest(request));
+
+  const uint8_t licenseRequest[] = {0x08, 0x01};
+  EXPECT_FALSE(widevine::IsServiceCertificateRequest(licenseRequest));
+
+  const uint8_t certificate[] = {0x08, 0x05};
+  EXPECT_FALSE(widevine::IsServiceCertificateRequest(certificate));
+
+  const uint8_t wrongTag[] = {0x10, 0x04};
+  EXPECT_FALSE(widevine::IsServiceCertificateRequest(wrongTag));
+
+  const uint8_t withMsg[] = {0x08, 0x04, 0x12, 0x00};
+  EXPECT_FALSE(widevine::IsServiceCertificateRequest(withMsg));
+
+  EXPECT_FALSE(widevine::IsServiceCertificateRequest(Span(request).First(1)));
+  EXPECT_FALSE(widevine::IsServiceCertificateRequest(Span<const uint8_t>{}));
+}

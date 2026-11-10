@@ -157,10 +157,18 @@ class MediaDrmRemoteCDMParent final : public RemoteCDMParent {
   struct SessionEntry {
     AMediaDrmSessionId id;
     nsAutoCString mimeType;
+    // The last message sent for this session was a service certificate
+    // request, so the next key request event is expected for it.
+    bool awaitingCertificate = false;
   };
 
   std::map<nsString, SessionEntry> mSessions;
   MozPromiseHolder<InternalPromise> mProvisionPromise;
+
+  // Before Android 10, key request events have no session ID. Sessions that
+  // have been given a service certificate are queued here in the order the
+  // events are expected for them.
+  nsTArray<nsString> mCertificateQueue;
 
   mutable Mutex mMutex;
   RefPtr<MediaDrmCrypto> mCrypto MOZ_GUARDED_BY(mMutex);
