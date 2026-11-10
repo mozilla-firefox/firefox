@@ -2215,6 +2215,10 @@ void MacroAssembler::test32MovePtr(Condition cond, Register operand, Imm32 mask,
   bind(&skip);
 }
 void MacroAssembler::xor32(Register src, Register dest) {
+  if (src == dest) {
+    ma_mv(dest, zero);
+    return;
+  }
   xor_(dest, dest, src);
 }
 
@@ -2241,6 +2245,10 @@ void MacroAssembler::xor32(const Address& src, Register dest) {
   xor32(scratch2, dest);
 }
 void MacroAssembler::xor64(Register64 src, Register64 dest) {
+  if (src == dest) {
+    ma_mv(dest.reg, zero);
+    return;
+  }
   xor_(dest.reg, dest.reg, src.reg);
 }
 
@@ -2248,6 +2256,10 @@ void MacroAssembler::xor64(Imm64 imm, Register64 dest) {
   ma_xor(dest.reg, dest.reg, imm);
 }
 void MacroAssembler::xorPtr(Register src, Register dest) {
+  if (src == dest) {
+    ma_mv(dest, zero);
+    return;
+  }
   xor_(dest, dest, src);
 }
 

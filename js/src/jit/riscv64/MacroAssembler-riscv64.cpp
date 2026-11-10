@@ -4480,7 +4480,7 @@ void MacroAssembler::setupUnalignedABICall(Register scratch) {
   setupNativeABICall();
   dynamicAlignment_ = true;
 
-  or_(scratch, StackPointer, zero);
+  ma_mv(scratch, StackPointer);
 
   // Force sp to be aligned
   asMasm().subPtr(Imm32(sizeof(uintptr_t)), StackPointer);
@@ -6310,12 +6310,12 @@ void MacroAssemblerRiscv64::ma_addPtrTestOverflow(Register rd, Register rj,
   Register scratch2 = temps.Acquire();
 
   if (imm.value == 0) {
-    ori(rd, rj, 0);
+    ma_mv(rd, rj);
     return;
   }
 
   if (rj == rd) {
-    ori(scratch2, rj, 0);
+    ma_mv(scratch2, rj);
     rj = scratch2;
   }
 
@@ -6336,13 +6336,13 @@ void MacroAssemblerRiscv64::ma_addPtrTestOverflow(Register rd, Register rj,
   Register scratch2 = temps.Acquire();
 
   if (imm.value == 0) {
-    ori(rd, rj, 0);
+    ma_mv(rd, rj);
     return;
   }
 
   if (rj == rd) {
     MOZ_ASSERT(rj != scratch2);
-    ori(scratch2, rj, 0);
+    ma_mv(scratch2, rj);
     rj = scratch2;
   }
 
