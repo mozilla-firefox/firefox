@@ -240,7 +240,6 @@ toolkit/components/backgroundtasks/BackgroundTask_success.sys.mjs
 toolkit/components/backgroundtasks/BackgroundTasksManager.sys.mjs
 toolkit/components/backgroundtasks/BackgroundTasksUtils.sys.mjs
 toolkit/components/backgroundtasks/dbg-actors.js
-toolkit/components/captivedetect/CaptiveDetect.sys.mjs
 toolkit/components/cleardata/ClearBySiteEntry.sys.mjs
 toolkit/components/cleardata/ClearDataService.sys.mjs
 toolkit/components/cleardata/PrincipalsCollector.sys.mjs

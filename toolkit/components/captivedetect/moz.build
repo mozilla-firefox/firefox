@@ -13,7 +13,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = "captivedetect"
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "CaptiveDetect.sys.mjs",
 ]
 
