@@ -8,7 +8,6 @@ with Files("**"):
 DIRS += ["build"]
 
 XPIDL_SOURCES += [
-    "nsIWebBrowser.idl",
     "nsIWebBrowserChrome.idl",
 ]
 

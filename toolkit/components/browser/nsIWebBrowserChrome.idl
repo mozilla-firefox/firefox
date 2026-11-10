@@ -6,7 +6,6 @@
 #include "nsISupports.idl"
 #include "nsIBaseWindow.idl"
 
-interface nsIWebBrowser;
 interface nsIDocShellTreeItem;
 
 /**

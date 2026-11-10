@@ -39,7 +39,6 @@
 #include "nsIObserverService.h"
 #include "nsXPCOM.h"
 #include "nsIURI.h"
-#include "nsIWebBrowser.h"
 #include "nsIWebBrowserChrome.h"
 #include "nsIWebNavigation.h"
 #include "nsIWindowCreator.h"

@@ -21680,16 +21680,6 @@ interface nsIUtilityProcessTest extends nsISupports {
   testTelemetryProbes(): void;
 }
 
-// https://searchfox.org/firefox-main/source/toolkit/components/browser/nsIWebBrowser.idl
-
-/** <!-- binding_to(idl, interface_name, XPIDL_nsIWebBrowser) --> */
-interface nsIWebBrowser extends nsISupports {
-  /** <!-- binding_to(idl, attribute, XPIDL_nsIWebBrowser_containerWindow) --> */
-  containerWindow: nsIWebBrowserChrome;
-  /** <!-- binding_to(idl, attribute, XPIDL_nsIWebBrowser_contentDOMWindow) --> */
-  readonly contentDOMWindow: mozIDOMWindowProxy;
-}
-
 // https://searchfox.org/firefox-main/source/toolkit/components/browser/nsIWebBrowserChrome.idl
 
 /** <!-- binding_to(idl, interface_name, XPIDL_nsIWebBrowserChrome) --> */
@@ -27459,7 +27449,6 @@ interface nsIXPCComponents_Interfaces {
   nsIUrlListManager: nsJSIID<nsIUrlListManager>;
   nsIURLFormatter: nsJSIID<nsIURLFormatter>;
   nsIUtilityProcessTest: nsJSIID<nsIUtilityProcessTest>;
-  nsIWebBrowser: nsJSIID<nsIWebBrowser>;
   nsIWebBrowserChrome: nsJSIID<nsIWebBrowserChrome>;
   nsIWebBrowserPrint: nsJSIID<nsIWebBrowserPrint>;
   nsIWebBrowserPersist: nsJSIID<nsIWebBrowserPersist>;

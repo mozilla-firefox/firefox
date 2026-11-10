@@ -18,7 +18,6 @@
 #include "nsIInterfaceRequestorUtils.h"
 #include "nsIWidget.h"
 #include "nsIWebProgress.h"
-#include "nsIWebBrowser.h"
 #include "nsIWebNavigation.h"
 #include "nsIWebProgressListener.h"
 #include "nsIDOMEventListener.h"
@@ -29,15 +28,10 @@
 #include "nsIPrintSettings.h"
 #include "nsIWidgetListener.h"
 
-#include "mozilla/BasePrincipal.h"
 #include "nsTArray.h"
 #include "nsIWeakReferenceUtils.h"
 
 class nsIOpenWindowInfo;
-
-//  {cda5863a-aa9c-411e-be49-ea0d525ab4b5} -
-#define NS_WEBBROWSER_CID \
-  {0xcda5863a, 0xaa9c, 0x411e, {0xbe, 0x49, 0xea, 0x0d, 0x52, 0x5a, 0xb4, 0xb5}}
 
 class mozIDOMWindowProxy;
 class nsDocShell;
@@ -50,8 +44,7 @@ class WindowGlobalChild;
 }  // namespace dom
 }  // namespace mozilla
 
-class nsWebBrowser final : public nsIWebBrowser,
-                           public nsIWebNavigation,
+class nsWebBrowser final : public nsIWebNavigation,
                            public nsIDocShellTreeItem,
                            public nsIDocShellTreeOwner,
                            public nsIBaseWindow,
@@ -61,19 +54,19 @@ class nsWebBrowser final : public nsIWebBrowser,
                            public nsSupportsWeakReference {
  public:
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
-  NS_DECL_CYCLE_COLLECTION_CLASS_AMBIGUOUS(nsWebBrowser, nsIWebBrowser)
+  NS_DECL_CYCLE_COLLECTION_CLASS_AMBIGUOUS(nsWebBrowser, nsIWebNavigation)
 
   NS_DECL_NSIBASEWINDOW
   NS_DECL_NSIDOCSHELLTREEITEM
   NS_DECL_NSIDOCSHELLTREEOWNER
   NS_DECL_NSIINTERFACEREQUESTOR
-  NS_DECL_NSIWEBBROWSER
   NS_DECL_NSIWEBNAVIGATION
   NS_DECL_NSIWEBPROGRESSLISTENER
   NS_DECL_NSIDOMEVENTLISTENER
 
   nsDocShell* GetDocShell() const { return mDocShell; }
   void Close() { InternalDestroy(); }
+  void SetWebBrowserChrome(nsIWebBrowserChrome* aWebBrowserChrome);
   void SetAllowDNSPrefetch(bool aAllowPrefetch);
   // TODO: Convert FocusDeactivate() to MOZ_CAN_RUN_SCRIPT
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void FocusActivate(uint64_t aActionId);
@@ -97,7 +90,6 @@ class nsWebBrowser final : public nsIWebBrowser,
   nsIWidget* EnsureWidget();
   explicit nsWebBrowser(int aItemType);
 
-  void SetWebBrowserChrome(nsIWebBrowserChrome* aWebBrowserChrome);
   nsresult AddChromeListeners();
   nsresult RemoveChromeListeners();
 
@@ -118,7 +110,6 @@ class nsWebBrowser final : public nsIWebBrowser,
 
  protected:
   RefPtr<nsDocShell> mDocShell;
-  mozilla::OriginAttributes mOriginAttributes;
 
   const uint32_t mContentType;
   bool mWillChangeProcess;

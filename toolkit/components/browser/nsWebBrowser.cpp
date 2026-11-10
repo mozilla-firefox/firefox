@@ -87,13 +87,11 @@ static nsresult GetDOMEventTarget(nsWebBrowser* aInBrowser,
     return NS_ERROR_INVALID_POINTER;
   }
 
-  nsCOMPtr<mozIDOMWindowProxy> domWindow;
-  aInBrowser->GetContentDOMWindow(getter_AddRefs(domWindow));
-  if (!domWindow) {
+  nsPIDOMWindowOuter* outerWindow = aInBrowser->GetWindow();
+  if (!outerWindow) {
     return NS_ERROR_FAILURE;
   }
 
-  auto* outerWindow = nsPIDOMWindowOuter::From(domWindow);
   nsPIDOMWindowOuter* rootWindow = outerWindow->GetPrivateRoot();
   NS_ENSURE_TRUE(rootWindow, NS_ERROR_FAILURE);
   nsCOMPtr<EventTarget> target = rootWindow->GetChromeEventHandler();
@@ -213,7 +211,7 @@ nsresult nsWebBrowser::Create(nsIWebBrowserChrome* aContainerWindow,
   RefPtr<nsWebBrowser> browser = new nsWebBrowser(
       aBrowsingContext->IsContent() ? typeContentWrapper : typeChromeWrapper);
 
-  MOZ_TRY(browser->SetContainerWindow(aContainerWindow));
+  browser->SetWebBrowserChrome(aContainerWindow);
   browser->mParentWidget = aParentWidget;
 
   nsCOMPtr<nsIWidget> docShellParentWidget = browser->EnsureWidget();
@@ -268,8 +266,7 @@ NS_IMPL_CYCLE_COLLECTING_RELEASE(nsWebBrowser)
 NS_IMPL_CYCLE_COLLECTION_WEAK(nsWebBrowser, mDocShell)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsWebBrowser)
-  NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIWebBrowser)
-  NS_INTERFACE_MAP_ENTRY(nsIWebBrowser)
+  NS_INTERFACE_MAP_ENTRY_AMBIGUOUS(nsISupports, nsIWebNavigation)
   NS_INTERFACE_MAP_ENTRY(nsIWebNavigation)
   NS_INTERFACE_MAP_ENTRY(nsIDocShellTreeItem)
   NS_INTERFACE_MAP_ENTRY(nsIDocShellTreeOwner)
@@ -339,39 +336,6 @@ nsWebBrowser::GetInterface(const nsIID& aIID, void** aSink) {
   }
 
   return NS_NOINTERFACE;
-}
-
-//*****************************************************************************
-// nsWebBrowser::nsIWebBrowser
-//*****************************************************************************
-
-NS_IMETHODIMP
-nsWebBrowser::GetContainerWindow(nsIWebBrowserChrome** aTopWindow) {
-  NS_ENSURE_ARG_POINTER(aTopWindow);
-
-  *aTopWindow = GetWebBrowserChrome().take();
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsWebBrowser::SetContainerWindow(nsIWebBrowserChrome* aTopWindow) {
-  SetWebBrowserChrome(aTopWindow);
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsWebBrowser::GetContentDOMWindow(mozIDOMWindowProxy** aResult) {
-  if (!mDocShell) {
-    return NS_ERROR_UNEXPECTED;
-  }
-
-  nsCOMPtr<nsPIDOMWindowOuter> retval = mDocShell->GetWindow();
-  retval.forget(aResult);
-  return *aResult ? NS_OK : NS_ERROR_FAILURE;
-}
-
-void nsWebBrowser::SetOriginAttributes(const OriginAttributes& aAttrs) {
-  mOriginAttributes = aAttrs;
 }
 
 //*****************************************************************************
@@ -693,8 +657,7 @@ void nsWebBrowser::EnsurePrompter() {
 
   nsCOMPtr<nsIWindowWatcher> wwatch(do_GetService(NS_WINDOWWATCHER_CONTRACTID));
   if (wwatch) {
-    nsCOMPtr<mozIDOMWindowProxy> domWindow;
-    GetContentDOMWindow(getter_AddRefs(domWindow));
+    nsCOMPtr<nsPIDOMWindowOuter> domWindow = GetWindow();
     if (domWindow) {
       wwatch->GetNewPrompter(domWindow, getter_AddRefs(mPrompter));
     }
@@ -708,8 +671,7 @@ void nsWebBrowser::EnsureAuthPrompter() {
 
   nsCOMPtr<nsIWindowWatcher> wwatch(do_GetService(NS_WINDOWWATCHER_CONTRACTID));
   if (wwatch) {
-    nsCOMPtr<mozIDOMWindowProxy> domWindow;
-    GetContentDOMWindow(getter_AddRefs(domWindow));
+    nsCOMPtr<nsPIDOMWindowOuter> domWindow = GetWindow();
     if (domWindow) {
       wwatch->GetNewAuthPrompter(domWindow, getter_AddRefs(mAuthPrompter));
     }
@@ -717,8 +679,7 @@ void nsWebBrowser::EnsureAuthPrompter() {
 }
 
 void nsWebBrowser::AddToWatcher() {
-  nsCOMPtr<mozIDOMWindowProxy> domWindow;
-  GetContentDOMWindow(getter_AddRefs(domWindow));
+  nsCOMPtr<nsPIDOMWindowOuter> domWindow = GetWindow();
   if (!domWindow) {
     return;
   }
@@ -733,8 +694,7 @@ void nsWebBrowser::AddToWatcher() {
 }
 
 void nsWebBrowser::RemoveFromWatcher() {
-  nsCOMPtr<mozIDOMWindowProxy> domWindow;
-  GetContentDOMWindow(getter_AddRefs(domWindow));
+  nsCOMPtr<nsPIDOMWindowOuter> domWindow = GetWindow();
   if (!domWindow) {
     return;
   }
@@ -1563,8 +1523,7 @@ void ChromeTooltipListener::sTooltipCallback(nsITimer* /*aTimer*/,
     }
   }
 
-  nsCOMPtr<nsIDocShell> docShell =
-      do_GetInterface(static_cast<nsIWebBrowser*>(self->mWebBrowser));
+  RefPtr<nsDocShell> docShell = self->mWebBrowser->GetDocShell();
   if (!docShell || !docShell->GetBrowsingContext()->IsActive()) {
     return;
   }

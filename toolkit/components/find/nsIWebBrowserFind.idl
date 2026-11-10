@@ -16,7 +16,7 @@ interface mozIDOMWindowProxy;
  *
  * Searches for text in a web browser.
  *
- * Get one by doing a GetInterface on an nsIWebBrowser.
+ * Get one by doing a GetInterface on an nsIDocShell.
  *
  * By default, the implementation will search the focussed frame, or
  * if there is no focussed frame, the web browser content area. It

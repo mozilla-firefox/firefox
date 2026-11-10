@@ -11,22 +11,6 @@
  */
 
 /**
- * Web Browser ContractID
- *   Creating an instance of this ContractID (via createInstanceByContractID)
- *   is the basic way to instantiate a Gecko browser.
- *
- * This contract implements the following interfaces:
- * nsIWebBrowser
- * nsIWebBrowserSetup
- * nsIInterfaceRequestor
- *
- * @note This contract does not guarantee implementation of any other
- * interfaces and does not guarantee ability to get any particular
- * interfaces via the nsIInterfaceRequestor implementation.
- */
-#define NS_WEBBROWSER_CONTRACTID "@mozilla.org/embedding/browser/nsWebBrowser;1"
-
-/**
  * Prompt Service ContractID
  *   The prompt service (which can be gotten by calling getServiceByContractID
  *   on this ContractID) is the way to pose various prompts, alerts,

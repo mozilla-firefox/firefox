@@ -38,7 +38,6 @@
 #include "mozilla/dom/Document.h"
 
 #include "nsEmbedCID.h"
-#include "nsIWebBrowser.h"
 #include "nsIDocShell.h"
 
 #include "nsWebBrowser.h"
@@ -283,7 +282,7 @@ class BrowserDestroyer final : public Runnable {
 };
 
 // This is the "stub" we return from CreateWindowlessBrowser - it exists
-// to manage the lifetimes of the nsIWebBrowser and container window.
+// to manage the lifetimes of the nsWebBrowser and container window.
 // In particular, it keeps a strong reference to both, to prevent them from
 // being collected while this object remains alive, and ensures that they
 // aren't destroyed when it's not safe to run scripts.

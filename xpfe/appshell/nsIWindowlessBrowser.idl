@@ -9,7 +9,7 @@ interface nsIDocShell;
 webidl BrowsingContext;
 
 /**
- * This interface represents a nsIWebBrowser instance with no associated OS
+ * This interface represents a nsWebBrowser instance with no associated OS
  * window. Its main function is to manage the lifetimes of those windows.
  * A strong reference to this object must be held until the window is
  * ready to be destroyed.
@@ -18,7 +18,7 @@ webidl BrowsingContext;
 interface nsIWindowlessBrowser : nsIWebNavigation
 {
   /**
-   * "Closes" the windowless browser and destroys its associated nsIWebBrowser
+   * "Closes" the windowless browser and destroys its associated nsWebBrowser
    * and docshell.
    *
    * This method *must* be called for every windowless browser before its last
