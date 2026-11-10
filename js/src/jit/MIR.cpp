@@ -590,6 +590,10 @@ const MDefinition* MDefinition::skipObjectGuards() const {
       result = result->toGuardProto()->object();
       continue;
     }
+    if (result->isGuardFunctionScript()) {
+      result = result->toGuardFunctionScript()->function();
+      continue;
+    }
 
     break;
   }
@@ -7255,6 +7259,12 @@ MDefinition* MGuardSpecificFunction::foldsTo(TempAllocator& alloc) {
     if (funIndex == otherIndex) {
       return function();
     }
+  }
+
+  // Scalar replacement of bound functions can leave the expected function
+  // behind guards that don't change it.
+  if (function()->skipObjectGuards() == expected()) {
+    return function();
   }
 
   return this;
