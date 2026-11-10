@@ -252,7 +252,7 @@ with only_when(host_is_osx | target_is_osx):
     )
 
     def mac_sdk_min_version():
-        return "27.2"
+        return "26.5"
 
     @depends(
         "--with-macos-sdk",

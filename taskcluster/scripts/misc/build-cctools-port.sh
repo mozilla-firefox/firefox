@@ -23,7 +23,6 @@ mkdir -p $CROSSTOOLS_BUILD_DIR $LIBTAPI_BUILD_DIR $LIBDISPATCH_BUILD_DIR
 # Apply a minor libtapi tweak so cmake from outside of the srcdir works.
 cd $LIBTAPI_SOURCE_DIR
 patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/libtapi.patch
-patch -p1 < $GECKO_PATH/taskcluster/scripts/misc/libtapi-arm64e-x1.patch
 
 # Build libtapi; the included build.sh is not sufficient for our purposes.
 cd $LIBTAPI_BUILD_DIR
