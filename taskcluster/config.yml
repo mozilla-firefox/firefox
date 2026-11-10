@@ -294,6 +294,8 @@ treeherder:
         'compose-draggable': 'compose-draggable'
         'concept-engine': 'concept-engine'
         'concept-fetch': 'concept-fetch'
+        'concept-file-importer': 'concept-file-importer'
+        'concept-file-parser': 'concept-file-parser'
         'concept-llm': 'concept-llm'
         'concept-menu': 'concept-menu'
         'concept-passwords-file': 'concept-passwords-file'

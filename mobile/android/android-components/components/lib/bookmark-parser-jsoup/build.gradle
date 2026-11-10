@@ -4,6 +4,7 @@
 
 plugins {
     id 'com.android.library'
+    alias(libs.plugins.kotlin.parcelize)
 }
 
 android {
@@ -11,6 +12,7 @@ android {
 }
 
 dependencies {
+    api project(':components:concept-file-parser')
     implementation project(':components:concept-bookmarks-parser')
     implementation project(':components:concept-storage-bookmarks')
 

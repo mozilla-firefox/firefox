@@ -550,6 +550,19 @@ projects:
     - components:support-base
     - components:support-test
     - components:tooling-lint
+  components:concept-file-importer:
+    description: An abstract definition of a component for importing data from a file.
+    path: components/concept/file-importer
+    publish: true
+    upstream_dependencies:
+    - components:concept-file-parser
+    - components:tooling-lint
+  components:concept-file-parser:
+    description: An abstract definition of a file-parser component.
+    path: components/concept/file-parser
+    publish: true
+    upstream_dependencies:
+    - components:tooling-lint
   components:concept-integrity:
     description: A concept for verifying the integrity of an installation
     path: components/concept/integrity
@@ -2029,6 +2042,7 @@ projects:
     publish: true
     upstream_dependencies:
     - components:concept-bookmarks-parser
+    - components:concept-file-parser
     - components:concept-storage-bookmarks
     - components:tooling-lint
   components:lib-bookmarks-file:
@@ -2175,6 +2189,7 @@ projects:
     upstream_dependencies:
     - components:concept-base
     - components:concept-fetch
+    - components:concept-file-parser
     - components:concept-passwords-parser
     - components:concept-storage
     - components:concept-storage-bookmarks
@@ -2191,6 +2206,7 @@ projects:
     upstream_dependencies:
     - components:concept-base
     - components:concept-fetch
+    - components:concept-file-parser
     - components:concept-passwords-file
     - components:concept-passwords-parser
     - components:concept-storage

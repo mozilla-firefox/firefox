@@ -28,6 +28,7 @@ projects:
     - components:concept-bookmarks-parser
     - components:concept-engine
     - components:concept-fetch
+    - components:concept-file-parser
     - components:concept-integrity
     - components:concept-llm
     - components:concept-menu
