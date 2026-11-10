@@ -787,9 +787,8 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     // The spec says that a PromiseReaction record has a [[Capability]] field
     // whose value is either undefined or a PromiseCapability record, but we
     // just store the PromiseCapability's fields directly in this object. This
-    // is the
-    // capability's [[Promise]] field; its [[Resolve]] and [[Reject]] fields are
-    // stored in Slot::Resolve and Slot::Reject.
+    // is the capability's [[Promise]] field; its [[Resolve]] and [[Reject]]
+    // fields are stored in Slots::Resolve and Slots::Reject.
     //
     // This can be 'null' in reaction records created for a few situations:
     //
@@ -807,8 +806,7 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     //   and whose Slot::GeneratorOrPromiseToResolveOrAsyncFromSyncIterator
     //   slot holds the generator object. (Typically V is a promise, so
     //   resolving P to V gives V a REACTION_FLAGS_DEFAULT_RESOLVING_HANDLER
-    //   reaction
-    //   record as described above.)
+    //   reaction record as described above.)
     //
     // - When JS::AddPromiseReactions{,IgnoringUnhandledRejection} cause the
     //   reaction to be created. (These functions act as if they had created a
@@ -869,8 +867,7 @@ class PromiseReactionObjectStorage : public PromiseJobObject {
     //   slot stores the promise to resolve when conceptually "calling" the
     //   OnFulfilled or OnRejected handlers.
     // - When the REACTION_FLAG_ASYNC_FROM_SYNC_ITERATOR is set, this slot
-    // stores
-    //   the async-from-sync iterator object.
+    //   stores the async-from-sync iterator object.
     GeneratorOrPromiseToResolveOrAsyncFromSyncIterator,
 
     SlotCount,
