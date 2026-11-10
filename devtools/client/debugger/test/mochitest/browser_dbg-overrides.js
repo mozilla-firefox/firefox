@@ -76,7 +76,9 @@ add_task(async function () {
   );
   MockFilePicker.setFiles([nsiFile]);
   const path = nsiFile.path;
+  registerCleanupFunction(() => IOUtils.remove(path));
 
+  const overridden = waitForDispatch(dbg.toolbox.store, "SET_NETWORK_OVERRIDE");
   await triggerSourceTreeContextMenu(
     dbg,
     findSourceNodeWithText(dbg, "test.js"),
@@ -84,6 +86,7 @@ add_task(async function () {
   );
 
   info("Wait for `test.js` to be saved to disk and re-write it");
+  await overridden;
   await TestUtils.waitForCondition(() => IOUtils.exists(path));
   await TestUtils.waitForCondition(async () => {
     const { size } = await IOUtils.stat(path);
