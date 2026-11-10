@@ -9,7 +9,6 @@ import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
 import androidx.core.content.edit
 import java.lang.ref.WeakReference
-import mozilla.appservices.fxaclient.FxaRustAuthState
 import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.concept.sync.AccountEvent
 import mozilla.components.concept.sync.AccountEventsObserver
@@ -154,16 +153,7 @@ internal class SharedPrefAccountStorage(
         val savedJSON = accountPreferences().getString(FXA_STATE_KEY, null) ?: return null
 
         // May throw a generic FxaException if it fails to process saved JSON.
-        val account = FirefoxAccount.fromJSONString(savedJSON, crashReporter)
-        val state = account.getAuthState()
-        if (state != FxaRustAuthState.CONNECTED && crashReporter != null) {
-            crashReporter.submitCaughtException(
-                AbnormalAccountStorageEvent.RestoringNonConnectedAccount(
-                    "Restoring account from an unexpected state: $state"
-                )
-            )
-        }
-        return account
+        return FirefoxAccount.fromJSONString(savedJSON, crashReporter)
     }
 
     override fun write(accountState: String) {
