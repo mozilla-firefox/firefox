@@ -28,3 +28,7 @@ let main = registerModule("main", parseModule(`
 `));
 moduleLoadAndLink(main);
 moduleEvaluate(main);
+
+assertEq(getModuleEnvironmentNames(registerModule("plain", parseModule(`
+  export let a = 1;
+`))).join(), "a");

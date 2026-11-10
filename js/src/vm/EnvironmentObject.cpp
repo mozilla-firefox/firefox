@@ -810,8 +810,7 @@ static bool IsInternalDotName(JSContext* cx, HandleId id) {
          id.isAtom(cx->names().dot_staticInitializers_) ||
          id.isAtom(cx->names().dot_staticFieldKeys_) ||
          id.isAtom(cx->names().dot_args_) ||
-         id.isAtom(cx->names().dot_newTarget_) ||
-         id.isAtom(cx->names().star_namespace_star_);
+         id.isAtom(cx->names().dot_newTarget_);
 }
 #endif
 

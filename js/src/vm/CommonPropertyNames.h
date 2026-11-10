@@ -456,9 +456,7 @@
   MACRO_(source, "source")                                                     \
   MACRO_(stack, "stack")                                                       \
   MACRO_(stackTraceLimit, "stackTraceLimit")                                   \
-  MACRO_(star_namespace_star_, "*namespace*")                                  \
   MACRO_(star_source_star_, "*source*")                                        \
-  MACRO_(star_deferred_namespace_star_, "*deferred-namespace*")                \
   MACRO_(start, "start")                                                       \
   MACRO_(startRange, "startRange")                                             \
   MACRO_(startTimestamp, "startTimestamp")                                     \

@@ -1994,33 +1994,6 @@ FullParseHandler::ModuleNodeResult Parser<FullParseHandler, Unit>::moduleBody(
     p->value()->setClosedOver();
   }
 
-  // Reserve an environment slot for a "*namespace*" psuedo-binding and mark as
-  // closed-over. We do not know until module linking if this will be used.
-  if (!noteDeclaredName(
-          TaggedParserAtomIndex::WellKnown::star_namespace_star_(),
-          DeclarationKind::Const, pos())) {
-    return errorResult();
-  }
-  modulepc.varScope()
-      .lookupDeclaredName(
-          TaggedParserAtomIndex::WellKnown::star_namespace_star_())
-      ->value()
-      ->setClosedOver();
-
-  // Reserve an environment slot for a "*deferred-namespace*" pseudo-binding
-  // and mark as closed-over. We do not know until module linking if this will
-  // be used.
-  if (!noteDeclaredName(
-          TaggedParserAtomIndex::WellKnown::star_deferred_namespace_star_(),
-          DeclarationKind::Const, pos())) {
-    return errorResult();
-  }
-  modulepc.varScope()
-      .lookupDeclaredName(
-          TaggedParserAtomIndex::WellKnown::star_deferred_namespace_star_())
-      ->value()
-      ->setClosedOver();
-
   if (!CheckParseTree(this->fc_, alloc_, stmtList)) {
     return errorResult();
   }
