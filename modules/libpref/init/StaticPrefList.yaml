@@ -17656,6 +17656,12 @@
   value: @IS_NIGHTLY_BUILD@
   mirror: always
 
+# When true, HTTP upgrade requests (e.g. WebSocket) use HTTPS RR.
+- name: network.http.upgrade_use_https_rr
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
 # When true, Happy Eyeballs is also used for requests carrying an HTTP
 # upgrade (e.g. WebSocket). Gated separately so the upgrade path can be
 # rolled out independently of the main Happy Eyeballs pref.

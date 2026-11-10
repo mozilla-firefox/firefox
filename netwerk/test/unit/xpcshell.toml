@@ -1985,6 +1985,12 @@ skip-if = [
   "verify",
 ]
 
+["test_websocket_ech.js"]
+run-sequentially = ["true"] # uses common port for ECH server
+skip-if = [
+  "os == 'win' && msix", # Bug 1808049
+]
+
 ["test_websocket_fails.js"]
 
 ["test_websocket_fails_2.js"]

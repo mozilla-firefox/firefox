@@ -3,11 +3,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 // This is a standalone server that offers TLS 1.3 Encrypted
-// Client Hello support.
+// Client Hello support. When MOZ_TLS_ECH_PROXY_PORT is set, it acts as a
+// reverse proxy instead: each connection is decrypted and relayed to a
+// plaintext server on that local port.
 
 #include <pk11pub.h>
 #include <stdio.h>
 
+#include <memory>
+#include <thread>
 #include <vector>
 
 #include "ScopedNSSTypes.h"
@@ -171,8 +175,72 @@ SECStatus ConfigureServer(PRFileDesc* aFd) {
   return SECSuccess;
 }
 
+static uint16_t sProxyPort = 0;
+
+static bool SendRaw(PRFileDesc* aSocket, const char* aData, int32_t aLen) {
+  while (aLen > 0) {
+    int32_t sent = PR_Send(aSocket, aData, aLen, 0, PR_INTERVAL_NO_TIMEOUT);
+    if (sent <= 0) {
+      return false;
+    }
+    aData += sent;
+    aLen -= sent;
+  }
+  return true;
+}
+
+// Copies data in both directions until either side closes.
+static void Relay(PRFileDesc* aClient, PRFileDesc* aBackend) {
+  PRPollDesc pds[2] = {{aClient, PR_POLL_READ, 0}, {aBackend, PR_POLL_READ, 0}};
+  char buf[16384];
+  while (PR_Poll(pds, 2, PR_INTERVAL_NO_TIMEOUT) > 0) {
+    for (int i = 0; i < 2; i++) {
+      if (!pds[i].out_flags) {
+        continue;
+      }
+      int32_t n =
+          PR_Recv(pds[i].fd, buf, sizeof(buf), 0, PR_INTERVAL_NO_TIMEOUT);
+      if (n <= 0 || !SendRaw(pds[1 - i].fd, buf, n)) {
+        return;
+      }
+    }
+  }
+}
+
+static void ProxyConnection(PRFileDesc* aSocket,
+                            const UniquePRFileDesc& aModelSocket) {
+  auto conn = std::make_unique<Connection>(aSocket);
+  if (NS_FAILED(SetupTLS(conn.get(), aModelSocket.get()))) {
+    return;
+  }
+
+  std::thread([conn = std::move(conn)] {
+    if (SSL_ForceHandshake(conn->mSocket) != SECSuccess) {
+      PrintPRError("SSL_ForceHandshake failed");
+      return;
+    }
+
+    UniquePRFileDesc backend(PR_NewTCPSocket());
+    PRNetAddr addr;
+    PR_InitializeNetAddr(PR_IpAddrLoopback, sProxyPort, &addr);
+    if (!backend || PR_Connect(backend.get(), &addr, PR_INTERVAL_NO_TIMEOUT) !=
+                        PR_SUCCESS) {
+      PrintPRError("PR_Connect to the proxy backend failed");
+      return;
+    }
+
+    Relay(conn->mSocket, backend.get());
+  }).detach();
+}
+
 int main(int argc, char* argv[]) {
-  int rv = StartServer(argc, argv, DoSNISocketConfig, nullptr, ConfigureServer);
+  const char* proxyPort = PR_GetEnv("MOZ_TLS_ECH_PROXY_PORT");
+  if (proxyPort) {
+    sProxyPort = atoi(proxyPort);
+  }
+
+  int rv = StartServer(argc, argv, DoSNISocketConfig, nullptr, ConfigureServer,
+                       sProxyPort ? ProxyConnection : nullptr);
   if (rv < 0) {
     return rv;
   }

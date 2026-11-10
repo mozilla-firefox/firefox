@@ -1235,9 +1235,11 @@ nsresult nsHttpChannel::ContinueOnBeforeConnect(bool aShouldUpgrade,
     // fallback mechanism, which restarts the transaction to fall back. Happy
     // Eyeballs instead races endpoints (honoring the HTTPS RR port, hints and
     // ALPN) and dispatches the sticky upgrade onto the winner with no restart,
-    // so it can safely use HTTPS RR. Only disallow HTTPS RR for upgrades that
-    // are not handled by Happy Eyeballs.
-    if (!(mCaps & NS_HTTP_USE_HAPPY_EYEBALLS)) {
+    // so it can safely use HTTPS RR. Without Happy Eyeballs, upgrades can only
+    // use HTTPS RR when nsHttpTransaction is allowed to restart them for the
+    // HTTPS RR fallback.
+    if (!(mCaps & NS_HTTP_USE_HAPPY_EYEBALLS) &&
+        !StaticPrefs::network_http_upgrade_use_https_rr()) {
       DisallowHTTPSRR(mCaps);
     }
   }

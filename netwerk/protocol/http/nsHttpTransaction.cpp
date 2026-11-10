@@ -1577,6 +1577,15 @@ void nsHttpTransaction::Close(nsresult reason) {
     mDontRetryWithDirectRoute = true;
   }
 
+  // A sticky transaction must not leave a connection that carries
+  // connection-based auth state. The HTTPS RR fallback errors only happen on a
+  // fresh connection, so restarting a sticky upgrade for them is safe. Happy
+  // Eyeballs handles HTTPS RR fallback itself without restarting.
+  const bool restartStickyForHTTPSRR =
+      shouldRestartTransactionForHTTPSRR && !connReused &&
+      !(mCaps & NS_HTTP_USE_HAPPY_EYEBALLS) &&
+      StaticPrefs::network_http_upgrade_use_https_rr();
+
   const bool restartForHttp3ProtocolError =
       reason == NS_ERROR_NET_HTTP3_PROTOCOL_ERROR && !mReceivedData &&
       !mConnInfo->IsHttp3ProxyConnection() &&
@@ -1619,7 +1628,7 @@ void nsHttpTransaction::Close(nsresult reason) {
        shouldRestartTransactionForHTTPSRR || restartForHttp3ProtocolError) &&
       (!(mCaps & NS_HTTP_STICKY_CONNECTION) ||
        (mCaps & NS_HTTP_CONNECTION_RESTARTABLE) ||
-       (mEarlyDataDisposition == EARLY_425))) {
+       (mEarlyDataDisposition == EARLY_425) || restartStickyForHTTPSRR)) {
     if (mForceRestart) {
       SetRestartReason(TRANSACTION_RESTART_FORCED);
       if (NS_SUCCEEDED(Restart())) {
