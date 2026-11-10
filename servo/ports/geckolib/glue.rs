@@ -4856,7 +4856,7 @@ pub unsafe extern "C" fn Servo_ComputedValues_Inherit(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Servo_ComputedValues_SpecifiesAnimationsOrTransitions(
+pub extern "C" fn Servo_ComputedValues_NeedsAnimationTraversal(
     values: &ComputedValues,
 ) -> bool {
     let ui = values.get_ui();
@@ -4864,6 +4864,7 @@ pub extern "C" fn Servo_ComputedValues_SpecifiesAnimationsOrTransitions(
         || ui.specifies_transitions()
         || ui.specifies_scroll_timelines()
         || ui.specifies_view_timelines()
+        || ui.specifies_timeline_scope()
 }
 
 #[repr(u8)]

@@ -58,9 +58,11 @@ class TimelineManager {
       const ComputedStyle* aComputedStyle, ProgressTimelineType aType);
 
   void UpdateTimelineScopes(dom::Element* aElement,
+                            const PseudoStyleRequest& aPseudoRequest,
                             const ComputedStyle* aComputedStyle);
-  static bool TimelineNameScopedByElement(const dom::Element* aElement,
-                                          const nsAtom* aName);
+  static bool TimelineNameScopedByElement(
+      const dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest,
+      const nsAtom* aName);
   static RefPtr<dom::AnimationTimeline> GetNamedTimelineForThisElement(
       const dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest,
       const nsAtom* aName, const dom::ShadowRoot* aTargetShadowRoot);
