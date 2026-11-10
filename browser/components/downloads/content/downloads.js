@@ -238,34 +238,18 @@ var DownloadsPanel = {
   handleEvent(aEvent) {
     switch (aEvent.type) {
       case "click":
-        if (
-          aEvent.currentTarget == DownloadsBlockedSubview.elements.deleteButton
-        ) {
-          DownloadsBlockedSubview.confirmBlock();
-          return;
-        }
-        if (
-          aEvent.currentTarget == DownloadsBlockedSubview.elements.unblockButton
-        ) {
-          DownloadsBlockedSubview.unblock();
-          return;
-        }
-        if (aEvent.currentTarget == PrivateDownloadsSubview.deleteButton) {
-          PrivateDownloadsSubview.choose(true);
-          return;
-        }
-        if (aEvent.currentTarget == PrivateDownloadsSubview.acceptButton) {
-          PrivateDownloadsSubview.choose(false);
-          return;
-        }
-
-        if (aEvent.currentTarget == DownloadsSummary._summaryNode) {
-          DownloadsPanel.showDownloadsHistory();
-        }
+        DownloadsPanel.showDownloadsHistory();
         break;
       case "command":
         if (aEvent.currentTarget == DownloadsView.downloadsHistory) {
           DownloadsPanel.showDownloadsHistory();
+          return;
+        }
+
+        if (
+          aEvent.currentTarget == DownloadsBlockedSubview.elements.deleteButton
+        ) {
+          DownloadsBlockedSubview.confirmBlock();
           return;
         }
 
@@ -431,15 +415,9 @@ var DownloadsPanel = {
 
     DownloadsView.downloadsHistory.addEventListener("command", this);
     DownloadsBlockedSubview.elements.deleteButton.addEventListener(
-      "click",
+      "command",
       this
     );
-    DownloadsBlockedSubview.elements.unblockButton.addEventListener(
-      "click",
-      this
-    );
-    PrivateDownloadsSubview.deleteButton.addEventListener("click", this);
-    PrivateDownloadsSubview.acceptButton.addEventListener("click", this);
     DownloadsSummary._summaryNode.addEventListener("click", this);
     DownloadsSummary._summaryNode.addEventListener("keydown", this);
   },
@@ -463,15 +441,9 @@ var DownloadsPanel = {
     DownloadsView.richListBox.removeEventListener("dragstart", this);
     DownloadsView.downloadsHistory.removeEventListener("command", this);
     DownloadsBlockedSubview.elements.deleteButton.removeEventListener(
-      "click",
+      "command",
       this
     );
-    DownloadsBlockedSubview.elements.unblockButton.removeEventListener(
-      "click",
-      this
-    );
-    PrivateDownloadsSubview.deleteButton.removeEventListener("click", this);
-    PrivateDownloadsSubview.acceptButton.removeEventListener("click", this);
     DownloadsSummary._summaryNode.removeEventListener("click", this);
     DownloadsSummary._summaryNode.removeEventListener("keydown", this);
   },
@@ -1385,7 +1357,11 @@ var DownloadsViewController = {
   // nsIController
 
   supportsCommand(aCommand) {
-    if (aCommand === "downloadsCmd_clearList") {
+    if (
+      aCommand === "downloadsCmd_clearList" ||
+      aCommand === "downloadsCmd_deletePrivate" ||
+      aCommand === "downloadsCmd_dismissDeletePrivate"
+    ) {
       return true;
     }
     // Firstly, determine if this is a command that we can handle.
@@ -1425,6 +1401,9 @@ var DownloadsViewController = {
       case "downloadsCmd_clearList": {
         return DownloadsCommon.getData(window).canRemoveFinished;
       }
+      case "downloadsCmd_deletePrivate":
+      case "downloadsCmd_dismissDeletePrivate":
+        return true;
       default: {
         // Other commands are selection-specific.
         let element = DownloadsView.richListBox.selectedItem;
@@ -1470,6 +1449,14 @@ var DownloadsViewController = {
 
   downloadsCmd_clearList() {
     DownloadsCommon.getData(window).removeFinished();
+  },
+
+  downloadsCmd_deletePrivate() {
+    PrivateDownloadsSubview.choose(true /* deletePrivate */);
+  },
+
+  downloadsCmd_dismissDeletePrivate() {
+    PrivateDownloadsSubview.choose(false /* deletePrivate */);
   },
 };
 
@@ -1737,12 +1724,6 @@ var DownloadsBlockedSubview = {
   element: undefined,
 
   /**
-   * The command to run when the unblock button is activated, determined by
-   * the current download's launchWhenSucceeded state.
-   */
-  _unblockCommand: undefined,
-
-  /**
    * Slides in the blocked subview.
    *
    * @param element
@@ -1787,13 +1768,13 @@ var DownloadsBlockedSubview = {
         e.unblockButton,
         "downloads-unblock-button-open"
       );
-      this._unblockCommand = "downloadsCmd_unblockAndOpen";
+      e.unblockButton.command = "downloadsCmd_unblockAndOpen";
     } else {
       document.l10n.setAttributes(
         e.unblockButton,
         "downloads-unblock-button-unblock"
       );
-      this._unblockCommand = "downloadsCmd_unblockAndSave";
+      e.unblockButton.command = "downloadsCmd_unblockAndSave";
     }
 
     let verdict = element.getAttribute("verdict");
@@ -1825,13 +1806,6 @@ var DownloadsBlockedSubview = {
   confirmBlock() {
     goDoCommand("cmd_delete");
     DownloadsPanel.hidePanel();
-  },
-
-  /**
-   * Runs the selected unblock command for the current download.
-   */
-  unblock() {
-    goDoCommand(this._unblockCommand);
   },
 };
 
@@ -1906,14 +1880,6 @@ ChromeUtils.defineLazyGetter(PrivateDownloadsSubview, "mainView", () =>
 
 ChromeUtils.defineLazyGetter(PrivateDownloadsSubview, "subview", () =>
   document.getElementById("downloadsPanel-privateBrowsing")
-);
-
-ChromeUtils.defineLazyGetter(PrivateDownloadsSubview, "deleteButton", () =>
-  document.getElementById("downloadsPanel-privateBrowsing-deleteButton")
-);
-
-ChromeUtils.defineLazyGetter(PrivateDownloadsSubview, "acceptButton", () =>
-  document.getElementById("downloadsPanel-privateBrowsing-acceptButton")
 );
 
 XPCOMUtils.defineConstant(

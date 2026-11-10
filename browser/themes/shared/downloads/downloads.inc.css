@@ -302,6 +302,10 @@
 
   #downloadsPanel-blockedSubview-buttons {
     justify-content: flex-start;
+
+    .footer-button {
+      padding: var(--space-small) var(--space-xlarge);
+    }
   }
 }
 

@@ -533,7 +533,6 @@ var SelectTranslationsPanel = new (class {
     panel.addEventListener("popuphidden", this);
 
     panel.addEventListener("command", this);
-    panel.addEventListener("click", this);
     fromMenuList.addEventListener("command", this);
     toMenuList.addEventListener("command", this);
     tryAnotherSourceMenuList.addEventListener("command", this);
@@ -825,51 +824,20 @@ var SelectTranslationsPanel = new (class {
    */
   #handleCommandEvent(target) {
     const {
+      cancelButton,
+      copyButton,
+      doneButtonPrimary,
+      doneButtonSecondary,
       fromMenuList,
       fromMenuPopup,
       settingsButton,
       toMenuList,
       toMenuPopup,
-      tryAnotherSourceMenuList,
-      tryAnotherSourceMenuPopup,
-    } = this.elements;
-    switch (target.id) {
-      case fromMenuList.id:
-      case fromMenuPopup.id: {
-        this.onChangeFromLanguage();
-        break;
-      }
-      case settingsButton.id: {
-        this.#openSettingsPopup();
-        break;
-      }
-      case toMenuList.id:
-      case toMenuPopup.id: {
-        this.onChangeToLanguage();
-        break;
-      }
-      case tryAnotherSourceMenuList.id:
-      case tryAnotherSourceMenuPopup.id: {
-        this.onChangeTryAnotherSourceLanguage();
-        break;
-      }
-    }
-  }
-
-  /**
-   * Handles events when a click event is triggered within the panel.
-   *
-   * @param {Element} target - The event target
-   */
-  #handleClickEvent(target) {
-    const {
-      cancelButton,
-      copyButton,
-      doneButtonPrimary,
-      doneButtonSecondary,
       translateButton,
       translateFullPageButton,
       tryAgainButton,
+      tryAnotherSourceMenuList,
+      tryAnotherSourceMenuPopup,
     } = this.elements;
     switch (target.id) {
       case cancelButton.id: {
@@ -885,6 +853,20 @@ var SelectTranslationsPanel = new (class {
         this.onClickDoneButton();
         break;
       }
+      case fromMenuList.id:
+      case fromMenuPopup.id: {
+        this.onChangeFromLanguage();
+        break;
+      }
+      case settingsButton.id: {
+        this.#openSettingsPopup();
+        break;
+      }
+      case toMenuList.id:
+      case toMenuPopup.id: {
+        this.onChangeToLanguage();
+        break;
+      }
       case translateButton.id: {
         this.onClickTranslateButton();
         break;
@@ -897,6 +879,11 @@ var SelectTranslationsPanel = new (class {
         this.onClickTryAgainButton();
         break;
       }
+      case tryAnotherSourceMenuList.id:
+      case tryAnotherSourceMenuPopup.id: {
+        this.onChangeTryAnotherSourceLanguage();
+        break;
+      }
     }
   }
 
@@ -906,11 +893,45 @@ var SelectTranslationsPanel = new (class {
    * @param {Element} target - The event target
    */
   #handleEnterKeyPressed(target) {
-    const { settingsButton } = this.elements;
+    const {
+      cancelButton,
+      copyButton,
+      doneButtonPrimary,
+      doneButtonSecondary,
+      settingsButton,
+      translateButton,
+      translateFullPageButton,
+      tryAgainButton,
+    } = this.elements;
 
     switch (target.id) {
+      case cancelButton.id: {
+        this.onClickCancelButton();
+        break;
+      }
+      case copyButton.id: {
+        this.onClickCopyButton();
+        break;
+      }
+      case doneButtonPrimary.id:
+      case doneButtonSecondary.id: {
+        this.onClickDoneButton();
+        break;
+      }
       case settingsButton.id: {
         this.#openSettingsPopup();
+        break;
+      }
+      case translateButton.id: {
+        this.onClickTranslateButton();
+        break;
+      }
+      case translateFullPageButton.id: {
+        this.onClickTranslateFullPageButton();
+        break;
+      }
+      case tryAgainButton.id: {
+        this.onClickTryAgainButton();
         break;
       }
     }
@@ -1184,10 +1205,6 @@ var SelectTranslationsPanel = new (class {
     switch (event.type) {
       case "command": {
         this.#handleCommandEvent(target);
-        break;
-      }
-      case "click": {
-        this.#handleClickEvent(target);
         break;
       }
       case "keypress": {
@@ -1815,7 +1832,7 @@ var SelectTranslationsPanel = new (class {
       // Do not offer to translate the full page if it is restricted on this page.
       this.#isFullPageTranslationsRestrictedForPage ||
       // Do not offer to translate the full page if Full-Page Translations is already active.
-      !!this.#activeFullPageTranslationsTargetLanguage
+      this.#activeFullPageTranslationsTargetLanguage
     );
   }
 
@@ -2035,7 +2052,6 @@ var SelectTranslationsPanel = new (class {
       doneButtonPrimary,
       doneButtonSecondary,
       initFailureContent,
-      initFailureMessageBar,
       mainContent,
       unsupportedLanguageContent,
       translateButton,
@@ -2054,9 +2070,10 @@ var SelectTranslationsPanel = new (class {
       ],
       makeVisible: [initFailureContent, cancelButton, tryAgainButton],
     });
-    tryAgainButton.updateComplete.then(() => {
-      tryAgainButton.buttonEl.ariaDescribedByElements = [initFailureMessageBar];
-    });
+    tryAgainButton.setAttribute(
+      "aria-describedby",
+      "select-translations-panel-init-failure-message-bar"
+    );
     tryAgainButton.focus({ focusVisible: false });
   }
 
@@ -2104,11 +2121,10 @@ var SelectTranslationsPanel = new (class {
         tryAgainButton,
       ],
     });
-    tryAgainButton.updateComplete.then(() => {
-      tryAgainButton.buttonEl.ariaDescribedByElements = [
-        translationFailureMessageBar,
-      ];
-    });
+    tryAgainButton.setAttribute(
+      "aria-describedby",
+      "select-translations-panel-translation-failure-message-bar"
+    );
     tryAgainButton.focus({ focusVisible: false });
   }
 
