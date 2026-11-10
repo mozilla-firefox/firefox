@@ -562,11 +562,34 @@ void InternalHeaders::GetEntries(
 
 void InternalHeaders::GetUnsafeHeaders(nsTArray<nsCString>& aNames) const {
   MOZ_ASSERT(aNames.IsEmpty());
-  for (uint32_t i = 0; i < mList.Length(); ++i) {
-    const Entry& header = mList[i];
+
+  // https://fetch.spec.whatwg.org/#cors-unsafe-request-header-names
+  AutoTArray<nsCString, 5> unsafeNames;
+  AutoTArray<nsCString, 5> potentiallyUnsafeNames;
+  size_t safelistValueSize = 0;
+
+  for (const Entry& header : mList) {
     if (!nsContentUtils::IsCORSSafelistedRequestHeader(header.mName,
                                                        header.mValue)) {
-      aNames.AppendElement(header.mName);
+      unsafeNames.AppendElement(header.mName);
+    } else {
+      potentiallyUnsafeNames.AppendElement(header.mName);
+      safelistValueSize += header.mValue.Length();
+    }
+  }
+
+  if (safelistValueSize > 1024) {
+    unsafeNames.AppendElements(std::move(potentiallyUnsafeNames));
+  }
+
+  // Convert header names to a sorted-lowercase set.
+  for (nsCString& name : unsafeNames) {
+    ToLowerCase(name);
+  }
+  unsafeNames.Sort();
+  for (nsCString& name : unsafeNames) {
+    if (aNames.IsEmpty() || aNames.LastElement() != name) {
+      aNames.AppendElement(std::move(name));
     }
   }
 }
