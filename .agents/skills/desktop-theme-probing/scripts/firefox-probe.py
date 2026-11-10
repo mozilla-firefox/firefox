@@ -112,8 +112,11 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
-import probelib
+sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "toolkit/themes/tools"))
+
+import probelib  # noqa: E402
 
 PROG = "firefox-probe"
 
