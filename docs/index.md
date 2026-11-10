@@ -1,5 +1,15 @@
 # Firefox Source Tree Documentation
 
+Welcome! This is the documentation for the Firefox source tree, written by
+and for the people who build Firefox. It covers how Firefox and Gecko are put
+together, how to build and test them, and how to get a patch landed.
+
+New here? Start with {{doc}}`the setup guide <setup/index>` to get a build going,
+then read the {{doc}}`contributor quick reference <contributing/contribution_quickref>`
+to make your first contribution.
+The documentation lives next to the code in
+[mozilla-firefox/firefox](https://github.com/mozilla-firefox/firefox).
+
 ```{{toctree}}
 :caption: Overview
 :maxdepth: 2
