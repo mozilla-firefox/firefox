@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import mozilla.components.concept.bookmark.parser.BookmarksParseResult
 import mozilla.components.concept.fileparser.FileParser
 import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeNode

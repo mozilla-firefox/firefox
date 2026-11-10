@@ -12,11 +12,11 @@ import mozilla.components.concept.fileimporter.FileImporterError
 import mozilla.components.concept.fileimporter.FileImporterException
 import mozilla.components.concept.fileparser.FileParser
 import mozilla.components.concept.fileparser.FileParserException
-import mozilla.components.concept.password.parser.PasswordsParseResult
 import mozilla.components.concept.storage.Login
 import mozilla.components.concept.storage.LoginEntry
 import mozilla.components.concept.storage.LoginsStorage
 import mozilla.components.lib.password.parser.csv.PasswordsParseError
+import mozilla.components.lib.password.parser.csv.PasswordsParseResult
 import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever

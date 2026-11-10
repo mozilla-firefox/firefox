@@ -24,7 +24,6 @@ projects:
     - components:concept-ai-controls
     - components:concept-awesomebar
     - components:concept-base
-    - components:concept-bookmarks-parser
     - components:concept-engine
     - components:concept-fetch
     - components:concept-file-importer
@@ -32,7 +31,6 @@ projects:
     - components:concept-integrity
     - components:concept-llm
     - components:concept-menu
-    - components:concept-passwords-parser
     - components:concept-push
     - components:concept-storage
     - components:concept-storage-bookmarks

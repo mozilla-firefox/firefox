@@ -17,10 +17,10 @@ import mozilla.components.concept.fileimporter.FileImporterException
 import mozilla.components.concept.fileimporter.ImportResult
 import mozilla.components.concept.fileparser.FileParser
 import mozilla.components.concept.fileparser.FileParserException
-import mozilla.components.concept.password.parser.PasswordsParseResult
 import mozilla.components.concept.storage.LoginsStorage
 import mozilla.components.lib.password.parser.csv.CsvPasswordsFileParser
 import mozilla.components.lib.password.parser.csv.PasswordsParseError
+import mozilla.components.lib.password.parser.csv.PasswordsParseResult
 
 /**
  * Creates a [FileImporter] that imports passwords from CSV password files.

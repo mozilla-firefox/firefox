@@ -11,7 +11,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import mozilla.components.concept.fileparser.FileParser
 import mozilla.components.concept.fileparser.FileParserException
-import mozilla.components.concept.password.parser.PasswordsParseResult
 import mozilla.components.concept.storage.LoginEntry
 
 /** A [FileParser] that reads CSV exports of password data. */

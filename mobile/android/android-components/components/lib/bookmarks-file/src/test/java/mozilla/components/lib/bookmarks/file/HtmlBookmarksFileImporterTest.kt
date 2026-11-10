@@ -17,7 +17,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import mozilla.components.concept.bookmark.parser.BookmarksParseResult
 import mozilla.components.concept.fileimporter.FileImporterError
 import mozilla.components.concept.fileimporter.FileImporterException
 import mozilla.components.concept.fileparser.FileParser
@@ -26,6 +25,7 @@ import mozilla.components.concept.storage.bookmarks.BookmarkInserter
 import mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeNode
 import mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeRoot
 import mozilla.components.lib.bookmark.parser.jsoup.BookmarksParseError
+import mozilla.components.lib.bookmark.parser.jsoup.BookmarksParseResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

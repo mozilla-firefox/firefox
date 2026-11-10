@@ -1,6 +1,6 @@
 # [android-components](../../../README.md) > Lib > Bookmark Parser Jsoup
 
-A jsoup-based implementation of [concept-bookmarks-parser](../../concept/bookmarks-parser/README.md) that parses HTML bookmark files in the Netscape Bookmark format.
+A jsoup-based implementation of [concept-file-parser](../../concept/file-parser/README.md) that parses HTML bookmark files in the Netscape Bookmark format.
 
 ## Usage
 

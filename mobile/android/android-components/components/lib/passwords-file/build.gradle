@@ -13,7 +13,6 @@ android {
 dependencies {
     api project(':components:concept-file-importer')
     api project(':components:concept-file-parser')
-    api project(':components:concept-passwords-parser')
     implementation project(':components:concept-storage')
     api project(':components:lib-password-parser-csv')
     implementation libs.kotlinx.coroutines

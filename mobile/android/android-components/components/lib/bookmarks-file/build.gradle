@@ -13,9 +13,8 @@ android {
 dependencies {
     api project(':components:concept-file-importer')
     api project(':components:concept-file-parser')
-    api project(':components:concept-bookmarks-parser')
     api project(':components:concept-storage-bookmarks')
-    implementation project(':components:lib-bookmark-parser-jsoup')
+    api project(':components:lib-bookmark-parser-jsoup')
     implementation libs.kotlinx.coroutines
 
     testImplementation platform(libs.junit.bom)

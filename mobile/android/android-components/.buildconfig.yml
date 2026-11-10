@@ -512,20 +512,6 @@ projects:
     - components:support-base
     - components:support-test
     - components:tooling-lint
-  components:concept-bookmarks-file:
-    description: An abstract definition of a component for importing bookmarks from
-      a file.
-    path: components/concept/bookmarks-file
-    publish: true
-    upstream_dependencies:
-    - components:tooling-lint
-  components:concept-bookmarks-parser:
-    description: An abstract definition of a bookmark-file-parser component.
-    path: components/concept/bookmarks-parser
-    publish: true
-    upstream_dependencies:
-    - components:concept-storage-bookmarks
-    - components:tooling-lint
   components:concept-engine:
     description: An abstract layer hiding the actual browser engine implementation.
     path: components/concept/engine
@@ -586,27 +572,6 @@ projects:
     - components:support-base
     - components:support-ktx
     - components:support-test
-    - components:support-utils
-    - components:tooling-lint
-  components:concept-passwords-file:
-    description: An abstract definition of a component for importing passwords from
-      a file.
-    path: components/concept/passwords-file
-    publish: true
-    upstream_dependencies:
-    - components:tooling-lint
-  components:concept-passwords-parser:
-    description: An abstract definition of a passwords-file-parser component.
-    path: components/concept/passwords-parser
-    publish: true
-    upstream_dependencies:
-    - components:concept-base
-    - components:concept-fetch
-    - components:concept-storage
-    - components:concept-storage-bookmarks
-    - components:lib-publicsuffixlist
-    - components:support-base
-    - components:support-ktx
     - components:support-utils
     - components:tooling-lint
   components:concept-push:
@@ -1296,23 +1261,6 @@ projects:
     - components:support-test-libstate
     - components:support-utils
     - components:tooling-lint
-    - components:ui-icons
-  components:feature-password-importer:
-    description: A feature that handles importing passwords.
-    path: components/feature/password-importer
-    publish: true
-    upstream_dependencies:
-    - components:compose-base
-    - components:concept-base
-    - components:concept-fetch
-    - components:concept-passwords-file
-    - components:lib-publicsuffixlist
-    - components:lib-state
-    - components:support-base
-    - components:support-ktx
-    - components:support-utils
-    - components:tooling-lint
-    - components:ui-colors
     - components:ui-icons
   components:feature-privatemode:
     description: Features used to enhance private browsing mode.
@@ -2038,11 +1986,11 @@ projects:
     - components:support-test
     - components:tooling-lint
   components:lib-bookmark-parser-jsoup:
-    description: A jsoup-based implementation of concept-bookmarks-parser
+    description: A jsoup-based implementation of concept-file-parser for Netscape
+      HTML bookmark files
     path: components/lib/bookmark-parser-jsoup
     publish: true
     upstream_dependencies:
-    - components:concept-bookmarks-parser
     - components:concept-file-parser
     - components:concept-storage-bookmarks
     - components:tooling-lint
@@ -2052,7 +2000,6 @@ projects:
     path: components/lib/bookmarks-file
     publish: true
     upstream_dependencies:
-    - components:concept-bookmarks-parser
     - components:concept-file-importer
     - components:concept-file-parser
     - components:concept-storage-bookmarks
@@ -2186,14 +2133,13 @@ projects:
     - components:support-utils
     - components:tooling-lint
   components:lib-password-parser-csv:
-    description: A CSV implementation of concept-passwords-parser
+    description: A CSV implementation of concept-file-parser for passwords files
     path: components/lib/password-parser-csv
     publish: true
     upstream_dependencies:
     - components:concept-base
     - components:concept-fetch
     - components:concept-file-parser
-    - components:concept-passwords-parser
     - components:concept-storage
     - components:concept-storage-bookmarks
     - components:lib-publicsuffixlist
@@ -2211,7 +2157,6 @@ projects:
     - components:concept-fetch
     - components:concept-file-importer
     - components:concept-file-parser
-    - components:concept-passwords-parser
     - components:concept-storage
     - components:concept-storage-bookmarks
     - components:lib-password-parser-csv

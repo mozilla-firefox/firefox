@@ -25,6 +25,12 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: `jsoupParser` is now an extension of `FileParser.Companion` and returns a `FileParser<BookmarksParseResult>`. Parse failures are reported as a `FileParserException` carrying a `BookmarksParseError`. [Bug 2041577](https://bugzilla.mozilla.org/show_bug.cgi?id=2041577)
 * **lib-password-parser-csv**
     * ⚠️ **Breaking change**: `CsvPasswordsFileParser` implements `FileParser<PasswordsParseResult>`. Parse failures are reported as a `FileParserException` carrying a `PasswordsParseError`. [Bug 2041577](https://bugzilla.mozilla.org/show_bug.cgi?id=2041577)
+* **concept-bookmarks-file**, **concept-passwords-file** and **feature-password-importer**
+    * ⚠️ **Breaking change**: Removed. Use `FileImporter` from `concept-file-importer` and `feature-importer` instead. [Bug 2041577](https://bugzilla.mozilla.org/show_bug.cgi?id=2041577)
+* **concept-bookmarks-parser**
+    * ⚠️ **Breaking change**: Removed. Use `FileParser<BookmarksParseResult>` from `concept-file-parser`, with `BookmarksParseResult` and `BookmarksParseError` from `lib-bookmark-parser-jsoup`, instead of `BookmarksFileParser` and `BookmarksParserError`. [Bug 2041577](https://bugzilla.mozilla.org/show_bug.cgi?id=2041577)
+* **concept-passwords-parser**
+    * ⚠️ **Breaking change**: Removed. Use `FileParser<PasswordsParseResult>` from `concept-file-parser`, with `PasswordsParseResult` and `PasswordsParseError` from `lib-password-parser-csv`, instead of `PasswordsFileParser` and `PasswordsParserError`. [Bug 2041577](https://bugzilla.mozilla.org/show_bug.cgi?id=2041577)
 
 # 161.0
 * **browser-state**

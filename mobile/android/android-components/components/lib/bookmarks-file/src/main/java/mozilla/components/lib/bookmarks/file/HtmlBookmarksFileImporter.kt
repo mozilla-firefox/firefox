@@ -11,7 +11,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import mozilla.components.concept.bookmark.parser.BookmarksParseResult
 import mozilla.components.concept.fileimporter.FileImporter
 import mozilla.components.concept.fileimporter.FileImporterError
 import mozilla.components.concept.fileimporter.FileImporterException
@@ -21,6 +20,7 @@ import mozilla.components.concept.fileparser.FileParserException
 import mozilla.components.concept.storage.bookmarks.BookmarkInserter
 import mozilla.components.concept.storage.bookmarks.InsertableBookmarkTreeRoot
 import mozilla.components.lib.bookmark.parser.jsoup.BookmarksParseError
+import mozilla.components.lib.bookmark.parser.jsoup.BookmarksParseResult
 
 /**
  * Creates a [FileImporter] that imports bookmarks from Netscape HTML bookmark files.
