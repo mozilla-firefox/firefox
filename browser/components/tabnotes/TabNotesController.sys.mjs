@@ -10,6 +10,8 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+  SessionStore:
+    "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
   TabNotes: "moz-src:///browser/components/tabnotes/TabNotes.sys.mjs",
 });
 ChromeUtils.defineLazyGetter(lazy, "logConsole", function () {
@@ -83,11 +85,19 @@ class TabNotesControllerClass {
     Services.obs.addObserver(this, "CanonicalURL:ActorUnregistered");
     if (this.TAB_NOTES_ENABLED) {
       lazy.logConsole.debug("browserFirstWindowReady", "Tab notes enabled");
-      return this.#init().then(() => {
+      for (const win of lazy.BrowserWindowTracker.orderedWindows) {
+        this.#initWindow(win);
+      }
+      // Session restore sets tab.canonicalUrl after the first window is ready.
+      lazy.SessionStore.promiseAllWindowsRestored.then(() => {
+        if (!this.TAB_NOTES_ENABLED) {
+          return;
+        }
         for (const win of lazy.BrowserWindowTracker.orderedWindows) {
-          this.#initWindow(win);
+          this.#checkRestoredTabs(win);
         }
       });
+      return this.#init();
     }
     lazy.logConsole.debug("browserFirstWindowReady", "Tab notes disabled");
     return Promise.resolve();
@@ -125,6 +135,7 @@ class TabNotesControllerClass {
     }
     if (this.TAB_NOTES_ENABLED) {
       this.#initWindow(win);
+      this.#checkRestoredTabs(win);
     }
   }
 
@@ -137,8 +148,16 @@ class TabNotesControllerClass {
   #initWindow(win) {
     EVENTS.forEach(eventName => win.addEventListener(eventName, this));
     win.gBrowser.addTabsProgressListener(this);
+    lazy.logConsole.debug("initWindow", win, EVENTS);
+  }
 
-    // check tabs that may have had canonicalUrl restored from session data
+  /**
+   * Determines whether tabs that may have had canonicalUrl restored from
+   * session data have a tab note.
+   *
+   * @param {Window} win
+   */
+  #checkRestoredTabs(win) {
     for (const tab of win.gBrowser.tabs) {
       if (tab.canonicalUrl && lazy.TabNotes.isEligible(tab)) {
         lazy.TabNotes.has(tab).then(hasTabNote => {
@@ -146,8 +165,6 @@ class TabNotesControllerClass {
         });
       }
     }
-
-    lazy.logConsole.debug("initWindow", win, EVENTS);
   }
 
   /**
@@ -216,6 +233,10 @@ class TabNotesControllerClass {
           const tab = gBrowser.getTabForBrowser(browser);
           tab.canonicalUrl = canonicalUrl;
           lazy.TabNotes.has(tab).then(hasTabNote => {
+            // The tab was reset by a disable or navigated away meanwhile.
+            if (tab.canonicalUrl != canonicalUrl) {
+              return;
+            }
             tab.hasTabNote = hasTabNote;
             lazy.logConsole.debug("TabNote:Determined", tab, hasTabNote);
             tab.dispatchEvent(
@@ -324,10 +345,12 @@ class TabNotesControllerClass {
         lazy.logConsole.debug(
           "CanonicalURL actor registered, requesting canonical URLs"
         );
+        for (const win of lazy.BrowserWindowTracker.orderedWindows) {
+          this.#initWindow(win);
+        }
         this.#init()
           .then(() => {
             for (const win of lazy.BrowserWindowTracker.orderedWindows) {
-              this.#initWindow(win);
               for (const tab of win.gBrowser.tabs) {
                 try {
                   /** @type {CanonicalURLParent|undefined} */
@@ -364,18 +387,15 @@ class TabNotesControllerClass {
         lazy.logConsole.debug(
           "CanonicalURL actor unregistered, clearing all tabs"
         );
-        this.#deinit()
-          .then(() => {
-            for (const win of lazy.BrowserWindowTracker.orderedWindows) {
-              this.#unloadWindow(win);
-              for (const tab of win.gBrowser.tabs) {
-                this.#resetTab(tab);
-              }
-            }
-          })
-          .then(() => {
-            Services.obs.notifyObservers(null, "TabNote:Disabled");
-          });
+        for (const win of lazy.BrowserWindowTracker.orderedWindows) {
+          this.#unloadWindow(win);
+          for (const tab of win.gBrowser.tabs) {
+            this.#resetTab(tab);
+          }
+        }
+        this.#deinit().then(() => {
+          Services.obs.notifyObservers(null, "TabNote:Disabled");
+        });
         break;
     }
   }

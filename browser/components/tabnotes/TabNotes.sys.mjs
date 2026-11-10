@@ -108,6 +108,13 @@ export class TabNotesStorage {
    */
   #shutdownBlocker;
 
+  /**
+   * Close of the previous connection, which a new `init()` waits for.
+   *
+   * @type {Promise<void>|undefined}
+   */
+  #closePromise;
+
   /** @type {Promise<OpenedConnection>} */
   get #connection() {
     return this.init().then(() => this.#databaseConnection);
@@ -128,9 +135,10 @@ export class TabNotesStorage {
 
     const basePath = options?.basePath ?? PathUtils.profileDir;
     this.dbPath = PathUtils.join(basePath, this.DATABASE_FILE_NAME);
-    this.#initPromise = Sqlite.openConnection({
-      path: this.dbPath,
-    }).then(async connection => {
+    const opened = Promise.resolve(this.#closePromise)
+      .catch(() => {})
+      .then(() => Sqlite.openConnection({ path: this.dbPath }));
+    this.#initPromise = opened.then(async connection => {
       this.#databaseConnection = connection;
       this.#shutdownBlocker = () => this.deinit();
       Sqlite.shutdown.addBlocker(
@@ -170,17 +178,31 @@ export class TabNotesStorage {
    * @returns {Promise<void>}
    */
   deinit() {
-    if (this.#shutdownBlocker) {
-      Sqlite.shutdown.removeBlocker(this.#shutdownBlocker);
-      this.#shutdownBlocker = null;
+    if (!this.#initPromise) {
+      return this.#closePromise ?? Promise.resolve();
     }
-    if (this.#databaseConnection) {
-      return this.#databaseConnection.close().then(() => {
+    // Close whatever the current init opens, even if it is still in flight,
+    // and let a later init() start a new connection once that is done.
+    const pendingInit = this.#initPromise;
+    this.#initPromise = undefined;
+    const closePromise = pendingInit
+      .catch(() => {})
+      .then(() => {
+        if (this.#shutdownBlocker) {
+          Sqlite.shutdown.removeBlocker(this.#shutdownBlocker);
+          this.#shutdownBlocker = null;
+        }
+        const connection = this.#databaseConnection;
         this.#databaseConnection = null;
-        this.#initPromise = undefined;
+        return connection?.close();
+      })
+      .finally(() => {
+        if (this.#closePromise == closePromise) {
+          this.#closePromise = undefined;
+        }
       });
-    }
-    return Promise.resolve();
+    this.#closePromise = closePromise;
+    return closePromise;
   }
 
   /**
