@@ -372,3 +372,53 @@ add_task(async function test_unavailable_error_support_link_closes_panel() {
   info("after setPanelState");
   BrowserTestUtils.removeTab(newTab);
 });
+
+/**
+ * Tests that failing to activate because the region is unavailable shows the
+ * generic error rather than the unavailable error.
+ */
+add_task(async function test_region_unavailable_shows_generic_error() {
+  setupService({
+    isReady: true,
+    proxyPass: {
+      status: 451,
+      error: "region_unavailable",
+      pass: null,
+    },
+  });
+  IPProtectionService.updateState();
+  await waitForProxyState(IPPProxyStates.READY);
+
+  const sandbox = sinon.createSandbox();
+  let startSpy = sandbox.spy(IPPProxyManager, "start");
+
+  let content = await openPanel({
+    isReady: true,
+  });
+
+  let turnOnButton = content.statusCardEl?.actionButtonEl;
+  Assert.ok(turnOnButton, "Turn on button should be present");
+  turnOnButton.click();
+
+  await TestUtils.waitForCondition(
+    () => content.state.error === ERRORS.GENERIC,
+    "Panel should show generic error after failed activation"
+  );
+  await content.updateComplete;
+
+  let { error } = await startSpy.firstCall.returnValue;
+  Assert.equal(
+    error,
+    ERRORS.VPN_UNAVAILABLE,
+    "Activation should fail with the unavailable error"
+  );
+  Assert.equal(
+    content.statusBoxEl?.type,
+    ERRORS.GENERIC,
+    "Status box type should be generic-error"
+  );
+
+  await closePanel();
+  sandbox.restore();
+  cleanupService();
+});
