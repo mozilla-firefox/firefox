@@ -36,6 +36,12 @@ export class ReftestFissionChild extends JSWindowActorChild {
         // We want to forward any after paint events to our parent document so that
         // that it reaches the root content document where the main reftest harness
         // code (reftest-content.js) will process it and update the canvas.
+        // Invalidations in a document whose parent is in the same process
+        // already cause invalidations in the process root document, so only
+        // process roots need to forward.
+        if (!this.manager.isProcessRoot) {
+          break;
+        }
         var rects = [];
         for (let r of evt.clientRects) {
           rects.push({

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html class="reftest-wait reftest-no-flush">
+<style>
+#result {
+  width: 100px;
+  height: 100px;
+  background-color: red;
+}
+</style>
+<div id="result"></div>
+<iframe id="frame" srcdoc="<html class='reftest-no-flush'><body style='background-color: white'></body></html>"></iframe>
+<script>
+document.addEventListener("MozReftestInvalidate", () => {
+  const utils = SpecialPowers.DOMWindowUtils;
+  const frameWindow = frame.contentWindow;
+  // Stop automatic refresh driver ticks so that nothing but the harness can
+  // flush this document.
+  utils.advanceTimeAndRefresh(0);
+  frameWindow.addEventListener("MozAfterPaint", () => {
+    frame.style.setProperty("--dirty", "1");
+    // Wait for the harness to handle this paint, which involves a round trip
+    // to the parent process.
+    setTimeout(async () => {
+      await SpecialPowers.spawnChrome([], () => {});
+      if (utils.needsFlush(SpecialPowers.Ci.nsIDOMWindowUtils.FLUSH_STYLE)) {
+        result.style.backgroundColor = "green";
+      }
+      utils.restoreNormalRefresh();
+      document.documentElement.classList.remove("reftest-wait");
+    }, 0);
+  }, { once: true });
+  frameWindow.document.body.style.backgroundColor = "blue";
+  utils.advanceTimeAndRefresh(16);
+}, { once: true });
+</script>
+</html>

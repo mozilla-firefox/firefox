@@ -214,6 +214,7 @@ fails == about:blank reftest-opaque-layer-fail.html
 pref(apz.allow_zooming,true) fails-if(useDrawSnapshot) == reftest-resolution.html reftest-resolution-ref.html
 
 == reftest-no-flush.html reftest-no-flush-ref.html
+== reftest-no-flush-subframe.html reftest-no-flush-subframe-ref.html
 
 skip-if(Android) HTTP == exampleorg-1.html exampleorg-1-ref.html
 
