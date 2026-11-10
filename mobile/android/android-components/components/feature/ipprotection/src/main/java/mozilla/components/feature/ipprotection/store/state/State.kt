@@ -45,21 +45,6 @@ val IPProtectionState.isEligible
     get() = eligibilityStatus == EligibilityStatus.Eligible
 
 /**
- * Whether we are waiting on the VPN to connect, either because it is being turned on or because the country is being
- * changed.
- *
- * This is true from the moment [mozilla.components.feature.ipprotection.store.middleware.IPProtectionEngineMiddleware]
- * starts sending the request, which is earlier than [proxyStatus] becoming [Authorized.Activating] - that only happens
- * once the engine replies. We cannot change where the VPN is connecting during that time, so anything that lets the
- * user try should be disabled while this is true.
- */
-val IPProtectionState.isActivationInFlight
-    get() =
-        proxyStatus == Authorized.Activating ||
-            proxyRequest is ProxyRequest.Activate ||
-            proxyRequest is ProxyRequest.SwitchLocation
-
-/**
  * The combined state of an FxA account pertinent to IP Protection.
  *
  * @property status The state of the authenticator being used.

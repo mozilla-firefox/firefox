@@ -79,7 +79,6 @@ import mozilla.components.feature.ipprotection.store.state.Uninitialized
 import mozilla.components.feature.ipprotection.store.state.UsageQuota
 import mozilla.components.feature.ipprotection.store.state.gigabytes
 import mozilla.components.feature.ipprotection.store.state.ipProtectionStatus
-import mozilla.components.feature.ipprotection.store.state.isActivationInFlight
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.list.TextListItem
@@ -149,8 +148,11 @@ fun IPProtectionScreen(
                 )
 
                 VpnToggleRow(
-                    checked = status == IPProtectionStatus.Enabled,
-                    enabled = status == IPProtectionStatus.Disabled || status == IPProtectionStatus.Enabled,
+                    checked = status == IPProtectionStatus.Enabled || status == IPProtectionStatus.Activating,
+                    enabled =
+                        status == IPProtectionStatus.Disabled ||
+                            status == IPProtectionStatus.Activating ||
+                            status == IPProtectionStatus.Enabled,
                     onToggle = onVpnToggle,
                 )
 
@@ -172,7 +174,6 @@ fun IPProtectionScreen(
                         selectedLocation = state.locationState.selectedLocation,
                         onLocationClicked = onLocationClicked,
                         enabled = isLocationSelectionEnabled,
-                        isActivating = state.isActivationInFlight,
                     )
                 } else {
                     GetStartedSection(
@@ -354,11 +355,7 @@ private fun VpnLocationSection(
     selectedLocation: Location,
     onLocationClicked: () -> Unit,
     enabled: Boolean,
-    isActivating: Boolean,
 ) {
-    // The row keeps its enabled appearance while activating, it just stops being tappable.
-    val isClickable = enabled && !isActivating
-
     SettingsSectionHeader(
         text = stringResource(R.string.ip_protection_location_section),
         modifier =
@@ -378,13 +375,13 @@ private fun VpnLocationSection(
                         stringResource(R.string.firefox),
                     ),
                 maxDescriptionLines = Int.MAX_VALUE,
-                onClick = onLocationClicked.takeIf { isClickable },
+                onClick = onLocationClicked.takeIf { enabled },
             )
         }
         is Country -> {
             TextListItem(
                 label = selectedLocation.displayName(LocalLocale.current.platformLocale),
-                onClick = onLocationClicked.takeIf { isClickable },
+                onClick = onLocationClicked.takeIf { enabled },
             )
         }
     }

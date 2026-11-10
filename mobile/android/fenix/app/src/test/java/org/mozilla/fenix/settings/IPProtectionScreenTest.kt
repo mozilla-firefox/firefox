@@ -7,10 +7,11 @@ package org.mozilla.fenix.settings
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasProgressBarRangeInfo
 import androidx.compose.ui.test.hasText
@@ -243,28 +244,22 @@ class IPProtectionScreenTest {
     }
 
     @Test
-    fun `GIVEN the proxy is activating WHEN rendering the screen THEN the location row is not selectable`() {
-        val state =
-            IPProtectionState(
-                eligibilityStatus = EligibilityStatus.Eligible,
-                proxyStatus = Authorized.Activating,
-                serviceStatus = ServiceState.Ready,
-                usageQuota =
-                    UsageQuota.Metered(
-                        max = DataVolume.roundedGigabytes(50),
-                        remaining = DataVolume.roundedGigabytes(40),
-                    ),
-            )
-
-        setScreen(state = state, isLocationSelectionEnabled = true)
+    fun `GIVEN the proxy is activating WHEN rendering the screen THEN the VPN toggle is on and can be turned off`() {
+        setScreen(state = activatingState(), isLocationSelectionEnabled = true)
 
         composeTestRule
             .onNode(hasText(testContext.getString(R.string.ip_protection_toggle_label)) and isToggleable())
-            .assertIsNotEnabled()
+            .assertIsOn()
+            .assertIsEnabled()
+    }
+
+    @Test
+    fun `GIVEN the proxy is activating WHEN rendering the screen THEN the location row is selectable`() {
+        setScreen(state = activatingState(), isLocationSelectionEnabled = true)
 
         composeTestRule
             .onNodeWithText(testContext.getString(R.string.ip_protection_location_recommended_label))
-            .assertHasNoClickAction()
+            .assertHasClickAction()
     }
 
     @Test
@@ -311,6 +306,18 @@ class IPProtectionScreenTest {
 
         composeTestRule.onNodeWithText(testContext.getString(R.string.ip_protection_get_started)).assertIsNotEnabled()
     }
+
+    private fun activatingState() =
+        IPProtectionState(
+            eligibilityStatus = EligibilityStatus.Eligible,
+            proxyStatus = Authorized.Activating,
+            serviceStatus = ServiceState.Ready,
+            usageQuota =
+                UsageQuota.Metered(
+                    max = DataVolume.roundedGigabytes(50),
+                    remaining = DataVolume.roundedGigabytes(40),
+                ),
+        )
 
     private fun setScreen(
         state: IPProtectionState,
