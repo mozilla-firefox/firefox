@@ -1,4 +1,8 @@
--dontobfuscate
+####################################################################################################
+# Keep Fenix names readable in stack traces, while still allowing R8 to shrink and optimize Fenix
+####################################################################################################
+
+-keep,allowshrinking,allowoptimization class org.mozilla.fenix.** { *; }
 
 ####################################################################################################
 # GeckoView built-ins
