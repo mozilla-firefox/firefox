@@ -30,11 +30,14 @@ const PREF_ENVIRONMENT = "widgets.framed.environment";
 const PREF_ENDPOINT_PREFIX = "widgets.framed.endpoint.";
 const PREF_ENDPOINTS_ALLOWLIST = "discoverystream.endpoints";
 
+// How long a cached manifest is served before it is refetched.
+const CACHE_EXPIRY_MS = 30 * 60 * 1000;
+
 /**
  * Fetches the framed widgets manifest of the selected environment (prod or
- * stage, each its own Merino endpoint) once per day, caches it, and broadcasts
- * a { [widgetId]: { url } } map of the FRAMED_WIDGETS entries the manifest
- * enables.
+ * stage, each its own Merino endpoint) at most every 30 minutes, caches it, and
+ * broadcasts a { [widgetId]: { url } } map of the FRAMED_WIDGETS entries the
+ * manifest enables.
  * resolveWidgetFrame turns it into each widget's document URL and frame state.
  */
 export class FramedWidgetsFeed {
@@ -83,8 +86,9 @@ export class FramedWidgetsFeed {
     if (!lastUpdated) {
       return true;
     }
-    const D = this.Date();
-    return new D(lastUpdated).toDateString() !== new D(D.now()).toDateString();
+    // A timestamp in the future (e.g. the clock was set back) is stale too.
+    const age = this.Date().now() - lastUpdated;
+    return age < 0 || age >= CACHE_EXPIRY_MS;
   }
 
   normalize(raw) {
