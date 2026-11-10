@@ -83,6 +83,9 @@ if CONFIG["TARGET_OS"] == "OSX":
     if CONFIG["MOZ_ENTERPRISE"]:
         UNIFIED_SOURCES += ["TestNetworkInterfaceDarwin.cpp"]
 
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
+    SOURCES += ["TestPlatformDNSMac.cpp"]
+
 TEST_HARNESS_FILES.gtest += [
     "urltestdata.json",
 ]

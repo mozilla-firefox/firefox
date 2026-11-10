@@ -2,8 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "PlatformDNSMac.h"
+
 #include <arpa/inet.h>
-#include <dns_sd.h>
+#include <errno.h>
 #include <poll.h>
 
 #include "GetAddrInfo.h"
@@ -16,16 +18,6 @@ namespace mozilla::net {
 
 #define LOG(msg, ...) \
   MOZ_LOG(gGetAddrInfoLog, LogLevel::Debug, ("[DNS]: " msg, ##__VA_ARGS__))
-
-struct DNSContext {
-  nsresult mRv = NS_OK;
-  TypeRecordResultType* mResult;
-  nsCString mHost;
-  Maybe<nsCString> mOriginHost;
-  uint32_t* mTTL;
-  // Set to the TargetName when the response is an HTTPS AliasMode record.
-  nsCString mAliasName;
-};
 
 // Callback for DNSServiceQueryRecord
 void QueryCallback(DNSServiceRef aSDRef, DNSServiceFlags aFlags,
@@ -54,6 +46,8 @@ void QueryCallback(DNSServiceRef aSDRef, DNSServiceFlags aFlags,
   if (aRRType != TRRTYPE_HTTPSSVC) {
     return;
   }
+
+  context->mDone = !(aFlags & kDNSServiceFlagsMoreComing);
 
   // Process the rdata for HTTPS records (type 65)
   if (aRDLen == 0) {
@@ -152,15 +146,40 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
   // If the domain queried results in NXDOMAIN, then QueryCallback will
   // never get called, and poll will hang forever. We need to use a
   // timeout so that poll() eventually returns.
-  int result =
-      poll(&pfd, 1, StaticPrefs::network_dns_native_https_timeout_mac_msec());
-  if (result > 0 && (pfd.revents & POLLIN)) {
-    // Process the result
-    DNSServiceProcessResult(sdRef);
-  } else if (result < 0) {
-    LOG("poll() failed");
-  } else if (result == 0) {
-    LOG("poll timed out");
+  // DNSServiceProcessResult only handles the replies that have already
+  // arrived, and intermediate CNAMEs come before the HTTPS records, so keep
+  // processing until the HTTPS RRSet has been delivered.
+  TimeStamp deadline =
+      startTime + TimeDuration::FromMilliseconds(
+                      StaticPrefs::network_dns_native_https_timeout_mac_msec());
+  while (!context.IsComplete()) {
+    int timeout =
+        static_cast<int>((deadline - TimeStamp::Now()).ToMilliseconds());
+    if (timeout <= 0) {
+      LOG("poll timed out");
+      break;
+    }
+    int result = poll(&pfd, 1, timeout);
+    if (result < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      LOG("poll() failed");
+      break;
+    }
+    if (result == 0) {
+      LOG("poll timed out");
+      break;
+    }
+    if (!(pfd.revents & POLLIN)) {
+      LOG("poll() returned revents %d", pfd.revents);
+      break;
+    }
+    err = DNSServiceProcessResult(sdRef);
+    if (err != kDNSServiceErr_NoError) {
+      LOG("DNSServiceProcessResult failed: %d", err);
+      break;
+    }
   }
 
   // Cleanup

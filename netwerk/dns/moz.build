@@ -56,6 +56,7 @@ elif CONFIG["OS_TARGET"] == "FreeBSD":
     SOURCES += ["PlatformDNSUnix.cpp"]
 elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
     SOURCES += ["PlatformDNSMac.cpp"]
+    SOURCE_HEADERS += ["PlatformDNSMac.h"]
 elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "android":
     SOURCES += ["PlatformDNSAndroid.cpp"]
 else:
