@@ -148,11 +148,15 @@ fun IPProtectionScreen(
                 )
 
                 VpnToggleRow(
-                    checked = status == IPProtectionStatus.Enabled || status == IPProtectionStatus.Activating,
+                    checked =
+                        status == IPProtectionStatus.Enabled ||
+                            status == IPProtectionStatus.Activating ||
+                            status == IPProtectionStatus.ConnectionError,
                     enabled =
                         status == IPProtectionStatus.Disabled ||
                             status == IPProtectionStatus.Activating ||
-                            status == IPProtectionStatus.Enabled,
+                            status == IPProtectionStatus.Enabled ||
+                            status == IPProtectionStatus.ConnectionError,
                     onToggle = onVpnToggle,
                 )
 

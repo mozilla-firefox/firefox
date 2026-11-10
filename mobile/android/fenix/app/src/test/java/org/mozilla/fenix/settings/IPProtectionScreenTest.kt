@@ -30,6 +30,7 @@ import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.DataVolume
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
+import mozilla.components.feature.ipprotection.store.state.ProxyStatus
 import mozilla.components.feature.ipprotection.store.state.UsageQuota
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
@@ -245,7 +246,17 @@ class IPProtectionScreenTest {
 
     @Test
     fun `GIVEN the proxy is activating WHEN rendering the screen THEN the VPN toggle is on and can be turned off`() {
-        setScreen(state = activatingState(), isLocationSelectionEnabled = true)
+        setScreen(state = readyState(Authorized.Activating), isLocationSelectionEnabled = true)
+
+        composeTestRule
+            .onNode(hasText(testContext.getString(R.string.ip_protection_toggle_label)) and isToggleable())
+            .assertIsOn()
+            .assertIsEnabled()
+    }
+
+    @Test
+    fun `GIVEN the proxy has a connection error WHEN rendering the screen THEN the VPN toggle is on and can be turned off`() {
+        setScreen(state = readyState(Authorized.ConnectionError), isLocationSelectionEnabled = true)
 
         composeTestRule
             .onNode(hasText(testContext.getString(R.string.ip_protection_toggle_label)) and isToggleable())
@@ -255,7 +266,7 @@ class IPProtectionScreenTest {
 
     @Test
     fun `GIVEN the proxy is activating WHEN rendering the screen THEN the location row is selectable`() {
-        setScreen(state = activatingState(), isLocationSelectionEnabled = true)
+        setScreen(state = readyState(Authorized.Activating), isLocationSelectionEnabled = true)
 
         composeTestRule
             .onNodeWithText(testContext.getString(R.string.ip_protection_location_recommended_label))
@@ -307,10 +318,10 @@ class IPProtectionScreenTest {
         composeTestRule.onNodeWithText(testContext.getString(R.string.ip_protection_get_started)).assertIsNotEnabled()
     }
 
-    private fun activatingState() =
+    private fun readyState(proxyStatus: ProxyStatus) =
         IPProtectionState(
             eligibilityStatus = EligibilityStatus.Eligible,
-            proxyStatus = Authorized.Activating,
+            proxyStatus = proxyStatus,
             serviceStatus = ServiceState.Ready,
             usageQuota =
                 UsageQuota.Metered(
