@@ -293,7 +293,6 @@ updatebot:
       enabled: True
       filter: security
       frequency: every
-      platform: windows
       blocking: 1234
       options: ["option1", "option2"]
     - type: vendoring

@@ -19,17 +19,12 @@ for f in $ALL_MOZ_YAML_FILES; do
 	IFS='' read -r -d '' INPUT <<"EOF"
 import sys
 import yaml
-enabled = False
 with open(sys.argv[1]) as yaml_in:
 	o = yaml.safe_load(yaml_in)
-	if "updatebot" in o:
-		if 'tasks' in o["updatebot"]:
-			for t in o["updatebot"]["tasks"]:
-				if t["type"] == "vendoring":
-					if t.get("enabled", True) and t.get("platform", "Linux").lower() == "linux":
-						enabled = True
-if enabled:
-	print(sys.argv[1])
+for t in o.get("updatebot", {}).get("tasks", ()):
+	if t["type"] == "vendoring" and t.get("enabled", True):
+		print(sys.argv[1])
+		break
 EOF
 
 	FILE=$(python3 -c "$INPUT" $f)

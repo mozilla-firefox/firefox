@@ -523,7 +523,6 @@ updatebot:
                                 "cc": ["b@example.com"],
                                 "needinfo": ["c@example.com"],
                                 "frequency": "1 weeks",
-                                "platform": "windows",
                                 "options": ["build-flag"],
                             },
                         ],
@@ -560,7 +559,6 @@ updatebot:
       cc: ["b@example.com"]
       needinfo: ["c@example.com"]
       frequency: 1 weeks
-      platform: windows
       options: ["build-flag"]
             """.strip(),
             ),
@@ -594,7 +592,6 @@ updatebot:
                                 "cc": ["b@example.com"],
                                 "needinfo": ["c@example.com"],
                                 "frequency": "1 weeks, 4 commits",
-                                "platform": "windows",
                             },
                         ],
                     },
@@ -630,7 +627,6 @@ updatebot:
       cc: ["b@example.com"]
       needinfo: ["c@example.com"]
       frequency: 1 weeks, 4 commits
-      platform: windows
             """.strip(),
             ),
             # -------------------------------------------------
@@ -671,7 +667,6 @@ updatebot:
       cc: ["b@example.com"]
       needinfo: ["c@example.com"]
       frequency: 1 weeks, 4 commits
-      platform: windows
             """.strip(),
             ),
             # -------------------------------------------------
@@ -707,7 +702,6 @@ updatebot:
                                 "filter": "none",
                                 "source-extensions": [".c", ".cpp"],
                                 "frequency": "2 weeks",
-                                "platform": "linux",
                             },
                         ],
                     },
@@ -746,7 +740,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 weeks
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -847,7 +840,6 @@ updatebot:
                                 "filter": "none",
                                 "source-extensions": [".c", ".cpp"],
                                 "frequency": "2 commits",
-                                "platform": "linux",
                             },
                         ],
                     },
@@ -886,7 +878,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 commits
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -927,7 +918,6 @@ updatebot:
                                 "filter": "none",
                                 "source-extensions": [".c", ".cpp"],
                                 "frequency": "2 commits",
-                                "platform": "linux",
                             },
                         ],
                     },
@@ -968,7 +958,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 commits
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -1013,7 +1002,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 commits
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -1409,7 +1397,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 commits
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -1453,7 +1440,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 commits
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -1496,7 +1482,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 commits, 4 weeks
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -1539,7 +1524,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 4 weeks, 2 commits, 3 weeks
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -1583,7 +1567,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 weeks
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -1627,7 +1610,6 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 01 commits
-      platform: linux
       source-extensions:
         - .c
         - .cpp
@@ -1670,7 +1652,7 @@ updatebot:
     - type: commit-alert
       filter: none
       frequency: 2 weeks
-      platform: mac
+      platform: linux  # Updatebot only runs on Linux; platform is no longer a valid key
       source-extensions:
         - .c
         - .cpp
