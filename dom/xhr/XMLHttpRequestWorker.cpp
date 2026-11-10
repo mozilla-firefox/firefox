@@ -680,11 +680,8 @@ class OpenRunnable final : public WorkerThreadProxySyncRunnable {
 
     MainThreadRunInternal(aRv);
 
-    // Restore the previous activated WorkerRef for send, unless an event
-    // listener tore down the proxy.
-    if (mProxy->mXHR) {
-      mProxy->mWorkerRef = std::move(oldWorker);
-    }
+    // Restore the previous activated WorkerRef for send.
+    mProxy->mWorkerRef = std::move(oldWorker);
   }
 
   void MainThreadRunInternal(ErrorResult& aRv);
@@ -799,9 +796,8 @@ void Proxy::Teardown() {
     // floor.
     AddRemoveEventListeners(false, false);
 
-    RefPtr<XMLHttpRequestMainThread> xhr = mXHR;
     ErrorResult rv;
-    xhr->Abort(rv);
+    mXHR->Abort(rv);
     if (NS_WARN_IF(rv.Failed())) {
       rv.SuppressException();
     }
@@ -1203,13 +1199,7 @@ void AbortRunnable::RunOnMainThread(ErrorResult& aRv) {
   // execution completes.
   mProxy->mWorkerRef = mWorkerRef;
 
-  RefPtr<XMLHttpRequestMainThread> xhr = mProxy->mXHR;
-  xhr->Abort(aRv);
-
-  // An event listener may have spun the event loop and torn down the proxy.
-  if (!mProxy->mXHR) {
-    return;
-  }
+  mProxy->mXHR->Abort(aRv);
 
   // Restore the activated WorkerRef to mProxy for the previous Send().
   mProxy->mWorkerRef = std::move(oldWorker);
@@ -1224,36 +1214,33 @@ void OpenRunnable::MainThreadRunInternal(ErrorResult& aRv) {
     return;
   }
 
-  // Open() fires events; keep the XHR alive if a listener tears down the proxy.
-  RefPtr<XMLHttpRequestMainThread> xhr = mProxy->mXHR;
-
   if (mBackgroundRequest) {
-    xhr->SetMozBackgroundRequestExternal(mBackgroundRequest, aRv);
+    mProxy->mXHR->SetMozBackgroundRequestExternal(mBackgroundRequest, aRv);
     if (aRv.Failed()) {
       return;
     }
   }
 
   if (mOriginStack) {
-    xhr->SetOriginStack(std::move(mOriginStack));
+    mProxy->mXHR->SetOriginStack(std::move(mOriginStack));
   }
 
   if (mWithCredentials) {
-    xhr->SetWithCredentials(mWithCredentials, aRv);
+    mProxy->mXHR->SetWithCredentials(mWithCredentials, aRv);
     if (NS_WARN_IF(aRv.Failed())) {
       return;
     }
   }
 
   if (mTimeout) {
-    xhr->SetTimeout(mTimeout, aRv);
+    mProxy->mXHR->SetTimeout(mTimeout, aRv);
     if (NS_WARN_IF(aRv.Failed())) {
       return;
     }
   }
 
   if (!mMimeTypeOverride.IsVoid()) {
-    xhr->OverrideMimeType(mMimeTypeOverride, aRv);
+    mProxy->mXHR->OverrideMimeType(mMimeTypeOverride, aRv);
     if (NS_WARN_IF(aRv.Failed())) {
       return;
     }
@@ -1262,9 +1249,9 @@ void OpenRunnable::MainThreadRunInternal(ErrorResult& aRv) {
   MOZ_ASSERT(!mProxy->mInOpen);
   mProxy->mInOpen = true;
 
-  xhr->Open(mMethod, mURL, true,
-            mUser.WasPassed() ? mUser.Value() : VoidCString(),
-            mPassword.WasPassed() ? mPassword.Value() : VoidCString(), aRv);
+  mProxy->mXHR->Open(
+      mMethod, mURL, true, mUser.WasPassed() ? mUser.Value() : VoidCString(),
+      mPassword.WasPassed() ? mPassword.Value() : VoidCString(), aRv);
 
   MOZ_ASSERT(mProxy->mInOpen);
   mProxy->mInOpen = false;
@@ -1273,24 +1260,16 @@ void OpenRunnable::MainThreadRunInternal(ErrorResult& aRv) {
     return;
   }
 
-  if (!mProxy->mXHR) {
-    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
-    return;
-  }
-
   if (mSource) {
-    xhr->SetSource(std::move(mSource));
+    mProxy->mXHR->SetSource(std::move(mSource));
   }
 
-  xhr->SetResponseType(mResponseType, aRv);
+  mProxy->mXHR->SetResponseType(mResponseType, aRv);
 }
 
 void SendRunnable::RunOnMainThread(ErrorResult& aRv) {
-  // Send() fires events; keep the XHR alive if a listener tears down the proxy.
-  RefPtr<XMLHttpRequestMainThread> xhr = mProxy->mXHR;
-
   // Before we change any state let's check if we can send.
-  if (!xhr->CanSend(aRv)) {
+  if (!mProxy->mXHR->CanSend(aRv)) {
     return;
   }
 
@@ -1331,6 +1310,7 @@ void SendRunnable::RunOnMainThread(ErrorResult& aRv) {
   mProxy->mWorkerRef = mWorkerRef;
 
   MOZ_ASSERT(!mProxy->mSyncLoopTarget);
+  mProxy->mSyncLoopTarget.swap(mSyncXHRSyncLoopTarget);
 
   if (mHasUploadListeners) {
     // Send() can be called more than once before failure,
@@ -1343,16 +1323,9 @@ void SendRunnable::RunOnMainThread(ErrorResult& aRv) {
 
   mProxy->mInnerChannelId++;
 
-  xhr->Send(payload, aRv);
-
-  if (!aRv.Failed() && !mProxy->mXHR) {
-    aRv.Throw(NS_ERROR_DOM_INVALID_STATE_ERR);
-  }
+  mProxy->mXHR->Send(payload, aRv);
 
   if (!aRv.Failed()) {
-    // Events fired during Send() go to mSyncEventResponseTarget, so only hand
-    // the sync loop to the proxy once we know it survived.
-    mProxy->mSyncLoopTarget.swap(mSyncXHRSyncLoopTarget);
     mProxy->mOutstandingSendCount++;
 
     if (!mHasUploadListeners) {
