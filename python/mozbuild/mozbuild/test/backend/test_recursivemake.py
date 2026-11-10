@@ -2100,13 +2100,18 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertEqual(self._cpp_unit_tests_lines({"MOZ_PROFILE_GENERATE": "1"}), [])
 
     def test_simple_programs_profile_generate(self):
-        env = self._get_environment(
-            "program-paths", substs={"MOZ_PROFILE_GENERATE": "1"}
-        )
-        self._consume("program-paths", RecursiveMakeBackend, env=env)
+        def backend_mk(**substs):
+            env = self._get_environment("program-paths", substs=substs)
+            self._consume("program-paths", RecursiveMakeBackend, env=env)
+            with open(
+                os.path.join(env.topobjdir, "dist-bin-simple", "backend.mk")
+            ) as fh:
+                return fh.read()
 
-        with open(os.path.join(env.topobjdir, "dist-bin-simple", "backend.mk")) as fh:
-            self.assertNotIn("SIMPLE_PROGRAMS", fh.read())
+        self.assertIn("simple.prog_OBJS", backend_mk())
+        profile_generate = backend_mk(MOZ_PROFILE_GENERATE="1")
+        self.assertNotIn("SIMPLE_PROGRAMS", profile_generate)
+        self.assertNotIn("simple.prog_OBJS", profile_generate)
 
     def test_linkage(self):
         env = self._consume("linkage", RecursiveMakeBackend)
