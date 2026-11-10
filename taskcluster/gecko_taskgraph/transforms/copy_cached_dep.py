@@ -3,8 +3,9 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from taskgraph.transforms.base import TransformSequence
-from taskgraph.util.cached_tasks import add_optimization
 from taskgraph.util.dependencies import get_primary_dependency
+
+from gecko_taskgraph.util.cached_tasks import add_optimization
 
 transforms = TransformSequence()
 

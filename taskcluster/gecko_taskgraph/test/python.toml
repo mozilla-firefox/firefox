@@ -29,6 +29,8 @@ subsuite = "taskgraph"
 
 ["test_transforms_build_schedules.py"]
 
+["test_transforms_copy_cached_dep.py"]
+
 ["test_transforms_duplicate.py"]
 
 ["test_transforms_fetch.py"]
