@@ -19065,13 +19065,6 @@
 # Prefs starting with "security."
 #---------------------------------------------------------------------------
 
-# Mochitests that need to load resource:// URIs not declared content-accessible
-# in manifests should set this pref.
-- name: security.all_resource_uri_content_accessible
-  type: bool
-  value: false
-  mirror: always
-
 - name: security.bad_cert_domain_error.url_fix_enabled
   type: bool
   value: true

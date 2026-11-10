@@ -61,7 +61,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=803225
   // onload listener is called after we successfully fetch the script,
   // independently of whether it throws an exception.
   var resource_script=document.createElement("script");
-  resource_script.src = "resource://gre/modules/XPCOMUtils.sys.mjs";
+  resource_script.src = "resource://content-accessible/TopLevelVideoDocument.js";
   resource_script.name = "resource_protocol";
   resource_script.onload = function() {
     parent.postMessage({"test": "resource", "msg": "resource with resource protocol loaded"}, "http://mochi.test:8888");

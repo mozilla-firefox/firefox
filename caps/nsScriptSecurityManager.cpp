@@ -952,7 +952,8 @@ nsScriptSecurityManager::CheckLoadURIWithPrincipal(nsIPrincipal* aPrincipal,
 }
 
 // Whether aSourceURI is one of our own unprivileged about: pages, pdf.js, or a
-// privileged extension, which can load non-content-accessible UI resources.
+// privileged extension, which can load non-content-accessible chrome: and
+// resource: URIs.
 static bool IsTrustedUISource(nsIURI* aSourceURI, nsIURI* aSourceBaseURI) {
   if (aSourceURI->SchemeIs("about")) {
     return !NS_IsContentAccessibleAboutURI(aSourceURI);
@@ -1053,7 +1054,7 @@ nsresult nsScriptSecurityManager::CheckLoadURIFlags(
       }
 
       if (targetScheme.EqualsLiteral("resource")) {
-        if (StaticPrefs::security_all_resource_uri_content_accessible()) {
+        if (IsTrustedUISource(aSourceURI, aSourceBaseURI)) {
           return NS_OK;
         }
 

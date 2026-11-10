@@ -24,7 +24,6 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=803225
   //Cycle through 4 different preference settings.
   function changePrefs(callback) {
     let newPrefs = [
-      ["security.all_resource_uri_content_accessible", true], // Temporarily allow content to access all resource:// URIs.
       ["security.mixed_content.block_display_content", settings[counter][0]],
       ["security.mixed_content.block_active_content", settings[counter][1]]
     ];

@@ -47,28 +47,14 @@ function testScriptSrc(aCallback) {
     is(typeof gUpdateHistory, "undefined",
        "content should not be able to load <script> from chrome://mozapps");
 
-    /**
-     * Make sure the last one didn't pass because someone moved history.js.
-     */
-    var resjs = document.getElementById("resjs");
-    resjs.onload = scriptOnload;
-    resjs.src = "resource://gre/chrome/toolkit/content/mozapps/update/history.js";
-    document.getElementById("content").appendChild(resjs);
-
-    function scriptOnload() {
-      is(typeof gUpdateHistory.onLoad, "function",
-         "history.js has not moved unexpectedly");
-
-      // trigger the callback
-      if (aCallback)
-        aCallback();
-    }
+    if (aCallback)
+      aCallback();
 }
 
 /** <img src=""> tests */
 var img_global = "chrome://global/skin/media/error.png";
 var img_mozapps = "chrome://mozapps/skin/extensions/extensionGeneric.svg";
-var res_mozapps = "resource://gre/chrome/toolkit/skin/classic/mozapps/extensions/extensionGeneric.svg";
+var res_mozapps = "resource://content-accessible/close-12.svg";
 
 var imgTests = [[img_global, "fail"],
                 [img_mozapps, "fail"],
@@ -111,12 +97,7 @@ function loadImage(uri, expect, callback) {
 }
 
 // Start off the script src test, and have it start the img tests when complete.
-// Temporarily allow content to access all resource:// URIs.
-SpecialPowers.pushPrefEnv({
-  set: [
-    ["security.all_resource_uri_content_accessible", true],
-  ],
-}, () => testScriptSrc(runImgTest));
+onload = () => testScriptSrc(runImgTest);
 </script>
 </pre>
 </body>
