@@ -157,6 +157,7 @@ add_task(async function testLocalMode() {
       "<img>"
     );
     await IOUtils.writeUTF8(fileWithEntitiesInName, "");
+    registerCleanupFunction(() => IOUtils.remove(fileWithEntitiesInName));
 
     await loadURL(gBrowser.selectedBrowser, TEST_FOLDER_URL);
 
