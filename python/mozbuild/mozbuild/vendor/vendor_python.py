@@ -2,8 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import base64
+import csv
 import hashlib
+import importlib.metadata
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -344,6 +348,44 @@ class VendorPython(MozbuildObject):
                 # which we don't we don't want.
                 mozfile.move(extracted_package_dir, package_dir)
                 _denormalize_symlinks(package_dir)
+
+        _update_pip_certifi(Path(dest))
+
+
+def _update_pip_certifi(vendor_dir):
+    # Keep pip's CA bundle in sync even when compatibility requires an older pip.
+    pip_dir = vendor_dir / "pip"
+    certifi_dir = vendor_dir / "certifi"
+    updated_paths = {"pip/_vendor/vendor.txt"}
+    for name in ("__init__.py", "cacert.pem"):
+        relative_path = f"pip/_vendor/certifi/{name}"
+        shutil.copyfile(certifi_dir / "certifi" / name, pip_dir / relative_path)
+        updated_paths.add(relative_path)
+
+    version = next(
+        importlib.metadata.distributions(name="certifi", path=[str(certifi_dir)])
+    ).version
+    vendor_txt = pip_dir / "pip" / "_vendor" / "vendor.txt"
+    contents = re.sub(
+        r"(?m)^(\s*certifi==)\S+",
+        rf"\g<1>{version}",
+        vendor_txt.read_text(encoding="utf-8"),
+    )
+    with vendor_txt.open("w", newline="\n", encoding="utf-8") as f:
+        f.write(contents)
+
+    record = next(pip_dir.glob("pip-*.dist-info/RECORD"))
+    with record.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+    for row in rows:
+        if row[0] in updated_paths:
+            data = (pip_dir / row[0]).read_bytes()
+            digest = base64.urlsafe_b64encode(hashlib.sha256(data).digest()).rstrip(
+                b"="
+            )
+            row[1:] = [f"sha256={digest.decode('ascii')}", str(len(data))]
+    with record.open("w", newline="", encoding="utf-8") as f:
+        csv.writer(f, lineterminator="\n").writerows(rows)
 
 
 def remove_environment_markers_from_requirements_txt(requirements_txt: Path):
