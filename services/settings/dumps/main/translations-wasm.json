@@ -1,97 +1,97 @@
 {
   "data": [
     {
-      "name": "bergamot-translator",
-      "schema": 1749068911282,
-      "license": "MPL-2.0",
-      "release": "v0.6.0",
-      "version": "3.0",
-      "revision": "1de4a085d3a7afb625c51a60aabb5ad298e4059f",
       "attachment": {
+        "filename": "bergamot-translator.wasm",
         "hash": "a3a89d9ad0a4ed8f27bf3e403701b23f5709816f6376438503f2fa5b0182c2dc",
-        "size": 4960506,
-        "filename": "bergamot-translator.wasm",
         "location": "main-workspace/translations-wasm/05082c31-aee8-4249-9e01-c1865afd7520.wasm",
-        "mimetype": "application/wasm"
+        "mimetype": "application/wasm",
+        "size": 4960506
       },
+      "filter_expression": "",
       "fx_release": "141.0a1",
-      "filter_expression": "",
       "id": "4fd32605-9889-4dd9-9fc7-577ad1136746",
-      "last_modified": 1749069444811
+      "last_modified": 1749069444811,
+      "license": "MPL-2.0",
+      "name": "bergamot-translator",
+      "release": "v0.6.0",
+      "revision": "1de4a085d3a7afb625c51a60aabb5ad298e4059f",
+      "schema": 1749068911282,
+      "version": "3.0"
     },
     {
-      "name": "bergamot-translator",
-      "schema": 1734370203944,
-      "license": "MPL-2.0",
-      "release": "v0.5.0",
-      "version": "2.0",
-      "revision": "b475d25cb4568dd7bf37f80b8804030f1820bd4b",
       "attachment": {
-        "hash": "e67e2f8be1a3fc0d9b00adce8b641cdf767bf3de90f1b3ccf732c2d711304fa3",
-        "size": 4956176,
         "filename": "bergamot-translator.wasm",
+        "hash": "e67e2f8be1a3fc0d9b00adce8b641cdf767bf3de90f1b3ccf732c2d711304fa3",
         "location": "main-workspace/translations-wasm/ec4aab08-4e7c-4a62-a7a5-ee6874a5d1a2.wasm",
-        "mimetype": "application/wasm"
+        "mimetype": "application/wasm",
+        "size": 4956176
       },
+      "filter_expression": "",
       "fx_release": "135.0a1",
-      "filter_expression": "",
       "id": "876af1dd-dfce-4766-8ca3-fd08cc067bc4",
-      "last_modified": 1734380308791
-    },
-    {
-      "name": "bergamot-translator",
-      "schema": 1705698520049,
+      "last_modified": 1734380308791,
       "license": "MPL-2.0",
-      "release": "v0.4.5",
-      "version": "1.1",
-      "revision": "05a87784973b6e1cc591f1f1a9a05c5873d9971e",
-      "attachment": {
-        "hash": "9bfb4cc9dc176c7cbaa6b2890d9f6868c0ada6f44168a0bb0903dbfb88278d92",
-        "size": 5188872,
-        "filename": "bergamot-translator-worker.wasm",
-        "location": "main-workspace/translations-wasm/76ec99f8-04d5-47df-8c52-a3a38d864141.wasm",
-        "mimetype": "application/wasm"
-      },
-      "fx_release": "122.0a1",
-      "filter_expression": "",
-      "id": "73c6f691-ba5e-4c98-9622-820a2cde16c0",
-      "last_modified": 1705701099603
+      "name": "bergamot-translator",
+      "release": "v0.5.0",
+      "revision": "b475d25cb4568dd7bf37f80b8804030f1820bd4b",
+      "schema": 1734370203944,
+      "version": "2.0"
     },
     {
-      "name": "fasttext-wasm",
-      "schema": 1681248641301,
-      "license": "MIT",
-      "release": "v0.9.2",
-      "version": "1.0",
-      "revision": "3697152e0fd772d9185697fdbd4a1d340ca5571d",
       "attachment": {
-        "hash": "ef84129d43648c3f0bded0e7cc3cb03b8855f22c7a1ab9d5515474b62ff3110e",
-        "size": 953921,
+        "filename": "bergamot-translator-worker.wasm",
+        "hash": "9bfb4cc9dc176c7cbaa6b2890d9f6868c0ada6f44168a0bb0903dbfb88278d92",
+        "location": "main-workspace/translations-wasm/76ec99f8-04d5-47df-8c52-a3a38d864141.wasm",
+        "mimetype": "application/wasm",
+        "size": 5188872
+      },
+      "filter_expression": "",
+      "fx_release": "122.0a1",
+      "id": "73c6f691-ba5e-4c98-9622-820a2cde16c0",
+      "last_modified": 1705701099603,
+      "license": "MPL-2.0",
+      "name": "bergamot-translator",
+      "release": "v0.4.5",
+      "revision": "05a87784973b6e1cc591f1f1a9a05c5873d9971e",
+      "schema": 1705698520049,
+      "version": "1.1"
+    },
+    {
+      "attachment": {
         "filename": "fasttext_wasm.wasm",
+        "hash": "ef84129d43648c3f0bded0e7cc3cb03b8855f22c7a1ab9d5515474b62ff3110e",
         "location": "main-workspace/translations-wasm/5ee35b78-d0d4-43b0-8bee-e40fe57726b3.wasm",
-        "mimetype": "application/wasm"
+        "mimetype": "application/wasm",
+        "size": 953921
       },
       "filter_expression": "",
       "id": "a51c66f6-d8af-11ed-a7b4-dbd50622f5f6",
-      "last_modified": 1681500422552
+      "last_modified": 1681500422552,
+      "license": "MIT",
+      "name": "fasttext-wasm",
+      "release": "v0.9.2",
+      "revision": "3697152e0fd772d9185697fdbd4a1d340ca5571d",
+      "schema": 1681248641301,
+      "version": "1.0"
     },
     {
-      "name": "fasttext-wasm",
-      "schema": 1681242495582,
-      "license": "MIT",
-      "release": "v0.9.2",
-      "version": "0.1",
-      "revision": "3697152e0fd772d9185697fdbd4a1d340ca5571d",
       "attachment": {
-        "hash": "fa3146187eb393d2e3a2d00ac004133e6701136d132ea5124449d54a60358959",
-        "size": 875075,
         "filename": "fasttext_wasm.wasm",
+        "hash": "fa3146187eb393d2e3a2d00ac004133e6701136d132ea5124449d54a60358959",
         "location": "main-workspace/translations-wasm/a9bf0ece-6a35-40a7-9813-2e3ecaa7d7f9.wasm",
-        "mimetype": "application/wasm"
+        "mimetype": "application/wasm",
+        "size": 875075
       },
       "filter_expression": "",
       "id": "ecf7c0f8-70e2-4057-a205-33bb160871f3",
-      "last_modified": 1681500422542
+      "last_modified": 1681500422542,
+      "license": "MIT",
+      "name": "fasttext-wasm",
+      "release": "v0.9.2",
+      "revision": "3697152e0fd772d9185697fdbd4a1d340ca5571d",
+      "schema": 1681242495582,
+      "version": "0.1"
     }
   ],
   "timestamp": 1749069444811

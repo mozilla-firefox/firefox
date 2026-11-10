@@ -1,60 +1,60 @@
 {
   "data": [
     {
-      "to": "content-signature-2-cdn.mozilla-backup.org",
       "from": "content-signature-2.cdn.mozilla.net",
-      "schema": 1776336958620,
       "id": "993a77f3-2249-4e4e-8350-322f0f742c75",
-      "last_modified": 1776861681298
+      "last_modified": 1776861681298,
+      "schema": 1776336958620,
+      "to": "content-signature-2-cdn.mozilla-backup.org"
     },
     {
-      "to": "archive.mozilla-backup.org",
       "from": "archive.mozilla.org",
-      "schema": 1776336958344,
       "id": "7c5166e8-a0c3-435f-9863-71612f73a14f",
-      "last_modified": 1776861681295
+      "last_modified": 1776861681295,
+      "schema": 1776336958344,
+      "to": "archive.mozilla-backup.org"
     },
     {
-      "to": "download.mozilla-backup.org",
       "from": "download.mozilla.org",
-      "schema": 1776336958066,
       "id": "a133c0a6-6b9a-490e-807a-85c07e8a1518",
-      "last_modified": 1776861681291
+      "last_modified": 1776861681291,
+      "schema": 1776336958066,
+      "to": "download.mozilla-backup.org"
     },
     {
-      "to": "versioncheck-addons.mozilla-backup.org",
       "from": "versioncheck.addons.mozilla.org",
-      "schema": 1776336957790,
       "id": "fd4b31aa-b848-4fae-a9bd-2b5bdd5da5f6",
-      "last_modified": 1776861681288
+      "last_modified": 1776861681288,
+      "schema": 1776336957790,
+      "to": "versioncheck-addons.mozilla-backup.org"
     },
     {
-      "to": "firefox-settings-attachments.mozilla-backup.org",
       "from": "firefox-settings-attachments.cdn.mozilla.net",
-      "schema": 1776336957510,
       "id": "ac3c64cf-ac29-460d-8d65-2f9ffb75b83c",
-      "last_modified": 1776861681285
+      "last_modified": 1776861681285,
+      "schema": 1776336957510,
+      "to": "firefox-settings-attachments.mozilla-backup.org"
     },
     {
-      "to": "firefox-settings.mozilla-backup.org",
       "from": "firefox.settings.services.mozilla.com",
-      "schema": 1776336957222,
       "id": "43117f86-14d3-490d-b6a6-609bbb684501",
-      "last_modified": 1776861681282
+      "last_modified": 1776861681282,
+      "schema": 1776336957222,
+      "to": "firefox-settings.mozilla-backup.org"
     },
     {
-      "to": "aus5.mozilla-backup.org",
       "from": "aus5.mozilla.org",
-      "schema": 1776297615790,
       "id": "e2ac272e-9254-43de-ad6d-0896c3589c45",
-      "last_modified": 1776861681279
+      "last_modified": 1776861681279,
+      "schema": 1776297615790,
+      "to": "aus5.mozilla-backup.org"
     },
     {
-      "to": "addons.mozilla-backup.org",
       "from": "addons.mozilla.org",
-      "schema": 1750936824485,
       "id": "e438a41a-05ac-4779-a168-891161358b02",
-      "last_modified": 1751018358372
+      "last_modified": 1751018358372,
+      "schema": 1750936824485,
+      "to": "addons.mozilla-backup.org"
     }
   ],
   "timestamp": 1776861681298

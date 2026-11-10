@@ -1,137 +1,135 @@
 {
   "data": [
     {
-      "os": "Linux",
-      "schema": 1786113883788,
-      "vendor": "0x10de",
+      "desktopEnvironment": "",
       "details": {
         "bug": "2055560",
         "name": "bug2055560_nouveau_mesa_threading_ac_init_crashes"
       },
       "devices": [],
+      "driverVendor": "mesa/nouveau",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "MESA_THREADING",
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "hardware": "",
-      "driverVendor": "mesa/nouveau",
+      "id": "aefaa076-01de-431a-81bc-e6aa2f6b84fc",
+      "last_modified": 1787185519530,
+      "os": "Linux",
+      "schema": 1786113883788,
+      "vendor": "0x10de",
       "versionRange": {
         "maxVersion": "155.*",
         "minVersion": ""
       },
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "id": "aefaa076-01de-431a-81bc-e6aa2f6b84fc",
-      "last_modified": 1787185519530
+      "windowProtocol": ""
     },
     {
-      "os": "Linux",
-      "schema": 1755909310311,
-      "vendor": "",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1979007",
         "name": "Mesa crash compiling certain shaders"
       },
       "devices": [],
+      "driverVendor": "mesa/all",
+      "driverVersion": "25.0.4",
+      "driverVersionComparator": "LESS_THAN",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBGPU",
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "hardware": "",
-      "driverVendor": "mesa/all",
+      "id": "e3e5622a-0a29-4a73-bd49-c3c2de8ec1bc",
+      "last_modified": 1771613837993,
+      "os": "Linux",
+      "schema": 1755909310311,
+      "vendor": "",
       "versionRange": {
         "maxVersion": "143.0",
         "minVersion": ""
       },
-      "driverVersion": "25.0.4",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "LESS_THAN",
-      "id": "e3e5622a-0a29-4a73-bd49-c3c2de8ec1bc",
-      "last_modified": 1771613837993
+      "windowProtocol": ""
     },
     {
-      "os": "WINNT 10.0",
-      "schema": 1748268762353,
-      "vendor": "0x10de",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1968876",
         "name": "NVIDIA mixed refresh rate + dcomp + Windows 10 bugs"
       },
       "devices": [],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBRENDER_COMPOSITOR",
+      "featureStatus": "BLOCKED_DEVICE",
       "hardware": "",
-      "driverVendor": "",
+      "id": "f5947ade-470c-4f40-9c6a-3af14cd91cca",
+      "last_modified": 1748485472559,
+      "os": "WINNT 10.0",
+      "schema": 1748268762353,
+      "vendor": "0x10de",
       "versionRange": {
         "maxVersion": "139.0",
         "minVersion": "139.0"
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "f5947ade-470c-4f40-9c6a-3af14cd91cca",
-      "last_modified": 1748485472559
+      "windowProtocol": ""
     },
     {
-      "os": "Linux",
-      "schema": 1731431264604,
-      "vendor": "0x10de",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1924578",
         "name": "linux_nvidia_dmabuf_webgl_before_133"
       },
       "devices": [],
+      "driverVendor": "nvidia/unknown",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "DMABUF",
+      "featureStatus": "BLOCKED_DEVICE",
       "hardware": "",
-      "driverVendor": "nvidia/unknown",
+      "id": "9717e767-5d2d-49e1-b0d1-605c4ff99f23",
+      "last_modified": 1731615130278,
+      "os": "Linux",
+      "schema": 1731431264604,
+      "vendor": "0x10de",
       "versionRange": {
         "maxVersion": "132.*",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "9717e767-5d2d-49e1-b0d1-605c4ff99f23",
-      "last_modified": 1731615130278
+      "windowProtocol": ""
     },
     {
-      "os": "Linux",
-      "schema": 1728291877519,
-      "vendor": "0x1002",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1913778",
         "name": "linux_mesa_radeonsi_24_1_3_dmabuf_crash"
       },
       "devices": [],
+      "driverVendor": "mesa/radeonsi",
+      "driverVersion": "24.1.3.0",
+      "driverVersionComparator": "EQUAL",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "DMABUF",
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "hardware": "",
-      "driverVendor": "mesa/radeonsi",
+      "id": "a7f18b43-a0ce-463a-b143-a6f54c107caf",
+      "last_modified": 1728326856983,
+      "os": "Linux",
+      "schema": 1728291877519,
+      "vendor": "0x1002",
       "versionRange": {
         "maxVersion": "132.0",
         "minVersion": ""
       },
-      "driverVersion": "24.1.3.0",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "EQUAL",
-      "id": "a7f18b43-a0ce-463a-b143-a6f54c107caf",
-      "last_modified": 1728326856983
+      "windowProtocol": ""
     },
     {
-      "os": "Linux",
-      "schema": 1692576006114,
-      "vendor": "0x1002",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1831598",
         "name": "AMD R600 Linux Webrender"
@@ -217,286 +215,286 @@
         "0x9714",
         "0x9715"
       ],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBRENDER",
-      "driverVendor": "",
+      "featureStatus": "BLOCKED_DEVICE",
+      "id": "80366b54-4a61-4aa9-af07-15c43abe4684",
+      "last_modified": 1692730580117,
+      "os": "Linux",
+      "schema": 1692576006114,
+      "vendor": "0x1002",
       "versionRange": {
         "maxVersion": "",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "80366b54-4a61-4aa9-af07-15c43abe4684",
-      "last_modified": 1692730580117
+      "windowProtocol": ""
     },
     {
+      "desktopEnvironment": "",
+      "details": {
+        "bug": "1824778",
+        "name": "NVIDIA driver stability issues"
+      },
+      "devices": [],
+      "driverVendor": "nvidia/unknown",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
+      "enabled": true,
+      "feature": "DMABUF",
+      "featureStatus": "BLOCKED_DEVICE",
+      "hardware": "",
+      "id": "78cc082a-221b-4353-8b07-57db1d03c871",
+      "last_modified": 1680018554787,
       "os": "Linux",
       "schema": 1680017089172,
       "vendor": "0x10de",
+      "versionRange": {
+        "maxVersion": "111.*",
+        "minVersion": ""
+      },
+      "windowProtocol": ""
+    },
+    {
+      "desktopEnvironment": "",
       "details": {
         "bug": "1824778",
         "name": "NVIDIA driver stability issues"
       },
       "devices": [],
-      "enabled": true,
-      "feature": "DMABUF",
-      "hardware": "",
       "driverVendor": "nvidia/unknown",
-      "versionRange": {
-        "maxVersion": "111.*",
-        "minVersion": ""
-      },
       "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
       "driverVersionComparator": "",
-      "id": "78cc082a-221b-4353-8b07-57db1d03c871",
-      "last_modified": 1680018554787
-    },
-    {
+      "driverVersionMax": "",
+      "enabled": true,
+      "feature": "THREADSAFE_GL",
+      "featureStatus": "BLOCKED_DEVICE",
+      "hardware": "",
+      "id": "57d7fc9f-3e12-4b79-b28e-84abda7496af",
+      "last_modified": 1680018554776,
       "os": "Linux",
       "schema": 1680017296058,
       "vendor": "0x10de",
-      "details": {
-        "bug": "1824778",
-        "name": "NVIDIA driver stability issues"
-      },
-      "devices": [],
-      "enabled": true,
-      "feature": "THREADSAFE_GL",
-      "hardware": "",
-      "driverVendor": "nvidia/unknown",
       "versionRange": {
         "maxVersion": "111.*",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "57d7fc9f-3e12-4b79-b28e-84abda7496af",
-      "last_modified": 1680018554776
+      "windowProtocol": ""
     },
     {
+      "desktopEnvironment": "",
+      "details": {
+        "bug": "1788573",
+        "name": "NVIDIA driver stability issues"
+      },
+      "devices": [],
+      "driverVendor": "non-mesa/all",
+      "driverVersion": "530.30.2.0",
+      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
+      "driverVersionMax": "",
+      "enabled": true,
+      "feature": "DMABUF",
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
+      "hardware": "",
+      "id": "5193a59e-7502-4462-8a56-5d918f8983eb",
+      "last_modified": 1677879347585,
       "os": "Linux",
       "schema": 1677861301308,
       "vendor": "0x10de",
+      "versionRange": {
+        "maxVersion": "110.*",
+        "minVersion": ""
+      },
+      "windowProtocol": ""
+    },
+    {
+      "desktopEnvironment": "",
       "details": {
         "bug": "1788573",
         "name": "NVIDIA driver stability issues"
       },
       "devices": [],
-      "enabled": true,
-      "feature": "DMABUF",
-      "hardware": "",
       "driverVendor": "non-mesa/all",
-      "versionRange": {
-        "maxVersion": "110.*",
-        "minVersion": ""
-      },
       "driverVersion": "530.30.2.0",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
       "driverVersionComparator": "LESS_THAN_OR_EQUAL",
-      "id": "5193a59e-7502-4462-8a56-5d918f8983eb",
-      "last_modified": 1677879347585
-    },
-    {
+      "driverVersionMax": "",
+      "enabled": true,
+      "feature": "THREADSAFE_GL",
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
+      "hardware": "",
+      "id": "382db832-b5ac-4d3d-831a-f7409ae82ce2",
+      "last_modified": 1677879347580,
       "os": "Linux",
       "schema": 1677861725427,
       "vendor": "0x10de",
-      "details": {
-        "bug": "1788573",
-        "name": "NVIDIA driver stability issues"
-      },
-      "devices": [],
-      "enabled": true,
-      "feature": "THREADSAFE_GL",
-      "hardware": "",
-      "driverVendor": "non-mesa/all",
       "versionRange": {
         "maxVersion": "110.*",
         "minVersion": ""
       },
-      "driverVersion": "530.30.2.0",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
-      "id": "382db832-b5ac-4d3d-831a-f7409ae82ce2",
-      "last_modified": 1677879347580
+      "windowProtocol": ""
     },
     {
-      "os": "All",
-      "schema": 1677776405692,
-      "vendor": "0x1002",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1817269",
         "name": "AMD video overlay bugs"
       },
       "devices": [],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "VIDEO_OVERLAY",
+      "featureStatus": "BLOCKED_DEVICE",
       "hardware": "",
-      "driverVendor": "",
+      "id": "6fb52585-39e1-4ba0-8e35-9e2246b57a15",
+      "last_modified": 1677776905806,
+      "os": "All",
+      "schema": 1677776405692,
+      "vendor": "0x1002",
       "versionRange": {
         "maxVersion": "110.*",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "6fb52585-39e1-4ba0-8e35-9e2246b57a15",
-      "last_modified": 1677776905806
+      "windowProtocol": ""
     },
     {
-      "os": "All",
-      "schema": 1677776209251,
-      "vendor": "0x10de",
+      "desktopEnvironment": "",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1817617",
         "name": "Block video overlay on Nvidia too"
       },
       "devices": [],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "VIDEO_OVERLAY",
+      "featureStatus": "BLOCKED_DEVICE",
       "hardware": "",
-      "driverVendor": "",
+      "id": "0dee1a85-cdaa-4bf5-9300-cadfd4e2d1c6",
+      "last_modified": 1677776905802,
+      "os": "All",
+      "schema": 1677776209251,
+      "vendor": "0x10de",
       "versionRange": {
         "maxVersion": "110.*",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "0dee1a85-cdaa-4bf5-9300-cadfd4e2d1c6",
-      "last_modified": 1677776905802
+      "windowProtocol": ""
     },
     {
-      "os": "Linux",
-      "schema": 1677775532727,
-      "vendor": "0x10de",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1817336",
         "name": "Nouveau multithread race"
       },
       "devices": [],
+      "driverVendor": "mesa/nouveau",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "ACCELERATED_CANVAS2D",
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "hardware": "",
-      "driverVendor": "mesa/nouveau",
+      "id": "b2a88f5c-4470-4441-9ffd-a5386a528d8b",
+      "last_modified": 1677776209179,
+      "os": "Linux",
+      "schema": 1677775532727,
+      "vendor": "0x10de",
       "versionRange": {
         "maxVersion": "110.*",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "b2a88f5c-4470-4441-9ffd-a5386a528d8b",
-      "last_modified": 1677776209179
+      "windowProtocol": ""
     },
     {
-      "os": "Linux",
-      "schema": 1677775524274,
-      "vendor": "0x10de",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1777849",
         "name": "GLX race caused by accelerated canvas with WebGL2 on Nvidia"
       },
       "devices": [],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "ACCELERATED_CANVAS2D",
+      "featureStatus": "BLOCKED_OS_VERSION",
       "hardware": "",
-      "driverVendor": "",
+      "id": "c0927c75-f1b0-4efc-9183-5861809858f0",
+      "last_modified": 1677776209175,
+      "os": "Linux",
+      "schema": 1677775524274,
+      "vendor": "0x10de",
       "versionRange": {
         "maxVersion": "110.*",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_OS_VERSION",
-      "windowProtocol": "x11/all",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "c0927c75-f1b0-4efc-9183-5861809858f0",
-      "last_modified": 1677776209175
+      "windowProtocol": "x11/all"
     },
     {
-      "os": "Linux",
-      "schema": 1677775515298,
-      "vendor": "0x8086",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1777849",
         "name": "GLX race caused by accelerated canvas with WebGL2 on Intel"
       },
       "devices": [],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "ACCELERATED_CANVAS2D",
+      "featureStatus": "BLOCKED_OS_VERSION",
       "hardware": "",
-      "driverVendor": "",
+      "id": "28ebdbf7-d638-481c-bb91-99c97ca4a5b2",
+      "last_modified": 1677776209169,
+      "os": "Linux",
+      "schema": 1677775515298,
+      "vendor": "0x8086",
       "versionRange": {
         "maxVersion": "110.*",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_OS_VERSION",
-      "windowProtocol": "x11/all",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "28ebdbf7-d638-481c-bb91-99c97ca4a5b2",
-      "last_modified": 1677776209169
+      "windowProtocol": "x11/all"
     },
     {
-      "os": "Linux",
-      "schema": 1677775501360,
-      "vendor": "0x1002",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1777849",
         "name": "GLX race caused by accelerated canvas with WebGL2"
       },
       "devices": [],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "ACCELERATED_CANVAS2D",
+      "featureStatus": "BLOCKED_OS_VERSION",
       "hardware": "",
-      "driverVendor": "",
+      "id": "d8694183-9ab5-4f3a-a3e5-9da7b82c56da",
+      "last_modified": 1677776209165,
+      "os": "Linux",
+      "schema": 1677775501360,
+      "vendor": "0x1002",
       "versionRange": {
         "maxVersion": "110.*",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_OS_VERSION",
-      "windowProtocol": "x11/all",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "d8694183-9ab5-4f3a-a3e5-9da7b82c56da",
-      "last_modified": 1677776209165
+      "windowProtocol": "x11/all"
     },
     {
-      "os": "Android",
-      "schema": 1643797519778,
-      "vendor": "Vivante Corporation",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1719327",
         "name": "Vivante startup crashes"
@@ -504,27 +502,27 @@
       "devices": [
         "Vivante GC7000UL"
       ],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBRENDER",
+      "featureStatus": "BLOCKED_DEVICE",
       "hardware": "",
-      "driverVendor": "",
+      "id": "bbd241d5-e3b2-44eb-bb4d-69ae07f12a0e",
+      "last_modified": 1643818378440,
+      "os": "Android",
+      "schema": 1643797519778,
+      "vendor": "Vivante Corporation",
       "versionRange": {
         "maxVersion": "97",
         "minVersion": ""
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "bbd241d5-e3b2-44eb-bb4d-69ae07f12a0e",
-      "last_modified": 1643818378440
+      "windowProtocol": ""
     },
     {
-      "os": "All",
-      "schema": 1623194747864,
-      "vendor": "0x8086",
+      "desktopEnvironment": "",
       "details": {
         "bug": "1715382",
         "name": "Block D2D to avoid bug 1712047"
@@ -533,27 +531,26 @@
         "0x0046",
         "0x0042"
       ],
+      "driverVendor": "",
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "DIRECT2D",
+      "featureStatus": "BLOCKED_DEVICE",
       "hardware": "gen5",
-      "driverVendor": "",
+      "id": "53585ac9-ab16-4201-a075-64730df7c752",
+      "last_modified": 1623195938349,
+      "os": "All",
+      "schema": 1623194747864,
+      "vendor": "0x8086",
       "versionRange": {
         "maxVersion": "89.0",
         "minVersion": "89.0"
       },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "windowProtocol": "",
-      "driverVersionMax": "",
-      "desktopEnvironment": "",
-      "driverVersionComparator": "",
-      "id": "53585ac9-ab16-4201-a075-64730df7c752",
-      "last_modified": 1623195938349
+      "windowProtocol": ""
     },
     {
-      "os": "All",
-      "schema": 1605987696433,
-      "vendor": "0x8086",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1678942",
         "name": "sandybridge from WebRender in 83 on Windows"
@@ -567,24 +564,55 @@
         "0x0122",
         "0x0126"
       ],
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBRENDER",
+      "featureStatus": "BLOCKED_DEVICE",
       "hardware": "",
+      "id": "6359e124-61ae-466f-9066-8f58f783b1ba",
+      "last_modified": 1606146402211,
+      "os": "All",
+      "schema": 1605987696433,
+      "vendor": "0x8086",
       "versionRange": {
         "maxVersion": "83.*",
         "minVersion": "83.0"
-      },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "driverVersionMax": "",
-      "driverVersionComparator": "",
-      "id": "6359e124-61ae-466f-9066-8f58f783b1ba",
-      "last_modified": 1606146402211
+      }
     },
     {
+      "details": {
+        "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1678448",
+        "name": "sandybridge from WebRender in 83 on macOS"
+      },
+      "devices": [
+        "0x0102",
+        "0x0106",
+        "0x010a",
+        "0x0112",
+        "0x0116",
+        "0x0122",
+        "0x0126"
+      ],
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
+      "enabled": true,
+      "feature": "WEBRENDER",
+      "featureStatus": "BLOCKED_DEVICE",
+      "hardware": "",
+      "id": "f138fcc2-3477-4b1e-a0d3-97c7a99246cf",
+      "last_modified": 1605895309599,
       "os": "Darwin 20",
       "schema": 1605878544498,
       "vendor": "0x8086",
+      "versionRange": {
+        "maxVersion": "83.*",
+        "minVersion": "83.0"
+      }
+    },
+    {
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1678448",
         "name": "sandybridge from WebRender in 83 on macOS"
@@ -598,24 +626,23 @@
         "0x0122",
         "0x0126"
       ],
+      "driverVersion": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBRENDER",
-      "hardware": "",
-      "versionRange": {
-        "maxVersion": "83.*",
-        "minVersion": "83.0"
-      },
-      "driverVersion": "",
       "featureStatus": "BLOCKED_DEVICE",
-      "driverVersionMax": "",
-      "driverVersionComparator": "",
-      "id": "f138fcc2-3477-4b1e-a0d3-97c7a99246cf",
-      "last_modified": 1605895309599
-    },
-    {
+      "hardware": "",
+      "id": "29815508-ba95-474b-ab55-e1669ece31bb",
+      "last_modified": 1605895309594,
       "os": "Darwin 19",
       "schema": 1605885821224,
       "vendor": "0x8086",
+      "versionRange": {
+        "maxVersion": "83.*",
+        "minVersion": "83.0"
+      }
+    },
+    {
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1678448",
         "name": "sandybridge from WebRender in 83 on macOS"
@@ -629,23 +656,24 @@
         "0x0122",
         "0x0126"
       ],
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBRENDER",
-      "hardware": "",
-      "versionRange": {
-        "maxVersion": "83.*",
-        "minVersion": "83.0"
-      },
-      "driverVersion": "",
       "featureStatus": "BLOCKED_DEVICE",
-      "driverVersionMax": "",
-      "id": "29815508-ba95-474b-ab55-e1669ece31bb",
-      "last_modified": 1605895309594
-    },
-    {
+      "hardware": "",
+      "id": "84ab1546-f779-42cb-8692-4426d38a06ec",
+      "last_modified": 1605895309589,
       "os": "Darwin 18",
       "schema": 1605887703589,
       "vendor": "0x8086",
+      "versionRange": {
+        "maxVersion": "83.*",
+        "minVersion": "83.0"
+      }
+    },
+    {
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1678448",
         "name": "sandybridge from WebRender in 83 on macOS"
@@ -659,24 +687,24 @@
         "0x0122",
         "0x0126"
       ],
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBRENDER",
-      "hardware": "",
-      "versionRange": {
-        "maxVersion": "83.*",
-        "minVersion": "83.0"
-      },
-      "driverVersion": "",
       "featureStatus": "BLOCKED_DEVICE",
-      "driverVersionMax": "",
-      "driverVersionComparator": "",
-      "id": "84ab1546-f779-42cb-8692-4426d38a06ec",
-      "last_modified": 1605895309589
-    },
-    {
+      "hardware": "",
+      "id": "bec686f1-428d-4979-931a-211974cd7f33",
+      "last_modified": 1605895309584,
       "os": "Darwin 17",
       "schema": 1605887758025,
       "vendor": "0x8086",
+      "versionRange": {
+        "maxVersion": "83.*",
+        "minVersion": "83.0"
+      }
+    },
+    {
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1678448",
         "name": "sandybridge from WebRender in 83 on macOS"
@@ -690,102 +718,71 @@
         "0x0122",
         "0x0126"
       ],
+      "driverVersion": "",
+      "driverVersionComparator": "",
+      "driverVersionMax": "",
       "enabled": true,
       "feature": "WEBRENDER",
-      "hardware": "",
-      "versionRange": {
-        "maxVersion": "83.*",
-        "minVersion": "83.0"
-      },
-      "driverVersion": "",
       "featureStatus": "BLOCKED_DEVICE",
-      "driverVersionMax": "",
-      "driverVersionComparator": "",
-      "id": "bec686f1-428d-4979-931a-211974cd7f33",
-      "last_modified": 1605895309584
-    },
-    {
+      "hardware": "",
+      "id": "fb5e482f-a0b2-434f-a667-d01b1d7fdf77",
+      "last_modified": 1605895309578,
       "os": "Darwin 16",
       "schema": 1605887815692,
       "vendor": "0x8086",
-      "details": {
-        "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1678448",
-        "name": "sandybridge from WebRender in 83 on macOS"
-      },
-      "devices": [
-        "0x0102",
-        "0x0106",
-        "0x010a",
-        "0x0112",
-        "0x0116",
-        "0x0122",
-        "0x0126"
-      ],
-      "enabled": true,
-      "feature": "WEBRENDER",
-      "hardware": "",
       "versionRange": {
         "maxVersion": "83.*",
         "minVersion": "83.0"
-      },
-      "driverVersion": "",
-      "featureStatus": "BLOCKED_DEVICE",
-      "driverVersionMax": "",
-      "driverVersionComparator": "",
-      "id": "fb5e482f-a0b2-434f-a667-d01b1d7fdf77",
-      "last_modified": 1605895309578
+      }
     },
     {
-      "os": "Darwin 11",
-      "schema": 1480349134676,
-      "vendor": "0x10de",
       "blockID": "g200",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=809550",
-        "who": "All Firefox users.",
-        "why": "Security problems.",
+        "created": "2012-11-12T10:35:32Z",
         "name": "Mac OS X WebGL anti-aliasing",
-        "created": "2012-11-12T10:35:32Z"
+        "who": "All Firefox users.",
+        "why": "Security problems."
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "ae36a32e-5f4f-2f98-804f-22b0de5e7bfa",
-      "last_modified": 1480349135384
+      "last_modified": 1480349135384,
+      "os": "Darwin 11",
+      "schema": 1480349134676,
+      "vendor": "0x10de"
     },
     {
-      "os": "WINNT 6.0",
-      "schema": 1480349134676,
-      "vendor": "0x8086",
       "blockID": "g1217",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1266220",
-        "who": ".",
-        "why": ".",
+        "created": "2016-05-23T15:43:58Z",
         "name": "10.18.10.3947 winnt 6.0",
-        "created": "2016-05-23T15:43:58Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [],
+      "driverVersion": "10.18.10.3947",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "HARDWARE_VIDEO_DECODING",
-      "driverVersion": "10.18.10.3947",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "a3fe9700-b9e6-1c31-f94b-030f72f4aa07",
-      "last_modified": 1480349135360
+      "last_modified": 1480349135360,
+      "os": "WINNT 6.0",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "All",
-      "schema": 1480349134676,
-      "vendor": "0x8086",
       "blockID": "g1124",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1170143",
-        "who": ".",
-        "why": ".",
+        "created": "2016-02-22T23:40:14Z",
         "name": "Intel Driver 8.15.10.2086",
-        "created": "2016-02-22T23:40:14Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [
         "0x2a42",
@@ -794,62 +791,62 @@
         "0x2e32",
         "0x0046"
       ],
-      "enabled": true,
       "driverVersion": "8.15.10.2086",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "driverVersionComparator": "EQUAL",
+      "enabled": true,
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "id": "851c8fcb-5763-bf89-813d-0f98cdd6f8c1",
-      "last_modified": 1480349135337
+      "last_modified": 1480349135337,
+      "os": "All",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "Darwin 12",
-      "schema": 1480349134676,
-      "vendor": "0x10de",
       "blockID": "g202",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=809550",
-        "who": "All Firefox users.",
-        "why": "Security problems.",
+        "created": "2012-11-12T10:37:07Z",
         "name": "Mac OS X WebGL anti-aliasing",
-        "created": "2012-11-12T10:37:07Z"
+        "who": "All Firefox users.",
+        "why": "Security problems."
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "a825cb5d-36f6-54b0-31b3-6668aae49cdd",
-      "last_modified": 1480349135314
-    },
-    {
+      "last_modified": 1480349135314,
       "os": "Darwin 12",
       "schema": 1480349134676,
-      "vendor": "0x8086",
+      "vendor": "0x10de"
+    },
+    {
       "blockID": "g208",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=809550",
-        "who": "All Firefox users.",
-        "why": "Security problems",
+        "created": "2012-11-12T10:42:34Z",
         "name": "Mac OS X WebGL anti-aliasing",
-        "created": "2012-11-12T10:42:34Z"
+        "who": "All Firefox users.",
+        "why": "Security problems"
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "a8e8aa1a-8e70-af51-065d-81ed31d23221",
-      "last_modified": 1480349135291
+      "last_modified": 1480349135291,
+      "os": "Darwin 12",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "All",
-      "schema": 1480349134676,
-      "vendor": "0x8086",
       "blockID": "g1073",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1207993",
-        "who": ".",
-        "why": ".",
+        "created": "2015-12-21T16:01:46Z",
         "name": "Crash in igd10umd32.dll@0x18f35",
-        "created": "2015-12-21T16:01:46Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [
         "0x2a42",
@@ -858,209 +855,209 @@
         "0x2e32",
         "0x0046"
       ],
-      "enabled": true,
       "driverVersion": "8.15.10.1994",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "driverVersionComparator": "EQUAL",
+      "enabled": true,
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "id": "13f75dff-c65f-eab1-4be5-864a79503ad5",
-      "last_modified": 1480349135267
+      "last_modified": 1480349135267,
+      "os": "All",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 10.0",
-      "schema": 1480349134676,
-      "vendor": "0x8086",
       "blockID": "g1221",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1266220",
-        "who": ".",
-        "why": ".",
+        "created": "2016-05-23T15:47:17Z",
         "name": "10.18.10.3947 winnt 10.0",
-        "created": "2016-05-23T15:47:17Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [],
+      "driverVersion": "10.18.10.3947",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "HARDWARE_VIDEO_DECODING",
-      "driverVersion": "10.18.10.3947",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "65ad7851-4af6-2a10-1d47-72943e63dcf0",
-      "last_modified": 1480349135245
+      "last_modified": 1480349135245,
+      "os": "WINNT 10.0",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 5.2",
-      "schema": 1480349134676,
-      "vendor": "0x8086",
       "blockID": "g1216",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1266220",
-        "who": ".",
-        "why": ".",
+        "created": "2016-05-23T15:32:22Z",
         "name": "10.18.10.3947 winnt 5.2",
-        "created": "2016-05-23T15:32:22Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [],
+      "driverVersion": "10.18.10.3947",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "HARDWARE_VIDEO_DECODING",
-      "driverVersion": "10.18.10.3947",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "18968a19-7317-cc56-f9fc-f568f40abca4",
-      "last_modified": 1480349135215
+      "last_modified": 1480349135215,
+      "os": "WINNT 5.2",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 5.1",
-      "schema": 1480349134676,
-      "vendor": "0x8086",
       "blockID": "g1215",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1266220",
-        "who": ".",
-        "why": ".",
+        "created": "2016-05-23T15:31:32Z",
         "name": "10.18.10.3947 winnt 5.1",
-        "created": "2016-05-23T15:31:32Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [],
+      "driverVersion": "10.18.10.3947",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "HARDWARE_VIDEO_DECODING",
-      "driverVersion": "10.18.10.3947",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "5c141970-5076-0af4-152f-efb3642a7b14",
-      "last_modified": 1480349135171
+      "last_modified": 1480349135171,
+      "os": "WINNT 5.1",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "Darwin 12",
-      "schema": 1480349134676,
-      "vendor": "0x1002",
       "blockID": "g234",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=815437",
-        "who": "All Firefox users.",
-        "why": "Security problems.",
+        "created": "2012-11-30T12:50:57Z",
         "name": "Mac OS X WebGL anti-aliasing (AMD)",
-        "created": "2012-11-30T12:50:57Z"
+        "who": "All Firefox users.",
+        "why": "Security problems."
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "3310f8b8-1789-1b13-9326-5531943514ae",
-      "last_modified": 1480349135145
+      "last_modified": 1480349135145,
+      "os": "Darwin 12",
+      "schema": 1480349134676,
+      "vendor": "0x1002"
     },
     {
-      "os": "Darwin 10",
-      "schema": 1480349134676,
-      "vendor": "0x1002",
       "blockID": "g230",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=815437",
-        "who": "All Firefox users.",
-        "why": "Security problems.",
+        "created": "2012-11-30T12:48:55Z",
         "name": "Mac OS X WebGL anti-aliasing (AMD)",
-        "created": "2012-11-30T12:48:55Z"
+        "who": "All Firefox users.",
+        "why": "Security problems."
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "4769433c-51e9-a0f9-eef5-45829ac54243",
-      "last_modified": 1480349135120
+      "last_modified": 1480349135120,
+      "os": "Darwin 10",
+      "schema": 1480349134676,
+      "vendor": "0x1002"
     },
     {
-      "os": "WINNT 6.1",
-      "schema": 1480349134676,
-      "vendor": "0x8086",
       "blockID": "g1218",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1266220",
-        "who": ".",
-        "why": ".",
+        "created": "2016-05-23T15:44:43Z",
         "name": "10.18.10.3947 winnt 6.1",
-        "created": "2016-05-23T15:44:43Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [],
+      "driverVersion": "10.18.10.3947",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "HARDWARE_VIDEO_DECODING",
-      "driverVersion": "10.18.10.3947",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "7a3ea538-8519-2845-53bf-6a4be0ff9e6b",
-      "last_modified": 1480349135096
+      "last_modified": 1480349135096,
+      "os": "WINNT 6.1",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "Darwin 10",
-      "schema": 1480349134676,
-      "vendor": "0x10de",
       "blockID": "g198",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=809550",
-        "who": "All Firefox users.",
-        "why": "Security problems.",
+        "created": "2012-11-12T10:34:32Z",
         "name": "Mac OS X WebGL anti-aliasing",
-        "created": "2012-11-12T10:34:32Z"
+        "who": "All Firefox users.",
+        "why": "Security problems."
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "c9551a39-62fb-f652-8032-cbe9d2ce419c",
-      "last_modified": 1480349135072
+      "last_modified": 1480349135072,
+      "os": "Darwin 10",
+      "schema": 1480349134676,
+      "vendor": "0x10de"
     },
     {
-      "os": "WINNT 5.1",
-      "schema": 1480349134676,
-      "vendor": "0x8086",
       "blockID": "g511",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=951422",
-        "who": "All Firefox users.",
-        "why": "Stability.",
+        "created": "2013-12-18T14:29:36Z",
         "name": "Intel driver < 6.14.10.5216 for DIRECT3D_9_LAYERS on XP",
-        "created": "2013-12-18T14:29:36Z"
+        "who": "All Firefox users.",
+        "why": "Stability."
       },
       "devices": [],
+      "driverVersion": "6.14.10.5218",
+      "driverVersionComparator": "LESS_THAN",
       "enabled": true,
       "feature": "DIRECT3D_9_LAYERS",
-      "driverVersion": "6.14.10.5218",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN",
       "id": "37ffcc44-0d03-681e-69bf-89c38111fcdd",
-      "last_modified": 1480349135048
+      "last_modified": 1480349135048,
+      "os": "WINNT 5.1",
+      "schema": 1480349134676,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 6.1",
-      "schema": 1480343737148,
-      "vendor": "0x10de",
       "blockID": "g36",
       "details": {
         "bug": "",
-        "who": "",
-        "why": "",
+        "created": "2011-03-01T12:13:42Z",
         "name": "<BlocklistGfx: None: WINNT 6.1 : 0x10de : 0x0a6c>",
-        "created": "2011-03-01T12:13:42Z"
+        "who": "",
+        "why": ""
       },
       "devices": [
         "0x0a6c"
       ],
+      "driverVersion": "8.17.12.5896",
+      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "enabled": true,
       "feature": "DIRECT3D_9_LAYERS",
-      "driverVersion": "8.17.12.5896",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "id": "6ac4f440-9661-ee18-248f-f3b7b6eb8deb",
-      "last_modified": 1480349134662
+      "last_modified": 1480349134662,
+      "os": "WINNT 6.1",
+      "schema": 1480343737148,
+      "vendor": "0x10de"
     },
     {
-      "os": "All",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g1069",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1207993",
-        "who": ".",
-        "why": ".",
+        "created": "2015-12-21T15:58:51Z",
         "name": "Crash in igd10umd32.dll@0x18f35",
-        "created": "2015-12-21T15:58:51Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [
         "0x2a42",
@@ -1069,24 +1066,24 @@
         "0x2e32",
         "0x0046"
       ],
-      "enabled": true,
       "driverVersion": "8.15.10.1855",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "driverVersionComparator": "EQUAL",
+      "enabled": true,
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "id": "9928c898-4941-555d-e502-54a90e9e5371",
-      "last_modified": 1480349134638
+      "last_modified": 1480349134638,
+      "os": "All",
+      "schema": 1480343737148,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 10.0",
-      "schema": 1480343737148,
-      "vendor": "0x1002",
       "blockID": "g974",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1189266",
-        "who": "All users who have these cards on Windows 10.",
-        "why": "Crashes on Windows 10.",
+        "created": "2015-08-11T10:30:37Z",
         "name": "ATI cards on Windows 10",
-        "created": "2015-08-11T10:30:37Z"
+        "who": "All users who have these cards on Windows 10.",
+        "why": "Crashes on Windows 10."
       },
       "devices": [
         "0x6920",
@@ -1110,25 +1107,25 @@
         "0x9876",
         "0x9877"
       ],
+      "driverVersion": "15.201.1151.0",
+      "driverVersionComparator": "LESS_THAN",
       "enabled": true,
       "feature": "DIRECT2D",
-      "driverVersion": "15.201.1151.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN",
       "id": "ec9cf554-49de-e5ea-bbdc-54f84d290605",
-      "last_modified": 1480349134615
+      "last_modified": 1480349134615,
+      "os": "WINNT 10.0",
+      "schema": 1480343737148,
+      "vendor": "0x1002"
     },
     {
-      "os": "WINNT 6.1",
-      "schema": 1480343737148,
-      "vendor": "0x1002",
       "blockID": "g280",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=840161",
-        "who": "All Firefox user who use this driver.",
-        "why": "Crashes.",
+        "created": "2013-02-13T14:52:05Z",
         "name": "AMD Radeon HD 6290/6300/6310/6320 for Direct3D 9",
-        "created": "2013-02-13T14:52:05Z"
+        "who": "All Firefox user who use this driver.",
+        "why": "Crashes."
       },
       "devices": [
         "0x9802",
@@ -1143,40 +1140,40 @@
       "feature": "DIRECT3D_9_LAYERS",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "9b7a25d9-075e-e5e9-678e-af1292db7463",
-      "last_modified": 1480349134582
+      "last_modified": 1480349134582,
+      "os": "WINNT 6.1",
+      "schema": 1480343737148,
+      "vendor": "0x1002"
     },
     {
-      "os": "All",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g984",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1193802",
-        "who": "All users using these driver versions.",
-        "why": "Major graphics artifacts.",
+        "created": "2015-08-14T16:21:45Z",
         "name": "Intel graphics block",
-        "created": "2015-08-14T16:21:45Z"
+        "who": "All users using these driver versions.",
+        "why": "Major graphics artifacts."
       },
       "devices": [],
+      "driverVersion": "8.15.10.2413",
+      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "enabled": true,
       "feature": "DIRECT2D",
-      "driverVersion": "8.15.10.2413",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "id": "f1830d7b-c807-afda-1b97-f41474157165",
-      "last_modified": 1480349134550
-    },
-    {
+      "last_modified": 1480349134550,
       "os": "All",
       "schema": 1480343737148,
-      "vendor": "0x8086",
+      "vendor": "0x8086"
+    },
+    {
       "blockID": "g1070",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1207993",
-        "who": ".",
-        "why": ".",
+        "created": "2015-12-21T15:59:29Z",
         "name": "Crash in igd10umd32.dll@0x18f35",
-        "created": "2015-12-21T15:59:29Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [
         "0x2a42",
@@ -1185,89 +1182,89 @@
         "0x2e32",
         "0x0046"
       ],
-      "enabled": true,
       "driverVersion": "8.15.10.1872",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "driverVersionComparator": "EQUAL",
+      "enabled": true,
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "id": "0f7b2114-976c-db1c-2d9a-02d47d1968e1",
-      "last_modified": 1480349134528
-    },
-    {
+      "last_modified": 1480349134528,
       "os": "All",
       "schema": 1480343737148,
-      "vendor": "0x1022",
+      "vendor": "0x8086"
+    },
+    {
       "blockID": "g148",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=793869",
-        "who": "All Firefox users who have these drivers installed.",
-        "why": "Some features in these drivers are causing frequent crashes in Firefox.",
+        "created": "2012-09-25T14:31:35Z",
         "name": "ATI/AMD driver 8.982.0.0 (Direct3D)",
-        "created": "2012-09-25T14:31:35Z"
+        "who": "All Firefox users who have these drivers installed.",
+        "why": "Some features in these drivers are causing frequent crashes in Firefox."
       },
       "devices": [],
+      "driverVersion": "8.982.0.0",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "DIRECT3D_9_LAYERS",
-      "driverVersion": "8.982.0.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "85925d60-d04e-2cbd-cdee-de70ea6be4f4",
-      "last_modified": 1480349134505
+      "last_modified": 1480349134505,
+      "os": "All",
+      "schema": 1480343737148,
+      "vendor": "0x1022"
     },
     {
-      "os": "WINNT 6.2",
-      "schema": 1480343737148,
-      "vendor": "0x1002",
       "blockID": "g192",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=806991",
-        "who": "All Firefox users.",
-        "why": "Crashes.",
+        "created": "2012-11-02T16:33:13Z",
         "name": "AMD DIRECT2D on Windows 8, [0x1002]",
-        "created": "2012-11-02T16:33:13Z"
+        "who": "All Firefox users.",
+        "why": "Crashes."
       },
       "devices": [],
+      "driverVersion": "9.10.8.0",
+      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "enabled": true,
       "feature": "DIRECT2D",
-      "driverVersion": "9.10.8.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "id": "5e34680b-5279-4ffc-7382-b1bc661b3094",
-      "last_modified": 1480349134483
+      "last_modified": 1480349134483,
+      "os": "WINNT 6.2",
+      "schema": 1480343737148,
+      "vendor": "0x1002"
     },
     {
-      "os": "WINNT 6.1",
-      "schema": 1480343737148,
-      "vendor": "0x10de",
       "blockID": "g35",
       "details": {
         "bug": "",
-        "who": "",
-        "why": "",
+        "created": "2011-03-01T12:13:40Z",
         "name": "<BlocklistGfx: None: WINNT 6.1 : 0x10de : 0x0a6c>",
-        "created": "2011-03-01T12:13:40Z"
+        "who": "",
+        "why": ""
       },
       "devices": [
         "0x0a6c"
       ],
+      "driverVersion": "8.17.12.5896",
+      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "enabled": true,
       "feature": "DIRECT2D",
-      "driverVersion": "8.17.12.5896",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "id": "00a6b9d2-285f-83f0-0a1f-ef0205a60067",
-      "last_modified": 1480349134459
+      "last_modified": 1480349134459,
+      "os": "WINNT 6.1",
+      "schema": 1480343737148,
+      "vendor": "0x10de"
     },
     {
-      "os": "All",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g1071",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1207993",
-        "who": ".",
-        "why": ".",
+        "created": "2015-12-21T16:00:05Z",
         "name": "Crash in igd10umd32.dll@0x18f35",
-        "created": "2015-12-21T16:00:05Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [
         "0x2a42",
@@ -1276,109 +1273,109 @@
         "0x2e32",
         "0x0046"
       ],
-      "enabled": true,
       "driverVersion": "8.15.10.1883",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "driverVersionComparator": "EQUAL",
+      "enabled": true,
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "id": "d4297784-dbac-906c-16b7-1a8792e868de",
-      "last_modified": 1480349134436
-    },
-    {
+      "last_modified": 1480349134436,
       "os": "All",
       "schema": 1480343737148,
-      "vendor": "0x1002",
+      "vendor": "0x8086"
+    },
+    {
       "blockID": "g150",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=793869",
-        "who": "All Firefox users who have these drivers installed.",
-        "why": "Some features in these drivers are causing frequent crashes in Firefox.",
+        "created": "2012-09-25T14:33:17Z",
         "name": "ATI/AMD driver 8.982.0.0 (Direct3D)",
-        "created": "2012-09-25T14:33:17Z"
+        "who": "All Firefox users who have these drivers installed.",
+        "why": "Some features in these drivers are causing frequent crashes in Firefox."
       },
       "devices": [],
+      "driverVersion": "8.982.0.0",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "DIRECT3D_9_LAYERS",
-      "driverVersion": "8.982.0.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "6a3c05bb-f971-d3d4-2a02-184e6970ba87",
-      "last_modified": 1480349134413
-    },
-    {
+      "last_modified": 1480349134413,
       "os": "All",
       "schema": 1480343737148,
-      "vendor": "0x1002",
+      "vendor": "0x1002"
+    },
+    {
       "blockID": "g144",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=792480",
-        "who": "All Firefox users who have these drivers installed.",
-        "why": "Some features in these drivers are causing frequent crashes in Firefox.",
+        "created": "2012-09-24T08:23:25Z",
         "name": "ATI/AMD driver 8.982.0.0",
-        "created": "2012-09-24T08:23:25Z"
+        "who": "All Firefox users who have these drivers installed.",
+        "why": "Some features in these drivers are causing frequent crashes in Firefox."
       },
       "devices": [],
+      "driverVersion": "8.982.0.0",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "DIRECT2D",
-      "driverVersion": "8.982.0.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "35e25a7c-d77d-6b43-fa5e-39b7e9c8a481",
-      "last_modified": 1480349134391
+      "last_modified": 1480349134391,
+      "os": "All",
+      "schema": 1480343737148,
+      "vendor": "0x1002"
     },
     {
-      "os": "WINNT 5.1",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g1251",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1283601",
-        "who": ".",
-        "why": ".",
+        "created": "2016-07-22T12:30:30Z",
         "name": "Intel driver < 6.14.10.5216 for DIRECT3D_9_LAYERS on XP",
-        "created": "2016-07-22T12:30:30Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [],
+      "driverVersion": "6.14.10.5218",
+      "driverVersionComparator": "LESS_THAN",
       "enabled": true,
       "feature": "WEBGL_ANGLE",
-      "versionRange": {
-        "maxVersion": "49.9"
-      },
-      "driverVersion": "6.14.10.5218",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN",
       "id": "ea27a4d2-ed88-0190-db12-473820b340b2",
-      "last_modified": 1480349134369
-    },
-    {
-      "os": "Darwin 11",
+      "last_modified": 1480349134369,
+      "os": "WINNT 5.1",
       "schema": 1480343737148,
       "vendor": "0x8086",
+      "versionRange": {
+        "maxVersion": "49.9"
+      }
+    },
+    {
       "blockID": "g206",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=809550",
-        "who": "All Firefox users.",
-        "why": "Security problems",
+        "created": "2012-11-12T10:39:32Z",
         "name": "Mac OS X WebGL anti-aliasing",
-        "created": "2012-11-12T10:39:32Z"
+        "who": "All Firefox users.",
+        "why": "Security problems"
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "91cc2cec-11dd-0f77-ffad-f57e69b3f441",
-      "last_modified": 1480349134345
+      "last_modified": 1480349134345,
+      "os": "Darwin 11",
+      "schema": 1480343737148,
+      "vendor": "0x8086"
     },
     {
-      "os": "All",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g1068",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1207993",
-        "who": ".",
-        "why": ".",
+        "created": "2015-12-21T15:58:01Z",
         "name": "Crash in igd10umd32.dll@0x18f35",
-        "created": "2015-12-21T15:58:01Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [
         "0x2a42",
@@ -1387,87 +1384,87 @@
         "0x2e32",
         "0x0046"
       ],
-      "enabled": true,
       "driverVersion": "8.15.10.1851",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "driverVersionComparator": "EQUAL",
+      "enabled": true,
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "id": "b7452893-25cc-497a-626c-aacee78683c6",
-      "last_modified": 1480349134323
+      "last_modified": 1480349134323,
+      "os": "All",
+      "schema": 1480343737148,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 6.2",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g1219",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1266220",
-        "who": ".",
-        "why": ".",
+        "created": "2016-05-23T15:45:21Z",
         "name": "10.18.10.3947 winnt 6.2",
-        "created": "2016-05-23T15:45:21Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [],
+      "driverVersion": "10.18.10.3947",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "HARDWARE_VIDEO_DECODING",
-      "driverVersion": "10.18.10.3947",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "73e4e12d-f27a-1113-b0e9-c05cb4dd78d2",
-      "last_modified": 1480349134301
+      "last_modified": 1480349134301,
+      "os": "WINNT 6.2",
+      "schema": 1480343737148,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 5.1",
-      "schema": 1480343737148,
-      "vendor": "0x10de",
       "blockID": "g37",
       "details": {
         "bug": "",
-        "who": "",
-        "why": "",
+        "created": "2011-03-14T14:11:51Z",
         "name": "<BlocklistGfx: None: WINNT 5.1 : 0x10de : >",
-        "created": "2011-03-14T14:11:51Z"
+        "who": "",
+        "why": ""
       },
       "devices": [],
+      "driverVersion": "7.0.0.0",
+      "driverVersionComparator": "GREATER_THAN_OR_EQUAL",
       "enabled": true,
       "feature": "DIRECT3D_9_LAYERS",
-      "driverVersion": "7.0.0.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "GREATER_THAN_OR_EQUAL",
       "id": "fb507393-460e-685e-91de-1ce3b18ddbc0",
-      "last_modified": 1480349134278
+      "last_modified": 1480349134278,
+      "os": "WINNT 5.1",
+      "schema": 1480343737148,
+      "vendor": "0x10de"
     },
     {
-      "os": "All",
-      "schema": 1480343737148,
-      "vendor": "0x1022",
       "blockID": "g146",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=792480",
-        "who": "All Firefox users who have these drivers installed.",
-        "why": "Some features in these drivers are causing frequent crashes in Firefox.",
+        "created": "2012-09-24T08:23:33Z",
         "name": "ATI/AMD driver 8.982.0.0",
-        "created": "2012-09-24T08:23:33Z"
+        "who": "All Firefox users who have these drivers installed.",
+        "why": "Some features in these drivers are causing frequent crashes in Firefox."
       },
       "devices": [],
+      "driverVersion": "8.982.0.0",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "DIRECT2D",
-      "driverVersion": "8.982.0.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "e6984930-7969-3cbc-fbaa-0f350afe6f14",
-      "last_modified": 1480349134255
+      "last_modified": 1480349134255,
+      "os": "All",
+      "schema": 1480343737148,
+      "vendor": "0x1022"
     },
     {
-      "os": "WINNT 8.1",
-      "schema": 1480343737148,
-      "vendor": "0x1002",
       "blockID": "g992",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1189266",
-        "who": "Users who have these cards installed.",
-        "why": "Crashing.",
+        "created": "2015-08-20T09:56:09Z",
         "name": "ATI cards on Windows 10",
-        "created": "2015-08-20T09:56:09Z"
+        "who": "Users who have these cards installed.",
+        "why": "Crashing."
       },
       "devices": [
         "0x6920",
@@ -1491,84 +1488,84 @@
         "0x9876",
         "0x9877"
       ],
+      "driverVersion": "15.201.1151.0",
+      "driverVersionComparator": "LESS_THAN",
       "enabled": true,
       "feature": "DIRECT2D",
-      "driverVersion": "15.201.1151.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN",
       "id": "77b27d80-1ebe-04de-2db9-bb197acbac32",
-      "last_modified": 1480349134232
+      "last_modified": 1480349134232,
+      "os": "WINNT 8.1",
+      "schema": 1480343737148,
+      "vendor": "0x1002"
     },
     {
-      "os": "Darwin 11",
-      "schema": 1480343737148,
-      "vendor": "0x1002",
       "blockID": "g232",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=809550",
-        "who": "All Firefox users.",
-        "why": "Security problems.",
+        "created": "2012-11-30T12:49:56Z",
         "name": "Mac OS X WebGL anti-aliasing (AMD)",
-        "created": "2012-11-30T12:49:56Z"
+        "who": "All Firefox users.",
+        "why": "Security problems."
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "8f8e9025-a9ec-5f1e-ae9f-aee28176bdf7",
-      "last_modified": 1480349134210
+      "last_modified": 1480349134210,
+      "os": "Darwin 11",
+      "schema": 1480343737148,
+      "vendor": "0x1002"
     },
     {
-      "os": "WINNT 6.3",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g1220",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1266220",
-        "who": ".",
-        "why": ".",
+        "created": "2016-05-23T15:46:34Z",
         "name": "10.18.10.3947 winnt 6.3",
-        "created": "2016-05-23T15:46:34Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [],
+      "driverVersion": "10.18.10.3947",
+      "driverVersionComparator": "EQUAL",
       "enabled": true,
       "feature": "HARDWARE_VIDEO_DECODING",
-      "driverVersion": "10.18.10.3947",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "EQUAL",
       "id": "1f91fdd6-8b89-d948-d05a-86491c705ce2",
-      "last_modified": 1480349134187
+      "last_modified": 1480349134187,
+      "os": "WINNT 6.3",
+      "schema": 1480343737148,
+      "vendor": "0x8086"
     },
     {
-      "os": "Darwin 10",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g204",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=809550",
-        "who": "All Firefox users.",
-        "why": "Security problems.",
+        "created": "2012-11-12T10:38:32Z",
         "name": "Mac OS X WebGL anti-aliasing",
-        "created": "2012-11-12T10:38:32Z"
+        "who": "All Firefox users.",
+        "why": "Security problems."
       },
       "devices": [],
       "enabled": true,
       "feature": "WEBGL_MSAA",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "33866148-1d41-2d4c-27b8-5f147467686b",
-      "last_modified": 1480349134160
+      "last_modified": 1480349134160,
+      "os": "Darwin 10",
+      "schema": 1480343737148,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 6.1",
-      "schema": 1480343737148,
-      "vendor": "0x1002",
       "blockID": "g278",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=840161",
-        "who": "All Firefox users using these drivers.",
-        "why": "Crashes",
+        "created": "2013-02-13T14:50:33Z",
         "name": "AMD Radeon HD 6290/6300/6310/6320 for Direct2D",
-        "created": "2013-02-13T14:50:33Z"
+        "who": "All Firefox users using these drivers.",
+        "why": "Crashes"
       },
       "devices": [
         "0x9802",
@@ -1583,19 +1580,19 @@
       "feature": "DIRECT2D",
       "featureStatus": "BLOCKED_DEVICE",
       "id": "bccdbab1-c335-6f2e-6d0a-d563ccb2f1f4",
-      "last_modified": 1480349134138
+      "last_modified": 1480349134138,
+      "os": "WINNT 6.1",
+      "schema": 1480343737148,
+      "vendor": "0x1002"
     },
     {
-      "os": "All",
-      "schema": 1480343737148,
-      "vendor": "0x8086",
       "blockID": "g1072",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=1207993",
-        "who": ".",
-        "why": ".",
+        "created": "2015-12-21T16:00:50Z",
         "name": "Crash in igd10umd32.dll@0x18f35",
-        "created": "2015-12-21T16:00:50Z"
+        "who": ".",
+        "why": "."
       },
       "devices": [
         "0x2a42",
@@ -1604,33 +1601,36 @@
         "0x2e32",
         "0x0046"
       ],
-      "enabled": true,
       "driverVersion": "8.15.10.1892",
-      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "driverVersionComparator": "EQUAL",
+      "enabled": true,
+      "featureStatus": "BLOCKED_DRIVER_VERSION",
       "id": "d780a857-b80d-0049-981e-1a8d3ebe485e",
-      "last_modified": 1480349134115
+      "last_modified": 1480349134115,
+      "os": "All",
+      "schema": 1480343737148,
+      "vendor": "0x8086"
     },
     {
-      "os": "WINNT 6.2",
-      "schema": 1480343737148,
-      "vendor": "0x1022",
       "blockID": "g194",
       "details": {
         "bug": "https://bugzilla.mozilla.org/show_bug.cgi?id=806991",
-        "who": "All Firefox users.",
-        "why": "Crashes.",
+        "created": "2012-11-02T16:35:37Z",
         "name": "AMD DIRECT2D on Windows 8, [0x1022]",
-        "created": "2012-11-02T16:35:37Z"
+        "who": "All Firefox users.",
+        "why": "Crashes."
       },
       "devices": [],
+      "driverVersion": "9.10.8.0",
+      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "enabled": true,
       "feature": "DIRECT2D",
-      "driverVersion": "9.10.8.0",
       "featureStatus": "BLOCKED_DRIVER_VERSION",
-      "driverVersionComparator": "LESS_THAN_OR_EQUAL",
       "id": "0afc5fe9-1f81-7fde-2424-0cb4d933c173",
-      "last_modified": 1480349134090
+      "last_modified": 1480349134090,
+      "os": "WINNT 6.2",
+      "schema": 1480343737148,
+      "vendor": "0x1022"
     }
   ],
   "timestamp": 1787185519530
