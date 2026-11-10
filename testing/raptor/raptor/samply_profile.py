@@ -146,7 +146,7 @@ class SamplyProfile(RaptorProfiling):
                 # Disabling the content sandbox allows JIT dumps
                 # and marker files to be emitted
                 "MOZ_DISABLE_CONTENT_SANDBOX": "1",
-                "JIT_OPTION_enableICFramePointers": "true",
+                "JIT_OPTION_enableStubFramePointers": "true",
                 "JIT_OPTION_onlyInlineSelfHosted": "true",
                 "JIT_OPTION_emitInterpreterEntryTrampoline": "true",
                 "PERF_SPEW_DIR": f"{self.temp_dir}",

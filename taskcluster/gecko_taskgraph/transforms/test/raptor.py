@@ -645,7 +645,7 @@ def add_etw_profile(config, tests):
         extra_options.extend([
             "--etw-profile",
             "--setenv ETW_ENABLED=1",
-            "--setenv JIT_OPTION_enableICFramePointers=true",
+            "--setenv JIT_OPTION_enableStubFramePointers=true",
             "--setenv JIT_OPTION_onlyInlineSelfHosted=true",
             "--setenv JIT_OPTION_emitInterpreterEntryTrampoline=true",
         ])

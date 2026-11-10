@@ -82,7 +82,7 @@ class PerfProfile(RaptorProfiling):
                 "IONPERF": "func",
                 "MOZ_USE_PERFORMANCE_MARKER_FILE": "1",
                 "MOZ_DISABLE_CONTENT_SANDBOX": "1",
-                "JIT_OPTION_enableICFramePointers": "true",
+                "JIT_OPTION_enableStubFramePointers": "true",
                 "JIT_OPTION_onlyInlineSelfHosted": "true",
                 "JIT_OPTION_emitInterpreterEntryTrampoline": "true",
                 "PERF_SPEW_DIR": f"{self.temp_dir}",
