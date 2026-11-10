@@ -18,6 +18,10 @@ These prefs can be accessed at prefValues.trainhopConfig.smartShortcuts
 * negative_prior: thompson sampling beta
 * min_exp_clicks: minimum recent clicks before exploration is enabled
 * min_exp_impressions: minimum recent impressions before exploration is enabled
+* rerank_interval_ms: minimum interval between organic rerankings triggered by
+*          SYSTEM_TICK or sponsored tile updates, in milliseconds; defaults to
+*          0, which reranks every time like before the interval existed. Other
+*          refresh triggers bypass the interval.
 * tau: seasonality smoothing strength
 * thom_weight: weight of thompson sampling. divided by 100
 * frec_weight: weight of frecency. divided by 100
@@ -63,6 +67,7 @@ const FEATURES = ["thom", "rece", "freq", "bmark", "ctr"];
 const SHORTCUT_POSITIVE_PRIOR = 1;
 const SHORTCUT_NEGATIVE_PRIOR = 1000;
 const SHORTCUT_TAU = 100;
+const SMART_SHORTCUTS_TICK_INTERVAL = 0;
 const SMART_TELEM = false;
 const MIN_EXP_IMPRESSIONS = 1000;
 const MIN_EXP_CLICKS = 10;
@@ -79,6 +84,76 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 import { sortKeysValues } from "resource://newtab/lib/SmartShortcutsRanker/ThomSample.mjs";
+
+/**
+ * Refresh reasons that keep the previous organic order until the rerank
+ * interval elapses. These fire on timers or for sponsored-only changes, so
+ * reranking on them would reshuffle shortcuts without any user action.
+ *
+ * Every other refresh reranks immediately, because the visible set or the
+ * user's intent changed: startup, pin/unpin, block, history cleared, pages or
+ * bookmarks changed, prefs (rows, search shortcuts, sponsored toggles),
+ * default sites, region or search engine changes, and developer ticks.
+ */
+const INTERVAL_GATED_REASONS = new Set([
+  "SYSTEM_TICK",
+  "SPONSORED_TILES_UPDATED",
+]);
+
+/**
+ * Whether a refresh should run the full ranking, or reuse the accepted order.
+ *
+ * @param {object} options
+ * @param {object} [options.acceptedOrder] ranked_state from the accepted cache.
+ * @param {string} [options.reason] What triggered the refresh.
+ * @param {number} options.now
+ * @param {number} options.interval Minimum time between gated reranks, in ms.
+ * @returns {boolean}
+ */
+export function shouldRerank({ acceptedOrder, reason, now, interval }) {
+  const previousOrder = acceptedOrder?.guids;
+  const lastRerank = acceptedOrder?.lastRerank;
+  // Even a gated refresh reranks when there's no prior order to keep, or the
+  // clock moved backwards, or the interval has elapsed.
+  return (
+    !INTERVAL_GATED_REASONS.has(reason) ||
+    !Array.isArray(previousOrder) ||
+    !lastRerank ||
+    now < lastRerank ||
+    now - lastRerank >= interval
+  );
+}
+
+/**
+ * Orders sites by the accepted GUID order without rescoring them.
+ *
+ * @param {Array<object>} sites Current sites with a guid, in frecency order.
+ * @param {string[]} previousOrder GUIDs of the last full ranking, best first.
+ * @param {number} [numItems] Visible slots available to ranked sites.
+ * @returns {Array<object>}
+ */
+export function reorderFromAcceptedOrder(sites, previousOrder, numItems) {
+  const byGuid = new Map(sites.map(site => [site.guid, site]));
+  const known = new Set(previousOrder);
+  // Only the prefix that can be visible is frozen. Sites that dropped out of
+  // the input since the last ranking leave gaps in it.
+  const frozen = previousOrder.slice(0, numItems).map(guid => byGuid.get(guid));
+  // The accepted order covers every ranked candidate, not just the visible
+  // ones, so gaps take the next best site from the last ranking. Sites new
+  // since then have no score and queue behind it in frecency order until the
+  // next full rerank.
+  const candidates = previousOrder
+    .slice(numItems ?? previousOrder.length)
+    .map(guid => byGuid.get(guid))
+    .filter(Boolean)
+    .concat(sites.filter(site => !known.has(site.guid)));
+  let next = 0;
+  // Unfilled gaps only remain when there are fewer sites than slots.
+  return frozen
+    .map(site => site ?? candidates[next++])
+    .filter(Boolean)
+    .concat(candidates.slice(next));
+}
 
 /**
  * Gates exploration-related runtime config until local shortcut engagement
@@ -160,6 +235,35 @@ export const roundNum = (x, sig = 4, eps = 1e-6) => {
   // normalize -0 to 0
   return Object.is(n, -0) ? 0 : n;
 };
+
+/**
+ * Copies rounded scores and weights onto sites so telemetry can report them.
+ *
+ * @param {Array<object>} sites
+ * @param {object} [scoreMap] guid -> feature scores.
+ * @param {object} [weights] Feature weights used for the ranking.
+ */
+function attachTelemetryScores(sites, scoreMap, weights) {
+  const roundWeights = Object.fromEntries(
+    Object.entries(weights ?? {}).map(([key, v]) => [
+      key,
+      typeof v === "number" && isFinite(v) ? roundNum(v) : (v ?? null),
+    ])
+  );
+  sites.forEach(s => {
+    const raw = scoreMap?.[s.guid];
+    s.scores =
+      raw && typeof raw === "object"
+        ? Object.fromEntries(
+            Object.entries(raw).map(([k, v]) => [
+              k,
+              typeof v === "number" && isFinite(v) ? roundNum(v) : (v ?? null),
+            ])
+          )
+        : null;
+    s.weights = roundWeights;
+  });
+}
 
 export async function getOpenTabURLsFromSessionLive() {
   // Ensure SessionStore is ready (important at early startup)
@@ -672,6 +776,15 @@ export class RankShortcutsProvider {
   constructor() {
     this.sc_obj = new lazy.PersistentCache("shortcut_cache", true);
   }
+  commitSnapshot(snapshot) {
+    this._acceptedCache = snapshot;
+    // Serialize snapshots so an older write cannot replace a newer accepted state.
+    this._cacheWrite = (this._cacheWrite ?? Promise.resolve())
+      .catch(() => {})
+      .then(() => this.sc_obj.set("snapshot", snapshot));
+    return this._cacheWrite;
+  }
+
   get rankShortcutsWorker() {
     if (!this._rankShortcutsWorker) {
       this._rankShortcutsWorker = new lazy.BasePromiseWorker(
@@ -706,11 +819,13 @@ export class RankShortcutsProvider {
       hourly_prob = await this.rankShortcutsWorker.post("sumNorm", [
         all_hourly_hist,
       ]);
-      // persist fresh prior
-      await this.sc_obj.set("hourly_seasonality", {
+      // Stage the fresh prior in this refresh's snapshot. Persisting it here,
+      // even with await, could let a superseded refresh update the cache.
+      // TopSitesFeed commits the snapshot only after accepting the refresh.
+      shortcut_cache.hourly_seasonality = {
         pvec: hourly_prob,
         timestamp: Date.now(),
-      });
+      };
     } else {
       // safe read with optional chaining + null fallback
       hourly_prob = cache?.pvec ?? null;
@@ -750,11 +865,13 @@ export class RankShortcutsProvider {
       daily_prob = await this.rankShortcutsWorker.post("sumNorm", [
         all_daily_hist,
       ]);
-      // persist fresh prior
-      await this.sc_obj.set("daily_seasonality", {
+      // Stage the fresh prior in this refresh's snapshot. Persisting it here,
+      // even with await, could let a superseded refresh update the cache.
+      // TopSitesFeed commits the snapshot only after accepting the refresh.
+      shortcut_cache.daily_seasonality = {
         pvec: daily_prob,
         timestamp: Date.now(),
-      });
+      };
     } else {
       daily_prob = cache?.pvec ?? null;
     }
@@ -814,7 +931,7 @@ export class RankShortcutsProvider {
       dict[guid] = { clicks, impressions };
     }
 
-    await this.sc_obj.set("time_last_update", now_s);
+    cache_data.time_last_update = now_s;
 
     return dict;
   }
@@ -846,10 +963,15 @@ export class RankShortcutsProvider {
    *
    * @param {Array<object>} topsites
    * @param {object} prefValues
-   * @param {object} isStartup stores the boolean isStartup
+   * @param {object} options
+   * @param {boolean} [options.isStartup] Whether this is the startup refresh.
+   * @param {string} [options.reason] Action that triggered the refresh.
+   * @param {number} [options.numItems] Visible slots available to ranked sites,
+   *   i.e. the shortcut count minus pinned tiles.
+   * @param {Function} [options.onRankedSnapshot] Receives the proposed cache snapshot.
    * @returns {Promise<{}>} topsites reordered
    */
-  async rankTopSites(topsites, prefValues, isStartup) {
+  async rankTopSites(topsites, prefValues, options = {}) {
     if (!smartshortcutsEnabled(prefValues)) {
       return topsites;
     }
@@ -870,6 +992,47 @@ export class RankShortcutsProvider {
       [[], []]
     );
 
+    // cache stores weights and the last feature values used to produce ranking
+    // PersistentCache r/w cant be on promise
+    const persistedCache = await this.sc_obj.get();
+    const sc_cache = structuredClone(
+      this._acceptedCache ?? persistedCache.snapshot ?? persistedCache
+    );
+    const telemEnabled =
+      prefValues?.trainhopConfig?.smartShortcuts?.telem || SMART_TELEM;
+
+    // Inside the rerank interval, skip all scoring and reuse the accepted
+    // order. No snapshot is proposed, so score_map stays paired with the order
+    // the user is seeing, and interactions since time_last_update are left for
+    // the next full ranking to learn from.
+    const now = Date.now();
+    const interval =
+      prefValues.trainhopConfig?.smartShortcuts?.rerank_interval_ms ??
+      SMART_SHORTCUTS_TICK_INTERVAL;
+    if (
+      !shouldRerank({
+        acceptedOrder: sc_cache.ranked_state,
+        reason: options.reason,
+        now,
+        interval,
+      })
+    ) {
+      const sites = reorderFromAcceptedOrder(
+        withGuid,
+        sc_cache.ranked_state.guids,
+        options.numItems
+      );
+      const combined = sites.concat(withoutGuid);
+      if (telemEnabled) {
+        attachTelemetryScores(
+          combined,
+          sc_cache.score_map,
+          sc_cache.ranking_weights
+        );
+      }
+      return combined;
+    }
+
     // query for interactions, sql cant be on promise
     // always do this but only used for thompson and ctr
     const [clicks, impressions] = await fetchShortcutInteractions(
@@ -877,10 +1040,6 @@ export class RankShortcutsProvider {
       SHORTCUT_TABLE,
       PLACES_TABLE
     );
-
-    // cache stores weights and the last feature values used to produce ranking
-    // PersistentCache r/w cant be on promise
-    const sc_cache = await this.sc_obj.get();
 
     // check for bad weights (numerical) or change in init configs
     let [weights, init_weights] = checkWeights(
@@ -927,15 +1086,17 @@ export class RankShortcutsProvider {
     const rankingWeights = rankingConfig.weights;
 
     // write the weights and init... sometimes redundant
-    await this.sc_obj.set("weights", weights);
-    await this.sc_obj.set("init_weights", init_weights);
+    sc_cache.weights = weights;
+    sc_cache.init_weights = init_weights;
+    // Kept so telemetry on reused orders reports the weights that ranked them.
+    sc_cache.ranking_weights = rankingWeights;
 
     // feature data
     const hourly_seasonality = features?.includes?.("hour")
-      ? await this.getHourlySeasonalityData(withGuid, sc_cache, isStartup)
+      ? await this.getHourlySeasonalityData(withGuid, sc_cache, options)
       : null;
     const daily_seasonality = features?.includes?.("daily")
-      ? await this.getDailySeasonalityData(withGuid, sc_cache, isStartup)
+      ? await this.getDailySeasonalityData(withGuid, sc_cache, options)
       : null;
     const bmark_scores = features?.includes?.("bmark")
       ? await fetchBookmarkedFlags(withGuid, BOOKMARK_TABLE, PLACES_TABLE)
@@ -948,7 +1109,7 @@ export class RankShortcutsProvider {
     const open_scores = features?.includes?.("open")
       ? await getIsOpen(
           withGuid.map(t => t.guid),
-          isStartup
+          options
         )
       : null;
     // call to the promise worker to do the ranking
@@ -985,8 +1146,8 @@ export class RankShortcutsProvider {
       ]
     );
     // update the cache
-    await this.sc_obj.set("norms", output.norms);
-    await this.sc_obj.set("score_map", output.score_map);
+    sc_cache.norms = output.norms;
+    sc_cache.score_map = output.score_map;
 
     // final score for ranking as an array
     let final_scores = withGuid.map(g => output.score_map[g.guid].final);
@@ -995,39 +1156,19 @@ export class RankShortcutsProvider {
       final_scores = frecency_scores;
     }
 
-    // sort by scores
-    const sortedSitesVals = sortKeysValues(final_scores, withGuid);
-    let [sortedSites] = sortedSitesVals;
-
+    const [sortedSites] = sortKeysValues(final_scores, withGuid);
     // grab topsites without guid
     const combined = sortedSites.concat(withoutGuid);
 
     // tack weights and scores so they can pass through to telemetry
-    if (prefValues?.trainhopConfig?.smartShortcuts?.telem || SMART_TELEM) {
-      // store a version of weights that is rounded
-      const roundWeights = Object.fromEntries(
-        Object.entries(rankingWeights ?? {}).map(([key, v]) => [
-          key,
-          typeof v === "number" && isFinite(v) ? roundNum(v) : (v ?? null),
-        ])
-      );
-      // do the tacking
-      combined.forEach(s => {
-        const raw = output?.score_map?.[s.guid];
-        s.scores =
-          raw && typeof raw === "object"
-            ? Object.fromEntries(
-                Object.entries(raw).map(([k, v]) => [
-                  k,
-                  typeof v === "number" && isFinite(v)
-                    ? roundNum(v)
-                    : (v ?? null),
-                ])
-              )
-            : null;
-        s.weights = roundWeights;
-      });
+    if (telemEnabled) {
+      attachTelemetryScores(combined, output.score_map, rankingWeights);
     }
+    sc_cache.ranked_state = {
+      guids: sortedSites.map(site => site.guid),
+      lastRerank: now,
+    };
+    options.onRankedSnapshot?.(sc_cache);
     return combined;
   }
 }

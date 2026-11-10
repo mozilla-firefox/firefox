@@ -182,6 +182,28 @@ function smartshortcutsEnabled(values) {
 }
 const OVERSAMPLE_MULTIPLIER = 2;
 
+/**
+ * Number of slots within the first numItems that ranked organic sites can
+ * fill, after pinned and sponsored tiles take theirs.
+ *
+ * @param {number} numItems Total shortcut slots.
+ * @param {Array<object|null>} pinned Pinned links by position, possibly sparse.
+ * @param {Array<object>} sponsored Sponsored links with a 1-based
+ *   sponsored_position.
+ * @returns {number}
+ */
+function countOrganicSlots(numItems, pinned, sponsored) {
+  const pinnedSlots = pinned.slice(0, numItems).filter(Boolean).length;
+  // A later partner's tile replaces an earlier one at the same position, so
+  // each position takes a single slot.
+  const sponsoredSlots = new Set(
+    sponsored
+      .map(link => link?.sponsored_position)
+      .filter(position => position >= 1 && position <= numItems)
+  ).size;
+  return Math.max(0, numItems - pinnedSlots - sponsoredSlots);
+}
+
 function getShortHostnameForCurrentSearch() {
   return lazy.NewTabUtils.shortHostname(
     lazy.SearchService.defaultEngine.searchUrlDomain
@@ -404,7 +426,10 @@ export class ContileIntegration {
     let updateDefaultSites = await this._fetchSites();
     await this._topSitesFeed.allocatePositions();
     if (updateDefaultSites) {
-      this._topSitesFeed._readDefaults();
+      // Sponsored tiles changing (including the 15 minute periodic refetch)
+      // must not reshuffle organic shortcuts, so the ranker gates this refresh
+      // on the rerank interval like SYSTEM_TICK.
+      this._topSitesFeed._readDefaults({ reason: "SPONSORED_TILES_UPDATED" });
     }
   }
 
@@ -1184,14 +1209,18 @@ export class TopSitesFeed {
 
   /**
    * _readDefaults - sets DEFAULT_TOP_SITES
+   *
+   * @param {object} [options]
+   * @param {boolean} [options.isStartup] Being called while TopSitesFeed is initting.
+   * @param {string} [options.reason] Passed through to refresh().
    */
-  async _readDefaults({ isStartup = false } = {}) {
+  async _readDefaults({ isStartup = false, reason } = {}) {
     this._useRemoteSetting = false;
 
     if (!Services.prefs.getBoolPref(REMOTE_SETTING_DEFAULTS_PREF)) {
       this.refreshDefaults(
         this.store.getState().Prefs.values[DEFAULT_SITES_PREF],
-        { isStartup }
+        { isStartup, reason }
       );
       return;
     }
@@ -1204,7 +1233,7 @@ export class TopSitesFeed {
       Cu.isInAutomation
     ) {
       let sites = Services.prefs.getStringPref(DEFAULT_SITES_OVERRIDE_PREF, "");
-      this.refreshDefaults(sites, { isStartup });
+      this.refreshDefaults(sites, { isStartup, reason });
       return;
     }
 
@@ -1290,7 +1319,7 @@ export class TopSitesFeed {
       DEFAULT_TOP_SITES.push(link);
     }
 
-    this.refresh({ broadcast: true, isStartup });
+    this.refresh({ broadcast: true, isStartup, reason });
   }
 
   /**
@@ -1345,7 +1374,13 @@ export class TopSitesFeed {
     return eligible.slice(0, this._maxSponsored);
   }
 
-  refreshDefaults(sites, { isStartup = false } = {}) {
+  /**
+   * @param {string} sites Comma separated default site URLs.
+   * @param {object} [options]
+   * @param {boolean} [options.isStartup] Being called while TopSitesFeed is initting.
+   * @param {string} [options.reason] Passed through to refresh().
+   */
+  refreshDefaults(sites, { isStartup = false, reason } = {}) {
     // Clear out the array of any previous defaults
     DEFAULT_TOP_SITES.length = 0;
 
@@ -1361,7 +1396,7 @@ export class TopSitesFeed {
       }
     }
 
-    this.refresh({ broadcast: true, isStartup });
+    this.refresh({ broadcast: true, isStartup, reason });
   }
 
   async _getRemoteConfig(firstTime = true) {
@@ -1712,7 +1747,12 @@ export class TopSitesFeed {
   }
 
   // eslint-disable-next-line max-statements
-  async getLinksWithDefaults(isStartup = false, refreshId = null) {
+  async getLinksWithDefaults(
+    isStartup = false,
+    refreshId = null,
+    reason,
+    onRankedSnapshot
+  ) {
     const prefValues = this.store.getState().Prefs.values;
     // switch on top_sites thompson sampling experiment
     const overSampleMultiplier =
@@ -1933,11 +1973,20 @@ export class TopSitesFeed {
     // Sample topsites via thompson sampling, if in experiment
     let sampledSites;
     if (smartshortcutsEnabled(this.store.getState().Prefs.values)) {
+      // The ranker only orders unpinned, unsponsored sites, so the frozen part
+      // of its order should match the slots those sites can actually fill.
+      // This is an upper bound on what's visible: narrow windows show fewer
+      // tiles per row, which the feed can't see.
+      const organicSlots = countOrganicSlots(
+        numItems,
+        pinned,
+        dedupedSponsored
+      );
       try {
         sampledSites = await this.ranker.rankTopSites(
           checkedAdult,
           prefValues,
-          { isStartup }
+          { isStartup, reason, numItems: organicSlots, onRankedSnapshot }
         );
       } catch (error) {
         lazy.log.warn(`Smart shortcuts ranking failed: ${error.message}`);
@@ -2131,6 +2180,9 @@ export class TopSitesFeed {
    * @param {object} [options]
    * @param {boolean} [options.broadcast] Should the update be broadcasted.
    * @param {boolean} [options.isStartup] Being called while TopSitesFeed is initting.
+   * @param {string} [options.reason] What triggered the refresh. Smart
+   *   shortcuts only skip an organic rerank for "SYSTEM_TICK" and
+   *   "SPONSORED_TILES_UPDATED"; any other or missing reason reranks.
    */
   async refresh(options = {}) {
     if (this._uninitialized) {
@@ -2153,9 +2205,14 @@ export class TopSitesFeed {
         await this._tippyTopProvider.init();
       }
 
+      let rankedSnapshot;
       const links = await this.getLinksWithDefaults(
         options.isStartup,
-        refreshId
+        refreshId,
+        options.reason,
+        snapshot => {
+          rankedSnapshot = snapshot;
+        }
       );
       if (this._uninitialized || refreshId !== this._refreshGeneration) {
         return;
@@ -2176,6 +2233,13 @@ export class TopSitesFeed {
       } else {
         // Don't broadcast only update the state and update the preloaded tab.
         this.store.dispatch(ac.AlsoToPreloaded(newAction));
+      }
+      if (rankedSnapshot) {
+        void this.ranker.commitSnapshot(rankedSnapshot).catch(error => {
+          lazy.log.warn(
+            `Smart shortcuts snapshot persistence failed: ${error.message}`
+          );
+        });
       }
     })();
 
@@ -2803,7 +2867,9 @@ export class TopSitesFeed {
       case at.DISCOVERY_STREAM_DEV_SYSTEM_TICK:
       case at.DISCOVERY_STREAM_DEV_EXPIRE_CACHE:
       case at.SYSTEM_TICK:
-        this.refresh({ broadcast: false });
+        // Only SYSTEM_TICK is gated by the smart shortcuts rerank interval;
+        // the dev tick and cache expiry pass their own type and always rerank.
+        this.refresh({ broadcast: false, reason: action.type });
         this._contile.periodicUpdate();
         // We don't need to await on this,
         // we can let this update in the background.
