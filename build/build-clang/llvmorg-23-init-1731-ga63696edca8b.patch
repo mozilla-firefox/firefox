@@ -1,0 +1,165 @@
+From a63696edca8b9cd64d76fc4205071709c47a0a63 Mon Sep 17 00:00:00 2001
+From: cooperp <peter_cooper@apple.com>
+Date: Tue, 27 Jan 2026 04:28:17 -0800
+Subject: [PATCH] Allow the no_stack_protector attribute on local variables
+ (#173311)
+
+This attribute is currently only permitted on functions, but sometimes
+it can be useful to opt out a specific local variable. That way the
+function can still get a stack protector if other locals require it, but
+locals which are opted out won't have the overhead of a stack protector
+if not needed.
+
+This is paired with an LLVM change which has already landed, which uses
+the new metadata to opt specific alloca instructions out of requiring a
+stack protector.
+
+Backported without the tests and release notes.
+---
+diff --git a/clang/include/clang/Basic/Attr.td b/clang/include/clang/Basic/Attr.td
+index ba44266d22c8c..2335168e4510c 100644
+--- a/clang/include/clang/Basic/Attr.td
++++ b/clang/include/clang/Basic/Attr.td
+@@ -2725,6 +2725,13 @@ def NoStackProtector : InheritableAttr {
+   let SimpleHandler = 1;
+ }
+ 
++def StackProtectorIgnore : InheritableAttr {
++  let Spellings = [Clang<"stack_protector_ignore">];
++  let Subjects = SubjectList<[LocalVar]>;
++  let Documentation = [StackProtectorIgnoreDocs];
++  let SimpleHandler = 1;
++}
++
+ def StrictGuardStackCheck : InheritableAttr {
+   let Spellings = [Declspec<"strict_gs_check">];
+   let Subjects = SubjectList<[Function]>;
+diff --git a/clang/include/clang/Basic/AttrDocs.td b/clang/include/clang/Basic/AttrDocs.td
+index 812b48058d189..6e2c73f924352 100644
+--- a/clang/include/clang/Basic/AttrDocs.td
++++ b/clang/include/clang/Basic/AttrDocs.td
+@@ -5736,6 +5736,20 @@ option.
+     }];
+ }
+ 
++def StackProtectorIgnoreDocs : Documentation {
++  let Category = DocCatFunction;
++  let Content = [{
++The ``stack_protector_ignore`` attribute skips analysis of the given local
++variable when determining if a function should use a stack protector.
++
++The ``-fstack-protector`` option uses a heuristic to only add stack protectors
++to functions which contain variables or buffers over some size threshold.  This
++attribute overrides that heuristic for the attached variable, opting
++them out.  If this results in no variables or buffers remaining over the stack
++protector threshold, then the function will no longer use a stack protector.
++  }];
++}
++
+ def StrictGuardStackCheckDocs : Documentation {
+   let Category = DocCatFunction;
+   let Content = [{
+diff --git a/clang/include/clang/Basic/DiagnosticCommonKinds.td b/clang/include/clang/Basic/DiagnosticCommonKinds.td
+index 6e50e225a8cc1..957002677cfc9 100644
+--- a/clang/include/clang/Basic/DiagnosticCommonKinds.td
++++ b/clang/include/clang/Basic/DiagnosticCommonKinds.td
+@@ -312,6 +312,10 @@ def warn_stack_clash_protection_inline_asm : Warning<
+   "unable to protect inline asm that clobbers stack pointer against stack "
+   "clash">, InGroup<DiagGroup<"stack-protector">>;
+ 
++def warn_stack_protection_ignore_attribute : Warning<
++  "'stack_protector_ignore' attribute ignored due to "
++  "'-fstack-protector-all' option">, InGroup<IgnoredAttributes>;
++
+ def warn_slh_does_not_support_asm_goto : Warning<
+   "speculative load hardening does not protect functions with asm goto">,
+   InGroup<DiagGroup<"slh-asm-goto">>;
+diff --git a/clang/lib/CodeGen/CGDecl.cpp b/clang/lib/CodeGen/CGDecl.cpp
+index 8b1cd83af2396..f39e282f3d055 100644
+--- a/clang/lib/CodeGen/CGDecl.cpp
++++ b/clang/lib/CodeGen/CGDecl.cpp
+@@ -1635,6 +1635,21 @@ CodeGenFunction::EmitAutoVarAlloca(const VarDecl &D) {
+         assert(!emission.useLifetimeMarkers());
+       }
+     }
++
++    if (D.hasAttr<StackProtectorIgnoreAttr>()) {
++      if (auto *AI = dyn_cast<llvm::AllocaInst>(address.getBasePointer())) {
++        llvm::LLVMContext &Ctx = Builder.getContext();
++        auto *Operand = llvm::ConstantAsMetadata::get(Builder.getInt32(0));
++        AI->setMetadata("stack-protector", llvm::MDNode::get(Ctx, {Operand}));
++      }
++
++      std::optional<llvm::Attribute::AttrKind> Attr =
++          CGM.StackProtectorAttribute(&D);
++      if (Attr && (*Attr == llvm::Attribute::StackProtectReq)) {
++        CGM.getDiags().Report(D.getLocation(),
++                              diag::warn_stack_protection_ignore_attribute);
++      }
++    }
+   } else {
+     EnsureInsertPoint();
+ 
+diff --git a/clang/lib/CodeGen/CodeGenModule.cpp b/clang/lib/CodeGen/CodeGenModule.cpp
+index c7f0997f6e972..57adfd45b949e 100644
+--- a/clang/lib/CodeGen/CodeGenModule.cpp
++++ b/clang/lib/CodeGen/CodeGenModule.cpp
+@@ -950,6 +950,22 @@ static bool isStackProtectorOn(const LangOptions &LangOpts,
+   return LangOpts.getStackProtector() == Mode;
+ }
+ 
++std::optional<llvm::Attribute::AttrKind>
++CodeGenModule::StackProtectorAttribute(const Decl *D) const {
++  if (D && D->hasAttr<NoStackProtectorAttr>())
++    ; // Do nothing.
++  else if (D && D->hasAttr<StrictGuardStackCheckAttr>() &&
++           isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPOn))
++    return llvm::Attribute::StackProtectStrong;
++  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPOn))
++    return llvm::Attribute::StackProtect;
++  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPStrong))
++    return llvm::Attribute::StackProtectStrong;
++  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPReq))
++    return llvm::Attribute::StackProtectReq;
++  return std::nullopt;
++}
++
+ void CodeGenModule::Release() {
+   Module *Primary = getContext().getCurrentNamedModule();
+   if (CXX20ModuleInits && Primary && !Primary->isHeaderLikeModule())
+@@ -2736,17 +2752,10 @@ void CodeGenModule::SetLLVMFunctionAttributesForDefinition(const Decl *D,
+   if (!hasUnwindExceptions(LangOpts))
+     B.addAttribute(llvm::Attribute::NoUnwind);
+ 
+-  if (D && D->hasAttr<NoStackProtectorAttr>())
+-    ; // Do nothing.
+-  else if (D && D->hasAttr<StrictGuardStackCheckAttr>() &&
+-           isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPOn))
+-    B.addAttribute(llvm::Attribute::StackProtectStrong);
+-  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPOn))
+-    B.addAttribute(llvm::Attribute::StackProtect);
+-  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPStrong))
+-    B.addAttribute(llvm::Attribute::StackProtectStrong);
+-  else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPReq))
+-    B.addAttribute(llvm::Attribute::StackProtectReq);
++  if (std::optional<llvm::Attribute::AttrKind> Attr =
++          StackProtectorAttribute(D)) {
++    B.addAttribute(*Attr);
++  }
+ 
+   if (!D) {
+     // Non-entry HLSL functions must always be inlined.
+diff --git a/clang/lib/CodeGen/CodeGenModule.h b/clang/lib/CodeGen/CodeGenModule.h
+index e0e3284f72168..cc18e21d45759 100644
+--- a/clang/lib/CodeGen/CodeGenModule.h
++++ b/clang/lib/CodeGen/CodeGenModule.h
+@@ -1872,6 +1872,9 @@ class CodeGenModule : public CodeGenTypeCache {
+     return TrapReasonBuilder(&getDiags(), DiagID, TR);
+   }
+ 
++  std::optional<llvm::Attribute::AttrKind>
++  StackProtectorAttribute(const Decl *D) const;
++
+ private:
+   bool shouldDropDLLAttribute(const Decl *D, const llvm::GlobalValue *GV) const;
+ 
