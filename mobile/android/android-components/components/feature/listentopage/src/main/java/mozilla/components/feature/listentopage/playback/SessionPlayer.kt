@@ -107,6 +107,11 @@ internal class SessionPlayer(
             articleState.setPlaybackState(STATE_BUFFERING)
         }
 
+        // Play requested while at the end of the article, which restarts the article and should show as playing
+        if (isPlayPendingAfterFinish) {
+            articleState.setPlayWhenReady(true, PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
+        }
+
         // Held at the target while a seek buffers or waits to be made, or at the end once a seek finished the article,
         // because the player still reports where it was. At all other times it is the live position in the current
         // item, moved on by where that item starts.
@@ -181,6 +186,7 @@ internal class SessionPlayer(
 
     // The player still holds the audio from before the seek that finished the article, so it is not played on.
     override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
+        if (!playWhenReady) isPlayPendingAfterFinish = false
         if (!playWhenReady || finishedAtMs == null) return super.handleSetPlayWhenReady(playWhenReady)
 
         isPlayPendingAfterFinish = true

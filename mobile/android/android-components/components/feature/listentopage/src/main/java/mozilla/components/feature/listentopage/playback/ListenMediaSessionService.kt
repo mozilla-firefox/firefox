@@ -30,6 +30,8 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
+import mozilla.components.feature.listentopage.facts.ListenToPageFacts
+import mozilla.components.feature.listentopage.facts.emitMediaControlFact
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.ui.icons.R as iconsR
 
@@ -215,7 +217,11 @@ internal class ListenSessionCallback(
         args: Bundle,
     ): ListenableFuture<SessionResult> {
         when (customCommand.customAction) {
-            ACTION_CYCLE_SPEED -> session.player.setPlaybackSpeed(session.player.nextSpeed().multiplier)
+            ACTION_CYCLE_SPEED -> {
+                val speed = session.player.nextSpeed()
+                session.player.setPlaybackSpeed(speed.multiplier)
+                emitMediaControlFact(ListenToPageFacts.Items.SPEED_SELECTED, speed.multiplier.toString())
+            }
             COMMAND_SET_SESSION_ACTIVITY -> session.setSessionActivity(args.sessionActivity())
             COMMAND_SET_ARTICLE_DURATION -> sessionPlayer.setArticleDuration(args.getLong(KEY_DURATION_MS))
             COMMAND_STOP_AND_BUFFER_AT -> sessionPlayer.bufferAt(args.getLong(KEY_POSITION_MS))
@@ -225,6 +231,30 @@ internal class ListenSessionCallback(
         }
 
         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+    }
+
+    @OptIn(UnstableApi::class)
+    override fun onPlayerInteractionFinished(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        playerCommands: Player.Commands,
+    ) {
+        // The player sheet's own controller, whose presses are recorded through the store.
+        if (controller.packageName == ownPackage && !session.isMediaNotificationController(controller)) return
+
+        val item =
+            when {
+                playerCommands.contains(Player.COMMAND_PLAY_PAUSE) ->
+                    if (session.player.playWhenReady) {
+                        ListenToPageFacts.Items.PLAY_PRESSED
+                    } else {
+                        ListenToPageFacts.Items.PAUSE_PRESSED
+                    }
+                playerCommands.contains(Player.COMMAND_SEEK_BACK) -> ListenToPageFacts.Items.SKIP_BACK_PRESSED
+                playerCommands.contains(Player.COMMAND_SEEK_FORWARD) -> ListenToPageFacts.Items.SKIP_FORWARD_PRESSED
+                else -> return
+            }
+        emitMediaControlFact(item)
     }
 }
 

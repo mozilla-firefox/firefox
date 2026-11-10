@@ -16,6 +16,11 @@ class ListenToPageFacts {
         const val CHUNK_SYNTHESIZED = "chunk_synthesized"
         const val OPENING_SYNTHESIS_STARTED = "opening_synthesis_started"
         const val ENGINE_BOUND = "engine_bound"
+        const val PLAY_PRESSED = "play_pressed"
+        const val PAUSE_PRESSED = "pause_pressed"
+        const val SKIP_BACK_PRESSED = "skip_back_pressed"
+        const val SKIP_FORWARD_PRESSED = "skip_forward_pressed"
+        const val SPEED_SELECTED = "speed_selected"
     }
 
     /** Keys of the metadata a fact carries. */
@@ -72,6 +77,22 @@ internal fun emitChunkSynthesizedFact(chunkSynthesis: ListenToPageFacts.ChunkSyn
             action = Action.IMPLEMENTATION_DETAIL,
             item = ListenToPageFacts.Items.CHUNK_SYNTHESIZED,
             metadata = mapOf(ListenToPageFacts.MetadataKeys.CHUNK_SYNTHESIS to chunkSynthesis),
+        )
+        .collect()
+}
+
+/**
+ * Reports a control pressed in the notification or the lock screen.
+ *
+ * @param item Which control was pressed, one of the `*_PRESSED` items or [ListenToPageFacts.Items.SPEED_SELECTED].
+ * @param value The speed moved to, for [ListenToPageFacts.Items.SPEED_SELECTED].
+ */
+internal fun emitMediaControlFact(item: String, value: String? = null) {
+    Fact(
+            component = Component.FEATURE_LISTENTOPAGE,
+            action = Action.CLICK,
+            item = item,
+            value = value,
         )
         .collect()
 }

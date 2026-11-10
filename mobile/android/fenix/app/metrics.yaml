@@ -9159,6 +9159,12 @@ listen_to_page:
     description: |
       The user pressed the play button to resume. Playback starts on its own
       when the audio icon is tapped, which `requested` records.
+    extra_keys:
+      source:
+        description: |
+          Where the control was pressed: 'in_app' for player sheet, or 'media_controls' for the playback
+          notification, the lock screen and other system media controls.
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2064878
     data_reviews:
@@ -9172,6 +9178,12 @@ listen_to_page:
     type: event
     description: |
       The user pressed the pause button.
+    extra_keys:
+      source:
+        description: |
+          Where the control was pressed: 'in_app' for player sheet, or 'media_controls' for the playback
+          notification, the lock screen and other system media controls.
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2064878
     data_reviews:
@@ -9185,6 +9197,12 @@ listen_to_page:
     type: event
     description: |
       The user pressed the skip-back button to jump backward.
+    extra_keys:
+      source:
+        description: |
+          Where the control was pressed: 'in_app' for player sheet, or 'media_controls' for the playback
+          notification, the lock screen and other system media controls.
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2064878
     data_reviews:
@@ -9198,6 +9216,12 @@ listen_to_page:
     type: event
     description: |
       The user pressed the skip-forward button to jump forward.
+    extra_keys:
+      source:
+        description: |
+          Where the control was pressed: 'in_app' for player sheet, or 'media_controls' for the playback
+          notification, the lock screen and other system media controls.
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2064878
     data_reviews:
@@ -9308,6 +9332,12 @@ listen_to_page:
       speed:
         description: |
           The selected speed as a multiple of the normal reading speed.
+        type: string
+      source:
+        description: |
+          Where the speed was changed: `in_app` for the player sheet's speed
+          menu, or `media_controls` for the speed control of the playback
+          notification or the lock screen.
         type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2064878

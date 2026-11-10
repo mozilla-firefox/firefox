@@ -353,6 +353,19 @@ class SessionPlayerTest {
     }
 
     @Test
+    fun `test that a play on a finished article is shown as playing while its start is loading`() {
+        val player = SessionPlayer(ChunkPlayer()) {}
+        player.setMediaItem(playlistFirstItem(ArticleTimeline(playlistStartMs = 0, durationMs = 600_000)))
+        player.finishAt(600_000)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        player.play()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertTrue("the play asked for was not shown", player.playWhenReady)
+    }
+
+    @Test
     fun `test that playing a finished article plays its top once it is made again`() {
         val chunk = ChunkPlayer()
         val player = SessionPlayer(chunk) {}

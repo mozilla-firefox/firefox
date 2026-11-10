@@ -17,7 +17,11 @@ import mozilla.components.feature.listentopage.PlaybackState
 import mozilla.components.feature.listentopage.Voice
 import mozilla.components.feature.listentopage.VoiceState
 import mozilla.components.feature.listentopage.content.LanguageSource
+import mozilla.components.feature.listentopage.facts.ListenToPageFacts
 import mozilla.components.feature.listentopage.listenReducer
+import mozilla.components.support.base.Component
+import mozilla.components.support.base.facts.Action
+import mozilla.components.support.base.facts.Fact
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -42,6 +46,7 @@ class ListenToPageTelemetryMiddlewareTest {
 
         assertNotNull(ListenToPage.playPressed.testGetValue())
         assertNull(ListenToPage.pausePressed.testGetValue())
+        assertEquals("in_app", ListenToPage.playPressed.testGetValue()!!.single().extra?.get("source"))
     }
 
     @Test
@@ -53,6 +58,7 @@ class ListenToPageTelemetryMiddlewareTest {
 
         assertNotNull(ListenToPage.pausePressed.testGetValue())
         assertNull(ListenToPage.playPressed.testGetValue())
+        assertEquals("in_app", ListenToPage.pausePressed.testGetValue()!!.single().extra?.get("source"))
     }
 
     @Test
@@ -63,6 +69,7 @@ class ListenToPageTelemetryMiddlewareTest {
 
         assertNotNull(ListenToPage.pausePressed.testGetValue())
         assertNull(ListenToPage.playPressed.testGetValue())
+        assertEquals("in_app", ListenToPage.pausePressed.testGetValue()!!.single().extra?.get("source"))
     }
 
     @Test
@@ -72,6 +79,7 @@ class ListenToPageTelemetryMiddlewareTest {
         store.dispatch(ListenAction.Controls.RewindClicked)
 
         assertNotNull(ListenToPage.skipBackPressed.testGetValue())
+        assertEquals("in_app", ListenToPage.skipBackPressed.testGetValue()!!.single().extra?.get("source"))
     }
 
     @Test
@@ -81,6 +89,7 @@ class ListenToPageTelemetryMiddlewareTest {
         store.dispatch(ListenAction.Controls.ForwardClicked)
 
         assertNotNull(ListenToPage.skipForwardPressed.testGetValue())
+        assertEquals("in_app", ListenToPage.skipForwardPressed.testGetValue()!!.single().extra?.get("source"))
     }
 
     @Test
@@ -166,6 +175,7 @@ class ListenToPageTelemetryMiddlewareTest {
         store.dispatch(ListenAction.Controls.PlaybackSpeedSelected(PlaybackSpeed.X1_5))
 
         assertEquals("1.5", ListenToPage.speedSelected.testGetValue()!!.single().extra?.get("speed"))
+        assertEquals("in_app", ListenToPage.speedSelected.testGetValue()!!.single().extra?.get("source"))
     }
 
     @Test
@@ -374,6 +384,46 @@ class ListenToPageTelemetryMiddlewareTest {
         assertNull(ListenToPage.playPressed.testGetValue())
         assertNull(ListenToPage.voiceListOpened.testGetValue())
     }
+
+    @Test
+    fun `WHEN play is pressed in the media controls THEN record play_pressed from media_controls`() {
+        ListenToPageTelemetryMiddleware().process(mediaControlFact(ListenToPageFacts.Items.PLAY_PRESSED))
+
+        assertEquals("media_controls", ListenToPage.playPressed.testGetValue()!!.single().extra?.get("source"))
+    }
+
+    @Test
+    fun `WHEN pause is pressed in the media controls THEN record pause_pressed from media_controls`() {
+        ListenToPageTelemetryMiddleware().process(mediaControlFact(ListenToPageFacts.Items.PAUSE_PRESSED))
+
+        assertEquals("media_controls", ListenToPage.pausePressed.testGetValue()!!.single().extra?.get("source"))
+    }
+
+    @Test
+    fun `WHEN skip back is pressed in the media controls THEN record skip_back_pressed from media_controls`() {
+        ListenToPageTelemetryMiddleware().process(mediaControlFact(ListenToPageFacts.Items.SKIP_BACK_PRESSED))
+
+        assertEquals("media_controls", ListenToPage.skipBackPressed.testGetValue()!!.single().extra?.get("source"))
+    }
+
+    @Test
+    fun `WHEN skip forward is pressed in the media controls THEN record skip_forward_pressed from media_controls`() {
+        ListenToPageTelemetryMiddleware().process(mediaControlFact(ListenToPageFacts.Items.SKIP_FORWARD_PRESSED))
+
+        assertEquals("media_controls", ListenToPage.skipForwardPressed.testGetValue()!!.single().extra?.get("source"))
+    }
+
+    @Test
+    fun `WHEN the speed is changed in the media controls THEN record speed_selected with the speed from media_controls`() {
+        ListenToPageTelemetryMiddleware().process(mediaControlFact(ListenToPageFacts.Items.SPEED_SELECTED, "1.5"))
+
+        val extra = ListenToPage.speedSelected.testGetValue()!!.single().extra
+        assertEquals("1.5", extra?.get("speed"))
+        assertEquals("media_controls", extra?.get("source"))
+    }
+
+    private fun mediaControlFact(item: String, value: String? = null) =
+        Fact(component = Component.FEATURE_LISTENTOPAGE, action = Action.CLICK, item = item, value = value)
 
     private fun createStore(
         phase: PlaybackPhase,

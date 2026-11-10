@@ -9,13 +9,17 @@ import mozilla.components.feature.listentopage.ListenState
 import mozilla.components.feature.listentopage.PlaybackPhase
 import mozilla.components.feature.listentopage.PlaybackState
 import mozilla.components.feature.listentopage.content.LanguageSource
+import mozilla.components.feature.listentopage.facts.ListenToPageFacts
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
+import mozilla.components.support.base.Component
+import mozilla.components.support.base.facts.Fact
+import mozilla.components.support.base.facts.FactProcessor
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.ListenToPage
 
 /** [Middleware] that records telemetry for the Listen to Page player. */
-internal class ListenToPageTelemetryMiddleware : Middleware<ListenState, ListenAction> {
+internal class ListenToPageTelemetryMiddleware : Middleware<ListenState, ListenAction>, FactProcessor {
 
     // Record once per session, since PlaybackStarted is dispatched every chunk
     private var playbackStartedRecorded = false
@@ -108,20 +112,25 @@ internal class ListenToPageTelemetryMiddleware : Middleware<ListenState, ListenA
         when (action) {
             ListenAction.Controls.PlayPauseClicked ->
                 if (store.state.playbackState.isPlayingOrBuffering) {
-                    ListenToPage.pausePressed.record(NoExtras())
+                    ListenToPage.pausePressed.record(ListenToPage.PausePressedExtra(source = IN_APP))
                 } else {
-                    ListenToPage.playPressed.record(NoExtras())
+                    ListenToPage.playPressed.record(ListenToPage.PlayPressedExtra(source = IN_APP))
                 }
 
-            ListenAction.Controls.RewindClicked -> ListenToPage.skipBackPressed.record(NoExtras())
-            ListenAction.Controls.ForwardClicked -> ListenToPage.skipForwardPressed.record(NoExtras())
+            ListenAction.Controls.RewindClicked ->
+                ListenToPage.skipBackPressed.record(ListenToPage.SkipBackPressedExtra(source = IN_APP))
+            ListenAction.Controls.ForwardClicked ->
+                ListenToPage.skipForwardPressed.record(ListenToPage.SkipForwardPressedExtra(source = IN_APP))
             ListenAction.Controls.VoicesClicked -> ListenToPage.voiceListOpened.record(NoExtras())
             ListenAction.Controls.VoicesDismissed -> ListenToPage.voiceListDismissed.record(NoExtras())
             ListenAction.Controls.PlaybackSpeedClicked -> ListenToPage.speedListOpened.record(NoExtras())
             ListenAction.Controls.PlaybackSpeedDismissed -> ListenToPage.speedListDismissed.record(NoExtras())
             is ListenAction.Controls.PlaybackSpeedSelected ->
                 ListenToPage.speedSelected.record(
-                    ListenToPage.SpeedSelectedExtra(speed = action.playbackSpeed.multiplier.toString())
+                    ListenToPage.SpeedSelectedExtra(
+                        speed = action.playbackSpeed.multiplier.toString(),
+                        source = IN_APP,
+                    )
                 )
         }
     }
@@ -148,6 +157,29 @@ internal class ListenToPageTelemetryMiddleware : Middleware<ListenState, ListenA
             is ListenAction.Voices.AvailableVoicesLoaded -> Unit
         }
     }
+
+    override fun process(fact: Fact) {
+        if (fact.component != Component.FEATURE_LISTENTOPAGE) return
+
+        when (fact.item) {
+            ListenToPageFacts.Items.PLAY_PRESSED ->
+                ListenToPage.playPressed.record(ListenToPage.PlayPressedExtra(source = MEDIA_CONTROLS))
+
+            ListenToPageFacts.Items.PAUSE_PRESSED ->
+                ListenToPage.pausePressed.record(ListenToPage.PausePressedExtra(source = MEDIA_CONTROLS))
+
+            ListenToPageFacts.Items.SKIP_BACK_PRESSED ->
+                ListenToPage.skipBackPressed.record(ListenToPage.SkipBackPressedExtra(source = MEDIA_CONTROLS))
+
+            ListenToPageFacts.Items.SKIP_FORWARD_PRESSED ->
+                ListenToPage.skipForwardPressed.record(ListenToPage.SkipForwardPressedExtra(source = MEDIA_CONTROLS))
+
+            ListenToPageFacts.Items.SPEED_SELECTED ->
+                ListenToPage.speedSelected.record(
+                    ListenToPage.SpeedSelectedExtra(speed = fact.value, source = MEDIA_CONTROLS)
+                )
+        }
+    }
 }
 
 private const val FORWARD = "forward"
@@ -161,6 +193,8 @@ private const val USER_SELECTED = "user_selected"
 private const val FALLBACK = "fallback"
 private const val PAGE = "page"
 private const val DEVICE = "device"
+private const val IN_APP = "in_app"
+private const val MEDIA_CONTROLS = "media_controls"
 
 private val PlaybackState.isPlayingOrBuffering: Boolean
     get() = phase == PlaybackPhase.Playing || phase == PlaybackPhase.Buffering
