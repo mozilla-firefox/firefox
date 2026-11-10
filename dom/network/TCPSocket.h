@@ -142,6 +142,10 @@ class TCPSocket final : public DOMEventTargetHelper,
   // Inform this socket that a buffered send() has completed sending.
   void NotifyCopyComplete(nsresult aStatus);
 
+  // Complete the "open" transition once the TLS handshake has finished.
+  // Called by TCPSocketTlsHandshakeListener on the main thread.
+  void HandshakeDoneOnMainThread();
+
   // Initialize this socket from a low-level connection that hasn't connected
   // yet (called from RecvOpenBind() in TCPSocketParent).
   nsresult InitWithUnconnectedTransport(nsISocketTransport* aTransport);
@@ -170,6 +174,11 @@ class TCPSocket final : public DOMEventTargetHelper,
   void ActivateTLS();
   // Discard received data that has not been delivered yet.
   void DiscardPendingInput();
+  // Register/clear this socket as the transport's TLS handshake-completion
+  // listener. Dispatched to the socket thread, per nsITLSSocketControl's
+  // threading contract.
+  void RegisterHandshakeCallbackListener();
+  void ClearHandshakeCallbackListener();
   // Dispatch an error event if necessary, then dispatch a "close" event.
   nsresult MaybeReportErrorAndCloseIfOpen(nsresult status);
 

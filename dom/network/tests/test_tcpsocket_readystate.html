@@ -1,0 +1,92 @@
+<!DOCTYPE HTML>
+<html>
+<!--
+Regression test for bug 2061626: TCPSocket.readyState must report
+"connecting" (not "closed") while the proxy lookup for a new connection is
+still in flight, and must stay "connecting" (not jump to "open") while a TCP
+connection using useSecureTransport is connected at the TCP layer but the
+TLS handshake has not completed yet.
+-->
+<head>
+  <meta charset="utf-8">
+  <title>Test for Bug 2061626</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2061626">Mozilla Bug 2061626</a>
+<p id="display"></p>
+<div id="content" style="display: none">
+</div>
+<pre id="test">
+</pre>
+<script type="application/javascript">
+"use strict";
+
+add_task(async function test_readystate_during_proxy_resolve() {
+  // Let the OS pick a free port rather than hardcoding one.
+  let probeServer = new TCPServerSocket(0, {}, -1);
+  let port = probeServer.localPort;
+  probeServer.close();
+
+  // The proxy lookup (AsyncResolve) for a new connection is always
+  // dispatched asynchronously, so readyState must already be "connecting"
+  // synchronously after construction, before that lookup has a chance to
+  // complete.
+  let socket = new TCPSocket("127.0.0.1", port, {});
+  is(
+    socket.readyState,
+    "connecting",
+    "readyState is connecting while the proxy lookup is in flight"
+  );
+  socket.close();
+});
+
+add_task(async function test_readystate_during_tls_handshake() {
+  const { TestUtils } = ChromeUtils.importESModule(
+    "resource://testing-common/TestUtils.sys.mjs"
+  );
+
+  // Let the OS pick a free port to avoid colliding with another test.
+  let acceptedSockets = [];
+  let listeningServer = new TCPServerSocket(0, { binaryType: "arraybuffer" }, -1);
+  let serverSawConnect = new Promise(resolve => {
+    listeningServer.onconnect = ev => {
+      // The server never speaks TLS; it just silently holds the connection
+      // open, so the client's TLS handshake never completes.
+      acceptedSockets.push(ev.socket);
+      resolve();
+    };
+  });
+
+  let clientSocket = new TCPSocket("127.0.0.1", listeningServer.localPort, {
+    useSecureTransport: true,
+  });
+  let sawOpen = false;
+  clientSocket.onopen = () => {
+    sawOpen = true;
+  };
+
+  // Avoid an arbitrary setTimeout; wait for the server's "connect" event,
+  // then flush a few ticks for the client's own handling of it to run.
+  await serverSawConnect;
+  for (let i = 0; i < 10; i++) {
+    await TestUtils.waitForTick();
+  }
+
+  ok(!sawOpen, "open must not fire before the TLS handshake completes");
+  is(
+    clientSocket.readyState,
+    "connecting",
+    "readyState stays connecting while the TLS handshake is in flight"
+  );
+
+  clientSocket.close();
+  for (let socket of acceptedSockets) {
+    socket.close();
+  }
+  listeningServer.close();
+});
+</script>
+</body>
+</html>

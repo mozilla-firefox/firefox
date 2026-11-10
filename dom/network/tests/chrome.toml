@@ -13,6 +13,8 @@ support-files = [
 
 ["test_tcpsocket_legacy.html"]
 
+["test_tcpsocket_readystate.html"]
+
 ["test_udpsocket.html"]
 skip-if = [
   "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 2023967

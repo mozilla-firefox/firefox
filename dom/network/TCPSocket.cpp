@@ -39,10 +39,12 @@
 #include "nsISocketTransportService.h"
 #include "nsISupportsPrimitives.h"
 #include "nsITLSSocketControl.h"
+#include "nsITlsHandshakeListener.h"
 #include "nsITransport.h"
 #include "nsIURIMutator.h"
 #include "nsNetCID.h"
 #include "nsNetUtil.h"
+#include "nsProxyRelease.h"
 #include "nsServiceManagerUtils.h"
 #include "nsStreamUtils.h"
 #include "nsString.h"
@@ -783,6 +785,10 @@ void TCPSocket::CloseHelper(bool waitForUnsentData) {
     mProxyRequest = nullptr;
   }
 
+  if (mSsl) {
+    ClearHandshakeCallbackListener();
+  }
+
   if (mSocketBridgeChild) {
     mSocketBridgeChild->SendClose();
     return;
@@ -953,6 +959,8 @@ already_AddRefed<TCPSocket> TCPSocket::Constructor(
 }
 
 nsresult TCPSocket::ResolveProxy() {
+  mReadyState = TCPReadyState::Connecting;
+
   nsresult rv;
   nsCOMPtr<nsIProtocolProxyService> pps =
       do_GetService(NS_PROTOCOLPROXYSERVICE_CONTRACTID, &rv);
@@ -1045,12 +1053,129 @@ TCPSocket::OnTransportStatus(nsITransport* aTransport, nsresult aStatus,
     return NS_OK;
   }
 
+  if (mSsl) {
+    // The TCP handshake is done, but the TLS handshake is still in flight.
+    // Wait for HandshakeDone() before reporting "open".
+    RegisterHandshakeCallbackListener();
+    return NS_OK;
+  }
+
   mReadyState = TCPReadyState::Open;
   nsresult rv = CreateInputStreamPump();
   NS_ENSURE_SUCCESS(rv, rv);
   FireEvent(u"open"_ns);
 
   return NS_OK;
+}
+
+namespace {
+// nsITLSSocketControl's handshake-completion listener must live on the
+// socket thread, but TCPSocket is cycle-collected and may only be refcounted
+// on the main thread. This proxy bridges the two.
+class TCPSocketTlsHandshakeListener final
+    : public nsITlsHandshakeCallbackListener {
+ public:
+  explicit TCPSocketTlsHandshakeListener(TCPSocket* aSocket)
+      : mSocket(new nsMainThreadPtrHolder<TCPSocket>(
+            "TCPSocketTlsHandshakeListener::mSocket", aSocket)) {}
+
+  NS_DECL_THREADSAFE_ISUPPORTS
+  NS_DECL_NSITLSHANDSHAKECALLBACKLISTENER
+
+ private:
+  ~TCPSocketTlsHandshakeListener() = default;
+
+  nsMainThreadPtrHandle<TCPSocket> mSocket;
+};
+
+NS_IMPL_ISUPPORTS(TCPSocketTlsHandshakeListener,
+                  nsITlsHandshakeCallbackListener)
+
+NS_IMETHODIMP
+TCPSocketTlsHandshakeListener::HandshakeDone() {
+  // Called on the socket thread; dispatch the rest to the main thread.
+  nsCOMPtr<nsISerialEventTarget> mainTarget =
+      mozilla::GetMainThreadSerialEventTarget();
+  mainTarget->Dispatch(NS_NewRunnableFunction(
+      "TCPSocketTlsHandshakeListener::HandshakeDone",
+      [socket = mSocket]() { socket->HandshakeDoneOnMainThread(); }));
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TCPSocketTlsHandshakeListener::CertVerificationDone() { return NS_OK; }
+
+NS_IMETHODIMP
+TCPSocketTlsHandshakeListener::ClientAuthCertificateRequested() {
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+TCPSocketTlsHandshakeListener::ClientAuthCertificateSelected() { return NS_OK; }
+}  // namespace
+
+void TCPSocket::RegisterHandshakeCallbackListener() {
+  nsCOMPtr<nsITLSSocketControl> tlsSocketControl;
+  mTransport->GetTlsSocketControl(getter_AddRefs(tlsSocketControl));
+  if (!tlsSocketControl) {
+    return;
+  }
+
+  nsresult rv;
+  nsCOMPtr<nsIEventTarget> socketThread =
+      do_GetService(NS_SOCKETTRANSPORTSERVICE_CONTRACTID, &rv);
+  if (NS_FAILED(rv)) {
+    return;
+  }
+
+  RefPtr<TCPSocketTlsHandshakeListener> listener =
+      new TCPSocketTlsHandshakeListener(this);
+
+  socketThread->Dispatch(
+      NS_NewRunnableFunction("TCPSocket::RegisterHandshakeCallbackListener",
+                             [listener, tlsSocketControl]() {
+                               tlsSocketControl->SetHandshakeCallbackListener(
+                                   listener);
+                             }),
+      NS_DISPATCH_NORMAL);
+}
+
+void TCPSocket::ClearHandshakeCallbackListener() {
+  if (!mTransport) {
+    return;
+  }
+
+  nsCOMPtr<nsITLSSocketControl> tlsSocketControl;
+  mTransport->GetTlsSocketControl(getter_AddRefs(tlsSocketControl));
+  if (!tlsSocketControl) {
+    return;
+  }
+
+  nsresult rv;
+  nsCOMPtr<nsIEventTarget> socketThread =
+      do_GetService(NS_SOCKETTRANSPORTSERVICE_CONTRACTID, &rv);
+  if (NS_FAILED(rv)) {
+    return;
+  }
+
+  socketThread->Dispatch(
+      NS_NewRunnableFunction("TCPSocket::ClearHandshakeCallbackListener",
+                             [tlsSocketControl]() {
+                               tlsSocketControl->SetHandshakeCallbackListener(
+                                   nullptr);
+                             }),
+      NS_DISPATCH_NORMAL);
+}
+
+void TCPSocket::HandshakeDoneOnMainThread() {
+  if (mReadyState != TCPReadyState::Connecting) {
+    return;
+  }
+
+  mReadyState = TCPReadyState::Open;
+  nsresult rv = CreateInputStreamPump();
+  NS_ENSURE_SUCCESS_VOID(rv);
+  FireEvent(u"open"_ns);
 }
 
 NS_IMETHODIMP
