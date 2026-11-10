@@ -157,6 +157,18 @@ object BrowserPageSelectors : SelectorContainer {
             description = "Page content '$text' long-press target",
         )
 
+    // Exact-text long-press target. A CONTAINS match on a bare word can also resolve to a linked image whose
+    // accessible name contains that word -- in pdfForm.pdf the painting is a Wikipedia hyperlink -- and long-pressing
+    // the image raises the link context menu instead of the text-selection bar. Matching the full text run exactly
+    // selects only the selectable caption node, not the image.
+    @Suppress("FunctionName")
+    fun PAGE_CONTENT_EXACT_LONG_PRESS_TARGET(text: String = "") =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR2_BY_TEXT,
+            value = text,
+            description = "Page content '$text' exact long-press target",
+        )
+
     // An item on the GeckoView text-selection floating action bar (and the app's paste popup),
     // matched by exact visible text. Mirrors the legacy clickContextMenuItem, which located items
     // with By.text(item) — covers "Select all", "Copy", "Search", "Private Search", "Paste".

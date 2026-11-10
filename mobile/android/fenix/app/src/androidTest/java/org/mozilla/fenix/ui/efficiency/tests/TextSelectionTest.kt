@@ -66,7 +66,9 @@ class TextSelectionTest : BaseTest() {
             .navigateToPage(genericURL.url.toString())
             .clickPageContent("PDF form file")
             .clickStayInAppPromptButtonIfPresent()
-            .longClickWebContentText("Crossing")
+            // Exact-match the caption run so the long-press can't resolve to the painting (a Wikipedia link whose
+            // accessible name also contains "Crossing"); its centre glyph is still "Crossing".
+            .longClickWebContentText(PDF_CAPTION, exact = true)
             .clickContextMenuItem("Copy")
 
         on.searchBar
@@ -88,7 +90,7 @@ class TextSelectionTest : BaseTest() {
             .navigateToPage(genericURL.url.toString())
             .clickPageContent("PDF form file")
             .clickStayInAppPromptButtonIfPresent()
-            .longClickWebContentText("Crossing")
+            .longClickWebContentText(PDF_CAPTION, exact = true)
             .clickContextMenuItem("Copy")
 
         on.searchBar
@@ -132,9 +134,14 @@ class TextSelectionTest : BaseTest() {
             .navigateToPage(genericURL.url.toString())
             .clickPageContent("PDF form file")
             .clickStayInAppPromptButtonIfPresent()
-            .longClickWebContentText("Crossing")
+            .longClickWebContentText(PDF_CAPTION, exact = true)
             .clickContextMenuItem("Search")
             .verifyUrl("Crossing")
             .verifyTabCounter("2")
+    }
+
+    private companion object {
+        // The caption under pdfForm.pdf's painting; long-pressing its centre selects "Crossing".
+        const val PDF_CAPTION = "Washington Crossing the Delaware"
     }
 }

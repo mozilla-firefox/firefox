@@ -472,12 +472,21 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
     // --- Text selection on web content ---
 
     /**
-     * Long-press web-content text containing [text] to raise the text-selection floating action bar. Waits for the text
-     * to render first (a PDF or a freshly loaded page may not be interactive the instant navigation reports done),
-     * mirroring the legacy longClickPageObject's waitForExists.
+     * Long-press web-content text to raise the text-selection floating action bar. Waits for the text to render first
+     * (a PDF or a freshly loaded page may not be interactive the instant navigation reports done), mirroring the legacy
+     * longClickPageObject's waitForExists.
+     *
+     * Pass [exact] = true to match the full text run exactly instead of by substring. A substring match on a bare word
+     * can also resolve to a linked image whose accessible name contains that word -- in pdfForm.pdf the painting is a
+     * Wikipedia hyperlink -- and long-pressing the image raises the link context menu instead of the selection bar.
      */
-    fun longClickWebContentText(text: String): BrowserPage {
-        val selector = BrowserPageSelectors.PAGE_CONTENT_LONG_PRESS_TARGET(text)
+    fun longClickWebContentText(text: String, exact: Boolean = false): BrowserPage {
+        val selector =
+            if (exact) {
+                BrowserPageSelectors.PAGE_CONTENT_EXACT_LONG_PRESS_TARGET(text)
+            } else {
+                BrowserPageSelectors.PAGE_CONTENT_LONG_PRESS_TARGET(text)
+            }
         mozVerify(selector, timeout = waitingTimeLong)
         mozLongClick(selector)
         return this
