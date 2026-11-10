@@ -84,7 +84,7 @@ var testtag_notificationbox_supportpage = [
 
 function testtag_notificationbox_buttonpressed(notification, button)
 {
-  SimpleTest.is(button.localName, "button");
+  SimpleTest.is(button.localName, "moz-button");
   return false;
 }
 
@@ -166,7 +166,7 @@ var tests =
         priority: nb.PRIORITY_INFO_LOW,
       }, testtag_notificationbox_buttons);
       SimpleTest.is(ntf && ntf.localName == NOTIFICATION_LOCAL_NAME, true, "append notification");
-      const button = ntf.buttonContainer.querySelector("button");
+      const button = ntf.buttonContainer.querySelector(".notification-button");
       SimpleTest.is(button.label, "Button 1", "set button label with the 'label' parameter");
       return ntf;
     },
@@ -187,7 +187,7 @@ var tests =
         priority: nb.PRIORITY_INFO_LOW,
       }, testtag_notificationbox_button_l10n);
       SimpleTest.is(ntf && ntf.localName == NOTIFICATION_LOCAL_NAME, true, "append notification");
-      const button = ntf.buttonContainer.querySelector("button");
+      const button = ntf.buttonContainer.querySelector(".notification-button");
       SimpleTest.is(button.dataset.l10nId, "test-id", "create notification button with correctly assigned l10n id");
       return ntf;
     },
@@ -431,7 +431,7 @@ var tests =
 
       let buttonContainer = ntf.buttonContainer;
       let button = buttonContainer.lastElementChild;
-      SimpleTest.is(button.localName, "button", "button is a button");
+      SimpleTest.is(button.localName, "moz-button", "button is a moz-button");
       SimpleTest.ok(!button.href, "button href is not set");
 
       let link = ntf.querySelector(".notification-link");
@@ -452,7 +452,7 @@ var tests =
       return ntf;
     },
     result(nb) {
-      let buttons = nb.currentNotification.buttonContainer.querySelectorAll("* button");
+      let buttons = nb.currentNotification.buttonContainer.querySelectorAll(".notification-button");
 
       buttons[0].focus();
       synthesizeKey(" ", {});

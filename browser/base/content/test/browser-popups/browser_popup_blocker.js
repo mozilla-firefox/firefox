@@ -221,7 +221,7 @@ add_task(async function test_bug2025170_unblock_popup() {
   const popupShown = BrowserTestUtils.waitForEvent(window, "popupshown");
   const popupFilled = waitForBlockedPopups(4, { doc: document });
   EventUtils.synthesizeMouseAtCenter(
-    notification.buttonContainer.querySelector("button"),
+    notification.buttonContainer.querySelector(".notification-button"),
     {},
     window
   );
@@ -285,7 +285,7 @@ async function testPopupBlockingToolbar(
     doc: win.document,
   });
   EventUtils.synthesizeMouseAtCenter(
-    notification.buttonContainer.querySelector("button"),
+    notification.buttonContainer.querySelector(".notification-button"),
     {},
     win
   );

@@ -130,7 +130,7 @@ add_task(async function terminateScriptTest() {
 
   let buttons =
     notification.currentNotification.buttonContainer.getElementsByTagName(
-      "button"
+      "moz-button"
     );
   is(buttons.length, 1, "Only one button displayed");
 
@@ -161,7 +161,7 @@ add_task(async function waitForScriptTest() {
 
   let buttons =
     notification.currentNotification.buttonContainer.getElementsByTagName(
-      "button"
+      "moz-button"
     );
   is(buttons.length, 1, "Only one button displayed");
 

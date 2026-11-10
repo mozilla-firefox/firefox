@@ -130,7 +130,8 @@ add_task(async function () {
   );
   await new Promise(r => setTimeout(r, 1000));
 
-  let prefBtn = notification.buttonContainer.getElementsByTagName("button")[0];
+  let prefBtn =
+    notification.buttonContainer.getElementsByTagName("moz-button")[0];
   ok(prefBtn, "Should have an open preferences button");
   let aboutPrefPromise = openAboutPrefPromise(win);
   EventUtils.synthesizeMouseAtCenter(prefBtn, {}, win);

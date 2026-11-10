@@ -75,7 +75,7 @@ async function testOnWindow(aTestData, aCallback, aTestCreater) {
   let notification = await BrowserTestUtils.waitForNotificationBar(win.gBrowser, browser, "blocked-badware-page");
   ok(notification, "Notification box should be displayed");
 
-  let buttons = notification.buttonContainer.getElementsByTagName("button");
+  let buttons = notification.buttonContainer.getElementsByTagName("moz-button");
   let button = buttons[1];
   if (aTestData.provider != "google" && aTestData.provider != "google4") {
     is(button, undefined, "Report button should not be showed");
