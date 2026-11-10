@@ -261,6 +261,14 @@ features:
         value:
           enabled: true
 
+  import-passwords:
+    description: A feature that lets users import passwords from a file exported by another browser or password manager.
+    variables:
+      enabled:
+        type: Boolean
+        description: If true, the import passwords feature will be enabled.
+        default: false
+
   installation:
     description: A feature that checks for reinstalls.
     variables:

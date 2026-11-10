@@ -67,7 +67,7 @@ class SavedLoginsFragment : SecureFragment(), SystemInsetsPaddedFragment {
             val store by
                 fragmentStore(
                     LoginsState.default.copy(
-                        showPasswordsImport = requireComponents.settings.importPasswordsFeatureFlagEnabled,
+                        showPasswordsImport = requireComponents.settings.isImportPasswordsAvailable,
                         sortOrder =
                             LoginsSortOrder.fromString(
                                 value = requireComponents.settings.loginsListSortOrder,

@@ -3059,12 +3059,20 @@ class Settings(
             default = 0,
         )
 
-    /** Feature flag that indicates if the Import Passwords feature is enabled. */
-    var importPasswordsFeatureFlagEnabled by
+    /** Feature flag to enable or disable Import Passwords feature through Secret Setting */
+    var overrideImportPasswordsEnabled by
         booleanPreference(
             key = appContext.getPreferenceKey(R.string.pref_key_enable_import_passwords),
             default = false,
         )
+
+    /**
+     * Indicates if the Import Passwords feature is available for the user.
+     *
+     * The flag is backed by a nimbus flag, with an option to override it through secret settings.
+     */
+    val isImportPasswordsAvailable: Boolean
+        get() = FxNimbus.features.importPasswords.value().enabled || overrideImportPasswordsEnabled
 
     /** Feature flag that indicates if the "Check Archived Version" button is shown on eligible error pages. */
     var isWaybackMachineEnabled by

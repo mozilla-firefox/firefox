@@ -394,7 +394,7 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_import_passwords).apply {
             isVisible = Config.channel.isNightlyOrDebug
-            isChecked = settings.importPasswordsFeatureFlagEnabled
+            isChecked = settings.overrideImportPasswordsEnabled
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
