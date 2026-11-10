@@ -869,7 +869,7 @@ nsresult DNSPacket::DecodeInternal(
               parsed.mSvcFieldPriority == 0) {
             // For AliasMode SVCB RRs, a TargetName of "." indicates that the
             // service is not available or does not exist.
-            continue;
+            break;
           }
 
           // Check for AliasForm

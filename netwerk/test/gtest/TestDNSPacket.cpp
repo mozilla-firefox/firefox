@@ -66,3 +66,91 @@ TEST(TestDNSPacket, PaddingLengths)
   AssertDnsPadding(1024, 1024, 41, true, "a.de"_ns);
   AssertDnsPadding(1025, 1024, 41, true, "a.de"_ns);
 }
+
+namespace {
+
+void AppendBE16(nsCString& aBuf, uint16_t aVal) {
+  aBuf += static_cast<char>((aVal >> 8) & 0xff);
+  aBuf += static_cast<char>(aVal & 0xff);
+}
+
+void AppendHeader(nsCString& aBuf, uint16_t aAnswers) {
+  AppendBE16(aBuf, 0);       // id
+  AppendBE16(aBuf, 0x8180);  // flags (QR, RD, RA)
+  AppendBE16(aBuf, 0);       // qdcount
+  AppendBE16(aBuf, aAnswers);
+  AppendBE16(aBuf, 0);  // nscount
+  AppendBE16(aBuf, 0);  // arcount
+}
+
+void AppendRecord(nsCString& aBuf, const nsACString& aOwner, uint16_t aType,
+                  const nsCString& aRData) {
+  ASSERT_EQ(DNSPacket::EncodeHost(aBuf, aOwner), NS_OK);
+  AppendBE16(aBuf, aType);
+  AppendBE16(aBuf, 1);  // CLASS IN
+  AppendBE16(aBuf, 0);
+  AppendBE16(aBuf, 60);  // TTL
+  AppendBE16(aBuf, aRData.Length());
+  aBuf.Append(aRData);
+}
+
+nsCString AliasModeRootRData() {
+  nsCString rdata;
+  AppendBE16(rdata, 0);  // SvcPriority 0 => AliasMode
+  rdata += '\0';         // TargetName "."
+  return rdata;
+}
+
+nsresult DecodeHTTPS(const nsCString& aPacket, nsCString& aHost,
+                     nsCString& aCname, TypeRecordResultType& aResult) {
+  DNSPacket packet;
+  nsresult rv = packet.FillBuffer([&](unsigned char* aResponse) -> int {
+    memcpy(aResponse, aPacket.BeginReading(), aPacket.Length());
+    return aPacket.Length();
+  });
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+  packet.SetNativePacket(true);
+  DOHresp resp;
+  nsClassHashtable<nsCStringHashKey, DOHresp> additionalRecords;
+  uint32_t ttl = UINT32_MAX;
+  return packet.Decode(aHost, TRRTYPE_HTTPSSVC, aCname, true, resp, aResult,
+                       additionalRecords, ttl);
+}
+
+}  // namespace
+
+// An AliasMode record with TargetName "." means the service doesn't exist.
+// Skipping it must still advance past its RDATA, otherwise the decoder reads
+// the rest of the response at the wrong offset.
+TEST(TestDNSPacket, HTTPSAliasModeRootIsSkipped)
+{
+  nsCString packet;
+  AppendHeader(packet, 1);
+  AppendRecord(packet, "example.com"_ns, TRRTYPE_HTTPSSVC,
+               AliasModeRootRData());
+
+  nsCString host("example.com"_ns);
+  nsCString cname;
+  TypeRecordResultType result = AsVariant(Nothing());
+  EXPECT_EQ(DecodeHTTPS(packet, host, cname, result), NS_ERROR_UNKNOWN_HOST);
+  EXPECT_TRUE(result.is<TypeRecordEmpty>());
+}
+
+TEST(TestDNSPacket, HTTPSAliasModeRootFollowedByRecord)
+{
+  nsCString packet;
+  AppendHeader(packet, 2);
+  AppendRecord(packet, "example.com"_ns, TRRTYPE_HTTPSSVC,
+               AliasModeRootRData());
+  nsCString target;
+  ASSERT_EQ(DNSPacket::EncodeHost(target, "target.example.net"_ns), NS_OK);
+  AppendRecord(packet, "example.com"_ns, TRRTYPE_CNAME, target);
+
+  nsCString host("example.com"_ns);
+  nsCString cname;
+  TypeRecordResultType result = AsVariant(Nothing());
+  EXPECT_EQ(DecodeHTTPS(packet, host, cname, result), NS_OK);
+  EXPECT_TRUE(cname.EqualsLiteral("target.example.net"));
+}
