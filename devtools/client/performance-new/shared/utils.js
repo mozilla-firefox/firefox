@@ -476,9 +476,10 @@ const featureDescriptions = [
     name: "No Timer Resolution Change",
     value: "notimerresolutionchange",
     title:
-      "Do not enhance the timer resolution for sampling intervals < 10ms, to " +
-      "avoid affecting timer-sensitive code. Warning: Sampling interval may " +
-      "increase in some processes.",
+      "Keep sampling on the system timer tick, without high-resolution " +
+      "timers or timer resolution changes, to minimize wakeups and avoid " +
+      "affecting timer-sensitive code. Warning: The sampling interval " +
+      "will be at least ~16ms.",
     disabledReason: "Windows only.",
   },
   {
