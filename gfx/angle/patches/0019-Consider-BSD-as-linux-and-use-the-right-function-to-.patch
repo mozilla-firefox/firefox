@@ -1,0 +1,62 @@
+From c9afd4396f9330bb3540b7ef93cfb739606ae27e Mon Sep 17 00:00:00 2001
+From: Landry Breuil <landry@openbsd.org>
+Date: Sun, 8 Nov 2026 08:38:49 +0100
+Subject: [PATCH] Consider *BSD as linux, and use the right function to set
+ pthread name there
+
+Avoids undefined symbol errors at startup on OpenBSD.
+---
+ src/common/system_utils_linux.cpp | 8 ++++++++
+ src/libGLESv2.gni                 | 4 ++--
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/src/common/system_utils_linux.cpp b/src/common/system_utils_linux.cpp
+index b7389ddefa..6d5e236c32 100644
+--- a/src/common/system_utils_linux.cpp
++++ b/src/common/system_utils_linux.cpp
+@@ -16,6 +16,10 @@
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
++#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
++#include <pthread_np.h>
++#endif
++
+ #include <array>
+ 
+ #ifndef CLOCK_MONOTONIC_RAW
+@@ -72,6 +76,10 @@ void SetCurrentThreadName(const char *name)
+     // There's a 15-character (16 including '\0') limit.  If the name is too big (and ERANGE is
+     // returned), name will be ignored.
+     ASSERT(strlen(name) < 16);
++#if defined(__DragonFly__) || defined(__FreeBSD__) || defined(__OpenBSD__)
++    pthread_set_name_np(pthread_self(), name);
++#else
+     pthread_setname_np(pthread_self(), name);
++#endif
+ }
+ }  // namespace angle
+diff --git a/src/libGLESv2.gni b/src/libGLESv2.gni
+index 24fcdb4014..3f127bf1c5 100644
+--- a/src/libGLESv2.gni
++++ b/src/libGLESv2.gni
+@@ -126,14 +126,14 @@ if (is_android && angle_enable_unwind_backtrace_support) {
+   libangle_common_sources += [ "src/common/backtrace_utils_noop.cpp" ]
+ }
+ 
+-if (is_linux || is_chromeos || is_android || is_fuchsia) {
++if (is_linux || is_bsd || is_chromeos || is_android || is_fuchsia) {
+   libangle_common_sources += [
+     "src/common/system_utils_linux.cpp",
+     "src/common/system_utils_posix.cpp",
+   ]
+ }
+ 
+-if (is_linux || is_chromeos) {
++if (is_linux || is_bsd || is_chromeos) {
+   libangle_common_sources += [
+     "src/common/linux/window_system.cpp",
+     "src/common/linux/window_system.h",
+-- 
+2.56.0
+

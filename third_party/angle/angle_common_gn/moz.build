@@ -151,6 +151,8 @@ if CONFIG["OS_TARGET"] == "OpenBSD":
     DEFINES["__STDC_FORMAT_MACROS"] = True
 
     UNIFIED_SOURCES += [
+        "/third_party/angle/src/common/linux/window_system.cpp",
+        "/third_party/angle/src/common/system_utils_linux.cpp",
         "/third_party/angle/src/common/system_utils_posix.cpp"
     ]
 
