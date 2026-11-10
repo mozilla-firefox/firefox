@@ -474,10 +474,13 @@ void MacroAssembler::moveValue(const ConstantOrRegister& src,
 // ===============================================================
 // Copy instructions
 
-void MacroAssembler::copy64(const Address& src, const Address& dest,
-                            Register scratch) {
+template <typename T>
+void MacroAssembler::copy64(const T& src, const T& dest, Register scratch) {
 #if JS_BITS_PER_WORD == 32
   MOZ_RELEASE_ASSERT(src.base != scratch && dest.base != scratch);
+  if constexpr (std::is_base_of_v<BaseIndex, T>) {
+    MOZ_RELEASE_ASSERT(src.index != scratch && dest.index != scratch);
+  }
   load32(LowWord(src), scratch);
   store32(scratch, LowWord(dest));
   load32(HighWord(src), scratch);
