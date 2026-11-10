@@ -4454,6 +4454,7 @@ const CTAParagraph = props => {
     handleAction(event);
     event.preventDefault();
   }, [handleAction]);
+  const keyPressedRef = react__WEBPACK_IMPORTED_MODULE_0___default().useRef(false);
   return /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("h2", {
     className: `cta-paragraph ${content?.info_tile ? "info-tile" : ""}`,
     style: {
@@ -4470,7 +4471,15 @@ const CTAParagraph = props => {
   }, content.text.string_name && typeof handleAction === "function" ? /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("span", {
     "data-l10n-id": content.text.string_id,
     onClick: onClick,
-    onKeyUp: event => ["Enter", " "].includes(event.key) ? onClick(event) : null,
+    onKeyDown: event => {
+      keyPressedRef.current = ["Enter", " "].includes(event.key);
+    },
+    onKeyUp: event => {
+      if (keyPressedRef.current && ["Enter", " "].includes(event.key)) {
+        onClick(event);
+      }
+      keyPressedRef.current = false;
+    },
     value: "cta_paragraph"
   }, " ", /*#__PURE__*/react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
     "data-l10n-name": content.text.string_name,
