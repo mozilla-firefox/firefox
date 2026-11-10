@@ -35,14 +35,17 @@ linux64-clang-tidy:
         arguments:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
         resources:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
     fetches:
         toolchain:
             - linux64-clang-toolchain
             - linux64-libxml2
             - linux64-toolchain-sysroot
+            - linux64-clang-22-profile
 
 linux64-aarch64-clang-tidy:
     index:
@@ -55,15 +58,18 @@ linux64-aarch64-clang-tidy:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/linux64-aarch64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
         resources:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/linux64-aarch64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
     fetches:
         toolchain:
             - linux64-clang-toolchain
             - linux64-aarch64-libxml2
             - linux64-aarch64-toolchain-sysroot
+            - linux64-clang-22-profile
 
 macosx64-clang-tidy:
     index:
@@ -76,14 +82,17 @@ macosx64-clang-tidy:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/macosx64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
         resources:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/macosx64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
     fetches:
         toolchain:
             - linux64-clang-toolchain
             - macosx64-sdk-toolchain
+            - macosx64-clang-22-profile
 
 macosx64-aarch64-clang-tidy:
     index:
@@ -96,14 +105,17 @@ macosx64-aarch64-clang-tidy:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/macosx64-aarch64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
         resources:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/macosx64-aarch64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
     fetches:
         toolchain:
             - linux64-clang-toolchain
             - macosx64-sdk-toolchain
+            - macosx64-aarch64-clang-22-profile
 
 win64-clang-tidy:
     description: "Clang-tidy toolchain build"
@@ -119,15 +131,18 @@ win64-clang-tidy:
             - 'build/build-clang/use-clang-cl-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/win64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
         resources:
             - 'build/build-clang/use-clang-cl-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/win64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
     fetches:
         toolchain:
             - linux64-clang-toolchain
             - vs-toolchain
             - win64-libxml2
+            - win64-clang-22-profile
 
 win64-aarch64-clang-tidy:
     description: "Clang-tidy toolchain build"
@@ -143,15 +158,18 @@ win64-aarch64-clang-tidy:
             - 'build/build-clang/use-clang-cl-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/win64-aarch64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
         resources:
             - 'build/build-clang/use-clang-cl-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/win64-aarch64.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
     fetches:
         toolchain:
             - linux64-clang-toolchain
             - vs-toolchain
             - win64-aarch64-libxml2
+            - win64-clang-22-profile
 
 linux64-clang-tidy-external:
     attributes:
@@ -167,14 +185,17 @@ linux64-clang-tidy-external:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/clang-tidy-external.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
         resources:
             - 'build/build-clang/use-clang-artifact.json'
             - 'build/build-clang/clang-tidy.json'
             - 'build/build-clang/clang-tidy-external.json'
+            - 'build/build-clang/stage-4-tidy-pgo.json'
     run-on-projects: []
     fetches:
         fetch:
             - civet-source
         toolchain:
+            - linux64-clang-22-profile
             - linux64-clang-toolchain
             - linux64-toolchain-sysroot
