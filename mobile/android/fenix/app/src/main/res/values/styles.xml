@@ -189,6 +189,62 @@
 
     <style name="NormalTheme" parent="NormalThemeBase" />
 
+    <!-- The OLED theme inherits from NormalThemeBase and overrides only the tokens that differ from dark theme. -->
+    <style name="OledThemeBase" parent="NormalThemeBase">
+        <item name="android:windowBackground">@color/fx_mobile_oled_surface</item>
+        <item name="android:colorAccent">@color/fx_mobile_oled_on_surface</item>
+        <item name="android:colorBackground">@color/fx_mobile_oled_background</item>
+
+        <!-- Material3 -->
+        <item name="colorPrimaryContainer">@color/fx_mobile_oled_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/fx_mobile_oled_on_primary_container</item>
+        <item name="colorSecondaryContainer">@color/fx_mobile_oled_secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/fx_mobile_oled_on_secondary_container</item>
+        <item name="colorTertiaryContainer">@color/fx_mobile_oled_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/fx_mobile_oled_on_tertiary_container</item>
+        <item name="colorOnBackground">@color/fx_mobile_oled_on_background</item>
+        <item name="colorSurface">@color/fx_mobile_oled_surface</item>
+        <item name="colorOnSurface">@color/fx_mobile_oled_on_surface</item>
+        <item name="colorOnSurfaceVariant">@color/fx_mobile_oled_on_surface_variant</item>
+        <item name="colorErrorContainer">@color/fx_mobile_oled_error_container</item>
+        <item name="colorOnErrorContainer">@color/fx_mobile_oled_on_error_container</item>
+        <item name="colorInformationContainer">@color/fx_mobile_oled_information_container</item>
+        <item name="colorOnInformationContainer">@color/fx_mobile_oled_on_information_container</item>
+        <item name="colorSuccessContainer">@color/fx_mobile_oled_success_container</item>
+        <item name="colorOnSuccessContainer">@color/fx_mobile_oled_on_success_container</item>
+        <item name="colorWarningContainer">@color/fx_mobile_oled_warning_container</item>
+        <item name="colorOnWarningContainer">@color/fx_mobile_oled_on_warning_container</item>
+        <item name="colorOutline">@color/fx_mobile_oled_outline</item>
+        <item name="colorOutlineVariant">@color/fx_mobile_oled_outline_variant</item>
+        <item name="colorSurfaceBright">@color/fx_mobile_oled_surface_bright</item>
+        <item name="colorSurfaceDim">@color/fx_mobile_oled_surface_dim</item>
+        <item name="colorSurfaceContainer">@color/fx_mobile_oled_surface_container</item>
+        <item name="colorSurfaceContainerHigh">@color/fx_mobile_oled_surface_container_high</item>
+        <item name="colorSurfaceContainerHighest">@color/fx_mobile_oled_surface_container_highest</item>
+        <item name="colorSurfaceContainerLow">@color/fx_mobile_oled_surface_container_low</item>
+        <item name="colorSurfaceContainerLowest">@color/fx_mobile_oled_surface_container_lowest</item>
+        <item name="colorSurfaceContainerSelected">@color/fx_mobile_oled_surface_container_selected</item>
+        <item name="colorAutofillText">@color/fx_mobile_oled_autofill_text</item>
+        <item name="colorSelectedText">@color/fx_mobile_oled_selected_text</item>
+        <item name="colorSheetOutline">@color/fx_mobile_oled_sheet_outline</item>
+
+        <!-- sets the toolbar back button color, radio buttons/ unselected checkboxes -->
+        <item name="colorControlNormal">@color/fx_mobile_oled_on_surface</item>
+        <item name="android:colorControlNormal">@color/fx_mobile_oled_on_surface</item>
+
+        <item name="mozac_primary_text_color">@color/fx_mobile_oled_on_surface</item>
+        <item name="mozac_caption_text_color">@color/fx_mobile_oled_on_surface_variant</item>
+        <item name="mozac_widget_favicon_border_color">@color/fx_mobile_oled_outline_variant</item>
+        <item name="mozac_ic_private_mode_circle_fill_icon_color">@color/fx_mobile_oled_on_surface</item>
+
+        <!-- Drawables -->
+        <item name="fenixWordmarkText">@drawable/ic_wordmark_text_private</item>
+    </style>
+
+    <style name="OledTheme" parent="OledThemeBase">
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+
     <style name="BaseDialogStyle.Private" parent="BaseDialogStyle">
         <item name="alertDialogStyle">@style/MaterialAlertDialog.App.Private</item>
         <item name="materialAlertDialogTitleTextStyle">@style/MaterialAlertDialog.App.Title.Text.Private</item>

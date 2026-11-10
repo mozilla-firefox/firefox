@@ -164,38 +164,38 @@
     <!-- The OLED theme inherits from the dark theme and only the tokens that differ are listed. -->
 
     <!-- Material3 color variables -->
-    <color name="fx_mobile_oled_primary_container" tools:ignore="UnusedResources">@color/novaViolet70</color>
-    <color name="fx_mobile_oled_on_primary_container" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_secondary_container" tools:ignore="UnusedResources">@color/novaVioletDesaturated80</color>
-    <color name="fx_mobile_oled_on_secondary_container" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_tertiary_container" tools:ignore="UnusedResources">@color/novaGray90</color>
-    <color name="fx_mobile_oled_on_tertiary_container" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_background" tools:ignore="UnusedResources">@color/novaBlack</color>
-    <color name="fx_mobile_oled_on_background" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_surface" tools:ignore="UnusedResources">@color/novaBlack</color>
-    <color name="fx_mobile_oled_on_surface" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_on_surface_variant" tools:ignore="UnusedResources">@color/novaGray40</color>
-    <color name="fx_mobile_oled_error_container" tools:ignore="UnusedResources">@color/novaRed80</color>
-    <color name="fx_mobile_oled_on_error_container" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_information_container" tools:ignore="UnusedResources">@color/novaBlue80</color>
-    <color name="fx_mobile_oled_on_information_container" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_success_container" tools:ignore="UnusedResources">@color/novaGreen80</color>
-    <color name="fx_mobile_oled_on_success_container" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_warning_container" tools:ignore="UnusedResources">@color/novaYellow80</color>
-    <color name="fx_mobile_oled_on_warning_container" tools:ignore="UnusedResources">@color/novaGray20</color>
-    <color name="fx_mobile_oled_outline" tools:ignore="UnusedResources">@color/novaGray50</color>
-    <color name="fx_mobile_oled_outline_variant" tools:ignore="UnusedResources">@color/novaGray65</color>
-    <color name="fx_mobile_oled_sheet_outline" tools:ignore="UnusedResources">@color/novaGray65</color>
-    <color name="fx_mobile_oled_surface_bright" tools:ignore="UnusedResources">@color/novaGray80</color>
-    <color name="fx_mobile_oled_surface_dim" tools:ignore="UnusedResources">@color/novaBlack</color>
-    <color name="fx_mobile_oled_surface_container" tools:ignore="UnusedResources">@color/novaBlack</color>
-    <color name="fx_mobile_oled_surface_container_high" tools:ignore="UnusedResources">@color/novaGray90</color>
-    <color name="fx_mobile_oled_surface_container_highest" tools:ignore="UnusedResources">@color/novaGray80</color>
-    <color name="fx_mobile_oled_surface_container_low" tools:ignore="UnusedResources">@color/novaGray90</color>
-    <color name="fx_mobile_oled_surface_container_lowest" tools:ignore="UnusedResources">@color/novaBlack</color>
-    <color name="fx_mobile_oled_surface_container_selected" tools:ignore="UnusedResources">@color/novaGray65</color>
-    <color name="fx_mobile_oled_autofill_text" tools:ignore="UnusedResources">@color/novaVioletDesaturated60</color>
-    <color name="fx_mobile_oled_selected_text" tools:ignore="UnusedResources">@color/novaGray60</color>
+    <color name="fx_mobile_oled_primary_container">@color/novaViolet70</color>
+    <color name="fx_mobile_oled_on_primary_container">@color/novaGray20</color>
+    <color name="fx_mobile_oled_secondary_container">@color/novaVioletDesaturated80</color>
+    <color name="fx_mobile_oled_on_secondary_container">@color/novaGray20</color>
+    <color name="fx_mobile_oled_tertiary_container">@color/novaGray90</color>
+    <color name="fx_mobile_oled_on_tertiary_container">@color/novaGray20</color>
+    <color name="fx_mobile_oled_background">@color/novaBlack</color>
+    <color name="fx_mobile_oled_on_background">@color/novaGray20</color>
+    <color name="fx_mobile_oled_surface">@color/novaBlack</color>
+    <color name="fx_mobile_oled_on_surface">@color/novaGray20</color>
+    <color name="fx_mobile_oled_on_surface_variant">@color/novaGray40</color>
+    <color name="fx_mobile_oled_error_container">@color/novaRed80</color>
+    <color name="fx_mobile_oled_on_error_container">@color/novaGray20</color>
+    <color name="fx_mobile_oled_information_container">@color/novaBlue80</color>
+    <color name="fx_mobile_oled_on_information_container">@color/novaGray20</color>
+    <color name="fx_mobile_oled_success_container">@color/novaGreen80</color>
+    <color name="fx_mobile_oled_on_success_container">@color/novaGray20</color>
+    <color name="fx_mobile_oled_warning_container">@color/novaYellow80</color>
+    <color name="fx_mobile_oled_on_warning_container">@color/novaGray20</color>
+    <color name="fx_mobile_oled_outline">@color/novaGray50</color>
+    <color name="fx_mobile_oled_outline_variant">@color/novaGray65</color>
+    <color name="fx_mobile_oled_sheet_outline">@color/novaGray65</color>
+    <color name="fx_mobile_oled_surface_bright">@color/novaGray80</color>
+    <color name="fx_mobile_oled_surface_dim">@color/novaBlack</color>
+    <color name="fx_mobile_oled_surface_container">@color/novaBlack</color>
+    <color name="fx_mobile_oled_surface_container_high">@color/novaGray90</color>
+    <color name="fx_mobile_oled_surface_container_highest">@color/novaGray80</color>
+    <color name="fx_mobile_oled_surface_container_low">@color/novaGray90</color>
+    <color name="fx_mobile_oled_surface_container_lowest">@color/novaBlack</color>
+    <color name="fx_mobile_oled_surface_container_selected">@color/novaGray65</color>
+    <color name="fx_mobile_oled_autofill_text">@color/novaVioletDesaturated60</color>
+    <color name="fx_mobile_oled_selected_text">@color/novaGray60</color>
 
     <!-- Light theme color palette -->
     <color name="primary_text_light_theme">@color/photonInk80</color>

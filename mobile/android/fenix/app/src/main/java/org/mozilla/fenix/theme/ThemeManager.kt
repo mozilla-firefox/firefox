@@ -41,9 +41,9 @@ abstract class ThemeManager {
         get() =
             when (currentTheme) {
                 Theme.Private -> R.style.PrivateTheme
+                Theme.Oled -> R.style.OledTheme
                 Theme.Light,
-                Theme.Dark,
-                Theme.Oled -> R.style.NormalTheme
+                Theme.Dark -> R.style.NormalTheme
             }
 
     /**

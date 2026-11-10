@@ -15,6 +15,18 @@
         <item name="android:windowLayoutInDisplayCutoutMode">default</item>
     </style>
 
+    <style name="OledTheme" parent="OledThemeBase">
+        <!-- Style the status bar -->
+        <!-- We have to pull in the changes from v23/styles.xml to make
+            sure we also get them in 27+ -->
+        <item name="android:windowLightStatusBar">false</item>
+
+        <!-- Style the navigation bar -->
+        <item name="android:navigationBarDividerColor">@android:color/transparent</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">default</item>
+    </style>
+
     <style name="PrivateTheme" parent="PrivateThemeBase">
         <!-- Style the status bar -->
         <!-- We have to pull in the changes from v23/styles.xml to make
