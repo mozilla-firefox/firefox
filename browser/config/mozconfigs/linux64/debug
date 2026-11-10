@@ -1,12 +1,4 @@
-ac_add_options --enable-debug
-
-. $topsrcdir/build/unix/mozconfig.linux
-
-# Needed to enable breakpad in application.ini
-export MOZILLA_OFFICIAL=1
-
-# Package js shell.
-export MOZ_PACKAGE_JSSHELL=1
+. "$topsrcdir/browser/config/mozconfigs/linux64/common-debug"
 
 ac_add_options --with-branding=browser/branding/nightly
 

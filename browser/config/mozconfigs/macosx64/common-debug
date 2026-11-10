@@ -1,0 +1,9 @@
+. $topsrcdir/build/macosx/mozconfig.common
+
+ac_add_options --enable-debug
+
+# Needed to enable breakpad in application.ini
+export MOZILLA_OFFICIAL=1
+
+# Package js shell.
+export MOZ_PACKAGE_JSSHELL=1
