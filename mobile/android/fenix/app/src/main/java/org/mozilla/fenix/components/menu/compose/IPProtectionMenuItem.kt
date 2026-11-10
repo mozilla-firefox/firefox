@@ -34,7 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToLong
-import mozilla.components.compose.base.modifier.debouncedClickable
 import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.theme.ThemedValue
 import mozilla.components.compose.base.theme.ThemedValueProvider
@@ -80,7 +79,7 @@ internal fun IPProtectionMenuItem(
             Modifier.wrapContentSize()
                 .clip(MaterialTheme.shapes.extraSmall)
                 .background(MaterialTheme.colorScheme.surfaceBright)
-                .thenConditional(Modifier.debouncedClickable(role = role) { onToggle() }) { isEnabled }
+                .thenConditional(Modifier.clickable(role = role) { onToggle() }) { isEnabled }
                 .semantics(mergeDescendants = true) {
                     stateDescription = statusDescription
                     if (!isEnabled) {

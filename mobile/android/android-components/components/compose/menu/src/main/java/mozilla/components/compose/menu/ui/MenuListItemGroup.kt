@@ -57,6 +57,7 @@ internal fun ListMenuItemsGroup(
                         state = it.state,
                         onClickEvent = it.onClickEvent,
                         onInteraction = onClick,
+                        debounceClicks = it.debounceClicks,
                     )
 
                 is ExpandableMenuItem ->

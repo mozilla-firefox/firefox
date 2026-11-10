@@ -44,6 +44,24 @@ class MenuListItemTest {
     }
 
     @Test
+    fun `GIVEN an item with a click event WHEN clicking it twice in quick succession THEN dispatch that event once`() {
+        setItem(onClickEvent = Clicked)
+
+        repeat(2) { composeTestRule.onNodeWithText(TITLE).performClick() }
+
+        assertEquals(listOf<MenuEvent>(Clicked), events)
+    }
+
+    @Test
+    fun `GIVEN an item that does not debounce clicks WHEN clicking it twice in quick succession THEN dispatch that event twice`() {
+        setItem(onClickEvent = Clicked, debounceClicks = false)
+
+        repeat(2) { composeTestRule.onNodeWithText(TITLE).performClick() }
+
+        assertEquals(listOf<MenuEvent>(Clicked, Clicked), events)
+    }
+
+    @Test
     fun `GIVEN an item with a click event THEN announce it as a button`() {
         setItem(onClickEvent = Clicked)
 
@@ -161,6 +179,7 @@ class MenuListItemTest {
         state: MenuItemState = MenuItemState.DEFAULT,
         role: Role = Role.Button,
         badge: MenuItemBadge? = null,
+        debounceClicks: Boolean = true,
     ) {
         composeTestRule.setContent {
             AcornTheme {
@@ -172,6 +191,7 @@ class MenuListItemTest {
                     role = role,
                     badge = badge,
                     state = state,
+                    debounceClicks = debounceClicks,
                 )
             }
         }

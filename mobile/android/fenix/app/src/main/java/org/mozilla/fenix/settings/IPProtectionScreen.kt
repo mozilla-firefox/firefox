@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -61,7 +62,6 @@ import mozilla.components.compose.base.Switch
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.IconButton
-import mozilla.components.compose.base.modifier.debouncedToggleable
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.concept.engine.ipprotection.ServiceState
@@ -398,7 +398,7 @@ private fun VpnToggleRow(
         modifier =
             Modifier.fillMaxWidth()
                 .defaultMinSize(minHeight = 56.dp)
-                .debouncedToggleable(
+                .toggleable(
                     value = checked,
                     enabled = enabled,
                     role = Role.Switch,

@@ -151,24 +151,15 @@ class IPProtectionMenuItemTest {
     }
 
     @Test
-    fun `GIVEN IP protection is disabled WHEN the label row is clicked THEN only the toggle callback is invoked`() {
-        setContent(IPProtectionStatus.Disabled)
-
-        composeTestRule.onNodeWithText(toggleLabel).performClick()
-
-        assertEquals(1, toggleCount)
-        assertEquals(0, navigateCount)
-    }
-
-    @Test
-    fun `GIVEN IP protection is disabled WHEN the row is clicked twice rapidly THEN the toggle is debounced`() {
+    fun `GIVEN IP protection is disabled WHEN the label row is clicked twice rapidly THEN only the toggle callback is invoked, once per click`() {
         setContent(IPProtectionStatus.Disabled)
 
         repeat(2) {
             composeTestRule.onNodeWithText(toggleLabel).performClick()
         }
 
-        assertEquals(1, toggleCount)
+        assertEquals(2, toggleCount)
+        assertEquals(0, navigateCount)
     }
 
     @Test
