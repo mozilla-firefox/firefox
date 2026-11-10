@@ -3462,7 +3462,7 @@ HTMLEditor::AutoListElementCreator::ReplaceContentNodesWithEmptyNewList(
 
 Result<RefPtr<Element>, nsresult>
 HTMLEditor::AutoListElementCreator::WrapContentNodesIntoNewListElements(
-    HTMLEditor& aHTMLEditor, AutoClonedRangeArray& aRanges,
+    HTMLEditor& aHTMLEditor, AutoClonedRangeArray& /*aRanges*/,
     AutoContentNodeArray& aArrayOfContents, const Element& aEditingHost) const {
   // if there is only one node in the array, and it is a list, div, or
   // blockquote, then look inside of it until we find inner list or content.
@@ -6225,7 +6225,7 @@ HTMLEditor::HandleOutdentAtSelectionInternal(const Element& aEditingHost) {
 Result<SplitRangeOffFromNodeResult, nsresult>
 HTMLEditor::RemoveBlockContainerElementWithTransactionBetween(
     Element& aBlockContainerElement, nsIContent& aStartOfRange,
-    nsIContent& aEndOfRange, BlockInlineCheck aBlockInlineCheck) {
+    nsIContent& aEndOfRange, BlockInlineCheck /*aBlockInlineCheck*/) {
   MOZ_ASSERT(IsEditActionDataAvailable());
 
   EditorDOMPoint pointToPutCaret;

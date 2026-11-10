@@ -81,7 +81,7 @@ nsresult StateUpdatingCommandBase::DoCommand(Command aCommand,
 
 nsresult StateUpdatingCommandBase::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   if (!aEditorBase) {
     return NS_OK;
   }
@@ -309,7 +309,7 @@ nsresult ListItemCommand::ToggleState(nsStaticAtom& aTagName,
 
 StaticRefPtr<RemoveListCommand> RemoveListCommand::sInstance;
 
-bool RemoveListCommand::IsCommandEnabled(Command aCommand,
+bool RemoveListCommand::IsCommandEnabled(Command /*aCommand*/,
                                          EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -328,7 +328,8 @@ bool RemoveListCommand::IsCommandEnabled(Command aCommand,
   return NS_SUCCEEDED(rv) && (bMixed || !localName.IsEmpty());
 }
 
-nsresult RemoveListCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
+nsresult RemoveListCommand::DoCommand(Command /*aCommand*/,
+                                      EditorBase& aEditorBase,
                                       nsIPrincipal* aPrincipal) const {
   HTMLEditor* htmlEditor = aEditorBase.GetAsHTMLEditor();
   if (NS_WARN_IF(!htmlEditor)) {
@@ -344,7 +345,7 @@ nsresult RemoveListCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult RemoveListCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -355,7 +356,7 @@ nsresult RemoveListCommand::GetCommandStateParams(
 
 StaticRefPtr<IndentCommand> IndentCommand::sInstance;
 
-bool IndentCommand::IsCommandEnabled(Command aCommand,
+bool IndentCommand::IsCommandEnabled(Command /*aCommand*/,
                                      EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -365,7 +366,7 @@ bool IndentCommand::IsCommandEnabled(Command aCommand,
          htmlEditor->IsStyleEditable();
 }
 
-nsresult IndentCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
+nsresult IndentCommand::DoCommand(Command /*aCommand*/, EditorBase& aEditorBase,
                                   nsIPrincipal* aPrincipal) const {
   HTMLEditor* htmlEditor = aEditorBase.GetAsHTMLEditor();
   if (NS_WARN_IF(!htmlEditor)) {
@@ -378,7 +379,7 @@ nsresult IndentCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult IndentCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -389,7 +390,7 @@ nsresult IndentCommand::GetCommandStateParams(
 
 StaticRefPtr<OutdentCommand> OutdentCommand::sInstance;
 
-bool OutdentCommand::IsCommandEnabled(Command aCommand,
+bool OutdentCommand::IsCommandEnabled(Command /*aCommand*/,
                                       EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -399,7 +400,8 @@ bool OutdentCommand::IsCommandEnabled(Command aCommand,
          htmlEditor->IsStyleEditable();
 }
 
-nsresult OutdentCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
+nsresult OutdentCommand::DoCommand(Command /*aCommand*/,
+                                   EditorBase& aEditorBase,
                                    nsIPrincipal* aPrincipal) const {
   HTMLEditor* htmlEditor = aEditorBase.GetAsHTMLEditor();
   if (NS_WARN_IF(!htmlEditor)) {
@@ -413,7 +415,7 @@ nsresult OutdentCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult OutdentCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -422,7 +424,7 @@ nsresult OutdentCommand::GetCommandStateParams(
  * mozilla::MultiStateCommandBase
  *****************************************************************************/
 
-bool MultiStateCommandBase::IsCommandEnabled(Command aCommand,
+bool MultiStateCommandBase::IsCommandEnabled(Command /*aCommand*/,
                                              EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -433,9 +435,9 @@ bool MultiStateCommandBase::IsCommandEnabled(Command aCommand,
          htmlEditor->IsStyleEditable();
 }
 
-nsresult MultiStateCommandBase::DoCommand(Command aCommand,
-                                          EditorBase& aEditorBase,
-                                          nsIPrincipal* aPrincipal) const {
+nsresult MultiStateCommandBase::DoCommand(Command /*aCommand*/,
+                                          EditorBase& /*aEditorBase*/,
+                                          nsIPrincipal* /*aPrincipal*/) const {
   NS_WARNING(
       "who is calling MultiStateCommandBase::DoCommand (no implementation)?");
   return NS_OK;
@@ -459,8 +461,8 @@ nsresult MultiStateCommandBase::DoCommandParam(Command aCommand,
 }
 
 nsresult MultiStateCommandBase::GetCommandStateParams(
-    Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    Command /*aCommand*/, nsCommandParams& aParams, EditorBase* aEditorBase,
+    nsIEditingSession* /*aEditingSession*/) const {
   if (!aEditorBase) {
     return NS_OK;
   }
@@ -889,7 +891,7 @@ nsresult AlignCommand::SetState(HTMLEditor* aHTMLEditor,
 StaticRefPtr<AbsolutePositioningCommand> AbsolutePositioningCommand::sInstance;
 
 nsresult AbsolutePositioningCommand::GetCurrentState(
-    nsStaticAtom& aTagName, HTMLEditor& aHTMLEditor,
+    nsStaticAtom& /*aTagName*/, HTMLEditor& aHTMLEditor,
     nsCommandParams& aParams) const {
   if (!aHTMLEditor.IsAbsolutePositionEditorEnabled()) {
     aParams.SetBool(STATE_MIXED, false);
@@ -905,7 +907,7 @@ nsresult AbsolutePositioningCommand::GetCurrentState(
 }
 
 nsresult AbsolutePositioningCommand::ToggleState(
-    nsStaticAtom& aTagName, HTMLEditor& aHTMLEditor,
+    nsStaticAtom& /*aTagName*/, HTMLEditor& aHTMLEditor,
     nsIPrincipal* aPrincipal) const {
   RefPtr<Element> container =
       aHTMLEditor.GetAbsolutelyPositionedSelectionContainer();
@@ -923,7 +925,7 @@ nsresult AbsolutePositioningCommand::ToggleState(
 
 StaticRefPtr<DecreaseZIndexCommand> DecreaseZIndexCommand::sInstance;
 
-bool DecreaseZIndexCommand::IsCommandEnabled(Command aCommand,
+bool DecreaseZIndexCommand::IsCommandEnabled(Command /*aCommand*/,
                                              EditorBase* aEditorBase) const {
   RefPtr<HTMLEditor> htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -940,7 +942,7 @@ bool DecreaseZIndexCommand::IsCommandEnabled(Command aCommand,
   return htmlEditor->GetZIndex(*positionedElement) > 0;
 }
 
-nsresult DecreaseZIndexCommand::DoCommand(Command aCommand,
+nsresult DecreaseZIndexCommand::DoCommand(Command /*aCommand*/,
                                           EditorBase& aEditorBase,
                                           nsIPrincipal* aPrincipal) const {
   HTMLEditor* htmlEditor = aEditorBase.GetAsHTMLEditor();
@@ -955,7 +957,7 @@ nsresult DecreaseZIndexCommand::DoCommand(Command aCommand,
 
 nsresult DecreaseZIndexCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -966,7 +968,7 @@ nsresult DecreaseZIndexCommand::GetCommandStateParams(
 
 StaticRefPtr<IncreaseZIndexCommand> IncreaseZIndexCommand::sInstance;
 
-bool IncreaseZIndexCommand::IsCommandEnabled(Command aCommand,
+bool IncreaseZIndexCommand::IsCommandEnabled(Command /*aCommand*/,
                                              EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -979,7 +981,7 @@ bool IncreaseZIndexCommand::IsCommandEnabled(Command aCommand,
   return !!htmlEditor->GetPositionedElement();
 }
 
-nsresult IncreaseZIndexCommand::DoCommand(Command aCommand,
+nsresult IncreaseZIndexCommand::DoCommand(Command /*aCommand*/,
                                           EditorBase& aEditorBase,
                                           nsIPrincipal* aPrincipal) const {
   HTMLEditor* htmlEditor = aEditorBase.GetAsHTMLEditor();
@@ -994,7 +996,7 @@ nsresult IncreaseZIndexCommand::DoCommand(Command aCommand,
 
 nsresult IncreaseZIndexCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -1005,7 +1007,7 @@ nsresult IncreaseZIndexCommand::GetCommandStateParams(
 
 StaticRefPtr<RemoveStylesCommand> RemoveStylesCommand::sInstance;
 
-bool RemoveStylesCommand::IsCommandEnabled(Command aCommand,
+bool RemoveStylesCommand::IsCommandEnabled(Command /*aCommand*/,
                                            EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -1016,7 +1018,7 @@ bool RemoveStylesCommand::IsCommandEnabled(Command aCommand,
          htmlEditor->IsStyleEditable();
 }
 
-nsresult RemoveStylesCommand::DoCommand(Command aCommand,
+nsresult RemoveStylesCommand::DoCommand(Command /*aCommand*/,
                                         EditorBase& aEditorBase,
                                         nsIPrincipal* aPrincipal) const {
   HTMLEditor* htmlEditor = aEditorBase.GetAsHTMLEditor();
@@ -1033,7 +1035,7 @@ nsresult RemoveStylesCommand::DoCommand(Command aCommand,
 
 nsresult RemoveStylesCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -1044,7 +1046,7 @@ nsresult RemoveStylesCommand::GetCommandStateParams(
 
 StaticRefPtr<IncreaseFontSizeCommand> IncreaseFontSizeCommand::sInstance;
 
-bool IncreaseFontSizeCommand::IsCommandEnabled(Command aCommand,
+bool IncreaseFontSizeCommand::IsCommandEnabled(Command /*aCommand*/,
                                                EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -1055,7 +1057,7 @@ bool IncreaseFontSizeCommand::IsCommandEnabled(Command aCommand,
          htmlEditor->IsStyleEditable();
 }
 
-nsresult IncreaseFontSizeCommand::DoCommand(Command aCommand,
+nsresult IncreaseFontSizeCommand::DoCommand(Command /*aCommand*/,
                                             EditorBase& aEditorBase,
                                             nsIPrincipal* aPrincipal) const {
   HTMLEditor* htmlEditor = aEditorBase.GetAsHTMLEditor();
@@ -1070,7 +1072,7 @@ nsresult IncreaseFontSizeCommand::DoCommand(Command aCommand,
 
 nsresult IncreaseFontSizeCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -1081,7 +1083,7 @@ nsresult IncreaseFontSizeCommand::GetCommandStateParams(
 
 StaticRefPtr<DecreaseFontSizeCommand> DecreaseFontSizeCommand::sInstance;
 
-bool DecreaseFontSizeCommand::IsCommandEnabled(Command aCommand,
+bool DecreaseFontSizeCommand::IsCommandEnabled(Command /*aCommand*/,
                                                EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -1092,7 +1094,7 @@ bool DecreaseFontSizeCommand::IsCommandEnabled(Command aCommand,
          htmlEditor->IsStyleEditable();
 }
 
-nsresult DecreaseFontSizeCommand::DoCommand(Command aCommand,
+nsresult DecreaseFontSizeCommand::DoCommand(Command /*aCommand*/,
                                             EditorBase& aEditorBase,
                                             nsIPrincipal* aPrincipal) const {
   HTMLEditor* htmlEditor = aEditorBase.GetAsHTMLEditor();
@@ -1107,7 +1109,7 @@ nsresult DecreaseFontSizeCommand::DoCommand(Command aCommand,
 
 nsresult DecreaseFontSizeCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -1118,7 +1120,7 @@ nsresult DecreaseFontSizeCommand::GetCommandStateParams(
 
 StaticRefPtr<InsertHTMLCommand> InsertHTMLCommand::sInstance;
 
-bool InsertHTMLCommand::IsCommandEnabled(Command aCommand,
+bool InsertHTMLCommand::IsCommandEnabled(Command /*aCommand*/,
                                          EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor || htmlEditor->ComputeEditContext()) {
@@ -1127,7 +1129,8 @@ bool InsertHTMLCommand::IsCommandEnabled(Command aCommand,
   return htmlEditor->IsModifiable() && htmlEditor->IsSelectionEditable();
 }
 
-nsresult InsertHTMLCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
+nsresult InsertHTMLCommand::DoCommand(Command /*aCommand*/,
+                                      EditorBase& aEditorBase,
                                       nsIPrincipal* aPrincipal) const {
   // If InsertHTMLCommand is called with no parameters, it was probably called
   // with an empty string parameter ''. In this case, it should act the same as
@@ -1143,7 +1146,7 @@ nsresult InsertHTMLCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
   return rv;
 }
 
-nsresult InsertHTMLCommand::DoCommandParam(Command aCommand,
+nsresult InsertHTMLCommand::DoCommandParam(Command /*aCommand*/,
                                            const nsAString& aStringParam,
                                            EditorBase& aEditorBase,
                                            nsIPrincipal* aPrincipal) const {
@@ -1164,7 +1167,7 @@ nsresult InsertHTMLCommand::DoCommandParam(Command aCommand,
 
 nsresult InsertHTMLCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -1175,7 +1178,7 @@ nsresult InsertHTMLCommand::GetCommandStateParams(
 
 StaticRefPtr<InsertTagCommand> InsertTagCommand::sInstance;
 
-bool InsertTagCommand::IsCommandEnabled(Command aCommand,
+bool InsertTagCommand::IsCommandEnabled(Command /*aCommand*/,
                                         EditorBase* aEditorBase) const {
   HTMLEditor* htmlEditor = HTMLEditor::GetFrom(aEditorBase);
   if (!htmlEditor) {
@@ -1300,7 +1303,7 @@ nsresult InsertTagCommand::DoCommandParam(Command aCommand,
 
 nsresult InsertTagCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }

@@ -231,7 +231,7 @@ void EditorCommand::GetCommandStateParams(const nsACString& aCommandName,
 
 StaticRefPtr<UndoCommand> UndoCommand::sInstance;
 
-bool UndoCommand::IsCommandEnabled(Command aCommand,
+bool UndoCommand::IsCommandEnabled(Command /*aCommand*/,
                                    EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -240,7 +240,7 @@ bool UndoCommand::IsCommandEnabled(Command aCommand,
          aEditorBase->CanUndo();
 }
 
-nsresult UndoCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
+nsresult UndoCommand::DoCommand(Command /*aCommand*/, EditorBase& aEditorBase,
                                 nsIPrincipal* aPrincipal) const {
   nsresult rv = aEditorBase.UndoAsAction(1, aPrincipal);
   NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "EditorBase::UndoAsAction() failed");
@@ -249,7 +249,7 @@ nsresult UndoCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult UndoCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -260,7 +260,7 @@ nsresult UndoCommand::GetCommandStateParams(
 
 StaticRefPtr<RedoCommand> RedoCommand::sInstance;
 
-bool RedoCommand::IsCommandEnabled(Command aCommand,
+bool RedoCommand::IsCommandEnabled(Command /*aCommand*/,
                                    EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -269,7 +269,7 @@ bool RedoCommand::IsCommandEnabled(Command aCommand,
          aEditorBase->CanRedo();
 }
 
-nsresult RedoCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
+nsresult RedoCommand::DoCommand(Command /*aCommand*/, EditorBase& aEditorBase,
                                 nsIPrincipal* aPrincipal) const {
   nsresult rv = aEditorBase.RedoAsAction(1, aPrincipal);
   NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "EditorBase::RedoAsAction() failed");
@@ -278,7 +278,7 @@ nsresult RedoCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult RedoCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -289,7 +289,7 @@ nsresult RedoCommand::GetCommandStateParams(
 
 StaticRefPtr<CutCommand> CutCommand::sInstance;
 
-bool CutCommand::IsCommandEnabled(Command aCommand,
+bool CutCommand::IsCommandEnabled(Command /*aCommand*/,
                                   EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -298,7 +298,7 @@ bool CutCommand::IsCommandEnabled(Command aCommand,
          aEditorBase->IsCutCommandEnabled();
 }
 
-nsresult CutCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
+nsresult CutCommand::DoCommand(Command /*aCommand*/, EditorBase& aEditorBase,
                                nsIPrincipal* aPrincipal) const {
   nsresult rv = aEditorBase.CutAsAction(aPrincipal);
   NS_WARNING_ASSERTION(NS_SUCCEEDED(rv), "EditorBase::CutAsAction() failed");
@@ -307,7 +307,7 @@ nsresult CutCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult CutCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -318,7 +318,7 @@ nsresult CutCommand::GetCommandStateParams(
 
 StaticRefPtr<CutOrDeleteCommand> CutOrDeleteCommand::sInstance;
 
-bool CutOrDeleteCommand::IsCommandEnabled(Command aCommand,
+bool CutOrDeleteCommand::IsCommandEnabled(Command /*aCommand*/,
                                           EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -326,7 +326,7 @@ bool CutOrDeleteCommand::IsCommandEnabled(Command aCommand,
   return aEditorBase->IsSelectionEditable();
 }
 
-nsresult CutOrDeleteCommand::DoCommand(Command aCommand,
+nsresult CutOrDeleteCommand::DoCommand(Command /*aCommand*/,
                                        EditorBase& aEditorBase,
                                        nsIPrincipal* aPrincipal) const {
   dom::Selection* selection = aEditorBase.GetSelection();
@@ -344,7 +344,7 @@ nsresult CutOrDeleteCommand::DoCommand(Command aCommand,
 
 nsresult CutOrDeleteCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -355,7 +355,7 @@ nsresult CutOrDeleteCommand::GetCommandStateParams(
 
 StaticRefPtr<CopyCommand> CopyCommand::sInstance;
 
-bool CopyCommand::IsCommandEnabled(Command aCommand,
+bool CopyCommand::IsCommandEnabled(Command /*aCommand*/,
                                    EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -363,8 +363,8 @@ bool CopyCommand::IsCommandEnabled(Command aCommand,
   return aEditorBase->IsCopyCommandEnabled();
 }
 
-nsresult CopyCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
-                                nsIPrincipal* aPrincipal) const {
+nsresult CopyCommand::DoCommand(Command /*aCommand*/, EditorBase& aEditorBase,
+                                nsIPrincipal* /*aPrincipal*/) const {
   // Shouldn't cause "beforeinput" event so that we don't need to specify
   // the given principal.
   return aEditorBase.Copy();
@@ -372,7 +372,7 @@ nsresult CopyCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult CopyCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -383,7 +383,7 @@ nsresult CopyCommand::GetCommandStateParams(
 
 StaticRefPtr<CopyOrDeleteCommand> CopyOrDeleteCommand::sInstance;
 
-bool CopyOrDeleteCommand::IsCommandEnabled(Command aCommand,
+bool CopyOrDeleteCommand::IsCommandEnabled(Command /*aCommand*/,
                                            EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -391,7 +391,7 @@ bool CopyOrDeleteCommand::IsCommandEnabled(Command aCommand,
   return aEditorBase->IsSelectionEditable();
 }
 
-nsresult CopyOrDeleteCommand::DoCommand(Command aCommand,
+nsresult CopyOrDeleteCommand::DoCommand(Command /*aCommand*/,
                                         EditorBase& aEditorBase,
                                         nsIPrincipal* aPrincipal) const {
   dom::Selection* selection = aEditorBase.GetSelection();
@@ -411,7 +411,7 @@ nsresult CopyOrDeleteCommand::DoCommand(Command aCommand,
 
 nsresult CopyOrDeleteCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -422,7 +422,7 @@ nsresult CopyOrDeleteCommand::GetCommandStateParams(
 
 StaticRefPtr<PasteCommand> PasteCommand::sInstance;
 
-bool PasteCommand::IsCommandEnabled(Command aCommand,
+bool PasteCommand::IsCommandEnabled(Command /*aCommand*/,
                                     EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -431,7 +431,7 @@ bool PasteCommand::IsCommandEnabled(Command aCommand,
          aEditorBase->CanPaste(nsIClipboard::kGlobalClipboard);
 }
 
-nsresult PasteCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
+nsresult PasteCommand::DoCommand(Command /*aCommand*/, EditorBase& aEditorBase,
                                  nsIPrincipal* aPrincipal) const {
   RefPtr<dom::DataTransfer> dataTransfer;
   nsCOMPtr<nsIPrincipal> subjectPrincipal =
@@ -470,7 +470,7 @@ nsresult PasteCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult PasteCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -481,13 +481,13 @@ nsresult PasteCommand::GetCommandStateParams(
 
 StaticRefPtr<PasteNoFormattingCommand> PasteNoFormattingCommand::sInstance;
 
-bool PasteNoFormattingCommand::IsCommandEnabled(Command aCommand,
+bool PasteNoFormattingCommand::IsCommandEnabled(Command /*aCommand*/,
                                                 EditorBase* aEditorBase) const {
   return aEditorBase && aEditorBase->IsSelectionEditable() &&
          aEditorBase->CanPaste(nsIClipboard::kGlobalClipboard);
 }
 
-nsresult PasteNoFormattingCommand::DoCommand(Command aCommand,
+nsresult PasteNoFormattingCommand::DoCommand(Command /*aCommand*/,
                                              EditorBase& aEditorBase,
                                              nsIPrincipal* aPrincipal) const {
 #ifdef DEBUG
@@ -510,7 +510,7 @@ nsresult PasteNoFormattingCommand::DoCommand(Command aCommand,
 
 nsresult PasteNoFormattingCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -521,7 +521,7 @@ nsresult PasteNoFormattingCommand::GetCommandStateParams(
 
 StaticRefPtr<PasteTransferableCommand> PasteTransferableCommand::sInstance;
 
-bool PasteTransferableCommand::IsCommandEnabled(Command aCommand,
+bool PasteTransferableCommand::IsCommandEnabled(Command /*aCommand*/,
                                                 EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -530,14 +530,14 @@ bool PasteTransferableCommand::IsCommandEnabled(Command aCommand,
          aEditorBase->CanPasteTransferable(nullptr);
 }
 
-nsresult PasteTransferableCommand::DoCommand(Command aCommand,
-                                             EditorBase& aEditorBase,
-                                             nsIPrincipal* aPrincipal) const {
+nsresult PasteTransferableCommand::DoCommand(
+    Command /*aCommand*/, EditorBase& /*aEditorBase*/,
+    nsIPrincipal* /*aPrincipal*/) const {
   return NS_ERROR_FAILURE;
 }
 
 nsresult PasteTransferableCommand::DoCommandParam(
-    Command aCommand, nsITransferable* aTransferableParam,
+    Command /*aCommand*/, nsITransferable* aTransferableParam,
     EditorBase& aEditorBase, nsIPrincipal* aPrincipal) const {
   if (NS_WARN_IF(!aTransferableParam)) {
     return NS_ERROR_INVALID_ARG;
@@ -551,8 +551,8 @@ nsresult PasteTransferableCommand::DoCommandParam(
 }
 
 nsresult PasteTransferableCommand::GetCommandStateParams(
-    Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    Command /*aCommand*/, nsCommandParams& aParams, EditorBase* aEditorBase,
+    nsIEditingSession* /*aEditingSession*/) const {
   if (NS_WARN_IF(!aEditorBase)) {
     return NS_ERROR_INVALID_ARG;
   }
@@ -579,14 +579,14 @@ nsresult PasteTransferableCommand::GetCommandStateParams(
 StaticRefPtr<SwitchTextDirectionCommand> SwitchTextDirectionCommand::sInstance;
 
 bool SwitchTextDirectionCommand::IsCommandEnabled(
-    Command aCommand, EditorBase* aEditorBase) const {
+    Command /*aCommand*/, EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
   }
   return aEditorBase->IsModifiable() && aEditorBase->IsSelectionEditable();
 }
 
-nsresult SwitchTextDirectionCommand::DoCommand(Command aCommand,
+nsresult SwitchTextDirectionCommand::DoCommand(Command /*aCommand*/,
                                                EditorBase& aEditorBase,
                                                nsIPrincipal* aPrincipal) const {
   nsresult rv = aEditorBase.ToggleTextDirectionAsAction(aPrincipal);
@@ -597,7 +597,7 @@ nsresult SwitchTextDirectionCommand::DoCommand(Command aCommand,
 
 nsresult SwitchTextDirectionCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -665,7 +665,7 @@ nsresult DeleteCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult DeleteCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -676,7 +676,7 @@ nsresult DeleteCommand::GetCommandStateParams(
 
 StaticRefPtr<SelectAllCommand> SelectAllCommand::sInstance;
 
-bool SelectAllCommand::IsCommandEnabled(Command aCommand,
+bool SelectAllCommand::IsCommandEnabled(Command /*aCommand*/,
                                         EditorBase* aEditorBase) const {
   // You can always select all, unless the selection is editable,
   // and the editable region is empty!
@@ -688,8 +688,9 @@ bool SelectAllCommand::IsCommandEnabled(Command aCommand,
   return !aEditorBase->IsEmpty();
 }
 
-nsresult SelectAllCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
-                                     nsIPrincipal* aPrincipal) const {
+nsresult SelectAllCommand::DoCommand(Command /*aCommand*/,
+                                     EditorBase& aEditorBase,
+                                     nsIPrincipal* /*aPrincipal*/) const {
   // Shouldn't cause "beforeinput" event so that we don't need to specify
   // aPrincipal.
   nsresult rv = aEditorBase.SelectAll();
@@ -699,7 +700,7 @@ nsresult SelectAllCommand::DoCommand(Command aCommand, EditorBase& aEditorBase,
 
 nsresult SelectAllCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -710,7 +711,7 @@ nsresult SelectAllCommand::GetCommandStateParams(
 
 StaticRefPtr<SelectionMoveCommands> SelectionMoveCommands::sInstance;
 
-bool SelectionMoveCommands::IsCommandEnabled(Command aCommand,
+bool SelectionMoveCommands::IsCommandEnabled(Command /*aCommand*/,
                                              EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -779,7 +780,7 @@ static const struct PhysicalCommand {
 
 nsresult SelectionMoveCommands::DoCommand(Command aCommand,
                                           EditorBase& aEditorBase,
-                                          nsIPrincipal* aPrincipal) const {
+                                          nsIPrincipal* /*aPrincipal*/) const {
   RefPtr<dom::Document> document = aEditorBase.GetDocument();
   if (document) {
     // Most of the commands below (possibly all of them) need layout to
@@ -844,7 +845,7 @@ nsresult SelectionMoveCommands::DoCommand(Command aCommand,
 
 nsresult SelectionMoveCommands::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -855,7 +856,7 @@ nsresult SelectionMoveCommands::GetCommandStateParams(
 
 StaticRefPtr<InsertPlaintextCommand> InsertPlaintextCommand::sInstance;
 
-bool InsertPlaintextCommand::IsCommandEnabled(Command aCommand,
+bool InsertPlaintextCommand::IsCommandEnabled(Command /*aCommand*/,
                                               EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -863,7 +864,7 @@ bool InsertPlaintextCommand::IsCommandEnabled(Command aCommand,
   return aEditorBase->IsModifiable() && aEditorBase->IsSelectionEditable();
 }
 
-nsresult InsertPlaintextCommand::DoCommand(Command aCommand,
+nsresult InsertPlaintextCommand::DoCommand(Command /*aCommand*/,
                                            EditorBase& aEditorBase,
                                            nsIPrincipal* aPrincipal) const {
   // XXX InsertTextAsAction() is not same as OnInputText().  However, other
@@ -880,8 +881,8 @@ nsresult InsertPlaintextCommand::DoCommand(Command aCommand,
 }
 
 nsresult InsertPlaintextCommand::DoCommandParam(
-    Command aCommand, const nsAString& aStringParam, EditorBase& aEditorBase,
-    nsIPrincipal* aPrincipal) const {
+    Command /*aCommand*/, const nsAString& aStringParam,
+    EditorBase& aEditorBase, nsIPrincipal* aPrincipal) const {
   if (NS_WARN_IF(aStringParam.IsVoid())) {
     return NS_ERROR_INVALID_ARG;
   }
@@ -901,7 +902,7 @@ nsresult InsertPlaintextCommand::DoCommandParam(
 
 nsresult InsertPlaintextCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -912,7 +913,7 @@ nsresult InsertPlaintextCommand::GetCommandStateParams(
 
 StaticRefPtr<InsertParagraphCommand> InsertParagraphCommand::sInstance;
 
-bool InsertParagraphCommand::IsCommandEnabled(Command aCommand,
+bool InsertParagraphCommand::IsCommandEnabled(Command /*aCommand*/,
                                               EditorBase* aEditorBase) const {
   if (!aEditorBase || aEditorBase->IsSingleLineEditor()) {
     return false;
@@ -920,7 +921,7 @@ bool InsertParagraphCommand::IsCommandEnabled(Command aCommand,
   return aEditorBase->IsModifiable() && aEditorBase->IsSelectionEditable();
 }
 
-nsresult InsertParagraphCommand::DoCommand(Command aCommand,
+nsresult InsertParagraphCommand::DoCommand(Command /*aCommand*/,
                                            EditorBase& aEditorBase,
                                            nsIPrincipal* aPrincipal) const {
   if (aEditorBase.IsSingleLineEditor()) {
@@ -942,7 +943,7 @@ nsresult InsertParagraphCommand::DoCommand(Command aCommand,
 
 nsresult InsertParagraphCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -953,7 +954,7 @@ nsresult InsertParagraphCommand::GetCommandStateParams(
 
 StaticRefPtr<InsertLineBreakCommand> InsertLineBreakCommand::sInstance;
 
-bool InsertLineBreakCommand::IsCommandEnabled(Command aCommand,
+bool InsertLineBreakCommand::IsCommandEnabled(Command /*aCommand*/,
                                               EditorBase* aEditorBase) const {
   if (!aEditorBase || aEditorBase->IsSingleLineEditor()) {
     return false;
@@ -961,7 +962,7 @@ bool InsertLineBreakCommand::IsCommandEnabled(Command aCommand,
   return aEditorBase->IsModifiable() && aEditorBase->IsSelectionEditable();
 }
 
-nsresult InsertLineBreakCommand::DoCommand(Command aCommand,
+nsresult InsertLineBreakCommand::DoCommand(Command /*aCommand*/,
                                            EditorBase& aEditorBase,
                                            nsIPrincipal* aPrincipal) const {
   if (aEditorBase.IsSingleLineEditor()) {
@@ -975,7 +976,7 @@ nsresult InsertLineBreakCommand::DoCommand(Command aCommand,
 
 nsresult InsertLineBreakCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   return aParams.SetBool(STATE_ENABLED,
                          IsCommandEnabled(aCommand, aEditorBase));
 }
@@ -986,7 +987,7 @@ nsresult InsertLineBreakCommand::GetCommandStateParams(
 
 StaticRefPtr<PasteQuotationCommand> PasteQuotationCommand::sInstance;
 
-bool PasteQuotationCommand::IsCommandEnabled(Command aCommand,
+bool PasteQuotationCommand::IsCommandEnabled(Command /*aCommand*/,
                                              EditorBase* aEditorBase) const {
   if (!aEditorBase) {
     return false;
@@ -995,7 +996,7 @@ bool PasteQuotationCommand::IsCommandEnabled(Command aCommand,
          aEditorBase->CanPaste(nsIClipboard::kGlobalClipboard);
 }
 
-nsresult PasteQuotationCommand::DoCommand(Command aCommand,
+nsresult PasteQuotationCommand::DoCommand(Command /*aCommand*/,
                                           EditorBase& aEditorBase,
                                           nsIPrincipal* aPrincipal) const {
   nsresult rv = aEditorBase.PasteAsQuotationAsAction(
@@ -1008,8 +1009,8 @@ nsresult PasteQuotationCommand::DoCommand(Command aCommand,
 }
 
 nsresult PasteQuotationCommand::GetCommandStateParams(
-    Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    Command /*aCommand*/, nsCommandParams& aParams, EditorBase* aEditorBase,
+    nsIEditingSession* /*aEditingSession*/) const {
   if (!aEditorBase) {
     return NS_OK;
   }

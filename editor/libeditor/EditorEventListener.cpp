@@ -780,7 +780,7 @@ bool EditorEventListener::NotifyIMEOfMouseButtonEvent(
       *presContext, focusedElement, aMouseEvent);
 }
 
-nsresult EditorEventListener::MouseDown(MouseEvent* aMouseEvent) {
+nsresult EditorEventListener::MouseDown(MouseEvent* /*aMouseEvent*/) {
   MOZ_ASSERT_IF(!DetachedFromEditor(), !mEditorBase->IsIMEComposing());
   return NS_OK;
 }

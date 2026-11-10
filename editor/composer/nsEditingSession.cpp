@@ -670,12 +670,12 @@ nsEditingSession::OnStateChange(nsIWebProgress* aWebProgress,
 
 ----------------------------------------------------------------------------*/
 NS_IMETHODIMP
-nsEditingSession::OnProgressChange(nsIWebProgress* aWebProgress,
-                                   nsIRequest* aRequest,
-                                   int32_t aCurSelfProgress,
-                                   int32_t aMaxSelfProgress,
-                                   int32_t aCurTotalProgress,
-                                   int32_t aMaxTotalProgress) {
+nsEditingSession::OnProgressChange(nsIWebProgress* /*aWebProgress*/,
+                                   nsIRequest* /*aRequest*/,
+                                   int32_t /*aCurSelfProgress*/,
+                                   int32_t /*aMaxSelfProgress*/,
+                                   int32_t /*aCurTotalProgress*/,
+                                   int32_t /*aMaxTotalProgress*/) {
   MOZ_ASSERT_UNREACHABLE("notification excluded in AddProgressListener(...)");
   return NS_OK;
 }
@@ -687,8 +687,8 @@ nsEditingSession::OnProgressChange(nsIWebProgress* aWebProgress,
 ----------------------------------------------------------------------------*/
 NS_IMETHODIMP
 nsEditingSession::OnLocationChange(nsIWebProgress* aWebProgress,
-                                   nsIRequest* aRequest, nsIURI* aURI,
-                                   uint32_t aFlags) {
+                                   nsIRequest* /*aRequest*/, nsIURI* aURI,
+                                   uint32_t /*aFlags*/) {
   nsCOMPtr<mozIDOMWindowProxy> domWindow;
   nsresult rv = aWebProgress->GetDOMWindow(getter_AddRefs(domWindow));
   NS_ENSURE_SUCCESS(rv, rv);
@@ -716,9 +716,9 @@ nsEditingSession::OnLocationChange(nsIWebProgress* aWebProgress,
 
 ----------------------------------------------------------------------------*/
 NS_IMETHODIMP
-nsEditingSession::OnStatusChange(nsIWebProgress* aWebProgress,
-                                 nsIRequest* aRequest, nsresult aStatus,
-                                 const char16_t* aMessage) {
+nsEditingSession::OnStatusChange(nsIWebProgress* /*aWebProgress*/,
+                                 nsIRequest* /*aRequest*/, nsresult /*aStatus*/,
+                                 const char16_t* /*aMessage*/) {
   MOZ_ASSERT_UNREACHABLE("notification excluded in AddProgressListener(...)");
   return NS_OK;
 }
@@ -729,8 +729,9 @@ nsEditingSession::OnStatusChange(nsIWebProgress* aWebProgress,
 
 ----------------------------------------------------------------------------*/
 NS_IMETHODIMP
-nsEditingSession::OnSecurityChange(nsIWebProgress* aWebProgress,
-                                   nsIRequest* aRequest, uint32_t aState) {
+nsEditingSession::OnSecurityChange(nsIWebProgress* /*aWebProgress*/,
+                                   nsIRequest* /*aRequest*/,
+                                   uint32_t /*aState*/) {
   MOZ_ASSERT_UNREACHABLE("notification excluded in AddProgressListener(...)");
   return NS_OK;
 }
@@ -741,9 +742,9 @@ nsEditingSession::OnSecurityChange(nsIWebProgress* aWebProgress,
 
 ----------------------------------------------------------------------------*/
 NS_IMETHODIMP
-nsEditingSession::OnContentBlockingEvent(nsIWebProgress* aWebProgress,
-                                         nsIRequest* aRequest,
-                                         uint32_t aEvent) {
+nsEditingSession::OnContentBlockingEvent(nsIWebProgress* /*aWebProgress*/,
+                                         nsIRequest* /*aRequest*/,
+                                         uint32_t /*aEvent*/) {
   MOZ_ASSERT_UNREACHABLE("notification excluded in AddProgressListener(...)");
   return NS_OK;
 }
@@ -803,10 +804,9 @@ nsresult nsEditingSession::StartDocumentLoad(nsIWebProgress* aWebProgress,
 
   Called on end of load in a single frame
 ----------------------------------------------------------------------------*/
-nsresult nsEditingSession::EndDocumentLoad(nsIWebProgress* aWebProgress,
-                                           nsIChannel* aChannel,
-                                           nsresult aStatus,
-                                           bool aIsToBeMadeEditable) {
+nsresult nsEditingSession::EndDocumentLoad(
+    nsIWebProgress* aWebProgress, [[maybe_unused]] nsIChannel* aChannel,
+    nsresult aStatus, bool aIsToBeMadeEditable) {
   NS_ENSURE_ARG_POINTER(aWebProgress);
 
 #ifdef NOISY_DOC_LOADING
@@ -891,7 +891,7 @@ nsresult nsEditingSession::EndDocumentLoad(nsIWebProgress* aWebProgress,
   return rv;
 }
 
-void nsEditingSession::TimerCallback(nsITimer* aTimer, void* aClosure) {
+void nsEditingSession::TimerCallback(nsITimer* /*aTimer*/, void* aClosure) {
   nsCOMPtr<nsIDocShell> docShell =
       do_QueryReferent(static_cast<nsIWeakReference*>(aClosure));
   if (docShell) {
@@ -913,7 +913,7 @@ void nsEditingSession::TimerCallback(nsITimer* aTimer, void* aClosure) {
 
   Called on start load of the entire page (incl. subframes)
 ----------------------------------------------------------------------------*/
-nsresult nsEditingSession::StartPageLoad(nsIChannel* aChannel) {
+nsresult nsEditingSession::StartPageLoad(nsIChannel* /*aChannel*/) {
 #ifdef NOISY_DOC_LOADING
   printf("======= StartPageLoad ========\n");
 #endif
@@ -927,7 +927,8 @@ nsresult nsEditingSession::StartPageLoad(nsIChannel* aChannel) {
   Called on end load of the entire page (incl. subframes)
 ----------------------------------------------------------------------------*/
 nsresult nsEditingSession::EndPageLoad(nsIWebProgress* aWebProgress,
-                                       nsIChannel* aChannel, nsresult aStatus) {
+                                       [[maybe_unused]] nsIChannel* aChannel,
+                                       nsresult aStatus) {
 #ifdef NOISY_DOC_LOADING
   printf("======= EndPageLoad ========\n");
   printf("  with status %d, ", aStatus);

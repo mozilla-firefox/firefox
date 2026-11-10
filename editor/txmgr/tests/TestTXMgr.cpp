@@ -330,7 +330,7 @@ class SimpleTransaction : public TestTransaction {
     return NS_OK;
   }
 
-  NS_IMETHOD Merge(nsITransaction* aTransaction, bool* aDidMerge) override {
+  NS_IMETHOD Merge(nsITransaction* /*aTransaction*/, bool* aDidMerge) override {
     if (aDidMerge) {
       *aDidMerge = (mFlags & MERGE_FLAG) ? true : false;
     }
@@ -445,7 +445,7 @@ class TestTransactionFactory {
 
 class SimpleTransactionFactory : public TestTransactionFactory {
  public:
-  TestTransaction* create(nsITransactionManager* txmgr,
+  TestTransaction* create(nsITransactionManager* /*txmgr*/,
                           int32_t flags) override {
     return (TestTransaction*)new SimpleTransaction(flags);
   }

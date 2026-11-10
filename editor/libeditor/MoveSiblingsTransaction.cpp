@@ -351,7 +351,7 @@ void MoveSiblingsTransaction::RemoveAllSiblingsToMove(
 
 nsresult MoveSiblingsTransaction::InsertAllSiblingsToMove(
     HTMLEditor& aHTMLEditor,
-    const nsTArray<OwningNonNull<nsIContent>>& aClonedSiblingsToMove,
+    const nsTArray<OwningNonNull<nsIContent>>& /*aClonedSiblingsToMove*/,
     nsINode& aParentNode, nsIContent* aReferenceNode,
     AutoMoveNodeSelNotify& aNotifier) const {
   MOZ_ASSERT(mHTMLEditor);

@@ -297,7 +297,8 @@ void AutoClonedRangeArray::EnsureRangesInTextNode(const Text& aTextNode) {
 
 Result<bool, nsresult>
 AutoClonedRangeArray::ShrinkRangesIfStartFromOrEndAfterAtomicContent(
-    const HTMLEditor& aHTMLEditor, nsIEditor::EDirection aDirectionAndAmount,
+    const HTMLEditor& /*aHTMLEditor*/,
+    nsIEditor::EDirection aDirectionAndAmount,
     IfSelectingOnlyOneAtomicContent aIfSelectingOnlyOneAtomicContent) {
   if (IsCollapsed()) {
     return false;

@@ -142,12 +142,12 @@ class DictionaryFetcher final : public nsIContentPrefCallback2 {
     return NS_OK;
   }
 
-  NS_IMETHOD HandleCompletion(uint16_t reason) override {
+  NS_IMETHOD HandleCompletion(uint16_t /*reason*/) override {
     mSpellCheck->DictionaryFetched(this);
     return NS_OK;
   }
 
-  NS_IMETHOD HandleError(nsresult error) override { return NS_OK; }
+  NS_IMETHOD HandleError(nsresult /*error*/) override { return NS_OK; }
 
   nsCOMPtr<nsIEditorSpellCheckCallback> mCallback;
   uint32_t mGroup;
@@ -494,7 +494,7 @@ EditorSpellCheck::Suggest(const nsAString& aSuggestedWord, uint32_t aCount,
           [promise](const CopyableTArray<nsString>& aSuggestions) {
             promise->MaybeResolve(aSuggestions);
           },
-          [promise](nsresult aError) {
+          [promise](nsresult /*aError*/) {
             promise->MaybeReject(NS_ERROR_FAILURE);
           });
 
@@ -668,7 +668,7 @@ EditorSpellCheck::SetCurrentDictionaries(
       ->Then(
           GetMainThreadSerialEventTarget(), __func__,
           [promise]() { promise->MaybeResolveWithUndefined(); },
-          [promise](nsresult aError) {
+          [promise](nsresult /*aError*/) {
             promise->MaybeReject(NS_ERROR_FAILURE);
           });
 

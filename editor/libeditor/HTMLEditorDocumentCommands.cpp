@@ -55,15 +55,15 @@ bool SetDocumentStateCommand::IsCommandEnabled(Command aCommand,
   }
 }
 
-nsresult SetDocumentStateCommand::DoCommand(Command aCommand,
-                                            EditorBase& aEditorBase,
-                                            nsIPrincipal* aPrincipal) const {
+nsresult SetDocumentStateCommand::DoCommand(
+    Command /*aCommand*/, EditorBase& /*aEditorBase*/,
+    nsIPrincipal* /*aPrincipal*/) const {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 nsresult SetDocumentStateCommand::DoCommandParam(
     Command aCommand, const Maybe<bool>& aBoolParam, EditorBase& aEditorBase,
-    nsIPrincipal* aPrincipal) const {
+    nsIPrincipal* /*aPrincipal*/) const {
   if (NS_WARN_IF(aBoolParam.isNothing())) {
     return NS_ERROR_INVALID_ARG;
   }
@@ -179,7 +179,7 @@ nsresult SetDocumentStateCommand::DoCommandParam(
 
 nsresult SetDocumentStateCommand::DoCommandParam(
     Command aCommand, const nsACString& aCStringParam, EditorBase& aEditorBase,
-    nsIPrincipal* aPrincipal) const {
+    nsIPrincipal* /*aPrincipal*/) const {
   if (NS_WARN_IF(aCStringParam.IsVoid())) {
     return NS_ERROR_INVALID_ARG;
   }
@@ -220,7 +220,7 @@ nsresult SetDocumentStateCommand::DoCommandParam(
 
 nsresult SetDocumentStateCommand::GetCommandStateParams(
     Command aCommand, nsCommandParams& aParams, EditorBase* aEditorBase,
-    nsIEditingSession* aEditingSession) const {
+    nsIEditingSession* /*aEditingSession*/) const {
   // If the result is set to STATE_ATTRIBUTE as CString value,
   // queryCommandValue() returns the string value.
   // Otherwise, ignored.
@@ -412,15 +412,15 @@ nsresult SetDocumentStateCommand::GetCommandStateParams(
 
 StaticRefPtr<DocumentStateCommand> DocumentStateCommand::sInstance;
 
-bool DocumentStateCommand::IsCommandEnabled(Command aCommand,
-                                            EditorBase* aEditorBase) const {
+bool DocumentStateCommand::IsCommandEnabled(Command /*aCommand*/,
+                                            EditorBase* /*aEditorBase*/) const {
   // Always return false to discourage callers from using DoCommand()
   return false;
 }
 
-nsresult DocumentStateCommand::DoCommand(Command aCommand,
-                                         EditorBase& aEditorBase,
-                                         nsIPrincipal* aPrincipal) const {
+nsresult DocumentStateCommand::DoCommand(Command /*aCommand*/,
+                                         EditorBase& /*aEditorBase*/,
+                                         nsIPrincipal* /*aPrincipal*/) const {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 

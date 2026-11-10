@@ -49,9 +49,9 @@ using namespace dom;
 
 static void ProcessBValue(const nsAString* aInputString,
                           nsAString& aOutputString,
-                          const char* aDefaultValueString,
-                          const char* aPrependString,
-                          const char* aAppendString) {
+                          const char* /*aDefaultValueString*/,
+                          const char* /*aPrependString*/,
+                          const char* /*aAppendString*/) {
   if (aInputString && aInputString->EqualsLiteral("-moz-editor-invert-value")) {
     aOutputString.AssignLiteral("normal");
   } else {
@@ -59,19 +59,19 @@ static void ProcessBValue(const nsAString* aInputString,
   }
 }
 
-static void ProcessDefaultValue(const nsAString* aInputString,
+static void ProcessDefaultValue(const nsAString* /*aInputString*/,
                                 nsAString& aOutputString,
                                 const char* aDefaultValueString,
-                                const char* aPrependString,
-                                const char* aAppendString) {
+                                const char* /*aPrependString*/,
+                                const char* /*aAppendString*/) {
   CopyASCIItoUTF16(MakeStringSpan(aDefaultValueString), aOutputString);
 }
 
 static void ProcessSameValue(const nsAString* aInputString,
                              nsAString& aOutputString,
-                             const char* aDefaultValueString,
-                             const char* aPrependString,
-                             const char* aAppendString) {
+                             const char* /*aDefaultValueString*/,
+                             const char* /*aPrependString*/,
+                             const char* /*aAppendString*/) {
   if (aInputString) {
     aOutputString.Assign(*aInputString);
   } else
@@ -80,7 +80,7 @@ static void ProcessSameValue(const nsAString* aInputString,
 
 static void ProcessExtendedValue(const nsAString* aInputString,
                                  nsAString& aOutputString,
-                                 const char* aDefaultValueString,
+                                 const char* /*aDefaultValueString*/,
                                  const char* aPrependString,
                                  const char* aAppendString) {
   aOutputString.Truncate();
@@ -97,9 +97,9 @@ static void ProcessExtendedValue(const nsAString* aInputString,
 
 static void ProcessLengthValue(const nsAString* aInputString,
                                nsAString& aOutputString,
-                               const char* aDefaultValueString,
-                               const char* aPrependString,
-                               const char* aAppendString) {
+                               const char* /*aDefaultValueString*/,
+                               const char* /*aPrependString*/,
+                               const char* /*aAppendString*/) {
   aOutputString.Truncate();
   if (aInputString) {
     aOutputString.Append(*aInputString);
@@ -111,9 +111,9 @@ static void ProcessLengthValue(const nsAString* aInputString,
 
 static void ProcessListStyleTypeValue(const nsAString* aInputString,
                                       nsAString& aOutputString,
-                                      const char* aDefaultValueString,
-                                      const char* aPrependString,
-                                      const char* aAppendString) {
+                                      const char* /*aDefaultValueString*/,
+                                      const char* /*aPrependString*/,
+                                      const char* /*aAppendString*/) {
   aOutputString.Truncate();
   if (aInputString) {
     if (aInputString->EqualsLiteral("1")) {
@@ -136,9 +136,9 @@ static void ProcessListStyleTypeValue(const nsAString* aInputString,
 
 static void ProcessMarginLeftValue(const nsAString* aInputString,
                                    nsAString& aOutputString,
-                                   const char* aDefaultValueString,
-                                   const char* aPrependString,
-                                   const char* aAppendString) {
+                                   const char* /*aDefaultValueString*/,
+                                   const char* /*aPrependString*/,
+                                   const char* /*aAppendString*/) {
   aOutputString.Truncate();
   if (aInputString) {
     if (aInputString->EqualsLiteral("center") ||
@@ -155,9 +155,9 @@ static void ProcessMarginLeftValue(const nsAString* aInputString,
 
 static void ProcessMarginRightValue(const nsAString* aInputString,
                                     nsAString& aOutputString,
-                                    const char* aDefaultValueString,
-                                    const char* aPrependString,
-                                    const char* aAppendString) {
+                                    const char* /*aDefaultValueString*/,
+                                    const char* /*aPrependString*/,
+                                    const char* /*aAppendString*/) {
   aOutputString.Truncate();
   if (aInputString) {
     if (aInputString->EqualsLiteral("center") ||

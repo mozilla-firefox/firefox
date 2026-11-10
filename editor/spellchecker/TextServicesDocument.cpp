@@ -2764,21 +2764,22 @@ NS_IMETHODIMP TextServicesDocument::DidJoinContents(
 }
 
 NS_IMETHODIMP
-TextServicesDocument::DidInsertText(CharacterData* aTextNode, int32_t aOffset,
-                                    const nsAString& aString,
-                                    nsresult aResult) {
+TextServicesDocument::DidInsertText(CharacterData* /*aTextNode*/,
+                                    int32_t /*aOffset*/,
+                                    const nsAString& /*aString*/,
+                                    nsresult /*aResult*/) {
   return NS_OK;
 }
 
 NS_IMETHODIMP
-TextServicesDocument::WillDeleteText(CharacterData* aTextNode, int32_t aOffset,
-                                     int32_t aLength) {
+TextServicesDocument::WillDeleteText(CharacterData* /*aTextNode*/,
+                                     int32_t /*aOffset*/, int32_t /*aLength*/) {
   return NS_OK;
 }
 
 NS_IMETHODIMP
 TextServicesDocument::WillDeleteRanges(
-    const nsTArray<RefPtr<dom::Range>>& aRangesToDelete) {
+    const nsTArray<RefPtr<dom::Range>>& /*aRangesToDelete*/) {
   return NS_OK;
 }
 

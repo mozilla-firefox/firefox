@@ -350,8 +350,8 @@ class EditorCommand : public ControllerCommand {
    * EditorCommandParamType::None.
    */
   MOZ_CAN_RUN_SCRIPT virtual nsresult DoCommandParam(
-      Command aCommand, EditorBase& aEditorBase,
-      nsIPrincipal* aPrincipal) const {
+      Command /*aCommand*/, EditorBase& /*aEditorBase*/,
+      nsIPrincipal* /*aPrincipal*/) const {
     MOZ_ASSERT_UNREACHABLE("Wrong overload is called");
     return NS_ERROR_NOT_IMPLEMENTED;
   }
@@ -362,8 +362,8 @@ class EditorCommand : public ControllerCommand {
    * means that given param was nullptr.
    */
   MOZ_CAN_RUN_SCRIPT virtual nsresult DoCommandParam(
-      Command aCommand, const Maybe<bool>& aBoolParam, EditorBase& aEditorBase,
-      nsIPrincipal* aPrincipal) const {
+      Command /*aCommand*/, const Maybe<bool>& /*aBoolParam8*/,
+      EditorBase& /*aEditorBase*/, nsIPrincipal* /*aPrincipal*/) const {
     MOZ_ASSERT_UNREACHABLE("Wrong overload is called");
     return NS_ERROR_NOT_IMPLEMENTED;
   }
@@ -374,8 +374,8 @@ class EditorCommand : public ControllerCommand {
    * means that given param was nullptr.
    */
   MOZ_CAN_RUN_SCRIPT virtual nsresult DoCommandParam(
-      Command aCommand, const nsACString& aCStringParam,
-      EditorBase& aEditorBase, nsIPrincipal* aPrincipal) const {
+      Command /*aCommand*/, const nsACString& /*aCStringParam*/,
+      EditorBase& /*aEditorBase*/, nsIPrincipal* /*aPrincipal*/) const {
     MOZ_ASSERT_UNREACHABLE("Wrong overload is called");
     return NS_ERROR_NOT_IMPLEMENTED;
   }
@@ -386,8 +386,8 @@ class EditorCommand : public ControllerCommand {
    * means that given param was nullptr.
    */
   MOZ_CAN_RUN_SCRIPT virtual nsresult DoCommandParam(
-      Command aCommand, const nsAString& aStringParam, EditorBase& aEditorBase,
-      nsIPrincipal* aPrincipal) const {
+      Command /*aCommand*/, const nsAString& /*aStringParam*/,
+      EditorBase& /*aEditorBase*/, nsIPrincipal* /*aPrincipal*/) const {
     MOZ_ASSERT_UNREACHABLE("Wrong overload is called");
     return NS_ERROR_NOT_IMPLEMENTED;
   }
@@ -398,8 +398,8 @@ class EditorCommand : public ControllerCommand {
    * nullptr.
    */
   MOZ_CAN_RUN_SCRIPT virtual nsresult DoCommandParam(
-      Command aCommand, nsITransferable* aTransferableParam,
-      EditorBase& aEditorBase, nsIPrincipal* aPrincipal) const {
+      Command /*aCommand*/, nsITransferable* /*aTransferableParam*/,
+      EditorBase& /*aEditorBase*/, nsIPrincipal* /*aPrincipal*/) const {
     MOZ_ASSERT_UNREACHABLE("Wrong overload is called");
     return NS_ERROR_NOT_IMPLEMENTED;
   }

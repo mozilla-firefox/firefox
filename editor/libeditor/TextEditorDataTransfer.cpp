@@ -99,7 +99,7 @@ nsresult TextEditor::InsertTextFromTransferable(
 
 nsresult TextEditor::InsertDroppedDataTransferAsAction(
     AutoEditActionDataSetter& aEditActionData, DataTransfer& aDataTransfer,
-    const EditorDOMPoint& aDroppedAt, nsIPrincipal* aSourcePrincipal) {
+    const EditorDOMPoint& aDroppedAt, nsIPrincipal* /*aSourcePrincipal*/) {
   MOZ_ASSERT(aEditActionData.GetEditAction() == EditAction::eDrop);
   MOZ_ASSERT(GetEditAction() == EditAction::eDrop);
   MOZ_ASSERT(aDroppedAt.IsSet());
@@ -160,7 +160,7 @@ nsresult TextEditor::InsertDroppedDataTransferAsAction(
   return rv;
 }
 
-nsresult TextEditor::HandlePaste(AutoEditActionDataSetter& aEditActionData,
+nsresult TextEditor::HandlePaste(AutoEditActionDataSetter& /*aEditActionData*/,
                                  nsIClipboard::ClipboardType aClipboardType,
                                  DataTransfer* aDataTransfer) {
   if (NS_WARN_IF(!GetDocument())) {
@@ -212,8 +212,8 @@ nsresult TextEditor::HandlePaste(AutoEditActionDataSetter& aEditActionData,
 }
 
 nsresult TextEditor::HandlePasteTransferable(
-    AutoEditActionDataSetter& aEditActionData, nsITransferable& aTransferable,
-    DataTransfer* aDataTransfer) {
+    AutoEditActionDataSetter& /*aEditActionData*/,
+    nsITransferable& aTransferable, DataTransfer* /*aDataTransfer*/) {
   if (!IsModifiable()) {
     return NS_OK;
   }

@@ -509,7 +509,7 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY void HTMLEditor::CharacterDataChanged(
 }
 
 nsresult HTMLEditor::RunOrScheduleOnModifyDocument(
-    const nsIContent* aContentWillBeRemoved /* = nullptr */) {
+    const nsIContent* /*aContentWillBeRemoved = nullptr */) {
   if (mPendingDocumentModifiedRunner) {
     return NS_OK;  // We've already posted same runnable into the queue.
   }

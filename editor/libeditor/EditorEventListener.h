@@ -80,7 +80,8 @@ class EditorEventListener : public nsIDOMEventListener {
   MOZ_CAN_RUN_SCRIPT void HandleEndComposition(
       WidgetCompositionEvent* aCompositionEvent);
   MOZ_CAN_RUN_SCRIPT virtual nsresult MouseDown(dom::MouseEvent* aMouseEvent);
-  MOZ_CAN_RUN_SCRIPT virtual nsresult MouseUp(dom::MouseEvent* aMouseEvent) {
+  MOZ_CAN_RUN_SCRIPT virtual nsresult MouseUp(
+      dom::MouseEvent* /*aMouseEvent*/) {
     return NS_OK;
   }
   MOZ_CAN_RUN_SCRIPT virtual nsresult PointerClick(

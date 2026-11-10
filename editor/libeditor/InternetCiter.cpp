@@ -351,8 +351,8 @@ void InternetCiter::EmitUnquotedLine(nsAString& aOutString,
 }
 
 void InternetCiter::Rewrap(const nsAString& aInString, uint32_t aWrapCol,
-                           uint32_t aFirstLineOffset, bool aRespectNewlines,
-                           nsAString& aOutString) {
+                           uint32_t /*aFirstLineOffset*/,
+                           bool /*aRespectNewlines*/, nsAString& aOutString) {
   // Rewrap operates on DOM newlines.
 #ifdef DEBUG
   int32_t crPosition = aInString.FindChar(HTMLEditUtils::kCarriageReturn);

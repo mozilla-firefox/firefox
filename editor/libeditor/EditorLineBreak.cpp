@@ -111,7 +111,7 @@ NS_INSTANTIATE_EDITOR_LINE_BREAK_CONST_METHOD(bool, IsPaddingForEmptyBlock,
 
 template <typename ContentType>
 bool EditorLineBreakBase<ContentType>::IsPaddingForEmptyBlock(
-    const dom::Element* aAncestorLimiter /* = nullptr */) const {
+    const dom::Element* /*aAncestorLimiter = nullptr */) const {
   return IsFollowedByCurrentBlockBoundary() &&
          IsFollowingCurrentBlockBoundary();
 }
