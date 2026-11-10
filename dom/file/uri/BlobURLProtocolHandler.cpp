@@ -103,6 +103,9 @@ static StaticMutex gNullOriginEntryTableMutex;
 static StaticAutoPtr<NullOriginEntryTable> gNullOriginEntryTable
     MOZ_GUARDED_BY(gNullOriginEntryTableMutex);
 
+BlobURLNullOriginEntry::BlobURLNullOriginEntry(const nsACString& aSpec,
+                                               nsIPrincipal* aPrincipal)
+    : mSpec(aSpec), mPrincipal(aPrincipal) {}
 BlobURLNullOriginEntry::~BlobURLNullOriginEntry() {
   StaticMutexAutoLock lock(gNullOriginEntryTableMutex);
   if (!gNullOriginEntryTable) {

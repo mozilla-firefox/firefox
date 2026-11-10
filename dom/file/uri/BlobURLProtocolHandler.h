@@ -144,8 +144,7 @@ class BlobURLNullOriginEntry final
  private:
   friend class SupportsThreadSafeWeakPtr<BlobURLNullOriginEntry>;
 
-  BlobURLNullOriginEntry(const nsACString& aSpec, nsIPrincipal* aPrincipal)
-      : mSpec(aSpec), mPrincipal(aPrincipal) {}
+  BlobURLNullOriginEntry(const nsACString& aSpec, nsIPrincipal* aPrincipal);
   ~BlobURLNullOriginEntry();
 };
 
