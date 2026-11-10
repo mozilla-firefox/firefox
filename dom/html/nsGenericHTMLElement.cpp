@@ -787,6 +787,13 @@ void nsGenericHTMLElement::AfterSetPopoverAttr() {
     }
 
     if (newState == PopoverAttributeState::None) {
+      // The popover may have been open, and HidePopoverInternal called above,
+      // but that can also fire an event where the popover is now still visible,
+      // so we need to check again, and potentially hide it again.
+      if (IsPopoverOpen()) {
+        HidePopoverWithoutRunningScript();
+      }
+
       auto* popoverData = GetPopoverData();
       if (popoverData) {
         // We have to keep track of the toggle event task, if, for example,
