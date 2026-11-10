@@ -442,15 +442,13 @@ body {
   }
 
   @media (-moz-platform: linux) and (-moz-gtk-csd-reversed-placement: 0) {
-    :root:not([sizemode="normal"]) &[type="pre-tabs"],
-    :root[tiled] &[type="pre-tabs"] {
+    :root:not([sizemode="normal"]) &[type="pre-tabs"] {
       display: none;
     }
   }
 
   @media (-moz-gtk-csd-reversed-placement) {
-    :root:not([sizemode="normal"]) &[type="post-tabs"],
-    :root[tiled] &[type="post-tabs"] {
+    :root:not([sizemode="normal"]) &[type="post-tabs"] {
       display: none;
     }
   }
