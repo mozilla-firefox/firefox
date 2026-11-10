@@ -833,22 +833,22 @@
             "moz-visual-picker-item[value='nova-sun@mozilla.org']"
           );
           let themePreview = themeItem.querySelector(".theme-preview");
-          let initialColor = getComputedStyle(themePreview).backgroundColor;
+          let initialImage = getComputedStyle(themePreview).backgroundImage;
 
-          ok(initialColor, "Theme preview has an initial background color.");
+          ok(initialImage, "Theme preview has an initial background image.");
 
           Services.prefs.setIntPref(PREF_SYSTEM_USES_DARK, 1);
 
           await waitForCondition(
             () =>
-              getComputedStyle(themePreview).backgroundColor !== initialColor,
+              getComputedStyle(themePreview).backgroundImage !== initialImage,
             "Theme swatch color changes after OS switches to dark mode."
           );
 
-          let darkColor = getComputedStyle(themePreview).backgroundColor;
+          let darkImage = getComputedStyle(themePreview).backgroundImage;
           isnot(
-            darkColor,
-            initialColor,
+            darkImage,
+            initialImage,
             "Theme swatch shows dark variant color in dark mode."
           );
 
@@ -856,14 +856,14 @@
 
           await waitForCondition(
             () =>
-              getComputedStyle(themePreview).backgroundColor === initialColor,
+              getComputedStyle(themePreview).backgroundImage === initialImage,
             "Theme swatch color changes back after OS switches to light mode."
           );
 
-          let lightColor = getComputedStyle(themePreview).backgroundColor;
+          let lightImage = getComputedStyle(themePreview).backgroundImage;
           is(
-            lightColor,
-            initialColor,
+            lightImage,
+            initialImage,
             "Theme swatch shows original light variant color."
           );
         }

@@ -614,10 +614,13 @@ add_task(async function test_device_appearance_changes_theme_swatch_colors() {
           "moz-visual-picker-item[value='nova-sun@mozilla.org']"
         );
         let themePreview = sunThemeItem.querySelector(".theme-preview");
-        let initialColor =
-          content.getComputedStyle(themePreview).backgroundColor;
+        let initialImage =
+          content.getComputedStyle(themePreview).backgroundImage;
 
-        Assert.ok(initialColor, "Theme preview should have initial color");
+        Assert.ok(
+          initialImage,
+          "Theme preview should have initial background image"
+        );
 
         await SpecialPowers.pushPrefEnv({
           set: [["ui.systemUsesDarkTheme", 1]],
@@ -631,14 +634,14 @@ add_task(async function test_device_appearance_changes_theme_swatch_colors() {
         // Wait for the theme preview style to actually update
         await ContentTaskUtils.waitForCondition(
           () =>
-            content.getComputedStyle(themePreview).backgroundColor !==
-            initialColor
+            content.getComputedStyle(themePreview).backgroundImage !==
+            initialImage
         );
 
-        let darkColor = content.getComputedStyle(themePreview).backgroundColor;
+        let darkImage = content.getComputedStyle(themePreview).backgroundImage;
         Assert.notEqual(
-          darkColor,
-          initialColor,
+          darkImage,
+          initialImage,
           "Theme swatch color should change in dark mode"
         );
 
@@ -653,10 +656,10 @@ add_task(async function test_device_appearance_changes_theme_swatch_colors() {
           "Waiting for device appearance to update to light"
         );
 
-        let lightColor = content.getComputedStyle(themePreview).backgroundColor;
+        let lightImage = content.getComputedStyle(themePreview).backgroundImage;
         Assert.equal(
-          lightColor,
-          initialColor,
+          lightImage,
+          initialImage,
           "Theme swatch color should return to original in light mode"
         );
 

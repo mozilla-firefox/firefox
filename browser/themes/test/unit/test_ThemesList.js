@@ -734,13 +734,4 @@ add_task(async function test_getThemePreviewLinkParameters() {
       );
     }
   }
-
-  // nova-sun is the only theme with a plain color dark variant, make sure it
-  // is turned into a gradient so that it can be part of a light-dark() image.
-  Assert.ok(
-    manager
-      .getThemePreviewLinkParameters("nova-sun@mozilla.org")
-      .includes("linear-gradient(#270F00, #270F00)"),
-    "plain color picker variants are turned into gradients"
-  );
 });
