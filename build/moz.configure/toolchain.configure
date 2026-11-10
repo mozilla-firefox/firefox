@@ -1380,6 +1380,35 @@ def minimum_gcc_version():
     return Version("11.1.0")
 
 
+option(
+    "--enable-clang-plugin",
+    env="ENABLE_CLANG_PLUGIN",
+    help="Enable building with the Clang plugin (gecko specific static analyzers)",
+)
+
+
+# Replace "clang-cl.exe" by "clang.exe --driver-mode=cl" to avoid loading the
+# module clang.exe again when loading the plugin dll, which links to the import
+# library of clang.exe.
+@template
+def clang_plugin_compiler(command):
+    @depends(command, target, "--enable-clang-plugin")
+    @imports("re")
+    def clang_plugin_compiler(command, target, clang_plugin):
+        if not command or not clang_plugin or target.kernel != "WINNT":
+            return command
+        result = []
+        for arg in command:
+            arg = re.sub(r"\.EXE$", ".exe", arg)
+            if arg.endswith("clang-cl.exe"):
+                result += [arg.replace("clang-cl.exe", "clang.exe"), "--driver-mode=cl"]
+            else:
+                result.append(arg)
+        return result
+
+    return clang_plugin_compiler
+
+
 @template
 def compiler(
     language,
@@ -1713,12 +1742,12 @@ def compiler(
 
     # This excludes WASM_CC from the list.
     if var in ("CC", "CXX", "HOST_CC", "HOST_CXX"):
-        set_config(
-            var,
-            depends_if(valid_compiler)(
-                lambda x: list(x.wrapper) + [x.compiler] + list(x.flags)
-            ),
+        command = depends_if(valid_compiler)(
+            lambda x: list(x.wrapper) + [x.compiler] + list(x.flags)
         )
+        if host_or_target is target:
+            command = clang_plugin_compiler(command)
+        set_config(var, command)
 
     # Set CC_TYPE/CC_VERSION/HOST_CC_TYPE/HOST_CC_VERSION to allow
     # old-configure to do some of its still existing checks.
@@ -3356,13 +3385,6 @@ set_config("MOZ_DEBUG_ASFLAGS", debug_asflags)
 
 # clang plugin handling
 # ==============================================================
-
-option(
-    "--enable-clang-plugin",
-    env="ENABLE_CLANG_PLUGIN",
-    help="Enable building with the Clang plugin (gecko specific static analyzers)",
-)
-
 
 set_config("ENABLE_CLANG_PLUGIN", True, when="--enable-clang-plugin")
 set_define("MOZ_CLANG_PLUGIN", True, when="--enable-clang-plugin")

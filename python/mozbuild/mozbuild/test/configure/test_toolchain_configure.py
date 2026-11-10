@@ -1536,6 +1536,31 @@ class WindowsCrossToolchainTest(BaseToolchainTest):
         self.do_outoption_test(self.PATHS, ("-Fo", "-o "))
 
 
+class WindowsClangPluginToolchainTest(BaseToolchainTest):
+    HOST = "i686-pc-windows-msvc"
+    TARGET = "i686-pc-windows-msvc"
+
+    def test_clang_plugin_compiler(self):
+        sandbox = self.toolchain_sandbox(
+            {"/usr/bin/clang-cl.EXE": CLANG_CL_19 + CLANG_CL_PLATFORM_X86},
+            {"CC": "/usr/bin/clang-cl.EXE", "CXX": "/usr/bin/clang-cl.EXE"},
+            args=["--enable-clang-plugin"],
+        )
+        clang = mozpath.abspath("/usr/bin/clang.exe")
+        self.assertEqual(
+            (
+                sandbox.get_config("CC"),
+                sandbox.get_config("CXX"),
+                sandbox.get_config("HOST_CC"),
+            ),
+            (
+                [clang, "--driver-mode=cl"],
+                [clang, "--driver-mode=cl", "-std:c++20"],
+                [mozpath.abspath("/usr/bin/clang-cl.EXE")],
+            ),
+        )
+
+
 class WindowsToWindowsCrossToolchainTest(BaseToolchainTest):
     HOST = "i686-pc-windows-msvc"
     TARGET = "x86_64-pc-windows-msvc"

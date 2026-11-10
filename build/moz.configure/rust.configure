@@ -1260,30 +1260,8 @@ def cargo_compiler(compiler):
     return depends_if(compiler)(lambda c: list(c.wrapper) + [c.compiler])
 
 
-# Replace "clang-cl.exe" by "clang.exe --driver-mode=cl" to avoid loading the
-# module clang.exe again when loading the plugin dll, which links to the import
-# library of clang.exe.
-@template
-def cargo_target_compiler(compiler):
-    @depends(cargo_compiler(compiler), target, "--enable-clang-plugin")
-    @imports("re")
-    def cargo_target_compiler(command, target, clang_plugin):
-        if not command or not clang_plugin or target.kernel != "WINNT":
-            return command
-        result = []
-        for arg in command:
-            arg = re.sub(r"\.EXE$", ".exe", arg)
-            if arg.endswith("clang-cl.exe"):
-                result += [arg.replace("clang-cl.exe", "clang.exe"), "--driver-mode=cl"]
-            else:
-                result.append(arg)
-        return result
-
-    return cargo_target_compiler
-
-
-set_config("MOZ_CARGO_CC", cargo_target_compiler(c_compiler))
-set_config("MOZ_CARGO_CXX", cargo_target_compiler(cxx_compiler))
+set_config("MOZ_CARGO_CC", clang_plugin_compiler(cargo_compiler(c_compiler)))
+set_config("MOZ_CARGO_CXX", clang_plugin_compiler(cargo_compiler(cxx_compiler)))
 set_config("MOZ_CARGO_HOST_CC", cargo_compiler(host_c_compiler))
 set_config("MOZ_CARGO_HOST_CXX", cargo_compiler(host_cxx_compiler))
 
