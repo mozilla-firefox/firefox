@@ -84,6 +84,19 @@ class nsMenuItemX final : public nsChangeObserver,
   // once the native item is in a menu, so this runs after insertion.
   void CopyUserKeyEquivalentToKeyElement();
 
+  // The shortcut the item has from its key element, underneath a shortcut the
+  // user assigned in System Settings.
+  NSString* BuiltInKeyEquivalent() { return mBuiltInKeyEquivalent; }
+  NSEventModifierFlags BuiltInKeyEquivalentModifierMask() {
+    return mBuiltInKeyEquivalentModifierMask;
+  }
+
+  // Whether the item's shortcut is internal, so that its key element never
+  // runs the command itself. As in XULKeySetGlobalKeyListener, this is the
+  // internal attribute of the command element the key element points to, or
+  // of the key element when it has no command.
+  bool HasInternalShortcut();
+
   void Dump(uint32_t aIndent) const;
 
  protected:
@@ -112,6 +125,8 @@ class nsMenuItemX final : public nsChangeObserver,
   // The <key> element mContent's key attribute resolves to, observed so that
   // edits to it reach the native menu item.
   RefPtr<mozilla::dom::Element> mKeyElement;
+  NSString* mBuiltInKeyEquivalent = @"";  // [strong]
+  NSEventModifierFlags mBuiltInKeyEquivalentModifierMask = 0;
   RefPtr<mozilla::dom::Element> mImageElement;
   mozilla::UniquePtr<nsMenuItemIconX> mIcon;  // always non-null
   bool mIsChecked = false;
