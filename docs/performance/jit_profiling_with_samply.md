@@ -10,13 +10,13 @@ assembly views) by running the following commands:
 - Firefox:
 
 ```
-samply record PERF_SPEW_DIR=/tmp IONPERF=src MOZ_DISABLE_CONTENT_SANDBOX=1 MOZ_USE_PERFORMANCE_MARKER_FILE=1 JIT_OPTION_enableICFramePointers=true JIT_OPTION_onlyInlineSelfHosted=true JIT_OPTION_emitInterpreterEntryTrampoline=true python3 ./mach run
+samply record PERF_SPEW_DIR=/tmp IONPERF=src MOZ_DISABLE_CONTENT_SANDBOX=1 MOZ_USE_PERFORMANCE_MARKER_FILE=1 JIT_OPTION_enableStubFramePointers=true JIT_OPTION_onlyInlineSelfHosted=true JIT_OPTION_emitInterpreterEntryTrampoline=true python3 ./mach run
 ```
 
 - JS shell:
 
 ```
-samply record PERF_SPEW_DIR=/tmp IONPERF=src ~/code/obj-shell/dist/bin/js --enable-ic-frame-pointers --only-inline-selfhosted index.js
+samply record PERF_SPEW_DIR=/tmp IONPERF=src ~/code/obj-shell/dist/bin/js --enable-stub-frame-pointers --only-inline-selfhosted index.js
 ```
 
 ## Motivation

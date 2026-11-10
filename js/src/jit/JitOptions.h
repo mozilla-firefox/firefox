@@ -88,7 +88,7 @@ struct DefaultJitOptions {
   bool wasmDelayTier2;
   bool lessDebugCode;
   bool onlyInlineSelfHosted;
-  bool enableICFramePointers;
+  bool enableStubFramePointers;
   bool enableWasmJitExit;
   bool enableWasmJitEntry;
   bool enableWasmIonFastCalls;

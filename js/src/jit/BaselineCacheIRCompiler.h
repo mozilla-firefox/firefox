@@ -75,7 +75,7 @@ class MOZ_RAII BaselineCacheIRCompiler : public CacheIRCompiler {
 
   // This register points to the baseline frame of the caller. It should only
   // be used before we enter a stub frame. This is normally the frame pointer
-  // register, but with --enable-ic-frame-pointers we have to allocate a
+  // register, but with --enable-stub-frame-pointers we have to allocate a
   // separate register.
   inline Register baselineFrameReg() {
     MOZ_ASSERT(!enteredStubFrame_);

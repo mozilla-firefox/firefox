@@ -147,15 +147,15 @@ DefaultJitOptions::DefaultJitOptions() {
   SET_DEFAULT(portableBaselineInterpreterWarmUpThreshold, 0);
 #endif
 
-  // emitInterpreterEntryTrampoline and enableICFramePointers are used in
+  // emitInterpreterEntryTrampoline and enableStubFramePointers are used in
   // combination with perf jitdump profiling.  The first will enable
   // trampolines for interpreter and baseline interpreter frames to
   // identify which function is being executed, and the latter enables
-  // frame pointers for IC stubs.  They are both enabled by default
-  // when the |IONPERF| environment variable is set.
+  // frame pointers for IC stubs and other trampolines. They are both
+  // enabled by default when the |IONPERF| environment variable is set.
   bool perfEnabled = !!getenv("IONPERF");
   SET_DEFAULT(emitInterpreterEntryTrampoline, perfEnabled);
-  SET_DEFAULT(enableICFramePointers, perfEnabled);
+  SET_DEFAULT(enableStubFramePointers, perfEnabled);
 
   // Whether the Baseline JIT is enabled.
   SET_DEFAULT(baselineJit, true);
