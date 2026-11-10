@@ -1267,6 +1267,7 @@ Result<EditActionResult, nsresult> HTMLEditor::AutoDeleteRangesHandler::Run(
         NS_WARNING(
             "AutoDeleteRangesHandler::FallbackToDeleteRangesWithTransaction() "
             "failed");
+        return caretPointOrError.propagateErr();
       }
       nsresult rv = caretPointOrError.inspect().SuggestCaretPointTo(
           aHTMLEditor, {SuggestCaret::OnlyIfHasSuggestion,
