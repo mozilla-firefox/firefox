@@ -219,6 +219,7 @@ WebExtensionPolicyCore::WebExtensionPolicyCore(GlobalObject& aGlobal,
       mExtensionPageCSP(aInit.mExtensionPageCSP),
       mSandboxPageCSP(aInit.mSandboxPageCSP),
       mIsPrivileged(aInit.mIsPrivileged),
+      mAboutNewTabMayAccess(aInit.mIsPrivileged || EPS().UseRemoteExtensions()),
       mTemporarilyInstalled(aInit.mTemporarilyInstalled),
       mBackgroundWorkerScript(aInit.mBackgroundWorkerScript),
       mIgnoreQuarantine(aInit.mIsPrivileged || aInit.mIgnoreQuarantine),
@@ -310,16 +311,17 @@ bool WebExtensionPolicyCore::SourceMayAccessPath(
     if (NS_SUCCEEDED(NS_GetAboutModuleName(aURI.URI(), aboutModule)) &&
         (aboutModule.EqualsLiteral("newtab") ||
          aboutModule.EqualsLiteral("home"))) {
-      // For about:newtab/about:home source URIs:
-      // - allow access privileged extensions resources unconditionally
-      //   (without requiring the moz-extension:// URL to be listed as
-      //   web_accessible_resources in the extension manifest).
-      // - disallow access to moz-extension:// URLs that belongs to
-      //   third party unprivileged extensions (opening this up depends
-      //   on enforcing moz-extension:// subframes to be loaded in
-      //   the extension process, see Bug 2070189, to disallow
-      //   unprivileged code from running in the privilegedabout process).
-      return IsPrivileged();
+      // For about:newtab/about:home source URIs, allow access to extension
+      // resources without requiring the moz-extension:// URL to be listed as
+      // web_accessible_resources in the extension manifest.
+      //
+      // Unprivileged extensions are only allowed when remote extensions are
+      // enabled, because moz-extension:// subframes of privilegedabout pages
+      // are only isolated in the extension process in that configuration
+      // (see Bug 2070189), and unprivileged code must never run in the
+      // privilegedabout process. Non-frame loads are restricted by the
+      // about:newtab CSP, which only allows moz-extension: in frame-src.
+      return mAboutNewTabMayAccess;
     }
   }
 

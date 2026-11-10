@@ -206,6 +206,10 @@ class WebExtensionPolicyCore final {
   /* const */ dom::Nullable<MatchGlobSet> mSandboxPages;
 
   const bool mIsPrivileged;
+  // Whether about:newtab and about:home may load this extension's resources,
+  // computed on the main thread because ExtensionPolicyService is main-thread
+  // only.
+  const bool mAboutNewTabMayAccess;
   const bool mTemporarilyInstalled;
 
   const nsString mBackgroundWorkerScript;
