@@ -186,17 +186,17 @@ Similarly for running tp6m (equivalent to tp6 but for mobile) on Firefox for And
 ```
 
 The set of extensions installed are the ones listed in the `"addons"` property of the condprof customization file
-{searchfox}`webext.json <mozilla-central/rev/bc6a50e6f08db0bb371ef7197c472555499e82c0:testing/condprofile/condprof/customization/webext.json>` from the `testing/condprofile/condprof/customization/` directory.
+{searchfox}`webext.json <testing/condprofile/condprof/customization/webext.json>` from the `testing/condprofile/condprof/customization/` directory.
 
 All extensions listed in the `webext.json` file are expected to have been predownloaded and included in the `firefox-addons.tar` archive
-defined in the CI fetch config named {searchfox}`firefox-addons <mozilla-central/rev/bc6a50e6f08db0bb371ef7197c472555499e82c0:taskcluster/ci/fetch/browsertime.yml#169-176>`, but they will be automatically downloaded from the url specified in the `webext.json`
+defined in the CI fetch config named {searchfox}`firefox-addons <taskcluster/kinds/fetch/browsertime.yml>`, but they will be automatically downloaded from the url specified in the `webext.json`
 file if they are not.
 
 In a try push we allow to run jobs on new extension XPI files not part of the firefox-addons.tar archive, the new extension needs to be just
-added in the {searchfox}`webext.json <mozilla-central/rev/bc6a50e6f08db0bb371ef7197c472555499e82c0:testing/condprofile/condprof/customization/webext.json>` condprof customization file in a patch part of the same stack of patches being pushed to try.
+added in the {searchfox}`webext.json <testing/condprofile/condprof/customization/webext.json>` condprof customization file in a patch part of the same stack of patches being pushed to try.
 
-On the contrary new extensions added to the {searchfox}`webext.json <mozilla-central/rev/bc6a50e6f08db0bb371ef7197c472555499e82c0:testing/condprofile/condprof/customization/webext.json>` condprof customization file on mozilla-central patches will require the XPI file to be
-added to the `firefox-addons.tar` archive and the {searchfox}`firefox-addons <mozilla-central/rev/bc6a50e6f08db0bb371ef7197c472555499e82c0:taskcluster/ci/fetch/browsertime.yml#169-176>` CI fetch config updated accordingly (missing to update the archive will
+On the contrary new extensions added to the {searchfox}`webext.json <testing/condprofile/condprof/customization/webext.json>` condprof customization file on mozilla-central patches will require the XPI file to be
+added to the `firefox-addons.tar` archive and the {searchfox}`firefox-addons <taskcluster/kinds/fetch/browsertime.yml>` CI fetch config updated accordingly (missing to update the archive will
 trigger explicit linter errors, {doc}`see condprof-addons linter docs </code-quality/lint/linters/condprof-addons>`).
 
 ## TP6-Bench Test
@@ -227,8 +227,8 @@ There are multiple ways of adding additional arguments to Browsertime from Rapto
 
 Other methods for adding additional arguments are:
 
-- Define additional arguments in {searchfox}`testing/raptor/raptor/browsertime/base.py <testing/raptor/raptor/browsertime/base.py#220-252>`.
-- Add a `browsertime_args` entry to the appropriate manifest with the desired arguments, i.e. {searchfox}`browsertime-tp6.ini <testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.ini>` for desktop page load tests. {searchfox}`Example of browsertime_args format <testing/raptor/raptor/tests/custom/browsertime-process-switch.ini#27>`.
+- Define additional arguments in {searchfox}`testing/raptor/raptor/browsertime/base.py <testing/raptor/raptor/browsertime/base.py>`.
+- Add a `browsertime_args` entry to the appropriate manifest with the desired arguments, i.e. {searchfox}`browsertime-tp6.toml <testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml>` for desktop page load tests. {searchfox}`Example of browsertime_args format <testing/raptor/raptor/tests/custom/browsertime-process-switch.toml>`.
 - Add a `chrome_args` array to a manifest test to pass Chrome/Chromium command-line flags for that test. The arguments are applied only to Chrome-family apps. For example, the {searchfox}`WebCodecs manifest <testing/raptor/raptor/tests/custom/browsertime-webcodecs.toml>` uses it to provide a fake camera:
 
   ```toml
@@ -278,17 +278,17 @@ Equivalent functionality to the `--gecko-profile` flag, i.e. something like `--c
 
 ## Custom profiling with Raptor-Browsertime
 
-With Browsertime you can now use the exposed start/stop commands of the gecko profiler **and** chrome trace. First, one needs to define the `expose_browser_profiler` and `apps` variables appropriately in the {searchfox}`test's configuration file <mozilla-central/rev/11d085b63cf74b35737d9c036be80434883dd3f6:testing/raptor/raptor/tests/benchmarks/speedometer-desktop.ini#9,12>`
+With Browsertime you can now use the exposed start/stop commands of the gecko profiler **and** chrome trace. First, one needs to define the `expose_browser_profiler` and `apps` variables appropriately in the {searchfox}`test's configuration file <testing/raptor/raptor/tests/benchmarks/speedometer-desktop.toml>`
 
-If you want to run the test in CI then you will want to ensure you set the `--extra-profiler-run` flag in the mozharness extra options for where your test is defined in the {searchfox}`browsertime-desktop yaml file <mozilla-central/rev/2e06f92ba068e32a9a7213ee726e8171f91605c7:taskcluster/ci/test/browsertime-desktop.yml#404-406>`. Otherwise you can just pass the `--extra-profiler-run` flag locally in your command line.
+If you want to run the test in CI then you will want to ensure you set the `--extra-profiler-run` flag in the mozharness extra options for where your test is defined in the {searchfox}`browsertime desktop yaml file <taskcluster/kinds/browsertime/desktop.yml>`. Otherwise you can just pass the `--extra-profiler-run` flag locally in your command line.
 
-Both of these steps are required to satisfy the `_expose_browser_profiler()` {searchfox}`method <mozilla-central/rev/11d085b63cf74b35737d9c036be80434883dd3f6:testing/raptor/raptor/browsertime/base.py#241>` so that the option, {searchfox}`expose_profiler <mozilla-central/rev/11d085b63cf74b35737d9c036be80434883dd3f6:testing/raptor/raptor/browsertime/base.py#383-386>`, is passed into your browsertime script. Finally, it should be as simple as calling the `start()` & `stop()` commands in your {searchfox}`script <mozilla-central/rev/11d085b63cf74b35737d9c036be80434883dd3f6:testing/raptor/browsertime/speedometer3.js#14,30-37,58-65>`.
+Both of these steps are required to satisfy the `_expose_browser_profiler()` {searchfox}`method <testing/raptor/raptor/browsertime/base.py>` so that the option, {searchfox}`expose_profiler <testing/raptor/raptor/browsertime/base.py>`, is passed into your browsertime script. Finally, it should be as simple as calling the `start()` & `stop()` commands in your {searchfox}`script <testing/raptor/browsertime/speedometer3.js>`.
 
 Interactive tests that use `test_cmds` automatically wrap each `measure.start` and `measure.stop` pair with the exposed profiler when `expose_browser_profiler` is set and profiling is enabled for the run, such as with `--gecko-profile` or the extra profiler run. This produces one profile per measured page; nav-bench uses this mechanism to profile each site and navigation phase separately.
 
-For the gecko profiler, you should also keep in mind these {searchfox}`default parameters <mozilla-central/rev/2e06f92ba068e32a9a7213ee726e8171f91605c7:testing/raptor/raptor/browsertime/base.py#474-495>`, which you may or may not want to change yourself in your tests configuration file.
+For the gecko profiler, you should also keep in mind these {searchfox}`default parameters <testing/raptor/raptor/browsertime/base.py>`, which you may or may not want to change yourself in your tests configuration file.
 
-Likewise, for chrome trace you will want to be aware of {searchfox}`these defaults. <mozilla-central/rev/11d085b63cf74b35737d9c036be80434883dd3f6:testing/raptor/raptor/browsertime/base.py#646-658>`
+Likewise, for chrome trace you will want to be aware of {searchfox}`these defaults. <testing/raptor/raptor/browsertime/base.py>`
 
 ## Native profiling with Raptor-Browsertime
 
@@ -347,7 +347,7 @@ To test the upgrade, run a Raptor test locally (with and without visual-metrics 
 
 To upgrade any of our benchmark tests, you will need to change the revision used in the test manifest. There are three fields that you have available to use there: `repository_revision` to denote the revision, `repository_branch` to denote the branch name, and `repository` to provide the link of the Github repo that contains the benchmark.
 
-For instance, with Speedometer 3 (sp3), we can update the revision {searchfox}`by changing the repository_revision field found here <mozilla-central/rev/aa3ccd258b64abfd4c5ce56c1f512bc7f65b844c:testing/raptor/raptor/tests/benchmarks/speedometer-desktop.ini#29>`. If the change isn't found on the default branch (master/main branch), then you will need to add an entry for `repository_branch` to specify this.
+For instance, with Speedometer 3 (sp3), we can update the revision {searchfox}`by changing the repository_revision field found here <testing/raptor/raptor/tests/benchmarks/speedometer-desktop.toml>`. If the change isn't found on the default branch (master/main branch), then you will need to add an entry for `repository_branch` to specify this.
 
 If the path to the test file changes (the file that is invoked to run the test), then the `test_url` will need to be changed.
 
