@@ -115,6 +115,24 @@ distros:
             a64: {in-tree: rocky10-arm64-base}
         methods: [rpm]
 
+    alma-8:
+        symbol: alm8
+        pre-install: dnf install -y curl wget tar xz
+        docker-image:
+            x64: {in-tree: alma8-base}
+            a64: {in-tree: alma8-arm64-base}
+        methods: [rpm]
+
+    # AlmaLinux 9 is not tested: dnf cannot import Mozilla's RPM signing key there, because
+    # RHEL 9's default crypto policy rejects the SHA-1 signatures in the key (rpm --import exits 1).
+    alma-10:
+        symbol: alm10
+        pre-install: dnf install -y curl wget tar xz
+        docker-image:
+            x64: {in-tree: alma10-base}
+            a64: {in-tree: alma10-arm64-base}
+        methods: [rpm]
+
     debian-12-flatpak:
         symbol: deb12-fpk
         pre-install: *apt-pre-install
@@ -276,6 +294,58 @@ tasks:
         treeherder:
             platform: linux64-aarch64/opt
             symbol: inst-rpm(rky10-a64-rel-upg)
+
+    alma-8-x64-rpm-release-upgrade:
+        description: "Test install-firefox.sh: rpm release over pre-installed distro firefox"
+        worker-type: b-linux
+        worker:
+            docker-image: {in-tree: alma8-base}
+        pre-install: dnf install -y curl wget firefox
+        install-method: rpm
+        channels: [release]
+        locales: [en-US]
+        treeherder:
+            platform: linux64/opt
+            symbol: inst-rpm(alm8-x64-rel-upg)
+
+    alma-8-a64-rpm-release-upgrade:
+        description: "Test install-firefox.sh: rpm release over pre-installed distro firefox (aarch64)"
+        worker-type: b-linux-aarch64
+        worker:
+            docker-image: {in-tree: alma8-arm64-base}
+        pre-install: dnf install -y curl wget firefox
+        install-method: rpm
+        channels: [release]
+        locales: [en-US]
+        treeherder:
+            platform: linux64-aarch64/opt
+            symbol: inst-rpm(alm8-a64-rel-upg)
+
+    alma-10-x64-rpm-release-upgrade:
+        description: "Test install-firefox.sh: rpm release over pre-installed distro firefox"
+        worker-type: b-linux
+        worker:
+            docker-image: {in-tree: alma10-base}
+        pre-install: dnf install -y curl wget firefox
+        install-method: rpm
+        channels: [release]
+        locales: [en-US]
+        treeherder:
+            platform: linux64/opt
+            symbol: inst-rpm(alm10-x64-rel-upg)
+
+    alma-10-a64-rpm-release-upgrade:
+        description: "Test install-firefox.sh: rpm release over pre-installed distro firefox (aarch64)"
+        worker-type: b-linux-aarch64
+        worker:
+            docker-image: {in-tree: alma10-arm64-base}
+        pre-install: dnf install -y curl wget firefox
+        install-method: rpm
+        channels: [release]
+        locales: [en-US]
+        treeherder:
+            platform: linux64-aarch64/opt
+            symbol: inst-rpm(alm10-a64-rel-upg)
 
     debian-12-x64-tarball-release-reinstall:
         description: "Test install-firefox.sh: tarball release reinstall over existing /opt/firefox"
