@@ -1,9 +1,11 @@
 import os
+import subprocess
 from copy import deepcopy
 
 import pytest
 import pytest_asyncio
 import tests.support.fixtures as global_fixtures
+from mozdevice import ADBDeviceFactory
 from tests.support import defaults
 
 from .chrome_handler import using_chrome_handler
@@ -331,6 +333,42 @@ def geckodriver(configuration, firefox_options):
 
     if custom_profile is not None:
         custom_profile.cleanup()
+
+
+@pytest.fixture
+def is_process_alive(configuration):
+    """Check if a process is still running.
+
+    On Android the process is looked up on the device instead of the host.
+    """
+
+    android_device = None
+    if configuration["target_platform"] == "android":
+        android = configuration["android"]
+        android_device = ADBDeviceFactory(
+            device=android["device_serial"], adb=android["adb_binary"]
+        )
+
+    def _is_process_alive(pid):
+        if android_device is not None:
+            return android_device.is_dir(f"/proc/{pid}")
+
+        if os.name == "nt":
+            try:
+                output = subprocess.check_output(
+                    ["tasklist", "/FI", f"PID eq {pid}"], text=True
+                )
+                return str(pid) in output
+            except subprocess.CalledProcessError:
+                return False
+
+        try:
+            os.kill(pid, 0)
+            return True
+        except OSError:
+            return False
+
+    return _is_process_alive
 
 
 @pytest.fixture
