@@ -90,6 +90,12 @@ def get_session():
     return _new_session()
 
 
+# Taskgraph forks a process per kind, and connections pooled in the parent's
+# session would be shared with, and between, those processes.
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(after_in_child=get_session.cache_clear)
+
+
 def _perfherder_artifact_path(base_path, perfherder_data):
     base_dir = base_path.parent
     stem = base_path.stem
