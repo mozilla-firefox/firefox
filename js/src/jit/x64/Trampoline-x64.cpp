@@ -353,12 +353,12 @@ void JitRuntime::generateInvalidator(MacroAssembler& masm, Label* bailoutTail) {
 
   // Make space for InvalidationBailout's bailoutInfo outparam.
   masm.reserveStack(sizeof(void*));
-  masm.movq(rsp, r11);
+  masm.movq(rsp, rbx);
 
   using Fn = bool (*)(InvalidationBailoutStack* sp, BaselineBailoutInfo** info);
   masm.setupUnalignedABICall(rdx);
   masm.passABIArg(rax);
-  masm.passABIArg(r11);
+  masm.passABIArg(rbx);
   masm.callWithABI<Fn, InvalidationBailout>(
       ABIType::General, CheckUnsafeCallWithABI::DontCheckOther);
 
@@ -541,7 +541,7 @@ uint32_t JitRuntime::generatePreBarrier(JSContext* cx, MacroAssembler& masm,
 
   static_assert(PreBarrierReg == rdx);
   Register temp1 = rax;
-  Register temp2 = r11;
+  Register temp2 = rbx;
   Register temp3 = rcx;
   masm.pushRegs(temp1, temp2, temp3);
 
