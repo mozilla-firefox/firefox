@@ -15,12 +15,13 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 import org.mozilla.fenix.ext.components
 
 @VisibleForTesting internal const val MIGRATION_WORK_NAME = "org.mozilla.fenix.collections.migration.work"
 
 @VisibleForTesting internal const val MAX_RUN_ATTEMPTS = 5
-private val INITIAL_DELAY_MILLIS = 1.minutes.inWholeMilliseconds
+private val INITIAL_DELAY_MILLIS = 15.seconds.inWholeMilliseconds
 private val BACKOFF_DELAY_MINUTES = 30.minutes.inWholeMinutes
 
 /** [CoroutineWorker] that migrates the stored Collections into Tab Groups. */
