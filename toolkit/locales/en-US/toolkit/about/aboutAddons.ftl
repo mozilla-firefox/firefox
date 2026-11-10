@@ -343,6 +343,10 @@ discopane-notice-learn-more = Learn more
 forced-colors-theme-notice =
     .message = Your Windows contrast settings are overriding { -brand-short-name } themes. Turn off these settings to use themes in { -brand-short-name }.
 
+# Message-bar notice shown in the about:addons themes list view after users opt in into the Smart Window mode.
+smartwindow-themes-notice =
+    .message = { -smart-window-brand-name } has its own built-in light and dark themes that follow your system settings.
+
 privacy-policy = Privacy Policy
 
 # Refers to the author of an add-on, shown below the name of the add-on.

@@ -148,7 +148,7 @@ ai-tasks-page-title = Tasks
 ai-tasks-add-alert-button = Create task
 ai-task-page-description = { -smart-window-brand-name } can watch prices and content on pages you choose. You’ll get a desktop notification when it finds a match.
 ai-tasks-no-monitors-title = { -smart-window-brand-name } tasks aren’t available in your region
-ai-tasks-no-monitors-message = Learn more <a data-l10n-name="smart-window-link">about Smart Window</a>.
+ai-tasks-no-monitors-message = Learn more <a data-l10n-name="smart-window-link">about { -smart-window-brand-name }</a>.
 ai-tasks-blocked-title = { -smart-window-brand-name } tasks are blocked in AI controls
 ai-task-page-no-alerts = Create a task to track prices or content on pages you choose. You’ll get notified when { -smart-window-brand-name } finds a match.
 ai-task-page-no-alerts-title = Watch what matters

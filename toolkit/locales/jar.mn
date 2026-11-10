@@ -8,7 +8,6 @@
   services                                         (%services/**/*.ftl)
   toolkit                                          (%toolkit/**/*.ftl)
   locales-preview/aboutRestricted.ftl              (../locales-preview/aboutRestricted.ftl)
-  locales-preview/smartWindow-aboutAddons.ftl      (../locales-preview/smartWindow-aboutAddons.ftl)
 #ifdef MOZ_LAYOUT_DEBUGGER
   layoutdebug/layoutdebug.ftl                      (../../layout/tools/layout-debug/ui/content/layoutdebug.ftl)
 #endif
