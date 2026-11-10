@@ -4777,7 +4777,12 @@ class Toolbox extends EventEmitter {
     }
 
     // Instead view the stylesheet in the debugger since the pref is enabled
-    if (Services.prefs.getBoolPref(DEVTOOLS_STYLESHEETS_IN_DEBUGGER)) {
+    // TODO: Viewing inline styles in debugger is not currently supported (See Bug 2037006)
+    // Lets fallback to showing inline styles in the style editor until Bug 2037006 lands.
+    if (
+      Services.prefs.getBoolPref(DEVTOOLS_STYLESHEETS_IN_DEBUGGER) &&
+      stylesheetResource.href
+    ) {
       Glean.devtoolsDebuggerStylesheets.linksOpenedInDebuggerCount.add(1);
       return viewSource.viewSourceInDebugger(
         this,
