@@ -73,6 +73,11 @@ window.onload = async function () {
       tooltip: "View source in Debugger → https://myfile.com/mahscripts.js:55",
     });
 
+    const isStylesheetInDebuggerEnabled = Services.prefs.getBoolPref(
+      "devtools.debugger.features.stylesheets-in-debugger",
+      false
+    );
+
     // Check when there's an error in CSS (View source in Style Editor)
     await checkFrameComponent({
       frame: {
@@ -84,7 +89,7 @@ window.onload = async function () {
         file: "cafebabe.css",
         line: 13,
         shouldLink: true,
-        tooltip: "View source in Style Editor → https://myfile.com/cafebabe.css:13",
+        tooltip: `View source in ${ isStylesheetInDebuggerEnabled ? "Debugger" : "Style Editor" } → https://myfile.com/cafebabe.css:13`,
     });
 
 
