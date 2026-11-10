@@ -12,6 +12,10 @@ add_task(async function () {
   // want https-first to interfere with that test
   await pushPref("dom.security.https_first", false);
 
+  // The first batch of requests expects uncached responses, so don't leave
+  // ours in the HTTP cache for a later run of this test.
+  registerCleanupFunction(() => Services.cache2.clear());
+
   const { tab, monitor } = await initNetMonitor(STATUS_CODES_URL, {
     enableCache: true,
     requestCount: 1,
