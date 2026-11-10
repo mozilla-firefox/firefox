@@ -225,6 +225,8 @@ void nsHostResolver::ClearPendingQueue(
 // right now, so we need to mark them to get re-resolved on completion!
 
 void nsHostResolver::FlushCache(bool aTrrToo, bool aFlushEvictionQueue) {
+  DNSNetworkChanged();
+
   MutexAutoLock dbLock(mDBLock);
   MutexAutoLock queueLock(mQueue.mLock);
 

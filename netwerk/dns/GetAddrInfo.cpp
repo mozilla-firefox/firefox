@@ -35,6 +35,11 @@ namespace mozilla::net {
 static StaticMutex gOverrideServiceMutex;
 static StaticRefPtr<NativeDNSResolverOverride> gOverrideService;
 static Atomic<bool, Relaxed> gOverrideServiceUsed{false};
+static Atomic<uint32_t> gNetworkGeneration{0};
+
+void DNSNetworkChanged() { gNetworkGeneration++; }
+
+uint32_t DNSNetworkGeneration() { return gNetworkGeneration; }
 
 LazyLogModule gGetAddrInfoLog("GetAddrInfo");
 #define LOG(msg, ...) \

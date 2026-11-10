@@ -26,6 +26,10 @@ struct _DnsRecordA;
 #  undef DNSQUERY_AVAILABLE
 #endif
 
+#ifdef HAVE_RES_NINIT
+struct __res_state;
+#endif
+
 namespace mozilla {
 namespace net {
 
@@ -67,6 +71,21 @@ nsresult GetAddrInfoInit();
 nsresult GetAddrInfoShutdown();
 
 void DNSThreadShutdown();
+
+/**
+ * Called when the network configuration may have changed, so that per-thread
+ * native resolver state gets reinitialized before its next use.
+ */
+void DNSNetworkChanged();
+uint32_t DNSNetworkGeneration();
+
+#ifdef HAVE_RES_NINIT
+/**
+ * Returns the resolver state of the calling thread, reinitializing it if the
+ * network changed since it was last initialized. Returns null on failure.
+ */
+struct __res_state* GetThreadResState();
+#endif
 
 /**
  * Resolves a HTTPS record. Will check overrides before calling the
