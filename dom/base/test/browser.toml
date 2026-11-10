@@ -33,6 +33,8 @@ support-files = [
   "file_slow_document.sjs",
   "file_use_counter_bfcache.html",
   "file_use_counter_bfcache_helper.html",
+  "file_use_counter_domparser_fast_path.html",
+  "file_use_counter_innerhtml_fast_path.html",
   "file_use_counter_outer.html",
   "file_use_counter_outer_display_none.html",
   "file_use_counter_style.html",
@@ -103,6 +105,8 @@ support-files = ["file_bug1703472.html"]
 ["browser_force_process_selector.js"]
 
 ["browser_form_validity_popup_submit.js"]
+
+["browser_fragment_parsing_telemetry.js"]
 
 ["browser_inputStream_structuredClone.js"]
 

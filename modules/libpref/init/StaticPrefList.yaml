@@ -3491,6 +3491,14 @@
   value: @IS_NIGHTLY_BUILD@
   mirror: always
 
+# The dom.fragment_parsing metrics time one in 2 to the power of this many
+# innerHTML or DOMParser calls, since timing every call costs more than the
+# fast path saves on small fragments.
+- name: dom.html_fragment_fast_path.telemetry_sample_shift
+  type: uint32_t
+  value: 6
+  mirror: always
+
 # <img loading=lazy sizes=auto>
 # https://html.spec.whatwg.org/multipage/embedded-content.html#allows-auto-sizes
 - name: dom.image.sizes_auto.enabled

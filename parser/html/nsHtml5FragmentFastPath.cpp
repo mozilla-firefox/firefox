@@ -12,11 +12,14 @@
 #include "mozAutoDocUpdate.h"
 #include "mozilla/Array.h"
 #include "mozilla/ErrorResult.h"
+#include "mozilla/RandomNum.h"
 #include "mozilla/Span.h"
+#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/TextUtils.h"
 #include "mozilla/Try.h"
 #include "mozilla/Utf16.h"
 #include "mozilla/Vector.h"
+#include "mozilla/glean/DomMetrics.h"
 #include "mozilla/dom/Comment.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
@@ -2192,3 +2195,125 @@ bool nsHtml5FragmentFastPath::TryParseDocument(const nsAString& aSource,
 }
 
 uint32_t nsHtml5FragmentFastPath::SuccessCount() { return sSuccessCount; }
+
+namespace {
+
+namespace metrics = glean::dom_fragment_parsing;
+
+// The index of the size label of aLength code units.
+size_t SizeIndex(uint32_t aLength) {
+  return aLength < 1000 ? 0 : aLength < 10000 ? 1 : aLength < 100000 ? 2 : 3;
+}
+
+// By outcome (fast, fallback, full), then by SizeIndex().
+constexpr metrics::InnerHtmlLabel kInnerHtmlLabels[3][4] = {
+    {metrics::InnerHtmlLabel::eFastUnder1k,
+     metrics::InnerHtmlLabel::eFastUnder10k,
+     metrics::InnerHtmlLabel::eFastUnder100k,
+     metrics::InnerHtmlLabel::eFastOver100k},
+    {metrics::InnerHtmlLabel::eFallbackUnder1k,
+     metrics::InnerHtmlLabel::eFallbackUnder10k,
+     metrics::InnerHtmlLabel::eFallbackUnder100k,
+     metrics::InnerHtmlLabel::eFallbackOver100k},
+    {metrics::InnerHtmlLabel::eFullUnder1k,
+     metrics::InnerHtmlLabel::eFullUnder10k,
+     metrics::InnerHtmlLabel::eFullUnder100k,
+     metrics::InnerHtmlLabel::eFullOver100k},
+};
+
+constexpr metrics::DomParserLabel kDomParserLabels[3][4] = {
+    {metrics::DomParserLabel::eFastUnder1k,
+     metrics::DomParserLabel::eFastUnder10k,
+     metrics::DomParserLabel::eFastUnder100k,
+     metrics::DomParserLabel::eFastOver100k},
+    {metrics::DomParserLabel::eFallbackUnder1k,
+     metrics::DomParserLabel::eFallbackUnder10k,
+     metrics::DomParserLabel::eFallbackUnder100k,
+     metrics::DomParserLabel::eFallbackOver100k},
+    {metrics::DomParserLabel::eFullUnder1k,
+     metrics::DomParserLabel::eFullUnder10k,
+     metrics::DomParserLabel::eFullUnder100k,
+     metrics::DomParserLabel::eFullOver100k},
+};
+
+constexpr metrics::InnerHtmlFastPathRejectedLabel kInnerHtmlRejectedLabels[4] =
+    {
+        metrics::InnerHtmlFastPathRejectedLabel::eUnder1k,
+        metrics::InnerHtmlFastPathRejectedLabel::eUnder10k,
+        metrics::InnerHtmlFastPathRejectedLabel::eUnder100k,
+        metrics::InnerHtmlFastPathRejectedLabel::eOver100k,
+};
+
+constexpr metrics::DomParserFastPathRejectedLabel kDomParserRejectedLabels[4] =
+    {
+        metrics::DomParserFastPathRejectedLabel::eUnder1k,
+        metrics::DomParserFastPathRejectedLabel::eUnder10k,
+        metrics::DomParserFastPathRejectedLabel::eUnder100k,
+        metrics::DomParserFastPathRejectedLabel::eOver100k,
+};
+
+// Whether to time this call. A pseudo-random sample, rather than every nth
+// call, so that it doesn't line up with calls that alternate.
+bool ShouldSample() {
+  MOZ_ASSERT(NS_IsMainThread());
+  // xorshift32, seeded per process so that processes don't all sample the
+  // calls at the same positions.
+  static uint32_t sState = [] {
+    const uint32_t seed = uint32_t(RandomUint64OrDie());
+    return seed ? seed : 2463534242;
+  }();
+  sState ^= sState << 13;
+  sState ^= sState >> 17;
+  sState ^= sState << 5;
+  const uint32_t shift = std::min(
+      StaticPrefs::dom_html_fragment_fast_path_telemetry_sample_shift(), 31u);
+  return !(sState & ((1u << shift) - 1));
+}
+
+}  // namespace
+
+nsHtml5FragmentFastPath::ParseTimer::ParseTimer(Caller aCaller,
+                                                uint32_t aLength)
+    : mLength(aLength), mCaller(aCaller), mSampled(ShouldSample()) {
+  if (mSampled) {
+    mStart = TimeStamp::Now();
+  }
+}
+
+void nsHtml5FragmentFastPath::ParseTimer::FastPathTried(bool aParsed) {
+  if (!mSampled) {
+    return;
+  }
+  if (aParsed) {
+    mOutcome = Outcome::Fast;
+    return;
+  }
+  mOutcome = Outcome::Fallback;
+  const TimeDuration elapsed = TimeStamp::Now() - mStart;
+  const size_t size = SizeIndex(mLength);
+  if (mCaller == Caller::InnerHTML) {
+    metrics::inner_html_fast_path_rejected
+        .EnumGet(kInnerHtmlRejectedLabels[size])
+        .AccumulateRawDuration(elapsed);
+  } else {
+    metrics::dom_parser_fast_path_rejected
+        .EnumGet(kDomParserRejectedLabels[size])
+        .AccumulateRawDuration(elapsed);
+  }
+}
+
+void nsHtml5FragmentFastPath::ParseTimer::Finish() {
+  if (!mSampled) {
+    return;
+  }
+  const TimeDuration elapsed = TimeStamp::Now() - mStart;
+  const size_t outcome = size_t(mOutcome);
+  const size_t size = SizeIndex(mLength);
+  if (mCaller == Caller::InnerHTML) {
+    metrics::inner_html.EnumGet(kInnerHtmlLabels[outcome][size])
+        .AccumulateRawDuration(elapsed);
+  } else {
+    metrics::dom_parser.EnumGet(kDomParserLabels[outcome][size])
+        .AccumulateRawDuration(elapsed);
+  }
+}

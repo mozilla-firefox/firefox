@@ -7,6 +7,8 @@
 
 #include <cstdint>
 
+#include "mozilla/Attributes.h"
+#include "mozilla/TimeStamp.h"
 #include "nsStringFwd.h"
 
 class nsIContent;
@@ -58,6 +60,41 @@ class nsHtml5FragmentFastPath final {
    * for tests.
    */
   static uint32_t SuccessCount();
+
+  /**
+   * Measures for telemetry how long innerHTML or DOMParser takes to parse its
+   * input, with or without the fast path, for a random sample of the calls
+   * (see dom.html_fragment_fast_path.telemetry_sample_shift).
+   */
+  class MOZ_STACK_CLASS ParseTimer final {
+   public:
+    enum class Caller : uint8_t { InnerHTML, DOMParser };
+
+    /**
+     * Starts measuring the parsing of aLength code units, if this call is
+     * sampled.
+     */
+    ParseTimer(Caller aCaller, uint32_t aLength);
+
+    /**
+     * Records that the fast path was tried, and whether it parsed the input.
+     */
+    void FastPathTried(bool aParsed);
+
+    /**
+     * Records the time since the timer was created.
+     */
+    void Finish();
+
+   private:
+    enum class Outcome : uint8_t { Fast, Fallback, Full };
+
+    mozilla::TimeStamp mStart;
+    const uint32_t mLength;
+    const Caller mCaller;
+    const bool mSampled;
+    Outcome mOutcome = Outcome::Full;
+  };
 };
 
 #endif  // nsHtml5FragmentFastPath_h

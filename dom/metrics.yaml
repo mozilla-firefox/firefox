@@ -906,6 +906,102 @@ dom.parentprocess:
     expires: never
     telemetry_mirror: DOM_PARENTPROCESS_PROCESS_LAUNCH_ERRORS
 
+dom.fragment_parsing:
+  inner_html:
+    type: labeled_timing_distribution
+    description: >
+      Time spent parsing the markup that innerHTML is set to, including the
+      attempt of the fast path (nsHtml5FragmentFastPath) to parse it. Labeled
+      by whether the fast path parsed it (fast), left it to the full parser
+      (fallback) or wasn't tried (full), and by the length of the markup in
+      UTF-16 code units. Short markup without "<" or "&", which innerHTML
+      doesn't parse, isn't recorded.
+      Only a random sample of the calls is timed, see
+      dom.html_fragment_fast_path.telemetry_sample_shift.
+    time_unit: nanosecond
+    labels: &fragment_parsing_labels
+      - fast_under_1k
+      - fast_under_10k
+      - fast_under_100k
+      - fast_over_100k
+      - fallback_under_1k
+      - fallback_under_10k
+      - fallback_under_100k
+      - fallback_over_100k
+      - full_under_1k
+      - full_under_10k
+      - full_under_100k
+      - full_over_100k
+    bugs:
+      - https://bugzil.la/1821615
+    data_reviews:
+      - https://bugzil.la/1821615
+    notification_emails:
+      - dom-core@mozilla.com
+      - jjaschke@mozilla.com
+    expires: never
+
+  inner_html_fast_path_rejected:
+    type: labeled_timing_distribution
+    description: >
+      Time that the innerHTML fast path (nsHtml5FragmentFastPath) spent on
+      markup before leaving it to the full parser, labeled by the length of the
+      markup in UTF-16 code units.
+      Only a random sample of the calls is timed, see
+      dom.html_fragment_fast_path.telemetry_sample_shift.
+    time_unit: nanosecond
+    labels: &fragment_parsing_size_labels
+      - under_1k
+      - under_10k
+      - under_100k
+      - over_100k
+    bugs:
+      - https://bugzil.la/1821615
+    data_reviews:
+      - https://bugzil.la/1821615
+    notification_emails:
+      - dom-core@mozilla.com
+      - jjaschke@mozilla.com
+    expires: never
+
+  dom_parser:
+    type: labeled_timing_distribution
+    description: >
+      Time spent by DOMParser.parseFromString() parsing text/html, including
+      the attempt of the fast path (nsHtml5FragmentFastPath) to parse it.
+      Labeled like dom.fragment_parsing.inner_html.
+      Only a random sample of the calls is timed, see
+      dom.html_fragment_fast_path.telemetry_sample_shift.
+    time_unit: nanosecond
+    labels: *fragment_parsing_labels
+    bugs:
+      - https://bugzil.la/1821615
+    data_reviews:
+      - https://bugzil.la/1821615
+    notification_emails:
+      - dom-core@mozilla.com
+      - jjaschke@mozilla.com
+    expires: never
+
+  dom_parser_fast_path_rejected:
+    type: labeled_timing_distribution
+    description: >
+      Time that the fast path (nsHtml5FragmentFastPath) spent on the input of
+      DOMParser.parseFromString() before leaving it to the full parser, labeled
+      like dom.fragment_parsing.inner_html_fast_path_rejected.
+      Only a random sample of the calls is timed, see
+      dom.html_fragment_fast_path.telemetry_sample_shift.
+    time_unit: nanosecond
+    labels: *fragment_parsing_size_labels
+    bugs:
+      - https://bugzil.la/1821615
+    data_reviews:
+      - https://bugzil.la/1821615
+    notification_emails:
+      - dom-core@mozilla.com
+      - jjaschke@mozilla.com
+    expires: never
+
 dom.textfragment:
   find_directives:
     type: timing_distribution
