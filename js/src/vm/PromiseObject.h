@@ -69,6 +69,20 @@ class SavedFrame;
 // PROMISE_FLAG_REQUIRES_USER_INTERACTION_HANDLING is set.
 #define PROMISE_FLAG_HAD_USER_INTERACTION_UPON_CREATION 0x80
 
+// This pending promise's only reaction is stored in the promise itself rather
+// than in a PromiseReactionRecord. See REACTIONS_OR_RESULT_SLOT and the
+// EMBEDDED_REACTION_* slots.
+#define PROMISE_FLAG_EMBEDDED_REACTION 0x100
+
+// The embedded reaction's incumbent global is the promise's global. If this
+// flag isn't set, the embedded reaction has no incumbent global.
+#define PROMISE_FLAG_EMBEDDED_REACTION_REALM_INCUMBENT 0x200
+
+// The bits holding the embedded reaction's flags.
+#define PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_SHIFT 16
+#define PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_MASK \
+  (0xff << PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_SHIFT)
+
 struct PromiseReactionRecordBuilder;
 
 class PromiseObject : public NativeObject {
@@ -80,6 +94,8 @@ class PromiseObject : public NativeObject {
   //     * undefined if there's no reaction
   //     * maybe-wrapped PromiseReactionRecord if there's only one reacion
   //     * dense array if there are two or more more reactions
+  //     * the onFulfilled handler of the embedded reaction if
+  //       PROMISE_FLAG_EMBEDDED_REACTION is set
   // * if this promise is fulfilled, the resolution value
   // * if this promise is rejected, the reason for the rejection
   JS_DEFINE_UNTYPED_SLOT(1, REACTIONS_OR_RESULT_SLOT);
@@ -97,7 +113,22 @@ class PromiseObject : public NativeObject {
   // * otherwise a PromiseDebugInfo object
   JS_DEFINE_TYPED_SLOT(3, DEBUG_INFO_SLOT, Object, Double, Undefined);
 
-  static const unsigned RESERVED_SLOTS = 4;
+  // * if PROMISE_FLAG_EMBEDDED_REACTION is set, the onRejected handler of the
+  //   embedded reaction
+  // * otherwise undefined
+  JS_DEFINE_UNTYPED_SLOT(4, EMBEDDED_REACTION_ON_REJECTED_SLOT);
+
+  // * if PROMISE_FLAG_EMBEDDED_REACTION is set, either the result promise (or
+  //   null), or specialized reaction state: a promise to resolve, an async
+  //   function's generator, an async generator, or an async-from-sync iterator
+  //   (the SpecializedReactionState field)
+  //   The reaction flags identify whether specialized state is present. A
+  //   reaction requiring both it and a result promise cannot be embedded.
+  // * otherwise undefined
+  JS_DEFINE_UNTYPED_SLOT(5,
+                         EMBEDDED_REACTION_PROMISE_OR_SPECIALIZED_STATE_SLOT);
+
+  static const unsigned RESERVED_SLOTS = 6;
   static const JSClass class_;
   static const JSClass protoClass_;
   static PromiseObject* create(JSContext* cx, JS::Handle<JSObject*> executor,
@@ -153,7 +184,43 @@ class PromiseObject : public NativeObject {
 
   JS::Value reactions() const {
     MOZ_ASSERT(state() == JS::PromiseState::Pending);
+    MOZ_ASSERT(!hasEmbeddedReaction());
     return getFixedSlot(REACTIONS_OR_RESULT_SLOT);
+  }
+
+  bool hasExistingReaction() const {
+    MOZ_ASSERT(state() == JS::PromiseState::Pending);
+    return !getFixedSlot(REACTIONS_OR_RESULT_SLOT).isUndefined();
+  }
+
+  bool hasEmbeddedReaction() const {
+    return flags() & PROMISE_FLAG_EMBEDDED_REACTION;
+  }
+
+  int32_t embeddedReactionFlags() const {
+    MOZ_ASSERT(hasEmbeddedReaction());
+    return (flags() & PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_MASK) >>
+           PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_SHIFT;
+  }
+
+  bool embeddedReactionHasIncumbentGlobal() const {
+    MOZ_ASSERT(hasEmbeddedReaction());
+    return flags() & PROMISE_FLAG_EMBEDDED_REACTION_REALM_INCUMBENT;
+  }
+
+  // Remove the embedded reaction, leaving the promise without reactions.
+  void clearEmbeddedReaction() {
+    MOZ_ASSERT(hasEmbeddedReaction());
+    setFixedSlotTyped(
+        FLAGS_SLOT,
+        JS::Int32Value(flags() &
+                       ~(PROMISE_FLAG_EMBEDDED_REACTION |
+                         PROMISE_FLAG_EMBEDDED_REACTION_REALM_INCUMBENT |
+                         PROMISE_FLAG_EMBEDDED_REACTION_FLAGS_MASK)));
+    setFixedSlot(REACTIONS_OR_RESULT_SLOT, JS::UndefinedValue());
+    setFixedSlot(EMBEDDED_REACTION_ON_REJECTED_SLOT, JS::UndefinedValue());
+    setFixedSlot(EMBEDDED_REACTION_PROMISE_OR_SPECIALIZED_STATE_SLOT,
+                 JS::UndefinedValue());
   }
 
   JS::Value value() const {

@@ -5163,6 +5163,10 @@ static bool SettlePromiseNow(JSContext* cx, unsigned argc, Value* vp) {
     SetAlreadyResolvedPromiseWithDefaultResolvingFunction(promise);
   }
 
+  if (promise->hasEmbeddedReaction()) {
+    promise->clearEmbeddedReaction();
+  }
+
   int32_t flags = promise->flags();
   promise->setFixedSlotTyped(
       PromiseObject::FLAGS_SLOT,
