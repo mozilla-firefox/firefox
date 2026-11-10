@@ -1,0 +1,37 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  display: block;
+  container-type: inline-size;
+
+  --aitab-image-background-color: light-dark(
+    var(--color-violet-desaturated-10, var(--color-violet-10)),
+    var(--color-violet-desaturated-80, var(--color-violet-80))
+  );
+  --aitab-image-radius: 50px;
+}
+
+.aitab-image {
+  aspect-ratio: 16 / 9;
+  overflow: clip;
+  background-color: var(--aitab-image-background-color);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  border-radius: var(--aitab-image-radius);
+
+  @container (width < 500px) {
+    --aitab-image-radius: 24px;
+  }
+
+  @container (width < 240px) {
+    --aitab-image-radius: 10px;
+  }
+}
+
+.aitab-image-img {
+  display: block;
+  inline-size: 100%;
+  block-size: 100%;
+  object-fit: cover;
+}

@@ -15,6 +15,8 @@ import "chrome://browser/content/aiwindow/components/aitab-timeline.mjs";
 import "chrome://browser/content/aiwindow/components/aitab-table.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/aitab-highlights.mjs";
+// eslint-disable-next-line import-x/no-unassigned-import
+import "chrome://browser/content/aiwindow/components/aitab-image.mjs";
 
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/aitab-error.mjs";
