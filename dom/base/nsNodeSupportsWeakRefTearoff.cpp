@@ -6,6 +6,10 @@
 
 #include "nsINode.h"
 
+nsNodeSupportsWeakRefTearoff::nsNodeSupportsWeakRefTearoff(nsINode* aNode)
+    : mNode(aNode) {}
+nsNodeSupportsWeakRefTearoff::~nsNodeSupportsWeakRefTearoff() = default;
+
 NS_IMPL_CYCLE_COLLECTION(nsNodeSupportsWeakRefTearoff, mNode)
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(nsNodeSupportsWeakRefTearoff)

@@ -16,7 +16,7 @@ class nsINode;
  */
 class nsNodeSupportsWeakRefTearoff final : public nsISupportsWeakReference {
  public:
-  explicit nsNodeSupportsWeakRefTearoff(nsINode* aNode) : mNode(aNode) {}
+  explicit nsNodeSupportsWeakRefTearoff(nsINode* aNode);
 
   // nsISupports
   NS_DECL_CYCLE_COLLECTING_ISUPPORTS_FINAL
@@ -27,7 +27,7 @@ class nsNodeSupportsWeakRefTearoff final : public nsISupportsWeakReference {
   NS_DECL_CYCLE_COLLECTION_CLASS(nsNodeSupportsWeakRefTearoff)
 
  private:
-  ~nsNodeSupportsWeakRefTearoff() = default;
+  ~nsNodeSupportsWeakRefTearoff();
 
   nsCOMPtr<nsINode> mNode;
 };
