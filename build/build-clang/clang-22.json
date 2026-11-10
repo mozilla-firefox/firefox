@@ -13,6 +13,7 @@
         "llvmorg-23-init-5314-g19e9bcba0bab.patch",
         "llvmorg-23-init-5315-gf2a10ab74ff7.patch",
         "llvmorg-23-init-5316-g4f4087edb182.patch",
+        "llvmorg-23-init-20003-g18c1cbce6874.patch",
         "llvmorg-24-init-8352-gb8007a8e4020.patch",
         "llvmorg-24-init-16018-g88de0d5aed55.patch",
         "android-hardware-buffer-header-workaround_clang_21.patch",
