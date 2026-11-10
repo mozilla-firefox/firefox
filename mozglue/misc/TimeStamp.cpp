@@ -90,7 +90,9 @@ static TickScale sSecondScale = {0, 0, 1};
 static TickScale sMillisecondScale = {0, 0, 1};
 static TickScale sMicrosecondScale = {0, 0, 1};
 static TickScale sNanosecondScale = {0, 0, 1};
+#  ifdef DEBUG
 static bool sScalesInitialized = false;
+#  endif
 
 void InitTickScales(uint64_t aTickRateNum, uint64_t aTickRateDen) {
   sSecondScale = TickScale::FromTickRate(aTickRateNum, aTickRateDen, 1);
@@ -99,7 +101,9 @@ void InitTickScales(uint64_t aTickRateNum, uint64_t aTickRateDen) {
       TickScale::FromTickRate(aTickRateNum, aTickRateDen, 1000000);
   sNanosecondScale =
       TickScale::FromTickRate(aTickRateNum, aTickRateDen, 1000000000);
+#  ifdef DEBUG
   sScalesInitialized = true;
+#  endif
 }
 
 // Scale aCount by aScale, rounding to the nearest tick and saturating at the
