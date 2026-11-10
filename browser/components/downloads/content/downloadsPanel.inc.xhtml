@@ -10,8 +10,6 @@
   <command id="downloadsCmd_cancel" />
   <command id="downloadsCmd_unblock" />
   <command id="downloadsCmd_chooseUnblock" />
-  <command id="downloadsCmd_unblockAndOpen" />
-  <command id="downloadsCmd_unblockAndSave" />
   <command id="downloadsCmd_confirmBlock" />
   <command id="downloadsCmd_open" />
   <command id="downloadsCmd_open:current" />
@@ -27,8 +25,6 @@
   <command id="downloadsCmd_alwaysOpenInSystemViewer" />
   <command id="downloadsCmd_alwaysOpenSimilarFiles" />
   <command id="downloadsCmd_deleteFile" />
-  <command id="downloadsCmd_deletePrivate"/>
-  <command id="downloadsCmd_dismissDeletePrivate"/>
 </commandset>
 
 <!-- For accessibility to screen readers, we use a label on the panel instead
@@ -153,13 +149,14 @@
       </vbox>
       <html:moz-button-group id="downloadsPanel-blockedSubview-buttons"
             class="panel-footer">
-        <button id="downloadsPanel-blockedSubview-unblockButton"
-                class="footer-button"
-                command="downloadsCmd_unblockAndOpen"/>
-        <button id="downloadsPanel-blockedSubview-deleteButton"
-                class="footer-button"
-                default="true"
-                data-l10n-id="downloads-unblock-button-confirm-block"/>
+        <html:moz-button
+          id="downloadsPanel-blockedSubview-unblockButton"
+        ></html:moz-button>
+        <html:moz-button
+          id="downloadsPanel-blockedSubview-deleteButton"
+          type="primary"
+          data-l10n-id="downloads-unblock-button-confirm-block"
+        ></html:moz-button>
       </html:moz-button-group>
     </panelview>
 
@@ -179,14 +176,16 @@
       </vbox>
       <html:moz-button-group
           class="panel-footer">
-        <button class="footer-button secondary"
-                command="downloadsCmd_deletePrivate"
-                data-l10n-id="downloads-private-browsing-delete-button"/>
-        <button class="footer-button primary"
-                default="true"
-                command="downloadsCmd_dismissDeletePrivate"
-                data-l10n-id="downloads-private-browsing-accept-button"/>
-    </html:moz-button-group>
+        <html:moz-button
+          id="downloadsPanel-privateBrowsing-deleteButton"
+          data-l10n-id="downloads-private-browsing-delete-button"
+        ></html:moz-button>
+        <html:moz-button
+          id="downloadsPanel-privateBrowsing-acceptButton"
+          type="primary"
+          data-l10n-id="downloads-private-browsing-accept-button"
+        ></html:moz-button>
+      </html:moz-button-group>
     </panelview>
   </panelmultiview>
 
