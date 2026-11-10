@@ -3675,18 +3675,9 @@ def make_shared_library(target, compiler):
     flags = ["$(DSO_LDOPTS)"]
     output = ["-o", "$@"]
 
-    if target.kernel == "Darwin":
-        soname = []
-    elif target.os == "NetBSD":
-        soname = ["-Wl,-soname,$(DSO_SONAME)"]
-    else:
-        assert compiler.type in ("gcc", "clang")
-
-        soname = ["-Wl,-h,$(DSO_SONAME)"]
-
     return namespace(
-        mkshlib=cxx + flags + soname + output,
-        mkcshlib=cc + flags + soname + output,
+        mkshlib=cxx + flags + output,
+        mkcshlib=cc + flags + output,
     )
 
 

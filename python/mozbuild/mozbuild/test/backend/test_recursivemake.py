@@ -2324,6 +2324,26 @@ class TestRecursiveMakeBackend(BackendTester):
             "-compatibility_version 1 -current_version 1\n",
             content,
         )
+        self.assertNotIn("-Wl,-h,", content)
+
+    def _shared_lib_dso_ldopts(self, substs):
+        env = self._get_environment("shared-lib-paths", substs=substs)
+        self._consume("shared-lib-paths", RecursiveMakeBackend, env=env)
+
+        with open(os.path.join(env.topobjdir, "dist-bin", "backend.mk")) as fh:
+            return [l.rstrip() for l in fh if l.startswith("EXTRA_DSO_LDOPTS")]
+
+    def test_soname(self):
+        self.assertEqual(
+            self._shared_lib_dso_ldopts({"OS_ARCH": "Linux", "OS_TARGET": "Linux"}),
+            ["EXTRA_DSO_LDOPTS += -Wl,-h,libdist-bin.so"],
+        )
+
+    def test_soname_netbsd(self):
+        self.assertEqual(
+            self._shared_lib_dso_ldopts({"OS_ARCH": "NetBSD", "OS_TARGET": "NetBSD"}),
+            ["EXTRA_DSO_LDOPTS += -Wl,-soname,libdist-bin.so"],
+        )
 
     def test_host_cpp_prog_link(self):
         env = self._consume("host-cpp-link", RecursiveMakeBackend)
@@ -2361,11 +2381,13 @@ class TestRecursiveMakeBackend(BackendTester):
         self.assertIn(
             "EXTRA_DSO_LDOPTS += -Wl,--out-implib -Wl,dist-bin.lib\n", content
         )
+        self.assertNotIn("-Wl,-h,", content)
 
     def test_clang_cl_import_library(self):
         content = self._windows_shared_lib_backend_mk("clang-cl")
         self.assertIn("EXTRA_DSO_LDOPTS += -IMPLIB:dist-bin.lib\n", content)
         self.assertNotIn("--out-implib", content)
+        self.assertNotIn("-Wl,-h,", content)
 
     def test_per_source_object_deps(self):
         env = self._consume("per-source-object-deps", RecursiveMakeBackend)

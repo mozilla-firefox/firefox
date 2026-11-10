@@ -976,7 +976,9 @@ class SharedLibrary(Library):
             if substs.get("CC_TYPE") == "clang-cl":
                 return [f"-IMPLIB:{self.import_name}"]
             return ["-Wl,--out-implib", f"-Wl,{self.import_name}"]
-        return []
+        if substs.get("OS_TARGET") == "NetBSD":
+            return [f"-Wl,-soname,{self.soname}"]
+        return [f"-Wl,-h,{self.soname}"]
 
 
 class HostSharedLibrary(HostMixin, Library):

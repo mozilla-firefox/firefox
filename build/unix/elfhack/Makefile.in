@@ -24,7 +24,6 @@ test-array$(DLL_SUFFIX) test-ctors$(DLL_SUFFIX): %$(DLL_SUFFIX): %.$(OBJ_SUFFIX)
 	# Fail if the new library doesn't contain less relocations
 	[ $$($(READELF) -r $@.bak | wc -l) -gt $$($(READELF) -r $@ | wc -l) ]
 
-test-array$(DLL_SUFFIX) test-ctors$(DLL_SUFFIX): DSO_SONAME=$@
 test-array$(DLL_SUFFIX): DT_TYPE=INIT_ARRAY
 test-ctors$(DLL_SUFFIX): DT_TYPE=INIT
 
