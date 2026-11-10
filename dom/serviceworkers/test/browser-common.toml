@@ -36,6 +36,8 @@ support-files = [
 
 ["browser_antitracking_subiframes.js"]
 
+["browser_bounceTrackingProtection_serviceWorkers.js"]
+
 ["browser_clearData_serviceWorkers.js"]
 
 ["browser_devtools_serviceworker_interception.js"]
