@@ -974,9 +974,7 @@ auto ApplyToTypedArrays(const T& aUnion, Fun&& aFun) {
   } else {
     MOZ_ASSERT(result, "Didn't expect union members other than typed arrays");
 
-    if constexpr (std::is_same_v<std::remove_cv_t<
-                                     std::remove_reference_t<decltype(result)>>,
-                                 bool>) {
+    if constexpr (std::is_same_v<std::remove_cvref_t<decltype(result)>, bool>) {
       return;
     } else {
       return result.extract();
