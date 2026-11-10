@@ -991,8 +991,9 @@ pub struct StackingContext {
     pub clip_chain_id: Option<ClipChainId>,
     /// Raster space already resolved against the enclosing stacking contexts by
     /// `DisplayListBuilder::push_stacking_context`, not the space its caller
-    /// requested. Resolving on the builder means one raster space stack rather
-    /// than two that have to agree.
+    /// requested. Resolving on the builder means the one raster space stack that
+    /// text interning needs is also the one the receiver reads, rather than two
+    /// that have to agree.
     pub raster_space: RasterSpace,
     pub flags: StackingContextFlags,
     /// Non-zero for a shadow emitted by the display list builder's shadow
