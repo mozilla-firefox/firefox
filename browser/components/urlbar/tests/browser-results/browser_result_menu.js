@@ -491,19 +491,10 @@ async function openContextMenu(resultIndex) {
     resultIndex
   );
 
-  let menu = gURLBar.view.resultMenu;
-  let onShown = BrowserTestUtils.waitForEvent(menu, "shown");
-  EventUtils.synthesizeMouseAtCenter(element.row, {
-    button: 2,
-    type: "mousedown",
-  });
+  let onShown = BrowserTestUtils.waitForEvent(gURLBar.view.resultMenu, "shown");
   EventUtils.synthesizeMouseAtCenter(element.row, {
     button: 2,
     type: "contextmenu",
-  });
-  EventUtils.synthesizeMouseAtCenter(element.row, {
-    button: 2,
-    type: "mouseup",
   });
   await onShown;
 }
