@@ -66,6 +66,8 @@ async function syncAndDownload(filenames, options = {}) {
     hashFunc = getHash,
     lengthFunc = arr => arr.length,
     clear = true,
+    locationDir = "intermediates",
+    beforePoll = async () => {},
   } = options;
 
   const localDB = await IntermediatePreloadsClient.client.db;
@@ -93,7 +95,7 @@ async function syncAndDownload(filenames, options = {}) {
         hash: hashFunc(certBytes),
         size: lengthFunc(certBytes),
         filename: `intermediate certificate #${count}.pem`,
-        location: `security-state-workspace/intermediates/${filename}`,
+        location: `security-state-workspace/${locationDir}/${filename}`,
         mimetype: "application/x-pem-file",
       },
       whitelist: false,
@@ -104,6 +106,7 @@ async function syncAndDownload(filenames, options = {}) {
     await localDB.create(record);
     count++;
   }
+  await beforePoll(localDB);
   // This promise will wait for the end of downloading.
   const updatedPromise = TestUtils.topicObserved(
     "remote-security-settings:intermediates-updated"
@@ -421,6 +424,80 @@ add_task(async function test_delete() {
     0,
     "shouldn't find intermediate in cert storage now"
   );
+});
+
+add_task(async function test_cached_attachments_kept_for_later_runs() {
+  Services.prefs.setBoolPref(INTERMEDIATES_ENABLED_PREF, true);
+  Services.prefs.setIntPref(INTERMEDIATES_DL_PER_POLL_PREF, 1);
+
+  const localDB = IntermediatePreloadsClient.client.db;
+  const seedCache = async records => {
+    const entries = [];
+    for (const record of records) {
+      const filename = record.attachment.location.split("/").pop();
+      const certBytes = readFile(
+        do_get_file(`test_intermediate_preloads/${filename}`)
+      );
+      entries.push([record.id, { record, blob: new Blob([certBytes]) }]);
+    }
+    await localDB.saveAttachments(entries);
+  };
+  const cachedIds = async () => {
+    const ids = [];
+    for (const { id } of await localDB.list()) {
+      if (await localDB.getAttachment(id)) {
+        ids.push(id);
+      }
+    }
+    return ids;
+  };
+
+  // The server doesn't serve this location, so attachments can only be read
+  // from the cache.
+  let result = await syncAndDownload(["int.pem", "int2.pem", "int.pem"], {
+    locationDir: "cache-only",
+    beforePoll: async db => seedCache(await db.list()),
+  });
+  equal(result, "success", "Preloading update should have run");
+  let imported = await locallyDownloaded();
+  equal(imported.length, 1, "One intermediate should have been imported");
+  let cached = await cachedIds();
+  equal(cached.length, 2, "The other attachments should still be cached");
+  ok(
+    !cached.includes(imported[0].id),
+    "The imported attachment should have been removed from the cache"
+  );
+
+  // Simulate a cached attachment left over from an interrupted run.
+  await seedCache(imported);
+
+  result = await syncAndDownload([], { clear: false });
+  equal(result, "success", "Preloading update should have run");
+  equal(
+    (await locallyDownloaded()).length,
+    2,
+    "Two intermediates should have been imported from the cache"
+  );
+  equal(
+    (await cachedIds()).length,
+    2,
+    "The waiting and the left over attachments should still be cached"
+  );
+
+  result = await syncAndDownload([], { clear: false });
+  equal(result, "success", "Preloading update should have run");
+  equal(
+    (await locallyDownloaded()).length,
+    3,
+    "All intermediates should have been imported from the cache"
+  );
+  deepEqual(
+    await cachedIds(),
+    [],
+    "The cache should be empty once all intermediates are imported"
+  );
+
+  Services.prefs.clearUserPref(INTERMEDIATES_DL_PER_POLL_PREF);
 });
 
 add_task(async function test_bug1966632() {

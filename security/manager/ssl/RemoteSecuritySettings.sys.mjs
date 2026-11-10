@@ -445,8 +445,15 @@ class IntermediatePreloads {
       return;
     }
 
-    // attachment cache is no longer needed
-    await this.client.attachments.deleteAll();
+    // Keep the cached attachments of the records still waiting, so that later
+    // runs can import them from the cached bundle.
+    if (toDownload.length == waiting.length) {
+      await this.client.attachments.deleteAll();
+    } else {
+      await this.client.attachments.cacheImpl.deleteMultiple(
+        toDownload.map(r => r.id)
+      );
+    }
 
     Services.obs.notifyObservers(
       null,
