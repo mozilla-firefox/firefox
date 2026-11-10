@@ -165,6 +165,11 @@ browsertime-tp6m:
 
 browsertime-tp6m-essential:
     <<: *tp6m-defaults
+    limit-platforms:
+        by-app:
+            fenix: []
+            default:
+                - android-hw.*
     raptor:
         apps: [geckoview, fenix, refbrow]
         run-visual-metrics: true
@@ -185,11 +190,14 @@ browsertime-tp6m-essential:
                     default: []
             default: []
     tier:
-        by-app:
-            geckoview: 1
-            fenix: 1
-            refbrow: 2
-            default: 3
+        by-test-platform:
+            android-em-14-arm64.*: 3
+            default:
+                by-app:
+                    geckoview: 1
+                    fenix: 1
+                    refbrow: 2
+                    default: 3
 
 browsertime-tp6m-webextensions:
     <<: *tp6m-defaults

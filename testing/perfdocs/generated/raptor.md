@@ -42201,6 +42201,23 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **use live sites**: false
 * **Test Task**:
 
+:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-tp6m-essential-fenix-allrecipes**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
 :::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
 :widths: 30 15 15 15 15
 :header-rows: 1
@@ -42418,6 +42435,23 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **unit**: ms
 * **use live sites**: false
 * **Test Task**:
+
+:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-tp6m-essential-fenix-amazon-search**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
 
 :::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
 :widths: 30 15 15 15 15
@@ -43519,6 +43553,23 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **use live sites**: false
 * **Test Task**:
 
+:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-tp6m-essential-fenix-espn**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
 :::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
 :widths: 30 15 15 15 15
 :header-rows: 1
@@ -43628,6 +43679,23 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **unit**: ms
 * **use live sites**: false
 * **Test Task**:
+
+:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-tp6m-essential-fenix-google**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
 
 :::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
 :widths: 30 15 15 15 15
@@ -44065,6 +44133,23 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **unit**: ms
 * **use live sites**: false
 * **Test Task**:
+
+:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-tp6m-essential-fenix-microsoft-support**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
 
 :::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
 :widths: 30 15 15 15 15
@@ -44610,6 +44695,23 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **unit**: ms
 * **use live sites**: false
 * **Test Task**:
+
+:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-tp6m-essential-fenix-youtube-watch**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
 
 :::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
 :widths: 30 15 15 15 15

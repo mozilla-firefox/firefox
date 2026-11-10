@@ -689,6 +689,7 @@ android-em-arm64-benchmark-tests:
     - browsertime-benchmark-jetstream3
     - browsertime-youtube-playback-mobile
     - browsertime-nav-bench-m
+    - browsertime-tp6m-essential
 
 android-hw-speedometer3-nightlyasrelease:
     - browsertime-benchmark-speedometer3-mobile
