@@ -2355,9 +2355,6 @@ nsHttpHandler::Observe(nsISupports* subject, const char* topic,
 #endif
   } else if (!strcmp(topic, "last-pb-context-exited")) {
     mPrivateAuthCache->ClearAll();
-    if (mAltSvcCache) {
-      mAltSvcCache->ClearAltServiceMappings();
-    }
     nsCORSListenerProxy::ClearPrivateBrowsingCache();
   } else if (!strcmp(topic, "browser:purge-session-history")) {
     if (mConnMgr) {

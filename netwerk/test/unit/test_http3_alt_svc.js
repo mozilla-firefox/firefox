@@ -180,7 +180,7 @@ function test_https_alt_svc() {
 // H2 server returns alt-svc=h3=:h3port,h3=:h3port
 function test_https_alt_svc_1() {
   dump("test_https_alt_svc_1()\n");
-  Services.obs.notifyObservers(null, "last-pb-context-exited");
+  Services.obs.notifyObservers(null, "browser:purge-session-history");
   Services.obs.notifyObservers(null, "net:cancel-all-connections");
 
   do_test_pending();

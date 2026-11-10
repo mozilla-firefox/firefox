@@ -97,6 +97,8 @@ skip-if = [
 ["test_altsvc.js"]
 run-sequentially = ["true"] # node server exceptions dont replay well
 
+["test_altsvc_cache_last-pb-context-exited.js"]
+
 ["test_altsvc_lna.js"]
 
 ["test_altsvc_pref.js"]
