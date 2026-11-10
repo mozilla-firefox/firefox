@@ -1395,6 +1395,25 @@ class SettingsTest {
     }
 
     @Test
+    fun `WHEN user has accepted the ToU and the app installed time is unavailable THEN termsOfUseAcceptedTimeInMillis returns 0L`() {
+        val settings =
+            Settings(
+                appContext = testContext,
+                packageName = "test",
+                packageManagerCompatHelper =
+                    FakePackageManagerCompatHelper(
+                        packageInfo = PackageInfo().apply { firstInstallTime = 12345L },
+                        getPackageInfoThrowable = PackageManager.NameNotFoundException(),
+                    ),
+            )
+        settings.hasAcceptedTermsOfService = true
+
+        val result = settings.termsOfUseAcceptedTimeInMillis
+
+        assertEquals(0L, result)
+    }
+
+    @Test
     fun `WHEN user has not accepted the ToU THEN termsOfUseAcceptedTimeInMillis returns 0L`() {
         val installTime = 12345L
         val settings =
