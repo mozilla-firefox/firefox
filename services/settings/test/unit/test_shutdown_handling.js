@@ -89,6 +89,47 @@ add_task(async function test_shutdown_immediate_abort() {
   Database._cancelShutdown();
 });
 
+add_task(async function test_delete_attachments_stops_at_shutdown() {
+  const db = new Database("main/delete-attachments");
+  const ids = Array.from({ length: 200 }, (_, i) => `id-${i}`);
+  const countAttachments = async () => {
+    let count = 0;
+    for (const id of ids) {
+      if (await db.getAttachment(id)) {
+        count++;
+      }
+    }
+    return count;
+  };
+  const saveAll = () =>
+    db.saveAttachments(ids.map(id => [id, { blob: new Blob([id]) }]));
+
+  await saveAll();
+  await db.deleteAttachments(ids);
+  equal(await countAttachments(), 0, "All attachments should be deleted");
+
+  await saveAll();
+  const deletePromise = db.deleteAttachments(ids);
+  // This read is queued behind the first chunk of deletions.
+  await db.getAttachment(ids[0]);
+  Database._shutdownHandler();
+  await Assert.rejects(
+    deletePromise,
+    /shutting down/,
+    "Deleting should stop once shutdown has started"
+  );
+
+  Database._cancelShutdown();
+  const remaining = await countAttachments();
+  Assert.greater(
+    remaining,
+    0,
+    "Deletion should have stopped before the last chunk"
+  );
+  Assert.less(remaining, ids.length, "Some chunks should have been deleted");
+  await db.deleteAttachments(ids);
+});
+
 add_task(async function test_shutdown_worker() {
   let client = new RemoteSettingsClient("language-dictionaries");
   const before = await client.db.getLastModified();
@@ -133,11 +174,15 @@ add_task(async function test_shutdown_worker() {
 
 // This test must remain the last task of this test file, because
 // shutdown phases cannot be reverted.
-add_task(async function test_no_worker_started_after_shutdown_began() {
+add_task(async function test_no_new_work_after_shutdown_began() {
   Assert.ok(!RemoteSettingsWorker.worker, "Worker is not running.");
+  const db = new Database("main/delete-attachments");
+  await db.saveAttachments([["id-0", { blob: new Blob(["id-0"]) }]]);
+
   Services.startup.advanceShutdownPhase(
     Ci.nsIAppStartup.SHUTDOWN_PHASE_APPSHUTDOWNCONFIRMED
   );
+  Assert.ok(Services.startup.shuttingDown, "App shutdown should have started");
 
   await Assert.rejects(
     RemoteSettingsWorker.importJSONDump("main", "language-dictionaries"),
@@ -147,5 +192,15 @@ add_task(async function test_no_worker_started_after_shutdown_began() {
   Assert.ok(
     !RemoteSettingsWorker.worker,
     "Worker should not have been instantiated during shutdown."
+  );
+
+  await Assert.rejects(
+    db.deleteAttachments(["id-0"]),
+    /shutting down/,
+    "Should refuse to delete attachments once app shutdown has started."
+  );
+  Assert.ok(
+    await db.getAttachment("id-0"),
+    "The attachment should not have been deleted"
   );
 });
