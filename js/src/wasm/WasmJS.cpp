@@ -1053,6 +1053,22 @@ bool js::WasmModuleExecute(JSContext* cx, Handle<ModuleObject*> record) {
         cx, &resolution.toObject().as<ResolvedBindingObject>());
     Rooted<ModuleObject*> resolvedModule(cx, resolvedBinding->module());
 
+    // TODO: The spec doesn't handle a namespace binding here,
+    // see https://github.com/WebAssembly/esm-integration/issues/127.
+    if (resolvedBinding->isNamespace()) {
+      UniqueChars moduleNameQuoted = imp.module.toQuotedString(cx);
+      UniqueChars nameQuoted = imp.field.toQuotedString(cx);
+      if (!moduleNameQuoted || !nameQuoted) {
+        ReportOutOfMemory(cx);
+        return false;
+      }
+
+      JS_ReportErrorNumberUTF8(cx, GetErrorMessage, nullptr,
+                               JSMSG_WASM_ESM_NAMESPACE_IMPORT,
+                               moduleNameQuoted.get(), nameQuoted.get());
+      return false;
+    }
+
     // Step 5.6. Let resolvedName be resolution.[[BindingName]].
     RootedId resolvedName(cx, AtomToId(resolvedBinding->bindingName()));
 
