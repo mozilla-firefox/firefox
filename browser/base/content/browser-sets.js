@@ -212,7 +212,9 @@ document.addEventListener(
             break;
           case "Browser:CopyTabURL":
             BrowserUtils.copyLink(
-              gURLBar.makeURIReadable(gBrowser.currentURI).displaySpec,
+              BrowserUtils.getExposableURI(gBrowser.currentURI, {
+                stripTracking: true,
+              }).displaySpec,
               gBrowser.selectedBrowser.contentTitle
             );
             break;

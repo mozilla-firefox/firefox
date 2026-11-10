@@ -389,13 +389,24 @@ add_task(async function testDuplicateTab() {
 });
 
 add_task(async function testCopyTabURL() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["privacy.query_stripping.strip_on_share.enabled", true],
+      ["privacy.query_stripping.enabled", false],
+    ],
+  });
+  await Cc["@mozilla.org/query-stripping-list-service;1"]
+    .getService(Ci.nsIURLQueryStrippingListService)
+    .testWaitForInit();
   CustomKeys.changeKey("key_copyTabURL", {
     modifiers: consts.unusedModifiers,
     key: consts.unusedKey,
   });
   try {
     const url = "https://example.com/?copy=tab#fragment";
-    await BrowserTestUtils.withNewTab(url, async () => {
+    const trackedURL =
+      "https://example.com/?utm_source=shortcut&copy=tab&utm_medium=share&utm_campaign=test#fragment";
+    await BrowserTestUtils.withNewTab(trackedURL, async () => {
       await SimpleTest.promiseClipboardChange(url, () =>
         EventUtils.synthesizeKey(consts.unusedKey, consts.unusedOptions, window)
       );

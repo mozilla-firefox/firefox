@@ -103,3 +103,64 @@ add_task(async function test_copyLinks_html() {
     "Should contain the expected HTML anchors"
   );
 });
+
+add_task(async function test_getExposableURI() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["privacy.query_stripping.strip_on_share.enabled", true]],
+  });
+  await Cc["@mozilla.org/query-stripping-list-service;1"]
+    .getService(Ci.nsIURLQueryStrippingListService)
+    .testWaitForInit();
+
+  const trackedURL =
+    "https://example.com/?utm_source=copy&keep=value&utm_medium=share#fragment";
+  const cleanURL = "https://example.com/?keep=value#fragment";
+  for (const url of [
+    trackedURL,
+    trackedURL.replace("https://", "https://user:password@"),
+    `about:reader?url=${encodeURIComponent(trackedURL)}`,
+  ]) {
+    Assert.equal(
+      BrowserUtils.getExposableURI(Services.io.newURI(url)).displaySpec,
+      trackedURL,
+      "Keep tracking parameters but remove credentials and Reader Mode wrapping by default"
+    );
+  }
+
+  for (const [url, expected] of [
+    [trackedURL, cleanURL],
+    [
+      "https://user:password@example.com/?utm_source=copy&keep=value#fragment",
+      cleanURL,
+    ],
+    [`about:reader?url=${encodeURIComponent(trackedURL)}`, cleanURL],
+    [cleanURL, cleanURL],
+    ["about:robots", "about:robots"],
+    ["about:robots?utm_source=copy", "about:robots?utm_source=copy"],
+  ]) {
+    Assert.equal(
+      BrowserUtils.getExposableURI(Services.io.newURI(url), {
+        stripTracking: true,
+      }).displaySpec,
+      expected,
+      `Prepare ${url} for copying`
+    );
+  }
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["privacy.query_stripping.strip_on_share.enabled", false]],
+  });
+  for (const url of [
+    trackedURL,
+    trackedURL.replace("https://", "https://user:password@"),
+    `about:reader?url=${encodeURIComponent(trackedURL)}`,
+  ]) {
+    Assert.equal(
+      BrowserUtils.getExposableURI(Services.io.newURI(url), {
+        stripTracking: true,
+      }).displaySpec,
+      trackedURL,
+      "Keep tracking parameters but remove credentials and Reader Mode wrapping when stripping is disabled"
+    );
+  }
+});

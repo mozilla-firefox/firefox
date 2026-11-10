@@ -224,8 +224,7 @@ class SharingUtilsCls {
     if (browser) {
       let maybeToShare = BrowserUtils.getShareableURL(browser.currentURI);
       if (maybeToShare) {
-        let { gURLBar } = node.documentGlobal;
-        urlToShare = gURLBar.makeURIReadable(maybeToShare).displaySpec;
+        urlToShare = BrowserUtils.getExposableURI(maybeToShare).displaySpec;
         titleToShare = browser.contentTitle;
       }
     }
@@ -248,9 +247,8 @@ class SharingUtilsCls {
       }
       let maybeToShare = BrowserUtils.getShareableURL(browser.currentURI);
       if (maybeToShare) {
-        let { gURLBar } = node.documentGlobal;
         links.push({
-          url: gURLBar.makeURIReadable(maybeToShare).displaySpec,
+          url: BrowserUtils.getExposableURI(maybeToShare).displaySpec,
           title: browser.contentTitle,
         });
       }

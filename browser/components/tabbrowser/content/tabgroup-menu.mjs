@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* global gBrowser, gURLBar, MozXULElement, openTrustedLinkIn,
+/* global gBrowser, MozXULElement, openTrustedLinkIn,
    SidebarController */
 
 const { TabMetrics } = ChromeUtils.importESModule(
@@ -1130,7 +1130,7 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
       let shareableURL = lazy.BrowserUtils.getShareableURL(browser.currentURI);
       if (shareableURL) {
         links.push({
-          url: gURLBar.makeURIReadable(shareableURL).displaySpec,
+          url: lazy.BrowserUtils.getExposableURI(shareableURL).displaySpec,
           title: browser.contentTitle,
         });
       }

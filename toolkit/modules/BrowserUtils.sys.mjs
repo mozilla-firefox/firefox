@@ -13,6 +13,10 @@ const lazy = XPCOMUtils.declareLazy({
     service: "@mozilla.org/network/idn-service;1",
     iid: Ci.nsIIDNService,
   },
+  QueryStringStripper: {
+    service: "@mozilla.org/url-query-string-stripper;1",
+    iid: Ci.nsIURLQueryStringStripper,
+  },
   mathMLNonAnchorLinksDisabled: {
     pref: "mathml.href_link_on_non_anchor_element.disabled",
     default: false,
@@ -260,6 +264,31 @@ export var BrowserUtils = {
     throw new Error(
       "Can't change the originAttributes of an expanded principal!"
     );
+  },
+
+  /**
+   * Unwraps Reader Mode URLs and removes credentials, optionally stripping
+   * known tracking parameters.
+   *
+   * @param {nsIURI} uri
+   *   The URI to prepare.
+   * @param {object} [options]
+   * @param {boolean} [options.stripTracking=false]
+   *   Whether to strip tracking parameters when strip-on-share is enabled.
+   * @returns {nsIURI}
+   *   The exposable URI.
+   */
+  getExposableURI(uri, { stripTracking = false } = {}) {
+    uri =
+      lazy.ReaderMode.getOriginalUrlObjectForDisplay(uri.displaySpec) ?? uri;
+    if (stripTracking) {
+      try {
+        uri = lazy.QueryStringStripper.stripForCopyOrShare(uri) ?? uri;
+      } catch (e) {
+        console.warn("stripForCopyOrShare:", e);
+      }
+    }
+    return Services.io.createExposableURI(uri);
   },
 
   /**
