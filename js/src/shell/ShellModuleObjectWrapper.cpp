@@ -22,9 +22,11 @@
 #include "js/Value.h"         // JS::Value
 #include "vm/ArrayObject.h"   // ArrayObject, NewDenseFullyAllocatedArray
 #include "vm/GlobalObject.h"  // DefinePropertiesAndFunctions
+#include "vm/JSAtomUtils.h"   // AtomizeString
 #include "vm/JSFunction.h"    // JSFunction
 #include "vm/JSObject.h"      // JSObject
 #include "vm/List.h"          // ListObject
+#include "vm/Modules.h"       // js::ModuleResolveExport
 #include "vm/NativeObject.h"  // NativeObject
 #include "vm/Stack.h"         // FixedInvokeArgs
 
@@ -83,6 +85,7 @@ using mozilla::Span;
   DEFINE_NATIVE_CLASS_IMPL(CLASS)
 
 DEFINE_CLASS(ModuleRequestObject)
+DEFINE_CLASS(ResolvedBindingObject)
 DEFINE_NATIVE_CLASS(ImportEntry)
 DEFINE_NATIVE_CLASS(ExportEntry)
 DEFINE_NATIVE_CLASS(RequestedModule)
@@ -512,6 +515,70 @@ static const JSPropertySpec ShellRequestedModuleWrapper_accessors[] = {
     JS_PS_END,
 };
 
+// Returns the binding name as a String, or the BindingNameType as an Int32 for
+// a namespace binding.
+static Value ShellResolvedBindingObjectWrapper_bindingNameGetter_raw(
+    ResolvedBindingObject* obj) {
+  if (obj->isNamespace()) {
+    return Int32Value(static_cast<int32_t>(obj->bindingNameType()));
+  }
+  return StringValue(obj->bindingName());
+}
+
+// Converts a namespace binding name to { namespace: "evaluation" } or
+// { namespace: "defer" }.
+bool BindingNameFilter(JSContext* cx, JS::Handle<JS::Value> raw,
+                       JS::MutableHandle<JS::Value> to) {
+  if (raw.isString()) {
+    to.set(raw);
+    return true;
+  }
+
+  auto type = static_cast<js::BindingNameType>(raw.toInt32());
+  MOZ_ASSERT(type == js::BindingNameType::Namespace ||
+             type == js::BindingNameType::DeferredNamespace);
+  const char* phase =
+      type == js::BindingNameType::DeferredNamespace ? "defer" : "evaluation";
+
+  JS::Rooted<JSString*> phaseStr(cx, JS_NewStringCopyZ(cx, phase));
+  if (!phaseStr) {
+    return false;
+  }
+  JS::Rooted<JSObject*> obj(cx, JS_NewPlainObject(cx));
+  if (!obj ||
+      !JS_DefineProperty(cx, obj, "namespace", phaseStr, JSPROP_ENUMERATE)) {
+    return false;
+  }
+  to.setObject(*obj);
+  return true;
+}
+
+static bool ShellResolvedBindingObjectWrapper_bindingNameGetter_impl(
+    JSContext* cx, const JS::CallArgs& args) {
+  return ShellModuleWrapperGetter<ShellResolvedBindingObjectWrapper>(
+      cx, args, ShellResolvedBindingObjectWrapper_bindingNameGetter_raw,
+      BindingNameFilter);
+}
+
+static bool ShellResolvedBindingObjectWrapper_bindingNameGetter(JSContext* cx,
+                                                                unsigned argc,
+                                                                Value* vp) {
+  JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+  return CallNonGenericMethod<
+      IsShellResolvedBindingObjectWrapper,
+      ShellResolvedBindingObjectWrapper_bindingNameGetter_impl>(cx, args);
+}
+
+DEFINE_GETTER_FUNCTIONS(ResolvedBindingObject, module, ObjectOrNullValue,
+                        SingleFilter<ShellModuleObjectWrapper>)
+
+static const JSPropertySpec ShellResolvedBindingObjectWrapper_accessors[] = {
+    JS_PSG("module", ShellResolvedBindingObjectWrapper_moduleGetter, 0),
+    JS_PSG("bindingName", ShellResolvedBindingObjectWrapper_bindingNameGetter,
+           0),
+    JS_PS_END,
+};
+
 DEFINE_GETTER_FUNCTIONS(ModuleObject, namespace_, ObjectOrNullValue,
                         IdentFilter)
 DEFINE_GETTER_FUNCTIONS(ModuleObject, status, StatusValue, GetModuleStatusName)
@@ -571,6 +638,60 @@ static const JSPropertySpec ShellModuleObjectWrapper_accessors[] = {
 #undef DEFINE_GETTER_FUNCTIONS
 #undef DEFINE_NATIVE_GETTER_FUNCTIONS
 
+static bool ShellModuleObjectWrapper_resolveExport_impl(
+    JSContext* cx, const JS::CallArgs& args) {
+  JS::Rooted<ShellModuleObjectWrapper*> wrapper(
+      cx, &args.thisv().toObject().as<ShellModuleObjectWrapper>());
+  JS::Rooted<ModuleObject*> module(cx, wrapper->get());
+
+  if (!args.get(0).isString()) {
+    JS_ReportErrorASCII(cx, "resolveExport: expected export name string");
+    return false;
+  }
+  if (module->status() == ModuleStatus::New) {
+    JS_ReportErrorASCII(cx, "resolveExport: module is not loaded");
+    return false;
+  }
+
+  JS::Rooted<JSAtom*> exportName(cx, AtomizeString(cx, args[0].toString()));
+  if (!exportName) {
+    return false;
+  }
+
+  JS::Rooted<JS::Value> resolution(cx);
+  if (!ModuleResolveExport(cx, module, exportName, &resolution)) {
+    return false;
+  }
+
+  if (!resolution.isObject()) {
+    args.rval().set(resolution);
+    return true;
+  }
+
+  JS::Rooted<ResolvedBindingObject*> binding(
+      cx, &resolution.toObject().as<ResolvedBindingObject>());
+  JS::Rooted<ShellResolvedBindingObjectWrapper*> result(
+      cx, ShellResolvedBindingObjectWrapper::create(cx, binding));
+  if (!result) {
+    return false;
+  }
+  args.rval().setObject(*result);
+  return true;
+}
+
+static bool ShellModuleObjectWrapper_resolveExport(JSContext* cx, unsigned argc,
+                                                   Value* vp) {
+  JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+  return CallNonGenericMethod<IsShellModuleObjectWrapper,
+                              ShellModuleObjectWrapper_resolveExport_impl>(
+      cx, args);
+}
+
+static const JSFunctionSpec ShellModuleObjectWrapper_functions[] = {
+    JS_FN("resolveExport", ShellModuleObjectWrapper_resolveExport, 1, 0),
+    JS_FS_END,
+};
+
 #define DEFINE_CREATE(CLASS, ACCESSORS, FUNCTIONS)                      \
   /* static */                                                          \
   Shell##CLASS##Wrapper* Shell##CLASS##Wrapper::create(                 \
@@ -606,6 +727,8 @@ static const JSPropertySpec ShellModuleObjectWrapper_accessors[] = {
 
 DEFINE_CREATE(ModuleRequestObject, ShellModuleRequestObjectWrapper_accessors,
               nullptr)
+DEFINE_CREATE(ResolvedBindingObject,
+              ShellResolvedBindingObjectWrapper_accessors, nullptr)
 
 DEFINE_NATIVE_CREATE(ImportEntry, ShellImportEntryWrapper_accessors, nullptr)
 DEFINE_NATIVE_CREATE(ExportEntry, ShellExportEntryWrapper_accessors, nullptr)
@@ -627,7 +750,7 @@ ShellModuleObjectWrapper* ShellModuleObjectWrapper::create(
     return nullptr;
   }
   if (!DefinePropertiesAndFunctions(cx, obj, ShellModuleObjectWrapper_accessors,
-                                    nullptr)) {
+                                    ShellModuleObjectWrapper_functions)) {
     return nullptr;
   }
   auto* wrapper = &obj->as<ShellModuleObjectWrapper>();
