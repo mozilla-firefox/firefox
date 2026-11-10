@@ -728,10 +728,16 @@ nsresult FetchDriver::HttpFetch(
   chan->SetNotificationCallbacks(this);
 
   nsCOMPtr<nsIClassOfService> cos(do_QueryInterface(chan));
-  // Mark channel as urgent-start if the Fetch is triggered by user input
-  // events.
-  if (cos && UserActivation::IsHandlingUserInput()) {
-    cos->AddClassFlags(nsIClassOfService::UrgentStart);
+  if (cos) {
+    // Like XHR, never let fetch be blocked by head CSS/JS loads, to avoid a
+    // deadlock where the server generates the CSS/JS only after a fetch.
+    cos->AddClassFlags(nsIClassOfService::Unblocked);
+
+    // Mark channel as urgent-start if the Fetch is triggered by user input
+    // events.
+    if (UserActivation::IsHandlingUserInput()) {
+      cos->AddClassFlags(nsIClassOfService::UrgentStart);
+    }
   }
 
   // Step 3.5 begins "HTTP network or cache fetch".
@@ -874,8 +880,10 @@ nsresult FetchDriver::HttpFetch(
   }
 
   if (mIsTrackingFetch && StaticPrefs::network_http_tailing_enabled() && cos) {
+    // TailAllowed overrules Unblocked, like for XHR.
     cos->AddClassFlags(nsIClassOfService::Throttleable |
-                       nsIClassOfService::Tail);
+                       nsIClassOfService::Tail |
+                       nsIClassOfService::TailAllowed);
   }
 
   const auto fetchPriority = ToFetchPriority(mRequest->GetPriorityMode());
