@@ -58,35 +58,100 @@ add_task(async function open_with_alt_closed_view() {
 add_task(async function change_engines_with_accel_updown() {
   info("Navigate engines with Accel+Up/Down");
 
+  for (let value of ["", "test"]) {
+    await UrlbarTestUtils.promiseAutocompleteResultPopup({ window, value });
+    let entry = "searchbutton";
+    let searchModes = [
+      ...SearchService.visibleEngines.map(({ name }) => ({
+        engineName: name,
+        source: UrlbarShared.RESULT_SOURCE.SEARCH,
+        entry,
+      })),
+      ...UrlbarShared.LOCAL_SEARCH_MODES.map(({ source }) => ({
+        source,
+        entry,
+      })),
+    ];
+
+    info("Cycle forwards");
+    for (let expectedMode of [...searchModes.slice(1), searchModes[0]]) {
+      EventUtils.synthesizeKey("KEY_ArrowDown", { accelKey: true }, window);
+      await UrlbarTestUtils.assertSearchMode(window, expectedMode);
+    }
+
+    info("Cycle backwards");
+    EventUtils.synthesizeKey("KEY_ArrowUp", { accelKey: true }, window);
+    await UrlbarTestUtils.assertSearchMode(
+      window,
+      searchModes[searchModes.length - 1]
+    );
+
+    await UrlbarTestUtils.exitSearchMode(window);
+  }
+});
+
+add_task(async function accel_updown_index() {
   await UrlbarTestUtils.promiseAutocompleteResultPopup({
     window,
     value: "",
   });
 
-  let entry = "searchbutton";
-  let searchModes = [
-    ...SearchService.visibleEngines.map(({ name }) => ({
-      engineName: name,
-      source: UrlbarShared.RESULT_SOURCE.SEARCH,
-      entry,
-    })),
-    ...UrlbarShared.LOCAL_SEARCH_MODES.map(({ source }) => ({ source, entry })),
-  ];
+  let engine2SearchMode = {
+    engineName: "engine2",
+    source: UrlbarShared.RESULT_SOURCE.SEARCH,
+    entry: "searchbutton",
+  };
 
-  info("Cycle forwards");
-  for (let expectedMode of [...searchModes.slice(1), searchModes[0]]) {
-    EventUtils.synthesizeKey("KEY_ArrowDown", { accelKey: true }, window);
-    await UrlbarTestUtils.assertSearchMode(window, expectedMode);
-  }
+  info("Select engine2");
+  EventUtils.synthesizeKey("KEY_ArrowDown", { accelKey: true }, window);
+  await UrlbarTestUtils.assertSearchMode(window, engine2SearchMode);
 
-  info("Cycle backwards");
-  EventUtils.synthesizeKey("KEY_ArrowUp", { accelKey: true }, window);
-  await UrlbarTestUtils.assertSearchMode(
+  info("Exit search mode, effectively going back to engine1");
+  await UrlbarTestUtils.exitSearchMode(window);
+  info("Select engine2 again");
+  EventUtils.synthesizeKey("KEY_ArrowDown", { accelKey: true }, window);
+  await UrlbarTestUtils.assertSearchMode(window, engine2SearchMode);
+
+  info("Select bookmarks with the switcher");
+  await UrlbarTestUtils.activateSearchModeSwitcherItem(
     window,
-    searchModes[searchModes.length - 1]
+    ".search-button-bookmarks"
   );
+  await UrlbarTestUtils.assertSearchMode(window, {
+    source: UrlbarShared.RESULT_SOURCE.BOOKMARKS,
+    entry: "searchbutton",
+  });
+  info("Go up to engine2");
+  EventUtils.synthesizeKey("KEY_ArrowUp", { accelKey: true }, window);
+  EventUtils.synthesizeKey("KEY_ArrowUp", { accelKey: true }, window);
+  await UrlbarTestUtils.assertSearchMode(window, engine2SearchMode);
 
   await UrlbarTestUtils.exitSearchMode(window);
+});
+
+add_task(async function accel_updown_new_engine() {
+  let engine = await SearchService.addUserEngine({
+    name: "user-engine",
+    url: "https://example.com/user?q={searchTerms}",
+  });
+
+  await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    window,
+    value: "",
+  });
+
+  info("Go down until the user engine");
+  for (let engineName of ["engine2", "engine3", "user-engine"]) {
+    EventUtils.synthesizeKey("KEY_ArrowDown", { accelKey: true }, window);
+    await UrlbarTestUtils.assertSearchMode(window, {
+      engineName,
+      source: UrlbarShared.RESULT_SOURCE.SEARCH,
+      entry: "searchbutton",
+    });
+  }
+
+  await UrlbarTestUtils.exitSearchMode(window);
+  await SearchService.removeEngine(engine);
 });
 
 add_task(async function search_engines_with_accel_updown() {
