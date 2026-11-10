@@ -5,10 +5,12 @@
 package org.mozilla.fenix.ui.efficiency.tests
 
 import org.junit.Test
+import org.mozilla.fenix.customannotations.Critical
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.ui.efficiency.helpers.BaseTest
 import org.mozilla.fenix.ui.efficiency.navigation.LaunchConfig
 import org.mozilla.fenix.ui.efficiency.selectors.HomeSelectors
+import org.mozilla.fenix.ui.efficiency.selectors.SettingsHomepageSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.StoriesSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.ToolbarSelectors
 
@@ -60,5 +62,38 @@ class HomeScreenRedesignedUITest :
         // top-left, "News" header): the story items (thumbnail, title, source) are dynamic and network-backed
         // and expose no stable handles, so asserting them would be flaky.
         on.stories.navigateToPage().mozVerify(StoriesSelectors.NEWS_HEADER).mozVerify(StoriesSelectors.BACK_BUTTON)
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3938215
+    @Critical
+    @Test
+    fun verifyHomeButtonOnNewsPageTest() {
+        on.home.navigateToPage().mozVerify(HomeSelectors.STORIES_BUTTON)
+        on.stories.navigateToPage().mozVerify(StoriesSelectors.NEWS_HEADER)
+        on.stories.mozClick(StoriesSelectors.BACK_BUTTON)
+        on.home
+            .mozVerify(HomeSelectors.HOMEPAGE_VIEW)
+            .mozVerify(HomeSelectors.TOP_SITES_LIST_COMPOSE)
+            .mozVerify(HomeSelectors.STORIES_BUTTON)
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3939270
+    @Critical
+    @Test
+    fun verifyStoriesSettingTogglesNewsButtonTest() {
+        on.settingsHomepage
+            .navigateToPage()
+            .mozVerifyOptionSwitchIsChecked(SettingsHomepageSelectors.STORIES_SWITCH)
+            .mozClick(SettingsHomepageSelectors.STORIES_SWITCH)
+            .mozVerifyOptionSwitchIsNotChecked(SettingsHomepageSelectors.STORIES_SWITCH)
+
+        on.home.navigateToPage().mozVerifyElementStaysAbsent(HomeSelectors.STORIES_BUTTON)
+
+        on.settingsHomepage
+            .navigateToPage()
+            .mozClick(SettingsHomepageSelectors.STORIES_SWITCH)
+            .mozVerifyOptionSwitchIsChecked(SettingsHomepageSelectors.STORIES_SWITCH)
+
+        on.home.navigateToPage().mozVerify(HomeSelectors.STORIES_BUTTON)
     }
 }
