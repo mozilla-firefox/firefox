@@ -189,6 +189,13 @@ RefPtr<MediaDataDecoder::InitPromise> AppleATDecoder::Init() {
                     RESULT_DETAIL("Non recognised format")),
         __func__);
   }
+  if (!mConfig.IsValid()) {
+    LOG("AppleATDecoder::Init failure: invalid configuration");
+    return InitPromise::CreateAndReject(
+        MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
+                    RESULT_DETAIL("Invalid configuration")),
+        __func__);
+  }
   mThread = GetCurrentSerialEventTarget();
 
   return InitPromise::CreateAndResolve(TrackType::kAudioTrack, __func__);
@@ -722,6 +729,17 @@ MediaResult AppleATDecoder::SetupDecoder(MediaRawData* aSample) {
   if (NS_FAILED(rv)) {
     LOG("GetInputAudioDescription failure");
     return rv;
+  }
+  if (inputFormat.mChannelsPerFrame == 0 ||
+      inputFormat.mChannelsPerFrame > AudioInfo::MAX_CHANNEL_COUNT ||
+      inputFormat.mSampleRate < 1 ||
+      inputFormat.mSampleRate > AudioInfo::MAX_RATE) {
+    LOG("Unsupported input format: {} channels at {} Hz",
+        inputFormat.mChannelsPerFrame, inputFormat.mSampleRate);
+    return MediaResult(
+        NS_ERROR_DOM_MEDIA_FATAL_ERR,
+        RESULT_DETAIL("Unsupported input format: %u channels at %f Hz",
+                      inputFormat.mChannelsPerFrame, inputFormat.mSampleRate));
   }
   // Fill in the output format manually.
   PodZero(&mOutputFormat);
