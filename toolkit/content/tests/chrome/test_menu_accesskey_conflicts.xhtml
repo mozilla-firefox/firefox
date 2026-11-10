@@ -117,6 +117,19 @@
     <menuitem label="2 columns" auto-accesskey=""/>
     <menuitem label="🦊" auto-accesskey=""/>
   </menupopup>
+  <menupopup id="auto-digit-mode">
+    <menuitem label="One" accesskey="1"/>
+    <menuitem label="2 columns" auto-accesskey=""/>
+    <menuitem label="cat" auto-accesskey="digit"/>
+    <menuitem label="cart" auto-accesskey="digit"/>
+    <menuitem label="care" auto-accesskey="digit"/>
+    <menuitem label="card" auto-accesskey="digit"/>
+    <menuitem label="cast" auto-accesskey="digit"/>
+    <menuitem label="case" auto-accesskey="digit"/>
+    <menuitem label="cash" auto-accesskey="digit"/>
+    <menuitem label="cask" auto-accesskey="digit"/>
+    <menuitem label="cage" auto-accesskey="digit"/>
+  </menupopup>
 
   <script class="testbody" type="application/javascript">
   <![CDATA[
@@ -413,6 +426,22 @@ add_task(async function testAutoAccessKeyDigits() {
     items.map(item => item.getAttribute("accesskey")),
     ["3", "2", "4"],
     "Each item without a typeable letter or digit gets the lowest unused digit"
+  );
+});
+
+add_task(async function testAutoAccessKeyDigitMode() {
+  let items = [
+    ...document.querySelectorAll("#auto-digit-mode [auto-accesskey]"),
+  ];
+  is(
+    (await openAndCollectErrors("auto-digit-mode")).length,
+    0,
+    "Items with auto-accesskey=digit may share their accesskeys"
+  );
+  assert.deepEqual(
+    items.map(item => item.getAttribute("accesskey")),
+    ["2", "3", "4", "5", "6", "7", "8", "9", "0", "3"],
+    "Each digit item gets the next unused digit, starting over once they run out"
   );
 });
 

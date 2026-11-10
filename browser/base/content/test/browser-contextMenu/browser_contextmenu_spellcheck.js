@@ -148,8 +148,8 @@ add_task(async function test_text_input_spellcheckwrong() {
   );
   is(
     contextMenu.querySelector(".spell-suggestion").accessKey,
-    "p",
-    "A spelling suggestion takes its accesskey from its label"
+    "1",
+    "A spelling suggestion gets a numbered accesskey"
   );
   let hidden = BrowserTestUtils.waitForPopupEvent(contextMenu, "hidden");
   contextMenu.hidePopup();
@@ -358,8 +358,8 @@ add_task(async function test_text_input_spellcheck_multilingual() {
       dictionaryMenu.querySelectorAll("[data-locale-code]"),
       item => item.accessKey
     ),
-    ["D", "E"],
-    "Each dictionary takes its accesskey from its name"
+    ["1", "2"],
+    "Each dictionary gets a numbered accesskey"
   );
 
   let dictionaryEventPromise = BrowserTestUtils.waitForEvent(

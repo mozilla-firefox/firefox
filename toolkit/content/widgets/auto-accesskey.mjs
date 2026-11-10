@@ -22,9 +22,14 @@ const TYPEABLE_CHARACTER =
  * which fails when another item claims that letter as its accesskey, or when
  * the label has no such character, as when it consists of characters typed
  * through an IME, such as Chinese, Japanese or Korean. Such an item may share
- * its accesskey with other items, and the key then cycles through them. An item
- * with a non-empty label that has no typeable letter or digit gets the lowest
- * digit from 1 to 9 that no other item in the popup uses.
+ * its accesskey with other items, and the key then cycles through them.
+ *
+ * An item with `auto-accesskey="digit"`, or with a non-empty label that has no
+ * typeable letter or digit, gets the next digit, in keyboard order from 1 to 9
+ * and then 0, that the popup's other items don't use as an accesskey. This
+ * suits items such as spelling suggestions, which mostly share their first
+ * letter. Once the digits run out, numbering starts over, and a key shared by
+ * several items cycles through them.
  *
  * When the popup's other items have no accesskeys, the items get none either,
  * so that they don't take the first letter of another item's label.
@@ -73,7 +78,7 @@ function assign(popup) {
       isPanelList ? item.label?.accessKey : item.getAttribute("accesskey")
     );
   let usedKeys = new Set();
-  let itemsWithoutKey = [];
+  let itemsToNumber = [];
   for (let item of items) {
     if (!item.hasAttribute("auto-accesskey")) {
       usedKeys.add(
@@ -82,28 +87,25 @@ function assign(popup) {
       continue;
     }
     let label = isPanelList ? item.textContent : item.getAttribute("label");
-    let key = othersHaveNoKeys
-      ? ""
-      : (label?.match(TYPEABLE_CHARACTER)?.[0] ?? "");
+    let key =
+      othersHaveNoKeys || item.getAttribute("auto-accesskey") == "digit"
+        ? ""
+        : (label?.match(TYPEABLE_CHARACTER)?.[0] ?? "");
     if (key) {
       item.setAttribute("accesskey", key);
       usedKeys.add(key);
     } else {
       item.removeAttribute("accesskey");
       if (!othersHaveNoKeys && label?.trim()) {
-        itemsWithoutKey.push(item);
+        itemsToNumber.push(item);
       }
     }
   }
-  let digit = 1;
-  for (let item of itemsWithoutKey) {
-    while (usedKeys.has(String(digit))) {
-      digit++;
+  let digits = [..."1234567890"].filter(digit => !usedKeys.has(digit));
+  if (digits.length) {
+    for (let [i, item] of itemsToNumber.entries()) {
+      item.setAttribute("accesskey", digits[i % digits.length]);
     }
-    if (digit <= 9) {
-      item.setAttribute("accesskey", String(digit));
-    }
-    digit++;
   }
 }
 

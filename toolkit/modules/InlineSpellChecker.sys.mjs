@@ -203,7 +203,7 @@ InlineSpellChecker.prototype = {
         true
       );
       item.setAttribute("class", "spell-suggestion");
-      item.toggleAttribute("auto-accesskey", true);
+      item.setAttribute("auto-accesskey", "digit");
       menu.insertBefore(item, insertBefore);
     }
     return spellSuggestions.length;
@@ -302,7 +302,7 @@ InlineSpellChecker.prototype = {
       item.setAttribute("label", sortedList[i].displayName);
       item.setAttribute("type", "checkbox");
       item.setAttribute("selection-type", "multiple");
-      item.toggleAttribute("auto-accesskey", true);
+      item.setAttribute("auto-accesskey", "digit");
       if (sortedList.length > 1) {
         item.setAttribute("closemenu", "none");
       }
