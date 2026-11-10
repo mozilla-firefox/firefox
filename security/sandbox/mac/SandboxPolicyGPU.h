@@ -249,9 +249,8 @@ static const char SandboxPolicyGPU[] = R"SANDBOX_LITERAL(
     (allow file-map-executable (subpath "/private/var/db/oah")))
 )SANDBOX_LITERAL";
 
-// This is an additional rule added to the GPU process for x86_64 processes:
-// native Intel and Rosetta-translated.
-static const char SandboxPolicyGPUx86_64Addend[] = R"SANDBOX_LITERAL(
+// Added to the GPU process when the parent sets hasWindowServer.
+static const char SandboxPolicyGPUWindowServerAddend[] = R"SANDBOX_LITERAL(
 
   (allow mach-lookup
     (global-name "com.apple.windowserver.active"))

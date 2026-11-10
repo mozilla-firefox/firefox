@@ -870,7 +870,7 @@ void gfxPlatform::Init() {
     forcedPrefs.AppendPrintf(
         "-W%d%d%d%d%d%d%d", StaticPrefs::webgl_angle_force_d3d11(),
         StaticPrefs::webgl_angle_force_warp(), StaticPrefs::webgl_disabled(),
-        StaticPrefs::webgl_disable_angle(),
+        StaticPrefs::webgl_disable_angle_AtStartup(),
 #ifdef XP_WIN
         StaticPrefs::webgl_dxgl_enabled(),
 #else

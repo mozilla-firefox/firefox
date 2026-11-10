@@ -1,0 +1,16 @@
+[DEFAULT]
+subsuite = "webgl1-core"
+prefs = ["webgl.disable-angle=true"]
+
+["test_backends_no_angle.html"]
+tags = "os_integration"
+run-if = [
+  "os == 'mac'",
+  "os == 'win'",
+]
+
+["test_pixel_pack_buffer.html"]
+skip-if = [
+  "os == 'android' && os_version == '14'",
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'",
+]

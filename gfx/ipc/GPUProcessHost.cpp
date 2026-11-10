@@ -9,9 +9,11 @@
 #include "gfxPlatform.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/StaticPrefs_layers.h"
+#include "mozilla/StaticPrefs_webgl.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/gfx/GPUChild.h"
 #include "mozilla/gfx/Logging.h"
+#include "mozilla/gfx/gfxVars.h"
 #include "mozilla/ipc/ProcessUtils.h"
 #include "mozilla/layers/SynchronousTask.h"
 #ifdef MOZ_WIDGET_ANDROID
@@ -334,6 +336,9 @@ bool GPUProcessHost::FillMacSandboxInfo(MacSandboxInfo& aInfo) {
   if (!aInfo.shouldLog && PR_GetEnv("MOZ_SANDBOX_GPU_LOGGING")) {
     aInfo.shouldLog = true;
   }
+  aInfo.hasWindowServer =
+      ProcessIsX86_64() && (!gfxVars::AllowMetalAngleWebGL() ||
+                            StaticPrefs::webgl_disable_angle_AtStartup());
   aInfo.type = MacSandboxType::MacSandboxType_GPU;
   return true;
 }

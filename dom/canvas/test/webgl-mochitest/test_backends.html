@@ -106,14 +106,6 @@ function TestDefault() {
     return;
   }
 
-  if (isMac) {
-    var prefPairList = [
-      ['webgl.disable-angle', true],
-    ];
-    RunWithPrefs(prefPairList, TestMacGL);
-    return;
-  }
-
   var prefPairList = [
     ['webgl.disabled', true],
   ];
@@ -150,26 +142,6 @@ function TestD3D9() {
 
   var prefPairList = [
     ['webgl.angle.try-d3d11', true],
-    ['webgl.disable-angle', true],
-  ];
-  RunWithPrefs(prefPairList, TestWinGL);
-}
-
-
-function TestWinGL() {
-  TestActualType('TestWinGL', 'gl');
-
-  var prefPairList = [
-    ['webgl.disabled', true],
-  ];
-  RunWithPrefs(prefPairList, TestDisabled);
-}
-
-
-function TestMacGL() {
-  TestActualType('TestMacGL', 'gl');
-
-  var prefPairList = [
     ['webgl.disabled', true],
   ];
   RunWithPrefs(prefPairList, TestDisabled);
@@ -189,7 +161,6 @@ SimpleTest.waitForExplicitFinish();
 var prefPairList = [
   ['webgl.force-enabled', true],
   ['webgl.enable-debug-renderer-info', true],
-  ['webgl.disable-angle', false],
 ];
 RunWithPrefs(prefPairList, TestDefault);
 

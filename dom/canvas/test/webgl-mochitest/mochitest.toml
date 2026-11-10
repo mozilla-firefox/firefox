@@ -182,12 +182,6 @@ fail-if = [
 
 ["test_noprog_draw.html"]
 
-["test_pixel_pack_buffer.html"]
-skip-if = [
-  "os == 'android' && os_version == '14'",
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'",
-]
-
 ["test_privileged_exts.html"]
 
 ["test_read_pixels_naive_impl_read_formats.html"]

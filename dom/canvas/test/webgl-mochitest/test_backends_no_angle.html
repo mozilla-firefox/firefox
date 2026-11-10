@@ -1,0 +1,43 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset='UTF-8'>
+  <script src='/tests/SimpleTest/SimpleTest.js'></script>
+  <link rel='stylesheet' href='/tests/SimpleTest/test.css'>
+</head>
+<body>
+<script>
+
+function GetRenderer() {
+  var c = document.createElement('canvas');
+  var gl = c.getContext('experimental-webgl');
+  if (!gl)
+    return undefined;
+
+  var ext = gl.getExtension('WEBGL_debug_renderer_info');
+  if (!ext)
+    throw new Error('Requires WEBGL_debug_renderer_info.');
+
+  return gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+}
+
+function TestNativeGL() {
+  var renderer = GetRenderer();
+  ok(renderer !== undefined, 'WebGL context should be created');
+  if (renderer !== undefined) {
+    ok(!renderer.includes('ANGLE'),
+       'Expected native GL with webgl.disable-angle, was ' + renderer);
+  }
+  SimpleTest.finish();
+}
+
+SimpleTest.waitForExplicitFinish();
+
+SpecialPowers.pushPrefEnv({'set': [
+  ['webgl.force-enabled', true],
+  ['webgl.enable-debug-renderer-info', true],
+]}, TestNativeGL);
+
+</script>
+</body>
+</html>

@@ -191,6 +191,7 @@ void MacSandboxInfo::AppendAsParams(std::vector<std::string>& aParams) const {
       this->AppendReadPathParams(aParams);
       break;
     case MacSandboxType_GPU:
+      this->AppendWindowServerParam(aParams);
       break;
     default:
       // Before supporting a new process type, add a case statement
@@ -449,8 +450,8 @@ bool StartMacSandbox(MacSandboxInfo const& aInfo, std::string& aErrorMessage) {
     }
   } else if (aInfo.type == MacSandboxType_GPU) {
     profile = const_cast<char*>(SandboxPolicyGPU);
-    if (ProcessIsX86_64()) {
-      profile.append(SandboxPolicyGPUx86_64Addend);
+    if (aInfo.hasWindowServer) {
+      profile.append(SandboxPolicyGPUWindowServerAddend);
     }
     params.push_back("SHOULD_LOG");
     params.push_back(aInfo.shouldLog ? "TRUE" : "FALSE");
@@ -841,6 +842,12 @@ bool GetRDDSandboxParamsFromArgs(int aArgc, char** aArgv,
 
 bool GetGPUSandboxParamsFromArgs(int aArgc, char** aArgv,
                                  MacSandboxInfo& aInfo) {
+  for (int i = 0; i < aArgc; i++) {
+    if (strcmp(aArgv[i], "-sbAllowWindowServer") == 0) {
+      aInfo.hasWindowServer = true;
+      break;
+    }
+  }
   return GetUtilitySandboxParamsFromArgs(aArgc, aArgv, aInfo, false);
 }
 

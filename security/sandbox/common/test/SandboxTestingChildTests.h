@@ -46,6 +46,8 @@
 
 #ifdef XP_MACOSX
 #  include "mozilla/Sandbox.h"
+#  include "mozilla/StaticPrefs_webgl.h"
+#  include "mozilla/gfx/gfxVars.h"
 #  if defined(__SSE2__) || defined(_M_X64) || \
       (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
 #    include "emmintrin.h"
@@ -1202,7 +1204,10 @@ void RunTestsGPU(SandboxTestingChild* child) {
 
   RunMacTestLaunchProcess(child);
   RunMacTestAudioAPI(child);
-  RunMacTestWindowServer(child, ProcessIsX86_64());
+  RunMacTestWindowServer(
+      child,
+      ProcessIsX86_64() && (!gfx::gfxVars::AllowMetalAngleWebGL() ||
+                            StaticPrefs::webgl_disable_angle_AtStartup()));
 
 #else   // defined(XP_WIN)
     child->ReportNoTests();

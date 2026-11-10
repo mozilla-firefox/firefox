@@ -20837,13 +20837,13 @@
   mirror: always
 
 - name: webgl.disable-angle
-  type: RelaxedAtomicBool
+  type: bool
 #if defined(XP_WIN) || defined(XP_MACOSX)
   value: false
 #else
   value: true
 #endif
-  mirror: always
+  mirror: once
 
 - name: webgl.disable-wgl
   type: RelaxedAtomicBool
