@@ -36,13 +36,6 @@
   margin-block: var(--panel-padding) 6px;
 }
 
-/* The default styling is to dim the default, but here override it so that it still uses
-   the primary color. */
-.translations-panel-button-group > button[default][disabled] {
-  color: var(--button-text-color-primary);
-  background-color: var(--color-accent-primary);
-}
-
 #full-page-translations-panel-translate-hint-action {
   appearance: none;
   background-color: var(--button-background-color);
@@ -167,21 +160,8 @@
 }
 
 .select-translations-panel-copy-button {
-  height: var(--size-item-large);
-  min-height: var(--size-item-large);
-  margin: 0;
-  justify-content: flex-start;
-  list-style-image: url(chrome://global/skin/icons/edit-copy.svg);
-  background-color: transparent;
-  -moz-context-properties: fill;
-  fill: currentColor;
-
-  > .button-box {
-    gap: var(--space-xsmall);
-  }
-
   &.copied {
-    list-style-image: url(chrome://global/skin/icons/check.svg);
+    --button-icon-content: url(chrome://global/skin/icons/check.svg);
   }
 }
 
