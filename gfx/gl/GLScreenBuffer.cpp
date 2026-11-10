@@ -27,7 +27,7 @@ UniquePtr<SwapChainPresenter> SwapChain::Acquire(
     const auto& existingDesc = mPool.front()->mDesc;
     auto newDesc = existingDesc;
     newDesc.size = size;
-    newDesc.colorSpace = colorSpace;
+    newDesc.colorSpace = mFactory->GetFactoryCspace(colorSpace);
     newDesc.transferFunction = transferFunction;
     if (newDesc != existingDesc || !mPool.front()->IsValid()) {
       mPool = {};
