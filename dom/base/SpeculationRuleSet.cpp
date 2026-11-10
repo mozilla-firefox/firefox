@@ -9,6 +9,7 @@
 #include "mozilla/dom/PrefetchCandidates.h"
 #include "mozilla/dom/ScriptSettings.h"
 #include "mozilla/dom/speculationrules_ffi_generated.h"
+#include "nsContentUtils.h"
 #include "nsIURI.h"
 
 namespace mozilla::dom {
@@ -44,27 +45,31 @@ SpeculationRuleSet::Parse(const nsACString& aSource, nsIURI* aDocumentBaseUri,
     nsIGlobalObject* aGlobal, SpeculationRuleParseError aError) {
   MOZ_ASSERT(aGlobal);
   MOZ_ASSERT(aError != SpeculationRuleParseError::None);
-  AutoJSAPI jsapi;
-  if (!jsapi.Init(aGlobal)) {
-    return;
-  }
-  JSErrNum errorNumber = JSMSG_SPECULATION_RULES_NOT_A_MAP;
-  switch (aError) {
-    case SpeculationRuleParseError::TopLevelValueMustBeJsonObject:
-      errorNumber = JSMSG_SPECULATION_RULES_NOT_A_MAP;
-      break;
-    case SpeculationRuleParseError::InvalidTag:
-      errorNumber = JSMSG_SPECULATION_RULES_INVALID_TAG;
-      break;
-    case SpeculationRuleParseError::InvalidBaseUrl:
-      errorNumber = JSMSG_SPECULATION_RULES_INVALID_BASE_URL;
-      break;
-    case SpeculationRuleParseError::None:
-      MOZ_ASSERT_UNREACHABLE();
-      return;
-  }
-  JS_ReportErrorNumberASCII(jsapi.cx(), js::GetErrorMessage, nullptr,
-                            errorNumber);
+  nsContentUtils::AddScriptRunner(NS_NewRunnableFunction(
+      "SpeculationRuleSet::ReportParseError",
+      [global = nsCOMPtr<nsIGlobalObject>(aGlobal), aError]() {
+        AutoJSAPI jsapi;
+        if (!jsapi.Init(global)) {
+          return;
+        }
+        JSErrNum errorNumber = JSMSG_SPECULATION_RULES_NOT_A_MAP;
+        switch (aError) {
+          case SpeculationRuleParseError::TopLevelValueMustBeJsonObject:
+            errorNumber = JSMSG_SPECULATION_RULES_NOT_A_MAP;
+            break;
+          case SpeculationRuleParseError::InvalidTag:
+            errorNumber = JSMSG_SPECULATION_RULES_INVALID_TAG;
+            break;
+          case SpeculationRuleParseError::InvalidBaseUrl:
+            errorNumber = JSMSG_SPECULATION_RULES_INVALID_BASE_URL;
+            break;
+          case SpeculationRuleParseError::None:
+            MOZ_ASSERT_UNREACHABLE();
+            return;
+        }
+        JS_ReportErrorNumberASCII(jsapi.cx(), js::GetErrorMessage, nullptr,
+                                  errorNumber);
+      }));
 }
 
 void SpeculationRuleSet::ConsiderLoads(PrefetchCandidates* aCandidates,
