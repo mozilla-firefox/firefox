@@ -2776,8 +2776,8 @@ static void SettlePromise(JSContext* cx, Handle<PromiseObject*> promise,
   MOZ_ASSERT_IF(unwrappedRejectionStack, state == JS::PromiseState::Rejected);
 
   if (promise->hasEmbeddedReaction()) {
-    return ResolvePromiseWithEmbeddedReaction(cx, promise, valueOrReason,
-                                              state, unwrappedRejectionStack);
+    return ResolvePromiseWithEmbeddedReaction(cx, promise, valueOrReason, state,
+                                              unwrappedRejectionStack);
   }
 
   // FulfillPromise
