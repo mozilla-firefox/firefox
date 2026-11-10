@@ -4,7 +4,7 @@
 "use strict";
 
 // Test that the stylesheet links in the rule view are correct when source maps
-// are involved.
+// are defined using the sourceMappingURL link comment in the css file.
 
 const TESTCASE_URI = URL_ROOT_SSL + "doc_sourcemaps.html";
 const PREF = "devtools.source-map.client-service.enabled";
