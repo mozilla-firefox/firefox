@@ -413,7 +413,9 @@ imgRequestProxy::Cancel(nsresult status) {
     return NS_ERROR_FAILURE;
   }
 
-  if (NS_WARN_IF(!mCancelable)) {
+  // Non-cancelable requests, like CSS images, are still in the load group, so
+  // canceling the load group tries to cancel them too.
+  if (!mCancelable) {
     return NS_ERROR_FAILURE;
   }
 
