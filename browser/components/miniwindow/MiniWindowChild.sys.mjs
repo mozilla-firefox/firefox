@@ -12,13 +12,19 @@ export class MiniWindowChild extends JSWindowActorChild {
   #lastScrollY = 0;
   #lastReportUp = null;
   #lastReportTime = 0;
-
   /**
    * Start reporting the user's scrolling to show and hide the toolbar.
    */
   #enableScrollReveal() {
     this.#lastScrollY = this.#scrollY();
     this.contentWindow?.addEventListener("mozvisualscroll", this, {
+      mozSystemGroup: true,
+      wantUntrusted: false,
+    });
+  }
+
+  #disableScrollReveal() {
+    this.contentWindow?.removeEventListener("mozvisualscroll", this, {
       mozSystemGroup: true,
       wantUntrusted: false,
     });
@@ -75,6 +81,9 @@ export class MiniWindowChild extends JSWindowActorChild {
         break;
       case "ResetApzFrame":
         this.#resetApzFrame();
+        break;
+      case "DisableScrollReveal":
+        this.#disableScrollReveal();
         break;
     }
     return undefined;

@@ -5,6 +5,8 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  MiniWindowState:
+    "moz-src:///browser/components/miniwindow/MiniWindow.sys.mjs",
   MiniWindowManager:
     "moz-src:///browser/components/miniwindow/MiniWindowManager.sys.mjs",
 });
@@ -18,10 +20,17 @@ export class MiniWindowParent extends JSWindowActorParent {
       case "Scrolled": {
         let browser = this.browsingContext?.top?.embedderElement;
         let miniwindow = lazy.MiniWindowManager._miniWindowForBrowser(browser);
+
+        if (miniwindow?.state !== lazy.MiniWindowState.ACTIVE) {
+          // The mini window might still be initializing, or it might have been closed.
+          // In either case, don't mess with the toolbar visibility.
+          return;
+        }
+
         if (message.data.up) {
-          miniwindow?.revealToolbar();
+          miniwindow.revealToolbar();
         } else {
-          miniwindow?.hideToolbarOnScrollDown();
+          miniwindow.hideToolbarOnScrollDown();
         }
         break;
       }

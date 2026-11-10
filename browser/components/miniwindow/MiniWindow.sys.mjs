@@ -570,6 +570,8 @@ export class MiniWindow {
         }
       },
     };
+
+    this.#edgeSuppressed = true;
     win.MousePosTracker.addListener(this.#edgeListener);
 
     this.#trackToolbarHeight(toolbox);
@@ -970,6 +972,8 @@ export class MiniWindow {
     // Undo the framing (viewport override and zoom) before the tab goes home, or
     // it stays framed there.
     this.#getActor()?.sendAsyncMessage("ResetApzFrame");
+    this.#getActor()?.sendAsyncMessage("DisableScrollReveal");
+
     let tab = this.tab;
     let { originWin } = this;
     let target = originWin && !originWin.closed ? originWin : null;

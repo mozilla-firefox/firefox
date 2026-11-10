@@ -39,6 +39,37 @@ add_task(async function test_toolbox_reveal_wiring() {
   removeTestTabs();
 });
 
+// Before the pointer moves in a new window, MousePosTracker reports (0, 0),
+// inside the reveal strip. That must not hold the first-open reveal up, or
+// switching away right after opening leaves the bar on screen for good.
+add_task(async function test_first_open_reveal_hides_without_pointer() {
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "https://example.com/"
+  );
+
+  let miniWin = await popTabForTest(tab);
+  let toolbox = miniWin.document.getElementById("navigator-toolbox");
+
+  Assert.ok(
+    toolbox.classList.contains("mini-window-revealed"),
+    "toolbox is revealed right after open"
+  );
+  await TestUtils.waitForCondition(
+    () => !toolbox.classList.contains("mini-window-revealed"),
+    "the first-open reveal hides again with no pointer movement",
+    100,
+    100
+  );
+
+  let popup = [...MiniWindowManager._miniwindows][0];
+  popup.close();
+  await BrowserTestUtils.domWindowClosed(miniWin);
+  assertNoMiniWindowsOpen();
+
+  removeTestTabs();
+});
+
 add_task(async function test_top_edge_reveals_toolbox() {
   let tab = await BrowserTestUtils.openNewForegroundTab(
     gBrowser,

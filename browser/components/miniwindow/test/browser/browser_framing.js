@@ -129,6 +129,15 @@ add_task(async function test_returning_restores_layout_and_zoom() {
   let miniWin = await popTabForTest(tab, cropInfoFor(tab.linkedBrowser));
   let popup = [...MiniWindowManager._miniwindows][0];
   await waitForFramed(popup.browser, CROP);
+  await SpecialPowers.spawn(popup.browser, [], async () => {
+    await ContentTaskUtils.waitForCondition(
+      () =>
+        Services.els
+          .getListenerInfoFor(content)
+          .some(l => l.type === "mozvisualscroll" && l.inSystemEventGroup),
+      "the scroll reveal listener is added in the mini window"
+    );
+  });
 
   popup.returnToOriginWin(false);
   await BrowserTestUtils.domWindowClosed(miniWin);
@@ -141,6 +150,13 @@ add_task(async function test_returning_restores_layout_and_zoom() {
     movedTab.linkedBrowser,
     [originalLayoutWidth],
     async width => {
+      await ContentTaskUtils.waitForCondition(
+        () =>
+          !Services.els
+            .getListenerInfoFor(content)
+            .some(l => l.type === "mozvisualscroll" && l.inSystemEventGroup),
+        "the scroll reveal listener is removed"
+      );
       await ContentTaskUtils.waitForCondition(
         () => content.windowUtils.getResolution() === 1,
         "the zoom is reset"
