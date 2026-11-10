@@ -14,6 +14,10 @@ const RESOLUTION_FACTOR_MAX = 1.04;
 
 info("--- Starting viewport test output ---");
 
+registerCleanupFunction(() => {
+  window.windowUtils.setResolutionAndScaleTo(1);
+});
+
 const WIDTH = 200;
 const HEIGHT = 200;
 const TESTS = [
