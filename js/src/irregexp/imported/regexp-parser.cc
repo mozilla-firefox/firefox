@@ -11,6 +11,7 @@
 #include "irregexp/imported/special-case.h"
 
 #ifdef V8_INTL_SUPPORT
+#include "js/properties_glue.h"
 #include "unicode/uniset.h"
 #include "unicode/unistr.h"
 #include "unicode/usetiter.h"
@@ -2297,7 +2298,12 @@ bool LookupSpecialPropertyValueName(const char* name,
                                          !negate, result, nullptr, flags, zone)
         .success;
   } else {
-    return false;
+    if constexpr (mode == ParseMode::kVerifySyntax) {
+      return mozilla_properties_glue_has_property(name);
+    }
+    return mozilla_properties_glue_add_property_ranges(
+        static_cast<void*>(result), static_cast<void*>(zone), name, negate,
+        IsUnicodeSets(flags) && IsIgnoreCase(flags));
   }
   return true;
 }

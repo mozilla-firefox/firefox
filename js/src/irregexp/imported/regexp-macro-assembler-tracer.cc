@@ -12,7 +12,7 @@ namespace internal {
 namespace regexp {
 
 RegExpMacroAssemblerTracer::RegExpMacroAssemblerTracer(
-    std::unique_ptr<RegExpMacroAssembler>&& assembler)
+    js::UniquePtr<RegExpMacroAssembler>&& assembler)
     : RegExpMacroAssembler(*assembler), assembler_(std::move(assembler)) {
   PrintF("RegExpMacroAssembler%s();\n",
          ImplementationToString(assembler_->Implementation()));

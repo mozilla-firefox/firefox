@@ -24,6 +24,8 @@ Stack::Stack() : thread_local_(this) {}
 
 Stack::~Stack() { thread_local_.FreeAndInvalidate(); }
 
+#ifndef COMPILING_IRREGEXP_FOR_EXTERNAL_EMBEDDER
+
 // static
 Stack* Stack::New() {
 #ifdef V8_ENABLE_SANDBOX_HARDWARE_SUPPORT
@@ -56,6 +58,8 @@ void Stack::Delete(Stack* instance) {
   delete instance;
 #endif
 }
+
+#endif  // !COMPILING_IRREGEXP_FOR_EXTERNAL_EMBEDDER
 
 char* Stack::ArchiveStack(char* to) {
   if (!thread_local_.owns_memory_) {

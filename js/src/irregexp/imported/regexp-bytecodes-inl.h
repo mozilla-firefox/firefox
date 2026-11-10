@@ -156,8 +156,7 @@ struct BytecodeOperandNames;
 #define DECLARE_OPERAND_NAMES(CamelName, OpNames, OpTypes, ...)           \
   template <>                                                             \
   struct BytecodeOperandNames<Bytecode::k##CamelName> {                   \
-    enum class Operand { UNPAREN(OpNames) };                              \
-    using enum Operand;                                                   \
+    enum Operand { UNPAREN(OpNames) };                                    \
     static constexpr size_t kCount = detail::CountOf<UNPAREN(OpNames)>(); \
     static constexpr auto kNames = detail::SplitNames<kCount>(#OpNames);  \
     static constexpr std::string_view Name(Operand op) {                  \
@@ -168,7 +167,7 @@ REGEXP_BYTECODE_LIST(DECLARE_OPERAND_NAMES)
 #undef DECLARE_OPERAND_NAMES
 
 template <Bytecode bc, BytecodeOperandType... OpTypes>
-class BytecodeOperandsBase {
+class BytecodeOperandsBase : public BytecodeOperandNames<bc> {
  public:
   static constexpr Bytecode kBytecode = bc;
   using Operand = BytecodeOperandNames<bc>::Operand;
@@ -294,8 +293,6 @@ class BytecodeOperandsBase {
       : public detail::BytecodeOperandsBase<PACK_OPTIONAL( \
             Bytecode::k##CamelName, UNPAREN(OpTypes))>,    \
         public AllStatic {                                 \
-   public:                                                 \
-    using enum Operand;                                    \
   };
 
 REGEXP_BYTECODE_LIST(DECLARE_OPERANDS)

@@ -206,7 +206,7 @@ IrregexpInterpreter::Result ThrowStackOverflow(Isolate* isolate,
   CHECK(call_origin == RegExp::CallOrigin::kFromRuntime);
   // We abort interpreter execution after the stack overflow is thrown, and thus
   // allow allocation here despite the outer DisallowGarbageCollectionScope.
-  AllowGarbageCollection yes_gc;
+  [[maybe_unused]] AllowGarbageCollection yes_gc;
   isolate->StackOverflow();
   return IrregexpInterpreter::EXCEPTION;
 }
@@ -283,7 +283,7 @@ IrregexpInterpreter::Result HandleInterrupts(
           String::IsOneByteRepresentationUnderneath(*subject_string_out);
       Tagged<Object> result;
       {
-        AllowGarbageCollection yes_gc;
+        [[maybe_unused]] AllowGarbageCollection yes_gc;
         result = isolate->stack_guard()->HandleInterrupts();
       }
       if (IsExceptionHole(result)) {
