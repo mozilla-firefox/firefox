@@ -34,7 +34,7 @@ class IPProtectionEngineMiddlewareTest {
     private val testDispatcher = StandardTestDispatcher()
 
     @Test
-    fun `WHEN the user toggles THEN an idle proxy is turned on, an active or failing one is turned off, and any other is left alone`() =
+    fun `WHEN the user toggles THEN an idle proxy is turned on, an activating, active or failing one is turned off, and any other is left alone`() =
         runTest(testDispatcher) {
             val cases =
                 listOf(
@@ -45,7 +45,7 @@ class IPProtectionEngineMiddlewareTest {
                         Authorized.ConnectionError,
                         listOf(FakeIPProtectionHandler.Call.Deactivate),
                     ),
-                    Triple(ServiceState.Ready, Authorized.Activating, emptyList()),
+                    Triple(ServiceState.Ready, Authorized.Activating, listOf(FakeIPProtectionHandler.Call.Deactivate)),
                     Triple(ServiceState.Ready, Authorized.DataLimitReached, emptyList()),
                     Triple(ServiceState.Ready, Uninitialized, emptyList()),
                     Triple(ServiceState.Unauthenticated, Authorized.Idle, emptyList()),
@@ -64,23 +64,74 @@ class IPProtectionEngineMiddlewareTest {
         }
 
     @Test
-    fun `GIVEN a request in progress WHEN the user toggles again THEN no other request is sent`() =
+    fun `GIVEN a deactivation in progress WHEN the user toggles or picks a location THEN no other request is sent`() =
         runTest(testDispatcher) {
-            listOf(Authorized.Idle to ProxyRequest.Activate(null), Authorized.Active to ProxyRequest.Deactivate)
-                .forEach { (proxyStatus, request) ->
+            listOf(
+                    IPProtectionAction.ActivationAction.Toggle,
+                    IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true),
+                )
+                .forEach { action ->
                     val handler = FakeIPProtectionHandler(holdResults = true)
-                    val (store, _) = buildStore(readyState(proxyStatus), handler)
+                    val (store, _) = buildStore(readyState(Authorized.Active), handler)
 
-                    store.dispatch(IPProtectionAction.ActivationAction.Toggle)
                     store.dispatch(IPProtectionAction.ActivationAction.Toggle)
                     testScheduler.advanceUntilIdle()
-
-                    assertEquals("$proxyStatus proxy", 1, handler.proxyCalls().size)
-                    assertEquals(request, store.state.proxyRequest)
-
+                    store.dispatch(action)
+                    testScheduler.advanceUntilIdle()
                     handler.releaseHeldResults()
                     testScheduler.advanceUntilIdle()
+
+                    assertEquals("$action", listOf(FakeIPProtectionHandler.Call.Deactivate), handler.proxyCalls())
                 }
+        }
+
+    @Test
+    fun `GIVEN an activation in progress WHEN the user picks a location THEN the proxy is moved there once the activation succeeds AND then to a location picked during that move`() =
+        runTest(testDispatcher) {
+            val activated = listOf(FakeIPProtectionHandler.Call.Activate(null))
+            val moved =
+                activated + FakeIPProtectionHandler.Call.Activate("JP") + FakeIPProtectionHandler.Call.Activate("DE")
+
+            listOf(ProxyState.ACTIVATING, ProxyState.ACTIVE).forEach { proxyState ->
+                val handler = FakeIPProtectionHandler(holdResults = true)
+                val (store, _) = buildStore(readyState(Authorized.Idle), handler)
+
+                store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+                testScheduler.advanceUntilIdle()
+                store.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(proxyState))
+                store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
+                testScheduler.advanceUntilIdle()
+
+                assertEquals("$proxyState proxy before the activation returns", activated, handler.proxyCalls())
+
+                handler.releaseHeldResults()
+                testScheduler.advanceUntilIdle()
+                store.dispatch(IPProtectionAction.LocationAction.LocationChanged(GERMANY, userAction = true))
+                handler.holdResults = false
+                handler.releaseHeldResults()
+                testScheduler.advanceUntilIdle()
+
+                assertEquals("$proxyState proxy", moved, handler.proxyCalls())
+                assertEquals(null, store.state.proxyRequest)
+            }
+        }
+
+    @Test
+    fun `GIVEN an activation in progress WHEN the user picks a location AND the activation is rejected THEN the proxy is not moved`() =
+        runTest(testDispatcher) {
+            val handler = FakeIPProtectionHandler(activateResult = RuntimeException("rejected"), holdResults = true)
+            val (store, _) = buildStore(readyState(Authorized.Idle), handler)
+
+            store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+            testScheduler.advanceUntilIdle()
+            store.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(ProxyState.ACTIVATING))
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
+            handler.holdResults = false
+            handler.releaseHeldResults()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(listOf(FakeIPProtectionHandler.Call.Activate(null)), handler.proxyCalls())
+            assertEquals(null, store.state.proxyRequest)
         }
 
     @Test
@@ -120,23 +171,6 @@ class IPProtectionEngineMiddlewareTest {
         }
 
     @Test
-    fun `GIVEN a location switch is waiting behind a turn-off WHEN the turn-off finishes THEN the switch is not sent`() =
-        runTest(testDispatcher) {
-            val handler = FakeIPProtectionHandler(holdResults = true)
-            val (store, _) = buildStore(readyState(Authorized.Active), handler)
-
-            store.dispatch(IPProtectionAction.ActivationAction.Toggle)
-            testScheduler.advanceUntilIdle()
-            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
-            store.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(ProxyState.READY))
-            handler.holdResults = false
-            handler.releaseHeldResults()
-            testScheduler.advanceUntilIdle()
-
-            assertEquals(listOf(FakeIPProtectionHandler.Call.Deactivate), handler.proxyCalls())
-        }
-
-    @Test
     fun `WHEN enrollment finishes THEN the proxy is turned on only if enrollment succeeded, even when the service reports Ready straight after`() =
         runTest(testDispatcher) {
             listOf(true to listOf(FakeIPProtectionHandler.Call.Activate(null)), false to emptyList()).forEach {
@@ -157,25 +191,35 @@ class IPProtectionEngineMiddlewareTest {
         }
 
     @Test
-    fun `WHEN the user signs out THEN the proxy is turned off AND an activation in progress reports no failure`() =
+    fun `GIVEN an activation in progress WHEN the user toggles or signs out THEN the proxy is turned off AND the cancelled activation reports no failure`() =
         runTest(testDispatcher) {
-            val handler =
-                FakeIPProtectionHandler(activateResult = RuntimeException("activation-canceled"), holdResults = true)
-            val (store, actions) = buildStore(readyState(Authorized.Idle), handler)
+            listOf(
+                    IPProtectionAction.ActivationAction.Toggle,
+                    IPProtectionAction.AccountAction.AccountManagerStateChanged(AccountStatus.NoAccount),
+                )
+                .forEach { action ->
+                    val handler =
+                        FakeIPProtectionHandler(
+                            activateResult = RuntimeException("activation-canceled"),
+                            holdResults = true,
+                        )
+                    val (store, actions) = buildStore(readyState(Authorized.Idle), handler)
 
-            store.dispatch(IPProtectionAction.ActivationAction.Toggle)
-            testScheduler.advanceUntilIdle()
-            store.dispatch(IPProtectionAction.AccountAction.AccountManagerStateChanged(AccountStatus.NoAccount))
-            testScheduler.advanceUntilIdle()
-            handler.releaseHeldResults()
-            testScheduler.advanceUntilIdle()
+                    store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+                    testScheduler.advanceUntilIdle()
+                    store.dispatch(action)
+                    testScheduler.advanceUntilIdle()
+                    handler.releaseHeldResults()
+                    testScheduler.advanceUntilIdle()
 
-            assertEquals(
-                listOf(FakeIPProtectionHandler.Call.Activate(null), FakeIPProtectionHandler.Call.Deactivate),
-                handler.proxyCalls(),
-            )
-            actions.assertNotDispatched(IPProtectionAction.ActivationAction.ToggleFailed::class)
-            assertEquals(null, store.state.proxyRequest)
+                    assertEquals(
+                        "$action",
+                        listOf(FakeIPProtectionHandler.Call.Activate(null), FakeIPProtectionHandler.Call.Deactivate),
+                        handler.proxyCalls(),
+                    )
+                    actions.assertNotDispatched(IPProtectionAction.ActivationAction.ToggleFailed::class)
+                    assertEquals(null, store.state.proxyRequest)
+                }
         }
 
     @Test
@@ -233,7 +277,7 @@ class IPProtectionEngineMiddlewareTest {
         }
 
     @Test
-    fun `GIVEN an activation is waiting behind a turn-off that fails WHEN the user toggles THEN no second activation is sent`() =
+    fun `GIVEN an activation is waiting behind a turn-off that fails WHEN the user toggles THEN the activation is cancelled instead of a second one being sent`() =
         runTest(testDispatcher) {
             val handler = FakeIPProtectionHandler(deactivateResult = RuntimeException("rejected"), holdResults = true)
             val (store, _) = buildStore(readyState(Authorized.Idle), handler)
@@ -249,33 +293,162 @@ class IPProtectionEngineMiddlewareTest {
             testScheduler.advanceUntilIdle()
 
             assertEquals(
-                listOf(FakeIPProtectionHandler.Call.Deactivate, FakeIPProtectionHandler.Call.Activate(null)),
+                listOf(
+                    FakeIPProtectionHandler.Call.Deactivate,
+                    FakeIPProtectionHandler.Call.Activate(null),
+                    FakeIPProtectionHandler.Call.Deactivate,
+                ),
                 handler.proxyCalls(),
             )
         }
 
     @Test
-    fun `GIVEN location switches waiting behind each other WHEN each one finishes THEN the next one is stored as the running request`() =
+    fun `GIVEN locations picked while a switch is running WHEN the switch finishes THEN the proxy is moved straight to the latest one AND only the locations it is moved to are shown as running`() =
+        runTest(testDispatcher) {
+            val handler = FakeIPProtectionHandler(holdResults = true)
+            val (store, _) = buildStore(readyState(Authorized.Active), handler)
+            val shownRequests = mutableListOf<ProxyRequest?>()
+            store.observeManually { shownRequests += it.proxyRequest }.resume()
+
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
+            testScheduler.advanceUntilIdle()
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(GERMANY, userAction = true))
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(FRANCE, userAction = true))
+            testScheduler.advanceUntilIdle()
+
+            listOf(ProxyRequest.SwitchLocation("JP"), ProxyRequest.SwitchLocation("FR"), null).forEach { expected ->
+                assertEquals(expected, store.state.proxyRequest)
+                handler.releaseHeldResults()
+                testScheduler.advanceUntilIdle()
+            }
+
+            assertEquals(
+                listOf(FakeIPProtectionHandler.Call.Activate("JP"), FakeIPProtectionHandler.Call.Activate("FR")),
+                handler.proxyCalls(),
+            )
+            assertEquals(
+                listOf(ProxyRequest.SwitchLocation("JP"), ProxyRequest.SwitchLocation("FR")),
+                shownRequests.filterNotNull().distinct(),
+            )
+        }
+
+    @Test
+    fun `GIVEN a location switch is waiting WHEN the proxy stops before the switch starts THEN the switch is not sent`() =
+        runTest(testDispatcher) {
+            listOf(ProxyState.ERROR, ProxyState.READY).forEach { proxyState ->
+                val handler = FakeIPProtectionHandler()
+                val (store, _) = buildStore(readyState(Authorized.Idle), handler)
+
+                store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+                testScheduler.advanceUntilIdle()
+                store.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(ProxyState.ACTIVE))
+                store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
+                store.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(proxyState))
+                testScheduler.advanceUntilIdle()
+
+                assertEquals(
+                    "$proxyState proxy",
+                    listOf(FakeIPProtectionHandler.Call.Activate(null)),
+                    handler.proxyCalls(),
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN a location switch is running WHEN the user toggles THEN the proxy is turned off after the switch finishes`() =
         runTest(testDispatcher) {
             val handler = FakeIPProtectionHandler(holdResults = true)
             val (store, _) = buildStore(readyState(Authorized.Active), handler)
 
-            listOf(JAPAN, GERMANY, JAPAN).forEach {
-                store.dispatch(IPProtectionAction.LocationAction.LocationChanged(it, userAction = true))
-            }
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
+            testScheduler.advanceUntilIdle()
+            store.dispatch(IPProtectionAction.ActivationAction.Toggle)
             testScheduler.advanceUntilIdle()
 
-            listOf(
-                    ProxyRequest.SwitchLocation("JP"),
-                    ProxyRequest.SwitchLocation("DE"),
-                    ProxyRequest.SwitchLocation("JP"),
-                    null,
-                )
-                .forEach { expected ->
-                    assertEquals(expected, store.state.proxyRequest)
-                    handler.releaseHeldResults()
-                    testScheduler.advanceUntilIdle()
-                }
+            assertEquals(listOf(FakeIPProtectionHandler.Call.Activate("JP")), handler.proxyCalls())
+
+            handler.holdResults = false
+            handler.releaseHeldResults()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                listOf(FakeIPProtectionHandler.Call.Activate("JP"), FakeIPProtectionHandler.Call.Deactivate),
+                handler.proxyCalls(),
+            )
+        }
+
+    @Test
+    fun `GIVEN a location switch fails while others are waiting WHEN the next switch runs THEN it goes to the latest location`() =
+        runTest(testDispatcher) {
+            val handler =
+                FakeIPProtectionHandler(activateResult = RuntimeException("server-not-found"), holdResults = true)
+            val (store, _) = buildStore(readyState(Authorized.Active), handler)
+
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
+            testScheduler.advanceUntilIdle()
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(GERMANY, userAction = true))
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(FRANCE, userAction = true))
+            handler.activateResult = null
+            handler.holdResults = false
+            handler.releaseHeldResults()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                listOf(FakeIPProtectionHandler.Call.Activate("JP"), FakeIPProtectionHandler.Call.Activate("FR")),
+                handler.proxyCalls(),
+            )
+        }
+
+    @Test
+    fun `GIVEN a location switch failed WHEN a later turn-off also fails THEN no switch is sent`() =
+        runTest(testDispatcher) {
+            val handler = FakeIPProtectionHandler(deactivateResult = RuntimeException("rejected"))
+            val (store, _) = buildStore(readyState(Authorized.Idle), handler)
+
+            store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+            testScheduler.advanceUntilIdle()
+            store.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(ProxyState.ACTIVE))
+            handler.activateResult = RuntimeException("server-not-found")
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
+            testScheduler.advanceUntilIdle()
+            store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                listOf(
+                    FakeIPProtectionHandler.Call.Activate(null),
+                    FakeIPProtectionHandler.Call.Activate("JP"),
+                    FakeIPProtectionHandler.Call.Deactivate,
+                ),
+                handler.proxyCalls(),
+            )
+        }
+
+    @Test
+    fun `GIVEN a location was picked during a turn-off WHEN the turn-off fails THEN the proxy is moved to that location`() =
+        runTest(testDispatcher) {
+            val handler = FakeIPProtectionHandler(deactivateResult = RuntimeException("rejected"))
+            val (store, _) = buildStore(readyState(Authorized.Idle), handler)
+
+            store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+            testScheduler.advanceUntilIdle()
+            store.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(ProxyState.ACTIVE))
+            handler.holdResults = true
+            store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+            testScheduler.advanceUntilIdle()
+            store.dispatch(IPProtectionAction.LocationAction.LocationChanged(GERMANY, userAction = true))
+            handler.holdResults = false
+            handler.releaseHeldResults()
+            testScheduler.advanceUntilIdle()
+
+            assertEquals(
+                listOf(
+                    FakeIPProtectionHandler.Call.Activate(null),
+                    FakeIPProtectionHandler.Call.Deactivate,
+                    FakeIPProtectionHandler.Call.Activate("DE"),
+                ),
+                handler.proxyCalls(),
+            )
         }
 
     @Test
@@ -292,6 +465,46 @@ class IPProtectionEngineMiddlewareTest {
 
             assertEquals(listOf(FakeIPProtectionHandler.Call.Deactivate), handler.proxyCalls())
             assertEquals(Thread.currentThread(), handler.lastProxyCallThread)
+        }
+
+    @Test
+    fun `GIVEN the engine was reset or the proxy failed after the VPN was turned on WHEN a later turn-off fails THEN no switch is sent`() =
+        runTest(testDispatcher) {
+            val engineReset =
+                listOf(
+                    IPProtectionAction.ServiceAction.ServiceStateChanged(ServiceState.Uninitialized),
+                    IPProtectionAction.ServiceAction.ServiceStateChanged(ServiceState.Ready),
+                )
+            val proxyFailed = listOf(IPProtectionAction.ProxyAction.ProxyStateChanged(ProxyState.ERROR))
+
+            listOf(engineReset, proxyFailed).forEach { reports ->
+                val handler = FakeIPProtectionHandler(deactivateResult = RuntimeException("rejected"))
+                val (store, _) = buildStore(readyState(Authorized.Idle), handler)
+
+                store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+                testScheduler.advanceUntilIdle()
+                store.dispatch(IPProtectionAction.ProxyAction.ProxyStateChanged(ProxyState.ACTIVE))
+                store.dispatch(IPProtectionAction.LocationAction.LocationChanged(JAPAN, userAction = true))
+                testScheduler.advanceUntilIdle()
+                reports.forEach { store.dispatch(it) }
+                handler.holdResults = true
+                store.dispatch(IPProtectionAction.ActivationAction.Toggle)
+                testScheduler.advanceUntilIdle()
+                store.dispatch(IPProtectionAction.LocationAction.LocationChanged(GERMANY, userAction = true))
+                handler.holdResults = false
+                handler.releaseHeldResults()
+                testScheduler.advanceUntilIdle()
+
+                assertEquals(
+                    "after $reports",
+                    listOf(
+                        FakeIPProtectionHandler.Call.Activate(null),
+                        FakeIPProtectionHandler.Call.Activate("JP"),
+                        FakeIPProtectionHandler.Call.Deactivate,
+                    ),
+                    handler.proxyCalls(),
+                )
+            }
         }
 
     @Test
@@ -339,5 +552,6 @@ class IPProtectionEngineMiddlewareTest {
     private companion object {
         val JAPAN = Country("JP", available = true)
         val GERMANY = Country("DE", available = true)
+        val FRANCE = Country("FR", available = true)
     }
 }

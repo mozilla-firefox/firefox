@@ -47,6 +47,9 @@ class IPProtectionEngineMiddleware(
     private val unfinishedRequest: ProxyRequest?
         get() = latestRequest.takeIf { latestJob?.isActive == true }
 
+    private var isProxyActive = false
+    private var connectedCountryCode: String? = null
+
     override fun invoke(
         store: Store<IPProtectionState, IPProtectionAction>,
         next: (IPProtectionAction) -> Unit,
@@ -58,11 +61,7 @@ class IPProtectionEngineMiddleware(
         when (action) {
             is IPProtectionAction.ActivationAction.Toggle -> toggle(store)
 
-            is IPProtectionAction.LocationAction.LocationChanged -> {
-                if (store.state.proxyStatus == Authorized.Active) {
-                    run(store, ProxyRequest.SwitchLocation(action.location.countryCode))
-                }
-            }
+            is IPProtectionAction.LocationAction.LocationChanged -> locationChanged(store, action.location.countryCode)
 
             is IPProtectionAction.AccountAction.FinishingEnrollment -> {
                 if (action.success) {
@@ -79,6 +78,11 @@ class IPProtectionEngineMiddleware(
             is IPProtectionAction.ServiceAction.ServiceStateChanged -> serviceStateChanged(store, before)
 
             is IPProtectionAction.ProxyAction.ProxyStateChanged -> {
+                if (store.state.proxyStatus != Authorized.Active && store.state.proxyStatus != Authorized.Activating) {
+                    isProxyActive = false
+                    connectedCountryCode = null
+                }
+
                 if (store.state.serviceStatus.isUnavailableOrUnauthenticated()) {
                     deactivateIfRunning(store, before)
                 }
@@ -112,22 +116,42 @@ class IPProtectionEngineMiddleware(
     }
 
     private fun toggle(store: Store<IPProtectionState, IPProtectionAction>) {
-        val unfinishedRequest = unfinishedRequest
-        if (
-            store.state.serviceStatus != ServiceState.Ready ||
-                unfinishedRequest is ProxyRequest.Activate ||
-                unfinishedRequest is ProxyRequest.Deactivate
-        ) {
+        if (store.state.serviceStatus != ServiceState.Ready) {
             return
         }
 
-        when (store.state.proxyStatus) {
-            Authorized.Idle -> run(store, ProxyRequest.Activate(store.state.locationState.selectedLocation.countryCode))
-            Authorized.Active,
-            Authorized.ConnectionError -> run(store, ProxyRequest.Deactivate)
-            else -> {
+        when (unfinishedRequest) {
+            is ProxyRequest.Activate -> cancelAndDeactivate(store)
+            ProxyRequest.Deactivate -> {
                 // no-op
             }
+            else ->
+                when (store.state.proxyStatus) {
+                    Authorized.Idle ->
+                        run(store, ProxyRequest.Activate(store.state.locationState.selectedLocation.countryCode))
+                    Authorized.Activating,
+                    Authorized.Active,
+                    Authorized.ConnectionError -> run(store, ProxyRequest.Deactivate)
+                    else -> {
+                        // no-op
+                    }
+                }
+        }
+    }
+
+    private fun locationChanged(
+        store: Store<IPProtectionState, IPProtectionAction>,
+        countryCode: String?,
+    ) {
+        when (unfinishedRequest) {
+            is ProxyRequest.Activate,
+            ProxyRequest.Deactivate -> {
+                // no-op
+            }
+            else ->
+                if (store.state.proxyStatus == Authorized.Active) {
+                    run(store, ProxyRequest.SwitchLocation(countryCode))
+                }
         }
     }
 
@@ -136,7 +160,11 @@ class IPProtectionEngineMiddleware(
         before: IPProtectionState,
     ) {
         when (store.state.serviceStatus) {
-            ServiceState.Uninitialized -> cancelAll()
+            ServiceState.Uninitialized -> {
+                cancelAll()
+                isProxyActive = false
+                connectedCountryCode = null
+            }
             ServiceState.Unavailable,
             ServiceState.Unauthenticated -> deactivateIfRunning(store, before)
             ServiceState.Ready -> {
@@ -179,7 +207,9 @@ class IPProtectionEngineMiddleware(
         jobs.removeAll { it.isCompleted }
         val job = scope.launch {
             requestLock.withLock {
-                store.dispatch(IPProtectionAction.ActivationAction.ProxyRequestStarted(request))
+                if (request !is ProxyRequest.SwitchLocation) {
+                    store.dispatch(IPProtectionAction.ActivationAction.ProxyRequestStarted(request))
+                }
                 try {
                     send(store, request)
                 } finally {
@@ -201,11 +231,17 @@ class IPProtectionEngineMiddleware(
 
         when (request) {
             is ProxyRequest.Activate -> {
-                handler.activateAwait(request.countryCode)?.let { error ->
+                val error = handler.activateAwait(request.countryCode)
+                if (error != null) {
                     store.dispatch(
                         IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Activate, error)
                     )
+                    return
                 }
+
+                isProxyActive = true
+                connectedCountryCode = request.countryCode
+                followSelectedLocation(store, handler)
             }
 
             is ProxyRequest.SwitchLocation -> {
@@ -213,19 +249,59 @@ class IPProtectionEngineMiddleware(
                     return
                 }
 
-                handler.activateAwait(request.countryCode)?.let { error ->
-                    store.dispatch(IPProtectionAction.LocationAction.LocationSwitchFailed(error))
+                if (
+                    isProxyActive ||
+                        switchLocation(store, handler, store.state.locationState.selectedLocation.countryCode)
+                ) {
+                    followSelectedLocation(store, handler)
                 }
             }
 
             is ProxyRequest.Deactivate -> {
-                handler.deactivateAwait()?.let { error ->
+                val error = handler.deactivateAwait()
+                if (error != null) {
                     store.dispatch(
                         IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Deactivate, error)
                     )
+                    followSelectedLocation(store, handler)
+                    return
                 }
+
+                isProxyActive = false
             }
         }
+    }
+
+    private suspend fun followSelectedLocation(
+        store: Store<IPProtectionState, IPProtectionAction>,
+        handler: IPProtectionHandler,
+    ) {
+        while (isProxyActive) {
+            val selectedCountryCode = store.state.locationState.selectedLocation.countryCode
+            if (selectedCountryCode == connectedCountryCode || !switchLocation(store, handler, selectedCountryCode)) {
+                return
+            }
+        }
+    }
+
+    private suspend fun switchLocation(
+        store: Store<IPProtectionState, IPProtectionAction>,
+        handler: IPProtectionHandler,
+        countryCode: String?,
+    ): Boolean {
+        store.dispatch(
+            IPProtectionAction.ActivationAction.ProxyRequestStarted(ProxyRequest.SwitchLocation(countryCode))
+        )
+        val error = handler.activateAwait(countryCode)
+        if (error != null) {
+            isProxyActive = false
+            store.dispatch(IPProtectionAction.LocationAction.LocationSwitchFailed(error))
+            return false
+        }
+
+        isProxyActive = true
+        connectedCountryCode = countryCode
+        return true
     }
 }
 
