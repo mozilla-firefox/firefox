@@ -783,6 +783,8 @@ skip-if = [
   "os == 'win' && msix", # Bug 1808049
 ]
 
+["test_h2_continuation_end_stream.js"]
+
 ["test_h2_unclean_shutdown_retry.js"]
 prefs = ["network.http.speculative-parallel-limit=0"]
 

@@ -508,6 +508,10 @@ class Http2Session final : public ASpdySession,
   uint32_t mExpectedHeaderID;
   uint32_t mExpectedPushPromiseID;
 
+  // END_STREAM of the HEADERS frame that started the current header block. It
+  // only takes effect once the block is complete.
+  bool mHeaderBlockEndStream = false;
+
   // for the conversion of downstream http headers into http/2 formatted headers
   // The data here does not persist between frames
   nsCString mFlatHTTPResponseHeaders;
