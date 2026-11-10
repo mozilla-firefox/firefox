@@ -14,6 +14,7 @@
 #include "mozilla/TextUtils.h"
 #include "mozilla/Try.h"
 #include "mozilla/Vector.h"
+#include "mozilla/dom/Comment.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/FromParser.h"
@@ -376,13 +377,13 @@ char16_t ToLower(char16_t aChar) {
 }
 
 struct Token {
-  enum class Kind : uint8_t { StartTag, EndTag, Text };
+  enum class Kind : uint8_t { StartTag, EndTag, Text, Comment };
   Kind mKind;
   // For start tags.
   uint8_t mTagIndex;
   uint8_t mAttributeCount;
-  // For text, the offset of its data in the source. For start tags, the index
-  // of their first attribute.
+  // For text and comments, the offset of their data in the source. For start
+  // tags, the index of their first attribute.
   uint32_t mOffset;
   uint32_t mLength;
 };
@@ -459,6 +460,10 @@ class Parser {
         case Token::Kind::Text:
           MOZ_TRY(AppendText(parents[depth], mStart + token.mOffset,
                              token.mLength));
+          break;
+        case Token::Kind::Comment:
+          MOZ_TRY(AppendComment(parents[depth], mStart + token.mOffset,
+                                token.mLength));
           break;
         case Token::Kind::EndTag:
           MOZ_ASSERT(depth);
@@ -552,8 +557,8 @@ class Parser {
     }
   }
 
-  // Tokenizes text and elements until the end of the input or an end tag,
-  // whose "</" is left unconsumed.
+  // Tokenizes text, comments and elements until the end of the input or an end
+  // tag, whose "</" is left unconsumed.
   //
   // https://html.spec.whatwg.org/#data-state
   //   Consume the next input character:
@@ -617,16 +622,302 @@ class Parser {
       //     U+003C LESS-THAN SIGN character token. Reconsume in the data
       //     state.
       //
-      // ParseEndTag() handles the end tag, and ParseElement() rejects
+      // ParseComment() handles the markup declaration and the processing
+      // instruction, ParseEndTag() the end tag, and ParseElement() rejects
       // anything but a tag name.
       if (mEnd - mPos >= 2 && mPos[1] == '/') {
         return true;
+      }
+      if (mEnd - mPos >= 2 && (mPos[1] == '!' || mPos[1] == '?')) {
+        if (!ParseComment()) {
+          return false;
+        }
+        continue;
       }
       ++mPos;
       if (!ParseElement(aModel)) {
         return false;
       }
     }
+  }
+
+  // Tokenizes a comment, or a bogus comment starting with "<?", at mPos.
+  bool ParseComment() {
+    const char16_t* pos = mPos + 1;
+    const char16_t* data;
+    const char16_t* dataEnd;
+    if (*pos == '?') {
+      // https://html.spec.whatwg.org/#processing-instruction-open-state
+      //   Consume the next input character:
+      //   ASCII alpha
+      //   U+005F LOW LINE (_)
+      //     Reconsume in the processing instruction target state.
+      //   EOF
+      //     This is an eof-in-processing-instruction parse error. Emit an
+      //     end-of-file token.
+      //   Anything else
+      //     This is an invalid-first-character-of-processing-instruction-target
+      //     parse error. Convert the temporary buffer to a comment. Reconsume
+      //     in the bogus comment state.
+      //
+      // https://html.spec.whatwg.org/#processing-instruction-target-state
+      //   Consume the next input character:
+      //   U+0009 CHARACTER TABULATION (tab)
+      //   U+000A LINE FEED (LF)
+      //   U+000C FORM FEED (FF)
+      //   U+0020 SPACE
+      //   U+003F QUESTION MARK (?)
+      //   U+003E GREATER-THAN SIGN (>)
+      //     Let target be the concatenation of the code points in the
+      //     temporary buffer, in the order they were added to the buffer.
+      //     If target is an ASCII case-insensitive match for "xml" or
+      //     "xml-stylesheet":
+      //       1. This is a disallowed-processing-instruction-target parse
+      //          error.
+      //       2. Convert the temporary buffer to a comment.
+      //       3. Reconsume in the bogus comment state.
+      //     Otherwise:
+      //       1. Create a processing instruction token whose target is target
+      //          and data is the empty string.
+      //       2. Reconsume in the after processing instruction target state.
+      //   ASCII alphanumeric
+      //   U+002D HYPHEN-MINUS (-)
+      //   U+005F LOW LINE (_)
+      //     Append the current input character to the temporary buffer.
+      //   EOF
+      //     This is an eof-in-processing-instruction parse error. Emit an
+      //     end-of-file token.
+      //   Anything else
+      //     This is an invalid-processing-instruction-target parse error.
+      //     Convert the temporary buffer to a comment. Reconsume in the bogus
+      //     comment state.
+      //
+      // https://html.spec.whatwg.org/#convert-the-temporary-buffer-to-a-comment
+      //   To convert the temporary buffer to a comment, create a comment token
+      //   whose data is the concatenation of "?" and the code points in the
+      //   temporary buffer, in the order they were added to the buffer.
+      //
+      // https://html.spec.whatwg.org/#bogus-comment-state
+      //   Consume the next input character:
+      //   U+003E GREATER-THAN SIGN (>)
+      //     Switch to the data state. Emit the current comment token.
+      //   EOF
+      //     Emit the current comment token. Emit an end-of-file token.
+      //   U+0000 NULL
+      //     This is an unexpected-null-character parse error. Append a U+FFFD
+      //     REPLACEMENT CHARACTER character to the comment token's data.
+      //   Anything else
+      //     Append the current input character to the comment token's data.
+      //
+      // Gecko's tokenizer doesn't implement processing instructions yet. It
+      // makes a bogus comment of everything from the "?" to the next ">",
+      // like the tokenization stage before processing instructions were
+      // added to it. That is the same comment as the spec's whenever the
+      // target state finds a character that isn't allowed in a target, as
+      // in Lit's "<?lit$1$>" markers. So this rejects every input for which
+      // the spec creates a processing instruction, or a comment from the
+      // "xml" and "xml-stylesheet" targets, and leaves it to the full parser,
+      // which therefore must be the one to start creating processing
+      // instructions.
+      const char16_t* target = pos + 1;
+      if (target != mEnd && (IsAsciiAlpha(*target) || *target == '_')) {
+        do {
+          ++target;
+        } while (target != mEnd && (IsAsciiAlphanumeric(*target) ||
+                                    *target == '-' || *target == '_'));
+        // A carriage return is whitespace here, like the line feed it is
+        // normalized to.
+        if (target == mEnd || IsAsciiWhitespace(*target) || *target == '?' ||
+            *target == '>') {
+          return false;
+        }
+      }
+      data = pos;
+      while (pos != mEnd && *pos != '>') {
+        ++pos;
+      }
+      if (pos == mEnd) {
+        return false;
+      }
+      dataEnd = pos;
+      mPos = pos + 1;
+    } else {
+      // https://html.spec.whatwg.org/#markup-declaration-open-state
+      //   If the next few characters are:
+      //   Two U+002D HYPHEN-MINUS characters (-)
+      //     Consume those two characters, create a comment token whose data
+      //     is the empty string, and switch to the comment start state.
+      //   ASCII case-insensitive match for "DOCTYPE"
+      //     Consume those characters and switch to the DOCTYPE state.
+      //   "[CDATA["
+      //     Consume those characters. If there is an adjusted current node and
+      //     it is not an element in the HTML namespace, then switch to the
+      //     CDATA section state. Otherwise, this is a cdata-in-html-content
+      //     parse error. Create a comment token whose data is "[CDATA[".
+      //     Switch to the bogus comment state.
+      //   Anything else
+      //     This is an incorrectly-opened-comment parse error. Create a
+      //     comment token whose data is the empty string. Switch to the bogus
+      //     comment state (don't consume anything in the current state).
+      //
+      // Only the comment is supported.
+      if (mEnd - pos < 3 || pos[1] != '-' || pos[2] != '-') {
+        return false;
+      }
+      pos += 3;
+      // https://html.spec.whatwg.org/#comment-start-state
+      //   Consume the next input character:
+      //   U+002D HYPHEN-MINUS (-)
+      //     Switch to the comment start dash state.
+      //   U+003E GREATER-THAN SIGN (>)
+      //     This is an abrupt-closing-of-empty-comment parse error. Switch to
+      //     the data state. Emit the current comment token.
+      //   Anything else
+      //     Reconsume in the comment state.
+      //
+      // https://html.spec.whatwg.org/#comment-start-dash-state
+      //   Consume the next input character:
+      //   U+002D HYPHEN-MINUS (-)
+      //     Switch to the comment end state.
+      //   U+003E GREATER-THAN SIGN (>)
+      //     This is an abrupt-closing-of-empty-comment parse error. Switch to
+      //     the data state. Emit the current comment token.
+      //   EOF
+      //     This is an eof-in-comment parse error. Emit the current comment
+      //     token. Emit an end-of-file token.
+      //   Anything else
+      //     Append a U+002D HYPHEN-MINUS character (-) to the comment token's
+      //     data. Reconsume in the comment state.
+      //
+      // "<!-->" and "<!--->" are left to the full parser.
+      if (pos != mEnd &&
+          (*pos == '>' || (*pos == '-' && pos + 1 != mEnd && pos[1] == '>'))) {
+        return false;
+      }
+      // https://html.spec.whatwg.org/#comment-state
+      //   Consume the next input character:
+      //   U+003C LESS-THAN SIGN (<)
+      //     Append the current input character to the comment token's data.
+      //     Switch to the comment less-than sign state.
+      //   U+002D HYPHEN-MINUS (-)
+      //     Switch to the comment end dash state.
+      //   U+0000 NULL
+      //     This is an unexpected-null-character parse error. Append a U+FFFD
+      //     REPLACEMENT CHARACTER character to the comment token's data.
+      //   EOF
+      //     This is an eof-in-comment parse error. Emit the current comment
+      //     token. Emit an end-of-file token.
+      //   Anything else
+      //     Append the current input character to the comment token's data.
+      //
+      // https://html.spec.whatwg.org/#comment-less-than-sign-state
+      //   Consume the next input character:
+      //   U+0021 EXCLAMATION MARK (!)
+      //     Append the current input character to the comment token's data.
+      //     Switch to the comment less-than sign bang state.
+      //   U+003C LESS-THAN SIGN (<)
+      //     Append the current input character to the comment token's data.
+      //   Anything else
+      //     Reconsume in the comment state.
+      //
+      // https://html.spec.whatwg.org/#comment-less-than-sign-bang-state
+      //   Consume the next input character:
+      //   U+002D HYPHEN-MINUS (-)
+      //     Switch to the comment less-than sign bang dash state.
+      //   Anything else
+      //     Reconsume in the comment state.
+      //
+      // https://html.spec.whatwg.org/#comment-less-than-sign-bang-dash-state
+      //   Consume the next input character:
+      //   U+002D HYPHEN-MINUS (-)
+      //     Switch to the comment less-than sign bang dash dash state.
+      //   Anything else
+      //     Reconsume in the comment end dash state.
+      //
+      // https://html.spec.whatwg.org/#comment-less-than-sign-bang-dash-dash-state
+      //   Consume the next input character:
+      //   U+003E GREATER-THAN SIGN (>)
+      //   EOF
+      //     Reconsume in the comment end state.
+      //   Anything else
+      //     This is a nested-comment parse error. Reconsume in the comment end
+      //     state.
+      //
+      // https://html.spec.whatwg.org/#comment-end-dash-state
+      //   Consume the next input character:
+      //   U+002D HYPHEN-MINUS (-)
+      //     Switch to the comment end state.
+      //   EOF
+      //     This is an eof-in-comment parse error. Emit the current comment
+      //     token. Emit an end-of-file token.
+      //   Anything else
+      //     Append a U+002D HYPHEN-MINUS character (-) to the comment token's
+      //     data. Reconsume in the comment state.
+      //
+      // https://html.spec.whatwg.org/#comment-end-state
+      //   Consume the next input character:
+      //   U+003E GREATER-THAN SIGN (>)
+      //     Switch to the data state. Emit the current comment token.
+      //   U+0021 EXCLAMATION MARK (!)
+      //     Switch to the comment end bang state.
+      //   U+002D HYPHEN-MINUS (-)
+      //     Append a U+002D HYPHEN-MINUS character (-) to the comment token's
+      //     data.
+      //   EOF
+      //     This is an eof-in-comment parse error. Emit the current comment
+      //     token. Emit an end-of-file token.
+      //   Anything else
+      //     Append two U+002D HYPHEN-MINUS characters (-) to the comment
+      //     token's data. Reconsume in the comment state.
+      //
+      // https://html.spec.whatwg.org/#comment-end-bang-state
+      //   Consume the next input character:
+      //   U+002D HYPHEN-MINUS (-)
+      //     Append two U+002D HYPHEN-MINUS characters (-) and a U+0021
+      //     EXCLAMATION MARK character (!) to the comment token's data. Switch
+      //     to the comment end dash state.
+      //   U+003E GREATER-THAN SIGN (>)
+      //     This is an incorrectly-closed-comment parse error. Switch to the
+      //     data state. Emit the current comment token.
+      //   EOF
+      //     This is an eof-in-comment parse error. Emit the current comment
+      //     token. Emit an end-of-file token.
+      //   Anything else
+      //     Append two U+002D HYPHEN-MINUS characters (-) and a U+0021
+      //     EXCLAMATION MARK character (!) to the comment token's data.
+      //     Reconsume in the comment state.
+      //
+      // Unless the data contains "--!", these states end the comment at the
+      // first "-->" and put everything before it into the data. The less-than
+      // sign states only report nested comments. "--!" and the end of the
+      // input are left to the full parser.
+      data = pos;
+      while (true) {
+        if (mEnd - pos < 3) {
+          return false;
+        }
+        if (pos[0] == '-' && pos[1] == '-') {
+          if (pos[2] == '>') {
+            break;
+          }
+          // "--!>" ends a comment too.
+          if (pos[2] == '!') {
+            return false;
+          }
+        }
+        ++pos;
+      }
+      dataEnd = pos;
+      mPos = pos + 3;
+    }
+    // Newline normalization and U+0000 need the full parser.
+    for (const char16_t* c = data; c != dataEnd; ++c) {
+      if (*c == '\r' || !*c) {
+        return false;
+      }
+    }
+    return mTokens.append(Token{Token::Kind::Comment, 0, 0, Offset(data),
+                                uint32_t(dataEnd - data)});
   }
 
   // Tokenizes an element whose "<" was consumed.
@@ -1222,6 +1513,29 @@ class Parser {
         new (mNodeInfoManager) nsTextNode(mNodeInfoManager);
     MOZ_TRY(text->SetText(aText, aLength, false));
     return Append(aParent, text);
+  }
+
+  // https://html.spec.whatwg.org/#parsing-main-inbody
+  //   A comment token
+  //     Insert a comment.
+  //
+  // https://html.spec.whatwg.org/#insert-a-comment
+  //   1. If the parser's parser sanitizer configuration is non-null and the
+  //      parser's parser sanitizer configuration does not allow comments,
+  //      then return.
+  //   2. Let data be the data given in the comment token being processed.
+  //   3. Let (targetParent, referenceChild) be the adjusted insertion location
+  //      given insertionLocation.
+  //   4. Let comment be the result of creating a comment node given
+  //      targetParent's node document and data.
+  //   5. Insert comment into targetParent before referenceChild.
+  //
+  // The fast path is only used without a sanitizer configuration.
+  nsresult AppendComment(nsIContent* aParent, const char16_t* aData,
+                         uint32_t aLength) {
+    RefPtr<Comment> comment = new (mNodeInfoManager) Comment(mNodeInfoManager);
+    MOZ_TRY(comment->SetText(aData, aLength, false));
+    return Append(aParent, comment);
   }
 
   already_AddRefed<Element> CreateElement(const Token& aToken) {
