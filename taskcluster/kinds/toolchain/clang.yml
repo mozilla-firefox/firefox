@@ -658,7 +658,7 @@ win64-aarch64-clang-22-raw:
             - clang-22
         toolchain:
             - linux64-clang-22-stage1
-            - linux64-clang-22-profile
+            - win64-clang-22-profile
             - win64-aarch64-compiler-rt-22
             - vs-toolchain
             - win64-aarch64-libxml2
@@ -1273,7 +1273,7 @@ win64-aarch64-clang-23-raw:
             - clang-23
         toolchain:
             - linux64-clang-23-stage1
-            - linux64-clang-23-profile
+            - win64-clang-23-profile
             - win64-aarch64-compiler-rt-23
             - vs-toolchain
             - win64-aarch64-libxml2
@@ -1951,7 +1951,7 @@ win64-aarch64-clang-trunk-raw:
             - clang-trunk
         toolchain:
             - linux64-clang-trunk-stage1
-            - linux64-clang-trunk-profile
+            - win64-clang-trunk-profile
             - win64-aarch64-compiler-rt-trunk
             - vs-toolchain
             - win64-aarch64-libxml2
