@@ -454,7 +454,7 @@ static uint32_t AvailableFeatures() {
 #endif
 
 #if !defined(GP_OS_windows)
-  ProfilerFeature::ClearNoTimerResolutionChange(features);
+  ProfilerFeature::ClearWinSystemTickSampling(features);
 #endif
 #if !defined(HAVE_CPU_FREQ_SUPPORT)
   ProfilerFeature::ClearCPUFrequency(features);
@@ -4635,7 +4635,7 @@ class SamplerThread {
   UniquePtr<PostSamplingCallbackListItem> mPostSamplingCallbackList;
 
 #if defined(GP_OS_windows)
-  bool mNoTimerResolutionChange = true;
+  bool mWinSystemTickSampling = true;
   HANDLE mHiResTimer = nullptr;
 #endif
 

@@ -88,7 +88,7 @@
   MACRO(13, "audiocallbacktracing", AudioCallbackTracing,                  \
         "Audio callback tracing")                                          \
                                                                            \
-  MACRO(14, "notimerresolutionchange", NoTimerResolutionChange,            \
+  MACRO(14, "winsystemticksampling", WinSystemTickSampling,                \
         "Keep sampling on the system timer tick, without high-resolution " \
         "timers or timer resolution changes, to minimize wakeups and "     \
         "timer interference. The sampling interval will be at least "      \

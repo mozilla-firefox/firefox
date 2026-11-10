@@ -473,8 +473,8 @@ const featureDescriptions = [
     title: "Trace real-time audio callbacks.",
   },
   {
-    name: "No Timer Resolution Change",
-    value: "notimerresolutionchange",
+    name: "Windows System Tick Sampling",
+    value: "winsystemticksampling",
     title:
       "Keep sampling on the system timer tick, without high-resolution " +
       "timers or timer resolution changes, to minimize wakeups and avoid " +

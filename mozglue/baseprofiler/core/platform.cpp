@@ -193,7 +193,7 @@ static uint32_t AvailableFeatures() {
   ProfilerFeature::ClearStackWalk(features);
 #endif
 #if !defined(GP_OS_windows)
-  ProfilerFeature::ClearNoTimerResolutionChange(features);
+  ProfilerFeature::ClearWinSystemTickSampling(features);
 #endif
 
   return features;
@@ -2035,7 +2035,7 @@ class SamplerThread {
 #endif
 
 #if defined(GP_OS_windows)
-  bool mNoTimerResolutionChange = true;
+  bool mWinSystemTickSampling = true;
   HANDLE mHiResTimer;
 #endif
 };

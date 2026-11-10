@@ -37,7 +37,7 @@
           "nativeallocations",
           "ipcmessages",
           "audiocallbacktracing",
-          "notimerresolutionchange",
+          "winsystemticksampling",
           "cpuallthreads",
           "samplingallthreads",
           "markersallthreads",

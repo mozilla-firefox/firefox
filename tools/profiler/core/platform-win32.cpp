@@ -315,21 +315,21 @@ SamplerThread::SamplerThread(PSLockRef aLock, uint32_t aActivityGeneration,
       mActivityGeneration(aActivityGeneration),
       mIntervalMicroseconds(
           std::max(1, int(floor(aIntervalMilliseconds * 1000 + 0.5)))),
-      mNoTimerResolutionChange(
-          ProfilerFeature::HasNoTimerResolutionChange(aFeatures)),
+      mWinSystemTickSampling(
+          ProfilerFeature::HasWinSystemTickSampling(aFeatures)),
       mHiResTimer(
-          mNoTimerResolutionChange
+          mWinSystemTickSampling
               ? nullptr
               : ::CreateWaitableTimerExA(nullptr, nullptr,
                                          CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
                                          TIMER_ALL_ACCESS)) {
   if (!mHiResTimer) {
-    if ((!mNoTimerResolutionChange) && (mIntervalMicroseconds < 10 * 1000)) {
+    if ((!mWinSystemTickSampling) && (mIntervalMicroseconds < 10 * 1000)) {
       // By default the timer resolution (which tends to be 1/64Hz, around 16ms)
       // is not changed. However, if the requested interval is sufficiently low,
       // the resolution will be adjusted to match. Note that this affects all
       // timers in Firefox, and could therefore hide issues while profiling.
-      // This change may be prevented with the "notimerresolutionchange"
+      // This change may be prevented with the "winsystemticksampling"
       // feature.
       ::timeBeginPeriod(mIntervalMicroseconds / 1000);
     }
@@ -477,7 +477,7 @@ void SamplerThread::SleepMicro(uint32_t aMicroseconds) {
 
 void SamplerThread::Stop(PSLockRef aLock) {
   if (!mHiResTimer) {
-    if ((!mNoTimerResolutionChange) && (mIntervalMicroseconds < 10 * 1000)) {
+    if ((!mWinSystemTickSampling) && (mIntervalMicroseconds < 10 * 1000)) {
       // Disable any timer resolution changes we've made. Do it now while
       // gPSMutex is locked, i.e. before any other SamplerThread can be created
       // and call ::timeBeginPeriod().
