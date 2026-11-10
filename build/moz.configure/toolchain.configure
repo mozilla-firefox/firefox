@@ -3671,20 +3671,8 @@ def make_shared_library(target, compiler):
     if target.os == "WINNT":
         if compiler.type == "clang":
             return namespace(
-                mkshlib=[
-                    "$(CXX)",
-                    "$(DSO_LDOPTS)",
-                    "-Wl,-pdb,$(LINK_PDBFILE)",
-                    "-o",
-                    "$@",
-                ],
-                mkcshlib=[
-                    "$(CC)",
-                    "$(DSO_LDOPTS)",
-                    "-Wl,-pdb,$(LINK_PDBFILE)",
-                    "-o",
-                    "$@",
-                ],
+                mkshlib=["$(CXX)", "$(DSO_LDOPTS)", "-o", "$@"],
+                mkcshlib=["$(CC)", "$(DSO_LDOPTS)", "-o", "$@"],
             )
         else:
             linker = [
@@ -3692,7 +3680,6 @@ def make_shared_library(target, compiler):
                 "-NOLOGO",
                 "-DLL",
                 "-OUT:$@",
-                "-PDB:$(LINK_PDBFILE)",
                 "$(DSO_LDOPTS)",
             ]
             return namespace(

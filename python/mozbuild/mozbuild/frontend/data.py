@@ -973,9 +973,15 @@ class SharedLibrary(Library):
                 "1",
             ]
         if substs.get("OS_ARCH") == "WINNT":
+            pdb = f"{mozpath.splitext(self.lib_name)[0]}.pdb"
             if substs.get("CC_TYPE") == "clang-cl":
-                return [f"-IMPLIB:{self.import_name}"]
-            return ["-Wl,--out-implib", f"-Wl,{self.import_name}"]
+                if substs.get("MOZ_COPY_PDBS"):
+                    pdb = mozpath.relpath(
+                        mozpath.join(mozpath.dirname(self.output_path.full_path), pdb),
+                        self.objdir,
+                    )
+                return [f"-PDB:{pdb}", f"-IMPLIB:{self.import_name}"]
+            return [f"-Wl,-pdb,{pdb}", "-Wl,--out-implib", f"-Wl,{self.import_name}"]
         if substs.get("OS_TARGET") == "NetBSD":
             return [f"-Wl,-soname,{self.soname}"]
         return [f"-Wl,-h,{self.soname}"]
