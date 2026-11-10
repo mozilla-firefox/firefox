@@ -479,6 +479,7 @@ def vcs_checkout(
     fetch_hgfingerprint=False,
     sparse_profile=None,
     bundle=None,
+    perfherder_output=None,
 ):
     # Specify method to checkout a revision. This defaults to revisions as
     # SHA-1 strings, but also supports symbolic revisions like `tip` via the
@@ -576,6 +577,8 @@ def vcs_checkout(
             )
         if bundle_path:
             args.extend(["--bundle", bundle_path])
+    if perfherder_output:
+        args.extend(["--perfherderoutput", perfherder_output])
 
     dest = os.path.abspath(dest)
     args.extend(
@@ -835,6 +838,14 @@ def vcs_checkout_from_args(args, project):
             sys.exit(1)
         return
 
+    perfherder_output = None
+    upload_dir = os.environ.get("UPLOAD_DIR")
+    if upload_dir:
+        os.makedirs(upload_dir, exist_ok=True)
+        perfherder_output = os.path.join(
+            upload_dir, f"perfherder-data-vcs-{options['project']}.json"
+        )
+
     os.environ["%s_HEAD_REV" % options["env-prefix"]] = vcs_checkout(
         options["head-repo"],
         options["checkout"],
@@ -845,6 +856,7 @@ def vcs_checkout_from_args(args, project):
         branch=options["branch"],
         sparse_profile=options["sparse-profile"],
         bundle=options["bundle"],
+        perfherder_output=perfherder_output,
     )
 
 
