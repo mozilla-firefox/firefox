@@ -72,7 +72,6 @@ Preferences.addSetting({
 
 export function createDefaultBrowserConfig({
   includeIsDefaultPane = true,
-  inProgress = false,
   hiddenFromSearch = false,
 } = {}) {
   const isDefaultPane = {
@@ -115,7 +114,6 @@ export function createDefaultBrowserConfig({
     l10nId: "home-default-browser-title",
     headingLevel: 2,
     items,
-    ...(inProgress && { inProgress }),
     ...(hiddenFromSearch && { hiddenFromSearch }),
   };
 }

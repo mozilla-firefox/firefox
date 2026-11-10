@@ -154,7 +154,6 @@ CO01:
         - policy-DisableFirefoxScreenshots
         # browser/preferences/preferences.ftl
         - sync-engine-addons
-        - sync-mobile-promo
         # browser/sidebar.ftl
         - menu-view-resource-monitor
         # browser/unifiedExtensions.ftl

@@ -4,7 +4,6 @@
 
 // Import globals from the files imported by the .xul files.
 /* import-globals-from main.js */
-/* import-globals-from sync.js */
 /* import-globals-from findInPage.js */
 /* import-globals-from /browser/base/content/utilityOverlay.js */
 /* import-globals-from /toolkit/content/preferencesBindings.js */
@@ -473,7 +472,6 @@ const CONFIG_PANES = Object.freeze({
       "referrals",
     ],
     module: "chrome://browser/content/preferences/config/account-sync.mjs",
-    replaces: "sync",
   },
   moreFromMozilla: {
     l10nId: "more-from-moz-page-header",
@@ -592,21 +590,6 @@ function init_all() {
       );
   }
 
-  // The Sync category needs to be the last of the "real" categories
-  // registered and initialized since many tests wait for the
-  // "sync-pane-loaded" observer notification before starting the test.
-  let accountsEnabled = Services.prefs.getBoolPref(
-    "identity.fxaccounts.enabled"
-  );
-  let categorySync = document.getElementById("category-sync");
-  if (redesignEnabled) {
-    categorySync.setAttribute("data-l10n-id", "pane-account-sync-title2");
-    categorySync.iconSrc = "chrome://browser/skin/fxa/avatar-empty.svg";
-    categorySync.hidden = false;
-  } else if (accountsEnabled) {
-    categorySync.hidden = false;
-    register_module("paneSync", gSyncPane);
-  }
   register_module("paneSearchResults", gSearchResultsPane);
   for (let [id, config] of Object.entries(CONFIG_PANES)) {
     if (!redesignEnabled && config.replaces) {

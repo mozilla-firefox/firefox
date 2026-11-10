@@ -137,7 +137,10 @@ async function runWithPairingDialog(test) {
   let promiseSubDialogLoaded = promiseLoadSubDialog(
     "chrome://browser/content/preferences/fxaPairDevice.xhtml"
   );
-  gBrowser.contentWindow.gSyncPane.pairAnotherDevice();
+  gBrowser.contentWindow.gSubDialog.open(
+    "chrome://browser/content/preferences/fxaPairDevice.xhtml",
+    { features: "resizable=no" }
+  );
 
   let win = await promiseSubDialogLoaded;
 

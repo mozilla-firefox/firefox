@@ -27,15 +27,6 @@ FTL_FILES = [
 ]
 OUTPUT = TOPSRCDIR / "browser/components/aiwindow/models/PreferencesNavMap.sys.mjs"
 
-# Top-level panes not in CONFIG_PANES (registered via XUL).
-TOPLEVEL_PANE_L10N_IDS = {
-    "general": "pane-general-title",
-    "home": "pane-home-title",
-    "search": "pane-search-title2",
-    "privacy": "pane-privacy-title3",
-    "sync": "pane-sync-title3",
-}
-
 FTL_VARIABLE_SUBSTITUTIONS = {
     "-brand-short-name": "Firefox",
     "-brand-product-name": "Firefox",
@@ -113,9 +104,7 @@ def parse_ftl_strings(ftl_files):
 
 def label_of(pane_id, panes, labels):
     """Resolve a display name for any pane id, including top-level ones."""
-    l10n_id = (panes.get(pane_id) or {}).get("l10nId") or TOPLEVEL_PANE_L10N_IDS.get(
-        pane_id, ""
-    )
+    l10n_id = (panes.get(pane_id) or {}).get("l10nId") or ""
     return labels.get(l10n_id) or labels.get(f"pane-{pane_id}-title", pane_id)
 
 
