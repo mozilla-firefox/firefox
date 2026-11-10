@@ -2485,6 +2485,36 @@ def preprocess_option(compiler):
 set_config("PREPROCESS_OPTION", preprocess_option)
 
 
+@template
+def outoption(host_or_target_c_compiler):
+    @depends(host_or_target_c_compiler)
+    def outoption(host_or_target_c_compiler):
+        if host_or_target_c_compiler.type == "clang-cl":
+            return "-Fo"
+        return "-o "
+
+    return outoption
+
+
+cc_outoption = outoption(c_compiler)
+host_cc_outoption = outoption(host_c_compiler)
+
+set_config("CC_OUTOPTION", cc_outoption)
+set_config("HOST_CC_OUTOPTION", host_cc_outoption)
+
+
+@depends(host, target, host_c_compiler, when=cross_compiling)
+def check_host_c_compiler_type(host, target, host_c_compiler):
+    # Windows-to-Windows cross compiles should always use MSVC-style options for
+    # host compiles.
+    if (
+        host.kernel == "WINNT"
+        and target.kernel == "WINNT"
+        and host_c_compiler.type != "clang-cl"
+    ):
+        die("MSVC-style compilers should be used for host compilations!")
+
+
 # On Power ISA, determine compiler flags for VMX, VSX and VSX-3.
 
 set_config(

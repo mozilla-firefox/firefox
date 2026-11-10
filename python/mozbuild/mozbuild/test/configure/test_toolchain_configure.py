@@ -341,15 +341,7 @@ class BaseToolchainTest(BaseConfigureTest):
         - `overrides` is a dict associating names of `@depends` functions to
           values they should return instead of being evaluated.
         """
-        environ = dict(environ)
-        if "PATH" not in environ:
-            environ["PATH"] = os.pathsep.join(
-                mozpath.abspath(p) for p in ("/bin", "/usr/bin")
-            )
-
-        args = args + ["--enable-release", "--disable-bootstrap"]
-
-        sandbox = self.get_sandbox(paths, {}, args, environ, logger=self.logger)
+        sandbox = self.toolchain_sandbox(paths, environ, args)
         for name, value in overrides.items():
             sandbox._dependency_overrides[sandbox._depends[sandbox[name]]] = value
 
@@ -406,6 +398,28 @@ class BaseToolchainTest(BaseConfigureTest):
                 "%s=%s" % (k, sandbox.get_config(k)),
                 "%s=%s" % (k, library_name_info[k]),
             )
+
+    def toolchain_sandbox(self, paths, environ={}, args=[]):
+        environ = dict(environ)
+        if "PATH" not in environ:
+            environ["PATH"] = os.pathsep.join(
+                mozpath.abspath(p) for p in ("/bin", "/usr/bin")
+            )
+        args = args + ["--enable-release", "--disable-bootstrap"]
+        return self.get_sandbox(paths, {}, args, environ, logger=self.logger)
+
+    def sandbox_values(self, paths, names, environ={}):
+        sandbox = self.toolchain_sandbox(paths, environ)
+        try:
+            return tuple(sandbox._value_for(sandbox[name]) for name in names)
+        except SystemExit:
+            return self.out.getvalue().strip()
+
+    def do_outoption_test(self, paths, result, environ={}):
+        self.assertEqual(
+            self.sandbox_values(paths, ("cc_outoption", "host_cc_outoption"), environ),
+            result,
+        )
 
 
 def old_gcc_message(old_ver):
@@ -715,6 +729,9 @@ class LinuxToolchainTest(BaseToolchainTest):
             },
             environ={"CC": "clang", "CXX": "clang++", "HOST_CC": "gcc"},
         )
+
+    def test_outoption(self):
+        self.do_outoption_test(self.PATHS, ("-o ", "-o "))
 
 
 class LinuxSimpleCrossToolchainTest(BaseToolchainTest):
@@ -1069,6 +1086,9 @@ class WindowsToolchainTest(BaseToolchainTest):
                         "valid_windows_sdk_dir": self.WINDOWS_SDK,
                     },
                 )
+
+    def test_outoption(self):
+        self.do_outoption_test(self.PATHS, ("-Fo", "-Fo"))
 
 
 class Windows64ToolchainTest(WindowsToolchainTest):
@@ -1494,20 +1514,53 @@ class OSXCrossToolchainTest(BaseToolchainTest):
 
 class WindowsCrossToolchainTest(BaseToolchainTest):
     TARGET = "x86_64-pc-windows-msvc"
+    PATHS = {
+        "/usr/bin/clang-cl": CLANG_CL_19 + CLANG_CL_PLATFORM_X86_64,
+        **LinuxToolchainTest.PATHS,
+    }
     DEFAULT_CLANG_RESULT = LinuxToolchainTest.DEFAULT_CLANG_RESULT
     DEFAULT_CLANGXX_RESULT = LinuxToolchainTest.DEFAULT_CLANGXX_RESULT
 
     def test_clang_cl_cross(self):
-        paths = {"/usr/bin/clang-cl": CLANG_CL_19 + CLANG_CL_PLATFORM_X86_64}
-        paths.update(LinuxToolchainTest.PATHS)
         self.do_toolchain_test(
-            paths,
+            self.PATHS,
             {
                 "c_compiler": WindowsToolchainTest.CLANG_CL_19_RESULT,
                 "cxx_compiler": WindowsToolchainTest.CLANGXX_CL_19_RESULT,
                 "host_c_compiler": self.DEFAULT_CLANG_RESULT,
                 "host_cxx_compiler": self.DEFAULT_CLANGXX_RESULT,
             },
+        )
+
+    def test_outoption(self):
+        self.do_outoption_test(self.PATHS, ("-Fo", "-o "))
+
+
+class WindowsToWindowsCrossToolchainTest(BaseToolchainTest):
+    HOST = "i686-pc-windows-msvc"
+    TARGET = "x86_64-pc-windows-msvc"
+
+    def test_outoption(self):
+        self.do_outoption_test(
+            {
+                "/usr/bin/clang-cl": CLANG_CL_19 + CLANG_CL_PLATFORM_X86_64,
+                "/usr/bin/host-clang-cl": CLANG_CL_19 + CLANG_CL_PLATFORM_X86,
+            },
+            ("-Fo", "-Fo"),
+            environ={"HOST_CC": "host-clang-cl"},
+        )
+
+
+class WindowsGnuToMsvcCrossToolchainTest(BaseToolchainTest):
+    HOST = "i686-pc-windows-gnu"
+    TARGET = "i686-pc-windows-msvc"
+
+    def test_host_c_compiler_type(self):
+        self.assertEqual(
+            self.sandbox_values(
+                WindowsToolchainTest.PATHS, ("check_host_c_compiler_type",)
+            ),
+            "MSVC-style compilers should be used for host compilations!",
         )
 
 
