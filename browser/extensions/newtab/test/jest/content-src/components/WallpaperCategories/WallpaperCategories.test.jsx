@@ -319,6 +319,95 @@ describe("<WallpaperCategories>", () => {
       const container = openCelestial(props);
       expect(container.querySelector("#soccer-ball")).not.toBeInTheDocument();
     });
+
+    describe("category with only gated wallpapers", () => {
+      const onlyGatedProps = (groupValues = {}) => ({
+        ...gatedProps(groupValues),
+        Wallpapers: {
+          ...DEFAULT_PROPS.Wallpapers,
+          wallpaperList: [
+            ...GATED_LIST,
+            {
+              title: "pitch",
+              category: "photographs",
+              theme: "dark",
+              visibility_group: "soccer",
+            },
+          ],
+          categories: ["custom-wallpaper", "celestial", "photographs"],
+        },
+      });
+
+      it("hides the category when no group is active", () => {
+        const { container } = render(<Harness {...onlyGatedProps()} />);
+        expect(container.querySelector("#photographs")).not.toBeInTheDocument();
+        expect(container.querySelector("#celestial")).toBeInTheDocument();
+        expect(
+          container.querySelector("#custom-wallpaper")
+        ).toBeInTheDocument();
+      });
+
+      it("shows the category when its group is active", () => {
+        const { container } = render(
+          <Harness
+            {...onlyGatedProps({
+              "newtabWallpapers.visibilityGroups": "soccer",
+            })}
+          />
+        );
+        expect(container.querySelector("#photographs")).toBeInTheDocument();
+      });
+
+      it("hides a category whose wallpapers are all visible: false", () => {
+        const props = onlyGatedProps();
+        props.Wallpapers.wallpaperList = [
+          ...GATED_LIST,
+          { title: "pitch", category: "photographs", visible: false },
+        ];
+        const { container } = render(<Harness {...props} />);
+        expect(container.querySelector("#photographs")).not.toBeInTheDocument();
+      });
+
+      it("keeps solid colors while the color picker is on", () => {
+        const props = onlyGatedProps({
+          "newtabWallpapers.customColor.enabled": true,
+        });
+        props.Wallpapers.categories = ["celestial", "solid-colors"];
+        const { container } = render(<Harness {...props} />);
+        expect(container.querySelector("#solid-colors")).toBeInTheDocument();
+      });
+
+      it("keeps solid colors while a custom color is applied", () => {
+        const props = onlyGatedProps({
+          "newtabWallpapers.customColor.enabled": false,
+          "newtabWallpapers.wallpaper": "solid-color-picker-#123456",
+        });
+        props.Wallpapers.categories = ["celestial", "solid-colors"];
+        const { container } = render(<Harness {...props} />);
+        expect(container.querySelector("#solid-colors")).toBeInTheDocument();
+      });
+
+      it("hides solid colors when it has no colors and no picker", () => {
+        const props = onlyGatedProps({
+          "newtabWallpapers.customColor.enabled": false,
+        });
+        props.Wallpapers.categories = ["celestial", "solid-colors"];
+        const { container } = render(<Harness {...props} />);
+        expect(
+          container.querySelector("#solid-colors")
+        ).not.toBeInTheDocument();
+      });
+
+      it("ignores a deep link to the hidden category", () => {
+        const onOpenPanel = jest.fn();
+        const props = { ...onlyGatedProps(), onOpenPanel };
+        const { rerender } = render(<Harness {...props} />);
+        rerender(
+          <Harness {...props} customizePanelWallpaperCategory="photographs" />
+        );
+        expect(onOpenPanel).not.toHaveBeenCalled();
+      });
+    });
   });
 
   it("opens the requested category when deep-linked via App state", () => {
@@ -327,6 +416,11 @@ describe("<WallpaperCategories>", () => {
       ...DEFAULT_PROPS,
       Wallpapers: {
         ...DEFAULT_PROPS.Wallpapers,
+        wallpaperList: [
+          ...DEFAULT_PROPS.Wallpapers.wallpaperList,
+          { title: "black", category: "solid-colors", theme: "dark" },
+          { title: "fox", category: "firefox", theme: "light" },
+        ],
         categories: ["celestial", "solid-colors", "firefox"],
       },
       customizePanelWallpaperCategory: null,
@@ -423,8 +517,18 @@ describe("<WallpaperCategories>", () => {
 
   it("opens the new category when switching while open", () => {
     const onOpenPanel = jest.fn();
+    const props = {
+      ...DEFAULT_PROPS,
+      Wallpapers: {
+        ...DEFAULT_PROPS.Wallpapers,
+        wallpaperList: [
+          ...DEFAULT_PROPS.Wallpapers.wallpaperList,
+          { title: "black", category: "solid-colors", theme: "dark" },
+        ],
+      },
+    };
     const { container } = render(
-      <Harness {...DEFAULT_PROPS} onOpenPanel={onOpenPanel} />
+      <Harness {...props} onOpenPanel={onOpenPanel} />
     );
     fireEvent.click(container.querySelector("#celestial"));
     fireEvent.click(container.querySelector("#solid-colors"));
@@ -1426,7 +1530,13 @@ describe("<WallpaperCategories>", () => {
       },
       Wallpapers: {
         ...DEFAULT_PROPS.Wallpapers,
-        wallpaperList: [...CELESTIAL, ...COLORS],
+        wallpaperList: [
+          ...CELESTIAL,
+          ...COLORS,
+          { title: "fox", category: "firefox", theme: "light" },
+          { title: "shapes", category: "abstracts", theme: "light" },
+          { title: "beach", category: "photographs", theme: "light" },
+        ],
         categories: CATEGORIES,
       },
     });

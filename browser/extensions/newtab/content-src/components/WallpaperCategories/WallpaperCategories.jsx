@@ -189,9 +189,30 @@ export class _WallpaperCategories extends React.PureComponent {
     }
   }
 
+  // An applied custom color keeps the picker even with the pref off.
+  get colorPickerShown() {
+    const prefs = this.props.Prefs.values;
+    return (
+      !!prefs["newtabWallpapers.customColor.enabled"] ||
+      !!prefs["newtabWallpapers.wallpaper"]?.includes("solid-color-picker")
+    );
+  }
+
+  // Categories with nothing to offer are hidden, except "Your images", which
+  // is the upload button until an image is saved, and solid colors while the
+  // color picker is shown.
+  get visibleCategories() {
+    return (this.props.Wallpapers.categories || []).filter(
+      category =>
+        category === WALLPAPER_CATEGORIES.CustomWallpaper ||
+        (category === WALLPAPER_CATEGORIES.SolidColors &&
+          this.colorPickerShown) ||
+        !!this.categoryWallpapers(category).length
+    );
+  }
+
   openRequestedCategory(categoryId) {
-    const { categories } = this.props.Wallpapers;
-    const index = categories?.indexOf(categoryId) ?? -1;
+    const index = this.visibleCategories.indexOf(categoryId);
     // Category may not be available in every build/region; bail if missing.
     if (index === -1) {
       return;
@@ -943,7 +964,8 @@ export class _WallpaperCategories extends React.PureComponent {
     const prefs = this.props.Prefs.values;
     // @nova-cleanup(remove-conditional): Remove novaEnabled once Nova ships
     const novaEnabled = prefs["nova.enabled"];
-    const { wallpaperList, categories } = this.props.Wallpapers;
+    const { wallpaperList } = this.props.Wallpapers;
+    const categories = this.visibleCategories;
     const { savedWallpapers } = this;
     const hasSavedWallpapers = !!savedWallpapers.length;
     // Without the library the tile stays the single upload button it was, so
@@ -958,7 +980,7 @@ export class _WallpaperCategories extends React.PureComponent {
       arrowIconSrc = `chrome://global/skin/icons/shaft-arrow-${isRTL ? "right" : "left"}.svg`;
     }
     // Enable custom color select if pref'ed on
-    let showColorPicker = prefs["newtabWallpapers.customColor.enabled"];
+    const showColorPicker = this.colorPickerShown;
     const activeGroups = resolveWallpaperVisibilityGroups(prefs);
     const filteredWallpapers = this.categoryWallpapers(activeCategory);
 
@@ -969,7 +991,6 @@ export class _WallpaperCategories extends React.PureComponent {
 
     // User has previous selected a custom color
     if (selectedWallpaper.includes("solid-color-picker")) {
-      showColorPicker = true;
       const regex = /#([a-fA-F0-9]{6})/;
       [wallpaperCustomSolidColorHex] = selectedWallpaper.match(regex);
     }
