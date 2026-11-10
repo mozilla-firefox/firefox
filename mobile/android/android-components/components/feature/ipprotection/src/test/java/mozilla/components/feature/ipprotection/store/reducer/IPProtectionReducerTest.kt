@@ -199,21 +199,13 @@ class IPProtectionReducerTest {
     }
 
     @Test
-    fun `WHEN LocationSwitchFailed is dispatched THEN location is reset to the previous one`() {
-        val previousLocation = Country("JP", available = true)
-        val state =
-            buildIPProtectionState()
-                .copy(
-                    locationState =
-                        LocationState(
-                            selectedLocation = Country("CA", available = true),
-                            previousLocation = previousLocation,
-                        )
-                )
+    fun `GIVEN a location was picked WHEN switching to it fails THEN the picked location stays selected`() {
+        val pickedLocation = Country("CA", available = true)
+        val state = buildIPProtectionState().copy(locationState = LocationState(selectedLocation = pickedLocation))
 
         val result = iPProtectionReducer(state, IPProtectionAction.LocationAction.LocationSwitchFailed())
 
-        assertEquals(previousLocation, result.locationState.selectedLocation)
+        assertEquals(pickedLocation, result.locationState.selectedLocation)
     }
 
     @Test

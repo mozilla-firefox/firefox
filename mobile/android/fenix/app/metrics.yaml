@@ -17890,8 +17890,7 @@ vpn:
   location_changed:
     type: event
     description:
-      Triggered when a location is selected, restored, or reverted after a
-      failed switch.
+      Triggered when a location is selected or restored.
     extra_keys:
       to:
         description: >
@@ -17901,8 +17900,7 @@ vpn:
       operation:
         description: >
           "user_action" when the user tapped a location in the location list, "restore" when a
-          saved location was applied at startup, "reset" when the previous location was put back
-          after a failed switch.
+          saved location was applied at startup.
         type: string
       proxy_state:
         description: >
@@ -17911,8 +17909,10 @@ vpn:
         type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2049043
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2071352
     data_reviews:
       - https://phabricator.services.mozilla.com/D326740
+      - https://phabricator.services.mozilla.com/D339737
     data_sensitivity:
       - interaction
       - technical

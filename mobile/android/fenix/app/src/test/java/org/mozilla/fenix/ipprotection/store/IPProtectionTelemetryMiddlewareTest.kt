@@ -344,7 +344,7 @@ class IPProtectionTelemetryMiddlewareTest {
     }
 
     @Test
-    fun `GIVEN a location switch fails THEN the revert back to the previous country is recorded`() {
+    fun `GIVEN a location switch fails THEN the error is recorded AND no location change is recorded for it`() {
         val store =
             createStore(
                 selectedLocation = Country(countryCode = "JP", available = true),
@@ -361,8 +361,8 @@ class IPProtectionTelemetryMiddlewareTest {
 
         val events = Vpn.locationChanged.testGetValue()
         assertNotNull(events)
-        assertEquals(listOf("FR", "JP"), events.map { it.extra?.get("to") })
-        assertEquals(listOf("user_action", "reset"), events.map { it.extra?.get("operation") })
+        assertEquals(listOf("FR"), events.map { it.extra?.get("to") })
+        assertEquals(listOf("user_action"), events.map { it.extra?.get("operation") })
         assertNotNull(Vpn.locationSwitchError.testGetValue())
     }
 

@@ -30,21 +30,12 @@ internal object LocationReducer {
                                     action.countries.map {
                                         Country(countryCode = it.code, available = it.available)
                                     },
-                            previousLocation = state.locationState.previousLocation,
                             updateState = LocationListUpdateState.Updated,
                         )
                 )
             }
 
-            is IPProtectionAction.LocationAction.LocationSwitchFailed -> {
-                state.copy(
-                    locationState =
-                        state.locationState.copy(
-                            selectedLocation = state.locationState.previousLocation ?: Recommended,
-                            previousLocation = null,
-                        )
-                )
-            }
+            is IPProtectionAction.LocationAction.LocationSwitchFailed -> state
 
             is IPProtectionAction.LocationAction.LocationUpdateFailed -> {
                 // Edge case: the user might log out while the request is in progress. Logging out does
@@ -72,7 +63,6 @@ internal object LocationReducer {
                         LocationState(
                             selectedLocation = action.location,
                             locations = state.locationState.locations,
-                            previousLocation = state.locationState.selectedLocation,
                             updateState = state.locationState.updateState,
                         )
                 )

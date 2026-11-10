@@ -16,7 +16,6 @@ import mozilla.components.feature.ipprotection.store.state.AccountStatus
 import mozilla.components.feature.ipprotection.store.state.Country
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.Location
-import mozilla.components.feature.ipprotection.store.state.Recommended
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.components.support.ktx.kotlin.toSnakeCase
@@ -54,8 +53,7 @@ internal class IPProtectionTelemetryMiddleware(
         when (action) {
             is IPProtectionAction.ActivationAction.ToggleFailed ->
                 handleToggleFailedAction(store.state, action.error, action.operation)
-            is IPProtectionAction.LocationAction.LocationSwitchFailed ->
-                handleLocationSwitchFailed(store.state, action.error)
+            is IPProtectionAction.LocationAction.LocationSwitchFailed -> handleLocationSwitchFailed(action.error)
             is IPProtectionAction.LocationAction.LocationUpdateFailed -> handleLocationUpdateFailed(action.error)
             is IPProtectionAction.LocationAction.LocationChanged -> handleLocationChanged(store.state, action)
             is IPProtectionAction.LocationAction.LocationReset -> handleLocationReset(store.state, action)
@@ -204,15 +202,8 @@ internal class IPProtectionTelemetryMiddleware(
         )
     }
 
-    private fun handleLocationSwitchFailed(state: IPProtectionState, error: Throwable?) {
+    private fun handleLocationSwitchFailed(error: Throwable?) {
         Vpn.locationSwitchError.record(extra = Vpn.LocationSwitchErrorExtra(errorCode = errorCodeOf(error)))
-        Vpn.locationChanged.record(
-            Vpn.LocationChangedExtra(
-                to = (state.locationState.previousLocation ?: Recommended).label,
-                operation = LocationChangeOperation.Reset.name.toSnakeCase(),
-                proxyState = state.proxyStatus.toString().toSnakeCase(),
-            )
-        )
     }
 
     // The location list is fetched over the GeckoView event dispatcher, which rejects with an
@@ -246,7 +237,6 @@ private val Location.label: String
 private enum class LocationChangeOperation {
     UserAction,
     Restore,
-    Reset,
 }
 
 private enum class LocationResetOperation {
