@@ -27,6 +27,14 @@ const { TabNotes } = ChromeUtils.importESModule(
   "moz-src:///browser/components/tabnotes/TabNotes.sys.mjs"
 );
 
+ChromeUtils.defineLazyGetter(this, "SidebarTestUtils", () => {
+  const { SidebarTestUtils: utils } = ChromeUtils.importESModule(
+    "resource://testing-common/SidebarTestUtils.sys.mjs"
+  );
+  utils.init(this);
+  return utils;
+});
+
 const TAB_PREVIEW_PANEL_ID = "tab-preview-panel";
 const TAB_GROUP_PREVIEW_PANEL_ID = "tabgroup-preview-panel";
 
@@ -119,24 +127,32 @@ function getOpenPanels() {
   );
 }
 
-async function withGroupPanel(fn) {
-  // Creates a collapsed tab group
-  const tab = await addTabTo(gBrowser, "about:robots");
-  const group = gBrowser.addTabGroup([tab]);
-  group.collapsed = true;
+function getTabGroupPanel() {
+  gBrowser.tabContainer.ensureTabPreviewPanelLoaded();
+  return gBrowser.tabContainer.previewPanel.tabGroupPanel;
+}
 
-  // Ensure the lazy-loaded preview component exists
-  await openGroupPreview(group);
-  await closeGroupPreviews();
-  const { tabGroupPanel } = gBrowser.tabContainer.previewPanel;
-
-  // Run `fn` with the group panel and group
+// Runs `fn` with the tab strip in the given orientation, waiting for the
+// orientation change to apply both before and after.
+async function withTabOrientation(orientation, extraPrefs, fn) {
+  if (!["vertical", "horizontal"].includes(orientation)) {
+    throw new Error(`Unknown tab orientation: ${orientation}`);
+  }
+  const previousOrientation = gBrowser.tabContainer.verticalMode
+    ? "vertical"
+    : "horizontal";
+  await SpecialPowers.pushPrefEnv({
+    set: [["sidebar.verticalTabs", orientation === "vertical"], ...extraPrefs],
+  });
+  await SidebarTestUtils.waitForTabstripOrientation(window, orientation);
   try {
-    await fn(tabGroupPanel, group);
+    await fn();
   } finally {
-    // Clean it up
-    await removeTabGroup(group);
-    await resetState();
+    await SpecialPowers.popPrefEnv();
+    await SidebarTestUtils.waitForTabstripOrientation(
+      window,
+      previousOrientation
+    );
   }
 }
 
@@ -1198,9 +1214,6 @@ add_task(async function moveBetweenTabGroupsTests() {
 });
 
 add_task(async function tabGroupPanelHorizontalOffsetOptions() {
-  // The vertical-tabs variant enables sidebar.verticalTabs for the whole run.
-  await SpecialPowers.pushPrefEnv({ set: [["sidebar.verticalTabs", false]] });
-
   const testCases = [
     {
       prefs: [],
@@ -1214,39 +1227,39 @@ add_task(async function tabGroupPanelHorizontalOffsetOptions() {
     },
   ];
 
-  await withGroupPanel(async groupPanel => {
-    info("Horizontal Tab Group Panel Offset");
+  // Force horizontal tabs, since some CI runs enable vertical tabs for every test.
+  await withTabOrientation("horizontal", [], async () => {
+    const groupPanel = getTabGroupPanel();
     for (const instance of testCases) {
       await assertPopupOptions(groupPanel, instance);
     }
   });
-
-  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function tabGroupPanelHorizontalOpensWithOffset() {
-  // The vertical-tabs variant enables sidebar.verticalTabs for the whole run.
-  await SpecialPowers.pushPrefEnv({
-    set: [["sidebar.verticalTabs", false]],
-  });
+  await withTabOrientation("horizontal", [], async () => {
+    const tab = await addTabTo(gBrowser, "about:robots");
+    const group = gBrowser.addTabGroup([tab]);
+    group.collapsed = true;
 
-  await withGroupPanel(async (groupPanel, group) => {
+    const groupPanel = getTabGroupPanel();
     const openPopupSpy = sinon.spy(groupPanel.panelElement, "openPopup");
-    await openGroupPreview(group);
-
-    Assert.ok(
-      openPopupSpy.calledWith(
-        group.labelContainerElement,
-        sinon.match({ position: "bottomleft topleft", x: -16, y: 0 })
-      ),
-      "openPopup is called anchored to the label with the correct offset"
-    );
-
-    await closeGroupPreviews();
-    sinon.restore();
+    try {
+      await openGroupPreview(group);
+      Assert.ok(
+        openPopupSpy.calledWith(
+          group.labelContainerElement,
+          sinon.match({ position: "bottomleft topleft", x: -16, y: 0 })
+        ),
+        "openPopup is called anchored to the label with the correct offset"
+      );
+      await closeGroupPreviews();
+    } finally {
+      sinon.restore();
+      await removeTabGroup(group);
+      await resetState();
+    }
   });
-
-  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function tabGroupPanelVerticalOffsetOptions() {
@@ -1262,18 +1275,9 @@ add_task(async function tabGroupPanelVerticalOffsetOptions() {
       message: "Sidebar at end: 16px offset, anchor mirrored",
     },
   ];
-  await withGroupPanel(async groupPanel => {
-    await SpecialPowers.pushPrefEnv({
-      set: [
-        ["sidebar.revamp", true],
-        ["sidebar.verticalTabs", true],
-      ],
-    });
-    await TestUtils.waitForCondition(
-      () => gBrowser.tabContainer.verticalMode,
-      "Tabs are in vertical mode"
-    );
 
+  await withTabOrientation("vertical", [["sidebar.revamp", true]], async () => {
+    const groupPanel = getTabGroupPanel();
     for (const { start, expected, message } of testCases) {
       await assertPopupOptions(groupPanel, {
         prefs: [["sidebar.position_start", start]],
@@ -1281,8 +1285,6 @@ add_task(async function tabGroupPanelVerticalOffsetOptions() {
         message,
       });
     }
-
-    await SpecialPowers.popPrefEnv();
   });
 });
 
