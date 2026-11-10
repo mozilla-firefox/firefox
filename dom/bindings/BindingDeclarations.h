@@ -345,12 +345,7 @@ inline void ImplCycleCollectionTraverse(
 template <class T>
 class NonNull {
  public:
-  NonNull()
-#ifdef DEBUG
-      : inited(false)
-#endif
-  {
-  }
+  NonNull() = default;
 
   // This is no worse than get() in terms of const handling.
   operator T&() const {
@@ -406,7 +401,7 @@ class NonNull {
   // ptr is left uninitialized for optimization purposes.
   MOZ_INIT_OUTSIDE_CTOR T* ptr;
 #ifdef DEBUG
-  bool inited;
+  bool inited = false;
 #endif
 };
 
