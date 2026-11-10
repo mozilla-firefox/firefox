@@ -5057,6 +5057,14 @@ int XREMain::XRE_mainInit(bool* aExitFlag) {
     gRestartedByOS = true;
   }
 
+#ifdef MOZ_X11
+  // An XSMP session manager restarting us passes --sm-client-id. The argument
+  // is consumed by nsNativeAppSupportUnix::Start later on.
+  if (CheckArgExists("sm-client-id") == ARG_FOUND) {
+    gRestartedByOS = true;
+  }
+#endif
+
   gRestartArgc = gArgc;
   gRestartArgv =
       (char**)malloc(sizeof(char*) * (gArgc + 1 + (override ? 2 : 0)));

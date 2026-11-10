@@ -108,6 +108,11 @@ skip-if = [
 
 ["test_restore_windows_after_restart_and_quit.py"]
 
+["test_restore_windows_after_session_manager_logout.py"]
+run-if = [
+  "os == 'linux'",
+]
+
 ["test_restore_windows_after_windows_shutdown.py"]
 run-if = [
   "os == 'win'",

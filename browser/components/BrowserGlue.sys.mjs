@@ -173,12 +173,37 @@ BrowserGlue.prototype = {
   _isNewProfile: undefined,
   _defaultCookieBehaviorAtStartup: null,
 
-  _setPrefToSaveSession: function BG__setPrefToSaveSession(aForce) {
+  /**
+   * Make the next startup resume the current session.
+   *
+   * @param {boolean} aForce
+   *        Set the pref even if no "restart" quit was requested.
+   * @param {boolean} aOSInitiated
+   *        The OS session manager asked us to save (XSMP SaveYourself on
+   *        Linux). The next startup should then only resume if the session
+   *        manager restarts us too, not if the user starts Firefox manually.
+   */
+  _setPrefToSaveSession(aForce, aOSInitiated) {
     if (!this._saveSession && !aForce) {
       return;
     }
 
     if (!lazy.PrivateBrowsingUtils.permanentPrivateBrowsing) {
+      if (
+        aOSInitiated &&
+        !Services.prefs.getBoolPref("browser.sessionstore.resume_session_once")
+      ) {
+        // Same logic as SessionStore's "os-restart" quit handling. If
+        // resume_session_once is already set, something else asked to resume
+        // unconditionally (an in-app restart, for example), so leave that
+        // request alone. Otherwise mark the resume as OS initiated;
+        // SessionStartup clears resume_session_once again on a start that
+        // Services.appinfo.restartedByOS does not report.
+        Services.prefs.setBoolPref(
+          "browser.sessionstore.resuming_after_os_restart",
+          true
+        );
+      }
       Services.prefs.setBoolPref(
         "browser.sessionstore.resume_session_once",
         true
@@ -234,7 +259,7 @@ BrowserGlue.prototype = {
         }
         break;
       case "session-save":
-        this._setPrefToSaveSession(true);
+        this._setPrefToSaveSession(true, true);
         subject.QueryInterface(Ci.nsISupportsPRBool);
         subject.data = true;
         break;
