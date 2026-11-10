@@ -102,9 +102,42 @@ export const DELETE_FILE_TOOL_CONFIG = {
   },
 };
 
+export const DECLINE_REQUEST = "decline_request";
+
+export const DECLINE_KINDS = Object.freeze({
+  UNSUPPORTED: "unsupported",
+  UNCLEAR: "unclear",
+  POLICY: "policy",
+});
+
+export const DECLINE_REQUEST_TOOL_CONFIG = {
+  type: "function",
+  function: {
+    name: DECLINE_REQUEST,
+    description: "Declines a request that can't be made into a widget.",
+    parameters: {
+      type: "object",
+      properties: {
+        kind: {
+          type: "string",
+          enum: Object.values(DECLINE_KINDS),
+          description:
+            "unclear: the request holds no widget. unsupported: the goal is clear but needs something a widget can't reach. policy: the widget would break the acceptable use rules.",
+        },
+        reason: {
+          type: "string",
+          description: "One sentence on why, for the developers' logs.",
+        },
+      },
+      required: ["kind"],
+    },
+  },
+};
+
 export const TOOLS = [
   WRITE_FILE_TOOL_CONFIG,
   EDIT_FILE_TOOL_CONFIG,
   READ_FILE_TOOL_CONFIG,
   DELETE_FILE_TOOL_CONFIG,
+  DECLINE_REQUEST_TOOL_CONFIG,
 ];

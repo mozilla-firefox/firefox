@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import {
+  DECLINE_REQUEST,
   DELETE_FILE,
   EDIT_FILE,
   READ_FILE,
@@ -96,12 +97,20 @@ export class Workspace {
    * files. A leading ./ or / is stripped from the path.
    *
    * @param {object} call - a tool call from the model's reply
-   * @returns {{reply?: string, error?: string}} the result
+   * @returns {{reply?: string, error?: string, decline?: object}} the result
    */
   run(call) {
     let { name, args, error } = this.#parse(call);
     if (error) {
       return { error };
+    }
+    if (name === DECLINE_REQUEST) {
+      return {
+        decline: {
+          kind: args.kind,
+          reason: typeof args.reason === "string" ? args.reason : undefined,
+        },
+      };
     }
     // Strips any run of leading "./" or "/" to get the path to lookup.
     let path = args.file_path.replace(/^(\.?\/)+/, "");
@@ -147,9 +156,12 @@ export class Workspace {
     }
     let { properties, required } = tool.function.parameters;
     for (let key of required) {
-      let { type } = properties[key];
+      let { type, enum: values } = properties[key];
       if (typeof args[key] !== type) {
         return { error: `The ${name} call needs ${key} as a ${type}.` };
+      }
+      if (values && !values.includes(args[key])) {
+        return { error: `The ${key} must be one of ${values.join(", ")}.` };
       }
     }
     return { name, args };

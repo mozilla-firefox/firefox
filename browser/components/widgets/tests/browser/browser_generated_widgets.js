@@ -111,6 +111,19 @@ function simulateDeleteFileResponse(...paths) {
   };
 }
 
+function simulateDeclineRequestResponse(args) {
+  return {
+    finalOutput: "",
+    toolCalls: [
+      {
+        id: "call-decline",
+        type: "function",
+        function: { name: "decline_request", arguments: JSON.stringify(args) },
+      },
+    ],
+  };
+}
+
 add_setup(async function () {
   mockEngine = new MockEngineManager();
   // The widget-generation service takes no `purpose`. MockEngineManager finds
@@ -145,7 +158,7 @@ add_task(async function test_the_model_writes_the_files() {
   });
   Assert.deepEqual(
     asked.request.tools.map(tool => tool.function.name),
-    ["write_file", "edit_file", "read_file", "delete_file"],
+    ["write_file", "edit_file", "read_file", "delete_file", "decline_request"],
     "Tools"
   );
   let content = asked.request.args.findLast(
@@ -344,6 +357,40 @@ add_task(async function test_a_read_is_answered_with_the_current_text() {
     "Read answers"
   );
   respond("Done.");
+  await making;
+});
+
+add_task(async function test_a_declined_request_rejects_with_its_kind() {
+  for (let [kind, code] of [
+    ["unsupported", GENERATION_ERRORS.UNSUPPORTED],
+    ["unclear", GENERATION_ERRORS.UNCLEAR],
+    ["policy", GENERATION_ERRORS.POLICY],
+  ]) {
+    await Assert.rejects(
+      generate(
+        { prompt: PROMPT },
+        simulateWriteFileResponse(FILES),
+        simulateDeclineRequestResponse({ kind, reason: "Test reason" })
+      ),
+      error => error.code == code,
+      kind
+    );
+  }
+});
+
+add_task(async function test_an_unknown_decline_kind_is_answered() {
+  let making = generate({ prompt: PROMPT });
+  await answer(simulateDeclineRequestResponse({ kind: "other" }));
+  let { request, respond } = await mockEngine.captureRequest({
+    purpose: PURPOSES.WIDGET_GENERATION,
+  });
+  is(
+    JSON.parse(request.args.at(-1).content),
+    "The kind must be one of unsupported, unclear, policy.",
+    "Error answer"
+  );
+  respond(simulateWriteFileResponse(FILES));
+  await answer("Done.");
   await making;
 });
 

@@ -2,7 +2,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { TOOLS } from "moz-src:///browser/components/widgets/Tools.sys.mjs";
+import {
+  DECLINE_KINDS,
+  TOOLS,
+} from "moz-src:///browser/components/widgets/Tools.sys.mjs";
 import { Workspace } from "moz-src:///browser/components/widgets/Workspace.sys.mjs";
 
 const lazy = {};
@@ -53,6 +56,12 @@ export const GENERATION_ERRORS = Object.freeze({
   SERVICE: "service",
   /** The model's files don't make a widget. */
   GENERATION: "generation",
+  /** The model declined a request that needs more than a widget can do. */
+  UNSUPPORTED: DECLINE_KINDS.UNSUPPORTED,
+  /** The model declined a request that doesn't describe a widget. */
+  UNCLEAR: DECLINE_KINDS.UNCLEAR,
+  /** The model declined a request under the acceptable use rules. */
+  POLICY: DECLINE_KINDS.POLICY,
 });
 
 /**
@@ -247,7 +256,8 @@ class _WidgetGenerator {
   }
 
   /**
-   * Runs the conversation until a reply calls no tools.
+   * Runs the conversation until a reply calls no tools or the model
+   * declines the request.
    *
    * @param {object} conversation - the conversation holding the request
    * @param {object} options
@@ -279,7 +289,14 @@ class _WidgetGenerator {
       conversation.addAssistantMessage({}, { tool_calls: calls });
       for (let call of calls) {
         let name = call.function?.name;
-        let { reply, error } = workspace.run(call);
+        let { reply, error, decline } = workspace.run(call);
+        if (decline) {
+          lazy.logger.debug("Declined", decline.kind, decline.reason);
+          throw new WidgetGeneratorError(
+            decline.reason || decline.kind,
+            decline.kind
+          );
+        }
         lastError = error;
         if (error) {
           lazy.logger.debug(error, name, call.function?.arguments);

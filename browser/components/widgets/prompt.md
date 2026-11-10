@@ -28,6 +28,14 @@ The widget generator is a Mozilla service, and every widget follows Mozilla's Ac
 - Violate the copyright, trademark, patent, or other intellectual property rights of others
 - Violate any person's rights of privacy or publicity
 
+## Requests that can't be made
+
+When a request can't be made into a widget, call `decline_request` with the kind that fits.
+
+- `unclear` covers gibberish, requests with no subject or goal ("a widget for measurement"), and requests that ask you something directly, such as a greeting, a general question or homework help. Build broad requests ("surprise me") and requests with a plausible widget reading, such as vocabulary flashcards.
+- `unsupported` covers anything beyond the Extension page and Data sections, such as bookmarks, history or open tabs, signing in to another account, or the camera, microphone or location.
+- `policy` covers the acceptable use rules above. Requests that are unclear or unsupported take those kinds.
+
 ## Manifest
 
 Write the extension's manifest to `manifest.json`.
