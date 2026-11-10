@@ -13,6 +13,7 @@ import androidx.datastore.dataStore
 import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import mozilla.components.support.base.log.logger.Logger
 
 internal const val ASSET_FILE_NAME = "merino_sports_matches.json"
@@ -27,7 +28,20 @@ interface MerinoMatchesStorage {
     /** Replace the stored matches with [matches] or remove them if null. */
     suspend fun setMatches(matches: MerinoMatches?)
 
-    companion object
+    companion object {
+        /** Creates a simple in-memory implementation of [MerinoMatchesStorage] for use in tests or previews. */
+        fun inMemory(initialMatches: MerinoMatches? = null): MerinoMatchesStorage =
+            InMemoryMerinoMatchesStorage(initialMatches)
+    }
+}
+
+private class InMemoryMerinoMatchesStorage(initialMatches: MerinoMatches?) : MerinoMatchesStorage {
+    private val _matches = MutableStateFlow(initialMatches)
+    override val matches: Flow<MerinoMatches?> = _matches
+
+    override suspend fun setMatches(matches: MerinoMatches?) {
+        _matches.value = matches
+    }
 }
 
 /** The data source for [MerinoMatchesStorage]. */

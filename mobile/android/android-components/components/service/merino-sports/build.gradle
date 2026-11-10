@@ -18,12 +18,16 @@ dependencies {
 
     implementation libs.androidx.core
     implementation libs.androidx.datastore
+    implementation libs.androidx.work.runtime
     implementation libs.kotlinx.coroutines
     implementation libs.kotlinx.serialization.json
 
     testImplementation project(':components:support-test')
 
+    testImplementation libs.androidx.concurrent
+    testImplementation libs.androidx.test.core
     testImplementation libs.androidx.test.junit
+    testImplementation libs.androidx.work.testing
     testImplementation libs.kotlin.test
     testImplementation libs.kotlinx.coroutines.test
     testImplementation libs.robolectric
