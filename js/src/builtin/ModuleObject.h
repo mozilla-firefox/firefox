@@ -231,11 +231,17 @@ class RequestedModule {
 
 using RequestedModuleVector = GCVector<RequestedModule, 0, SystemAllocPolicy>;
 
+// Possible value types of [[BindingName]] in ResolvedBinding Records.
+enum class BindingNameType : uint8_t { String, Namespace, DeferredNamespace };
+
+// https://tc39.es/ecma262/#resolvedbinding-record
 class ResolvedBindingObject : public NativeObject {
   enum { ModuleSlotIndex = 0, BindingNameSlotIndex, SlotCount };
 
   JS_DEFINE_TYPED_SLOT(ModuleSlotIndex, MODULE_SLOT, Object);
-  JS_DEFINE_TYPED_SLOT(BindingNameSlotIndex, BINDING_NAME_SLOT, String);
+  // Holds the binding name as a String, or the BindingNameType as an Int32 for
+  // a namespace binding.
+  JS_DEFINE_TYPED_SLOT(BindingNameSlotIndex, BINDING_NAME_SLOT, String, Int32);
   static constexpr uint32_t SLOT_COUNT = SlotCount;
 
  public:
@@ -244,8 +250,18 @@ class ResolvedBindingObject : public NativeObject {
   static ResolvedBindingObject* create(JSContext* cx,
                                        Handle<ModuleObject*> module,
                                        Handle<JSAtom*> bindingName);
+  static ResolvedBindingObject* createNamespace(JSContext* cx,
+                                                Handle<ModuleObject*> module,
+                                                ImportPhase phase);
   ModuleObject* module() const;
+  BindingNameType bindingNameType() const;
+  bool isNamespace() const;
+  // For a namespace binding, returns the name of the internal property of the
+  // target module environment that holds the namespace object.
   JSAtom* bindingName() const;
+  // Only valid when isNamespace() is true.
+  ImportPhase namespacePhase() const;
+  bool isSameBinding(const ResolvedBindingObject* other) const;
 };
 
 class IndirectBindingMap {

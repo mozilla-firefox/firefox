@@ -178,9 +178,44 @@ ModuleObject* ResolvedBindingObject::module() const {
   return &value.toObject().as<ModuleObject>();
 }
 
+BindingNameType ResolvedBindingObject::bindingNameType() const {
+  Value value = getReservedSlotTyped(BINDING_NAME_SLOT);
+  if (value.isString()) {
+    return BindingNameType::String;
+  }
+  return static_cast<BindingNameType>(value.toInt32());
+}
+
+bool ResolvedBindingObject::isNamespace() const {
+  return bindingNameType() != BindingNameType::String;
+}
+
 JSAtom* ResolvedBindingObject::bindingName() const {
   Value value = getReservedSlotTyped(BINDING_NAME_SLOT);
-  return &value.toString()->asAtom();
+  if (value.isString()) {
+    return &value.toString()->asAtom();
+  }
+
+  // TODO: Removed later when storing namespace slot in the ModuleEnvironment
+  // object
+  JSAtomState* names = runtimeFromMainThread()->commonNames;
+  return namespacePhase() == ImportPhase::Deferred
+             ? names->star_deferred_namespace_star_
+             : names->star_namespace_star_;
+}
+
+ImportPhase ResolvedBindingObject::namespacePhase() const {
+  MOZ_ASSERT(isNamespace());
+  return bindingNameType() == BindingNameType::DeferredNamespace
+             ? ImportPhase::Deferred
+             : ImportPhase::Evaluation;
+}
+
+bool ResolvedBindingObject::isSameBinding(
+    const ResolvedBindingObject* other) const {
+  return module() == other->module() &&
+         getReservedSlotTyped(BINDING_NAME_SLOT) ==
+             other->getReservedSlotTyped(BINDING_NAME_SLOT);
 }
 
 /* static */
@@ -199,6 +234,25 @@ ResolvedBindingObject* ResolvedBindingObject::create(
 
   self->initReservedSlotTyped(MODULE_SLOT, ObjectValue(*module));
   self->initReservedSlotTyped(BINDING_NAME_SLOT, StringValue(bindingName));
+  return self;
+}
+
+/* static */
+ResolvedBindingObject* ResolvedBindingObject::createNamespace(
+    JSContext* cx, Handle<ModuleObject*> module, ImportPhase phase) {
+  MOZ_ASSERT(phase == ImportPhase::Evaluation ||
+             phase == ImportPhase::Deferred);
+  ResolvedBindingObject* self =
+      NewObjectWithGivenProto<ResolvedBindingObject>(cx, nullptr);
+  if (!self) {
+    return nullptr;
+  }
+
+  BindingNameType type = phase == ImportPhase::Deferred
+                             ? BindingNameType::DeferredNamespace
+                             : BindingNameType::Namespace;
+  self->initReservedSlotTyped(MODULE_SLOT, ObjectValue(*module));
+  self->initReservedSlotTyped(BINDING_NAME_SLOT, Int32Value(int32_t(type)));
   return self;
 }
 

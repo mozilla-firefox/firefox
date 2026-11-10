@@ -1148,6 +1148,20 @@ static bool CreateResolvedBindingObject(JSContext* cx,
   return true;
 }
 
+static bool CreateResolvedNamespaceBindingObject(JSContext* cx,
+                                                 Handle<ModuleObject*> module,
+                                                 ImportPhase phase,
+                                                 MutableHandle<Value> result) {
+  ResolvedBindingObject* obj =
+      ResolvedBindingObject::createNamespace(cx, module, phase);
+  if (!obj) {
+    return false;
+  }
+
+  result.setObject(*obj);
+  return true;
+}
+
 // https://tc39.es/ecma262/#sec-resolveexport
 // Source Text Module Record: ResolveExport
 //
@@ -1240,17 +1254,14 @@ static bool CyclicModuleResolveExport(JSContext* cx,
         //                 Return ResolvedBinding Record { [[Module]]:
         //                 importedModule, [[BindingName]]: DEFERRED-NAMESPACE
         //                 }.
-        if (moduleRequest->phase() == ImportPhase::Deferred) {
-          name = cx->names().star_deferred_namespace_star_;
-        } else {
-          // Step 6.a.iii.3. Else,
-          //   Assert: e.[[Phase]] is evaluation.
-          MOZ_ASSERT(moduleRequest->phase() == ImportPhase::Evaluation);
-          //   Return ResolvedBinding Record {
-          //     [[Module]]: importedModule, [[BindingName]]: NAMESPACE }.
-          name = cx->names().star_namespace_star_;
-        }
-        return CreateResolvedBindingObject(cx, importedModule, name, result);
+        // Step 6.a.iii.3. Else,
+        //   Assert: e.[[Phase]] is evaluation.
+        //   Return ResolvedBinding Record {
+        //     [[Module]]: importedModule, [[BindingName]]: NAMESPACE }.
+        MOZ_ASSERT(moduleRequest->phase() == ImportPhase::Deferred ||
+                   moduleRequest->phase() == ImportPhase::Evaluation);
+        return CreateResolvedNamespaceBindingObject(
+            cx, importedModule, moduleRequest->phase(), result);
       } else {
         name = e.importName();
         // Step 6.a.iv.1. Assert: module imports a specific binding for this
@@ -1350,16 +1361,8 @@ static bool CyclicModuleResolveExport(JSContext* cx,
         //                 starResolution.[[Module]] are not the same Module
         //                 Record, return AMBIGUOUS.
         // Step 9.e.iii.3. If resolution.[[BindingName]] is not
-        //                 starResolution.[[BindingName]] and either
-        //                 resolution.[[BindingName]] or
-        //                 starResolution.[[BindingName]] is namespace, return
-        //                 AMBIGUOUS.
-        // Step 9.e.iii.4. If resolution.[[BindingName]] is a String,
-        //                 starResolution.[[BindingName]] is a String, and
-        //                 resolution.[[BindingName]] is not
-        //                 starResolution.[[BindingName]]), return AMBIGUOUS.
-        if (binding->module() != starResolution->module() ||
-            binding->bindingName() != starResolution->bindingName()) {
+        //                 starResolution.[[BindingName]], return AMBIGUOUS.
+        if (!binding->isSameBinding(starResolution)) {
           result.setString(cx->names().ambiguous);
 
           if (errorInfoOut) {
