@@ -7,13 +7,14 @@ package org.mozilla.fenix.tabstray.ui.theme
 import androidx.compose.runtime.Composable
 import mozilla.components.compose.base.theme.Theme
 import org.mozilla.fenix.tabstray.redux.state.Page
-import org.mozilla.fenix.theme.DefaultThemeProvider
 import org.mozilla.fenix.theme.ThemeProvider
+import org.mozilla.fenix.theme.getThemeProvider
 
 /**
  * [ThemeProvider] for the Tab Manager.
  *
- * When on [Page.PrivateTabs], [Theme.Private] is used. Otherwise, we fallback to [DefaultThemeProvider].
+ * When on [Page.PrivateTabs], [Theme.Private] is used. Otherwise, we fallback to
+ * [ThemeProvider.provideNonPrivateTheme].
  */
 class TabManagerThemeProvider(val selectedPage: Page) : ThemeProvider {
     @Composable
@@ -21,6 +22,8 @@ class TabManagerThemeProvider(val selectedPage: Page) : ThemeProvider {
         if (selectedPage == Page.PrivateTabs) {
             Theme.Private
         } else {
-            DefaultThemeProvider.provideTheme()
+            provideNonPrivateTheme()
         }
+
+    @Composable override fun provideNonPrivateTheme() = getThemeProvider().provideNonPrivateTheme()
 }

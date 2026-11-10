@@ -66,8 +66,8 @@ import org.mozilla.fenix.debugsettings.store.DebugDrawerTelemetryMiddleware
 import org.mozilla.fenix.debugsettings.store.DrawerStatus
 import org.mozilla.fenix.debugsettings.tabs.TabGroupTools
 import org.mozilla.fenix.ext.components
-import org.mozilla.fenix.theme.DefaultThemeProvider
 import org.mozilla.fenix.theme.FirefoxTheme
+import org.mozilla.fenix.theme.getThemeProvider
 
 /**
  * Overlay for presenting Fenix-wide debugging content.
@@ -228,7 +228,7 @@ private fun FenixOverlay(
     }
         .collectAsState(initial = DrawerStatus.Closed)
 
-    FirefoxTheme(theme = DefaultThemeProvider.provideTheme()) {
+    FirefoxTheme(theme = getThemeProvider().provideNonPrivateTheme()) {
         DebugOverlay(
             navController = navController,
             drawerStatus = drawerStatus,

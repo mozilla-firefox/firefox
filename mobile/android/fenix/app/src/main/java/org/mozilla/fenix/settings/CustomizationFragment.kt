@@ -56,6 +56,8 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
     private lateinit var radioHomepageSearchTop: RadioButtonPreference
     private val args by navArgs<CustomizationFragmentArgs>()
 
+    private var isOledThemeApplied = false
+
     // Cached reactive feature state used when (re)building preferences.
     // Defaults match the DataStore defaults (summarization off, translations on)
     private var dynamicFeaturesStatus =
@@ -68,6 +70,8 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.customization_preferences, rootKey)
+
+        isOledThemeApplied = requireComponents.settings.shouldUseOledTheme
 
         setupPreferences(dynamicFeaturesStatus)
     }
@@ -261,7 +265,7 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
         radioDarkestTheme.isVisible = settings.enableOledTheme
         radioDarkestTheme.onClickListener {
             AppTheme.oledThemeSelected.record(AppTheme.OledThemeSelectedExtra("SETTINGS"))
-            setNewTheme(AppCompatDelegate.MODE_NIGHT_YES)
+            setNewTheme(AppCompatDelegate.MODE_NIGHT_YES, useOledTheme = true)
         }
     }
 
@@ -274,8 +278,12 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
         }
     }
 
-    private fun setNewTheme(mode: Int) {
-        if (AppCompatDelegate.getDefaultNightMode() == mode) return
+    private fun setNewTheme(mode: Int, useOledTheme: Boolean = false) {
+        // Avoid recreating the activity if the selected theme is already applied. Dark and Darkest both use
+        // MODE_NIGHT_YES, so switching between them leaves the night mode unchanged.
+        if (AppCompatDelegate.getDefaultNightMode() == mode && isOledThemeApplied == useOledTheme) return
+
+        isOledThemeApplied = useOledTheme
         AppCompatDelegate.setDefaultNightMode(mode)
         activity?.recreate()
         with(requireComponents.core) {

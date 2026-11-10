@@ -17,6 +17,7 @@ import android.os.SystemClock
 import android.util.Log.INFO
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
@@ -50,7 +51,6 @@ import mozilla.components.browser.state.state.selectedOrDefaultPrivateSearchEngi
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.browser.storage.sync.GlobalPlacesDependencyProvider
 import mozilla.components.compose.base.theme.Theme
-import mozilla.components.compose.base.theme.Theme.Private
 import mozilla.components.concept.ai.controls.isEnabled
 import mozilla.components.concept.base.crash.Breadcrumb
 import mozilla.components.concept.engine.webextension.WebExtension
@@ -110,6 +110,7 @@ import org.mozilla.fenix.GleanMetrics.TabStrip
 import org.mozilla.fenix.GleanMetrics.TermsOfUse
 import org.mozilla.fenix.GleanMetrics.UserAiSummarize
 import org.mozilla.fenix.autofill.AutofillService
+import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.components.Components
 import org.mozilla.fenix.components.Core
 import org.mozilla.fenix.components.appstate.AppAction
@@ -142,8 +143,8 @@ import org.mozilla.fenix.session.VisibilityLifecycleCallback
 import org.mozilla.fenix.settings.doh.DefaultDohSettingsProvider
 import org.mozilla.fenix.settings.doh.DohSettingsProvider
 import org.mozilla.fenix.startupCrash.StartupCrashActivity
-import org.mozilla.fenix.theme.DefaultThemeProvider
 import org.mozilla.fenix.theme.ThemeProvider
+import org.mozilla.fenix.theme.getTheme
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.utils.isLargeScreenSize
 import org.mozilla.fenix.wallpapers.Wallpaper
@@ -1354,13 +1355,20 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
     }
 
     @Composable
-    override fun provideTheme(): Theme {
-        return if (components.appStore.state.mode.isPrivate) {
-            Private
-        } else {
-            DefaultThemeProvider.provideTheme()
-        }
-    }
+    override fun provideTheme(): Theme =
+        getTheme(
+            browsingMode = components.appStore.state.mode,
+            isSystemInDarkTheme = isSystemInDarkTheme(),
+            shouldUseOledTheme = components.settings.shouldUseOledTheme,
+        )
+
+    @Composable
+    override fun provideNonPrivateTheme(): Theme =
+        getTheme(
+            browsingMode = BrowsingMode.Normal,
+            isSystemInDarkTheme = isSystemInDarkTheme(),
+            shouldUseOledTheme = components.settings.shouldUseOledTheme,
+        )
 
     /**
      * Initializes EmojiCompat manually on a background thread.

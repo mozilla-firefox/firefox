@@ -35,8 +35,8 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.share.DefaultShareController.Companion.ACTION_COPY_LINK_TO_CLIPBOARD
 import org.mozilla.fenix.share.listadapters.AppShareOption
-import org.mozilla.fenix.theme.DefaultThemeProvider
 import org.mozilla.fenix.theme.FirefoxTheme
+import org.mozilla.fenix.theme.getThemeProvider
 
 class ShareFragment : AppCompatDialogFragment() {
 
@@ -143,7 +143,7 @@ class ShareFragment : AppCompatDialogFragment() {
 
         binding.savePdf.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         binding.savePdf.setContent {
-            FirefoxTheme(theme = DefaultThemeProvider.provideTheme()) {
+            FirefoxTheme(theme = getThemeProvider().provideNonPrivateTheme()) {
                 SaveToPDFItem {
                     shareInteractor.onSaveToPDF(tabId = args.sessionId)
                 }
@@ -152,7 +152,7 @@ class ShareFragment : AppCompatDialogFragment() {
 
         binding.print.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         binding.print.setContent {
-            FirefoxTheme(theme = DefaultThemeProvider.provideTheme()) {
+            FirefoxTheme(theme = getThemeProvider().provideNonPrivateTheme()) {
                 PrintItem {
                     shareInteractor.onPrint(tabId = args.sessionId)
                 }

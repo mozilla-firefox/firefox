@@ -16,6 +16,9 @@ import mozilla.components.compose.base.utils.inComposePreview
 interface ThemeProvider {
     /** Returns the current [Theme] that is to be displayed. */
     @Composable fun provideTheme(): Theme
+
+    /** Returns the [Theme] that is to be displayed ignoring private theme. */
+    @Composable fun provideNonPrivateTheme(): Theme
 }
 
 /** The default [ThemeProvider]. Used when [Theme.Private] is not needed or when in a Compose Preview. */
@@ -27,6 +30,8 @@ object DefaultThemeProvider : ThemeProvider {
         } else {
             Light
         }
+
+    @Composable override fun provideNonPrivateTheme() = provideTheme()
 }
 
 /** Gets the [ThemeProvider] for the current context. */
