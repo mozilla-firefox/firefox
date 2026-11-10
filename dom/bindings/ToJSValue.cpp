@@ -46,7 +46,12 @@ bool ToJSValue(JSContext* aCx, ErrorResult&& aArgument,
 
 bool ToJSValue(JSContext* aCx, Promise& aArgument,
                JS::MutableHandle<JS::Value> aValue) {
-  aValue.setObject(*aArgument.PromiseObj());
+  JSObject* promiseObj = aArgument.PromiseObj();
+  if (!promiseObj) [[unlikely]] {
+    return ThrowErrorMessage<MSG_ONE_OFF_TYPEERR>(aCx, "",
+                                                  "Missing Promise JS object");
+  }
+  aValue.setObject(*promiseObj);
   return MaybeWrapObjectValue(aCx, aValue);
 }
 
