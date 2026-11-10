@@ -149,6 +149,7 @@ class HostIPCAllocator : public ISurfaceAllocator {
   }
 
   bool IsAboutToSendAsyncMessages() { return mAboutToSendAsyncMessages; }
+  void ClearAboutToSendAsyncMessages() { mAboutToSendAsyncMessages = false; }
 
  protected:
   std::vector<AsyncParentMessageData> mPendingAsyncMessage;

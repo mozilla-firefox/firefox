@@ -177,6 +177,7 @@ class MOZ_STACK_CLASS AutoImageBridgeParentAsyncMessageSender final {
 
   ~AutoImageBridgeParentAsyncMessageSender() {
     mImageBridge->SendPendingAsyncMessages();
+    mImageBridge->ClearAboutToSendAsyncMessages();
     if (mToDestroy) {
       mImageBridge->DestroyActors(*mToDestroy);
     }
