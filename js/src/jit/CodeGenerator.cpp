@@ -6954,9 +6954,31 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
   masm.jump(&invokeFunctionVMEntry);
 }
 
+static void PushTrampolineFrame(MacroAssembler& masm) {
+  if (JitOptions.enableStubFramePointers) {
+#ifdef JS_USE_LINK_REGISTER
+    masm.pushRegs(LinkRegister, FramePointer);
+#else
+    masm.push(FramePointer);
+#endif
+    masm.moveStackPtrTo(FramePointer);
+  }
+}
+
+static void PopTrampolineFrame(MacroAssembler& masm) {
+  if (JitOptions.enableStubFramePointers) {
+#ifdef JS_USE_LINK_REGISTER
+    masm.popRegs(FramePointer, LinkRegister);
+#else
+    masm.pop(FramePointer);
+#endif
+  }
+}
+
 void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateMegamorphicLoadStub");
   megamorphicLoadStubOffset_ = startTrampolineCode(masm, TargetKind::ImmCall);
+  PushTrampolineFrame(masm);
 
   Register obj = CallTempReg3;
   Register id = CallTempReg0;
@@ -6975,7 +6997,7 @@ void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
   Label cacheHit;
   masm.emitMegamorphicCacheLookupByValue(obj, id, idHash, outEntryPtr, output,
                                          &cacheHit);
-
+  PopTrampolineFrame(masm);
   masm.abiret();
 
   // Given we don't need the entry if we got a cache hit, and the entry pointer
@@ -6983,6 +7005,7 @@ void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
   // outEntryPtr to indicate success
   masm.bind(&cacheHit);
   masm.movePtr(ImmPtr((void*)(MegamorphicLoadStubCacheHit)), outEntryPtr);
+  PopTrampolineFrame(masm);
   masm.abiret();
 }
 
@@ -6990,6 +7013,7 @@ void JitRuntime::generateMegamorphicLoadStubPermissive(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateMegamorphicLoadStubPermissive");
   megamorphicLoadStubPermissiveOffset_ =
       startTrampolineCode(masm, TargetKind::ImmCall);
+  PushTrampolineFrame(masm);
 
   Register obj = CallTempReg3;
   Register id = CallTempReg0;
@@ -7009,6 +7033,7 @@ void JitRuntime::generateMegamorphicLoadStubPermissive(MacroAssembler& masm) {
   masm.emitMegamorphicCacheLookupByValue(obj, id, idHash, outEntryPtr, output,
                                          &cacheHit, &cacheHitGetter);
 
+  PopTrampolineFrame(masm);
   masm.abiret();
 
   // Given we don't need the entry if we got a cache hit, and the entry pointer
@@ -7016,10 +7041,12 @@ void JitRuntime::generateMegamorphicLoadStubPermissive(MacroAssembler& masm) {
   // outEntryPtr to indicate success or that output holds a getter.
   masm.bind(&cacheHit);
   masm.movePtr(ImmPtr((void*)(MegamorphicLoadStubCacheHit)), outEntryPtr);
+  PopTrampolineFrame(masm);
   masm.abiret();
 
   masm.bind(&cacheHitGetter);
   masm.movePtr(ImmPtr((void*)(MegamorphicLoadStubCacheHitGetter)), outEntryPtr);
+  PopTrampolineFrame(masm);
   masm.abiret();
 }
 
