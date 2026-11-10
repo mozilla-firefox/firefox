@@ -1109,6 +1109,8 @@ void TextureClient::RecycleTexture(TextureFlags aFlags) {
 }
 
 void TextureClient::SetAddedToCompositableClient() {
+  MOZ_ASSERT(mAllocator && mAllocator->GetThread() &&
+             mAllocator->GetThread()->IsOnCurrentThread());
   if (!mAddedToCompositableClient) {
     mAddedToCompositableClient = true;
     if (!(GetFlags() & TextureFlags::RECYCLE)) {
@@ -1142,6 +1144,8 @@ static void CancelTextureClientNotifyNotUsed(uint64_t aTextureId,
 }
 
 void TextureClient::CancelWaitForNotifyNotUsed() {
+  MOZ_ASSERT(mAllocator && mAllocator->GetThread() &&
+             mAllocator->GetThread()->IsOnCurrentThread());
   if (GetFlags() & TextureFlags::RECYCLE) {
     CancelTextureClientNotifyNotUsed(mSerial, GetAllocator());
     return;
@@ -1168,6 +1172,7 @@ void TextureClient::SetRecycleAllocator(
 bool TextureClient::InitIPDLActor(CompositableForwarder* aForwarder) {
   RefPtr<TextureForwarder> textureFwd = aForwarder->GetTextureForwarder();
   MOZ_ASSERT(aForwarder && textureFwd->GetThread() == mAllocator->GetThread());
+  MOZ_ASSERT(mAllocator->GetThread()->IsOnCurrentThread());
 
   if (mActor && !mActor->CanSend()) {
     return false;
@@ -1256,6 +1261,7 @@ bool TextureClient::InitIPDLActor(KnowsCompositor* aKnowsCompositor,
   RefPtr<TextureForwarder> textureFwd = aKnowsCompositor->GetTextureForwarder();
   MOZ_ASSERT(aKnowsCompositor &&
              textureFwd->GetThread() == mAllocator->GetThread());
+  MOZ_ASSERT(mAllocator->GetThread()->IsOnCurrentThread());
   if (mActor && !mActor->mDestroyed) {
     CompositableForwarder* currentFwd = mActor->mCompositableForwarder;
 
@@ -1320,7 +1326,11 @@ bool TextureClient::InitIPDLActor(KnowsCompositor* aKnowsCompositor,
   return mActor->CanSend();
 }
 
-PTextureChild* TextureClient::GetIPDLActor() { return mActor; }
+PTextureChild* TextureClient::GetIPDLActor() {
+  MOZ_ASSERT(mAllocator && mAllocator->GetThread() &&
+             mAllocator->GetThread()->IsOnCurrentThread());
+  return mActor;
+}
 
 // static
 already_AddRefed<TextureClient> TextureClient::CreateForDrawing(
