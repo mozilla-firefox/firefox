@@ -849,7 +849,7 @@ void MacroAssemblerX64::handleFailureWithHandlerTail(
 
   // Found a wasm catch handler, restore state and jump to it.
   bind(&wasmCatch);
-  wasm::GenerateJumpToCatchHandler(asMasm(), rsp, rax, rbx, rcx);
+  wasm::GenerateJumpToCatchHandler(asMasm(), rsp, rax, r11, rcx);
 }
 
 void MacroAssemblerX64::profilerEnterFrame(Register framePtr,
@@ -971,8 +971,8 @@ void MacroAssemblerX64::flexibleDivMod64(Register lhs, Register rhs,
   }
 
   // Choose a register that is neither rdx nor rax to hold the rhs;
-  // rbx is chosen arbitrarily, and will be preserved if necessary.
-  Register regForRhs = (rhs == rax || rhs == rdx) ? rbx : rhs;
+  // r11 is chosen arbitrarily, and will be preserved if necessary.
+  Register regForRhs = (rhs == rax || rhs == rdx) ? r11 : rhs;
 
   // Add registers we will be clobbering as live, but also remove the set we
   // do not restore.
