@@ -182,6 +182,9 @@ class MacroAssembler : public js::jit::Assembler {
   static bool OneInstrMoveImmediateHelper(MacroAssembler* masm,
                                           const Register& dst,
                                           int64_t imm);
+  static bool TwoInstrMoveImmediateHelper(MacroAssembler* masm,
+                                          const Register& dst,
+                                          uint64_t imm);
 
 
   // Logical macros.

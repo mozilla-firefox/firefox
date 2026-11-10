@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "mozilla/MathAlgorithms.h"
 #include "mozilla/Sprintf.h"
 
 #include "jit/IonAnalysis.h"
@@ -873,5 +874,97 @@ BEGIN_TEST(testJitMacroAssembler_rshift64) {
   return ExecuteJit(cx, masm);
 }
 END_TEST(testJitMacroAssembler_rshift64)
+
+#endif
+
+#if defined(JS_CODEGEN_ARM64)
+
+BEGIN_TEST(testJitMacroAssembler_moveImmediate) {
+  TempAllocator tempAlloc(&cx->tempLifoAlloc());
+  JitContext jcx(cx);
+  StackMacroAssembler masm(cx, tempAlloc);
+  AutoCreatedBy acb(masm, __func__);
+
+  PrepareJit(masm);
+
+  struct {
+    uint64_t value;
+    uint32_t instructions;
+  } cases[] = {
+      {0x0000000000000000, 1},
+      {0xffffffffffffffff, 1},
+      {0x0000ffff0000ffff, 1},
+      {0x0000000012345678, 2},
+      {0xfff9000100000000, 2},
+      {0x123456789abcdef0, 4},
+      {0xfff9000012345678, 3},
+      // 32-bit move and movk.
+      {0xfff90000fffffc18, 2},
+      {0x00000001fffffc18, 2},
+      {0xfff9000000ff00ff, 2},
+      // orr and movk.
+      {0x41efffffffe00000, 2},
+      {0x3fe6666666666666, 2},
+      {0x7fffffff00000001, 2},
+      {0xcccccccccccccccd, 2},
+  };
+
+  // Logical immediates with one halfword replaced, and 32-bit values with
+  // one upper halfword set.
+  constexpr size_t NumRandom = 2048;
+  uint64_t values[std::size(cases) + NumRandom];
+  for (size_t i = 0; i < std::size(cases); i++) {
+    values[i] = cases[i].value;
+  }
+  uint64_t seed = 1;
+  auto next = [&seed]() {
+    seed = seed * 6364136223846793005 + 1442695040888963407;
+    return uint32_t(seed >> 32);
+  };
+  for (size_t i = 0; i < NumRandom; i++) {
+    uint64_t value;
+    uint32_t shift;
+    if (i % 2 == 0) {
+      uint32_t size = 2 << (next() % 6);
+      uint64_t element = (uint64_t(1) << (1 + next() % (size - 1))) - 1;
+      value = 0;
+      for (uint32_t j = 0; j < 64; j += size) {
+        value |= element << j;
+      }
+      value = mozilla::RotateRight(value, next() % 64);
+      shift = 16 * (next() % 4);
+    } else {
+      value = uint64_t(next() & 0xffff) << (16 * (next() % 2));
+      if (next() % 2) {
+        value ^= 0xffffffff;
+      }
+      shift = 32 + 16 * (next() % 2);
+    }
+    value &= ~(uint64_t(0xffff) << shift);
+    value |= uint64_t(next() & 0xffff) << shift;
+    values[std::size(cases) + i] = value;
+  }
+
+  uint64_t results[std::size(values)] = {};
+  Register base = CallTempReg0;
+  Register dest = CallTempReg1;
+  masm.movePtr(ImmPtr(results), base);
+  for (size_t i = 0; i < std::size(values); i++) {
+    uint32_t start = masm.currentOffset();
+    masm.movePtr(ImmWord(values[i]), dest);
+    uint32_t instructions = (masm.currentOffset() - start) / 4;
+    if (i < std::size(cases)) {
+      CHECK_EQUAL(instructions, cases[i].instructions);
+    }
+    masm.storePtr(dest, Address(base, i * sizeof(uint64_t)));
+  }
+
+  CHECK(ExecuteJit(cx, masm));
+  for (size_t i = 0; i < std::size(values); i++) {
+    CHECK_EQUAL(results[i], values[i]);
+  }
+  return true;
+}
+END_TEST(testJitMacroAssembler_moveImmediate)
 
 #endif

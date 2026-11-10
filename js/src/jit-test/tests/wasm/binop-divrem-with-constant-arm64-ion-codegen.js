@@ -258,10 +258,8 @@ const i64_div_s = [
     divisor: 3,
     expected:  `mov     x2, x0
                 mov     x1, x2
-                mov     x16, #0x5556
-                movk    x16, #0x5555, lsl #16
-                movk    x16, #0x5555, lsl #32
-                movk    x16, #0x5555, lsl #48
+                mov     x16, #0x5555555555555555
+                movk    x16, #0x5556
                 smulh   x0, x1, x16
                 sub     x0, x0, x1, asr #63`,
   },
@@ -269,10 +267,8 @@ const i64_div_s = [
     divisor: 5,
     expected: `mov     x2, x0
                mov     x1, x2
-               mov     x16, #0x6667
-               movk    x16, #0x6666, lsl #16
-               movk    x16, #0x6666, lsl #32
-               movk    x16, #0x6666, lsl #48
+               mov     x16, #0x6666666666666666
+               movk    x16, #0x6667
                smulh   x0, x1, x16
                asr     x0, x0, #1
                sub     x0, x0, x1, asr #63`,
@@ -373,10 +369,8 @@ const i64_div_u = [
     divisor: 3,
     expected:  `mov     x2, x0
                 mov     x1, x2
-                mov     x16, #0xaaab
-                movk    x16, #0xaaaa, lsl #16
-                movk    x16, #0xaaaa, lsl #32
-                movk    x16, #0xaaaa, lsl #48
+                mov     x16, #0xaaaaaaaaaaaaaaaa
+                movk    x16, #0xaaab
                 umulh   x0, x1, x16
                 lsr     x0, x0, #1`,
   },
@@ -384,10 +378,8 @@ const i64_div_u = [
     divisor: 5,
     expected: `mov     x2, x0
                mov     x1, x2
-               mov     x16, #0xcccd
-               movk    x16, #0xcccc, lsl #16
-               movk    x16, #0xcccc, lsl #32
-               movk    x16, #0xcccc, lsl #48
+               mov     x16, #0xcccccccccccccccc
+               movk    x16, #0xcccd
                umulh   x0, x1, x16
                lsr     x0, x0, #2`,
   },
@@ -419,10 +411,8 @@ const i64_div_u = [
     divisor: 0x3_0000_0000,
     expected: `mov     x2, x0
                mov     x1, x2
-               mov     x16, #0xaaab
-               movk    x16, #0xaaaa, lsl #16
-               movk    x16, #0xaaaa, lsl #32
-               movk    x16, #0xaaaa, lsl #48
+               mov     x16, #0xaaaaaaaaaaaaaaaa
+               movk    x16, #0xaaab
                umulh   x0, x1, x16
                lsr     x0, x0, #33`,
   },
@@ -750,10 +740,8 @@ const i64_rem_u = [
     divisor: 0x3_0000_0000,
     expected: `mov     x2, x0
                mov     x1, x2
-               mov     x16, #0xaaab
-               movk    x16, #0xaaaa, lsl #16
-               movk    x16, #0xaaaa, lsl #32
-               movk    x16, #0xaaaa, lsl #48
+               mov     x16, #0xaaaaaaaaaaaaaaaa
+               movk    x16, #0xaaab
                umulh   x0, x1, x16
                lsr     x0, x0, #33
                mov     x16, #0x300000000
