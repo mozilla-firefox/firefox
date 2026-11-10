@@ -3557,6 +3557,11 @@ nsDocShell::DisplayLoadError(nsresult aError, nsIURI* aURI,
     // CSP error
     cssClass.AssignLiteral("neterror");
     error = "cspBlocked";
+  } else if (NS_ERROR_CONNECTION_ALLOWLIST_VIOLATION == aError) {
+    cssClass.AssignLiteral("neterror");
+    error = "blockedByConnectionAllowlist";
+    // TODO(Bug 2089542): Update strings
+    errorDescriptionID = "blockedByCORP";
   } else if (NS_ERROR_XFO_VIOLATION == aError) {
     // XFO error
     cssClass.AssignLiteral("neterror");
@@ -6496,8 +6501,10 @@ nsresult nsDocShell::EndPageLoad(nsIChannel* aChannel, nsresult aStatus) {
     // this particular error can happen asynchronously.
     // Bug 1629201 is filed for having much clearer decision making around
     // which cases need error events.
-    bool fireFrameErrorEvent = (aStatus == NS_ERROR_CONTENT_BLOCKED_SHOW_ALT ||
-                                aStatus == NS_ERROR_CONTENT_BLOCKED);
+    bool fireFrameErrorEvent =
+        (aStatus == NS_ERROR_CONTENT_BLOCKED_SHOW_ALT ||
+         aStatus == NS_ERROR_CONTENT_BLOCKED ||
+         aStatus == NS_ERROR_CONNECTION_ALLOWLIST_VIOLATION);
     UnblockEmbedderLoadEventForFailure(fireFrameErrorEvent);
 
     bool skippedUnknownProtocolNavigation = false;

@@ -133,6 +133,29 @@ export const NET_ERRORS = [
     hasNoUserFix: true,
   },
   {
+    id: "blockedByConnectionAllowlist",
+    errorCode: "NS_ERROR_CONNECTION_ALLOWLIST_VIOLATION",
+    category: "blocked",
+    introContent: {
+      // TODO(Bug 2089542): Update strings
+      dataL10nId: "fp-neterror-coop-coep-intro",
+    },
+    descriptionParts: [
+      { tag: "p", dataL10nId: "certerror-blocked-by-corp-headers-description" },
+    ],
+    buttons: {
+      showTryAgain: false,
+      showGoBack: true,
+    },
+    customNetError: {
+      titleL10nId: "fp-certerror-body-title",
+      whyDidThisHappenL10nId: "fp-neterror-coop-coep-why-did-this-happen-body",
+      whyDidThisHappenL10nArgs: { hostname: null },
+      showErrorCode: true,
+    },
+    hasNoUserFix: true,
+  },
+  {
     id: "blockedByCOEP",
     errorCode: "NS_ERROR_DOM_COEP_FAILED",
     category: "blocked",

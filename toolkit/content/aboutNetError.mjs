@@ -321,7 +321,8 @@ function initTitleAndBodyIds(baseURL, isTRROnlyFailure) {
       tryAgain.hidden = true;
       break;
     case "blockedByCOOP":
-    case "blockedByCOEP": {
+    case "blockedByCOEP":
+    case "blockedByConnectionAllowlist": {
       bodyTitleId = "general-body-title";
       document.body.classList.add("blocked");
       tryAgain.hidden = true;

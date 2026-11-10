@@ -235,6 +235,8 @@ export class ParentWebProgressListener {
 
   #isContentBlocked(blockedReason) {
     return [
+      // If a navigation was blocked because of the Connection-Allowlist header.
+      "NS_ERROR_CONNECTION_ALLOWLIST_VIOLATION",
       // If content is blocked with e.g. CSP meta tag.
       "NS_ERROR_CONTENT_BLOCKED",
       // If a resource load was blocked because of the CSP header.

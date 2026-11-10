@@ -935,6 +935,9 @@ with modules["SECURITY"]:
     errors["NS_ERROR_CSP_FORM_ACTION_VIOLATION"] = FAILURE(97)
     errors["NS_ERROR_CSP_FRAME_ANCESTOR_VIOLATION"] = FAILURE(98)
 
+    # Error code for Connection Allowlists
+    errors["NS_ERROR_CONNECTION_ALLOWLIST_VIOLATION"] = FAILURE(99)
+
     # Error code for Sub-Resource Integrity
     errors["NS_ERROR_SRI_CORRUPT"] = FAILURE(200)
     errors["NS_ERROR_SRI_NOT_ELIGIBLE"] = FAILURE(201)
