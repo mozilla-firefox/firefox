@@ -8,6 +8,7 @@
 #include "PolicyContainer.h"
 #include "mozilla/RefPtr.h"
 #include "nsCOMPtr.h"
+#include "nsContentSecurityUtils.h"
 #include "nsIChannelEventSink.h"
 #include "nsILoadInfo.h"
 #include "nsNetUtil.h"
@@ -17,7 +18,14 @@ namespace mozilla::dom {
 NS_IMPL_ISUPPORTS(ConnectionAllowlistsService, nsIContentPolicy)
 
 static already_AddRefed<ConnectionAllowlists> GetAllowlistsForLoad(
-    nsILoadInfo* aLoadInfo) {
+    nsILoadInfo* aLoadInfo, nsIURI* aURI) {
+  // Trusted schemes are internal and never reach the network, so they can't be
+  // used to exfiltrate data. Blocking them would break browser features
+  // injected into web content, e.g. video controls.
+  if (nsContentSecurityUtils::IsTrustedScheme(aURI)) {
+    return nullptr;
+  }
+
   nsCOMPtr<nsIPolicyContainer> policyContainer =
       aLoadInfo->GetPolicyContainer();
   RefPtr<ConnectionAllowlists> allowlists =
@@ -37,7 +45,8 @@ ConnectionAllowlistsService::ShouldLoad(nsIURI* aContentLocation,
                                         int16_t* aDecision) {
   *aDecision = nsIContentPolicy::ACCEPT;
 
-  RefPtr<ConnectionAllowlists> allowlists = GetAllowlistsForLoad(aLoadInfo);
+  RefPtr<ConnectionAllowlists> allowlists =
+      GetAllowlistsForLoad(aLoadInfo, aContentLocation);
   if (!allowlists) {
     return NS_OK;
   }
@@ -75,7 +84,8 @@ nsresult ConnectionAllowlistsService::ConsultForRedirect(
     return NS_OK;
   }
 
-  RefPtr<ConnectionAllowlists> allowlists = GetAllowlistsForLoad(aLoadInfo);
+  RefPtr<ConnectionAllowlists> allowlists =
+      GetAllowlistsForLoad(aLoadInfo, aNewURI);
   if (!allowlists) {
     return NS_OK;
   }
