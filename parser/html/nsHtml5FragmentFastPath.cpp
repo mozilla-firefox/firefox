@@ -9,6 +9,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "mozAutoDocUpdate.h"
 #include "mozilla/Array.h"
 #include "mozilla/ErrorResult.h"
 #include "mozilla/Span.h"
@@ -20,12 +21,14 @@
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/Element.h"
 #include "mozilla/dom/FromParser.h"
+#include "mozilla/dom/MutationObservers.h"
 #include "mozilla/dom/NodeInfo.h"
 #include "mozilla/htmlaccel/htmlaccelEnabled.h"
 #ifdef MOZ_MAY_HAVE_HTMLACCEL
 #  include "mozilla/htmlaccel/htmlaccelNotInline.h"
 #endif
 #include "nsContentUtils.h"
+#include "nsDocElementCreatedNotificationRunner.h"
 #include "nsGenericHTMLElement.h"
 #include "nsGkAtoms.h"
 #include "nsHtml5AttributeName.h"
@@ -2049,6 +2052,139 @@ bool nsHtml5FragmentFastPath::TryParse(const nsAString& aSource,
     return false;
   }
   aError = parser.Build(aTarget);
+  if (!aError.Failed()) {
+    ++sSuccessCount;
+  }
+  return true;
+}
+
+bool nsHtml5FragmentFastPath::TryParseDocument(const nsAString& aSource,
+                                               Document* aDocument,
+                                               ErrorResult& aError) {
+  MOZ_ASSERT(!aDocument->HasChildren());
+  // The insertion modes before "in body" drop whitespace, also from character
+  // references, and don't put comments, doctypes or end tags in the body, so
+  // the content has to start with a start tag or with text other than a
+  // character reference after the leading whitespace. Without a doctype, the
+  // document is in quirks mode, which doesn't change how the supported tags
+  // nest.
+  //
+  // https://html.spec.whatwg.org/#parse-html-from-a-string
+  //   1. Set document's type to "html".
+  //   2. Let parser be a new HTML parser whose allow declarative shadow roots
+  //      is document's allow declarative shadow roots and parser sanitizer
+  //      configuration is configuration, associated with document.
+  //   3. Place html into the input stream for parser. The encoding confidence
+  //      is irrelevant.
+  //   4. Start parser and let it run until it has consumed all the characters
+  //      just inserted into the input stream.
+  //
+  // https://html.spec.whatwg.org/#the-initial-insertion-mode
+  //   A character token that is one of U+0009 CHARACTER TABULATION, U+000A
+  //   LINE FEED (LF), U+000C FORM FEED (FF), U+000D CARRIAGE RETURN (CR), or
+  //   U+0020 SPACE
+  //     Ignore the token.
+  //   A comment token
+  //     Insert a comment given (the Document object, null).
+  //   ...
+  //   Anything else
+  //     If the document is not an iframe srcdoc document, then this is a
+  //     parse error; if the parser cannot change the mode flag is false, set
+  //     the Document to quirks mode.
+  //     In any case, switch the insertion mode to "before html", then
+  //     reprocess the token.
+  //
+  // https://html.spec.whatwg.org/#the-before-html-insertion-mode
+  //   ...
+  //   Anything else
+  //     Create an html element whose node document is the Document object.
+  //     Insert an element at the adjusted insertion location with that
+  //     element and (the Document, null). Put this element in the stack of
+  //     open elements.
+  //     Switch the insertion mode to "before head", then reprocess the token.
+  //
+  // https://html.spec.whatwg.org/#the-before-head-insertion-mode
+  //   ...
+  //   Anything else
+  //     Insert an HTML element for a "head" start tag token with no
+  //     attributes.
+  //     Set the head element pointer to the newly created head element.
+  //     Switch the insertion mode to "in head".
+  //     Reprocess the current token.
+  //
+  // https://html.spec.whatwg.org/#parsing-main-inhead
+  //   ...
+  //   Anything else
+  //     Pop the current node (which will be the head element) off the stack
+  //     of open elements.
+  //     Switch the insertion mode to "after head".
+  //     Reprocess the token.
+  //
+  // https://html.spec.whatwg.org/#the-after-head-insertion-mode
+  //   ...
+  //   Anything else
+  //     Insert an HTML element for a "body" start tag token with no
+  //     attributes.
+  //     Set the frameset-ok flag to "ok".
+  //     Switch the insertion mode to "in body".
+  //     Reprocess the current token.
+  //
+  // DOMParser documents aren't iframe srcdoc documents, and their parser can
+  // change the mode. None of the supported tags has a rule of its own in these
+  // insertion modes, so the first start tag or non-whitespace character
+  // creates <html>, <head> and <body> and goes to "in body", like the end of
+  // the input does for input that is only whitespace.
+  const char16_t* start = aSource.BeginReading();
+  const char16_t* const end = aSource.EndReading();
+  while (start != end && IsAsciiWhitespace(*start)) {
+    ++start;
+  }
+  if (start != end && (*start == '&' || (*start == '<' && end - start >= 2 &&
+                                         (start[1] == '!' || start[1] == '?' ||
+                                          start[1] == '/')))) {
+    return false;
+  }
+  // nsContentUtils::ParseDocumentHTML() fails when it is reentered.
+  if (nsContentUtils::IsFragmentParsingActive()) {
+    return false;
+  }
+  nsNodeInfoManager* nodeInfoManager = aDocument->NodeInfoManager();
+  Parser parser(Substring(start, end), nodeInfoManager);
+  if (!parser.Tokenize()) {
+    return false;
+  }
+
+  aDocument->SetCompatibilityMode(eCompatibility_NavQuirks);
+  // Like nsHtml5OplessBuilder, which notifies that the document element was
+  // created once the update ends.
+  mozAutoDocUpdate update(aDocument, true);
+  auto create = [&](nsHtml5ElementName* aName) -> RefPtr<Element> {
+    return aName->getHtmlCreator()(
+        nodeInfoManager->GetNodeInfo(aName->getName(), nullptr,
+                                     kNameSpaceID_XHTML, nsINode::ELEMENT_NODE),
+        FROM_PARSER_FRAGMENT);
+  };
+  const RefPtr<Element> html = create(nsHtml5ElementName::ELT_HTML);
+  const RefPtr<Element> head = create(nsHtml5ElementName::ELT_HEAD);
+  const RefPtr<Element> body = create(nsHtml5ElementName::ELT_BODY);
+  aDocument->SuspendDOMNotifications();
+  aDocument->AppendChildTo(html, false, aError);
+  if (!aError.Failed()) {
+    nsContentUtils::AddScriptRunner(
+        MakeAndAddRef<nsDocElementCreatedNotificationRunner>(aDocument));
+    html->AppendChildTo(head, false, aError);
+  }
+  if (!aError.Failed()) {
+    html->AppendChildTo(body, false, aError);
+  }
+  if (!aError.Failed()) {
+    aError = parser.Build(body);
+  }
+  aDocument->ResumeDOMNotifications();
+  if (html->GetParentNode()) {
+    MutationObservers::NotifyContentInserted(
+        aDocument, html, {MutationEffectOnScript::KeepTrustWorthiness});
+  }
   if (!aError.Failed()) {
     ++sSuccessCount;
   }
