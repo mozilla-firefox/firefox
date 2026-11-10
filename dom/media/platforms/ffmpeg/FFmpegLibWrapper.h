@@ -12,9 +12,6 @@
 #define FFMPEG_MAX_MAJOR_VERSION 63
 #define FFMPEG_MAX_MAJOR_VERSION_STR_HELPER(x) #x
 #define FFMPEG_MAX_MAJOR_VERSION_STR(x) FFMPEG_MAX_MAJOR_VERSION_STR_HELPER(x)
-// Floor for enabling Vulkan direct export on bundled ffvpx (25e187f849).
-// TODO: remove once bundled ffvpx lavc is greater than (62.29.101).
-#define MOZ_FFMPEG_MIN_LAVC_FOR_VULKAN_DMABUF ((62u << 16) | (29u << 8) | 101u)
 
 #include "ffvpx/tx.h"
 #include "mozilla/Attributes.h"
