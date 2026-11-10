@@ -29,7 +29,6 @@ tasks:
                 SYMBOL_SECRET: "project/releng/gecko/build/level-{level}/gecko-symbol-upload"
                 UPLOAD_SYMBOLS: /builds/worker/fetches/upload-symbols-cli/upload-symbols
         run:
-            clone-with: hg
             using: mach
             mach: {task-reference: "python toolkit/crashreporter/tools/upload_symbols.py --task-id <system-symbols> --ignore-missing"}
             sparse-profile: upload-symbols

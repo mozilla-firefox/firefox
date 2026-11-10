@@ -37,7 +37,6 @@ tasks:
                 CRASHSTATS_SECRET: "project/releng/gecko/build/level-{level}/gecko-symbol-reprocess"
                 DUMP_SYMS: "/bin/false"
         run:
-            clone-with: hg
             using: run-task
             command: {task-reference: "${MOZ_FETCHES_DIR}/symbol-scrapers/reprocess.sh <system-symbols>"}
         fetches:

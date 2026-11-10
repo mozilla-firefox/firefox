@@ -15,9 +15,6 @@ kind-dependencies:
     - fetch
     - toolchain
 
-task-defaults:
-    run-on-repo-type: [hg]
-
 tasks:
     symbols-upload:
         description: Upload symbols for a library built by a toolchain task.
@@ -37,7 +34,6 @@ tasks:
                 SYMBOL_SECRET: "project/releng/gecko/build/level-{level}/gecko-symbol-upload"
                 UPLOAD_SYMBOLS: /builds/worker/fetches/upload-symbols-cli/upload-symbols
         run:
-            clone-with: hg
             using: mach
             mach: {task-reference: "python toolkit/crashreporter/tools/upload_symbols.py --task-id <toolchain> --ignore-missing"}
             sparse-profile: upload-symbols
