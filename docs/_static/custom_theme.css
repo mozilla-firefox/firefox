@@ -153,3 +153,9 @@ pre.mermaid {
     }
   }
 }
+
+.wy-side-nav-search .wy-dropdown > a img.logo,
+.wy-side-nav-search > a img.logo {
+  max-height: 120px;
+  width: auto;
+}

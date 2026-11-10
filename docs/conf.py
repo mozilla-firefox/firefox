@@ -137,7 +137,9 @@ html_sidebars = {
         "searchbox.html",
     ]
 }
-html_logo = str(topsrcdir / "browser/branding/nightly/content/firefox-wordmark.svg")
+html_logo = str(
+    topsrcdir / "browser/components/aboutwelcome/assets/kit-sit-look-up.svg"
+)
 html_favicon = str(topsrcdir / "browser/branding/nightly/firefox.ico")
 
 exclude_patterns = ["_build", "_staging", "_venv", "**security/nss/legacy/**"]
