@@ -28,8 +28,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import java.net.URLEncoder
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.findTabOrCustomTab
 import mozilla.components.browser.state.selector.privateTabs
 import mozilla.components.browser.state.state.CustomTabConfig
@@ -695,9 +693,7 @@ class BrowserFragment : BaseFragment(), UserInteractionHandler, AccessibilityMan
 
         crashReporterFragment.onCloseTabPressed = { sendCrashReport ->
             if (sendCrashReport) {
-                val crashReporter = requireComponents.crashReporter
-
-                requireComponents.applicationScope.launch(Dispatchers.IO) { crashReporter.submitReport(crash) }
+                requireComponents.crashReporter.submitReport(crash)
             }
 
             requireComponents.sessionUseCases.crashRecovery.invoke()

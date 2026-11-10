@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import mozilla.components.support.ktx.kotlin.stripCommonSubdomains
 import org.mozilla.focus.activity.MainActivity
 import org.mozilla.focus.ext.components
@@ -33,15 +34,16 @@ object HomeScreen {
     fun checkIfPinningSupported(
         context: Context,
         scope: CoroutineScope,
-        mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
         ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) {
         if (context.components.appStore.state.isPinningSupported == null) {
-            scope.launch(ioDispatcher) {
-                val isPinningSupported = ShortcutManagerCompat.isRequestPinShortcutSupported(context)
-                scope.launch(mainDispatcher) {
-                    context.components.appStore.dispatch(AppAction.UpdateIsPinningSupported(isPinningSupported))
-                }
+            scope.launch {
+                val isPinningSupported =
+                    withContext(ioDispatcher) {
+                        ShortcutManagerCompat.isRequestPinShortcutSupported(context)
+                    }
+
+                context.components.appStore.dispatch(AppAction.UpdateIsPinningSupported(isPinningSupported))
             }
         }
     }

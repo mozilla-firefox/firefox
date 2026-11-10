@@ -8,7 +8,6 @@ import android.content.Context
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.privateTabs
 import mozilla.components.browser.state.store.BrowserStore
@@ -71,7 +70,7 @@ class LockObserver(
      * @param owner The lifecycle owner.
      */
     private fun checkAndLockApp(owner: LifecycleOwner) {
-        owner.lifecycleScope.launch(Dispatchers.IO) {
+        owner.lifecycleScope.launch {
             if (canLockApp()) {
                 if (browserStore.state.privateTabs.isNotEmpty()) {
                     appStore.dispatch(AppAction.Lock())

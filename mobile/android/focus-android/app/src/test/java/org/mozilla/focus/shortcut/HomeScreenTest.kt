@@ -6,8 +6,8 @@ package org.mozilla.focus.shortcut
 import android.content.Context
 import android.content.pm.ShortcutManager
 import junit.framework.TestCase.assertEquals
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Before
 import org.junit.Test
@@ -61,40 +61,40 @@ class HomeScreenTest {
     }
 
     @Test
-    fun `test checkIfPinningSupported when state is null`() {
-        val appState = AppState(Screen.Home)
-        `when`(appStore.state).thenReturn(appState)
+    fun `test checkIfPinningSupported when state is null`() =
+        runTest(testDispatcher) {
+            val appState = AppState(Screen.Home)
+            `when`(appStore.state).thenReturn(appState)
 
-        `when`(shortcutManager.isRequestPinShortcutSupported).thenReturn(true)
+            `when`(shortcutManager.isRequestPinShortcutSupported).thenReturn(true)
 
-        HomeScreen.checkIfPinningSupported(
-            context,
-            CoroutineScope(testDispatcher),
-            testDispatcher,
-            testDispatcher,
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
+            HomeScreen.checkIfPinningSupported(
+                context,
+                scope = this,
+                ioDispatcher = testDispatcher,
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        verify(shortcutManager).isRequestPinShortcutSupported
+            verify(shortcutManager).isRequestPinShortcutSupported
 
-        verify(appStore).dispatch(AppAction.UpdateIsPinningSupported(true))
-    }
+            verify(appStore).dispatch(AppAction.UpdateIsPinningSupported(true))
+        }
 
     @Test
-    fun `test checkIfPinningSupported when state is not null`() {
-        val appState = AppState(Screen.Home, isPinningSupported = true)
-        `when`(appStore.state).thenReturn(appState)
+    fun `test checkIfPinningSupported when state is not null`() =
+        runTest(testDispatcher) {
+            val appState = AppState(Screen.Home, isPinningSupported = true)
+            `when`(appStore.state).thenReturn(appState)
 
-        HomeScreen.checkIfPinningSupported(
-            context,
-            CoroutineScope(testDispatcher),
-            testDispatcher,
-            testDispatcher,
-        )
+            HomeScreen.checkIfPinningSupported(
+                context,
+                scope = this,
+                ioDispatcher = testDispatcher,
+            )
 
-        testDispatcher.scheduler.advanceUntilIdle()
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        verify(shortcutManager, never()).isRequestPinShortcutSupported
-        verify(appStore, never()).dispatch(AppAction.UpdateIsPinningSupported(true))
-    }
+            verify(shortcutManager, never()).isRequestPinShortcutSupported
+            verify(appStore, never()).dispatch(AppAction.UpdateIsPinningSupported(true))
+        }
 }
