@@ -60,7 +60,7 @@ add_task(async function change_engines_with_accel_updown() {
 
   await UrlbarTestUtils.promiseAutocompleteResultPopup({
     window,
-    value: "test",
+    value: "",
   });
 
   let entry = "searchbutton";

@@ -499,10 +499,7 @@ export class SearchModeSwitcher {
       this.#input.browserWindow?.gBrowser.selectedBrowser
     );
 
-    let searchString = this.#getSearchString();
-    if (searchString) {
-      this.#input.startQuery({ allowAutofill: false });
-    }
+    this.#input.startQuery({ allowAutofill: false });
   }
 
   async #populateEngines() {
