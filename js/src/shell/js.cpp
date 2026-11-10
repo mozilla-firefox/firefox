@@ -5810,6 +5810,57 @@ static bool ParseModule(JSContext* cx, unsigned argc, Value* vp) {
   return true;
 }
 
+static bool CreateSyntheticModule(JSContext* cx, unsigned argc, Value* vp) {
+  CallArgs args = CallArgsFromVp(argc, vp);
+  if (!args.requireAtLeast(cx, "createSyntheticModule", 1)) {
+    return false;
+  }
+
+  if (!args[0].isObject()) {
+    const char* typeName = InformalValueTypeName(args[0]);
+    JS_ReportErrorASCII(cx, "expected object of exports, got %s", typeName);
+    return false;
+  }
+
+  RootedObject exports(cx, &args[0].toObject());
+  JS::RootedIdVector ids(cx);
+  if (!GetPropertyKeys(cx, exports, JSITER_OWNONLY, &ids)) {
+    return false;
+  }
+
+  Rooted<ExportNameVector> exportNames(cx);
+  JS::RootedVector<Value> exportValues(cx);
+  RootedValue idValue(cx);
+  RootedValue value(cx);
+  Rooted<JSAtom*> name(cx);
+  for (size_t i = 0; i < ids.length(); i++) {
+    idValue = IdToValue(ids[i]);
+    name = ToAtom<CanGC>(cx, idValue);
+    if (!name || !JS_GetPropertyById(cx, exports, ids[i], &value)) {
+      return false;
+    }
+    if (!exportNames.append(name) || !exportValues.append(value)) {
+      ReportOutOfMemory(cx);
+      return false;
+    }
+  }
+
+  Rooted<ModuleObject*> module(cx,
+                               ModuleObject::createSynthetic(cx, &exportNames));
+  if (!module ||
+      !ModuleObject::createSyntheticEnvironment(cx, module, exportValues)) {
+    return false;
+  }
+
+  Rooted<ShellModuleObjectWrapper*> wrapper(
+      cx, ShellModuleObjectWrapper::create(cx, module));
+  if (!wrapper) {
+    return false;
+  }
+  args.rval().setObject(*wrapper);
+  return true;
+}
+
 // A JSObject that holds XDRBuffer.
 class XDRBufferObject : public NativeObject {
   static const size_t VECTOR_SLOT = 0;
@@ -10349,6 +10400,12 @@ static const JSFunctionSpecWithHelp shell_functions[] = {
 "  Parses source text as a JS module ('js', this is the default),\n"
 "  a JSON module ('json'), a bytes module ('bytes'), or a text module ('text'),\n"
 "  and returns a ModuleObject wrapper object."),
+
+    JS_FN_HELP("createSyntheticModule", CreateSyntheticModule, 1, 0,
+"createSyntheticModule(exports)",
+"  Creates a synthetic module whose exports are the own properties of the\n"
+"  object |exports|, and returns a ModuleObject wrapper object. Export names\n"
+"  can be arbitrary strings."),
 
     JS_FN_HELP("instantiateModuleStencil", InstantiateModuleStencil, 1, 0,
 "instantiateModuleStencil(stencil, [options])",
