@@ -18,4 +18,7 @@ internal object BookmarksTestTag {
     // Edit bookmarked item
     const val EDIT_BOOKMARK_ITEM_TITLE_TEXT_FIELD = "edit.bookmark.item.title.text.field"
     const val EDIT_BOOKMARK_ITEM_URL_TEXT_FIELD = "edit.bookmark.item.url.text.field"
+
+    // Edit bookmark folder
+    const val EDIT_BOOKMARK_FOLDER_TITLE_TEXT_FIELD = "edit.bookmark.folder.title.text.field"
 }

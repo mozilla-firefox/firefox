@@ -335,4 +335,39 @@ class BookmarksTest : BaseTest() {
             .mozVerify(BookmarksSelectors.BOOKMARK_ITEM_TITLE(firstWebPage.title))
             .mozVerify(BookmarksSelectors.BOOKMARK_ITEM_TITLE(bookmarkFolderName))
     }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2833689
+    @Critical
+    @Test
+    fun editBookmarkFolderTest() {
+        val firstBookmarkFolderName = "My Folder"
+        val secondBookmarkFolderName = "My Folder 2"
+        val renamedFirstBookmarkFolderName = "My Folder 3"
+
+        on.bookmarks
+            .navigateToPage()
+            .createFolder(firstBookmarkFolderName)
+            .mozVerify(BookmarksSelectors.BOOKMARK_ITEM_TITLE(firstBookmarkFolderName))
+        on.bookmarks
+            .createFolder(secondBookmarkFolderName)
+            .mozVerify(BookmarksSelectors.BOOKMARK_ITEM_TITLE(secondBookmarkFolderName))
+        on.bookmarks
+            .openItemMenu(firstBookmarkFolderName)
+            .mozVerifyElementsByGroup(BookmarksSelectors.Group.BOOKMARK_FOLDER_THREE_DOT_MENU)
+            .mozClick(BookmarksSelectors.EDIT_BUTTON)
+            .mozVerifyElementsByGroup(BookmarksSelectors.Group.EDIT_BOOKMARK_FOLDER)
+            .mozClearAndEnterText(
+                renamedFirstBookmarkFolderName,
+                BookmarksSelectors.EDIT_BOOKMARK_FOLDER_TITLE_TEXT_FIELD,
+            )
+            .mozClick(BookmarksSelectors.NAVIGATE_UP_BUTTON)
+        on.bookmarks.openItemMenu(renamedFirstBookmarkFolderName).mozClick(BookmarksSelectors.EDIT_BUTTON)
+        on.bookmarks
+            .setParentFolder(secondBookmarkFolderName)
+            .saveEditBookmark()
+            .mozVerify(BookmarksSelectors.BOOKMARK_ITEM_TITLE(secondBookmarkFolderName))
+            .mozVerifyElementAbsent(BookmarksSelectors.BOOKMARK_ITEM_TITLE(renamedFirstBookmarkFolderName))
+            .mozClick(BookmarksSelectors.BOOKMARK_ITEM_TITLE(secondBookmarkFolderName))
+            .mozVerify(BookmarksSelectors.BOOKMARK_ITEM_TITLE(renamedFirstBookmarkFolderName))
+    }
 }

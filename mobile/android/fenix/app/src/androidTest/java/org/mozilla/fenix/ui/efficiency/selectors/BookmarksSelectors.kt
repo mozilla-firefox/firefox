@@ -17,7 +17,9 @@ import org.mozilla.fenix.ui.efficiency.helpers.SelectorStrategy
 object BookmarksSelectors : SelectorContainer {
     enum class Group : SelectorGroup {
         EMPTY_BOOKMARKS_MENU_VIEW,
-        BOOKMARKS_THREE_DOT_MENU,
+        BOOKMARKED_ITEM_THREE_DOT_MENU,
+        BOOKMARK_FOLDER_THREE_DOT_MENU,
+        EDIT_BOOKMARK_FOLDER,
         EDIT_BOOKMARKS_VIEW,
         BOOKMARKS_SORTING_OPTIONS,
     }
@@ -115,7 +117,7 @@ object BookmarksSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.bookmark_menu_open_in_new_tab_button),
             description = "Open in new tab bookmarks three dot menu button",
-            groups = setOf(Group.BOOKMARKS_THREE_DOT_MENU),
+            groups = setOf(Group.BOOKMARKED_ITEM_THREE_DOT_MENU),
         )
 
     val NAVIGATE_UP_BUTTON =
@@ -123,7 +125,7 @@ object BookmarksSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
             value = getStringResource(R.string.bookmark_navigate_back_button_content_description),
             description = "Bookmark edit navigate up button",
-            groups = setOf(Group.EDIT_BOOKMARKS_VIEW, Group.EMPTY_BOOKMARKS_MENU_VIEW),
+            groups = setOf(Group.EDIT_BOOKMARKS_VIEW, Group.EMPTY_BOOKMARKS_MENU_VIEW, Group.EDIT_BOOKMARK_FOLDER),
         )
 
     val EDIT_BOOKMARKS_TOOLBAR_TITLE =
@@ -140,6 +142,14 @@ object BookmarksSelectors : SelectorContainer {
             value = BookmarksTestTag.EDIT_BOOKMARK_ITEM_TITLE_TEXT_FIELD,
             description = "Bookmark edit title field",
             groups = setOf(Group.EDIT_BOOKMARKS_VIEW),
+        )
+
+    val EDIT_BOOKMARK_FOLDER_TITLE_TEXT_FIELD =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TAG,
+            value = BookmarksTestTag.EDIT_BOOKMARK_FOLDER_TITLE_TEXT_FIELD,
+            description = "Bookmark edit folder title field",
+            groups = setOf(Group.EDIT_BOOKMARK_FOLDER),
         )
 
     val EDIT_BOOKMARK_ITEM_URL_TEXT_FIELD =
@@ -210,7 +220,7 @@ object BookmarksSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.bookmark_menu_edit_button),
             description = "Edit bookmark button in three dot menu",
-            groups = setOf(Group.BOOKMARKS_THREE_DOT_MENU),
+            groups = setOf(Group.BOOKMARKED_ITEM_THREE_DOT_MENU, Group.BOOKMARK_FOLDER_THREE_DOT_MENU),
         )
 
     val DELETE_BUTTON =
@@ -218,7 +228,7 @@ object BookmarksSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.bookmark_menu_delete_button),
             description = "Delete bookmark button",
-            groups = setOf(Group.BOOKMARKS_THREE_DOT_MENU),
+            groups = setOf(Group.BOOKMARKED_ITEM_THREE_DOT_MENU, Group.BOOKMARK_FOLDER_THREE_DOT_MENU),
         )
 
     val SHARE_BUTTON =
@@ -226,7 +236,39 @@ object BookmarksSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.bookmark_menu_share_button),
             description = "Share bookmark button in three dot menu",
-            groups = setOf(Group.BOOKMARKS_THREE_DOT_MENU),
+            groups = setOf(Group.BOOKMARKED_ITEM_THREE_DOT_MENU),
+        )
+
+    val SELECT_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.bookmark_menu_select_button),
+            description = "Select bookmark button in three dot menu",
+            groups = setOf(Group.BOOKMARK_FOLDER_THREE_DOT_MENU),
+        )
+
+    val MOVE_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.bookmark_menu_move_button),
+            description = "Move bookmark button in three dot menu",
+            groups = setOf(Group.BOOKMARK_FOLDER_THREE_DOT_MENU),
+        )
+
+    val OPEN_ALL_IN_NEW_TABS_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.bookmark_menu_open_all_in_tabs_button),
+            description = "Open all in new tabs button in three dot menu",
+            groups = setOf(Group.BOOKMARK_FOLDER_THREE_DOT_MENU),
+        )
+
+    val OPEN_ALL_IN_PRIVATE_TABS_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.bookmark_menu_open_all_in_private_tabs_button),
+            description = "Open all in private tabs button in three dot menu",
+            groups = setOf(Group.BOOKMARK_FOLDER_THREE_DOT_MENU),
         )
 
     val CANCEL_FOLDER_DELETION_BUTTON =
@@ -248,6 +290,22 @@ object BookmarksSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
             value = getStringResource(R.string.content_description_menu),
             description = "Multi-selection three dot button",
+        )
+
+    val DELETE_BOOKMARK_FOLDER_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            value = getStringResource(R.string.bookmark_delete_folder_content_description),
+            description = "Delete bookmark folder button",
+            groups = setOf(Group.EDIT_BOOKMARK_FOLDER),
+        )
+
+    val EDIT_FOLDER_TOOLBAR_TITLE =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.edit_bookmark_folder_fragment_title),
+            description = "Edit bookmark folder toolbar title",
+            groups = setOf(Group.EDIT_BOOKMARK_FOLDER),
         )
 
     @Suppress("FunctionName")
