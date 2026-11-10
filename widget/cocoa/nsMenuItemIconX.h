@@ -42,7 +42,11 @@ class nsMenuItemIconX final : public mozilla::widget::IconLoader::Listener {
   // GetIconImage() will return nil. If it does have an icon, GetIconImage()
   // will return a transparent placeholder icon during the load and the actual
   // icon when the load is completed.
+  // While macOS opens menus without showing them, the load is deferred instead
+  // and HasDeferredLoad() returns true until SetupIcon is called again.
   void SetupIcon(nsIContent* aContent);
+
+  bool HasDeferredLoad() const { return mHasDeferredLoad; }
 
   // Implements this method for mozilla::widget::IconLoader::Listener.
   // Called once the icon load is complete.
@@ -61,6 +65,7 @@ class nsMenuItemIconX final : public mozilla::widget::IconLoader::Listener {
   mozilla::WeakPtr<nsPresContext> mPresContext;
   NSImage* mIconImage = nil;  // [strong]
   RefPtr<mozilla::widget::IconLoader> mIconLoader;
+  bool mHasDeferredLoad = false;
 };
 
 #endif  // nsMenuItemIconX_h_

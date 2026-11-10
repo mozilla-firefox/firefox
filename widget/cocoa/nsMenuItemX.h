@@ -75,6 +75,7 @@ class nsMenuItemX final : public nsChangeObserver,
   nsresult DispatchDOMEvent(const nsString& eventName,
                             bool* preventDefaultCalled);
   void SetupIcon();
+  bool HasDeferredIconLoad() const { return mIcon->HasDeferredLoad(); }
   nsMenuX* ParentMenu() { return mMenuParent; }
   nsIContent* Content() { return mContent; }
   NSMenuItem* NativeNSMenuItem() { return mNativeMenuItem; }

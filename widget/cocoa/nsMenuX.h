@@ -75,6 +75,10 @@ class nsMenuX final : public nsMenuParentX,
   // unsafe to do while this is happening.
   static int32_t sIndexingMenuLevel;
 
+  // If > 0, macOS is opening menus without showing them, for example to
+  // collect the app's menu items for Spotlight.
+  static int32_t sSimulatedOpeningLevel;
+
   NS_DECL_CHANGEOBSERVER
 
   // nsMenuItemIconX::Listener
@@ -170,6 +174,7 @@ class nsMenuX final : public nsMenuParentX,
 
   void SetRebuild(bool aMenuEvent);
   void SetupIcon();
+  bool HasDeferredIconLoad() const { return mIcon->HasDeferredLoad(); }
 
   // Calls nsMenuItemX::CopyUserKeyEquivalentToKeyElement on every item in this
   // menu and its submenus.
@@ -207,6 +212,9 @@ class nsMenuX final : public nsMenuParentX,
   virtual ~nsMenuX();
 
   void RebuildMenu();
+  // Starts the icon loads that were deferred while macOS opened this menu
+  // without showing it.
+  void LoadDeferredIcons();
   nsresult RemoveAll();
   void SetTitle();
   void SetAttributedTitle();
