@@ -542,3 +542,51 @@ add_task(async function test_removal_is_not_served_from_the_search_cache() {
   );
   await SpecialPowers.popPrefEnv();
 });
+
+add_task(async function test_trash_button_works_on_the_row_that_moves_up() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });
+  await withFormHistoryPopup(
+    async (browser, autoCompletePopup, itemsBox) => {
+      const getTrashButton = () =>
+        getRowItem(itemsBox, 0).shadowRoot.querySelector(
+          "moz-button.secondary-action"
+        );
+      const first = getRowItem(itemsBox, 0).value;
+      const second = getRowItem(itemsBox, 1).value;
+
+      EventUtils.synthesizeMouseAtCenter(getTrashButton(), {
+        type: "mousemove",
+      });
+      await TestUtils.waitForCondition(
+        () => getTrashButton().checkVisibility({ checkVisibilityCSS: true }),
+        "the trash button is visible on hover"
+      );
+      EventUtils.synthesizeMouseAtCenter(getTrashButton(), {});
+      await TestUtils.waitForCondition(
+        () =>
+          autoCompletePopup.matchCount === 2 &&
+          getRowItem(itemsBox, 0).value === second,
+        "the next row moves up"
+      );
+
+      // Click again without moving the pointer.
+      await TestUtils.waitForCondition(
+        () => getTrashButton().checkVisibility({ checkVisibilityCSS: true }),
+        "the moved-up row's trash button is visible"
+      );
+      EventUtils.synthesizeMouseAtCenter(getTrashButton(), {});
+      await TestUtils.waitForCondition(
+        async () => !(await countEntries(second)),
+        "the moved-up entry is removed"
+      );
+      Assert.equal(await countEntries(first), 0, "The first entry is removed");
+      Assert.equal(
+        await FormHistory.count({ fieldname: "field1" }),
+        1,
+        "Only the two clicked entries are removed"
+      );
+    },
+    ["value1", "value2", "value3"]
+  );
+  await SpecialPowers.popPrefEnv();
+});

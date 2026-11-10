@@ -596,15 +596,15 @@ add_task(async function test_flyout_actions_dispatch_by_index() {
         actions[0].action();
         Assert.deepEqual(
           calls.at(-1),
-          [true, 0],
-          "First flyout item dispatches secondary action index 0"
+          [true, 0, 0],
+          "First flyout item dispatches action index 0 for row 0"
         );
 
         actions[1].action();
         Assert.deepEqual(
           calls.at(-1),
-          [true, 1],
-          "Second flyout item dispatches secondary action index 1"
+          [true, 1, 0],
+          "Second flyout item dispatches action index 1 for row 0"
         );
       } finally {
         AutoCompleteParent.prototype.selectAutoCompleteEntry = original;

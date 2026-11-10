@@ -551,11 +551,14 @@
             };
             // Route each secondary action back to its provider through the
             // parent actor, identifying a menu action by its index (a single
-            // action omits it).
+            // action omits it). Pass the row index, since the row under the
+            // pointer may not be selected.
+            const rowIndex = this._currentIndex;
             const activateAction = actionIndex => () =>
               lazy.AutoCompleteParent.getCurrentActor()?.selectAutoCompleteEntry(
                 true,
-                actionIndex
+                actionIndex,
+                rowIndex
               );
             if (secondaryAction.actions) {
               secondary.actions = secondaryAction.actions.map(

@@ -976,10 +976,14 @@ export class AutoCompleteParent extends JSWindowActorParent {
    * @param {boolean} secondary Whether to dispatch the entry's secondary action.
    * @param {number} [actionIndex] Which secondary menu action to dispatch;
    *   omitted for a single (non-menu) secondary action.
+   * @param {number} [index] The entry's index; defaults to the selected one.
    */
-  selectAutoCompleteEntry(secondary = false, actionIndex) {
-    const selectedIndex = this.openedPopup?.selectedIndex;
-    const result = AutoCompleteResultView.results[selectedIndex];
+  selectAutoCompleteEntry(
+    secondary = false,
+    actionIndex,
+    index = this.openedPopup?.selectedIndex
+  ) {
+    const result = AutoCompleteResultView.results[index];
     if (!result) {
       return;
     }
