@@ -142,6 +142,12 @@ static bool CanDecodeAudio(const Config& aConfig) {
   if (!IsSupportedAudioCodec(aConfig.mCodec)) {
     return false;
   }
+  if (aConfig.mNumberOfChannels > AudioInfo::MAX_CHANNEL_COUNT ||
+      aConfig.mSampleRate > AudioInfo::MAX_RATE) {
+    LOG("Unsupported audio configuration: {} channels at {} Hz",
+        aConfig.mNumberOfChannels, aConfig.mSampleRate);
+    return false;
+  }
   bool typeSupported = false;
   // TODO: Instead of calling CanHandleContainerType with the guessed the
   // containers, DecoderTraits should provide an API to tell if a codec is
