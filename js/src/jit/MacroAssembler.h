@@ -671,6 +671,11 @@ class MacroAssembler : public MacroAssemblerSpecific {
                              uint8_t* target) PER_SHARED_ARCH;
   static void patchCallToNop(uint8_t* callsite) PER_SHARED_ARCH;
 
+  // Emit nops until at least PatchWrite_NearCallSize() bytes follow |offset|,
+  // so that a near call patched in at |offset| doesn't overwrite the code
+  // emitted next.
+  void ensureNearCallPatchSpace(uint32_t offset);
+
   // These methods are like movWithPatch/PatchDataWithValueCheck but allow
   // using pc-relative addressing on certain platforms (RIP-relative LEA on x64,
   // ADR instruction on arm64).

@@ -209,21 +209,7 @@ void BaselineCompilerCodeGen::ensureDebugModeOSRPointSpace() {
 
   // Ensure that the previous DebugModeOSR point has sufficient space before
   // emitting the next eligible call or finishing code generation.
-  if (masm.currentOffset() - *lastOffset <
-      Assembler::PatchWrite_NearCallSize()) {
-    int32_t paddingSize = Assembler::PatchWrite_NearCallSize();
-    paddingSize -= masm.currentOffset() - *lastOffset;
-#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
-    masm.nop(paddingSize);
-#else
-    for (int32_t i = 0; i < paddingSize; i += Assembler::NopSize()) {
-      masm.nop();
-    }
-#endif
-  }
-
-  MOZ_ASSERT_IF(!masm.oom(), masm.currentOffset() - *lastOffset >=
-                                 Assembler::PatchWrite_NearCallSize());
+  masm.ensureNearCallPatchSpace(*lastOffset);
 }
 
 template <>

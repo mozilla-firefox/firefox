@@ -8523,6 +8523,22 @@ void MacroAssembler::nopPatchableToCall(const wasm::CallSiteDesc& desc) {
   append(desc, offset);
 }
 
+void MacroAssembler::ensureNearCallPatchSpace(uint32_t offset) {
+  if (currentOffset() - offset < Assembler::PatchWrite_NearCallSize()) {
+    int32_t paddingSize = Assembler::PatchWrite_NearCallSize();
+    paddingSize -= currentOffset() - offset;
+#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
+    nop(paddingSize);
+#else
+    for (int32_t i = 0; i < paddingSize; i += Assembler::NopSize()) {
+      nop();
+    }
+#endif
+  }
+  MOZ_ASSERT_IF(
+      !oom(), currentOffset() - offset >= Assembler::PatchWrite_NearCallSize());
+}
+
 // Given a cell and the chunk containing that cell, load the word containing
 // the mark bits for that cell, and compute the bitIndex for a particular mark
 // color.

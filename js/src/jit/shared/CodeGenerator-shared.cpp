@@ -1003,16 +1003,7 @@ void CodeGeneratorShared::ensureOsiSpace() {
   //
   // At points where we want to ensure that invalidation won't corrupt an
   // important instruction, we make sure to pad with nops.
-  if (masm.currentOffset() - lastOsiPointOffset_ <
-      Assembler::PatchWrite_NearCallSize()) {
-    int32_t paddingSize = Assembler::PatchWrite_NearCallSize();
-    paddingSize -= masm.currentOffset() - lastOsiPointOffset_;
-    for (int32_t i = 0; i < paddingSize; ++i) {
-      masm.nop();
-    }
-  }
-  MOZ_ASSERT_IF(!masm.oom(), masm.currentOffset() - lastOsiPointOffset_ >=
-                                 Assembler::PatchWrite_NearCallSize());
+  masm.ensureNearCallPatchSpace(lastOsiPointOffset_);
 }
 
 uint32_t CodeGeneratorShared::markOsiPoint(LOsiPoint* ins) {
