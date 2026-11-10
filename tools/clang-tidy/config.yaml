@@ -52,6 +52,7 @@ header_skiplist:
   - modules/libpref/init/StaticPrefListEnd.h
   - mozglue/baseprofiler/public/BaseProfilerMarkersDetail.h
   - netwerk/socket/neqo_glue/NeqoHttp3Conn.h
+  - parser/html/nsHtml5PortabilityHSupplement.h
   - parser/html/nsHtml5TokenizerCppSupplement.h
   - parser/html/nsHtml5TokenizerHSupplement.h
   - parser/html/nsHtml5TreeBuilderCppSupplement.h

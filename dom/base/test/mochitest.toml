@@ -495,6 +495,10 @@ skip-if = [
   "http3",
 ]
 
+["test_innerHTML_fast_path.html"]
+
+["test_innerHTML_fast_path_csp.html"]
+
 ["test_innersize_scrollport.html"]
 
 ["test_input_vsync_alignment_inner_event_loop.html"]

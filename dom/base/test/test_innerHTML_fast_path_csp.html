@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="script-src 'self' 'nonce-fastpath'">
+<title>innerHTML reports the same CSP violations with and without the fragment fast path</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css">
+<script nonce="fastpath">
+"use strict";
+
+const PREF = "dom.html_fragment_fast_path.enabled";
+const utils = SpecialPowers.getDOMWindowUtils(window);
+const MARKUP = "<button onclick=\"a()\">b</button><span onmouseover='b()' onfocus='c()'>s</span>";
+
+async function violations(enabled) {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, enabled]] });
+  const seen = [];
+  const listener = e => seen.push({
+    directive: e.violatedDirective,
+    target: e.target.nodeName,
+    line: e.lineNumber,
+    column: e.columnNumber,
+  });
+  document.addEventListener("securitypolicyviolation", listener);
+  const div = document.createElement("div");
+  document.body.append(div);
+  const before = utils.innerHTMLFastPathCount;
+  div.innerHTML = MARKUP;
+  is(utils.innerHTMLFastPathCount - before, enabled ? 1 : 0,
+     `markup parsed by the fast path: ${enabled}`);
+  // Violation events are dispatched from tasks.
+  while (seen.length < 3) {
+    await new Promise(resolve => SimpleTest.executeSoon(resolve));
+  }
+  ok(!div.querySelector("button").onclick, `blocked handler isn't set, fast path ${enabled}`);
+  document.removeEventListener("securitypolicyviolation", listener);
+  div.remove();
+  await SpecialPowers.popPrefEnv();
+  return JSON.stringify(seen);
+}
+
+add_task(async function test_csp_violations() {
+  const expected = await violations(false);
+  const actual = await violations(true);
+  is(actual, expected, "same CSP violations, in the same order");
+});
+</script>

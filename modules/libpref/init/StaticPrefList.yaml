@@ -3484,6 +3484,13 @@
 #endif
   mirror: always
 
+# Whether innerHTML parses markup in a small subset of HTML without the full
+# HTML parser.
+- name: dom.html_fragment_fast_path.enabled
+  type: bool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 # <img loading=lazy sizes=auto>
 # https://html.spec.whatwg.org/multipage/embedded-content.html#allows-auto-sizes
 - name: dom.image.sizes_auto.enabled

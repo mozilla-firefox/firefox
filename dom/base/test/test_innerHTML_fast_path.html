@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>innerHTML gives the same result with and without the fragment fast path</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<link rel="stylesheet" href="/tests/SimpleTest/test.css">
+<div id="contexts"></div>
+<form id="form"></form>
+<form id="other"></form>
+<script>
+"use strict";
+
+const PREF = "dom.html_fragment_fast_path.enabled";
+const utils = SpecialPowers.getDOMWindowUtils(window);
+
+// Markup that the fast path parses in the supported contexts.
+const ACCEPTED = [
+  "<span>x</span>",
+  "<div class='a b' id=foo data-x=1>t</div>",
+  "<li class=\"\" data-id=\"1\" data-priority=\"0\"><div class=\"view\"><input class=\"toggle\" type=\"checkbox\" checked><label>Item</label><button class=\"destroy\"></button></div><input class=\"edit\" value=\"Item\"></li>",
+  "\n    <li>\n      <div class=view>\n        <input type=checkbox >\n      </div>\n    </li>\n  ",
+  "<input type=radio name=r checked><input type=radio name=r checked>",
+  "<input value=5><input type=number value=7><input type=checkbox value=on>",
+  "<input type=date value=2020-01-02><input type=time><input type=datetime-local value=x>",
+  "<input required><input type=radio name=req required><input type=radio name=req checked><input type=email value=a>",
+  "<button type=submit>b</button><button type=reset></button>",
+  "<p>a<b>b<i>i</i></b><strong>s</strong><span>s</span><br>c</p>",
+  "<ul><li>1</li><li>2<ul><li>3</li></ul></li></ul>",
+  "<ol><li>1</li>text<li>2</li></ol>",
+  "<li>x</li><a href=x>y</a><button>z</button><p>w</p>",
+  "<a href=x>link</a><a href=y><div>block</div></a>",
+  "<footer><div><p>x</p></div></footer>",
+  "<DIV CLASS=Up>x</DIV>",
+  "<span>x</SPAN>",
+  "<div / >x</div>",
+  "<br/><input/>",
+  "<input type=checkbox checked/>",
+  "<div  a = 'q'  b=\"r\"c='s'>x</div>",
+  "<span title=\"a>b\">x</span>",
+  "<span title=\"a<b\">x</span><span title='</span>'>y</span>",
+  "<div class=\"abcdefghijklmnopqrstuvwxyz\" title=\"x<em>y</em>z\">text that spans strides</div>",
+  "<label for=x>l</label><input id=x>",
+  "<div class$lit$=\"a\" data-x:y=1 _a=2 a.b=3 \u00e9=4 xml:lang=de>x</div>",
+  "<img src=\"x.png\">",
+  "<img src=x.png>",
+  "<div class=$489805878$ data-a=x/y:z.png data-b=#905 data-c=a,b;c>x</div><img src=a.png/>",
+  "<p><img src='a.png' alt=a><img src=\"b.png\"></p><span><img></span>",
+  "<div dir=rtl>x</div><div dir=auto>א</div>",
+  "<span style=\"color: red\">x</span>",
+  "<div hidden>x</div><div contenteditable>x</div><div contenteditable=true>y</div>",
+  "<div tabindex=3 lang=de>x</div>",
+  "<h1>t</h1><h2 class=x>a<em>b</em></h2><h6>z</h6>",
+  "<H2>x</H2><h3 id=h>y</h3>",
+  "<section><header><h3>t</h3></header><article><p>a <code>c</code> <small>s</small></p><aside>x</aside></article><footer>f</footer></section>",
+  "<nav><ul><li><a href=x>l</a></li></ul></nav><main><figure><figcaption>c</figcaption></figure></main>",
+  "<blockquote><p>q <q>i</q> <cite>c</cite></p></blockquote><address>a</address><hr><hr/>",
+  "<p><u>u</u><s>s</s><tt>t</tt><sub>1</sub><sup>2</sup><mark>m</mark><abbr title=t>a</abbr><kbd>k</kbd><samp>s</samp><var>v</var><time datetime=2020>t</time><data value=1>d</data><dfn>d</dfn><bdi>b</bdi><bdo dir=rtl>b</bdo>a<wbr>b</p>",
+  "<span>a<em>b<code>c</code></em></span><em><em><em><em>x</em></em></em></em>",
+  "<a href=x><section>s</section><h4>h</h4></a>",
+  "ļĦč\u{1F600}<span>ļĦč\u{1F600}ļĦč\u{1F600}ļĦč</span>",
+  "<span>".repeat(128) + "x" + "</span>".repeat(128),
+  `<div ${Array.from({ length: 16 }, (_, i) => `a${i}=${i}`).join(" ")}>x</div>`,
+  `<div ${"a".repeat(64)}=1>x</div>`,
+  "<div\fclass=a>x</div\f><span>y</span\n>",
+  "<div on=1>x</div>",
+  "<div onclick='x()' ONMOUSEOVER=\"y()\" onfoo=z once=1>x</div>",
+  "<div a=\"x\"/>x</div><img src=x / >",
+  "<center>a</center><details open><summary>s</summary>d</details><dialog>x</dialog><search>q</search>",
+  "<dir><li>a</li></dir><menu><li>m</li></menu><hgroup><h2>t</h2><p>p</p></hgroup><dl><div>d</div></dl>",
+  "<fieldset disabled><input name=\"f\"><button>b</button></fieldset>",
+  "<p><big>b</big><strike>s</strike><font color=\"red\">f<b>x</b></font><ins>i</ins><del>d</del><acronym>a</acronym></p>",
+  "<meter value=\"0.5\">m</meter><progress value=\"1\" max=\"2\">p</progress><canvas width=\"1\"></canvas><map name=\"m\"><area href=\"x\"></map><slot name=\"s\"></slot>",
+  "<video><source src=\"v.webm\"><track kind=\"captions\"></video><audio controls></audio><ruby>k<span>a</span></ruby><embed><keygen><param name=\"a\" value=\"b\">",
+  "<a href=\"x\"><details>d</details></a>",
+  "<picture><source srcset=\"a.png\"><img src=\"a.png\"></picture>",
+  "<div a=>x</div><div b= >y</div><div c=/>z</div>",
+  "<div Data-Foo=1 data-bar=2 dATA-bAZ=3 foo=4 fo=5>x</div>",
+];
+
+// Short text without markup, which innerHTML handles before the fast path.
+const TEXT_WITHOUT_MARKUP = ["", "plain text"];
+
+// Markup that makes the fast path fall back to the full parser.
+const REJECTED = [
+  ...TEXT_WITHOUT_MARKUP,
+  "a &amp; b",
+  "<div title=\"&lt;\">x</div>",
+  "<!-- c -->x",
+  "<div a\"b=1>x</div>",
+  "<div a<b=1>x</div>",
+  "<div a\0b=1>x</div>",
+  "<div a=b`c>x</div>",
+  "<div a=b=c>x</div>",
+  "<div a=b\"c>x</div>",
+  "<div a=b&amp;c>x</div>",
+  "<div a=b\0c>x</div>",
+  "a\r\nb",
+  "<div title=\"a\r\nb\">x</div>",
+  "<p><div>x</div></p>",
+  "<p>a<p>b",
+  "<li>a<li>b",
+  "<li><div><li>x</li></div></li>",
+  "<a><a>x</a></a>",
+  "<button><button>x</button></button>",
+  "<button><span><button>x</button></span></button>",
+  "<div><span>x</div></span>",
+  "<div>unclosed",
+  "<div/>x",
+  "</div>",
+  "<span>x</span></div>",
+  "<b><i>x</b></i>",
+  "<div is=foo-bar>x</div>",
+  "<div customelementregistry>x</div>",
+  "<div class=a class=b>x</div>",
+  "<div class=a CLASS=b>x</div>",
+  "<div data-foo=1 DATA-FOO=2>x</div>",
+  "<div foo=1 bar=2 Foo=3>x</div>",
+  "<table><tr><td>x</td></tr></table>",
+  "<div a='1>x</div>",
+  "x < y",
+  "<custom-el>x</custom-el>",
+  "<ul><div>x</div></ul>",
+  "<span><div>x</div></span>",
+  "<select><option>x</option></select>",
+  "<p><h1>x</h1></p>",
+  "<h1><h2>x</h2></h1>",
+  "<h1><div>x</div></h1>",
+  "<p><section>x</section></p>",
+  "<em><p>x</p></em>",
+  "<p><hr></p>",
+  "<h1>a</h2>",
+  "<code><div>x</div></code>",
+  "<span><a><section>x</section></a></span>",
+  "<h1>x<h2>y",
+  "<nobr>a<nobr>b</nobr></nobr>",
+  "<pre>\nx</pre>",
+  "<div id=late1>x</div><span id=late2 class=c>y</span><div>unclosed",
+  "<input type=radio name=rb checked><div><input type=radio name=rb checked><p><div>x</div></p></div>",
+  "<ul><li id=late3>1</li><li>2<div class=d>x</div></li></ul><p><div>x</div></p>",
+  "<label for=late4>l</label><input id=late4><b><i>x</b></i>",
+  "<span>".repeat(129) + "x" + "</span>".repeat(129),
+  "<span>".repeat(128) + "<br>" + "</span>".repeat(128),
+  `<div ${Array.from({ length: 17 }, (_, i) => `a${i}=${i}`).join(" ")}>x</div>`,
+  `<div ${"a".repeat(65)}=1>x</div>`,
+  "<p><details>x</details></p>",
+  "<span><center>x</center></span>",
+  "<font><fieldset>x</fieldset></font>",
+  "<dl><dt>t</dt><dd>d</dd></dl>",
+  "<ruby>a<rt>b</rt></ruby>",
+  "<output>o</output>",
+];
+
+// The fast path scans text 16 code units at a time, so put characters it has
+// to stop at, and characters that only share their low byte with those, at
+// every position around the stride boundaries.
+const TEXT = "abcdefghijklmnopqrstuvwxyz0123456789ABCD";
+for (const [insert, accepted] of [
+  ["&amp;", false], ["\r", false], ["\0", false], ["<b>x</b>", true],
+  ["</span>", false], ["ļ", true], ["Ħ", true], ["č", true], ["Ā", true],
+  ["\u{1F600}", true],
+]) {
+  for (let i = 0; i <= TEXT.length; i++) {
+    (accepted ? ACCEPTED : REJECTED).push(
+      `<span>${TEXT.slice(0, i)}${insert}${TEXT.slice(i)}</span>`);
+  }
+}
+// The same for quoted attribute values, which it scans 16 code units at a time
+// after their first 16.
+for (const quote of ["\"", "'"]) {
+  const other = quote == "\"" ? "'" : "\"";
+  for (const [insert, accepted] of [
+    ["&amp;", false], ["\r", false], ["\0", false], [quote, false],
+    [other, true], ["<b>x</b>", true], ["Ģ", true], ["Ħ", true], ["ħ", true],
+    ["č", true], ["Ā", true], ["\u{1F600}", true],
+  ]) {
+    for (let i = 0; i <= TEXT.length; i++) {
+      (accepted ? ACCEPTED : REJECTED).push(
+        `<span title=${quote}${TEXT.slice(0, i)}${insert}${TEXT.slice(i)}${quote}>x</span>`);
+    }
+  }
+}
+
+const CONTEXTS = ["div", "ul", "ol", "li", "span", "p", "label", "button", "a",
+                  "b", "footer", "section", "template", "h2", "em", "code",
+                  "article", "header", "blockquote", "fieldset", "details", "font",
+                  "ins", "dl", "video"];
+const UNSUPPORTED_CONTEXTS = ["td", "custom-el", "input", "img", "svg:a", "math:mi", "dt", "output"];
+const NAMESPACES = {
+  svg: "http://www.w3.org/2000/svg",
+  math: "http://www.w3.org/1998/Math/MathML",
+};
+
+function describe(root) {
+  const out = [];
+  for (const el of root.querySelectorAll("*")) {
+    const d = { tag: el.localName, ctor: el.constructor.name };
+    if (el instanceof HTMLInputElement) {
+      Object.assign(d, { checked: el.checked, defaultChecked: el.defaultChecked,
+                         value: el.value, type: el.type,
+                         valid: el.validity.valid, matchesInvalid: el.matches(":invalid"),
+                         uaWidget: !!SpecialPowers.wrap(el).openOrClosedShadowRoot });
+    }
+    if (el instanceof HTMLButtonElement) {
+      d.type = el.type;
+    }
+    for (const cls of el.classList) {
+      d["matches." + cls] = root.querySelectorAll("." + CSS.escape(cls)).length;
+    }
+    if (el.id) {
+      d.byId = el.ownerDocument.getElementById(el.id) == el;
+    }
+    out.push(d);
+  }
+  return JSON.stringify(out);
+}
+
+function describeNodes(root) {
+  const out = [];
+  const walker = document.createTreeWalker(root);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    out.push(node.nodeType == Node.ELEMENT_NODE ? node.nodeName
+             : `${node.nodeType}:${JSON.stringify(node.data)}`);
+  }
+  return out.join(" ");
+}
+
+function parse(context, markup) {
+  const container = document.getElementById("contexts");
+  const [prefix, localName] = context.includes(":") ? context.split(":") : [null, context];
+  const el = prefix ? document.createElementNS(NAMESPACES[prefix], localName)
+                    : document.createElement(localName);
+  container.append(el);
+  const before = utils.innerHTMLFastPathCount;
+  el.innerHTML = markup;
+  const fast = utils.innerHTMLFastPathCount != before;
+  const root = el.content ?? el;
+  const result = { html: el.innerHTML, dom: describe(root), nodes: describeNodes(root), fast };
+  el.remove();
+  return result;
+}
+
+add_task(async function test_fast_path_matches_full_parser() {
+  const cases = [];
+  for (const context of [...CONTEXTS, ...UNSUPPORTED_CONTEXTS]) {
+    const supported = CONTEXTS.includes(context);
+    for (const markup of ACCEPTED) {
+      cases.push({ context, markup, fast: supported });
+    }
+    for (const markup of REJECTED) {
+      cases.push({ context, markup, fast: false });
+    }
+  }
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, false]] });
+  const expected = cases.map(c => parse(c.context, c.markup));
+  await SpecialPowers.popPrefEnv();
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });
+  const actual = cases.map(c => parse(c.context, c.markup));
+  await SpecialPowers.popPrefEnv();
+
+  let mismatches = 0;
+  for (const [i, c] of cases.entries()) {
+    const name = `<${c.context}>.innerHTML = ${JSON.stringify(c.markup)}`;
+    for (const key of ["html", "dom", "nodes"]) {
+      if (actual[i][key] !== expected[i][key]) {
+        is(actual[i][key], expected[i][key], `${name}: ${key}`);
+        mismatches++;
+      }
+    }
+    if (actual[i].fast !== c.fast) {
+      is(actual[i].fast, c.fast, `${name}: parsed by the fast path`);
+      mismatches++;
+    }
+    if (expected[i].fast) {
+      ok(false, `${name}: parsed by the fast path with the pref disabled`);
+      mismatches++;
+    }
+  }
+  is(mismatches, 0, `${cases.length} cases match`);
+});
+
+add_task(async function test_mutation_records() {
+  const markup = "<div id=rec>x</div><span>y</span><input value=x><img src='x.png'>";
+  // Template contents belong to the template contents owner, a document of
+  // their own.
+  for (const localName of ["div", "template"]) {
+    const results = [];
+    for (const enabled of [false, true]) {
+      await SpecialPowers.pushPrefEnv({ set: [[PREF, enabled]] });
+      const el = document.createElement(localName);
+      document.body.append(el);
+      el.innerHTML = "<b>old</b>";
+      const target = localName == "template" ? el.content : el;
+      const observer = new MutationObserver(() => {});
+      observer.observe(target, { childList: true, subtree: true });
+      el.innerHTML = markup;
+      const records = observer.takeRecords().map(r => ({
+        type: r.type,
+        target: r.target == target,
+        added: [...r.addedNodes].map(n => n.nodeName),
+        removed: [...r.removedNodes].map(n => n.nodeName),
+      }));
+      observer.disconnect();
+      results.push(JSON.stringify(records));
+      el.remove();
+      await SpecialPowers.popPrefEnv();
+    }
+    is(
+      results[1],
+      results[0],
+      `same mutation records in a ${localName} with and without the fast path`
+    );
+  }
+});
+
+add_task(async function test_form_ancestor() {
+  const form = document.getElementById("form");
+  const results = [];
+  for (const enabled of [false, true]) {
+    await SpecialPowers.pushPrefEnv({ set: [[PREF, enabled]] });
+    const fieldset = document.createElement("fieldset");
+    fieldset.disabled = true;
+    const div = document.createElement("div");
+    fieldset.append(div);
+    form.append(fieldset);
+    const before = utils.innerHTMLFastPathCount;
+    div.innerHTML = "<input name=a><button>b</button><input type=radio name=f checked><input type=radio name=f checked><input form=other><img name=i>";
+    is(utils.innerHTMLFastPathCount - before, enabled ? 1 : 0,
+       `markup inside a form parsed by the fast path: ${enabled}`);
+    results.push(JSON.stringify({
+      controls: [...div.querySelectorAll("input, button")].map(el => ({
+        form: el.form?.id ?? null,
+        disabled: el.matches(":disabled"),
+        checked: el.checked,
+      })),
+      elements: [...form.elements].map(el => el.name || el.localName),
+      named: form.elements.namedItem("a")?.localName ?? null,
+      // Images are associated with the form for its named properties.
+      img: form.i == div.querySelector("img"),
+    }));
+    fieldset.remove();
+    await SpecialPowers.popPrefEnv();
+  }
+  is(results[1], results[0], "same form association, disabled and checked state");
+});
+
+add_task(async function test_radio_group_in_document() {
+  const results = [];
+  for (const enabled of [false, true]) {
+    await SpecialPowers.pushPrefEnv({ set: [[PREF, enabled]] });
+    const existing = document.createElement("input");
+    existing.type = "radio";
+    existing.name = "doc-group";
+    existing.checked = true;
+    const div = document.createElement("div");
+    document.body.append(existing, div);
+    div.innerHTML = "<input type=radio name=doc-group checked><input type=radio name=doc-group>";
+    results.push(JSON.stringify([existing.checked,
+                                 ...[...div.querySelectorAll("input")].map(el => el.checked)]));
+    existing.remove();
+    div.remove();
+    await SpecialPowers.popPrefEnv();
+  }
+  is(results[1], results[0], "same radio group state as the full parser");
+});
+
+add_task(async function test_shadow_root() {
+  for (const enabled of [false, true]) {
+    await SpecialPowers.pushPrefEnv({ set: [[PREF, enabled]] });
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = host.attachShadow({ mode: "open" });
+    const before = utils.innerHTMLFastPathCount;
+    root.innerHTML = "<span class=x>a</span><input type=checkbox checked>";
+    is(utils.innerHTMLFastPathCount - before, enabled ? 1 : 0,
+       `shadow root markup parsed by the fast path: ${enabled}`);
+    is(root.innerHTML, "<span class=\"x\">a</span><input type=\"checkbox\" checked=\"\">",
+       `shadow root serialization, fast path ${enabled}`);
+    ok(root.querySelector("input").checked, `shadow root input checked, fast path ${enabled}`);
+    host.remove();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_event_handler_attributes() {
+  for (const enabled of [false, true]) {
+    await SpecialPowers.pushPrefEnv({ set: [[PREF, enabled]] });
+    const div = document.createElement("div");
+    document.body.append(div);
+    window.handlerCalls = [];
+    const before = utils.innerHTMLFastPathCount;
+    div.innerHTML = "<button onclick=\"handlerCalls.push('click')\">b</button>" +
+                    "<span ONMOUSEOVER=\"handlerCalls.push('over')\">s</span>";
+    is(utils.innerHTMLFastPathCount - before, enabled ? 1 : 0,
+       `event handler attributes parsed by the fast path: ${enabled}`);
+    div.querySelector("button").click();
+    div.querySelector("span").dispatchEvent(new MouseEvent("mouseover"));
+    is(JSON.stringify(window.handlerCalls), '["click","over"]',
+       `event handlers run, fast path ${enabled}`);
+    div.remove();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+</script>

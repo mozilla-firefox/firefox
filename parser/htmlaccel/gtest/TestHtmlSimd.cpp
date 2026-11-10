@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <algorithm>
+#include <iterator>
 
 #include "gtest/gtest.h"
 #include "mozilla/htmlaccel/htmlaccelNotInline.h"
@@ -98,5 +99,75 @@ TEST(HtmlSimd, TestWriteThrough)
       ASSERT_TRUE(std::all_of(output + written, output + length + 16,
                               [](char16_t c) { return c == sentinel; }));
     }
+  }
+}
+
+TEST(HtmlSimd, TestCollectLessThanAndAmpersand)
+{
+  using mozilla::htmlaccel::CollectLessThanAndAmpersand;
+  char16_t input[48];
+  std::fill(std::begin(input), std::end(input), u'a');
+  input[2] = '<';
+  input[17] = '&';
+  // Only share the low byte with "<" and "&".
+  input[20] = 0x203C;
+  input[21] = 0x2026;
+  input[35] = '\r';
+  uint32_t offsets[64];
+
+  uint32_t* out = offsets;
+  const char16_t* stop = CollectLessThanAndAmpersand(input, input, input + 48,
+                                                     out, std::end(offsets));
+  ASSERT_EQ(stop, input + 35);
+  ASSERT_EQ(out - offsets, 2);
+  ASSERT_EQ(offsets[0], 2u);
+  ASSERT_EQ(offsets[1], 17u);
+
+  // Only full strides are scanned.
+  out = offsets;
+  stop = CollectLessThanAndAmpersand(input, input, input + 40, out,
+                                     std::end(offsets));
+  ASSERT_EQ(stop, input + 32);
+  ASSERT_EQ(out - offsets, 2);
+
+  // And only while their offsets are sure to fit.
+  out = offsets;
+  stop =
+      CollectLessThanAndAmpersand(input, input, input + 48, out, offsets + 15);
+  ASSERT_EQ(stop, input);
+  ASSERT_EQ(out, offsets);
+
+  input[35] = 0;
+  out = offsets;
+  stop = CollectLessThanAndAmpersand(input, input + 16, input + 48, out,
+                                     std::end(offsets));
+  ASSERT_EQ(stop, input + 35);
+  ASSERT_EQ(out - offsets, 1);
+  ASSERT_EQ(offsets[0], 17u);
+}
+
+TEST(HtmlSimd, TestSkipAttributeValue)
+{
+  using namespace mozilla::htmlaccel;
+  char16_t input[40];
+  std::fill(std::begin(input), std::end(input), u'a');
+  // Only share the low byte with the double quote, apostrophe and ampersand.
+  input[3] = 0x2022;
+  input[4] = 0x2027;
+  input[6] = 0x2026;
+  ASSERT_EQ(SkipAttributeValueDoubleQuoted(input, input + 40), 32u);
+  ASSERT_EQ(SkipAttributeValueSingleQuoted(input, input + 40), 32u);
+  ASSERT_EQ(SkipAttributeValueDoubleQuoted(input, input + 15), 0u);
+
+  input[20] = '"';
+  ASSERT_EQ(SkipAttributeValueDoubleQuoted(input, input + 40), 20u);
+  ASSERT_EQ(SkipAttributeValueSingleQuoted(input, input + 40), 32u);
+  input[20] = '\'';
+  ASSERT_EQ(SkipAttributeValueDoubleQuoted(input, input + 40), 32u);
+  ASSERT_EQ(SkipAttributeValueSingleQuoted(input, input + 40), 20u);
+  for (const char16_t stop : {u'&', u'\r', u'\0'}) {
+    input[20] = stop;
+    ASSERT_EQ(SkipAttributeValueDoubleQuoted(input, input + 40), 20u);
+    ASSERT_EQ(SkipAttributeValueSingleQuoted(input, input + 40), 20u);
   }
 }
