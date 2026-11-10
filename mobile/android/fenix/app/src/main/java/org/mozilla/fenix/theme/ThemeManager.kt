@@ -7,7 +7,6 @@ package org.mozilla.fenix.theme
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.util.TypedValue
 import android.view.Window
 import androidx.annotation.AnyRes
@@ -17,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import com.google.android.material.R as materialR
+import mozilla.components.compose.base.theme.Theme
 import mozilla.components.support.ktx.android.content.getColorFromAttr
 import mozilla.components.support.ktx.android.content.getStatusBarColor
 import mozilla.components.support.ktx.android.view.createWindowInsetsController
@@ -29,15 +29,21 @@ import org.mozilla.fenix.customtabs.ExternalAppBrowserActivity
 
 abstract class ThemeManager {
 
-    abstract var currentTheme: BrowsingMode
+    abstract var currentTheme: Theme
+
+    /** Whether the [currentTheme] is [Theme.Private]. */
+    val isPrivate: Boolean
+        get() = currentTheme == Theme.Private
 
     /** Returns the style resource corresponding to the [currentTheme]. */
     @get:StyleRes
     val currentThemeResource
         get() =
             when (currentTheme) {
-                BrowsingMode.Normal -> R.style.NormalTheme
-                BrowsingMode.Private -> R.style.PrivateTheme
+                Theme.Private -> R.style.PrivateTheme
+                Theme.Light,
+                Theme.Dark,
+                Theme.Oled -> R.style.NormalTheme
             }
 
     /**
@@ -49,20 +55,12 @@ abstract class ThemeManager {
 
     private fun applyStatusBarTheme(window: Window, context: Context) {
         when (currentTheme) {
-            BrowsingMode.Normal -> {
-                when (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {
-                    Configuration.UI_MODE_NIGHT_UNDEFINED, // We assume light here per Android doc's recommendation
-                    Configuration.UI_MODE_NIGHT_NO -> {
-                        updateLightSystemBars(window, context)
-                    }
-                    Configuration.UI_MODE_NIGHT_YES -> {
-                        clearLightSystemBars(window)
-                        setStatusBarColor(window, context)
-                        updateNavigationBar(window, context)
-                    }
-                }
+            Theme.Light -> {
+                updateLightSystemBars(window, context)
             }
-            BrowsingMode.Private -> {
+            Theme.Dark,
+            Theme.Oled,
+            Theme.Private -> {
                 clearLightSystemBars(window)
                 setStatusBarColor(window, context)
                 updateNavigationBar(window, context)
@@ -131,10 +129,11 @@ abstract class ThemeManager {
 }
 
 class DefaultThemeManager(
-    currentTheme: BrowsingMode,
+    currentTheme: Theme,
     private val activity: Activity,
 ) : ThemeManager() {
-    override var currentTheme: BrowsingMode = currentTheme
+
+    override var currentTheme: Theme = currentTheme
         set(value) {
             if (currentTheme != value) {
                 // ExternalAppBrowserActivity doesn't need to switch between private and non-private.
@@ -145,9 +144,24 @@ class DefaultThemeManager(
                 field = value
 
                 val intent = activity.intent ?: Intent().also { activity.intent = it }
-                intent.putExtra(HomeActivity.PRIVATE_BROWSING_MODE, value == BrowsingMode.Private)
+                intent.putExtra(HomeActivity.PRIVATE_BROWSING_MODE, value == Theme.Private)
 
                 activity.recreate()
             }
         }
 }
+
+/**
+ * Returns the [Theme] to apply for the given [browsingMode].
+ *
+ * @param browsingMode The current [BrowsingMode].
+ * @param isSystemInDarkTheme Whether the device is in dark mode.
+ * @param shouldUseOledTheme Whether the OLED theme is selected.
+ */
+fun getTheme(browsingMode: BrowsingMode, isSystemInDarkTheme: Boolean, shouldUseOledTheme: Boolean): Theme =
+    when {
+        browsingMode.isPrivate -> Theme.Private
+        !isSystemInDarkTheme -> Theme.Light
+        shouldUseOledTheme -> Theme.Oled
+        else -> Theme.Dark
+    }

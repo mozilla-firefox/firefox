@@ -152,6 +152,7 @@ import org.mozilla.fenix.ext.getIntentSource
 import org.mozilla.fenix.ext.getNavDirections
 import org.mozilla.fenix.ext.hasTopDestination
 import org.mozilla.fenix.ext.isAllowedDuringOnboardingIntent
+import org.mozilla.fenix.ext.isSystemInDarkTheme
 import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.ext.openSetDefaultBrowserOption
 import org.mozilla.fenix.ext.recordEventInNimbus
@@ -203,6 +204,7 @@ import org.mozilla.fenix.tabhistory.TabHistoryDialogFragment
 import org.mozilla.fenix.theme.DefaultThemeManager
 import org.mozilla.fenix.theme.StatusBarColorManager
 import org.mozilla.fenix.theme.ThemeManager
+import org.mozilla.fenix.theme.getTheme
 import org.mozilla.fenix.translations.TranslationsAIControllableFeatureRegistrar
 import org.mozilla.fenix.translations.TranslationsEnabledSettings
 import org.mozilla.fenix.utils.AccessibilityUtils.announcePrivateModeForAccessibility
@@ -1680,8 +1682,11 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
             onModeChange = { newMode ->
                 updateSecureWindowFlags(newMode)
 
-                if (::themeManager.isInitialized) {
-                    themeManager.currentTheme = newMode
+                // Browsing mode only determines whether the theme should be private so only update the theme when
+                // private browsing changes.
+                if (::themeManager.isInitialized && newMode.isPrivate != themeManager.isPrivate) {
+                    themeManager.currentTheme =
+                        getTheme(newMode, isSystemInDarkTheme(), components.settings.shouldUseOledTheme)
                 }
 
                 components.appStore.dispatch(AppAction.BrowsingModeManagerModeChanged(mode = newMode))
@@ -1698,7 +1703,10 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
     }
 
     private fun createThemeManager(): ThemeManager {
-        return DefaultThemeManager(browsingModeManager.mode, this)
+        return DefaultThemeManager(
+            getTheme(browsingModeManager.mode, isSystemInDarkTheme(), components.settings.shouldUseOledTheme),
+            this,
+        )
     }
 
     private fun openPopup(webExtensionState: WebExtensionState) {
