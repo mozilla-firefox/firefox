@@ -6919,6 +6919,12 @@ mozilla::ipc::IPCResult ContentParent::RecvCreateBrowsingContext(
     if (!opener) {
       return IPC_FAIL(this, "Opener doesn't exist in parent process");
     }
+    RefPtr<WindowGlobalParent> openerWindow =
+        WindowGlobalParent::GetByInnerWindowId(aInit.mOpenerInnerWindowId);
+    if (!openerWindow || openerWindow->GetContentParent() != this ||
+        openerWindow->GetBrowsingContext()->Id() != aInit.GetOpenerId()) {
+      return IPC_FAIL(this, "Invalid opener window for the creating process");
+    }
   }
 
   if (opener && !opener->Group()->IsKnownForChildID(ChildID())) {

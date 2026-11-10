@@ -988,6 +988,7 @@ class BrowsingContext : public nsILoadContext,
     // deserialized before other BrowsingContext in the BrowsingContextGroup
     // have been initialized.
     uint64_t mParentId = 0;
+    uint64_t mOpenerInnerWindowId = 0;
     already_AddRefed<WindowContext> GetParent();
     uint64_t GetOpenerId() const { return mFields.Get<IDX_OpenerId>(); }
     uint64_t GetBrowserId() const { return mFields.Get<IDX_BrowserId>(); }
