@@ -32,7 +32,6 @@ task-defaults:
         docker-image: {in-tree: android-ui-tests}
         max-run-time: 1800
     run:
-        clone-with: hg
         use-caches: false
         using: run-commands
         secrets:

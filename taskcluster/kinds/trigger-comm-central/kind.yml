@@ -26,7 +26,6 @@ task-defaults:
         max-run-time: 600
         taskcluster-proxy: true
     run:
-        clone-with: hg
         using: run-task
         checkout: false
 
