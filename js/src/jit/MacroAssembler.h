@@ -1072,8 +1072,7 @@ class MacroAssembler : public MacroAssemblerSpecific {
   // ===============================================================
   // Copy instructions
 
-  template <typename T>
-  inline void copy64(const T& src, const T& dest, Register scratch);
+  inline void copy64(const Address& src, const Address& dest, Register scratch);
 
  public:
   // ===============================================================

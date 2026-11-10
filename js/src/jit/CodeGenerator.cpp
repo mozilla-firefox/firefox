@@ -5690,13 +5690,6 @@ void CodeGenerator::emitCallMegamorphicGetter(
 
   masm.checkStackAlignment();
 
-  if (JitOptions.enableStubFramePointers) {
-    // If the generic call trampoline is using frame pointers, the caller
-    // is responsible for pushing the callee token + frame descriptor.
-    masm.PushCalleeToken(calleeScratch, /* constructing = */ false);
-    masm.Push(FrameDescriptor(FrameType::IonJS, 0));
-  }
-
   masm.move32(Imm32(0), argcScratch);
   ensureOsiSpace();
 
@@ -6655,14 +6648,6 @@ void CodeGenerator::visitCallGeneric(LCallGeneric* call) {
 
   // Nestle the StackPointer up to the argument vector.
   masm.freeStack(unusedStack);
-
-  if (JitOptions.enableStubFramePointers) {
-    // If the generic call trampoline is using frame pointers, the caller
-    // is responsible for pushing the callee token + frame descriptor.
-    masm.PushCalleeToken(IonGenericCallCalleeReg,
-                         call->mir()->isConstructing());
-    masm.Push(FrameDescriptor(FrameType::IonJS, call->numActualArgs()));
-  }
   ensureOsiSpace();
 
   auto kind = call->mir()->isConstructing() ? IonGenericCallKind::Construct
@@ -6702,40 +6687,6 @@ void CodeGenerator::visitCallGeneric(LCallGeneric* call) {
   emitRestoreStackPointerFromFP();
 }
 
-// Offset from the stack pointer to the first argument (`this`).
-static size_t IonGenericCallArgOffset() {
-  return JitOptions.enableStubFramePointers ? sizeof(JitFrameLayout) : 0;
-}
-
-// If we pushed a JitFrameLayout on entry to the trampoline, pop it.
-static void IonGenericCallLeaveFrame(MacroAssembler& masm) {
-  if (!JitOptions.enableStubFramePointers) {
-    return;
-  }
-  masm.pop(FramePointer);
-#ifdef JS_USE_LINK_REGISTER
-  masm.popReturnAddress();
-#else
-  masm.pop(IonGenericCallReturnAddrReg);
-#endif
-  masm.addToStackPtr(Imm32(sizeof(JitFrameLayout) - 2 * sizeof(uintptr_t)));
-}
-
-// When we update the callee and/or argc (eg FunCall, bound functions), if we
-// have a stack frame, the frame descriptor and the callee token must be
-// updated before jumping back to the entry point.
-static void IonGenericCallUpdateFrame(MacroAssembler& masm, Register callee,
-                                      Register argc, Register scratch) {
-  if (!JitOptions.enableStubFramePointers) {
-    return;
-  }
-  masm.storePtr(callee, Address(masm.getStackPointer(),
-                                JitFrameLayout::offsetOfCalleeToken()));
-  masm.makeFrameDescriptorForJitCall(FrameType::IonJS, argc, scratch);
-  masm.storePtr(scratch, Address(masm.getStackPointer(),
-                                 JitFrameLayout::offsetOfDescriptor()));
-}
-
 void JitRuntime::generateIonGenericCallArgumentsShift(
     MacroAssembler& masm, Register argc, Register curr, Register end,
     Register scratch, Label* done) {
@@ -6746,9 +6697,6 @@ void JitRuntime::generateIonGenericCallArgumentsShift(
   // Initialize `curr` to the destination of the first copy, and `end` to the
   // final value of curr.
   masm.moveStackPtrTo(curr);
-  if (size_t argOffset = IonGenericCallArgOffset()) {
-    masm.addPtr(Imm32(argOffset), curr);
-  }
   masm.computeEffectiveAddress(BaseValueIndex(curr, argc), end);
 
   Label loop;
@@ -6792,32 +6740,6 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
   //
   // The caller is responsible for switching back to the caller's
   // realm and cleaning up the stack.
-  //
-  // To support external profilers, we also support a second interface
-  // that creates a stack frame for the trampoline, using the
-  // following approach:
-  //
-  // 1. Before calling the trampoline, we optimistically push the
-  //    callee token and frame descriptor. This matches what the
-  //    trampoline would do to call a scripted function without
-  //    argument underflow.
-  // 2. When entering the trampoline, we ensure the return address is
-  //    pushed (for architectures with a link register) then push the
-  //    frame pointer to create a new frame. The net result is that
-  //    in addition to the arguments, as described above, we have also
-  //    pushed an entire JitFrameLayout. Now the profiler is happy.
-  // 3. If we're calling a scripted function, and there's no argument
-  //    underflow, this is the layout we want, so the only extra work
-  //    was pushing/popping the temporary frame pointer. This is the
-  //    common case.
-  // 4. In cases where we add new arguments (underflow, bound arguments),
-  //    we move the JitFrameLayout. If the callee or argc changes (bound
-  //    arguments, funcall), we update the callee token and descriptor.
-  // 5. When we're ready to do the final tail call, we pop the frame
-  //    pointer and jump to the target.
-  // 6. If we're calling into C++, we have to drop the trampoline frame
-  //    to finish setting up the exit frame, leaving a short window
-  //    where the profiler will still be confused. C'est la vie.
 
   Register calleeReg = IonGenericCallCalleeReg;
   Register argcReg = IonGenericCallArgcReg;
@@ -6825,22 +6747,9 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
   Register scratch = regs.takeAny();
   Register scratch2 = regs.takeAny();
 
-  bool hasFrame = JitOptions.enableStubFramePointers;
-  size_t argOffset = IonGenericCallArgOffset();
-
-#ifdef JS_USE_LINK_REGISTER
-  if (hasFrame) {
-    masm.pushRegs(LinkRegister, FramePointer);
-    masm.moveStackPtrTo(FramePointer);
-  }
-#else
+#ifndef JS_USE_LINK_REGISTER
   Register returnAddrReg = IonGenericCallReturnAddrReg;
-  if (hasFrame) {
-    masm.push(FramePointer);
-    masm.moveStackPtrTo(FramePointer);
-  } else {
-    masm.pop(returnAddrReg);
-  }
+  masm.pop(returnAddrReg);
 #endif
 
 #ifdef JS_CODEGEN_ARM
@@ -6870,7 +6779,7 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
 
   if (isConstructing) {
     // Use the slow path if CreateThis was unable to create the |this| object.
-    Address thisAddr(masm.getStackPointer(), argOffset);
+    Address thisAddr(masm.getStackPointer(), 0);
     masm.branchTestNull(Assembler::Equal, thisAddr, &vmCall);
   }
 
@@ -6886,24 +6795,12 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
   masm.switchToObjectRealm(calleeReg, scratch);
   masm.loadJitCodeRaw(calleeReg, scratch2);
 
-  // We're about to do a tail call, so we want the stack to look as if
-  // we just did a regular call: a JitFrameLayout minus the frame pointer
-  // (and with the return address in a link register if the arch uses one).
-  // If we already had a frame, we pop some data; if we didn't have a frame
-  // yet, we create it now.
-  if (hasFrame) {
-    masm.pop(FramePointer);
-#ifdef JS_USE_LINK_REGISTER
-    masm.popReturnAddress();
-#endif
-  } else {
-    // Construct the JitFrameLayout.
-    masm.PushCalleeToken(calleeReg, isConstructing);
-    masm.PushFrameDescriptorForJitCall(FrameType::IonJS, argcReg, scratch);
+  // Construct the JitFrameLayout.
+  masm.PushCalleeToken(calleeReg, isConstructing);
+  masm.PushFrameDescriptorForJitCall(FrameType::IonJS, argcReg, scratch);
 #ifndef JS_USE_LINK_REGISTER
-    masm.push(returnAddrReg);
+  masm.push(returnAddrReg);
 #endif
-  }
 
   // Tail call the jit entry.
   masm.jump(scratch2);
@@ -6932,8 +6829,6 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
   // ********************
   masm.bind(&vmCall);
 
-  IonGenericCallLeaveFrame(masm);
-
   masm.push(masm.getStackPointer());  // argv
   masm.push(argcReg);                 // argc
   masm.push(Imm32(false));            // ignores return value
@@ -6954,31 +6849,9 @@ void JitRuntime::generateIonGenericCallStub(MacroAssembler& masm,
   masm.jump(&invokeFunctionVMEntry);
 }
 
-static void PushTrampolineFrame(MacroAssembler& masm) {
-  if (JitOptions.enableStubFramePointers) {
-#ifdef JS_USE_LINK_REGISTER
-    masm.pushRegs(LinkRegister, FramePointer);
-#else
-    masm.push(FramePointer);
-#endif
-    masm.moveStackPtrTo(FramePointer);
-  }
-}
-
-static void PopTrampolineFrame(MacroAssembler& masm) {
-  if (JitOptions.enableStubFramePointers) {
-#ifdef JS_USE_LINK_REGISTER
-    masm.popRegs(FramePointer, LinkRegister);
-#else
-    masm.pop(FramePointer);
-#endif
-  }
-}
-
 void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateMegamorphicLoadStub");
   megamorphicLoadStubOffset_ = startTrampolineCode(masm, TargetKind::ImmCall);
-  PushTrampolineFrame(masm);
 
   Register obj = CallTempReg3;
   Register id = CallTempReg0;
@@ -6997,7 +6870,7 @@ void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
   Label cacheHit;
   masm.emitMegamorphicCacheLookupByValue(obj, id, idHash, outEntryPtr, output,
                                          &cacheHit);
-  PopTrampolineFrame(masm);
+
   masm.abiret();
 
   // Given we don't need the entry if we got a cache hit, and the entry pointer
@@ -7005,7 +6878,6 @@ void JitRuntime::generateMegamorphicLoadStub(MacroAssembler& masm) {
   // outEntryPtr to indicate success
   masm.bind(&cacheHit);
   masm.movePtr(ImmPtr((void*)(MegamorphicLoadStubCacheHit)), outEntryPtr);
-  PopTrampolineFrame(masm);
   masm.abiret();
 }
 
@@ -7013,7 +6885,6 @@ void JitRuntime::generateMegamorphicLoadStubPermissive(MacroAssembler& masm) {
   AutoCreatedBy acb(masm, "JitRuntime::generateMegamorphicLoadStubPermissive");
   megamorphicLoadStubPermissiveOffset_ =
       startTrampolineCode(masm, TargetKind::ImmCall);
-  PushTrampolineFrame(masm);
 
   Register obj = CallTempReg3;
   Register id = CallTempReg0;
@@ -7033,7 +6904,6 @@ void JitRuntime::generateMegamorphicLoadStubPermissive(MacroAssembler& masm) {
   masm.emitMegamorphicCacheLookupByValue(obj, id, idHash, outEntryPtr, output,
                                          &cacheHit, &cacheHitGetter);
 
-  PopTrampolineFrame(masm);
   masm.abiret();
 
   // Given we don't need the entry if we got a cache hit, and the entry pointer
@@ -7041,12 +6911,10 @@ void JitRuntime::generateMegamorphicLoadStubPermissive(MacroAssembler& masm) {
   // outEntryPtr to indicate success or that output holds a getter.
   masm.bind(&cacheHit);
   masm.movePtr(ImmPtr((void*)(MegamorphicLoadStubCacheHit)), outEntryPtr);
-  PopTrampolineFrame(masm);
   masm.abiret();
 
   masm.bind(&cacheHitGetter);
   masm.movePtr(ImmPtr((void*)(MegamorphicLoadStubCacheHitGetter)), outEntryPtr);
-  PopTrampolineFrame(masm);
   masm.abiret();
 }
 
@@ -7110,13 +6978,9 @@ void JitRuntime::generateIonGenericHandleUnderflow(MacroAssembler& masm,
   //
   // Note that |newTarget|, if it exists, must be between the padding and the
   // undefined args. It does not move down along with the actual args.
-  //
-  // If we're using frame pointers, there's a JitFrameLayout between `sp`
-  // and `this`. This doesn't affect alignment. We copy/update it below.
-  static_assert(sizeof(JitFrameLayout) % JitStackAlignment == 0);
 
-  // The first step is to copy the memory between `sp` and `argN` into the
-  // correct position. We start copying at `sp`.
+  // The first step is to copy the memory from [this] through [argN] into the
+  // correct position. The source of the copy is the current stack pointer.
   masm.moveStackPtrTo(src);
 
   // Compute how far the args must be moved and adjust the stack pointer.
@@ -7133,41 +6997,19 @@ void JitRuntime::generateIonGenericHandleUnderflow(MacroAssembler& masm,
   if (mustSpill) {
     masm.pushRegs(calleeReg, numMissing);
   }
-  // Include the size of the frame if present.
-  size_t argOffset = IonGenericCallArgOffset();
-  masm.computeEffectiveAddress(BaseValueIndex(src, argcReg, argOffset), srcEnd);
-
-  if (JitOptions.enableStubFramePointers) {
-    // The loop below will move the frame, including the stored frame
-    // pointer, so we have to update the FramePointer register. To
-    // ensure the stored frame pointer and return address are valid
-    // at all times, we peel the first two words out of the loop.
-    masm.loadPtr(Address(src, 0), scratch);
-    masm.storePtr(scratch, Address(dest, 0));
-    masm.loadPtr(Address(src, sizeof(uintptr_t)), scratch);
-    masm.storePtr(scratch, Address(dest, sizeof(uintptr_t)));
-    masm.movePtr(dest, FramePointer);
-    masm.addPtr(Imm32(2 * sizeof(uintptr_t)), src);
-    masm.addPtr(Imm32(2 * sizeof(uintptr_t)), dest);
-  }
+  masm.computeEffectiveAddress(BaseValueIndex(src, argcReg), srcEnd);
 
   // The stack currently looks like this:
-  //                                    (If enableStubFramePointers)
-  //   [newTarget]                     [newTarget]
-  //   [argN] <-- srcEnd               [argN] <-- srcEnd
-  //   ...                             ...
-  //   [arg0]                          [arg0]
-  //   [this] <-- src                  [this]
-  //   ...                             [callee]
-  //   ...    <-- dest                 [desc]    <-- src
-  //   [spill?]                        [retaddr] (already copied)
-  //   [spill?]                        [fp]      (already copied)
-  //                                   ...
-  //                                   ...       <-- dest
-  //                                   [retaddr]
-  //                                   [fp]
-  //                                   [spill?]
-  //                                   [spill?]
+  //
+  //   [newTarget]
+  //   [argN] <-- srcEnd
+  //   ...
+  //   [arg0]
+  //   [this] <-- src
+  //   ...
+  //   ...    <-- dest
+  //   [spill?]
+  //   [spill?]
 
   // Loop to move the arguments.
   Label argLoop;
@@ -7219,8 +7061,6 @@ void JitRuntime::generateIonGenericCallNativeFunction(MacroAssembler& masm,
 #ifndef JS_USE_LINK_REGISTER
   Register returnAddrReg = IonGenericCallReturnAddrReg;
 #endif
-
-  IonGenericCallLeaveFrame(masm);
 
   // Push a value containing the callee, which will become argv[0].
   masm.pushValue(JSVAL_TYPE_OBJECT, calleeReg);
@@ -7319,18 +7159,15 @@ void JitRuntime::generateIonGenericCallFunCall(MacroAssembler& masm,
   // After making this transformation, we can jump back to the beginning
   // of this trampoline to handle the inner call.
 
-  Address thisAddr(masm.getStackPointer(), IonGenericCallArgOffset());
-
   // Guard that |this| is an object. If it is, replace calleeReg.
-  masm.fallibleUnboxObject(thisAddr, scratch, vmCall);
+  masm.fallibleUnboxObject(Address(masm.getStackPointer(), 0), scratch, vmCall);
   masm.movePtr(scratch, calleeReg);
 
   Label hasArgs;
   masm.branch32(Assembler::NotEqual, argcReg, Imm32(0), &hasArgs);
 
   // No arguments. Replace |this| with |undefined| and start from the top.
-  masm.storeValue(UndefinedValue(), thisAddr);
-  IonGenericCallUpdateFrame(masm, calleeReg, argcReg, scratch);
+  masm.storeValue(UndefinedValue(), Address(masm.getStackPointer(), 0));
   masm.jump(entry);
 
   masm.bind(&hasArgs);
@@ -7340,7 +7177,6 @@ void JitRuntime::generateIonGenericCallFunCall(MacroAssembler& masm,
                                        scratch3, &doneSliding);
   masm.bind(&doneSliding);
   masm.sub32(Imm32(1), argcReg);
-  IonGenericCallUpdateFrame(masm, calleeReg, argcReg, scratch);
 
   masm.jump(entry);
 
@@ -7369,7 +7205,6 @@ void JitRuntime::generateIonGenericCallBoundFunction(MacroAssembler& masm,
   Address thisSlot(calleeReg, BoundFunctionObject::offsetOfBoundThisSlot());
   Address firstInlineArgSlot(
       calleeReg, BoundFunctionObject::offsetOfFirstInlineBoundArg());
-  size_t argOffset = IonGenericCallArgOffset();
 
   // Check that we won't be pushing too many arguments.
   masm.load32(flagsSlot, scratch);
@@ -7392,53 +7227,34 @@ void JitRuntime::generateIonGenericCallBoundFunction(MacroAssembler& masm,
   //                                     [bound0]    <- one bound argument (odd)
   //                                     [boundThis] <- top of stack (aligned)
   //
-  // If we have created a stack frame, the JitFrameLayout must also move.
+  Label poppedThis;
   if (JitStackValueAlignment > 1) {
-    Label existingArgsAligned;
+    Label alreadyAligned;
     masm.branchTest32(Assembler::Zero, flagsSlot,
                       Imm32(1 << BoundFunctionObject::NumBoundArgsShift),
-                      &existingArgsAligned);
+                      &alreadyAligned);
 
     // We have an odd number of bound arguments. Shift the existing arguments
     // down by 8 bytes.
     generateIonGenericCallArgumentsShift(masm, argcReg, scratch, scratch2,
-                                         scratch3, &existingArgsAligned);
-    masm.bind(&existingArgsAligned);
+                                         scratch3, &poppedThis);
+    masm.bind(&alreadyAligned);
   }
 
-  // Adjust the stack pointer by the number of bound arguments we're adding.
-  Register numBoundArgs = scratch;
-  masm.load32(flagsSlot, numBoundArgs);
-  masm.rshift32(Imm32(BoundFunctionObject::NumBoundArgsShift), numBoundArgs);
-  static_assert(JitStackValueAlignment <= 2);
-  masm.move32(numBoundArgs, scratch2);
-  if (JitStackValueAlignment > 1) {
-    // Round the adjustment up to an even number of slots if necessary.
-    masm.add32(Imm32(1), scratch2);
-    masm.and32(Imm32(~1), scratch2);
-  }
-  masm.lshift32(Imm32(ValueShift), scratch2);
-  masm.subFromStackPtr(scratch2);
+  // Pop the current `this`. It will be replaced with the bound `this`.
+  masm.freeStack(sizeof(Value));
+  masm.bind(&poppedThis);
 
-  if (JitOptions.enableStubFramePointers) {
-    // If we have a stack frame, writing the bound arguments will
-    // clobber it. We copy the frame pointer and return address now,
-    // and update the FramePointer register.  The frame descriptor and
-    // callee token don't need to be copied; we'll update them using
-    // IonGenericCallUpdateFrame.
-    masm.loadPtr(Address(FramePointer, 0), scratch3);
-    masm.storePtr(scratch3, Address(masm.getStackPointer(), 0));
-    masm.loadPtr(Address(FramePointer, sizeof(uintptr_t)), scratch3);
-    masm.storePtr(scratch3, Address(masm.getStackPointer(), sizeof(uintptr_t)));
-    masm.moveStackPtrTo(FramePointer);
-  }
+  // Load the number of bound arguments in scratch
+  masm.load32(flagsSlot, scratch);
+  masm.rshift32(Imm32(BoundFunctionObject::NumBoundArgsShift), scratch);
 
-  Label doneStoringBoundArguments;
-  masm.branch32(Assembler::Equal, numBoundArgs, Imm32(0),
-                &doneStoringBoundArguments);
+  Label donePushingBoundArguments;
+  masm.branch32(Assembler::Equal, scratch, Imm32(0),
+                &donePushingBoundArguments);
 
   // Update argc to include bound arguments.
-  masm.add32(numBoundArgs, argcReg);
+  masm.add32(scratch, argcReg);
 
   // Load &boundArgs[0] in scratch2.
   Label outOfLineBoundArguments, haveBoundArguments;
@@ -7454,22 +7270,24 @@ void JitRuntime::generateIonGenericCallBoundFunction(MacroAssembler& masm,
 
   masm.bind(&haveBoundArguments);
 
-  // Copy the bound arguments, starting with the last one.
+  // Load &boundArgs[numBoundArgs] in scratch.
+  BaseObjectElementIndex lastBoundArg(scratch2, scratch);
+  masm.computeEffectiveAddress(lastBoundArg, scratch);
+
+  // Push the bound arguments, starting with the last one.
+  // Copying pre-decrements scratch until scratch2 is reached.
   Label boundArgumentsLoop;
   masm.bind(&boundArgumentsLoop);
-  BaseValueIndex from(scratch2, numBoundArgs, -int32_t(sizeof(Value)));
-  BaseValueIndex to(masm.getStackPointer(), numBoundArgs, argOffset);
-  masm.copy64(from, to, scratch3);
-  masm.branchSub32(Assembler::NonZero, Imm32(1), numBoundArgs,
-                   &boundArgumentsLoop);
-  masm.bind(&doneStoringBoundArguments);
+  masm.subPtr(Imm32(sizeof(Value)), scratch);
+  masm.pushValue(Address(scratch, 0));
+  masm.branchPtr(Assembler::Above, scratch, scratch2, &boundArgumentsLoop);
+  masm.bind(&donePushingBoundArguments);
 
-  // Copy the bound `this` value to the stack slot.
-  masm.copy64(thisSlot, Address(masm.getStackPointer(), argOffset), scratch3);
+  // Push the bound `this`.
+  masm.pushValue(thisSlot);
 
-  // Load the target in calleeReg. Update the JitFrameLayout if we have one.
+  // Load the target in calleeReg.
   masm.unboxObject(targetSlot, calleeReg);
-  IonGenericCallUpdateFrame(masm, calleeReg, argcReg, scratch);
 
   // Bound targets can be nested arbitrarily deep. Check the stack limit before
   // recursing.

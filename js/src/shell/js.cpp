@@ -13395,9 +13395,8 @@ bool InitOptionParser(OptionParser& op) {
       !op.addStringOption(
           '\0', "canonicalize-nan-at-uses", "on/off",
           "Canonicalize NaN values at uses (default: off, on to enable") ||
-      !op.addBoolOption('\0', "enable-stub-frame-pointers",
-                        "Use frame pointers in baseline IC stubs and other "
-                        "trampolines") ||
+      !op.addBoolOption('\0', "enable-ic-frame-pointers",
+                        "Use frame pointers in all IC stubs") ||
       !op.addBoolOption('\0', "scalar-replace-arguments",
                         "Use scalar replacement to optimize ArgumentsObject") ||
       !op.addStringOption(
@@ -14668,8 +14667,8 @@ bool SetContextJITOptions(JSContext* cx, const OptionParser& op) {
     jit::JitOptions.onlyInlineSelfHosted = true;
   }
 
-  if (op.getBoolOption("enable-stub-frame-pointers")) {
-    jit::JitOptions.enableStubFramePointers = true;
+  if (op.getBoolOption("enable-ic-frame-pointers")) {
+    jit::JitOptions.enableICFramePointers = true;
   }
 
   if (const char* str = op.getStringOption("ion-iterator-indices")) {
@@ -14912,10 +14911,8 @@ bool ApplyBenchmarkMode(JSContext* cx, const OptionParser& op) {
     issue("--emit-interpreter-entry adds overhead.");
   }
 
-  if (op.getBoolOption("enable-stub-frame-pointers")) {
-    issue(
-        "--enable-stub-frame-pointers adds overhead to IC stubs and various "
-        "trampolines.");
+  if (op.getBoolOption("enable-ic-frame-pointers")) {
+    issue("--enable-ic-frame-pointers adds overhead to IC stubs.");
   }
 
   if (op.getBoolOption("no-ion")) {
