@@ -8,22 +8,18 @@ import android.content.pm.PackageManager
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.utils.ext.PackageManagerCompatHelper
 
-/**
- * Returns the installation time of this application (in milliseconds).
- *
- * @return The installation time in milliseconds since epoch, or `0L` if unavailable.
- */
+/** Returns the installation time in milliseconds since epoch, or `null` if unavailable. */
 fun getApplicationInstalledTime(
     packageManagerCompatHelper: PackageManagerCompatHelper,
     packageName: String,
     logger: Logger,
-): Long =
+): Long? =
     try {
         packageManagerCompatHelper.getPackageInfoCompat(packageName, 0).firstInstallTime
     } catch (e: PackageManager.NameNotFoundException) {
         logger.warn("Unable to retrieve package info for $packageName", e)
-        0L
+        null
     } catch (e: UnsupportedOperationException) {
         logger.warn("Unable to retrieve package info for $packageName", e)
-        0L
+        null
     }

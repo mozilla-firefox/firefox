@@ -8,6 +8,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import mozilla.components.support.base.log.logger.Logger
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class GetApplicationInstalledTimeTest {
@@ -33,7 +34,7 @@ class GetApplicationInstalledTimeTest {
     }
 
     @Test
-    fun `WHEN getPackageInfoCompat throws NameNotFoundException THEN getApplicationInstalledTime returns 0`() {
+    fun `WHEN getPackageInfoCompat throws NameNotFoundException THEN getApplicationInstalledTime returns null`() {
         val installTime = 12345L
 
         val result =
@@ -50,11 +51,11 @@ class GetApplicationInstalledTimeTest {
                 logger = Logger(),
             )
 
-        assertEquals(0, result)
+        assertNull(result)
     }
 
     @Test
-    fun `WHEN getPackageInfoCompat throws UnsupportedOperationException THEN getApplicationInstalledTime returns 0`() {
+    fun `WHEN getPackageInfoCompat throws UnsupportedOperationException THEN getApplicationInstalledTime returns null`() {
         val installTime = 12345L
 
         val result =
@@ -71,6 +72,6 @@ class GetApplicationInstalledTimeTest {
                 logger = Logger(),
             )
 
-        assertEquals(0, result)
+        assertNull(result)
     }
 }

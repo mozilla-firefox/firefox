@@ -736,7 +736,7 @@ class Settings(
                         packageManagerCompatHelper = packageManagerCompatHelper,
                         packageName = packageName,
                         logger = logger,
-                    )
+                    ) ?: 0L
                 } else {
                     0L
                 }
