@@ -87,7 +87,8 @@ export class UrlbarProviderSemanticHistorySearch extends UrlbarProvider {
    * @param {UrlbarQueryContext} queryContext
    * @returns {{host: string, searchText: string}|null}
    *   `host` is the domain without any leading "www.", and `searchText` is the
-   *   text to search for: the final path segment followed by the other tokens.
+   *   text to search for: the words of the whole path followed by the other
+   *   tokens, with punctuation (including "/") replaced by spaces.
    *   Null if the search should not be scoped to a domain, including when the
    *   text to search for is shorter than MIN_DOMAIN_SCOPED_SEARCH_TEXT_LENGTH.
    */
@@ -110,7 +111,9 @@ export class UrlbarProviderSemanticHistorySearch extends UrlbarProvider {
       return null;
     }
 
-    let pathText = originInfo.path.slice(originInfo.path.lastIndexOf("/") + 1);
+    // Use every path segment, not just the last one: earlier segments often
+    // carry useful words, like "nutrition" in "healthline.com/nutrition/creatine".
+    let pathText = originInfo.path;
     try {
       pathText = decodeURIComponent(pathText);
     } catch {}

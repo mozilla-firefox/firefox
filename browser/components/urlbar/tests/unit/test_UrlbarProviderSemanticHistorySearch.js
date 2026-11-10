@@ -389,8 +389,20 @@ add_task(async function test_getDomainScope() {
     ["cnn.com - !", null],
     [
       "http://www.github.com/mozilla/semantic-history_bugs",
-      { host: "github.com", searchText: "semantic history bugs" },
+      { host: "github.com", searchText: "mozilla semantic history bugs" },
     ],
+    [
+      "github.com/mozilla/firefox/issues",
+      { host: "github.com", searchText: "mozilla firefox issues" },
+    ],
+    [
+      "github.com/mozilla/firefox bugs",
+      { host: "github.com", searchText: "mozilla firefox bugs" },
+    ],
+    // Short segments count together towards the minimum length.
+    ["cnn.com/us/DUI", { host: "cnn.com", searchText: "us DUI" }],
+    ["cnn.com/a/b", null],
+    ["cnn.com/a//b/", null],
     [
       "gist.github.com/some%20topic here",
       { host: "gist.github.com", searchText: "some topic here" },
