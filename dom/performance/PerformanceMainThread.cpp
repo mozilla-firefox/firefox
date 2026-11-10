@@ -439,7 +439,7 @@ void PerformanceMainThread::DispatchPendingEventTimingEntries() {
       RefPtr<PerformanceEventTiming> entry =
           mPendingEventTimingEntries.popFirst();
       UpdateInteractionTelemetry(entry);
-      if (entry->RawDuration().valueOr(0) >= kDefaultEventTimingMinDuration) {
+      if (entry->Duration() >= kDefaultEventTimingMinDuration) {
         QueueEntry(entry);
       }
 
