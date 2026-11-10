@@ -22,6 +22,32 @@
 namespace js {
 namespace jit {
 
+// For LSX type safety in assembler.
+struct VRegister {
+  using Codes = FloatRegisters;
+  using Encoding = Codes::Encoding;
+
+  constexpr Encoding encoding() const { return Encoding(encoding_); }
+
+  static constexpr VRegister FromEncoding(Encoding encoding) {
+    return VRegister(encoding);
+  }
+
+ private:
+  uint8_t encoding_;
+
+  explicit constexpr VRegister(Encoding encoding) : encoding_(encoding) {}
+};
+
+inline VRegister FloatRegister::toV() const {
+#if defined(ENABLE_JIT_SIMD)
+  MOZ_ASSERT(!invalid_);
+  return VRegister::FromEncoding(encoding());
+#else
+  MOZ_CRASH("ENABLE_JIT_SIMD not set");
+#endif
+}
+
 using LabelDoc = DisassemblerSpew::LabelDoc;
 
 static constexpr Register zero{Registers::zero};

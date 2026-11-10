@@ -494,6 +494,8 @@ static const uint32_t SizeOfReturnAddressAfterCall = 0;
 // GiB, +/-2 GiB).
 static const uint32_t JumpImmediateRange = INT32_MAX;
 
+struct VRegister;
+
 struct FloatRegister {
   typedef FloatRegisters Codes;
   typedef size_t Code;
@@ -578,6 +580,8 @@ struct FloatRegister {
     MOZ_CRASH("ENABLE_JIT_SIMD not set");
 #endif
   }
+
+  VRegister toV() const;
 
   constexpr uint32_t size() const {
     MOZ_ASSERT(!invalid_);
