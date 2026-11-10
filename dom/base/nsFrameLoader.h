@@ -20,6 +20,7 @@
 #include "mozilla/Attributes.h"
 #include "mozilla/LinkedList.h"
 #include "mozilla/RefPtr.h"
+#include "mozilla/WeakPtr.h"
 #include "mozilla/dom/BrowsingContext.h"
 #include "mozilla/dom/MessageManagerCallback.h"
 #include "mozilla/dom/Nullable.h"
@@ -108,6 +109,7 @@ typedef struct _GtkWidget GtkWidget;
 class nsFrameLoader final : public nsStubMutationObserver,
                             public mozilla::dom::ipc::MessageManagerCallback,
                             public nsWrapperCache,
+                            public mozilla::SupportsWeakPtr,
                             public mozilla::LinkedListElement<nsFrameLoader> {
   friend class AutoResetInShow;
   friend class AutoResetInFrameSwap;
