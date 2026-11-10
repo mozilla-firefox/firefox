@@ -23,7 +23,7 @@
   },
   "twitter": {
     "queryParams": ["refsrc", "cxt", "s"],
-    "hosts": ["www.twitter.com", "twitter.com", "x.com"]
+    "schemelessSites": ["twitter.com", "x.com"]
   },
   "amazon": {
     "queryParams": [
@@ -63,48 +63,48 @@
       "_encoding",
       "qualifier"
     ],
-    "hosts": [
-      "www.amazon.com",
-      "www.amazon.de",
-      "www.amazon.nl",
-      "www.amazon.fr",
-      "www.amazon.co.jp",
-      "www.amazon.in",
-      "www.amazon.es",
-      "www.amazon.ac",
-      "www.amazon.cn",
-      "www.amazon.eg",
-      "www.amazon.co.uk",
-      "www.amazon.it",
-      "www.amazon.pl",
-      "www.amazon.sg",
-      "www.amazon.ca",
-      "www.amazon.com.au",
-      "www.amazon.com.br",
-      "www.amazon.com.mx",
-      "www.amazon.com.be",
-      "www.amazon.com.tr",
-      "www.amazon.sa",
-      "www.amazon.ae",
-      "www.amazon.se",
-      "www.amazon.ie",
-      "www.amazon.co.za",
-      "www.audible.com",
-      "www.audible.co.uk",
-      "www.audible.de",
-      "www.audible.fr",
-      "www.audible.it",
-      "www.audible.ca",
-      "www.audible.com.au",
-      "www.audible.co.jp",
-      "www.audible.in",
-      "www.audible.es",
-      "www.audible.com.br"
+    "hosts": ["www.amazon.com.be"],
+    "schemelessSites": [
+      "amazon.com",
+      "amazon.de",
+      "amazon.nl",
+      "amazon.fr",
+      "amazon.co.jp",
+      "amazon.in",
+      "amazon.es",
+      "amazon.ac",
+      "amazon.cn",
+      "amazon.eg",
+      "amazon.co.uk",
+      "amazon.it",
+      "amazon.pl",
+      "amazon.sg",
+      "amazon.ca",
+      "amazon.com.au",
+      "amazon.com.br",
+      "amazon.com.mx",
+      "amazon.com.tr",
+      "amazon.sa",
+      "amazon.ae",
+      "amazon.se",
+      "amazon.ie",
+      "amazon.co.za",
+      "audible.com",
+      "audible.co.uk",
+      "audible.de",
+      "audible.fr",
+      "audible.it",
+      "audible.ca",
+      "audible.com.au",
+      "audible.co.jp",
+      "audible.in",
+      "audible.es",
+      "audible.com.br"
     ]
   },
   "youtube": {
     "queryParams": ["si", "is", "feature", "kw", "pp"],
-    "hosts": ["www.youtube.com", "youtube.com", "m.youtube.com", "youtu.be"]
+    "schemelessSites": ["youtube.com", "youtu.be"]
   },
   "carousell": {
     "queryParams": [
@@ -120,33 +120,27 @@
       "t-referrer_browse_type",
       "t-id"
     ],
-    "hosts": [
-      "ca.carousell.com",
-      "www.carousell.sg",
-      "www.carousell.com.hk",
-      "us.carousell.com",
-      "au.carousell.com"
-    ]
+    "schemelessSites": ["carousell.com", "carousell.sg", "carousell.com.hk"]
   },
   "etsy": {
     "queryParams": ["click_sum", "ref", "click_key", "organic_search_click"],
-    "hosts": ["www.etsy.com"]
+    "schemelessSites": ["etsy.com"]
   },
   "wallstreetjournal": {
     "queryParams": ["reflink"],
-    "hosts": ["www.wsj.com"]
+    "schemelessSites": ["wsj.com"]
   },
   "theathletic": {
     "queryParams": ["source"],
-    "hosts": ["theathletic.com"]
+    "schemelessSites": ["theathletic.com"]
   },
   "forbes": {
     "queryParams": ["sh"],
-    "hosts": ["www.forbes.com"]
+    "schemelessSites": ["forbes.com"]
   },
   "bloomberg": {
     "queryParams": ["leadSource", "sref", "srnd"],
-    "hosts": ["www.bloomberg.com"]
+    "schemelessSites": ["bloomberg.com"]
   },
   "tiktok": {
     "queryParams": [
@@ -164,7 +158,7 @@
       "t",
       "q"
     ],
-    "hosts": ["www.tiktok.com"]
+    "schemelessSites": ["tiktok.com"]
   },
   "bbc": {
     "queryParams": [
@@ -178,11 +172,11 @@
       "ns_fee",
       "xtor"
     ],
-    "hosts": ["www.bbc.com"]
+    "schemelessSites": ["bbc.com"]
   },
   "cnn": {
     "queryParams": ["ref"],
-    "hosts": ["www.cnn.co.jp", "www.cnn.com", "edition.cnn.com"]
+    "schemelessSites": ["cnn.co.jp", "cnn.com"]
   },
   "imdb": {
     "queryParams": [
@@ -194,19 +188,19 @@
       "pf_rd_r",
       "ref_"
     ],
-    "hosts": ["www.imdb.com", "m.imdb.com"]
+    "schemelessSites": ["imdb.com"]
   },
   "mirror": {
     "queryParams": ["int_source"],
-    "hosts": ["www.mirror.co.uk"]
+    "schemelessSites": ["mirror.co.uk"]
   },
   "wise": {
     "queryParams": ["partnerizecampaignID", "clickref", "adref", "partnerID"],
-    "hosts": ["wise.com"]
+    "schemelessSites": ["wise.com"]
   },
   "facebook": {
     "queryParams": ["tracking", "extid", "mibextid"],
-    "hosts": ["www.facebook.com"]
+    "schemelessSites": ["facebook.com"]
   },
   "lazada": {
     "queryParams": [
@@ -223,18 +217,17 @@
       "cid",
       "pos"
     ],
-    "hosts": [
-      "www.lazada.com.ph",
-      "www.lazada.vn",
-      "www.lazada.sg",
-      "www.lazada.com.my",
-      "pages.lazada.co.id",
-      "www.lazada.co.id"
+    "schemelessSites": [
+      "lazada.com.ph",
+      "lazada.vn",
+      "lazada.sg",
+      "lazada.com.my",
+      "lazada.co.id"
     ]
   },
   "msn": {
     "queryParams": ["cvid", "pc", "ei"],
-    "hosts": ["www.msn.com"]
+    "schemelessSites": ["msn.com"]
   },
   "aliexpress": {
     "queryParams": [
@@ -259,11 +252,7 @@
       "algo_expid",
       "gps-id"
     ],
-    "hosts": [
-      "www.aliexpress.com",
-      "robotime.aliexpress.com",
-      "ar.aliexpress.com"
-    ]
+    "schemelessSites": ["aliexpress.com"]
   },
   "reddit": {
     "queryParams": [
@@ -273,11 +262,11 @@
       "correlation_id",
       "share_id"
     ],
-    "hosts": ["www.reddit.com"]
+    "schemelessSites": ["reddit.com"]
   },
   "wired": {
     "queryParams": ["mbid"],
-    "hosts": ["www.wired.co.uk", "www.wired.com"]
+    "schemelessSites": ["wired.co.uk", "wired.com"]
   },
   "yandex": {
     "queryParams": [
@@ -292,7 +281,7 @@
       "suggest_reqid",
       "clid"
     ],
-    "hosts": ["yandex.com"]
+    "schemelessSites": ["yandex.com"]
   },
   "ebay": {
     "queryParams": [
@@ -309,7 +298,7 @@
       "_from",
       "hash"
     ],
-    "hosts": ["www.ebay.com", "www.ebay.co.uk"]
+    "schemelessSites": ["ebay.com", "ebay.co.uk"]
   },
   "flipkart": {
     "queryParams": [
@@ -323,7 +312,7 @@
       "pageUID",
       "lid"
     ],
-    "hosts": ["www.flipkart.com"]
+    "schemelessSites": ["flipkart.com"]
   },
   "google": {
     "queryParams": [
@@ -354,217 +343,215 @@
       "gs_lcp",
       "gs_lcrp"
     ],
-    "hosts": [
-      "www.google.com",
-      "www.google.ad",
-      "www.google.ae",
-      "www.google.com.af",
-      "www.google.com.ag",
-      "www.google.al",
-      "www.google.am",
-      "www.google.co.ao",
-      "www.google.com.ar",
-      "www.google.as",
-      "www.google.at",
-      "www.google.com.au",
-      "www.google.az",
-      "www.google.ba",
-      "www.google.com.bd",
-      "www.google.be",
-      "www.google.bf",
-      "www.google.bg",
-      "www.google.com.bh",
-      "www.google.bi",
-      "www.google.bj",
-      "www.google.com.bn",
-      "www.google.com.bo",
-      "www.google.com.br",
-      "www.google.bs",
-      "www.google.bt",
-      "www.google.co.bw",
-      "www.google.by",
-      "www.google.com.bz",
-      "www.google.ca",
-      "www.google.cd",
-      "www.google.cf",
-      "www.google.cg",
-      "www.google.ch",
-      "www.google.ci",
-      "www.google.co.ck",
-      "www.google.cl",
-      "www.google.cm",
-      "www.google.cn",
-      "www.google.com.co",
-      "www.google.co.cr",
-      "www.google.com.cu",
-      "www.google.cv",
-      "www.google.com.cy",
-      "www.google.cz",
-      "www.google.de",
-      "www.google.dj",
-      "www.google.dk",
-      "www.google.dm",
-      "www.google.com.do",
-      "www.google.dz",
-      "www.google.com.ec",
-      "www.google.ee",
-      "www.google.com.eg",
-      "www.google.es",
-      "www.google.com.et",
-      "www.google.fi",
-      "www.google.com.fj",
-      "www.google.fm",
-      "www.google.fr",
-      "www.google.ga",
-      "www.google.ge",
-      "www.google.gg",
-      "www.google.com.gh",
-      "www.google.com.gi",
-      "www.google.gl",
-      "www.google.gm",
-      "www.google.gr",
-      "www.google.com.gt",
-      "www.google.gy",
-      "www.google.com.hk",
-      "www.google.hn",
-      "www.google.hr",
-      "www.google.ht",
-      "www.google.hu",
-      "www.google.co.id",
-      "www.google.ie",
-      "www.google.co.il",
-      "www.google.im",
-      "www.google.co.in",
-      "www.google.iq",
-      "www.google.is",
-      "www.google.it",
-      "www.google.je",
-      "www.google.com.jm",
-      "www.google.jo",
-      "www.google.co.jp",
-      "www.google.co.ke",
-      "www.google.com.kh",
-      "www.google.ki",
-      "www.google.kg",
-      "www.google.co.kr",
-      "www.google.com.kw",
-      "www.google.kz",
-      "www.google.la",
-      "www.google.com.lb",
-      "www.google.li",
-      "www.google.lk",
-      "www.google.co.ls",
-      "www.google.lt",
-      "www.google.lu",
-      "www.google.lv",
-      "www.google.com.ly",
-      "www.google.co.ma",
-      "www.google.md",
-      "www.google.me",
-      "www.google.mg",
-      "www.google.mk",
-      "www.google.ml",
-      "www.google.com.mm",
-      "www.google.mn",
-      "www.google.com.mt",
-      "www.google.mu",
-      "www.google.mv",
-      "www.google.mw",
-      "www.google.com.mx",
-      "www.google.com.my",
-      "www.google.co.mz",
-      "www.google.com.na",
-      "www.google.com.ng",
-      "www.google.com.ni",
-      "www.google.ne",
-      "www.google.nl",
-      "www.google.no",
-      "www.google.com.np",
-      "www.google.nr",
-      "www.google.nu",
-      "www.google.co.nz",
-      "www.google.com.om",
-      "www.google.com.pa",
-      "www.google.com.pe",
-      "www.google.com.pg",
-      "www.google.com.ph",
-      "www.google.com.pk",
-      "www.google.pl",
-      "www.google.pn",
-      "www.google.com.pr",
-      "www.google.ps",
-      "www.google.pt",
-      "www.google.com.py",
-      "www.google.com.qa",
-      "www.google.ro",
-      "www.google.ru",
-      "www.google.rw",
-      "www.google.com.sa",
-      "www.google.com.sb",
-      "www.google.sc",
-      "www.google.se",
-      "www.google.com.sg",
-      "www.google.sh",
-      "www.google.si",
-      "www.google.sk",
-      "www.google.com.sl",
-      "www.google.sn",
-      "www.google.so",
-      "www.google.sm",
-      "www.google.sr",
-      "www.google.st",
-      "www.google.com.sv",
-      "www.google.td",
-      "www.google.tg",
-      "www.google.co.th",
-      "www.google.com.tj",
-      "www.google.tl",
-      "www.google.tm",
-      "www.google.tn",
-      "www.google.to",
-      "www.google.com.tr",
-      "www.google.tt",
-      "www.google.com.tw",
-      "www.google.co.tz",
-      "www.google.com.ua",
-      "www.google.co.ug",
-      "www.google.co.uk",
-      "www.google.com.uy",
-      "www.google.co.uz",
-      "www.google.com.vc",
-      "www.google.co.ve",
-      "www.google.co.vi",
-      "www.google.com.vn",
-      "www.google.vu",
-      "www.google.ws",
-      "www.google.rs",
-      "www.google.co.za",
-      "www.google.co.zm",
-      "www.google.co.zw",
-      "www.google.cat",
-      "consent.google.de",
-      "support.google.com"
+    "schemelessSites": [
+      "google.com",
+      "google.ad",
+      "google.ae",
+      "google.com.af",
+      "google.com.ag",
+      "google.al",
+      "google.am",
+      "google.co.ao",
+      "google.com.ar",
+      "google.as",
+      "google.at",
+      "google.com.au",
+      "google.az",
+      "google.ba",
+      "google.com.bd",
+      "google.be",
+      "google.bf",
+      "google.bg",
+      "google.com.bh",
+      "google.bi",
+      "google.bj",
+      "google.com.bn",
+      "google.com.bo",
+      "google.com.br",
+      "google.bs",
+      "google.bt",
+      "google.co.bw",
+      "google.by",
+      "google.com.bz",
+      "google.ca",
+      "google.cd",
+      "google.cf",
+      "google.cg",
+      "google.ch",
+      "google.ci",
+      "google.co.ck",
+      "google.cl",
+      "google.cm",
+      "google.cn",
+      "google.com.co",
+      "google.co.cr",
+      "google.com.cu",
+      "google.cv",
+      "google.com.cy",
+      "google.cz",
+      "google.de",
+      "google.dj",
+      "google.dk",
+      "google.dm",
+      "google.com.do",
+      "google.dz",
+      "google.com.ec",
+      "google.ee",
+      "google.com.eg",
+      "google.es",
+      "google.com.et",
+      "google.fi",
+      "google.com.fj",
+      "google.fm",
+      "google.fr",
+      "google.ga",
+      "google.ge",
+      "google.gg",
+      "google.com.gh",
+      "google.com.gi",
+      "google.gl",
+      "google.gm",
+      "google.gr",
+      "google.com.gt",
+      "google.gy",
+      "google.com.hk",
+      "google.hn",
+      "google.hr",
+      "google.ht",
+      "google.hu",
+      "google.co.id",
+      "google.ie",
+      "google.co.il",
+      "google.im",
+      "google.co.in",
+      "google.iq",
+      "google.is",
+      "google.it",
+      "google.je",
+      "google.com.jm",
+      "google.jo",
+      "google.co.jp",
+      "google.co.ke",
+      "google.com.kh",
+      "google.ki",
+      "google.kg",
+      "google.co.kr",
+      "google.com.kw",
+      "google.kz",
+      "google.la",
+      "google.com.lb",
+      "google.li",
+      "google.lk",
+      "google.co.ls",
+      "google.lt",
+      "google.lu",
+      "google.lv",
+      "google.com.ly",
+      "google.co.ma",
+      "google.md",
+      "google.me",
+      "google.mg",
+      "google.mk",
+      "google.ml",
+      "google.com.mm",
+      "google.mn",
+      "google.com.mt",
+      "google.mu",
+      "google.mv",
+      "google.mw",
+      "google.com.mx",
+      "google.com.my",
+      "google.co.mz",
+      "google.com.na",
+      "google.com.ng",
+      "google.com.ni",
+      "google.ne",
+      "google.nl",
+      "google.no",
+      "google.com.np",
+      "google.nr",
+      "google.nu",
+      "google.co.nz",
+      "google.com.om",
+      "google.com.pa",
+      "google.com.pe",
+      "google.com.pg",
+      "google.com.ph",
+      "google.com.pk",
+      "google.pl",
+      "google.pn",
+      "google.com.pr",
+      "google.ps",
+      "google.pt",
+      "google.com.py",
+      "google.com.qa",
+      "google.ro",
+      "google.ru",
+      "google.rw",
+      "google.com.sa",
+      "google.com.sb",
+      "google.sc",
+      "google.se",
+      "google.com.sg",
+      "google.sh",
+      "google.si",
+      "google.sk",
+      "google.com.sl",
+      "google.sn",
+      "google.so",
+      "google.sm",
+      "google.sr",
+      "google.st",
+      "google.com.sv",
+      "google.td",
+      "google.tg",
+      "google.co.th",
+      "google.com.tj",
+      "google.tl",
+      "google.tm",
+      "google.tn",
+      "google.to",
+      "google.com.tr",
+      "google.tt",
+      "google.com.tw",
+      "google.co.tz",
+      "google.com.ua",
+      "google.co.ug",
+      "google.co.uk",
+      "google.com.uy",
+      "google.co.uz",
+      "google.com.vc",
+      "google.co.ve",
+      "google.co.vi",
+      "google.com.vn",
+      "google.vu",
+      "google.ws",
+      "google.rs",
+      "google.co.za",
+      "google.co.zm",
+      "google.co.zw",
+      "google.cat"
     ]
   },
   "bing": {
     "queryParams": ["qp", "cvid", "qs", "form", "sk", "sc", "sp"],
-    "hosts": ["www.bing.com"]
+    "schemelessSites": ["bing.com"]
   },
   "twitch": {
     "queryParams": ["tt_content", "tt_medium"],
-    "hosts": ["www.twitch.tv", "dev.twitch.tv"]
+    "schemelessSites": ["twitch.tv"]
   },
   "cnet": {
     "queryParams": ["ftag"],
-    "hosts": ["www.cnet.com"]
+    "schemelessSites": ["cnet.com"]
   },
   "nytimes": {
     "queryParams": ["smid"],
-    "hosts": ["www.nytimes.com"]
+    "schemelessSites": ["nytimes.com"]
   },
   "github": {
     "queryParams": ["email_token", "email_source"],
-    "hosts": ["github.com"]
+    "schemelessSites": ["github.com"]
   },
   "linkedin": {
     "queryParams": ["refId", "trk", "trackingId"],
@@ -572,10 +559,10 @@
   },
   "newyorker": {
     "queryParams": ["esrc", "bxid", "cndid", "source", "mbid"],
-    "hosts": ["www.newyorker.com"]
+    "schemelessSites": ["newyorker.com"]
   },
   "bestbuy": {
     "queryParams": ["acampID", "irclickid", "irgwc", "loc", "mpid", "intl"],
-    "hosts": ["www.bestbuy.com"]
+    "schemelessSites": ["bestbuy.com"]
   }
 }

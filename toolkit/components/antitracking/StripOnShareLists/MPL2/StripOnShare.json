@@ -188,11 +188,11 @@
   },
   "twitter": {
     "queryParams": ["ref_src", "ref_url"],
-    "hosts": ["www.twitter.com", "twitter.com", "x.com"]
+    "schemelessSites": ["twitter.com", "x.com"]
   },
   "instagram": {
     "queryParams": ["igshid", "ig_rid"],
-    "hosts": ["www.instagram.com"]
+    "schemelessSites": ["instagram.com"]
   },
   "amazon": {
     "queryParams": [
@@ -235,56 +235,55 @@
       "sr",
       "store_ref"
     ],
-    "hosts": [
-      "www.amazon.com",
-      "www.amazon.de",
-      "www.amazon.nl",
-      "www.amazon.fr",
-      "www.amazon.co.jp",
-      "www.amazon.in",
-      "www.amazon.es",
-      "www.amazon.ac",
-      "www.amazon.cn",
-      "www.amazon.eg",
-      "www.amazon.co.uk",
-      "www.amazon.it",
-      "www.amazon.pl",
-      "www.amazon.sg",
-      "www.amazon.ca",
-      "www.amazon.com.au",
-      "www.amazon.com.br",
-      "www.amazon.com.mx",
-      "www.amazon.com.be",
-      "www.amazon.com.tr",
-      "www.amazon.sa",
-      "www.amazon.ae",
-      "www.amazon.se",
-      "www.amazon.ie",
-      "www.amazon.co.za",
-      "www.audible.com",
-      "www.audible.co.uk",
-      "www.audible.de",
-      "www.audible.fr",
-      "www.audible.it",
-      "www.audible.ca",
-      "www.audible.com.au",
-      "www.audible.co.jp",
-      "www.audible.in",
-      "www.audible.es",
-      "www.audible.com.br"
+    "hosts": ["www.amazon.com.be"],
+    "schemelessSites": [
+      "amazon.com",
+      "amazon.de",
+      "amazon.nl",
+      "amazon.fr",
+      "amazon.co.jp",
+      "amazon.in",
+      "amazon.es",
+      "amazon.ac",
+      "amazon.cn",
+      "amazon.eg",
+      "amazon.co.uk",
+      "amazon.it",
+      "amazon.pl",
+      "amazon.sg",
+      "amazon.ca",
+      "amazon.com.au",
+      "amazon.com.br",
+      "amazon.com.mx",
+      "amazon.com.tr",
+      "amazon.sa",
+      "amazon.ae",
+      "amazon.se",
+      "amazon.ie",
+      "amazon.co.za",
+      "audible.com",
+      "audible.co.uk",
+      "audible.de",
+      "audible.fr",
+      "audible.it",
+      "audible.ca",
+      "audible.com.au",
+      "audible.co.jp",
+      "audible.in",
+      "audible.es",
+      "audible.com.br"
     ]
   },
   "handelsblatt": {
     "queryParams": ["share"],
-    "hosts": ["www.handelsblatt.com"]
+    "schemelessSites": ["handelsblatt.com"]
   },
   "shopee": {
     "queryParams": ["sp_atk", "xptdk"],
-    "hosts": [
+    "schemelessSites": [
       "shopee.co.id",
       "shopee.tw",
       "shopee.vn",
-      "shopee.co.vn",
       "shopee.ph",
       "shopee.com.my",
       "shopee.sg",
@@ -296,29 +295,30 @@
   },
   "tokopedia": {
     "queryParams": ["extParam"],
-    "hosts": ["www.tokopedia.com"]
+    "schemelessSites": ["tokopedia.com"]
   },
   "spotify": {
     "queryParams": ["si"],
-    "hosts": ["open.spotify.com"]
+    "schemelessSites": ["spotify.com"]
   },
   "meetup": {
     "queryParams": ["eventOrigin", "recId", "recSource", "searchId"],
-    "hosts": ["www.meetup.com"]
+    "schemelessSites": ["meetup.com"]
   },
   "facebook": {
     "queryParams": ["__cft__[0]", "__cft__%5B0%5D", "__tn__"],
-    "hosts": ["www.facebook.com"]
+    "schemelessSites": ["facebook.com"]
   },
   "wikimedia": {
     "queryParams": ["wprov"],
-    "hosts": [
+    "schemelessSites": [
+      "wikipedia.org",
+      "wikimedia.org",
+      "mediawiki.org",
       "w.wiki",
-      "www.wikidata.org",
-      "test.wikidata.org",
-      "www.wikifunctions.org"
-    ],
-    "schemelessSites": ["wikipedia.org", "wikimedia.org", "mediawiki.org"]
+      "wikidata.org",
+      "wikifunctions.org"
+    ]
   },
   "bilibili": {
     "queryParams": [
@@ -327,11 +327,11 @@
       "is_room_feed",
       "live_from"
     ],
-    "hosts": ["www.bilibili.com", "space.bilibili.com", "live.bilibili.com"]
+    "schemelessSites": ["bilibili.com"]
   },
   "humblebundle": {
     "queryParams": ["hmb_source", "hmb_medium", "hmb_campaign"],
-    "hosts": ["www.humblebundle.com"]
+    "schemelessSites": ["humblebundle.com"]
   },
   "linkedin": {
     "queryParams": [
