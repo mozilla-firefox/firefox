@@ -118,11 +118,16 @@ class CollectionsToTabGroupsMigration(
         return migratedAllCollections
     }
 
-    /** Returns the stored [TabCollection]s or null if the collection storage could not be read. */
+    /**
+     * Returns the stored [TabCollection]s, oldest first, or null if the collection storage could not be read.
+     *
+     * Collections are stored newest first. They are reversed so they are migrated oldest first, which makes the newest
+     * collection the most recently modified tab group and preserves the collections' order in the tab groups list.
+     */
     @Suppress("TooGenericExceptionCaught")
     private suspend fun getCollections(): List<TabCollection>? =
         try {
-            tabCollectionStorage.getCollectionsList()
+            tabCollectionStorage.getCollectionsList().asReversed()
         } catch (e: Exception) {
             reportFailure(message = "Unable to fetch collections from storage", throwable = e)
             null

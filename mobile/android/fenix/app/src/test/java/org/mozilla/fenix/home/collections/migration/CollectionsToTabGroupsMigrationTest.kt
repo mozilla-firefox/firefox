@@ -99,9 +99,9 @@ class CollectionsToTabGroupsMigrationTest {
             val storage =
                 mockCollectionStorage(
                     listOf(
-                        collection(id = 1L, title = "Recipes", tabIds = listOf("a", "b")),
-                        collection(id = 2L, title = "Empty", tabIds = emptyList()),
                         collection(id = 3L, title = "News", tabIds = listOf("c")),
+                        collection(id = 2L, title = "Empty", tabIds = emptyList()),
+                        collection(id = 1L, title = "Recipes", tabIds = listOf("a", "b")),
                     )
                 )
 
@@ -111,6 +111,28 @@ class CollectionsToTabGroupsMigrationTest {
             assertEquals(listOf("Recipes", "News"), storedGroups.tabGroups.map { it.title })
             assertEquals(
                 listOf(TabGroupTheme.Yellow.name, TabGroupTheme.Orange.name),
+                storedGroups.tabGroups.map { it.theme },
+            )
+        }
+
+    @Test
+    fun `GIVEN collections stored newest first WHEN collections are migrated to tab groups THEN they are migrated oldest first`() =
+        runTest {
+            val storage =
+                mockCollectionStorage(
+                    listOf(
+                        collection(id = 3L, title = "Added third", tabIds = listOf("c")),
+                        collection(id = 2L, title = "Added second", tabIds = listOf("b")),
+                        collection(id = 1L, title = "Added first", tabIds = listOf("a")),
+                    )
+                )
+
+            collectionsToTabGroupsMigration(FakeCollectionsMigrationRepository(), storage).migrateIfNeeded()
+
+            val storedGroups = tabGroupRepository.tabGroupDataFlow.first()
+            assertEquals(listOf("Added first", "Added second", "Added third"), storedGroups.tabGroups.map { it.title })
+            assertEquals(
+                listOf(TabGroupTheme.Yellow.name, TabGroupTheme.Orange.name, TabGroupTheme.Red.name),
                 storedGroups.tabGroups.map { it.theme },
             )
         }
@@ -142,8 +164,8 @@ class CollectionsToTabGroupsMigrationTest {
             val storage =
                 mockCollectionStorage(
                     listOf(
-                        collection(id = 1L, title = "Recipes", tabIds = listOf("a")),
                         collection(id = 2L, title = "News", tabIds = listOf("b")),
+                        collection(id = 1L, title = "Recipes", tabIds = listOf("a")),
                     )
                 )
 
@@ -350,8 +372,8 @@ class CollectionsToTabGroupsMigrationTest {
             val storage =
                 mockCollectionStorage(
                     listOf(
-                        collection(id = 1L, title = "Recipes", tabIds = listOf("a"), restorableTabIds = emptyList()),
                         collection(id = 2L, title = "News", tabIds = listOf("c")),
+                        collection(id = 1L, title = "Recipes", tabIds = listOf("a"), restorableTabIds = emptyList()),
                     )
                 )
 
