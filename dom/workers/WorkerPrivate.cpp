@@ -1154,10 +1154,15 @@ class WorkerPrivate::MemoryReporter final : public nsIMemoryReporter {
 
   SharedMutex mMutex;
   WorkerPrivate* mWorkerPrivate;
+  // Outlives mWorkerPrivate and rejects dispatches once the worker has been
+  // destroyed, so CollectReports never has to keep the worker alive itself.
+  const nsCOMPtr<nsISerialEventTarget> mControlEventTarget;
 
  public:
   explicit MemoryReporter(WorkerPrivate* aWorkerPrivate)
-      : mMutex(aWorkerPrivate->mMutex), mWorkerPrivate(aWorkerPrivate) {
+      : mMutex(aWorkerPrivate->mMutex),
+        mWorkerPrivate(aWorkerPrivate),
+        mControlEventTarget(aWorkerPrivate->ControlEventTarget()) {
     aWorkerPrivate->AssertIsOnWorkerThread();
   }
 
@@ -1168,19 +1173,22 @@ class WorkerPrivate::MemoryReporter final : public nsIMemoryReporter {
  private:
   class FinishCollectRunnable;
 
-  class CollectReportsRunnable final : public MainThreadWorkerControlRunnable {
+  // Dispatched through mControlEventTarget, which wraps it in a control
+  // runnable. Cancel is a no-op so that draining the control queue of a dead
+  // worker only releases it, and the destructor still finishes the report.
+  class CollectReportsRunnable final : public CancelableRunnable {
     RefPtr<FinishCollectRunnable> mFinishCollectRunnable;
     const bool mAnonymize;
 
    public:
-    CollectReportsRunnable(WorkerPrivate* aWorkerPrivate,
-                           nsIHandleReportCallback* aHandleReport,
+    CollectReportsRunnable(nsIHandleReportCallback* aHandleReport,
                            nsISupports* aHandlerData, bool aAnonymize,
                            const nsACString& aPath);
 
-   private:
-    bool WorkerRun(JSContext* aCx, WorkerPrivate* aWorkerPrivate) override;
+    NS_IMETHOD Run() override;
+    nsresult Cancel() override { return NS_OK; }
 
+   private:
     ~CollectReportsRunnable() {
       if (NS_IsMainThread()) {
         mFinishCollectRunnable->Run();
@@ -1282,11 +1290,15 @@ WorkerPrivate::MemoryReporter::CollectReports(
     }
     path.AppendPrintf(", 0x%p)/", static_cast<void*>(mWorkerPrivate));
 
-    runnable = new CollectReportsRunnable(mWorkerPrivate, aHandleReport, aData,
-                                          aAnonymize, path);
+    runnable =
+        new CollectReportsRunnable(aHandleReport, aData, aAnonymize, path);
   }
 
-  if (!runnable->Dispatch(mWorkerPrivate)) {
+  // The worker may be destroyed by its parent thread at any point from here
+  // on. The event target checks for that atomically with the dispatch, and a
+  // failed dispatch releases the runnable here, which finishes the report.
+  if (NS_FAILED(mControlEventTarget->Dispatch(runnable.forget(),
+                                              NS_DISPATCH_NORMAL))) {
     return NS_ERROR_UNEXPECTED;
   }
 
@@ -1294,18 +1306,21 @@ WorkerPrivate::MemoryReporter::CollectReports(
 }
 
 WorkerPrivate::MemoryReporter::CollectReportsRunnable::CollectReportsRunnable(
-    WorkerPrivate* aWorkerPrivate, nsIHandleReportCallback* aHandleReport,
-    nsISupports* aHandlerData, bool aAnonymize, const nsACString& aPath)
-    : MainThreadWorkerControlRunnable("CollectReportsRunnable"),
+    nsIHandleReportCallback* aHandleReport, nsISupports* aHandlerData,
+    bool aAnonymize, const nsACString& aPath)
+    : CancelableRunnable(
+          "dom::WorkerPrivate::MemoryReporter::CollectReportsRunnable"),
       mFinishCollectRunnable(new FinishCollectRunnable(
           aHandleReport, aHandlerData, aAnonymize, aPath)),
       mAnonymize(aAnonymize) {}
 
-bool WorkerPrivate::MemoryReporter::CollectReportsRunnable::WorkerRun(
-    JSContext* aCx, WorkerPrivate* aWorkerPrivate) {
-  aWorkerPrivate->AssertIsOnWorkerThread();
+NS_IMETHODIMP
+WorkerPrivate::MemoryReporter::CollectReportsRunnable::Run() {
+  WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
+  MOZ_ASSERT(workerPrivate);
+  workerPrivate->AssertIsOnWorkerThread();
 
-  RefPtr<WorkerGlobalScope> scope = aWorkerPrivate->GlobalScope();
+  RefPtr<WorkerGlobalScope> scope = workerPrivate->GlobalScope();
   RefPtr<Performance> performance =
       scope ? scope->GetPerformanceIfExists() : nullptr;
   if (performance) {
@@ -1315,10 +1330,10 @@ bool WorkerPrivate::MemoryReporter::CollectReportsRunnable::WorkerRun(
     mFinishCollectRunnable->SetPerformanceSizes(userEntries, resourceEntries);
   }
 
-  mFinishCollectRunnable->SetSuccess(aWorkerPrivate->CollectRuntimeStats(
+  mFinishCollectRunnable->SetSuccess(workerPrivate->CollectRuntimeStats(
       &mFinishCollectRunnable->mCxStats, mAnonymize));
 
-  return true;
+  return NS_OK;
 }
 
 WorkerPrivate::MemoryReporter::FinishCollectRunnable::FinishCollectRunnable(
