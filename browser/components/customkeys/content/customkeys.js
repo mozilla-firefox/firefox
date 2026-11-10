@@ -57,19 +57,19 @@ async function buildTable() {
       keyLabelContainer.className = "key-label-container";
       keyLabel.className = "key-label";
       keyLabel.textContent = keyLabelText;
-      if (key.internal) {
-        row.classList.add("internal");
-        keyDescription.className = "text-deemphasized";
-        keyDescription.setAttribute(
-          "data-l10n-id",
-          "customkeys-key-unchangeable"
-        );
-      } else if (key.systemAssigned) {
+      if (key.systemAssigned) {
         row.classList.add("system-assigned");
         keyDescription.className = "text-deemphasized";
         keyDescription.setAttribute(
           "data-l10n-id",
           "customkeys-key-system-assigned"
+        );
+      } else if (key.internal) {
+        row.classList.add("internal");
+        keyDescription.className = "text-deemphasized";
+        keyDescription.setAttribute(
+          "data-l10n-id",
+          "customkeys-key-unchangeable"
         );
       }
       keyLabelContainer.append(keyLabel);
