@@ -118,8 +118,6 @@ INCLUDES = \
   -I$(ABS_DIST)/include \
   $(NULL)
 
-include $(MOZILLA_DIR)/config/static-checking-config.mk
-
 LDFLAGS		= $(COMPUTED_LDFLAGS)
 
 COMPILE_CFLAGS	= $(COMPUTED_CFLAGS) $(COMPUTED_PGO_CFLAGS) $(_DEPEND_CFLAGS)

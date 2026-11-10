@@ -1560,6 +1560,20 @@ class WindowsClangPluginToolchainTest(BaseToolchainTest):
             ),
         )
 
+    def test_clang_plugin_compiler_wasm_cxx(self):
+        sandbox = self.toolchain_sandbox(
+            {"/usr/bin/clang-cl.EXE": CLANG_CL_19 + CLANG_CL_PLATFORM_X86},
+            {"CC": "/usr/bin/clang-cl.EXE", "CXX": "/usr/bin/clang-cl.EXE"},
+            args=["--enable-clang-plugin"],
+        )
+        wasm_cxx = sandbox["dependable"](["/usr/bin/clang++.EXE", "--target=wasm32"])
+        self.assertEqual(
+            sandbox._value_for(
+                sandbox["clang_plugin_compiler"](wasm_cxx, "clang++", "g++")
+            ),
+            ["/usr/bin/clang.exe", "--driver-mode=g++", "--target=wasm32"],
+        )
+
 
 class WindowsToWindowsCrossToolchainTest(BaseToolchainTest):
     HOST = "i686-pc-windows-msvc"

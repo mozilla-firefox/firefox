@@ -142,6 +142,19 @@ class TestToolkitMozConfigure(BaseConfigureTest):
             (defaults, defaults + ["-fcolor-diagnostics", "-DBAR=a b"]),
         )
 
+    def test_wasm_cxx_clang_plugin(self):
+        sandbox = self.get_sandbox(
+            {}, {}, ["--target=x86_64-pc-windows-msvc", "--enable-clang-plugin"], {}
+        )
+        wasm_cxx = ["/usr/bin/clang++.EXE", "--target=wasm32"]
+        sandbox._dependency_overrides[
+            sandbox._depends[sandbox["wasm_cxx_with_flags"]]
+        ] = wasm_cxx
+        self.assertEqual(
+            (sandbox.get_config("WASM_CXX"), sandbox.get_config("WASM_CXX_LINK")),
+            (["/usr/bin/clang.exe", "--driver-mode=g++", "--target=wasm32"], wasm_cxx),
+        )
+
     def test_elfhack(self):
         class ReadElf:
             def __init__(self, with_relr):
