@@ -2647,7 +2647,7 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
 
 #remote-control-panel-toggle-button {
   margin: 0;
-  justify-content: center;
+  width: 100%;
 }
 
 /* Report Broken Site panels */
