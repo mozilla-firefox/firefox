@@ -215,6 +215,8 @@ skip-if = [
 ["test_meta_refresh.html"]
 support-files = ["file_meta_refresh.html"]
 
+["test_navigate_event_strong_sourceElement.html"]
+
 ["test_navigation_type.html"]
 support-files = ["file_navigation_type.html"]
 

@@ -1,0 +1,35 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Navigation source element should be kept alive until navigate event is fired</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<form><input type=submit></form>
+<script>
+"use strict";
+
+const form = document.querySelector("form");
+
+add_task(async () => {
+  const {promise, resolve} = Promise.withResolvers();
+  navigation.addEventListener("navigate", e => {
+    resolve(e.sourceElement);
+    e.intercept();
+  }, {once: true});
+
+  document.querySelector("input").click();
+  document.querySelector("input").remove();
+
+  SpecialPowers.forceGC();
+  SpecialPowers.forceCC();
+
+  const sourceElement = await promise;
+  is(sourceElement.tagName, "INPUT",
+    "Source element should be kept alive until navigate event is fired.");
+});
+</script>
+</body>
+</html>

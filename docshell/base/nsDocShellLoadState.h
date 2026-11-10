@@ -460,10 +460,9 @@ class nsDocShellLoadState final {
 
   // This is used as the parameter for https://html.spec.whatwg.org/#navigate
   void SetSourceElement(mozilla::dom::Element* aElement);
-  already_AddRefed<mozilla::dom::Element> GetSourceElement() const;
-  bool HasSourceElement() const {
-    return mSourceElement && mSourceElement->IsAlive();
-  }
+  // Take ownership of the source element.
+  already_AddRefed<mozilla::dom::Element> TakeSourceElement();
+  bool HasSourceElement() const { return !!mSourceElement; }
 
   // This is used as the parameter for https://html.spec.whatwg.org/#navigate
   nsIStructuredCloneContainer* GetNavigationAPIState() const;
@@ -792,7 +791,7 @@ class nsDocShellLoadState final {
   nsILoadInfo::HTTPSUpgradeTelemetryType mHttpsUpgradeTelemetry =
       nsILoadInfo::NOT_INITIALIZED;
 
-  nsWeakPtr mSourceElement;
+  RefPtr<mozilla::dom::Element> mSourceElement;
 
   RefPtr<nsStructuredCloneContainer> mNavigationAPIState;
 

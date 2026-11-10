@@ -2552,6 +2552,9 @@ nsresult BrowsingContext::InternalLoad(nsDocShellLoadState* aLoadState) {
   // Same reason as for the sandbox flags.
   MOZ_TRY(CheckFramebusting(aLoadState));
 
+  // Ensure we don't keep a strong reference to the source element for too long.
+  aLoadState->SetSourceElement(nullptr);
+
   if (XRE_IsParentProcess()) {
     ContentParent* cp = Canonical()->GetContentParent();
     if (!cp || !cp->CanSend()) {
