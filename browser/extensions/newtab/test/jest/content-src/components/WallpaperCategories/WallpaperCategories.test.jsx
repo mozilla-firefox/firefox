@@ -410,6 +410,149 @@ describe("<WallpaperCategories>", () => {
     });
   });
 
+  describe("category order and cap", () => {
+    const ALL = [
+      "custom-wallpaper",
+      "firefox",
+      "abstracts",
+      "celestial",
+      "photographs",
+      "solid-colors",
+      "partner",
+    ];
+
+    const orderProps = (prefs = {}) => ({
+      ...DEFAULT_PROPS,
+      Prefs: { values: { ...DEFAULT_PROPS.Prefs.values, ...prefs } },
+      Wallpapers: {
+        ...DEFAULT_PROPS.Wallpapers,
+        wallpaperList: ALL.filter(c => c !== "custom-wallpaper").map(c => ({
+          title: `${c}-1`,
+          category: c,
+          theme: "light",
+        })),
+        categories: ALL,
+      },
+    });
+
+    const shownCategories = props => {
+      const { container } = render(<Harness {...props} />);
+      return [
+        ...container.querySelectorAll(".category-list button.wallpaper-input"),
+      ].map(button => button.id);
+    };
+
+    it("keeps the feed order without a pref", () => {
+      expect(shownCategories(orderProps())).toEqual(ALL);
+    });
+
+    it("puts listed categories first and the rest after, in feed order", () => {
+      expect(
+        shownCategories(
+          orderProps({
+            "newtabWallpapers.categoryOrder": "partner, celestial",
+          })
+        )
+      ).toEqual([
+        "partner",
+        "celestial",
+        "custom-wallpaper",
+        "firefox",
+        "abstracts",
+        "photographs",
+        "solid-colors",
+      ]);
+    });
+
+    it("lets trainhopConfig set the order", () => {
+      expect(
+        shownCategories(
+          orderProps({
+            "newtabWallpapers.categoryOrder": "celestial",
+            trainhopConfig: { wallpapers: { categoryOrder: "partner" } },
+          })
+        )[0]
+      ).toBe("partner");
+    });
+
+    it("does not cap the classic layout", () => {
+      expect(
+        shownCategories(orderProps({ "newtabWallpapers.maxCategories": 2 }))
+      ).toHaveLength(ALL.length);
+    });
+
+    it("caps Nova at 6 by default, dropping the last category", () => {
+      expect(shownCategories(orderProps({ "nova.enabled": true }))).toEqual(
+        ALL.slice(0, 6)
+      );
+    });
+
+    it("lets a listed category replace one at the end", () => {
+      expect(
+        shownCategories(
+          orderProps({
+            "nova.enabled": true,
+            "newtabWallpapers.categoryOrder":
+              "custom-wallpaper,firefox,abstracts,celestial,photographs,partner",
+          })
+        )
+      ).toEqual([
+        "custom-wallpaper",
+        "firefox",
+        "abstracts",
+        "celestial",
+        "photographs",
+        "partner",
+      ]);
+    });
+
+    it("always keeps Your images, even when it sorts past the cap", () => {
+      expect(
+        shownCategories(
+          orderProps({
+            "nova.enabled": true,
+            "newtabWallpapers.maxCategories": 2,
+            "newtabWallpapers.categoryOrder": "firefox,abstracts,celestial",
+          })
+        )
+      ).toEqual(["firefox", "custom-wallpaper"]);
+    });
+
+    it("lets trainhopConfig set the cap", () => {
+      expect(
+        shownCategories(
+          orderProps({
+            "nova.enabled": true,
+            "newtabWallpapers.maxCategories": 6,
+            trainhopConfig: { wallpapers: { maxCategories: 3 } },
+          })
+        )
+      ).toHaveLength(3);
+    });
+
+    it("falls back to the pref, then 6, for an invalid cap", () => {
+      for (const maxCategories of [0, -1, 2.5, "4"]) {
+        expect(
+          shownCategories(
+            orderProps({
+              "nova.enabled": true,
+              "newtabWallpapers.maxCategories": 4,
+              trainhopConfig: { wallpapers: { maxCategories } },
+            })
+          )
+        ).toHaveLength(4);
+        expect(
+          shownCategories(
+            orderProps({
+              "nova.enabled": true,
+              "newtabWallpapers.maxCategories": maxCategories,
+            })
+          )
+        ).toHaveLength(6);
+      }
+    });
+  });
+
   it("opens the requested category when deep-linked via App state", () => {
     const onOpenPanel = jest.fn();
     const props = {

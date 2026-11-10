@@ -1182,6 +1182,22 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
+    "newtabWallpapers.categoryOrder",
+    {
+      title:
+        "Comma-separated wallpaper category order. Unlisted categories follow the listed ones. Overridden by trainhopConfig.wallpapers.categoryOrder",
+      value: "",
+    },
+  ],
+  [
+    "newtabWallpapers.maxCategories",
+    {
+      title:
+        "Maximum number of wallpaper category tiles in the Nova layout, including Your images. Overridden by trainhopConfig.wallpapers.maxCategories",
+      value: 6,
+    },
+  ],
+  [
     "newtabAdSize.leaderboard",
     {
       title: "Boolean flag to turn the leaderboard ad size on and off",

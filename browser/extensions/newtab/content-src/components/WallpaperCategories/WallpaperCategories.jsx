@@ -26,28 +26,49 @@ const PREF_WALLPAPER_UPLOAD_MAX_FILE_SIZE_ENABLED =
   "newtabWallpapers.customWallpaper.fileSize.enabled";
 
 const PREF_WALLPAPER_VISIBILITY_GROUPS = "newtabWallpapers.visibilityGroups";
+const PREF_WALLPAPER_CATEGORY_ORDER = "newtabWallpapers.categoryOrder";
+const PREF_WALLPAPER_MAX_CATEGORIES = "newtabWallpapers.maxCategories";
+const DEFAULT_MAX_CATEGORIES = 6;
 
-// The dedicated trainhopConfig.wallpapers object wins over the pref, so a group
-// can be activated without a release. The pref is never read at call sites.
-export function resolveWallpaperVisibilityGroups(prefs) {
+// The dedicated trainhopConfig.wallpapers object wins over the pref, so a value
+// can be changed without a release. The pref is never read at call sites.
+function resolveTrainhopCsv(prefs, key, prefName) {
   // A trainhop payload is raw JSON from a Nimbus recipe, so a malformed value
   // must fall back to the pref rather than throw while rendering the picker.
-  const trainhop = prefs.trainhopConfig?.wallpapers?.visibilityGroups;
+  const trainhop = prefs.trainhopConfig?.wallpapers?.[key];
   if (trainhop !== undefined && typeof trainhop !== "string") {
     console.warn(
-      `trainhopConfig.wallpapers.visibilityGroups is ${JSON.stringify(
+      `trainhopConfig.wallpapers.${key} is ${JSON.stringify(
         trainhop
       )}; expected a string. Ignoring it.`
     );
   }
   const csv =
-    (typeof trainhop === "string" && trainhop) ||
-    prefs[PREF_WALLPAPER_VISIBILITY_GROUPS] ||
-    "";
+    (typeof trainhop === "string" && trainhop) || prefs[prefName] || "";
   return csv
     .split(",")
-    .map(group => group.trim())
+    .map(item => item.trim())
     .filter(Boolean);
+}
+
+export const resolveWallpaperVisibilityGroups = prefs =>
+  resolveTrainhopCsv(
+    prefs,
+    "visibilityGroups",
+    PREF_WALLPAPER_VISIBILITY_GROUPS
+  );
+
+export const resolveWallpaperCategoryOrder = prefs =>
+  resolveTrainhopCsv(prefs, "categoryOrder", PREF_WALLPAPER_CATEGORY_ORDER);
+
+export function resolveWallpaperMaxCategories(prefs) {
+  const isValid = value => Number.isInteger(value) && value >= 1;
+  return (
+    [
+      prefs.trainhopConfig?.wallpapers?.maxCategories,
+      prefs[PREF_WALLPAPER_MAX_CATEGORIES],
+    ].find(isValid) ?? DEFAULT_MAX_CATEGORIES
+  );
 }
 
 // Remote Settings records may omit either field. A missing `visible` means
@@ -202,12 +223,36 @@ export class _WallpaperCategories extends React.PureComponent {
   // is the upload button until an image is saved, and solid colors while the
   // color picker is shown.
   get visibleCategories() {
-    return (this.props.Wallpapers.categories || []).filter(
+    const { categories } = this.props.Wallpapers;
+    const prefs = this.props.Prefs.values;
+    const offered = (categories || []).filter(
       category =>
         category === WALLPAPER_CATEGORIES.CustomWallpaper ||
         (category === WALLPAPER_CATEGORIES.SolidColors &&
           this.colorPickerShown) ||
         !!this.categoryWallpapers(category).length
+    );
+    const order = resolveWallpaperCategoryOrder(prefs);
+    const rank = category => {
+      const index = order.indexOf(category);
+      return index === -1 ? order.length : index;
+    };
+    const sorted = offered.toSorted((a, b) => rank(a) - rank(b));
+    // @nova-cleanup(remove-conditional): Always cap once Nova ships
+    if (!prefs["nova.enabled"]) {
+      return sorted;
+    }
+    const kept = sorted
+      .filter(category => category !== WALLPAPER_CATEGORIES.CustomWallpaper)
+      .slice(
+        0,
+        resolveWallpaperMaxCategories(prefs) -
+          (sorted.includes(WALLPAPER_CATEGORIES.CustomWallpaper) ? 1 : 0)
+      );
+    return sorted.filter(
+      category =>
+        category === WALLPAPER_CATEGORIES.CustomWallpaper ||
+        kept.includes(category)
     );
   }
 
