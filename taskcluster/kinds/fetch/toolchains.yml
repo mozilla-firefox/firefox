@@ -838,12 +838,12 @@ jj:
         revision: 2508982cde5c7e4db0933e0b6469f9e778e71e28
 
 searchfox-cli:
-    description: searchfox-cli 0.20.5 source code
+    description: searchfox-cli 0.20.6 source code
     fetch:
         type: static-url
-        url: https://crates.io/api/v1/crates/searchfox-cli/0.20.5/download
-        sha256: e77e5334075599c4263b973effbb42d63769cb4cdd0dc6c1a8b5a39662e3ef65
-        size: 26871
+        url: https://crates.io/api/v1/crates/searchfox-cli/0.20.6/download
+        sha256: 4dfbdd7e12ce6cc818c9b6c923f34100ee3b7af1919cfa718196df354c2c5d60
+        size: 26872
         artifact-name: searchfox-cli.tar.zst
         strip-components: 1
         add-prefix: searchfox-cli/
