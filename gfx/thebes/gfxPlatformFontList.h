@@ -17,6 +17,7 @@
 #include "gfxFont.h"
 #include "gfxFontConstants.h"
 #include "gfxPlatform.h"
+#include "gfxUserFontSet.h"
 #include "SharedFontList.h"
 
 #include "nsIMemoryReporter.h"
@@ -531,11 +532,16 @@ class gfxPlatformFontList : public gfxFontInfoLoader {
   // Keep track of userfont sets to notify when global fontlist changes occur.
   void AddUserFontSet(gfxUserFontSet* aUserFontSet) {
     AutoLock lock(mLock);
-    mUserFontSetList.Insert(aUserFontSet);
+    if (!aUserFontSet->mDestroying) {
+      mUserFontSetList.Insert(aUserFontSet);
+    }
   }
 
+  // Called from the font-set destructor, to notify that the set is being
+  // destroyed and should no longer be tracked here.
   void RemoveUserFontSet(gfxUserFontSet* aUserFontSet) {
     AutoLock lock(mLock);
+    aUserFontSet->mDestroying = true;
     mUserFontSetList.Remove(aUserFontSet);
   }
 
