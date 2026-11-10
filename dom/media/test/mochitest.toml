@@ -828,6 +828,9 @@ run-if = [
   # The graphics sanity test only exists on Windows.
   "os == 'win' && mda_gpu",
 ]
+skip-if = [
+  "os == 'win' && arch == 'x86_64' && opt && mda_gpu", # Bug 2071042 - 272 failures
+]
 
 ["test_hls_player_independency.html"]
 # There's a limit for creating decoder when API lever < 18(Bug 1278574)
