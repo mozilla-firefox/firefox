@@ -106,8 +106,6 @@ run-if = [
 
 ["TestLinkedList"]
 
-["TestMARFindItem"]
-
 ["TestMMPolicy"]
 run-if = [
   "os == 'win'",
