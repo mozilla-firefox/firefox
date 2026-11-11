@@ -1165,7 +1165,8 @@ class MediaTrackGraph {
    * Create a track that a media decoder (or some other source of
    * media data, such as a camera) can write to.
    */
-  SourceMediaTrack* CreateSourceTrack(MediaSegment::Type aType);
+  SourceMediaTrack* CreateSourceTrack(MediaSegment::Type aType,
+                                      MediaTrack::Flags aFlags = {});
   /**
    * Create a track that will forward data from its input track.
    *
