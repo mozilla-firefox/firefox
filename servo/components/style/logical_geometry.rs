@@ -23,6 +23,10 @@ pub enum InlineBaseDirection {
     RightToLeft,
 }
 
+fn sideways_enabled(_: &crate::parser::ParserContext) -> bool {
+    crate::pref!("layout.writing-mode.sideways.enabled", gecko = true)
+}
+
 /// The writing-mode property (different from the WritingMode enum).
 /// https://drafts.csswg.org/css-writing-modes/#block-flow
 /// Aliases come from https://drafts.csswg.org/css-writing-modes-4/#svg-writing-mode
@@ -50,7 +54,9 @@ pub enum WritingModeProperty {
     #[parse(aliases = "tb,tb-rl")]
     VerticalRl,
     VerticalLr,
+    #[parse(condition = "sideways_enabled")]
     SidewaysRl,
+    #[parse(condition = "sideways_enabled")]
     SidewaysLr,
 }
 
