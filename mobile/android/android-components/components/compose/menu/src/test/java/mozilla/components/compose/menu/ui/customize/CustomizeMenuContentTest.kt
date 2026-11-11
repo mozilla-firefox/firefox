@@ -64,14 +64,14 @@ class CustomizeMenuContentTest {
     }
 
     @Test
-    fun `GIVEN no hidden sections THEN the area to drag sections into to hide them is shown`() {
+    fun `GIVEN no hidden sections THEN the hide section area is shown`() {
         setContent(menuState(shown = listOf(row("Shown"))))
 
         composeTestRule.onNodeWithText(dragToHide).assertIsDisplayed()
     }
 
     @Test
-    fun `GIVEN hidden sections THEN the area to drag sections into to hide them is not shown`() {
+    fun `GIVEN hidden sections THEN the hide section area is not shown`() {
         setContent(menuState(shown = listOf(row("Shown")), hidden = listOf(row("Hidden"))))
 
         composeTestRule.onNodeWithText(dragToHide).assertDoesNotExist()
@@ -87,7 +87,7 @@ class CustomizeMenuContentTest {
     }
 
     @Test
-    fun `GIVEN the menu is customized AND no hidden sections THEN the button to reset it is shown below the area to drag sections into to hide them`() {
+    fun `GIVEN the menu is customized AND no hidden sections THEN the button to reset it is shown below the hide section area`() {
         setContent(menuState(shown = listOf(row("Shown")), isCustomized = true))
 
         val dragToHideBounds = composeTestRule.onNodeWithText(dragToHide).getUnclippedBoundsInRoot()
@@ -165,11 +165,92 @@ class CustomizeMenuContentTest {
     }
 
     @Test
-    fun `GIVEN no hidden sections WHEN a shown section is dragged into the area to drag sections into to hide them THEN it is put back where it was`() {
-        val state = menuState(shown = listOf(row("Shown 1"), row("Shown 2")))
-        val store = setContent(state)
+    fun `GIVEN no hidden sections WHEN a visible section is dragged into hide section area THEN it is hidden`() {
+        val store =
+            setContent(
+                menuState(
+                    shown = listOf(row("Shown 1"), row("Shown 2"), row("Mandatory")),
+                    mandatoryIds = setOf("Mandatory"),
+                )
+            )
 
         longPressAndDrag(title = "Shown 1", to = { boundsOf(dragToHide).center })
+
+        assertEquals(listOf("Shown 2", "Mandatory"), shownIds(store))
+        assertEquals(listOf("Shown 1"), hiddenIds(store))
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN a shown section is dragged over them THEN it is hidden next to them`() {
+        val store =
+            setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden"))))
+
+        longPressAndDrag(title = "Shown 1", to = { boundsOf("Hidden").bottomCenter })
+
+        assertEquals(listOf("Shown 2"), shownIds(store))
+        assertEquals(listOf("Hidden", "Shown 1"), hiddenIds(store))
+    }
+
+    @Test
+    fun `GIVEN no hidden sections WHEN a shown section is dragged past the hide section area THEN it is put back where it was`() {
+        val state = menuState(shown = listOf(row("Shown 1"), row("Shown 2")), isCustomized = true)
+        val store = setContent(state)
+
+        longPressAndDrag(title = "Shown 1", to = { boundsOf(resetToDefault).center })
+
+        assertEquals(state, store.state)
+    }
+
+    @Test
+    fun `GIVEN hidden sections and no reset button WHEN a shown section is dragged below the last hidden section THEN it is put back where it was`() {
+        val state = menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden")))
+        val store = setContent(state)
+
+        longPressAndDrag(
+            title = "Shown 1",
+            to = { boundsOf("Hidden").let { Offset(it.center.x, it.bottom + it.height) } },
+        )
+
+        assertEquals(state, store.state)
+    }
+
+    @Test
+    fun `WHEN a hidden section is dragged below a shown section THEN it is shown after it`() {
+        val store =
+            setContent(
+                menuState(
+                    shown = listOf(row("Shown"), row("Mandatory")),
+                    hidden = listOf(row("Hidden")),
+                    mandatoryIds = setOf("Mandatory"),
+                )
+            )
+
+        longPressAndDrag(title = "Hidden", to = { boundsOf("Shown").bottomCenter })
+
+        assertEquals(listOf("Shown", "Hidden", "Mandatory"), shownIds(store))
+        assertEquals(emptyList<String>(), hiddenIds(store))
+    }
+
+    @Test
+    fun `GIVEN one hidden section WHEN it is dragged THEN the hide section area is shown`() {
+        val state = menuState(shown = listOf(row("Shown")), hidden = listOf(row("Hidden")))
+        val store = setContent(state)
+
+        longPressAndMove(title = "Hidden", to = { boundsOf("Hidden").center })
+
+        composeTestRule.onNodeWithText(dragToHide).assertIsDisplayed()
+
+        release()
+
+        assertEquals(state, store.state)
+    }
+
+    @Test
+    fun `GIVEN no hidden sections WHEN a mandatory section is dragged into the hide section area THEN it is put back where it was`() {
+        val state = menuState(shown = listOf(row("Shown"), row("Mandatory")), mandatoryIds = setOf("Mandatory"))
+        val store = setContent(state)
+
+        longPressAndDrag(title = "Mandatory", to = { boundsOf(dragToHide).center })
 
         assertEquals(state, store.state)
     }
@@ -185,16 +266,6 @@ class CustomizeMenuContentTest {
         val store = setContent(state)
 
         longPressAndDrag(title = "Mandatory", to = { boundsOf("Hidden").center })
-
-        assertEquals(state, store.state)
-    }
-
-    @Test
-    fun `WHEN a hidden section is dragged above a shown section THEN it is not moved`() {
-        val state = menuState(shown = listOf(row("Shown")), hidden = listOf(row("Hidden")))
-        val store = setContent(state)
-
-        longPressAndDrag(title = "Hidden", to = { boundsOf("Shown").topCenter })
 
         assertEquals(state, store.state)
     }
@@ -286,6 +357,9 @@ class CustomizeMenuContentTest {
 
     private fun shownIds(store: CustomizableMenuStore) =
         store.state.menuGroups.map { it.id }.filterNot { it in store.state.hiddenGroupIds }
+
+    private fun hiddenIds(store: CustomizableMenuStore) =
+        store.state.menuGroups.map { it.id }.filter { it in store.state.hiddenGroupIds }
 
     /**
      * State of a screen showing the [shown] groups, with the [mandatoryIds] ones as mandatory, then the [hidden] ones.

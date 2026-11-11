@@ -29,7 +29,7 @@ class CustomizeMenuGroupsTest {
     }
 
     @Test
-    fun `WHEN a shown group is moved before the hidden sections THEN it is shown last`() {
+    fun `WHEN a shown group is moved before the hidden sections THEN it is placed as the last visible group`() {
         assertEquals(
             CustomizeMenuGroups(shown = groups("b", "c", "a"), hidden = groups("d", "e")),
             groups.moveGroup(sourceId = "a", targetKey = HIDDEN_SECTIONS, placeAfter = false),
@@ -37,8 +37,53 @@ class CustomizeMenuGroupsTest {
     }
 
     @Test
-    fun `WHEN a shown group is moved after the hidden sections THEN nothing changes`() {
-        assertEquals(groups, groups.moveGroup(sourceId = "a", targetKey = HIDDEN_SECTIONS, placeAfter = true))
+    fun `WHEN a shown group is moved after the hidden sections THEN it is placed as the first hidden item`() {
+        assertEquals(
+            CustomizeMenuGroups(shown = groups("a", "c"), hidden = groups("b", "d", "e")),
+            groups.moveGroup(sourceId = "b", targetKey = HIDDEN_SECTIONS, placeAfter = true),
+        )
+    }
+
+    @Test
+    fun `WHEN a shown group is moved next to a hidden group THEN it is hidden next to it`() {
+        assertEquals(
+            CustomizeMenuGroups(shown = groups("b", "c"), hidden = groups("d", "a", "e")),
+            groups.moveGroup(sourceId = "a", targetKey = "d", placeAfter = true),
+        )
+    }
+
+    @Test
+    fun `WHEN the only shown group is hidden THEN no group is shown`() {
+        val groups = CustomizeMenuGroups(shown = groups("a"), hidden = emptyList())
+
+        assertEquals(
+            CustomizeMenuGroups(shown = emptyList(), hidden = groups("a")),
+            groups.moveGroup(sourceId = "a", targetKey = HIDDEN_SECTIONS, placeAfter = true),
+        )
+    }
+
+    @Test
+    fun `WHEN a hidden group is moved before the hidden sections THEN it is placed as the last visible group`() {
+        assertEquals(
+            CustomizeMenuGroups(shown = groups("a", "b", "c", "e"), hidden = groups("d")),
+            groups.moveGroup(sourceId = "e", targetKey = HIDDEN_SECTIONS, placeAfter = false),
+        )
+    }
+
+    @Test
+    fun `WHEN a hidden group is moved next to a shown group THEN it is shown next to it`() {
+        assertEquals(
+            CustomizeMenuGroups(shown = groups("d", "a", "b", "c"), hidden = groups("e")),
+            groups.moveGroup(sourceId = "d", targetKey = "a", placeAfter = false),
+        )
+    }
+
+    @Test
+    fun `WHEN a hidden group is moved after another hidden group THEN it is hidden after it`() {
+        assertEquals(
+            CustomizeMenuGroups(shown = groups("a", "b", "c"), hidden = groups("e", "d")),
+            groups.moveGroup(sourceId = "d", targetKey = "e", placeAfter = true),
+        )
     }
 
     @Test
@@ -67,13 +112,17 @@ class CustomizeMenuGroupsTest {
     }
 
     @Test
-    fun `WHEN a hidden group is moved next to a shown group THEN nothing changes`() {
-        assertEquals(groups, groups.moveGroup(sourceId = "d", targetKey = "a", placeAfter = false))
+    fun `WHEN a mandatory group is moved after the hidden sections THEN nothing changes`() {
+        val groups = CustomizeMenuGroups(shown = groups("a", "m"), hidden = groups("d"), mandatoryIds = setOf("m"))
+
+        assertEquals(groups, groups.moveGroup(sourceId = "m", targetKey = HIDDEN_SECTIONS, placeAfter = true))
     }
 
     @Test
-    fun `WHEN a shown group is moved next to a hidden group THEN nothing changes`() {
-        assertEquals(groups, groups.moveGroup(sourceId = "a", targetKey = "d", placeAfter = true))
+    fun `WHEN a mandatory group is moved next to a hidden group THEN nothing changes`() {
+        val groups = CustomizeMenuGroups(shown = groups("a", "m"), hidden = groups("d"), mandatoryIds = setOf("m"))
+
+        assertEquals(groups, groups.moveGroup(sourceId = "m", targetKey = "d", placeAfter = false))
     }
 
     @Test

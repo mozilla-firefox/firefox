@@ -28,20 +28,33 @@ internal data class CustomizeMenuGroups(
     val mandatoryIds: Set<String> = emptySet(),
 ) {
     /**
-     * Move a shown group next to another shown group, or before [CustomizeMenuItemKey.HIDDEN_SECTIONS] to show it last.
+     * Move a group next to another group, or to either side of [CustomizeMenuItemKey.HIDDEN_SECTIONS] to show it last
+     * or hide it first. Mandatory groups cannot be hidden.
      *
      * @param sourceId Id of the group to move.
      * @param targetKey Id of the group to move it next to, or [CustomizeMenuItemKey.HIDDEN_SECTIONS].
      * @param placeAfter Whether to place the group after its target instead of before it.
      */
     fun moveGroup(sourceId: Any, targetKey: Any, placeAfter: Boolean): CustomizeMenuGroups {
-        val group = shown.firstOrNull { it.id == sourceId } ?: return this
-        if (targetKey == sourceId) return this
+        val group = (shown + hidden).firstOrNull { it.id == sourceId } ?: return this
+        val hides =
+            (targetKey == CustomizeMenuItemKey.HIDDEN_SECTIONS && placeAfter) || hidden.any { it.id == targetKey }
+        if (targetKey == sourceId || (hides && sourceId in mandatoryIds)) return this
 
         val otherShown = shown.filterNot { it.id == sourceId }
+        val otherHidden = hidden.filterNot { it.id == sourceId }
         return when {
-            targetKey == CustomizeMenuItemKey.HIDDEN_SECTIONS && !placeAfter -> copy(shown = otherShown + group)
-            otherShown.any { it.id == targetKey } -> copy(shown = otherShown.withNextTo(targetKey, group, placeAfter))
+            targetKey == CustomizeMenuItemKey.HIDDEN_SECTIONS && placeAfter ->
+                copy(shown = otherShown, hidden = listOf(group) + otherHidden)
+
+            targetKey == CustomizeMenuItemKey.HIDDEN_SECTIONS -> copy(shown = otherShown + group, hidden = otherHidden)
+
+            otherShown.any { it.id == targetKey } ->
+                copy(shown = otherShown.withNextTo(targetKey, group, placeAfter), hidden = otherHidden)
+
+            otherHidden.any { it.id == targetKey } ->
+                copy(shown = otherShown, hidden = otherHidden.withNextTo(targetKey, group, placeAfter))
+
             else -> this
         }
     }

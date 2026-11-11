@@ -16,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
@@ -55,6 +56,11 @@ internal fun LazyListScope.customizeMenuGroups(
             state = interactionState,
             key = group.id,
             position = firstIndex + index,
+            modifier =
+                Modifier.groupPlacement(
+                    isLastHidden = isHidden && index == menuGroups.lastIndex,
+                    hiddenArea = drag.hiddenArea,
+                ),
         ) {
             CustomizeMenuGroupContent(
                 group = group,
@@ -64,14 +70,29 @@ internal fun LazyListScope.customizeMenuGroups(
                             start = AcornTheme.layout.space.static200,
                             end = AcornTheme.layout.space.static25,
                         ),
-                state = drag.groups.stateOf(group, isHidden = isHidden),
+                state = drag.groups.stateOf(group, isDragged = isDragged, isHidden = isHidden),
             )
         }
     }
 }
 
-private fun CustomizeMenuGroups.stateOf(group: MenuItemsGroup, isHidden: Boolean): CustomizeMenuGroupState =
+/**
+ * Tell [hiddenArea] where the last hidden group is placed.
+ *
+ * @param isLastHidden Whether the group is the last of the hidden groups, at the bottom of the list.
+ * @param hiddenArea Where the area holding the hidden groups is shown.
+ */
+private fun Modifier.groupPlacement(isLastHidden: Boolean, hiddenArea: CustomizeMenuHiddenArea): Modifier =
+    this.then(if (isLastHidden) Modifier.onGloballyPositioned(hiddenArea::onLastHiddenGroupPositioned) else Modifier)
+
+/** How [group] is shown. Dragged groups look the same, whether they were shown or hidden. */
+private fun CustomizeMenuGroups.stateOf(
+    group: MenuItemsGroup,
+    isDragged: Boolean,
+    isHidden: Boolean,
+): CustomizeMenuGroupState =
     when {
+        isDragged -> CustomizeMenuGroupState.SHOWN
         isHidden -> CustomizeMenuGroupState.HIDDEN
         group.id in mandatoryIds -> CustomizeMenuGroupState.MANDATORY
         else -> CustomizeMenuGroupState.SHOWN

@@ -750,6 +750,7 @@ private fun findOverscroll(
  * @param state List reordering state.
  * @param key Key of the item to be displayed.
  * @param position Position in the list of the item to be displayed.
+ * @param modifier [Modifier] for where the item is laid out, not moved to follow the finger while dragged.
  * @param enteringItemKey The key of the item entering composition, if any. Can be null.
  * @param content Content of the item to be displayed.
  */
@@ -758,6 +759,7 @@ fun LazyItemScope.InteractableDragItemContainer(
     state: ListInteractionState,
     key: Any,
     position: Int,
+    modifier: Modifier = Modifier,
     enteringItemKey: Any? = null,
     content: @Composable (itemInteractionState: ItemInteractionState) -> Unit,
 ) {
@@ -771,7 +773,8 @@ fun LazyItemScope.InteractableDragItemContainer(
      */
     Box(
         modifier =
-            Modifier.zIndex(
+            modifier
+                .zIndex(
                     if (key == state.draggedItem.key || key == state.previousKeyOfDraggedItem) {
                         Elevation.DRAGGED_ITEM
                     } else {

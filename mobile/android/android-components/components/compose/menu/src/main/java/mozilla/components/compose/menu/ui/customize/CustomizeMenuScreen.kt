@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
@@ -107,6 +108,7 @@ private fun CustomizeMenuList(
     LazyColumn(
         modifier =
             Modifier.fillMaxSize()
+                .onGloballyPositioned(drag.hiddenArea::onListPositioned)
                 .detectListPressAndDrag(
                     listState = listState,
                     interactionState = drag.interactionState,
@@ -130,7 +132,12 @@ private fun CustomizeMenuList(
         customizeMenuGroups(menuGroups = drag.groups.shown, drag = drag, firstIndex = 1)
 
         item(key = HIDDEN_SECTIONS) {
-            CustomizeMenuHiddenSections(drag.groups.hidden.isNotEmpty())
+            CustomizeMenuHiddenSections(
+                hasHiddenItems = drag.hasHiddenGroups,
+                onTitlePositioned = drag.hiddenArea::onTitlePositioned,
+                onPositioned = drag.hiddenArea::onHiddenSectionsPositioned,
+                modifier = Modifier.animateItem(),
+            )
         }
 
         customizeMenuGroups(
@@ -142,7 +149,10 @@ private fun CustomizeMenuList(
 
         if (menuState.isCustomized) {
             item(key = RESET_BUTTON) {
-                CustomizeMenuResetButton(onClick = onResetToDefault)
+                CustomizeMenuResetButton(
+                    onClick = onResetToDefault,
+                    modifier = Modifier.animateItem().onGloballyPositioned(drag.hiddenArea::onResetButtonPositioned),
+                )
             }
         }
     }
@@ -205,12 +215,18 @@ private fun CustomizeMenuDragBar(
 }
 
 @Composable
-private fun CustomizeMenuHiddenSections(hasHiddenItems: Boolean, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
+private fun CustomizeMenuHiddenSections(
+    hasHiddenItems: Boolean,
+    onTitlePositioned: (LayoutCoordinates) -> Unit,
+    onPositioned: (LayoutCoordinates) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.onGloballyPositioned(onPositioned)) {
         Text(
             text = stringResource(R.string.mozac_menu_customize_hidden_sections),
             modifier =
-                Modifier.fillMaxWidth()
+                Modifier.onGloballyPositioned(onTitlePositioned)
+                    .fillMaxWidth()
                     .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
                     .padding(
                         start = AcornTheme.layout.space.static200,

@@ -6,11 +6,14 @@ package mozilla.components.compose.menu.ui.customize
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import mozilla.components.compose.draggable.InteractionMode
 import mozilla.components.compose.draggable.InteractionState
 import mozilla.components.compose.draggable.ItemInteractionHandler
 import mozilla.components.compose.draggable.ListInteractionState
@@ -27,26 +30,37 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_B
  *
  * @property groups The shown and the hidden groups.
  * @property interactionState State of dragging the items of the list showing the groups.
+ * @property hiddenArea Where the area holding the hidden groups is shown.
  * @property isDragging Whether a group is dragged.
+ * @property hasHiddenGroups Whether groups other than the dragged one are hidden. Otherwise the area to drag groups
+ *   into to hide them is shown.
+ * @property dropTarget Where the dragged group is moved to if the user lets go of it, if anywhere.
  */
 internal class CustomizeMenuDragState(
     val groups: CustomizeMenuGroups,
     val interactionState: ListInteractionState,
+    val hiddenArea: CustomizeMenuHiddenArea,
     val isDragging: Boolean,
+    val hasHiddenGroups: Boolean,
+    val dropTarget: State<CustomizeMenuDropTarget?>,
 ) {
     /**
      * Index in the list of the first hidden group, after the drag bar, the shown groups and the hidden sections title.
      */
-    val firstHiddenIndex = groups.shown.size + 2
+    val firstHiddenIndex = hiddenSectionsIndexOf(groups) + 1
 }
 
+/** Index in the list of the hidden sections title, after the drag bar and the shown groups. */
+private fun hiddenSectionsIndexOf(groups: CustomizeMenuGroups) = 1 + groups.shown.size
+
+// Groups can be dropped next to these items.
 private val FIXED_ITEMS = setOf(HIDDEN_SECTIONS)
 
 private const val AUTO_SCROLL_ZONE_WINDOW_FRACTION = 0.1f
 
 /**
- * Allows dragging the shown groups of the customize menu screen shown in the list with [listState] to reorder them,
- * saving the move to [store] when the user lets go of a dragged group.
+ * Allows dragging the groups of the customize menu screen shown in the list with [listState] to reorder them, hide them
+ * or show them again, saving the move to [store] when the user lets go of a dragged group.
  */
 @Composable
 internal fun rememberCustomizeMenuDragState(
@@ -60,15 +74,14 @@ internal fun rememberCustomizeMenuDragState(
             CustomizeMenuGroups(shown = shown, hidden = hidden, mandatoryIds = menuState.mandatoryGroupIds)
         }
     val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+    val moveGroupsHandler = remember(store, groups) { MoveGroupsHandler(store = store, groups = groups) }
     val interactionState =
         createListInteractionState(
             listState = listState,
-            // Only the shown groups can be moved, and only next to each other.
-            ignoredItems = remember(groups.hidden) { setOf<Any>(DRAG_BAR, RESET_BUTTON) + groups.hidden.map { it.id } },
+            ignoredItems = setOf(DRAG_BAR, RESET_BUTTON),
             liveReorderEnabled = false,
-            itemInteractionHandler = remember(store, groups) { MoveGroupsHandler(store = store, groups = groups) },
+            itemInteractionHandler = moveGroupsHandler,
             dragAndDropEnabled = false,
-            // Groups dropped before it are shown last, and the ones dropped after it are put back where they were.
             fixedItems = FIXED_ITEMS,
             // The groups differ in height, so a part of the window rather than of the first one shown.
             scrollZoneHeight = windowHeight * AUTO_SCROLL_ZONE_WINDOW_FRACTION,
@@ -76,15 +89,49 @@ internal fun rememberCustomizeMenuDragState(
     val isDragging by
         remember(interactionState) { derivedStateOf { interactionState.draggedItem != InteractionState.List.None } }
 
+    val hasHiddenGroups by
+        remember(interactionState, groups) {
+            derivedStateOf { groups.hidden.any { it.id != interactionState.draggedItem.key } }
+        }
+
+    val hiddenArea = remember { CustomizeMenuHiddenArea() }
+    val hiddenSectionsIndex = hiddenSectionsIndexOf(groups)
+    val draggedGroupPosition by
+        remember(listState, interactionState, hiddenSectionsIndex, groups) {
+            derivedStateOf {
+                (interactionState.draggedItem as? InteractionState.List.Active)?.let {
+                    // Dragged out of them, the last hidden group is still laid out below the area to drag groups into.
+                    hiddenArea.positionOf(it, listState.layoutInfo, hiddenSectionsIndex, groups.hidden.isNotEmpty())
+                }
+            }
+        }
+    val dropTarget =
+        remember(listState, interactionState, groups) {
+            derivedStateOf {
+                val draggedGroupId = interactionState.draggedItem.key ?: return@derivedStateOf null
+                dropTargetOf(
+                    draggedGroupId = draggedGroupId,
+                    reordering = interactionState.interactionMode as? InteractionMode.List.Reordering,
+                    position = draggedGroupPosition,
+                    groups = groups,
+                    hasHiddenGroups = hasHiddenGroups,
+                )
+            }
+        }
+    SideEffect { moveGroupsHandler.dropTarget = { dropTarget.value } }
+
     return CustomizeMenuDragState(
         groups = groups,
         interactionState = interactionState,
+        hiddenArea = hiddenArea,
         isDragging = isDragging,
+        hasHiddenGroups = hasHiddenGroups,
+        dropTarget = dropTarget,
     )
 }
 
 /**
- * Moves the shown groups of a customize menu screen when the user lets go of a dragged group, saving the move.
+ * Moves the groups of a customize menu screen when the user lets go of a dragged group, saving the move.
  *
  * @param store Store to save the moves to.
  * @param groups The groups as last saved.
@@ -93,13 +140,32 @@ internal class MoveGroupsHandler(
     private val store: CustomizableMenuStore,
     private val groups: CustomizeMenuGroups,
 ) : ItemInteractionHandler {
+    /** Where the dragged group is moved to if the user lets go of it, if anywhere. */
+    var dropTarget: () -> CustomizeMenuDropTarget? = { null }
+
     // Set only once the group is moved further than the touch slop.
     private var draggedGroupId: Any? = null
 
-    // Without live reordering this is called only once the user lets go of the dragged group.
-    override fun onMove(sourceKey: Any, targetKey: Any?, placeAfter: Boolean) {
-        if (sourceKey != draggedGroupId) return
-        val movedGroups = targetKey?.let { groups.moveGroup(sourceKey, it, placeAfter) } ?: return
+    // The dragged group is moved only when the user lets go of it.
+    override fun onMove(sourceKey: Any, targetKey: Any?, placeAfter: Boolean) = Unit
+
+    override fun onDrop(sourceKey: Any, targetKey: Any) = Unit
+
+    override fun onDragStart(sourceKey: Any, preserveSelectMode: Boolean) {
+        draggedGroupId = sourceKey
+    }
+
+    override fun onDragEnd() {
+        val groupId = draggedGroupId ?: return
+        draggedGroupId = null
+        dropTarget()?.let { save(groups.drop(groupId, it)) }
+    }
+
+    override fun onDragCancel() {
+        draggedGroupId = null
+    }
+
+    private fun save(movedGroups: CustomizeMenuGroups) {
         if (movedGroups != groups) {
             store.dispatch(
                 MenuStructureChanged(
@@ -108,15 +174,5 @@ internal class MoveGroupsHandler(
                 )
             )
         }
-    }
-
-    override fun onDrop(sourceKey: Any, targetKey: Any) = Unit
-
-    override fun onDragStart(sourceKey: Any, preserveSelectMode: Boolean) {
-        draggedGroupId = sourceKey
-    }
-
-    override fun onDragCancel() {
-        draggedGroupId = null
     }
 }
