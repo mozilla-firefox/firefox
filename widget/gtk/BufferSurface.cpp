@@ -121,6 +121,11 @@ void BufferSurface::ReleaseTextures() {
   mGL = nullptr;
 }
 
+bool BufferSurface::SupportsDirectComposition() {
+  return GdkIsWaylandDisplay() &&
+         GetGlobalDMABufFormats()->SupportsDirectComposition(GetFormat());
+}
+
 bool BufferSurface::HasAlpha() const {
   return mFOURCCFormat == GBM_FORMAT_ARGB8888 ||
          mFOURCCFormat == GBM_FORMAT_ABGR8888 ||
