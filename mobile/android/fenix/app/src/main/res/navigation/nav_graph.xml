@@ -34,6 +34,10 @@
         app:popUpToInclusive="false" />
 
     <action
+        android:id="@+id/action_global_tabGroupFlowFragment"
+        app:destination="@id/tabGroupFlowFragment" />
+
+    <action
         android:id="@+id/action_global_onboarding"
         app:destination="@id/onboardingFragment"
         app:popUpTo="@id/startupFragment"

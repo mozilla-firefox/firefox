@@ -5,9 +5,6 @@
 package org.mozilla.fenix.tabstray.ui
 
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -15,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
 import androidx.activity.result.ActivityResultLauncher
-import androidx.annotation.ColorInt
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import androidx.biometric.BiometricManager
@@ -41,7 +37,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
-import androidx.core.graphics.createBitmap
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.setFragmentResultListener
@@ -55,9 +50,7 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import com.google.android.material.R as materialR
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import mozilla.appservices.places.BookmarkRoot
 import mozilla.components.compose.base.modifier.thenConditional
 import mozilla.components.compose.base.snackbar.displaySnackbar
@@ -70,7 +63,6 @@ import mozilla.components.lib.state.helpers.StoreProvider.Companion.storeProvide
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.ktx.android.view.setNavigationBarTheme
 import mozilla.components.support.ktx.android.view.setStatusBarTheme
-import mozilla.components.support.utils.BuildManufacturerChecker
 import mozilla.components.support.utils.ext.pixelSizeFor
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.Config
@@ -79,7 +71,6 @@ import org.mozilla.fenix.GleanMetrics.TabsTray
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.appstate.AppAction
-import org.mozilla.fenix.components.share.CacheHelper
 import org.mozilla.fenix.compose.navigation.BottomSheetSceneStrategy
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.hideToolbar
@@ -101,8 +92,9 @@ import org.mozilla.fenix.tabgroups.CloseLastTabAndDeleteTabGroupConfirmationDial
 import org.mozilla.fenix.tabgroups.DeleteTabGroupConfirmationDialog
 import org.mozilla.fenix.tabgroups.EditTabGroup
 import org.mozilla.fenix.tabgroups.ExpandedTabGroup
-import org.mozilla.fenix.tabgroups.ExpandedTabGroupActions
 import org.mozilla.fenix.tabgroups.UngroupTabGroupConfirmationDialog
+import org.mozilla.fenix.tabgroups.expandedTabGroupActions
+import org.mozilla.fenix.tabgroups.shareTabGroup
 import org.mozilla.fenix.tabstray.InactiveTabsBinding
 import org.mozilla.fenix.tabstray.PbmLockStatusBinding
 import org.mozilla.fenix.tabstray.TabManagerCfrController
@@ -547,9 +539,15 @@ class TabManagementFragment : Fragment() {
 
         val expandedGroupActions =
             expandedTabGroupActions(
-                handleTabClick = handleTabClick,
-                expandedGroupDotColor = expandedGroupDotColor,
-                expandedGroup = expandedGroup,
+                group = expandedGroup,
+                homepageAsNewTabEnabled = tabsTrayStore.state.config.homepageAsNewTabEnabled,
+                dispatch = tabsTrayStore::dispatch,
+                addNewHomepageTab = {
+                    requireComponents.useCases.fenixBrowserUseCases.addNewHomepageTab(private = false)
+                },
+                onTabClick = handleTabClick,
+                onShareClick = { handleShareTabGroupClick(group = expandedGroup, dotColor = expandedGroupDotColor) },
+                onAddNewTabCompleted = { tabManagerController.handleNavigateToHome() },
             )
 
         ExpandedTabGroup(
@@ -557,56 +555,6 @@ class TabManagementFragment : Fragment() {
             actions = expandedGroupActions,
             displayTabsInGrid = displayTabsInGrid,
             itemInteractionHandler = itemInteractionHandler,
-        )
-    }
-
-    private fun expandedTabGroupActions(
-        handleTabClick: (TabsTrayItem.Tab) -> Unit,
-        expandedGroup: TabsTrayItem.TabGroup,
-        @ColorInt expandedGroupDotColor: Int,
-    ): ExpandedTabGroupActions {
-        return ExpandedTabGroupActions(
-            onItemClick = {
-                when (it) {
-                    is TabsTrayItem.Tab -> handleTabClick(it)
-
-                    else -> {}
-                }
-            },
-            onTabClose = { tab ->
-                tabsTrayStore.dispatch(TabGroupAction.TabClosed(tab = tab, group = expandedGroup))
-            },
-            onDeleteTabGroupClick = {
-                tabsTrayStore.dispatch(TabGroupAction.DeleteClicked(expandedGroup))
-            },
-            onEditTabGroupClick = {
-                tabsTrayStore.dispatch(action = TabGroupAction.EditTabGroupClicked(group = expandedGroup))
-            },
-            onCloseTabGroupClick = {
-                tabsTrayStore.dispatch(action = TabGroupAction.CloseTabGroupClicked(group = expandedGroup))
-            },
-            onUngroupTabGroupClick = {
-                tabsTrayStore.dispatch(action = TabGroupAction.UngroupRequested(group = expandedGroup))
-            },
-            onAddNewTabClick =
-                if (tabsTrayStore.state.config.homepageAsNewTabEnabled) {
-                    {
-                        val newTabId =
-                            requireComponents.useCases.fenixBrowserUseCases.addNewHomepageTab(private = false)
-                        tabsTrayStore.dispatch(
-                            TabGroupAction.TabAddedToExistingTabGroup(
-                                tabId = newTabId,
-                                groupId = expandedGroup.id,
-                            )
-                        )
-                        tabManagerController.handleNavigateToHome()
-                    }
-                } else {
-                    null
-                },
-            onShareTabGroupClick = {
-                shareTabGroup(expandedGroup, expandedGroupDotColor)
-            },
         )
     }
 
@@ -678,10 +626,16 @@ class TabManagementFragment : Fragment() {
             onOpenNewPrivateTabClicked = tabManagerInteractor::onPrivateTabsFabClicked,
             onSyncedTabsFabClicked = tabManagerInteractor::onSyncedTabsFabClicked,
             onUnlockPbmClick = { verifyUser(fallbackVerification = verificationResultLauncher) },
-            onShareTabGroupClick = { group -> shareTabGroup(group, tabGroupDotColors.getValue(group.theme)) },
+            onShareTabGroupClick = { group ->
+                handleShareTabGroupClick(group = group, dotColor = tabGroupDotColors.getValue(group.theme))
+            },
             trackersBlockedCount = trackersBlockedCount,
             onPrivacyReportTapped = tabManagerController::onPrivacyReportTapped,
         )
+    }
+
+    private fun handleShareTabGroupClick(group: TabsTrayItem.TabGroup, dotColor: Int) {
+        shareTabGroup(group = group, dotColor = dotColor)
     }
 
     private fun handleItemClick(item: TabsTrayItem, handleTabClick: (TabsTrayItem.Tab) -> Unit) {
@@ -823,58 +777,6 @@ class TabManagementFragment : Fragment() {
             tab = tab,
             source = TAB_MANAGER_FEATURE_NAME,
         )
-    }
-
-    private fun shareTabGroup(
-        group: TabsTrayItem.TabGroup,
-        @ColorInt dotColor: Int,
-    ) {
-        // ColorOS-based devices render the system share sheet's content-preview image as a
-        // large graphic rather than a small icon, so we omit the thumbnail on these devices.
-        if (isColorOsBasedDevice) {
-            tabManagerController.handleShareTabGroupClicked(group, dotColor, thumbnailUri = null)
-            return
-        }
-
-        val context = requireContext()
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val thumbnailUri =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        CacheHelper()
-                            .saveBitmapToCache(
-                                context = context,
-                                bitmap = createTabGroupDotBitmap(dotColor),
-                                name = "tab_group_share_thumbnail_$dotColor",
-                            )
-                    }
-                        .getOrNull()
-                }
-
-            if (thumbnailUri == null) {
-                recordBreadcrumb("Failed to build tab group share thumbnail")
-            }
-
-            tabManagerController.handleShareTabGroupClicked(group, dotColor, thumbnailUri)
-        }
-    }
-
-    /** Whether this device runs a ColorOS-based OS. */
-    private val isColorOsBasedDevice: Boolean
-        get() = BuildManufacturerChecker().let { it.isOppo() || it.isOnePlus() || it.isRealme() }
-
-    private fun createTabGroupDotBitmap(@ColorInt color: Int): Bitmap {
-        val bitmap = createBitmap(TAB_GROUP_SHARE_DOT_SIZE_PX, TAB_GROUP_SHARE_DOT_SIZE_PX)
-        val radius = TAB_GROUP_SHARE_DOT_SIZE_PX / 2f
-        Canvas(bitmap)
-            .drawCircle(
-                radius,
-                radius,
-                radius,
-                Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color },
-            )
-        return bitmap
     }
 
     override fun onPause() {
@@ -1288,7 +1190,6 @@ class TabManagementFragment : Fragment() {
     private companion object {
         private const val DOWNLOAD_CANCEL_DIALOG_FRAGMENT_TAG = "DOWNLOAD_CANCEL_DIALOG_FRAGMENT_TAG"
         private const val TAB_MANAGER_FEATURE_NAME = "Tab Manager"
-        private const val TAB_GROUP_SHARE_DOT_SIZE_PX = 128
     }
 }
 

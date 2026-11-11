@@ -18,6 +18,8 @@ import org.junit.Test
 class TabGroupsStripMiddlewareTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
+    private val expandedGroupIds = mutableListOf<String>()
+    private val expandGroup: (String) -> Unit = { expandedGroupIds.add(it) }
 
     @Test
     fun `GIVEN a selected tab in an open group WHEN a snapshot emits THEN the strip shows the group's tabs in order`() =
@@ -148,6 +150,7 @@ class TabGroupsStripMiddlewareTest {
                             TabGroupsStripMiddleware(
                                 coordinator,
                                 isHomepageAsNewTabEnabled = { true },
+                                expandGroup = {},
                                 scope = testScope,
                                 dispatcher = testDispatcher,
                             )
@@ -293,6 +296,33 @@ class TabGroupsStripMiddlewareTest {
             assertTrue(coordinator.addNewTabToGroupIds.isEmpty())
         }
 
+    @Test
+    fun `WHEN ExpandGroupClicked is dispatched THEN the focused group is expanded`() {
+        val store =
+            TabGroupsStripStore(
+                initialState =
+                    TabGroupsStripState.TabGroupStripVisible(
+                        groupId = "group",
+                        groupTitle = "Group",
+                        tabs = listOf(stripTab("1", isFocused = true)),
+                    ),
+                middleware =
+                    listOf(
+                        TabGroupsStripMiddleware(
+                            FakeTabDataCoordinator(),
+                            isHomepageAsNewTabEnabled = { true },
+                            expandGroup = expandGroup,
+                            scope = testScope,
+                            dispatcher = testDispatcher,
+                        )
+                    ),
+            )
+
+        store.dispatch(TabGroupsStripAction.ExpandGroupClicked)
+
+        assertEquals(expected = listOf("group"), actual = expandedGroupIds)
+    }
+
     private fun buildStore(snapshot: TabsSnapshot?): TabGroupsStripStore = buildStore(FakeTabDataCoordinator(snapshot))
 
     private fun buildStore(
@@ -301,7 +331,15 @@ class TabGroupsStripMiddlewareTest {
     ): TabGroupsStripStore =
         TabGroupsStripStore(
                 middleware =
-                    listOf(TabGroupsStripMiddleware(coordinator, isHomepageAsNewTabEnabled, testScope, testDispatcher))
+                    listOf(
+                        TabGroupsStripMiddleware(
+                            coordinator,
+                            isHomepageAsNewTabEnabled,
+                            expandGroup,
+                            testScope,
+                            testDispatcher,
+                        )
+                    )
             )
             .also { it.dispatch(TabGroupsStripAction.InitializeDataObservation) }
 

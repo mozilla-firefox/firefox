@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.fragment.app.DialogFragment
@@ -24,12 +25,18 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.scene.DialogSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import mozilla.components.compose.base.theme.layout.AcornWindowSize
+import mozilla.components.compose.draggable.NoOpItemInteractionHandler
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.storeProvider
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.navigation.BottomSheetSceneStrategy
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.tabgroups.AddToTabGroup
 import org.mozilla.fenix.tabgroups.EditTabGroup
+import org.mozilla.fenix.tabgroups.ExpandedTabGroup
+import org.mozilla.fenix.tabgroups.expandedTabGroupActions
+import org.mozilla.fenix.tabgroups.shareTabGroup
+import org.mozilla.fenix.tabstray.data.TabsTrayItem
+import org.mozilla.fenix.tabstray.data.toTabStorageUpdate
 import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.utils.Settings
@@ -143,9 +150,37 @@ class TabGroupFlowFragment : DialogFragment() {
                     )
                 }
             ) { args ->
-                // todo-bug-2069525: support up the expanded group from this fragment
+                ExpandedTabGroupEntry(group = args.group, state = state)
             }
         }
+    }
+
+    @Composable
+    private fun ExpandedTabGroupEntry(
+        group: TabsTrayItem.TabGroup,
+        state: TabGroupFlowState,
+    ) {
+        val expandedGroup = state.groups.find { it.id == group.id } ?: group
+        val dotColor = expandedGroup.theme.primary.toArgb()
+        ExpandedTabGroup(
+            group = expandedGroup,
+            actions =
+                expandedTabGroupActions(
+                    group = expandedGroup,
+                    homepageAsNewTabEnabled = state.config.homepageAsNewTabEnabled,
+                    dispatch = store::dispatch,
+                    addNewHomepageTab = {
+                        requireComponents.useCases.fenixBrowserUseCases.addNewHomepageTab(private = false)
+                    },
+                    onTabClick = {
+                        requireComponents.useCases.tabsUseCases.selectTab(it.id)
+                        store.dispatch(TabGroupAction.NavigateBackInvoked)
+                    },
+                    onShareClick = { shareTabGroup(group = expandedGroup, dotColor = dotColor) },
+                ),
+            displayTabsInGrid = state.config.displayTabsInGrid,
+            itemInteractionHandler = NoOpItemInteractionHandler,
+        )
     }
 
     private fun setupStore(): TabGroupFlowStore {
@@ -192,8 +227,11 @@ class TabGroupFlowFragment : DialogFragment() {
                     TabGroupFlowDestination.EditTabGroup
                 }
                 is TabGroupFlowEntryPoint.ViewGroup -> {
-                    // todo-bug-2069525: support up the expanded group from this fragment
-                    null
+                    requireComponents.tabDataCoordinator.tabsSnapshot.value
+                        ?.toTabStorageUpdate()
+                        ?.tabGroups
+                        ?.find { it.id == tabGroupFlowEntryPoint.groupId }
+                        ?.let { TabGroupFlowDestination.ExpandedTabGroup(group = it) }
                 }
             }
         return listOfNotNull(TabGroupFlowDestination.Root, destination)
