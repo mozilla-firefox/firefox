@@ -32,6 +32,9 @@ DIRS += [
 
 TEST_DIRS += ["tests/mochitest"]
 
+if toolkit == "cocoa":
+    TEST_DIRS += ["tests/gtest"]
+
 BROWSER_CHROME_MANIFESTS += [
     "tests/browser/atk/browser.toml",
     "tests/browser/bounds/browser.toml",

@@ -403,6 +403,19 @@ void GetHumanReadableInstantiatorStr(nsAString& aResult) {
   aResult = result;
 }
 
+static void EnableA11y() {
+  sA11yShouldBeEnabled = true;
+  // If accessibility should be enabled, log the appropriate client
+  auto [_, clientToLog] = GetClients();
+  const char* client = GetStringForClient(clientToLog);
+
+#if defined(MOZ_TELEMETRY_REPORTING)
+  mozilla::glean::a11y::instantiators.Set(nsDependentCString(client));
+#endif  // defined(MOZ_TELEMETRY_REPORTING)
+  CrashReporter::RecordAnnotationCString(
+      CrashReporter::Annotation::AccessibilityClient, client);
+}
+
 }  // namespace a11y
 }  // namespace mozilla
 
@@ -413,28 +426,20 @@ void GetHumanReadableInstantiatorStr(nsAString& aResult) {
 @implementation GeckoNSApplication (a11y)
 
 - (NSAccessibilityRole)accessibilityRole {
-  // For ATs that don't request `AXEnhancedUserInterface` we need to enable
-  // accessibility when a role is fetched. Not ideal, but this is needed
-  // for such services as Voice Control.
+  // Clients such as Voice Control need Gecko accessibility on a role query,
+  // without enabling AppKit's Enhanced UI window animations.
   if (!mozilla::a11y::sA11yShouldBeEnabled) {
-    [self accessibilitySetValue:@YES forAttribute:@"AXEnhancedUserInterface"];
+    mozilla::a11y::EnableA11y();
   }
   return [super accessibilityRole];
 }
 
 - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
   if ([attribute isEqualToString:@"AXEnhancedUserInterface"]) {
-    mozilla::a11y::sA11yShouldBeEnabled = ([value intValue] == 1);
-    if (sA11yShouldBeEnabled) {
-      // If accessibility should be enabled, log the appropriate client
-      auto [_, clientToLog] = GetClients();
-      const char* client = GetStringForClient(clientToLog);
-
-#if defined(MOZ_TELEMETRY_REPORTING)
-      mozilla::glean::a11y::instantiators.Set(nsDependentCString(client));
-#endif  // defined(MOZ_TELEMETRY_REPORTING)
-      CrashReporter::RecordAnnotationCString(
-          CrashReporter::Annotation::AccessibilityClient, client);
+    if ([value intValue] == 1) {
+      mozilla::a11y::EnableA11y();
+    } else {
+      mozilla::a11y::sA11yShouldBeEnabled = false;
     }
   }
 
