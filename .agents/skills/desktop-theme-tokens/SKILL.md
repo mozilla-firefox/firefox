@@ -285,10 +285,10 @@ says it paints.** The target names the same property and state in the variant
 the component looks like (a hover background at the same state's background in
 the variant it resembles), or the property the part is drawn with (e.g. a fill
 at a text color, a background at a border color). Such a cross-type reference
-goes in the token JSON: in a consumer sheet `use-design-tokens` accepts only the
-token categories the property type's `tokenTypes` in the stylelint plugin's
-`config.mjs` lists, so `fill: var(--…-text-color-…)` is a lint error where a
-fill token that references the text color passes. A literal that equals such a
+goes in the token JSON, since `use-design-tokens` rejects
+`fill: var(--text-color)` in a consumer sheet
+(`docs/code-quality/lint/linters/stylelint-plugin-mozilla/rules/use-design-tokens.md`,
+"Token categories"). A literal that equals such a
 token's value is a missing reference on any side, `forcedColors` and
 `prefersContrast` included; reference the token once `--effective` shows it
 resolving to that value in every environment the side reaches. Check every
@@ -325,9 +325,10 @@ round a length built from one where it must be whole. A raw px literal in a
 (`docs/code-quality/lint/linters/stylelint-plugin-mozilla/rules/use-design-tokens/space.md`).
 
 When a raw value becomes a token, take the token the property type's
-`customFixes` in the stylelint plugin's `config.mjs` maps it to (`Space`,
-`Size`, `BorderRadius`, `FontWeight`), even where that crosses px and rem
-(`Size` maps `0.75rem` to the 12px `--size-item-xsmall`). Don't take a larger
+`customFixes` in the stylelint plugin's `config.mjs` maps it to, even across px
+and rem
+(`docs/code-quality/lint/linters/stylelint-plugin-mozilla/rules/use-design-tokens.md`,
+"Autofix"). Don't take a larger
 one that renders nearer the original at chrome's smaller root: the whole scale
 shrinks together, so compensating at one call site breaks its rank against the
 spacing around it.
