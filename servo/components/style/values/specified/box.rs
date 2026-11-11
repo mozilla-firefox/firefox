@@ -25,11 +25,6 @@ use style_traits::{SpecifiedValueInfo, StyleParseErrorKind, ToCss};
 use thin_vec::ThinVec;
 
 #[inline]
-fn grid_enabled() -> bool {
-    crate::pref!("layout.grid.enabled", gecko = true)
-}
-
-#[inline]
 fn appearance_base_enabled(_context: &ParserContext) -> bool {
     crate::pref!("layout.css.appearance-base.enabled")
 }
@@ -512,7 +507,7 @@ impl DisplayKeyword {
             "inline-table" => Full(Display::InlineTable),
             "-webkit-flex" => Full(Display::Flex),
             "inline-flex" | "-webkit-inline-flex" => Full(Display::InlineFlex),
-            "inline-grid" if grid_enabled() => Full(Display::InlineGrid),
+            "inline-grid" => Full(Display::InlineGrid),
             "inline-grid-lanes" if is_display_grid_lanes_enabled() => Full(Display::InlineGridLanes),
             "table-caption" => Full(Display::TableCaption),
             "table-row-group" => Full(Display::TableRowGroup),
@@ -548,7 +543,7 @@ impl DisplayKeyword {
             "flex" => Inside(DisplayInside::Flex),
             "flow-root" => Inside(DisplayInside::FlowRoot),
             "table" => Inside(DisplayInside::Table),
-            "grid" if grid_enabled() => Inside(DisplayInside::Grid),
+            "grid" => Inside(DisplayInside::Grid),
             "grid-lanes" if is_display_grid_lanes_enabled() => Inside(DisplayInside::GridLanes),
             #[cfg(feature = "gecko")]
             "ruby" => Inside(DisplayInside::Ruby),

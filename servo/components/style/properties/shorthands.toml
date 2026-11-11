@@ -309,27 +309,22 @@ aliases = ["grid-gap"]
 [grid-row]
 sub_properties = ["grid-row-start", "grid-row-end"]
 spec = "https://drafts.csswg.org/css-grid/#propdef-grid-row"
-servo_pref = "layout.grid.enabled"
 
 [grid-column]
 sub_properties = ["grid-column-start", "grid-column-end"]
 spec = "https://drafts.csswg.org/css-grid/#propdef-grid-column"
-servo_pref = "layout.grid.enabled"
 
 [grid-area]
 sub_properties = ["grid-row-start", "grid-row-end", "grid-column-start", "grid-column-end"]
 spec = "https://drafts.csswg.org/css-grid/#propdef-grid-area"
-servo_pref = "layout.grid.enabled"
 
 [grid-template]
 sub_properties = ["grid-template-rows", "grid-template-columns", "grid-template-areas"]
 spec = "https://drafts.csswg.org/css-grid/#propdef-grid-template"
-servo_pref = "layout.grid.enabled"
 
 [grid]
 sub_properties = ["grid-template-rows", "grid-template-columns", "grid-template-areas", "grid-auto-rows", "grid-auto-columns", "grid-auto-flow"]
 spec = "https://drafts.csswg.org/css-grid/#propdef-grid"
-servo_pref = "layout.grid.enabled"
 
 [place-content]
 sub_properties = ["align-content", "justify-content"]
