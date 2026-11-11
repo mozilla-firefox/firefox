@@ -64,21 +64,6 @@ Box(
             // see: https://developer.android.com/develop/ui/compose/lists
             key = { _, item -> item.id },
         ) { index, item ->
-            // optional - if (and only if) you need to drag an item off the grid/list,
-            // you need to pin the composable so it stays rendered.
-            // it should be disposed as soon as it is no longer dragged.
-            val pinnableContainer = LocalPinnableContainer.current
-            val isDragged by
-                remember(item.id) {
-                    derivedStateOf {
-                        gridInteractionState.draggedItem.key == item.id
-                    }
-                }
-            DisposableEffect(isDragged) {
-                val handle = if (isDragged) pinnableContainer?.pin() else null
-                onDispose { handle?.release() }
-            }
-
             // If you also support clicking on the items, you may want to track whether drag is active
             // and disable click listening when a drag is in progress.
             val shouldClickListen = gridInteractionState.draggedItem.key != item.id
@@ -94,8 +79,8 @@ Box(
                     }
                 }
 
-            // Wrap your items in the interactable container,
-            // which handles animations and global layout coordinate tracking.
+            // Wrap your items in the interactable container, which handles animations and global layout
+            // coordinate tracking, and keeps the dragged item rendered when it is scrolled off the grid/list.
             InteractableDragItemContainer(
                 state = gridInteractionState,
                 position = index, // likely your grid index, but you may increment this if you have headers

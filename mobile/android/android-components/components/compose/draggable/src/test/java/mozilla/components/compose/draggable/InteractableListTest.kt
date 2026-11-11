@@ -6,7 +6,9 @@ package mozilla.components.compose.draggable
 
 import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LayoutCoordinates
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -381,6 +383,31 @@ class InteractableListTest {
     }
 
     @Test
+    fun `GIVEN an item is dragged WHEN the list lays it out out of view THEN it is still moved to where the finger is`() {
+        val alpha = FakeListItemInfo(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 10)
+        val beta = FakeListItemInfo(key = TabKeys.TAB_BETA, index = 2, size = 10, offset = 30)
+        var layoutInfo =
+            FakeListLayoutInfo(visibleItemsInfo = listOf(alpha, beta), totalItemsCount = 2, beforeContentPadding = 16)
+        val listState = mock<LazyListState>()
+        whenever(listState.firstVisibleItemIndex).thenReturn(0)
+        whenever(listState.layoutInfo).thenAnswer { layoutInfo }
+        whenever(listState.isScrollInProgress).thenReturn(false)
+        val reorderState = fakeListInteractionState(listState, liveReorderEnabled = true)
+        val listCoordinates = attachedCoordinates()
+        val itemCoordinates = mock<LayoutCoordinates>()
+        whenever(listCoordinates.localPositionOf(itemCoordinates, Offset.Zero)).thenReturnUnboxed(Offset(0f, -24f))
+        reorderState.updateListLayoutCoordinates(listCoordinates)
+
+        reorderState.onTouchSlopPassed(beta.offset.toFloat(), false)
+        layoutInfo = layoutInfo.copy(visibleItemsInfo = listOf(alpha.copy(offset = 0)))
+        reorderState.onDraggedItemPositioned(itemCoordinates)
+
+        // Laid out 40px above the first item, which starts after the content padding, while the finger still holds it
+        // where it was picked up.
+        assertEquals(beta.offset + 40f, reorderState.computeItemOffset(beta.index))
+    }
+
+    @Test
     fun `GIVEN liveReorderEnabled is true WHEN multiple drag events to the same position occur THEN only one onMove is called`() {
         val handler = RecordingItemInteractionHandler()
         val dragItemOffset = 30
@@ -714,6 +741,12 @@ class InteractableListTest {
         size: Int = 10,
         offset: Int = 0,
     ): LazyListItemInfo = FakeListItemInfo(key = key, index = index, size = size, offset = offset)
+
+    private fun attachedCoordinates(): LayoutCoordinates {
+        val coordinates = mock<LayoutCoordinates>()
+        whenever(coordinates.isAttached).thenReturn(true)
+        return coordinates
+    }
 
     private fun mockHeaderItem(): LazyListItemInfo =
         mockListItem(key = TabKeys.HEADER, index = 0, size = 100, offset = 0)

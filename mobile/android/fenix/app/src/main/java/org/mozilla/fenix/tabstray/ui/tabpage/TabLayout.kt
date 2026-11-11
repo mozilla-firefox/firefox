@@ -43,7 +43,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
@@ -61,7 +60,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.LocalPinnableContainer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.dimensionResource
@@ -779,18 +777,6 @@ private fun InteractableTabGrid(
                 onTabGroupOnboardingDismiss = onTabGroupOnboardingDismiss,
                 collectionSemantics = collectionSemantics,
             ) { tabIndex, gridIndex, collectionIndex, tab ->
-                val pinnableContainer = LocalPinnableContainer.current
-                val isDragged by
-                    remember(tab.id) {
-                        derivedStateOf {
-                            gridInteractionState.draggedItem.key == tab.id
-                        }
-                    }
-
-                DisposableEffect(isDragged) {
-                    val handle = if (isDragged) pinnableContainer?.pin() else null
-                    onDispose { handle?.release() }
-                }
                 val reorderActions =
                     rememberTabReorderActions(
                         item = tab,
@@ -1367,8 +1353,6 @@ private fun LazyListScope.interactableTabListContent(
         onTabGroupOnboardingDismiss = onTabGroupOnboardingDismiss,
         collectionSemantics = tabCollectionSemantics,
     ) { tabIndex, position, shapeInfo, tab ->
-        // Pins the currently dragged item so that it can be scrolled off screen without being disposed
-        val pinnableContainer = LocalPinnableContainer.current
         val isDragged by
             remember(tab.id) {
                 derivedStateOf {
@@ -1381,10 +1365,6 @@ private fun LazyListScope.interactableTabListContent(
                     isDragged && !listInteractionState.draggedItem.moved
                 }
             }
-        DisposableEffect(isDragged) {
-            val handle = if (isDragged) pinnableContainer?.pin() else null
-            onDispose { handle?.release() }
-        }
         val reorderActions =
             rememberTabReorderActions(
                 item = tab,

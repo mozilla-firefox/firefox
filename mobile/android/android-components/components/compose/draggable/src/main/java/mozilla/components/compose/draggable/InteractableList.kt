@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -31,6 +32,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.zIndex
@@ -148,6 +151,21 @@ interface ListInteractionState {
      */
     fun computeItemOffset(index: Int): Float
 
+    /**
+     * Called when the dragged item is placed, keeping it under the finger even when it is no longer visible. Needs the
+     * list to be known with [updateListLayoutCoordinates].
+     *
+     * @param itemCoordinates The [LayoutCoordinates] of the dragged item, not moved to follow the finger.
+     */
+    fun onDraggedItemPositioned(itemCoordinates: LayoutCoordinates)
+
+    /**
+     * Called when the list is placed, to find where the dragged item is laid out in it.
+     *
+     * @param coordinates The [LayoutCoordinates] of the list.
+     */
+    fun updateListLayoutCoordinates(coordinates: LayoutCoordinates)
+
     /** Called to indicate to the list that the drop handling has been completed and the state can be reset. */
     fun reset()
 }
@@ -205,12 +223,35 @@ internal class ListInteractionStateImpl(
     override val orientation: Orientation
         get() = listState.layoutInfo.orientation
 
+    private var listLayoutCoordinates: LayoutCoordinates? = null
+
+    // Where the dragged item is laid out in the list, also when it is not visible. Observed to redraw the item when the
+    // list lays it out somewhere else.
+    private var draggedItemLayoutOffset by mutableStateOf<Float?>(null)
+
     override fun computeItemOffset(index: Int): Float {
         val itemAtIndex = listState.layoutInfo.visibleItemsInfo.firstOrNull { info -> info.index == index }
-        if (itemAtIndex != null) {
-            return (draggedItem.initialOffset + draggedItem.cumulatedOffset - itemAtIndex.offset)
-        }
-        return draggedItem.initialOffset + draggedItem.cumulatedOffset
+        return offsetFromLayout(itemAtIndex?.offset?.toFloat() ?: draggedItemLayoutOffset ?: 0f)
+    }
+
+    /** Offset of the dragged item from where it is laid out at [layoutOffset], to follow the finger. */
+    private fun offsetFromLayout(layoutOffset: Float) =
+        draggedItem.initialOffset + draggedItem.cumulatedOffset - layoutOffset
+
+    override fun onDraggedItemPositioned(itemCoordinates: LayoutCoordinates) {
+        val listCoordinates = listLayoutCoordinates?.takeIf { it.isAttached } ?: return
+        val positionInList = listCoordinates.localPositionOf(itemCoordinates, Offset.Zero)
+        val mainAxisPosition =
+            when (orientation) {
+                Orientation.Vertical -> positionInList.y
+                Orientation.Horizontal -> positionInList.x
+            }
+        // The offsets of the list items do not include the content padding before the first item.
+        draggedItemLayoutOffset = mainAxisPosition - listState.layoutInfo.beforeContentPadding
+    }
+
+    override fun updateListLayoutCoordinates(coordinates: LayoutCoordinates) {
+        listLayoutCoordinates = coordinates
     }
 
     override fun onTouchSlopPassed(offset: Float, shouldLongPress: Boolean) {
@@ -292,7 +333,9 @@ internal class ListInteractionStateImpl(
         if (draggedItem is InteractionState.List.Active) {
             val draggingItem = draggedItem as InteractionState.List.Active
             previousKeyOfDraggedItem = draggedItem.key
-            val startOffset = computeItemOffset(draggingItem.index)
+            val layoutOffset =
+                listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == draggingItem.key }?.offset?.toFloat()
+            val startOffset = offsetFromLayout(layoutOffset ?: draggedItemLayoutOffset ?: 0f)
             scope.launch {
                 if (previousItemAnimatableOffset.isRunning) {
                     previousItemAnimatableOffset.stop()
@@ -312,6 +355,7 @@ internal class ListInteractionStateImpl(
         hoveredItem = InteractionState.List.None
         highlightedRect = null
         interactionMode = InteractionMode.List.None
+        draggedItemLayoutOffset = null
         moved = false
         scrollJob?.cancel()
         scrollJob = null
@@ -659,7 +703,7 @@ private fun findOverscroll(
 }
 
 /**
- * Container for draggable list item.
+ * Container for draggable list item. Keeps the item composed while it is dragged, also when it is scrolled out of view.
  *
  * @param state List reordering state.
  * @param key Key of the item to be displayed.
@@ -675,45 +719,85 @@ fun LazyItemScope.InteractableDragItemContainer(
     enteringItemKey: Any? = null,
     content: @Composable (itemInteractionState: ItemInteractionState) -> Unit,
 ) {
-    val modifier =
-        when (key) {
-            state.draggedItem.key -> {
-                Modifier.zIndex(Elevation.DRAGGED_ITEM).graphicsLayer {
-                    when (state.orientation) {
-                        Orientation.Vertical -> translationY = state.computeItemOffset(position)
-                        Orientation.Horizontal -> translationX = state.computeItemOffset(position)
+    // Keeps the dragged item composed when it is scrolled out of view, to keep it under the finger.
+    val isDragged by remember(state, key) { derivedStateOf { state.draggedItem.key == key } }
+    PinnedWhile(isDragged)
+    /*
+     * The outer box tells where the dragged item is laid out, to keep it under the finger also when it is no longer
+     * visible. graphicsLayer translations are included in LayoutCoordinates measurements, so the translations
+     * following the finger happen in an inner box.
+     */
+    Box(
+        modifier =
+            Modifier.zIndex(
+                    if (key == state.draggedItem.key || key == state.previousKeyOfDraggedItem) {
+                        Elevation.DRAGGED_ITEM
+                    } else {
+                        Elevation.NO_INTERACTION
                     }
-                }
-            }
-
-            state.previousKeyOfDraggedItem -> {
-                Modifier.zIndex(Elevation.DRAGGED_ITEM).graphicsLayer {
-                    when (state.orientation) {
-                        Orientation.Vertical -> translationY = state.previousItemAnimatableOffset.value
-
-                        Orientation.Horizontal -> translationX = state.previousItemAnimatableOffset.value
-                    }
-                }
-            }
-
-            else -> {
-                Modifier.zIndex(Elevation.NO_INTERACTION)
-            }
-        }.defaultListItemAnimation(
-            lazyListItemScope = this,
-            // suppress item transitions when group entrance animation is playing
-            suppressTransitions = enteringItemKey != null,
-        )
-    Box(modifier = modifier, propagateMinConstraints = true) {
-        content(
-            ItemInteractionState(
-                isHoveredByItem = key == state.hoveredItem.key,
-                isDragged = key == state.draggedItem.key,
-                isEntering = key == enteringItemKey,
+                )
+                .reportDragPlacement(state = state, key = key)
+                .defaultListItemAnimation(
+                    lazyListItemScope = this,
+                    // suppress item transitions when group entrance animation is playing
+                    suppressTransitions = enteringItemKey != null,
+                ),
+        propagateMinConstraints = true,
+    ) {
+        Box(
+            modifier = Modifier.dragTranslation(state = state, key = key, position = position),
+            propagateMinConstraints = true,
+        ) {
+            content(
+                ItemInteractionState(
+                    isHoveredByItem = key == state.hoveredItem.key,
+                    isDragged = key == state.draggedItem.key,
+                    isEntering = key == enteringItemKey,
+                )
             )
-        )
+        }
     }
 }
+
+/**
+ * Tell [state] where the item with [key] is placed while it is dragged. Other items are not observed.
+ *
+ * @param state List reordering state.
+ * @param key Key of the item.
+ */
+private fun Modifier.reportDragPlacement(state: ListInteractionState, key: Any): Modifier =
+    if (key == state.draggedItem.key) this.onGloballyPositioned(state::onDraggedItemPositioned) else this
+
+/**
+ * Move the item with [key] to follow the finger while it is dragged, and from where it was let go of while it is
+ * animated to its place.
+ *
+ * @param state List reordering state.
+ * @param key Key of the item.
+ * @param position Position in the list of the item.
+ */
+private fun Modifier.dragTranslation(state: ListInteractionState, key: Any, position: Int): Modifier =
+    when (key) {
+        state.draggedItem.key -> {
+            this.graphicsLayer {
+                when (state.orientation) {
+                    Orientation.Vertical -> translationY = state.computeItemOffset(position)
+                    Orientation.Horizontal -> translationX = state.computeItemOffset(position)
+                }
+            }
+        }
+
+        state.previousKeyOfDraggedItem -> {
+            this.graphicsLayer {
+                when (state.orientation) {
+                    Orientation.Vertical -> translationY = state.previousItemAnimatableOffset.value
+                    Orientation.Horizontal -> translationX = state.previousItemAnimatableOffset.value
+                }
+            }
+        }
+
+        else -> this
+    }
 
 /** Calculates the offset of an item taking its height into account. */
 private val LazyListItemInfo.endOffset: Int
@@ -730,7 +814,8 @@ private fun LazyListState.findItem(offset: Float) =
     }
 
 /**
- * Detects press, long press and drag gestures.
+ * Detects press, long press and drag gestures. Also tells [interactionState] where the list is, so this has to be
+ * applied to the list or to a node which starts where the list does.
  *
  * @param listState State of the list.
  * @param interactionState List interaction state used for dragging callbacks.
@@ -742,6 +827,7 @@ fun Modifier.detectListPressAndDrag(
     shouldLongPressToDrag: Boolean,
 ): Modifier =
     this then
+        Modifier.onGloballyPositioned(interactionState::updateListLayoutCoordinates) then
         Modifier.pointerInput(listState, shouldLongPressToDrag) {
             if (shouldLongPressToDrag) {
                 detectDragGesturesAfterLongPress(

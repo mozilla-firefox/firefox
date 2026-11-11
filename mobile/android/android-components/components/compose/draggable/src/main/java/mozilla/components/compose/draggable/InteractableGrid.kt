@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -726,7 +727,7 @@ private fun findOverscroll(
 }
 
 /**
- * Container for draggable grid item.
+ * Container for draggable grid item. Keeps the item composed while it is dragged, also when it is scrolled out of view.
  *
  * @param state State of the lazy grid.
  * @param key Key of the item to be displayed.
@@ -746,6 +747,9 @@ fun LazyGridItemScope.InteractableDragItemContainer(
     enteringItemDecoration: @Composable (ItemInteractionState) -> Modifier = { Modifier },
     content: @Composable (interactionState: ItemInteractionState) -> Unit,
 ) {
+    // Keeps the dragged item composed when it is scrolled out of view, to keep it under the finger.
+    val isDragged by remember(state, key) { derivedStateOf { state.draggedItem.key == key } }
+    PinnedWhile(isDragged)
     val itemInteractionState =
         ItemInteractionState(
             isHoveredByItem = key == state.hoveredItem.key,

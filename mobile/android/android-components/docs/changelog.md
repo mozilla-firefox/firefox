@@ -33,6 +33,8 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: Removed. Use `FileParser<PasswordsParseResult>` from `concept-file-parser`, with `PasswordsParseResult` and `PasswordsParseError` from `lib-password-parser-csv`, instead of `PasswordsFileParser` and `PasswordsParserError`. [Bug 2041577](https://bugzilla.mozilla.org/show_bug.cgi?id=2041577)
 * **compose-draggable**
     * Added `fixedItems` to `createListInteractionState` for list items which cannot be dragged but can have other items moved next to or dropped onto them. [Bug 2086549](https://bugzilla.mozilla.org/show_bug.cgi?id=2086549)
+    * ⚠️ **Breaking change**: Added `ListInteractionState.onDraggedItemPositioned` and `ListInteractionState.updateListLayoutCoordinates`, which custom `ListInteractionState` implementations must implement, to keep a dragged list item under the finger also when the list lays it out out of view. [Bug 2086549](https://bugzilla.mozilla.org/show_bug.cgi?id=2086549)
+    * `InteractableDragItemContainer` for lists and for grids keeps the dragged item composed while it is scrolled out of view, callers no longer need to. [Bug 2086549](https://bugzilla.mozilla.org/show_bug.cgi?id=2086549)
 
 # 161.0
 * **browser-state**
