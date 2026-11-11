@@ -530,6 +530,11 @@ WebAuthnService::SetHasAttestationConsent(uint64_t aTransactionId,
 NS_IMETHODIMP
 WebAuthnService::PinCallback(uint64_t aTransactionId, const nsACString& aPin) {
   MOZ_ASSERT(NS_IsMainThread());
+  if (aTransactionId == 0) {
+    // about:webauthn PIN callback
+    return AuthrsService()->PinCallback(aTransactionId, aPin);
+  }
+
   if (mActiveTransaction.isNothing() ||
       mActiveTransaction.ref().transactionId != aTransactionId) {
     return NS_OK;
