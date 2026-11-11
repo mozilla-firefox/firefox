@@ -589,7 +589,7 @@ bool AndroidImageReader::AcquirePendingImage() {
     gfxCriticalNoteOnce << "AImage_getHardwareBuffer failed"
                         << static_cast<int32_t>(result);
     if (fence) {
-      AImage_deleteAsync(image, fence.get());
+      AImage_deleteAsync(image, fence.release());
     } else {
       AImage_delete(image);
     }
