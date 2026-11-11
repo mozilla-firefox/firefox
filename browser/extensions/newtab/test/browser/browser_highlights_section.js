@@ -15,6 +15,7 @@ add_setup(async function () {
 
   await SpecialPowers.pushPrefEnv({
     set: [
+      ["browser.newtabpage.activity-stream.feeds.discoverystreamfeed", true],
       [
         "browser.newtabpage.activity-stream.discoverystream.config",
         PREFS_CONFIG.get("discoverystream.config").getValue({

@@ -5,13 +5,16 @@
 /* global ContentTaskUtils */
 
 async function before({ pushPrefs }) {
-  await pushPrefs([
-    "browser.newtabpage.activity-stream.discoverystream.config",
-    JSON.stringify({
-      collapsible: true,
-      enabled: true,
-    }),
-  ]);
+  await pushPrefs(
+    ["browser.newtabpage.activity-stream.feeds.discoverystreamfeed", true],
+    [
+      "browser.newtabpage.activity-stream.discoverystream.config",
+      JSON.stringify({
+        collapsible: true,
+        enabled: true,
+      }),
+    ]
+  );
   // @nova-cleanup(remove-pref): Remove this return block; delete the novaEnabled parameter
   // from test_render_hardcoded_topsites and remove the selector branch — always use
   // "section[data-section-id='topsites']"

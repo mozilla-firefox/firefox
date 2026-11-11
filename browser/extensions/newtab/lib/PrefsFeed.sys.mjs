@@ -85,7 +85,6 @@ function recordsHistory() {
 const PREF_DEFAULTS = [
   { type: "bool", key: "logowordmark.alwaysVisible", defaultValue: false },
   { type: "bool", key: "feeds.section.topstories", defaultValue: false },
-  { type: "bool", key: "discoverystream.enabled", defaultValue: false },
   {
     type: "bool",
     key: "discoverystream.hardcoded-basic-layout",

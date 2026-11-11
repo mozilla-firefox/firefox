@@ -122,11 +122,6 @@ describe("DiscoveryStreamFeed", () => {
 
     services = mockServices(["locale", "obs", "prefs", "uuid", "vc"]);
     services.uuid.generateUUID.mockReturnValue(FAKE_UUID);
-    services.prefs.getBoolPref.mockImplementation(name =>
-      name === "browser.newtabpage.activity-stream.discoverystream.enabled"
-        ? true
-        : undefined
-    );
 
     surfaceIdSet = jest.fn();
     surfaceIdRejectedRecord = jest.fn();
@@ -203,7 +198,6 @@ describe("DiscoveryStreamFeed", () => {
             enabled: false,
           }),
           [ENDPOINTS_PREF_NAME]: DUMMY_ENDPOINT,
-          "discoverystream.enabled": true,
           "feeds.section.topstories": true,
           "feeds.system.topstories": true,
           "system.showSponsored": false,
@@ -443,7 +437,6 @@ describe("DiscoveryStreamFeed", () => {
               enabled: true,
             }),
             [ENDPOINTS_PREF_NAME]: DUMMY_ENDPOINT,
-            "discoverystream.enabled": true,
             "discoverystream.region-basic-layout": true,
             "system.showSponsored": false,
           },
@@ -465,7 +458,6 @@ describe("DiscoveryStreamFeed", () => {
               enabled: true,
             }),
             [ENDPOINTS_PREF_NAME]: DUMMY_ENDPOINT,
-            "discoverystream.enabled": true,
             "discoverystream.region-basic-layout": false,
             "system.showSponsored": false,
           },
@@ -487,7 +479,6 @@ describe("DiscoveryStreamFeed", () => {
               enabled: false,
             }),
             [ENDPOINTS_PREF_NAME]: DUMMY_ENDPOINT,
-            "discoverystream.enabled": true,
             "discoverystream.hardcoded-basic-layout": true,
             "system.showSponsored": false,
           },
@@ -512,7 +503,6 @@ describe("DiscoveryStreamFeed", () => {
               enabled: false,
             }),
             [ENDPOINTS_PREF_NAME]: DUMMY_ENDPOINT,
-            "discoverystream.enabled": true,
             "discoverystream.spocs-endpoint":
               "https://spocs.getpocket.com/spocs2",
             "system.showSponsored": false,
@@ -2270,6 +2260,7 @@ describe("DiscoveryStreamFeed", () => {
 
   describe("#setupPrefs", () => {
     it("should call setupPrefs", async () => {
+      jest.spyOn(feed, "enable").mockResolvedValue();
       jest.spyOn(feed, "setupPrefs");
       feed.onAction({
         type: at.INIT,
@@ -2651,24 +2642,6 @@ describe("DiscoveryStreamFeed", () => {
   });
 
   describe("#onAction: DISCOVERY_STREAM_CONFIG_CHANGE", () => {
-    it("should call this.loadLayout if config.enabled changes to true ", async () => {
-      jest.spyOn(feed.cache, "set").mockReturnValue(Promise.resolve());
-      // First initialize
-      await feed.onAction({ type: at.INIT });
-      expect(feed.loaded).toBe(false);
-
-      // force clear cached pref value
-      feed._prefCache = {};
-      setPref(CONFIG_PREF_NAME, { enabled: true });
-
-      jest.spyOn(feed, "resetCache").mockReturnValue(Promise.resolve());
-      jest.spyOn(feed, "loadLayout").mockReturnValue(Promise.resolve());
-      await feed.onAction({ type: at.DISCOVERY_STREAM_CONFIG_CHANGE });
-
-      expect(feed.loadLayout).toHaveBeenCalledTimes(1);
-      expect(feed.resetCache).toHaveBeenCalledTimes(1);
-      expect(feed.loaded).toBe(true);
-    });
     it("should clear the cache if a config change happens and config.enabled is true", async () => {
       expectConsoleError();
       jest.spyOn(feed.cache, "set").mockReturnValue(Promise.resolve());
@@ -2695,26 +2668,6 @@ describe("DiscoveryStreamFeed", () => {
           type: at.DISCOVERY_STREAM_LAYOUT_RESET,
         })
       );
-    });
-    it("should not call this.loadLayout if config.enabled changes to false", async () => {
-      expectConsoleError();
-      jest.spyOn(feed.cache, "set").mockReturnValue(Promise.resolve());
-      // force clear cached pref value
-      feed._prefCache = {};
-      setPref(CONFIG_PREF_NAME, { enabled: true });
-
-      await feed.onAction({ type: at.INIT });
-      expect(feed.loaded).toBe(true);
-
-      feed._prefCache = {};
-      setPref(CONFIG_PREF_NAME, { enabled: false });
-      jest.spyOn(feed, "resetCache").mockReturnValue(Promise.resolve());
-      jest.spyOn(feed, "loadLayout").mockReturnValue(Promise.resolve());
-      await feed.onAction({ type: at.DISCOVERY_STREAM_CONFIG_CHANGE });
-
-      expect(feed.loadLayout).not.toHaveBeenCalled();
-      expect(feed.resetCache).toHaveBeenCalledTimes(1);
-      expect(feed.loaded).toBe(false);
     });
   });
 
@@ -2907,6 +2860,7 @@ describe("DiscoveryStreamFeed", () => {
 
   describe("#onAction: DISCOVERY_STREAM_DEV_REFRESH_CACHE", () => {
     it("should clear the cache with DISCOVERY_STREAM_DEV_REFRESH_CACHE", async () => {
+      jest.spyOn(feed, "enable").mockResolvedValue();
       jest.spyOn(feed.cache, "set").mockReturnValue(Promise.resolve());
 
       jest.spyOn(feed, "resetCache").mockReturnValue(Promise.resolve());

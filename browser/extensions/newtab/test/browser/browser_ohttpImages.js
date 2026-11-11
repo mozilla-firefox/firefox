@@ -11,6 +11,12 @@ const { NimbusTestUtils } = ChromeUtils.importESModule(
 );
 
 add_task(async function test_nimbus_experiment_enabled() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.newtabpage.activity-stream.feeds.discoverystreamfeed", true],
+    ],
+  });
+
   const onActionSpy = sinon.spy(DiscoveryStreamFeed.prototype, "onAction");
 
   await ExperimentAPI.ready();
@@ -43,4 +49,5 @@ add_task(async function test_nimbus_experiment_enabled() {
 
   await doExperimentCleanup();
   onActionSpy.restore();
+  await SpecialPowers.popPrefEnv();
 });
