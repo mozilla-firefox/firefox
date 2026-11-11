@@ -9,7 +9,6 @@ preprocessed_intervention_files = [
     "bug1579159-m.tailieu.vn.js",
     "bug1610046-diverse.direct-fix_image_flickering.css",
     "bug1610344-directv.com.co-hide_browser_notice.css",
-    "bug1709653-Office_365_email_handling_prompt.js",
     "bug1718366-smugmug.com-fix_image_flickering.css",
     "bug1724868-news.yahoo.co.jp-1.js",
     "bug1724868-news.yahoo.co.jp.js",
