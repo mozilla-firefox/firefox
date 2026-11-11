@@ -4,7 +4,9 @@
 #include "mozilla/SpinEventLoopUntil.h"
 #include "mozilla/gtest/MozAssertions.h"
 #include "nsCOMPtr.h"
+#include "nsComponentManagerUtils.h"
 #include "nsIInputStream.h"
+#include "nsIMultiplexInputStream.h"
 #include "nsIPipe.h"
 #include "nsStreamUtils.h"
 #include "nsString.h"
@@ -692,4 +694,33 @@ TEST(TestSlicedInputStream, AbortLengthCallback)
       [&]() { return callback2->Called(); }));
   ASSERT_TRUE(!callback1->Called());
   ASSERT_EQ(-1, callback2->Size());
+}
+
+// A wrapped stream that implements nsICloneableInputStream but refuses to be
+// cloned in its current state must not be reported as cloneable.
+TEST(TestSlicedInputStream, CloneableFollowsWrappedStream)
+{
+  nsCOMPtr<nsIInputStream> stream;
+  ASSERT_NS_SUCCEEDED(
+      NS_NewCStringInputStream(getter_AddRefs(stream), "Hello world"_ns));
+
+  nsCOMPtr<nsIMultiplexInputStream> multiplex =
+      do_CreateInstance("@mozilla.org/io/multiplex-input-stream;1");
+  ASSERT_NS_SUCCEEDED(multiplex->AppendStream(stream));
+
+  nsCOMPtr<nsIInputStream> wrapped = do_QueryInterface(multiplex);
+  ASSERT_TRUE(NS_InputStreamIsCloneable(wrapped));
+
+  // nsMultiplexInputStream refuses to clone itself once it has been read from.
+  char buf[5];
+  uint32_t count = 0;
+  ASSERT_NS_SUCCEEDED(wrapped->Read(buf, sizeof(buf), &count));
+  ASSERT_EQ(5u, count);
+  ASSERT_FALSE(NS_InputStreamIsCloneable(wrapped));
+
+  RefPtr sis = MakeRefPtr<SlicedInputStream>(do_AddRef(wrapped), 0, 5);
+  ASSERT_FALSE(NS_InputStreamIsCloneable(sis));
+
+  nsCOMPtr<nsIInputStream> clone;
+  ASSERT_NS_FAILED(sis->Clone(getter_AddRefs(clone)));
 }
