@@ -2,30 +2,50 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "RenderDMABUFTextureHost.h"
+#include "RenderLinuxTextureHost.h"
 
 #include "GLContextEGL.h"
 #include "ScopedGLHelpers.h"
 #include "mozilla/gfx/Logging.h"
+#include "mozilla/widget/DMABufSurface.h"
+#include "mozilla/widget/SHMBufSurface.h"
 
 namespace mozilla::wr {
 
-RenderDMABUFTextureHost::RenderDMABUFTextureHost(DMABufSurface* aSurface)
+// Derived from
+RenderLinuxTextureHost::RenderLinuxTextureHost(BufferSurface* aSurface)
     : mSurface(aSurface) {
-  MOZ_COUNT_CTOR_INHERITED(RenderDMABUFTextureHost, RenderTextureHost);
+  if (!aSurface->GetAsDMABufSurface()) {
+    NS_WARNING("Direct import is used for DMABufSurfaces only!");
+    mSurface = nullptr;
+  }
+  MOZ_COUNT_CTOR_INHERITED(RenderLinuxTextureHost, RenderTextureHost);
 }
 
-RenderDMABUFTextureHost::~RenderDMABUFTextureHost() {
-  MOZ_COUNT_DTOR_INHERITED(RenderDMABUFTextureHost, RenderTextureHost);
+RenderLinuxTextureHost::RenderLinuxTextureHost(
+    uint8_t* aBuffer, const layers::BufferDescriptor& aDescriptor) {
+  MOZ_COUNT_CTOR_INHERITED(RenderLinuxTextureHost, RenderTextureHost);
+  mSurface = SHMBufSurface::Create(aBuffer, aDescriptor);
+}
+
+RenderLinuxTextureHost::~RenderLinuxTextureHost() {
+  MOZ_COUNT_DTOR_INHERITED(RenderLinuxTextureHost, RenderTextureHost);
   DeleteTextureHandle();
 }
 
-wr::WrExternalImage RenderDMABUFTextureHost::Lock(uint8_t aChannelIndex,
-                                                  gl::GLContext* aGL) {
+void RenderLinuxTextureHost::PrepareForUse() {
+  // We don't use texture recycling for dmabuf, but we may
+  // implement it for WebGL for instance.
+  if (mSurface->GetAsSHMBufSurface()) {
+    mSurface->MarkTextureDirty();
+  }
+}
+
+wr::WrExternalImage RenderLinuxTextureHost::Lock(uint8_t aChannelIndex,
+                                                 gl::GLContext* aGL) {
   const gfx::IntSize size(mSurface->GetWidth(aChannelIndex),
                           mSurface->GetHeight(aChannelIndex));
-
-  // Wayland native compositor doesn't use textures so pass zero
+  // Wayland native compositor may not use textures so pass zero
   // there. It saves GPU resources.
   if (!aGL) {
     return NativeTextureToWrExternalImage(0, 0.0, 0.0,
@@ -51,20 +71,19 @@ wr::WrExternalImage RenderDMABUFTextureHost::Lock(uint8_t aChannelIndex,
     if (!mSurface->CreateTextures(mGL)) {
       return InvalidToWrExternalImage();
     }
-    ActivateBindAndTexParameteri(mGL, LOCAL_GL_TEXTURE0, LOCAL_GL_TEXTURE_2D,
-                                 mSurface->GetTexture(aChannelIndex));
   }
 
-  if (auto texture = mSurface->GetTexture(aChannelIndex)) {
-    mSurface->MaybeSemaphoreWait(texture);
+  auto texture = mSurface->GetTexture(aChannelIndex);
+  if (auto* dmabuf = mSurface->GetAsDMABufSurface()) {
+    dmabuf->MaybeSemaphoreWait(texture);
   }
 
-  return NativeTextureToWrExternalImage(
-      mSurface->GetTexture(aChannelIndex), 0.0, 0.0,
-      static_cast<float>(size.width), static_cast<float>(size.height));
+  return NativeTextureToWrExternalImage(texture, 0.0, 0.0,
+                                        static_cast<float>(size.width),
+                                        static_cast<float>(size.height));
 }
 
-gfx::IntSize RenderDMABUFTextureHost::GetSize(uint8_t aChannelIndex) const {
+gfx::IntSize RenderLinuxTextureHost::GetSize(uint8_t aChannelIndex) const {
   MOZ_ASSERT(mSurface);
   MOZ_ASSERT((mSurface->GetTextureCount() == 0)
                  ? (aChannelIndex == mSurface->GetTextureCount())
@@ -77,22 +96,29 @@ gfx::IntSize RenderDMABUFTextureHost::GetSize(uint8_t aChannelIndex) const {
                       mSurface->GetHeight(aChannelIndex));
 }
 
-void RenderDMABUFTextureHost::Unlock() {}
+void RenderLinuxTextureHost::Unlock() {}
 
-void RenderDMABUFTextureHost::DeleteTextureHandle() {
+void RenderLinuxTextureHost::DeleteTextureHandle() {
   mSurface->ReleaseTextures();
 }
 
-void RenderDMABUFTextureHost::ClearCachedResources() {
+void RenderLinuxTextureHost::ClearCachedResources() {
   DeleteTextureHandle();
   mGL = nullptr;
 }
 
-bool RenderDMABUFTextureHost::MapPlane(RenderCompositor* aCompositor,
-                                       uint8_t aChannelIndex,
-                                       PlaneInfo& aPlaneInfo) {
+bool RenderLinuxTextureHost::MapPlane(RenderCompositor* aCompositor,
+                                      uint8_t aChannelIndex,
+                                      PlaneInfo& aPlaneInfo) {
+  // SHM surfaces are directly mapped
+  if (auto* shm = mSurface->GetAsSHMBufSurface()) {
+    aPlaneInfo.mData =
+        shm->MapPlane(aChannelIndex, aPlaneInfo.mStride, aPlaneInfo.mSize);
+    return !!aPlaneInfo.mData;
+  }
+
   if (mSurface->GetAsDMABufSurfaceYUV()) {
-    // DMABufSurfaceYUV is not supported.
+    // DMABufSurfaceYUV mapping is not supported yet. Do we need it?
     return false;
   }
 
@@ -119,7 +145,7 @@ bool RenderDMABUFTextureHost::MapPlane(RenderCompositor* aCompositor,
   return true;
 }
 
-void RenderDMABUFTextureHost::UnmapPlanes() {
+void RenderLinuxTextureHost::UnmapPlanes() {
   if (mReadback) {
     mReadback->Unmap();
     mReadback = nullptr;
