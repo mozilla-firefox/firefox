@@ -12,6 +12,11 @@
 
 "use strict";
 
+ChromeUtils.defineESModuleGetters(this, {
+  OpenSearchEngine:
+    "moz-src:///toolkit/components/search/OpenSearchEngine.sys.mjs",
+});
+
 const tests = [
   {
     file: "simple.xml",
@@ -75,6 +80,18 @@ for (const test of tests) {
 
     Assert.equal(engine._loadPath, `[http]localhost/${test.file}`);
 
+    let installURL = `${gHttpURL}/opensearch/${test.file}`;
+    Assert.equal(
+      engine.installURL,
+      installURL,
+      "Should have recorded the url it was installed from"
+    );
+    Assert.equal(
+      SearchService.getEngineByInstallURL(installURL),
+      engine,
+      "Should find the engine by the url it was installed from"
+    );
+
     Assert.equal(
       engine.queryCharset,
       test.queryCharset ?? SearchUtils.DEFAULT_QUERY_CHARSET,
@@ -119,6 +136,37 @@ for (const test of tests) {
     }
   });
 }
+
+add_task(async function test_installURL_persisted() {
+  // Use an engine from the previous tests.
+  let engine = SearchService.getEngineByName("simple");
+  let json = JSON.parse(JSON.stringify(engine));
+  Assert.equal(
+    json._installURL,
+    `${gHttpURL}/opensearch/simple.xml`,
+    "Should save the install url"
+  );
+
+  let restored = new OpenSearchEngine({ json });
+  Assert.equal(
+    restored.installURL,
+    `${gHttpURL}/opensearch/simple.xml`,
+    "Should restore the install url"
+  );
+
+  delete json._installURL;
+  restored = new OpenSearchEngine({ json });
+  Assert.equal(
+    restored.installURL,
+    null,
+    "Should have no install url for engines saved without one"
+  );
+  Assert.equal(
+    SearchService.getEngineByInstallURL("https://example.com/unknown.xml"),
+    null,
+    "Should not find an engine for an unknown url"
+  );
+});
 
 add_task(async function test_telemetry_reporting() {
   // Use an engine from the previous tests.

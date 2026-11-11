@@ -53,31 +53,42 @@ class _OpenSearchManager {
    *   The type of modification.
    */
   observe(subject, _topic, data) {
-    let engine = subject.wrappedJSObject;
-    // There are two kinds of search engine objects: SearchEngine objects
-    // and plain OpenSearchData objects. `engine` in this observer is the
-    // former and the arrays in #offeredEngines and #hiddenEngines contain the
-    // latter. They are related by their names.
     switch (data) {
       case "engine-added":
-        // An engine was added to the search service.  If a page is offering the
-        // engine, then the engine needs to be removed from the corresponding
-        // browser's offered engines.
-        this.#removeMaybeOfferedEngine(engine.name);
+      case "engine-changed":
+        // If a page is offering an engine that is now installed, it needs to be
+        // moved from the browser's offered engines to its hidden engines.
+        this.#hideInstalledEngines();
         break;
       case "engine-removed":
-        // An engine was removed from the search service.  If a page is offering
-        // the engine, then the engine needs to be added back to the corresponding
-        // browser's offered engines.
-        this.#addMaybeOfferedEngine(engine.name);
+        // If a page is offering an engine that is no longer installed, it needs
+        // to be moved back from the browser's hidden engines to its offered
+        // engines.
+        this.#offerUninstalledEngines();
         break;
     }
   }
 
   /**
+   * Whether an engine offered by a page is already installed. Pages may offer
+   * an engine under a different title to the name in its OpenSearch
+   * description, so the url of the description is checked as well.
+   *
+   * @param {OpenSearchData} engine
+   *   The engine offered by the page.
+   * @returns {boolean}
+   */
+  #isInstalled(engine) {
+    return !!(
+      lazy.SearchService.getEngineByName(engine.title) ||
+      lazy.SearchService.getEngineByInstallURL(engine.uri)
+    );
+  }
+
+  /**
    * Adds an open search engine to the list of available engines for a browser.
-   * If an engine with that name is already installed, adds it to the list
-   * of hidden engines instead.
+   * If the engine is already installed, adds it to the list of hidden engines
+   * instead.
    *
    * @param {MozBrowser} browser
    *   The browser offering the engine.
@@ -97,24 +108,25 @@ class _OpenSearchManager {
       return;
     }
 
-    // If this engine (identified by title) is already in the list, add it
-    // to the list of hidden engines rather than to the main list.
-    let shouldBeHidden = !!lazy.SearchService.getEngineByName(engine.title);
-
-    let engines =
-      (shouldBeHidden
-        ? this.#hiddenEngines.get(browser)
-        : this.#offeredEngines.get(browser)) || [];
-
     // Caching open search data in sys modules must not keep the browser alive.
     let browserRef = new WeakRef(browser);
-    engines.push({
+    let data = {
       uri: engine.href,
       title: engine.title,
       get icon() {
         return browserRef.deref()?.mIconURL;
       },
-    });
+    };
+
+    // If this engine is already installed, add it to the list of hidden
+    // engines rather than to the main list.
+    let shouldBeHidden = this.#isInstalled(data);
+
+    let engines =
+      (shouldBeHidden
+        ? this.#hiddenEngines.get(browser)
+        : this.#offeredEngines.get(browser)) || [];
+    engines.push(data);
 
     if (shouldBeHidden) {
       this.#hiddenEngines.set(browser, engines);
@@ -164,49 +176,47 @@ class _OpenSearchManager {
     }
   }
 
-  #addMaybeOfferedEngine(engineName) {
-    for (let win of lazy.BrowserWindowTracker.orderedWindows) {
-      for (let browser of win.gBrowser.browsers) {
-        let hiddenEngines = this.#hiddenEngines.get(browser) || [];
-        let offeredEngines = this.#offeredEngines.get(browser) || [];
-
-        for (let i = 0; i < hiddenEngines.length; i++) {
-          if (hiddenEngines[i].title == engineName) {
-            offeredEngines.push(hiddenEngines[i]);
-            if (offeredEngines.length == 1) {
-              this.#offeredEngines.set(browser, offeredEngines);
-            }
-
-            hiddenEngines.splice(i, 1);
-            if (browser == win.gBrowser.selectedBrowser) {
-              this.updateOpenSearchBadge(win);
-            }
-            break;
-          }
-        }
-      }
-    }
+  #offerUninstalledEngines() {
+    this.#moveEngines(
+      this.#hiddenEngines,
+      this.#offeredEngines,
+      engine => !this.#isInstalled(engine)
+    );
   }
 
-  #removeMaybeOfferedEngine(engineName) {
+  #hideInstalledEngines() {
+    this.#moveEngines(this.#offeredEngines, this.#hiddenEngines, engine =>
+      this.#isInstalled(engine)
+    );
+  }
+
+  /**
+   * Moves the engines matching a condition from one list to the other for
+   * every browser, updating the badge of browsers whose offered engines change.
+   *
+   * @param {WeakMap<MozBrowser, OpenSearchData[]>} from
+   *   The lists to move engines from.
+   * @param {WeakMap<MozBrowser, OpenSearchData[]>} to
+   *   The lists to move engines to.
+   * @param {(engine: OpenSearchData) => boolean} shouldMove
+   *   Whether an engine should be moved.
+   */
+  #moveEngines(from, to, shouldMove) {
     for (let win of lazy.BrowserWindowTracker.orderedWindows) {
       for (let browser of win.gBrowser.browsers) {
-        let hiddenEngines = this.#hiddenEngines.get(browser) || [];
-        let offeredEngines = this.#offeredEngines.get(browser) || [];
+        let fromEngines = from.get(browser) || [];
+        let moved = fromEngines.filter(shouldMove);
+        if (!moved.length) {
+          continue;
+        }
 
-        for (let i = 0; i < offeredEngines.length; i++) {
-          if (offeredEngines[i].title == engineName) {
-            hiddenEngines.push(offeredEngines[i]);
-            if (hiddenEngines.length == 1) {
-              this.#hiddenEngines.set(browser, hiddenEngines);
-            }
-
-            offeredEngines.splice(i, 1);
-            if (browser == win.gBrowser.selectedBrowser) {
-              this.updateOpenSearchBadge(win);
-            }
-            break;
-          }
+        from.set(
+          browser,
+          fromEngines.filter(e => !moved.includes(e))
+        );
+        to.set(browser, [...(to.get(browser) || []), ...moved]);
+        if (browser == win.gBrowser.selectedBrowser) {
+          this.updateOpenSearchBadge(win);
         }
       }
     }

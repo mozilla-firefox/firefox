@@ -39,6 +39,8 @@ export class OpenSearchEngine extends SearchEngine {
   _updateInterval = null;
   // The url to check at for a new update
   _updateURL = null;
+  // The url of the OpenSearch description the engine was installed from.
+  #installURL = null;
 
   /**
    * Creates a OpenSearchEngine.
@@ -79,6 +81,7 @@ export class OpenSearchEngine extends SearchEngine {
     }
 
     if (options.engineData) {
+      this.#installURL = options.engineData.installURL?.spec ?? null;
       this.#setEngineData(options.engineData, options.originAttributes);
 
       // As this is a new engine, we must set the verification hash for the load
@@ -95,6 +98,7 @@ export class OpenSearchEngine extends SearchEngine {
       this._initWithJSON(options.json);
       this._updateInterval = options.json._updateInterval ?? null;
       this._updateURL = options.json._updateURL ?? null;
+      this.#installURL = options.json._installURL ?? null;
     }
   }
 
@@ -108,7 +112,18 @@ export class OpenSearchEngine extends SearchEngine {
     let json = super.toJSON();
     json._updateInterval = this._updateInterval;
     json._updateURL = this._updateURL;
+    json._installURL = this.#installURL;
     return json;
+  }
+
+  /**
+   * The url of the OpenSearch description the engine was installed from. This
+   * is null for engines installed before it was recorded.
+   *
+   * @returns {?string}
+   */
+  get installURL() {
+    return this.#installURL;
   }
 
   /**

@@ -393,6 +393,27 @@ export const SearchService = new (class SearchService {
   }
 
   /**
+   * Returns the OpenSearch engine installed from the given description url.
+   *
+   * @param {string} installURL
+   *   The url of the OpenSearch description.
+   * @returns {?SearchEngine}
+   *   The associated engine if found, null otherwise.
+   */
+  getEngineByInstallURL(installURL) {
+    this.#ensureInitialized();
+    for (let engine of this._engines.values()) {
+      if (
+        engine instanceof lazy.OpenSearchEngine &&
+        engine.installURL == installURL
+      ) {
+        return engine;
+      }
+    }
+    return null;
+  }
+
+  /**
    * Returns the engine associated with the id.
    *
    * @param {string} engineId

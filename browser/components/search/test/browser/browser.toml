@@ -69,6 +69,8 @@ support-files = [
 
 ["browser_oneOffContextMenu_setDefault.js"]
 
+["browser_openSearchManager_installURL.js"]
+
 ["browser_private_search_perwindowpb.js"]
 
 ["browser_rich_suggestions.js"]
