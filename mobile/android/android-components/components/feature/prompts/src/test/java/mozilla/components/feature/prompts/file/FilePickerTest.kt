@@ -388,13 +388,87 @@ class FilePickerTest {
     }
 
     @Test
-    fun `onRequestPermissionsResult with FILE_PICKER_REQUEST and PERMISSION_DENIED will call onPermissionsDeny`() {
+    fun `onRequestPermissionsResult with FILE_PICKER_REQUEST and PERMISSION_DENIED will call onPermissionsDenied`() {
         filePicker = spy(filePicker)
+        filePicker.currentRequest = request
         doNothing().`when`(filePicker).onPermissionsDenied()
 
         filePicker.onPermissionsResult(emptyArray(), IntArray(1) { PERMISSION_DENIED })
 
         verify(filePicker).onPermissionsDenied()
+    }
+
+    @Test
+    fun `onRequestPermissionsResult without currentRequest falls back to active prompt request in store when GRANTED`() {
+        stubContext()
+        val tab = TabSessionState("tab1", ContentState(url = "http://mozilla.org", promptRequests = listOf(request)))
+        val store = BrowserStore(BrowserState(tabs = listOf(tab), selectedTabId = "tab1"))
+        filePicker = spy(FilePicker(fragment, store, fileUploadsDirCleaner = mock()) {})
+
+        filePicker.onPermissionsResult(emptyArray(), IntArray(1) { PERMISSION_GRANTED })
+
+        verify(filePicker).onPermissionsGranted(request)
+        assertNull(filePicker.currentRequest)
+    }
+
+    @Test
+    fun `onRequestPermissionsResult without currentRequest falls back to active prompt request in store when DENIED`() {
+        val tab = TabSessionState("tab1", ContentState(url = "http://mozilla.org", promptRequests = listOf(request)))
+        val store = BrowserStore(BrowserState(tabs = listOf(tab), selectedTabId = "tab1"))
+        filePicker = spy(FilePicker(fragment, store, fileUploadsDirCleaner = mock()) {})
+        doNothing().`when`(filePicker).onPermissionsDenied()
+
+        filePicker.onPermissionsResult(emptyArray(), IntArray(1) { PERMISSION_DENIED })
+
+        verify(filePicker).onPermissionsDenied()
+        assertEquals(request, filePicker.currentRequest)
+    }
+
+    @Test
+    fun `grant arriving after a rejected duplicate permission request does not crash or open a picker`() {
+        var onDismissCalls = 0
+        val audioRequest = request.copy(mimeTypes = arrayOf("audio/*"), onDismiss = { onDismissCalls++ })
+        val tab =
+            TabSessionState("tab1", ContentState(url = "http://mozilla.org", promptRequests = listOf(audioRequest)))
+        val store = BrowserStore(BrowserState(tabs = listOf(tab), selectedTabId = "tab1"))
+        doReturn(ApplicationProvider.getApplicationContext<Context>()).`when`(fragment).context
+        var requestedPermissions = emptyArray<String>()
+        filePicker = FilePicker(fragment, store, fileUploadsDirCleaner = mock()) { requestedPermissions = it }
+
+        // Recreated PromptFeature re-handles the pending prompt while the original dialog is still showing.
+        filePicker.handleFileRequest(audioRequest)
+        assertTrue(requestedPermissions.isNotEmpty())
+
+        // Android rejects the duplicate request with an empty result.
+        filePicker.onPermissionsResult(emptyArray(), IntArray(0))
+        assertEquals(1, onDismissCalls)
+
+        // The user then grants the original dialog.
+        filePicker.onPermissionsResult(requestedPermissions, IntArray(requestedPermissions.size) { PERMISSION_GRANTED })
+
+        assertEquals(1, onDismissCalls)
+        assertNull(filePicker.currentRequest)
+        verify(fragment, never()).startActivityForResult(any(), anyInt())
+    }
+
+    @Test
+    fun `onRequestPermissionsResult finds File prompt even if a Folder prompt is after it in promptRequests`() {
+        stubContext()
+        val tab =
+            TabSessionState(
+                "tab1",
+                ContentState(
+                    url = "http://mozilla.org",
+                    promptRequests = listOf(request, requestFolder),
+                ),
+            )
+        val store = BrowserStore(BrowserState(tabs = listOf(tab), selectedTabId = "tab1"))
+        filePicker = spy(FilePicker(fragment, store, fileUploadsDirCleaner = mock()) {})
+
+        filePicker.onPermissionsResult(emptyArray(), IntArray(1) { PERMISSION_GRANTED })
+
+        verify(filePicker).onPermissionsGranted(request)
+        assertNull(filePicker.currentRequest)
     }
 
     @Test
