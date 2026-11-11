@@ -39,10 +39,10 @@ SVGArcConverter::SVGArcConverter(const Point& from, const Point& to,
   mSinPhi = sin(angle * kRadPerDegree);
   mCosPhi = cos(angle * kRadPerDegree);
 
-  double x1dash =
-      mCosPhi * (from.x - to.x) / 2.0 + mSinPhi * (from.y - to.y) / 2.0;
-  double y1dash =
-      -mSinPhi * (from.x - to.x) / 2.0 + mCosPhi * (from.y - to.y) / 2.0;
+  double dx = double(from.x) - double(to.x);
+  double dy = double(from.y) - double(to.y);
+  double x1dash = mCosPhi * dx / 2.0 + mSinPhi * dy / 2.0;
+  double y1dash = -mSinPhi * dx / 2.0 + mCosPhi * dy / 2.0;
 
   double root;
   double numerator = mRx * mRx * mRy * mRy - mRx * mRx * y1dash * y1dash -
@@ -83,14 +83,11 @@ SVGArcConverter::SVGArcConverter(const Point& from, const Point& to,
   else if (sweepFlag && dtheta < 0)
     dtheta += 2.0 * M_PI;
 
-  // Convert into cubic bezier segments <= 90deg
-  mNumSegs = static_cast<int>(ceil(std::abs(dtheta / (M_PI / 2.0))));
-  mDelta = dtheta / mNumSegs;
-  mT = 8.0 / 3.0 * sin(mDelta / 4.0) * sin(mDelta / 4.0) / sin(mDelta / 2.0);
-
   mFrom = from;
 
-  if (std::abs(dtheta) < 1e-8) {
+  if (!std::isfinite(dtheta) || std::abs(dtheta) < 1e-8) {
+    // If the angle dtheta is not finite (the inputs overflowed) we can't
+    // compute the arc, so draw a line instead.
     // If the angle dtheta is extremely small, then the resulting portion of the
     // arc is indistinguishable from a line.
     // In this situation we are likely dealing with quantities that are large or
@@ -101,7 +98,13 @@ SVGArcConverter::SVGArcConverter(const Point& from, const Point& to,
     // https://searchfox.org/firefox-main/rev/d0ff31da7cb418d2d86b0d83fecd7114395e5d46/gfx/skia/skia/src/core/SkPath.cpp#1323
     mFallBackToSingleLine = true;
     mNumSegs = 1;
+    return;
   }
+
+  // Convert into cubic bezier segments <= 90deg
+  mNumSegs = static_cast<int>(ceil(std::abs(dtheta / (M_PI / 2.0))));
+  mDelta = dtheta / mNumSegs;
+  mT = 8.0 / 3.0 * sin(mDelta / 4.0) * sin(mDelta / 4.0) / sin(mDelta / 2.0);
 }
 
 bool SVGArcConverter::GetNextSegment(Point* cp1, Point* cp2, Point* to) {
