@@ -24,7 +24,13 @@ unsafe impl Sync for OpaqueElement {}
 impl OpaqueElement {
     /// Creates a new OpaqueElement from an arbitrarily-typed pointer.
     pub fn new<T>(ptr: &T) -> Self {
-        OpaqueElement(NonNull::from_ref(ptr).cast())
+        // TODO: with rust 1.89, this can just be
+        // `OpaqueElement(NonNull::from_ref(ptr).cast())`
+        unsafe {
+            OpaqueElement(NonNull::new_unchecked(
+                ptr as *const T as *const () as *mut (),
+            ))
+        }
     }
 
     /// Creates a new OpaqueElement from a type-erased non-null pointer
