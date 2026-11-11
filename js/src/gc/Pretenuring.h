@@ -332,15 +332,22 @@ class PretenuringZone {
   // generation that didn't come from optimized alloc sites.
   AllocSite promotedAllocSites[NurseryTraceKinds];
 
-  // Count of tenured cell allocations made between each major collection and
+  // Counts of tenured cell allocations made between each major collection and
   // how many survived.
-  uint32_t allocCountInNewlyCreatedArenas = 0;
-  uint32_t survivorCountInNewlyCreatedArenas = 0;
+  struct CountsInNewlyCreatedArenas {
+    uint32_t allocCount = 0;
+    uint32_t survivorCount = 0;
+    void update(uint32_t allocs, uint32_t survivors) {
+      allocCount += allocs;
+      survivorCount += survivors;
+    }
+  };
+  CountsInNewlyCreatedArenas cellCountsInNewlyCreatedArenas[NurseryTraceKinds];
 
   // Count of successive collections that had a low young tenured survival
   // rate. Used to discard optimized code if we get the pretenuring decision
   // wrong.
-  uint32_t lowYoungTenuredSurvivalCount = 0;
+  uint32_t lowYoungTenuredSurvivalCount[NurseryTraceKinds] = {0};
 
   // Count of successive nursery collections that had a high survival rate for
   // objects allocated by optimized code. Used to discard optimized code if we
@@ -372,24 +379,27 @@ class PretenuringZone {
   }
 
   void clearCellCountsInNewlyCreatedArenas() {
-    allocCountInNewlyCreatedArenas = 0;
-    survivorCountInNewlyCreatedArenas = 0;
+    for (auto& counts : cellCountsInNewlyCreatedArenas) {
+      counts = CountsInNewlyCreatedArenas();
+    }
   }
-  void updateCellCountsInNewlyCreatedArenas(uint32_t allocCount,
+  void updateCellCountsInNewlyCreatedArenas(JS::TraceKind kind,
+                                            uint32_t allocCount,
                                             uint32_t survivorCount) {
-    allocCountInNewlyCreatedArenas += allocCount;
-    survivorCountInNewlyCreatedArenas += survivorCount;
+    size_t index = size_t(kind);
+    MOZ_ASSERT(index < NurseryTraceKinds);
+    cellCountsInNewlyCreatedArenas[index].update(allocCount, survivorCount);
   }
 
-  bool calculateYoungTenuredSurvivalRate(double* rateOut);
+  bool calculateYoungTenuredSurvivalRate(size_t kind, double* rateOut) const;
 
-  void noteLowYoungTenuredSurvivalRate(bool lowYoungSurvivalRate);
+  void noteLowYoungTenuredSurvivalRate(size_t kind, bool lowYoungSurvivalRate);
   void noteHighNurserySurvivalRate(bool highNurserySurvivalRate);
 
   // Recovery: if code behaviour change we may need to reset allocation site
   // state and invalidate JIT code.
   bool shouldResetNurseryAllocSites();
-  bool shouldResetPretenuredAllocSites();
+  bool shouldResetPretenuredAllocSites(JS::TraceKind kind);
 
   uint32_t nurseryPromotedCount(JS::TraceKind kind) const {
     size_t i = size_t(kind);

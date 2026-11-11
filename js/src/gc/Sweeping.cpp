@@ -175,8 +175,10 @@ inline size_t Arena::finalize(JS::GCContext* gcx, AllocKind thingKind,
   if constexpr (std::is_same_v<T, JSObject> || std::is_same_v<T, JSString> ||
                 std::is_same_v<T, JS::BigInt>) {
     if (isNewlyCreated_) {
-      zone()->pretenuring.updateCellCountsInNewlyCreatedArenas(
-          nmarked + nfinalized, nmarked);
+      auto& pretenuring = zone()->pretenuring;
+      JS::TraceKind kind = JS::MapTypeToTraceKind<T>::kind;
+      size_t nalloced = nmarked + nfinalized;
+      pretenuring.updateCellCountsInNewlyCreatedArenas(kind, nalloced, nmarked);
     }
   }
   isNewlyCreated_ = 0;
