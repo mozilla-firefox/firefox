@@ -213,10 +213,6 @@ struct nsCSSRendering {
       mozilla::layers::RenderRootStateManager* aManager,
       mozilla::nsDisplayListBuilder* aDisplayListBuilder);
 
-  static bool GenerateAndPushBorderAreaMask(nsIFrame* aFrame,
-                                            gfxContext* aContext,
-                                            const nsRect& aBackgroundRect);
-
   static void CreateWebRenderCommandsForNullBorder(
       mozilla::nsDisplayItem* aItem, nsIFrame* aForFrame,
       const nsRect& aBorderArea, mozilla::wr::DisplayListBuilder& aBuilder,

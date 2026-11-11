@@ -3816,21 +3816,15 @@ void nsDisplayBackgroundImage::PaintInternal(nsDisplayListBuilder* aBuilder,
   const nsStyleImageLayers::Layer& layer =
       mBackgroundStyle->StyleBackground()->mImage.mLayers[mLayer];
   StyleBackgroundClip clip = layer.mClip;
-  const bool needsBorderAreaMask = NeedsBorderAreaMask(StyleFrame(), clip);
-  if (needsBorderAreaMask && !nsCSSRendering::GenerateAndPushBorderAreaMask(
-                                 StyleFrame(), ctx, mBackgroundRect)) {
-    return;
-  }
   if (clip == StyleBackgroundClip::Text) {
-    MOZ_ASSERT(!needsBorderAreaMask);
     if (!GenerateAndPushTextMask(StyleFrame(), aCtx, mBackgroundRect,
                                  aBuilder)) {
       return;
     }
   }
 
-  auto popMaskGroup = MakeScopeExit([&] {
-    if (clip == StyleBackgroundClip::Text || needsBorderAreaMask) {
+  auto popTextGroup = MakeScopeExit([&] {
+    if (clip == StyleBackgroundClip::Text) {
       ctx->PopGroupAndBlend();
     }
   });
@@ -3839,7 +3833,7 @@ void nsDisplayBackgroundImage::PaintInternal(nsDisplayListBuilder* aBuilder,
   // painted by the border). The outer border-box clip is applied by the
   // display item's clip.
   Maybe<gfxContextAutoSaveRestore> borderAreaClip;
-  if (clip == StyleBackgroundClip::BorderArea && !needsBorderAreaMask) {
+  if (clip == StyleBackgroundClip::BorderArea) {
     borderAreaClip.emplace(ctx);
     ClipBackgroundToBorderArea(ctx, StyleFrame(), layer, mBackgroundRect);
   }
@@ -4248,19 +4242,7 @@ void nsDisplayBackgroundColor::Paint(nsDisplayListBuilder* aBuilder,
   }
 
   Maybe<gfxContextAutoSaveRestore> borderAreaClip;
-  const bool needsBorderAreaMask =
-      NeedsBorderAreaMask(mFrame, mBottomLayerClip);
-  if (needsBorderAreaMask && !nsCSSRendering::GenerateAndPushBorderAreaMask(
-                                 mFrame, ctx, mBackgroundRect)) {
-    return;
-  }
-  auto popBorderAreaGroup = MakeScopeExit([&] {
-    if (needsBorderAreaMask) {
-      ctx->PopGroupAndBlend();
-    }
-  });
-  if (mBottomLayerClip == StyleBackgroundClip::BorderArea &&
-      !needsBorderAreaMask) {
+  if (mBottomLayerClip == StyleBackgroundClip::BorderArea) {
     borderAreaClip.emplace(ctx);
     ClipBackgroundToBorderArea(
         ctx, mFrame, mFrame->StyleBackground()->BottomLayer(), mBackgroundRect);
