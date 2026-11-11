@@ -5,7 +5,7 @@
 #include "DMABUFTextureHostOGL.h"
 
 #include "GLContextEGL.h"
-#include "mozilla/webrender/RenderDMABUFTextureHost.h"
+#include "mozilla/webrender/RenderLinuxTextureHost.h"
 #include "mozilla/webrender/RenderThread.h"
 #include "mozilla/webrender/WebRenderAPI.h"
 #include "mozilla/widget/DMABufFormats.h"
@@ -85,7 +85,7 @@ void DMABUFTextureHostOGL::CreateRenderTexture(
   if (!mSurface) {
     return;
   }
-  RefPtr texture = MakeRefPtr<wr::RenderDMABUFTextureHost>(mSurface);
+  RefPtr texture = MakeRefPtr<wr::RenderLinuxTextureHost>(mSurface);
   wr::RenderThread::Get()->RegisterExternalImage(aExternalImageId,
                                                  texture.forget());
 }
@@ -193,9 +193,7 @@ void DMABUFTextureHostOGL::PushDisplayItems(
   }
   bool preferCompositorSurface =
       aFlags.contains(PushDisplayItemFlag::PREFER_COMPOSITOR_SURFACE);
-  bool supportsDirectComposition =
-      widget::GetGlobalDMABufFormats()->SupportsDirectComposition(
-          mSurface->GetFormat());
+  bool supportsDirectComposition = mSurface->SupportsDirectComposition();
 
   switch (mSurface->GetFormat()) {
     case gfx::SurfaceFormat::R8G8B8X8:
