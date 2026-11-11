@@ -744,6 +744,11 @@ class TextureClient : public AtomicRefCountedWithFinalize<TextureClient> {
 
   RefPtr<LayersIPCChannel> mAllocator;
   RefPtr<TextureChild> mActor;
+  // Actor locked by LockActor() for the matching UnlockActor() call on the
+  // same thread, including drawing-thread and IPDL-thread callers.
+  mutable RefPtr<TextureChild> mActorForUnlock MOZ_GUARDED_BY(mMutex);
+  // Set when Destroy() starts; prevents assigning a new actor afterward.
+  bool mActorDestroying MOZ_GUARDED_BY(mMutex) = false;
   RefPtr<ITextureClientRecycleAllocator> mRecycleAllocator;
   RefPtr<TextureReadLock> mReadLock MOZ_GUARDED_BY(mMutex);
 
