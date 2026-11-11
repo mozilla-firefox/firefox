@@ -79,8 +79,10 @@ The sweep covers the environment, not the product's own states. List the
 attributes the changed selectors key on (e.g. `[open]`, `[checked]`,
 `:focus-within`) and measure each state through the entry point the product uses
 for it. When a declaration moves under a narrower selector, also measure the
-elements the new selector no longer matches, which lose the declaration;
-enumerate them with `desktop-theme-probing`'s `references/probe-recipes.md` §8.
+elements the new selector no longer matches, which lose the declaration; when
+one moves under a wider selector, measure the elements it newly matches, which
+gain it. Enumerate either set with `desktop-theme-probing`'s
+`references/probe-recipes.md` §8.
 
 The sweep also covers every surface and branch the changed declarations reach.
 When a patch redefines or moves a custom property, list the sheets that read it

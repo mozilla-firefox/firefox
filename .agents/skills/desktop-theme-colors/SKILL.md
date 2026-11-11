@@ -206,8 +206,8 @@ Linux and macOS that setup includes the override from §2 above, and the walk
 exits 1 when an entry judged nothing. Before judging a state, read its §2 "Per
 state" and §4 "Per selector": a diff-only read misses the state the patch left
 to an existing rule and the descendants a state repaints. Enumerate the elements
-a narrowed selector drops with `desktop-theme-probing`'s
-`references/probe-recipes.md` §8 "Measure what a narrowed selector drops".
+a narrowed selector drops, or a widened one adds, with `desktop-theme-probing`'s
+`references/probe-recipes.md` §8 "Measure what a changed selector drops or adds".
 
 **Judge forced colors by pair membership, and `prefers-contrast` alone by ratio
 where a literal paints.** Under forced colors the user's palette only promises

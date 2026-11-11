@@ -171,12 +171,16 @@ document only; `restored` should equal `before`. The probe finds the layer of a
 `@layer` block, of a `@layer` block around `@media` and of an `@import …
 layer()` rule.
 
-## 8. Measure what a narrowed selector drops
+## 8. Measure what a changed selector drops or adds
 
 When a patch narrows an existing selector (e.g. a compound added or a rule moved
 under an ancestor), enumerate the elements that fall out of it and measure one
 of each: `[...document.querySelectorAll(oldSelector)].filter(el =>
-!el.closest(newScope))`. A result of zero or one in a fresh window means the
+!el.matches(newSelector))`. When it widens one (e.g. a compound dropped or a
+rule moved out from under an ancestor), swap the two selectors to enumerate the
+elements it newly reaches. A selector rewritten both ways (e.g. a renamed class,
+or one compound added while another is dropped) does both, so run the snippet
+in both directions. A result of zero or one in a fresh window means the
 population is state-dependent (e.g. a panel not yet populated or a mode not
-entered), not that nothing falls out; create it through the product's own path
-first, then enumerate.
+entered), not that nothing falls out or is newly reached; create it through the
+product's own path first, then enumerate.
