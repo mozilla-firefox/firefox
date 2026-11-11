@@ -839,18 +839,26 @@ def verify_path_task(monkeypatch):
     chunk._resolve_tests_under.cache_clear()
 
     def resolve_tests(paths):
-        def tests(flavor, prefix, count, manifest):
+        def tests(flavor, prefix, count, manifest, **extra):
             return [
                 {
                     "srcdir_relpath": f"{paths[0]}/{prefix}_{i}.js",
                     "manifest_relpath": f"{paths[0]}/{manifest}",
                     "flavor": flavor,
+                    **extra,
                 }
                 for i in range(count)
             ]
 
-        return tests("browser-chrome", "browser", 25, "browser/browser.toml") + tests(
-            "xpcshell", "test", 50, "xpcshell.toml"
+        return (
+            tests("browser-chrome", "browser", 25, "browser/browser.toml")
+            + tests("xpcshell", "test", 50, "xpcshell.toml")
+            # Tests that test-verify-path doesn't verify.
+            + tests("chrome", "test_chrome", 10, "chrome.toml")
+            + tests("mochitest", "test_gpu", 10, "mochitest.toml", subsuite="gpu")
+            + tests(
+                "browser-chrome", "browser_off", 10, "browser/browser.toml", disabled=""
+            )
         )
 
     monkeypatch.setattr(chunk.resolver, "resolve_tests", resolve_tests)
@@ -868,7 +876,7 @@ def test_test_verify_path_is_sized_from_the_requested_paths(
             chunk.set_test_verify_path_chunks, verify_path_task, params=params
         )
     )
-    assert [t["chunks"] for t in tasks] == [8]
+    assert [t["chunks"] for t in tasks] == [4]
 
 
 @pytest.mark.parametrize(

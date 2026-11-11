@@ -7,6 +7,7 @@
 import copy
 import glob
 import json
+import math
 import multiprocessing
 import os
 import re
@@ -1318,6 +1319,7 @@ class DesktopUnittest(TestingMixin, MercurialScript, MozbaseMixin, CodeCoverageM
             # max_per_test_time is the time limit of the whole per-test task,
             # not of each test.
             max_per_test_time = timedelta(minutes=150)
+            max_per_test_tests = math.inf
         executed_tests = 0
         executed_too_many_tests = False
 

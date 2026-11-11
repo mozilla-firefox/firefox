@@ -69,13 +69,29 @@ class TestChunkSuites(unittest.TestCase):
             self.chunk({"xpcshell": list(reversed(tests))}, 3, 2),
         )
 
-    def test_tests_are_split_across_suites(self):
-        suites = {"mochitest-plain": ["b.js", "a.js"], "xpcshell": ["d.js", "c.js"]}
+    def test_every_chunk_gets_the_same_mix_of_suites(self):
+        suites = {
+            "mochitest-plain": ["m%d.js" % i for i in range(4)],
+            "xpcshell": ["x%d.js" % i for i in range(6)],
+        }
 
         self.assertEqual(
-            self.chunk(dict(suites), 2, 1), {"mochitest-plain": ["a.js", "b.js"]}
+            self.chunk(dict(suites), 2, 1),
+            {
+                "mochitest-plain": ["m0.js", "m2.js"],
+                "xpcshell": ["x0.js", "x2.js", "x4.js"],
+            },
         )
-        self.assertEqual(self.chunk(dict(suites), 2, 2), {"xpcshell": ["c.js", "d.js"]})
+        self.assertEqual(
+            self.chunk(dict(suites), 2, 2),
+            {
+                "mochitest-plain": ["m1.js", "m3.js"],
+                "xpcshell": ["x1.js", "x3.js", "x5.js"],
+            },
+        )
+
+    def test_chunks_beyond_the_tests_are_empty(self):
+        self.assertEqual(self.chunk({"xpcshell": ["a.js"]}, 3, 3), {})
 
     def test_a_single_chunk_runs_everything(self):
         suites = {"xpcshell": ["b.js", "a.js"]}
