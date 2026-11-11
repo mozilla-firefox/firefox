@@ -25,6 +25,7 @@ gecko = [
     "nsstring",
     "regex",
     "serde",
+    "siphasher",
     "style_traits/gecko",
     "toml",
     "selectors/to_shmem",
@@ -85,7 +86,7 @@ rayon-core = "1"
 selectors = { path = "../selectors" }
 serde = {version = "1.0", optional = true, features = ["derive"]}
 servo_arc = { path = "../servo_arc" }
-siphasher = "1"
+siphasher = { version = "1", optional = true }
 stylo_atoms = {path = "../atoms", optional = true}
 servo_config = {path = "../config", optional = true}
 smallbitvec = "2.3.0"
