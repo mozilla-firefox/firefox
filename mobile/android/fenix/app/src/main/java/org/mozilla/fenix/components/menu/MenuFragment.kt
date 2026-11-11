@@ -73,6 +73,7 @@ import mozilla.components.support.utils.ext.isLandscape
 import mozilla.components.support.utils.ext.pixelSizeFor
 import mozilla.components.support.utils.ext.top
 import mozilla.telemetry.glean.private.NoExtras
+import org.mozilla.fenix.GleanMetrics.CustomizeMenu
 import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
@@ -288,16 +289,20 @@ class MenuFragment : BottomSheetDialogFragment() {
                     onDismiss = { showCustomizeMenuPopup = false },
                     onCustomizeMenuClick = {
                         showCustomizeMenuPopup = false
-                        nav(
-                            id = R.id.menuFragment,
-                            directions = MenuFragmentDirections.actionMenuFragmentToCustomizeMenuFragment(),
-                            options = NavOptions.Builder().setPopUpTo(R.id.menuFragment, true).build(),
-                        )
+                        CustomizeMenu.launched.record(CustomizeMenu.LaunchedExtra(source = "menu"))
+                        openCustomizeMenu()
                     },
                 )
             }
         }
     }
+
+    private fun openCustomizeMenu() =
+        nav(
+            id = R.id.menuFragment,
+            directions = MenuFragmentDirections.actionMenuFragmentToCustomizeMenuFragment(),
+            options = NavOptions.Builder().setPopUpTo(R.id.menuFragment, true).build(),
+        )
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

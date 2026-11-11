@@ -26,6 +26,7 @@ import mozilla.components.feature.summarize.settings.SummarizationSettings
 import org.mozilla.fenix.FeatureFlags
 import org.mozilla.fenix.GleanMetrics.AppTheme
 import org.mozilla.fenix.GleanMetrics.CustomizationSettings
+import org.mozilla.fenix.GleanMetrics.CustomizeMenu
 import org.mozilla.fenix.GleanMetrics.PullToRefreshInBrowser
 import org.mozilla.fenix.GleanMetrics.ToolbarSettings
 import org.mozilla.fenix.R
@@ -447,6 +448,7 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
                 CustomizationSettings.dynamicToolbar.set(requireComponents.settings.isDynamicToolbarEnabled)
             }
             resources.getString(R.string.pref_key_customize_menu) -> {
+                CustomizeMenu.launched.record(CustomizeMenu.LaunchedExtra(source = "settings"))
                 nav(
                     id = R.id.customizationFragment,
                     directions = CustomizationFragmentDirections.actionCustomizationFragmentToCustomizeMenuFragment(),
