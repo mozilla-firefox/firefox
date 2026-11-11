@@ -279,16 +279,11 @@ SlicedInputStream::IsNonBlocking(bool* aNonBlocking) {
 
 NS_IMETHODIMP
 SlicedInputStream::GetCloneable(bool* aCloneable) {
-  *aCloneable = false;
-
   NS_ENSURE_STATE(mInputStream);
   NS_ENSURE_STATE(mWeakCloneableInputStream);
 
-  // Clone() can only do what the wrapped stream can, so don't promise more:
-  // implementing nsICloneableInputStream doesn't mean a stream is currently
-  // cloneable (see nsMultiplexInputStream, which refuses once it has been read
-  // from).
-  return mWeakCloneableInputStream->GetCloneable(aCloneable);
+  *aCloneable = true;
+  return NS_OK;
 }
 
 NS_IMETHODIMP
