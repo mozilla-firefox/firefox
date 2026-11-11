@@ -255,6 +255,10 @@ nsHtml5StreamParser::nsHtml5StreamParser(nsHtml5TreeOpExecutor* aExecutor,
 #endif
   mTokenizer->setInterner(&mAtomTable);
   mTokenizer->setEncodingDeclarationHandler(this);
+  if (aMode == NORMAL) {
+    mTokenizer->setProcessingInstructionsEnabled(
+        mozilla::StaticPrefs::dom_template_for_enabled());
+  }
 
   if (aMode == VIEW_SOURCE_HTML || aMode == VIEW_SOURCE_XML) {
     nsHtml5Highlighter* highlighter =

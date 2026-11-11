@@ -39,6 +39,9 @@ nsresult nsHtml5StringParser::ParseFragment(
     nsContentUtils::SanitizerMode aSanitizerMode) {
   NS_ENSURE_TRUE(aSourceBuffer.Length() <= INT32_MAX, NS_ERROR_OUT_OF_MEMORY);
 
+  mTokenizer->setProcessingInstructionsEnabled(
+      mozilla::StaticPrefs::dom_template_for_enabled());
+
   Document* doc = aTargetNode->OwnerDoc();
   nsIURI* uri = doc->GetDocumentURI();
   NS_ENSURE_TRUE(uri, NS_ERROR_NOT_AVAILABLE);
@@ -94,6 +97,9 @@ nsresult nsHtml5StringParser::ParseDocument(
   MOZ_ASSERT(!aTargetDoc->GetFirstChild());
 
   NS_ENSURE_TRUE(aSourceBuffer.Length() <= INT32_MAX, NS_ERROR_OUT_OF_MEMORY);
+
+  mTokenizer->setProcessingInstructionsEnabled(
+      mozilla::StaticPrefs::dom_template_for_enabled());
 
   mTreeBuilder->setFragmentContext(nullptr, kNameSpaceID_None, nullptr, false);
   mTreeBuilder->SetCustomElementRegistry(mozilla::Nothing());

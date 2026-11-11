@@ -11834,7 +11834,7 @@ static void SerializeNodeToMarkupInternal(
         aBuilder.Append(u" ");
         aBuilder.Append(
             static_cast<nsIContent*>(current)->GetCharacterDataBuffer());
-        aBuilder.Append(u">");
+        aBuilder.Append(u"?>");
         break;
       }
     }

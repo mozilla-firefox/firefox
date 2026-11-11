@@ -61,6 +61,8 @@ nsHtml5Parser::nsHtml5Parser()
       mRootContextLineNumber(1),
       mReturnToStreamParserPermitted(false) {
   mTokenizer->setInterner(&mAtomTable);
+  mTokenizer->setProcessingInstructionsEnabled(
+      mozilla::StaticPrefs::dom_template_for_enabled());
 }
 
 nsHtml5Parser::~nsHtml5Parser() {

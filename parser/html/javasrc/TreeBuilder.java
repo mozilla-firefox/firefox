@@ -851,6 +851,45 @@ public abstract class TreeBuilder<T> implements TokenHandler,
         return;
     }
 
+    public final void processingInstruction(String target, @NoLength char[] buf,
+            int start, int length) throws SAXException {
+        needToDropLF = false;
+        if (!isInForeign()) {
+            switch (mode) {
+                case INITIAL:
+                case BEFORE_HTML:
+                case AFTER_AFTER_BODY:
+                case AFTER_AFTER_FRAMESET:
+                    /*
+                     * A processing instruction token Append a
+                     * ProcessingInstruction node to the Document object.
+                     */
+                    appendProcessingInstructionToDocument(target, buf, start,
+                            length);
+                    return;
+                case AFTER_BODY:
+                    /*
+                     * A processing instruction token Append a
+                     * ProcessingInstruction node to the first element in the
+                     * stack of open elements (the html element).
+                     */
+                    flushCharacters();
+                    appendProcessingInstruction(stack[0].node, target, buf,
+                            start, length);
+                    return;
+                default:
+                    break;
+            }
+        }
+        /*
+         * A processing instruction token Append a ProcessingInstruction node
+         * to the current node.
+         */
+        flushCharacters();
+        appendProcessingInstruction(stack[currentPtr].node, target, buf, start,
+                length);
+    }
+
     /**
      * @see nu.validator.htmlparser.common.TokenHandler#characters(char[], int,
      *      int)
@@ -5803,6 +5842,14 @@ public abstract class TreeBuilder<T> implements TokenHandler,
 
     protected abstract void appendCommentToDocument(@NoLength char[] buf,
             int start, int length) throws SAXException;
+
+    protected abstract void appendProcessingInstruction(T parent,
+            String target, @NoLength char[] buf, int start, int length)
+            throws SAXException;
+
+    protected abstract void appendProcessingInstructionToDocument(
+            String target, @NoLength char[] buf, int start, int length)
+            throws SAXException;
 
     protected abstract void addAttributesToElement(T element,
             HtmlAttributes attributes) throws SAXException;

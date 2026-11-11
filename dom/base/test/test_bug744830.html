@@ -19,7 +19,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=744830
 
   var PI = document.createProcessingInstruction('foo', 'bar="1.0"');
   t.appendChild(PI);
-  is(t.innerHTML, '<span>hi</span> there <!-- mon ami --><?foo bar="1.0">',
+  is(t.innerHTML, '<span>hi</span> there <!-- mon ami --><?foo bar="1.0"?>',
     "pi nodes should be included");
 
   t.innerHTML = null;

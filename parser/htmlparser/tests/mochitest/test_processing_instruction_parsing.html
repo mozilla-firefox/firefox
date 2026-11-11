@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="help" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2053472">
+  <link rel="author" title="Helmut Januschka" href="mailto:helmut@januschka.com">
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script>
+function firstParsed(html) {
+  const div = document.createElement("div");
+  div.innerHTML = html;
+  return div.firstChild;
+}
+
+function describe(node) {
+  if (!node) {
+    return "none";
+  }
+  if (node.nodeType == Node.PROCESSING_INSTRUCTION_NODE) {
+    return `pi:${node.target}:${node.data}`;
+  }
+  if (node.nodeType == Node.COMMENT_NODE) {
+    return `comment:${node.data}`;
+  }
+  return `text:${node.data}`;
+}
+
+add_task(async function prefOff() {
+  is(describe(firstParsed('<?foo bar?>')), 'comment:?foo bar?',
+     "pref off keeps the bogus comment");
+});
+
+add_task(async function tokenizerStates() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["dom.template-for.enabled", true]],
+  });
+
+  const cases = [
+    ['<?foo bar?>', 'pi:foo:bar'],
+    ['<?foo  bar ?>', 'pi:foo:bar '],
+    ['<?foo?>', 'pi:foo:'],
+    ['<?foo??>', 'pi:foo:?'],
+    ['<?foo a??>', 'pi:foo:a?'],
+    ['<?FOO?>', 'pi:FOO:'],
+    ['<?_foo?>', 'pi:_foo:'],
+    ['<?foo-2_x y?>', 'pi:foo-2_x:y'],
+    ['<?foo\nbar?>', 'pi:foo:bar'],
+    ['<?foo bar\nbaz?>', 'pi:foo:bar\nbaz'],
+    ['<?foo a\u0000b?>', 'pi:foo:a\uFFFDb'],
+    ['<?xmlfoo?>', 'pi:xmlfoo:'],
+    // Disallowed targets fall back to the legacy bogus comment.
+    ['<?xml version="1.0"?>', 'comment:?xml version="1.0"?'],
+    ['<?XML?>', 'comment:?XML?'],
+    ['<?xml-stylesheet x?>', 'comment:?xml-stylesheet x?'],
+    ['<?Xml-StyleSheet?>', 'comment:?Xml-StyleSheet?'],
+    // Invalid first character or target character.
+    ['<? foo?>', 'comment:? foo?'],
+    ['<?-foo?>', 'comment:?-foo?'],
+    ['<?f=oo?>', 'comment:?f=oo?'],
+    ['<??>', 'comment:??'],
+  ];
+  for (const [html, expected] of cases) {
+    is(describe(firstParsed(html)), expected, JSON.stringify(html));
+  }
+
+  is(firstParsed('<?foo bar?>').nodeType, Node.PROCESSING_INSTRUCTION_NODE,
+     "node type is processing instruction");
+
+  const round = document.createElement("div");
+  round.innerHTML = '<?foo bar?>';
+  is(round.innerHTML, '<?foo bar?>', "serialization round trips");
+});
+
+add_task(async function carriageReturns() {
+  const cases = [
+    ['<?foo\rbar?>', 'pi:foo:bar'],
+    ['<?foo\r\nbar?>', 'pi:foo:bar'],
+    ['<?foo bar\rbaz?>', 'pi:foo:bar\nbaz'],
+    ['<?foo bar\r\nbaz?>', 'pi:foo:bar\nbaz'],
+    ['<?foo ?\rbar?>', 'pi:foo:?\nbar'],
+  ];
+  for (const [html, expected] of cases) {
+    is(describe(firstParsed(html)), expected, JSON.stringify(html));
+  }
+
+  // A CR ending one chunk and an LF starting the next is a single break.
+  const splits = [
+    [['<?foo\r', '\nbar?>'], 'pi:foo:bar'],
+    [['<?foo bar\r', '\nbaz?>'], 'pi:foo:bar\nbaz'],
+    [['<?foo ?\r', '\nbar?>'], 'pi:foo:?\nbar'],
+  ];
+  for (const [chunks, expected] of splits) {
+    const doc = document.implementation.createHTMLDocument();
+    doc.open();
+    doc.write('<div>');
+    for (const chunk of chunks) {
+      doc.write(chunk);
+    }
+    doc.write('</div>');
+    doc.close();
+    is(describe(doc.querySelector("div").firstChild), expected,
+       JSON.stringify(chunks));
+  }
+});
+
+add_task(async function truncatedAtEof() {
+  // A processing instruction truncated by EOF emits nothing.
+  for (const html of ['x<?', 'x<?f', 'x<?foo', 'x<?foo ', 'x<?foo bar',
+                      'x<?foo bar?']) {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    is(div.childNodes.length, 1, JSON.stringify(html));
+    is(describe(div.firstChild), 'text:x', JSON.stringify(html));
+  }
+});
+
+add_task(async function chunkedDocumentWrite() {
+  const splits = [
+    ['<?sta', 'rt name="p"?>'],
+    ['<?', 'start name="p"?>'],
+    ['<?start name="p"?', '>'],
+    ['<?start', ' name="p"?>'],
+    ['<?start ', 'name="p"?>'],
+  ];
+  for (const chunks of splits) {
+    const doc = document.implementation.createHTMLDocument();
+    doc.open();
+    doc.write('<div>');
+    for (const chunk of chunks) {
+      doc.write(chunk);
+    }
+    doc.write('</div>');
+    doc.close();
+    const pi = doc.querySelector("div").firstChild;
+    is(describe(pi), 'pi:start:name="p"', JSON.stringify(chunks));
+  }
+
+  // Before any other content the processing instruction is appended to
+  // the document, like a comment in the same position.
+  const doc = document.implementation.createHTMLDocument();
+  doc.open();
+  doc.write('<?start name="p"?>');
+  doc.close();
+  is(describe(doc.childNodes[0]), 'pi:start:name="p"',
+     "document-level processing instruction");
+});
+</script>
+</body>
+</html>

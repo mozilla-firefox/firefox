@@ -160,6 +160,14 @@ void errLtGt();
 
 void errProcessingInstruction();
 
+void errEofInProcessingInstruction();
+
+void errInvalidFirstCharacterOfProcessingInstructionTarget();
+
+void errInvalidProcessingInstructionTarget();
+
+void errDisallowedProcessingInstructionTarget();
+
 void errUnescapedAmpersandInterpretedAsCharacterReference();
 
 void errNotSemicolonTerminated();

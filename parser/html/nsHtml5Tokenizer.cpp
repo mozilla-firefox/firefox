@@ -41,6 +41,8 @@
 #include "nsHtml5Tokenizer.h"
 
 char16_t nsHtml5Tokenizer::LT_GT[] = {'<', '>'};
+char16_t nsHtml5Tokenizer::XML_STYLESHEET[] = {
+    'x', 'm', 'l', '-', 's', 't', 'y', 'l', 'e', 's', 'h', 'e', 'e', 't'};
 char16_t nsHtml5Tokenizer::LT_SOLIDUS[] = {'<', '/'};
 char16_t nsHtml5Tokenizer::RSQB_RSQB[] = {']', ']'};
 char16_t nsHtml5Tokenizer::REPLACEMENT_CHARACTER[] = {0xfffd};
@@ -120,6 +122,8 @@ nsHtml5Tokenizer::nsHtml5Tokenizer(nsHtml5TreeBuilder* tokenHandler,
       doctypeName(nullptr),
       publicIdentifier(nullptr),
       systemIdentifier(nullptr),
+      piTarget(nullptr),
+      processingInstructionsEnabled(false),
       attributes(tokenHandler->HasBuilder() ? new nsHtml5HtmlAttributes(0)
                                             : nullptr),
       newAttributesEachTime(!tokenHandler->HasBuilder()),
@@ -135,6 +139,11 @@ nsHtml5Tokenizer::nsHtml5Tokenizer(nsHtml5TreeBuilder* tokenHandler,
 
 void nsHtml5Tokenizer::setInterner(nsHtml5AtomTable* interner) {
   this->interner = interner;
+}
+
+void nsHtml5Tokenizer::setProcessingInstructionsEnabled(
+    bool processingInstructionsEnabled) {
+  this->processingInstructionsEnabled = processingInstructionsEnabled;
 }
 
 void nsHtml5Tokenizer::initLocation(nsHtml5String newPublicId,
@@ -245,6 +254,39 @@ void nsHtml5Tokenizer::emitComment(int32_t provisionalHyphens, int32_t pos) {
   RememberGt(pos);
   tokenHandler->comment(strBuf, 0, strBufLen - provisionalHyphens);
   clearStrBufAfterUse();
+  cstart = pos + 1;
+  suspendIfRequestedAfterCurrentNonTextToken();
+}
+
+bool nsHtml5Tokenizer::isDisallowedPiTarget() {
+  int32_t targetLength = strBufLen - 1;
+  if (targetLength != 3 && targetLength != 14) {
+    return false;
+  }
+  for (int32_t i = 0; i < targetLength; i++) {
+    char16_t folded = strBuf[i + 1];
+    if (folded >= 'A' && folded <= 'Z') {
+      folded += 0x20;
+    }
+    if (folded != XML_STYLESHEET[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void nsHtml5Tokenizer::finishPiTarget() {
+  piTarget = nsHtml5Portability::newStringFromBuffer(strBuf, 1, strBufLen - 1,
+                                                     tokenHandler, nullptr);
+  clearStrBufAfterUse();
+}
+
+void nsHtml5Tokenizer::emitProcessingInstruction(int32_t pos) {
+  RememberGt(pos);
+  tokenHandler->processingInstruction(piTarget, strBuf, 0, strBufLen);
+  clearStrBufAfterUse();
+  piTarget.Release();
+  piTarget = nullptr;
   cstart = pos + 1;
   suspendIfRequestedAfterCurrentNonTextToken();
 }
@@ -570,6 +612,18 @@ eofloop:
       case ATTRIBUTE_VALUE_SINGLE_QUOTED:
       case ATTRIBUTE_VALUE_UNQUOTED: {
         errEofInAttributeValue();
+        NS_HTML5_BREAK(eofloop);
+      }
+      case PROCESSING_INSTRUCTION_OPEN:
+      case PROCESSING_INSTRUCTION_TARGET:
+      case AFTER_PROCESSING_INSTRUCTION_TARGET:
+      case PROCESSING_INSTRUCTION_DATA:
+      case PROCESSING_INSTRUCTION_QUESTIONABLE: {
+        errEofInProcessingInstruction();
+        if (piTarget) {
+          piTarget.Release();
+          piTarget = nullptr;
+        }
         NS_HTML5_BREAK(eofloop);
       }
       case BOGUS_COMMENT: {
@@ -919,7 +973,12 @@ void nsHtml5Tokenizer::suspendAfterCurrentTokenIfNotInText() {
     case CDATA_RSQB:
     case CDATA_RSQB_RSQB:
     case PROCESSING_INSTRUCTION:
-    case PROCESSING_INSTRUCTION_QUESTION_MARK: {
+    case PROCESSING_INSTRUCTION_QUESTION_MARK:
+    case PROCESSING_INSTRUCTION_OPEN:
+    case PROCESSING_INSTRUCTION_TARGET:
+    case AFTER_PROCESSING_INSTRUCTION_TARGET:
+    case PROCESSING_INSTRUCTION_DATA:
+    case PROCESSING_INSTRUCTION_QUESTIONABLE: {
       break;
     }
     case CONSUME_CHARACTER_REFERENCE:
@@ -969,6 +1028,10 @@ void nsHtml5Tokenizer::end() {
     publicIdentifier.Release();
     publicIdentifier = nullptr;
   }
+  if (piTarget) {
+    piTarget.Release();
+    piTarget = nullptr;
+  }
   tagName = nullptr;
   nonInternedTagName->setNameForNonInterned(nullptr, false);
   attributeName = nullptr;
@@ -981,6 +1044,10 @@ void nsHtml5Tokenizer::end() {
 
 void nsHtml5Tokenizer::resetToDataState() {
   clearStrBufAfterUse();
+  if (piTarget) {
+    piTarget.Release();
+    piTarget = nullptr;
+  }
   charRefBufLen = 0;
   stateSave = nsHtml5Tokenizer::DATA;
   lastCR = false;
@@ -1052,6 +1119,13 @@ void nsHtml5Tokenizer::loadState(nsHtml5Tokenizer* other) {
     publicIdentifier =
         nsHtml5Portability::newStringFromString(other->publicIdentifier);
   }
+  piTarget.Release();
+  if (!other->piTarget) {
+    piTarget = nullptr;
+  } else {
+    piTarget = nsHtml5Portability::newStringFromString(other->piTarget);
+  }
+  processingInstructionsEnabled = other->processingInstructionsEnabled;
   containsHyphen = other->containsHyphen;
   if (!other->tagName) {
     tagName = nullptr;

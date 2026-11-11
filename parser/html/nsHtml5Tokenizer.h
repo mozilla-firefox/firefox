@@ -220,10 +220,21 @@ class nsHtml5Tokenizer {
 
   static const int32_t COMMENT_LESSTHAN_BANG_DASH_DASH = 79;
 
+  static const int32_t PROCESSING_INSTRUCTION_OPEN = 80;
+
+  static const int32_t PROCESSING_INSTRUCTION_TARGET = 81;
+
+  static const int32_t AFTER_PROCESSING_INSTRUCTION_TARGET = 82;
+
+  static const int32_t PROCESSING_INSTRUCTION_DATA = 83;
+
+  static const int32_t PROCESSING_INSTRUCTION_QUESTIONABLE = 84;
+
  private:
   static const int32_t LEAD_OFFSET = (0xD800 - (0x10000 >> 10));
 
   static char16_t LT_GT[];
+  static char16_t XML_STYLESHEET[];
   static char16_t LT_SOLIDUS[];
   static char16_t RSQB_RSQB[];
   static char16_t REPLACEMENT_CHARACTER[];
@@ -307,6 +318,8 @@ class nsHtml5Tokenizer {
   RefPtr<nsAtom> doctypeName;
   nsHtml5String publicIdentifier;
   nsHtml5String systemIdentifier;
+  nsHtml5String piTarget;
+  bool processingInstructionsEnabled;
   nsHtml5HtmlAttributes* attributes;
   bool newAttributesEachTime;
   bool shouldSuspend;
@@ -324,6 +337,7 @@ class nsHtml5Tokenizer {
  public:
   nsHtml5Tokenizer(nsHtml5TreeBuilder* tokenHandler, bool viewingXmlSource);
   void setInterner(nsHtml5AtomTable* interner);
+  void setProcessingInstructionsEnabled(bool processingInstructionsEnabled);
   void initLocation(nsHtml5String newPublicId, nsHtml5String newSystemId);
   bool isViewingXmlSource();
   void setKeepBuffer(bool keepBuffer);
@@ -420,6 +434,9 @@ class nsHtml5Tokenizer {
   }
 
   void emitComment(int32_t provisionalHyphens, int32_t pos);
+  bool isDisallowedPiTarget();
+  void finishPiTarget();
+  void emitProcessingInstruction(int32_t pos);
 
  protected:
   void flushChars(char16_t* buf, int32_t pos);
@@ -538,6 +555,15 @@ class nsHtml5Tokenizer {
                   state = P::transition(
                       mViewSource.get(),
                       nsHtml5Tokenizer::PROCESSING_INSTRUCTION, reconsume, pos);
+                  NS_HTML5_CONTINUE(stateloop);
+                }
+                if (processingInstructionsEnabled) {
+                  clearStrBufBeforeUse();
+                  appendStrBuf(c);
+                  state = P::transition(
+                      mViewSource.get(),
+                      nsHtml5Tokenizer::PROCESSING_INSTRUCTION_OPEN, reconsume,
+                      pos);
                   NS_HTML5_CONTINUE(stateloop);
                 }
                 if (P::reportErrors) {
@@ -4434,6 +4460,197 @@ class nsHtml5Tokenizer {
               default: {
                 appendStrBuf(c);
                 continue;
+              }
+            }
+          }
+        }
+        case PROCESSING_INSTRUCTION_OPEN: {
+          if (++pos == endPos) {
+            NS_HTML5_BREAK(stateloop);
+          }
+          c = P::checkChar(this, buf, pos);
+          if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_') {
+            appendStrBuf(c);
+            state =
+                P::transition(mViewSource.get(),
+                              nsHtml5Tokenizer::PROCESSING_INSTRUCTION_TARGET,
+                              reconsume, pos);
+          } else {
+            if (P::reportErrors) {
+              errInvalidFirstCharacterOfProcessingInstructionTarget();
+            }
+            reconsume = true;
+            state =
+                P::transition(mViewSource.get(),
+                              nsHtml5Tokenizer::BOGUS_COMMENT, reconsume, pos);
+            NS_HTML5_CONTINUE(stateloop);
+          }
+          [[fallthrough]];
+        }
+        case PROCESSING_INSTRUCTION_TARGET: {
+          for (;;) {
+            if (++pos == endPos) {
+              NS_HTML5_BREAK(stateloop);
+            }
+            c = P::checkChar(this, buf, pos);
+            if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                (c >= '0' && c <= '9') || c == '-' || c == '_') {
+              appendStrBuf(c);
+              continue;
+            }
+            switch (c) {
+              case '\r':
+              case '\n':
+              case '\f':
+              case ' ':
+              case '\t':
+              case '\?':
+              case '>': {
+                if (isDisallowedPiTarget()) {
+                  if (P::reportErrors) {
+                    errDisallowedProcessingInstructionTarget();
+                  }
+                  reconsume = true;
+                  state = P::transition(mViewSource.get(),
+                                        nsHtml5Tokenizer::BOGUS_COMMENT,
+                                        reconsume, pos);
+                  NS_HTML5_CONTINUE(stateloop);
+                }
+                finishPiTarget();
+                reconsume = true;
+                state = P::transition(
+                    mViewSource.get(),
+                    nsHtml5Tokenizer::AFTER_PROCESSING_INSTRUCTION_TARGET,
+                    reconsume, pos);
+                NS_HTML5_BREAK(pitargetloop);
+              }
+              default: {
+                if (P::reportErrors) {
+                  errInvalidProcessingInstructionTarget();
+                }
+                if (c == '\0') {
+                  c = 0xfffd;
+                }
+                reconsume = true;
+                state = P::transition(mViewSource.get(),
+                                      nsHtml5Tokenizer::BOGUS_COMMENT,
+                                      reconsume, pos);
+                NS_HTML5_CONTINUE(stateloop);
+              }
+            }
+          }
+        pitargetloop_end:;
+          [[fallthrough]];
+        }
+        case AFTER_PROCESSING_INSTRUCTION_TARGET: {
+          for (;;) {
+            if (reconsume) {
+              reconsume = false;
+            } else {
+              if (++pos == endPos) {
+                NS_HTML5_BREAK(stateloop);
+              }
+              c = P::checkChar(this, buf, pos);
+            }
+            switch (c) {
+              case '\r': {
+                P::silentCarriageReturn(this);
+                NS_HTML5_BREAK(stateloop);
+              }
+              case '\n': {
+                P::silentLineFeed(this);
+                [[fallthrough]];
+              }
+              case ' ':
+              case '\t':
+              case '\f': {
+                continue;
+              }
+              default: {
+                reconsume = true;
+                state =
+                    P::transition(mViewSource.get(),
+                                  nsHtml5Tokenizer::PROCESSING_INSTRUCTION_DATA,
+                                  reconsume, pos);
+                NS_HTML5_BREAK(afterpitargetloop);
+              }
+            }
+          }
+        afterpitargetloop_end:;
+          [[fallthrough]];
+        }
+        case PROCESSING_INSTRUCTION_DATA: {
+          for (;;) {
+            if (reconsume) {
+              reconsume = false;
+            } else {
+              if (++pos == endPos) {
+                NS_HTML5_BREAK(stateloop);
+              }
+              c = P::checkChar(this, buf, pos);
+            }
+            switch (c) {
+              case '\?': {
+                state = P::transition(
+                    mViewSource.get(),
+                    nsHtml5Tokenizer::PROCESSING_INSTRUCTION_QUESTIONABLE,
+                    reconsume, pos);
+                NS_HTML5_BREAK(pidataloop);
+              }
+              case '>': {
+                emitProcessingInstruction(pos);
+                state = P::transition(mViewSource.get(), nsHtml5Tokenizer::DATA,
+                                      reconsume, pos);
+                if (shouldSuspend) {
+                  NS_HTML5_BREAK(stateloop);
+                }
+                NS_HTML5_CONTINUE(stateloop);
+              }
+              case '\r': {
+                appendStrBufCarriageReturn<P>();
+                NS_HTML5_BREAK(stateloop);
+              }
+              case '\n': {
+                appendStrBufLineFeed<P>();
+                continue;
+              }
+              case '\0': {
+                c = 0xfffd;
+                [[fallthrough]];
+              }
+              default: {
+                appendStrBuf(c);
+                continue;
+              }
+            }
+          }
+        pidataloop_end:;
+          [[fallthrough]];
+        }
+        case PROCESSING_INSTRUCTION_QUESTIONABLE: {
+          for (;;) {
+            if (++pos == endPos) {
+              NS_HTML5_BREAK(stateloop);
+            }
+            c = P::checkChar(this, buf, pos);
+            switch (c) {
+              case '>': {
+                emitProcessingInstruction(pos);
+                state = P::transition(mViewSource.get(), nsHtml5Tokenizer::DATA,
+                                      reconsume, pos);
+                if (shouldSuspend) {
+                  NS_HTML5_BREAK(stateloop);
+                }
+                NS_HTML5_CONTINUE(stateloop);
+              }
+              default: {
+                appendStrBuf('\?');
+                reconsume = true;
+                state =
+                    P::transition(mViewSource.get(),
+                                  nsHtml5Tokenizer::PROCESSING_INSTRUCTION_DATA,
+                                  reconsume, pos);
+                NS_HTML5_CONTINUE(stateloop);
               }
             }
           }

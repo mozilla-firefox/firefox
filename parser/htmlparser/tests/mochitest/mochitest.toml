@@ -234,6 +234,8 @@ support-files = [
 # Disable test due to frequent orange on Mac
 #		test_bug534293.html
 
+["test_processing_instruction_parsing.html"]
+
 ["test_xml_parse_error.html"]
 support-files = [
   "file_xml_parse_error.js",

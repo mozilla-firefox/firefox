@@ -1561,6 +1561,107 @@ void nsHtml5TreeBuilder::appendCommentToDocument(char16_t* aBuffer,
   treeOp->Init(mozilla::AsVariant(data));
 }
 
+// Copies the target followed by the data into a single buffer, as expected
+// by the processing instruction tree ops.
+static mozilla::UniquePtr<char16_t[]> CopyProcessingInstruction(
+    nsHtml5String aTarget, const char16_t* aBuffer, int32_t aLength) {
+  int32_t targetLength = aTarget.Length();
+  auto bufferCopy =
+      mozilla::MakeUniqueFallible<char16_t[]>(targetLength + aLength);
+  if (bufferCopy) {
+    aTarget.CopyToBuffer(bufferCopy.get());
+    memcpy(bufferCopy.get() + targetLength, aBuffer,
+           aLength * sizeof(char16_t));
+  }
+  return bufferCopy;
+}
+
+void nsHtml5TreeBuilder::appendProcessingInstruction(nsIContentHandle* aParent,
+                                                     nsHtml5String aTarget,
+                                                     char16_t* aBuffer,
+                                                     int32_t aStart,
+                                                     int32_t aLength) {
+  MOZ_ASSERT(aBuffer, "Null buffer");
+  MOZ_ASSERT(aParent, "Null parent");
+  MOZ_ASSERT(!aStart, "aStart must always be zero.");
+
+  if (mBuilder) {
+    nsAutoString target;
+    aTarget.ToString(target);
+    nsDependentSubstring data(aBuffer, aLength);
+    nsresult rv;
+    if (MOZ_UNLIKELY(mSanitizerState)) {
+      if (!mSanitizerState->CommentsAllowed()) {
+        return;
+      }
+      SanitizerState::Location location =
+          mSanitizerState->LocationFor(static_cast<nsIContent*>(aParent));
+      rv = nsHtml5TreeOperation::InsertProcessingInstructionBefore(
+          location.mParent, target, data, location.mBefore, mBuilder);
+    } else {
+      rv = nsHtml5TreeOperation::AppendProcessingInstruction(
+          static_cast<nsIContent*>(aParent), target, data, mBuilder);
+    }
+    if (NS_FAILED(rv)) {
+      MarkAsBrokenAndRequestSuspensionWithBuilder(rv);
+    }
+    return;
+  }
+
+  auto bufferCopy = CopyProcessingInstruction(aTarget, aBuffer, aLength);
+  if (!bufferCopy) {
+    mBroken = NS_ERROR_OUT_OF_MEMORY;
+    requestSuspension();
+    return;
+  }
+
+  nsHtml5TreeOperation* treeOp = mOpQueue.AppendElement(mozilla::fallible);
+  if (MOZ_UNLIKELY(!treeOp)) {
+    MarkAsBrokenAndRequestSuspensionWithoutBuilder(NS_ERROR_OUT_OF_MEMORY);
+    return;
+  }
+  opAppendProcessingInstruction operation(aParent, bufferCopy.release(),
+                                          aTarget.Length(), aLength);
+  treeOp->Init(mozilla::AsVariant(operation));
+}
+
+void nsHtml5TreeBuilder::appendProcessingInstructionToDocument(
+    nsHtml5String aTarget, char16_t* aBuffer, int32_t aStart, int32_t aLength) {
+  MOZ_ASSERT(aBuffer, "Null buffer");
+  MOZ_ASSERT(!aStart, "aStart must always be zero.");
+
+  if (mBuilder) {
+    if (MOZ_UNLIKELY(mSanitizerState) && !mSanitizerState->CommentsAllowed()) {
+      return;
+    }
+    nsAutoString target;
+    aTarget.ToString(target);
+    nsDependentSubstring data(aBuffer, aLength);
+    nsresult rv = nsHtml5TreeOperation::AppendProcessingInstructionToDocument(
+        target, data, mBuilder);
+    if (NS_FAILED(rv)) {
+      MarkAsBrokenAndRequestSuspensionWithBuilder(rv);
+    }
+    return;
+  }
+
+  auto bufferCopy = CopyProcessingInstruction(aTarget, aBuffer, aLength);
+  if (!bufferCopy) {
+    mBroken = NS_ERROR_OUT_OF_MEMORY;
+    requestSuspension();
+    return;
+  }
+
+  nsHtml5TreeOperation* treeOp = mOpQueue.AppendElement(mozilla::fallible);
+  if (MOZ_UNLIKELY(!treeOp)) {
+    MarkAsBrokenAndRequestSuspensionWithoutBuilder(NS_ERROR_OUT_OF_MEMORY);
+    return;
+  }
+  opAppendProcessingInstructionToDocument data16(bufferCopy.release(),
+                                                 aTarget.Length(), aLength);
+  treeOp->Init(mozilla::AsVariant(data16));
+}
+
 void nsHtml5TreeBuilder::addAttributesToElement(
     nsIContentHandle* aElement, nsHtml5HtmlAttributes* aAttributes) {
   MOZ_ASSERT(aElement, "Null element");

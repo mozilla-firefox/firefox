@@ -231,6 +231,16 @@ public class Tokenizer implements Locator, Locator2 {
 
     public static final int COMMENT_LESSTHAN_BANG_DASH_DASH = 79;
 
+    public static final int PROCESSING_INSTRUCTION_OPEN = 80;
+
+    public static final int PROCESSING_INSTRUCTION_TARGET = 81;
+
+    public static final int AFTER_PROCESSING_INSTRUCTION_TARGET = 82;
+
+    public static final int PROCESSING_INSTRUCTION_DATA = 83;
+
+    public static final int PROCESSING_INSTRUCTION_QUESTIONABLE = 84;
+
     /**
      * Magic value for UTF-16 operations.
      */
@@ -241,6 +251,9 @@ public class Tokenizer implements Locator, Locator2 {
      * those characters on certain parse errors.
      */
     private static final @NoLength char[] LT_GT = { '<', '>' };
+
+    private static final @NoLength char[] XML_STYLESHEET = { 'x', 'm', 'l',
+            '-', 's', 't', 'y', 'l', 'e', 's', 'h', 'e', 'e', 't' };
 
     /**
      * UTF-16 code unit array containing less than and solidus for emitting
@@ -483,6 +496,17 @@ public class Tokenizer implements Locator, Locator2 {
     private String systemIdentifier;
 
     /**
+     * The target of the current processing instruction token.
+     */
+    private String piTarget;
+
+    /**
+     * Whether <code>&lt;?</code> starts a processing instruction instead of
+     * a bogus comment.
+     */
+    private boolean processingInstructionsEnabled;
+
+    /**
      * The attribute holder.
      */
     private HtmlAttributes attributes;
@@ -570,6 +594,8 @@ public class Tokenizer implements Locator, Locator2 {
         this.doctypeName = null;
         this.publicIdentifier = null;
         this.systemIdentifier = null;
+        this.piTarget = null;
+        this.processingInstructionsEnabled = false;
         this.attributes = null;
         this.shouldSuspend = false;
         this.keepBuffer = false;
@@ -629,6 +655,8 @@ public class Tokenizer implements Locator, Locator2 {
         this.doctypeName = null;
         this.publicIdentifier = null;
         this.systemIdentifier = null;
+        this.piTarget = null;
+        this.processingInstructionsEnabled = false;
         // [NOCPP[
         this.attributes = null;
         // ]NOCPP]
@@ -645,6 +673,11 @@ public class Tokenizer implements Locator, Locator2 {
 
     public void setInterner(Interner interner) {
         this.interner = interner;
+    }
+
+    public void setProcessingInstructionsEnabled(
+            boolean processingInstructionsEnabled) {
+        this.processingInstructionsEnabled = processingInstructionsEnabled;
     }
 
     public void initLocation(String newPublicId, String newSystemId) {
@@ -1146,6 +1179,51 @@ public class Tokenizer implements Locator, Locator2 {
         }
         // ]NOCPP]
         clearStrBufAfterUse();
+        cstart = pos + 1;
+        suspendIfRequestedAfterCurrentNonTextToken();
+    }
+
+    /**
+     * Checks whether the processing instruction target accumulated after the
+     * initial U+003F in the buffer is an ASCII case-insensitive match for
+     * "xml" or "xml-stylesheet".
+     */
+    private boolean isDisallowedPiTarget() {
+        int targetLength = strBufLen - 1;
+        if (targetLength != 3 && targetLength != 14) {
+            return false;
+        }
+        for (int i = 0; i < targetLength; i++) {
+            char folded = strBuf[i + 1];
+            if (folded >= 'A' && folded <= 'Z') {
+                folded += 0x20;
+            }
+            if (folded != XML_STYLESHEET[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Takes the target out of the buffer, leaving the buffer ready for
+     * accumulating the processing instruction data. The initial U+003F stays
+     * in the buffer only while the bogus comment fallback is still possible,
+     * so it is excluded here.
+     */
+    private void finishPiTarget() {
+        piTarget = Portability.newStringFromBuffer(strBuf, 1, strBufLen - 1
+            // CPPONLY: , tokenHandler, null
+        );
+        clearStrBufAfterUse();
+    }
+
+    private void emitProcessingInstruction(int pos) throws SAXException {
+        // CPPONLY: RememberGt(pos);
+        tokenHandler.processingInstruction(piTarget, strBuf, 0, strBufLen);
+        clearStrBufAfterUse();
+        Portability.releaseString(piTarget);
+        piTarget = null;
         cstart = pos + 1;
         suspendIfRequestedAfterCurrentNonTextToken();
     }
@@ -1761,6 +1839,22 @@ public class Tokenizer implements Locator, Locator2 {
                                 // CPPONLY: pos);
                                 // CPPONLY: continue stateloop;
                                 // CPPONLY: }
+                                if (processingInstructionsEnabled) {
+                                    /*
+                                     * U+003F QUESTION MARK (?) Set the
+                                     * temporary buffer to the empty string.
+                                     * Switch to the processing instruction
+                                     * open state.
+                                     *
+                                     * The U+003F is kept at the start of the
+                                     * buffer so that converting the buffer to
+                                     * a comment needs no further work.
+                                     */
+                                    clearStrBufBeforeUse();
+                                    appendStrBuf(c);
+                                    state = transition(state, Tokenizer.PROCESSING_INSTRUCTION_OPEN, reconsume, pos);
+                                    continue stateloop;
+                                }
                                 /*
                                  * U+003F QUESTION MARK (?) Parse error.
                                  */
@@ -6300,6 +6394,248 @@ public class Tokenizer implements Locator, Locator2 {
                         }
                     }
                     // no fallthrough, reordering opportunity
+                case PROCESSING_INSTRUCTION_OPEN:
+                    if (++pos == endPos) {
+                        break stateloop;
+                    }
+                    c = checkChar(buf, pos);
+                    /*
+                     * Consume the next input character:
+                     */
+                    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+                            || c == '_') {
+                        /*
+                         * ASCII alpha, U+005F LOW LINE (_) Reconsume in the
+                         * processing instruction target state.
+                         */
+                        appendStrBuf(c);
+                        state = transition(state, Tokenizer.PROCESSING_INSTRUCTION_TARGET, reconsume, pos);
+                        // Reconsuming the appended character is equivalent
+                        // to falling through having consumed it.
+                    } else {
+                        /*
+                         * Anything else This is an
+                         * invalid-first-character-of-processing-instruction-target
+                         * parse error. Convert the temporary buffer to a
+                         * comment. Reconsume in the bogus comment state.
+                         */
+                        errInvalidFirstCharacterOfProcessingInstructionTarget();
+                        reconsume = true;
+                        state = transition(state, Tokenizer.BOGUS_COMMENT, reconsume, pos);
+                        continue stateloop;
+                    }
+                    // CPPONLY: MOZ_FALLTHROUGH;
+                case PROCESSING_INSTRUCTION_TARGET:
+                    pitargetloop: for (;;) {
+                        if (++pos == endPos) {
+                            break stateloop;
+                        }
+                        c = checkChar(buf, pos);
+                        /*
+                         * Consume the next input character:
+                         */
+                        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+                                || (c >= '0' && c <= '9') || c == '-'
+                                || c == '_') {
+                            /*
+                             * ASCII alphanumeric, U+002D HYPHEN-MINUS (-),
+                             * U+005F LOW LINE (_) Append the current input
+                             * character to the temporary buffer.
+                             */
+                            appendStrBuf(c);
+                            continue;
+                        }
+                        switch (c) {
+                            case '\r':
+                            case '\n':
+                            case '\u000C':
+                            case ' ':
+                            case '\t':
+                            case '?':
+                            case '>':
+                                /*
+                                 * Let target be the concatenation of the code
+                                 * points in the temporary buffer.
+                                 */
+                                if (isDisallowedPiTarget()) {
+                                    /*
+                                     * If target is an ASCII case-insensitive
+                                     * match for "xml" or "xml-stylesheet",
+                                     * this is a
+                                     * disallowed-processing-instruction-target
+                                     * parse error. Convert the temporary
+                                     * buffer to a comment. Reconsume in the
+                                     * bogus comment state.
+                                     */
+                                    errDisallowedProcessingInstructionTarget();
+                                    reconsume = true;
+                                    state = transition(state, Tokenizer.BOGUS_COMMENT, reconsume, pos);
+                                    continue stateloop;
+                                }
+                                /*
+                                 * Otherwise, create a processing instruction
+                                 * token whose target is target and data is
+                                 * the empty string. Reconsume in the after
+                                 * processing instruction target state.
+                                 */
+                                finishPiTarget();
+                                reconsume = true;
+                                state = transition(state, Tokenizer.AFTER_PROCESSING_INSTRUCTION_TARGET, reconsume, pos);
+                                // `break` optimizes; `continue stateloop;` would be valid
+                                break pitargetloop;
+                            default:
+                                /*
+                                 * Anything else This is an
+                                 * invalid-processing-instruction-target parse
+                                 * error. Convert the temporary buffer to a
+                                 * comment. Reconsume in the bogus comment
+                                 * state.
+                                 */
+                                errInvalidProcessingInstructionTarget();
+                                if (c == '\u0000') {
+                                    c = '\uFFFD';
+                                }
+                                reconsume = true;
+                                state = transition(state, Tokenizer.BOGUS_COMMENT, reconsume, pos);
+                                continue stateloop;
+                        }
+                    }
+                    // CPPONLY: MOZ_FALLTHROUGH;
+                case AFTER_PROCESSING_INSTRUCTION_TARGET:
+                    afterpitargetloop: for (;;) {
+                        if (reconsume) {
+                            reconsume = false;
+                        } else {
+                            if (++pos == endPos) {
+                                break stateloop;
+                            }
+                            c = checkChar(buf, pos);
+                        }
+                        /*
+                         * Consume the next input character:
+                         */
+                        switch (c) {
+                            case '\r':
+                                silentCarriageReturn();
+                                break stateloop;
+                            case '\n':
+                                silentLineFeed();
+                                // CPPONLY: MOZ_FALLTHROUGH;
+                            case ' ':
+                            case '\t':
+                            case '\u000C':
+                                /*
+                                 * U+0009 CHARACTER TABULATION (tab), U+000A
+                                 * LINE FEED (LF), U+000C FORM FEED (FF),
+                                 * U+0020 SPACE Ignore the character.
+                                 */
+                                continue;
+                            default:
+                                /*
+                                 * Anything else Reconsume in the processing
+                                 * instruction data state.
+                                 */
+                                reconsume = true;
+                                state = transition(state, Tokenizer.PROCESSING_INSTRUCTION_DATA, reconsume, pos);
+                                break afterpitargetloop;
+                        }
+                    }
+                    // CPPONLY: MOZ_FALLTHROUGH;
+                case PROCESSING_INSTRUCTION_DATA:
+                    pidataloop: for (;;) {
+                        if (reconsume) {
+                            reconsume = false;
+                        } else {
+                            if (++pos == endPos) {
+                                break stateloop;
+                            }
+                            c = checkChar(buf, pos);
+                        }
+                        /*
+                         * Consume the next input character:
+                         */
+                        switch (c) {
+                            case '?':
+                                /*
+                                 * U+003F QUESTION MARK (?) Switch to the
+                                 * processing instruction questionable state.
+                                 */
+                                state = transition(state, Tokenizer.PROCESSING_INSTRUCTION_QUESTIONABLE, reconsume, pos);
+                                break pidataloop;
+                            case '>':
+                                /*
+                                 * U+003E GREATER-THAN SIGN (>) Switch to the
+                                 * data state. Emit the current processing
+                                 * instruction token.
+                                 */
+                                emitProcessingInstruction(pos);
+                                state = transition(state, Tokenizer.DATA, reconsume, pos);
+                                if (shouldSuspend) {
+                                    break stateloop;
+                                }
+                                continue stateloop;
+                            case '\r':
+                                appendStrBufCarriageReturn();
+                                break stateloop;
+                            case '\n':
+                                appendStrBufLineFeed();
+                                continue;
+                            case '\u0000':
+                                /*
+                                 * The spec appends U+0000 as-is; replacing it
+                                 * with U+FFFD matches other engines and the
+                                 * fix proposed in
+                                 * https://github.com/whatwg/html/issues/13036
+                                 */
+                                c = '\uFFFD';
+                                // CPPONLY: MOZ_FALLTHROUGH;
+                            default:
+                                /*
+                                 * Anything else Append the current input
+                                 * character to the current processing
+                                 * instruction token's data.
+                                 */
+                                appendStrBuf(c);
+                                continue;
+                        }
+                    }
+                    // CPPONLY: MOZ_FALLTHROUGH;
+                case PROCESSING_INSTRUCTION_QUESTIONABLE:
+                    for (;;) {
+                        if (++pos == endPos) {
+                            break stateloop;
+                        }
+                        c = checkChar(buf, pos);
+                        /*
+                         * Consume the next input character:
+                         */
+                        switch (c) {
+                            case '>':
+                                /*
+                                 * U+003E GREATER-THAN SIGN (>) Switch to the
+                                 * data state. Emit the current processing
+                                 * instruction token.
+                                 */
+                                emitProcessingInstruction(pos);
+                                state = transition(state, Tokenizer.DATA, reconsume, pos);
+                                if (shouldSuspend) {
+                                    break stateloop;
+                                }
+                                continue stateloop;
+                            default:
+                                /*
+                                 * Anything else Append U+003F (?) to the
+                                 * current processing instruction token's
+                                 * data. Reconsume in the processing
+                                 * instruction data state.
+                                 */
+                                appendStrBuf('?');
+                                reconsume = true;
+                                state = transition(state, Tokenizer.PROCESSING_INSTRUCTION_DATA, reconsume, pos);
+                                continue stateloop;
+                        }
+                    }
+                    // no fallthrough, reordering opportunity
                 case PROCESSING_INSTRUCTION:
                     processinginstructionloop: for (;;) {
                         if (++pos == endPos) {
@@ -6665,6 +7001,21 @@ public class Tokenizer implements Locator, Locator2 {
                     /*
                      * Reconsume the EOF character in the data state.
                      */
+                    break eofloop;
+                case PROCESSING_INSTRUCTION_OPEN:
+                case PROCESSING_INSTRUCTION_TARGET:
+                case AFTER_PROCESSING_INSTRUCTION_TARGET:
+                case PROCESSING_INSTRUCTION_DATA:
+                case PROCESSING_INSTRUCTION_QUESTIONABLE:
+                    /*
+                     * EOF This is an eof-in-processing-instruction parse
+                     * error. Emit an end-of-file token.
+                     */
+                    errEofInProcessingInstruction();
+                    if (piTarget != null) {
+                        Portability.releaseString(piTarget);
+                        piTarget = null;
+                    }
                     break eofloop;
                 case BOGUS_COMMENT:
                     emitComment(0, 0);
@@ -7212,6 +7563,11 @@ public class Tokenizer implements Locator, Locator2 {
             case CDATA_RSQB_RSQB:
             case PROCESSING_INSTRUCTION:
             case PROCESSING_INSTRUCTION_QUESTION_MARK:
+            case PROCESSING_INSTRUCTION_OPEN:
+            case PROCESSING_INSTRUCTION_TARGET:
+            case AFTER_PROCESSING_INSTRUCTION_TARGET:
+            case PROCESSING_INSTRUCTION_DATA:
+            case PROCESSING_INSTRUCTION_QUESTIONABLE:
                 break;
             case CONSUME_CHARACTER_REFERENCE:
             case CONSUME_NCR:
@@ -7296,6 +7652,10 @@ public class Tokenizer implements Locator, Locator2 {
             Portability.releaseString(publicIdentifier);
             publicIdentifier = null;
         }
+        if (piTarget != null) {
+            Portability.releaseString(piTarget);
+            piTarget = null;
+        }
         tagName = null;
         nonInternedTagName.setNameForNonInterned(null
                 // CPPONLY: , false
@@ -7360,6 +7720,10 @@ public class Tokenizer implements Locator, Locator2 {
 
     public void resetToDataState() {
         clearStrBufAfterUse();
+        if (piTarget != null) {
+            Portability.releaseString(piTarget);
+            piTarget = null;
+        }
         charRefBufLen = 0;
         stateSave = Tokenizer.DATA;
         // line = 1; XXX line numbers
@@ -7435,6 +7799,14 @@ public class Tokenizer implements Locator, Locator2 {
         } else {
             publicIdentifier = Portability.newStringFromString(other.publicIdentifier);
         }
+
+        Portability.releaseString(piTarget);
+        if (other.piTarget == null) {
+            piTarget = null;
+        } else {
+            piTarget = Portability.newStringFromString(other.piTarget);
+        }
+        processingInstructionsEnabled = other.processingInstructionsEnabled;
 
         containsHyphen = other.containsHyphen;
         if (other.tagName == null) {
@@ -7557,6 +7929,21 @@ public class Tokenizer implements Locator, Locator2 {
     }
 
     protected void errProcessingInstruction() throws SAXException {
+    }
+
+    protected void errEofInProcessingInstruction() throws SAXException {
+    }
+
+    protected void errInvalidFirstCharacterOfProcessingInstructionTarget()
+            throws SAXException {
+    }
+
+    protected void errInvalidProcessingInstructionTarget()
+            throws SAXException {
+    }
+
+    protected void errDisallowedProcessingInstructionTarget()
+            throws SAXException {
     }
 
     protected void errUnescapedAmpersandInterpretedAsCharacterReference()

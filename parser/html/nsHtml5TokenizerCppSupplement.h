@@ -311,6 +311,32 @@ void nsHtml5Tokenizer::errProcessingInstruction() {
   }
 }
 
+void nsHtml5Tokenizer::errEofInProcessingInstruction() {
+  if (MOZ_LIKELY(mViewSource)) {
+    mViewSource->AddErrorToCurrentNode("errEofInProcessingInstruction");
+  }
+}
+
+void nsHtml5Tokenizer::errInvalidFirstCharacterOfProcessingInstructionTarget() {
+  if (MOZ_LIKELY(mViewSource)) {
+    mViewSource->AddErrorToCurrentNode(
+        "errInvalidFirstCharacterOfProcessingInstructionTarget");
+  }
+}
+
+void nsHtml5Tokenizer::errInvalidProcessingInstructionTarget() {
+  if (MOZ_LIKELY(mViewSource)) {
+    mViewSource->AddErrorToCurrentNode("errInvalidProcessingInstructionTarget");
+  }
+}
+
+void nsHtml5Tokenizer::errDisallowedProcessingInstructionTarget() {
+  if (MOZ_LIKELY(mViewSource)) {
+    mViewSource->AddErrorToCurrentNode(
+        "errDisallowedProcessingInstructionTarget");
+  }
+}
+
 void nsHtml5Tokenizer::errUnescapedAmpersandInterpretedAsCharacterReference() {
   if (MOZ_UNLIKELY(mViewSource)) {
     mViewSource->AddErrorToCurrentAmpersand(
