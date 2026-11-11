@@ -7787,6 +7787,9 @@ void nsContentUtils::RemoveScriptBlocker() {
   uint32_t blockersCount = lastBlocker - firstBlocker;
   sRunnersCountAtFirstBlocker = 0;
   NS_ASSERTION(firstBlocker <= lastBlocker, "bad sRunnersCountAtFirstBlocker");
+  if (!blockersCount) {
+    return;
+  }
 
   while (firstBlocker < lastBlocker) {
     nsCOMPtr<nsIRunnable> runnable;
@@ -7808,7 +7811,9 @@ void nsContentUtils::RemoveScriptBlocker() {
   AutoRestore<bool> removingScriptBlockers(sRemovingScriptBlockers);
   sRemovingScriptBlockers = true;
 #endif
-  sBlockedScriptRunners->RemoveElementsAt(originalFirstBlocker, blockersCount);
+  MOZ_DIAGNOSTIC_ASSERT(!sScriptBlockerCount &&
+                        sBlockedScriptRunners->Length() == lastBlocker);
+  sBlockedScriptRunners->TruncateLength(originalFirstBlocker);
 }
 
 nsAutoMicroTaskForDocument::nsAutoMicroTaskForDocument(
