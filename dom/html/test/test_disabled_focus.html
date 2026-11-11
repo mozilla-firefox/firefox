@@ -94,6 +94,63 @@ add_task(async function test_disabled_focus() {
   }
 });
 
+add_task(async function test_disabled_keyboard_defaults() {
+  await SpecialPowers.pushPrefEnv({set: [
+    ["dom.forms.retain_focus_on_disabled.enabled", true],
+  ]});
+  for (const type of [
+    "button", "select", "textarea", "text", "checkbox", "radio",
+    "number", "range", "date", "time", "datetime-local",
+  ]) {
+    const form = document.createElement("form");
+    form.innerHTML = '<input type="radio" name="control"><button>Submit</button>';
+    const otherRadio = form.firstElementChild;
+    const target = document.createElement(
+      ["button", "select", "textarea"].includes(type) ? type : "input"
+    );
+    if (target instanceof HTMLInputElement) {
+      target.type = type;
+      target.name = "control";
+    }
+    if (type == "select") {
+      target.innerHTML = "<option>First</option><option>Second</option>";
+    }
+    target.value = type == "date" ? "2026-10-29" :
+      type == "time" ? "12:34" :
+      type == "datetime-local" ? "2026-10-29T12:34" : "1";
+    form.prepend(target);
+    document.body.append(form);
+    let clicks = 0;
+    let submissions = 0;
+    form.addEventListener("click", () => clicks++);
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      submissions++;
+    });
+    target.focus();
+    target.disabled = true;
+    await updateRendering();
+    const value = target.value;
+    const checked = target.checked;
+    for (const key of [
+      "x", "KEY_ArrowDown", "KEY_ArrowUp", "KEY_ArrowLeft", "KEY_ArrowRight",
+      "KEY_Delete", "KEY_Backspace", "KEY_Enter", " ",
+    ]) {
+      synthesizeKey(key);
+      is(document.activeElement, target, `${type}: ${key} does not move disabled focus`);
+      is(target.value, value, `${type}: ${key} does not edit disabled input`);
+      if (target instanceof HTMLInputElement) {
+        is(target.checked, checked, `${type}: ${key} does not toggle disabled input`);
+      }
+      ok(!otherRadio.checked, `${type}: ${key} does not select another radio`);
+    }
+    is(clicks, 0, `${type}: disabled input does not activate`);
+    is(submissions, 0, `${type}: disabled input does not submit`);
+    form.remove();
+  }
+  await SpecialPowers.popPrefEnv();
+});
+
 add_task(async function test_disabled_focus_other_invalidation() {
   await SpecialPowers.pushPrefEnv({set: [
     ["dom.forms.retain_focus_on_disabled.enabled", true],
@@ -139,6 +196,40 @@ add_task(async function test_first_legend_exemption() {
     fieldset.remove();
     await SpecialPowers.popPrefEnv();
   }
+});
+
+add_task(async function test_disabled_space_keyup() {
+  await SpecialPowers.pushPrefEnv({set: [
+    ["dom.forms.retain_focus_on_disabled.enabled", true],
+  ]});
+  for (const tag of ["input", "button"]) {
+    const target = document.createElement(tag);
+    if (tag == "input") {
+      target.type = "checkbox";
+    }
+    let clicks = 0;
+    target.addEventListener("click", () => clicks++);
+    document.body.append(target);
+    target.focus();
+    synthesizeKey(" ", {type: "keydown"});
+    target.disabled = true;
+    await updateRendering();
+    synthesizeKey(" ", {type: "keyup"});
+    is(clicks, 0, `${tag}: disabling cancels pending keyboard activation`);
+    target.disabled = false;
+    synthesizeKey(" ", {type: "keyup"});
+    is(clicks, 0, `${tag}: re-enabling does not restore pending keyboard activation`);
+    target.disabled = true;
+    await updateRendering();
+    synthesizeKey(" ", {type: "keydown"});
+    target.disabled = false;
+    synthesizeKey(" ", {type: "keyup"});
+    is(clicks, 0, `${tag}: disabled keydown does not start keyboard activation`);
+    synthesizeKey(" ");
+    is(clicks, 1, `${tag}: enabled control still activates with Space`);
+    target.remove();
+  }
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function test_disabled_focus_tabindex_order() {

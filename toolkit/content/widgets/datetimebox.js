@@ -673,7 +673,7 @@ this.DateTimeBoxWidget = class {
   onKeyDown(aEvent) {
     this.log("onKeyDown key: " + aEvent.key);
 
-    if (aEvent.defaultPrevented) {
+    if (aEvent.defaultPrevented || this.isDisabled()) {
       return;
     }
 

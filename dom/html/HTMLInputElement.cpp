@@ -3890,13 +3890,20 @@ nsresult HTMLInputElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
 
   bool preventDefault =
       aVisitor.mEventStatus == nsEventStatus_eConsumeNoDefault;
-  if (IsDisabled() && oldType != FormControlType::InputCheckbox &&
-      oldType != FormControlType::InputRadio) {
-    // Behave as if defaultPrevented when the element becomes disabled by event
-    // listeners. Checkboxes and radio buttons should still process clicks for
-    // web compat. See:
-    // https://html.spec.whatwg.org/multipage/input.html#the-input-element:activation-behaviour
-    preventDefault = true;
+  if (IsDisabled()) {
+    if (oldType != FormControlType::InputCheckbox &&
+        oldType != FormControlType::InputRadio) {
+      // Behave as if defaultPrevented when the element becomes disabled by
+      // event listeners. Checkboxes and radio buttons should still process
+      // clicks for web compat. See:
+      // https://html.spec.whatwg.org/multipage/input.html#the-input-element:activation-behaviour
+      preventDefault = true;
+    }
+    if (StaticPrefs::dom_forms_retain_focus_on_disabled_enabled() &&
+        aVisitor.mEvent->AsKeyboardEvent()) {
+      UnsetFlags(HTML_ELEMENT_ACTIVE_FOR_KEYBOARD);
+      preventDefault = true;
+    }
   }
 
   if (NS_SUCCEEDED(rv)) {

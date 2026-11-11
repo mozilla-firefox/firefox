@@ -2513,6 +2513,12 @@ void nsGenericHTMLElement::HandleKeyboardActivation(
   MOZ_ASSERT(aVisitor.mEvent->HasKeyEventMessage());
   MOZ_ASSERT(aVisitor.mEvent->IsTrusted());
 
+  if (StaticPrefs::dom_forms_retain_focus_on_disabled_enabled() &&
+      IsDisabled()) {
+    UnsetFlags(HTML_ELEMENT_ACTIVE_FOR_KEYBOARD);
+    return;
+  }
+
   // If focused element is different from this element, it may be editable.
   // In that case, associated editor for the element should handle the keyboard
   // instead.  Therefore, if this is not the focused element, we should not
