@@ -50,9 +50,7 @@ pub enum WritingModeProperty {
     #[parse(aliases = "tb,tb-rl")]
     VerticalRl,
     VerticalLr,
-    #[cfg(feature = "gecko")]
     SidewaysRl,
-    #[cfg(feature = "gecko")]
     SidewaysLr,
 }
 
@@ -163,14 +161,12 @@ impl WritingMode {
                     flags.insert(WritingMode::INLINE_REVERSED);
                 }
             },
-            #[cfg(feature = "gecko")]
             WritingModeProperty::SidewaysRl => {
                 flags.insert(WritingMode::WRITING_MODE_SIDEWAYS_RL);
                 if direction == Direction::Rtl {
                     flags.insert(WritingMode::INLINE_REVERSED);
                 }
             },
-            #[cfg(feature = "gecko")]
             WritingModeProperty::SidewaysLr => {
                 flags.insert(WritingMode::WRITING_MODE_SIDEWAYS_LR);
                 if direction == Direction::Ltr {
