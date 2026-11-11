@@ -215,18 +215,6 @@ void MediaTrackGraphImpl::AddTrackGraphThread(MediaTrack* aTrack) {
 
 void MediaTrackGraphImpl::RemoveTrackGraphThread(MediaTrack* aTrack) {
   MOZ_ASSERT(OnGraphThreadOrNotRunning());
-  // Remove references in mTrackUpdates before we allow aTrack to die.
-  // Pending updates are not needed (since the main thread has already given
-  // up the track) so we will just drop them.
-  {
-    MonitorAutoLock lock(mMonitor);
-    for (uint32_t i = 0; i < mTrackUpdates.Length(); ++i) {
-      if (mTrackUpdates[i].mTrack == aTrack) {
-        mTrackUpdates[i].mTrack = nullptr;
-      }
-    }
-  }
-
   // Ensure that mFirstCycleBreaker is updated when necessary.
   SetTrackOrderDirty();
 
@@ -1152,44 +1140,14 @@ void MediaTrackGraphImpl::PrepareUpdatesToMainThreadState(bool aFinalUpdate) {
   // We don't want to frequently update the main thread about timing update
   // when we are not running in realtime.
   if (aFinalUpdate || ShouldUpdateMainThread()) {
-    // Strip updates that will be obsoleted below, so as to keep the length of
-    // mTrackUpdates sane.
-    size_t keptUpdateCount = 0;
-    for (size_t i = 0; i < mTrackUpdates.Length(); ++i) {
-      MediaTrack* track = mTrackUpdates[i].mTrack;
-      // RemoveTrackGraphThread() clears mTrack in updates for
-      // tracks that are removed from the graph.
-      MOZ_ASSERT(!track || track->GraphImpl() == this);
-      if (!track || track->MainThreadNeedsUpdates()) {
-        // Discard this update as it has either been cleared when the track
-        // was destroyed or there will be a newer update below.
-        continue;
-      }
-      if (keptUpdateCount != i) {
-        mTrackUpdates[keptUpdateCount] = std::move(mTrackUpdates[i]);
-        MOZ_ASSERT(!mTrackUpdates[i].mTrack);
-      }
-      ++keptUpdateCount;
-    }
-    mTrackUpdates.TruncateLength(keptUpdateCount);
-
-    mTrackUpdates.SetCapacity(mTrackUpdates.Length() + mTracks.Length() +
-                              mSuspendedTracks.Length());
     for (MediaTrack* track : AllTracks()) {
-      if (!track->MainThreadNeedsUpdates()) {
+      if (!track->mCanonicals || !track->MainThreadNeedsUpdates()) {
         continue;
       }
-      TrackUpdate* update = mTrackUpdates.AppendElement();
-      update->mTrack = track;
       // No blocking to worry about here, since we've passed
       // UpdateCurrentTimeForTracks.
-      update->mNextMainThreadCurrentTime =
-          track->GraphTimeToTrackTime(mProcessedTime);
-      update->mNextMainThreadEnded = track->mNotifiedEnded;
-      if (track->mCanonicals) {
-        track->mCanonicals->mCurrentTime.Set(
-            track->GraphTimeToTrackTime(mProcessedTime));
-      }
+      track->mCanonicals->mCurrentTime.Set(
+          track->GraphTimeToTrackTime(mProcessedTime));
     }
     if (!mPendingUpdateRunnables.IsEmpty()) {
       mUpdateRunnables.AppendElements(std::move(mPendingUpdateRunnables));
@@ -1202,7 +1160,7 @@ void MediaTrackGraphImpl::PrepareUpdatesToMainThreadState(bool aFinalUpdate) {
   if (!aFinalUpdate &&
       // Don't send the message to the main thread if it's not going to have
       // any work to do.
-      !(mUpdateRunnables.IsEmpty() && mTrackUpdates.IsEmpty())) {
+      !mUpdateRunnables.IsEmpty()) {
     EnsureStableStateEventPosted();
   }
 }
@@ -1723,20 +1681,6 @@ auto MediaTrackGraphImpl::OneIterationImpl(
   return IterationResult::CreateStillProcessing();
 }
 
-void MediaTrackGraphImpl::ApplyTrackUpdate(TrackUpdate* aUpdate) {
-  MOZ_ASSERT(NS_IsMainThread());
-  mMonitor.AssertCurrentThreadOwns();
-
-  MediaTrack* track = aUpdate->mTrack;
-  if (!track) return;
-  track->mMainThreadCurrentTime = aUpdate->mNextMainThreadCurrentTime;
-  track->mMainThreadEnded = aUpdate->mNextMainThreadEnded;
-
-  if (track->ShouldNotifyTrackEnded()) {
-    track->NotifyMainThreadListeners();
-  }
-}
-
 void MediaTrackGraphImpl::ForceShutDown() {
   MOZ_ASSERT(NS_IsMainThread(), "Must be called on main thread");
   LOG(LogLevel::Debug, ("{}: MediaTrackGraph::ForceShutdown", fmt::ptr(this)));
@@ -2047,13 +1991,6 @@ void MediaTrackGraphImpl::RunInStableState(bool aSourceIsMTG) {
     }
 
     runnables = std::move(mUpdateRunnables);
-    for (uint32_t i = 0; i < mTrackUpdates.Length(); ++i) {
-      TrackUpdate* update = &mTrackUpdates[i];
-      if (update->mTrack) {
-        ApplyTrackUpdate(update);
-      }
-    }
-    mTrackUpdates.Clear();
 
     if (LifecycleState() == LIFECYCLE_WAITING_FOR_MAIN_THREAD_CLEANUP &&
         IsEmpty()) {
@@ -2108,9 +2045,9 @@ void MediaTrackGraphImpl::RunInStableState(bool aSourceIsMTG) {
       // a dispatcher that may not fire again before the graph is gone.
       if (AbstractThread* current = AbstractThread::GetCurrent()) {
         // Unlock here because TailDispatchMessage grabs the monitor. State
-        // mutated under the monitor above is mainly mUpdateRunnables and
-        // mTrackUpdates. But we've entered forced shutdown. The graph won't
-        // iterate again, and cannot mutate those members while we're unlocked.
+        // mutated under the monitor above is mainly mUpdateRunnables. But
+        // we've entered forced shutdown. The graph won't iterate again, and
+        // cannot mutate those members while we're unlocked.
         MonitorAutoUnlock unlock(mMonitor);
         MOZ_ALWAYS_SUCCEEDS(current->TailDispatchTasksFor(this));
       }
@@ -2221,9 +2158,6 @@ MediaTrack::MediaTrack(TrackRate aSampleRate, MediaSegment::Type aType,
       mDisabledMode(DisabledTrackMode::ENABLED),
       mStartBlocking(GRAPH_TIME_MAX),
       mSuspendedCount(0),
-      mMainThreadCurrentTime(0),
-      mMainThreadEnded(false),
-      mEndedNotificationSent(false),
       mDestroyed(false),
       mGraph(nullptr) {
   MOZ_COUNT_CTOR(MediaTrack);
@@ -2233,8 +2167,6 @@ MediaTrack::MediaTrack(TrackRate aSampleRate, MediaSegment::Type aType,
 MediaTrack::~MediaTrack() {
   MOZ_COUNT_DTOR(MediaTrack);
   NS_ASSERTION(mDestroyed, "Should have been destroyed already");
-  NS_ASSERTION(mMainThreadListeners.IsEmpty(),
-               "All main thread listeners should have been removed");
 }
 
 size_t MediaTrack::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const {
@@ -2248,7 +2180,6 @@ size_t MediaTrack::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const {
   // - mTrackListeners - elements
 
   amount += mTrackListeners.ShallowSizeOfExcludingThis(aMallocSizeOf);
-  amount += mMainThreadListeners.ShallowSizeOfExcludingThis(aMallocSizeOf);
   amount += mConsumers.ShallowSizeOfExcludingThis(aMallocSizeOf);
 
   return amount;
@@ -2765,41 +2696,6 @@ void MediaTrack::ApplyTrackDisabling(MediaSegment* aSegment,
                                      MediaSegment* aRawSegment) {
   AssertOnGraphThread();
   mozilla::ApplyTrackDisabling(mDisabledMode, aSegment, aRawSegment);
-}
-
-void MediaTrack::AddMainThreadListener(
-    MainThreadMediaTrackListener* aListener) {
-  MOZ_ASSERT(NS_IsMainThread());
-  MOZ_ASSERT(aListener);
-  MOZ_ASSERT(!mMainThreadListeners.Contains(aListener));
-
-  mMainThreadListeners.AppendElement(aListener);
-
-  // If it is not yet time to send the notification, then exit here.
-  if (!mEndedNotificationSent) {
-    return;
-  }
-
-  class NotifyRunnable final : public Runnable {
-   public:
-    explicit NotifyRunnable(MediaTrack* aTrack)
-        : Runnable("MediaTrack::NotifyRunnable"), mTrack(aTrack) {}
-
-    NS_IMETHOD Run() override {
-      TRACE("MediaTrack::NotifyMainThreadListeners Runnable");
-      MOZ_ASSERT(NS_IsMainThread());
-      mTrack->NotifyMainThreadListeners();
-      return NS_OK;
-    }
-
-   private:
-    ~NotifyRunnable() = default;
-
-    RefPtr<MediaTrack> mTrack;
-  };
-
-  nsCOMPtr<nsIRunnable> runnable = new NotifyRunnable(this);
-  GraphImpl()->DispatchToMainThread(runnable.forget());
 }
 
 void MediaTrack::AdvanceTimeVaryingValuesToCurrentTime(GraphTime aCurrentTime,
