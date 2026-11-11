@@ -187,7 +187,7 @@ impl<'de> Deserialize<'de> for MakeCredentialsResult {
                                 _ => {
                                     return Err(DesError::custom(
                                         "unknown attestation statement format",
-                                    ))
+                                    ));
                                 }
                             }
                         }
@@ -1266,4 +1266,54 @@ pub mod test {
         0xEE, 0x64, 0x04, 0x4D, 0x50, 0xB4, 0x15, 0xA6, 0xA4, 0xD4, 0xD8, 0x4B, 0xA6, 0xD8, 0x95,
         0xCB, 0x5A, 0xB7, 0xA1, 0xAA, 0x7D, 0x08, 0x1D, 0xE3, 0x41, 0xFA, // ...
     ];
+
+    /// Test canonical encoding of MakeCredential requests.
+    #[test]
+    fn test_cbor_canonical() {
+        const OPTION_BOOL_VALUES: [Option<bool>; 3] = [None, Some(false), Some(true)];
+        let names = vec![None, Some(String::new()), Some(String::from("ABCD"))];
+
+        let client_data_hash = CollectedClientData {
+            webauthn_type: WebauthnType::Create,
+            challenge: Challenge::from(vec![0x00, 0x01, 0x02, 0x03]),
+            origin: String::from("example.com"),
+            cross_origin: false,
+            token_binding: None,
+        }
+        .hash()
+        .expect("failed to serialize client data");
+
+        for rp_name in &names {
+            for user_name in &names {
+                for display_name in &names {
+                    for resident_key in OPTION_BOOL_VALUES {
+                        for user_verification in OPTION_BOOL_VALUES {
+                            let req = MakeCredentials::new(
+                                client_data_hash.clone(),
+                                RelyingParty {
+                                    id: String::from("example.com"),
+                                    name: rp_name.clone(),
+                                },
+                                Some(PublicKeyCredentialUserEntity {
+                                    id: vec![0x01; 32],
+                                    name: user_name.clone(),
+                                    display_name: display_name.clone(),
+                                }),
+                                vec![PublicKeyCredentialParameters {
+                                    alg: COSEAlgorithm::ES256,
+                                }],
+                                Vec::new(),
+                                MakeCredentialsOptions {
+                                    resident_key,
+                                    user_verification,
+                                },
+                                Default::default(),
+                            );
+                            assert_canonical_cbor_encoding(&req);
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

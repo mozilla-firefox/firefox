@@ -43,10 +43,10 @@ use std::io::Cursor;
 #[derive(Clone, Copy, Debug, Serialize)]
 #[cfg_attr(test, derive(Deserialize))]
 pub struct GetAssertionOptions {
-    #[serde(rename = "uv", skip_serializing_if = "Option::is_none")]
-    pub user_verification: Option<bool>,
     #[serde(rename = "up", skip_serializing_if = "Option::is_none")]
     pub user_presence: Option<bool>,
+    #[serde(rename = "uv", skip_serializing_if = "Option::is_none")]
+    pub user_verification: Option<bool>,
 }
 
 impl Default for GetAssertionOptions {
@@ -203,8 +203,11 @@ impl HmacSecretExtension {
             (Ok(salt1), None) => secret.encrypt(&salt1),
             (Ok(salt1), Some(Ok(salt2))) => secret.encrypt(&[salt1, salt2].concat()),
             (Err(_), _) | (_, Some(Err(_))) => {
-                debug!("Invalid hmac-secret salt length(s): salt1: {}, salt2: {:?} (expected 32 and 32|None)",
-                       self.salt1.len(), self.salt2.as_ref().map(Vec::len));
+                debug!(
+                    "Invalid hmac-secret salt length(s): salt1: {}, salt2: {:?} (expected 32 and 32|None)",
+                    self.salt1.len(),
+                    self.salt2.as_ref().map(Vec::len)
+                );
                 Err(CryptoError::WrongSaltLength)
             }
         }?;
@@ -424,7 +427,9 @@ impl GetAssertion {
                     };
             }
             Some(HmacGetSecretOrPrf::PrfUninitialized(_)) => {
-                unreachable!("Reached GetAssertion.finalize_result without replacing PrfUninitialized instance with Prf")
+                unreachable!(
+                    "Reached GetAssertion.finalize_result without replacing PrfUninitialized instance with Prf"
+                )
             }
             Some(HmacGetSecretOrPrf::PrfUnmatched) => {
                 result.extensions.prf = Some(AuthenticationExtensionsPRFOutputs {
@@ -2059,6 +2064,49 @@ pub mod test {
         0x05, // unsigned(5)
         0x01, // unsigned(1)
     ];
+
+    /// Test canonical encoding of GetAssertion requests.
+    #[test]
+    fn test_cbor_canonical() {
+        const OPTION_BOOL_VALUES: [Option<bool>; 3] = [None, Some(false), Some(true)];
+        let allow_lists = vec![
+            // Resident
+            vec![],
+            // Non-resident
+            vec![PublicKeyCredentialDescriptor {
+                id: vec![0x67; 67],
+                transports: vec![Transport::USB],
+            }],
+        ];
+
+        let client_data_hash = CollectedClientData {
+            webauthn_type: WebauthnType::Get,
+            challenge: Challenge::from(vec![0x00, 0x01, 0x02, 0x03]),
+            origin: String::from("example.com"),
+            cross_origin: false,
+            token_binding: None,
+        }
+        .hash()
+        .expect("failed to serialize client data");
+
+        for allow_list in allow_lists {
+            for user_presence in OPTION_BOOL_VALUES {
+                for user_verification in OPTION_BOOL_VALUES {
+                    let assertion = GetAssertion::new(
+                        client_data_hash.clone(),
+                        RelyingParty::from("example.com"),
+                        allow_list.clone(),
+                        GetAssertionOptions {
+                            user_presence,
+                            user_verification,
+                        },
+                        Default::default(),
+                    );
+                    assert_canonical_cbor_encoding(&assertion);
+                }
+            }
+        }
+    }
 
     mod hmac_secret {
         use std::convert::TryFrom;

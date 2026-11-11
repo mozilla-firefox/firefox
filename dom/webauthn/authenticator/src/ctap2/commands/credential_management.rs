@@ -550,6 +550,7 @@ mod test {
                 .set_pin_uv_auth_param(Some(token.clone()))
                 .expect("set_pin_uv_auth_param failed");
             assert!(request.pin_uv_auth_param.is_none());
+            assert_canonical_cbor_encoding(&request);
             let wire = request.wire_format().expect("wire_format failed");
             // Only the subCommand (0x01) is sent: {1: 3} or {1: 5}
             assert_eq!(wire.len(), 3);
@@ -565,6 +566,7 @@ mod test {
                 .set_pin_uv_auth_param(Some(token.clone()))
                 .expect("set_pin_uv_auth_param failed");
             assert!(request.pin_uv_auth_param.is_some());
+            assert_canonical_cbor_encoding(&request);
         }
     }
 }
