@@ -330,8 +330,7 @@ When a raw value becomes a token, take the token the property type's
 (`Size` maps `0.75rem` to the 12px `--size-item-xsmall`). Don't take a larger
 one that renders nearer the original at chrome's smaller root: the whole scale
 shrinks together, so compensating at one call site breaks its rank against the
-spacing around it. Delete a `stylelint-disable-next-line … use-design-tokens`
-above a declaration you convert; the rule wanted a token there.
+spacing around it.
 
 Measure; the system font varies. Before quoting what a rem token computes to,
 read §1 "One launch sweeps every platform's root size" in
