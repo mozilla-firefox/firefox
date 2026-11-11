@@ -148,6 +148,95 @@ class InteractableListTest {
     }
 
     @Test
+    fun `GIVEN the dragged item is below a third of the first visible item WHEN gatherCandidates is called THEN no top Scroll candidate is created`() {
+        val draggedItem = InteractionState.List.Active(index = 1, key = "key", size = 10, initialOffset = 5f)
+
+        val candidates = scrollCandidates(draggedItem)
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the dragged item is inside the list WHEN gatherCandidates is called THEN no Scroll candidate is created`() {
+        val draggedItem =
+            InteractionState.List.Active(
+                index = 1,
+                key = "key",
+                size = 40,
+                initialOffset = 10f,
+                cumulatedOffset = -5f,
+            )
+
+        val candidates = scrollCandidates(draggedItem, scrollZoneHeight = 30f)
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the dragged item went past the start of the list WHEN gatherCandidates is called THEN top Scroll candidate is created`() {
+        val draggedItem =
+            InteractionState.List.Active(
+                index = 1,
+                key = "key",
+                size = 40,
+                initialOffset = 0f,
+                cumulatedOffset = -5f,
+            )
+
+        val candidates = scrollCandidates(draggedItem, scrollZoneHeight = 30f)
+
+        assertEquals(1, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the dragged item went past the start of the list but is dragged down WHEN gatherCandidates is called THEN no Scroll candidate is created`() {
+        val draggedItem =
+            InteractionState.List.Active(
+                index = 1,
+                key = "key",
+                size = 4,
+                initialOffset = -10f,
+                cumulatedOffset = 2f,
+            )
+
+        val candidates = scrollCandidates(draggedItem, scrollZoneHeight = 30f)
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the dragged item is inside the list near its end WHEN gatherCandidates is called THEN no bottom Scroll candidate is created`() {
+        val draggedItem =
+            InteractionState.List.Active(
+                index = 1,
+                key = "key",
+                size = 4,
+                initialOffset = 4f,
+                cumulatedOffset = 2f,
+            )
+
+        val candidates = scrollCandidates(draggedItem, scrollZoneHeight = 30f, totalItems = 5)
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the dragged item went past the end of the list WHEN gatherCandidates is called THEN bottom Scroll candidate is created`() {
+        val draggedItem =
+            InteractionState.List.Active(
+                index = 1,
+                key = "key",
+                size = 4,
+                initialOffset = 8f,
+                cumulatedOffset = 5f,
+            )
+
+        val candidates = scrollCandidates(draggedItem, scrollZoneHeight = 30f, totalItems = 5)
+
+        assertEquals(1, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
     fun `GIVEN the last visible item is not the last in the list AND dragged item is at bottom of viewport WHEN gatherCandidates is called THEN bottom Scroll candidate is created`() {
         val listState =
             mockListState(
@@ -820,6 +909,36 @@ class InteractableListTest {
         assertEquals(InteractionState.List.None, reorderState.hoveredItem)
         assertNull(reorderState.highlightedRect)
         assertEquals(InteractionMode.List.None, reorderState.interactionMode)
+    }
+
+    /**
+     * The candidates for [draggedItem] in a viewport of 10, where the first visible item is not the first of the list.
+     *
+     * @param totalItems Number of items in the list, only more than 3 allows a bottom Scroll candidate.
+     */
+    private fun scrollCandidates(
+        draggedItem: InteractionState.List.Active,
+        scrollZoneHeight: Float? = null,
+        totalItems: Int = 3,
+    ): List<ListInteractionCandidate> {
+        val listState =
+            mockListState(
+                listOf(mockListItem("key", index = 1), mockListItem(TabKeys.TAB_BETA, index = 2)),
+                firstVisibleIndex = 1,
+                totalItems = totalItems,
+            )
+        return gatherCandidates(
+            listState = listState,
+            draggedItemOffset =
+                ListItemOffset(
+                    draggedItem = draggedItem,
+                    draggingItemOffset = draggedItem.initialOffset,
+                    itemSize = draggedItem.size,
+                ),
+            draggedItem = draggedItem,
+            ignoredItems = defaultIgnoredItems,
+            scrollZoneHeight = scrollZoneHeight,
+        )
     }
 
     private fun mockListItem(

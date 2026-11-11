@@ -433,6 +433,7 @@ projects:
     publish: true
     upstream_dependencies:
     - components:compose-base
+    - components:compose-draggable
     - components:concept-base
     - components:concept-fetch
     - components:lib-publicsuffixlist

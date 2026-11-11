@@ -16,6 +16,7 @@ projects:
     - components:compose-awesomebar
     - components:compose-base
     - components:compose-cfr
+    - components:compose-draggable
     - components:compose-menu
     - components:concept-awesomebar
     - components:concept-base

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,9 +39,13 @@ import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.draggable.detectListPressAndDrag
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
 import mozilla.components.compose.menu.ui.utils.customizeMenuPreviewData
 import mozilla.components.lib.state.ext.observeAsComposableState
 
@@ -96,13 +101,19 @@ private fun CustomizeMenuList(
     onPreviewClick: () -> Unit,
 ) {
     val menuState by store.observeAsComposableState { it }
-    val (hiddenGroups, shownGroups) =
-        remember(menuState.menuGroups, menuState.hiddenGroupIds) {
-            menuState.menuGroups.partition { it.id in menuState.hiddenGroupIds }
-        }
+    val listState = rememberLazyListState()
+    val drag = rememberCustomizeMenuDragState(store, menuState, listState)
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier =
+            Modifier.fillMaxSize()
+                .detectListPressAndDrag(
+                    listState = listState,
+                    interactionState = drag.interactionState,
+                    shouldLongPressToDrag = true,
+                ),
+        state = listState,
+        userScrollEnabled = !drag.isDragging,
         contentPadding =
             PaddingValues.Absolute(
                 left = leftPadding,
@@ -112,37 +123,29 @@ private fun CustomizeMenuList(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
     ) {
-        item(key = CustomizeMenuItemKey.DRAG_BAR) {
+        item(key = DRAG_BAR) {
             CustomizeMenuDragBar(onPreviewClick)
         }
 
-        customizeMenuGroups(
-            menuGroups = shownGroups,
-            mandatoryGroupIds = menuState.mandatoryGroupIds,
-        )
+        customizeMenuGroups(menuGroups = drag.groups.shown, drag = drag, firstIndex = 1)
 
-        item(key = CustomizeMenuItemKey.HIDDEN_SECTIONS) {
-            CustomizeMenuHiddenSections(hiddenGroups.isNotEmpty())
+        item(key = HIDDEN_SECTIONS) {
+            CustomizeMenuHiddenSections(drag.groups.hidden.isNotEmpty())
         }
 
         customizeMenuGroups(
-            menuGroups = hiddenGroups,
+            menuGroups = drag.groups.hidden,
+            drag = drag,
+            firstIndex = drag.firstHiddenIndex,
             isHidden = true,
         )
 
         if (menuState.isCustomized) {
-            item(key = CustomizeMenuItemKey.RESET_BUTTON) {
+            item(key = RESET_BUTTON) {
                 CustomizeMenuResetButton(onClick = onResetToDefault)
             }
         }
     }
-}
-
-/** Keys of the items of the customize menu screen which are not menu groups that the user can reorder. */
-private enum class CustomizeMenuItemKey {
-    DRAG_BAR,
-    HIDDEN_SECTIONS,
-    RESET_BUTTON,
 }
 
 @Composable

@@ -35,8 +35,10 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import kotlin.math.abs
@@ -61,6 +63,9 @@ import kotlinx.coroutines.launch
  * @param dragAndDropEnabled Whether the drag and drop feature is enabled for this list.
  * @param fixedItems Set of keys for items that cannot be dragged but that other items can be moved next to or dropped
  *   onto.
+ * @param scrollZoneHeight Height of the areas at the start and at the end of the list in which the center of a dragged
+ *   item scrolls it, once the item went past the edge of the list there. `null` for a third of the first visible item,
+ *   whether the dragged item went past the edge or not.
  */
 @Composable
 fun createListInteractionState(
@@ -71,10 +76,12 @@ fun createListInteractionState(
     itemInteractionHandler: ItemInteractionHandler,
     dragAndDropEnabled: Boolean = true,
     fixedItems: Set<Any> = emptySet(),
+    scrollZoneHeight: Dp? = null,
 ): ListInteractionState {
     val scope = rememberCoroutineScope()
     val touchSlop = LocalViewConfiguration.current.touchSlop
     val hapticFeedback = LocalHapticFeedback.current
+    val scrollZoneHeightPx = scrollZoneHeight?.let { with(LocalDensity.current) { it.toPx() } }
     val state =
         remember(listState) {
             ListInteractionStateImpl(
@@ -84,6 +91,7 @@ fun createListInteractionState(
                 hapticFeedback = hapticFeedback,
                 ignoredItems = ignoredItems,
                 fixedItems = fixedItems,
+                scrollZoneHeight = scrollZoneHeightPx,
                 onLongPress = onLongPress,
                 itemInteractionHandler = itemInteractionHandler,
                 dragAndDropEnabled = dragAndDropEnabled,
@@ -93,6 +101,7 @@ fun createListInteractionState(
     SideEffect {
         state.ignoredItems = ignoredItems
         state.fixedItems = fixedItems
+        state.scrollZoneHeight = scrollZoneHeightPx
         state.itemInteractionHandler = itemInteractionHandler
         state.dragAndDropEnabled = dragAndDropEnabled
         state.liveReorderEnabled = liveReorderEnabled
@@ -192,6 +201,9 @@ interface ListInteractionState {
  * @param onLongPress Optional callback to be invoked when long pressing an item.
  * @param fixedItems Set of keys for items that cannot be dragged but that other items can be moved next to or dropped
  *   onto.
+ * @param scrollZoneHeight Height in pixels of the areas at the start and at the end of the list in which the center of
+ *   a dragged item scrolls it, once the item went past the edge of the list there. `null` for a third of the first
+ *   visible item, whether the dragged item went past the edge or not.
  */
 internal class ListInteractionStateImpl(
     private val listState: LazyListState,
@@ -204,6 +216,7 @@ internal class ListInteractionStateImpl(
     var liveReorderEnabled: Boolean,
     var onLongPress: (LazyListItemInfo) -> Unit = {},
     var fixedItems: Set<Any> = emptySet(),
+    var scrollZoneHeight: Float? = null,
 ) : ListInteractionState {
     override var draggedItem by mutableStateOf<InteractionState.List>(InteractionState.List.None)
         private set
@@ -449,6 +462,7 @@ internal class ListInteractionStateImpl(
                 itemOffset = itemOffset,
                 ignoredItems = ignoredItems,
                 dragAndDropEnabled = dragAndDropEnabled,
+                scrollZoneHeight = scrollZoneHeight,
             )
         // Debounce duplicate reorder events.
         // Note that multiple duplicate scroll events are valid
@@ -479,6 +493,7 @@ private fun determineInteractionMode(
     itemOffset: ListItemOffset,
     ignoredItems: Set<Any>,
     dragAndDropEnabled: Boolean,
+    scrollZoneHeight: Float?,
 ): InteractionMode.List {
     if (listState.isScrollInProgress) return InteractionMode.List.None
     if (draggedItem is InteractionState.List.None) return InteractionMode.List.None
@@ -489,6 +504,7 @@ private fun determineInteractionMode(
                 draggedItemOffset = itemOffset,
                 draggedItem = draggedItem,
                 ignoredItems = ignoredItems,
+                scrollZoneHeight = scrollZoneHeight,
             )
             .filter { item ->
                 // Filter out the drag and drop interaction type if it is disabled, as in private tabs
@@ -572,16 +588,21 @@ internal fun Rect.closestPointTo(offset: Float): Float {
 private fun getScrollCandidates(
     listState: LazyListState,
     draggedItemOffset: ListItemOffset,
+    scrollZoneHeight: Float?,
 ): List<ListInteractionCandidate> {
     val firstVisible = listState.layoutInfo.visibleItemsInfo.firstOrNull() ?: return emptyList()
     val candidates = mutableListOf<ListInteractionCandidate>()
     val scrollRectSize =
         Size(
             width = listState.layoutInfo.viewportSize.width.toFloat(),
-            height = firstVisible.size / 3.0f,
+            height = scrollZoneHeight ?: (firstVisible.size / 3.0f),
         )
+    // Given a height, the areas only scroll when the dragged item went past the edge of the list, as that scrolls it.
+    val overscroll = scrollZoneHeight?.let {
+        findOverscroll(draggedItemOffset.draggedItem, draggedItemOffset, listState)
+    }
     // Scroll up can only be a candidate if we are not at the top of the view
-    if (listState.firstVisibleItemIndex > 0) {
+    if (listState.firstVisibleItemIndex > 0 && (overscroll == null || overscroll < 0f)) {
         val scrollUpRect =
             Rect(
                 offset = Offset(0f, 0f),
@@ -599,7 +620,10 @@ private fun getScrollCandidates(
     }
     // Scroll down can only be a candidate if we are not at the bottom of the view
     val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull() ?: return candidates
-    if (lastVisibleItemIndex(listState) < listState.layoutInfo.totalItemsCount - 1) {
+    if (
+        lastVisibleItemIndex(listState) < listState.layoutInfo.totalItemsCount - 1 &&
+            (overscroll == null || overscroll > 0f)
+    ) {
         val scrollDownRect =
             Rect(
                 offset = Offset(0f, listState.layoutInfo.viewportSize.height - scrollRectSize.height),
@@ -627,6 +651,7 @@ internal fun gatherCandidates(
     draggedItemOffset: ListItemOffset,
     draggedItem: InteractionState,
     ignoredItems: Set<Any>,
+    scrollZoneHeight: Float? = null,
 ): List<ListInteractionCandidate> {
     val candidates = mutableListOf<ListInteractionCandidate>()
     candidates.addAll(
@@ -634,6 +659,7 @@ internal fun gatherCandidates(
             getScrollCandidates(
                 listState = listState,
                 draggedItemOffset = draggedItemOffset,
+                scrollZoneHeight = scrollZoneHeight,
             )
     )
     for (itemCandidate in listState.layoutInfo.visibleItemsInfo) {
