@@ -8,25 +8,32 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
@@ -52,42 +59,90 @@ fun CustomizeMenuContent(
     onResetToDefault: () -> Unit = {},
     onPreviewClick: () -> Unit = {},
 ) {
-    Column(
+    val windowWidth = LocalWindowInfo.current.containerSize.width
+    // How far right of the center of the window this is, when beside a larger notch than navigation bar for example.
+    var offCenter by remember { mutableFloatStateOf(0f) }
+    // The list takes the whole width, to be scrolled from anywhere, with its items no wider than the maximum width.
+    BoxWithConstraints(
         modifier =
-            modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Column(modifier = Modifier.widthIn(max = AcornTheme.layout.size.containerMaxWidth).fillMaxWidth()) {
-            CustomizeMenuDragBar(onPreviewClick = onPreviewClick)
-
-            val menuState by store.observeAsComposableState { it }
-            val (hiddenGroups, shownGroups) =
-                remember(menuState.menuGroups, menuState.hiddenGroupIds) {
-                    menuState.menuGroups.partition { it.id in menuState.hiddenGroupIds }
-                }
-
-            CustomizeMenu(
-                menuGroups = shownGroups,
-                mandatoryGroupIds = menuState.mandatoryGroupIds,
-            )
-
-            CustomizeMenuHiddenSections(hasHiddenItems = hiddenGroups.isNotEmpty())
-
-            if (hiddenGroups.isNotEmpty()) {
-                CustomizeMenu(
-                    menuGroups = hiddenGroups,
-                    isHidden = true,
-                )
+            modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer).onGloballyPositioned {
+                offCenter = it.positionInWindow().x + (it.size.width - windowWidth) / 2f
             }
+    ) {
+        val freeWidth =
+            if (constraints.hasBoundedWidth) {
+                (maxWidth - AcornTheme.layout.size.containerMaxWidth).coerceAtLeast(0.dp)
+            } else {
+                0.dp
+            }
+        // The items are centered in the window, as far as the free width allows.
+        val shift = with(LocalDensity.current) { offCenter.toDp() }.coerceIn(-freeWidth / 2, freeWidth / 2)
+        CustomizeMenuList(
+            store = store,
+            leftPadding = freeWidth / 2 - shift,
+            rightPadding = freeWidth / 2 + shift,
+            onResetToDefault = onResetToDefault,
+            onPreviewClick = onPreviewClick,
+        )
+    }
+}
 
-            if (menuState.isCustomized) {
+@Composable
+private fun CustomizeMenuList(
+    store: CustomizableMenuStore,
+    leftPadding: Dp,
+    rightPadding: Dp,
+    onResetToDefault: () -> Unit,
+    onPreviewClick: () -> Unit,
+) {
+    val menuState by store.observeAsComposableState { it }
+    val (hiddenGroups, shownGroups) =
+        remember(menuState.menuGroups, menuState.hiddenGroupIds) {
+            menuState.menuGroups.partition { it.id in menuState.hiddenGroupIds }
+        }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding =
+            PaddingValues.Absolute(
+                left = leftPadding,
+                right = rightPadding,
+                bottom = AcornTheme.layout.space.static300,
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
+    ) {
+        item(key = CustomizeMenuItemKey.DRAG_BAR) {
+            CustomizeMenuDragBar(onPreviewClick)
+        }
+
+        customizeMenuGroups(
+            menuGroups = shownGroups,
+            mandatoryGroupIds = menuState.mandatoryGroupIds,
+        )
+
+        item(key = CustomizeMenuItemKey.HIDDEN_SECTIONS) {
+            CustomizeMenuHiddenSections(hiddenGroups.isNotEmpty())
+        }
+
+        customizeMenuGroups(
+            menuGroups = hiddenGroups,
+            isHidden = true,
+        )
+
+        if (menuState.isCustomized) {
+            item(key = CustomizeMenuItemKey.RESET_BUTTON) {
                 CustomizeMenuResetButton(onClick = onResetToDefault)
             }
         }
     }
+}
+
+/** Keys of the items of the customize menu screen which are not menu groups that the user can reorder. */
+private enum class CustomizeMenuItemKey {
+    DRAG_BAR,
+    HIDDEN_SECTIONS,
+    RESET_BUTTON,
 }
 
 @Composable
@@ -100,8 +155,10 @@ private fun CustomizeMenuResetButton(
             modifier
                 .fillMaxWidth()
                 .padding(
-                    horizontal = AcornTheme.layout.space.static200,
-                    vertical = AcornTheme.layout.space.static300,
+                    start = AcornTheme.layout.space.static200,
+                    top = AcornTheme.layout.space.static300 + AcornTheme.layout.space.static150,
+                    end = AcornTheme.layout.space.static200,
+                    bottom = 0.dp,
                 ),
         contentAlignment = Alignment.Center,
     ) {
@@ -156,7 +213,7 @@ private fun CustomizeMenuHiddenSections(hasHiddenItems: Boolean, modifier: Modif
                         start = AcornTheme.layout.space.static200,
                         end = AcornTheme.layout.space.static100,
                         top = AcornTheme.layout.space.static100,
-                        bottom = AcornTheme.layout.space.static100,
+                        bottom = AcornTheme.layout.space.static50,
                     )
                     .wrapContentHeight(Alignment.CenterVertically),
             style = AcornTheme.typography.headline8,
@@ -169,8 +226,8 @@ private fun CustomizeMenuHiddenSections(hasHiddenItems: Boolean, modifier: Modif
                     Modifier.fillMaxWidth()
                         .padding(
                             start = AcornTheme.layout.space.static200,
+                            top = AcornTheme.layout.space.static150,
                             end = AcornTheme.layout.space.static200,
-                            bottom = AcornTheme.layout.space.static300,
                         )
                         .hiddenSectionBorder()
                         .defaultMinSize(minHeight = 72.dp),

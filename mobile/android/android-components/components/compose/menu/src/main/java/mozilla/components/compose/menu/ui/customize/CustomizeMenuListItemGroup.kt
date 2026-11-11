@@ -4,6 +4,7 @@
 
 package mozilla.components.compose.menu.ui.customize
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
@@ -40,7 +42,7 @@ private const val PEEK_RATIO = 4f / 7f
 
 /**
  * Display a list of [MenuItem]s as a vertical list, showing only the first [COLLAPSED_ITEMS_COUNT] of them, the last
- * only partly and fading out. Lists with fewer items are shown in full.
+ * only partly with its content fading out. Lists with fewer items are shown in full.
  *
  * @param items The list of [MenuItem]s to display.
  * @param modifier The modifier to apply to this layout.
@@ -60,7 +62,7 @@ internal fun CustomizeMenuListItemGroup(
     Column(
         modifier =
             modifier
-                .let { if (isCollapsed) it.fadeBottomGradient(contentAlpha) else it.alpha(contentAlpha) }
+                .alpha(contentAlpha)
                 .clip(shape = MaterialTheme.shapes.extraLarge)
                 .menuListGroupSemantics(shownItems.size),
         verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static25),
@@ -72,11 +74,16 @@ internal fun CustomizeMenuListItemGroup(
                     color = MaterialTheme.colorScheme.outlineVariant,
                 )
             }
+            val itemShape = getListItemShape(itemIndex = index, totalItems = shownItems.size)
+            val isPeeked = isCollapsed && index == shownItems.lastIndex
             MenuListItem(
                 title = item.title,
                 modifier =
-                    Modifier.let { if (isCollapsed && index == shownItems.lastIndex) it.peekOnly() else it }
-                        .clip(getListItemShape(itemIndex = index, totalItems = shownItems.size)),
+                    if (isPeeked) {
+                        Modifier.peeked(containerColor = MaterialTheme.colorScheme.surfaceBright, shape = itemShape)
+                    } else {
+                        Modifier.clip(itemShape)
+                    },
                 index = index,
                 onClickEvent = null,
                 onInteraction = {},
@@ -98,22 +105,35 @@ private fun Modifier.peekOnly() = layout { measurable, constraints ->
     layout(placeable.width, (placeable.height * PEEK_RATIO).roundToInt()) { placeable.place(0, 0) }
 }
 
-/** Fade out the bottom of this, with the given [alpha] applied to the result. */
+/**
+ * Show only the [PEEK_RATIO] of the height of this, in the given [shape], with its content fading out at the bottom
+ * while its container stays solid.
+ *
+ * @param containerColor The color of the container of this, which is drawn by this and its content as well.
+ * @param shape The [Shape] to clip this to.
+ */
 @Composable
-private fun Modifier.fadeBottomGradient(alpha: Float): Modifier {
+private fun Modifier.peeked(containerColor: Color, shape: Shape) =
+    peekOnly().background(containerColor, shape).fadeOutBottom(shape)
+
+/** Clip this to [shape] and fade out its bottom, up to the [PEEK_RATIO] of its height, with what it draws. */
+@Composable
+private fun Modifier.fadeOutBottom(shape: Shape): Modifier {
     val fadeHeight = AcornTheme.layout.space.static200
-    return this.graphicsLayer(alpha = alpha, compositingStrategy = CompositingStrategy.Offscreen).drawWithCache {
-        val brush =
-            Brush.verticalGradient(
-                colors = listOf(Color.Black, Color.Transparent),
-                startY = maxOf(0f, size.height - fadeHeight.toPx()),
-                endY = size.height,
-            )
-        onDrawWithContent {
-            drawContent()
-            drawRect(brush = brush, blendMode = BlendMode.DstIn)
+    return graphicsLayer(shape = shape, clip = true, compositingStrategy = CompositingStrategy.Offscreen)
+        .drawWithCache {
+            val visibleHeight = size.height * PEEK_RATIO
+            val brush =
+                Brush.verticalGradient(
+                    colors = listOf(Color.Black, Color.Transparent),
+                    startY = maxOf(0f, visibleHeight - fadeHeight.toPx()),
+                    endY = visibleHeight,
+                )
+            onDrawWithContent {
+                drawContent()
+                drawRect(brush = brush, blendMode = BlendMode.DstIn)
+            }
         }
-    }
 }
 
 @PreviewLightDark
