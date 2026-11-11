@@ -10,7 +10,7 @@ use crate::command_buffer::CommandBufferIndex;
 use crate::pattern::image::ImagePattern;
 use crate::quad::{self, QuadDescriptor, QuadTransformState};
 use crate::quad_clip::QuadClipStack;
-use crate::render_task_cache::{RenderTaskCacheKey, RenderTaskCacheKeyKind, RenderTaskParent, to_cache_size};
+use crate::render_task_cache::RenderTaskParent;
 use crate::frame_builder::{FrameBuildingContext, FrameBuildingState};
 use crate::dl_interner::{DlResolve, DlResolveContext};
 use crate::prim_store::{
@@ -218,29 +218,14 @@ impl NormalBorderData {
                 continue;
             }
 
-            // Update the cache key device size based on requested scale.
-            let cache_size = to_cache_size(segment.task_size, &mut scale);
-            let cache_key = RenderTaskCacheKey {
-                kind: RenderTaskCacheKeyKind::BorderSegment(segment.cache_key.clone()),
-                origin: DeviceIntPoint::zero(),
-                size: cache_size,
-            };
-
             // TODO(gw): We don't calculate opacity for borders yet!
             let is_opaque = false;
 
-            let task_id = frame_state.resource_cache.request_render_task(
-                Some(cache_key),
-                is_opaque,
+            let (task_id, cache_size) = segment.request_render_task(
+                &border,
+                &mut scale,
                 RenderTaskParent::Surface,
-                &mut frame_state.frame_gpu_data.f32,
-                frame_state.rg_builder,
-                &mut frame_state.surface_builder,
-                &mut |rg_builder, gpu_buffer_builder| {
-                    rg_builder.add().init(segment.render_task(
-                        cache_size, &border, scale, gpu_buffer_builder,
-                    ))
-                }
+                frame_state,
             );
 
             let pattern = ImagePattern {
