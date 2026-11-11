@@ -1407,6 +1407,9 @@ inline LiveGeneralRegisterSet SavedNonVolatileRegisters(
 #elif defined(JS_CODEGEN_MIPS64) || defined(JS_CODEGEN_LOONG64) || \
     defined(JS_CODEGEN_RISCV64)
   result.add(Register::FromCode(Registers::ra));
+#elif defined(JS_CODEGEN_X64)
+  // ScratchReg (rbx) is non-volatile but not allocatable.
+  result.add(Register::FromCode(X86Encoding::rbx));
 #endif
 
   return result;

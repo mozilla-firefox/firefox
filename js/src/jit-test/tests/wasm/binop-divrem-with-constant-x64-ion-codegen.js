@@ -639,12 +639,12 @@ const i64_rem_s = [
                mov %rcx, %rax
                test %rax, %rax
                js 0x${HEX}+
-               mov \\$0x7FFFFFFFFFFFFFFF, %r11
-               and %r11, %rax
+               mov \\$0x7FFFFFFFFFFFFFFF, %rbx
+               and %rbx, %rax
                jmp 0x${HEX}+
                neg %rax
-               mov \\$0x7FFFFFFFFFFFFFFF, %r11
-               and %r11, %rax
+               mov \\$0x7FFFFFFFFFFFFFFF, %rbx
+               and %rbx, %rax
                neg %rax`,
   },
 
@@ -657,8 +657,8 @@ const i64_rem_s = [
                mov %rdi, %rax
                sar \\$0x3F, %rax
                sub %rax, %rdx
-               mov \\$0x300000000, %r11
-               imul %r11, %rdx
+               mov \\$0x300000000, %rbx
+               imul %rbx, %rdx
                mov %rdi, %rax
                sub %rdx, %rax`,
     negative: `mov \\$0x2AAAAAAAAAAAAAAB, %rax
@@ -668,8 +668,8 @@ const i64_rem_s = [
                sar \\$0x3F, %rax
                sub %rax, %rdx
                neg %rdx
-               mov \\$-0x300000000, %r11
-               imul %r11, %rdx
+               mov \\$-0x300000000, %rbx
+               imul %rbx, %rdx
                mov %rdi, %rax
                sub %rdx, %rax`,
   },
@@ -747,8 +747,8 @@ const i64_rem_u = [
     divisor: 0x8000_0000_0000_0000n,
     expected: `mov %rdi, %rcx
                mov %rcx, %rax
-               mov \\$0x7FFFFFFFFFFFFFFF, %r11
-               and %r11, %rax`,
+               mov \\$0x7FFFFFFFFFFFFFFF, %rbx
+               and %rbx, %rax`,
   },
 
   // Other divisors.
@@ -757,8 +757,8 @@ const i64_rem_u = [
     expected: `mov \\$-0x5555555555555555, %rax
                mul %rdi
                shr \\$0x21, %rdx
-               mov \\$0x300000000, %r11
-               imul %r11, %rdx
+               mov \\$0x300000000, %rbx
+               imul %rbx, %rdx
                mov %rdi, %rax
                sub %rdx, %rax`,
   },

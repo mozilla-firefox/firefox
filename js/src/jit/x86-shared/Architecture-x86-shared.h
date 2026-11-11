@@ -135,7 +135,7 @@ class Registers {
 
   static const SetType NonAllocatableMask =
       (1 << X86Encoding::rsp) | (1 << X86Encoding::rbp) |
-      (1 << X86Encoding::r11);  // This is ScratchReg.
+      (1 << X86Encoding::rbx);  // This is ScratchReg.
 
   // Registers returned from a JS -> JS call.
   static const SetType JSCallMask = (1 << X86Encoding::rcx);

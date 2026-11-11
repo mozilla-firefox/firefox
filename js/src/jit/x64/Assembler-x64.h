@@ -85,7 +85,7 @@ static constexpr Register JSReturnReg = rcx;
 static constexpr Register JSReturnReg_Type = JSReturnReg;
 static constexpr Register JSReturnReg_Data = JSReturnReg;
 
-static constexpr Register ScratchReg = r11;
+static constexpr Register ScratchReg = rbx;
 
 // Helper class for ScratchRegister usage. Asserts that only one piece
 // of code thinks it has exclusive ownership of the scratch register.
@@ -112,7 +112,7 @@ static constexpr FloatRegister ScratchSimd128Reg =
 // Avoid rbp, which is the FramePointer, which is unavailable in some modes.
 static constexpr Register CallTempReg0 = rax;
 static constexpr Register CallTempReg1 = rdi;
-static constexpr Register CallTempReg2 = rbx;
+static constexpr Register CallTempReg2 = r11;
 static constexpr Register CallTempReg3 = rcx;
 static constexpr Register CallTempReg4 = rsi;
 static constexpr Register CallTempReg5 = rdx;
@@ -126,7 +126,7 @@ static constexpr Register IntArgReg3 = r9;
 static constexpr uint32_t NumIntArgRegs = 4;
 static constexpr Register IntArgRegs[NumIntArgRegs] = {rcx, rdx, r8, r9};
 
-static constexpr Register CallTempNonArgRegs[] = {rax, rdi, rbx, rsi};
+static constexpr Register CallTempNonArgRegs[] = {rax, rdi, r11, rsi};
 static constexpr uint32_t NumCallTempNonArgRegs = std::size(CallTempNonArgRegs);
 
 static constexpr FloatRegister FloatArgReg0 = xmm0;
@@ -147,7 +147,7 @@ static constexpr uint32_t NumIntArgRegs = 6;
 static constexpr Register IntArgRegs[NumIntArgRegs] = {rdi, rsi, rdx,
                                                        rcx, r8,  r9};
 
-static constexpr Register CallTempNonArgRegs[] = {rax, rbx};
+static constexpr Register CallTempNonArgRegs[] = {rax, r11};
 static constexpr uint32_t NumCallTempNonArgRegs = std::size(CallTempNonArgRegs);
 
 static constexpr FloatRegister FloatArgReg0 = xmm0;
@@ -198,9 +198,9 @@ class ABIArgGenerator : public ABIArgGeneratorShared {
 };
 
 // See "ABI special registers" in Assembler-shared.h for more information.
-// Avoid r11, which is the MacroAssembler's ScratchReg.
+// Avoid rbx, which is the MacroAssembler's ScratchReg.
 static constexpr Register ABINonArgReg0 = rax;
-static constexpr Register ABINonArgReg1 = rbx;
+static constexpr Register ABINonArgReg1 = r11;
 static constexpr Register ABINonArgReg2 = r10;
 static constexpr Register ABINonArgReg3 = r12;
 
@@ -243,7 +243,7 @@ static constexpr Register WasmTailCallFPScratchReg = ABINonArgReg3;
 // Register used as a scratch along the return path in the fast js -> wasm stub
 // code.  This must not overlap ReturnReg, JSReturnOperand, or InstanceReg.
 // It must be a volatile register.
-static constexpr Register WasmJitEntryReturnScratch = rbx;
+static constexpr Register WasmJitEntryReturnScratch = r11;
 
 static constexpr Register OsrFrameReg = IntArgReg3;
 
