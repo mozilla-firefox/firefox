@@ -148,6 +148,223 @@ describe("settings ai features", () => {
       );
     }
 
+    describe("custom widgets row", () => {
+      function assertVisibility(doc, visible) {
+        for (const id of [
+          "customWidgetsFieldset",
+          "aiControlGeneratedWidgetsSelect",
+        ]) {
+          const element = doc.getElementById(id);
+          Assert.ok(element, `${id} exists`);
+          Assert.equal(
+            BrowserTestUtils.isVisible(element),
+            visible,
+            `${id} is ${visible ? "visible" : "hidden"}`
+          );
+        }
+      }
+
+      it("shows the group only while the Labs pref is on", async () => {
+        await SpecialPowers.pushPrefEnv({
+          set: [["browser.preferences.aiControls.showUnavailable", true]],
+        });
+        prefEnvCount++;
+        Assert.ok(!Services.prefs.getBoolPref(LABS_PREF), "Labs is disabled");
+
+        await withPrefsPane("ai", async doc => {
+          const win = doc.documentGlobal;
+          const setting = win.Preferences.getSetting(
+            "aiControlGeneratedWidgetsSelect"
+          );
+          assertVisibility(doc, false);
+
+          let settingChanged = waitForSettingChange(setting);
+          await enrolInLabs();
+          await settingChanged;
+          await new Promise(resolve => win.requestAnimationFrame(resolve));
+          assertVisibility(doc, true);
+          Assert.equal(
+            doc.getElementById("aiControlGeneratedWidgetsSelect").value,
+            "enabled"
+          );
+
+          settingChanged = waitForSettingChange(setting);
+          await cleanupEnrollment();
+          await settingChanged;
+          await new Promise(resolve => win.requestAnimationFrame(resolve));
+          assertVisibility(doc, false);
+        });
+      });
+
+      it("keeps the group and reads Blocked when AI is blocked", async () => {
+        await enrolInLabs();
+        await withPrefsPane("ai", async doc => {
+          const win = doc.documentGlobal;
+          const setting = win.Preferences.getSetting(
+            "aiControlGeneratedWidgetsSelect"
+          );
+          const select = doc.getElementById("aiControlGeneratedWidgetsSelect");
+          assertVisibility(doc, true);
+          try {
+            const settingChanged = waitForSettingChange(setting);
+            await blockAllAi(doc);
+            await settingChanged;
+            await new Promise(resolve => win.requestAnimationFrame(resolve));
+            assertVisibility(doc, true);
+            Assert.equal(select.value, "blocked");
+            Assert.ok(isEnrolled(), "Labs enrolment remains active");
+          } finally {
+            await unblockAllAi(doc);
+          }
+          await new Promise(resolve => win.requestAnimationFrame(resolve));
+          assertVisibility(doc, true);
+          Assert.equal(select.value, "available");
+        });
+      });
+
+      it("offers all three options and keeps the one chosen", async () => {
+        Services.prefs.setStringPref(CONTROL_PREF, "blocked");
+        await enrolInLabs();
+        await withPrefsPane("ai", async doc => {
+          const win = doc.documentGlobal;
+          const setting = win.Preferences.getSetting(
+            "aiControlGeneratedWidgetsSelect"
+          );
+          const select = doc.getElementById("aiControlGeneratedWidgetsSelect");
+          const offered = () =>
+            [...select.querySelectorAll("moz-option")].map(o => o.value);
+          const expected = ["available", "enabled", "blocked"];
+          Assert.deepEqual(offered(), expected, "Blocked user is offered all");
+          for (const choice of ["available", "enabled", "available"]) {
+            const settingChanged = waitForSettingChange(setting);
+            await changeMozSelectValue(select, choice);
+            await settingChanged;
+            await new Promise(resolve => win.requestAnimationFrame(resolve));
+            Assert.equal(Services.prefs.getStringPref(CONTROL_PREF), choice);
+            Assert.equal(select.value, choice, `${choice} stays selected`);
+            Assert.deepEqual(offered(), expected, "All options remain");
+          }
+          Assert.ok(isEnrolled(), "Labs enrolment remains active");
+        });
+      });
+
+      it("keeps the group and enrolment when blocked from the row", async () => {
+        await enrolInLabs();
+        await withPrefsPane("ai", async doc => {
+          const win = doc.documentGlobal;
+          const select = doc.getElementById("aiControlGeneratedWidgetsSelect");
+          const settingChanged = waitForSettingChange(
+            win.Preferences.getSetting("aiControlGeneratedWidgetsSelect")
+          );
+          await changeMozSelectValue(select, "blocked");
+          await settingChanged;
+          await new Promise(resolve => win.requestAnimationFrame(resolve));
+          Assert.equal(Services.prefs.getStringPref(CONTROL_PREF), "blocked");
+          Assert.ok(isEnrolled(), "Labs enrolment remains active");
+          assertVisibility(doc, true);
+          Assert.equal(select.value, "blocked");
+        });
+      });
+
+      it("reads Blocked for a user who rejoined Labs while AI is blocked", async () => {
+        await withPrefsPane("ai", async doc => {
+          const win = doc.documentGlobal;
+          try {
+            await blockAllAi(doc);
+            const settingChanged = waitForSettingChange(
+              win.Preferences.getSetting("aiControlGeneratedWidgetsSelect")
+            );
+            await enrolInLabs();
+            await settingChanged;
+            await new Promise(resolve => win.requestAnimationFrame(resolve));
+            assertVisibility(doc, true);
+            Assert.equal(
+              doc.getElementById("aiControlGeneratedWidgetsSelect").value,
+              "blocked"
+            );
+          } finally {
+            await unblockAllAi(doc);
+          }
+        });
+      });
+
+      it("is disabled when the control is locked", async () => {
+        await enrolInLabs();
+        await withPrefsPane("ai", async doc => {
+          const win = doc.documentGlobal;
+          const setting = win.Preferences.getSetting(
+            "aiControlGeneratedWidgetsSelect"
+          );
+          try {
+            const settingChanged = waitForSettingChange(setting);
+            Services.prefs.lockPref(CONTROL_PREF);
+            setting.emit("change");
+            await settingChanged;
+            await new Promise(resolve => win.requestAnimationFrame(resolve));
+            assertVisibility(doc, true);
+            Assert.ok(
+              doc.getElementById("aiControlGeneratedWidgetsSelect").disabled,
+              "The control is disabled when locked"
+            );
+          } finally {
+            Services.prefs.unlockPref(CONTROL_PREF);
+          }
+        });
+      });
+
+      it("lists custom widgets in the block dialog only for Labs users", async () => {
+        await withPrefsPane("ai", async doc => {
+          const win = doc.documentGlobal;
+          const toggle = doc.getElementById("aiControlDefaultToggle");
+          const dialogEl = doc.querySelector("block-ai-confirmation-dialog");
+          await dialogEl.updateComplete;
+          for (const enrolled of [false, true]) {
+            if (enrolled) {
+              await enrolInLabs();
+            }
+            toggle.buttonEl.scrollIntoView();
+            await new Promise(resolve => win.requestAnimationFrame(resolve));
+            const dialogShown = BrowserTestUtils.waitForEvent(
+              dialogEl.dialog,
+              "toggle"
+            );
+            EventUtils.synthesizeMouseAtCenter(toggle.buttonEl, {}, win);
+            await dialogShown;
+            Assert.ok(dialogEl.dialog.open, "Block confirmation is open");
+            Assert.equal(
+              !!dialogEl.renderRoot.querySelector(
+                '[data-l10n-id="preferences-ai-controls-block-confirmation-custom-widgets"]'
+              ),
+              enrolled,
+              "Custom widgets are listed only for Labs users"
+            );
+            const dialogClosed = BrowserTestUtils.waitForEvent(
+              dialogEl.dialog,
+              "toggle"
+            );
+            EventUtils.synthesizeMouseAtCenter(dialogEl.cancelButton, {}, win);
+            await dialogClosed;
+            Assert.ok(!dialogEl.dialog.open, "Block confirmation is closed");
+          }
+        });
+      });
+
+      it("has its strings", async () => {
+        await enrolInLabs();
+        await withPrefsPane("ai", async doc => {
+          Assert.equal(
+            await doc.l10n.formatValue(
+              "preferences-ai-controls-block-confirmation-custom-widgets"
+            ),
+            "Custom widgets"
+          );
+          const fieldset = doc.getElementById("customWidgetsFieldset");
+          await doc.l10n.translateFragment(fieldset);
+          Assert.equal(fieldset.getAttribute("label"), "Custom widgets");
+        });
+      });
+    });
+
     it("follows the per-feature control, then the global default", () => {
       for (const [control, global, expected] of [
         ["default", "available", false],

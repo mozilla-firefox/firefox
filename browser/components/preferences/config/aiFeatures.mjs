@@ -86,6 +86,12 @@ Preferences.addSetting({
 Preferences.addSetting({ id: "aiStatesDescription" });
 Preferences.addSetting({ id: "sidebarChatbotFieldset" });
 Preferences.addSetting({
+  id: "customWidgetsFieldset",
+  deps: ["aiControlGeneratedWidgetsSelect"],
+  visible: deps => deps.aiControlGeneratedWidgetsSelect.visible,
+});
+Preferences.addSetting({ id: "customWidgetsItem" });
+Preferences.addSetting({
   id: "aiBlockedMessage",
   deps: ["aiControlDefaultToggle"],
   visible: deps => {
@@ -171,6 +177,7 @@ class BlockAiConfirmationDialog extends MozLitElement {
     this.isGlobal = !!all;
     this.headingL10nId = headingL10nId;
     this.descriptionL10nId = descriptionL10nId;
+    this.requestUpdate();
     this.updateComplete.then(() => this.dialog.showModal());
     return this.#resolvers.promise;
   }
@@ -216,6 +223,13 @@ class BlockAiConfirmationDialog extends MozLitElement {
         <li
           data-l10n-id="preferences-ai-controls-block-confirmation-sidebar-chatbot"
         ></li>
+        ${OnDeviceModelManager.isAllowed(
+          OnDeviceModelManager.features.GeneratedWidgets
+        )
+          ? html`<li
+              data-l10n-id="preferences-ai-controls-block-confirmation-custom-widgets"
+            ></li>`
+          : nothing}
       </ul>
       <p
         data-l10n-id="preferences-ai-controls-block-confirmation-features-after"
@@ -580,6 +594,15 @@ makeAiControlSetting({
   id: "aiControlSpeechRecognitionSelect",
   pref: "browser.ai.control.speechRecognition",
   feature: OnDeviceModelManager.features.SpeechRecognition,
+});
+makeAiControlSetting({
+  id: "aiControlGeneratedWidgetsSelect",
+  pref: "browser.ai.control.generatedWidgets",
+  feature: OnDeviceModelManager.features.GeneratedWidgets,
+  visible: () =>
+    OnDeviceModelManager.isAllowed(
+      OnDeviceModelManager.features.GeneratedWidgets
+    ),
 });
 
 // sidebar chatbot
@@ -1556,6 +1579,33 @@ SettingGroupManager.registerGroups({
                   },
                   { control: "hr" },
                 ],
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: "customWidgetsFieldset",
+        control: "moz-fieldset",
+        l10nId: "preferences-ai-controls-custom-widgets-group",
+        supportPage: "firefox-ai-controls",
+        headingLevel: 2,
+        controlAttrs: {
+          iconsrc: "chrome://browser/skin/topsites.svg",
+        },
+        items: [
+          {
+            id: "customWidgetsItem",
+            control: "moz-box-item",
+            items: [
+              {
+                id: "aiControlGeneratedWidgetsSelect",
+                l10nId: "preferences-ai-controls-custom-widgets-control",
+                control: "moz-select",
+                controlAttrs: {
+                  inputlayout: "inline-end",
+                },
+                options: [...AI_CONTROL_OPTIONS],
               },
             ],
           },
