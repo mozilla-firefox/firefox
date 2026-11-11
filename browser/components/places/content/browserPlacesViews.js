@@ -324,7 +324,7 @@ class PlacesViewBase {
     aPopup._emptyMenuitem = aPopup._startMarker = aPopup._endMarker = null;
   }
 
-  _cleanPopup(aPopup, aDelay) {
+  _cleanPopup(aPopup) {
     // Ensure markers are here when `invalidateContainer` is called before the
     // popup is shown, which may the case for panelviews, for example.
     this._ensureMarkers(aPopup);
@@ -332,17 +332,8 @@ class PlacesViewBase {
     let child = aPopup._startMarker;
     while (child.nextElementSibling != aPopup._endMarker) {
       let sibling = child.nextElementSibling;
-      if (sibling._placesNode && !aDelay) {
+      if (sibling._placesNode) {
         aPopup.removeChild(sibling);
-      } else if (sibling._placesNode && aDelay) {
-        // HACK (bug 733419): the popups originating from the OS X native
-        // menubar don't live-update while open, thus we don't clean it
-        // until the next popupshowing, to avoid zombie menuitems.
-        if (!aPopup._delayedRemovals) {
-          aPopup._delayedRemovals = [];
-        }
-        aPopup._delayedRemovals.push(sibling);
-        child = child.nextElementSibling;
       } else {
         child = child.nextElementSibling;
       }
@@ -853,13 +844,6 @@ class PlacesViewBase {
     let popup = aEvent.originalTarget;
 
     this._ensureMarkers(popup);
-
-    // Remove any delayed element, see _cleanPopup for details.
-    if ("_delayedRemovals" in popup) {
-      while (popup._delayedRemovals.length) {
-        popup.removeChild(popup._delayedRemovals.shift());
-      }
-    }
 
     if (popup._placesNode && PlacesUIUtils.getViewForNode(popup) == this) {
       if (this.#isPopupForRecursiveFolderShortcut(popup)) {
