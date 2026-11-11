@@ -5,7 +5,9 @@
 package org.mozilla.fenix.ui.efficiency.pageObjects
 
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
+import org.mozilla.fenix.helpers.TestHelper.appContext
 import org.mozilla.fenix.ui.efficiency.helpers.BasePage
 import org.mozilla.fenix.ui.efficiency.navigation.NavigationGraph
 import org.mozilla.fenix.ui.efficiency.navigation.NavigationOptions
@@ -27,7 +29,14 @@ class SettingsTurnOnSyncPage(composeRule: AndroidComposeTestRule<HomeActivityInt
                 listOf(
                     NavigationStep.Click(HomeSelectors.MAIN_MENU_BUTTON),
                     NavigationStep.Click(MainMenuSelectors.SETTINGS_BUTTON),
-                    NavigationStep.Click(SettingsSelectors.SIGN_IN_BUTTON),
+                    NavigationStep.Click(
+                        // The SIGN_IN_BUTTON branch can be removed once accountSettingsNewUi is enabled by default.
+                        if (appContext.components.settings.accountSettingsNewUi) {
+                            SettingsSelectors.SIGN_IN_PROMO_CARD
+                        } else {
+                            SettingsSelectors.SIGN_IN_BUTTON
+                        }
+                    ),
                 ),
         )
     }

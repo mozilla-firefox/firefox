@@ -88,6 +88,7 @@ import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.perf.ProfilerViewModel
 import org.mozilla.fenix.perf.ProfilerViewModelFactory
 import org.mozilla.fenix.settings.account.AccountUiView
+import org.mozilla.fenix.settings.account.SignInPromoPreference
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
 import org.mozilla.fenix.utils.Settings
@@ -154,6 +155,15 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
                 accountManager = requireComponents.backgroundServices.accountManager,
                 httpClient = requireComponents.core.client,
             )
+
+        requirePreference<SignInPromoPreference>(R.string.pref_key_sign_in_promo).onClick = {
+            SettingsMetrics.signIntoSync.add()
+            navigateFromSettings(
+                SettingsFragmentDirections.actionSettingsFragmentToTurnOnSyncFragment(
+                    entrypoint = FenixFxAEntryPoint.SettingsMenu
+                )
+            )
+        }
 
         addonFilePicker = AddonFilePicker(requireContext(), requireComponents.addonManager)
         addonFilePicker.registerForResults(this)

@@ -11,4 +11,7 @@ internal object AccountSettingsTestTag {
     // Sign Out Confirmation Dialog
     const val SIGN_OUT_DIALOG_CONFIRM_BUTTON = "$ACCOUNT_SETTINGS.SignOutDialog.ConfirmButton"
     const val SIGN_OUT_DIALOG_CANCEL_BUTTON = "$ACCOUNT_SETTINGS.SignOutDialog.CancelButton"
+
+    // Sign In Promo Card
+    const val SIGN_IN_PROMO_CARD = "$ACCOUNT_SETTINGS.SignInPromoCard"
 }

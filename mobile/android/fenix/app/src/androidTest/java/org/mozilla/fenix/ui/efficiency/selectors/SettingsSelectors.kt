@@ -7,6 +7,7 @@ package org.mozilla.fenix.ui.efficiency.selectors
 import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.TestHelper.appName
+import org.mozilla.fenix.settings.account.AccountSettingsTestTag
 import org.mozilla.fenix.ui.efficiency.helpers.Selector
 import org.mozilla.fenix.ui.efficiency.helpers.SelectorContainer
 import org.mozilla.fenix.ui.efficiency.helpers.SelectorGroup
@@ -298,6 +299,13 @@ object SettingsSelectors : SelectorContainer {
             value = "Sign in",
             description = "the Sign in button",
             groups = setOf(Group.SYNC),
+        )
+
+    val SIGN_IN_PROMO_CARD =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TAG,
+            value = AccountSettingsTestTag.SIGN_IN_PROMO_CARD,
+            description = "the Sign in promo card",
         )
 
     val NOTIFICATIONS_BUTTON =

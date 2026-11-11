@@ -13,6 +13,7 @@ import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.sync.Profile
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import org.mozilla.fenix.R
+import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.settings.requirePreference
 
 class AccountUiView(
@@ -23,6 +24,8 @@ class AccountUiView(
 ) {
 
     private val preferenceSignIn = fragment.requirePreference<Preference>(R.string.pref_key_sign_in)
+    private val preferenceSignInPromo =
+        fragment.requirePreference<SignInPromoPreference>(R.string.pref_key_sign_in_promo)
     private val preferenceFirefoxAccount = fragment.requirePreference<AccountPreference>(R.string.pref_key_account)
     private val preferenceFirefoxAccountAuthError =
         fragment.requirePreference<AccountAuthErrorPreference>(R.string.pref_key_account_auth_error)
@@ -45,6 +48,7 @@ class AccountUiView(
         // Signed-in, no problems.
         if (account != null && !accountManager.accountNeedsReauth()) {
             preferenceSignIn.isVisible = false
+            preferenceSignInPromo.isVisible = false
 
             accountPreferenceUpdater.update(context, profile)
 
@@ -60,13 +64,23 @@ class AccountUiView(
             accountPreferenceCategory.isVisible = true
 
             preferenceSignIn.isVisible = false
+            preferenceSignInPromo.isVisible = false
             preferenceSignIn.onPreferenceClickListener = null
 
             preferenceFirefoxAccountAuthError.email = profile?.email
 
+            // Signed-out with the new account settings UI enabled.
+        } else if (context.components.settings.accountSettingsNewUi) {
+            preferenceSignInPromo.isVisible = true
+            preferenceSignIn.isVisible = false
+            preferenceFirefoxAccount.isVisible = false
+            preferenceFirefoxAccountAuthError.isVisible = false
+            accountPreferenceCategory.isVisible = true
+
             // Signed-out.
         } else {
             preferenceSignIn.isVisible = true
+            preferenceSignInPromo.isVisible = false
             preferenceFirefoxAccount.isVisible = false
             preferenceFirefoxAccountAuthError.isVisible = false
             accountPreferenceCategory.isVisible = false

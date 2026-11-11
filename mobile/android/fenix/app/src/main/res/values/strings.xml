@@ -1202,6 +1202,12 @@
     <!-- Preference for removing FxA account -->
     <string name="preferences_sync_remove_account">Remove account</string>
 
+    <!-- Settings sign-in promo card -->
+    <!-- Sign-in promo card: Title inviting the user to sign in -->
+    <string name="sign_in_promo_title">Sign in</string>
+    <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+    <string name="sign_in_promo_description">Start syncing tabs, bookmarks, passwords, and more.</string>
+
     <!-- Pairing Feature strings -->
     <!-- Instructions on how to access pairing -->
     <string name="pair_instructions_2"><![CDATA[Scan the QR code shown at <b>firefox.com/pair</b>]]></string>

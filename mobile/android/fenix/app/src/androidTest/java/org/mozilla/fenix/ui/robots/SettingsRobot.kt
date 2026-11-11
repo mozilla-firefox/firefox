@@ -9,6 +9,8 @@ package org.mozilla.fenix.ui.robots
 import android.content.Intent
 import android.util.Log
 import androidx.compose.ui.test.junit4.ComposeTestRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import androidx.core.net.toUri
 import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
@@ -41,6 +43,7 @@ import org.hamcrest.CoreMatchers
 import org.hamcrest.CoreMatchers.endsWith
 import org.hamcrest.Matchers.allOf
 import org.mozilla.fenix.R
+import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.AppAndSystemHelper.forceCloseApp
 import org.mozilla.fenix.helpers.AppAndSystemHelper.isPackageInstalled
 import org.mozilla.fenix.helpers.Constants.LISTS_MAXSWIPES
@@ -53,6 +56,7 @@ import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithText
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeShort
+import org.mozilla.fenix.helpers.TestHelper.appContext
 import org.mozilla.fenix.helpers.TestHelper.appName
 import org.mozilla.fenix.helpers.TestHelper.hasCousin
 import org.mozilla.fenix.helpers.TestHelper.mDevice
@@ -61,6 +65,7 @@ import org.mozilla.fenix.helpers.TestHelper.scrollToElementByText
 import org.mozilla.fenix.helpers.click
 import org.mozilla.fenix.helpers.ext.waitNotNull
 import org.mozilla.fenix.settings.SupportUtils
+import org.mozilla.fenix.settings.account.AccountSettingsTestTag
 
 /** Implementation of Robot Pattern for the settings menu. */
 class SettingsRobot {
@@ -733,9 +738,16 @@ class SettingsRobot {
             composeTestRule: ComposeTestRule,
             interact: SettingsSignInToSyncRobot.() -> Unit,
         ): SettingsSignInToSyncRobot.Transition {
-            Log.i(TAG, "openTurnOnSyncMenu: Trying to click the \"Sync and save your data\" button")
-            onView(withText("Sign in")).click()
-            Log.i(TAG, "openTurnOnSyncMenu: Clicked the \"Sync and save your data\" button")
+            // The legacy "Sign in" branch can be removed once accountSettingsNewUi is enabled by default.
+            if (appContext.components.settings.accountSettingsNewUi) {
+                Log.i(TAG, "openTurnOnSyncMenu: Trying to click the \"Sign in\" promo card")
+                composeTestRule.onNodeWithTag(AccountSettingsTestTag.SIGN_IN_PROMO_CARD).performClick()
+                Log.i(TAG, "openTurnOnSyncMenu: Clicked the \"Sign in\" promo card")
+            } else {
+                Log.i(TAG, "openTurnOnSyncMenu: Trying to click the \"Sync and save your data\" button")
+                onView(withText("Sign in")).click()
+                Log.i(TAG, "openTurnOnSyncMenu: Clicked the \"Sync and save your data\" button")
+            }
 
             SettingsSignInToSyncRobot().interact()
             return SettingsSignInToSyncRobot.Transition(composeTestRule)
@@ -870,6 +882,7 @@ class SettingsRobot {
             composeTestRule: ComposeTestRule,
             interact: SettingsSubMenuPageSummariesRobot.() -> Unit,
         ): SettingsSubMenuPageSummariesRobot.Transition {
+            scrollToElementByText(getStringResource(R.string.preferences_page_summaries))
             assertUIObjectExists(itemContainingText(getStringResource(R.string.preferences_page_summaries)))
             Log.i(TAG, "openPageSummariesSubMenu: Trying to click the \"Page summaries\" button")
             itemContainingText(getStringResource(R.string.preferences_page_summaries)).click()
