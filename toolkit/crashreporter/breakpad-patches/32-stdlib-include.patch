@@ -1,0 +1,12 @@
+diff --git a/src/common/windows/string_utils.cc b/src/common/windows/string_utils.cc
+--- a/src/common/windows/string_utils.cc
++++ b/src/common/windows/string_utils.cc
+@@ -27,6 +27,8 @@
+ // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
++#include <stdlib.h>
++
+ #include <cassert>
+ #include <vector>
+ 
