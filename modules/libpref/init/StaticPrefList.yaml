@@ -5739,7 +5739,7 @@
 
 - name: dom.headingoffset.enabled
   type: RelaxedAtomicBool
-  value: true
+  value: false
   mirror: always
   rust: true
 
