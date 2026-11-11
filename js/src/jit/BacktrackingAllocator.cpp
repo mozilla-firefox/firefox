@@ -2133,12 +2133,15 @@ static bool CanMergeTypesInBundle(LDefinition::Type a, LDefinition::Type b) {
   return LStackSlot::width(a) == LStackSlot::width(b);
 }
 
-// Helper for ::tryMergeReusedRegister
-void BacktrackingAllocator::tryMergeBundles(LiveBundle* bundle0,
-                                            LiveBundle* bundle1) {
+// Try to merge bundle1 into bundle0. Returns whether the bundles were merged.
+// If |limitRangeComparisons| is false, the merge only fails if the bundles
+// have overlapping live ranges or can't share a spill location.
+bool BacktrackingAllocator::tryMergeBundles(LiveBundle* bundle0,
+                                            LiveBundle* bundle1,
+                                            bool limitRangeComparisons) {
   // See if bundle0 and bundle1 can be merged together.
   if (bundle0 == bundle1) {
-    return;
+    return true;
   }
 
   // Get a representative virtual register from each bundle.
@@ -2155,7 +2158,7 @@ void BacktrackingAllocator::tryMergeBundles(LiveBundle* bundle0,
     // constructor calling convention.
     if (IsThisSlotDefinition(reg0.def()) || IsThisSlotDefinition(reg1.def())) {
       if (*reg0.def()->output() != *reg1.def()->output()) {
-        return;
+        return false;
       }
     }
 
@@ -2181,7 +2184,7 @@ void BacktrackingAllocator::tryMergeBundles(LiveBundle* bundle0,
 #endif
       if (!canSpillToArgSlots) {
         if (*reg0.def()->output() != *reg1.def()->output()) {
-          return;
+          return false;
         }
       }
     }
@@ -2195,7 +2198,7 @@ void BacktrackingAllocator::tryMergeBundles(LiveBundle* bundle0,
   // policy LDefinition::STACK.  This aliasing between allocations makes it
   // unsound to merge anything with a LDefinition::STACK policy.
   if (HasStackPolicy(reg0.def()) || HasStackPolicy(reg1.def())) {
-    return;
+    return false;
   }
 
   // Limit the number of times we compare ranges if there are many ranges in
@@ -2207,8 +2210,8 @@ void BacktrackingAllocator::tryMergeBundles(LiveBundle* bundle0,
                             iter1 = bundle1->rangesBegin();
   size_t count = 0;
   while (iter0 && iter1) {
-    if (++count >= MAX_RANGES) {
-      return;
+    if (limitRangeComparisons && ++count >= MAX_RANGES) {
+      return false;
     }
 
     LiveRange* range0 = *iter0;
@@ -2219,7 +2222,7 @@ void BacktrackingAllocator::tryMergeBundles(LiveBundle* bundle0,
     } else if (range1->from() >= range0->to()) {
       iter0++;
     } else {
-      return;
+      return false;
     }
   }
 
@@ -2236,6 +2239,7 @@ void BacktrackingAllocator::tryMergeBundles(LiveBundle* bundle0,
       prevRange = range;
     }
   }
+  return true;
 }
 
 // Helper for ::mergeAndQueueRegisters
@@ -2424,6 +2428,14 @@ bool BacktrackingAllocator::mergeAndQueueRegisters() {
 
   // If there is an OSR block, merge parameters in that block with the
   // corresponding parameters in the initial block.
+  //
+  // This is required for correctness: when canSpillToArgSlots is true,
+  // tryMergeBundles can merge other (non-overlapping) bundles with an LArgument
+  // bundle, and this is only safe if that bundle contains both virtual
+  // registers for the argument slot.
+  //
+  // This merge can't fail because the parameters are live in disjoint sets of
+  // blocks and we disable the range-comparison limit used for optional merges.
   if (MBasicBlock* osr = graph.mir().osrBlock()) {
     size_t original = 1;
     for (LInstructionIterator iter = osr->lir()->begin();
@@ -2436,8 +2448,10 @@ bool BacktrackingAllocator::mergeAndQueueRegisters() {
             VirtualRegister& originalVreg = vregs[original];
             if (*originalVreg.def()->output() == *iter->getDef(i)->output()) {
               MOZ_ASSERT(originalVreg.ins()->isParameter());
-              tryMergeBundles(originalVreg.firstBundle(),
-                              paramVreg.firstBundle());
+              bool merged = tryMergeBundles(
+                  originalVreg.firstBundle(), paramVreg.firstBundle(),
+                  /* limitRangeComparisons = */ false);
+              MOZ_RELEASE_ASSERT(merged);
               found = true;
               break;
             }
