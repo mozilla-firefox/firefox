@@ -2,7 +2,7 @@ import pytest
 
 URL = "https://web.snapchat.com/"
 
-SUPPORTED_CSS = "#__next"
+SUPPORTED_CSS = "form[data-testid=login-form]"
 UNSUPPORTED_TEXT = "Browser not supported"
 
 

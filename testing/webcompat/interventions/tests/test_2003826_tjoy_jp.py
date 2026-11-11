@@ -6,6 +6,7 @@ URL = "https://tjoy.jp/shinjuku_wald9#schedule-content"
 DATES_CSS = ".calendar-item"
 CARD_CSS = ".box-film-wapper:has(.schedule-status[onclick])"
 RESERVE_CSS = ".schedule-status[onclick]"
+MAP_LOADER_CSS = ".map-content .loader"
 ZOOM_WRAPPER_CSS = ".js-zoom-in"
 MAP_CSS = ".js-map"
 
@@ -14,6 +15,10 @@ MAP_CSS = ".js-map"
 async def does_correct_zoom(client):
     # Open and wait for the movie list to be loaded.
     await client.navigate(URL, wait="load")
+
+    if client.find_text("403 ERROR"):
+        pytest.skip("Region-locked, cannot test. Try using a VPN set to Japan.")
+        return False
 
     # Navigate to the seat choice screen.
     # Display tomorrow's movies and reserve the seat for one of them.
@@ -30,13 +35,16 @@ async def does_correct_zoom(client):
     # The element is overlapped by another one, so we have to use javascript to click it.
     client.execute_script("arguments[0].click()", reserve)
 
-    # Zoom in to the seat map and check if it sets only 'zoom' without '-moz-transform'.
+    # Wait for the map's loading spinner to appear and disappear
     try:
-        # The seat map takes time to be displayed, and may not even appear at all.
-        seat_map_zoom_wrapper = client.await_css(ZOOM_WRAPPER_CSS, timeout=10)
+        client.await_css(MAP_LOADER_CSS, is_displayed=True)
+        client.await_element_hidden(client.css(MAP_LOADER_CSS))
     except NoSuchElementException:
-        return False
-    client.execute_script("arguments[0].click()", seat_map_zoom_wrapper)
+        pass
+    await client.stall(1)
+
+    # Zoom in to the seat map and check if it sets only 'zoom' without '-moz-transform'.
+    client.soft_click(client.await_css(ZOOM_WRAPPER_CSS, is_displayed=True))
     seat_map = client.await_css(MAP_CSS)
     moz_transform = client.execute_script(
         "return getComputedStyle(arguments[0]).MozTransform", seat_map

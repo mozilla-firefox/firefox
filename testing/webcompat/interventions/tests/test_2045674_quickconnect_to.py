@@ -39,6 +39,7 @@ async def is_drop_handled(client):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_platforms("android")
 @pytest.mark.with_interventions
 async def test_enabled(client):
     assert await is_drop_handled(client)
@@ -46,6 +47,7 @@ async def test_enabled(client):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_platforms("android")
 @pytest.mark.without_interventions
 async def test_disabled(client):
     assert not await is_drop_handled(client)
