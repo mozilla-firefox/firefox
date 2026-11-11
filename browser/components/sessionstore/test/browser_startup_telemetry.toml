@@ -5,6 +5,5 @@
 # call, clears those metrics for every test that follows it.
 
 [DEFAULT]
-prefs = ["browser.sessionstore.debug.validate_state=true"]
 
 ["browser_startup_timeline_telemetry.js"]

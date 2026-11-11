@@ -1,5 +1,5 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
     "version": {
@@ -21,11 +21,7 @@
       }
     },
     "savedGroups": {
-      "$comment": "Introduced Firefox 133, bug 1908423",
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/savedTabGroup"
-      }
+      "type": "array"
     },
     "session": {
       "type": "object",
@@ -64,7 +60,6 @@
     }
   },
   "required": ["version", "windows"],
-  "unevaluatedProperties": false,
   "definitions": {
     "cookie": {
       "type": "object",
@@ -117,8 +112,7 @@
           "type": "integer"
         }
       },
-      "required": [],
-      "unevaluatedProperties": false
+      "required": []
     },
     "sidebar": {
       "type": "object",
@@ -140,50 +134,9 @@
         },
         "launcherWidth": {
           "type": ["null", "number"]
-        },
-        "launcherVisible": {
-          "$comment": "Removed Firefox 160, bug 2066086",
-          "deprecated": true,
-          "type": "boolean"
-        },
-        "bookmarksExpandedFolders": {
-          "$comment": "Introduced Firefox 151, bug 2019583",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "expandedLauncherWidth": {
-          "$comment": "Introduced Firefox 135, bug 1930199",
-          "type": ["null", "number"]
-        },
-        "pinnedTabsHeight": {
-          "$comment": "Introduced Firefox 140, bug 1941189",
-          "type": "number"
-        },
-        "expandedPinnedTabsHeight": {
-          "$comment": "Introduced Firefox 140, bug 1941189",
-          "type": "number"
-        },
-        "collapsedPinnedTabsHeight": {
-          "$comment": "Introduced Firefox 140, bug 1941189",
-          "type": "number"
-        },
-        "toolsHeight": {
-          "$comment": "Introduced Firefox 141, bug 1954155",
-          "type": "number"
-        },
-        "expandedToolsHeight": {
-          "$comment": "Introduced Firefox 141, bug 1954155",
-          "type": "number"
-        },
-        "collapsedToolsHeight": {
-          "$comment": "Introduced Firefox 141, bug 1954155",
-          "type": "number"
         }
       },
-      "required": [],
-      "unevaluatedProperties": false
+      "required": []
     },
     "window": {
       "type": "object",
@@ -215,50 +168,11 @@
         "_closedTabs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/closedTab",
-            "required": ["sourceWindowId"]
+            "$ref": "#/definitions/closedTab"
           }
         },
         "_lastClosedTabGroupCount": {
           "type": "integer"
-        },
-        "_shouldRestore": {
-          "$comment": "Introduced Firefox 7, bug 625016",
-          "type": "boolean"
-        },
-        "closedAt": {
-          "$comment": "Introduced Firefox 29, bug 873556",
-          "type": "integer"
-        },
-        "closedId": {
-          "$comment": "Introduced Firefox 52, bug 1309880",
-          "type": "integer"
-        },
-        "groups": {
-          "$comment": "Introduced Firefox 133, bug 1908418",
-          "description": "A closed window holds its groups as saved groups, and keeps them when it is reopened at startup",
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "$ref": "#/definitions/openTabGroup"
-              },
-              {
-                "$ref": "#/definitions/savedTabGroup"
-              }
-            ]
-          }
-        },
-        "closedGroups": {
-          "$comment": "Introduced Firefox 134, bug 1908422",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/closedTabGroup"
-          }
-        },
-        "lastClosedTabGroupId": {
-          "$comment": "Introduced Firefox 136, bug 1940752",
-          "type": ["null", "string"]
         },
         "args": {
           "$comment": "Introduced Firefox 156, bug 2066315",
@@ -335,17 +249,28 @@
         }
       },
       "required": [],
-      "unevaluatedProperties": false
+      "additionalProperties": true
     },
     "closedWindow": {
       "type": "object",
       "allOf": [
         {
           "$ref": "#/definitions/window"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "closedAt": {
+              "type": "integer"
+            },
+            "closedId": {
+              "type": "integer"
+            }
+          }
         }
       ],
-      "required": ["closedId"],
-      "unevaluatedProperties": false
+      "required": ["closedAt", "closedId"],
+      "additionalProperties": false
     },
     "splitview": {
       "type": "object",
@@ -357,8 +282,7 @@
           "type": "integer"
         }
       },
-      "required": ["id", "numberOfTabs"],
-      "unevaluatedProperties": false
+      "required": ["id", "numberOfTabs"]
     },
     "tab": {
       "type": "object",
@@ -379,30 +303,7 @@
           "type": "boolean"
         },
         "searchMode": {
-          "$comment": "Introduced Firefox 83, bug 1655486",
-          "type": ["null", "object"],
-          "properties": {
-            "engineName": {
-              "type": "string"
-            },
-            "isGeneralPurposeEngine": {
-              "type": "boolean"
-            },
-            "source": {
-              "type": "integer"
-            },
-            "entry": {
-              "type": "string"
-            },
-            "isPreview": {
-              "type": "boolean"
-            },
-            "restrictType": {
-              "type": "string",
-              "enum": ["keyword", "symbol"]
-            }
-          },
-          "unevaluatedProperties": false
+          "type": "null"
         },
         "userContextId": {
           "type": "integer"
@@ -427,45 +328,15 @@
         },
         "canonicalUrl": {
           "type": "string"
-        },
-        "splitViewId": {
-          "$comment": "Introduced Firefox 149, bug 1995818",
-          "type": "integer"
-        },
-        "formdata": {
-          "$comment": "Introduced Firefox 29, bug 947212",
-          "$ref": "#/definitions/formdata"
-        },
-        "scroll": {
-          "$comment": "Introduced Firefox 29, bug 921942",
-          "$ref": "#/definitions/scroll"
-        },
-        "pinned": {
-          "$comment": "Introduced Firefox 4, bug 575560",
-          "type": "boolean"
-        },
-        "extData": {
-          "$comment": "Introduced Firefox 3, bug 328162",
-          "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
-        },
-        "groupId": {
-          "$comment": "Introduced Firefox 133, bug 1908418",
-          "type": "string"
-        },
-        "userTypedValue": {
-          "$comment": "Introduced Firefox 3.5, bug 439675",
-          "type": "string"
-        },
-        "userTypedClear": {
-          "$comment": "Introduced Firefox 4, bug 522545",
-          "type": "integer"
         }
       },
-      "required": ["entries"],
-      "unevaluatedProperties": false
+      "required": [
+        "entries",
+        "lastAccessed",
+        "hidden",
+        "userContextId",
+        "index"
+      ]
     },
     "openTab": {
       "type": "object",
@@ -504,191 +375,17 @@
           "type": "integer"
         },
         "sourceWindowId": {
-          "description": "The ID of the window the tab was closed in, or the closedId of that window once it has closed too",
-          "type": ["integer", "string"]
-        },
-        "closedInTabGroupId": {
-          "$comment": "Introduced Firefox 136, bug 1940752",
-          "type": ["null", "string"]
-        },
-        "_originalStateIndex": {
-          "$comment": "Introduced Firefox 135, bug 1927774",
-          "type": "integer"
-        },
-        "_originalGroupStateIndex": {
-          "$comment": "Introduced Firefox 135, bug 1927774",
-          "type": "integer"
+          "type": "string"
         }
       },
-      "required": ["state", "closedId"],
-      "unevaluatedProperties": false
-    },
-    "tabGroup": {
-      "$comment": "Introduced Firefox 133, bug 1908418",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "name": {
-          "type": "string"
-        },
-        "color": {
-          "type": "string",
-          "enum": [
-            "blue",
-            "purple",
-            "cyan",
-            "orange",
-            "yellow",
-            "pink",
-            "green",
-            "gray",
-            "red"
-          ]
-        },
-        "collapsed": {
-          "type": "boolean"
-        },
-        "saveOnWindowClose": {
-          "type": "boolean"
-        }
-      },
-      "required": ["id"]
-    },
-    "openTabGroup": {
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/definitions/tabGroup"
-        }
-      ],
-      "unevaluatedProperties": false
-    },
-    "closedTabGroup": {
-      "$comment": "Introduced Firefox 134, bug 1908422",
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/definitions/tabGroup"
-        }
-      ],
-      "properties": {
-        "closedAt": {
-          "type": "integer"
-        },
-        "sourceWindowId": {
-          "type": "string"
-        },
-        "tabs": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/closedTab",
-            "required": ["sourceWindowId"]
-          }
-        },
-        "splitViews": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/splitview"
-          }
-        }
-      },
-      "required": ["tabs"],
-      "unevaluatedProperties": false
-    },
-    "savedTabGroup": {
-      "$comment": "Introduced Firefox 133, bug 1908423",
-      "type": "object",
-      "allOf": [
-        {
-          "$ref": "#/definitions/tabGroup"
-        }
-      ],
-      "properties": {
-        "saved": {
-          "const": true
-        },
-        "closedAt": {
-          "type": "integer"
-        },
-        "sourceWindowId": {
-          "type": "string"
-        },
-        "windowClosedId": {
-          "type": "integer"
-        },
-        "removeAfterRestore": {
-          "type": "boolean"
-        },
-        "tabs": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/closedTab"
-          }
-        },
-        "splitViews": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/splitview"
-          }
-        }
-      },
-      "required": ["tabs"],
-      "unevaluatedProperties": false
-    },
-    "formdata": {
-      "type": "object",
-      "properties": {
-        "url": {
-          "type": "string"
-        },
-        "id": {
-          "type": "object"
-        },
-        "xpath": {
-          "type": "object"
-        },
-        "innerHTML": {
-          "type": "string"
-        },
-        "children": {
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "$ref": "#/definitions/formdata"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
-      "unevaluatedProperties": false
-    },
-    "scroll": {
-      "type": "object",
-      "properties": {
-        "scroll": {
-          "type": "string"
-        },
-        "children": {
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "$ref": "#/definitions/scroll"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        }
-      },
-      "unevaluatedProperties": false
+      "required": [
+        "state",
+        "title",
+        "pos",
+        "closedAt",
+        "sourceWindowId",
+        "closedId"
+      ]
     },
     "entry": {
       "type": "object",
@@ -794,7 +491,7 @@
         }
       },
       "additionalProperties": false,
-      "required": ["url"]
+      "required": ["url", "title", "hasUserInteraction"]
     },
     "presStateItem": {
       "type": "object",

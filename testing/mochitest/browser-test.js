@@ -62,13 +62,9 @@ const SIMPLETEST_OVERRIDES = [
 ];
 
 // An uncaught error with one of these names, from any process, fails the
-// running test: the accesskey check by menupopup and panel-list code, and
-// session store's schema check when browser.sessionstore.debug.validate_state
-// is set.
-const FAILING_UNCAUGHT_ERROR_NAMES = [
-  "AccessKeyConflictError",
-  "SessionStateValidationError",
-];
+// running test. Currently this is only the accesskey check by menupopup and
+// panel-list code.
+const FAILING_UNCAUGHT_ERROR_NAMES = ["AccessKeyConflictError"];
 
 setTimeout(testInit, 0);
 

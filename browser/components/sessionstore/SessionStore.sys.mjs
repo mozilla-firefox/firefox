@@ -9444,14 +9444,6 @@ class _SessionStore {
   }
 
   /**
-   * The parsed contents of session.schema.json, loaded by the first
-   * validateState call.
-   *
-   * @type {Promise<object>|null}
-   */
-  #stateSchemaPromise = null;
-
-  /**
    * Validates that a state object matches the schema
    * defined in browser/components/sessionstore/session.schema.json
    *
@@ -9467,14 +9459,19 @@ class _SessionStore {
       // Don't include any deferred initial state.
       delete state.deferredInitialState;
     }
-    this.#stateSchemaPromise ??= fetch(
+    const schema = await fetch(
       "moz-src:///browser/components/sessionstore/session.schema.json"
     ).then(rsp => rsp.json());
-    const schema = await this.#stateSchemaPromise;
 
     let result;
     try {
       result = lazy.JsonSchema.validate(state, schema);
+      if (!result.valid) {
+        console.warn(
+          "Session state didn't validate against the schema",
+          result.errors
+        );
+      }
     } catch (ex) {
       console.error(`Error validating session state: ${ex.message}`, ex);
     }

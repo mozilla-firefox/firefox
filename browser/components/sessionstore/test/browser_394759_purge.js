@@ -47,8 +47,8 @@ add_task(async function () {
   }
 
   // create a new state for testing
-  const REMEMBER = String(Date.now()),
-    FORGET = String(Math.random());
+  const REMEMBER = Date.now(),
+    FORGET = Math.random();
   let testState = {
     windows: [
       {
