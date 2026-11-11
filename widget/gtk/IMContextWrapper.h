@@ -524,8 +524,8 @@ class IMContextWrapper final : public TextEventDispatcherListener {
               NS_WARN_IF(event->state != (aEvent->state & GDK_MODIFIER_MASK))) {
             continue;
           }
+          return i;
         }
-        return i;
       }
       return GdkEventKeyQueue::NoIndex();
     }
