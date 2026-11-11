@@ -629,7 +629,7 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
         }
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_menu_customization_screen).apply {
-            isVisible = Config.channel.isDebug
+            isVisible = Config.channel.isNightlyOrDebug
             isChecked = context.components.settings.isMenuCustomizationScreenEnabled
             onPreferenceChangeListener =
                 object : SharedPreferenceUpdater() {
