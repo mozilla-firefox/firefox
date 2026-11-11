@@ -8,7 +8,6 @@ import android.content.Intent
 import androidx.lifecycle.Lifecycle
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -52,7 +51,6 @@ class TopSitesRefresherTest {
         lifecycleOwner.registerObserver(observer = topSitesRefresher)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class) // advanceUntilIdle
     @Test
     fun `WHEN lifecycle resumes AND we want to show contile feature THEN top sites are refreshed`() =
         runTest(context = testDispatcher) {
@@ -64,7 +62,6 @@ class TopSitesRefresherTest {
             assertTrue(topSitesProvider.cacheRefreshed)
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class) // advanceUntilIdle
     @Test
     fun `WHEN lifecycle resumes AND we DO NOT want to show contile feature THEN top sites are NOT refreshed`() =
         runTest(context = testDispatcher) {

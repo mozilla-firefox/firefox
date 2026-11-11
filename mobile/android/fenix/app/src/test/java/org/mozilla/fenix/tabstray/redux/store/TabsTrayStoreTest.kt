@@ -5,7 +5,6 @@
 package org.mozilla.fenix.tabstray.redux.store
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import org.junit.Test
@@ -13,7 +12,6 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class TabsTrayStoreTest {
     @Test

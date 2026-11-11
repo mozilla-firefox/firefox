@@ -6,7 +6,6 @@ package org.mozilla.fenix.home.collections.migration
 
 import androidx.room.RoomDatabase
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -30,7 +29,6 @@ import org.mozilla.fenix.components.TabCollectionStorage
 import org.mozilla.fenix.helpers.perf.TestStrictModeManager
 import org.mozilla.fenix.utils.Settings
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class CollectionsToTabGroupsMigrationIntegrationTest {
 

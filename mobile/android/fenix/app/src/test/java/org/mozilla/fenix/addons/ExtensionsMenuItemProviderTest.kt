@@ -338,7 +338,6 @@ class ExtensionsMenuItemProviderTest {
         }
 
     /** The menu item once everything known about the extensions was read and applied to it. */
-    @OptIn(ExperimentalCoroutinesApi::class)
     private val nothingToShowItem =
         StandardMenuItem(
             title = MenuItemTitle(Text.Resource(R.string.browser_menu_extensions)),
@@ -389,7 +388,6 @@ class ExtensionsMenuItemProviderTest {
             assertEquals(MenuItemState.DEFAULT, item.subMenuItems.first().state)
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `GIVEN the menu was opened from custom tab WHEN clicking what an extension offers THEN keep the menu open and do not run action`() =
         runTest {
@@ -414,7 +412,6 @@ class ExtensionsMenuItemProviderTest {
             assertFalse(wasClicked)
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `GIVEN extensions process is disabled in custom tab WHEN building the item THEN show greyed out item with disabled summary and no action button`() =
         runTest {
@@ -441,7 +438,6 @@ class ExtensionsMenuItemProviderTest {
             assertNull(item.actionButton)
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `GIVEN the menu was opened from custom tab WHEN building expandable item THEN addon actions are shown without manage or discover items`() =
         runTest {
@@ -605,7 +601,6 @@ class ExtensionsMenuItemProviderTest {
             assertEquals(MenuAction.Navigate.ManageExtensions, item.onClickEvent)
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `GIVEN an extension update waits for the user WHEN building the item for a custom tab THEN do not point it out`() =
         runTest {

@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.ExperimentalSerializationApi
 import mozilla.components.concept.fetch.MutableHeaders
 import mozilla.components.concept.fetch.Response
 import mozilla.components.concept.integrity.IntegrityToken
@@ -98,7 +97,6 @@ class FetchClientMlpaServiceTest {
             assertEquals(response.getOrThrow(), expected)
         }
 
-    @OptIn(ExperimentalSerializationApi::class)
     @Test
     fun `GIVEN a malformed response WHEN we try to verify an integrity THEN return a failure`() = runTest {
         val json =

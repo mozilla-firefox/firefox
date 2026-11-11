@@ -6,7 +6,6 @@ package org.mozilla.fenix.tabstray
 
 import io.mockk.spyk
 import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.state.createTab
@@ -19,7 +18,6 @@ import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
 import org.mozilla.fenix.tabstray.redux.store.TabsTrayStore
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class PbmLockStatusBindingTest {
     private val testDispatcher = StandardTestDispatcher()
     lateinit var tabsTrayStore: TabsTrayStore

@@ -9,7 +9,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.benchmark.macro.BaselineProfileMode
 import androidx.benchmark.macro.CompilationMode
-import androidx.benchmark.macro.ExperimentalMetricApi
 import androidx.benchmark.macro.FrameTimingMetric
 import androidx.benchmark.macro.MacrobenchmarkScope
 import androidx.benchmark.macro.StartupTimingMetric
@@ -81,7 +80,6 @@ class TabsTrayBenchmark {
             animationsEnabled = false,
         )
 
-    @OptIn(ExperimentalMetricApi::class)
     @RequiresApi(Build.VERSION_CODES.Q)
     private fun switchTabsBenchmark(compilationMode: CompilationMode, animationsEnabled: Boolean) {
         var firstStart = true

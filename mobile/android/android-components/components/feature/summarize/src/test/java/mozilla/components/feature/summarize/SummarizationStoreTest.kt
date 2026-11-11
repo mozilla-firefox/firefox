@@ -6,7 +6,6 @@ package mozilla.components.feature.summarize
 
 import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.Flow
@@ -928,7 +927,6 @@ class SummarizationStoreTest {
         assertEquals(Prompt(content, defaultInstructions("en")), llm.lastPrompt)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `llm provider errors are reported`() = runTest {
         val message = "cloud not clouding"
@@ -1222,7 +1220,6 @@ class SummarizationStoreTest {
             assertIs<CloudLlmProvider.State.Ready>(provider.state.value)
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `if preparing fails because authentication is required, the sign-in screen is shown`() = runTest {
         val provider =

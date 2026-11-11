@@ -1147,7 +1147,6 @@ class GeckoEngine(
     }
 
     /** See [BrowserPreferencesRuntime.registerPrefForObservation]. */
-    @OptIn(ExperimentalGeckoViewApi::class)
     override fun registerPrefForObservation(
         pref: String,
         onSuccess: () -> Unit,
@@ -1168,7 +1167,6 @@ class GeckoEngine(
     }
 
     /** See [BrowserPreferencesRuntime.registerPrefsForObservation]. */
-    @OptIn(ExperimentalGeckoViewApi::class)
     override fun registerPrefsForObservation(
         prefs: List<String>,
         onSuccess: () -> Unit,
@@ -1189,7 +1187,6 @@ class GeckoEngine(
     }
 
     /** See [BrowserPreferencesRuntime.unregisterPrefForObservation]. */
-    @OptIn(ExperimentalGeckoViewApi::class)
     override fun unregisterPrefForObservation(
         pref: String,
         onSuccess: () -> Unit,
@@ -1210,7 +1207,6 @@ class GeckoEngine(
     }
 
     /** See [BrowserPreferencesRuntime.unregisterPrefsForObservation]. */
-    @OptIn(ExperimentalGeckoViewApi::class)
     override fun unregisterPrefsForObservation(
         prefs: List<String>,
         onSuccess: () -> Unit,
@@ -1353,7 +1349,6 @@ class GeckoEngine(
 
     /** See [Engine.setBrowserPref]. */
     @ExperimentalAndroidComponentsApi
-    @OptIn(ExperimentalGeckoViewApi::class)
     @Suppress("TooGenericExceptionCaught")
     override fun setBrowserPrefs(
         prefs: List<SetBrowserPreference<*>>,

@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.ipprotection.store
 
-import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.lib.state.Middleware
@@ -29,7 +28,6 @@ data class IPProtectionSnackbarMessages(
  *
  * This differs from the [IPProtectionInfoPrompter] which is similar, but handles sticky snackbar messages.
  */
-@OptIn(ExperimentalAndroidComponentsApi::class)
 class IPProtectionSnackbarMiddleware(
     private val lazyAppStore: Lazy<AppStore>,
     private val messages: IPProtectionSnackbarMessages,

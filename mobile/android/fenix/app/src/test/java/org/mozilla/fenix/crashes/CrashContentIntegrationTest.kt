@@ -12,7 +12,6 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -163,7 +162,6 @@ class CrashContentIntegrationTest {
             verify { integration.updateVerticalMargins() }
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class) // advanceUntilIdle
     @Test
     fun `GIVEN integration was stopped and then restarted WHEN orientation state changes THEN margins are updated`() =
         runTest(testDispatcher) {

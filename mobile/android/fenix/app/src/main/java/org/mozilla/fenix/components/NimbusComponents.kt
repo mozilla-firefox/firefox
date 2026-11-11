@@ -7,7 +7,6 @@ package org.mozilla.fenix.components
 import android.content.Context
 import java.io.File
 import mozilla.appservices.remotesettings.RemoteSettingsService
-import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.Engine
 import mozilla.components.service.nimbus.NimbusApi
 import mozilla.components.service.nimbus.messaging.FxNimbusMessaging
@@ -28,7 +27,6 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.messaging.CustomAttributeProvider
 
 /** Component group for access to Nimbus and other Nimbus services. */
-@OptIn(ExperimentalAndroidComponentsApi::class)
 class NimbusComponents(
     private val context: Context,
     private val engine: Lazy<Engine>,

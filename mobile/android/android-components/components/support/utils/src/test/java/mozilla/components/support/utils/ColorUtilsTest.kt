@@ -99,7 +99,6 @@ class ColorUtilsTest {
     }
 
     @Test
-    @OptIn(ExperimentalStdlibApi::class)
     fun `GIVEN a red color and a factor of 0,5 WHEN lighten is called THEN the result is pink`() {
         assertEquals("ffffa191", ComposeColor.Red.lighten(0.5f).toArgb().toHexString(HexFormat.Default))
     }
@@ -115,7 +114,6 @@ class ColorUtilsTest {
     }
 
     @Test
-    @OptIn(ExperimentalStdlibApi::class)
     fun `GIVEN a red color and a factor of 0,5 WHEN darken is called THEN the result is olive`() {
         assertEquals("ff636300", ComposeColor.Yellow.darken(0.5f).toArgb().toHexString(HexFormat.Default))
     }

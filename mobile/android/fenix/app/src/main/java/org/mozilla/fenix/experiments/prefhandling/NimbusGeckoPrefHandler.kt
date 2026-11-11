@@ -277,7 +277,6 @@ class NimbusGeckoPrefHandler(
      *
      * @param newPrefsState: The list of new Gecko preference states.
      */
-    @OptIn(ExperimentalAndroidComponentsApi::class)
     override fun setGeckoPrefsState(newPrefsState: List<GeckoPrefState>) {
         if (newPrefsState.isEmpty()) {
             return

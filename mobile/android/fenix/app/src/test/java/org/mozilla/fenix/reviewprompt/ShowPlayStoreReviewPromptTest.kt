@@ -9,7 +9,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.coVerify
 import io.mockk.mockk
 import java.lang.ref.WeakReference
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
@@ -25,7 +24,6 @@ import org.mozilla.fenix.components.appstate.AppAction.ReviewPromptAction.Review
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.reviewprompt.ReviewPromptState.NotEligible
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class ShowPlayStoreReviewPromptTest {
 

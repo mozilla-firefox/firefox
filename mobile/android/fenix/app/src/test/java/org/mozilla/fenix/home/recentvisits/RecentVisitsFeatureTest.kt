@@ -12,7 +12,6 @@ import io.mockk.slot
 import io.mockk.spyk
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.storage.sync.PlacesHistoryStorage
@@ -697,7 +696,6 @@ class RecentVisitsFeatureTest {
         result.forEach { assertEquals("https://mozilla.org", it.historyHighlight.url) }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class) // advanceUntilIdle
     private fun startRecentVisitsFeature(scope: CoroutineScope) {
         val feature =
             RecentVisitsFeature(

@@ -5,7 +5,6 @@
 package org.mozilla.fenix.ipprotection.store
 
 import kotlin.time.Instant
-import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.feature.ipprotection.store.IPProtectionAction
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.lib.state.Middleware
@@ -34,7 +33,6 @@ class DefaultIPProtectionRepository(private val settings: Settings) : IPProtecti
 }
 
 /** [Middleware] responsible for intercepting a toggle action and persistently recording the initial VPN interaction. */
-@OptIn(ExperimentalAndroidComponentsApi::class)
 internal class IPProtectionPreferencesMiddleware(private val preferences: IPProtectionRepository) :
     Middleware<IPProtectionState, IPProtectionAction> {
 

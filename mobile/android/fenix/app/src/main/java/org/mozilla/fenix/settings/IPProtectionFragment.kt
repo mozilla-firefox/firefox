@@ -21,7 +21,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import java.time.LocalDate
-import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.feature.ipprotection.IPProtectionWarningBinding
 import mozilla.components.feature.ipprotection.auth.fxa.IPProtectionFxaAuthFlow
 import mozilla.components.feature.ipprotection.auth.fxa.IPProtectionFxaAuthFlow.Companion.INTENT_ON_COMPLETE
@@ -67,7 +66,6 @@ class IPProtectionFragment : Fragment(), SystemInsetsPaddedFragment {
         }
     }
 
-    @OptIn(ExperimentalAndroidComponentsApi::class)
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
