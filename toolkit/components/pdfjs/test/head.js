@@ -1,23 +1,30 @@
 // A page render can be cancelled, for example by the scale change the sidebar
 // triggers when it opens, and then no "textlayerrendered" is dispatched for it.
 // So check the state of the DOM instead of pairing up the render events.
-function waitForPdfJS(browser, url = null) {
-  const loadPromise = BrowserTestUtils.waitForContentEvent(
+// "annotationlayerrendered" can also be dispatched before its layer exists.
+function waitForPdfJSLayerRendered(browser, eventName) {
+  return BrowserTestUtils.waitForContentEvent(
     browser,
-    "textlayerrendered",
+    eventName,
     false,
     event => {
       const doc = event.target.ownerDocument || event.target;
       const pages = doc.querySelectorAll(".page[data-loaded='true']");
+      const selector =
+        event.type === "textlayerrendered"
+          ? ".textLayer:not([hidden]) .endOfContent"
+          : ".annotationLayer:not([hidden])";
       return (
         !!pages.length &&
-        Array.from(pages).every(page =>
-          page.querySelector(".textLayer:not([hidden]) .endOfContent")
-        )
+        Array.from(pages).every(page => page.querySelector(selector))
       );
     },
     true
   );
+}
+
+function waitForPdfJS(browser, url = null) {
+  const loadPromise = waitForPdfJSLayerRendered(browser, "textlayerrendered");
   if (url) {
     BrowserTestUtils.startLoadingURIString(browser, url);
   }
@@ -37,47 +44,24 @@ async function waitForPdfJSClose(browser, closeTab = false) {
   }
 }
 
-async function waitForPdfJSAnnotationLayer(browser, url) {
-  let loadPromise = BrowserTestUtils.waitForContentEvent(
-    browser,
-    "annotationlayerrendered",
-    false,
-    null,
-    true
-  );
-  let pagePromise = waitForPdfJS(browser, url);
-  return Promise.all([pagePromise, loadPromise]);
+function waitForPdfJSAnnotationLayer(browser, url) {
+  return Promise.all([
+    waitForPdfJSLayerRendered(browser, "annotationlayerrendered"),
+    waitForPdfJS(browser, url),
+  ]);
 }
 
 async function waitForPdfJSAllLayers(browser, url, layers) {
-  let loadPromise = BrowserTestUtils.waitForContentEvent(
-    browser,
-    "textlayerrendered",
-    false,
-    null,
-    true
-  );
-  let annotationPromise = BrowserTestUtils.waitForContentEvent(
-    browser,
-    "annotationlayerrendered",
-    false,
-    null,
-    true
-  );
-  let annotationEditorPromise = BrowserTestUtils.waitForContentEvent(
+  const annotationEditorPromise = BrowserTestUtils.waitForContentEvent(
     browser,
     "annotationeditorlayerrendered",
     false,
     null,
     true
   );
-  let pagePromise = waitForPdfJS(browser, url);
-
   await Promise.all([
-    pagePromise,
-    loadPromise,
-    annotationPromise,
     annotationEditorPromise,
+    waitForPdfJSAnnotationLayer(browser, url),
   ]);
 
   await waitForPdfJSLayers(browser, layers);
