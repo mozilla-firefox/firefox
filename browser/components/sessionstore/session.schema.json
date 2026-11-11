@@ -328,6 +328,10 @@
         },
         "canonicalUrl": {
           "type": "string"
+        },
+        "splitViewId": {
+          "$comment": "Introduced Firefox 149, bug 1995818",
+          "type": "integer"
         }
       },
       "required": [
