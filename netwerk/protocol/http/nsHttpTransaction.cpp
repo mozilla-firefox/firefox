@@ -309,28 +309,23 @@ nsresult nsHttpTransaction::Init(
   // read from a private clone and leave the channel's stream untouched by the
   // socket thread. Parent-process upload streams are normalized to be cloneable
   // (see HttpBaseChannel's NormalizeUploadStream).
-  //
-  // A streaming body is usually an async pipe; cloning it adds a second reader
-  // that nobody reads, so the pipe would hold on to every segment written to it
-  // and buffer the whole upload in memory.  HttpBaseChannel::CloneUploadStream
-  // refuses to tee such a stream for the same reason.  A pipe can't be rewound,
-  // so the channel never touches it.  A seekable streaming body (a Blob's
-  // stream) can be, so it is cloned like any other.
-  nsCOMPtr<nsISeekableStream> seekable = do_QueryInterface(requestBody);
   nsCOMPtr<nsIInputStream> requestBodyClone;
-  if (mHasRequestBody && (!mRequestBodyIsStreaming || seekable)) {
+  if (mHasRequestBody) {
     rv = NS_CloneInputStream(requestBody, getter_AddRefs(requestBodyClone));
     if (NS_SUCCEEDED(rv)) {
       requestBody = requestBodyClone;
-    } else if (XRE_IsParentProcess() && seekable) {
-      // The channel can rewind this stream on the main thread, so reading it
-      // here would mean two threads sharing it.  InternalSetUploadStream
-      // refuses a stream that can't be cloned, so this shouldn't happen.
-      // The socket process gets its own deserialized copy, which may not be
-      // cloneable (e.g. a file stream sent as a descriptor), and nothing
-      // else touches it there, so sharing is fine.
-      MOZ_DIAGNOSTIC_ASSERT(false, "Upload stream should be cloneable");
-      return rv;
+    } else if (XRE_IsParentProcess()) {
+      nsCOMPtr<nsISeekableStream> seekable = do_QueryInterface(requestBody);
+      if (seekable) {
+        // The channel can rewind this stream on the main thread, so reading it
+        // here would mean two threads sharing it.  InternalSetUploadStream
+        // refuses a stream that can't be cloned, so this shouldn't happen.
+        // The socket process gets its own deserialized copy, which may not be
+        // cloneable (e.g. a file stream sent as a descriptor), and nothing
+        // else touches it there, so sharing is fine.
+        MOZ_DIAGNOSTIC_ASSERT(false, "Upload stream should be cloneable");
+        return rv;
+      }
     }
   }
 
