@@ -2884,6 +2884,13 @@
   value: false
   mirror: always
 
+# Enables document.parsed, document.contentLoaded and document.loaded.
+# See https://github.com/whatwg/html/pull/1936
+- name: dom.document.load_promises.enabled
+  type: bool
+  value: false
+  mirror: always
+
 # Preferences for document-language metadata extraction.
 #
 # How long a metadata request waits for the document load event before

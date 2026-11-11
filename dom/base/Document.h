@@ -3760,6 +3760,9 @@ class Document : public nsINode,
   void GetReferrer(nsACString& aReferrer) const;
   void GetLastModified(nsAString& aLastModified) const;
   void GetReadyState(nsAString& aReadyState) const;
+  Promise* GetParsed(ErrorResult& aRv);
+  Promise* GetContentLoaded(ErrorResult& aRv);
+  Promise* GetLoaded(ErrorResult& aRv);
 
   void GetTitle(nsAString& aTitle);
   void SetTitle(const nsAString& aTitle, ErrorResult& rv);
@@ -5108,6 +5111,11 @@ class Document : public nsINode,
 
   void MaybeResolveReadyForIdle();
 
+  // Returns aPromise, creating it if needed. A promise created after the
+  // point it should have been resolved is resolved right away.
+  Promise* GetReadinessPromise(RefPtr<Promise>& aPromise, bool aResolved,
+                               ErrorResult& aRv);
+
   using AutomaticStorageAccessPermissionGrantPromise =
       MozPromise<bool, bool, true>;
   [[nodiscard]] RefPtr<AutomaticStorageAccessPermissionGrantPromise>
@@ -5244,6 +5252,13 @@ class Document : public nsINode,
   DocumentState mState{DocumentState::LTR_LOCALE};
 
   RefPtr<Promise> mReadyForIdle;
+
+  // https://html.spec.whatwg.org/#current-document-readiness
+  // Created lazily by GetParsed(), GetContentLoaded() and GetLoaded(). Reset
+  // when the readyState goes back to "loading".
+  RefPtr<Promise> mParsedPromise;
+  RefPtr<Promise> mContentLoadedPromise;
+  RefPtr<Promise> mLoadedPromise;
 
   // Lazily created in PermissionsPolicy().
   mutable RefPtr<mozilla::dom::PermissionsPolicy> mPermissionsPolicy;

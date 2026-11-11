@@ -2786,6 +2786,9 @@ NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(Document)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFontFaceSet)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mPreviouslyFocusedContent)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mReadyForIdle)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mParsedPromise)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mContentLoadedPromise)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mLoadedPromise)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDocumentL10n)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mFragmentDirective)
   NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mHighlightRegistry)
@@ -2954,6 +2957,9 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(Document)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mFontFaceSet)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mPreviouslyFocusedContent)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mReadyForIdle)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mParsedPromise)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mContentLoadedPromise)
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mLoadedPromise)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mDocumentL10n)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mFragmentDirective)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mHighlightRegistry)
@@ -8975,11 +8981,24 @@ void Document::DispatchContentLoadedEvents(bool aFinishSync) {
                         nullptr);
   }
 
+  // Resolved after the event so that its reactions run after every
+  // DOMContentLoaded listener, whatever event target they are on. The promise
+  // is fetched first because a listener can call document.open(), which
+  // replaces it with one for the next load.
+  RefPtr<Promise> contentLoaded;
+  if (StaticPrefs::dom_document_load_promises_enabled()) {
+    contentLoaded = GetContentLoaded(IgnoreErrors());
+  }
+
   // Fire a DOM event notifying listeners that this document has been
   // loaded (excluding images and other loads initiated by this
   // document).
   nsContentUtils::DispatchTrustedEvent(this, this, u"DOMContentLoaded"_ns,
                                        CanBubble::eYes, Cancelable::eNo);
+
+  if (contentLoaded) {
+    contentLoaded->MaybeResolveWithUndefined();
+  }
 
   if (auto* const window = GetInnerWindow()) {
     const RefPtr<ServiceWorkerContainer> serviceWorker =
@@ -10838,6 +10857,11 @@ Document* Document::Open(const Optional<nsAString>& /* unused */,
   // navigation.
   if (shell && IsCurrentActiveDocument()) {
     if (shell->GetIsAttemptingToNavigate()) {
+      // Stopping can abort our own load and set readyState to "complete",
+      // which must not settle the promises of the load being replaced.
+      mParsedPromise = nullptr;
+      mContentLoadedPromise = nullptr;
+      mLoadedPromise = nullptr;
       shell->Stop(nsIWebNavigation::STOP_NETWORK);
 
       // The Stop call may have cancelled the onload blocker request or
@@ -13521,6 +13545,31 @@ void Document::SetReadyStateInternal(ReadyState aReadyState,
   if (wasLoading && StaticPrefs::dom_element_blocking_enabled()) {
     MaybeScheduleRendering();
   }
+  switch (aReadyState) {
+    case READYSTATE_LOADING:
+      mParsedPromise = nullptr;
+      mContentLoadedPromise = nullptr;
+      mLoadedPromise = nullptr;
+      break;
+    case READYSTATE_INTERACTIVE:
+      if (mParsedPromise) {
+        mParsedPromise->MaybeResolveWithUndefined();
+      }
+      break;
+    case READYSTATE_COMPLETE:
+      if (mParsedPromise) {
+        mParsedPromise->MaybeResolveWithUndefined();
+      }
+      if (mContentLoadedPromise) {
+        mContentLoadedPromise->MaybeResolveWithUndefined();
+      }
+      if (mLoadedPromise) {
+        mLoadedPromise->MaybeResolveWithUndefined();
+      }
+      break;
+    default:
+      break;
+  }
   if (aUpdateTimingInformation && mTiming) {
     switch (aReadyState) {
       case READYSTATE_LOADING:
@@ -15718,6 +15767,31 @@ void Document::MaybeResolveReadyForIdle() {
   if (readyPromise) {
     readyPromise->MaybeResolveWithUndefined();
   }
+}
+
+Promise* Document::GetReadinessPromise(RefPtr<Promise>& aPromise,
+                                       bool aResolved, ErrorResult& aRv) {
+  if (!aPromise) {
+    nsIGlobalObject* global = GetScopeObject();
+    aPromise = aResolved ? Promise::CreateResolvedWithUndefined(global, aRv)
+                         : Promise::Create(global, aRv);
+  }
+  return aPromise;
+}
+
+Promise* Document::GetParsed(ErrorResult& aRv) {
+  return GetReadinessPromise(mParsedPromise,
+                             mReadyState >= READYSTATE_INTERACTIVE, aRv);
+}
+
+Promise* Document::GetContentLoaded(ErrorResult& aRv) {
+  return GetReadinessPromise(mContentLoadedPromise,
+                             mReadyState == READYSTATE_COMPLETE, aRv);
+}
+
+Promise* Document::GetLoaded(ErrorResult& aRv) {
+  return GetReadinessPromise(mLoadedPromise, mReadyState == READYSTATE_COMPLETE,
+                             aRv);
 }
 
 mozilla::dom::PermissionsPolicy* Document::PermissionsPolicy() const {

@@ -137,6 +137,12 @@ partial interface Document {
   [Throws] attribute DOMString cookie;
   readonly attribute DOMString lastModified;
   readonly attribute DOMString readyState;
+  [Throws, Unscopable, Pref="dom.document.load_promises.enabled"]
+  readonly attribute Promise<undefined> parsed;
+  [Throws, Unscopable, Pref="dom.document.load_promises.enabled"]
+  readonly attribute Promise<undefined> contentLoaded;
+  [Throws, Unscopable, Pref="dom.document.load_promises.enabled"]
+  readonly attribute Promise<undefined> loaded;
 
   // DOM tree accessors
   //(Not proxy yet)getter object (DOMString name);
