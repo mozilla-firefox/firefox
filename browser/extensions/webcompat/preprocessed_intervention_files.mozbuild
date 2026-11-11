@@ -48,7 +48,6 @@ preprocessed_intervention_files = [
     "bug1899054-icorrectproof.com.js",
     "bug1899059-bankmandiri.co.id.js",
     "bug1899063-onlinestep.pgc.edu-hide_browser_notice.css",
-    "bug1899829-animeflv.net-fix-premiere-labels.css",
     "bug1899930-africanews.com-hide_browser_notice.css",
     "bug1902379-adl.edu.tw.js",
     "bug1902385-bithumb.com-hide_browser_notice.css",
