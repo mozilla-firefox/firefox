@@ -44,6 +44,7 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.helpers.perf.TestStrictModeManager
 import org.mozilla.fenix.home.intent.StartSearchIntentProcessor
+import org.mozilla.fenix.settings.account.AuthCustomTabActivity
 import org.mozilla.fenix.settings.account.AuthIntentReceiverActivity
 import org.mozilla.fenix.shortcut.NewTabShortcutIntentProcessor
 import org.mozilla.fenix.shortcut.PasswordManagerIntentProcessor
@@ -385,6 +386,7 @@ class IntentReceiverActivityTest {
             val actualIntent = shadowOf(activity).peekNextStartedActivity()
             assertThat(actualIntent, hasComponent(AuthIntentReceiverActivity::class.java.name))
             assertThat(actualIntent, hasExtraWithKey(CustomTabsIntent.EXTRA_SESSION))
+            assertTrue(actualIntent.getBooleanExtra(AuthCustomTabActivity.EXTRA_OPEN_HOME_ON_AUTHENTICATED, false))
             assertEquals(url, actualIntent.dataString)
             assertTrue(activity.isFinishing)
             assertNull(Events.openedLink.testGetValue())
