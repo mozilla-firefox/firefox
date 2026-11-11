@@ -1153,12 +1153,15 @@ void Assembler::break_(uint32_t code, bool break_as_stop) {
       (break_as_stop && code <= kMaxStopCode && code > kMaxTracepointCode) ||
       (!break_as_stop && (code > kMaxStopCode || code <= kMaxTracepointCode)));
 
+  ebreak();
+#ifdef JS_SIMULATOR_RISCV64
   // since ebreak does not allow additional immediate field, we use the
   // immediate field of lui instruction immediately following the ebreak to
-  // encode the "code" info
-  ebreak();
+  // encode the "code" info. Only the simulator reads it, so other builds
+  // emit the ebreak alone.
   MOZ_ASSERT(is_uint20(code));
   lui(zero_reg, code);
+#endif
 }
 
 void Assembler::ToggleToJmp(CodeLocationLabel inst_) {
