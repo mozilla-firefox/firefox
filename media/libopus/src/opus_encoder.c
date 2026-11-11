@@ -842,6 +842,13 @@ opus_int32 frame_size_select(int application, opus_int32 frame_size, int variabl
       return -1;
    if (new_size>frame_size)
       return -1;
+   /* Every legal duration below is at most 6*Fs/50 (120 ms), so a caller
+      passing a frame_size large enough to overflow the multiplications
+      that follow can only be trying to smuggle through an out-of-range
+      value: new_size can't legitimately reach here already bigger than
+      Fs itself, so reject it before the overflow-prone checks run. */
+   if (new_size>Fs)
+      return -1;
    if (400*new_size!=Fs   && 200*new_size!=Fs   && 100*new_size!=Fs   &&
         50*new_size!=Fs   &&  25*new_size!=Fs   &&  50*new_size!=3*Fs &&
         50*new_size!=4*Fs &&  50*new_size!=5*Fs &&  50*new_size!=6*Fs)
@@ -1761,12 +1768,10 @@ opus_int32 opus_encode_native(OpusEncoder *st, const opus_res *pcm, int frame_si
        if (st->enable_qext) max_header_bytes += (nb_frames-1) + 1;
 #endif
 
-       if (st->use_vbr || st->user_bitrate_bps==OPUS_BITRATE_MAX)
-          repacketize_len = out_data_bytes;
-       else {
-          celt_assert(cbr_bytes>=0);
-          repacketize_len = IMIN(cbr_bytes, out_data_bytes);
-       }
+       /* max_data_bytes already accounts for the packet size cap and, in CBR
+          mode, for the bitrate, so there is no need to go back to the size of
+          the caller's buffer here. */
+       repacketize_len = max_data_bytes;
        max_len_sum = nb_frames + repacketize_len - max_header_bytes;
 
        ALLOC(tmp_data, max_len_sum, unsigned char);

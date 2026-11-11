@@ -131,8 +131,7 @@ int          p
       if (iter == 10) {
          /* If the coeffs still do not fit into the 16 bit range after 10 iterations,
             fall back to the A(z)=1 filter. */
-         OPUS_CLEAR(lpc, p);
-         _lpc[0] = 4096;  /* Q12 */
+         OPUS_CLEAR(_lpc, p);
       } else {
          for (i = 0; i < p; i++) {
             _lpc[i] = EXTRACT16(PSHR32(lpc[i], 13));  /* Q25->Q12 */
