@@ -79,7 +79,7 @@ num-traits = "0.2"
 num-derive = "0.4"
 parking_lot = "0.12"
 precomputed-hash = "0.1.1"
-rand = { version = "0.8.6", features = ["small_rng"] }
+rand = { version = "0.8.6", default-features = false, features = ["small_rng"] }
 rayon = "1"
 rayon-core = "1"
 selectors = { path = "../selectors" }
