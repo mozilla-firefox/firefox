@@ -110,7 +110,6 @@ preprocessed_intervention_files = [
     "bug1954921-dood.al.js",
     "bug1955932-coopvoce.it-fix_broken_radio_buttons.css",
     "bug1959598-signal-tech.com.js",
-    "bug1960294-firstenergycorp.com-hide_browser_notice.css",
     "bug1963270-app.kosmi.io.js",
     "bug1966330-salling.dk-fix_mobile_filter_scrolling.css",
     "bug1966377-nvidia.com-fix_overflowing_layout.css",
