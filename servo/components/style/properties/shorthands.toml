@@ -203,7 +203,7 @@ spec="https://drafts.csswg.org/css-overflow/#propdef-overflow"
 kind = "two_properties"
 
 [overscroll-behavior]
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.overscroll-behavior.enabled"
 sub_properties = ["overscroll-behavior-x", "overscroll-behavior-y"]
 spec = "https://wicg.github.io/overscroll-behavior/#overscroll-behavior-properties"
 kind = "two_properties"
@@ -391,13 +391,13 @@ spec = "https://drafts.csswg.org/css-backgrounds-4/#the-background-position"
 sub_properties = ["mask-mode", "mask-repeat", "mask-clip", "mask-origin", "mask-composite", "mask-position-x", "mask-position-y", "mask-size", "mask-image"]
 spec = "https://drafts.fxtf.org/css-masking/#propdef-mask"
 extra_prefixes = ["webkit"]
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.masking.enabled"
 
 [mask-position]
 sub_properties = ["mask-position-x", "mask-position-y"]
 spec = "https://drafts.csswg.org/css-masks-4/#the-mask-position"
 extra_prefixes = ["webkit"]
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.masking.enabled"
 
 [border-radius]
 sub_properties = ["border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"]
@@ -408,62 +408,62 @@ extra_prefixes = ["webkit"]
 sub_properties = ["corner-top-left-shape", "corner-top-right-shape", "corner-bottom-right-shape", "corner-bottom-left-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 
 [corner-top-shape]
 sub_properties = ["corner-top-left-shape", "corner-top-right-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-top-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 kind = "two_properties"
 
 [corner-right-shape]
 sub_properties = ["corner-top-right-shape", "corner-bottom-right-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-right-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 kind = "two_properties"
 
 [corner-bottom-shape]
 sub_properties = ["corner-bottom-left-shape", "corner-bottom-right-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-bottom-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 kind = "two_properties"
 
 [corner-left-shape]
 sub_properties = ["corner-top-left-shape", "corner-bottom-left-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-left-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 kind = "two_properties"
 
 [corner-block-start-shape]
 sub_properties = ["corner-start-start-shape", "corner-start-end-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-start-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 kind = "two_properties"
 
 [corner-block-end-shape]
 sub_properties = ["corner-end-start-shape", "corner-end-end-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-block-end-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 kind = "two_properties"
 
 [corner-inline-start-shape]
 sub_properties = ["corner-start-start-shape", "corner-end-start-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-start-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 kind = "two_properties"
 
 [corner-inline-end-shape]
 sub_properties = ["corner-start-end-shape", "corner-end-end-shape"]
 spec = "https://drafts.csswg.org/css-borders-4/#propdef-corner-inline-end-shape"
 gecko_pref = "layout.css.corner-shape.enabled"
-servo_pref = "layout.unimplemented"
+servo_pref = "layout.css.corner-shape.enabled"
 kind = "two_properties"
 
 [outline]
@@ -473,7 +473,7 @@ spec = "https://drafts.csswg.org/css-ui/#propdef-outline"
 [columns]
 sub_properties = ["column-width", "column-count"]
 spec = "https://drafts.csswg.org/css-multicol/#propdef-columns"
-servo_pref = "layout.columns.enabled"
+servo_pref = "layout.css.columns.enabled"
 
 [column-rule]
 engine = "gecko"

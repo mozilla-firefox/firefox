@@ -24,7 +24,7 @@ pub enum InlineBaseDirection {
 }
 
 fn sideways_enabled(_: &crate::parser::ParserContext) -> bool {
-    crate::pref!("layout.writing-mode.sideways.enabled", gecko = true)
+    crate::pref!("layout.css.writing-mode.sideways.enabled", gecko = true)
 }
 
 /// The writing-mode property (different from the WritingMode enum).

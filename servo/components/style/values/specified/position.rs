@@ -1618,7 +1618,7 @@ impl ToCss for GridAutoFlow {
 /// Whether the `balance` value of `flex-wrap` is enabled.
 #[inline]
 fn flex_wrap_balance_enabled() -> bool {
-    crate::pref!("layout.flexbox.balance", gecko = false)
+    crate::pref!("layout.css.flexbox-balance.enabled", gecko = false)
 }
 
 /// The specified and computed value of the `flex-wrap` property:
