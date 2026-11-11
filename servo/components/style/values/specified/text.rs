@@ -998,8 +998,8 @@ impl Parse for TextIndent {
                 continue;
             }
 
-            // Servo doesn't support the keywords, so just break and let the caller deal with it.
-            if cfg!(feature = "servo") {
+            // If the keywords are disabled, just break and let the caller deal with it.
+            if !crate::pref!("layout.css.text-indent-keywords.enabled", gecko = true) {
                 break;
             }
 
