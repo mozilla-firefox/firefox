@@ -187,9 +187,9 @@ nsresult TCPSocket::CreateStream() {
                                     getter_AddRefs(mSocketOutputStream));
   NS_ENSURE_SUCCESS(rv, rv);
 
-  // If the other side is not listening, we will
-  // get an onInputStreamReady callback where available
-  // raises to indicate the connection was refused.
+  // If the other side is not listening, or some other connection error
+  // occurred, we will get an onInputStreamReady callback where available raises
+  // to indicate the connection was refused.
   nsCOMPtr<nsIAsyncInputStream> asyncStream =
       do_QueryInterface(mSocketInputStream);
   NS_ENSURE_TRUE(asyncStream, NS_ERROR_NOT_AVAILABLE);
@@ -1180,12 +1180,10 @@ void TCPSocket::HandshakeDoneOnMainThread() {
 
 NS_IMETHODIMP
 TCPSocket::OnInputStreamReady(nsIAsyncInputStream* aStream) {
-  // Only used for detecting if the connection was refused.
-
   uint64_t dummy;
   nsresult rv = aStream->Available(&dummy);
   if (NS_FAILED(rv)) {
-    MaybeReportErrorAndCloseIfOpen(NS_ERROR_CONNECTION_REFUSED);
+    MaybeReportErrorAndCloseIfOpen(rv);
   }
   return NS_OK;
 }
