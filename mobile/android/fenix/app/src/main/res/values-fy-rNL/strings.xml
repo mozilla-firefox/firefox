@@ -465,7 +465,7 @@
   <!-- Learn more link for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
   <string name="onboarding_preferences_dialog_crash_reporting_learn_more_2">Mear ynfo</string>
   <!-- Title for the startup crash page. %s is the name of the app (for example "Firefox") -->
-  <string name="startup_crash_title">%s moat opnij opstarte wurde</string>
+  <string name="startup_crash_title">%s moat opnij start wurde</string>
   <!-- Body text for the startup crash page. %s is the name of the app (for example "Firefox") -->
   <string name="startup_crash_body">Der is in probleem bard by it iepenjen fan %s.\n\nIt ferstjoeren fan in ûngelokrapport helpt ús problemen mei de browser te analysearjen en op te lossen. Rapporten kinne persoanlike of gefoelige gegevens befetsje.</string>
   <!-- Button text to submit a startup crash report -->
@@ -869,7 +869,7 @@
   <!-- Summary for preference to show Firefox Suggest search suggestions for web content -->
   <string name="preferences_show_nonsponsored_suggestions_summary">Krij suggestjes fan it web relatearre oan jo sykopdracht</string>
   <!-- Preference title for switch preference to show search optimization cards -->
-  <string name="preferences_show_search_optimization_cards" tools:ignore="BrandUsage">Suggestjes fan Mozilla ophelje wylst jo type</string>
+  <string name="preferences_show_search_optimization_cards" tools:ignore="BrandUsage">Suggestjes fan Mozilla ophelje wylst jo typje</string>
   <!-- Preference for link sharing -->
   <string name="preferences_link_sharing">Keppelingen diele</string>
   <!-- Title for the link sharing toggle. %1$s is replaced by the brand name (e.g. Firefox). -->
@@ -1454,7 +1454,7 @@
   <!-- Content description (not visible, for screen readers etc.): Close tab button -->
   <string name="tab_manager_close_tabs">Slute</string>
   <!-- Content description for the media playback indicator in the tabs tray. -->
-  <string name="tab_indicator_media_playing">Media ôfspylje</string>
+  <string name="tab_indicator_media_playing">Media wurdt ôfspile</string>
   <!--
     Opening screen
 
@@ -1889,7 +1889,7 @@
   <!-- Error message shown when a user tries to rename a downloaded file but only changes the casing (e.g., "file.txt" to "File.txt"). -->
   <string name="download_rename_error_case_only_error">De ynfierde namme wiziget allinnich haadletters of lytse letters. Probearje in oare bestânsnamme.</string>
   <!-- Title for the alert dialog when the file cannot be renamed. -->
-  <string name="download_rename_error_cannot_rename_title">Kin betân net omneame</string>
+  <string name="download_rename_error_cannot_rename_title">Kin bestân net omneame</string>
   <!-- Description message for the alert dialog when the file cannot be renamed. -->
   <string name="download_rename_error_cannot_rename_description">Dit bestân kin net omneamd wurde fanwegen systeem- of ûnthâldbeheiningen.</string>
   <string name="download_rename_error_dismiss_button">OK</string>
@@ -2045,7 +2045,7 @@
   <!-- Broken site reason text for site asked to turn off ad blocker -->
   <string name="webcompat_reporter_reason_turn_off_adblocker">Website frege om adblocker út te skeakeljen</string>
   <!-- Broken site reason text for browser isn’t supported or blocked -->
-  <string name="webcompat_reporter_reason_notsupported_2">Browser wurdt net stipe of blokkearre</string>
+  <string name="webcompat_reporter_reason_notsupported_2">Browser wurdt blokkearre of net stipe</string>
   <!-- Broken site reason text for the site being deceptive -->
   <string name="webcompat_reporter_reason_site_is_deceptive">Dizze website is misliedend</string>
   <!-- Broken site reason text for something else -->
@@ -2218,7 +2218,7 @@
 
     Button label that take the user to the Android App setting
   -->
-  <string name="phone_feature_go_to_settings">Nei Ynstellingen</string>
+  <string name="phone_feature_go_to_settings">Nei ynstellingen</string>
   <!-- Label that indicates that this option it the recommended one -->
   <string name="phone_feature_recommended">Oanrekommandearre</string>
   <!-- Button label for clearing all the information of site permissions -->
@@ -2752,7 +2752,7 @@
   <!-- Description of cross-site tracking cookies that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_cookies_description">Blokkearret cookies dy’t advertinsjenetwurken en analysebedriuwen brûke om jo sneupgegevens op in protte websites te sammeljen.</string>
   <!-- Description of cross-site tracking cookies that can be blocked by Enhanced Tracking Protection -->
-  <string name="etp_cookies_description_2">Totale cookiebeskerming isolearret cookies yn op de website dy’t jo besykje, sadat trackers lykas advertinsjenetwurken se net brûke kinne om jo oer websites hinne te folgjen.</string>
+  <string name="etp_cookies_description_2">Totale cookiebeskerming isolearret cookies op de website dy’t jo besykje, sadat trackers lykas advertinsjenetwurken se net brûke kinne om jo oer websites hinne te folgjen.</string>
   <!-- Category of trackers (cryptominers) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_cryptominers_title">Cryptominers</string>
   <!-- Description of cryptominers that can be blocked by Enhanced Tracking Protection -->
@@ -3601,7 +3601,7 @@
   <!-- Snackbar message for enrolling in a Nimbus experiment from the secret settings when Studies preference is Off. -->
   <string name="experiments_snackbar">Skeakelje telemetry yn om gegevens te ferstjoeren.</string>
   <!-- Snackbar button text to navigate to telemetry settings. -->
-  <string name="experiments_snackbar_button">Nei Ynstellingen</string>
+  <string name="experiments_snackbar_button">Nei ynstellingen</string>
   <!--
     Accessibility services actions labels. These will be appended to accessibility actions like "Double tap to.." but not by or applications but by services like Talkback.
 
@@ -3999,7 +3999,7 @@
   -->
   <string name="debug_drawer_title">Helpmiddelen foar debugge</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate back within the debug drawer. -->
-  <string name="debug_drawer_back_button_content_description">Tebek blêdzje</string>
+  <string name="debug_drawer_back_button_content_description">Tebek navigearje</string>
   <!-- Content description (not visible, for screen readers etc.): Open debug drawer. -->
   <string name="debug_drawer_fab_content_description">Debuglade iepenje</string>
   <!--
@@ -4540,7 +4540,7 @@
   <!-- Sports widget error card title shown when match data fails to load. -->
   <string name="wrex_widget_error_load_failed_title">Kin op dit stuit gjin wedstriidynformaasje toane</string>
   <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
-  <string name="wrex_widget_error_try_refreshing">Probeaje te ferfarskjen of kontrolearje letter wer.</string>
+  <string name="wrex_widget_error_try_refreshing">Probearje te ferfarskjen of kontrolearje letter opnij.</string>
   <!-- Sports widget error card title shown when the latest match results fail to load. -->
   <string name="wrex_widget_error_results_load_failed_title">Kin op dit stuit gjin resultaten toane</string>
   <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
@@ -4662,7 +4662,7 @@
   <!-- Helper text shown beneath a Firefox Labs item when it is blocked from being turned on. -->
   <string name="firefox_labs_feature_conflict">Funksje is net beskikber om te probearjen.</string>
   <!-- Text displayed on the Firefox Labs screen when there are no Labs experimental features present. -->
-  <string name="firefox_labs_no_labs_available_description">No gjin eksperimintele funksjes om te probearjen</string>
+  <string name="firefox_labs_no_labs_available_description">Op dit stuit gjin eksperimintele funksjes om te probearjen</string>
   <!-- Title of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Website-isolaasje</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->

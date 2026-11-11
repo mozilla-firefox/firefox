@@ -2045,7 +2045,7 @@
   <!-- Broken site reason text for site asked to turn off ad blocker -->
   <string name="webcompat_reporter_reason_turn_off_adblocker">Website vroeg om adblocker uit te schakelen</string>
   <!-- Broken site reason text for browser isn’t supported or blocked -->
-  <string name="webcompat_reporter_reason_notsupported_2">Browser wordt niet ondersteund of geblokkeerd</string>
+  <string name="webcompat_reporter_reason_notsupported_2">Browser wordt geblokkeerd of niet ondersteund</string>
   <!-- Broken site reason text for the site being deceptive -->
   <string name="webcompat_reporter_reason_site_is_deceptive">Deze website is misleidend</string>
   <!-- Broken site reason text for something else -->
@@ -3999,7 +3999,7 @@
   -->
   <string name="debug_drawer_title">Hulpmiddelen voor debuggen</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate back within the debug drawer. -->
-  <string name="debug_drawer_back_button_content_description">Terug bladeren</string>
+  <string name="debug_drawer_back_button_content_description">Terug navigeren</string>
   <!-- Content description (not visible, for screen readers etc.): Open debug drawer. -->
   <string name="debug_drawer_fab_content_description">Debuglade openen</string>
   <!--

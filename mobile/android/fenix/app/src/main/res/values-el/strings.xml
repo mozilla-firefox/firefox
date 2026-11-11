@@ -389,6 +389,8 @@
   <string name="ai_controls_voice_search_description">Ο ήχος μετατρέπεται σε κείμενο από τις υπηρεσίες ομιλίας της Google.</string>
   <!-- Title for the listen to page AI feature toggle -->
   <string name="ai_controls_listen_to_page_title">Ακρόαση σελίδας</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Η συσκευή σας ενδέχεται να χρησιμοποιήσει τεχνητή νοημοσύνη για την εκφώνηση. Το κείμενο και ο ήχος παραμένουν ιδιωτικά.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Αποκλεισμός βελτιώσεων ΤΝ;</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -976,6 +978,8 @@
     Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
   -->
   <string name="addon_remove_dialog_title">Αφαίρεση του «%1$s»;</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Η επέκταση και οι ρυθμίσεις της θα αφαιρεθούν από αυτήν τη συσκευή.</string>
   <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
   <string name="addon_remove_dialog_confirm">Αφαίρεση</string>
   <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
@@ -1147,6 +1151,10 @@
   <string name="preferences_category_sync">Συγχρονισμένα δεδομένα</string>
   <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
   <string name="preferences_enable_sync_title">Συγχρονισμός συσκευής</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Έχει δημιουργηθεί αντίγραφο ασφαλείας των δεδομένων σας και είναι διαθέσιμα στις συγχρονισμένες συσκευές.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Χρησιμοποιούνται αποθηκευμένα δεδομένα του λογαριασμού %1$s σας.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Διαχείριση δεδομένων προς συγχρονισμό με όλες τις συνδεδεμένες συσκευές</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -4486,8 +4494,12 @@
   <string name="wrex_widget_wallpapers">Ταπετσαρίες</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Αφαίρεση γραφικού στοιχείου</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Τελικό</string>
   <!-- Sports widget match status label shown during half-time of a match. -->
   <string name="wrex_widget_match_half_time">Ημίχρονο</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Παράταση</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="wrex_widget_match_penalties">Πέναλτι</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
@@ -4511,6 +4523,11 @@
   -->
   <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, ζωντανά</string>
   <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Παρελθών χρόνος σε λεπτά: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
@@ -4520,6 +4537,14 @@
   <string name="wrex_widget_error_connection_offline_title">Φαίνεται ότι είστε εκτός σύνδεσης</string>
   <!-- Sports widget error card description shown when the user is offline. -->
   <string name="wrex_widget_error_connection_offline_description">Ελέγξτε τη σύνδεσή σας στο διαδίκτυο και δοκιμάστε ξανά.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Δεν είναι δυνατή η εμφάνιση πληροφοριών αγώνα αυτήν τη στιγμή</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Δοκιμάστε να κάνετε ανανέωση ή επιστρέψτε αργότερα.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Δεν είναι δυνατή η εμφάνιση αποτελεσμάτων αυτήν τη στιγμή</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Η ομάδα δεν έχει καθοριστεί ακόμη</string>
   <!--
     Privacy notice homepage banner
 

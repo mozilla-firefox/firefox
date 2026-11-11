@@ -154,6 +154,11 @@
   <string name="preferences_search_synced_tabs">Meklēt vienādotajās cilnēs</string>
   <!-- Preference for account and sync settings -->
   <string name="preferences_account_and_sync_settings">Konts un vienādošana</string>
+  <!--
+    Summary for preference to show sponsored Firefox Suggest search suggestions.
+    %1$s is the name of the app (for example "Firefox").
+  -->
+  <string name="preferences_show_sponsored_suggestions_summary">Atbalsti %1$s ar apmaksātiem ieteikumiem, kas parādās laiku pa laikam</string>
   <!-- Snackbar action label shown when user shares a link -->
   <string name="link_shared_snackbar_action">Pārvaldīt iestatījumus</string>
   <!-- Preference for open links in third party apps always open in apps option -->
@@ -436,6 +441,8 @@
   <string name="preference_doh_provider_custom_dialog_add">Pievienot</string>
   <!-- Text displayed that links to adding website domain for "DNS over HTTPS" exceptions. -->
   <string name="preference_doh_exceptions_add">Pievienot vietni</string>
+  <!-- About page link text to open support link -->
+  <string name="about_support">Atbalsts</string>
   <!-- Title text for the Add To Homescreen dialog -->
   <string name="add_to_homescreen_title">Pievienot sākuma ekrānam</string>
   <!-- Add button text for the Add to Homescreen dialog -->
@@ -582,6 +589,8 @@
   <string name="protection_panel_banner_not_secure_title">Šajā vietnē jāuzmanās</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Drošs savienojums</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">ES uzticības zīme</string>
   <!-- The button text to add tabs to the active tab group in the tab creation tool. -->
   <string name="debug_drawer_tab_tools_tab_creation_tool_button_text_active">Pievienot izmantotajām cilnēm</string>
   <!-- The button text to add tabs to the inactive tab group in the tab creation tool. -->
