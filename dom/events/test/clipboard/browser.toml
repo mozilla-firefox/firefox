@@ -44,6 +44,11 @@ skip-if = [
   "headless",
 ]
 
+["browser_document_command_paste_contextmenu_window_close.js"]
+skip-if = [
+  "headless", # bug 1989339
+]
+
 ["browser_navigator_clipboard_clickjacking.js"]
 support-files = ["simple_navigator_clipboard_keydown.html"]
 run-if = [
@@ -72,6 +77,15 @@ skip-if = [
 support-files = [
   "file_toplevel.html",
   "file_iframe.html",
+]
+
+["browser_navigator_clipboard_contextmenu_window_close.js"]
+support-files = [
+  "file_toplevel.html",
+  "file_iframe.html",
+]
+skip-if = [
+  "headless", # bug 1989339
 ]
 
 ["browser_navigator_clipboard_read.js"]

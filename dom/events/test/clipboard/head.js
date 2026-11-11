@@ -66,12 +66,12 @@ function promiseBrowserReflow() {
   );
 }
 
-function waitForPasteMenuPopupEvent(aEventSuffix) {
+function waitForPasteMenuPopupEvent(aEventSuffix, aDocument = document) {
   // The element with id `kPasteMenuPopupId` is inserted dynamically, hence
   // calling `BrowserTestUtils.waitForEvent` instead of
   // `BrowserTestUtils.waitForPopupEvent`.
   return BrowserTestUtils.waitForEvent(
-    document,
+    aDocument,
     "popup" + aEventSuffix,
     false /* capture */,
     e => {
@@ -80,11 +80,11 @@ function waitForPasteMenuPopupEvent(aEventSuffix) {
   );
 }
 
-function promisePasteButtonIsShown() {
-  return waitForPasteMenuPopupEvent("shown").then(async () => {
+function promisePasteButtonIsShown(aDocument = document) {
+  return waitForPasteMenuPopupEvent("shown", aDocument).then(async () => {
     ok(true, "Witnessed 'popupshown' event for 'Paste' button.");
 
-    const pasteButton = document.getElementById(kPasteMenuItemId);
+    const pasteButton = aDocument.getElementById(kPasteMenuItemId);
     if (Services.prefs.getIntPref("security.dialog_enable_delay") > 0) {
       ok(
         pasteButton.disabled,

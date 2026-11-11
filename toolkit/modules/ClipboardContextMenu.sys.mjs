@@ -17,6 +17,7 @@ export var ClipboardContextMenu = {
         this.onCommand();
         break;
       }
+      case "unload":
       case "popuphiding": {
         this.onPopupHiding();
         break;
@@ -37,6 +38,10 @@ export var ClipboardContextMenu = {
   },
 
   onPopupHiding() {
+    if (!this._pendingRequest) {
+      return;
+    }
+
     // Remove the listeners before potentially sending the async message
     // below, because that might throw.
     this._removeMenupopupEventListeners();
@@ -46,6 +51,7 @@ export var ClipboardContextMenu = {
     this._menupopup = null;
     this._menuitem = null;
 
+    this._pendingRequest.promptWindow.removeEventListener("unload", this);
     let propBag = lazy.PromptUtils.objectToPropBag({
       ok: this._pasteMenuItemClicked,
     });
@@ -90,7 +96,8 @@ export var ClipboardContextMenu = {
         return;
       }
 
-      let { document } = aWindowContext.browsingContext.topChromeWindow;
+      const { topChromeWindow } = aWindowContext.browsingContext;
+      const { document } = topChromeWindow;
       if (!document) {
         reject(
           Components.Exception(
@@ -111,14 +118,18 @@ export var ClipboardContextMenu = {
         return;
       }
 
-      this._pendingRequest = { resolve, reject };
+      this._pendingRequest = { resolve, reject, promptWindow: topChromeWindow };
       this._menupopup = this._getMenupopup(document);
       this._menuitem = this._menupopup.firstElementChild;
       this._addMenupopupEventListeners();
+      // We need to handle the unload event because the popuphiding event might
+      // not fire when the chrome window is closed on Linux (bug 2089701).
+      // This can be removed once bug 2089701 is fixed.
+      topChromeWindow.addEventListener("unload", this, { once: true });
 
       let mouseXInCSSPixels = {};
       let mouseYInCSSPixels = {};
-      document.documentGlobal.windowUtils.getLastOverWindowPointerLocationInCSSPixels(
+      topChromeWindow.windowUtils.getLastOverWindowPointerLocationInCSSPixels(
         mouseXInCSSPixels,
         mouseYInCSSPixels
       );
