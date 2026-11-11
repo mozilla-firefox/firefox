@@ -146,18 +146,6 @@ static bool EncodeJpeg(SkWStream* aDst, const SkPixmap& aSrc, int aQuality) {
 
 namespace mozilla::gfx {
 
-struct PrintTargetSkPDF::SkPDFDocState {
-  explicit SkPDFDocState(UniquePtr<GkSkWStream> aStream)
-      : mOStream(std::move(aStream)) {}
-
-  // Do not hand out references to this object. It holds a non-owning reference
-  // to mOStream, so must not outlive mOStream. Order here ensures that mDoc is
-  // destroyed before mOStream, which it wraps.
-  UniquePtr<GkSkWStream> mOStream;
-  sk_sp<SkDocument> mDoc;
-  SkCanvas* mCanvas = nullptr;  // Owned by mDoc.
-};
-
 class GkSkWStream final : public SkWStream {
  public:
   // Used for the dummy mRefState stream.
@@ -216,6 +204,18 @@ class GkSkWStream final : public SkWStream {
  private:
   nsCOMPtr<nsIOutputStream> mStream;
   size_t mWritten = 0;
+};
+
+struct PrintTargetSkPDF::SkPDFDocState {
+  explicit SkPDFDocState(UniquePtr<GkSkWStream> aStream)
+      : mOStream(std::move(aStream)) {}
+
+  // Do not hand out references to this object. It holds a non-owning reference
+  // to mOStream, so must not outlive mOStream. Order here ensures that mDoc is
+  // destroyed before mOStream, which it wraps.
+  UniquePtr<GkSkWStream> mOStream;
+  sk_sp<SkDocument> mDoc;
+  SkCanvas* mCanvas = nullptr;  // Owned by mDoc.
 };
 
 PrintTargetSkPDF::PrintTargetSkPDF(UniquePtr<GkSkWStream> aStream)
