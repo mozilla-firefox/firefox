@@ -23,9 +23,12 @@ import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
+import mozilla.components.compose.menu.store.CustomizableMenuAction
+import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.MenuItemIconRes
+import mozilla.components.lib.state.Middleware
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.ui.icons.R as iconsR
 import org.junit.Assert.assertEquals
@@ -256,6 +259,87 @@ class CustomizeMenuContentTest {
     }
 
     @Test
+    fun `WHEN a mandatory section is dragged over the hidden sections THEN the app is told the user tried to hide it`() {
+        val actions = mutableListOf<CustomizableMenuAction>()
+        setContent(
+            menuState(shown = listOf(row("Shown"), row("Mandatory")), mandatoryIds = setOf("Mandatory")),
+            middleware =
+                listOf { _, next, action ->
+                    actions += action
+                    next(action)
+                },
+        )
+
+        longPressAndMove(title = "Mandatory", to = { boundsOf(dragToHide).center })
+
+        assertEquals(
+            listOf(AttemptedRemovalOfMandatorySection("Mandatory")),
+            actions.filterIsInstance<AttemptedRemovalOfMandatorySection>(),
+        )
+
+        release()
+    }
+
+    @Test
+    fun `WHEN a shown section is dragged over the hidden sections THEN the app is not told the user tried to hide a mandatory section`() {
+        val actions = mutableListOf<CustomizableMenuAction>()
+        setContent(
+            menuState(shown = listOf(row("Shown"), row("Mandatory")), mandatoryIds = setOf("Mandatory")),
+            middleware =
+                listOf { _, next, action ->
+                    actions += action
+                    next(action)
+                },
+        )
+
+        longPressAndDrag(title = "Shown", to = { boundsOf(dragToHide).center })
+
+        assertEquals(
+            emptyList<CustomizableMenuAction>(),
+            actions.filterIsInstance<AttemptedRemovalOfMandatorySection>(),
+        )
+    }
+
+    @Test
+    fun `WHEN a mandatory section is dragged over the hidden sections again in the same drag THEN the app is told only once`() {
+        val actions = mutableListOf<CustomizableMenuAction>()
+        setContent(
+            menuState(shown = listOf(row("Shown"), row("Mandatory")), mandatoryIds = setOf("Mandatory")),
+            middleware =
+                listOf { _, next, action ->
+                    actions += action
+                    next(action)
+                },
+        )
+
+        longPressAndMove(title = "Mandatory", to = { boundsOf(dragToHide).center })
+        moveTo { boundsOf("Shown").center }
+        moveTo { boundsOf(dragToHide).center }
+
+        assertEquals(1, actions.count { it is AttemptedRemovalOfMandatorySection })
+
+        release()
+    }
+
+    @Test
+    fun `WHEN a mandatory section is dragged over the hidden sections in two drags THEN the app is told for each of them`() {
+        val actions = mutableListOf<CustomizableMenuAction>()
+        setContent(
+            menuState(shown = listOf(row("Shown"), row("Mandatory")), mandatoryIds = setOf("Mandatory")),
+            middleware =
+                listOf { _, next, action ->
+                    actions += action
+                    next(action)
+                },
+        )
+
+        longPressAndDrag(title = "Mandatory", to = { boundsOf(dragToHide).center })
+        longPressAndDrag(title = "Mandatory", to = { boundsOf(dragToHide).center })
+
+        assertEquals(2, actions.count { it is AttemptedRemovalOfMandatorySection })
+    }
+
+    @Test
     fun `GIVEN hidden sections WHEN a mandatory section is dragged over them THEN it is put back where it was`() {
         val state =
             menuState(
@@ -295,8 +379,11 @@ class CustomizeMenuContentTest {
         release()
     }
 
-    private fun setContent(state: CustomizableMenuState): CustomizableMenuStore {
-        val store = CustomizableMenuStore(initialState = state)
+    private fun setContent(
+        state: CustomizableMenuState,
+        middleware: List<Middleware<CustomizableMenuState, CustomizableMenuAction>> = emptyList(),
+    ): CustomizableMenuStore {
+        val store = CustomizableMenuStore(initialState = state, middleware = middleware)
         composeTestRule.setContent {
             AcornTheme {
                 CustomizeMenuContent(store = store)
@@ -337,6 +424,17 @@ class CustomizeMenuContentTest {
             move()
         }
         composeTestRule.waitForIdle()
+        moveTo(to)
+    }
+
+    /**
+     * Drag in steps the finger which is down from where it is to [to], letting the list react in between.
+     *
+     * @param to Where to drag the finger to, found once the nodes moved.
+     */
+    private fun moveTo(to: () -> Offset) {
+        var from = Offset.Zero
+        composeTestRule.onRoot().performTouchInput { from = checkNotNull(currentPosition()) }
         val steps = 10
         val step = (to() - from) / steps.toFloat()
         repeat(steps) {

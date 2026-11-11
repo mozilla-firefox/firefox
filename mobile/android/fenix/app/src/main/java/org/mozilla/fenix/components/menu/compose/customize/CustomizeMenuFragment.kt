@@ -11,11 +11,13 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
 import androidx.lifecycle.coroutineScope
+import androidx.navigation.fragment.findNavController
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuContent
 import mozilla.components.feature.automotive.isAndroidAutomotiveAvailable
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
+import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.MenuBuilder
@@ -29,11 +31,15 @@ import org.mozilla.fenix.ext.isToolbarAtBottom
 import org.mozilla.fenix.ext.openSetDefaultBrowserOption
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.showToolbar
+import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
+import org.mozilla.fenix.snackbar.SnackbarBinding
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.translations.TranslationsEnabledSettings
 
 /** Screen allowing the user to customize the order of and what menu items or menu sections are to be shown. */
 class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
+    private val snackbarBinding = ViewBoundFeatureWrapper<SnackbarBinding>()
+
     private val menuStore: CustomizableMenuStore by
         fragmentStore(CustomizableMenuState(emptyList())) { restoredState ->
             val components = requireComponents
@@ -53,6 +59,8 @@ class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
                             isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                             isExpandedToolbarEnabled = components.settings.shouldUseExpandedToolbar,
                             scope = viewLifecycleOwner.lifecycle.coroutineScope,
+                            appStore = components.appStore,
+                            cannotHideSectionMessage = getString(R.string.customize_menu_cannot_hide_section),
                         )
                     ),
             )
@@ -66,6 +74,28 @@ class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
         FirefoxTheme {
             CustomizeMenuContent(store = menuStore)
         }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val components = requireComponents
+        snackbarBinding.set(
+            feature =
+                SnackbarBinding(
+                    context = requireContext(),
+                    browserStore = components.core.store,
+                    appStore = components.appStore,
+                    snackbarDelegate = FenixSnackbarDelegate(view),
+                    navController = findNavController(),
+                    tabsUseCases = components.useCases.tabsUseCases,
+                    sendTabUseCases = null,
+                    customTabSessionId = null,
+                    applicationScope = components.applicationScope,
+                ),
+            owner = this,
+            view = view,
+        )
     }
 
     override fun onResume() {

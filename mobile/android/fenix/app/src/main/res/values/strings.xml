@@ -156,6 +156,8 @@
     <!-- Browser Fragment -->
     <!-- Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout. -->
     <string name="customize_menu">Customize menu</string>
+    <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+    <string name="customize_menu_cannot_hide_section">Can’t hide this section</string>
     <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
     <string name="browser_menu_back">Back</string>
     <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->

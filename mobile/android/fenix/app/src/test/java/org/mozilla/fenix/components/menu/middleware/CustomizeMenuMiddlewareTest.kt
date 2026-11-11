@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.CustomizableMenuAction
+import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
@@ -26,6 +27,10 @@ import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import org.junit.Test
+import org.mozilla.fenix.components.AppStore
+import org.mozilla.fenix.components.appstate.AppAction
+import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction
+import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
@@ -43,6 +48,9 @@ class CustomizeMenuMiddlewareTest {
     private val repository: MenuCustomizationRepository = mockk(relaxed = true)
     private val menuBuilder: MenuBuilder = mockk()
     private val captureActions = CaptureActionsMiddleware<CustomizableMenuState, CustomizableMenuAction>()
+    private val captureAppActions = CaptureActionsMiddleware<AppState, AppAction>()
+    private val appStore = AppStore(middlewares = listOf(captureAppActions))
+    private val cannotHideSectionMessage = "Can't hide this section"
     private val defaultMenuInfo =
         BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
 
@@ -173,6 +181,18 @@ class CustomizeMenuMiddlewareTest {
             assertTrue(store.state.isCustomized)
         }
 
+    @Test
+    fun `WHEN the user tries to remove a section which cannot be removed THEN tell them it cannot be hidden`() =
+        runTest {
+            val store = createStore(initialState = CustomizableMenuState(menuGroups = defaultGroups()))
+
+            store.dispatch(AttemptedRemovalOfMandatorySection(GROUP_5_ID))
+
+            captureAppActions.assertLastAction(SnackbarAction.ShowSnackbar::class) { action ->
+                assertEquals(cannotHideSectionMessage, action.title)
+            }
+        }
+
     // The customization is read on a scope that runTest cancels at the end of each test.
     private fun TestScope.createStore(
         initialState: CustomizableMenuState = CustomizableMenuState(menuGroups = emptyList()),
@@ -193,6 +213,8 @@ class CustomizeMenuMiddlewareTest {
                         isToolbarAtBottom = false,
                         isExpandedToolbarEnabled = false,
                         scope = backgroundScope,
+                        appStore = appStore,
+                        cannotHideSectionMessage = cannotHideSectionMessage,
                     ),
                 ),
         )

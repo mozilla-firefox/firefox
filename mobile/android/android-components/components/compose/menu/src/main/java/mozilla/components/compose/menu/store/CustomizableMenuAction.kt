@@ -47,4 +47,11 @@ sealed interface CustomizableMenuAction : Action {
      * @property isCustomized Whether the menu structure differs from the default one.
      */
     data class CustomizationStatusChanged(val isCustomized: Boolean) : CustomizableMenuAction
+
+    /**
+     * The user tried to remove a menu group which cannot be removed from the menu.
+     *
+     * @property sectionId Id of the menu group.
+     */
+    data class AttemptedRemovalOfMandatorySection(val sectionId: String) : CustomizableMenuAction
 }

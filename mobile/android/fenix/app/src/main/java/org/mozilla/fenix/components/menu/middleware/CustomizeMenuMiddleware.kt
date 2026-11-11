@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import mozilla.components.compose.menu.store.CustomizableMenuAction
+import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
@@ -18,6 +19,8 @@ import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
+import org.mozilla.fenix.components.AppStore
+import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
@@ -32,6 +35,8 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
  * @param isToolbarAtBottom Whether the toolbar is shown at the bottom of the screen.
  * @param isExpandedToolbarEnabled Whether the expanded toolbar is used.
  * @param scope [CoroutineScope] tied to the lifetime of the screen, on which to read the current structure.
+ * @param appStore [AppStore] showing the snackbars of the screen.
+ * @param cannotHideSectionMessage Localized message telling the user a section cannot be removed from the menu.
  */
 class CustomizeMenuMiddleware(
     private val repository: MenuCustomizationRepository,
@@ -39,6 +44,8 @@ class CustomizeMenuMiddleware(
     private val isToolbarAtBottom: Boolean,
     private val isExpandedToolbarEnabled: Boolean,
     private val scope: CoroutineScope,
+    private val appStore: AppStore,
+    private val cannotHideSectionMessage: String,
 ) : Middleware<CustomizableMenuState, CustomizableMenuAction> {
 
     override fun invoke(
@@ -64,6 +71,8 @@ class CustomizeMenuMiddleware(
                     store.dispatch(CustomizationStatusChanged(isCustomized))
                 }
             }
+            is AttemptedRemovalOfMandatorySection ->
+                appStore.dispatch(SnackbarAction.ShowSnackbar(title = cannotHideSectionMessage))
             is MenuEvent,
             is Update,
             is CustomizationStatusChanged -> Unit

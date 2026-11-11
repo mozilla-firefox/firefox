@@ -6,18 +6,22 @@ package mozilla.components.compose.menu.ui.customize
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import kotlinx.coroutines.flow.first
 import mozilla.components.compose.draggable.InteractionMode
 import mozilla.components.compose.draggable.InteractionState
 import mozilla.components.compose.draggable.ItemInteractionHandler
 import mozilla.components.compose.draggable.ListInteractionState
 import mozilla.components.compose.draggable.createListInteractionState
+import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
@@ -60,7 +64,8 @@ private const val AUTO_SCROLL_ZONE_WINDOW_FRACTION = 0.1f
 
 /**
  * Allows dragging the groups of the customize menu screen shown in the list with [listState] to reorder them, hide them
- * or show them again, saving the move to [store] when the user lets go of a dragged group.
+ * or show them again, saving the move to [store] when the user lets go of a dragged group. Tells [store], once for each
+ * drag, when a group which cannot be removed from the menu is dragged over the area holding the hidden groups.
  */
 @Composable
 internal fun rememberCustomizeMenuDragState(
@@ -119,6 +124,17 @@ internal fun rememberCustomizeMenuDragState(
             }
         }
     SideEffect { moveGroupsHandler.dropTarget = { dropTarget.value } }
+
+    val draggedMandatoryGroupId by
+        remember(interactionState, groups) {
+            derivedStateOf { (interactionState.draggedItem.key as? String)?.takeIf { it in groups.mandatoryIds } }
+        }
+    // Once for each drag, for the user not to be told again while trying again.
+    LaunchedEffect(store, draggedMandatoryGroupId) {
+        val groupId = draggedMandatoryGroupId ?: return@LaunchedEffect
+        snapshotFlow { draggedGroupPosition == DraggedGroupPosition.OVER_HIDDEN_AREA }.first { isOver -> isOver }
+        store.dispatch(AttemptedRemovalOfMandatorySection(groupId))
+    }
 
     return CustomizeMenuDragState(
         groups = groups,

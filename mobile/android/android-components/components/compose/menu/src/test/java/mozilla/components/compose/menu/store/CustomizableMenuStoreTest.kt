@@ -5,6 +5,7 @@
 package mozilla.components.compose.menu.store
 
 import mozilla.components.compose.menu.data.MenuItemsGroup
+import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
@@ -84,6 +85,16 @@ class CustomizableMenuStoreTest {
         val store = CustomizableMenuStore(initialState = initialState)
 
         store.dispatch(TestMenuEvent)
+
+        assertEquals(initialState, store.state)
+    }
+
+    @Test
+    fun `WHEN the user tries to remove a group which cannot be removed THEN don't change the state`() {
+        val initialState = CustomizableMenuState(menuGroups = groups("a", "b"), mandatoryGroupIds = setOf("b"))
+        val store = CustomizableMenuStore(initialState = initialState)
+
+        store.dispatch(AttemptedRemovalOfMandatorySection("b"))
 
         assertEquals(initialState, store.state)
     }
