@@ -402,6 +402,7 @@ nsMultiplexInputStream::Seek(int32_t aWhence, int64_t aOffset) {
     int64_t remaining = aOffset;
     if (aOffset == 0) {
       mCurrentStream = 0;
+      mStartedReadingCurrent = false;
     }
     for (uint32_t i = 0; i < mStreams.Length(); ++i) {
       nsCOMPtr<nsISeekableStream> stream = mStreams[i].mSeekableStream;
