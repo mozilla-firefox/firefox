@@ -103,6 +103,44 @@ class CallbackOnComplete final : public mozIStorageCompletionCallback {
 
 NS_IMPL_ISUPPORTS(CallbackOnComplete, mozIStorageCompletionCallback)
 
+/**
+ * Forwards notifications to the consumer's callback, and notifies the target
+ * when the statement completed.
+ */
+class DispatchedStatementCallback final : public AsyncStatementCallback {
+  using Method = void (ConcurrentConnection::*)(mozIStoragePendingStatement*);
+
+ public:
+  DispatchedStatementCallback(ConcurrentConnection* aTarget, Method aMethod,
+                              PendingStatementCallback* aCallback)
+      : mMethod(aMethod), mTarget(aTarget), mCallback(aCallback) {}
+
+  void SetPendingStatement(mozIStoragePendingStatement* aStatement) {
+    mPendingStatement = aStatement;
+  }
+
+  NS_IMETHOD HandleResult(mozIStorageResultSet* aResultSet) override {
+    return mCallback->HandleResult(aResultSet);
+  }
+
+  NS_IMETHOD HandleError(mozIStorageError* aError) override {
+    return mCallback->HandleError(aError);
+  }
+
+  NS_IMETHOD HandleCompletion(uint16_t aReason) override {
+    nsCOMPtr<mozIStoragePendingStatement> statement =
+        mPendingStatement.forget();
+    (mTarget->*mMethod)(statement);
+    return mCallback->HandleCompletion(aReason);
+  }
+
+ private:
+  Method mMethod;
+  RefPtr<ConcurrentConnection> mTarget;
+  RefPtr<PendingStatementCallback> mCallback;
+  nsCOMPtr<mozIStoragePendingStatement> mPendingStatement;
+};
+
 }  // anonymous namespace
 
 NS_IMPL_ISUPPORTS(ConcurrentConnection, nsIObserver, nsISupportsWeakReference,
@@ -247,6 +285,11 @@ ConcurrentConnection::BlockShutdown(nsIAsyncShutdownClient* aBarrierClient) {
   // Start closing the connection, then call aBarrierClient.RemoveBlocker(this)
   // once done.
   if (mConn) {
+    // Interrupt only stops the running statement, and AsyncClose runs all
+    // the queued statements before closing, so cancel them.
+    for (const auto& statement : mDispatchedStatements) {
+      (void)statement->Cancel();
+    }
     (void)mConn->Interrupt();
     CloseConnection();
   } else if (!mIsOpening && !mIsClosing) {
@@ -595,10 +638,21 @@ void ConcurrentConnection::TryToConsumeQueues() {
     if (NS_WARN_IF(NS_FAILED(rv))) continue;
     rv = stmt->BindParameters(paramsArray);
     if (NS_WARN_IF(NS_FAILED(rv))) continue;
+    RefPtr<DispatchedStatementCallback> cb =
+        MakeAndAddRef<DispatchedStatementCallback>(
+            this, &ConcurrentConnection::StatementCompleted, query->mCallback);
     nsCOMPtr<mozIStoragePendingStatement> ps;
-    rv = stmt->ExecuteAsync(query->mCallback, getter_AddRefs(ps));
+    rv = stmt->ExecuteAsync(cb, getter_AddRefs(ps));
     if (NS_WARN_IF(NS_FAILED(rv))) continue;
+    cb->SetPendingStatement(ps);
+    mDispatchedStatements.AppendElement(ps);
   }
+}
+
+void ConcurrentConnection::StatementCompleted(
+    mozIStoragePendingStatement* aStatement) {
+  AssertIsOnMainThread();
+  mDispatchedStatements.RemoveElement(aStatement);
 }
 
 void ConcurrentConnection::TryToOpenConnection() {
@@ -687,6 +741,7 @@ void ConcurrentConnection::Shutdown() {
   // Clear the queues, as we can't handle them anymore.
   mPendingQueries.Erase();
   mPendingRunnables.Erase();
+  mDispatchedStatements.Clear();
 
   // Stop blocking shutdown.
   if (mShutdownBarrierClient) {

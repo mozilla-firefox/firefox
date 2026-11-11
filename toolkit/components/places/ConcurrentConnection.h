@@ -9,6 +9,7 @@
 #include "mozilla/Mutex.h"
 #include "mozilla/storage/StatementCache.h"
 #include "mozIStorageCompletionCallback.h"
+#include "mozIStoragePendingStatement.h"
 #include "mozIStorageStatementCallback.h"
 #include "Helpers.h"
 #include "mozilla/RefPtr.h"
@@ -18,6 +19,7 @@
 #include "nsIObserver.h"
 #include "nsISupportsImpl.h"
 #include "nsITimer.h"
+#include "nsTArray.h"
 #include "nsWeakReference.h"
 
 namespace mozilla::places {
@@ -124,6 +126,11 @@ class ConcurrentConnection final : public nsIObserver,
   void TryToConsumeQueues();
 
   /**
+   * Stop tracking a dispatched statement once it completed.
+   */
+  void StatementCompleted(mozIStoragePendingStatement* aStatement);
+
+  /**
    * Try to open a database connection.
    * This may arguably fail, for example if the database was not created yet,
    * or has an outdated schema version. In that case this component will try
@@ -201,6 +208,12 @@ class ConcurrentConnection final : public nsIObserver,
    */
   nsRefPtrDeque<PendingQuery> mPendingQueries;
   nsRefPtrDeque<Runnable> mPendingRunnables;
+
+  /**
+   * Statements dispatched to the connection that didn't complete yet, so they
+   * can be canceled at shutdown.
+   */
+  nsTArray<nsCOMPtr<mozIStoragePendingStatement>> mDispatchedStatements;
 
   nsCOMPtr<nsITimer> mPlacesInitFallbackTimer;
 

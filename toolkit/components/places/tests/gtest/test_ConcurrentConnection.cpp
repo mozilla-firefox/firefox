@@ -7,6 +7,7 @@
 #include "../../Helpers.h"
 
 #include "mozilla/Assertions.h"
+#include "mozilla/Monitor.h"
 #include "mozIStorageBindingParamsArray.h"
 #include "mozIStorageResultSet.h"
 #include "mozIStorageRow.h"
@@ -118,6 +119,31 @@ class TestRunnable : public Runnable {
   ~TestRunnable() = default;
 };
 
+class BlockingRunnable : public Runnable {
+ public:
+  BlockingRunnable() : Runnable("places::BlockingRunnable") {}
+
+  NS_IMETHOD Run() override {
+    MonitorAutoLock lock(mMonitor);
+    while (!mReleased) {
+      lock.Wait();
+    }
+    return NS_OK;
+  }
+
+  void Unblock() {
+    MonitorAutoLock lock(mMonitor);
+    mReleased = true;
+    lock.Notify();
+  }
+
+ private:
+  ~BlockingRunnable() = default;
+
+  Monitor mMonitor MOZ_UNANNOTATED{"BlockingRunnable::mMonitor"};
+  bool mReleased = false;
+};
+
 }  // Anonymous namespace
 
 TEST(test_ConcurrentConnection, test_setup)
@@ -202,6 +228,35 @@ TEST(test_ConcurrentConnection, test_queue_from_background_thread)
             mozIStorageStatementCallback::REASON_FINISHED);
   ASSERT_TRUE(cb->mValue.EqualsLiteral("moz_places"));
   ASSERT_TRUE(event->SpinUntilResult());
+}
+
+TEST(test_ConcurrentConnection, test_cancel_dispatched_statements_on_shutdown)
+{
+  auto conn = ConcurrentConnection::GetInstance();
+  MOZ_DIAGNOSTIC_ASSERT(conn.isSome());
+
+  // Keep the helper thread busy, so the statements stay queued.
+  RefPtr<BlockingRunnable> blocker = MakeAndAddRef<BlockingRunnable>();
+  conn.value()->Queue(blocker);
+
+  RefPtr<StatementCallback> cb1 =
+      MakeAndAddRef<StatementCallback>("moz_places"_ns);
+  conn.value()->Queue(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND tbl_name = ?"_ns,
+      cb1);
+  RefPtr<StatementCallback> cb2 =
+      MakeAndAddRef<StatementCallback>("moz_icons"_ns);
+  conn.value()->Queue(
+      "SELECT name FROM favicons.sqlite_master WHERE type = 'table' AND tbl_name = ?"_ns,
+      cb2);
+
+  MOZ_ALWAYS_SUCCEEDS(conn.value()->BlockShutdown(nullptr));
+  blocker->Unblock();
+
+  ASSERT_EQ(cb1->SpinUntilCompleted(),
+            mozIStorageStatementCallback::REASON_CANCELED);
+  ASSERT_EQ(cb2->SpinUntilCompleted(),
+            mozIStorageStatementCallback::REASON_CANCELED);
 }
 
 TEST(test_ConcurrentConnection, test_shutdown)
