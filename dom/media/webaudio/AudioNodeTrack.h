@@ -116,14 +116,6 @@ class AudioNodeTrack : public ProcessedMediaTrack {
   // The value for channelCount on an AudioNode, but on the audio thread side.
   uint32_t NumberOfChannels() const override;
 
-  /*
-   * Resume track after updating its concept of current time by aAdvance.
-   * Main thread.  Used only from AudioDestinationNode when resuming a track
-   * suspended to save running the MediaTrackGraph when there are no other
-   * nodes in the AudioContext.
-   */
-  void AdvanceAndResume(TrackTime aAdvance);
-
   AudioNodeTrack* AsAudioNodeTrack() override { return this; }
   void AddInput(MediaInputPort* aPort) override;
   void RemoveInput(MediaInputPort* aPort) override;

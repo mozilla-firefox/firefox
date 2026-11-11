@@ -255,16 +255,6 @@ uint32_t AudioNodeTrack::NumberOfChannels() const {
   return mNumberOfInputChannels;
 }
 
-void AudioNodeTrack::AdvanceAndResume(TrackTime aAdvance) {
-  mMainThreadCurrentTime += aAdvance;
-  QueueControlMessageWithNoShutdown([self = RefPtr{this}, this, aAdvance] {
-    TRACE("AudioNodeTrack::AdvanceAndResumeMessage");
-    mStartTime -= aAdvance;
-    mSegment->AppendNullData(aAdvance);
-    DecrementSuspendCount();
-  });
-}
-
 void AudioNodeTrack::ObtainInputBlock(AudioBlock& aTmpChunk,
                                       uint32_t aPortIndex) {
   uint32_t inputCount = mInputs.Length();

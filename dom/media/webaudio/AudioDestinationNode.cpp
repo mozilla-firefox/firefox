@@ -241,8 +241,7 @@ class DestinationNodeEngine final : public AudioNodeEngine {
     // Keep processing to track track time, which is used for all timelines
     // associated with the same AudioContext.  If there are no other engines
     // for the AudioContext, then this could return false to suspend the
-    // track, but the track is blocked anyway through
-    // AudioDestinationNode::SetIsOnlyNodeForContext().
+    // track.
     return true;
   }
 
