@@ -14,6 +14,14 @@
   <script type="application/javascript">
     const utils = SpecialPowers.getDOMWindowUtils(window);
 
+    async function synthesizeKeyAndWaitForScrollEnd(key) {
+      let scrollEndPromise = promiseScrollend(visualViewport);
+      window.synthesizeKey(key);
+      await scrollEndPromise;
+      await promiseApzFlushedRepaints();
+      await promiseFrame();
+    }
+
     async function test() {
       is(await getResolution(), 1.0, "should not be zoomed (1)");
 
@@ -34,10 +42,7 @@
       is(visualViewport.pageTop, 0, "shouldn't have scrolled (9)");
       is(visualViewport.pageLeft, 0, "shouldn't have scrolled (10)");
 
-      window.synthesizeKey("KEY_ArrowRight");
-
-      await promiseApzFlushedRepaints();
-      await promiseFrame();
+      await synthesizeKeyAndWaitForScrollEnd("KEY_ArrowRight");
 
       is(await getResolution(), 2.0, "should be zoomed (11)");
 
@@ -46,10 +51,7 @@
       is(visualViewport.pageTop, 0, "shouldn't have scrolled (14)");
       isnot(visualViewport.pageLeft, 0, "should have scrolled (15)");
 
-      window.synthesizeKey("KEY_ArrowDown");
-
-      await promiseApzFlushedRepaints();
-      await promiseFrame();
+      await synthesizeKeyAndWaitForScrollEnd("KEY_ArrowDown");
 
       is(await getResolution(), 2.0, "should be zoomed (16)");
 
@@ -58,12 +60,26 @@
       isnot(visualViewport.pageTop, 0, "should have scrolled (19)");
       isnot(visualViewport.pageLeft, 0, "should have scrolled (20)");
 
+      let pageLeft = visualViewport.pageLeft;
+      await synthesizeKeyAndWaitForScrollEnd("KEY_ArrowLeft");
+
+      is(window.scrollX, 0, "shouldn't have scrolled (21)");
+      is(window.scrollY, 0, "shouldn't have scrolled (22)");
+      ok(visualViewport.pageLeft < pageLeft, "should have scrolled left (23)");
+
+      let pageTop = visualViewport.pageTop;
+      await synthesizeKeyAndWaitForScrollEnd("KEY_ArrowUp");
+
+      is(window.scrollX, 0, "shouldn't have scrolled (24)");
+      is(window.scrollY, 0, "shouldn't have scrolled (25)");
+      ok(visualViewport.pageTop < pageTop, "should have scrolled up (26)");
+
       // Zoom back out
       SpecialPowers.getDOMWindowUtils(window).setResolutionAndScaleTo(1.0);
       await promiseApzFlushedRepaints();
       await promiseFrame();
 
-      is(await getResolution(), 1.0, "should not be zoomed (21)");
+      is(await getResolution(), 1.0, "should not be zoomed (27)");
     }
 
     waitUntilApzStable()

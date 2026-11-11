@@ -7654,7 +7654,7 @@ ScrollContainerFrame::GetAvailableScrollingDirectionsForUserInputEvents()
 
 Sides ScrollContainerFrame::SidesToScrollForUserInputEvents() const {
   nsRect scrollRange = GetScrollRangeForUserInputEvents();
-  nsPoint scrollPos = GetScrollPosition();
+  nsPoint scrollPos = GetVisualViewportOffset();
 
   // We check if there is at least one half of a screen pixel of scroll range to
   // roughly match what apz does when it checks if the change in scroll position
