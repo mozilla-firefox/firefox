@@ -13,7 +13,7 @@ XPIDL_SOURCES += [
 
 XPIDL_MODULE = "toolkit_cleardata"
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "ClearBySiteEntry.sys.mjs",
     "ClearDataService.sys.mjs",
     "PrincipalsCollector.sys.mjs",

@@ -12,7 +12,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   HiddenFrame: "resource://gre/modules/HiddenFrame.sys.mjs",
   PerTestCoverageUtils:
     "resource://testing-common/PerTestCoverageUtils.sys.mjs",
-  ServiceWorkerCleanUp: "resource://gre/modules/ServiceWorkerCleanUp.sys.mjs",
+  ServiceWorkerCleanUp:
+    "moz-src:///toolkit/components/cleardata/ServiceWorkerCleanUp.sys.mjs",
   SpecialPowersSandbox:
     "resource://testing-common/SpecialPowersSandbox.sys.mjs",
 });

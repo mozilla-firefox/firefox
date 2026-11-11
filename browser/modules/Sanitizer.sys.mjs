@@ -15,7 +15,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
   FormHistory: "resource://gre/modules/FormHistory.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
-  PrincipalsCollector: "resource://gre/modules/PrincipalsCollector.sys.mjs",
+  PrincipalsCollector:
+    "moz-src:///toolkit/components/cleardata/PrincipalsCollector.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   SessionStore:
     "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",

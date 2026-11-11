@@ -73,6 +73,9 @@
       "chrome://browser/content/aiwindow/components/aitab-highlights.mjs": [
         "../../../browser/components/aiwindow/ui/components/aitab-page/aitab-highlights/aitab-highlights.mjs"
       ],
+      "chrome://browser/content/aiwindow/components/aitab-image.mjs": [
+        "../../../browser/components/aiwindow/ui/components/aitab-page/aitab-image/aitab-image.mjs"
+      ],
       "chrome://browser/content/aiwindow/components/aitab-list.mjs": [
         "../../../browser/components/aiwindow/ui/components/aitab-page/aitab-list/aitab-list.mjs"
       ],
@@ -357,9 +360,6 @@
       ],
       "chrome://browser/content/preferences/config/notification-permissions.mjs": [
         "../../../browser/components/preferences/config/notification-permissions.mjs"
-      ],
-      "chrome://browser/content/preferences/widgets/dialog-button.mjs": [
-        "../../../browser/components/preferences/widgets/dialog-button/dialog-button.mjs"
       ],
       "chrome://browser/content/preferences/widgets/nav-notice.mjs": [
         "../../../browser/components/preferences/widgets/nav-notice/nav-notice.mjs"
@@ -6340,9 +6340,6 @@
       "resource://gre/modules/Preferences.sys.mjs": [
         "../../../toolkit/modules/Preferences.sys.mjs"
       ],
-      "resource://gre/modules/PrincipalsCollector.sys.mjs": [
-        "../../../toolkit/components/cleardata/PrincipalsCollector.sys.mjs"
-      ],
       "resource://gre/modules/PrivateBrowsingUtils.sys.mjs": [
         "../../../toolkit/modules/PrivateBrowsingUtils.sys.mjs"
       ],
@@ -6423,9 +6420,6 @@
       ],
       "resource://gre/modules/ServiceRequest.sys.mjs": [
         "../../../toolkit/modules/ServiceRequest.sys.mjs"
-      ],
-      "resource://gre/modules/ServiceWorkerCleanUp.sys.mjs": [
-        "../../../toolkit/components/cleardata/ServiceWorkerCleanUp.sys.mjs"
       ],
       "resource://gre/modules/ShortcutUtils.sys.mjs": [
         "../../../toolkit/modules/ShortcutUtils.sys.mjs"

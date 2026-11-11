@@ -61,7 +61,8 @@ const lazy = XPCOMUtils.declareLazy({
   getSitePermsPermissionsPromptStringIds:
     "resource://gre/modules/addons/siteperms-addon-utils.sys.mjs",
   Schemas: "resource://gre/modules/Schemas.sys.mjs",
-  ServiceWorkerCleanUp: "resource://gre/modules/ServiceWorkerCleanUp.sys.mjs",
+  ServiceWorkerCleanUp:
+    "moz-src:///toolkit/components/cleardata/ServiceWorkerCleanUp.sys.mjs",
   extensionStorageSync: "resource://gre/modules/ExtensionStorageSync.sys.mjs",
   PERMISSION_L10N: "resource://gre/modules/ExtensionPermissionMessages.sys.mjs",
   permissionToL10nId:

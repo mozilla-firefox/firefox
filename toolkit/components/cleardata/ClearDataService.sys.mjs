@@ -13,7 +13,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   NetworkGeolocationCache:
     "moz-src:///dom/system/NetworkGeolocationCache.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
-  ServiceWorkerCleanUp: "resource://gre/modules/ServiceWorkerCleanUp.sys.mjs",
+  ServiceWorkerCleanUp:
+    "moz-src:///toolkit/components/cleardata/ServiceWorkerCleanUp.sys.mjs",
 });
 
 XPCOMUtils.defineLazyServiceGetter(

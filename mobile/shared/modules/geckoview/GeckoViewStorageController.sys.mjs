@@ -8,7 +8,8 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   E10SUtils: "resource://gre/modules/E10SUtils.sys.mjs",
-  PrincipalsCollector: "resource://gre/modules/PrincipalsCollector.sys.mjs",
+  PrincipalsCollector:
+    "moz-src:///toolkit/components/cleardata/PrincipalsCollector.sys.mjs",
 });
 
 const { debug, warn } = GeckoViewUtils.initLogging(
