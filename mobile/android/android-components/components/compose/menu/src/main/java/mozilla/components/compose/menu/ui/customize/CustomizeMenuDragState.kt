@@ -13,8 +13,11 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import mozilla.components.compose.draggable.InteractionMode
 import mozilla.components.compose.draggable.InteractionState
@@ -65,7 +68,9 @@ private const val AUTO_SCROLL_ZONE_WINDOW_FRACTION = 0.1f
 /**
  * Allows dragging the groups of the customize menu screen shown in the list with [listState] to reorder them, hide them
  * or show them again, saving the move to [store] when the user lets go of a dragged group. Tells [store], once for each
- * drag, when a group which cannot be removed from the menu is dragged over the area holding the hidden groups.
+ * drag, when a group which cannot be removed from the menu is dragged over the area holding the hidden groups. The user
+ * feels it whenever the line, or the highlighted area, showing where the dragged group is dropped appears or moves to
+ * another place.
  */
 @Composable
 internal fun rememberCustomizeMenuDragState(
@@ -128,6 +133,8 @@ internal fun rememberCustomizeMenuDragState(
         }
     SideEffect { moveGroupsHandler.dropTarget = { dropTarget.value } }
 
+    DropIndicationHaptics(interactionState, groups, dropTarget)
+
     val draggedMandatoryGroupId by
         remember(interactionState, groups) {
             derivedStateOf { (interactionState.draggedItem.key as? String)?.takeIf { it in groups.mandatoryIds } }
@@ -147,6 +154,32 @@ internal fun rememberCustomizeMenuDragState(
         hasHiddenGroups = hasHiddenGroups,
         dropTarget = dropTarget,
     )
+}
+
+/**
+ * Lets the user feel it whenever the line, or the highlighted area, showing where the group dragged with
+ * [interactionState] is dropped appears or moves to another place.
+ *
+ * @param interactionState State of dragging the items of the list showing the groups.
+ * @param groups The groups as last saved.
+ * @param dropTarget Where the dragged group is moved to if the user lets go of it, if anywhere.
+ */
+@Composable
+private fun DropIndicationHaptics(
+    interactionState: ListInteractionState,
+    groups: CustomizeMenuGroups,
+    dropTarget: State<CustomizeMenuDropTarget?>,
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+    LaunchedEffect(interactionState, groups, dropTarget) {
+        // Different drop targets can show the line at the same place, which is felt only once.
+        snapshotFlow {
+            val draggedGroupId = interactionState.draggedItem.key ?: return@snapshotFlow null
+            dropTarget.value?.let { groups.drop(draggedGroupId, it) }
+        }
+            .filterNotNull()
+            .collect { hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress) }
+    }
 }
 
 /**

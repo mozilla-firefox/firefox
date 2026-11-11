@@ -4,7 +4,11 @@
 
 package mozilla.components.compose.menu.ui.customize
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
@@ -44,6 +48,7 @@ class CustomizeMenuContentTest {
     private val hiddenSectionsTitle = testContext.getString(R.string.mozac_menu_customize_hidden_sections)
     private val dragToHide = testContext.getString(R.string.mozac_menu_customize_drag_to_hide)
     private val resetToDefault = testContext.getString(R.string.mozac_menu_customize_reset_to_default)
+    private val hapticFeedback = RecordingHapticFeedback()
 
     @Test
     fun `GIVEN shown, mandatory and hidden sections THEN the shown and mandatory ones are shown in their order with the hidden ones below the hidden sections title`() {
@@ -380,6 +385,67 @@ class CustomizeMenuContentTest {
     }
 
     @Test
+    fun `WHEN a section is dragged to where it would be dropped somewhere else THEN the user feels it`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"))))
+        longPressAndMove(title = "Shown 2", to = { boundsOf("Shown 2").center })
+        val feltBefore = hapticFeedback.performed.size
+
+        moveTo { boundsOf("Shown 1").topCenter }
+
+        assertTrue(hapticFeedback.performed.size > feltBefore)
+        release()
+    }
+
+    @Test
+    fun `WHEN a section is dragged back to where it was THEN the user feels it`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"))))
+        longPressAndMove(title = "Shown 2", to = { boundsOf("Shown 2").center })
+        moveTo { boundsOf("Shown 1").topCenter }
+        val feltBefore = hapticFeedback.performed.size
+
+        moveTo { boundsOf("Shown 1").bottomCenter }
+
+        assertTrue(hapticFeedback.performed.size > feltBefore)
+        release()
+    }
+
+    @Test
+    fun `GIVEN no hidden sections WHEN a section is dragged into the hide section area THEN the user feels it`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"))))
+        longPressAndMove(title = "Shown 2", to = { boundsOf("Shown 2").center })
+        val feltBefore = hapticFeedback.performed.size
+
+        moveTo { boundsOf(dragToHide).center }
+
+        assertTrue(hapticFeedback.performed.size > feltBefore)
+        release()
+    }
+
+    @Test
+    fun `GIVEN a section taking so much space that the hide section area takes its place WHEN it is long pressed without moving THEN the user only feels the long press`() {
+        setContent(menuState(shown = listOf(row("Shown"), row(id = "Tall", "Tall 1", "Tall 2", "Tall 3"))))
+
+        longPressAndMove(title = "Tall 1", to = { boundsOf("Tall 1").center })
+
+        assertEquals(1, hapticFeedback.performed.size)
+        release()
+    }
+
+    @Test
+    fun `WHEN a mandatory section is dragged over the hidden sections THEN the user does not feel it`() {
+        setContent(menuState(shown = listOf(row("Shown"), row("Mandatory")), mandatoryIds = setOf("Mandatory")))
+        // On the way there the line showing where it is put back is felt, as for any other section.
+        longPressAndMove(title = "Mandatory", to = { boundsOf(dragToHide).center })
+        val feltBefore = hapticFeedback.performed.size
+
+        // Over the hidden sections it cannot be dropped, so nothing shows where it is.
+        moveTo { boundsOf(dragToHide).bottomCenter }
+
+        assertEquals(feltBefore, hapticFeedback.performed.size)
+        release()
+    }
+
+    @Test
     fun `WHEN a section is dragged THEN the sections below it take its space`() {
         setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"))))
         val shown1 = boundsOf("Shown 1")
@@ -398,7 +464,9 @@ class CustomizeMenuContentTest {
         val store = CustomizableMenuStore(initialState = state, middleware = middleware)
         composeTestRule.setContent {
             AcornTheme {
-                CustomizeMenuContent(store = store)
+                CompositionLocalProvider(LocalHapticFeedback provides hapticFeedback) {
+                    CustomizeMenuContent(store = store)
+                }
             }
         }
         return store
@@ -465,6 +533,15 @@ class CustomizeMenuContentTest {
         composeTestRule.waitForIdle()
     }
 
+    /** [HapticFeedback] that records every feedback type it is asked to perform, in order, in [performed]. */
+    private class RecordingHapticFeedback : HapticFeedback {
+        val performed = mutableListOf<HapticFeedbackType>()
+
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            performed += hapticFeedbackType
+        }
+    }
+
     private fun shownIds(store: CustomizableMenuStore) =
         store.state.menuGroups.map { it.id }.filterNot { it in store.state.hiddenGroupIds }
 
@@ -487,15 +564,17 @@ class CustomizeMenuContentTest {
             isCustomized = isCustomized,
         )
 
-    private fun row(title: String) =
+    private fun row(title: String) = row(id = title, title)
+
+    private fun row(id: String, vararg titles: String) =
         MenuItemsGroup.Row(
-            id = title,
+            id = id,
             items =
-                listOf(
+                titles.map { title ->
                     StandardMenuItem(
                         title = MenuItemTitle(Text.String(title)),
                         icon = MenuItemIconRes(iconsR.drawable.mozac_ic_settings_24),
                     )
-                ),
+                },
         )
 }
