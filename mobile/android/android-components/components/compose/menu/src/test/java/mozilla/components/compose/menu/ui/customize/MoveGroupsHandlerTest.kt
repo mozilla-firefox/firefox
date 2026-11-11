@@ -45,7 +45,10 @@ class MoveGroupsHandlerTest {
         handler.onDragEnd()
 
         assertEquals(
-            listOf(Init, MenuStructureChanged(items = groups("b", "a", "c"), hiddenGroupIds = setOf("c"))),
+            listOf(
+                Init,
+                MenuStructureChanged(items = groups("b", "a", "c"), hiddenGroupIds = setOf("c"), movedGroupId = "b"),
+            ),
             actions,
         )
     }
@@ -60,7 +63,10 @@ class MoveGroupsHandlerTest {
         handler.onDragEnd()
 
         assertEquals(
-            listOf(Init, MenuStructureChanged(items = groups("b", "a"), hiddenGroupIds = setOf("a"))),
+            listOf(
+                Init,
+                MenuStructureChanged(items = groups("b", "a"), hiddenGroupIds = setOf("a"), movedGroupId = "a"),
+            ),
             actions,
         )
     }
@@ -110,7 +116,10 @@ class MoveGroupsHandlerTest {
         handler.onDragEnd()
 
         assertEquals(
-            listOf(Init, MenuStructureChanged(items = groups("b", "a", "c"), hiddenGroupIds = setOf("c"))),
+            listOf(
+                Init,
+                MenuStructureChanged(items = groups("b", "a", "c"), hiddenGroupIds = setOf("c"), movedGroupId = "b"),
+            ),
             actions,
         )
     }

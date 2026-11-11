@@ -171,6 +171,7 @@ class CustomizeMenuMiddlewareTest {
                         QUIT_GROUP_ID,
                     ),
                 hiddenGroupIds = setOf(QUIT_GROUP_ID),
+                movedGroupId = PAGE_CONTROLS_GROUP_ID,
             )
         )
 
@@ -211,6 +212,7 @@ class CustomizeMenuMiddlewareTest {
                             QUIT_GROUP_ID,
                         ),
                     hiddenGroupIds = emptySet(),
+                    movedGroupId = VPN_GROUP_ID,
                 )
             )
 
@@ -267,6 +269,7 @@ class CustomizeMenuMiddlewareTest {
                             QUIT_GROUP_ID,
                         ),
                     hiddenGroupIds = setOf(QUIT_GROUP_ID),
+                    movedGroupId = VPN_GROUP_ID,
                 )
             )
 
@@ -307,6 +310,7 @@ class CustomizeMenuMiddlewareTest {
                             QUIT_GROUP_ID,
                         ),
                     hiddenGroupIds = emptySet(),
+                    movedGroupId = PAGE_CONTROLS_GROUP_ID,
                 )
             )
             store.dispatch(
@@ -322,6 +326,7 @@ class CustomizeMenuMiddlewareTest {
                             QUIT_GROUP_ID,
                         ),
                     hiddenGroupIds = emptySet(),
+                    movedGroupId = PAGE_CONTROLS_GROUP_ID,
                 )
             )
 
@@ -371,6 +376,7 @@ class CustomizeMenuMiddlewareTest {
                         QUIT_GROUP_ID,
                     ),
                 hiddenGroupIds = emptySet(),
+                movedGroupId = PAGE_CONTROLS_GROUP_ID,
             )
         )
 
@@ -387,6 +393,7 @@ class CustomizeMenuMiddlewareTest {
                 MenuStructureChanged(
                     items = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
                     hiddenGroupIds = defaultMenuInfo.hiddenSectionIds.toSet(),
+                    movedGroupId = TABS_CONTROLS_GROUP_ID,
                 )
             )
 
@@ -412,6 +419,7 @@ class CustomizeMenuMiddlewareTest {
                             QUIT_GROUP_ID,
                         ),
                     hiddenGroupIds = setOf(QUIT_GROUP_ID),
+                    movedGroupId = QUIT_GROUP_ID,
                 )
             )
 

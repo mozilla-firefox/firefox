@@ -203,9 +203,11 @@ internal class MoveGroupsHandler(
     }
 
     override fun onDragEnd() {
+        val groupId = draggedGroupId
+        val moved = movedGroups
         draggedGroupId = null
-        movedGroups?.let { save(it) }
         movedGroups = null
+        if (groupId is String && moved != null) save(groupId, moved)
     }
 
     override fun onDragCancel() {
@@ -213,12 +215,13 @@ internal class MoveGroupsHandler(
         movedGroups = null
     }
 
-    private fun save(movedGroups: CustomizeMenuGroups) {
+    private fun save(movedGroupId: String, movedGroups: CustomizeMenuGroups) {
         if (movedGroups != groups) {
             store.dispatch(
                 MenuStructureChanged(
                     items = movedGroups.shown + movedGroups.hidden,
                     hiddenGroupIds = movedGroups.hidden.map { it.id }.toSet(),
+                    movedGroupId = movedGroupId,
                 )
             )
         }

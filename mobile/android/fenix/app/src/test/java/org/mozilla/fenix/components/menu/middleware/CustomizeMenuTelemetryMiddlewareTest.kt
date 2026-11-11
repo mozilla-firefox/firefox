@@ -9,6 +9,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
+import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
@@ -81,6 +82,55 @@ class CustomizeMenuTelemetryMiddlewareTest {
     }
 
     @Test
+    fun `WHEN the user moves a section among the shown sections THEN record its name and its new position counted from 1`() {
+        val store =
+            createStore(
+                initialState = CustomizableMenuState(menuGroups = groups(PAGE_CONTROLS_GROUP_ID, TOOLS_GROUP_ID))
+            )
+        assertNull(CustomizeMenu.sectionMoved.testGetValue())
+
+        store.dispatch(
+            structureChanged(
+                shown = listOf(TOOLS_GROUP_ID, PAGE_CONTROLS_GROUP_ID),
+                movedGroupId = TOOLS_GROUP_ID,
+            )
+        )
+
+        assertSectionMovedRecorded(section = "tools", hidden = false, position = 1)
+        assertNull(CustomizeMenu.shown.testGetValue())
+    }
+
+    @Test
+    fun `WHEN the user moves a section to the removed sections THEN record its name and its new position among them`() {
+        val store = createStore()
+
+        store.dispatch(
+            structureChanged(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID, ACCOUNTS_AND_SETTINGS_GROUP_ID),
+                hidden = listOf(QUIT_GROUP_ID, TOOLS_GROUP_ID),
+                movedGroupId = TOOLS_GROUP_ID,
+            )
+        )
+
+        assertSectionMovedRecorded(section = "tools", hidden = true, position = 2)
+    }
+
+    @Test
+    fun `WHEN the user moves a section out of the removed sections THEN record its name and its new position among the shown ones`() {
+        val store = createStore()
+
+        store.dispatch(
+            structureChanged(
+                shown = listOf(PAGE_CONTROLS_GROUP_ID, TABS_CONTROLS_GROUP_ID, ACCOUNTS_AND_SETTINGS_GROUP_ID),
+                hidden = listOf(QUIT_GROUP_ID),
+                movedGroupId = TABS_CONTROLS_GROUP_ID,
+            )
+        )
+
+        assertSectionMovedRecorded(section = "tabs_controls", hidden = false, position = 2)
+    }
+
+    @Test
     fun `WHEN the user presses back THEN record it`() {
         val store = createStore()
         assertNull(CustomizeMenu.backPressed.testGetValue())
@@ -101,7 +151,24 @@ class CustomizeMenuTelemetryMiddlewareTest {
             isCustomized = false,
         )
 
+    private fun structureChanged(shown: List<String>, movedGroupId: String, hidden: List<String> = emptyList()) =
+        MenuStructureChanged(
+            items = groups(*(shown + hidden).toTypedArray()),
+            hiddenGroupIds = hidden.toSet(),
+            movedGroupId = movedGroupId,
+        )
+
     private fun groups(vararg ids: String) = ids.map { MenuItemsGroup.Row(id = it, items = emptyList()) }
+
+    private fun assertSectionMovedRecorded(section: String, hidden: Boolean, position: Int) {
+        val events = CustomizeMenu.sectionMoved.testGetValue()
+        assertNotNull(events)
+
+        val extras = events.single().extra
+        assertEquals(section, extras?.getValue("section"))
+        assertEquals(hidden.toString(), extras?.getValue("hidden"))
+        assertEquals(position.toString(), extras?.getValue("position"))
+    }
 
     private fun assertShownRecorded(shownSections: String, hiddenSections: String) {
         val events = CustomizeMenu.shown.testGetValue()

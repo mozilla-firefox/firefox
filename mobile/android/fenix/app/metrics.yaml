@@ -11025,6 +11025,39 @@ customize_menu:
     metadata:
       tags:
         - MainMenu
+  section_moved:
+    type: event
+    description: |
+      The user moved a section of the browser menu to another place on the customize menu screen: to another position
+      among the sections marked as showing in the menu, to the ones marked as hidden, out of them or to another
+      position among them. Not recorded when the section is dropped where it was.
+    extra_keys:
+      section:
+        type: string
+        description: |
+          The name of the moved section. One of: page_controls, reader_view, vpn, tools, library,
+          accounts_and_settings, tabs_controls, quit.
+      hidden:
+        type: boolean
+        description: |
+          Whether the section was moved to the sections marked as hidden in the menu, or marked as showing in it.
+      position:
+        type: quantity
+        description: |
+          The position of the section after it was moved, among the sections marked as hidden in the menu if `hidden` is
+          true, among the ones marked as showing in it otherwise. Counted from top to bottom, starting at 1, inclusive.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2086548
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D339830
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - MainMenu
   back_pressed:
     type: event
     description: |

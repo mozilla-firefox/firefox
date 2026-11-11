@@ -62,7 +62,9 @@ class CustomizableMenuStoreTest {
             )
         val store = CustomizableMenuStore(initialState = initialState)
 
-        store.dispatch(MenuStructureChanged(items = groups("b", "a", "d", "c"), hiddenGroupIds = setOf("c")))
+        store.dispatch(
+            MenuStructureChanged(items = groups("b", "a", "d", "c"), hiddenGroupIds = setOf("c"), movedGroupId = "b")
+        )
 
         assertEquals(
             initialState.copy(menuGroups = groups("b", "a", "d", "c"), hiddenGroupIds = setOf("c")),

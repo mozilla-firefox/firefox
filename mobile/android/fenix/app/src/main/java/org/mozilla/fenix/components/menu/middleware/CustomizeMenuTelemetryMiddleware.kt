@@ -37,13 +37,26 @@ class CustomizeMenuTelemetryMiddleware : Middleware<CustomizableMenuState, Custo
 
         when (action) {
             is Update -> if (isFirstStructureRead) recordShown(action)
+            is MenuStructureChanged -> recordSectionMoved(action)
             is BackPressed -> CustomizeMenu.backPressed.record()
             is MenuEvent,
             is Init,
-            is MenuStructureChanged,
             is CustomizationStatusChanged,
             is AttemptedRemovalOfMandatorySection -> Unit
         }
+    }
+
+    private fun recordSectionMoved(change: MenuStructureChanged) {
+        val isHidden = change.movedGroupId in change.hiddenGroupIds
+        val sectionsOfSameKind = change.items.filter { (it.id in change.hiddenGroupIds) == isHidden }
+
+        CustomizeMenu.sectionMoved.record(
+            CustomizeMenu.SectionMovedExtra(
+                section = change.movedGroupId,
+                hidden = isHidden,
+                position = sectionsOfSameKind.indexOfFirst { it.id == change.movedGroupId } + 1,
+            )
+        )
     }
 
     private fun recordShown(update: Update) {

@@ -35,10 +35,12 @@ sealed interface CustomizableMenuAction : Action {
      * @property items All the menu groups: the ones to show in the order they should be shown in, then the ones the
      *   user removed from the menu.
      * @property hiddenGroupIds Ids of the [items] removed from the menu.
+     * @property movedGroupId Id of the menu group the user moved.
      */
     data class MenuStructureChanged(
         val items: List<MenuItemsGroup>,
         val hiddenGroupIds: Set<String>,
+        val movedGroupId: String,
     ) : CustomizableMenuAction
 
     /**
