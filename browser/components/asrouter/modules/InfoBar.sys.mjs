@@ -418,7 +418,7 @@ class InfoBarNotification {
    *
    * @param {Element} notificationBox - The `<notification-message>` element representing the infobar.
    * @param {object} btnDescription - An object describing the button, includes the label, the action with an optional dismiss property, primary button styling, and the optional `id` and generated `index` used to identify the button in telemetry.
-   * @param {Element} target - The <button> DOM element that was clicked.
+   * @param {Element} target - The <moz-button> DOM element that was clicked.
    * @returns {boolean} `true` to keep the infobar open, `false` to dismiss it.
    */
   buttonCallback(notificationBox, btnDescription, target) {
@@ -426,7 +426,7 @@ class InfoBarNotification {
       btnDescription.action,
       target.documentGlobal.gBrowser.selectedBrowser
     );
-    let isPrimary = target.classList.contains("primary");
+    let isPrimary = btnDescription.primary === true;
     let eventName = isPrimary
       ? "CLICK_PRIMARY_BUTTON"
       : "CLICK_SECONDARY_BUTTON";

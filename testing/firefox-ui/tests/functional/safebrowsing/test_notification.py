@@ -106,7 +106,7 @@ class TestSafeBrowsingNotificationBar(WindowManagerMixin, MarionetteTestCase):
             )
             button_container = message.get_property("buttonContainer")
             button = button_container.find_element(
-                By.CSS_SELECTOR, 'button[label="Get me out of here!"]'
+                By.CSS_SELECTOR, '.notification-button[label="Get me out of here!"]'
             )
             button.click()
 

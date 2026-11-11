@@ -233,7 +233,7 @@ add_task(async function test_one_crash_notification_click_send_nothrottle() {
   );
 
   const sendButton = notification.querySelector(
-    'button[data-l10n-id="pending-crash-reports-send"]'
+    '.notification-button[data-l10n-id="pending-crash-reports-send"]'
   );
   sendButton.click();
   await TestUtils.waitForCondition(
@@ -346,7 +346,7 @@ add_task(async function test_multiple_crashes_notification_merge() {
   };
 
   const sendButton = notification2.querySelector(
-    'button[data-l10n-id="pending-crash-reports-send"]'
+    '.notification-button[data-l10n-id="pending-crash-reports-send"]'
   );
   sendButton.click();
 
@@ -478,7 +478,7 @@ add_task(
       _checkForInterestingUnsubmittedCrash;
 
     const disableButton = notification.querySelector(
-      'button[data-l10n-id="requested-crash-reports-dont-show-again"]'
+      '.notification-button[data-l10n-id="requested-crash-reports-dont-show-again"]'
     );
     disableButton.click();
 

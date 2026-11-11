@@ -122,10 +122,9 @@ add_task(async function testNeverAllowPersistsBlock() {
     let neverButton = getButton(notification, 1);
     let { id } = document.l10n.getAttributes(neverButton);
     is(id, "protocolhandler-never-allow-button", "Never allow button l10n id");
-    await BrowserTestUtils.waitForMutationCondition(
-      neverButton,
-      { attributes: true, attributeFilter: ["label"] },
-      () => neverButton.label
+    await TestUtils.waitForCondition(
+      () => neverButton.label,
+      "Wait for Never allow button label"
     );
     let [{ attributes }] = await document.l10n.formatMessages([{ id }]);
     let expected = Object.fromEntries(attributes.map(a => [a.name, a.value]));

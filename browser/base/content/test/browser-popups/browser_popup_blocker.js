@@ -217,11 +217,16 @@ add_task(async function test_bug2025170_unblock_popup() {
         .getNotificationWithValue("popup-blocked"))
   );
 
+  await TestUtils.waitForCondition(
+    () => tab.linkedBrowser.popupAndRedirectBlocker.getBlockedPopupCount() == 4,
+    "Waiting for all 4 popups to be blocked"
+  );
+
   // Show the menu.
   const popupShown = BrowserTestUtils.waitForEvent(window, "popupshown");
   const popupFilled = waitForBlockedPopups(4, { doc: document });
   EventUtils.synthesizeMouseAtCenter(
-    notification.buttonContainer.querySelector("button"),
+    notification.buttonContainer.querySelector(".notification-button"),
     {},
     window
   );
@@ -279,13 +284,20 @@ async function testPopupBlockingToolbar(
         .getNotificationWithValue("popup-blocked"))
   );
 
+  await TestUtils.waitForCondition(
+    () =>
+      tab.linkedBrowser.popupAndRedirectBlocker.getBlockedPopupCount() ==
+      expectedBlocked,
+    `Waiting for ${expectedBlocked} popups to be blocked`
+  );
+
   // Show the menu.
   let popupShown = BrowserTestUtils.waitForEvent(win, "popupshown");
   let popupFilled = waitForBlockedPopups(expectedBlocked, {
     doc: win.document,
   });
   EventUtils.synthesizeMouseAtCenter(
-    notification.buttonContainer.querySelector("button"),
+    notification.buttonContainer.querySelector(".notification-button"),
     {},
     win
   );
