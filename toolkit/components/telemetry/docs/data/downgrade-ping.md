@@ -30,6 +30,8 @@ Structure:
     isNewInstall: <bool>, // (Windows only, optional) Whether the current install happened after the profile was last locked
     isNewUpdate: <bool>, // (optional) Whether the last update was applied after the profile was last locked
     isDifferentInstall: <bool>, // Whether the profile was last used by a different install of the application
+    isDifferentMachine: <bool>, // (optional) Whether the profile was last used on a different machine
+    profileType: "", // (Windows only, optional) The Windows user profile type: "normal", "roaming", "mandatory" or "temporary"
   }
 }
 ```

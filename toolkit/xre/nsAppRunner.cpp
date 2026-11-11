@@ -26,6 +26,7 @@
 #include "mozilla/ProcessType.h"
 #include "mozilla/ResultExtensions.h"
 #include "mozilla/RuntimeExceptionModule.h"
+#include "mozilla/SHA1.h"
 #include "mozilla/FileUtils.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/StaticPrefs_browser.h"
@@ -113,6 +114,7 @@
 #ifdef XP_WIN
 #  include "nsIWinAppHelper.h"
 #  include <windows.h>
+#  include <userenv.h>
 #  include <intrin.h>
 #  include <math.h>
 #  include "cairo/cairo-features.h"
@@ -218,6 +220,12 @@
 
 #if defined(XP_MACOSX)
 #  include <Carbon/Carbon.h>
+#  include <IOKit/IOKitLib.h>
+#endif
+
+#if defined(XP_LINUX)
+#  include <fstream>
+#  include <string>
 #endif
 
 #ifdef DEBUG
@@ -290,6 +298,10 @@ static const char kPrefHealthReportUploadEnabled[] =
     "datareporting.healthreport.uploadEnabled";
 #endif  // defined(MOZ_BLOCK_PROFILE_DOWNGRADE) || defined(MOZ_LAUNCHER_PROCESS)
         // || defined(MOZ_DEFAULT_BROWSER_AGENT)
+#ifdef MOZ_BLOCK_PROFILE_DOWNGRADE
+// Holds a hash of the machine ID. Never send this in telemetry.
+static const char kPrefMachineId[] = "toolkit.profiles.machineID";
+#endif
 #if defined(MOZ_DEFAULT_BROWSER_AGENT)
 static const char kPrefDefaultAgentEnabled[] = "default-browser-agent.enabled";
 
@@ -3406,6 +3418,101 @@ static mozilla::Maybe<uint64_t> ReadInstallTimestamp(nsIFile* aJsonFile,
 }
 #  endif  // !XP_MACOSX
 
+#  if defined(XP_LINUX)
+static nsresult ReadLinuxMachineId(const char* aPath, nsACString& aMachineId) {
+  std::ifstream input(aPath);
+  if (!input.is_open()) {
+    return NS_ERROR_FAILURE;
+  }
+  std::string line;
+  if (!std::getline(input, line) || line.empty()) {
+    return NS_ERROR_FAILURE;
+  }
+  aMachineId.Assign(line.c_str(), line.length());
+  return NS_OK;
+}
+#  endif
+
+static nsresult GetRawMachineId(nsACString& aMachineId) {
+#  if defined(XP_WIN)
+  wchar_t guid[64];
+  DWORD size = sizeof(guid);
+  if (::RegGetValueW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Cryptography",
+                     L"MachineGuid", RRF_RT_REG_SZ | RRF_SUBKEY_WOW6464KEY,
+                     nullptr, guid, &size) != ERROR_SUCCESS) {
+    return NS_ERROR_FAILURE;
+  }
+  CopyUTF16toUTF8(nsDependentString(guid), aMachineId);
+  return NS_OK;
+#  elif defined(XP_MACOSX)
+  io_service_t platformExpert = IOServiceGetMatchingService(
+      MACH_PORT_NULL, IOServiceMatching("IOPlatformExpertDevice"));
+  if (!platformExpert) {
+    return NS_ERROR_FAILURE;
+  }
+
+  CFTypeRef uuid = IORegistryEntryCreateCFProperty(
+      platformExpert, CFSTR(kIOPlatformUUIDKey), kCFAllocatorDefault, 0);
+  IOObjectRelease(platformExpert);
+  if (!uuid) {
+    return NS_ERROR_FAILURE;
+  }
+  auto releaseUuid = MakeScopeExit([&] { CFRelease(uuid); });
+
+  char buffer[128];
+  if (CFGetTypeID(uuid) != CFStringGetTypeID() ||
+      !CFStringGetCString(static_cast<CFStringRef>(uuid), buffer,
+                          sizeof(buffer), kCFStringEncodingUTF8) ||
+      !buffer[0]) {
+    return NS_ERROR_FAILURE;
+  }
+  aMachineId.Assign(buffer);
+  return NS_OK;
+#  elif defined(XP_LINUX)
+  if (NS_SUCCEEDED(ReadLinuxMachineId("/etc/machine-id", aMachineId))) {
+    return NS_OK;
+  }
+  return ReadLinuxMachineId("/var/lib/dbus/machine-id", aMachineId);
+#  else
+  return NS_ERROR_NOT_AVAILABLE;
+#  endif
+}
+
+/**
+ * Returns the hash of a unique identifier for the current device. As a unique
+ * identifier this must not be included in telemetry data without passing a
+ * sensitive data review.
+ *
+ * We use SHA1 as the hashing function as it is available without starting NSS
+ * and we only need to use it for comparison purposes.
+ */
+nsresult GetMachineId(nsACString& aMachineId) {
+  nsAutoCString rawId;
+  nsresult rv = GetRawMachineId(rawId);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  SHA1Sum sha1;
+  sha1.update(kPrefMachineId, sizeof(kPrefMachineId) - 1);
+  sha1.update(rawId.BeginReading(), rawId.Length());
+  SHA1Sum::Hash hash;
+  sha1.finish(hash);
+
+  aMachineId.Truncate();
+  for (uint8_t byte : hash) {
+    aMachineId.AppendPrintf("%02x", byte);
+  }
+  return NS_OK;
+}
+
+static void StoreMachineId() {
+  nsAutoCString machineId;
+  if (NS_SUCCEEDED(GetMachineId(machineId))) {
+    Preferences::SetCString(kPrefMachineId, machineId);
+  } else {
+    Preferences::ClearUser(kPrefMachineId);
+  }
+}
+
 Maybe<mozilla::PathString> GenerateDowngradeTelemetry(
     const nsACString& aPingId, const nsCString& aLastVersion, bool aHasSync,
     int32_t aButton, const nsACString& aChannel,
@@ -3441,7 +3548,30 @@ Maybe<mozilla::PathString> GenerateDowngradeTelemetry(
     // Don't early return.
     NS_ERROR("Failed to get property: hasWinPackageId");
   }
+
+  const char* profileType = nullptr;
+  DWORD profileFlags = 0;
+  if (::GetProfileType(&profileFlags)) {
+    if (profileFlags & PT_TEMPORARY) {
+      profileType = "temporary";
+    } else if (profileFlags & PT_MANDATORY) {
+      profileType = "mandatory";
+    } else if (profileFlags & (PT_ROAMING | PT_ROAMING_PREEXISTING)) {
+      profileType = "roaming";
+    } else {
+      profileType = "normal";
+    }
+  }
 #  endif
+
+  mozilla::Maybe<bool> maybeIsDifferentMachine;
+  nsCString lastMachineId;
+  if (NS_SUCCEEDED(prefBranch->GetCharPref(kPrefMachineId, lastMachineId))) {
+    nsAutoCString machineId;
+    if (NS_SUCCEEDED(GetMachineId(machineId))) {
+      maybeIsDifferentMachine = mozilla::Some(lastMachineId != machineId);
+    }
+  }
 
   mozilla::Maybe<PRTime> maybeInstallTime;
   mozilla::Maybe<PRTime> maybeUpdateTime;
@@ -3590,6 +3720,16 @@ Maybe<mozilla::PathString> GenerateDowngradeTelemetry(
                        PromiseFlatCString(aProfileSelectionReason));
 
       w.BoolProperty("isDifferentInstall", aIsDifferentInstall);
+
+      if (maybeIsDifferentMachine) {
+        w.BoolProperty("isDifferentMachine", *maybeIsDifferentMachine);
+      }
+
+#  ifdef XP_WIN
+      if (profileType) {
+        w.StringProperty("profileType", MakeStringSpan(profileType));
+      }
+#  endif
 
       if (aReplacedLockTime) {
         // aReplacedLockTime is in milliseconds.
@@ -6384,6 +6524,10 @@ nsresult XREMain::XRE_mainRun() {
     NS_ENSURE_TRUE(appStartup, NS_ERROR_FAILURE);
 
     mDirProvider.DoStartup();
+
+#ifdef MOZ_BLOCK_PROFILE_DOWNGRADE
+    StoreMachineId();
+#endif
 
 #ifdef XP_WIN
     // It needs to be called on the main thread because it has to use
