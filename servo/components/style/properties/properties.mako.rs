@@ -1451,6 +1451,11 @@ pub mod style_structs {
                 ${impl_physical_sides("margin", ["margin-top", "margin-right", "margin-bottom", "margin-left"])}
             % elif style_struct.name == "Position":
                 ${impl_physical_sides("inset", ["top", "right", "bottom", "left"])}
+                /// Sets the computed justify-items value without changing the specified value.
+                pub fn set_computed_justify_items(&mut self, v: crate::values::specified::JustifyItems) {
+                    debug_assert_ne!(v, crate::values::specified::JustifyItems::legacy());
+                    self.justify_items.computed = v;
+                }
             % endif
         }
 

@@ -871,7 +871,6 @@ fn need_to_unconditionally_recascade_for_reset_change(
     //
     // Similarly, we could potentially do better, but this really
     // seems not common enough to care about.
-    #[cfg(feature = "gecko")]
     {
         use crate::values::specified::align::AlignFlags;
 

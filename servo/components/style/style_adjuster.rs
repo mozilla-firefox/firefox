@@ -754,7 +754,6 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     /// to comply with:
     ///
     /// <https://drafts.csswg.org/css-align/#valdef-justify-items-legacy>
-    #[cfg(feature = "gecko")]
     fn adjust_for_justify_items(&mut self) {
         use crate::values::specified::align;
         let justify_items = *self.style.get_position().get_justify_items();
@@ -1082,8 +1081,8 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         {
             self.adjust_for_contain();
             self.adjust_for_contain_intrinsic_size();
-            self.adjust_for_justify_items();
         }
+        self.adjust_for_justify_items();
         self.adjust_for_table_text_align();
         self.adjust_for_writing_mode(layout_parent_style);
         #[cfg(feature = "gecko")]
