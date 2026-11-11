@@ -6,6 +6,7 @@ package mozilla.components.compose.draggable
 
 import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LayoutCoordinates
@@ -13,6 +14,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import mozilla.components.compose.draggable.RecordingItemInteractionHandler.Call
@@ -383,6 +387,28 @@ class InteractableListTest {
     }
 
     @Test
+    fun `GIVEN liveReorderEnabled is true AND the list was laid out again after an item was moved WHEN the item is let go THEN its animation starts from where it was let go relative to its new position`() {
+        val alpha = FakeListItemInfo(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 10)
+        val beta = FakeListItemInfo(key = TabKeys.TAB_BETA, index = 2, size = 10, offset = 30)
+        var layoutInfo = FakeListLayoutInfo(visibleItemsInfo = listOf(alpha, beta), totalItemsCount = 2)
+        val listState = mock<LazyListState>()
+        whenever(listState.firstVisibleItemIndex).thenReturn(0)
+        whenever(listState.layoutInfo).thenAnswer { layoutInfo }
+        whenever(listState.isScrollInProgress).thenReturn(false)
+        val reorderState = fakeListInteractionState(listState, liveReorderEnabled = true)
+
+        reorderState.onTouchSlopPassed(beta.offset.toFloat(), false)
+        reorderState.dragUp(distance = 30f, preserveSelectMode = false)
+        layoutInfo =
+            layoutInfo.copy(
+                visibleItemsInfo = listOf(beta.copy(index = 1, offset = 10), alpha.copy(index = 2, offset = 30))
+            )
+        reorderState.onDragEnd()
+
+        assertEquals(-10f, reorderState.computeDroppedItemOffset())
+    }
+
+    @Test
     fun `GIVEN an item is dragged WHEN the list lays it out out of view THEN it is still moved to where the finger is`() {
         val alpha = FakeListItemInfo(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 10)
         val beta = FakeListItemInfo(key = TabKeys.TAB_BETA, index = 2, size = 10, offset = 30)
@@ -405,6 +431,68 @@ class InteractableListTest {
         // Laid out 40px above the first item, which starts after the content padding, while the finger still holds it
         // where it was picked up.
         assertEquals(beta.offset + 40f, reorderState.computeItemOffset(beta.index))
+    }
+
+    @Test
+    fun `GIVEN an item was let go of WHEN the list then lays it out somewhere else THEN it is kept where it was let go of`() {
+        val dropped = DroppedItemList()
+
+        // Moved by the list only once let go of, 30px above where it was laid out.
+        dropped.layDroppedItemOut(offset = DROPPED_ITEM_OFFSET - 30)
+
+        // Let go of 20px above where it was laid out, so 10px below where it is laid out now.
+        assertEquals(10f, dropped.state.computeDroppedItemOffset())
+        dropped.animationScope.cancel()
+    }
+
+    @Test
+    fun `GIVEN an item was let go of WHEN the list lays it out where it was THEN it starts from where it was let go of`() {
+        val dropped = DroppedItemList()
+
+        assertEquals(-20f, dropped.state.computeDroppedItemOffset())
+        dropped.animationScope.cancel()
+    }
+
+    @Test
+    fun `GIVEN an item was let go of WHEN it is animated to its place THEN it is not offset anymore`() {
+        val dropped = DroppedItemList(frameClock = ImmediateFramesClock)
+
+        dropped.animationScope.testScheduler.advanceUntilIdle()
+
+        assertNull(dropped.state.previousKeyOfDraggedItem)
+        assertEquals(0f, dropped.state.computeDroppedItemOffset())
+    }
+
+    /**
+     * A list in which an item was let go of 20px above where it was laid out.
+     *
+     * @param frameClock Drives the animation of the item to its place.
+     */
+    private inner class DroppedItemList(frameClock: MonotonicFrameClock = NoFramesClock) {
+        private val alpha = FakeListItemInfo(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 10)
+        private val beta = FakeListItemInfo(key = TabKeys.TAB_BETA, index = 2, size = 10, offset = DROPPED_ITEM_OFFSET)
+        private var layoutInfo = FakeListLayoutInfo(visibleItemsInfo = listOf(alpha, beta), totalItemsCount = 2)
+        val animationScope = TestScope(testDispatcher + frameClock)
+        val state: ListInteractionState
+
+        init {
+            val listState = mock<LazyListState>()
+            whenever(listState.firstVisibleItemIndex).thenReturn(0)
+            whenever(listState.layoutInfo).thenAnswer { layoutInfo }
+            whenever(listState.isScrollInProgress).thenReturn(false)
+            // Moved next to the other item instead of dropped onto it.
+            state = fakeListInteractionState(listState, dragAndDropEnabled = false, coroutineScope = animationScope)
+
+            state.onTouchSlopPassed(beta.offset.toFloat(), false)
+            state.dragUp(distance = 20f, preserveSelectMode = false)
+            state.onDragEnd()
+            animationScope.testScheduler.runCurrent()
+        }
+
+        /** Let the list lay the dropped item out at [offset]. */
+        fun layDroppedItemOut(offset: Int) {
+            layoutInfo = layoutInfo.copy(visibleItemsInfo = listOf(alpha, beta.copy(offset = offset)))
+        }
     }
 
     @Test
@@ -732,7 +820,6 @@ class InteractableListTest {
         assertEquals(InteractionState.List.None, reorderState.hoveredItem)
         assertNull(reorderState.highlightedRect)
         assertEquals(InteractionMode.List.None, reorderState.interactionMode)
-        assertEquals(reorderState.previousItemAnimatableOffset.value, 0f)
     }
 
     private fun mockListItem(
@@ -798,11 +885,12 @@ class InteractableListTest {
         liveReorderEnabled: Boolean = false,
         onLongPress: (LazyListItemInfo) -> Unit = {},
         fixedItems: Set<Any> = emptySet(),
+        coroutineScope: CoroutineScope = scope,
     ): ListInteractionState {
         return ListInteractionStateImpl(
             listState = listState,
             itemInteractionHandler = handler,
-            scope = scope,
+            scope = coroutineScope,
             touchSlop = 0f,
             ignoredItems = defaultIgnoredItems,
             onLongPress = onLongPress,
@@ -819,5 +907,25 @@ class InteractableListTest {
 
     private fun ListInteractionState.dragUp(distance: Float, preserveSelectMode: Boolean) {
         this.onDrag(offset = -distance, preserveSelectMode = preserveSelectMode)
+    }
+
+    /** [MonotonicFrameClock] never producing a frame, so that animations stay at their starting value. */
+    private object NoFramesClock : MonotonicFrameClock {
+        override suspend fun <R> withFrameNanos(onFrame: (frameTimeNanos: Long) -> R): R = awaitCancellation()
+    }
+
+    /** [MonotonicFrameClock] producing a frame as soon as it is asked for one, so that animations run to the end. */
+    private object ImmediateFramesClock : MonotonicFrameClock {
+        private var frameTimeNanos = 0L
+
+        override suspend fun <R> withFrameNanos(onFrame: (frameTimeNanos: Long) -> R): R {
+            frameTimeNanos += FRAME_TIME_NANOS
+            return onFrame(frameTimeNanos)
+        }
+    }
+
+    private companion object {
+        const val DROPPED_ITEM_OFFSET = 30
+        const val FRAME_TIME_NANOS = 16_000_000L
     }
 }

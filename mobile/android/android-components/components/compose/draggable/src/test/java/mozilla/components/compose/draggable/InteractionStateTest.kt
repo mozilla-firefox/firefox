@@ -4,6 +4,8 @@
 
 package mozilla.components.compose.draggable
 
+import androidx.compose.foundation.lazy.LazyListItemInfo
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridItemInfo
 import androidx.compose.foundation.lazy.grid.LazyGridLayoutInfo
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -77,9 +79,9 @@ class InteractionStateTest {
     }
 
     @Test
-    fun `GIVEN List Active State WHEN its offset, index or moved flag changes THEN its size is preserved`() {
+    fun `GIVEN List Active State WHEN its offset or moved flag changes THEN its size is preserved`() {
         val initialState = InteractionState.List.Active(index = 0, key = "key", size = 750)
-        val result = initialState.incrementCumulatedOffset(10f).markAsMoved().copyWithNewIndex(3)
+        val result = initialState.incrementCumulatedOffset(10f).markAsMoved()
         assertEquals(750, (result as InteractionState.List.Active).size)
     }
 
@@ -91,10 +93,9 @@ class InteractionStateTest {
     }
 
     @Test
-    fun `GIVEN List None state when lazyGridItemInfo is called THEN null is returned`() {
-        val mockItem = mock<LazyGridItemInfo>()
-        val gridState = mockGridState(mockItem)
-        assertNull(InteractionState.List.None.getLazyGridItemInfo(gridState))
+    fun `GIVEN List None state when lazyListItemInfo is called THEN null is returned`() {
+        val listState = mockListState(FakeListItemInfo(key = "key", index = 0, size = 10, offset = 0))
+        assertNull(InteractionState.List.None.getLazyListItemInfo(listState))
     }
 
     @Test
@@ -108,13 +109,13 @@ class InteractionStateTest {
     }
 
     @Test
-    fun `Given List Active state when lazyGridItemInfo is called with a matching item THEN that item is returned`() {
-        val mockItem = mockGridItem(key = "key", index = 0)
-        val gridState = mockGridState(mockItem)
+    fun `Given List Active state when lazyListItemInfo is called with a matching item THEN that item is returned`() {
+        val item = FakeListItemInfo(key = "key", index = 0, size = 10, offset = 0)
+        val listState = mockListState(item)
         val result =
             InteractionState.List.Active(index = 0, key = "key", size = 10, initialOffset = 0f)
-                .getLazyGridItemInfo(gridState)
-        assertEquals(mockItem, result)
+                .getLazyListItemInfo(listState)
+        assertEquals(item, result)
     }
 
     @Test
@@ -128,12 +129,11 @@ class InteractionStateTest {
     }
 
     @Test
-    fun `Given List Active state when lazyGridItemInfo is called without a matching item THEN null is returned`() {
-        val mockItem = mockGridItem(key = "otherKey", index = 1)
-        val gridState = mockGridState(mockItem)
+    fun `Given List Active state when lazyListItemInfo is called without a matching item THEN null is returned`() {
+        val listState = mockListState(FakeListItemInfo(key = "otherKey", index = 1, size = 10, offset = 0))
         val result =
             InteractionState.List.Active(index = 0, key = "key", size = 10, initialOffset = 0f)
-                .getLazyGridItemInfo(gridState)
+                .getLazyListItemInfo(listState)
         assertNull(result)
     }
 
@@ -150,5 +150,12 @@ class InteractionStateTest {
         val gridState = mock<LazyGridState>()
         whenever(gridState.layoutInfo).thenReturn(layoutInfo)
         return gridState
+    }
+
+    private fun mockListState(item: LazyListItemInfo): LazyListState {
+        val listState = mock<LazyListState>()
+        whenever(listState.layoutInfo)
+            .thenReturn(FakeListLayoutInfo(visibleItemsInfo = listOf(item), totalItemsCount = 1))
+        return listState
     }
 }

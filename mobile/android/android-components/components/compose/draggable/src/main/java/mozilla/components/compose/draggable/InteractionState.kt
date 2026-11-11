@@ -4,6 +4,8 @@
 
 package mozilla.components.compose.draggable
 
+import androidx.compose.foundation.lazy.LazyListItemInfo
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.LazyGridItemInfo
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.ui.geometry.Offset
@@ -24,9 +26,6 @@ sealed interface InteractionState {
     /** The item's unique key. */
     val key: Any?
 
-    /** Fetches the [LazyGridItemInfo] for the interacted item, based on its key. */
-    fun getLazyGridItemInfo(gridState: LazyGridState): LazyGridItemInfo?
-
     /** Grid interface to handle the InteractionState for a 2 dimensional coordinate system. */
     sealed interface Grid : InteractionState {
         val initialOffset: Offset
@@ -40,6 +39,9 @@ sealed interface InteractionState {
 
         /** Return a copy of the item with an updated index. */
         fun copyWithNewIndex(newIndex: Int): Grid
+
+        /** Fetches the [LazyGridItemInfo] for the interacted item, based on its key. */
+        fun getLazyGridItemInfo(gridState: LazyGridState): LazyGridItemInfo?
 
         /**
          * Data object to represent no active interaction.
@@ -114,8 +116,8 @@ sealed interface InteractionState {
         /** Mark that the dragged item has been moved. */
         fun markAsMoved(): List
 
-        /** Return a copy of the item with an updated index. */
-        fun copyWithNewIndex(newIndex: Int): List
+        /** Fetches the [LazyListItemInfo] for the interacted item, based on its key. */
+        fun getLazyListItemInfo(listState: LazyListState): LazyListItemInfo?
 
         /**
          * Data object to represent no active interaction.
@@ -133,7 +135,7 @@ sealed interface InteractionState {
             override val initialOffset: Float = 0f
             override val cumulatedOffset: Float = 0f
 
-            override fun getLazyGridItemInfo(gridState: LazyGridState): LazyGridItemInfo? {
+            override fun getLazyListItemInfo(listState: LazyListState): LazyListItemInfo? {
                 return null
             }
 
@@ -144,16 +146,13 @@ sealed interface InteractionState {
             override fun markAsMoved(): List {
                 return this
             }
-
-            override fun copyWithNewIndex(newIndex: Int): List {
-                return this
-            }
         }
 
         /**
          * Data object to represent an active interaction.
          *
-         * @property index of the item, as an Int
+         * @property index of the item when the drag started, as an Int. Not updated as the item is moved, use
+         *   [getLazyListItemInfo] to find where the item is now.
          * @property key of the item
          * @property size of the item, as an Int
          * @property initialOffset initial offset of the item,
@@ -168,8 +167,8 @@ sealed interface InteractionState {
             override val cumulatedOffset: Float = 0f,
             override val moved: Boolean = false,
         ) : List {
-            override fun getLazyGridItemInfo(gridState: LazyGridState): LazyGridItemInfo? {
-                return gridState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == this.key }
+            override fun getLazyListItemInfo(listState: LazyListState): LazyListItemInfo? {
+                return listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == this.key }
             }
 
             override fun incrementCumulatedOffset(offset: Float): List {
@@ -178,10 +177,6 @@ sealed interface InteractionState {
 
             override fun markAsMoved(): List {
                 return this.copy(moved = true)
-            }
-
-            override fun copyWithNewIndex(newIndex: Int): List {
-                return this.copy(index = newIndex)
             }
         }
     }

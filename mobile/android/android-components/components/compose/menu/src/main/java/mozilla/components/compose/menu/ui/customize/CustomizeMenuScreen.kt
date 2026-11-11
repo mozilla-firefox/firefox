@@ -30,18 +30,12 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
-import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
-import mozilla.components.compose.menu.data.MenuItemTitle
-import mozilla.components.compose.menu.data.MenuItemsGroup
-import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
-import mozilla.components.compose.menu.store.MenuEvent
-import mozilla.components.compose.menu.ui.MenuItemIconRes
+import mozilla.components.compose.menu.ui.utils.customizeMenuPreviewData
 import mozilla.components.lib.state.ext.observeAsComposableState
-import mozilla.components.ui.icons.R as iconsR
 
 /**
  * Content composable for the customize menu screen.
@@ -194,54 +188,31 @@ private fun CustomizeMenuHiddenSections(hasHiddenItems: Boolean, modifier: Modif
 
 @PreviewLightDark
 @Composable
-private fun CustomizeMenuScreenPreview() {
+private fun CustomizeMenuScreenWithTabsShownPreview() {
     AcornTheme {
         CustomizeMenuContent(
             CustomizableMenuStore(
                 initialState =
                     CustomizableMenuState(
-                        menuGroups =
-                            listOf(
-                                MenuItemsGroup.Grid(
-                                    id = "navigation",
-                                    items =
-                                        listOf(
-                                            StandardMenuItem(
-                                                title = MenuItemTitle(Text.String("Back")),
-                                                icon = MenuItemIconRes(iconsR.drawable.mozac_ic_back_24),
-                                                onClickEvent = object : MenuEvent {},
-                                            ),
-                                            StandardMenuItem(
-                                                title = MenuItemTitle(Text.String("Forward")),
-                                                icon = MenuItemIconRes(iconsR.drawable.mozac_ic_forward_24),
-                                                onClickEvent = object : MenuEvent {},
-                                            ),
-                                        ),
-                                    isSticky = true,
-                                ),
-                                MenuItemsGroup.Row(
-                                    id = "group1",
-                                    items =
-                                        listOf(
-                                            StandardMenuItem(
-                                                title = MenuItemTitle(Text.String("Bookmarks")),
-                                                icon = MenuItemIconRes(iconsR.drawable.mozac_ic_star_fill_20),
-                                                onClickEvent = object : MenuEvent {},
-                                            )
-                                        ),
-                                ),
-                                MenuItemsGroup.Row(
-                                    id = "group2",
-                                    items =
-                                        listOf(
-                                            StandardMenuItem(
-                                                title = MenuItemTitle(Text.String("History")),
-                                                icon = MenuItemIconRes(iconsR.drawable.mozac_ic_history_24),
-                                                onClickEvent = object : MenuEvent {},
-                                            )
-                                        ),
-                                ),
-                            )
+                        menuGroups = customizeMenuPreviewData,
+                        isCustomized = false,
+                    )
+            )
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun CustomizeMenuScreenWithTabsHiddenPreview() {
+    AcornTheme {
+        CustomizeMenuContent(
+            CustomizableMenuStore(
+                initialState =
+                    CustomizableMenuState(
+                        menuGroups = customizeMenuPreviewData,
+                        hiddenGroupIds = setOf("tabs"),
+                        isCustomized = true,
                     )
             )
         )

@@ -4,14 +4,14 @@
 
 package mozilla.components.compose.draggable
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListItemInfo
 import androidx.compose.foundation.lazy.LazyListState
@@ -20,6 +20,7 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -36,9 +37,11 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalViewConfiguration
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
 import kotlin.math.abs
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -119,9 +122,6 @@ interface ListInteractionState {
     /** The list's orientation */
     val orientation: Orientation
 
-    /** Cached offset used to animate the item from a cancelled drag back into place */
-    val previousItemAnimatableOffset: Animatable<Float, AnimationVector1D>
-
     /**
      * Called when a slop threshold has been exceeded to start a drag event.
      *
@@ -165,6 +165,13 @@ interface ListInteractionState {
      * @param coordinates The [LayoutCoordinates] of the list.
      */
     fun updateListLayoutCoordinates(coordinates: LayoutCoordinates)
+
+    /**
+     * Returns the offset that draws the item with [previousKeyOfDraggedItem] where it was let go of, shrinking to zero
+     * as it animates to where the list lays it out. Read while placing the item, to use its current position in the
+     * list.
+     */
+    fun computeDroppedItemOffset(): Float
 
     /** Called to indicate to the list that the drop handling has been completed and the state can be reset. */
     fun reset()
@@ -218,8 +225,6 @@ internal class ListInteractionStateImpl(
     override var previousKeyOfDraggedItem by mutableStateOf<Any?>(null)
         private set
 
-    override val previousItemAnimatableOffset = Animatable(0f)
-
     override val orientation: Orientation
         get() = listState.layoutInfo.orientation
 
@@ -229,14 +234,24 @@ internal class ListInteractionStateImpl(
     // list lays it out somewhere else.
     private var draggedItemLayoutOffset by mutableStateOf<Float?>(null)
 
-    override fun computeItemOffset(index: Int): Float {
-        val itemAtIndex = listState.layoutInfo.visibleItemsInfo.firstOrNull { info -> info.index == index }
-        return offsetFromLayout(itemAtIndex?.offset?.toFloat() ?: draggedItemLayoutOffset ?: 0f)
-    }
+    // Where the item was let go of in the list, while it is animated to its place.
+    private var droppedItemOffset = 0f
 
-    /** Offset of the dragged item from where it is laid out at [layoutOffset], to follow the finger. */
-    private fun offsetFromLayout(layoutOffset: Float) =
-        draggedItem.initialOffset + draggedItem.cumulatedOffset - layoutOffset
+    // Drop animation progress: 1 when the item is let go of, 0 once it is in its place.
+    private var dropProgress by mutableFloatStateOf(0f)
+
+    private var dropAnimationJob: Job? = null
+
+    override fun computeItemOffset(index: Int): Float =
+        offsetFromLayout(listState.layoutInfo.visibleItemsInfo.firstOrNull { info -> info.index == index })
+
+    private fun computeDraggedItemOffset(): Float = offsetFromLayout(draggedItem.getLazyListItemInfo(listState))
+
+    /** Offset of the dragged item from where the list lays out [itemInfo], to follow the finger. */
+    private fun offsetFromLayout(itemInfo: LazyListItemInfo?): Float {
+        val layoutOffset = itemInfo?.offset?.toFloat() ?: draggedItemLayoutOffset ?: 0f
+        return draggedItem.initialOffset + draggedItem.cumulatedOffset - layoutOffset
+    }
 
     override fun onDraggedItemPositioned(itemCoordinates: LayoutCoordinates) {
         val listCoordinates = listLayoutCoordinates?.takeIf { it.isAttached } ?: return
@@ -252,6 +267,26 @@ internal class ListInteractionStateImpl(
 
     override fun updateListLayoutCoordinates(coordinates: LayoutCoordinates) {
         listLayoutCoordinates = coordinates
+    }
+
+    override fun computeDroppedItemOffset(): Float {
+        val droppedItemInfo = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == previousKeyOfDraggedItem }
+        return droppedItemInfo?.let { dropProgress * (droppedItemOffset - it.offset) } ?: 0f
+    }
+
+    /** Animate the dropped item from where it was let go of to where the list lays it out. */
+    private fun animateDroppedItem() {
+        dropAnimationJob?.cancel()
+        dropAnimationJob = scope.launch {
+            animate(
+                initialValue = 1f,
+                targetValue = 0f,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow, visibilityThreshold = 0.001f),
+            ) { progress, _ ->
+                dropProgress = progress
+            }
+            previousKeyOfDraggedItem = null
+        }
     }
 
     override fun onTouchSlopPassed(offset: Float, shouldLongPress: Boolean) {
@@ -284,7 +319,7 @@ internal class ListInteractionStateImpl(
     }
 
     private fun doReorder(mode: InteractionMode.List.Reordering) {
-        if (draggedItem.index == listState.firstVisibleItemIndex) {
+        if (draggedItem.getLazyListItemInfo(listState)?.index == listState.firstVisibleItemIndex) {
             autoScroll(mode.source.size.toFloat())
         }
         itemInteractionHandler.onMove(
@@ -331,25 +366,11 @@ internal class ListInteractionStateImpl(
 
     private fun resetState() {
         if (draggedItem is InteractionState.List.Active) {
-            val draggingItem = draggedItem as InteractionState.List.Active
             previousKeyOfDraggedItem = draggedItem.key
-            val layoutOffset =
-                listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == draggingItem.key }?.offset?.toFloat()
-            val startOffset = offsetFromLayout(layoutOffset ?: draggedItemLayoutOffset ?: 0f)
-            scope.launch {
-                if (previousItemAnimatableOffset.isRunning) {
-                    previousItemAnimatableOffset.stop()
-                }
-                previousItemAnimatableOffset.snapTo(startOffset)
-                previousItemAnimatableOffset.animateTo(
-                    0f,
-                    spring(
-                        stiffness = Spring.StiffnessMediumLow,
-                        visibilityThreshold = 1f,
-                    ),
-                )
-                previousKeyOfDraggedItem = null
-            }
+            droppedItemOffset = draggedItem.initialOffset + draggedItem.cumulatedOffset
+            // Set right away, for the item to be drawn where it was let go of in the frame in which the list moves it.
+            dropProgress = 1f
+            animateDroppedItem()
         }
         draggedItem = InteractionState.List.None
         hoveredItem = InteractionState.List.None
@@ -376,11 +397,6 @@ internal class ListInteractionStateImpl(
         hoveredItem = InteractionState.List.None
         if (liveReorderEnabled) {
             doReorder(mode)
-            // Update the dragged item's index as reorders happen
-            val newIndex = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.key == draggedItem.key }?.index ?: -1
-            if (newIndex != -1) {
-                draggedItem = draggedItem.copyWithNewIndex(newIndex)
-            }
         } else {
             highlightedRect = mode.rect
         }
@@ -423,7 +439,7 @@ internal class ListInteractionStateImpl(
         val itemOffset =
             ListItemOffset(
                 draggedItem = draggingItem,
-                draggingItemOffset = computeItemOffset(draggingItem.index),
+                draggingItemOffset = computeDraggedItemOffset(),
                 itemSize = draggingItem.size,
             )
         val mode =
@@ -739,8 +755,12 @@ fun LazyItemScope.InteractableDragItemContainer(
                 .reportDragPlacement(state = state, key = key)
                 .defaultListItemAnimation(
                     lazyListItemScope = this,
-                    // suppress item transitions when group entrance animation is playing
-                    suppressTransitions = enteringItemKey != null,
+                    // Skip default animations during group entrance and while an item is dragged or animated after a
+                    // drop.
+                    suppressTransitions =
+                        enteringItemKey != null ||
+                            key == state.draggedItem.key ||
+                            key == state.previousKeyOfDraggedItem,
                 ),
         propagateMinConstraints = true,
     ) {
@@ -772,6 +792,9 @@ private fun Modifier.reportDragPlacement(state: ListInteractionState, key: Any):
  * Move the item with [key] to follow the finger while it is dragged, and from where it was let go of while it is
  * animated to its place.
  *
+ * The dragged item is translated when drawing. After it is let go of, its offset is instead computed when placing it,
+ * so that a move by the list cannot make it jump for one frame.
+ *
  * @param state List reordering state.
  * @param key Key of the item.
  * @param position Position in the list of the item.
@@ -788,10 +811,11 @@ private fun Modifier.dragTranslation(state: ListInteractionState, key: Any, posi
         }
 
         state.previousKeyOfDraggedItem -> {
-            this.graphicsLayer {
+            this.absoluteOffset {
+                val offset = state.computeDroppedItemOffset().roundToInt()
                 when (state.orientation) {
-                    Orientation.Vertical -> translationY = state.previousItemAnimatableOffset.value
-                    Orientation.Horizontal -> translationX = state.previousItemAnimatableOffset.value
+                    Orientation.Vertical -> IntOffset(0, offset)
+                    Orientation.Horizontal -> IntOffset(offset, 0)
                 }
             }
         }
