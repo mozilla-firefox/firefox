@@ -20,6 +20,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
@@ -457,6 +458,89 @@ class CustomizeMenuContentTest {
         release()
     }
 
+    @Test
+    fun `WHEN a shown section is dragged by its handle above another shown section THEN it is shown before it`() {
+        val store = setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"))))
+
+        dragByHandle(title = "Shown 2", to = { boundsOf("Shown 1").topCenter })
+
+        assertEquals(listOf("Shown 2", "Shown 1"), shownIds(store))
+    }
+
+    @Test
+    fun `GIVEN no hidden sections WHEN a shown section is dragged by its handle into the hide section area THEN it is hidden`() {
+        val store = setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"))))
+
+        dragByHandle(title = "Shown 1", to = { boundsOf(dragToHide).center })
+
+        assertEquals(listOf("Shown 2"), shownIds(store))
+        assertEquals(listOf("Shown 1"), hiddenIds(store))
+    }
+
+    @Test
+    fun `WHEN a hidden section is dragged by its handle below a shown section THEN it is shown after it`() {
+        val store =
+            setContent(
+                menuState(
+                    shown = listOf(row("Shown"), row("Mandatory")),
+                    hidden = listOf(row("Hidden")),
+                    mandatoryIds = setOf("Mandatory"),
+                )
+            )
+
+        dragByHandle(title = "Hidden", to = { boundsOf("Shown").bottomCenter })
+
+        assertEquals(listOf("Shown", "Hidden", "Mandatory"), shownIds(store))
+        assertEquals(emptyList<String>(), hiddenIds(store))
+    }
+
+    @Test
+    fun `WHEN the handle of a section is held for longer than a long press and then dragged THEN the section is dragged`() {
+        val store = setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"))))
+
+        pressHandle("Shown 2")
+        composeTestRule.onRoot().performTouchInput {
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis * 2)
+            move()
+        }
+        composeTestRule.waitForIdle()
+        moveTo { boundsOf("Shown 1").topCenter }
+        release()
+
+        assertEquals(listOf("Shown 2", "Shown 1"), shownIds(store))
+    }
+
+    @Test
+    fun `WHEN a section is moved by its content without a long press THEN the sections are not reordered`() {
+        val state = menuState(shown = listOf(row("Shown 1"), row("Shown 2")))
+        val store = setContent(state)
+
+        val from = boundsOf("Shown 2").center
+        composeTestRule.onRoot().performTouchInput { down(from) }
+        moveTo { boundsOf("Shown 1").topCenter }
+        release()
+
+        assertEquals(state, store.state)
+    }
+
+    @Test
+    fun `GIVEN a section dragged by its handle WHEN the handle of another section is touched by a second finger THEN the first section is still dragged`() {
+        val store = setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"), row("Shown 3"))))
+        pickUpByHandle("Shown 1")
+
+        val secondFinger = handleOf("Shown 3")
+        composeTestRule.onRoot().performTouchInput {
+            down(1, secondFinger)
+            moveBy(1, Offset(0f, -viewConfiguration.touchSlop * 3))
+            up(1)
+        }
+        composeTestRule.waitForIdle()
+        moveTo { boundsOf("Shown 3").bottomCenter }
+        release()
+
+        assertEquals(listOf("Shown 2", "Shown 3", "Shown 1"), shownIds(store))
+    }
+
     private fun setContent(
         state: CustomizableMenuState,
         middleware: List<Middleware<CustomizableMenuState, CustomizableMenuAction>> = emptyList(),
@@ -531,6 +615,35 @@ class CustomizeMenuContentTest {
     private fun cancelGesture() {
         composeTestRule.onRoot().performTouchInput { cancel() }
         composeTestRule.waitForIdle()
+    }
+
+    /** Tap the handle of the section with [title], drag it in steps to [to] and let go of it. */
+    private fun dragByHandle(title: String, to: () -> Offset) {
+        pickUpByHandle(title)
+        moveTo(to)
+        release()
+    }
+
+    /**
+     * Tap the handle of the section with [title] and move it just far enough for the section to be dragged, letting the
+     * other sections take its space.
+     */
+    private fun pickUpByHandle(title: String) {
+        pressHandle(title)
+        composeTestRule.onRoot().performTouchInput { moveBy(Offset(0f, viewConfiguration.touchSlop * 3)) }
+        composeTestRule.waitForIdle()
+    }
+
+    private fun pressHandle(title: String) {
+        val from = handleOf(title)
+        composeTestRule.onRoot().performTouchInput { down(from) }
+    }
+
+    /** Where the handle of the section with [title] is, at the end of the row of the section. */
+    private fun handleOf(title: String): Offset {
+        val listBounds = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val distanceFromEnd = with(composeTestRule.density) { 30.dp.toPx() }
+        return Offset(listBounds.right - distanceFromEnd, boundsOf(title).center.y)
     }
 
     /** [HapticFeedback] that records every feedback type it is asked to perform, in order, in [performed]. */

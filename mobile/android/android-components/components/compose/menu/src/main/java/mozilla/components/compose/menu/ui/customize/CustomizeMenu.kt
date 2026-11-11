@@ -31,15 +31,14 @@ import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.MenuItemIconRes
+import mozilla.components.compose.menu.ui.utils.DRAGGED_GROUP_ALPHA
 import mozilla.components.ui.icons.R as iconsR
-
-private const val DRAGGED_GROUP_ALPHA = 0.7f
 
 /**
  * Show [menuGroups] as items of a customize menu screen.
  *
  * @param menuGroups The groups of menu items to display.
- * @param drag State of dragging the groups of the screen.
+ * @param dragState State of dragging the groups of the screen.
  * @param firstIndex Index in the list of the first of these groups.
  * @param itemSpacing Space between the items of the list. It is added above each group, not by the list, for a dragged
  *   group, which takes no space, to not leave more of it between the groups around it.
@@ -47,12 +46,12 @@ private const val DRAGGED_GROUP_ALPHA = 0.7f
  */
 internal fun LazyListScope.customizeMenuGroups(
     menuGroups: List<MenuItemsGroup>,
-    drag: CustomizeMenuDragState,
+    dragState: CustomizeMenuDragState,
     firstIndex: Int,
     itemSpacing: Dp,
     isHidden: Boolean = false,
 ) {
-    val interactionState = drag.interactionState
+    val interactionState = dragState.interactionState
     itemsIndexed(items = menuGroups, key = { _, group -> group.id }) { index, group ->
         val isDragged by
             remember(interactionState, group.id) {
@@ -67,8 +66,8 @@ internal fun LazyListScope.customizeMenuGroups(
                 Modifier.groupPlacement(
                     isDragged = isDragged,
                     isLastHidden = isHidden && index == menuGroups.lastIndex,
-                    hiddenArea = drag.hiddenArea,
-                    dropTarget = drag.dropTarget,
+                    hiddenArea = dragState.hiddenArea,
+                    dropTarget = dragState.dropTarget,
                     itemSpacing = itemSpacing,
                 ),
         ) {
@@ -76,13 +75,14 @@ internal fun LazyListScope.customizeMenuGroups(
                 group = group,
                 modifier =
                     Modifier.padding(top = itemSpacing)
-                        .dropLine(group.id, drag.dropTarget, itemSpacing)
+                        .dropLine(group.id, dragState.dropTarget, itemSpacing)
                         .alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f)
                         .padding(
                             start = AcornTheme.layout.space.static200,
                             end = AcornTheme.layout.space.static25,
                         ),
-                state = drag.groups.stateOf(group, isDragged = isDragged, isHidden = isHidden),
+                state = dragState.groups.stateOf(group, isDragged = isDragged, isHidden = isHidden),
+                dragState = dragState,
             )
         }
     }
@@ -171,9 +171,14 @@ private fun CustomizeMenuPreview() {
                 )
             }
             val listState = rememberLazyListState()
-            val drag = rememberCustomizeMenuDragState(store, store.state, listState)
+            val dragState = rememberCustomizeMenuDragState(store, store.state, listState)
             LazyColumn(state = listState) {
-                customizeMenuGroups(menuGroups = drag.groups.shown, drag = drag, firstIndex = 0, itemSpacing = 0.dp)
+                customizeMenuGroups(
+                    menuGroups = dragState.groups.shown,
+                    dragState = dragState,
+                    firstIndex = 0,
+                    itemSpacing = 0.dp,
+                )
             }
         }
     }

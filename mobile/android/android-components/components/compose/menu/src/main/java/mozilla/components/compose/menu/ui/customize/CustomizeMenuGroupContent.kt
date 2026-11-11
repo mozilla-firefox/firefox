@@ -4,6 +4,7 @@
 
 package mozilla.components.compose.menu.ui.customize
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,8 +24,8 @@ import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.data.StandardMenuItem
-import mozilla.components.compose.menu.ui.DISABLED_ALPHA
 import mozilla.components.compose.menu.ui.MenuItemIconRes
+import mozilla.components.compose.menu.ui.utils.DISABLED_ALPHA
 import mozilla.components.compose.menu.ui.utils.mainSectionMenuItemsPreviewData
 import mozilla.components.ui.icons.R as iconsR
 
@@ -33,36 +34,48 @@ internal fun CustomizeMenuGroupContent(
     group: MenuItemsGroup,
     modifier: Modifier = Modifier,
     state: CustomizeMenuGroupState = CustomizeMenuGroupState.SHOWN,
+    dragState: CustomizeMenuDragState? = null,
 ) {
     val isHidden = state == CustomizeMenuGroupState.HIDDEN
-    val contentAlpha = if (isHidden) DISABLED_ALPHA else 1f
 
-    CustomizedGroupTheme(containerColor = if (isHidden) Color.Transparent else null) {
-        Row(
-            modifier = modifier,
-            verticalAlignment = Alignment.CenterVertically,
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // The Box parent allows the drag gesture surviving a "isHidden" state change.
+        Box(
+            modifier = Modifier.weight(1f).dragGroupAfterLongPress(dragState, group.id),
+            propagateMinConstraints = true,
         ) {
-            val groupModifier = Modifier.weight(1f).let { if (isHidden) it.hiddenSectionBorder() else it }
-
-            when (group) {
-                is MenuItemsGroup.Grid ->
-                    CustomizeMenuGridContainer(
-                        items = group.items,
-                        modifier = groupModifier,
-                        contentAlpha = contentAlpha,
-                    )
-
-                is MenuItemsGroup.Row ->
-                    CustomizeMenuListItemGroup(
-                        items = group.items,
-                        modifier = groupModifier,
-                        showDivider = isHidden,
-                        contentAlpha = contentAlpha,
-                    )
+            CustomizedGroupTheme(containerColor = if (isHidden) Color.Transparent else null) {
+                CustomizeMenuGroup(group = group, isHidden = isHidden)
             }
-
-            CustomizeMenuDragIndicator()
         }
+
+        CustomizeMenuDragIndicator(modifier = Modifier.dragGroup(dragState, group.id))
+    }
+}
+
+@Composable
+private fun CustomizeMenuGroup(group: MenuItemsGroup, isHidden: Boolean) {
+    val contentAlpha = if (isHidden) DISABLED_ALPHA else 1f
+    val groupModifier = if (isHidden) Modifier.hiddenSectionBorder() else Modifier
+
+    when (group) {
+        is MenuItemsGroup.Grid ->
+            CustomizeMenuGridContainer(
+                items = group.items,
+                modifier = groupModifier,
+                contentAlpha = contentAlpha,
+            )
+
+        is MenuItemsGroup.Row ->
+            CustomizeMenuListItemGroup(
+                items = group.items,
+                modifier = groupModifier,
+                showDivider = isHidden,
+                contentAlpha = contentAlpha,
+            )
     }
 }
 

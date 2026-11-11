@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.compose.draggable.detectListPressAndDrag
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
@@ -104,20 +103,16 @@ private fun CustomizeMenuList(
 ) {
     val menuState by store.observeAsComposableState { it }
     val listState = rememberLazyListState()
-    val drag = rememberCustomizeMenuDragState(store, menuState, listState)
+    val dragState = rememberCustomizeMenuDragState(store, menuState, listState)
     val itemSpacing = AcornTheme.layout.space.static150
 
     LazyColumn(
         modifier =
             Modifier.fillMaxSize()
-                .onGloballyPositioned(drag.hiddenArea::onListPositioned)
-                .detectListPressAndDrag(
-                    listState = listState,
-                    interactionState = drag.interactionState,
-                    shouldLongPressToDrag = true,
-                ),
+                .onGloballyPositioned(dragState.hiddenArea::onListPositioned)
+                .onGloballyPositioned(dragState.interactionState::updateListLayoutCoordinates),
         state = listState,
-        userScrollEnabled = !drag.isDragging,
+        userScrollEnabled = !dragState.isDragging,
         contentPadding =
             PaddingValues.Absolute(
                 left = leftPadding,
@@ -130,29 +125,34 @@ private fun CustomizeMenuList(
             CustomizeMenuDragBar(onPreviewClick)
         }
 
-        customizeMenuGroups(menuGroups = drag.groups.shown, drag = drag, firstIndex = 1, itemSpacing = itemSpacing)
+        customizeMenuGroups(
+            menuGroups = dragState.groups.shown,
+            dragState = dragState,
+            firstIndex = 1,
+            itemSpacing = itemSpacing,
+        )
 
         item(key = HIDDEN_SECTIONS) {
             val isDropTarget by
-                remember(drag.dropTarget) {
-                    derivedStateOf { drag.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
+                remember(dragState.dropTarget) {
+                    derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
                 }
             CustomizeMenuHiddenSections(
-                hasHiddenItems = drag.hasHiddenGroups,
+                hasHiddenItems = dragState.hasHiddenGroups,
                 isDropTarget = isDropTarget,
-                onTitlePositioned = drag.hiddenArea::onTitlePositioned,
-                onPositioned = drag.hiddenArea::onHiddenSectionsPositioned,
+                onTitlePositioned = dragState.hiddenArea::onTitlePositioned,
+                onPositioned = dragState.hiddenArea::onHiddenSectionsPositioned,
                 modifier =
                     Modifier.animateItem()
                         .padding(top = itemSpacing)
-                        .dropLine(HIDDEN_SECTIONS, drag.dropTarget, itemSpacing),
+                        .dropLine(HIDDEN_SECTIONS, dragState.dropTarget, itemSpacing),
             )
         }
 
         customizeMenuGroups(
-            menuGroups = drag.groups.hidden,
-            drag = drag,
-            firstIndex = drag.firstHiddenIndex,
+            menuGroups = dragState.groups.hidden,
+            dragState = dragState,
+            firstIndex = dragState.firstHiddenIndex,
             itemSpacing = itemSpacing,
             isHidden = true,
         )
@@ -164,7 +164,7 @@ private fun CustomizeMenuList(
                     modifier =
                         Modifier.animateItem()
                             .padding(top = itemSpacing)
-                            .onGloballyPositioned(drag.hiddenArea::onResetButtonPositioned),
+                            .onGloballyPositioned(dragState.hiddenArea::onResetButtonPositioned),
                 )
             }
         }

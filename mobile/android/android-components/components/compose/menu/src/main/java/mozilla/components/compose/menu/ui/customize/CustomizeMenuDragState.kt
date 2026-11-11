@@ -36,6 +36,7 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_B
  * State of dragging the groups of the customize menu screen.
  *
  * @property groups The shown and the hidden groups.
+ * @property listState State of the list showing the groups.
  * @property interactionState State of dragging the items of the list showing the groups.
  * @property hiddenArea Where the area holding the hidden groups is shown.
  * @property isDragging Whether a group is dragged.
@@ -45,6 +46,7 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_B
  */
 internal class CustomizeMenuDragState(
     val groups: CustomizeMenuGroups,
+    val listState: LazyListState,
     val interactionState: ListInteractionState,
     val hiddenArea: CustomizeMenuHiddenArea,
     val isDragging: Boolean,
@@ -148,6 +150,7 @@ internal fun rememberCustomizeMenuDragState(
 
     return CustomizeMenuDragState(
         groups = groups,
+        listState = listState,
         interactionState = interactionState,
         hiddenArea = hiddenArea,
         isDragging = isDragging,
