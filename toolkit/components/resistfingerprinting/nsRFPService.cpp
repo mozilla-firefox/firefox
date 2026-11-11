@@ -146,12 +146,7 @@ static constexpr uint32_t kVideoDroppedRatio = 1;
 #  define DESKTOP_DEFAULT(name) RFPTarget::name,
 #endif
 
-#if defined(MOZ_WIDGET_ANDROID) && !defined(NIGHTLY_BUILD)
-constinit
-#else
-MOZ_RUNINIT
-#endif
-    const RFPTargetSet kDefaultFingerprintingProtectionsBase = {
+MOZ_RUNINIT const RFPTargetSet kDefaultFingerprintingProtectionsBase = {
 #include "RFPTargetsDefaultBaseline.inc"
 };
 

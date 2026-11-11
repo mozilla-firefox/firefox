@@ -9,8 +9,6 @@ DESKTOP_DEFAULT(EfficientCanvasRandomization)
 DESKTOP_DEFAULT(ScreenAvailToResolution)
 DESKTOP_DEFAULT(MaxTouchPointsCollapse)
 
-#ifdef NIGHTLY_BUILD
 ANDROID_DEFAULT(EfficientCanvasRandomization)
 ANDROID_DEFAULT(ScreenAvailToResolution)
 ANDROID_DEFAULT(MaxTouchPointsCollapse)
-#endif
