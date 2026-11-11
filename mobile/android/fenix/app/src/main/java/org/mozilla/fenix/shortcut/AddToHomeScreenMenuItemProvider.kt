@@ -53,6 +53,8 @@ class AddToHomeScreenMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.AddToHomeScreen)))
         } else {
             browserStore.stateFlow
                 .map { state ->
@@ -86,7 +88,8 @@ class AddToHomeScreenMenuItemProvider(
         )
     }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.AddToHomeScreen
+    override fun handles(event: MenuEvent) =
+        target != MenuTarget.Preview && (event == MenuAction.Navigate.AddToHomeScreen)
 
     /**
      * A page offering a web app manifest is installed as a PWA right away. Any other is added as a simple shortcut, for

@@ -101,6 +101,7 @@ data class ExtensionMenuState(
         get() {
             return when (accesspoint) {
                 MenuAccessPoint.Browser,
+                MenuAccessPoint.Preview,
                 MenuAccessPoint.External -> {
                     browserWebExtensionMenuItem.size
                 }
@@ -117,7 +118,9 @@ data class ExtensionMenuState(
             return ((recommendedAddons.isEmpty() || accesspoint == MenuAccessPoint.External) &&
                 availableAddons.isEmpty() &&
                 browserWebExtensionMenuItem.isEmpty()) ||
-                ((accesspoint == MenuAccessPoint.Browser || accesspoint == MenuAccessPoint.External) &&
+                ((accesspoint == MenuAccessPoint.Browser ||
+                    accesspoint == MenuAccessPoint.Preview ||
+                    accesspoint == MenuAccessPoint.External) &&
                     browserWebExtensionMenuItem.isEmpty() &&
                     availableAddons.isNotEmpty())
         }

@@ -9,6 +9,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
@@ -47,5 +48,6 @@ private fun reduce(state: CustomizableMenuState, action: CustomizableMenuAction)
         is BackPressed,
         is ResetToDefaultClicked,
         is ResetToDefaultConfirmed,
+        is PreviewClicked,
         is MenuEvent -> state
     }

@@ -34,7 +34,7 @@ class BookmarksScreenMenuItemProvider(private val target: MenuTarget) : MenuItem
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Bookmarks)))
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.Bookmarks
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.Navigate.Bookmarks)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         menu.navigate(NavGraphDirections.actionGlobalBookmarkFragment(BookmarkRoot.Mobile.id))

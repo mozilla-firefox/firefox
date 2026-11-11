@@ -58,7 +58,7 @@ class MozillaAccountMenuItemProvider(
     private val httpClient: Client,
     context: Context,
     private val accessPoint: MenuAccessPoint,
-    target: MenuTarget,
+    private val target: MenuTarget,
     scope: CoroutineScope,
 ) : MenuItemProvider {
     private val avatarSize = AVATAR_SIZE_DP.dpToPx(context.resources.displayMetrics)
@@ -70,17 +70,34 @@ class MozillaAccountMenuItemProvider(
             ?.let(::MenuItemIconDrawable)
             ?: MenuItemIconRes(iconsR.drawable.mozac_ic_avatar_warning_circle_fill_multicolor_24)
     private val mutableItems: MutableStateFlow<List<MenuItem>>? =
-        if (target == MenuTarget.CustomizeMenu) {
+        if (target == MenuTarget.CustomizeMenu || target == MenuTarget.Preview) {
             null
         } else {
             MutableStateFlow(listOf(syncStore.state.toMenuItem()))
         }
 
     override val itemsFlow: StateFlow<List<MenuItem>> =
-        mutableItems?.asStateFlow() ?: MutableStateFlow(listOf(DEFAULT_MENU_ITEM)).asStateFlow()
+        if (target == MenuTarget.CustomizeMenu) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM)).asStateFlow()
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(
+                    listOf(
+                        DEFAULT_MENU_ITEM.copy(
+                            onClickEvent =
+                                MenuAction.Navigate.MozillaAccount(
+                                    accountState = NotAuthenticated,
+                                    accesspoint = accessPoint,
+                                )
+                        )
+                    )
+                )
+                .asStateFlow()
+        } else {
+            mutableItems?.asStateFlow() ?: MutableStateFlow(listOf(DEFAULT_MENU_ITEM)).asStateFlow()
+        }
 
     init {
-        if (target != MenuTarget.CustomizeMenu) {
+        if (target != MenuTarget.CustomizeMenu && target != MenuTarget.Preview) {
             scope.launch {
                 syncStore.stateFlow
                     .distinctUntilChangedBy { it.account to it.accountState }
@@ -124,7 +141,8 @@ class MozillaAccountMenuItemProvider(
                 else -> MenuItemIconRes(iconsR.drawable.mozac_ic_avatar_circle_24)
             }
 
-    override fun handles(event: MenuEvent) = event is MenuAction.Navigate.MozillaAccount
+    override fun handles(event: MenuEvent) =
+        target != MenuTarget.Preview && (event is MenuAction.Navigate.MozillaAccount)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         if (event !is MenuAction.Navigate.MozillaAccount) return

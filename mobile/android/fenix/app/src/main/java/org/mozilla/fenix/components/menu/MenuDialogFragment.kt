@@ -398,6 +398,7 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                 val initRoute =
                     when (args.accesspoint) {
                         MenuAccessPoint.Browser,
+                        MenuAccessPoint.Preview,
                         MenuAccessPoint.Home -> Route.MainMenu
 
                         MenuAccessPoint.External -> Route.CustomTabMenu

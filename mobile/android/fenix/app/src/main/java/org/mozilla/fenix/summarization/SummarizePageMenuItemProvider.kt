@@ -58,6 +58,9 @@ class SummarizePageMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM)).asStateFlow()
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Summarizer)))
+                .asStateFlow()
         } else {
             combine(browserStore.stateFlow, isPageEligible) { state, isEligible ->
                     listOfNotNull(state.summarizePageItem(isPageEligible = isEligible))
@@ -71,7 +74,7 @@ class SummarizePageMenuItemProvider(
         }
 
     init {
-        if (target != MenuTarget.CustomizeMenu) {
+        if (target != MenuTarget.CustomizeMenu && target != MenuTarget.Preview) {
             scope.launch { resolvePageEligibility() }
         }
     }
@@ -83,7 +86,8 @@ class SummarizePageMenuItemProvider(
     }
 
     override fun handles(event: MenuEvent) =
-        event == MenuAction.Navigate.Summarizer || event == MenuAction.OnSummarizationMenuExposed
+        target != MenuTarget.Preview &&
+            (event == MenuAction.Navigate.Summarizer || event == MenuAction.OnSummarizationMenuExposed)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         when (event) {

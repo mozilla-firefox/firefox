@@ -48,6 +48,11 @@ class RefreshMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM)).asStateFlow()
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(
+                    listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Reload(bypassCache = false)))
+                )
+                .asStateFlow()
         } else {
             browserStore.stateFlow
                 .distinctUntilChangedBy { target.browserSessionFrom(it)?.content?.loading }
@@ -59,7 +64,8 @@ class RefreshMenuItemProvider(
                 )
         }
 
-    override fun handles(event: MenuEvent) = event is MenuAction.Navigate.Reload || event == MenuAction.Navigate.Stop
+    override fun handles(event: MenuEvent) =
+        target != MenuTarget.Preview && (event is MenuAction.Navigate.Reload || event == MenuAction.Navigate.Stop)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         val tabId = target.browserSessionFrom(browserStore.state)?.id ?: return

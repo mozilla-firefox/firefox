@@ -33,7 +33,7 @@ class HistoryMenuItemProvider(private val target: MenuTarget) : MenuItemProvider
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.History)))
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.History
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.Navigate.History)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         menu.navigate(NavGraphDirections.actionGlobalHistoryFragment())

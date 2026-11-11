@@ -60,6 +60,8 @@ class BookmarkMenuItemProvider(
             listOfNotNull(
                 if (target == MenuTarget.CustomizeMenu) {
                     DEFAULT_MENU_ITEM
+                } else if (target == MenuTarget.Preview) {
+                    DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.AddBookmark)
                 } else {
                     DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.AddBookmark).takeIf {
                         target.browserSessionFrom(browserStore.state) != null
@@ -71,7 +73,7 @@ class BookmarkMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> = mutableItems.asStateFlow()
 
     init {
-        if (target != MenuTarget.CustomizeMenu) {
+        if (target != MenuTarget.CustomizeMenu && target != MenuTarget.Preview) {
             // BookmarksStorage#getBookmarksWithUrl will run until completion even if the coroutine is canceled, so it
             // is deliberately run on a scope outliving this menu. As such it must not reference this provider, which
             // would then be leaked together with the menu it holds onto while waiting for the bookmarks.
@@ -93,7 +95,7 @@ class BookmarkMenuItemProvider(
     }
 
     override fun handles(event: MenuEvent) =
-        event == MenuAction.AddBookmark || event is MenuAction.Navigate.EditBookmark
+        target != MenuTarget.Preview && (event == MenuAction.AddBookmark || event is MenuAction.Navigate.EditBookmark)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         when (event) {

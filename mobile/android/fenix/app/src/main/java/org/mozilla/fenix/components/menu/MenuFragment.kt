@@ -5,6 +5,7 @@
 package org.mozilla.fenix.components.menu
 
 import android.app.Dialog
+import android.content.Context
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
@@ -110,72 +111,55 @@ class MenuFragment : BottomSheetDialogFragment() {
     private val ipProtectionSnackbarBinding = ViewBoundFeatureWrapper<IPProtectionSnackbarBinding>()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        Events.toolbarMenuVisible.record(NoExtras())
+        if (args.accessPoint != MenuAccessPoint.Preview) {
+            Events.toolbarMenuVisible.record(NoExtras())
+        }
 
-        return object : BottomSheetDialog(requireContext(), theme) {
-                override fun onKeyDown(
-                    keyCode: Int,
-                    event: KeyEvent,
-                ): Boolean {
-                    if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_MENU) {
-                        // Repeats from a held down hardware key would otherwise keep dismissing
-                        // and reopening the menu.
-                        if (event.repeatCount == 0) {
-                            dismiss()
-                        }
-                        return true
-                    }
-                    return super.onKeyDown(keyCode, event)
+        return MenuBottomSheetDialog(requireContext(), theme).apply {
+            setOnShowListener { setupBottomSheet(this) }
+        }
+    }
+
+    private fun setupBottomSheet(dialog: BottomSheetDialog) {
+        val safeActivity = activity ?: return
+        val isPrivate = safeActivity.components.appStore.state.mode.isPrivate
+
+        if (isPrivate && args.accessPoint == MenuAccessPoint.Home) {
+            dialog.window?.setBackgroundDrawable(
+                Color.BLACK.toDrawable().mutate().apply {
+                    alpha = PRIVATE_HOME_MENU_BACKGROUND_ALPHA
                 }
-            }
-            .apply {
-                setOnShowListener {
-                    val safeActivity = activity ?: return@setOnShowListener
-                    val isPrivate = safeActivity.components.appStore.state.mode.isPrivate
+            )
+        }
 
-                    if (isPrivate && args.accessPoint == MenuAccessPoint.Home) {
-                        window?.setBackgroundDrawable(
-                            Color.BLACK.toDrawable().mutate().apply {
-                                alpha = PRIVATE_HOME_MENU_BACKGROUND_ALPHA
-                            }
-                        )
-                    }
+        val bottomSheet = dialog.findViewById<View?>(materialR.id.design_bottom_sheet) ?: return
 
-                    val bottomSheet = findViewById<View?>(materialR.id.design_bottom_sheet)
+        ViewCompat.setOnApplyWindowInsetsListener(bottomSheet) { view, insets ->
+            val systemBarInsets = insets.getInsets(systemBars())
+            view.setPadding(0, systemBarInsets.top, 0, systemBarInsets.bottom)
+            insets
+        }
+        bottomSheet.setBackgroundResource(R.drawable.bottom_sheet_with_top_rounded_corners)
 
-                    bottomSheet?.let {
-                        ViewCompat.setOnApplyWindowInsetsListener(it) { view, insets ->
-                            val systemBarInsets = insets.getInsets(systemBars())
-                            view.setPadding(0, systemBarInsets.top, 0, systemBarInsets.bottom)
-                            insets
-                        }
-                    }
-                    bottomSheet?.setBackgroundResource(R.drawable.bottom_sheet_with_top_rounded_corners)
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1982004
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            bottomSheet.translationY = bottomSheet.height * MENU_ANIMATION_START_OFFSET_RATIO
+            bottomSheet
+                .animate()
+                .translationY(0f)
+                .setInterpolator(OvershootInterpolator())
+                .setDuration(MENU_ANIMATION_DURATION)
+                .start()
+        }
 
-                    // https://bugzilla.mozilla.org/show_bug.cgi?id=1982004
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-                        bottomSheet?.let { sheet ->
-                            sheet.translationY = sheet.height * MENU_ANIMATION_START_OFFSET_RATIO
-                            sheet
-                                .animate()
-                                .translationY(0f)
-                                .setInterpolator(OvershootInterpolator())
-                                .setDuration(MENU_ANIMATION_DURATION)
-                                .start()
-                        }
-                    }
-
-                    bottomSheetBehavior = bottomSheet?.let {
-                        BottomSheetBehavior.from(it).apply {
-                            maxWidth = calculateMenuSheetWidth()
-                            peekHeight = resources.displayMetrics.heightPixels
-                            maxHeight = calculateMenuSheetHeight()
-                            skipCollapsed = true
-                            state = BottomSheetBehavior.STATE_EXPANDED
-                            hideFriction = HIDING_FRICTION
-                        }
-                    }
-                }
+        bottomSheetBehavior =
+            BottomSheetBehavior.from(bottomSheet).apply {
+                maxWidth = calculateMenuSheetWidth()
+                peekHeight = resources.displayMetrics.heightPixels
+                maxHeight = calculateMenuSheetHeight()
+                skipCollapsed = true
+                state = BottomSheetBehavior.STATE_EXPANDED
+                hideFriction = HIDING_FRICTION
             }
     }
 
@@ -370,6 +354,7 @@ class MenuFragment : BottomSheetDialogFragment() {
                     MenuAccessPoint.External ->
                         args.customTabSessionId?.let { MenuTarget.CustomTab(it, args.isSandboxCustomTab) }
                             ?: MenuTarget.BrowserTab
+                    MenuAccessPoint.Preview -> MenuTarget.Preview
                 },
             browserStore = components.core.store,
             appStore = components.appStore,
@@ -419,7 +404,8 @@ class MenuFragment : BottomSheetDialogFragment() {
 
     private suspend fun buildMenuConfigurationFor(menuAccessPoint: MenuAccessPoint) =
         when (menuAccessPoint) {
-            MenuAccessPoint.Browser ->
+            MenuAccessPoint.Browser,
+            MenuAccessPoint.Preview ->
                 BrowserMenuConfiguration.sections(
                     isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                     isExpandedToolbarEnabled = requireComponents.settings.shouldUseExpandedToolbar,
@@ -509,4 +495,20 @@ private suspend fun AwaitPointerEventScope.consumeRemainingPointerEvents() {
         val event = awaitPointerEvent(PointerEventPass.Initial)
         event.changes.forEach { it.consume() }
     } while (event.changes.any { it.pressed })
+}
+
+private class MenuBottomSheetDialog(
+    context: Context,
+    theme: Int,
+) : BottomSheetDialog(context, theme) {
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_MENU) {
+            // Repeats from a held down hardware key would otherwise keep dismissing and reopening the menu.
+            if (event.repeatCount == 0) {
+                dismiss()
+            }
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
 }

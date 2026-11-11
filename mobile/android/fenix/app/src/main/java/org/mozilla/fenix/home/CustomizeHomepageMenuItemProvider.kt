@@ -33,7 +33,8 @@ class CustomizeHomepageMenuItemProvider(private val target: MenuTarget) : MenuIt
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.CustomizeHomepage)))
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.CustomizeHomepage
+    override fun handles(event: MenuEvent) =
+        target != MenuTarget.Preview && (event == MenuAction.Navigate.CustomizeHomepage)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         menu.navigate(NavGraphDirections.actionGlobalHomeSettingsFragment())

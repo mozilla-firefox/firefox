@@ -55,6 +55,10 @@ class BackMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target is MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target is MenuTarget.Preview) {
+            MutableStateFlow(
+                listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Back(viewHistory = false)))
+            )
         } else {
             browserStore.stateFlow
                 .map { state ->
@@ -72,7 +76,7 @@ class BackMenuItemProvider(
                 )
         }
 
-    override fun handles(event: MenuEvent) = event is MenuAction.Navigate.Back
+    override fun handles(event: MenuEvent) = target !is MenuTarget.Preview && (event is MenuAction.Navigate.Back)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         if (event !is MenuAction.Navigate.Back) return

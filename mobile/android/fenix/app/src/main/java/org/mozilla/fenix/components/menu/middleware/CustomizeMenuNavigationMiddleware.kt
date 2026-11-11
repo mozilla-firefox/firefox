@@ -11,6 +11,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
@@ -19,6 +20,7 @@ import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.compose.customize.CustomizeMenuFragmentDirections
 import org.mozilla.fenix.ext.nav
 
@@ -38,6 +40,15 @@ class CustomizeMenuNavigationMiddleware(private val navController: NavController
         next(action)
 
         when (action) {
+            is PreviewClicked -> {
+                navController.nav(
+                    R.id.customizeMenuFragment,
+                    CustomizeMenuFragmentDirections.actionCustomizeMenuFragmentToMenuFragment(
+                        accessPoint = MenuAccessPoint.Preview
+                    ),
+                )
+            }
+
             is ResetToDefaultClicked -> {
                 navController.nav(
                     R.id.customizeMenuFragment,

@@ -10,6 +10,7 @@ import kotlin.test.assertNull
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
@@ -149,6 +150,16 @@ class CustomizeMenuTelemetryMiddlewareTest {
         store.dispatch(ResetToDefaultConfirmed)
 
         assertEquals(1, CustomizeMenu.resetToDefaultClicked.testGetValue()?.size)
+    }
+
+    @Test
+    fun `WHEN the user taps preview THEN record it`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.previewClicked.testGetValue())
+
+        store.dispatch(PreviewClicked)
+
+        assertEquals(1, CustomizeMenu.previewClicked.testGetValue()?.size)
     }
 
     private fun createStore(initialState: CustomizableMenuState = CustomizableMenuState(emptyList())) =

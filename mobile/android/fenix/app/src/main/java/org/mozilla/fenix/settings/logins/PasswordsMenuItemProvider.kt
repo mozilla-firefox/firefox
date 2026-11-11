@@ -34,6 +34,8 @@ class PasswordsMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Passwords)))
         } else {
             MutableStateFlow(
                 listOfNotNull(
@@ -45,7 +47,7 @@ class PasswordsMenuItemProvider(
             )
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.Passwords
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.Navigate.Passwords)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         menu.navigate(MenuFragmentDirections.actionMenuFragmentToLoginsListFragment())

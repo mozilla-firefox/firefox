@@ -65,4 +65,7 @@ sealed interface CustomizableMenuAction : Action {
 
     /** The user confirmed resetting the menu to default in the confirmation dialog. */
     data object ResetToDefaultConfirmed : CustomizableMenuAction
+
+    /** The user tapped "Preview" on the customize menu screen. */
+    data object PreviewClicked : CustomizableMenuAction
 }

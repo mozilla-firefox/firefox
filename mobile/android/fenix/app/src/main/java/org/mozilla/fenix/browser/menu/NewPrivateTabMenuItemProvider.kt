@@ -45,7 +45,8 @@ class NewPrivateTabMenuItemProvider(
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.NewPrivateTab)))
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.NewPrivateTab
+    override fun handles(event: MenuEvent) =
+        target != MenuTarget.Preview && (event == MenuAction.Navigate.NewPrivateTab)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         browsingModeManager.mode = BrowsingMode.Private

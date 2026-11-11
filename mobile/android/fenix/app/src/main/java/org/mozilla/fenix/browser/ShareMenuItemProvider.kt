@@ -45,7 +45,7 @@ class ShareMenuItemProvider(
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Share)))
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.Share
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.Navigate.Share)
 
     /**
      * The page is shared through the system share sheet when possible, with the menu closed afterwards. Otherwise the

@@ -40,6 +40,7 @@ import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
+import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
@@ -55,13 +56,11 @@ import mozilla.components.lib.state.ext.observeAsComposableState
  *
  * @param store The [CustomizableMenuStore] managing the state and dispatching events for menu customization.
  * @param modifier The [Modifier] to be applied to the layout.
- * @param onPreviewClick Callback invoked when the "Preview" button is clicked.
  */
 @Composable
 fun CustomizeMenuContent(
     store: CustomizableMenuStore,
     modifier: Modifier = Modifier,
-    onPreviewClick: () -> Unit = {},
 ) {
     val windowWidth = LocalWindowInfo.current.containerSize.width
     // How far right of the center of the window this is, when beside a larger notch than navigation bar for example.
@@ -85,7 +84,6 @@ fun CustomizeMenuContent(
             store = store,
             leftPadding = freeWidth / 2 - shift,
             rightPadding = freeWidth / 2 + shift,
-            onPreviewClick = onPreviewClick,
         )
     }
 }
@@ -95,7 +93,6 @@ private fun CustomizeMenuList(
     store: CustomizableMenuStore,
     leftPadding: Dp,
     rightPadding: Dp,
-    onPreviewClick: () -> Unit,
 ) {
     val menuState by store.observeAsComposableState { it }
     val listState = rememberLazyListState()
@@ -115,7 +112,7 @@ private fun CustomizeMenuList(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         item(key = DRAG_BAR) {
-            CustomizeMenuDragBar(onPreviewClick)
+            CustomizeMenuDragBar({ store.dispatch(PreviewClicked) })
         }
 
         customizeMenuGroups(

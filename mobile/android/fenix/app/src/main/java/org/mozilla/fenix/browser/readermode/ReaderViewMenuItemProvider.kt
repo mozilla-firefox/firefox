@@ -45,6 +45,8 @@ class ReaderViewMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.CustomizeReaderView)))
         } else {
             browserStore.stateFlow
                 .map { listOfNotNull(it.customizeReaderViewItem()) }
@@ -55,7 +57,7 @@ class ReaderViewMenuItemProvider(
                 )
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.CustomizeReaderView
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.CustomizeReaderView)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         if (target.browserSessionFrom(browserStore.state) == null) return

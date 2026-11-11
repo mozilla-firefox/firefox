@@ -43,6 +43,8 @@ class DownloadsMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM)).asStateFlow()
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Downloads))).asStateFlow()
         } else {
             appStore.stateFlow
                 .map { it.supportedMenuNotifications.contains(SupportedMenuNotifications.Downloads) }
@@ -70,7 +72,7 @@ class DownloadsMenuItemProvider(
             onClickEvent = MenuAction.Navigate.Downloads,
         )
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.Downloads
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.Navigate.Downloads)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         menu.navigate(NavGraphDirections.actionGlobalDownloadsFragment())

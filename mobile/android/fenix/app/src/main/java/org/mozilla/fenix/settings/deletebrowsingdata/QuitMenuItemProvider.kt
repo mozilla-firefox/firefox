@@ -58,7 +58,8 @@ class QuitMenuItemProvider(
             MutableStateFlow(emptyList())
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.DeleteBrowsingDataAndQuit
+    override fun handles(event: MenuEvent) =
+        target != MenuTarget.Preview && (event == MenuAction.DeleteBrowsingDataAndQuit)
 
     /**
      * The data is deleted after the menu is closed, and the application quit only after that. What is needed for this

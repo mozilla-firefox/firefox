@@ -38,6 +38,8 @@ class PrintMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.PrintRequested)))
         } else {
             MutableStateFlow(
                 listOfNotNull(
@@ -50,7 +52,7 @@ class PrintMenuItemProvider(
             )
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.PrintRequested
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.PrintRequested)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         val tabId = target.browserSessionFrom(browserStore.state)?.id ?: return

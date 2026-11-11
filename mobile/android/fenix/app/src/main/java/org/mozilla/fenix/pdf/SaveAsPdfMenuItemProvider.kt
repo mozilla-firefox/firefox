@@ -42,7 +42,7 @@ class SaveAsPdfMenuItemProvider(
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.SaveAsPdfRequested)))
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.SaveAsPdfRequested
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.SaveAsPdfRequested)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         val tabId = target.browserSessionFrom(browserStore.state)?.id ?: return

@@ -47,6 +47,8 @@ class DesktopSiteMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM)).asStateFlow()
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.RequestDesktopSite))).asStateFlow()
         } else {
             browserStore.stateFlow
                 .map { listOfNotNull(it.desktopSiteItem()) }
@@ -58,7 +60,8 @@ class DesktopSiteMenuItemProvider(
         }
 
     override fun handles(event: MenuEvent) =
-        event == MenuAction.RequestDesktopSite || event == MenuAction.RequestMobileSite
+        target != MenuTarget.Preview &&
+            (event == MenuAction.RequestDesktopSite || event == MenuAction.RequestMobileSite)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         val tabId = target.browserSessionFrom(browserStore.state)?.id ?: return

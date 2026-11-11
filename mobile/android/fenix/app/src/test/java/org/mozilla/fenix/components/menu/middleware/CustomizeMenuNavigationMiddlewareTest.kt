@@ -11,16 +11,34 @@ import io.mockk.mockk
 import io.mockk.verify
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
+import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.compose.customize.CustomizeMenuFragmentDirections
 
 class CustomizeMenuNavigationMiddlewareTest {
     private val navController: NavController = mockk(relaxed = true)
+
+    @Test
+    fun `WHEN PreviewClicked is dispatched THEN navigate to MenuFragment`() {
+        val store = createStore()
+
+        store.dispatch(PreviewClicked)
+
+        verify {
+            navController.navigate(
+                CustomizeMenuFragmentDirections.actionCustomizeMenuFragmentToMenuFragment(
+                    accessPoint = MenuAccessPoint.Preview
+                ),
+                null,
+            )
+        }
+    }
 
     @Test
     fun `WHEN ResetToDefaultClicked is dispatched THEN navigate to ResetToDefaultDialogFragment`() {

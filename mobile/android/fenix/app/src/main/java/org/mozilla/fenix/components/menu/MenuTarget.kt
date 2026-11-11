@@ -33,4 +33,9 @@ sealed interface MenuTarget {
     data object CustomizeMenu : MenuTarget {
         override fun browserSessionFrom(state: BrowserState): SessionState? = null
     }
+
+    /** The menu will be shown in the menu preview screen. */
+    data object Preview : MenuTarget {
+        override fun browserSessionFrom(state: BrowserState): SessionState? = null
+    }
 }

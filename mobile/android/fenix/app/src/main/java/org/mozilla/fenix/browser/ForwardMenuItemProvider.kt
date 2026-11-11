@@ -47,6 +47,11 @@ class ForwardMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM)).asStateFlow()
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(
+                    listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Forward(viewHistory = false)))
+                )
+                .asStateFlow()
         } else {
             browserStore.stateFlow
                 .distinctUntilChangedBy { target.browserSessionFrom(it)?.content?.canGoForward }
@@ -58,7 +63,7 @@ class ForwardMenuItemProvider(
                 )
         }
 
-    override fun handles(event: MenuEvent) = event is MenuAction.Navigate.Forward
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event is MenuAction.Navigate.Forward)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         if (event !is MenuAction.Navigate.Forward) return

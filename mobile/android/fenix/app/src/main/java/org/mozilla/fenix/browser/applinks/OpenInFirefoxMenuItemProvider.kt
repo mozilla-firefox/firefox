@@ -36,21 +36,27 @@ class OpenInFirefoxMenuItemProvider(
 ) : MenuItemProvider {
     private val isSandboxCustomTab = (target as? MenuTarget.CustomTab)?.isSandboxed == true
     override val itemsFlow: StateFlow<List<MenuItem>> =
-        MutableStateFlow(
-            listOf(
-                defaultMenuItem(appName)
-                    .copy(
-                        onClickEvent = MenuAction.OpenInFirefox,
-                        state =
-                            when {
-                                isSandboxCustomTab -> MenuItemState.DISABLED
-                                else -> MenuItemState.DEFAULT
-                            },
-                    )
+        if (target == MenuTarget.CustomizeMenu) {
+            MutableStateFlow(listOf(defaultMenuItem(appName)))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(defaultMenuItem(appName).copy(onClickEvent = MenuAction.OpenInFirefox)))
+        } else {
+            MutableStateFlow(
+                listOf(
+                    defaultMenuItem(appName)
+                        .copy(
+                            onClickEvent = MenuAction.OpenInFirefox,
+                            state =
+                                when {
+                                    isSandboxCustomTab -> MenuItemState.DISABLED
+                                    else -> MenuItemState.DEFAULT
+                                },
+                        )
+                )
             )
-        )
+        }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.OpenInFirefox
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.OpenInFirefox)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         if (isSandboxCustomTab) return

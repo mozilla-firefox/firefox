@@ -33,7 +33,7 @@ class SettingsMenuItemProvider(private val target: MenuTarget) : MenuItemProvide
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Settings)))
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.Settings
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.Navigate.Settings)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         menu.navigate(NavGraphDirections.actionGlobalSettingsFragment())

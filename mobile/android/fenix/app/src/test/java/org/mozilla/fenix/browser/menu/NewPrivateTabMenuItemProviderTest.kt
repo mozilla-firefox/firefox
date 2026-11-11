@@ -41,7 +41,7 @@ class NewPrivateTabMenuItemProviderTest {
         assertEquals(
             StandardMenuItem(
                 title = MenuItemTitle(Text.Resource(tabcounterR.string.mozac_browser_menu_new_private_tab)),
-                icon = MenuItemIconRes(iconsR.drawable.mozac_ic_private_mode_24),
+                icon = MenuItemIconRes(iconsR.drawable.mozac_ic_private_mode_fill_24),
                 onClickEvent = MenuAction.Navigate.NewPrivateTab,
             ),
             provider.itemsFlow.value.single(),
@@ -54,8 +54,25 @@ class NewPrivateTabMenuItemProviderTest {
 
         val item = provider.itemsFlow.value.single() as StandardMenuItem
         assertEquals(MenuItemTitle(Text.Resource(tabcounterR.string.mozac_browser_menu_new_private_tab)), item.title)
-        assertEquals(MenuItemIconRes(iconsR.drawable.mozac_ic_private_mode_24), item.icon)
+        assertEquals(MenuItemIconRes(iconsR.drawable.mozac_ic_private_mode_fill_24), item.icon)
         assertNull(item.onClickEvent)
+    }
+
+    @Test
+    fun `GIVEN target is Preview WHEN building the menu item THEN offer item with onClickEvent for ripple animation`() {
+        val provider = createProvider(MenuTarget.Preview)
+
+        val item = provider.itemsFlow.value.single() as StandardMenuItem
+        assertEquals(MenuItemTitle(Text.Resource(tabcounterR.string.mozac_browser_menu_new_private_tab)), item.title)
+        assertEquals(MenuItemIconRes(iconsR.drawable.mozac_ic_private_mode_fill_24), item.icon)
+        assertEquals(MenuAction.Navigate.NewPrivateTab, item.onClickEvent)
+    }
+
+    @Test
+    fun `GIVEN target is Preview WHEN checking handled events THEN return false`() {
+        val provider = createProvider(MenuTarget.Preview)
+
+        assertFalse(provider.handles(MenuAction.Navigate.NewPrivateTab))
     }
 
     @Test

@@ -54,6 +54,8 @@ class TranslationsMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.Translate)))
         } else {
             combine(browserStore.stateFlow, translationsSettings.isEnabled) { state, isEnabled ->
                     listOfNotNull(state.translationsItem(isEnabled = isEnabled))
@@ -89,7 +91,7 @@ class TranslationsMenuItemProvider(
         return translationEngine.supportedLanguages?.findLanguage(translatedTo)?.localizedDisplayName
     }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.Translate
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.Navigate.Translate)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         val tabId = target.browserSessionFrom(browserStore.state)?.id ?: return

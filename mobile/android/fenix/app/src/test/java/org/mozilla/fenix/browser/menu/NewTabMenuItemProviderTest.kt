@@ -59,6 +59,23 @@ class NewTabMenuItemProviderTest {
     }
 
     @Test
+    fun `GIVEN target is Preview WHEN building the menu item THEN offer item with onClickEvent for ripple animation`() {
+        val provider = createProvider(MenuTarget.Preview)
+
+        val item = provider.itemsFlow.value.single() as StandardMenuItem
+        assertEquals(MenuItemTitle(Text.Resource(tabcounterR.string.mozac_browser_menu_new_tab)), item.title)
+        assertEquals(MenuItemIconRes(iconsR.drawable.mozac_ic_plus_24), item.icon)
+        assertEquals(MenuAction.Navigate.NewTab, item.onClickEvent)
+    }
+
+    @Test
+    fun `GIVEN target is Preview WHEN checking handled events THEN return false`() {
+        val provider = createProvider(MenuTarget.Preview)
+
+        assertFalse(provider.handles(MenuAction.Navigate.NewTab))
+    }
+
+    @Test
     fun `GIVEN homepage as new tab is enabled WHEN clicking the item THEN set normal browsing mode, add new homepage tab and navigate home`() {
         every { settings.enableHomepageAsNewTab } returns true
         val provider = createProvider()

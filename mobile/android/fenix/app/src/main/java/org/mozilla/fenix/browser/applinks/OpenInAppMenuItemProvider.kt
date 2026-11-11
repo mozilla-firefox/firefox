@@ -57,6 +57,8 @@ class OpenInAppMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.OpenInApp)))
         } else {
             combine(browserStore.currentUrl(target), appStore.isOpenInAppHighlighted()) { url, isHighlighted ->
                     listOf(openInAppItem(url = url, isHighlighted = isHighlighted))
@@ -107,7 +109,7 @@ class OpenInAppMenuItemProvider(
         )
     }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.OpenInApp
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.OpenInApp)
 
     /**
      * Whether there is an app for the current page is resolved again, since the user may have navigated to another page

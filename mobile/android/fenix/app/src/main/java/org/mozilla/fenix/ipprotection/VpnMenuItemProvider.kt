@@ -67,7 +67,8 @@ class VpnMenuItemProvider(
             )
 
     override fun handles(event: MenuEvent) =
-        event == MenuAction.IPProtectionToggle || event == MenuAction.Navigate.IPProtectionSettings
+        target != MenuTarget.Preview &&
+            (event == MenuAction.IPProtectionToggle || event == MenuAction.Navigate.IPProtectionSettings)
 
     /** The menu is deliberately left open while connecting, so that the user can see the status change. */
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
@@ -118,6 +119,7 @@ class VpnMenuItemProvider(
             true ->
                 when (target) {
                     MenuTarget.CustomizeMenu -> DEFAULT_MENU_ITEM
+                    MenuTarget.Preview -> DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.IPProtectionToggle)
                     else -> toMenuState().toMenuItem()
                 }
 

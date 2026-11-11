@@ -37,6 +37,8 @@ class MoveToNormalTabsMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.MoveToNonPrivateTab)))
         } else {
             MutableStateFlow(
                 listOfNotNull(
@@ -49,7 +51,7 @@ class MoveToNormalTabsMenuItemProvider(
             )
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.MoveToNonPrivateTab
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.MoveToNonPrivateTab)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         val tabId = target.browserSessionFrom(browserStore.state)?.id ?: return

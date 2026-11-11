@@ -40,6 +40,12 @@ class SaveToCollectionMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(
+                listOf(
+                    DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.SaveToCollection(hasCollection = false))
+                )
+            )
         } else {
             MutableStateFlow(
                 listOfNotNull(
@@ -57,7 +63,8 @@ class SaveToCollectionMenuItemProvider(
             )
         }
 
-    override fun handles(event: MenuEvent) = event is MenuAction.Navigate.SaveToCollection
+    override fun handles(event: MenuEvent) =
+        target != MenuTarget.Preview && (event is MenuAction.Navigate.SaveToCollection)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         if (event !is MenuAction.Navigate.SaveToCollection) return

@@ -31,6 +31,8 @@ class MenuTelemetryMiddleware<S : State, A : Action>(private val accessPoint: Me
     ) {
         next(action)
 
+        if (accessPoint == MenuAccessPoint.Preview) return
+
         when (action) {
             MenuAction.Navigate.CustomizeHomepage ->
                 Events.browserMenuAction.record(Events.BrowserMenuActionExtra(item = "customize_homepage"))

@@ -60,6 +60,8 @@ class ReportBrokenSiteMenuItemProvider(
     override val itemsFlow: StateFlow<List<MenuItem>> =
         if (target == MenuTarget.CustomizeMenu) {
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM))
+        } else if (target == MenuTarget.Preview) {
+            MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.WebCompatReporter)))
         } else {
             browserStore.stateFlow
                 .map { state -> listOfNotNull(target.browserSessionFrom(state).reportBrokenSiteItem()) }
@@ -70,7 +72,8 @@ class ReportBrokenSiteMenuItemProvider(
                 )
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.WebCompatReporter
+    override fun handles(event: MenuEvent) =
+        target != MenuTarget.Preview && (event == MenuAction.Navigate.WebCompatReporter)
 
     /**
      * A broken site is reported from inside the app if the user allows telemetry, since only then can the details of

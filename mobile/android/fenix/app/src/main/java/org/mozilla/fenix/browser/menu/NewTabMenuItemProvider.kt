@@ -45,7 +45,7 @@ class NewTabMenuItemProvider(
             MutableStateFlow(listOf(DEFAULT_MENU_ITEM.copy(onClickEvent = MenuAction.Navigate.NewTab)))
         }
 
-    override fun handles(event: MenuEvent) = event == MenuAction.Navigate.NewTab
+    override fun handles(event: MenuEvent) = target != MenuTarget.Preview && (event == MenuAction.Navigate.NewTab)
 
     override fun onEvent(event: MenuEvent, menu: MenuHost) {
         browsingModeManager.mode = BrowsingMode.Normal

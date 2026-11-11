@@ -11091,6 +11091,22 @@ customize_menu:
     metadata:
       tags:
         - MainMenu
+  preview_clicked:
+    type: event
+    description: |
+      The user tapped "Preview" on the customize menu screen to preview the menu structure.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2086543
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D339917
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - MainMenu
 app_theme:
   dark_theme_selected:
     type: event
