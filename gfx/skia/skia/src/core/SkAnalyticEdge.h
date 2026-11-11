@@ -58,12 +58,12 @@ struct SkAnalyticEdge {
     // Update fX, fY of this edge so fY = y
     inline void goY(SkFixed y) {
         if (y == fY + SK_Fixed1) {
-            fX = fX + fDX;
+            fX = Sk32_sat_add(fX, fDX);
             fY = y;
         } else if (y != fY) {
             // Drop lower digits as our alpha only has 8 bits
             // (fDX and y - fUpperY may be greater than SK_Fixed1)
-            fX = fUpperX + SkFixedMul(fDX, y - fUpperY);
+            fX = Sk64_pin_to_s32(fUpperX + ((int64_t)fDX * (y - fUpperY) >> 16));
             fY = y;
         }
     }
@@ -72,7 +72,7 @@ struct SkAnalyticEdge {
         SkASSERT(yShift >= 0 && yShift <= kDefaultAccuracy);
         SkASSERT(fDX == 0 || y - fY == SK_Fixed1 >> yShift);
         fY = y;
-        fX += fDX >> yShift;
+        fX = Sk32_sat_add(fX, fDX >> yShift);
     }
 
     bool setLine(const SkPoint& p0, const SkPoint& p1);
