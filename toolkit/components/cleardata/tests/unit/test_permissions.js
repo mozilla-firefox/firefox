@@ -569,10 +569,7 @@ add_task(async function test_3rdpartystorage_permissions() {
   });
 });
 
-add_task(async function test_clear_site_permissions_preserves_defaults() {
-  Services.perms.removeAll();
-
-  // Set up a defaults file with a builtin permission.
+function loadDefaultPermissions(lines) {
   let file = do_get_tempdir();
   file.append("test_default_permissions");
 
@@ -584,7 +581,9 @@ add_task(async function test_clear_site_permissions_preserves_defaults() {
     Ci.nsIConverterOutputStream
   );
   conv.init(ostream, "UTF-8");
-  conv.writeString("host\tuitour\t1\texample.org\n");
+  for (let line of lines) {
+    conv.writeString(line + "\n");
+  }
   ostream.close();
 
   Services.prefs.setCharPref(
@@ -592,6 +591,14 @@ add_task(async function test_clear_site_permissions_preserves_defaults() {
     "file://" + file.path
   );
   Services.obs.notifyObservers(null, "testonly-reload-permissions-from-disk");
+  return file;
+}
+
+add_task(async function test_clear_site_permissions_preserves_defaults() {
+  Services.perms.removeAll();
+
+  // Set up a defaults file with a builtin permission.
+  let file = loadDefaultPermissions(["host\tuitour\t1\texample.org"]);
 
   const uri = Services.io.newURI("https://example.org");
   const principal = Services.scriptSecurityManager.createContentPrincipal(
@@ -638,5 +645,88 @@ add_task(async function test_clear_site_permissions_preserves_defaults() {
   );
 
   file.remove(false);
+  Services.perms.removeAll();
+});
+
+add_task(async function test_clear_by_site_preserves_defaults() {
+  Services.perms.removeAll();
+
+  let file = loadDefaultPermissions([
+    "host\tuitour\t1\texample.org",
+    "host\tinstall\t1\texample.org",
+  ]);
+
+  const principal =
+    Services.scriptSecurityManager.createContentPrincipalFromOrigin(
+      "https://example.org"
+    );
+  const testPerm = type =>
+    Services.perms.testExactPermissionFromPrincipal(principal, type);
+
+  Services.perms.addDefaultFromPrincipal(
+    principal,
+    "https-only-load-insecure",
+    Ci.nsIHttpsOnlyModePermission.HTTPSFIRST_LOAD_INSECURE_ALLOW
+  );
+  Services.perms.addFromPrincipal(
+    principal,
+    "install",
+    Services.perms.DENY_ACTION
+  );
+  Services.perms.addFromPrincipal(
+    principal,
+    "geo",
+    Services.perms.ALLOW_ACTION
+  );
+
+  await new Promise(aResolve => {
+    Services.clearData.deleteDataFromSite(
+      "example.org",
+      {},
+      true,
+      Ci.nsIClearDataService.CLEAR_PERMISSIONS,
+      value => {
+        Assert.equal(value, 0);
+        aResolve();
+      }
+    );
+  });
+
+  Assert.equal(
+    testPerm("uitour"),
+    Services.perms.ALLOW_ACTION,
+    "Built-in default permission is kept"
+  );
+  Assert.equal(
+    testPerm("https-only-load-insecure"),
+    Ci.nsIHttpsOnlyModePermission.HTTPSFIRST_LOAD_INSECURE_ALLOW,
+    "Remote default permission is kept"
+  );
+  Assert.equal(
+    testPerm("install"),
+    Services.perms.ALLOW_ACTION,
+    "Clearing a user override restores the default permission"
+  );
+  Assert.equal(
+    testPerm("geo"),
+    Services.perms.UNKNOWN_ACTION,
+    "User-granted permission is removed"
+  );
+
+  Services.obs.notifyObservers(null, "testonly-reload-permissions-from-disk");
+
+  Assert.equal(
+    testPerm("uitour"),
+    Services.perms.ALLOW_ACTION,
+    "Built-in default permission is still present after a reload"
+  );
+  Assert.equal(
+    testPerm("install"),
+    Services.perms.ALLOW_ACTION,
+    "Restored default permission is still present after a reload"
+  );
+
+  file.remove(false);
+  Services.prefs.clearUserPref("permissions.manager.defaultsUrl");
   Services.perms.removeAll();
 });

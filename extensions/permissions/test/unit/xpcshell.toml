@@ -105,6 +105,8 @@ prefs = ["security.storage.encryption.sqlite.enabled=false"]
 
 ["test_permmanager_removeAllSinceWithTypeExceptions.js"]
 
+["test_permmanager_removePermissionsExceptDefaults.js"]
+
 ["test_permmanager_removePermissionsWithAttributes.js"]
 
 ["test_permmanager_remove_add_update.js"]
