@@ -1442,6 +1442,74 @@ export class UrlbarInputBaseTestUtils {
   }
 
   /**
+   * Asserts a search term is in the url bar and state values are what they
+   * should be. Can only be used if UrlbarTestUtils has been initialized with
+   * init().
+   *
+   * @param {ChromeWindow} window
+   *   The browser window.
+   * @param {string} searchString
+   *   String that should be matched in the url bar.
+   * @param {object} [options]
+   *   Options for the assertions.
+   * @param {string} [options.pageProxyState]
+   *   The pageproxystate that should be expected.
+   * @param {string} [options.userTypedValue]
+   *   The userTypedValue that should be expected.
+   * @param {boolean} [options.persistSearchTerms]
+   *   Whether the persistsearchterms attribute should be expected.
+   */
+  assertSearchStringIsInUrlbar(
+    window,
+    searchString,
+    {
+      pageProxyState = "invalid",
+      userTypedValue = searchString,
+      persistSearchTerms = true,
+    } = {}
+  ) {
+    if (this.#urlbar(window).sapName != "urlbar") {
+      throw new Error(
+        "Persisted search terms are only supported in the address bar"
+      );
+    }
+    this.Assert.equal(
+      this.#urlbar(window).value,
+      searchString,
+      `Search string should be the urlbar value.`
+    );
+    let state = this.#urlbar(window).getBrowserState(
+      window.gBrowser.selectedBrowser
+    );
+    this.Assert.equal(
+      state.persist?.searchTerms,
+      searchString,
+      `Search terms should match.`
+    );
+    this.Assert.equal(
+      window.gBrowser.userTypedValue,
+      userTypedValue,
+      "userTypedValue should match."
+    );
+    this.Assert.equal(
+      this.#urlbar(window).getAttribute("pageproxystate"),
+      pageProxyState,
+      "Pageproxystate should match."
+    );
+    if (persistSearchTerms) {
+      this.Assert.ok(
+        this.#urlbar(window).hasAttribute("persistsearchterms"),
+        "Urlbar has persistsearchterms attribute."
+      );
+    } else {
+      this.Assert.ok(
+        !this.#urlbar(window).hasAttribute("persistsearchterms"),
+        "Urlbar does not have persistsearchterms attribute."
+      );
+    }
+  }
+
+  /**
    * Enters search mode by clicking a one-off.  The view must already be open
    * before you call this. Can only be used if UrlbarTestUtils has been
    * initialized with init().

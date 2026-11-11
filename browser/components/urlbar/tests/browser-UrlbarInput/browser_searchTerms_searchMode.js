@@ -51,7 +51,7 @@ async function searchWithNonDefaultSearchMode(tab) {
   EventUtils.synthesizeKey("KEY_Enter");
   await browserLoadedPromise;
 
-  assertSearchStringIsInUrlbar(SEARCH_STRING);
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
   await UrlbarTestUtils.assertSearchMode(window, {
     engineName: "MochiSearch",
     isGeneralPurposeEngine: true,
@@ -161,7 +161,7 @@ add_task(async function clear_search_mode_refresh() {
   );
 
   // UserTypedValue is set when the search mode has to be recovered.
-  assertSearchStringIsInUrlbar(SEARCH_STRING, {
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
     userTypedValue: SEARCH_STRING,
   });
   await UrlbarTestUtils.assertSearchMode(window, {
@@ -186,7 +186,7 @@ add_task(async function clear_search_mode_switch_tab() {
     waitForSearch: false,
   });
   await UrlbarTestUtils.promisePopupClose(window);
-  assertSearchStringIsInUrlbar(SEARCH_STRING, {
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
     userTypedValue: SEARCH_STRING,
     persistSearchTerms: false,
   });
@@ -196,7 +196,7 @@ add_task(async function clear_search_mode_switch_tab() {
   await BrowserTestUtils.switchTab(gBrowser, tab);
 
   // UserTypedValue is set when the search mode has to be recovered.
-  assertSearchStringIsInUrlbar(SEARCH_STRING, {
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
     userTypedValue: SEARCH_STRING,
     persistSearchTerms: false,
   });
@@ -235,7 +235,7 @@ add_task(async function tabhistory_searchmode_non_default() {
   );
 
   // UserTypedValue is set when the search mode has to be recovered.
-  assertSearchStringIsInUrlbar(SEARCH_STRING, {
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
     userTypedValue: SEARCH_STRING,
   });
   await UrlbarTestUtils.assertSearchMode(window, {
@@ -270,7 +270,7 @@ add_task(async function tabhistory_searchmode_default_engine() {
     () => !gURLBar.searchMode,
     "Waiting for search mode to be absent."
   );
-  assertSearchStringIsInUrlbar(SEARCH_STRING);
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
   await UrlbarTestUtils.assertSearchMode(window, null);
 
   info(`Go forward to ${searchModeUrl}`);
@@ -283,7 +283,7 @@ add_task(async function tabhistory_searchmode_default_engine() {
     "Waiting for search mode."
   );
   // UserTypedValue is set when the search mode has to be recovered.
-  assertSearchStringIsInUrlbar(SEARCH_STRING, {
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
     userTypedValue: SEARCH_STRING,
   });
   await UrlbarTestUtils.assertSearchMode(window, {
@@ -315,7 +315,7 @@ add_task(async function search_mode_switch_tab_to_default() {
 
   info("Check default SERP is not in a search mode.");
   await UrlbarTestUtils.assertSearchMode(window, null);
-  assertSearchStringIsInUrlbar(SEARCH_STRING, {
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
     userTypedValue: SEARCH_STRING,
   });
 
@@ -348,7 +348,7 @@ add_task(async function search_mode_switch_tab_to_non_default() {
     isPreview: false,
     entry: "oneoff",
   });
-  assertSearchStringIsInUrlbar(SEARCH_STRING, {
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
     userTypedValue: SEARCH_STRING,
   });
 

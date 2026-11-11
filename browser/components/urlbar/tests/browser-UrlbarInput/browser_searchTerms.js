@@ -41,7 +41,7 @@ add_task(async function go_back() {
   tab.linkedBrowser.goBack(false);
   await pageShowPromise;
 
-  assertSearchStringIsInUrlbar(SEARCH_STRING);
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
 
   BrowserTestUtils.removeTab(tab);
 });
@@ -112,7 +112,7 @@ add_task(async function load_url() {
   );
   BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, expectedSearchUrl);
   await browserLoadedPromise;
-  assertSearchStringIsInUrlbar(SEARCH_STRING);
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
 
   BrowserTestUtils.removeTab(tab);
 });

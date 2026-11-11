@@ -44,7 +44,7 @@ add_task(async function move_tab_into_new_window() {
   let newWindow = gBrowser.replaceTabWithWindow(tab);
   await BrowserTestUtils.waitForEvent(tab.linkedBrowser, "SwapDocShells");
 
-  assertSearchStringIsInUrlbar(SEARCH_STRING, { win: newWindow });
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(newWindow, SEARCH_STRING);
 
   // Clean up.
   await BrowserTestUtils.closeWindow(newWindow);
@@ -79,7 +79,7 @@ add_task(async function move_tab_into_existing_window() {
   // Make the first window adopt and switch to that tab.
   tab = gBrowser.adoptTab(tab);
   await BrowserTestUtils.switchTab(gBrowser, tab);
-  assertSearchStringIsInUrlbar(SEARCH_STRING);
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
 
   // Clean up.
   BrowserTestUtils.removeTab(tab);

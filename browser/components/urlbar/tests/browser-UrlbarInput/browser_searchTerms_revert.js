@@ -99,7 +99,7 @@ add_task(async function revert_and_change_tab() {
   // Switch back to the original tab.
   await BrowserTestUtils.switchTab(gBrowser, tab);
 
-  assertSearchStringIsInUrlbar(SEARCH_STRING, {
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
     pageProxyState: "invalid",
   });
 
@@ -135,7 +135,7 @@ add_task(async function revert_when_using_content() {
   tab.linkedBrowser.goBack();
   Assert.ok(gURLBar.focused, "Address bar is focused.");
   await pageShowPromise;
-  assertSearchStringIsInUrlbar(SEARCH_STRING);
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
 
   pageShowPromise = BrowserTestUtils.waitForContentEvent(
     tab.linkedBrowser,
@@ -144,7 +144,7 @@ add_task(async function revert_when_using_content() {
   tab.linkedBrowser.goForward();
   await pageShowPromise;
   Assert.ok(gURLBar.focused, "Address bar is focused.");
-  assertSearchStringIsInUrlbar("another search string");
+  UrlbarTestUtils.assertSearchStringIsInUrlbar(window, "another search string");
 
   BrowserTestUtils.removeTab(tab);
 });
