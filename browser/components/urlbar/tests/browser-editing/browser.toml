@@ -75,11 +75,6 @@ https_first_disabled = true
 ["browser_urlbar_contextmenu.js"]
 
 ["browser_urlbar_selection.js"]
-skip-if = [
-  "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", # bug 1570474
-  "os == 'mac' && os_version == '14.70' && arch == 'x86_64'", # bug 1869788
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # bug 1570474
-]
 
 ["browser_userTypedValue.js"]
 support-files = ["../browser/file_userTypedValue.html"]

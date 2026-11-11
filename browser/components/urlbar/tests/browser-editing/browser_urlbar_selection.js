@@ -172,7 +172,7 @@ add_task(async function rightClickSelectsAll() {
     document.getElementById("cmd_selectAll"),
     "command"
   );
-  await click(contextMenuItem);
+  contextMenu.activateItem(contextMenuItem);
   await commandPromise;
   Assert.equal(
     gURLBar.selectionStart,
