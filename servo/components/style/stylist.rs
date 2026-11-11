@@ -17,7 +17,6 @@ use crate::custom_properties::{SpecifiedValue, parse_name};
 use crate::derives::*;
 use crate::device::Device;
 use crate::dom::TElement;
-#[cfg(feature = "gecko")]
 use crate::dom::TShadowRoot;
 #[cfg(feature = "gecko")]
 use crate::gecko_bindings::structs::{ServoStyleSetSizes, StyleRuleInclusion};
@@ -30,7 +29,6 @@ use crate::invalidation::media_queries::{
 };
 use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet};
 use crate::parser::ParserContext;
-#[cfg(feature = "gecko")]
 use crate::properties::StyleBuilder;
 use crate::properties::{
     self, AnimationDeclarations, CascadeMode, CascadeReparenting, ComputedValues,
@@ -74,7 +72,6 @@ use crate::stylesheets::{
 };
 use crate::stylesheets::{CustomMediaEvaluator, CustomMediaMap};
 use crate::substitution::AttrTaint;
-#[cfg(feature = "gecko")]
 use crate::values::specified::position::PositionTryFallbacksItem;
 use crate::values::specified::position::PositionTryFallbacksTryTactic;
 use crate::values::{AtomIdent, Parser, SourceLocation, computed};
@@ -1417,7 +1414,6 @@ impl Stylist {
     }
 
     /// Computes a fallback style lazily given the current and parent styles, and name.
-    #[cfg(feature = "gecko")]
     pub fn resolve_position_try<E>(
         &self,
         style: &ComputedValues,
@@ -1874,7 +1870,6 @@ impl Stylist {
 
     /// Returns the registered `@position-try-rule` animation for the specified name.
     #[inline]
-    #[cfg(feature = "gecko")]
     fn lookup_position_try<'a, E>(
         &'a self,
         name: &Atom,
