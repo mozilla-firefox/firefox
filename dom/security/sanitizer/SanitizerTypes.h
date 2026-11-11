@@ -6,6 +6,7 @@
 #define mozilla_dom_SanitizerTypes_h
 
 #include "fmt/format.h"
+#include "mozilla/HashFunctions.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/dom/SanitizerBinding.h"
 #include "nsHashtablesFwd.h"
@@ -36,7 +37,8 @@ class CanonicalAttribute : public PLDHashEntryHdr {
 
   static KeyTypePointer KeyToPointer(KeyType aKey) { return &aKey; }
   static PLDHashNumber HashKey(KeyTypePointer aKey) {
-    return mozilla::HashGeneric(aKey->mLocalName.get(), aKey->mNamespace.get());
+    return AddToHash(aKey->mLocalName->hash(),
+                     aKey->mNamespace ? aKey->mNamespace->hash() : 0);
   }
 
   enum { ALLOW_MEMMOVE = true };
@@ -79,7 +81,8 @@ class CanonicalElement : public PLDHashEntryHdr {
 
   static KeyTypePointer KeyToPointer(KeyType aKey) { return &aKey; }
   static PLDHashNumber HashKey(KeyTypePointer aKey) {
-    return mozilla::HashGeneric(aKey->mLocalName.get(), aKey->mNamespace.get());
+    return AddToHash(aKey->mLocalName->hash(),
+                     aKey->mNamespace ? aKey->mNamespace->hash() : 0);
   }
 
   enum { ALLOW_MEMMOVE = true };
