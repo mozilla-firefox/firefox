@@ -6997,9 +6997,6 @@
       "resource://newtab/lib/TopSitesFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/TopSitesFeed.sys.mjs"
       ],
-      "resource://newtab/lib/TopStoriesFeed.sys.mjs": [
-        "../../../browser/extensions/newtab/lib/TopStoriesFeed.sys.mjs"
-      ],
       "resource://newtab/lib/Wallpapers/WallpaperFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/Wallpapers/WallpaperFeed.sys.mjs"
       ],

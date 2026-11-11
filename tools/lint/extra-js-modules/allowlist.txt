@@ -227,7 +227,6 @@ toolkit/components/DefaultCLH.sys.mjs
 toolkit/components/asyncshutdown/AsyncShutdown.sys.mjs
 toolkit/components/asyncshutdown/nsAsyncShutdown.sys.mjs
 toolkit/components/autocomplete/AutoCompleteSimpleSearch.sys.mjs
-toolkit/components/backgroundhangmonitor/BHRTelemetryService.sys.mjs
 toolkit/components/backgroundtasks/BackgroundTask_exception.sys.mjs
 toolkit/components/backgroundtasks/BackgroundTask_failure.sys.mjs
 toolkit/components/backgroundtasks/BackgroundTask_message.sys.mjs

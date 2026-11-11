@@ -20,7 +20,7 @@ if (
 ):
     DEFINES["MOZ_ENABLE_BACKGROUND_HANG_MONITOR"] = 1
 
-    EXTRA_JS_MODULES += [
+    MOZ_SRC_FILES += [
         "BHRTelemetryService.sys.mjs",
     ]
 
