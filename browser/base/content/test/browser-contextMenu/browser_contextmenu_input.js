@@ -205,6 +205,48 @@ add_task(async function test_password_input() {
   await SpecialPowers.popPrefEnv();
 });
 
+add_task(async function test_password_input_view_passwords_disabled() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["pref.privacy.disable_button.view_passwords", true]],
+  });
+  await test_contextmenu("#input_password", null, {
+    skipFocusChange: true,
+    // Flip the field to a password type so it is recognized as a login form;
+    // restore it afterwards since it tracks hasBeenTypePassword.
+    async preCheckContextMenuFn() {
+      await SpecialPowers.spawn(
+        gBrowser.selectedBrowser,
+        [],
+        async function () {
+          let input = content.document.getElementById("input_password");
+          input.type = "password";
+          input.clientTop; // force layout flush
+        }
+      );
+    },
+    async onContextMenuShown() {
+      ok(
+        BrowserTestUtils.isHidden(
+          document.getElementById("manage-saved-logins")
+        ),
+        "Manage Passwords item is hidden when password management is disabled"
+      );
+    },
+    async postCheckContextMenuFn() {
+      await SpecialPowers.spawn(
+        gBrowser.selectedBrowser,
+        [],
+        async function () {
+          let input = content.document.getElementById("input_password");
+          input.outerHTML = `<input id="input_password">`;
+          input.clientTop; // force layout flush
+        }
+      );
+    },
+  });
+  await SpecialPowers.popPrefEnv();
+});
+
 add_task(async function firefox_relay_input() {
   await SpecialPowers.pushPrefEnv({
     set: [["signon.firefoxRelay.feature", "enabled"]],

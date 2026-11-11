@@ -97,6 +97,13 @@ XPCOMUtils.defineLazyServiceGetter(
   Ci.nsIClipboardHelper
 );
 
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "VIEW_PASSWORDS_DISABLED",
+  "pref.privacy.disable_button.view_passwords",
+  false
+);
+
 const PASSWORD_FIELDNAME_HINTS = ["current-password", "new-password"];
 const USERNAME_FIELDNAME_HINT = "username";
 
@@ -1224,7 +1231,7 @@ export class nsContextMenu {
       if (!this.isLoginForm()) {
         return;
       }
-      showManage = true;
+      showManage = !lazy.VIEW_PASSWORDS_DISABLED;
 
       // Disable the fill option if the user hasn't unlocked with their primary password
       // or if the password field or target field are disabled.
