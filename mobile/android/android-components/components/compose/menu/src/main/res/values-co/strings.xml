@@ -11,4 +11,14 @@
   <string name="mozac_menu_item_new_indicator_label">Novu</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Ricusà a pruposta</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">Fà trascinà e sezzioni per riurdinalle</string>
+  <!-- Button text to preview the changes made to the menu -->
+  <string name="mozac_menu_customize_preview">Fighjulata</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">Sezzioni piattate</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">Fà trascinà e sezzioni quì per piattalle</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">Reinizià à u valore predefinitu</string>
 </resources>

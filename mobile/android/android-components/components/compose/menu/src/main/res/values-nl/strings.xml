@@ -20,5 +20,5 @@
   <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
   <string name="mozac_menu_customize_drag_to_hide">Sleep secties hierheen om te verbergen</string>
   <!-- Button text to reset the menu to default configuration -->
-  <string name="mozac_menu_customize_reset_to_default">Standaardwaarden</string>
+  <string name="mozac_menu_customize_reset_to_default">Standaardwaarden herstellen</string>
 </resources>

@@ -16,6 +16,8 @@
   <string name="feedback_erase2">S’ha esborrat l’historial de navegació</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">S\'ha esborrat l\'historial de navegació de la pestanya.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">Menú</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">Comparteix…</string>
   <!--

@@ -389,6 +389,8 @@
   <string name="ai_controls_voice_search_description">Lyd konverteres til tekst av Google Speech Services.</string>
   <!-- Title for the listen to page AI feature toggle -->
   <string name="ai_controls_listen_to_page_title">Lytt til siden</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Enheten din kan bruke AI til å lese høyt. Teksten og lyden forblir private.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Blokkere AI-forbedringer?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -717,6 +719,8 @@
   <string name="preferences_search">Søk</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Søkemotorer</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Legg til søkewidget på startskjermen</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Startskjerm-widget</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -1147,6 +1151,10 @@
   <string name="preferences_category_sync">Synkroniserte data</string>
   <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
   <string name="preferences_enable_sync_title">Synkroniser denne enheten</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Dataene dine er sikkerhetskopiert og tilgjengelige på synkroniserte enheter.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Bruker lagrede data fra %1$s-kontoen din.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Behandle hva som synkroniseres på alle de tilkoblede enhetene dine</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -3897,6 +3905,10 @@
   <string name="protection_panel_privacy_and_security_settings_2">Personverninnstillinger</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Tillatelser</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Sikker tilkobling</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">EUs tillitsmerke</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4474,6 +4486,8 @@
   <string name="wrex_widget_match_suspended">Suspendert</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Utsatt</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Oppdater</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Resultater</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4482,8 +4496,12 @@
   <string name="wrex_widget_wallpapers">Bakgrunnsbilder</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Fjern widgeten</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Slutt</string>
   <!-- Sports widget match status label shown during half-time of a match. -->
   <string name="wrex_widget_match_half_time">Pause</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Ekstraomganger</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="wrex_widget_match_penalties">Straffer</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
@@ -4523,6 +4541,12 @@
   <string name="wrex_widget_error_connection_offline_description">Sjekk internett-tilkoblingen din og prøv igjen.</string>
   <!-- Sports widget error card title shown when match data fails to load. -->
   <string name="wrex_widget_error_load_failed_title">Kan ikke vise kampinformasjon akkurat nå</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Prøv å oppdatere, eller kom tilbake senere.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Kan ikke vise resultater akkurat nå</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Laget skal bestemmes</string>
   <!--
     Privacy notice homepage banner
 
