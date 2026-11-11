@@ -246,8 +246,8 @@ goes into that surface's own component token, since the shared token's JSON
 changes every surface. The rule covers design tokens (§2's `isDesignToken`
 check); a sheet-local custom property is not one, whatever its casing suggests.
 In review, ask for this move before discussing the override's media query or
-comment. Under a condition with no key (e.g. a platform media feature such as
-`-moz-windows-mica`, a `[uidensity]` attribute), or one that combines a keyless
+comment. Under a condition with no key (e.g. a `-moz-platform` or other
+platform media feature, a `[uidensity]` attribute), or one that combines a keyless
 condition with a keyed one, the value stays in the consumer sheet; scope it with
 the token layer's own conditions, plus `prefers-contrast` and `forced-colors`
 where that layer has them as separate layers, so the unlayered rule does not

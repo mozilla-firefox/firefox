@@ -45,6 +45,12 @@ browser.nova.enabled on and no media feature, a pref that defaults on shows as
 `<pref>=false` where it is off (for Nova, the unmaintained pref-off path), and
 any other pref by its name where it is on.
 
+Every mode but --declared reads only the token sheets. A consumer sheet that
+redefines a token, including a platform theme sheet outside the design system
+(e.g. a Windows-only sheet under a platform media feature), is not included, so
+--effective is the token sheets' answer, not the painted value. Before trusting
+it on a surface, check the consumer sheets with --declared.
+
 --diff and --before print, per realm, a count line and then one line per
 declaration that differs, keyed by (context, name). The context is the
 declaration's at-rules (layer, media query, -moz-pref()) plus any selector
