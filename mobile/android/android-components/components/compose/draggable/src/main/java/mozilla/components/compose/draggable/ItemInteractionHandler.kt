@@ -23,8 +23,11 @@ interface ItemInteractionHandler {
      */
     fun onDrop(sourceKey: Any, targetKey: Any)
 
-    /** Called when an item drag ends without taking an action. */
+    /** Called when an item drag is cancelled, and also when it ends if [onDragEnd] is not overridden. */
     fun onDragCancel()
+
+    /** Called when the user lets go of a dragged item without dropping it onto another item. */
+    fun onDragEnd() = onDragCancel()
 
     /**
      * Called when a drag starts

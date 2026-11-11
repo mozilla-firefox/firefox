@@ -70,6 +70,8 @@ class RecordingItemInteractionHandler : ItemInteractionHandler {
         data class DragStart(val sourceKey: Any, val preserveSelectMode: Boolean) : Call
 
         data object DragCancel : Call
+
+        data object DragEnd : Call
     }
 
     val calls = mutableListOf<Call>()
@@ -84,6 +86,10 @@ class RecordingItemInteractionHandler : ItemInteractionHandler {
 
     override fun onDragCancel() {
         calls += Call.DragCancel
+    }
+
+    override fun onDragEnd() {
+        calls += Call.DragEnd
     }
 
     override fun onDragStart(sourceKey: Any, preserveSelectMode: Boolean) {

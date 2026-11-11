@@ -618,7 +618,7 @@ class InteractableListTest {
     }
 
     @Test
-    fun `GIVEN a drag is in progress and the dragged item is not visible when onDragEnd is called THEN onDragCancelled is called`() {
+    fun `GIVEN a drag is in progress and the dragged item is not visible when onDragEnd is called THEN the handler is told the drag ended`() {
         val handler = RecordingItemInteractionHandler()
         val draggedItemOffset = 30
         val reorderState =
@@ -631,7 +631,35 @@ class InteractableListTest {
         reorderState.dragDown(distance = 50f, preserveSelectMode = false)
         reorderState.onDragEnd()
 
-        assertTrue(Call.DragCancel in handler.calls)
+        assertTrue(Call.DragEnd in handler.calls)
+        assertFalse(Call.DragCancel in handler.calls)
+    }
+
+    @Test
+    fun `GIVEN liveReorderEnabled is false WHEN the user lets go of an item moved next to another THEN the handler is told the drag ended`() {
+        val handler = RecordingItemInteractionHandler()
+        val dragItemOffset = 30
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = 10,
+                betaTabOffset = dragItemOffset,
+                liveReorderEnabled = false,
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragUp(distance = 30f, preserveSelectMode = false)
+        reorderState.onDragEnd()
+
+        assertEquals(
+            expected =
+                listOf(
+                    Call.DragStart(TabKeys.TAB_BETA, preserveSelectMode = false),
+                    Call.Move(TabKeys.TAB_BETA, TabKeys.TAB_ALPHA, false),
+                    Call.DragEnd,
+                ),
+            actual = handler.calls,
+        )
     }
 
     @Test
@@ -684,6 +712,7 @@ class InteractableListTest {
         reorderState.onDragCancelled()
 
         assertTrue(Call.DragCancel in handler.calls)
+        assertFalse(Call.DragEnd in handler.calls)
     }
 
     @Test
@@ -854,6 +883,60 @@ class InteractableListTest {
         reorderState.onDragEnd()
 
         assertTrue(Call.Drop(TabKeys.TAB_ALPHA, TabKeys.TAB_BETA) in handler.calls)
+    }
+
+    @Test
+    fun `GIVEN liveReorderEnabled is true WHEN the user lets go of an item moved next to another THEN the handler is told once that the drag ended`() {
+        val handler = RecordingItemInteractionHandler()
+        val dragItemOffset = 30
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = 10,
+                betaTabOffset = dragItemOffset,
+                liveReorderEnabled = true,
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragUp(distance = 30f, preserveSelectMode = false)
+        reorderState.onDragEnd()
+
+        assertEquals(
+            expected =
+                listOf(
+                    Call.DragStart(TabKeys.TAB_BETA, preserveSelectMode = false),
+                    Call.Move(TabKeys.TAB_BETA, TabKeys.TAB_ALPHA, false),
+                    Call.DragEnd,
+                ),
+            actual = handler.calls,
+        )
+    }
+
+    @Test
+    fun `GIVEN liveReorderEnabled is true WHEN the drag of an item moved next to another is cancelled THEN the handler is only told the drag was cancelled`() {
+        val handler = RecordingItemInteractionHandler()
+        val dragItemOffset = 30
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = 10,
+                betaTabOffset = dragItemOffset,
+                liveReorderEnabled = true,
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragUp(distance = 30f, preserveSelectMode = false)
+        reorderState.onDragCancelled()
+
+        assertEquals(
+            expected =
+                listOf(
+                    Call.DragStart(TabKeys.TAB_BETA, preserveSelectMode = false),
+                    Call.Move(TabKeys.TAB_BETA, TabKeys.TAB_ALPHA, false),
+                    Call.DragCancel,
+                ),
+            actual = handler.calls,
+        )
     }
 
     @Test

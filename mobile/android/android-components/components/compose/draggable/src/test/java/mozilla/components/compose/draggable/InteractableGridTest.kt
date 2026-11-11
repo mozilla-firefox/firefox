@@ -451,7 +451,7 @@ class InteractableGridTest {
     }
 
     @Test
-    fun `GIVEN a drag is in progress and the dragged item is not visible when onDragEnd is called THEN onDragCancelled is called`() {
+    fun `GIVEN a drag is in progress and the dragged item is not visible when onDragEnd is called THEN the handler is told the drag ended`() {
         val handler = RecordingItemInteractionHandler()
         val draggedItemOffset = IntOffset(30, 0)
         val reorderState =
@@ -464,7 +464,8 @@ class InteractableGridTest {
         reorderState.onDrag(offset = Offset(50f, 50f), preserveSelectMode = false)
         reorderState.onDragEnd()
 
-        assertTrue(Call.DragCancel in handler.calls)
+        assertTrue(Call.DragEnd in handler.calls)
+        assertFalse(Call.DragCancel in handler.calls)
     }
 
     @Test
@@ -517,6 +518,7 @@ class InteractableGridTest {
         reorderState.onDragCancelled()
 
         assertTrue(Call.DragCancel in handler.calls)
+        assertFalse(Call.DragEnd in handler.calls)
     }
 
     @Test

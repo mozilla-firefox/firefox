@@ -147,10 +147,10 @@ interface ListInteractionState {
      */
     fun onDrag(offset: Float, preserveSelectMode: Boolean)
 
-    /** Called when a drag event ends. */
+    /** Called when the user lets go of the dragged item. */
     fun onDragEnd()
 
-    /** Called when a drag is cancelled, for example, when a user lets go without performing an action. */
+    /** Called when a drag is cancelled before the user lets go of the dragged item, for example by the system. */
     fun onDragCancelled()
 
     /**
@@ -355,7 +355,7 @@ internal class ListInteractionStateImpl(
                 if (!liveReorderEnabled) {
                     doReorder(mode)
                 }
-                itemInteractionHandler.onDragCancel()
+                itemInteractionHandler.onDragEnd()
                 resetState()
             }
 
@@ -363,7 +363,7 @@ internal class ListInteractionStateImpl(
             is InteractionMode.List.None -> {
                 // No action is taken
                 if (moved) {
-                    itemInteractionHandler.onDragCancel()
+                    itemInteractionHandler.onDragEnd()
                 }
                 resetState()
             }

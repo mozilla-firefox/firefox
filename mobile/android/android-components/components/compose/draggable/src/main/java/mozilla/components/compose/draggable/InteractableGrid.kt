@@ -153,10 +153,10 @@ interface GridInteractionState {
      */
     fun onDrag(offset: Offset, preserveSelectMode: Boolean)
 
-    /** Called when a drag event ends. */
+    /** Called when the user lets go of the dragged item. */
     fun onDragEnd()
 
-    /** Called when a drag is cancelled, for example, when a user lets go without performing an action. */
+    /** Called when a drag is cancelled before the user lets go of the dragged item, for example by the system. */
     fun onDragCancelled()
 
     /** Updates the stored layout coordinates in order to map grid space to screen space. */
@@ -290,7 +290,7 @@ internal class GridInteractionStateImpl(
                 if (!liveReorderEnabled) {
                     doReorder(mode)
                 }
-                itemInteractionHandler.onDragCancel()
+                itemInteractionHandler.onDragEnd()
                 resetState()
             }
 
@@ -298,7 +298,7 @@ internal class GridInteractionStateImpl(
             is InteractionMode.Grid.None -> {
                 // No action is taken
                 if (moved) {
-                    itemInteractionHandler.onDragCancel()
+                    itemInteractionHandler.onDragEnd()
                 }
                 resetState()
             }
