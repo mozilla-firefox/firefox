@@ -609,7 +609,10 @@ AudioBufferSourceNode::AudioBufferSourceNode(AudioContext* aContext)
       // mOffset and mDuration are initialized in Start().
       mLoop(false),
       mStartCalled(false),
-      mBufferSet(false) {
+      mBufferSet(false),
+      mWatchManager(this, AbstractThread::MainThread()),
+      mTrackEnded(AbstractThread::MainThread(), false,
+                  "AudioBufferSourceNode::mTrackEnded") {
   mPlaybackRate = CreateAudioParam(PLAYBACKRATE, u"playbackRate"_ns, 1.0f);
   mDetune = CreateAudioParam(DETUNE, u"detune"_ns, 0.0f);
   AudioBufferSourceNodeEngine* engine =
@@ -618,7 +621,8 @@ AudioBufferSourceNode::AudioBufferSourceNode(AudioContext* aContext)
                                   AudioNodeTrack::NEED_MAIN_THREAD_ENDED,
                                   aContext->Graph());
   engine->SetSourceTrack(mTrack);
-  mTrack->AddMainThreadListener(this);
+  mTrackEnded.Connect(&mTrack->CanonicalEnded());
+  mWatchManager.Watch(mTrackEnded, &AudioBufferSourceNode::OnTrackEnded);
 }
 
 /* static */
@@ -643,10 +647,8 @@ already_AddRefed<AudioBufferSourceNode> AudioBufferSourceNode::Create(
   return audioNode.forget();
 }
 void AudioBufferSourceNode::DestroyMediaTrack() {
-  bool hadTrack = mTrack;
-  if (hadTrack) {
-    mTrack->RemoveMainThreadListener(this);
-  }
+  mWatchManager.Shutdown();
+  mTrackEnded.DisconnectIfConnected();
   AudioNode::DestroyMediaTrack();
 }
 
@@ -794,8 +796,8 @@ void AudioBufferSourceNode::Stop(double aWhen, ErrorResult& aRv) {
   ns->SetTrackTimeParameter(STOP, Context(), std::max(0.0, aWhen));
 }
 
-void AudioBufferSourceNode::NotifyMainThreadTrackEnded() {
-  MOZ_ASSERT(mTrack->IsEnded());
+void AudioBufferSourceNode::OnTrackEnded() {
+  MOZ_ASSERT(mTrackEnded);
 
   class EndedEventDispatcher final : public Runnable {
    public:

@@ -7,14 +7,15 @@
 
 #include "AudioBuffer.h"
 #include "AudioScheduledSourceNode.h"
+#include "mozilla/StateMirroring.h"
+#include "mozilla/StateWatching.h"
 
 namespace mozilla::dom {
 
 struct AudioBufferSourceOptions;
 class AudioParam;
 
-class AudioBufferSourceNode final : public AudioScheduledSourceNode,
-                                    public MainThreadMediaTrackListener {
+class AudioBufferSourceNode final : public AudioScheduledSourceNode {
  public:
   static already_AddRefed<AudioBufferSourceNode> Create(
       JSContext* aCx, AudioContext& aAudioContext,
@@ -75,7 +76,6 @@ class AudioBufferSourceNode final : public AudioScheduledSourceNode,
     mLoopEnd = aEnd;
     SendLoopParametersToTrack();
   }
-  void NotifyMainThreadTrackEnded() override;
 
   const char* NodeType() const override { return "AudioBufferSourceNode"; }
 
@@ -85,6 +85,8 @@ class AudioBufferSourceNode final : public AudioScheduledSourceNode,
  private:
   explicit AudioBufferSourceNode(AudioContext* aContext);
   ~AudioBufferSourceNode() = default;
+
+  void OnTrackEnded();
 
   friend class AudioBufferSourceNodeEngine;
   // START is sent during Start().
@@ -120,6 +122,8 @@ class AudioBufferSourceNode final : public AudioScheduledSourceNode,
   bool mLoop;
   bool mStartCalled;
   bool mBufferSet;
+  WatchManager<AudioBufferSourceNode> mWatchManager;
+  Mirror<bool> mTrackEnded;
 };
 
 }  // namespace mozilla::dom
