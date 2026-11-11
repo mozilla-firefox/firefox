@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.65
- * pdfjsBuild = 6619bf0c6
+ * pdfjsVersion = 7.0.84
+ * pdfjsBuild = 94a48f3c8
  */
 
 ;// ./web/ui_utils.js
@@ -644,7 +644,7 @@ const defaultOptions = new Map([["allowedGlobalEvents", {
   value: true,
   kind: OptionKind.VIEWER + OptionKind.PREFERENCE
 }], ["enableSplitMerge", {
-  value: false,
+  value: true,
   kind: OptionKind.VIEWER + OptionKind.PREFERENCE
 }], ["enableUpdatedAddImage", {
   value: false,
@@ -907,7 +907,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "9ca1b0ec-6d8f-4df1-97eb-4c3b691c44a8";
+const INTERNAL_EVT = "7c2d88f0-b1d4-4f20-9ce1-090bc0ccf65a";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -8897,7 +8897,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "7.0.65";
+    const viewerVersion = "7.0.84";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -10924,6 +10924,7 @@ const PDFViewerApplication = {
   _isScrolling: false,
   editorUndoBar: null,
   _printPermissionPromise: null,
+  _preloadedIcons: null,
   async initialize(appConfig) {
     this.appConfig = appConfig;
     try {
@@ -12636,7 +12637,7 @@ function onWheel(evt) {
   const origin = [evt.clientX, evt.clientY];
   if (isPinchToZoom || evt.ctrlKey && supportsMouseWheelZoomCtrlKey || evt.metaKey && supportsMouseWheelZoomMetaKey) {
     evt.preventDefault();
-    if (this._isScrolling || document.visibilityState === "hidden" || this.overlayManager.active) {
+    if (this._isScrolling && !isPinchToZoom || document.visibilityState === "hidden" || this.overlayManager.active) {
       return;
     }
     if (isPinchToZoom && supportsPinchToZoom) {
