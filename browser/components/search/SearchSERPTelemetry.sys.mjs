@@ -1854,13 +1854,16 @@ class ContentHandler {
       // Exceptions:
       // - If a searchbox was used to initiate the load, don't record another
       //   engagement because the event was logged elsewhere.
+      // - If the SERP has no impression id, e.g. the provider has no
+      //   components, the engagement couldn't be associated with an
+      //   impression.
       //
       // If the ad impression hasn't been recorded yet, we can't know precisely
       // which component was selected, but we can still tell an ad from a
       // non-ad by the URL alone. Recording the engagement as uncategorized is
       // better than dropping it.
       let isSerp = false;
-      if (telemetryState && !telemetryState.searchBoxSubmitted) {
+      if (telemetryState?.impressionId && !telemetryState.searchBoxSubmitted) {
         if (info.searchPageRegexp?.test(originURL)) {
           isSerp = true;
         }

@@ -121,6 +121,13 @@ support-files = [
   "searchTelemetryAd_searchbox_with_content.html^headers^",
 ]
 
+["browser_search_telemetry_engagement_no_components.js"]
+support-files = [
+  "searchTelemetryAd.html",
+  "searchTelemetryAd_searchbox.html",
+  "serp.css",
+]
+
 ["browser_search_telemetry_engagement_nonAdsLinkQueryParamNames.js"]
 support-files = [
   "searchTelemetryAd_searchbox_with_redirecting_links.html",
@@ -189,14 +196,14 @@ support-files = [
 ["browser_search_telemetry_keyword_fixup.js"]
 support-files = ["searchTelemetry.html"]
 
-["browser_search_telemetry_post_engine.js"]
-support-files = ["searchTelemetryAd_post_result.sjs"]
-
 ["browser_search_telemetry_new_window.js"]
 support-files = ["searchTelemetry.html", "searchTelemetryAd.html"]
 
 ["browser_search_telemetry_newtab_non_handoff.js"]
 support-files = ["searchTelemetry.html"]
+
+["browser_search_telemetry_post_engine.js"]
+support-files = ["searchTelemetryAd_post_result.sjs"]
 
 ["browser_search_telemetry_private.js"]
 support-files = ["searchTelemetry.html", "searchTelemetryAd.html", "serp.css"]
@@ -269,14 +276,14 @@ support-files = ["searchTelemetrySinglePageApp.html"]
 ["browser_search_telemetry_spa_multi_tab.js"]
 support-files = ["searchTelemetrySinglePageApp.html"]
 
-["browser_search_telemetry_spa_single_tab.js"]
-support-files = ["searchTelemetrySinglePageApp.html"]
-
 ["browser_search_telemetry_spa_require_top_level_impression_origin.js"]
 support-files = [
   "searchTelemetrySinglePageApp.html",
   "searchTelemetryNonSerpPushState.html",
 ]
+
+["browser_search_telemetry_spa_single_tab.js"]
+support-files = ["searchTelemetrySinglePageApp.html"]
 
 ["browser_search_telemetry_subframe.js"]
 support-files = [
