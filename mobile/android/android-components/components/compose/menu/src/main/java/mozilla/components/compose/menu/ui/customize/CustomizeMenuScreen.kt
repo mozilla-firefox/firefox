@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -104,6 +105,7 @@ private fun CustomizeMenuList(
     val menuState by store.observeAsComposableState { it }
     val listState = rememberLazyListState()
     val drag = rememberCustomizeMenuDragState(store, menuState, listState)
+    val itemSpacing = AcornTheme.layout.space.static150
 
     LazyColumn(
         modifier =
@@ -123,20 +125,27 @@ private fun CustomizeMenuList(
                 bottom = AcornTheme.layout.space.static300,
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static150),
     ) {
         item(key = DRAG_BAR) {
             CustomizeMenuDragBar(onPreviewClick)
         }
 
-        customizeMenuGroups(menuGroups = drag.groups.shown, drag = drag, firstIndex = 1)
+        customizeMenuGroups(menuGroups = drag.groups.shown, drag = drag, firstIndex = 1, itemSpacing = itemSpacing)
 
         item(key = HIDDEN_SECTIONS) {
+            val isDropTarget by
+                remember(drag.dropTarget) {
+                    derivedStateOf { drag.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
+                }
             CustomizeMenuHiddenSections(
                 hasHiddenItems = drag.hasHiddenGroups,
+                isDropTarget = isDropTarget,
                 onTitlePositioned = drag.hiddenArea::onTitlePositioned,
                 onPositioned = drag.hiddenArea::onHiddenSectionsPositioned,
-                modifier = Modifier.animateItem(),
+                modifier =
+                    Modifier.animateItem()
+                        .padding(top = itemSpacing)
+                        .dropLine(HIDDEN_SECTIONS, drag.dropTarget, itemSpacing),
             )
         }
 
@@ -144,6 +153,7 @@ private fun CustomizeMenuList(
             menuGroups = drag.groups.hidden,
             drag = drag,
             firstIndex = drag.firstHiddenIndex,
+            itemSpacing = itemSpacing,
             isHidden = true,
         )
 
@@ -151,7 +161,10 @@ private fun CustomizeMenuList(
             item(key = RESET_BUTTON) {
                 CustomizeMenuResetButton(
                     onClick = onResetToDefault,
-                    modifier = Modifier.animateItem().onGloballyPositioned(drag.hiddenArea::onResetButtonPositioned),
+                    modifier =
+                        Modifier.animateItem()
+                            .padding(top = itemSpacing)
+                            .onGloballyPositioned(drag.hiddenArea::onResetButtonPositioned),
                 )
             }
         }
@@ -217,6 +230,7 @@ private fun CustomizeMenuDragBar(
 @Composable
 private fun CustomizeMenuHiddenSections(
     hasHiddenItems: Boolean,
+    isDropTarget: Boolean,
     onTitlePositioned: (LayoutCoordinates) -> Unit,
     onPositioned: (LayoutCoordinates) -> Unit,
     modifier: Modifier = Modifier,
@@ -248,14 +262,29 @@ private fun CustomizeMenuHiddenSections(
                             top = AcornTheme.layout.space.static150,
                             end = AcornTheme.layout.space.static200,
                         )
-                        .hiddenSectionBorder()
+                        .then(
+                            if (isDropTarget) {
+                                Modifier.background(
+                                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                )
+                            } else {
+                                Modifier
+                            }
+                        )
+                        .hiddenSectionBorder(isHighlighted = isDropTarget)
                         .defaultMinSize(minHeight = 72.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     text = stringResource(R.string.mozac_menu_customize_drag_to_hide),
                     style = AcornTheme.typography.body2,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color =
+                        if (isDropTarget) {
+                            MaterialTheme.colorScheme.tertiary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                 )
             }
         }

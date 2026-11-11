@@ -157,6 +157,29 @@ class InteractableListTest {
     }
 
     @Test
+    fun `GIVEN the dragged item takes no space AND is the first visible item WHEN gatherCandidates is called THEN the next item sizes the top Scroll candidate`() {
+        val listState =
+            mockListState(
+                listOf(
+                    mockListItem("key", index = 1, size = 0),
+                    mockListItem(TabKeys.TAB_BETA, index = 2, size = 30),
+                ),
+                firstVisibleIndex = 1,
+            )
+        val draggedItem = InteractionState.List.Active(index = 1, key = "key", size = 10, initialOffset = 5f)
+
+        val candidates =
+            gatherCandidates(
+                listState = listState,
+                draggedItemOffset = ListItemOffset(draggedItem, draggingItemOffset = 5f, itemSize = 10),
+                draggedItem = draggedItem,
+                ignoredItems = defaultIgnoredItems,
+            )
+
+        assertEquals(1, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
     fun `GIVEN a scroll zone height AND the dragged item is inside the list WHEN gatherCandidates is called THEN no Scroll candidate is created`() {
         val draggedItem =
             InteractionState.List.Active(

@@ -40,6 +40,7 @@ permalink: /changelog/
     * `InteractableDragItemContainer` for lists and for grids keeps the dragged item composed while it is scrolled out of view, callers no longer need to. [Bug 2086549](https://bugzilla.mozilla.org/show_bug.cgi?id=2086549)
     * ⚠️ **Breaking change**: Replaced `ListInteractionState.previousItemAnimatableOffset` with `ListInteractionState.computeDroppedItemOffset`, which custom `ListInteractionState` implementations must implement, to keep a dropped list item where it was let go of when the list moves it only after that, as without live reordering, instead of drawing it for a frame away from there. [Bug 2086549](https://bugzilla.mozilla.org/show_bug.cgi?id=2086549)
     * Added `scrollZoneHeight` to `createListInteractionState`, for the height of the areas at the start and at the end of a list in which a dragged item scrolls it once it went past the edge of the list there, instead of a third of the first visible item. [Bug 2086549](https://bugzilla.mozilla.org/show_bug.cgi?id=2086549)
+    * The areas at the start and at the end of a list in which a dragged item scrolls it by default are no longer sized from the dragged item when this is the first visible item. [Bug 2086552](https://bugzilla.mozilla.org/show_bug.cgi?id=2086552)
     * Added `ItemInteractionHandler.onDragEnd`, called instead of `onDragCancel` when the user lets go of a dragged item without dropping it onto another item. By default it calls `onDragCancel`. [Bug 2086550](https://bugzilla.mozilla.org/show_bug.cgi?id=2086550)
 
 # 161.0

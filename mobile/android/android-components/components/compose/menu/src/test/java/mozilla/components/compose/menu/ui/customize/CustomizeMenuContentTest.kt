@@ -379,6 +379,18 @@ class CustomizeMenuContentTest {
         release()
     }
 
+    @Test
+    fun `WHEN a section is dragged THEN the sections below it take its space`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"))))
+        val shown1 = boundsOf("Shown 1")
+
+        longPressAndMove(title = "Shown 1", to = { shown1.center })
+
+        assertTrue(boundsOf("Shown 2").top < shown1.bottom)
+
+        release()
+    }
+
     private fun setContent(
         state: CustomizableMenuState,
         middleware: List<Middleware<CustomizableMenuState, CustomizableMenuAction>> = emptyList(),

@@ -113,7 +113,10 @@ internal fun rememberCustomizeMenuDragState(
     val dropTarget =
         remember(listState, interactionState, groups) {
             derivedStateOf {
-                val draggedGroupId = interactionState.draggedItem.key ?: return@derivedStateOf null
+                val draggedItem = interactionState.draggedItem
+                val draggedGroupId = draggedItem.key ?: return@derivedStateOf null
+                // Only once moved, before which the group is still where it was picked up.
+                if (!draggedItem.moved) return@derivedStateOf null
                 dropTargetOf(
                     draggedGroupId = draggedGroupId,
                     reordering = interactionState.interactionMode as? InteractionMode.List.Reordering,

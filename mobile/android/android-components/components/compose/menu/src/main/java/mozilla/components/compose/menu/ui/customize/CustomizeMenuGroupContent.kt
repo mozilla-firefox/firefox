@@ -87,13 +87,17 @@ private fun CustomizedGroupTheme(containerColor: Color?, content: @Composable ()
     )
 }
 
-/** Dashed border shown around the sections the user removed from the menu. */
+/**
+ * Dashed border shown around the sections the user removed from the menu.
+ *
+ * @param isHighlighted Whether to highlight the border, to show that a dragged section is dropped inside.
+ */
 @Composable
-internal fun Modifier.hiddenSectionBorder(): Modifier =
+internal fun Modifier.hiddenSectionBorder(isHighlighted: Boolean = false): Modifier =
     this.dashedBorder(
-        color = MaterialTheme.colorScheme.outlineVariant,
+        color = if (isHighlighted) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outlineVariant,
         cornerRadius = AcornCorners.extraLarge,
-        dashHeight = AcornTheme.layout.border.heavy,
+        dashHeight = if (isHighlighted) AcornTheme.layout.border.heaviest else AcornTheme.layout.border.heavy,
         dashWidth = 6.dp,
         dashGap = 6.dp,
     )

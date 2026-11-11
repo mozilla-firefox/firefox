@@ -8,6 +8,7 @@ import mozilla.components.compose.draggable.InteractionMode
 import mozilla.components.compose.draggable.InteractionState
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuDropTarget.EmptyHiddenArea
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuDropTarget.InPlace
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuDropTarget.NextTo
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
 import mozilla.components.compose.menu.ui.customize.DraggedGroupPosition.ABOVE_HIDDEN_AREA
@@ -71,6 +72,34 @@ class CustomizeMenuDropTargetTest {
                 "a",
                 reorderingNextTo(HIDDEN_SECTIONS, placeAfter = false),
                 OVER_HIDDEN_AREA,
+                groups,
+                hasHiddenGroups = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `GIVEN a group dragged above the hidden area WHEN the list places it next to where it is THEN it is dropped in place`() {
+        assertEquals(
+            InPlace,
+            dropTargetOf(
+                "a",
+                reorderingNextTo("b", placeAfter = false),
+                ABOVE_HIDDEN_AREA,
+                groups,
+                hasHiddenGroups = true,
+            ),
+        )
+    }
+
+    @Test
+    fun `GIVEN the last shown group dragged above the hidden area WHEN the list places it with the hidden groups THEN it is dropped in place`() {
+        assertEquals(
+            InPlace,
+            dropTargetOf(
+                "b",
+                reorderingNextTo("c", placeAfter = false),
+                ABOVE_HIDDEN_AREA,
                 groups,
                 hasHiddenGroups = true,
             ),
@@ -146,6 +175,11 @@ class CustomizeMenuDropTargetTest {
             CustomizeMenuGroups(shown = groups("b", "a"), hidden = groups("c")),
             groups.drop("a", NextTo("b", placeAfter = true)),
         )
+    }
+
+    @Test
+    fun `WHEN a group is dropped in place THEN no group is moved`() {
+        assertEquals(groups, groups.drop("a", InPlace))
     }
 
     private fun reorderingNextTo(key: Any, placeAfter: Boolean) =

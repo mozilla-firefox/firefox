@@ -11,13 +11,17 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.draggable.InteractableDragItemContainer
@@ -37,12 +41,15 @@ private const val DRAGGED_GROUP_ALPHA = 0.7f
  * @param menuGroups The groups of menu items to display.
  * @param drag State of dragging the groups of the screen.
  * @param firstIndex Index in the list of the first of these groups.
+ * @param itemSpacing Space between the items of the list. It is added above each group, not by the list, for a dragged
+ *   group, which takes no space, to not leave more of it between the groups around it.
  * @param isHidden Whether these groups were removed from the menu.
  */
 internal fun LazyListScope.customizeMenuGroups(
     menuGroups: List<MenuItemsGroup>,
     drag: CustomizeMenuDragState,
     firstIndex: Int,
+    itemSpacing: Dp,
     isHidden: Boolean = false,
 ) {
     val interactionState = drag.interactionState
@@ -58,14 +65,19 @@ internal fun LazyListScope.customizeMenuGroups(
             position = firstIndex + index,
             modifier =
                 Modifier.groupPlacement(
+                    isDragged = isDragged,
                     isLastHidden = isHidden && index == menuGroups.lastIndex,
                     hiddenArea = drag.hiddenArea,
+                    dropTarget = drag.dropTarget,
+                    itemSpacing = itemSpacing,
                 ),
         ) {
             CustomizeMenuGroupContent(
                 group = group,
                 modifier =
-                    Modifier.alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f)
+                    Modifier.padding(top = itemSpacing)
+                        .dropLine(group.id, drag.dropTarget, itemSpacing)
+                        .alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f)
                         .padding(
                             start = AcornTheme.layout.space.static200,
                             end = AcornTheme.layout.space.static25,
@@ -77,13 +89,25 @@ internal fun LazyListScope.customizeMenuGroups(
 }
 
 /**
- * Tell [hiddenArea] where the last hidden group is placed.
+ * Lay out a group without taking any space while it is dragged, for the other groups to take its space, showing there
+ * if it is dropped back, and tell [hiddenArea] where the last hidden group is placed.
  *
+ * @param isDragged Whether the group is dragged.
  * @param isLastHidden Whether the group is the last of the hidden groups, at the bottom of the list.
  * @param hiddenArea Where the area holding the hidden groups is shown.
+ * @param dropTarget Where the dragged group is dropped.
+ * @param itemSpacing Space above each item of the list, which the dragged group takes too.
  */
-private fun Modifier.groupPlacement(isLastHidden: Boolean, hiddenArea: CustomizeMenuHiddenArea): Modifier =
+@Composable
+private fun Modifier.groupPlacement(
+    isDragged: Boolean,
+    isLastHidden: Boolean,
+    hiddenArea: CustomizeMenuHiddenArea,
+    dropTarget: State<CustomizeMenuDropTarget?>,
+    itemSpacing: Dp,
+): Modifier =
     this.then(if (isLastHidden) Modifier.onGloballyPositioned(hiddenArea::onLastHiddenGroupPositioned) else Modifier)
+        .then(if (isDragged) Modifier.collapsed().inPlaceDropLine(dropTarget, itemSpacing) else Modifier)
 
 /** How [group] is shown. Dragged groups look the same, whether they were shown or hidden. */
 private fun CustomizeMenuGroups.stateOf(
@@ -97,6 +121,12 @@ private fun CustomizeMenuGroups.stateOf(
         group.id in mandatoryIds -> CustomizeMenuGroupState.MANDATORY
         else -> CustomizeMenuGroupState.SHOWN
     }
+
+/** Lay out without taking any space, drawing over what is laid out next. */
+private fun Modifier.collapsed() = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, 0) { placeable.place(0, 0) }
+}
 
 @PreviewLightDark
 @Composable
@@ -143,7 +173,7 @@ private fun CustomizeMenuPreview() {
             val listState = rememberLazyListState()
             val drag = rememberCustomizeMenuDragState(store, store.state, listState)
             LazyColumn(state = listState) {
-                customizeMenuGroups(menuGroups = drag.groups.shown, drag = drag, firstIndex = 0)
+                customizeMenuGroups(menuGroups = drag.groups.shown, drag = drag, firstIndex = 0, itemSpacing = 0.dp)
             }
         }
     }

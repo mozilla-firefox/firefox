@@ -64,8 +64,8 @@ import kotlinx.coroutines.launch
  * @param fixedItems Set of keys for items that cannot be dragged but that other items can be moved next to or dropped
  *   onto.
  * @param scrollZoneHeight Height of the areas at the start and at the end of the list in which the center of a dragged
- *   item scrolls it, once the item went past the edge of the list there. `null` for a third of the first visible item,
- *   whether the dragged item went past the edge or not.
+ *   item scrolls it, once the item went past the edge of the list there. `null` for a third of the first visible item
+ *   other than the dragged one, whether the dragged item went past the edge or not.
  */
 @Composable
 fun createListInteractionState(
@@ -203,7 +203,7 @@ interface ListInteractionState {
  *   onto.
  * @param scrollZoneHeight Height in pixels of the areas at the start and at the end of the list in which the center of
  *   a dragged item scrolls it, once the item went past the edge of the list there. `null` for a third of the first
- *   visible item, whether the dragged item went past the edge or not.
+ *   visible item other than the dragged one, whether the dragged item went past the edge or not.
  */
 internal class ListInteractionStateImpl(
     private val listState: LazyListState,
@@ -590,12 +590,15 @@ private fun getScrollCandidates(
     draggedItemOffset: ListItemOffset,
     scrollZoneHeight: Float?,
 ): List<ListInteractionCandidate> {
-    val firstVisible = listState.layoutInfo.visibleItemsInfo.firstOrNull() ?: return emptyList()
+    val visibleItems = listState.layoutInfo.visibleItemsInfo
+    val firstVisible = visibleItems.firstOrNull() ?: return emptyList()
+    // The dragged item may take no space, so it is not used to size the areas.
+    val sizingItem = visibleItems.firstOrNull { it.key != draggedItemOffset.draggedItem.key } ?: firstVisible
     val candidates = mutableListOf<ListInteractionCandidate>()
     val scrollRectSize =
         Size(
             width = listState.layoutInfo.viewportSize.width.toFloat(),
-            height = scrollZoneHeight ?: (firstVisible.size / 3.0f),
+            height = scrollZoneHeight ?: (sizingItem.size / 3.0f),
         )
     // Given a height, the areas only scroll when the dragged item went past the edge of the list, as that scrolls it.
     val overscroll = scrollZoneHeight?.let {
