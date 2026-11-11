@@ -746,7 +746,7 @@ void AudioContext::ShutdownWorklet() {
 double AudioContext::CurrentTime() {
   mozilla::MediaTrack* track = Destination()->Track();
 
-  double rawTime = track->TrackTimeToSeconds(track->GetCurrentTime());
+  double rawTime = track->TrackTimeToSeconds(Destination()->CurrentTime());
 
   // CurrentTime increments in intervals of 128/sampleRate. If the Timer
   // Precision Reduction is smaller than this interval, the jittered time

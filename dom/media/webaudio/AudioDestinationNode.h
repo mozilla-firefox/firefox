@@ -57,6 +57,11 @@ class AudioDestinationNode final : public AudioNode,
   void OfflineShutdown();
 
   void OnTrackEnded();
+
+  // The main thread's view of how much data the destination track has
+  // processed.
+  TrackTime CurrentTime() const { return mTrackCurrentTime; }
+
   void FireOfflineCompletionEvent();
 
   const char* NodeType() const override { return "AudioDestinationNode"; }
@@ -130,6 +135,7 @@ class AudioDestinationNode final : public AudioNode,
   bool mIsOffline;
   WatchManager<AudioDestinationNode> mWatchManager;
   Mirror<bool> mTrackEnded;
+  Mirror<TrackTime> mTrackCurrentTime;
 };
 
 }  // namespace mozilla::dom
