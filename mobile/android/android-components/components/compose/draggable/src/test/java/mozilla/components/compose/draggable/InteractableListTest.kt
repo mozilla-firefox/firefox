@@ -572,6 +572,87 @@ class InteractableListTest {
     }
 
     @Test
+    fun `GIVEN an item which cannot be dragged WHEN it is long pressed and dragged THEN no drag starts and onLongPress is not invoked`() {
+        val handler = RecordingItemInteractionHandler()
+        val longPressed = mutableListOf<Any>()
+        val dragItemOffset = 10
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = dragItemOffset,
+                betaTabOffset = 30,
+                fixedItems = setOf(TabKeys.TAB_ALPHA),
+                onLongPress = { longPressed += it.key },
+            )
+
+        reorderState.onTouchSlopPassed(offset = dragItemOffset.toFloat(), shouldLongPress = true)
+        reorderState.dragDown(distance = 50f, preserveSelectMode = false)
+
+        assertIs<InteractionState.List.None>(reorderState.draggedItem)
+        assertTrue(handler.calls.isEmpty())
+        assertTrue(longPressed.isEmpty())
+    }
+
+    @Test
+    fun `GIVEN an item which cannot be dragged WHEN another item is dragged to its top THEN the dragged item is moved before it`() {
+        val handler = RecordingItemInteractionHandler()
+        val dragItemOffset = 30
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = 10,
+                betaTabOffset = dragItemOffset,
+                liveReorderEnabled = true,
+                fixedItems = setOf(TabKeys.TAB_ALPHA),
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragUp(distance = 30f, preserveSelectMode = false)
+
+        assertTrue(Call.Move(TabKeys.TAB_BETA, TabKeys.TAB_ALPHA, false) in handler.calls)
+    }
+
+    @Test
+    fun `GIVEN an item which cannot be dragged WHEN another item is dragged to its bottom THEN the dragged item is moved after it`() {
+        val handler = RecordingItemInteractionHandler()
+        val dragItemOffset = 110
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = dragItemOffset,
+                betaTabOffset = 130,
+                includeHeader = true,
+                liveReorderEnabled = true,
+                fixedItems = setOf(TabKeys.TAB_BETA),
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragDown(distance = 50f, preserveSelectMode = false)
+
+        assertTrue(Call.Move(TabKeys.TAB_ALPHA, TabKeys.TAB_BETA, true) in handler.calls)
+    }
+
+    @Test
+    fun `GIVEN an item which cannot be dragged WHEN another item is dropped onto it THEN onDrop is called`() {
+        val handler = RecordingItemInteractionHandler()
+        val dragItemOffset = 120
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = dragItemOffset,
+                betaTabOffset = 140,
+                includeHeader = true,
+                fixedItems = setOf(TabKeys.TAB_BETA),
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragDown(distance = 20f, preserveSelectMode = false)
+        reorderState.onDragEnd()
+
+        assertTrue(Call.Drop(TabKeys.TAB_ALPHA, TabKeys.TAB_BETA) in handler.calls)
+    }
+
+    @Test
     fun `GIVEN items of different sizes WHEN a drag starts THEN the dragged item keeps its own size`() {
         val reorderState =
             fakeListInteractionState(
@@ -644,6 +725,8 @@ class InteractableListTest {
         includeHeader: Boolean = false,
         dragAndDropEnabled: Boolean = true,
         liveReorderEnabled: Boolean = false,
+        fixedItems: Set<Any> = emptySet(),
+        onLongPress: (LazyListItemInfo) -> Unit = {},
     ): ListInteractionState {
         val items = buildList {
             if (includeHeader) {
@@ -657,6 +740,8 @@ class InteractableListTest {
             handler = handler,
             dragAndDropEnabled = dragAndDropEnabled,
             liveReorderEnabled = liveReorderEnabled,
+            fixedItems = fixedItems,
+            onLongPress = onLongPress,
         )
     }
 
@@ -679,6 +764,7 @@ class InteractableListTest {
         dragAndDropEnabled: Boolean = true,
         liveReorderEnabled: Boolean = false,
         onLongPress: (LazyListItemInfo) -> Unit = {},
+        fixedItems: Set<Any> = emptySet(),
     ): ListInteractionState {
         return ListInteractionStateImpl(
             listState = listState,
@@ -690,6 +776,7 @@ class InteractableListTest {
             hapticFeedback = RecordingHapticFeedback(),
             dragAndDropEnabled = dragAndDropEnabled,
             liveReorderEnabled = liveReorderEnabled,
+            fixedItems = fixedItems,
         )
     }
 

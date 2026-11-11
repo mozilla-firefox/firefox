@@ -47,11 +47,14 @@ import kotlinx.coroutines.launch
  * will break after any move.
  *
  * @param listState State of the list.
- * @param ignoredItems Set of keys for non-draggable items.
+ * @param ignoredItems Set of keys for items that cannot be dragged and that other items cannot be moved next to or
+ *   dropped onto.
  * @param liveReorderEnabled Whether reordering should happen 'live' while a drag is active.
  * @param onLongPress Callback to be invoked when long pressing an item.
  * @param itemInteractionHandler Handler for item interactions.
  * @param dragAndDropEnabled Whether the drag and drop feature is enabled for this list.
+ * @param fixedItems Set of keys for items that cannot be dragged but that other items can be moved next to or dropped
+ *   onto.
  */
 @Composable
 fun createListInteractionState(
@@ -61,6 +64,7 @@ fun createListInteractionState(
     onLongPress: (LazyListItemInfo) -> Unit = {},
     itemInteractionHandler: ItemInteractionHandler,
     dragAndDropEnabled: Boolean = true,
+    fixedItems: Set<Any> = emptySet(),
 ): ListInteractionState {
     val scope = rememberCoroutineScope()
     val touchSlop = LocalViewConfiguration.current.touchSlop
@@ -73,6 +77,7 @@ fun createListInteractionState(
                 touchSlop = touchSlop,
                 hapticFeedback = hapticFeedback,
                 ignoredItems = ignoredItems,
+                fixedItems = fixedItems,
                 onLongPress = onLongPress,
                 itemInteractionHandler = itemInteractionHandler,
                 dragAndDropEnabled = dragAndDropEnabled,
@@ -81,6 +86,7 @@ fun createListInteractionState(
         }
     SideEffect {
         state.ignoredItems = ignoredItems
+        state.fixedItems = fixedItems
         state.itemInteractionHandler = itemInteractionHandler
         state.dragAndDropEnabled = dragAndDropEnabled
         state.liveReorderEnabled = liveReorderEnabled
@@ -153,11 +159,14 @@ interface ListInteractionState {
  * @param scope [CoroutineScope] used for scrolling to the target item.
  * @param hapticFeedback [HapticFeedback] used for performing haptic feedback on item long press.
  * @param touchSlop Distance in pixels the user can wander until we consider they started dragging.
- * @param ignoredItems List of keys for non-draggable items.
+ * @param ignoredItems Set of keys for items that cannot be dragged and that other items cannot be moved next to or
+ *   dropped onto.
  * @param itemInteractionHandler Handler for item interactions.
  * @param dragAndDropEnabled Whether the drag and drop feature is enabled for this list.
  * @param liveReorderEnabled Whether reordering should happen 'live' while a drag is active.
  * @param onLongPress Optional callback to be invoked when long pressing an item.
+ * @param fixedItems Set of keys for items that cannot be dragged but that other items can be moved next to or dropped
+ *   onto.
  */
 internal class ListInteractionStateImpl(
     private val listState: LazyListState,
@@ -169,6 +178,7 @@ internal class ListInteractionStateImpl(
     var dragAndDropEnabled: Boolean,
     var liveReorderEnabled: Boolean,
     var onLongPress: (LazyListItemInfo) -> Unit = {},
+    var fixedItems: Set<Any> = emptySet(),
 ) : ListInteractionState {
     override var draggedItem by mutableStateOf<InteractionState.List>(InteractionState.List.None)
         private set
@@ -206,7 +216,7 @@ internal class ListInteractionStateImpl(
     override fun onTouchSlopPassed(offset: Float, shouldLongPress: Boolean) {
         listState
             .findItem(offset)
-            ?.takeIf { it.key !in ignoredItems }
+            ?.takeIf { it.key !in ignoredItems && it.key !in fixedItems }
             ?.also { item ->
                 if (shouldLongPress) {
                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)

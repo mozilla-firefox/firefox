@@ -31,6 +31,8 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: Removed. Use `FileParser<BookmarksParseResult>` from `concept-file-parser`, with `BookmarksParseResult` and `BookmarksParseError` from `lib-bookmark-parser-jsoup`, instead of `BookmarksFileParser` and `BookmarksParserError`. [Bug 2041577](https://bugzilla.mozilla.org/show_bug.cgi?id=2041577)
 * **concept-passwords-parser**
     * ⚠️ **Breaking change**: Removed. Use `FileParser<PasswordsParseResult>` from `concept-file-parser`, with `PasswordsParseResult` and `PasswordsParseError` from `lib-password-parser-csv`, instead of `PasswordsFileParser` and `PasswordsParserError`. [Bug 2041577](https://bugzilla.mozilla.org/show_bug.cgi?id=2041577)
+* **compose-draggable**
+    * Added `fixedItems` to `createListInteractionState` for list items which cannot be dragged but can have other items moved next to or dropped onto them. [Bug 2086549](https://bugzilla.mozilla.org/show_bug.cgi?id=2086549)
 
 # 161.0
 * **browser-state**

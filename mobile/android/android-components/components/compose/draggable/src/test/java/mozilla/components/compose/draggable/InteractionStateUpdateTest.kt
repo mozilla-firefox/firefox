@@ -107,6 +107,25 @@ class InteractionStateUpdateTest {
         assertEquals(Call.DragStart(sourceKey = "a", preserveSelectMode = false), secondHandler.calls.first())
     }
 
+    @Test
+    fun `GIVEN a list state WHEN recomposed with new items which cannot be dragged THEN a drag cannot start from those items`() {
+        var fixedItems by mutableStateOf<Set<Any>>(emptySet())
+        lateinit var state: ListInteractionState
+        composeTestRule.setContent {
+            state =
+                testList(
+                    onLongPress = {},
+                    itemInteractionHandler = NoOpItemInteractionHandler,
+                    fixedItems = fixedItems,
+                )
+        }
+
+        composeTestRule.runOnIdle { fixedItems = setOf("a") }
+        composeTestRule.runOnIdle { state.onTouchSlopPassed(offset = 1f, shouldLongPress = false) }
+
+        assertEquals(InteractionState.List.None, state.draggedItem)
+    }
+
     @Composable
     private fun testGrid(
         onLongPress: (LazyGridItemInfo) -> Unit,
@@ -133,6 +152,7 @@ class InteractionStateUpdateTest {
     private fun testList(
         onLongPress: (LazyListItemInfo) -> Unit,
         itemInteractionHandler: ItemInteractionHandler,
+        fixedItems: Set<Any> = emptySet(),
     ): ListInteractionState {
         val listState = rememberLazyListState()
         val interactionState =
@@ -142,6 +162,7 @@ class InteractionStateUpdateTest {
                 liveReorderEnabled = false,
                 onLongPress = onLongPress,
                 itemInteractionHandler = itemInteractionHandler,
+                fixedItems = fixedItems,
             )
         LazyColumn(state = listState) {
             items(items = keys, key = { it }) {
