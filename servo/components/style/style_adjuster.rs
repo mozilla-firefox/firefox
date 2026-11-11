@@ -41,7 +41,6 @@ pub struct StyleAdjuster<'a, 'b: 'a> {
     style: &'a mut StyleBuilder<'b>,
 }
 
-#[cfg(feature = "gecko")]
 fn is_topmost_svg_svg_element<E>(e: E) -> bool
 where
     E: TElement,
@@ -64,7 +63,6 @@ where
 }
 
 // https://drafts.csswg.org/css-display/#unbox
-#[cfg(feature = "gecko")]
 fn is_effective_display_none_for_display_contents<E>(element: E) -> bool
 where
     E: TElement,
@@ -509,7 +507,6 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
     /// https://drafts.csswg.org/css-display/#unbox-html
     ///
     /// And forbidding display: contents in pseudo-elements, at least for now.
-    #[cfg(feature = "gecko")]
     fn adjust_for_prohibited_display_contents<E>(&mut self, element: Option<E>)
     where
         E: TElement,
@@ -519,6 +516,7 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         }
 
         // FIXME(emilio): ::before and ::after should support display: contents, see bug 1418138.
+        #[cfg(feature = "gecko")]
         if self.style.pseudo.is_some_and(|p| !p.is_element_backed()) {
             self.style.mutate_box().set_display(Display::Inline);
             return;
@@ -1068,9 +1066,9 @@ impl<'a, 'b: 'a> StyleAdjuster<'a, 'b> {
         // );
 
         self.adjust_for_links(element);
+        self.adjust_for_prohibited_display_contents(element);
         #[cfg(feature = "gecko")]
         {
-            self.adjust_for_prohibited_display_contents(element);
             self.adjust_for_fieldset_content();
             self.adjust_for_text_control_editing_root();
         }
