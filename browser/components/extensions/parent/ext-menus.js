@@ -360,7 +360,6 @@ var gMenuBuilder = {
       element.setAttribute("label", label);
       if (accessKey) {
         element.setAttribute("accesskey", accessKey);
-        element.toggleAttribute("intended-duplicate-accesskey", true);
       } else {
         element.toggleAttribute("auto-accesskey", true);
       }

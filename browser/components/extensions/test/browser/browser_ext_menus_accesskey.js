@@ -156,7 +156,7 @@ add_task(async function accesskeys() {
       `Accesskey source for item ${i} (${description})`
     );
     ok(
-      items[i].matches("[intended-duplicate-accesskey], [auto-accesskey]"),
+      items[i].classList.contains("webextension-menuitem"),
       `Item ${i} may share its accesskey (${description})`
     );
   });
@@ -260,7 +260,7 @@ add_task(async function accesskeys_selection() {
       `Accesskey source for item ${i} (${description})`
     );
     ok(
-      items[i].matches("[intended-duplicate-accesskey], [auto-accesskey]"),
+      items[i].classList.contains("webextension-menuitem"),
       `Item ${i} may share its accesskey (${description})`
     );
   });

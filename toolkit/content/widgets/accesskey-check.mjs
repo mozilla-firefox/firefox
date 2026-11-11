@@ -29,13 +29,17 @@ const ENABLED =
  * A popup with known conflicts names the bug that tracks fixing them in an
  * `accesskey-conflicts-bug` attribute and is skipped until the attribute goes.
  * An item that shares its accesskey on purpose, so that the key cycles
- * through the items, must have the `intended-duplicate-accesskey` attribute
- * and is left out of the shared-key check, as is an item with the
- * `auto-accesskey` attribute (see auto-accesskey.mjs). A disabled menuitem
- * with a role attribute (a note, a heading) only displays information and is
- * not one. A menuitem without a label, such as an icon button in a menugroup,
- * can't show an accesskey or be reached by its first letter, so it may lack an
- * accesskey; one it has is still compared with the others.
+ * through the items, must list the space-separated ids of the items it shares
+ * the key with in an `intended-duplicate-accesskey` attribute, and is left out
+ * of the shared-key check. Each id has to name an item of the same menu, and
+ * one with an accesskey has to have the same one. An item with the
+ * `auto-accesskey` attribute (see auto-accesskey.mjs) is left out too, as is a
+ * WebExtension's item, which can't know the items its accesskey collides with.
+ * A disabled menuitem with a role attribute (a note, a heading) only displays
+ * information and is not one. A menuitem without a label, such as an icon
+ * button in a menugroup, can't show an accesskey or be reached by its first
+ * letter, so it may lack an accesskey; one it has is still compared with the
+ * others.
  *
  * A menu that macOS shows natively ignores accesskeys, so it is skipped along
  * with its submenus.
@@ -70,11 +74,11 @@ export async function checkAccessKeys(popup) {
     );
   }
 
-  let items =
+  let allItems =
     popup.localName == "panel-list"
       ? panelListItems(popup)
       : menupopupItems(popup);
-  items = items.filter(item => item.label);
+  let items = allItems.filter(item => item.visible && item.label);
   let withKey = items.filter(item => item.accesskey);
   if (!withKey.length) {
     return;
@@ -98,7 +102,44 @@ export async function checkAccessKeys(popup) {
       "Fix a shared accesskey, in order of preference: 1) give one of the " +
         "items a different accesskey, 2) move items into a submenu, 3) drop " +
         "the accesskeys of every item in this menu, 4) set " +
-        "intended-duplicate-accesskey on one of the items."
+        "intended-duplicate-accesskey on one of the items to the ids of the " +
+        "items it shares the accesskey with."
+    );
+  }
+
+  let byId = new Map(
+    allItems.filter(item => item.id).map(item => [item.id, item])
+  );
+  let staleProblems = [];
+  for (let item of withKey) {
+    if (item.marked && !item.webExtension && !item.sharesWith.length) {
+      staleProblems.push(
+        `"${item.label}" has an empty intended-duplicate-accesskey`
+      );
+    }
+    for (let id of item.sharesWith) {
+      let other = byId.get(id);
+      if (!other) {
+        staleProblems.push(
+          `"${item.label}" names "${id}" in intended-duplicate-accesskey, ` +
+            "which is not an item of this menu"
+        );
+      } else if (
+        other.accesskey &&
+        other.accesskey.toLowerCase() != item.accesskey.toLowerCase()
+      ) {
+        staleProblems.push(
+          `"${item.label}" names "${id}" in intended-duplicate-accesskey, ` +
+            `which has accesskey "${other.accesskey}"`
+        );
+      }
+    }
+  }
+  if (staleProblems.length) {
+    problems.push(...staleProblems);
+    remedies.push(
+      "Fix intended-duplicate-accesskey by listing the ids of the items in " +
+        "this menu that share the accesskey."
     );
   }
 
@@ -166,12 +207,17 @@ function isShownNatively(menupopup) {
 function menupopupItems(popup) {
   return Array.from(
     popup.querySelectorAll(
-      ":is(:scope, :scope > menugroup) > :is(menuitem, menu):not([hidden], [role][disabled])"
+      ":is(:scope, :scope > menugroup) > :is(menuitem, menu)"
     ),
     item => ({
+      id: item.id,
+      visible: !item.matches("[hidden], [role][disabled]"),
+      marked: item.hasAttribute("intended-duplicate-accesskey"),
+      webExtension: item.classList.contains("webextension-menuitem"),
+      sharesWith: sharesWith(item),
       accesskey: item.getAttribute("accesskey"),
       intendedDuplicate: item.matches(
-        "[intended-duplicate-accesskey], [auto-accesskey]"
+        "[intended-duplicate-accesskey], [auto-accesskey], .webextension-menuitem"
       ),
       hasText: item.matches("[label], [value]"),
       label:
@@ -183,17 +229,32 @@ function menupopupItems(popup) {
 }
 
 function panelListItems(popup) {
-  return Array.from(
-    popup.querySelectorAll("panel-item:not([hidden])"),
-    item => ({
-      accesskey: item.label?.accessKey,
-      intendedDuplicate: item.matches(
-        "[intended-duplicate-accesskey], [auto-accesskey]"
-      ),
-      hasText: true,
-      label: (item.label?.textContent ?? item.textContent).trim(),
-    })
-  );
+  return Array.from(popup.querySelectorAll("panel-item"), item => ({
+    id: item.id,
+    visible: !item.hidden,
+    marked: item.hasAttribute("intended-duplicate-accesskey"),
+    webExtension: false,
+    sharesWith: sharesWith(item),
+    accesskey: item.label?.accessKey,
+    intendedDuplicate: item.matches(
+      "[intended-duplicate-accesskey], [auto-accesskey]"
+    ),
+    hasText: true,
+    label: (item.label?.textContent ?? item.textContent).trim(),
+  }));
+}
+
+/**
+ * The ids an item lists in its intended-duplicate-accesskey attribute, naming
+ * the items it shares its accesskey with.
+ *
+ * @param {Element} item
+ * @returns {string[]}
+ */
+function sharesWith(item) {
+  return (item.getAttribute("intended-duplicate-accesskey") ?? "")
+    .split(/\s+/)
+    .filter(Boolean);
 }
 
 function quoteLabels(labels) {

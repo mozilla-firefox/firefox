@@ -57,13 +57,39 @@
     <menuitem label="Three"/>
   </menupopup>
   <menupopup id="intended">
-    <menuitem label="One" accesskey="o"/>
-    <menuitem label="Two" accesskey="o" intended-duplicate-accesskey="true"/>
+    <menuitem id="intended-one" label="One" accesskey="o"/>
+    <menuitem label="Two" accesskey="o" intended-duplicate-accesskey="intended-one"/>
     <menuitem label="Three" accesskey="o"/>
   </menupopup>
   <menupopup id="intended-only">
+    <menuitem id="intended-only-one" label="One" accesskey="o"/>
+    <menuitem label="Two" accesskey="o" intended-duplicate-accesskey="intended-only-one"/>
+  </menupopup>
+  <menupopup id="intended-empty">
     <menuitem label="One" accesskey="o"/>
-    <menuitem label="Two" accesskey="o" intended-duplicate-accesskey="true"/>
+    <menuitem label="Two" accesskey="o" intended-duplicate-accesskey=""/>
+  </menupopup>
+  <menupopup id="webextension">
+    <menuitem label="One" accesskey="o"/>
+    <menuitem class="webextension-menuitem" label="Two" accesskey="o"
+              intended-duplicate-accesskey=""/>
+    <menuitem class="webextension-menuitem" label="Three" accesskey="o"/>
+  </menupopup>
+  <menupopup id="intended-named">
+    <menuitem id="named-one" label="One" accesskey="o"/>
+    <menuitem label="Two" accesskey="o"
+              intended-duplicate-accesskey="named-one  named-hidden"/>
+    <menuitem id="named-hidden" label="Three" accesskey="O" hidden="true"/>
+  </menupopup>
+  <menupopup id="intended-stale">
+    <menuitem id="stale-one" label="One" accesskey="n"/>
+    <menuitem label="Two" accesskey="o"
+              intended-duplicate-accesskey="stale-one stale-missing stale-nested"/>
+    <menu label="Sub" accesskey="s">
+      <menupopup>
+        <menuitem id="stale-nested" label="Nested" accesskey="o"/>
+      </menupopup>
+    </menu>
   </menupopup>
   <menupopup id="auto">
     <menuitem label="Copy" accesskey="c"/>
@@ -274,6 +300,63 @@ add_task(async function testIntendedDuplicate() {
     (await openAndCollectErrors("intended-only")).length,
     0,
     "A key shared only with a marked item is not a conflict"
+  );
+});
+
+add_task(async function testIntendedDuplicateEmpty() {
+  let errors = await openAndCollectErrors("intended-empty");
+  is(errors.length, 1, "An empty intended-duplicate-accesskey is reported");
+  assert.stringContains(
+    errors[0],
+    `"Two" has an empty intended-duplicate-accesskey`,
+    "Message names the item"
+  );
+  assert.stringContains(
+    errors[0],
+    "Fix intended-duplicate-accesskey",
+    "Message recommends a remedy for the empty value"
+  );
+});
+
+add_task(async function testWebExtensionItems() {
+  is(
+    (await openAndCollectErrors("webextension")).length,
+    0,
+    "WebExtension items are left out of the shared-key check, with or without an empty intended-duplicate-accesskey"
+  );
+});
+
+add_task(async function testIntendedDuplicateIds() {
+  is(
+    (await openAndCollectErrors("intended-named")).length,
+    0,
+    "Ids naming items with the same accesskey, hidden or not, are accepted"
+  );
+  let errors = await openAndCollectErrors("intended-stale");
+  is(errors.length, 1, "Stale ids are reported once");
+  assert.stringContains(
+    errors[0],
+    `"Two" names "stale-one" in intended-duplicate-accesskey, which has accesskey "n"`,
+    "An id naming an item with a different accesskey is reported"
+  );
+  assert.stringContains(
+    errors[0],
+    `"Two" names "stale-missing" in intended-duplicate-accesskey, which is not an item of this menu`,
+    "An id naming no element is reported"
+  );
+  assert.stringContains(
+    errors[0],
+    `"Two" names "stale-nested" in intended-duplicate-accesskey, which is not an item of this menu`,
+    "An id naming an item of a submenu is reported"
+  );
+  assert.stringContains(
+    errors[0],
+    "Fix intended-duplicate-accesskey",
+    "Message recommends a remedy for stale ids"
+  );
+  ok(
+    !errors[0].includes("Fix a shared accesskey"),
+    "Message recommends nothing for a problem it didn't find"
   );
 });
 
