@@ -481,12 +481,16 @@ static int testWasmFuzz(const uint8_t* buf, size_t size) {
               return 0;
             }
 
-            if (readFuncValue.isNull()) {
+            if (!readFuncValue.isObject()) {
               continue;
             }
 
-            RootedFunction callee(gCx,
-                                  &readFuncValue.toObject().as<JSFunction>());
+            RootedObject funcObj(gCx, &readFuncValue.toObject());
+            if (!funcObj->is<JSFunction>()) {
+              continue;
+            }
+
+            RootedFunction callee(gCx, &funcObj->as<JSFunction>());
 
             if (!callExportedFunc(callee, &lastReturnVal)) {
               return 0;
