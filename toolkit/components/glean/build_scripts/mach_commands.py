@@ -339,8 +339,14 @@ def glean_dev(command_context, glean_path, branch):
     cargo_toml = Path(command_context.topsrcdir) / "Cargo.toml"
     content = open(cargo_toml).read()
 
-    if re.search(TOML_GLEAN_PATCH_RE, content):
-        content = re.sub(TOML_GLEAN_PATCH_RE, "", content)
+    matches = re.finditer(TOML_GLEAN_PATCH_RE, content)
+    for match in matches:
+        # Skip any already existing extended entry
+        # (such as the one that will be under `workspace.dependencies`)
+        if match[0].startswith("glean = { version"):
+            continue
+
+        content = re.sub(match[0], "", content)
 
     patch = patch_section(glean_path, branch)
     glean_source(command_context, cargo_toml, content, patch)
