@@ -368,6 +368,7 @@ export let StartupTelemetry = {
       "browser.ai.control.sidebarChatbot": "sidebarChatbot",
       "browser.ai.control.smartWindow": "smartWindow",
       "browser.ai.control.speechRecognition": "speechRecognition",
+      "browser.ai.control.generatedWidgets": "generatedWidgets",
     };
     const _checkAiControlPrefs = async () => {
       const globalIsBlocked =

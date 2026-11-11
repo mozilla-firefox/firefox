@@ -14,6 +14,8 @@ const lazy = XPCOMUtils.declareLazy({
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   GenAI: "moz-src:///browser/components/genai/GenAI.sys.mjs",
+  GeneratedWidgetsFeature:
+    "moz-src:///browser/components/widgets/GeneratedWidgetsFeature.sys.mjs",
   LinkPreview: "moz-src:///browser/components/genai/LinkPreview.sys.mjs",
   PdfJsGuessAltTextFeature: "resource://pdf.js/PdfJsAIFeature.sys.mjs",
   SmartTabGroupingManager:
@@ -35,6 +37,7 @@ const OnDeviceModelFeatures = Object.freeze({
   SidebarChatbot: "sidebarChatbot",
   SmartWindow: "smartWindow",
   SpeechRecognition: "speechRecognition",
+  GeneratedWidgets: "generatedWidgets",
 });
 
 /** @type {Record<OnDeviceModelFeaturesEnum, string[]>} */
@@ -75,6 +78,9 @@ const FeaturePrefs = Object.freeze({
   // the AI Controls UI reflects state changes; no JS teardown is needed.
   [OnDeviceModelFeatures.SpeechRecognition]: [
     "browser.ai.control.speechRecognition",
+  ],
+  [OnDeviceModelFeatures.GeneratedWidgets]: [
+    "browser.widgets.generated.enabled",
   ],
 });
 
@@ -147,6 +153,8 @@ export const OnDeviceModelManager = {
         return lazy.AIWindow;
       case OnDeviceModelFeatures.SpeechRecognition:
         return lazy.SpeechRecognitionFeature;
+      case OnDeviceModelFeatures.GeneratedWidgets:
+        return lazy.GeneratedWidgetsFeature;
       default:
         throw new Error(`Unknown feature "${feature}"`);
     }
@@ -173,6 +181,8 @@ export const OnDeviceModelManager = {
         return "browser.ai.control.smartWindow";
       case OnDeviceModelFeatures.SpeechRecognition:
         return "browser.ai.control.speechRecognition";
+      case OnDeviceModelFeatures.GeneratedWidgets:
+        return "browser.ai.control.generatedWidgets";
       default:
         throw new Error(`Unknown feature "${feature}"`);
     }

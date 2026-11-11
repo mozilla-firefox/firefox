@@ -17,6 +17,7 @@ const AI_CONTROL_PREFS = {
   "browser.ai.control.sidebarChatbot": "sidebarChatbot",
   "browser.ai.control.smartWindow": "smartWindow",
   "browser.ai.control.speechRecognition": "speechRecognition",
+  "browser.ai.control.generatedWidgets": "generatedWidgets",
 };
 
 function resetPrefs(changes = {}) {
@@ -67,6 +68,7 @@ add_task(function test_defaults_no_prefs_set() {
     sidebarChatbot: false,
     smartWindow: false,
     speechRecognition: false,
+    generatedWidgets: false,
   });
 });
 
@@ -89,6 +91,7 @@ add_task(function test_global_blocked_features_default() {
     sidebarChatbot: true,
     smartWindow: true,
     speechRecognition: true,
+    generatedWidgets: true,
   });
 });
 
@@ -112,6 +115,7 @@ add_task(function test_global_available_one_feature_blocked() {
     sidebarChatbot: false,
     smartWindow: false,
     speechRecognition: false,
+    generatedWidgets: false,
   });
 });
 
@@ -135,6 +139,7 @@ add_task(function test_global_blocked_one_feature_enabled() {
     sidebarChatbot: true,
     smartWindow: true,
     speechRecognition: true,
+    generatedWidgets: true,
   });
 });
 
@@ -157,6 +162,7 @@ add_task(function test_pref_observer_global_change() {
     sidebarChatbot: false,
     smartWindow: false,
     speechRecognition: false,
+    generatedWidgets: false,
   });
 
   Services.prefs.setStringPref(GLOBAL_AI_PREF, "blocked");
@@ -174,6 +180,7 @@ add_task(function test_pref_observer_global_change() {
     sidebarChatbot: true,
     smartWindow: true,
     speechRecognition: true,
+    generatedWidgets: true,
   });
 });
 

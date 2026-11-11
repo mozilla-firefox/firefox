@@ -15,6 +15,8 @@ tags = "os_integration"
 
 ["browser_aiFeatures_chatbot.js"]
 
+["browser_aiFeatures_generated_widgets.js"]
+
 ["browser_aiFeatures_smart_window.js"]
 
 ["browser_aiFeatures_smart_window_block_dialog.js"]

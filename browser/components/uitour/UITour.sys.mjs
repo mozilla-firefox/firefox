@@ -1709,6 +1709,10 @@ export var UITour = {
             "browser.ai.control.speechRecognition",
             "default"
           ),
+          generatedWidgets: Services.prefs.getStringPref(
+            "browser.ai.control.generatedWidgets",
+            "default"
+          ),
         });
         break;
       default:
