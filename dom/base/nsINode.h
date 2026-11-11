@@ -1815,6 +1815,8 @@ class nsINode : public mozilla::dom::EventTarget {
     virtual void Traverse(nsCycleCollectionTraversalCallback&);
     virtual void Unlink(nsINode&);
 
+    void ClearWeakReference();
+
     /**
      * A list of mutation observers
      */
@@ -1837,7 +1839,8 @@ class nsINode : public mozilla::dom::EventTarget {
 
     /**
      * Weak reference to this node.  This is cleared by the destructor of
-     * nsNodeWeakReference.
+     * nsNodeWeakReference, and by ClearWeakReference when the node is
+     * unlinked or destroyed.
      */
     nsNodeWeakReference* MOZ_NON_OWNING_REF mWeakReference;
 

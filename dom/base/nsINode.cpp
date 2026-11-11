@@ -302,8 +302,13 @@ nsINode::nsSlots::~nsSlots() {
     mChildNodes->InvalidateCacheIfAvailable();
   }
 
+  ClearWeakReference();
+}
+
+void nsINode::nsSlots::ClearWeakReference() {
   if (mWeakReference) {
     mWeakReference->NoticeNodeDestruction();
+    mWeakReference = nullptr;
   }
 }
 
@@ -331,6 +336,7 @@ void nsINode::nsSlots::Unlink(nsINode& aNode) {
     mChildNodes->InvalidateCacheIfAvailable();
     ImplCycleCollectionUnlink(mChildNodes);
   }
+  ClearWeakReference();
   ClearBoundObjects(*this, aNode);
 }
 
