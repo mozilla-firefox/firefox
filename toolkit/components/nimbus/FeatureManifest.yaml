@@ -5507,6 +5507,22 @@ linkPreviews:
         sub-pref and values objects indicating the desired branch and value
         defaulting to clearing the user branch value.
 
+generatedWidgets:
+  description: >-
+    Custom widgets: lets users create widgets from a prompt with AI and shows
+    the Widget Studio panel in the sidebar.
+  owner: fchasen@mozilla.com
+  hasExposure: false
+  variables:
+    enabled:
+      type: boolean
+      setPref:
+        branch: user
+        pref: browser.widgets.generated.enabled
+      description: >-
+        If true, shows the Widget Studio panel in the sidebar and lets users
+        create widgets.
+
 resourceMonitor:
   description: Resource Monitor sidebar panel
   owner: tthorne@mozilla.com
