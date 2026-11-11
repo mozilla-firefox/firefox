@@ -66,7 +66,6 @@ UNIFIED_SOURCES += [
     "TestMediaCapabilities.cpp",
     "TestMediaCodecsSupport.cpp",
     "TestMediaDataDecoder.cpp",
-    "TestMediaDataEncoder.cpp",
     "TestMediaEventSource.cpp",
     "TestMediaFormatReader.cpp",
     "TestMediaInfo.cpp",
@@ -102,6 +101,17 @@ UNIFIED_SOURCES += [
     "TestYUVBufferGenerator.cpp",
     "YUVBufferGenerator.cpp",
 ]
+
+if CONFIG["OS_TARGET"] == "Darwin":
+    # AppleVTEncoder.h includes Carbon headers that conflict with declarations
+    # in unified gtest translation units.
+    SOURCES += [
+        "TestMediaDataEncoder.cpp",
+    ]
+else:
+    UNIFIED_SOURCES += [
+        "TestMediaDataEncoder.cpp",
+    ]
 
 # Not in UNIFIED_SOURCES: on macOS it includes MacIOSurface.h, which pulls in
 # CoreVideo, see the MOZ_APPLEMEDIA block.
