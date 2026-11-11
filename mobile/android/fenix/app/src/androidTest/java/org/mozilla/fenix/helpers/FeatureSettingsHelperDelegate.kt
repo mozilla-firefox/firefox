@@ -52,6 +52,7 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
             nativeShareSheetEnabled = settings.nativeShareSheetEnabled,
             showVoiceSearchInDisplayToolbar = settings.showVoiceSearchInDisplayToolbar,
             isHomepageTrendingRecentSearchEnabled = settings.enableHomepageTrendingRecentSearch,
+            isCollectionsToTabGroupsMigrationEnabled = settings.migrateCollectionsToTabGroupsEnabled,
             isGoogleLensIntegrationEnabled = settings.googleLensIntegrationEnabled,
             isGoogleLensIntegrationUserEnabled = settings.googleLensIntegrationUserEnabled,
             isFxSuggestEnabled = settings.enableFxSuggest,
@@ -88,6 +89,8 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
     override var showVoiceSearchInDisplayToolbar: Boolean by updatedFeatureFlags::showVoiceSearchInDisplayToolbar
     override var isHomepageTrendingRecentSearchEnabled: Boolean by
         updatedFeatureFlags::isHomepageTrendingRecentSearchEnabled
+    override var isCollectionsToTabGroupsMigrationEnabled: Boolean by
+        updatedFeatureFlags::isCollectionsToTabGroupsMigrationEnabled
     override var isGoogleLensIntegrationEnabled: Boolean by updatedFeatureFlags::isGoogleLensIntegrationEnabled
     override var isGoogleLensIntegrationUserEnabled: Boolean by updatedFeatureFlags::isGoogleLensIntegrationUserEnabled
     override var isFxSuggestEnabled: Boolean by updatedFeatureFlags::isFxSuggestEnabled
@@ -134,6 +137,7 @@ class FeatureSettingsHelperDelegate : FeatureSettingsHelper {
         settings.nativeShareSheetEnabled = featureFlags.nativeShareSheetEnabled
         settings.showVoiceSearchInDisplayToolbar = featureFlags.showVoiceSearchInDisplayToolbar
         settings.enableHomepageTrendingRecentSearch = featureFlags.isHomepageTrendingRecentSearchEnabled
+        settings.migrateCollectionsToTabGroupsEnabled = featureFlags.isCollectionsToTabGroupsMigrationEnabled
         settings.showAddressBarInFocusMode = featureFlags.showAddressBarInFocusMode
         settings.crashReportChoice = featureFlags.crashReportOption.label
         settings.googleLensIntegrationEnabled = featureFlags.isGoogleLensIntegrationEnabled
@@ -168,6 +172,7 @@ private data class FeatureFlags(
     var nativeShareSheetEnabled: Boolean,
     var showVoiceSearchInDisplayToolbar: Boolean,
     var isHomepageTrendingRecentSearchEnabled: Boolean,
+    var isCollectionsToTabGroupsMigrationEnabled: Boolean,
     var showAddressBarInFocusMode: Boolean,
     var crashReportOption: CrashReportOption,
     var isGoogleLensIntegrationEnabled: Boolean,

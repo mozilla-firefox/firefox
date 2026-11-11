@@ -98,6 +98,9 @@ interface FeatureSettingsHelper {
     /** Whether trending and recent searches are shown on the Homepage search. */
     var isHomepageTrendingRecentSearchEnabled: Boolean
 
+    /** Whether the Collections to Tab Groups migration runs. */
+    var isCollectionsToTabGroupsMigrationEnabled: Boolean
+
     /** Whether Google Lens feature is enabled. */
     var isGoogleLensIntegrationEnabled: Boolean
 
