@@ -231,6 +231,60 @@ add_task(async function test_matches_title() {
   });
 });
 
+add_task(async function test_matches_each_token() {
+  configureEngine([
+    {
+      id: "mobile",
+      tabs: [
+        {
+          urlHistory: ["https://xkcd.com/3166/"],
+          title: "xkcd: Big and little spoons",
+        },
+      ],
+    },
+  ]);
+
+  async function checkQuery(query, shouldMatch, properties = {}) {
+    info(`Searching for "${query}"`);
+    let context = createContext(query, {
+      isPrivate: false,
+      providers: ["UrlbarProviderRemoteTabs"],
+      ...properties,
+    });
+    await check_results({
+      context,
+      matches: shouldMatch
+        ? [
+            makeRemoteTabResult(context, {
+              uri: "https://xkcd.com/3166/",
+              device: "My Phone",
+              title: "xkcd: Big and little spoons",
+            }),
+          ]
+        : [],
+    });
+  }
+
+  let { OPENPAGE } = UrlbarShared.RESTRICT_TOKENS;
+  for (let query of [
+    "big spoon",
+    "little big",
+    "xkcd spoons",
+    "3166 big",
+    "XKCD BIG",
+    `${OPENPAGE} big spoon`,
+    `big spoon ${OPENPAGE}`,
+  ]) {
+    await checkQuery(query, true);
+  }
+  await checkQuery("big forks", false);
+
+  await checkQuery("big spoon", true, {
+    searchMode: { source: UrlbarShared.RESULT_SOURCE.TABS },
+    sources: [UrlbarShared.RESULT_SOURCE.TABS],
+  });
+});
+
 add_task(async function test_localtab_matches_override() {
   // We have an open tab to the same page on a remote device, only "switch to
   // tab" should appear as duplicate detection removed the remote one.
