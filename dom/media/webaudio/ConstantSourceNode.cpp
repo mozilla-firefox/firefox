@@ -154,7 +154,10 @@ class ConstantSourceNodeEngine final : public AudioNodeEngine {
 ConstantSourceNode::ConstantSourceNode(AudioContext* aContext)
     : AudioScheduledSourceNode(aContext, 2, ChannelCountMode::Max,
                                ChannelInterpretation::Speakers),
-      mStartCalled(false) {
+      mStartCalled(false),
+      mWatchManager(this, AbstractThread::MainThread()),
+      mTrackEnded(AbstractThread::MainThread(), false,
+                  "ConstantSourceNode::mTrackEnded") {
   mOffset =
       CreateAudioParam(ConstantSourceNodeEngine::OFFSET, u"offset"_ns, 1.0f);
   ConstantSourceNodeEngine* engine =
@@ -163,7 +166,8 @@ ConstantSourceNode::ConstantSourceNode(AudioContext* aContext)
                                   AudioNodeTrack::NEED_MAIN_THREAD_ENDED,
                                   aContext->Graph());
   engine->SetSourceTrack(mTrack);
-  mTrack->AddMainThreadListener(this);
+  mTrackEnded.Connect(&mTrack->CanonicalEnded());
+  mWatchManager.Watch(mTrackEnded, &ConstantSourceNode::OnTrackEnded);
 }
 
 ConstantSourceNode::~ConstantSourceNode() = default;
@@ -195,9 +199,8 @@ already_AddRefed<ConstantSourceNode> ConstantSourceNode::Constructor(
 }
 
 void ConstantSourceNode::DestroyMediaTrack() {
-  if (mTrack) {
-    mTrack->RemoveMainThreadListener(this);
-  }
+  mWatchManager.Shutdown();
+  mTrackEnded.DisconnectIfConnected();
   AudioNode::DestroyMediaTrack();
 }
 
@@ -243,8 +246,8 @@ void ConstantSourceNode::Stop(double aWhen, ErrorResult& aRv) {
                                 std::max(0.0, aWhen));
 }
 
-void ConstantSourceNode::NotifyMainThreadTrackEnded() {
-  MOZ_ASSERT(mTrack->IsEnded());
+void ConstantSourceNode::OnTrackEnded() {
+  MOZ_ASSERT(mTrackEnded);
 
   class EndedEventDispatcher final : public Runnable {
    public:
