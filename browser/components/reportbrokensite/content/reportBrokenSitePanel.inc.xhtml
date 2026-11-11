@@ -101,20 +101,39 @@
                      data-l10n-attrs="label">
       <html:img slot="nested" decoding="sync" id="report-broken-site-popup-screenshot"/>
     </html:moz-toggle>
-    <button id="report-broken-site-popup-send-more-info-button" class="arrow-button footer-button progression"
-                         data-l10n-id="report-broken-site-panel-send-more-info-button" />
-    <button id="report-broken-site-popup-preview-button" class="arrow-button footer-button progression"
-                         data-l10n-id="report-broken-site-panel-preview-button"/>
+    <html:moz-button
+      id="report-broken-site-popup-send-more-info-button"
+      class="arrow-button progression"
+      type="ghost"
+      closemenu="none"
+      iconsrc="chrome://global/skin/icons/arrow-right.svg"
+      iconposition="end"
+      data-l10n-id="report-broken-site-panel-send-more-info-button"
+    ></html:moz-button>
+    <html:moz-button
+      id="report-broken-site-popup-preview-button"
+      class="arrow-button progression"
+      type="ghost"
+      closemenu="none"
+      iconsrc="chrome://global/skin/icons/arrow-right.svg"
+      iconposition="end"
+      data-l10n-id="report-broken-site-panel-preview-button"
+    ></html:moz-button>
   </vbox>
   <toolbarseparator/>
   <html:moz-button-group class="panel-footer">
-    <button id="report-broken-site-popup-details-cancel-button"
-            class="footer-button cancel-button"
-            data-l10n-id="report-broken-site-panel-button-cancel"/>
-    <button id="report-broken-site-popup-send-button"
-            class="footer-button send-button progression"
-            default="true"
-            data-l10n-id="report-broken-site-panel-button-send-report"/>
+    <html:moz-button
+      id="report-broken-site-popup-details-cancel-button"
+      class="cancel-button"
+      data-l10n-id="report-broken-site-panel-button-cancel"
+    ></html:moz-button>
+    <html:moz-button
+      id="report-broken-site-popup-send-button"
+      class="send-button progression"
+      type="primary"
+      closemenu="none"
+      data-l10n-id="report-broken-site-panel-button-send-report"
+    ></html:moz-button>
   </html:moz-button-group>
 </panelview>
 
@@ -128,13 +147,18 @@
     <vbox id="report-broken-site-panel-preview-items" class="update"/>
   </vbox>
   <html:moz-button-group class="panel-footer">
-    <button id="report-broken-site-popup-preview-cancel-button"
-            class="footer-button cancel-button"
-            data-l10n-id="report-broken-site-panel-button-cancel"/>
-    <button id="report-broken-site-popup-preview-send-button"
-            class="footer-button send-button"
-            default="true"
-            data-l10n-id="report-broken-site-panel-button-send-report"/>
+    <html:moz-button
+      id="report-broken-site-popup-preview-cancel-button"
+      class="cancel-button"
+      data-l10n-id="report-broken-site-panel-button-cancel"
+    ></html:moz-button>
+    <html:moz-button
+      id="report-broken-site-popup-preview-send-button"
+      class="send-button"
+      type="primary"
+      closemenu="none"
+      data-l10n-id="report-broken-site-panel-button-send-report"
+    ></html:moz-button>
   </html:moz-button-group>
 </panelview>
 
@@ -158,9 +182,10 @@
             class="subview-subheader"/>
   </vbox>
   <html:moz-button-group class="panel-footer">
-    <button id="report-broken-site-popup-okay-button"
-            class="footer-button"
-            default="true"
-            data-l10n-id="report-broken-site-panel-button-okay"/>
+    <html:moz-button
+      id="report-broken-site-popup-okay-button"
+      type="primary"
+      data-l10n-id="report-broken-site-panel-button-okay"
+    ></html:moz-button>
   </html:moz-button-group>
 </panelview>
