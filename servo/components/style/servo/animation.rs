@@ -1623,6 +1623,7 @@ pub struct AnimationSetKey {
 
 impl AnimationSetKey {
     /// Create a new key given a node and optional pseudo element.
+    #[inline]
     pub fn new(node: OpaqueNode, pseudo_element: Option<PseudoElement>) -> Self {
         AnimationSetKey {
             node,
@@ -1631,6 +1632,7 @@ impl AnimationSetKey {
     }
 
     /// Create a new key for the main content of this node.
+    #[inline]
     pub fn new_for_non_pseudo(node: OpaqueNode) -> Self {
         AnimationSetKey {
             node,
@@ -1639,6 +1641,7 @@ impl AnimationSetKey {
     }
 
     /// Create a new key for given node and pseudo element.
+    #[inline]
     pub fn new_for_pseudo(node: OpaqueNode, pseudo_element: PseudoElement) -> Self {
         AnimationSetKey {
             node,
@@ -1670,6 +1673,14 @@ impl DocumentAnimationSet {
             .read()
             .get(key)
             .map_or(false, |set| set.has_active_transition())
+    }
+
+    /// Return whether or not the provided node has active CSS animations or transitions
+    pub fn has_active_animations_or_transitions(&self, key: &AnimationSetKey) -> bool {
+        self.sets
+            .read()
+            .get(key)
+            .is_some_and(|set| set.has_active_animation() || set.has_active_transition())
     }
 
     /// Return a locked PropertyDeclarationBlock with animation values for the given

@@ -742,6 +742,7 @@ trait PrivateMatchMethods: TElement {
         let changed_animations = animation_set.dirty;
         if !animation_set.is_empty() {
             animation_set.dirty = false;
+            self.set_may_have_animations();
             shared_context
                 .animations
                 .sets
