@@ -223,16 +223,6 @@ async function installPersistTestEngines(globalDefault = "Example") {
   };
 }
 
-/**
- * Wait for 10 idle dispatches. This function should not be used in new tests.
- * Bug 2032010 will investigate removing it.
- */
-async function flakyWaitForManyIdles() {
-  for (let i = 0; i < 10; i++) {
-    await new Promise(resolve => Services.tm.idleDispatchToMainThread(resolve));
-  }
-}
-
 async function startCustomizing(win = window) {
   if (!win.document.documentElement.hasAttribute("customizing")) {
     let eventPromise = BrowserTestUtils.waitForEvent(
