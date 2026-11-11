@@ -1977,6 +1977,8 @@ skip-if = [
 
 ["test_unix_domain.js"]
 
+["test_upload_stream_normalization.js"]
+
 ["test_uri_mutator.js"]
 
 ["test_use_httpssvc.js"]
