@@ -9,10 +9,14 @@ package org.mozilla.fenix.components.menu
  *
  * @property visibleSectionIds Ids of the sections to show, in the order they should be shown in.
  * @property hiddenSectionIds Ids of the sections the user removed from the menu.
+ * @property isNavigationSectionMoved Whether the user moved the navigation section, which is then shown where it was
+ *   saved until the menu is restored to its default structure. Otherwise it is shown on the same side of the menu as
+ *   the toolbar.
  */
 data class CustomizedMenuInfo(
     val visibleSectionIds: List<String>,
     val hiddenSectionIds: List<String>,
+    val isNavigationSectionMoved: Boolean = false,
 )
 
 /**
@@ -44,5 +48,5 @@ internal fun CustomizedMenuInfo.reconciledWith(
     }
     val hiddenPlusNew = hiddenIfAvailable + default.hiddenSectionIds.filter { it !in placedIds }
 
-    return CustomizedMenuInfo(visibleSectionIds = visiblePlusNew, hiddenSectionIds = hiddenPlusNew)
+    return copy(visibleSectionIds = visiblePlusNew, hiddenSectionIds = hiddenPlusNew)
 }

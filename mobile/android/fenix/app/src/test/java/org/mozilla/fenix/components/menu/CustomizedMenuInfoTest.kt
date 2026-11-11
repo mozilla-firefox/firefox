@@ -109,6 +109,17 @@ class CustomizedMenuInfoTest {
         assertEquals(saved, saved.reconciledWith(default, requiredSectionIds = emptySet()))
     }
 
+    @Test
+    fun `GIVEN the user moved the navigation section WHEN adapting the saved menu to the app THEN keep it moved`() {
+        val saved =
+            menuInfo(shown = listOf("d", "removed", "a"), hidden = listOf("b")).copy(isNavigationSectionMoved = true)
+
+        assertEquals(
+            menuInfo(shown = listOf("d", "a", "c"), hidden = listOf("b")).copy(isNavigationSectionMoved = true),
+            saved.reconciledWith(default, requiredSectionIds = emptySet()),
+        )
+    }
+
     private fun menuInfo(shown: List<String>, hidden: List<String> = emptyList()) =
         CustomizedMenuInfo(visibleSectionIds = shown, hiddenSectionIds = hidden)
 }

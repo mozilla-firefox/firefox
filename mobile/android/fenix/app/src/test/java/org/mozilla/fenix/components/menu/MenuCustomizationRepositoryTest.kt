@@ -44,6 +44,22 @@ class MenuCustomizationRepositoryTest {
         }
 
     @Test
+    fun `GIVEN the user moved the navigation section WHEN reading the customization THEN return it as moved`() =
+        runTest {
+            val dataStore =
+                FakeDataStore(
+                    record(shown = listOf("c", "b", "a"), hidden = listOf("d"), isNavigationSectionMoved = true)
+                )
+            val repository = repository(dataStore)
+            runCurrent()
+
+            assertEquals(
+                menuInfo(shown = listOf("c", "b", "a"), hidden = listOf("d"), isNavigationSectionMoved = true),
+                repository.customizedMenuInfo.value,
+            )
+        }
+
+    @Test
     fun `GIVEN the customization was saved in an unknown format WHEN reading it THEN return the default menu structure`() =
         runTest {
             val dataStore = FakeDataStore(record(shown = listOf("c", "a"), hidden = listOf("b"), schemaVersion = 2))
@@ -76,11 +92,29 @@ class MenuCustomizationRepositoryTest {
         val dataStore = FakeDataStore(CustomizedMenuRecord.getDefaultInstance())
         val repository = repository(dataStore)
 
-        repository.save(visibleSectionIds = listOf("b", "a"), hiddenSectionIds = listOf("c"))
+        repository.save(menuInfo(shown = listOf("b", "a"), hidden = listOf("c")))
         runCurrent()
 
         assertEquals(record(shown = listOf("b", "a"), hidden = listOf("c", "d")), dataStore.record)
         assertEquals(menuInfo(shown = listOf("b", "a"), hidden = listOf("c", "d")), repository.customizedMenuInfo.value)
+    }
+
+    @Test
+    fun `WHEN saving a customization with the navigation section moved THEN persist that it was moved`() = runTest {
+        val dataStore = FakeDataStore(CustomizedMenuRecord.getDefaultInstance())
+        val repository = repository(dataStore)
+
+        repository.save(menuInfo(shown = listOf("b", "a"), hidden = listOf("c"), isNavigationSectionMoved = true))
+        runCurrent()
+
+        assertEquals(
+            record(shown = listOf("b", "a"), hidden = listOf("c", "d"), isNavigationSectionMoved = true),
+            dataStore.record,
+        )
+        assertEquals(
+            menuInfo(shown = listOf("b", "a"), hidden = listOf("c", "d"), isNavigationSectionMoved = true),
+            repository.customizedMenuInfo.value,
+        )
     }
 
     @Test
@@ -89,7 +123,7 @@ class MenuCustomizationRepositoryTest {
             val dataStore = FakeDataStore(CustomizedMenuRecord.getDefaultInstance())
             val repository = repository(dataStore, requiredSectionIds = setOf("c"))
 
-            repository.save(visibleSectionIds = listOf("a", "b"), hiddenSectionIds = listOf("c"))
+            repository.save(menuInfo(shown = listOf("a", "b"), hidden = listOf("c")))
             runCurrent()
 
             assertEquals(record(shown = listOf("a", "b", "c"), hidden = listOf("d")), dataStore.record)
@@ -107,14 +141,24 @@ class MenuCustomizationRepositoryTest {
             scope = backgroundScope,
         )
 
-    private fun menuInfo(shown: List<String>, hidden: List<String>) =
-        CustomizedMenuInfo(visibleSectionIds = shown, hiddenSectionIds = hidden)
+    private fun menuInfo(shown: List<String>, hidden: List<String>, isNavigationSectionMoved: Boolean = false) =
+        CustomizedMenuInfo(
+            visibleSectionIds = shown,
+            hiddenSectionIds = hidden,
+            isNavigationSectionMoved = isNavigationSectionMoved,
+        )
 
-    private fun record(shown: List<String>, hidden: List<String>, schemaVersion: Int = 1) =
+    private fun record(
+        shown: List<String>,
+        hidden: List<String>,
+        schemaVersion: Int = 1,
+        isNavigationSectionMoved: Boolean = false,
+    ) =
         CustomizedMenuRecord.newBuilder()
             .setSchemaVersion(schemaVersion)
             .addAllSections(shown.map { section(it) })
             .addAllHiddenSections(hidden.map { section(it) })
+            .setIsNavigationSectionMoved(isNavigationSectionMoved)
             .build()
 
     private fun section(id: String) = CustomizedMenuRecord.Section.newBuilder().setId(id).build()

@@ -18,6 +18,9 @@ message CustomizedMenuRecord {
   repeated Section sections = 2;
   // Sections the user removed from the menu.
   repeated Section hidden_sections = 3;
+  // Whether the user moved the navigation section, which is then shown where it was saved until the menu is restored
+  // to its default structure. Otherwise it is shown on the same side of the menu as the toolbar.
+  bool is_navigation_section_moved = 4;
 
   // A menu section as customized by the user.
   // Anything not set here, like the section's items, comes from the app's default menu configuration.

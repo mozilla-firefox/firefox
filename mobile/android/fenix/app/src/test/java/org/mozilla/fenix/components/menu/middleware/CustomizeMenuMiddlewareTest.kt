@@ -132,11 +132,130 @@ class CustomizeMenuMiddlewareTest {
 
         verify {
             repository.save(
-                visibleSectionIds = listOf(GROUP_1_ID, NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID),
-                hiddenSectionIds = listOf(GROUP_6_ID),
+                CustomizedMenuInfo(
+                    visibleSectionIds =
+                        listOf(GROUP_1_ID, NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID),
+                    hiddenSectionIds = listOf(GROUP_6_ID),
+                    isNavigationSectionMoved = true,
+                )
             )
         }
     }
+
+    @Test
+    fun `GIVEN the navigation section follows the toolbar WHEN the user changes another section THEN keep it following the toolbar`() =
+        runTest {
+            val store = createStore()
+
+            store.dispatch(
+                MenuStructureChanged(
+                    items =
+                        groups(NAVIGATION_ID, GROUP_2_ID, GROUP_1_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                    hiddenGroupIds = emptySet(),
+                )
+            )
+
+            verify {
+                repository.save(
+                    CustomizedMenuInfo(
+                        visibleSectionIds =
+                            listOf(
+                                NAVIGATION_ID,
+                                GROUP_2_ID,
+                                GROUP_1_ID,
+                                GROUP_3_ID,
+                                GROUP_4_ID,
+                                GROUP_5_ID,
+                                GROUP_6_ID,
+                            ),
+                        hiddenSectionIds = emptyList(),
+                        isNavigationSectionMoved = false,
+                    )
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN the user moved the navigation section WHEN the toolbar moved to its side and the user changes another section THEN keep it independent of the toolbar`() =
+        runTest {
+            // Moved to the bottom while the toolbar was at the top, which is now the toolbar's side.
+            val customization =
+                CustomizedMenuInfo(
+                    visibleSectionIds =
+                        listOf(GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, NAVIGATION_ID),
+                    hiddenSectionIds = listOf(GROUP_6_ID),
+                    isNavigationSectionMoved = true,
+                )
+            val store = createStore(customization = MutableStateFlow(customization), isToolbarAtBottom = true)
+
+            store.dispatch(
+                MenuStructureChanged(
+                    items =
+                        groups(GROUP_2_ID, GROUP_1_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, NAVIGATION_ID, GROUP_6_ID),
+                    hiddenGroupIds = setOf(GROUP_6_ID),
+                )
+            )
+
+            verify {
+                repository.save(
+                    CustomizedMenuInfo(
+                        visibleSectionIds =
+                            listOf(GROUP_2_ID, GROUP_1_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, NAVIGATION_ID),
+                        hiddenSectionIds = listOf(GROUP_6_ID),
+                        isNavigationSectionMoved = true,
+                    )
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN the user moved the navigation section WHEN they move it back before the move is reported THEN keep it independent of the toolbar`() =
+        runTest {
+            val store = createStore()
+
+            store.dispatch(
+                MenuStructureChanged(
+                    items =
+                        groups(GROUP_1_ID, NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                    hiddenGroupIds = emptySet(),
+                )
+            )
+            store.dispatch(
+                MenuStructureChanged(
+                    items =
+                        groups(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                    hiddenGroupIds = emptySet(),
+                )
+            )
+
+            verify {
+                repository.save(
+                    CustomizedMenuInfo(
+                        visibleSectionIds =
+                            listOf(
+                                NAVIGATION_ID,
+                                GROUP_1_ID,
+                                GROUP_2_ID,
+                                GROUP_3_ID,
+                                GROUP_4_ID,
+                                GROUP_5_ID,
+                                GROUP_6_ID,
+                            ),
+                        hiddenSectionIds = emptyList(),
+                        isNavigationSectionMoved = true,
+                    )
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN the navigation section is independent of the toolbar but shown as by default WHEN the screen is shown THEN show the menu as customized`() =
+        runTest {
+            createStore(customization = MutableStateFlow(defaultMenuInfo.copy(isNavigationSectionMoved = true)))
+            runCurrent()
+
+            captureActions.assertLastAction(Update::class) { assertTrue(it.isCustomized) }
+        }
 
     @Test
     fun `GIVEN the menu was not customized WHEN the user moves a section THEN show the menu as customized`() = runTest {
@@ -198,6 +317,7 @@ class CustomizeMenuMiddlewareTest {
         initialState: CustomizableMenuState = CustomizableMenuState(menuGroups = emptyList()),
         customization: StateFlow<CustomizedMenuInfo?> = MutableStateFlow(null),
         menuGroups: List<MenuItemsGroup> = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
+        isToolbarAtBottom: Boolean = false,
     ): CustomizableMenuStore {
         every { repository.customizedMenuInfo } returns customization
         every { menuBuilder.menuStructure } returns flowOf(menuGroups)
@@ -210,7 +330,7 @@ class CustomizeMenuMiddlewareTest {
                     CustomizeMenuMiddleware(
                         repository = repository,
                         menuBuilder = menuBuilder,
-                        isToolbarAtBottom = false,
+                        isToolbarAtBottom = isToolbarAtBottom,
                         isExpandedToolbarEnabled = false,
                         scope = backgroundScope,
                         appStore = appStore,

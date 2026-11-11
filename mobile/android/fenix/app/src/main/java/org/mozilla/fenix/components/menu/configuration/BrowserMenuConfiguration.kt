@@ -74,9 +74,37 @@ object BrowserMenuConfiguration {
         }
 
         val defaultSectionsIds = defaultSections.associateBy { it.id }
-        return customizationInfo.visibleSectionIds
-            .updateNavigationItemsPosition(shouldShowNavigationItemsAtTheTop)
-            .mapNotNull { defaultSectionsIds[it] }
+        val visibleSectionIds =
+            if (customizationInfo.isNavigationSectionMoved) {
+                customizationInfo.visibleSectionIds
+            } else {
+                customizationInfo.visibleSectionIds.withNavigationSectionOnToolbarSide(
+                    shouldShowNavigationItemsAtTheTop
+                )
+            }
+        return visibleSectionIds.mapNotNull { defaultSectionsIds[it] }
+    }
+
+    /**
+     * Whether the navigation section is shown away from the toolbar's side of the menu, indicating the user moved it
+     * there.
+     *
+     * @param visibleSectionIds Ids of the sections to show, in the order they should be shown in.
+     * @param isToolbarAtBottom Whether the toolbar is shown at the bottom of the screen.
+     * @param isExpandedToolbarEnabled Whether the expanded toolbar is used.
+     */
+    fun isNavigationSectionMoved(
+        visibleSectionIds: List<String>,
+        isToolbarAtBottom: Boolean,
+        isExpandedToolbarEnabled: Boolean,
+    ): Boolean {
+        val index = visibleSectionIds.indexOf(NAVIGATION_ID)
+        val toolbarSideIndex =
+            when (shouldShowNavigationItemsAtTheTop(isToolbarAtBottom, isExpandedToolbarEnabled)) {
+                true -> 0
+                else -> visibleSectionIds.lastIndex
+            }
+        return index != -1 && index != toolbarSideIndex
     }
 
     /** The sections of the browser menu the user removed, in their stored order. */
@@ -170,10 +198,11 @@ object BrowserMenuConfiguration {
         return if (shouldShowNavigationItemsAtTheTop) listOf(navSection) + rest else rest + navSection
     }
 
-    /** Move the navigation section to the toolbar's side of the menu only if the user left it first or last. */
-    private fun List<String>.updateNavigationItemsPosition(shouldShowNavigationItemsAtTheTop: Boolean): List<String> {
-        val index = indexOf(NAVIGATION_ID)
-        if (index == -1 || (index != 0 && index != lastIndex)) return this
+    /** Move the navigation section, if shown, to the toolbar's side of the menu. */
+    private fun List<String>.withNavigationSectionOnToolbarSide(
+        shouldShowNavigationItemsAtTheTop: Boolean
+    ): List<String> {
+        if (NAVIGATION_ID !in this) return this
 
         val rest = this - NAVIGATION_ID
         return when (shouldShowNavigationItemsAtTheTop) {

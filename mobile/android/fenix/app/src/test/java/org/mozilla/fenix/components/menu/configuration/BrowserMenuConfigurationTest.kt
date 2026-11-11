@@ -5,6 +5,7 @@
 package org.mozilla.fenix.components.menu.configuration
 
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import org.junit.Test
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
@@ -119,8 +120,13 @@ class BrowserMenuConfigurationTest {
     }
 
     @Test
-    fun `GIVEN the navigation block was saved between other sections WHEN building the browser menu THEN keep it where the user placed it`() {
-        val customization = menuInfo(shown = listOf(GROUP_1_ID, NAVIGATION_ID, GROUP_5_ID))
+    fun `GIVEN the user moved the navigation block WHEN building the browser menu THEN keep it where the user placed it`() {
+        val customization =
+            CustomizedMenuInfo(
+                visibleSectionIds = listOf(GROUP_1_ID, NAVIGATION_ID, GROUP_5_ID),
+                hiddenSectionIds = emptyList(),
+                isNavigationSectionMoved = true,
+            )
 
         val configuration =
             BrowserMenuConfiguration.sections(
@@ -189,6 +195,72 @@ class BrowserMenuConfigurationTest {
         assertEquals(
             listOf(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
             BrowserMenuConfiguration.allSections().map { it.id },
+        )
+    }
+
+    @Test
+    fun `GIVEN the toolbar is at the top WHEN the navigation section is first THEN it was not moved`() {
+        assertFalse(
+            BrowserMenuConfiguration.isNavigationSectionMoved(
+                visibleSectionIds = listOf(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID),
+                isToolbarAtBottom = false,
+                isExpandedToolbarEnabled = false,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the toolbar is at the top WHEN the navigation section is not first THEN it was moved`() {
+        assertTrue(
+            BrowserMenuConfiguration.isNavigationSectionMoved(
+                visibleSectionIds = listOf(GROUP_1_ID, NAVIGATION_ID, GROUP_2_ID),
+                isToolbarAtBottom = false,
+                isExpandedToolbarEnabled = false,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the toolbar is at the bottom WHEN the navigation section is last THEN it was not moved`() {
+        assertFalse(
+            BrowserMenuConfiguration.isNavigationSectionMoved(
+                visibleSectionIds = listOf(GROUP_1_ID, GROUP_2_ID, NAVIGATION_ID),
+                isToolbarAtBottom = true,
+                isExpandedToolbarEnabled = false,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the toolbar is at the bottom WHEN the navigation section is not last THEN it was moved`() {
+        assertTrue(
+            BrowserMenuConfiguration.isNavigationSectionMoved(
+                visibleSectionIds = listOf(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID),
+                isToolbarAtBottom = true,
+                isExpandedToolbarEnabled = false,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the expanded toolbar is used WHEN the navigation section is last THEN it was not moved`() {
+        assertFalse(
+            BrowserMenuConfiguration.isNavigationSectionMoved(
+                visibleSectionIds = listOf(GROUP_1_ID, GROUP_2_ID, NAVIGATION_ID),
+                isToolbarAtBottom = false,
+                isExpandedToolbarEnabled = true,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the navigation section is not shown THEN it was not moved`() {
+        assertFalse(
+            BrowserMenuConfiguration.isNavigationSectionMoved(
+                visibleSectionIds = listOf(GROUP_1_ID, GROUP_2_ID),
+                isToolbarAtBottom = false,
+                isExpandedToolbarEnabled = false,
+            )
         )
     }
 

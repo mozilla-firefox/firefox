@@ -47,6 +47,8 @@ class CustomizeMenuMiddleware(
     private val appStore: AppStore,
     private val cannotHideSectionMessage: String,
 ) : Middleware<CustomizableMenuState, CustomizableMenuAction> {
+    // The repository takes a moment to report what was just saved.
+    private var isNavigationSectionMoved: Boolean? = null
 
     override fun invoke(
         store: Store<CustomizableMenuState, CustomizableMenuAction>,
@@ -57,25 +59,43 @@ class CustomizeMenuMiddleware(
 
         when (action) {
             is Init -> showInitialMenuStructure(store)
-            is MenuStructureChanged -> {
-                val (hiddenSections, visibleSections) = action.items.partition { it.id in action.hiddenGroupIds }
-                val newMenuInfo =
-                    CustomizedMenuInfo(
-                        visibleSectionIds = visibleSections.map { it.id },
-                        hiddenSectionIds = hiddenSections.map { it.id },
-                    )
-                repository.save(newMenuInfo.visibleSectionIds, newMenuInfo.hiddenSectionIds)
-
-                val isCustomized = isCustomized(newMenuInfo)
-                if (isCustomized != store.state.isCustomized) {
-                    store.dispatch(CustomizationStatusChanged(isCustomized))
-                }
-            }
+            is MenuStructureChanged -> saveMenuStructure(store, action)
             is AttemptedRemovalOfMandatorySection ->
                 appStore.dispatch(SnackbarAction.ShowSnackbar(title = cannotHideSectionMessage))
             is MenuEvent,
             is Update,
             is CustomizationStatusChanged -> Unit
+        }
+    }
+
+    private fun saveMenuStructure(
+        store: Store<CustomizableMenuState, CustomizableMenuAction>,
+        action: MenuStructureChanged,
+    ) {
+        val (hiddenSections, visibleSections) = action.items.partition { it.id in action.hiddenGroupIds }
+        val visibleSectionIds = visibleSections.map { it.id }
+        // Once moved, the navigation section stays independent of the toolbar, wherever it is shown, until the menu is
+        // restored to its default structure.
+        val wasNavigationSectionMoved =
+            isNavigationSectionMoved ?: (repository.customizedMenuInfo.value?.isNavigationSectionMoved == true)
+        isNavigationSectionMoved =
+            wasNavigationSectionMoved ||
+                BrowserMenuConfiguration.isNavigationSectionMoved(
+                    visibleSectionIds,
+                    isToolbarAtBottom,
+                    isExpandedToolbarEnabled,
+                )
+        val newMenuInfo =
+            CustomizedMenuInfo(
+                visibleSectionIds = visibleSectionIds,
+                hiddenSectionIds = hiddenSections.map { it.id },
+                isNavigationSectionMoved = isNavigationSectionMoved == true,
+            )
+        repository.save(newMenuInfo)
+
+        val isCustomized = isCustomized(newMenuInfo)
+        if (isCustomized != store.state.isCustomized) {
+            store.dispatch(CustomizationStatusChanged(isCustomized))
         }
     }
 
@@ -103,6 +123,7 @@ class CustomizeMenuMiddleware(
         val defaultShownSections = BrowserMenuConfiguration.sections(isToolbarAtBottom, isExpandedToolbarEnabled)
 
         return shownSections.map { it.id } != defaultShownSections.map { it.id } ||
-            customization.hiddenSectionIds.toSet() != default.hiddenSectionIds.toSet()
+            customization.hiddenSectionIds.toSet() != default.hiddenSectionIds.toSet() ||
+            customization.isNavigationSectionMoved
     }
 }
