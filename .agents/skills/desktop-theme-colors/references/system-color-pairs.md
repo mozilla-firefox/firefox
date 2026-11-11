@@ -37,7 +37,7 @@ the walk still judges a surface whose resolved color equals a system color, and
 exits 1 for an entry that judged nothing (`checked: 0`), so read
 `regime.forcedColorsActive` before taking a clean walk as a forced-colors check.
 
-[`scripts/pair-walk.py`](../scripts/pair-walk.py) locks the state, maps each
+`scripts/pair-walk.py` locks the state, maps each
 visible descendant's surface to its system colors and lists every foreground
 outside that pair; its `--help` has what it checks and its flags. It locks a
 pseudo-class state only in chrome, so a `--context content` run takes

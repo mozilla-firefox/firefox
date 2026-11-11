@@ -68,7 +68,7 @@ before and after, then diff the two maps.
 `tokens-platform.css`, in-content reads `tokens-shared.css` plus
 `tokens-brand.css`; the brand or platform sheet overrides shared values, and a
 shared value may reference a name only that sheet defines. The bundled
-[`scripts/token-resolve.py`](scripts/token-resolve.py) pairs them and reports
+`scripts/token-resolve.py` pairs them and reports
 each realm separately.
 
 The generated sheets are checked in, so reading one token's current value needs
