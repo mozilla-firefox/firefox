@@ -52,6 +52,7 @@ prefs = [
   "gfx.font_rendering.fallback.async=false",
   "browser.sessionstore.closedTabsFromAllWindows=true",
   "browser.sessionstore.closedTabsFromClosedWindows=true",
+  "browser.sessionstore.debug.validate_state=true",
 ]
 
 #NB: the following are disabled

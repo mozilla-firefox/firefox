@@ -107,15 +107,22 @@ function test() {
     ["", "value33"],
   ];
 
-  let promises = [];
-  for (let i = 0; i < formData.length; i++) {
-    promises.push(testTabRestoreData(formData[i], expectedValues[i]));
-  }
-
-  Promise.all(promises).then(
-    () => finish(),
-    ex => ok(false, ex)
-  );
+  // A tab that hasn't restored yet writes the old format's keys back, and they
+  // aren't part of session.schema.json.
+  SpecialPowers.pushPrefEnv({
+    set: [["browser.sessionstore.debug.validate_state", false]],
+  })
+    .then(() => {
+      let promises = [];
+      for (let i = 0; i < formData.length; i++) {
+        promises.push(testTabRestoreData(formData[i], expectedValues[i]));
+      }
+      return Promise.all(promises);
+    })
+    .then(
+      () => finish(),
+      ex => ok(false, ex)
+    );
 }
 
 async function testTabRestoreData(aFormData, aExpectedValue) {

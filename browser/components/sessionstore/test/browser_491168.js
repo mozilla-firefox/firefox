@@ -91,6 +91,10 @@ add_task(async function () {
     "document.referrer is still correct after closing and reopening the tab."
   );
 
+  // session.schema.json doesn't describe the legacy referrer property.
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.sessionstore.debug.validate_state", false]],
+  });
   tabState.entries[0].referrerInfo = null;
   tabState.entries[0].referrer = REFERRER3;
   await promiseTabState(tab, tabState);

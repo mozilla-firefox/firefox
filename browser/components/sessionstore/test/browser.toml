@@ -37,6 +37,7 @@ prefs = [
   "gfx.font_rendering.fallback.async=false",
   "browser.sessionstore.closedTabsFromAllWindows=true",
   "browser.sessionstore.closedTabsFromClosedWindows=true",
+  "browser.sessionstore.debug.validate_state=true",
   # Override the test default, allowing the session restore infobar to be shown if necessary
   "browser.startup.couldRestoreSession.count=0",
 ]

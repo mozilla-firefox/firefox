@@ -28,7 +28,6 @@ const SESSION_DATA = JSON.stringify({
             {
               url: "http://www.example.com/browser/browser/components/sessionstore/test/browser_1267910_page.html",
               triggeringPrincipal_base64,
-              charset: "UTF-8",
               ID: 0,
               docshellID: 2,
               originalURI:
@@ -91,7 +90,6 @@ const SESSION_DATA_OA = JSON.stringify({
             {
               url: "http://www.example.com/browser/browser/components/sessionstore/test/browser_1267910_page.html",
               triggeringPrincipal_base64,
-              charset: "UTF-8",
               ID: 0,
               docshellID: 2,
               originalURI:
