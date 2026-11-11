@@ -405,6 +405,173 @@ add_task(async function test_a_signed_out_account_is_an_auth_error() {
   getToken.resolves("mock-fxa-token");
 });
 
+add_task(async function test_a_blocked_row_is_a_blocked_error() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ai.control.generatedWidgets", "blocked"]],
+  });
+  let [, getToken] = mockEngine.mocks;
+  getToken.resetHistory();
+  try {
+    await Assert.rejects(
+      WidgetGenerator.generate({ prompt: PROMPT }),
+      error => error.code == GENERATION_ERRORS.BLOCKED,
+      "Custom widgets are blocked"
+    );
+    Assert.ok(getToken.notCalled, "No account token requested");
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_the_global_block_is_a_blocked_error() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.ai.control.generatedWidgets", "default"],
+      ["browser.ai.control.default", "blocked"],
+    ],
+  });
+  try {
+    await Assert.rejects(
+      WidgetGenerator.generate({ prompt: PROMPT }),
+      error => error.code == GENERATION_ERRORS.BLOCKED,
+      "Custom widgets inherit the global block"
+    );
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_the_row_overrides_the_global_block() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.ai.control.generatedWidgets", "available"],
+      ["browser.ai.control.default", "blocked"],
+    ],
+  });
+  try {
+    let files = await generate(
+      { prompt: PROMPT },
+      simulateWriteFileResponse(FILES),
+      "Done."
+    );
+    Assert.deepEqual(Object.fromEntries(files), FILES, "Files");
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_the_endpoint_override_needs_no_account() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.widgets.generated.endpoint", "http://localhost:1/"]],
+  });
+  let [, getToken] = mockEngine.mocks;
+  getToken.resetHistory();
+  try {
+    let files = await generate(
+      { prompt: PROMPT },
+      simulateWriteFileResponse(FILES),
+      "Done."
+    );
+    Assert.deepEqual(Object.fromEntries(files), FILES, "Files");
+    Assert.ok(getToken.notCalled, "No account token requested");
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_the_endpoint_override_is_still_blocked() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.widgets.generated.endpoint", "http://localhost:1/"],
+      ["browser.ai.control.generatedWidgets", "blocked"],
+    ],
+  });
+  try {
+    await Assert.rejects(
+      WidgetGenerator.generate({ prompt: PROMPT }),
+      error => error.code == GENERATION_ERRORS.BLOCKED,
+      "The endpoint override respects the block"
+    );
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_blocking_during_setup_sends_no_request() {
+  let [, getToken] = mockEngine.mocks;
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ai.control.generatedWidgets", "available"]],
+  });
+  try {
+    getToken.callsFake(async () => {
+      Services.prefs.setStringPref(
+        "browser.ai.control.generatedWidgets",
+        "blocked"
+      );
+      return "mock-fxa-token";
+    });
+    await Assert.rejects(
+      WidgetGenerator.generate({ prompt: PROMPT }),
+      error => error.code == GENERATION_ERRORS.BLOCKED,
+      "Blocked before the first request"
+    );
+  } finally {
+    getToken.resolves("mock-fxa-token");
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(
+  async function test_blocking_mid_generation_stops_before_the_next_turn() {
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.ai.control.generatedWidgets", "available"]],
+    });
+    try {
+      let generating = WidgetGenerator.generate({ prompt: PROMPT });
+      let { respond } = await mockEngine.captureRequest({
+        purpose: PURPOSES.WIDGET_GENERATION,
+      });
+      Services.prefs.setStringPref(
+        "browser.ai.control.generatedWidgets",
+        "blocked"
+      );
+      respond(simulateWriteFileResponse(FILES));
+      await Assert.rejects(
+        generating,
+        error => error.code == GENERATION_ERRORS.BLOCKED,
+        "Blocked before the next turn"
+      );
+    } finally {
+      await SpecialPowers.popPrefEnv();
+    }
+  }
+);
+
+add_task(async function test_blocking_during_the_last_reply_discards_it() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ai.control.generatedWidgets", "available"]],
+  });
+  try {
+    let generating = WidgetGenerator.generate({ prompt: PROMPT });
+    await answer(simulateWriteFileResponse(FILES));
+    let { respond } = await mockEngine.captureRequest({
+      purpose: PURPOSES.WIDGET_GENERATION,
+    });
+    Services.prefs.setStringPref(
+      "browser.ai.control.generatedWidgets",
+      "blocked"
+    );
+    respond("Done.");
+    await Assert.rejects(
+      generating,
+      error => error.code == GENERATION_ERRORS.BLOCKED,
+      "The final reply is discarded when blocked"
+    );
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
 add_task(async function test_only_this_major_version_is_read() {
   await setGeneratorRecords([
     GENERATOR_RECORD,

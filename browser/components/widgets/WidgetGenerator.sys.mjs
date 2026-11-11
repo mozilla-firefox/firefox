@@ -15,6 +15,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   Conversation:
     "moz-src:///browser/components/aiwindow/models/Conversation.sys.mjs",
+  GeneratedWidgetsFeature:
+    "moz-src:///browser/components/widgets/GeneratedWidgetsFeature.sys.mjs",
   MODEL_FEATURES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
   SERVICE_TYPES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
@@ -50,6 +52,8 @@ export const PROMPT_MAJOR_VERSION = 2;
  * The codes of a WidgetGeneratorError.
  */
 export const GENERATION_ERRORS = Object.freeze({
+  /** AI Controls block custom widgets. */
+  BLOCKED: "blocked",
   /** No account is signed in. */
   AUTH: "auth",
   /** The model can't be reached. */
@@ -94,6 +98,7 @@ class _WidgetGenerator {
    */
   async generate({ prompt, signal }) {
     signal?.throwIfAborted();
+    this.#throwIfBlocked();
     let endpoint = Services.prefs.getStringPref(ENDPOINT_PREF, "");
     let connection = {};
     let token = null;
@@ -122,6 +127,7 @@ class _WidgetGenerator {
       model: Services.prefs.getStringPref(MODEL_PREF, "") || config.model,
     });
     signal?.throwIfAborted();
+    this.#throwIfBlocked();
     let conversation = this.#startConversation({
       ...config,
       engine,
@@ -135,6 +141,15 @@ class _WidgetGenerator {
       );
     }
     return files;
+  }
+
+  #throwIfBlocked() {
+    if (lazy.GeneratedWidgetsFeature.isBlocked) {
+      throw new WidgetGeneratorError(
+        "Custom widgets are blocked in AI Controls",
+        GENERATION_ERRORS.BLOCKED
+      );
+    }
   }
 
   /**
@@ -272,6 +287,7 @@ class _WidgetGenerator {
     for (let turn = 0; turn < maxTurns; turn++) {
       let response = await this.#runTurn(conversation, token);
       signal?.throwIfAborted();
+      this.#throwIfBlocked();
       let text = response?.finalOutput?.trim();
       if (text) {
         lazy.logger.debug(text);
