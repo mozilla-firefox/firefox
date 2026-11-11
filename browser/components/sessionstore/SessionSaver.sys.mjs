@@ -33,6 +33,18 @@ const PREF_INTERVAL_ACTIVE = "browser.sessionstore.interval";
 const PREF_INTERVAL_IDLE = "browser.sessionstore.interval.idle";
 const PREF_IDLE_DELAY = "browser.sessionstore.idleDelay";
 
+// Schema keywords that only report that a nested schema failed. The nested
+// failure is reported on its own.
+const WRAPPER_KEYWORDS = new Set([
+  "$ref",
+  "additionalProperties",
+  "allOf",
+  "anyOf",
+  "items",
+  "properties",
+  "unevaluatedProperties",
+]);
+
 const lazy = XPCOMUtils.declareLazy({
   PrivacyFilter: "resource://gre/modules/sessionstore/PrivacyFilter.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
@@ -57,6 +69,10 @@ const lazy = XPCOMUtils.declareLazy({
   // Minimal interval between two save operations (in ms), while the user is
   // idle.
   intervalWhileIdle: { pref: PREF_INTERVAL_IDLE, default: 3600000 /* 1 h */ },
+  validateStateOnWrite: {
+    pref: "browser.sessionstore.debug.validate_state",
+    default: false,
+  },
   // How long before we assume that the user is idle (s).
   idleDelay: {
     pref: PREF_IDLE_DELAY,
@@ -358,6 +374,10 @@ class _SessionSaver {
     // before writing has completed. See Bug 902280
     this.updateLastSaveTime();
 
+    if (lazy.validateStateOnWrite) {
+      this.#reportInvalidState(state);
+    }
+
     // Write (atomically) to a session file, using a tmp file. Once the session
     // file is successfully updated, save the time stamp of the last save and
     // notify the observers.
@@ -378,6 +398,44 @@ class _SessionSaver {
         );
       }
     );
+  }
+
+  /**
+   * Reports a state that, as serialized to disk, doesn't match
+   * session.schema.json to the session store log, and as a
+   * SessionStateValidationError script error, which fails the running
+   * browser-chrome test. The log's console appender can't raise that error:
+   * it prefixes the message and logs only fatal entries by default.
+   *
+   * @param {object} state
+   */
+  async #reportInvalidState(state) {
+    let result = await lazy.SessionStore.validateState(
+      JSON.parse(JSON.stringify(state))
+    );
+    if (result?.valid) {
+      return;
+    }
+    let details = result
+      ? result.errors
+          .filter(e => !WRAPPER_KEYWORDS.has(e.keyword))
+          .map(e => `${e.instanceLocation}: ${e.error}`)
+          .join("; ")
+      : "the validator threw";
+    let message = `SessionStateValidationError: ${details}`;
+    lazy.sessionStoreLogger.error(message);
+    let scriptError = Cc["@mozilla.org/scripterror;1"].createInstance(
+      Ci.nsIScriptError
+    );
+    scriptError.init(
+      message,
+      "moz-src:///browser/components/sessionstore/SessionSaver.sys.mjs",
+      0,
+      0,
+      Ci.nsIScriptError.errorFlag,
+      "chrome javascript"
+    );
+    Services.console.logMessage(scriptError);
   }
 }
 
