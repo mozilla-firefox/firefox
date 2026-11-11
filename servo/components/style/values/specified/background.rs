@@ -165,6 +165,10 @@ fn background_clip_border_area_enabled(context: &ParserContext) -> bool {
     context.chrome_rules_enabled() || crate::pref!("layout.css.background-clip.border-area.enabled")
 }
 
+fn background_clip_text_enabled(_: &ParserContext) -> bool {
+    crate::pref!("layout.css.background-clip.text.enabled", gecko = true)
+}
+
 /// The specified value of the `background-clip` and `mask-clip` properties.
 ///
 /// This is the union of the keywords both properties accept; each property restricts the set it
@@ -209,7 +213,8 @@ pub enum BackgroundClip {
     #[value_info(skip)]
     NoClip,
     // TODO: text and border-area are supposed to combine in backgrounds-4...
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "background_clip_text_enabled")]
+    #[cfg_attr(feature = "servo", value_info(skip))]
     Text,
     #[parse(condition = "background_clip_border_area_enabled")]
     #[value_info(skip)]
@@ -240,7 +245,6 @@ impl BackgroundClip {
             Self::ViewBox => ClipValidity::MASK,
             #[cfg(feature = "gecko")]
             Self::NoClip => ClipValidity::MASK,
-            #[cfg(feature = "gecko")]
             Self::Text => ClipValidity::BACKGROUND,
             Self::BorderArea => ClipValidity::BACKGROUND,
         }
