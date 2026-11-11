@@ -10,8 +10,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
-import mozilla.components.compose.menu.ui.customize.CustomizeMenuDropTarget.EmptyHiddenArea
-import mozilla.components.compose.menu.ui.customize.CustomizeMenuDropTarget.NextTo
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
 import mozilla.components.lib.state.Middleware
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -41,9 +40,8 @@ class MoveGroupsHandlerTest {
 
     @Test
     fun `WHEN a dragged group is let go next to another group THEN the new structure of the menu is saved`() {
-        handler.dropTarget = { NextTo("a", placeAfter = false) }
-
         handler.onDragStart(sourceKey = "b", preserveSelectMode = false)
+        handler.onMove(sourceKey = "b", targetKey = "a", placeAfter = false)
         handler.onDragEnd()
 
         assertEquals(
@@ -53,23 +51,24 @@ class MoveGroupsHandlerTest {
     }
 
     @Test
-    fun `WHEN a dragged group is let go into the empty hidden area THEN it is saved as the first hidden group`() {
-        handler.dropTarget = { EmptyHiddenArea }
+    fun `GIVEN no hidden groups WHEN a dragged group is let go into the empty hidden area THEN it is saved as hidden`() {
+        val noHiddenGroups = CustomizeMenuGroups(shown = groups("a", "b"), hidden = emptyList())
+        val handler = MoveGroupsHandler(store = store, groups = noHiddenGroups)
 
         handler.onDragStart(sourceKey = "a", preserveSelectMode = false)
+        handler.onMove(sourceKey = "a", targetKey = DROP_AREA, placeAfter = true)
         handler.onDragEnd()
 
         assertEquals(
-            listOf(Init, MenuStructureChanged(items = groups("b", "a", "c"), hiddenGroupIds = setOf("a", "c"))),
+            listOf(Init, MenuStructureChanged(items = groups("b", "a"), hiddenGroupIds = setOf("a"))),
             actions,
         )
     }
 
     @Test
     fun `WHEN a dragged group is let go where it already is THEN nothing is saved`() {
-        handler.dropTarget = { NextTo("b", placeAfter = false) }
-
         handler.onDragStart(sourceKey = "a", preserveSelectMode = false)
+        handler.onMove(sourceKey = "a", targetKey = "b", placeAfter = false)
         handler.onDragEnd()
 
         assertEquals(listOf(Init), actions)
@@ -77,8 +76,6 @@ class MoveGroupsHandlerTest {
 
     @Test
     fun `WHEN a dragged group is let go where it cannot be dropped THEN nothing is saved`() {
-        handler.dropTarget = { null }
-
         handler.onDragStart(sourceKey = "a", preserveSelectMode = false)
         handler.onDragEnd()
 
@@ -87,8 +84,7 @@ class MoveGroupsHandlerTest {
 
     @Test
     fun `WHEN a long pressed group is let go before being dragged THEN nothing is saved`() {
-        handler.dropTarget = { NextTo("a", placeAfter = false) }
-
+        handler.onMove(sourceKey = "b", targetKey = "a", placeAfter = false)
         handler.onDragEnd()
 
         assertEquals(listOf(Init), actions)
@@ -96,13 +92,27 @@ class MoveGroupsHandlerTest {
 
     @Test
     fun `WHEN the drag of a group is cancelled THEN nothing is saved`() {
-        handler.dropTarget = { NextTo("a", placeAfter = false) }
-
         handler.onDragStart(sourceKey = "b", preserveSelectMode = false)
+        handler.onMove(sourceKey = "b", targetKey = "a", placeAfter = false)
         handler.onDragCancel()
         handler.onDragEnd()
 
         assertEquals(listOf(Init), actions)
+    }
+
+    @Test
+    fun `GIVEN a group was let go next to another group WHEN the next dragged group is let go where it cannot be dropped THEN nothing more is saved`() {
+        handler.onDragStart(sourceKey = "b", preserveSelectMode = false)
+        handler.onMove(sourceKey = "b", targetKey = "a", placeAfter = false)
+        handler.onDragEnd()
+
+        handler.onDragStart(sourceKey = "a", preserveSelectMode = false)
+        handler.onDragEnd()
+
+        assertEquals(
+            listOf(Init, MenuStructureChanged(items = groups("b", "a", "c"), hiddenGroupIds = setOf("c"))),
+            actions,
+        )
     }
 
     private fun groups(vararg ids: String) = ids.map { MenuItemsGroup.Row(id = it, items = emptyList()) }

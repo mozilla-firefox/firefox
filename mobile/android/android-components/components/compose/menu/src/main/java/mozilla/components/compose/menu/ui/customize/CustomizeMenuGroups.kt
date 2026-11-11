@@ -12,6 +12,9 @@ internal enum class CustomizeMenuItemKey {
 
     /** Separates the shown groups, above it, from the hidden groups, below it. */
     HIDDEN_SECTIONS,
+
+    /** The empty area to drag groups into to hide them, shown below [HIDDEN_SECTIONS] when no other group is hidden. */
+    DROP_AREA,
     RESET_BUTTON,
 }
 
@@ -27,6 +30,10 @@ internal data class CustomizeMenuGroups(
     val hidden: List<MenuItemsGroup>,
     val mandatoryIds: Set<String> = emptySet(),
 ) {
+    /** Index in the list of the hidden sections title, after the drag bar and the shown groups. */
+    val hiddenSectionsIndex: Int
+        get() = 1 + shown.size
+
     /**
      * Move a group next to another group, or to either side of [CustomizeMenuItemKey.HIDDEN_SECTIONS] to show it last
      * or hide it first. Mandatory groups cannot be hidden.

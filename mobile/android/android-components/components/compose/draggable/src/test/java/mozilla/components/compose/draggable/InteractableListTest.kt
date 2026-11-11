@@ -24,6 +24,7 @@ import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.mockito.Mockito
 
 class InteractableListTest {
     private val testDispatcher = StandardTestDispatcher()
@@ -1063,6 +1064,96 @@ class InteractableListTest {
     private fun mockHeaderItem(): LazyListItemInfo =
         mockListItem(key = TabKeys.HEADER, index = 0, size = 100, offset = 0)
 
+    @Test
+    fun `WHEN an item is dragged THEN the interaction found for it is replaced by the one interceptInteractionMode returns`() {
+        val dragItemOffset = 30
+        val found = mutableListOf<InteractionMode.List>()
+        val reorderState =
+            twoTabReorderState(
+                alphaTabOffset = 10,
+                betaTabOffset = dragItemOffset,
+                interceptInteractionMode = { _, mode ->
+                    found += mode
+                    InteractionMode.List.None
+                },
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragUp(distance = 30f, preserveSelectMode = false)
+
+        assertTrue(found.any { it is InteractionMode.List.Reordering && it.target.key == TabKeys.TAB_ALPHA })
+        assertEquals(InteractionMode.List.None, reorderState.interactionMode)
+    }
+
+    @Test
+    fun `GIVEN interceptInteractionMode retargets the dragged item WHEN the user lets go of it THEN the handler is told about the retargeted move`() {
+        val handler = RecordingItemInteractionHandler()
+        val dragItemOffset = 30
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = 10,
+                betaTabOffset = dragItemOffset,
+                interceptInteractionMode = { _, mode ->
+                    (mode as? InteractionMode.List.Reordering)?.copy(placeAfter = true) ?: mode
+                },
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragUp(distance = 30f, preserveSelectMode = false)
+        reorderState.onDragEnd()
+
+        assertEquals(
+            expected =
+                listOf(
+                    Call.DragStart(TabKeys.TAB_BETA, preserveSelectMode = false),
+                    Call.Move(TabKeys.TAB_BETA, TabKeys.TAB_ALPHA, true),
+                    Call.DragEnd,
+                ),
+            actual = handler.calls,
+        )
+    }
+
+    @Test
+    fun `GIVEN interceptInteractionMode rejects the interaction WHEN the user lets go of the dragged item THEN the handler is only told the drag ended`() {
+        val handler = RecordingItemInteractionHandler()
+        val dragItemOffset = 30
+        val reorderState =
+            twoTabReorderState(
+                handler = handler,
+                alphaTabOffset = 10,
+                betaTabOffset = dragItemOffset,
+                interceptInteractionMode = { _, _ -> InteractionMode.List.None },
+            )
+
+        reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
+        reorderState.dragUp(distance = 30f, preserveSelectMode = false)
+        reorderState.onDragEnd()
+
+        assertEquals(
+            expected = listOf(Call.DragStart(TabKeys.TAB_BETA, preserveSelectMode = false), Call.DragEnd),
+            actual = handler.calls,
+        )
+    }
+
+    @Test
+    fun `GIVEN interceptInteractionMode retargets the dragged item WHEN it goes past the end of the list THEN the list still scrolls`() {
+        val listState = mockListState(listOf(mockListItem(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 0)))
+        val reorderState =
+            fakeListInteractionState(
+                listState,
+                interceptInteractionMode = { dragged, _ ->
+                    InteractionMode.List.Reordering(source = dragged, target = dragged, placeAfter = true)
+                },
+            )
+
+        reorderState.onTouchSlopPassed(offset = 5f, shouldLongPress = false)
+        reorderState.dragDown(distance = 20f, preserveSelectMode = false)
+        scope.testScheduler.runCurrent()
+
+        assertTrue(Mockito.mockingDetails(listState).invocations.any { it.method.name == "scroll" })
+    }
+
     private fun twoTabReorderState(
         handler: ItemInteractionHandler = NoOpItemInteractionHandler,
         alphaTabOffset: Int,
@@ -1072,6 +1163,10 @@ class InteractableListTest {
         liveReorderEnabled: Boolean = false,
         fixedItems: Set<Any> = emptySet(),
         onLongPress: (LazyListItemInfo) -> Unit = {},
+        interceptInteractionMode: (InteractionState.List.Active, InteractionMode.List) -> InteractionMode.List =
+            { _, mode ->
+                mode
+            },
     ): ListInteractionState {
         val items = buildList {
             if (includeHeader) {
@@ -1087,6 +1182,7 @@ class InteractableListTest {
             liveReorderEnabled = liveReorderEnabled,
             fixedItems = fixedItems,
             onLongPress = onLongPress,
+            interceptInteractionMode = interceptInteractionMode,
         )
     }
 
@@ -1111,6 +1207,10 @@ class InteractableListTest {
         onLongPress: (LazyListItemInfo) -> Unit = {},
         fixedItems: Set<Any> = emptySet(),
         coroutineScope: CoroutineScope = scope,
+        interceptInteractionMode: (InteractionState.List.Active, InteractionMode.List) -> InteractionMode.List =
+            { _, mode ->
+                mode
+            },
     ): ListInteractionState {
         return ListInteractionStateImpl(
             listState = listState,
@@ -1123,6 +1223,7 @@ class InteractableListTest {
             dragAndDropEnabled = dragAndDropEnabled,
             liveReorderEnabled = liveReorderEnabled,
             fixedItems = fixedItems,
+            interceptInteractionMode = interceptInteractionMode,
         )
     }
 

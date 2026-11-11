@@ -9,7 +9,6 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
@@ -29,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalDensity
@@ -45,6 +43,7 @@ import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
 import mozilla.components.compose.menu.ui.utils.customizeMenuPreviewData
@@ -107,10 +106,7 @@ private fun CustomizeMenuList(
     val itemSpacing = AcornTheme.layout.space.static150
 
     LazyColumn(
-        modifier =
-            Modifier.fillMaxSize()
-                .onGloballyPositioned(dragState.hiddenArea::onListPositioned)
-                .onGloballyPositioned(dragState.interactionState::updateListLayoutCoordinates),
+        modifier = Modifier.fillMaxSize().onGloballyPositioned(dragState.interactionState::updateListLayoutCoordinates),
         state = listState,
         userScrollEnabled = !dragState.isDragging,
         contentPadding =
@@ -133,20 +129,22 @@ private fun CustomizeMenuList(
         )
 
         item(key = HIDDEN_SECTIONS) {
-            val isDropTarget by
-                remember(dragState.dropTarget) {
-                    derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
-                }
-            CustomizeMenuHiddenSections(
-                hasHiddenItems = dragState.hasHiddenGroups,
-                isDropTarget = isDropTarget,
-                onTitlePositioned = dragState.hiddenArea::onTitlePositioned,
-                onPositioned = dragState.hiddenArea::onHiddenSectionsPositioned,
+            CustomizeMenuHiddenSectionsTitle(
                 modifier =
                     Modifier.animateItem()
                         .padding(top = itemSpacing)
-                        .dropLine(HIDDEN_SECTIONS, dragState.dropTarget, itemSpacing),
+                        .dropLine(HIDDEN_SECTIONS, dragState.dropTarget, itemSpacing)
             )
+        }
+
+        if (!dragState.hasHiddenGroups) {
+            item(key = DROP_AREA) {
+                val isDropTarget by
+                    remember(dragState.dropTarget) {
+                        derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
+                    }
+                CustomizeMenuDropArea(isDropTarget = isDropTarget, modifier = Modifier.animateItem())
+            }
         }
 
         customizeMenuGroups(
@@ -161,10 +159,7 @@ private fun CustomizeMenuList(
             item(key = RESET_BUTTON) {
                 CustomizeMenuResetButton(
                     onClick = onResetToDefault,
-                    modifier =
-                        Modifier.animateItem()
-                            .padding(top = itemSpacing)
-                            .onGloballyPositioned(dragState.hiddenArea::onResetButtonPositioned),
+                    modifier = Modifier.animateItem().padding(top = itemSpacing),
                 )
             }
         }
@@ -228,66 +223,66 @@ private fun CustomizeMenuDragBar(
 }
 
 @Composable
-private fun CustomizeMenuHiddenSections(
-    hasHiddenItems: Boolean,
-    isDropTarget: Boolean,
-    onTitlePositioned: (LayoutCoordinates) -> Unit,
-    onPositioned: (LayoutCoordinates) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.onGloballyPositioned(onPositioned)) {
-        Text(
-            text = stringResource(R.string.mozac_menu_customize_hidden_sections),
-            modifier =
-                Modifier.onGloballyPositioned(onTitlePositioned)
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
-                    .padding(
-                        start = AcornTheme.layout.space.static200,
-                        end = AcornTheme.layout.space.static100,
-                        top = AcornTheme.layout.space.static100,
-                        bottom = AcornTheme.layout.space.static50,
-                    )
-                    .wrapContentHeight(Alignment.CenterVertically),
-            style = AcornTheme.typography.headline8,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-        if (!hasHiddenItems) {
-            Box(
-                modifier =
-                    Modifier.fillMaxWidth()
-                        .padding(
-                            start = AcornTheme.layout.space.static200,
-                            top = AcornTheme.layout.space.static150,
-                            end = AcornTheme.layout.space.static200,
-                        )
-                        .then(
-                            if (isDropTarget) {
-                                Modifier.background(
-                                    color = MaterialTheme.colorScheme.tertiaryContainer,
-                                    shape = MaterialTheme.shapes.extraLarge,
-                                )
-                            } else {
-                                Modifier
-                            }
-                        )
-                        .hiddenSectionBorder(isHighlighted = isDropTarget)
-                        .defaultMinSize(minHeight = 72.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = stringResource(R.string.mozac_menu_customize_drag_to_hide),
-                    style = AcornTheme.typography.body2,
-                    color =
-                        if (isDropTarget) {
-                            MaterialTheme.colorScheme.tertiary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
+private fun CustomizeMenuHiddenSectionsTitle(modifier: Modifier = Modifier) {
+    Text(
+        text = stringResource(R.string.mozac_menu_customize_hidden_sections),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
+                .padding(
+                    start = AcornTheme.layout.space.static200,
+                    end = AcornTheme.layout.space.static100,
+                    top = AcornTheme.layout.space.static100,
+                    bottom = AcornTheme.layout.space.static50,
                 )
-            }
-        }
+                .wrapContentHeight(Alignment.CenterVertically),
+        style = AcornTheme.typography.headline8,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+}
+
+/**
+ * The empty area to drag groups into to hide them.
+ *
+ * @param isDropTarget Whether a dragged group is dropped into it, which highlights it.
+ * @param modifier The [Modifier] to be applied to the area.
+ */
+@Composable
+private fun CustomizeMenuDropArea(isDropTarget: Boolean, modifier: Modifier = Modifier) {
+    Box(
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(
+                    start = AcornTheme.layout.space.static200,
+                    top = AcornTheme.layout.space.static150,
+                    end = AcornTheme.layout.space.static200,
+                )
+                .then(
+                    if (isDropTarget) {
+                        Modifier.background(
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            shape = MaterialTheme.shapes.extraLarge,
+                        )
+                    } else {
+                        Modifier
+                    }
+                )
+                .hiddenSectionBorder(isHighlighted = isDropTarget)
+                .defaultMinSize(minHeight = 72.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = stringResource(R.string.mozac_menu_customize_drag_to_hide),
+            style = AcornTheme.typography.body2,
+            color =
+                if (isDropTarget) {
+                    MaterialTheme.colorScheme.tertiary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+        )
     }
 }
 

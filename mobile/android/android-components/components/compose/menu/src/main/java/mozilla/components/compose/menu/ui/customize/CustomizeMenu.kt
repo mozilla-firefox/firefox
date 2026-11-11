@@ -18,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -65,8 +64,6 @@ internal fun LazyListScope.customizeMenuGroups(
             modifier =
                 Modifier.groupPlacement(
                     isDragged = isDragged,
-                    isLastHidden = isHidden && index == menuGroups.lastIndex,
-                    hiddenArea = dragState.hiddenArea,
                     dropTarget = dragState.dropTarget,
                     itemSpacing = itemSpacing,
                 ),
@@ -90,24 +87,18 @@ internal fun LazyListScope.customizeMenuGroups(
 
 /**
  * Lay out a group without taking any space while it is dragged, for the other groups to take its space, showing there
- * if it is dropped back, and tell [hiddenArea] where the last hidden group is placed.
+ * if it is dropped back.
  *
  * @param isDragged Whether the group is dragged.
- * @param isLastHidden Whether the group is the last of the hidden groups, at the bottom of the list.
- * @param hiddenArea Where the area holding the hidden groups is shown.
  * @param dropTarget Where the dragged group is dropped.
  * @param itemSpacing Space above each item of the list, which the dragged group takes too.
  */
 @Composable
 private fun Modifier.groupPlacement(
     isDragged: Boolean,
-    isLastHidden: Boolean,
-    hiddenArea: CustomizeMenuHiddenArea,
     dropTarget: State<CustomizeMenuDropTarget?>,
     itemSpacing: Dp,
-): Modifier =
-    this.then(if (isLastHidden) Modifier.onGloballyPositioned(hiddenArea::onLastHiddenGroupPositioned) else Modifier)
-        .then(if (isDragged) Modifier.collapsed().inPlaceDropLine(dropTarget, itemSpacing) else Modifier)
+): Modifier = this.then(if (isDragged) Modifier.collapsed().inPlaceDropLine(dropTarget, itemSpacing) else Modifier)
 
 /** How [group] is shown. Dragged groups look the same, whether they were shown or hidden. */
 private fun CustomizeMenuGroups.stateOf(

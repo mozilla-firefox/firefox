@@ -4,6 +4,7 @@
 
 package mozilla.components.compose.menu.ui.customize
 
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -15,6 +16,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.draggable.InteractionMode
+import mozilla.components.compose.draggable.InteractionState
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
 
 /** Where a group of the customize menu screen is moved to if the user lets go of it. */
@@ -36,55 +39,97 @@ internal sealed interface CustomizeMenuDropTarget {
 }
 
 /**
- * Where a dragged group is dropped, if anywhere: where the list would place it, but hidden only if dragged over the
- * area holding the hidden groups and if the group is not mandatory.
+ * The interaction to use for the [dragged] group instead of [mode], the one the list found for it: placing it where the
+ * list would, but hidden only if dragged over the area holding the hidden groups and if the group is not mandatory,
+ * into the empty area to drag groups into if dragged over it, and nowhere if dragged below the hidden groups.
  *
- * @param draggedGroupId Id of the dragged group.
- * @param reordering Where the list would place the dragged group, if anywhere.
- * @param position Where the dragged group is relative to the area holding the hidden groups.
+ * @param dragged The dragged group.
+ * @param mode The interaction the list found for the dragged group.
+ * @param layoutInfo Layout of the list showing the groups.
  * @param groups The groups as they were before dragging.
- * @param hasHiddenGroups Whether groups other than the dragged one are hidden.
  */
-internal fun dropTargetOf(
-    draggedGroupId: Any,
-    reordering: InteractionMode.List.Reordering?,
-    position: DraggedGroupPosition?,
+internal fun interactionModeOf(
+    dragged: InteractionState.List.Active,
+    mode: InteractionMode.List,
+    layoutInfo: LazyListLayoutInfo,
     groups: CustomizeMenuGroups,
-    hasHiddenGroups: Boolean,
-): CustomizeMenuDropTarget? {
+): InteractionMode.List {
+    // Until the list lays out the dragged group taking no space, the other groups are not yet where they move to.
+    // The dragged group must then be laid out with a size of exactly 0, as by `collapsed` in CustomizeMenu.kt,
+    // or it is never dropped anywhere.
+    if (layoutInfo.visibleItemsInfo.any { it.key == dragged.key && it.size > 0 }) return InteractionMode.List.None
+    val position = draggedGroupPositionOf(dragged, layoutInfo, groups)
     val isOverHiddenArea = position == DraggedGroupPosition.OVER_HIDDEN_AREA
+    val hasOtherHiddenGroups = groups.hidden.any { it.id != dragged.key }
     return when {
-        position == null || position == DraggedGroupPosition.BELOW_HIDDEN_AREA -> null
-        isOverHiddenArea && draggedGroupId in groups.mandatoryIds -> null
-        isOverHiddenArea && !hasHiddenGroups -> CustomizeMenuDropTarget.EmptyHiddenArea
-        reordering == null -> null
-        else -> nextToTargetOf(draggedGroupId, reordering, isOverHiddenArea, groups)
+        position == DraggedGroupPosition.BELOW_HIDDEN_AREA -> InteractionMode.List.None
+        isOverHiddenArea && dragged.key in groups.mandatoryIds -> InteractionMode.List.None
+        isOverHiddenArea && !hasOtherHiddenGroups -> dragged.placedNextTo(DROP_AREA, placeAfter = true, layoutInfo)
+        mode !is InteractionMode.List.Reordering -> mode
+        else -> mode.retargeted(isOverHiddenArea, groups, layoutInfo)
     }
 }
 
 /**
  * Where the list would place the dragged group, but hidden only if dragged over the area holding the hidden groups.
- * Next to the items around it, the group is dropped where it was taken from.
  *
- * @param draggedGroupId Id of the dragged group.
- * @param reordering Where the list would place the dragged group.
  * @param isOverHiddenArea Whether the dragged group is over the area holding the hidden groups, otherwise above it.
  * @param groups The groups as they were before dragging.
+ * @param layoutInfo Layout of the list showing the groups.
  */
-private fun nextToTargetOf(
-    draggedGroupId: Any,
-    reordering: InteractionMode.List.Reordering,
+private fun InteractionMode.List.Reordering.retargeted(
     isOverHiddenArea: Boolean,
     groups: CustomizeMenuGroups,
-): CustomizeMenuDropTarget {
-    val targetKey = reordering.target.key
-    val hides = (targetKey == HIDDEN_SECTIONS && reordering.placeAfter) || groups.hidden.any { it.id == targetKey }
-    val target =
-        when {
-            !isOverHiddenArea && hides -> CustomizeMenuDropTarget.NextTo(HIDDEN_SECTIONS, placeAfter = false)
-            isOverHiddenArea && !hides -> CustomizeMenuDropTarget.NextTo(HIDDEN_SECTIONS, placeAfter = true)
-            else -> CustomizeMenuDropTarget.NextTo(targetKey, reordering.placeAfter)
-        }
+    layoutInfo: LazyListLayoutInfo,
+): InteractionMode.List {
+    val targetKey = target.key
+    val hides =
+        targetKey == DROP_AREA ||
+            (targetKey == HIDDEN_SECTIONS && placeAfter) ||
+            groups.hidden.any { it.id == targetKey }
+    return when {
+        !isOverHiddenArea && hides -> source.placedNextTo(HIDDEN_SECTIONS, placeAfter = false, layoutInfo)
+        isOverHiddenArea && !hides -> source.placedNextTo(HIDDEN_SECTIONS, placeAfter = true, layoutInfo)
+        else -> this
+    }
+}
+
+/** Place this next to the list item with [key], if it is laid out. */
+private fun InteractionState.List.Active.placedNextTo(
+    key: Any,
+    placeAfter: Boolean,
+    layoutInfo: LazyListLayoutInfo,
+): InteractionMode.List {
+    val item = layoutInfo.visibleItemsInfo.firstOrNull { it.key == key } ?: return InteractionMode.List.None
+    return InteractionMode.List.Reordering(
+        source = this,
+        target =
+            InteractionState.List.Active(
+                index = item.index,
+                key = item.key,
+                size = item.size,
+                initialOffset = item.offset.toFloat(),
+            ),
+        placeAfter = placeAfter,
+    )
+}
+
+/**
+ * Where the group with [draggedGroupId] is dropped if the user lets go of it during [mode], if anywhere. Next to the
+ * items around it, the group is dropped where it was taken from.
+ *
+ * @param draggedGroupId Id of the dragged group.
+ * @param mode The interaction for the dragged group.
+ * @param groups The groups as they were before dragging.
+ */
+internal fun dropTargetOf(
+    draggedGroupId: Any,
+    mode: InteractionMode.List,
+    groups: CustomizeMenuGroups,
+): CustomizeMenuDropTarget? {
+    val reordering = mode as? InteractionMode.List.Reordering ?: return null
+    if (reordering.target.key == DROP_AREA) return CustomizeMenuDropTarget.EmptyHiddenArea
+    val target = CustomizeMenuDropTarget.NextTo(reordering.target.key, reordering.placeAfter)
     return if (groups.drop(draggedGroupId, target) == groups) CustomizeMenuDropTarget.InPlace else target
 }
 
