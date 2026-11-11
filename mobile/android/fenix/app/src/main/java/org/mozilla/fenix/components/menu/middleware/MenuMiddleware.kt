@@ -16,22 +16,26 @@ import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.components.menu.MenuBuilder
+import org.mozilla.fenix.components.menu.MenuHost
 import org.mozilla.fenix.components.menu.MenuItemEventRouter
+import org.mozilla.fenix.components.menu.MenuItemsRegistry
 
 /**
  * [MenuStore] middleware keeping the menu up to date and letting the providers of its items handle all user
  * interactions with them.
  *
- * @param menuBuilder [MenuBuilder] providing the menu to show, kept up to date.
- * @param eventRouter [MenuItemEventRouter] for handling interactions with the menu items shown.
+ * @param menuItemsRegistry Builds the [MenuItemsRegistry] with the items of the menu to show, waiting until they are
+ *   known.
+ * @param host [MenuHost] for the providers of the menu items to interact with.
  * @param scope [CoroutineScope] tied to the lifetime of the menu, on which to keep it up to date.
  */
 class MenuMiddleware(
-    private val menuBuilder: MenuBuilder,
-    private val eventRouter: MenuItemEventRouter,
+    private val menuItemsRegistry: suspend () -> MenuItemsRegistry,
+    private val host: MenuHost,
     private val scope: CoroutineScope,
 ) : Middleware<MenuState, MenuAction> {
     private val logger = Logger("MenuMiddleware")
+    private var eventRouter: MenuItemEventRouter? = null
 
     override fun invoke(
         store: Store<MenuState, MenuAction>,
@@ -39,15 +43,17 @@ class MenuMiddleware(
         action: MenuAction,
     ) {
         when (action) {
-            is Init -> observeMenuStructureUpdates(store)
-            is MenuEvent -> if (!eventRouter.route(action)) logger.warn("No menu item handles $action")
+            is Init -> buildMenuStructure(store)
+            is MenuEvent -> if (eventRouter?.route(action) != true) logger.warn("No menu item handles $action")
             else -> Unit
         }
 
         next(action)
     }
 
-    private fun observeMenuStructureUpdates(store: Store<MenuState, MenuAction>) = scope.launch {
-        menuBuilder.menuStructure.collect { store.dispatch(Update(it)) }
+    private fun buildMenuStructure(store: Store<MenuState, MenuAction>) = scope.launch {
+        val registry = menuItemsRegistry()
+        eventRouter = MenuItemEventRouter(registry = registry, host = host)
+        MenuBuilder(registry).menuStructure.collect { store.dispatch(Update(it)) }
     }
 }

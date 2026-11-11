@@ -6,6 +6,7 @@ package org.mozilla.fenix.components.menu.middleware
 
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -21,9 +22,7 @@ import mozilla.components.compose.menu.store.MenuState
 import mozilla.components.compose.menu.store.MenuStore
 import mozilla.components.lib.state.Middleware
 import org.junit.Test
-import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuHost
-import org.mozilla.fenix.components.menu.MenuItemEventRouter
 import org.mozilla.fenix.components.menu.MenuItemProvider
 import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeReaderView
@@ -49,6 +48,24 @@ class MenuMiddlewareTest {
         }
 
     @Test
+    fun `GIVEN the menu items are not known yet WHEN the menu is opened THEN show them once they are known`() =
+        runTest(testDispatcher) {
+            val registry = CompletableDeferred<MenuItemsRegistry>()
+            val store = createStore(menuItemsRegistry = { registry.await() })
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(emptyList(), store.state.menuGroups)
+
+            registry.complete(registryOf(ReactingMenuItemProvider(reactingTo = null)))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(
+                listOf(MenuItemsGroup.Row(id = MENU_GROUP_ID, items = listOf(readerViewItem))),
+                store.state.menuGroups,
+            )
+        }
+
+    @Test
     fun `WHEN one of the menu items changes THEN update the menu`() =
         runTest(testDispatcher) {
             val provider = ReactingMenuItemProvider(reactingTo = null)
@@ -65,6 +82,7 @@ class MenuMiddlewareTest {
     fun `GIVEN a provider reacts to an event WHEN the event is dispatched THEN let the provider react to it`() {
         val provider = ReactingMenuItemProvider(reactingTo = MenuAction.CustomizeReaderView)
         val store = createStore(provider)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         store.dispatch(MenuAction.CustomizeReaderView)
 
@@ -75,6 +93,7 @@ class MenuMiddlewareTest {
     fun `GIVEN no provider reacts to an event WHEN the event is dispatched THEN no provider reacts to it`() {
         val provider = ReactingMenuItemProvider(reactingTo = MenuAction.FindInPage)
         val store = createStore(provider)
+        testDispatcher.scheduler.advanceUntilIdle()
 
         store.dispatch(MenuAction.CustomizeReaderView)
 
@@ -93,6 +112,7 @@ class MenuMiddlewareTest {
                         next(action)
                     },
             )
+        testDispatcher.scheduler.advanceUntilIdle()
 
         store.dispatch(MenuAction.CustomizeReaderView)
         store.dispatch(MenuAction.FindInPage)
@@ -106,32 +126,32 @@ class MenuMiddlewareTest {
     private fun createStore(
         provider: MenuItemProvider = ReactingMenuItemProvider(reactingTo = null),
         downstreamMiddleware: List<Middleware<MenuState, MenuStoreAction>> = emptyList(),
-    ): MenuStore {
-        val registry =
-            MenuItemsRegistry(
-                configuration =
-                    listOf(
-                        MenuSectionConfiguration(
-                            id = MENU_GROUP_ID,
-                            presentationMode = Row,
-                            items = listOf(CustomizeReaderView),
-                        )
-                    ),
-                resolver = { provider },
-            )
-
-        return MenuStore(
+        menuItemsRegistry: suspend () -> MenuItemsRegistry = { registryOf(provider) },
+    ) =
+        MenuStore(
             initialState = MenuState(emptyList()),
             middleware =
                 listOf(
                     MenuMiddleware(
-                        menuBuilder = MenuBuilder(registry),
-                        eventRouter = MenuItemEventRouter(registry = registry, host = FakeMenuHost()),
+                        menuItemsRegistry = menuItemsRegistry,
+                        host = FakeMenuHost(),
                         scope = CoroutineScope(testDispatcher),
                     )
                 ) + downstreamMiddleware,
         )
-    }
+
+    private fun registryOf(provider: MenuItemProvider) =
+        MenuItemsRegistry(
+            configuration =
+                listOf(
+                    MenuSectionConfiguration(
+                        id = MENU_GROUP_ID,
+                        presentationMode = Row,
+                        items = listOf(CustomizeReaderView),
+                    )
+                ),
+            resolver = { provider },
+        )
 
     private class ReactingMenuItemProvider(private val reactingTo: MenuEvent?) : MenuItemProvider {
         override val itemsFlow = MutableStateFlow<List<MenuItem>>(listOf(readerViewItem))
