@@ -245,7 +245,19 @@ NSAttributedString* nsMenuUtilsX::AttributedStringForContent(
   }
 
   NSFont* font = [NSFont menuFontOfSize:zoom * fontSize];
-  NSDictionary* attrs = @{NSFontAttributeName : font};
+  NSMutableParagraphStyle* paragraphStyle =
+      [[[NSMutableParagraphStyle alloc] init] autorelease];
+  if (style->StyleVisibility()->mDirection == StyleDirection::Rtl) {
+    paragraphStyle.alignment = NSTextAlignmentRight;
+  } else {
+    paragraphStyle.alignment = NSTextAlignmentLeft;
+  }
+  paragraphStyle.lineBreakMode = NSLineBreakByTruncatingTail;
+
+  NSDictionary* attrs = @{
+    NSFontAttributeName : font,
+    NSParagraphStyleAttributeName : paragraphStyle
+  };
 
   return [[[NSAttributedString alloc] initWithString:aLabel
                                           attributes:attrs] autorelease];
