@@ -1512,7 +1512,7 @@ HTMLEditUtils::ScanInclusiveNextThingWithIgnoringUnnecessaryLineBreak(
   if (!nextThingOfLineBreak.ReachedBlockBoundary()) {
     MOZ_ASSERT(
         nextThing.CreateEditorLineBreak<EditorRawLineBreak>().IsSignificant(
-            aTreatAsUnnecessaryLineBreaks));
+            aTreatAsUnnecessaryLineBreaks, aAncestorLimiter));
     return nextThing;
   }
   const WSScanResult previousThingOfLineBreak =
