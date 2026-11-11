@@ -68,7 +68,7 @@
         "firefox_enterprise": { "version_added": "149.0.2" }
       },
       "x-restart-required": true,
-      "description": "Controls access to AI features: Translations, PDF alt text generation, smart tab groups, display summaries in link previews, AI chatbot in the sidebar, smart windows and on-device speech recognition. The `Default` value applies to all AI features, unless overridden by a specific feature.",
+      "description": "Controls access to AI features: Translations, PDF alt text generation, smart tab groups, display summaries in link previews, AI chatbot in the sidebar, smart windows, on-device speech recognition and custom widgets. The `Default` value applies to all AI features, unless overridden by a specific feature.",
       "examples": [
         {
           "Default": {
@@ -249,6 +249,34 @@
             "Value": {
               "type": "string",
               "enum": ["available", "blocked"]
+            },
+            "Locked": {
+              "type": "boolean"
+            }
+          }
+        },
+        "CustomWidgets": {
+          "type": "object",
+          "x-compatibility": {
+            "firefox": { "version_added": "162" },
+            "firefox_esr": { "version_added": false },
+            "firefox_enterprise": { "version_added": "162" }
+          },
+          "properties": {
+            "Value": {
+              "type": "string",
+              "oneOf": [
+                {
+                  "const": "available",
+                  "title": "Available",
+                  "description": "The feature is on and available to users."
+                },
+                {
+                  "const": "blocked",
+                  "title": "Blocked",
+                  "description": "The feature is off and unavailable to users."
+                }
+              ]
             },
             "Locked": {
               "type": "boolean"

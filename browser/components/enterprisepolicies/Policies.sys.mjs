@@ -185,6 +185,7 @@ export var Policies = {
         ],
         ["SmartWindow", [], "browser.ai.control.smartWindow"],
         ["SpeechRecognition", [], "browser.ai.control.speechRecognition"],
+        ["CustomWidgets", [], "browser.ai.control.generatedWidgets"],
       ];
 
       const defaultItem = param.Default;
