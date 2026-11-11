@@ -2254,7 +2254,7 @@ add_task(async function test_show_warning_label() {
     ],
   });
   await BrowserTestUtils.withNewTab(
-    "data:text/plain,hi".repeat(1000),
+    "data:text/plain,hi".repeat(4000),
     async browser => {
       await selectAllAndMouseUp(browser);
 
