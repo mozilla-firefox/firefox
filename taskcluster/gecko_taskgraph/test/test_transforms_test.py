@@ -862,21 +862,34 @@ def verify_path_task(monkeypatch):
         )
 
     monkeypatch.setattr(chunk.resolver, "resolve_tests", resolve_tests)
-    return {"suite": "test-verify-path", "test-name": "test-verify-path"}
+    return {
+        "suite": "test-verify-path",
+        "test-name": "test-verify-path",
+        "test-platform": "linux2404-64/opt",
+    }
 
 
+@pytest.mark.parametrize(
+    "test_platform,expected",
+    [
+        ("linux2404-64/opt", [4]),
+        ("linux2404-64/debug", [8]),
+        ("linux2404-64-tsan/opt", [12]),
+    ],
+)
 def test_test_verify_path_is_sized_from_the_requested_paths(
-    run_transform, verify_path_task
+    run_transform, verify_path_task, test_platform, expected
 ):
     params = _make_test_paths_params(["dir"])
     params["try_mode"] = "try_task_config"
+    verify_path_task["test-platform"] = test_platform
 
     tasks = list(
         run_transform(
             chunk.set_test_verify_path_chunks, verify_path_task, params=params
         )
     )
-    assert [t["chunks"] for t in tasks] == [4]
+    assert [t["chunks"] for t in tasks] == expected
 
 
 @pytest.mark.parametrize(

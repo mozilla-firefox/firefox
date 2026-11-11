@@ -28,14 +28,15 @@ DYNAMIC_CHUNK_DURATION = 20 * 60  # seconds
 """The approximate time each test chunk should take to run."""
 
 VERIFY_SECONDS_PER_TEST = {
-    "browser-chrome": 160,
-    "mochitest": 55,
+    "browser-chrome": (160, 315, 480),
+    "mochitest": (55, 110, 165),
     # Not measured, assumed to be like mochitest.
-    "crashtest": 55,
-    "xpcshell": 12,
+    "crashtest": (55, 110, 165),
+    "xpcshell": (12, 20, 36),
 }
-"""How long verifying one test of each flavor takes on opt builds, as measured
-on Linux test-verify-path tasks."""
+"""How long verifying one test of each flavor takes on (opt, debug, tsan)
+builds, as measured on Linux test-verify-path tasks. TSan builds weren't
+measured: their values are 3 times the opt ones, as the harness timeouts are."""
 
 
 transforms = TransformSequence()
@@ -84,6 +85,15 @@ def _is_gpu_subsuite(subsuite):
     return bool(subsuite) and (subsuite == "gpu" or subsuite.startswith("webgl"))
 
 
+def _verify_seconds_per_test(flavor, test_platform):
+    opt, debug, tsan = VERIFY_SECONDS_PER_TEST[flavor]
+    if test_platform.endswith("/debug"):
+        return debug
+    if "-tsan" in test_platform:
+        return tsan
+    return opt
+
+
 @transforms.add
 def set_test_verify_path_chunks(config, tasks):
     """Size test-verify-path from the tests under the requested paths, for
@@ -108,7 +118,7 @@ def set_test_verify_path_chunks(config, tasks):
             path for suite_paths in paths.values() for path in suite_paths
         )
         duration = sum(
-            count * VERIFY_SECONDS_PER_TEST[flavor]
+            count * _verify_seconds_per_test(flavor, task["test-platform"])
             for flavor, count in _count_tests_by_flavor(requested).items()
         )
         task["chunks"] = ceil(duration / DYNAMIC_CHUNK_DURATION) or 1
