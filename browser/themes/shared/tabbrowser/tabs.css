@@ -3254,6 +3254,10 @@ tab-group {
   appearance: none;
   opacity: 0.65;
   -moz-window-shadow: none;
+  /* This panel is the drag image on Linux. Gecko hit-tests it at the
+     position where it opened, not where it follows the pointer, so it must
+     let drag events through to whatever is underneath. */
+  pointer-events: none;
 }
 
 /* Firefox View button and menu item */
