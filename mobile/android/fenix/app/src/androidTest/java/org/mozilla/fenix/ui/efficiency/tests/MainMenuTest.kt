@@ -493,7 +493,7 @@ class MainMenuTest : BaseTest() {
             .navigateToPage()
             .mozVerify(MainMenuSelectors.TRY_RECOMMENDED_EXTENSION_BUTTON)
             .mozClick(MainMenuSelectors.EXTENSIONS_BUTTON)
-        val extension = on.mainMenu.installFirstRecommendedExtension()
+        val extension = on.mainMenu.installKnownRecommendedExtension()
 
         // Remove it through Manage extensions -> the add-ons manager.
         on.browserPage.navigateToPage(genericURL.url.toString(), forceNavigation = true)
@@ -517,7 +517,7 @@ class MainMenuTest : BaseTest() {
             .navigateToPage()
             .mozVerify(MainMenuSelectors.TRY_RECOMMENDED_EXTENSION_BUTTON)
             .mozClick(MainMenuSelectors.EXTENSIONS_BUTTON)
-        val extension = on.mainMenu.installFirstRecommendedExtension()
+        val extension = on.mainMenu.installKnownRecommendedExtension()
 
         // Manage extensions opens the add-ons manager, where the extension is listed under Enabled.
         // Parity: legacy verifyAddonIsInstalled asserted the addon's install (+) button was invisible;
@@ -543,7 +543,7 @@ class MainMenuTest : BaseTest() {
             .navigateToPage()
             .mozVerify(MainMenuSelectors.TRY_RECOMMENDED_EXTENSION_BUTTON)
             .mozClick(MainMenuSelectors.EXTENSIONS_BUTTON)
-        val extension = on.mainMenu.installFirstRecommendedExtension()
+        val extension = on.mainMenu.installKnownRecommendedExtension()
 
         // Re-open the Extensions submenu: the collapsed Extensions row now advertises the installed
         // extension, the extension is listed in the submenu, and "Discover more" has been replaced by
@@ -570,7 +570,7 @@ class MainMenuTest : BaseTest() {
             .navigateToPage()
             .mozVerify(MainMenuSelectors.TRY_RECOMMENDED_EXTENSION_BUTTON)
             .mozClick(MainMenuSelectors.EXTENSIONS_BUTTON)
-        val extension = on.mainMenu.installFirstRecommendedExtension()
+        val extension = on.mainMenu.installKnownRecommendedExtension()
 
         // Open the installed extension's detail from Manage extensions and disable it.
         on.browserPage.navigateToPage(genericURL.url.toString(), forceNavigation = true)

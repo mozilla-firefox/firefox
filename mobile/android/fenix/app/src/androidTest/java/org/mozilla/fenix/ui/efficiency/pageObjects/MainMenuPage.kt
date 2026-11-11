@@ -99,7 +99,7 @@ class MainMenuPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRul
     override val selectorCatalog = MainMenuSelectors
 
     /**
-     * An extension installed by [installFirstRecommendedExtension].
+     * An extension installed by [installKnownRecommendedExtension].
      *
      * AMO's listing name, shown in the recommendations, often differs from the names the app shows once the extension
      * is installed, so callers must use the name matching the surface they check.
@@ -130,25 +130,43 @@ class MainMenuPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRul
      * Installs a recommended extension from the expanded Extensions submenu. The submenu must already be expanded
      * (click [MainMenuSelectors.EXTENSIONS_BUTTON]) before calling.
      *
-     * Which extensions AMO recommends is server-driven, so this prefers one on [recommendedAddons], which are known to
-     * add a menu entry, and otherwise installs the first one shown. Extensions without a toolbar button leave the
-     * Extensions row reading "No extensions enabled", so checks on the menu entry fail on that fallback.
+     * Which extensions AMO recommends is server-driven, so this only installs one on [recommendedAddons], which are
+     * known to add a menu entry. Extensions off that list (e.g. Google Search Fixer) add no toolbar button, leaving the
+     * Extensions row reading "No extensions enabled" and breaking the menu-entry checks. When the surfaced set contains
+     * none of them, the menu is closed and reopened to pull a fresh set; after [maxAttempts] attempts without a match
+     * it fails rather than installing an arbitrary extension.
      */
-    fun installFirstRecommendedExtension(): InstalledExtension {
-        // The recommendation list is fetched from AMO asynchronously, so wait for a row before reading it.
-        // Each row's install button is described "Add <listing title>", which is where the titles are read from.
-        mozVerify(MainMenuSelectors.RECOMMENDED_ADDON_ITEM)
+    fun installKnownRecommendedExtension(maxAttempts: Int = 3): InstalledExtension {
         val installButtonPrefix = getStringResource(R.string.browser_menu_extension_plus_icon_content_description_2, "")
-        val listedTitles =
-            composeRule
-                .onAllNodes(hasContentDescription(installButtonPrefix, substring = true), useUnmergedTree = true)
-                .fetchSemanticsNodes()
-                .map { it.config[SemanticsProperties.ContentDescription].first().removePrefix(installButtonPrefix) }
-        val listingTitle =
-            listedTitles.firstOrNull { title -> recommendedAddons.any { title.contains(it) } } ?: listedTitles.first()
+        var listedTitles = emptyList<String>()
+        var listingTitle: String? = null
+        for (attempt in 0 until maxAttempts) {
+            // The recommendation list is fetched from AMO asynchronously, so wait for a row before reading it.
+            // Each row's install button is described "Add <listing title>", which is where the titles are read from.
+            mozVerify(MainMenuSelectors.RECOMMENDED_ADDON_ITEM)
+            listedTitles =
+                composeRule
+                    .onAllNodes(hasContentDescription(installButtonPrefix, substring = true), useUnmergedTree = true)
+                    .fetchSemanticsNodes()
+                    .map { it.config[SemanticsProperties.ContentDescription].first().removePrefix(installButtonPrefix) }
+            listingTitle = listedTitles.firstOrNull { title -> recommendedAddons.any { title.contains(it) } }
+            if (listingTitle != null) break
+            // None of the surfaced rows are on recommendedAddons; close and reopen the menu to let AMO surface a
+            // different set rather than installing whatever happened to be listed first.
+            if (attempt < maxAttempts - 1) {
+                mozPressBackUntilGone(MainMenuSelectors.MAIN_MENU_ANCHOR)
+                mozClick(BrowserPageSelectors.MAIN_MENU_BUTTON)
+                mozClick(MainMenuSelectors.EXTENSIONS_BUTTON)
+            }
+        }
+        val resolvedTitle =
+            requireNotNull(listingTitle) {
+                "None of the AMO-recommended extensions matched recommendedAddons after $maxAttempts attempts; " +
+                    "surfaced: $listedTitles"
+            }
 
         val extensionsBefore = appContext.components.core.store.state.extensions.keys
-        mozClick(MainMenuSelectors.RECOMMENDED_ADDON_INSTALL_BUTTON(listingTitle))
+        mozClick(MainMenuSelectors.RECOMMENDED_ADDON_INSTALL_BUTTON(resolvedTitle))
         // Matched on the Add button rather than the prompt title: the prompt shows the manifest name, which can
         // differ from the listing name. The button is disabled for ~1s after the prompt appears (mirrors the legacy
         // allowPermissionToInstall).
