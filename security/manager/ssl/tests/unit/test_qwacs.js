@@ -55,6 +55,9 @@ add_task(async function test_verify_1_qwacs() {
   await verify_1_qwacs("test_qwacs/no-1-qwac-policies.pem", false);
   await verify_1_qwacs("test_qwacs/no-policies.pem", false);
   await verify_1_qwacs("test_qwacs/2-qwac.pem", false);
+  await verify_1_qwacs("test_qwacs/1-qwac-sha1.pem", false);
+  await verify_1_qwacs("test_qwacs/1-qwac-small-rsa-key.pem", false);
+  await verify_1_qwacs("test_qwacs/1-qwac-small-rsa-signature.pem", false);
 });
 
 async function verify_2_qwacs(

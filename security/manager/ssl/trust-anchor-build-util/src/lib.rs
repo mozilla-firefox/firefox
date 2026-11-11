@@ -54,7 +54,12 @@ pub fn read_trust_anchors(
     let mut trust_anchors = if trust_anchor_filename_or_directory.is_dir() {
         let mut trust_anchors = Vec::new();
         for dir_entry in read_dir(trust_anchor_filename_or_directory)? {
-            trust_anchors.append(&mut read_trust_anchors_from(dir_entry?.path())?);
+            let path = dir_entry?.path();
+            if let Some(extension) = path.extension() {
+                if extension == "pem" {
+                    trust_anchors.append(&mut read_trust_anchors_from(path)?);
+                }
+            }
         }
         trust_anchors
     } else {
@@ -68,12 +73,18 @@ pub fn read_trust_anchors(
 pub fn read_trust_anchors_from(
     trust_anchor_file_path: PathBuf,
 ) -> std::io::Result<Vec<TrustAnchor>> {
-    let trust_anchor_file = File::open(trust_anchor_file_path)?;
+    let trust_anchor_file = File::open(&trust_anchor_file_path)?;
     let reader = BufReader::new(trust_anchor_file);
     let mut maybe_current_trust_anchor: Option<Vec<String>> = None;
     let mut trust_anchors = Vec::new();
     for line in reader.lines() {
-        let line = line.expect("Couldn't read contents of trust anchors file.");
+        let line = line.expect(
+            format!(
+                "Couldn't read contents of trust anchors file '{}'",
+                trust_anchor_file_path.display()
+            )
+            .as_str(),
+        );
         match line.as_str() {
             "-----BEGIN CERTIFICATE-----" => {
                 maybe_current_trust_anchor.replace(Vec::new());

@@ -113,11 +113,31 @@ pkix::Result QWACTrustDomain::IsChainValid(const DERArray& certChain, Time time,
 
 pkix::Result QWACTrustDomain::CheckSignatureDigestAlgorithm(
     DigestAlgorithm digestAlg, EndEntityOrCA, Time) {
-  return Success;
+  // ETSI TS 119 312 V2.1.1 mandates support for SHA-256, SHA-384, and SHA-512.
+  // SHA-1 has not been recommended since ETSI TS 102 176-1 V2.1.1, published
+  // in 2011.
+  switch (digestAlg) {
+    case DigestAlgorithm::sha256:  // fall through
+    case DigestAlgorithm::sha384:  // fall through
+    case DigestAlgorithm::sha512:
+      return Success;
+    case DigestAlgorithm::sha1:
+      return Result::ERROR_CERT_SIGNATURE_ALGORITHM_DISABLED;
+  }
+  return Result::FATAL_ERROR_LIBRARY_FAILURE;
 }
+
+// ETSI TS 119 312 V2.1.1 mandates that RSA keys smaller than 3000 bits not be
+// used for new certificates starting 2026-12-31. However, this standard is
+// rather new, and to avoid potential interoperability issues, this uses the
+// minimum from the earlier V1.4.3 specification, which is 1900 bits.
+const unsigned int kETSIMinRSABits = 1900;
 
 pkix::Result QWACTrustDomain::CheckRSAPublicKeyModulusSizeInBits(
     EndEntityOrCA /*endEntityOrCA*/, unsigned int modulusSizeInBits) {
+  if (modulusSizeInBits < kETSIMinRSABits) {
+    return Result::ERROR_INADEQUATE_KEY_SIZE;
+  }
   return Success;
 }
 
