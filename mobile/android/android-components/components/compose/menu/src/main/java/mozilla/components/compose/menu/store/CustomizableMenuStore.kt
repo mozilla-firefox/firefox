@@ -5,6 +5,7 @@
 package mozilla.components.compose.menu.store
 
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
+import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
@@ -41,5 +42,6 @@ private fun reduce(state: CustomizableMenuState, action: CustomizableMenuAction)
         is CustomizationStatusChanged -> state.copy(isCustomized = action.isCustomized)
         is Init,
         is AttemptedRemovalOfMandatorySection,
+        is BackPressed,
         is MenuEvent -> state
     }

@@ -12,11 +12,13 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.compose.content
 import androidx.lifecycle.coroutineScope
 import androidx.navigation.fragment.findNavController
+import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuContent
 import mozilla.components.feature.automotive.isAndroidAutomotiveAvailable
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
+import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
@@ -27,6 +29,7 @@ import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.MenuTarget
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.menu.middleware.CustomizeMenuMiddleware
+import org.mozilla.fenix.components.menu.middleware.CustomizeMenuTelemetryMiddleware
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.isToolbarAtBottom
 import org.mozilla.fenix.ext.openSetDefaultBrowserOption
@@ -38,7 +41,7 @@ import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.translations.TranslationsEnabledSettings
 
 /** Screen allowing the user to customize the order of and what menu items or menu sections are to be shown. */
-class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
+class CustomizeMenuFragment : Fragment(), UserInteractionHandler, SystemInsetsPaddedFragment {
     private val snackbarBinding = ViewBoundFeatureWrapper<SnackbarBinding>()
 
     private val menuStore: CustomizableMenuStore by
@@ -62,7 +65,8 @@ class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
                             scope = viewLifecycleOwner.lifecycle.coroutineScope,
                             appStore = components.appStore,
                             cannotHideSectionMessage = getString(R.string.customize_menu_cannot_hide_section),
-                        )
+                        ),
+                        CustomizeMenuTelemetryMiddleware(),
                     ),
             )
         }
@@ -102,6 +106,11 @@ class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
     override fun onResume() {
         super.onResume()
         showToolbar(getString(R.string.customize_menu))
+    }
+
+    override fun onBackPressed(): Boolean {
+        menuStore.dispatch(BackPressed)
+        return false
     }
 
     private fun buildMenuItemProvidersFactory(): MenuItemProvidersFactory {

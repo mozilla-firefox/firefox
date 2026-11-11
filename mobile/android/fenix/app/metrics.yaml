@@ -10992,6 +10992,56 @@ customize_menu:
     metadata:
       tags:
         - MainMenu
+  shown:
+    type: event
+    description: |
+      The customize menu screen was shown, with the default menu sections merged with the user's customization.
+      Recorded once each time the user enters the screen, not again when the screen is recreated while the user is on
+      it.
+      The section lists leave out the sections which are ineligible or disabled by the user in settings, but include
+      the ones which only appear sometimes, depending on the current application or tab state.
+    extra_keys:
+      shown_sections:
+        type: string
+        description: |
+          Comma separated names of the sections marked as showing in the menu, from top to bottom.
+          Each name is one of: page_controls, reader_view, vpn, tools, library, accounts_and_settings,
+          tabs_controls, quit.
+      hidden_sections:
+        type: string
+        description: |
+          Comma separated names of the sections marked as hidden in the menu, from top to bottom.
+          Each name is one of: page_controls, reader_view, vpn, tools, library, accounts_and_settings,
+          tabs_controls, quit.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2086548
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D339829
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - MainMenu
+  back_pressed:
+    type: event
+    description: |
+      The user pressed back on the customize menu screen, with either the back button in the toolbar or the system back
+      button or gesture.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2086548
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D339829
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
+    metadata:
+      tags:
+        - MainMenu
 app_theme:
   dark_theme_selected:
     type: event

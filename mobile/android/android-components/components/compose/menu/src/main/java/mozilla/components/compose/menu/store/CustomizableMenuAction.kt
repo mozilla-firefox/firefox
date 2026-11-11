@@ -54,4 +54,7 @@ sealed interface CustomizableMenuAction : Action {
      * @property sectionId Id of the menu group.
      */
     data class AttemptedRemovalOfMandatorySection(val sectionId: String) : CustomizableMenuAction
+
+    /** The user tapped or gestured to go back while in the customization screen. */
+    data object BackPressed : CustomizableMenuAction
 }

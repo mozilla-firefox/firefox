@@ -6,6 +6,7 @@ package mozilla.components.compose.menu.store
 
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
+import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
@@ -95,6 +96,16 @@ class CustomizableMenuStoreTest {
         val store = CustomizableMenuStore(initialState = initialState)
 
         store.dispatch(AttemptedRemovalOfMandatorySection("b"))
+
+        assertEquals(initialState, store.state)
+    }
+
+    @Test
+    fun `WHEN the user presses back THEN don't change the state`() {
+        val initialState = CustomizableMenuState(menuGroups = groups("a", "b"))
+        val store = CustomizableMenuStore(initialState = initialState)
+
+        store.dispatch(BackPressed)
 
         assertEquals(initialState, store.state)
     }

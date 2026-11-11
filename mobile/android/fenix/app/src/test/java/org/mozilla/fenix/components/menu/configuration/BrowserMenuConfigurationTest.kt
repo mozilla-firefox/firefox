@@ -289,6 +289,25 @@ class BrowserMenuConfigurationTest {
         )
     }
 
+    @Test
+    fun `WHEN getting all the browser menu sections THEN their ids are the names recorded in telemetry`() {
+        val ids = BrowserMenuConfiguration.allSections().map { it.id }
+
+        assertEquals(
+            listOf(
+                "page_controls",
+                "reader_view",
+                "vpn",
+                "tools",
+                "library",
+                "accounts_and_settings",
+                "quit",
+                "tabs_controls",
+            ),
+            ids,
+        )
+    }
+
     private fun menuInfo(shown: List<String>, hidden: List<String> = emptyList()) =
         CustomizedMenuInfo(visibleSectionIds = shown, hiddenSectionIds = hidden)
 }

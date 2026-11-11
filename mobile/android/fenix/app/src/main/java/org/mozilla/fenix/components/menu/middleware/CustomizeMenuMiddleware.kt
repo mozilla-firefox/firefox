@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import mozilla.components.compose.menu.store.CustomizableMenuAction
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
+import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
@@ -64,6 +65,7 @@ class CustomizeMenuMiddleware(
                 appStore.dispatch(SnackbarAction.ShowSnackbar(title = cannotHideSectionMessage))
             is MenuEvent,
             is Update,
+            is BackPressed,
             is CustomizationStatusChanged -> Unit
         }
     }
