@@ -13615,14 +13615,16 @@ bool InitOptionParser(OptionParser& op) {
                        "NUMBER of instructions.",
                        -1) ||
 #endif
-#ifdef JS_CODEGEN_RISCV64
-      !op.addBoolOption('\0', "riscv-debug",
-                        "Print riscv debugging messages.") ||
+      // Like arm-hwcap, accepted by every shell so that jit-test variants can
+      // pass it; only riscv64 builds read it.
       !op.addStringOption(
           '\0', "riscv-ext", "[features]",
           "Specify RISCV code generation features. Starts with ISA (\"rv64g\") "
           "or profile (\"rva20u64\", \"rva22u64\", \"rva23u64\"), followed by "
           "extensions separated with '_'.") ||
+#ifdef JS_CODEGEN_RISCV64
+      !op.addBoolOption('\0', "riscv-debug",
+                        "Print riscv debugging messages.") ||
 #endif
 #ifdef JS_SIMULATOR_RISCV64
       !op.addBoolOption('\0', "riscv-sim-trace",

@@ -1,4 +1,4 @@
-// |jit-test| skip-if: !wasmThreadsEnabled(); test-also=--setpref=wasm_baseline_debug=true; skip-variant-if: --setpref=wasm_baseline_debug=true, wasmCompileMode() == "ion"
+// |jit-test| skip-if: !wasmThreadsEnabled(); test-also=--setpref=wasm_baseline_debug=true; skip-variant-if: --setpref=wasm_baseline_debug=true, wasmCompileMode() == "ion"; test-also=--riscv-ext=rv64g; skip-variant-if: --riscv-ext=rv64g, !getBuildConfiguration("riscv64")
 
 const oob = /index out of bounds/;
 const unaligned = /unaligned memory access/;

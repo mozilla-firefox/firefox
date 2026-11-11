@@ -1,3 +1,5 @@
+// |jit-test| test-also=--riscv-ext=rv64g --ion-eager --ion-offthread-compile=off; skip-variant-if: --riscv-ext=rv64g, !getBuildConfiguration("riscv64")
+
 function test() {
   var i8 = new Int8Array(4);
   var i16 = new Int16Array(i8.buffer, 0, 2);
