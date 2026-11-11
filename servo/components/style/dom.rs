@@ -585,7 +585,7 @@ pub trait TElement:
             pseudo.is_eager(),
             "Someone called may_generate_pseudo with a non-eager pseudo."
         );
-        true
+        !pseudo.is_first_line() || crate::pref!("layout.css.first-line.enabled", gecko = true)
     }
 
     /// Returns true if this element may have a descendant needing style processing.
