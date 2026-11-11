@@ -72,7 +72,7 @@ fn eval_prefers_color_scheme(context: &Context, query_value: Option<PrefersColor
 
 bitflags! {
     /// https://drafts.csswg.org/mediaqueries-4/#mf-interaction
-    #[derive(Debug, Clone, Copy)]
+    #[derive(Debug, Clone, Copy, PartialEq)]
     pub struct PointerCapabilities: u8 {
         /// The input mechanism includes a pointing device of limited accuracy, such as a finger on a touchscreen.
         const COARSE = 0b001;

@@ -56,44 +56,44 @@ pub trait FontMetricsProvider: Debug + Sync {
 
 #[derive(Debug, MallocSizeOf)]
 pub(super) struct ExtraDeviceData {
-    /// The current media type used by de device.
-    media_type: MediaType,
-    /// The current viewport size, in CSS pixels.
-    viewport_size: Size2D<f32, CSSPixel>,
-    /// The current screen size, in device pixels.
-    device_size: Size2D<f32, DevicePixel>,
-    /// The current device pixel ratio, from CSS pixels to device pixels.
-    device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
-    /// The current quirks mode.
-    #[ignore_malloc_size_of = "Pure stack type"]
-    quirks_mode: QuirksMode,
-    /// Whether the user prefers light mode or dark mode
-    #[ignore_malloc_size_of = "Pure stack type"]
-    prefers_color_scheme: PrefersColorScheme,
-    /// The capabilities of the primary pointer input
-    #[ignore_malloc_size_of = "Pure stack type"]
-    primary_pointer_capabilities: PointerCapabilities,
-    /// The union of the capabilities of all pointer inputs
-    #[ignore_malloc_size_of = "Pure stack type"]
-    all_pointer_capabilities: PointerCapabilities,
+    /// Data which Stylo uses to evaluate media queries
+    media_data: MediaData,
     /// An implementation of a trait which implements support for querying font metrics.
     #[ignore_malloc_size_of = "Owned by embedder"]
     font_metrics_provider: Box<dyn FontMetricsProvider>,
 }
 
+#[derive(Debug, MallocSizeOf, Clone, PartialEq)]
+/// Data which Stylo uses to evaluate media queries
+pub struct MediaData {
+    /// The current media type used by de device.
+    pub media_type: MediaType,
+    /// The current viewport size, in CSS pixels.
+    pub viewport_size: Size2D<f32, CSSPixel>,
+    /// The current screen size, in device pixels.
+    pub device_size: Size2D<f32, DevicePixel>,
+    /// The current device pixel ratio, from CSS pixels to device pixels.
+    pub device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
+    /// The current quirks mode.
+    #[ignore_malloc_size_of = "Pure stack type"]
+    pub quirks_mode: QuirksMode,
+    /// Whether the user prefers light mode or dark mode
+    #[ignore_malloc_size_of = "Pure stack type"]
+    pub prefers_color_scheme: PrefersColorScheme,
+    /// The capabilities of the primary pointer input
+    #[ignore_malloc_size_of = "Pure stack type"]
+    pub primary_pointer_capabilities: PointerCapabilities,
+    /// The union of the capabilities of all pointer inputs
+    #[ignore_malloc_size_of = "Pure stack type"]
+    pub all_pointer_capabilities: PointerCapabilities,
+}
+
 impl Device {
     /// Trivially construct a new `Device`.
     pub fn new(
-        media_type: MediaType,
-        quirks_mode: QuirksMode,
-        viewport_size: Size2D<f32, CSSPixel>,
-        device_size: Size2D<f32, DevicePixel>,
-        device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
-        font_metrics_provider: Box<dyn FontMetricsProvider>,
         default_values: Arc<ComputedValues>,
-        prefers_color_scheme: PrefersColorScheme,
-        primary_pointer_capabilities: PointerCapabilities,
-        all_pointer_capabilities: PointerCapabilities,
+        font_metrics_provider: Box<dyn FontMetricsProvider>,
+        media_data: MediaData,
     ) -> Device {
         let root_style = RwLock::new(Arc::clone(&default_values));
         Device {
@@ -114,14 +114,7 @@ impl Device {
             default_values,
             body_text_color: RwLock::new(AbsoluteColor::BLACK),
             extra: ExtraDeviceData {
-                media_type,
-                viewport_size,
-                device_size,
-                device_pixel_ratio,
-                quirks_mode,
-                prefers_color_scheme,
-                primary_pointer_capabilities,
-                all_pointer_capabilities,
+                media_data,
                 font_metrics_provider,
             },
         }
@@ -147,7 +140,7 @@ impl Device {
 
     /// Get the quirks mode of the current device.
     pub fn quirks_mode(&self) -> QuirksMode {
-        self.extra.quirks_mode
+        self.extra.media_data.quirks_mode
     }
 
     /// Returns a hasher specific to this document, used to vary the random
@@ -171,9 +164,33 @@ impl Device {
         true
     }
 
+    /// Get the [`MediaData`] associated with this [`Device`].
+    #[inline]
+    pub fn media_data(&self) -> &MediaData {
+        &self.extra.media_data
+    }
+
+    /// Mutate the [`MediaData`] on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn media_data_mut(&mut self) -> &mut MediaData {
+        &mut self.extra.media_data
+    }
+
+    /// Set the [`MediaData`] on this [`Device`].
+    ///
+    /// Note that this does not update any associated `Stylist`. For this you must call
+    /// `Stylist::media_features_change_changed_style` and
+    /// `Stylist::force_stylesheet_origins_dirty`.
+    pub fn set_media_data(&mut self, media_data: MediaData) {
+        self.extra.media_data = media_data;
+    }
+
     /// Get the viewport size on this [`Device`].
     pub fn viewport_size(&self) -> Size2D<f32, CSSPixel> {
-        self.extra.viewport_size
+        self.extra.media_data.viewport_size
     }
 
     /// Set the viewport size on this [`Device`].
@@ -182,7 +199,7 @@ impl Device {
     /// `Stylist::media_features_change_changed_style` and
     /// `Stylist::force_stylesheet_origins_dirty`.
     pub fn set_viewport_size(&mut self, viewport_size: Size2D<f32, CSSPixel>) {
-        self.extra.viewport_size = viewport_size;
+        self.extra.media_data.viewport_size = viewport_size;
     }
 
     /// Returns the viewport size of the current device in app units, needed,
@@ -190,8 +207,8 @@ impl Device {
     #[inline]
     pub fn au_viewport_size(&self) -> UntypedSize2D<Au> {
         Size2D::new(
-            Au::from_f32_px(self.extra.viewport_size.width),
-            Au::from_f32_px(self.extra.viewport_size.height),
+            Au::from_f32_px(self.extra.media_data.viewport_size.width),
+            Au::from_f32_px(self.extra.media_data.viewport_size.height),
         )
     }
 
@@ -208,17 +225,17 @@ impl Device {
 
     /// Returns the number of app units per device pixel we're using currently.
     pub fn app_units_per_device_pixel(&self) -> i32 {
-        (AU_PER_PX as f32 / self.extra.device_pixel_ratio.0) as i32
+        (AU_PER_PX as f32 / self.extra.media_data.device_pixel_ratio.0) as i32
     }
 
     /// Returns the device pixel ratio, ignoring the full zoom factor.
     pub fn device_pixel_ratio_ignoring_full_zoom(&self) -> Scale<f32, CSSPixel, DevicePixel> {
-        self.extra.device_pixel_ratio
+        self.extra.media_data.device_pixel_ratio
     }
 
     /// Returns the device pixel ratio.
     pub fn device_pixel_ratio(&self) -> Scale<f32, CSSPixel, DevicePixel> {
-        self.extra.device_pixel_ratio
+        self.extra.media_data.device_pixel_ratio
     }
 
     /// Set a new device pixel ratio on this [`Device`].
@@ -230,7 +247,7 @@ impl Device {
         &mut self,
         device_pixel_ratio: Scale<f32, CSSPixel, DevicePixel>,
     ) {
-        self.extra.device_pixel_ratio = device_pixel_ratio;
+        self.extra.media_data.device_pixel_ratio = device_pixel_ratio;
     }
 
     /// Set the device size on this [`Device`] (e.g. the available screen dimensions).
@@ -239,13 +256,13 @@ impl Device {
     /// `Stylist::media_features_change_changed_style` and
     /// `Stylist::force_stylesheet_origins_dirty`.
     pub fn set_device_size(&mut self, device_size: Size2D<f32, DevicePixel>) {
-        self.extra.device_size = device_size;
+        self.extra.media_data.device_size = device_size;
     }
 
     /// Returns the screen size of the current device in app units.
     #[inline]
     pub fn device_size(&self) -> Size2D<f32, DevicePixel> {
-        self.extra.device_size
+        self.extra.media_data.device_size
     }
 
     /// Gets the size of the scrollbar in CSS pixels.
@@ -277,12 +294,12 @@ impl Device {
     /// `Stylist::media_features_change_changed_style` and
     /// `Stylist::force_stylesheet_origins_dirty`.
     pub fn set_media_type(&mut self, media_type: MediaType) {
-        self.extra.media_type = media_type;
+        self.extra.media_data.media_type = media_type;
     }
 
     /// Return the media type of the current device.
     pub fn media_type(&self) -> MediaType {
-        self.extra.media_type.clone()
+        self.extra.media_data.media_type.clone()
     }
 
     /// Returns whether document colors are enabled.
@@ -306,12 +323,12 @@ impl Device {
     /// `Stylist::media_features_change_changed_style` and
     /// `Stylist::force_stylesheet_origins_dirty`.
     pub fn set_color_scheme(&mut self, new_color_scheme: PrefersColorScheme) {
-        self.extra.prefers_color_scheme = new_color_scheme;
+        self.extra.media_data.prefers_color_scheme = new_color_scheme;
     }
 
     /// Returns the color scheme of this [`Device`].
     pub fn color_scheme(&self) -> PrefersColorScheme {
-        self.extra.prefers_color_scheme
+        self.extra.media_data.prefers_color_scheme
     }
 
     /// Set the [`PointerCapbabilities`] value for the primary pointer on this [`Device`]
@@ -320,12 +337,12 @@ impl Device {
     /// `Stylist::media_features_change_changed_style` and
     /// `Stylist::force_stylesheet_origins_dirty`.
     pub fn set_primary_pointer_capabilities(&mut self, capabilities: PointerCapabilities) {
-        self.extra.primary_pointer_capabilities = capabilities;
+        self.extra.media_data.primary_pointer_capabilities = capabilities;
     }
 
     /// Returns the pointer capabilities of this [`Device`].
     pub fn primary_pointer_capabilities(&self) -> PointerCapabilities {
-        self.extra.primary_pointer_capabilities
+        self.extra.media_data.primary_pointer_capabilities
     }
 
     /// Set the [`PointerCapbabilities`] value for all pointers on this [`Device`]
@@ -334,12 +351,12 @@ impl Device {
     /// `Stylist::media_features_change_changed_style` and
     /// `Stylist::force_stylesheet_origins_dirty`.
     pub fn set_all_pointer_capabilities(&mut self, capabilities: PointerCapabilities) {
-        self.extra.all_pointer_capabilities = capabilities;
+        self.extra.media_data.all_pointer_capabilities = capabilities;
     }
 
     /// Returns the pointer capabilities of this [`Device`].
     pub fn all_pointer_capabilities(&self) -> PointerCapabilities {
-        self.extra.all_pointer_capabilities
+        self.extra.media_data.all_pointer_capabilities
     }
 
     pub(crate) fn is_dark_color_scheme(&self, color_scheme_flags: ColorSchemeFlags) -> bool {
