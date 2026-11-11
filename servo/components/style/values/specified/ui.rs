@@ -317,6 +317,31 @@ pub enum Inert {
     Inert,
 }
 
+/// The interactivity property
+/// https://drafts.csswg.org/css-ui-4/#propdef-interactivity
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    FromPrimitive,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum Interactivity {
+    Auto,
+    Inert,
+}
+
 /// Internal -moz-user-focus property.
 /// https://developer.mozilla.org/en-US/docs/Web/CSS/-moz-user-focus
 #[allow(missing_docs)]

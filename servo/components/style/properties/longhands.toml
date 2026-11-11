@@ -1890,11 +1890,21 @@ affects = ""
 type = "Inert"
 initial = "specified::Inert::None"
 struct = "inherited_ui"
-engine = "gecko"
 gecko_ffi_name = "mInert"
 animation_type = "discrete"
 enabled_in = "ua"
 spec = "Nonstandard (https://html.spec.whatwg.org/multipage/#inert-subtrees)"
+servo_restyle_damage = "repaint"
+affects = "paint"
+
+[interactivity]
+type = "Interactivity"
+initial = "specified::Interactivity::Auto"
+struct = "inherited_ui"
+engine = "servo"
+animation_type = "discrete"
+spec = "https://drafts.csswg.org/css-ui-4/#propdef-interactivity"
+servo_restyle_damage = "repaint"
 affects = "paint"
 
 [-moz-user-focus]

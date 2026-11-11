@@ -10,8 +10,8 @@ use crate::values::computed::image::Image;
 use crate::values::generics::ui as generics;
 
 pub use crate::values::specified::ui::{
-    BoolInteger, CursorKind, FieldSizing, ImeMode, Inert, MozTheme, PointerEvents, ScrollbarWidth,
-    UserFocus, UserSelect, WindowDragging, WindowShadow,
+    BoolInteger, CursorKind, FieldSizing, ImeMode, Inert, Interactivity, MozTheme, PointerEvents,
+    ScrollbarWidth, UserFocus, UserSelect, WindowDragging, WindowShadow,
 };
 
 /// A computed value for the `cursor` property.

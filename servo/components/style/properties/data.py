@@ -646,6 +646,7 @@ class Longhand(Property):
                 "ImageDecoding",
                 "ImageRendering",
                 "Inert",
+                "Interactivity",
                 "PositionArea",
                 "PositionAreaKeyword",
                 "PositionProperty",

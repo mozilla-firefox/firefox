@@ -390,6 +390,7 @@ pub enum NonTSPseudoClass {
     Lang(Lang),
     Link,
     Modal,
+    MozInert,
     MozMeterOptimum,
     MozMeterSubOptimum,
     MozMeterSubSubOptimum,
@@ -464,6 +465,7 @@ impl ToCss for NonTSPseudoClass {
             Self::Invalid => ":invalid",
             Self::Link => ":link",
             Self::Modal => ":modal",
+            Self::MozInert => ":-moz-inert",
             Self::MozMeterOptimum => ":-moz-meter-optimum",
             Self::MozMeterSubOptimum => ":-moz-meter-sub-optimum",
             Self::MozMeterSubSubOptimum => ":-moz-meter-sub-sub-optimum",
@@ -509,6 +511,7 @@ impl NonTSPseudoClass {
             Self::Invalid => ElementState::INVALID,
             Self::Link => ElementState::UNVISITED,
             Self::Modal => ElementState::MODAL,
+            Self::MozInert => ElementState::INERT,
             Self::MozMeterOptimum => ElementState::OPTIMUM,
             Self::MozMeterSubOptimum => ElementState::SUB_OPTIMUM,
             Self::MozMeterSubSubOptimum => ElementState::SUB_SUB_OPTIMUM,
@@ -643,6 +646,14 @@ impl<'a, 'i> ::selectors::Parser<'i> for SelectorParser<'a> {
             "user-valid" => NonTSPseudoClass::UserValid,
             "valid" => NonTSPseudoClass::Valid,
             "visited" => NonTSPseudoClass::Visited,
+            "-moz-inert" => {
+                if !self.in_user_agent_stylesheet() {
+                    return Err(ParseError::custom(
+                        SelectorParseErrorKind::UnexpectedIdent
+                    ))
+                }
+                NonTSPseudoClass::MozInert
+            },
             "-moz-meter-optimum" => NonTSPseudoClass::MozMeterOptimum,
             "-moz-meter-sub-optimum" => NonTSPseudoClass::MozMeterSubOptimum,
             "-moz-meter-sub-sub-optimum" => NonTSPseudoClass::MozMeterSubSubOptimum,
