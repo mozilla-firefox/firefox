@@ -75,24 +75,12 @@ add_setup(async function () {
   let promise = waitForDomainToCategoriesUpdate();
   await insertRecordIntoCollectionAndSync();
   await SpecialPowers.pushPrefEnv({
-    set: [
-      ["browser.search.serpEventTelemetryCategorization.enabled", true],
-      ["browser.search.serpMetricsRecordedCounter", 0],
-    ],
+    set: [["browser.search.serpMetricsRecordedCounter", 0]],
   });
   await promise;
 
   registerCleanupFunction(async () => {
-    // Manually unload the pref so that we can check if we should wait for the
-    // the categories map to be un-initialized.
     await SpecialPowers.popPrefEnv();
-    if (
-      !Services.prefs.getBoolPref(
-        "browser.search.serpEventTelemetryCategorization.enabled"
-      )
-    ) {
-      await waitForDomainToCategoriesUninit();
-    }
     CATEGORIZATION_SETTINGS.PING_SUBMISSION_THRESHOLD = oldThreshold;
     SearchSERPTelemetry.overrideSearchTelemetryForTests();
     resetTelemetry();

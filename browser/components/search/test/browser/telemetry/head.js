@@ -762,6 +762,10 @@ async function initSinglePageAppTest({ baseProviderOverrides = {} } = {}) {
   // Shorten delay to avoid potential TV timeouts.
   Services.ppmm.sharedData.set(SEARCH_TELEMETRY_SHARED.SPA_LOAD_TIMEOUT, 100);
 
+  await SpecialPowers.pushPrefEnv({
+    set: [["dom.ipc.processCount.webIsolated", 1]],
+  });
+
   registerCleanupFunction(function () {
     Services.ppmm.sharedData.set(
       SEARCH_TELEMETRY_SHARED.SPA_LOAD_TIMEOUT,

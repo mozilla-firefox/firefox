@@ -15,10 +15,6 @@ if (AppConstants.platform == "macosx") {
 add_setup(async function () {
   await initSinglePageAppTest();
 
-  await SpecialPowers.pushPrefEnv({
-    set: [["dom.ipc.processCount.webIsolated", 1]],
-  });
-
   registerCleanupFunction(async () => {
     SearchSERPTelemetry.overrideSearchTelemetryForTests();
     resetTelemetry();

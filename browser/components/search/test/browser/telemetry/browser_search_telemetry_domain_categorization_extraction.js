@@ -396,23 +396,9 @@ const TESTS = [
 ];
 
 add_setup(async function () {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.search.serpEventTelemetryCategorization.enabled", true]],
-  });
-
   await SearchSERPTelemetry.init();
 
   registerCleanupFunction(async () => {
-    // Manually unload the pref so that we can check if we should wait for the
-    // the categories map to be un-initialized.
-    await SpecialPowers.popPrefEnv();
-    if (
-      !Services.prefs.getBoolPref(
-        "browser.search.serpEventTelemetryCategorization.enabled"
-      )
-    ) {
-      await waitForDomainToCategoriesUninit();
-    }
     resetTelemetry();
   });
 });
