@@ -670,8 +670,6 @@ class MediaTrackGraphImpl : public MediaTrackGraph,
   already_AddRefed<MediaInputPort> ConnectToCaptureTrack(
       uint64_t aWindowId, MediaTrack* aMediaTrack);
 
-  Watchable<GraphTime>& CurrentTime() override;
-
   /**
    * Interrupt any JS running on the graph thread.
    * Called on the main thread when shutting down the graph.
@@ -1167,18 +1165,6 @@ class MediaTrackGraphImpl : public MediaTrackGraph,
    */
   bool mCanRunMessagesSynchronously;
 #endif
-
-  /**
-   * The graph's main-thread observable graph time.
-   * Updated by the stable state runnable after each iteration.
-   */
-  Watchable<GraphTime> mMainThreadGraphTime;
-
-  /**
-   * Set based on mProcessedTime at end of iteration.
-   * Read by stable state runnable on main thread. Protected by mMonitor.
-   */
-  GraphTime mNextMainThreadGraphTime MOZ_GUARDED_BY(mMonitor) = 0;
 
   /**
    * Cached audio output latency, in seconds. Main thread only. This is reset

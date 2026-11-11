@@ -1295,12 +1295,6 @@ class MediaTrackGraph {
   }
 
   /**
-   * Returns a watchable of the graph's main-thread observable graph time.
-   * Main thread only.
-   */
-  virtual Watchable<GraphTime>& CurrentTime() = 0;
-
-  /**
    * Graph thread function to return the time at which all processing has been
    * completed.  Some tracks may have performed processing beyond this time.
    */
