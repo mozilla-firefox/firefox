@@ -6,7 +6,7 @@
 
 use crate::color::AbsoluteColor;
 use crate::context::QuirksMode;
-use crate::custom_properties::CssEnvironment;
+use crate::substitution::env::CssEnvironment;
 use crate::font_metrics::FontMetrics;
 use crate::logical_geometry::WritingMode;
 use crate::media_queries::MediaType;
@@ -93,6 +93,7 @@ impl Device {
     pub fn new(
         default_values: Arc<ComputedValues>,
         font_metrics_provider: Box<dyn FontMetricsProvider>,
+        submit_string: Box<str>,
         media_data: MediaData,
     ) -> Device {
         let root_style = RwLock::new(Arc::clone(&default_values));
@@ -113,6 +114,7 @@ impl Device {
             environment: CssEnvironment,
             default_values,
             body_text_color: RwLock::new(AbsoluteColor::BLACK),
+            submit_string,
             extra: ExtraDeviceData {
                 media_data,
                 font_metrics_provider,

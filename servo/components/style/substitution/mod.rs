@@ -31,7 +31,7 @@ use servo_arc::Arc;
 use smallvec::SmallVec;
 use std::borrow::Cow;
 use std::num;
-use strum::VariantNames;
+use strum_macros::VariantNames;
 use style_traits::{ParseError, ParsingMode, StyleParseErrorKind};
 
 pub use self::attr::AttrFunction;
