@@ -180,6 +180,12 @@ support-files = ["res_hello_h1.sjs"]
 
 ["browser_essential_domain_fallbacks.js"]
 
+["browser_eventsource_worker_close.js"]
+support-files = [
+  "eventsource_worker_close.sjs",
+  "eventsource_worker_close_worker.js",
+]
+
 ["browser_fetch_after_suspending_request.js"]
 
 ["browser_fetch_lnk.js"]
