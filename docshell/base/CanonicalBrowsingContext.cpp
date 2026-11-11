@@ -1723,7 +1723,7 @@ void CanonicalBrowsingContext::ReplaceActiveSessionHistoryEntry(
   // interaction state does not get updated. So we instead propagate state from
   // the previous canonical entry. See bug 1917369.
   const bool hasUserInteraction = mActiveEntry->GetHasUserInteraction();
-  mActiveEntry->SetInfo(aInfo);
+  mActiveEntry->ReplaceInfo(aInfo);
   mActiveEntry->SetHasUserInteraction(hasUserInteraction);
   // Notify children of the update
   nsSHistory* shistory = static_cast<nsSHistory*>(GetSessionHistory());

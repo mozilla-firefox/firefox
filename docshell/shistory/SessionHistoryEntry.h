@@ -332,6 +332,10 @@ struct LoadingSessionHistoryInfo {
   // other cases mForceMaybeResetName.isSome() will be false and the child
   // process should be able to make that determination itself.
   Maybe<bool> mForceMaybeResetName;
+
+  // If true, the load replaces the active entry in place instead of adding a
+  // new one. Not serialized.
+  bool mReplacesActiveEntry = false;
 };
 
 // HistoryEntryCounterForBrowsingContext is used to count the number of entries
@@ -470,6 +474,7 @@ class SessionHistoryEntry : public nsISHEntry, public nsSupportsWeakReference {
   already_AddRefed<SessionHistoryEntry> GetParent();
 
   void SetInfo(SessionHistoryInfo* aInfo);
+  void ReplaceInfo(SessionHistoryInfo* aInfo);
 
   bool ForInitialLoad() { return mForInitialLoad; }
   void SetForInitialLoad(bool aForInitialLoad) {

@@ -41,7 +41,6 @@
 #include "nsIMultiPartChannel.h"
 #include "nsIPrincipal.h"
 #include "nsISHistory.h"
-#include "nsIScriptChannel.h"
 #include "nsIStructuredCloneContainer.h"
 #include "nsIXULRuntime.h"
 #include "nsNetUtil.h"
@@ -335,11 +334,9 @@ bool Navigation::HasEntriesAndEventsDisabled() const {
   return !doc || !doc->IsCurrentActiveDocument() ||
          doc->IsEverInitialDocument() ||
          doc->GetPrincipal()->GetIsNullPrincipal() ||
-         // We explicitly disallow documents loaded through multipart and
-         // script channels from having events or entries. See bug 1996218
-         // and bug 1996221
+         // We explicitly disallow documents loaded through multipart channels
+         // from having events or entries. See bug 1996218
          SupportsInterface<nsIMultiPartChannel>(doc->GetChannel()) ||
-         SupportsInterface<nsIScriptChannel>(doc->GetChannel()) ||
          // We also disallow documents embedded using <object>/<embed>. See bug
          // 1996215.
          !doc->GetBrowsingContext() ||

@@ -1434,6 +1434,20 @@ void SessionHistoryEntry::SetInfo(SessionHistoryInfo* aInfo) {
   mInfo = std::make_unique<SessionHistoryInfo>(*aInfo);
 }
 
+void SessionHistoryEntry::ReplaceInfo(SessionHistoryInfo* aInfo) {
+  const RefPtr<SHEntrySharedParentState> oldState = SharedInfo();
+  SetInfo(aInfo);
+  SHEntrySharedParentState* newState = SharedInfo();
+  if (newState == oldState) {
+    return;
+  }
+  newState->mDocShellID = oldState->mDocShellID;
+  newState->mSHistory = oldState->mSHistory;
+  newState->mIsFrameNavigation = oldState->mIsFrameNavigation;
+  newState->mDynamicallyCreated = oldState->mDynamicallyCreated;
+  mChildren.Clear();
+}
+
 already_AddRefed<nsIURI>
 SessionHistoryInfo::GetURIOrInheritedForAboutBlankOrSrcdoc() const {
   if (mURI && NS_IsAboutBlankOrSrcdoc(mURI)) {
