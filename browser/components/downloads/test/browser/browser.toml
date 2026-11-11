@@ -3,9 +3,9 @@ support-files = ["head.js"]
 
 ["browser_about_downloads.js"]
 
-["browser_blocked_and_deleted_status.js"]
-
 ["browser_basic_functionality.js"]
+
+["browser_blocked_and_deleted_status.js"]
 
 ["browser_confirm_unblock_download.js"]
 
@@ -100,5 +100,7 @@ support-files = [
 ["browser_overflow_anchor.js"]
 
 ["browser_pdfjs_preview.js"]
+
+["browser_private_downloads_subview.js"]
 
 ["browser_tempfilename.js"]
