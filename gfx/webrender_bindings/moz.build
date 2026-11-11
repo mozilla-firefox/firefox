@@ -93,18 +93,20 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
     EXPORTS.mozilla.webrender += [
-        "RenderLinuxTextureHost.h",
+        "RenderDMABUFTextureHost.h",
     ]
     SOURCES += [
-        "RenderLinuxTextureHost.cpp",
+        "RenderDMABUFTextureHost.cpp",
     ]
 
 if CONFIG["MOZ_WAYLAND"]:
     EXPORTS.mozilla.webrender += [
         "RenderCompositorNative.h",
+        "RenderWaylandTextureHost.h",
     ]
     SOURCES += [
         "RenderCompositorNative.cpp",
+        "RenderWaylandTextureHost.cpp",
     ]
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] in ("android", "gtk"):
