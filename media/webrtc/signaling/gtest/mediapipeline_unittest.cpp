@@ -109,8 +109,8 @@ class FakeAudioTrack : public ProcessedMediaTrack {
 
   void Destroy() override {
     MutexAutoLock lock(mMutex);
-    MOZ_RELEASE_ASSERT(!mMainThreadDestroyed);
-    mMainThreadDestroyed = true;
+    MOZ_RELEASE_ASSERT(!mDestroyed);
+    mDestroyed = true;
     mTimer->Cancel();
     mTimer = nullptr;
   }
@@ -146,7 +146,7 @@ class FakeAudioTrack : public ProcessedMediaTrack {
   static void FakeAudioTrackGenerateData(nsITimer* /*timer*/, void* closure) {
     auto t = static_cast<FakeAudioTrack*>(closure);
     MutexAutoLock lock(t->mMutex);
-    if (t->mMainThreadDestroyed) {
+    if (t->mDestroyed) {
       return;
     }
     CheckedInt<size_t> bufferSize(sizeof(int16_t));
@@ -806,7 +806,7 @@ class MockSourceMediaTrack : public SourceMediaTrack {
       MediaTrackListener* aListener) override {
     return GenericPromise::CreateAndResolve(true, __func__);
   }
-  void Destroy() override { mMainThreadDestroyed = true; }
+  void Destroy() override { mDestroyed = true; }
 };
 
 // A frame libwebrtc decodes itself reaches the track as an I420 copy in the

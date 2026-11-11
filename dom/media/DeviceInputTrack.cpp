@@ -237,7 +237,7 @@ NotNull<RefPtr<DeviceInputTrack>> DeviceInputTrack::OpenAudio(
     LOG("Create {}NativeInputTrack {} in MTG {} for device {}",
         (track->AsNativeInputTrack() ? "" : "Non"), fmt::ptr(track.get()),
         fmt::ptr(aGraph), fmt::ptr(aDeviceId));
-    aGraph->AddTrack(track);
+    aGraph->AddTrack(track, {});
     // Add the listener before opening the device so the device passed to
     // OpenAudioInput always has a non-zero input channel count.
     track->AddDataListener(aConsumer->GetAudioDataListener());

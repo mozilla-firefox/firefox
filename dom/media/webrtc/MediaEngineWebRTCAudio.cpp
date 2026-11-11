@@ -1382,7 +1382,7 @@ void AudioProcessingTrack::SetInputProcessing(
 AudioProcessingTrack* AudioProcessingTrack::Create(MediaTrackGraph* aGraph) {
   MOZ_ASSERT(NS_IsMainThread());
   AudioProcessingTrack* track = new AudioProcessingTrack(aGraph->GraphRate());
-  aGraph->AddTrack(track);
+  aGraph->AddTrack(track, {});
   return track;
 }
 

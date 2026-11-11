@@ -42,7 +42,7 @@ AudioNodeExternalInputTrack::Create(MediaTrackGraph* aGraph,
   RefPtr<AudioNodeExternalInputTrack> track =
       new AudioNodeExternalInputTrack(aEngine, aGraph->GraphRate());
   track->mSuspendedCount += ctx->ShouldSuspendNewTrack();
-  aGraph->AddTrack(track);
+  aGraph->AddTrack(track, {});
   return track.forget();
 }
 

@@ -32,7 +32,7 @@ AudioDecoderInputTrack* AudioDecoderInputTrack::Create(
   AudioDecoderInputTrack* track =
       new AudioDecoderInputTrack(aDecoderThread, aGraph->GraphRate(), aInfo,
                                  aPlaybackRate, aPreservesPitch);
-  aGraph->AddTrack(track);
+  aGraph->AddTrack(track, {});
   return track;
 }
 
