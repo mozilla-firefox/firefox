@@ -15,9 +15,13 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_4_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_5_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_6_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_7_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.NAVIGATION_ID
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeHomepage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DefaultBrowserBanner
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.NewPrivateTab
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.NewTab
+import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 
 class BrowserMenuConfigurationTest {
     @Test
@@ -174,7 +178,7 @@ class BrowserMenuConfigurationTest {
             defaultMenuInfo.visibleSectionIds,
         )
         assertEquals(NAVIGATION_ID, defaultMenuInfo.visibleSectionIds.last())
-        assertEquals(emptyList(), defaultMenuInfo.hiddenSectionIds)
+        assertEquals(listOf(GROUP_7_ID), defaultMenuInfo.hiddenSectionIds)
     }
 
     @Test
@@ -193,9 +197,17 @@ class BrowserMenuConfigurationTest {
     @Test
     fun `WHEN getting all the browser menu sections THEN return every section with the navigation block first`() {
         assertEquals(
-            listOf(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+            listOf(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID, GROUP_7_ID),
             BrowserMenuConfiguration.allSections().map { it.id },
         )
+    }
+
+    @Test
+    fun `WHEN checking group 7 section THEN it contains new tab items in Row mode and is hidden by default`() {
+        val group7Section = BrowserMenuConfiguration.allSections().first { it.id == GROUP_7_ID }
+        assertEquals(Row, group7Section.presentationMode)
+        assertEquals(listOf(NewTab, NewPrivateTab), group7Section.items)
+        assertTrue(GROUP_7_ID in BrowserMenuConfiguration.HIDDEN_BY_DEFAULT_SECTION_IDS)
     }
 
     @Test

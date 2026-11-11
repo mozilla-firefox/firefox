@@ -534,6 +534,26 @@ class MenuTelemetryMiddlewareTest {
         assertTelemetryRecorded(Events.browserMenuAction, item = "add_to_group")
     }
 
+    @Test
+    fun `WHEN navigating to open a new tab THEN record the new tab browser menu telemetry`() {
+        val store = createStore()
+        assertNull(Events.browserMenuAction.testGetValue())
+
+        store.dispatch(MenuAction.Navigate.NewTab)
+
+        assertTelemetryRecorded(Events.browserMenuAction, item = "new_tab")
+    }
+
+    @Test
+    fun `WHEN navigating to open a new private tab THEN record the new private tab browser menu telemetry`() {
+        val store = createStore()
+        assertNull(Events.browserMenuAction.testGetValue())
+
+        store.dispatch(MenuAction.Navigate.NewPrivateTab)
+
+        assertTelemetryRecorded(Events.browserMenuAction, item = "new_private_tab")
+    }
+
     private fun assertTelemetryRecorded(
         event: EventMetricType<Events.BrowserMenuActionExtra>,
         item: String,

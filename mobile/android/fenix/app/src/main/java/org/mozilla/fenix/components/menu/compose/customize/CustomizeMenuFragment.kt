@@ -18,6 +18,7 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuContent
 import mozilla.components.feature.automotive.isAndroidAutomotiveAvailable
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
+import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.MenuBuilder
@@ -134,6 +135,7 @@ class CustomizeMenuFragment : Fragment(), SystemInsetsPaddedFragment {
             setAsDefaultBrowserDelegate = activity::openSetDefaultBrowserOption,
             menuViewScope = viewLifecycleOwner.lifecycle.coroutineScope,
             applicationScope = components.applicationScope,
+            browsingModeManager = (activity as HomeActivity).browsingModeManager,
         )
     }
 }

@@ -28,8 +28,11 @@ import org.mozilla.fenix.browser.RefreshMenuItemProvider
 import org.mozilla.fenix.browser.ShareMenuItemProvider
 import org.mozilla.fenix.browser.applinks.OpenInAppMenuItemProvider
 import org.mozilla.fenix.browser.applinks.OpenInFirefoxMenuItemProvider
+import org.mozilla.fenix.browser.browsingmode.BrowsingModeManager
 import org.mozilla.fenix.browser.menu.MoreMenuItemsProvider
 import org.mozilla.fenix.browser.menu.MoveToNormalTabsMenuItemProvider
+import org.mozilla.fenix.browser.menu.NewPrivateTabMenuItemProvider
+import org.mozilla.fenix.browser.menu.NewTabMenuItemProvider
 import org.mozilla.fenix.browser.readermode.ReaderViewMenuItemProvider
 import org.mozilla.fenix.collections.SaveToCollectionMenuItemProvider
 import org.mozilla.fenix.components.AppStore
@@ -94,12 +97,29 @@ class MenuItemProvidersFactory(
     private val setAsDefaultBrowserDelegate: () -> Unit,
     private val menuViewScope: CoroutineScope,
     private val applicationScope: CoroutineScope,
+    private val browsingModeManager: BrowsingModeManager,
 ) {
 
     /** Build a [MenuItemProvider] for the given [FenixMenuItem]. */
     @Suppress("LongMethod", "CyclomaticComplexMethod")
     fun buildProviderFor(item: FenixMenuItem): MenuItemProvider =
         when (item) {
+            FenixMenuItem.NewTab ->
+                NewTabMenuItemProvider(
+                    target = target,
+                    fenixBrowserUseCases = useCases.fenixBrowserUseCases,
+                    settings = settings,
+                    browsingModeManager = browsingModeManager,
+                )
+
+            FenixMenuItem.NewPrivateTab ->
+                NewPrivateTabMenuItemProvider(
+                    target = target,
+                    fenixBrowserUseCases = useCases.fenixBrowserUseCases,
+                    settings = settings,
+                    browsingModeManager = browsingModeManager,
+                )
+
             FenixMenuItem.DefaultBrowserBanner ->
                 DefaultBrowserMenuItemProvider(
                     settings = settings,

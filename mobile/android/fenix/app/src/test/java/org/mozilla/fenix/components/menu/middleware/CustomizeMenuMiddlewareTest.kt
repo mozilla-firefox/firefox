@@ -41,6 +41,7 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_4_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_5_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_6_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_7_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.NAVIGATION_ID
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -83,7 +84,11 @@ class CustomizeMenuMiddlewareTest {
         runCurrent()
 
         captureActions.assertLastAction(Update::class) {
-            assertEquals(defaultMenuInfo.visibleSectionIds, it.items.map { group -> group.id })
+            assertEquals(
+                defaultMenuInfo.visibleSectionIds + defaultMenuInfo.hiddenSectionIds,
+                it.items.map { group -> group.id },
+            )
+            assertEquals(setOf(GROUP_7_ID), it.hiddenGroupIds)
             assertFalse(it.isCustomized)
         }
     }
@@ -277,7 +282,12 @@ class CustomizeMenuMiddlewareTest {
             val store =
                 createStore(initialState = CustomizableMenuState(menuGroups = defaultGroups(), isCustomized = true))
 
-            store.dispatch(MenuStructureChanged(items = defaultGroups(), hiddenGroupIds = emptySet()))
+            store.dispatch(
+                MenuStructureChanged(
+                    items = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
+                    hiddenGroupIds = defaultMenuInfo.hiddenSectionIds.toSet(),
+                )
+            )
 
             assertFalse(store.state.isCustomized)
         }

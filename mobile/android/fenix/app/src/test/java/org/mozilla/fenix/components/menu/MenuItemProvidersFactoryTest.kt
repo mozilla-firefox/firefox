@@ -35,6 +35,8 @@ import org.mozilla.fenix.browser.applinks.OpenInAppMenuItemProvider
 import org.mozilla.fenix.browser.applinks.OpenInFirefoxMenuItemProvider
 import org.mozilla.fenix.browser.menu.MoreMenuItemsProvider
 import org.mozilla.fenix.browser.menu.MoveToNormalTabsMenuItemProvider
+import org.mozilla.fenix.browser.menu.NewPrivateTabMenuItemProvider
+import org.mozilla.fenix.browser.menu.NewTabMenuItemProvider
 import org.mozilla.fenix.browser.readermode.ReaderViewMenuItemProvider
 import org.mozilla.fenix.collections.SaveToCollectionMenuItemProvider
 import org.mozilla.fenix.components.AppStore
@@ -165,10 +167,13 @@ class MenuItemProvidersFactoryTest {
             setAsDefaultBrowserDelegate = {},
             menuViewScope = scope,
             applicationScope = scope,
+            browsingModeManager = mockk(relaxed = true),
         )
 
     private val expectedProviders: Map<KClass<out FenixMenuItem>, KClass<out MenuItemProvider>> =
         mapOf(
+            FenixMenuItem.NewTab::class to NewTabMenuItemProvider::class,
+            FenixMenuItem.NewPrivateTab::class to NewPrivateTabMenuItemProvider::class,
             FenixMenuItem.DefaultBrowserBanner::class to DefaultBrowserMenuItemProvider::class,
             FenixMenuItem.CustomizeReaderView::class to ReaderViewMenuItemProvider::class,
             FenixMenuItem.IPProtection::class to VpnMenuItemProvider::class,

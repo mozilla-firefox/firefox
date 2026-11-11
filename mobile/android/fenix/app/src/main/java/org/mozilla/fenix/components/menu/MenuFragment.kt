@@ -74,6 +74,7 @@ import mozilla.components.support.utils.ext.pixelSizeFor
 import mozilla.components.support.utils.ext.top
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.Events
+import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.compose.CustomizeMenuPopup
 import org.mozilla.fenix.components.menu.compose.MenuDialogBottomSheet
@@ -387,6 +388,7 @@ class MenuFragment : BottomSheetDialogFragment() {
             setAsDefaultBrowserDelegate = activity::openSetDefaultBrowserOption,
             menuViewScope = viewLifecycleOwner.lifecycle.coroutineScope,
             applicationScope = components.applicationScope,
+            browsingModeManager = (activity as HomeActivity).browsingModeManager,
         )
     }
 

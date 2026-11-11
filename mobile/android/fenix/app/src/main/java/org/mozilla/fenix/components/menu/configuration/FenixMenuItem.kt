@@ -112,4 +112,10 @@ sealed interface FenixMenuItem {
 
     /** A menu item allowing to refresh or stop loading the current page. */
     data object Refresh : FenixMenuItem
+
+    /** A menu item allowing to open a new tab in normal mode. */
+    data object NewTab : FenixMenuItem
+
+    /** A menu item allowing to open a new tab in private mode. */
+    data object NewPrivateTab : FenixMenuItem
 }

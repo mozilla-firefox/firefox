@@ -145,7 +145,7 @@ events:
           custom_forward, custom_forward_long_press, custom_share, customize_homepage, desktop_view_off,
           desktop_view_on, discover_more_extensions, dismiss_menu_banner, downloads,
           edit_bookmark, find_in_page, forward, forward_long_press, history, install_addon,
-          installed_addon_details, menu_banner, new_tab, open_in_app, open_in_fenix, print_content,
+          installed_addon_details, menu_banner, new_private_tab, new_tab, open_in_app, open_in_fenix, print_content,
           quit, reader_mode_appearance, reload, remove_from_top_sites, save_to_collection,
           move_to_non_private_tab, set_default_browser, settings, share, stop, sync_account,
           translate and web_extension_browser_action_clicked.

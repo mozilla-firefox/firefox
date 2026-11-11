@@ -295,5 +295,11 @@ sealed class MenuAction : MenuEvent {
 
         /** [Navigate] action dispatched when navigating to the IP Protection settings screen. */
         data object IPProtectionSettings : Navigate()
+
+        /** [Navigate] action dispatched when opening a new normal tab. */
+        data object NewTab : Navigate()
+
+        /** [Navigate] action dispatched when opening a new private tab. */
+        data object NewPrivateTab : Navigate()
     }
 }

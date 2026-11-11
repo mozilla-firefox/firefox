@@ -216,6 +216,12 @@ class MenuTelemetryMiddleware<S : State, A : Action>(private val accessPoint: Me
                 Events.browserMenuAction.record(Events.BrowserMenuActionExtra(item = action.entryPoint.telemetryName))
             }
 
+            MenuAction.Navigate.NewTab ->
+                Events.browserMenuAction.record(Events.BrowserMenuActionExtra(item = "new_tab"))
+
+            MenuAction.Navigate.NewPrivateTab ->
+                Events.browserMenuAction.record(Events.BrowserMenuActionExtra(item = "new_private_tab"))
+
             MenuAction.Navigate.Summarizer,
             MenuAction.InitAction,
             is MenuAction.CustomMenuItemAction,
