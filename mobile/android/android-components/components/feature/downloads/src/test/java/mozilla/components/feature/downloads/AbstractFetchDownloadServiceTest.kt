@@ -6,6 +6,7 @@ package mozilla.components.feature.downloads
 
 import android.app.DownloadManager
 import android.app.DownloadManager.EXTRA_DOWNLOAD_ID
+import android.app.ForegroundServiceStartNotAllowedException
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.Service
@@ -81,6 +82,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -89,6 +91,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers.anyBoolean
+import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.ArgumentMatchers.anyString
 import org.mockito.ArgumentMatchers.argThat
@@ -1175,6 +1178,43 @@ class AbstractFetchDownloadServiceTest {
             service.setForegroundNotification()
 
             verify(service).startForeground(NOTIFICATION_DOWNLOAD_GROUP_ID, notification)
+        }
+
+    @Test
+    @Config(sdk = [31])
+    fun `onStartCommand does not crash when the app is not allowed to start a foreground service`() =
+        runTest(testDispatcher) {
+            val service = createService(browserStore, backgroundScope, testScheduler)
+            val download = DownloadState("https://example.com/file.txt", "file.txt")
+
+            val downloadIntent = Intent("ACTION_DOWNLOAD")
+            downloadIntent.putExtra(EXTRA_DOWNLOAD_ID, download.id)
+
+            doNothing().`when`(service).performDownload(any(), anyBoolean())
+            doThrow(ForegroundServiceStartNotAllowedException("Test thrown exception"))
+                .`when`(service)
+                .startForeground(anyInt(), any())
+
+            browserStore.dispatch(DownloadAction.AddDownloadAction(download))
+            service.onStartCommand(downloadIntent, 0, 0)
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            verify(service).startForeground(eq(NOTIFICATION_DOWNLOAD_GROUP_ID), any())
+            verify(service).startDownloadJob(any())
+            assertEquals(DOWNLOADING, service.downloadJobs[download.id]?.status)
+        }
+
+    @Test
+    @Config(sdk = [30])
+    fun `setForegroundNotification rethrows exceptions other than ForegroundServiceStartNotAllowedException`() =
+        runTest(testDispatcher) {
+            val service = createService(browserStore, backgroundScope, testScheduler)
+            val exception = IllegalStateException("Test thrown exception")
+            doReturn(mock<Notification>()).`when`(service).updateNotificationGroup()
+            doThrow(exception).`when`(service).startForeground(anyInt(), any())
+
+            val thrown = assertThrows(IllegalStateException::class.java) { service.setForegroundNotification() }
+            assertEquals(exception, thrown)
         }
 
     @Test

@@ -6,6 +6,7 @@ package mozilla.components.feature.downloads
 
 import android.app.DownloadManager.ACTION_DOWNLOAD_COMPLETE
 import android.app.DownloadManager.EXTRA_DOWNLOAD_ID
+import android.app.ForegroundServiceStartNotAllowedException
 import android.app.Notification
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -652,9 +653,22 @@ abstract class AbstractFetchDownloadService : Service() {
      * don't have more active downloads.
      */
     @VisibleForTesting
+    @Suppress("TooGenericExceptionCaught")
     internal fun setForegroundNotification() {
         val (notificationId, notification) = NOTIFICATION_DOWNLOAD_GROUP_ID to updateNotificationGroup()
-        startForeground(notificationId, notification)
+        try {
+            startForeground(notificationId, notification)
+        } catch (e: Exception) {
+            if (SDK_INT >= Build.VERSION_CODES.S && e is ForegroundServiceStartNotAllowedException) {
+                // The app may no longer be allowed to start a foreground service, e.g. when it moved to the
+                // background before this service was started (or when retrying a download from the background).
+                // Keep running as a regular service instead of crashing: the download notification has already
+                // been posted, and the download continues for as long as the system keeps the service alive.
+                logger.error("Unable to start the download service in the foreground", e)
+            } else {
+                throw e
+            }
+        }
     }
 
     /**
