@@ -312,6 +312,28 @@ class PlacesViewBase {
     aPopup._emptyMenuitem = aPopup._startMarker = aPopup._endMarker = null;
   }
 
+  /**
+   * Drops the _domNodes entries of an element that is being removed, and of
+   * the elements in its popup, so they don't keep stale nodes alive.
+   *
+   * @param {Element} aElt
+   *   A menu, menuitem, separator or button created for a Places node.
+   */
+  _forgetDOMNodes(aElt) {
+    let placesNode = aElt._placesNode;
+    if (placesNode) {
+      let mapped = this._domNodes.get(placesNode);
+      if (mapped === aElt || mapped?.parentNode === aElt) {
+        this._domNodes.delete(placesNode);
+      }
+    }
+    for (let child of aElt.menupopup?.children ?? []) {
+      if (child._placesNode) {
+        this._forgetDOMNodes(child);
+      }
+    }
+  }
+
   _cleanPopup(aPopup) {
     // Ensure markers are here when `invalidateContainer` is called before the
     // popup is shown, which may the case for panelviews, for example.
@@ -321,6 +343,7 @@ class PlacesViewBase {
     while (child.nextElementSibling != aPopup._endMarker) {
       let sibling = child.nextElementSibling;
       if (sibling._placesNode) {
+        this._forgetDOMNodes(sibling);
         aPopup.removeChild(sibling);
       } else {
         child = child.nextElementSibling;
@@ -461,6 +484,9 @@ class PlacesViewBase {
 
   toggleCutNode(aPlacesNode, aValue) {
     let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
+    if (!elt) {
+      return;
+    }
 
     // We may get the popup for menus, but we need the menu itself.
     if (elt.localName == "menupopup") {
@@ -513,9 +539,9 @@ class PlacesViewBase {
   nodeTitleChanged(aPlacesNode, aNewTitle) {
     let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
 
-    // There's no UI representation for the root node, thus there's
-    // nothing to be done when the title changes.
-    if (elt == this._rootElt) {
+    // There's no UI representation for the root node or for nodes that have no
+    // DOM node, thus there's nothing to be done when the title changes.
+    if (!elt || elt == this._rootElt) {
       return;
     }
 
@@ -536,23 +562,31 @@ class PlacesViewBase {
 
   nodeRemoved(aParentPlacesNode, aPlacesNode) {
     let parentElt = this._getDOMNodeForPlacesNode(aParentPlacesNode);
+    if (!parentElt?._built) {
+      return;
+    }
+
     let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
+    if (!elt) {
+      throw new Error(
+        `No DOM node for the removed node, type: ${aPlacesNode.type}`
+      );
+    }
 
     // Here we need the <menu>.
     if (elt.localName == "menupopup") {
       elt = elt.parentNode;
     }
 
-    if (parentElt._built) {
-      parentElt.removeChild(elt);
+    this._forgetDOMNodes(elt);
+    parentElt.removeChild(elt);
 
-      // Figure out if we need to show the "<Empty>" menu-item.
-      // TODO Bug 517701: This doesn't seem to handle the case of an empty
-      // root.
-      if (parentElt._startMarker.nextElementSibling == parentElt._endMarker) {
-        this._mayAddCommandsItems(parentElt);
-        this._setEmptyPopupStatus(parentElt, true);
-      }
+    // Figure out if we need to show the "<Empty>" menu-item.
+    // TODO Bug 517701: This doesn't seem to handle the case of an empty
+    // root.
+    if (parentElt._startMarker.nextElementSibling == parentElt._endMarker) {
+      this._mayAddCommandsItems(parentElt);
+      this._setEmptyPopupStatus(parentElt, true);
     }
   }
 
@@ -569,7 +603,7 @@ class PlacesViewBase {
 
   nodeInserted(aParentPlacesNode, aPlacesNode, aIndex) {
     let parentElt = this._getDOMNodeForPlacesNode(aParentPlacesNode);
-    if (!parentElt._built) {
+    if (!parentElt?._built) {
       return;
     }
 
@@ -598,6 +632,9 @@ class PlacesViewBase {
     // folder to another.  Instead, it calls nodeRemoved and nodeInserted
     // for the two folders.  Thus, we can assume old-parent == new-parent.
     let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
+    if (!elt) {
+      return;
+    }
 
     // Here we need the <menu>.
     if (elt.localName == "menupopup") {
@@ -611,7 +648,7 @@ class PlacesViewBase {
     }
 
     let parentElt = this._getDOMNodeForPlacesNode(aNewParentPlacesNode);
-    if (parentElt._built) {
+    if (parentElt?._built) {
       // Move the node.
       parentElt.removeChild(elt);
       let index =
@@ -648,6 +685,9 @@ class PlacesViewBase {
 
   invalidateContainer(aPlacesNode) {
     let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
+    if (!elt) {
+      return;
+    }
     elt._built = false;
 
     // If the menupopup is open we should live-update it.
@@ -1063,6 +1103,7 @@ class PlacesToolbar extends PlacesViewBase {
 
     this._openedMenuButton = null;
     while (this._rootElt.hasChildNodes()) {
+      this._forgetDOMNodes(this._rootElt.firstChild);
       this._rootElt.firstChild.remove();
     }
 
@@ -1420,6 +1461,10 @@ class PlacesToolbar extends PlacesViewBase {
 
   nodeInserted(aParentPlacesNode, aPlacesNode, aIndex) {
     let parentElt = this._getDOMNodeForPlacesNode(aParentPlacesNode);
+    // Nothing to do if the parent is a never-visible node.
+    if (!parentElt) {
+      return;
+    }
     if (parentElt == this._rootElt) {
       // Node is on the toolbar.
       let children = this._rootElt.children;
@@ -1438,7 +1483,9 @@ class PlacesToolbar extends PlacesViewBase {
           return;
         }
         // Keep the number of built nodes consistent.
-        this._rootElt.removeChild(this._rootElt.lastElementChild);
+        let lastElt = this._rootElt.lastElementChild;
+        this._forgetDOMNodes(lastElt);
+        this._rootElt.removeChild(lastElt);
       }
 
       let button = this._insertNewItem(
@@ -1467,6 +1514,9 @@ class PlacesToolbar extends PlacesViewBase {
 
   nodeRemoved(aParentPlacesNode, aPlacesNode, aIndex) {
     let parentElt = this._getDOMNodeForPlacesNode(aParentPlacesNode);
+    if (!parentElt) {
+      return;
+    }
     if (parentElt == this._rootElt) {
       // Node is on the toolbar.
       let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
@@ -1481,6 +1531,7 @@ class PlacesToolbar extends PlacesViewBase {
       }
 
       let overflowed = elt.style.visibility == "hidden";
+      this._forgetDOMNodes(elt);
       this._removeChild(elt);
       if (this._resultNode.childCount > this._rootElt.children.length) {
         // A new node should be built to keep a coherent number of children.
@@ -1506,6 +1557,9 @@ class PlacesToolbar extends PlacesViewBase {
     aNewIndex
   ) {
     let parentElt = this._getDOMNodeForPlacesNode(aNewParentPlacesNode);
+    if (!parentElt) {
+      return;
+    }
     if (parentElt == this._rootElt) {
       // Node is on the toolbar.
       // Do nothing if the node will never be visible.
@@ -1524,6 +1578,9 @@ class PlacesToolbar extends PlacesViewBase {
       }
 
       if (aNewIndex > lastBuiltIndex + 1) {
+        if (elt) {
+          this._forgetDOMNodes(elt);
+        }
         if (this._resultNode.childCount > this._rootElt.children.length) {
           // If the element was built and becomes non built, another node should
           // be built to keep a coherent number of children.
@@ -2218,7 +2275,7 @@ class PlacesMenu extends PlacesViewBase {
     while (child != popup._endMarker) {
       let next = child.nextElementSibling;
       if (child._placesNode && !visibleNodes.has(child._placesNode)) {
-        this._domNodes.delete(child._placesNode);
+        this._forgetDOMNodes(child);
         child.remove();
       }
       child = next;
@@ -2257,21 +2314,6 @@ class PlacesMenu extends PlacesViewBase {
     if (!this._updateNativeFolder(newParent, node, newIndex)) {
       super.nodeMoved(node, oldParent, oldIndex, newParent, newIndex);
     }
-  }
-
-  nodeTitleChanged(node, title) {
-    // Items beyond the folder limit have no DOM node.
-    if (this._nativeView && !this._getDOMNodeForPlacesNode(node)) {
-      return;
-    }
-    super.nodeTitleChanged(node, title);
-  }
-
-  invalidateContainer(node) {
-    if (this._nativeView && !this._getDOMNodeForPlacesNode(node)) {
-      return;
-    }
-    super.invalidateContainer(node);
   }
 
   _onPopupShowing(event) {

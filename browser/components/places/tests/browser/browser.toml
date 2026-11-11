@@ -217,6 +217,8 @@ https_first_disabled = true
 
 ["browser_markPageAsFollowedLink.js"]
 
+["browser_menu_domnodes_cleanup.js"]
+
 ["browser_mobile_root_on_bookmark_menus.js"]
 
 ["browser_native_menu_folder_limit.js"]
