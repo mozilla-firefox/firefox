@@ -200,6 +200,18 @@ interface nsIPermissionManager : nsISupports
   void removePermission(in nsIPermission perm);
 
   /**
+   * Remove the given permissions from the permission manager, except for
+   * default permissions, such as built-in or remote permissions, which are
+   * kept. Removing a permission that overrides a default restores the default.
+   * Null entries and permissions that no longer exist are ignored. If a
+   * permission can't be removed, the remaining ones are still removed and the
+   * first error is thrown.
+   *
+   * @param perms   permissions obtained from the permission manager.
+   */
+  void removePermissionsExceptDefaults(in Array<nsIPermission> perms);
+
+  /**
    * Clear permission information for all websites.
    */
   void removeAll();

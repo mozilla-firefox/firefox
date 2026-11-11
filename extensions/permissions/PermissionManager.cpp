@@ -2415,6 +2415,86 @@ PermissionManager::RemovePermission(nsIPermission* aPerm) {
 }
 
 NS_IMETHODIMP
+PermissionManager::RemovePermissionsExceptDefaults(
+    const nsTArray<RefPtr<nsIPermission>>& aPerms) {
+  ENSURE_NOT_CHILD_PROCESS;
+
+  MonitorAutoLock lock{mMonitor};
+  EnsureReadCompleted();
+
+  // Keep removing the remaining permissions if one fails, and report the first
+  // failure.
+  nsresult firstError = NS_OK;
+  auto recordError = [&firstError](nsresult aRv) {
+    if (NS_SUCCEEDED(firstError)) {
+      firstError = aRv;
+    }
+  };
+
+  for (nsIPermission* perm : aPerms) {
+    if (!perm) {
+      continue;
+    }
+
+    nsCOMPtr<nsIPrincipal> principal;
+    nsresult rv = perm->GetPrincipal(getter_AddRefs(principal));
+    if (NS_FAILED(rv)) {
+      recordError(rv);
+      continue;
+    }
+
+    bool isValidPermissionPrincipal = false;
+    rv = ShouldHandlePrincipalForPermission(principal,
+                                            isValidPermissionPrincipal);
+    if (NS_FAILED(rv)) {
+      recordError(rv);
+      continue;
+    }
+    if (!isValidPermissionPrincipal) {
+      continue;
+    }
+
+    nsAutoCString type;
+    rv = perm->GetType(type);
+    if (NS_FAILED(rv)) {
+      recordError(rv);
+      continue;
+    }
+
+    int32_t typeIndex = GetTypeIndex(type, false);
+    if (typeIndex == -1) {
+      continue;
+    }
+
+    RefPtr<PermissionKey> key = PermissionKey::CreateFromPrincipal(
+        principal, IsOAForceStripPermission(type), IsSiteScopedPermission(type),
+        rv);
+    if (!key) {
+      recordError(NS_FAILED(rv) ? rv : NS_ERROR_FAILURE);
+      continue;
+    }
+
+    PermissionHashKey* entry = mPermissionTable.GetEntry(key);
+    if (!entry) {
+      continue;
+    }
+
+    int32_t index = entry->GetPermissionIndex(typeIndex);
+    if (index == -1 ||
+        entry->GetPermissions()[index].mID == cIDPermissionIsDefault) {
+      continue;
+    }
+
+    rv = RemoveFromPrincipalInternal(principal, type);
+    if (NS_FAILED(rv)) {
+      recordError(rv);
+    }
+  }
+
+  return firstError;
+}
+
+NS_IMETHODIMP
 PermissionManager::RemoveAll() {
   ENSURE_NOT_CHILD_PROCESS;
 
