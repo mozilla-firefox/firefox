@@ -5,11 +5,15 @@
 import { actionTypes as at } from "resource://newtab/common/Actions.mjs";
 import { Dedupe } from "resource:///modules/Dedupe.sys.mjs";
 
-export {
-  TOP_SITES_DEFAULT_ROWS,
-  TOP_SITES_MAX_ROWS,
-  TOP_SITES_MAX_SITES_PER_ROW,
-} from "resource:///modules/topsites/constants.mjs";
+/**
+ * @backward-compat { version 162 }
+ *
+ * Switch back to re-exporting these from
+ * moz-src:///browser/components/topsites/constants.mjs once 162 hits release.
+ */
+export const TOP_SITES_DEFAULT_ROWS = 1;
+export const TOP_SITES_MAX_SITES_PER_ROW = 8;
+export const TOP_SITES_MAX_ROWS = 4;
 
 const dedupe = new Dedupe(site => site && site.url);
 

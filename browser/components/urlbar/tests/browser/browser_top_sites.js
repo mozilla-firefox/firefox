@@ -6,7 +6,7 @@
 ChromeUtils.defineESModuleGetters(this, {
   AboutNewTab: "resource:///modules/AboutNewTab.sys.mjs",
   NewTabUtils: "resource://gre/modules/NewTabUtils.sys.mjs",
-  TopSites: "resource:///modules/topsites/TopSites.sys.mjs",
+  TopSites: "moz-src:///browser/components/topsites/TopSites.sys.mjs",
 });
 
 // Uses Baidu for a top site, so that it works as a search shortcut.

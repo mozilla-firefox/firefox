@@ -149,10 +149,6 @@ module.exports = (env = {}) => {
           resourcePathRegExes: [
             [new RegExp("^resource://newtab/"), path.join(__dirname, "./")],
             [
-              new RegExp("^resource:///modules/topsites/"),
-              path.join(__dirname, "../../components/topsites/"),
-            ],
-            [
               new RegExp("^resource:///modules/Dedupe.sys.mjs"),
               path.join(__dirname, "../../modules/Dedupe.sys.mjs"),
             ],

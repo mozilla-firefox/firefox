@@ -4,9 +4,9 @@
 import {
   getDomain,
   TippyTopProvider,
-} from "resource:///modules/topsites/TippyTopProvider.sys.mjs";
+} from "moz-src:///browser/components/topsites/TippyTopProvider.sys.mjs";
 import { Dedupe } from "resource:///modules/Dedupe.sys.mjs";
-import { TOP_SITES_MAX_SITES_PER_ROW } from "resource:///modules/topsites/constants.mjs";
+import { TOP_SITES_MAX_SITES_PER_ROW } from "moz-src:///browser/components/topsites/constants.mjs";
 import {
   CUSTOM_SEARCH_SHORTCUTS,
   checkHasSearchEngine,

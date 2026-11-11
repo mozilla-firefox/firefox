@@ -63,9 +63,6 @@ browser/components/newtab/AboutNewTabRedirector.sys.mjs
 browser/components/newtab/AboutNewTabResourceMapping.sys.mjs
 browser/components/profiles/SelectableProfile.sys.mjs
 browser/components/profiles/SelectableProfileService.sys.mjs
-browser/components/topsites/TippyTopProvider.sys.mjs
-browser/components/topsites/TopSites.sys.mjs
-browser/components/topsites/constants.mjs
 browser/modules/AboutNewTab.sys.mjs
 browser/modules/BackgroundTask_install.sys.mjs
 browser/modules/BackgroundTask_uninstall.sys.mjs

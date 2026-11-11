@@ -4,7 +4,7 @@
 "use strict";
 
 ChromeUtils.defineESModuleGetters(this, {
-  FaviconProvider: "resource:///modules/topsites/TopSites.sys.mjs",
+  FaviconProvider: "moz-src:///browser/components/topsites/TopSites.sys.mjs",
   HttpServer: "resource://testing-common/httpd.sys.mjs",
   NewTabUtils: "resource://gre/modules/NewTabUtils.sys.mjs",
   NetUtil: "resource://gre/modules/NetUtil.sys.mjs",

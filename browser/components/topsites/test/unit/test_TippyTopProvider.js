@@ -5,7 +5,8 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   sinon: "resource://testing-common/Sinon.sys.mjs",
-  TippyTopProvider: "resource:///modules/topsites/TippyTopProvider.sys.mjs",
+  TippyTopProvider:
+    "moz-src:///browser/components/topsites/TippyTopProvider.sys.mjs",
 });
 
 /**

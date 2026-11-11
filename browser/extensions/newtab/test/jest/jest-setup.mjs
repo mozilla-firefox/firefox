@@ -48,6 +48,12 @@ globalThis.ChromeUtils = {
   generateQI: () => ({}),
 };
 
+// ImportHelper needs the real module, which the importESModule shim above
+// never returns.
+jest.mock("resource://newtab/lib/ImportHelper.sys.mjs", () => ({
+  ImportHelper: { import: moduleURI => jest.requireActual(moduleURI) },
+}));
+
 globalThis.XPCOMUtils = {
   defineLazyGlobalGetters: updateGlobalOrObject,
   defineLazyServiceGetter: updateGlobalOrObject,

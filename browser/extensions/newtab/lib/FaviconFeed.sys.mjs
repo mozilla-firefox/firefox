@@ -3,7 +3,17 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { actionTypes as at } from "resource://newtab/common/Actions.mjs";
-import { FaviconProvider } from "resource:///modules/topsites/TopSites.sys.mjs";
+import { ImportHelper } from "resource://newtab/lib/ImportHelper.sys.mjs";
+
+/**
+ * @backward-compat { version 162 }
+ *
+ * Switch back to a normal import once 162 hits release.
+ */
+const { FaviconProvider } = ImportHelper.import(
+  "moz-src:///browser/components/topsites/TopSites.sys.mjs",
+  "resource:///modules/topsites/"
+);
 
 export class FaviconFeed {
   constructor() {

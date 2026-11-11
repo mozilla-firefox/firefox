@@ -4,7 +4,9 @@
 "use strict";
 
 const { TopSites, insertPinned, DEFAULT_TOP_SITES } =
-  ChromeUtils.importESModule("resource:///modules/topsites/TopSites.sys.mjs");
+  ChromeUtils.importESModule(
+    "moz-src:///browser/components/topsites/TopSites.sys.mjs"
+  );
 
 ChromeUtils.defineESModuleGetters(this, {
   FilterAdult: "resource:///modules/FilterAdult.sys.mjs",
@@ -15,8 +17,10 @@ ChromeUtils.defineESModuleGetters(this, {
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   TestUtils: "resource://testing-common/TestUtils.sys.mjs",
-  TOP_SITES_DEFAULT_ROWS: "resource:///modules/topsites/constants.mjs",
-  TOP_SITES_MAX_SITES_PER_ROW: "resource:///modules/topsites/constants.mjs",
+  TOP_SITES_DEFAULT_ROWS:
+    "moz-src:///browser/components/topsites/constants.mjs",
+  TOP_SITES_MAX_SITES_PER_ROW:
+    "moz-src:///browser/components/topsites/constants.mjs",
 });
 
 const FAKE_FAVICON = "data987";

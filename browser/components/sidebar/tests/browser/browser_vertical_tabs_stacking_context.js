@@ -4,7 +4,7 @@
 "use strict";
 
 const { TopSites } = ChromeUtils.importESModule(
-  "resource:///modules/topsites/TopSites.sys.mjs"
+  "moz-src:///browser/components/topsites/TopSites.sys.mjs"
 );
 
 // Mirrors UrlbarProviderTopSites, which reads the row from whichever

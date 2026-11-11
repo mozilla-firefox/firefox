@@ -1804,15 +1804,6 @@
       "resource:///modules/profiles/SelectableProfileService.sys.mjs": [
         "../../../browser/components/profiles/SelectableProfileService.sys.mjs"
       ],
-      "resource:///modules/topsites/TippyTopProvider.sys.mjs": [
-        "../../../browser/components/topsites/TippyTopProvider.sys.mjs"
-      ],
-      "resource:///modules/topsites/TopSites.sys.mjs": [
-        "../../../browser/components/topsites/TopSites.sys.mjs"
-      ],
-      "resource:///modules/topsites/constants.mjs": [
-        "../../../browser/components/topsites/constants.mjs"
-      ],
       "resource:///modules/webrtcUI.sys.mjs": [
         "../../../browser/modules/webrtcUI.sys.mjs"
       ],
@@ -6915,6 +6906,9 @@
       ],
       "resource://newtab/lib/HighlightsFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/HighlightsFeed.sys.mjs"
+      ],
+      "resource://newtab/lib/ImportHelper.sys.mjs": [
+        "../../../browser/extensions/newtab/lib/ImportHelper.sys.mjs"
       ],
       "resource://newtab/lib/InferredModel/FeatureModel.sys.mjs": [
         "../../../browser/extensions/newtab/lib/InferredModel/FeatureModel.sys.mjs"

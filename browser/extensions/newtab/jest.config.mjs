@@ -20,8 +20,6 @@ export default {
     "^resource://newtab/(.*)$": "<rootDir>/$1",
     "^resource:///modules/asrouter/(.*)$":
       "<rootDir>/../../components/asrouter/modules/$1",
-    "^resource:///modules/topsites/(.*)$":
-      "<rootDir>/../../components/topsites/$1",
     "^resource:///modules/(.*)$": "<rootDir>/../../modules/$1",
     "^moz-src:///(.*)$": "<rootDir>/../../../$1",
   },
