@@ -121,22 +121,10 @@ class PlacesViewBase {
    *
    * @param {object} aPlacesNode
    *        a places result node.
-   * @param {boolean} aAllowMissing
-   *        whether the node may be missing
-   * @returns {object|null} The associated DOM node.
-   * @throws if there is no DOM node set for aPlacesNode.
+   * @returns {object|undefined} The associated DOM node, if there is one.
    */
-  _getDOMNodeForPlacesNode(aPlacesNode, aAllowMissing = false) {
-    let node = this._domNodes.get(aPlacesNode, null);
-    if (!node && !aAllowMissing) {
-      throw new Error(
-        "No DOM node set for aPlacesNode.\nnode.type: " +
-          aPlacesNode.type +
-          ". node.parent: " +
-          aPlacesNode
-      );
-    }
-    return node;
+  _getDOMNodeForPlacesNode(aPlacesNode) {
+    return this._domNodes.get(aPlacesNode);
   }
 
   get controller() {
@@ -486,7 +474,7 @@ class PlacesViewBase {
   }
 
   nodeURIChanged(aPlacesNode) {
-    let elt = this._getDOMNodeForPlacesNode(aPlacesNode, true);
+    let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
 
     // There's no DOM node, thus there's nothing to be done when the URI changes.
     if (!elt) {
@@ -505,7 +493,7 @@ class PlacesViewBase {
   }
 
   nodeIconChanged(aPlacesNode) {
-    let elt = this._getDOMNodeForPlacesNode(aPlacesNode, true);
+    let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
 
     // There's no UI representation for the root node, or there's no DOM node,
     // thus there's nothing to be done when the icon changes.
@@ -1481,7 +1469,7 @@ class PlacesToolbar extends PlacesViewBase {
     let parentElt = this._getDOMNodeForPlacesNode(aParentPlacesNode);
     if (parentElt == this._rootElt) {
       // Node is on the toolbar.
-      let elt = this._getDOMNodeForPlacesNode(aPlacesNode, true);
+      let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
       // Nothing to do if it's a never-visible node.
       if (!elt) {
         return;
@@ -1526,7 +1514,7 @@ class PlacesToolbar extends PlacesViewBase {
         return;
       }
 
-      let elt = this._getDOMNodeForPlacesNode(aPlacesNode, true);
+      let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
       if (elt) {
         // Here we need the <menu>.
         if (elt.localName == "menupopup") {
@@ -1583,7 +1571,7 @@ class PlacesToolbar extends PlacesViewBase {
   }
 
   nodeTitleChanged(aPlacesNode, aNewTitle) {
-    let elt = this._getDOMNodeForPlacesNode(aPlacesNode, true);
+    let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
 
     // Nothing to do if it's a never-visible node.
     if (!elt || elt == this._rootElt) {
@@ -1606,7 +1594,7 @@ class PlacesToolbar extends PlacesViewBase {
   }
 
   invalidateContainer(aPlacesNode) {
-    let elt = this._getDOMNodeForPlacesNode(aPlacesNode, true);
+    let elt = this._getDOMNodeForPlacesNode(aPlacesNode);
     // Nothing to do if it's a never-visible node.
     if (!elt) {
       return;
@@ -2184,7 +2172,7 @@ class PlacesMenu extends PlacesViewBase {
   }
 
   _getMenuItemForPlacesNode(node) {
-    let element = this._getDOMNodeForPlacesNode(node, true);
+    let element = this._getDOMNodeForPlacesNode(node);
     return element?.localName == "menupopup" ? element.parentNode : element;
   }
 
@@ -2192,7 +2180,7 @@ class PlacesMenu extends PlacesViewBase {
     if (!this._nativeView || !PlacesUtils.nodeIsFolderOrShortcut(node)) {
       return false;
     }
-    let popup = this._getDOMNodeForPlacesNode(node, true);
+    let popup = this._getDOMNodeForPlacesNode(node);
     if (!popup) {
       return true;
     }
@@ -2273,14 +2261,14 @@ class PlacesMenu extends PlacesViewBase {
 
   nodeTitleChanged(node, title) {
     // Items beyond the folder limit have no DOM node.
-    if (this._nativeView && !this._getDOMNodeForPlacesNode(node, true)) {
+    if (this._nativeView && !this._getDOMNodeForPlacesNode(node)) {
       return;
     }
     super.nodeTitleChanged(node, title);
   }
 
   invalidateContainer(node) {
-    if (this._nativeView && !this._getDOMNodeForPlacesNode(node, true)) {
+    if (this._nativeView && !this._getDOMNodeForPlacesNode(node)) {
       return;
     }
     super.invalidateContainer(node);
