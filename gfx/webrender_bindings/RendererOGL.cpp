@@ -25,6 +25,10 @@
 #  include "mozilla/layers/AndroidHardwareBuffer.h"
 #endif
 
+#ifdef MOZ_WAYLAND
+#  include "mozilla/webrender/RenderLinuxTextureHost.h"
+#endif
+
 namespace mozilla {
 namespace wr {
 
@@ -80,9 +84,10 @@ wr::WrExternalImage wr_renderer_lock_external_image(void* aObj,
 
 #if defined(MOZ_WAYLAND)
   // Wayland native compositor doesn't use textures for direct compositing.
-  if (aIsComposited && texture->AsRenderDMABUFTextureHost() &&
+  if (aIsComposited && texture->AsRenderLinuxTextureHost() &&
       renderer->GetCompositor()->CompositorType() ==
-          layers::WebRenderCompositor::WAYLAND) {
+          layers::WebRenderCompositor::WAYLAND &&
+      texture->AsRenderLinuxTextureHost()->SupportsDirectComposition()) {
     return texture->Lock(aChannelIndex, nullptr);
   }
 #endif
