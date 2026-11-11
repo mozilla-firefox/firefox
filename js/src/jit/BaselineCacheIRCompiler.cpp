@@ -567,7 +567,12 @@ bool BaselineCacheIRCompiler::emitLoadFixedSlotResult(ObjOperandId objId,
   return true;
 }
 
-bool BaselineCacheIRCompiler::emitLoadFixedSlotTypedResult(
+bool BaselineCacheIRCompiler::emitLoadReservedFixedSlotResult(
+    ObjOperandId objId, uint32_t offsetOffset) {
+  return emitLoadFixedSlotResult(objId, offsetOffset);
+}
+
+bool BaselineCacheIRCompiler::emitLoadReservedFixedSlotTypedResult(
     ObjOperandId objId, uint32_t offsetOffset, ValueType) {
   // The type is only used by Warp.
   return emitLoadFixedSlotResult(objId, offsetOffset);

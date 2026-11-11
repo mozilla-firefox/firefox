@@ -7311,16 +7311,16 @@ AttachDecision InlinableNativeIRGenerator::tryAttachUnsafeGetReservedSlot(
 
   switch (native) {
     case InlinableNative::IntrinsicUnsafeGetReservedSlot:
-      writer.loadFixedSlotResult(objId, offset);
+      writer.loadReservedFixedSlotResult(objId, offset);
       break;
     case InlinableNative::IntrinsicUnsafeGetObjectFromReservedSlot:
-      writer.loadFixedSlotTypedResult(objId, offset, ValueType::Object);
+      writer.loadReservedFixedSlotTypedResult(objId, offset, ValueType::Object);
       break;
     case InlinableNative::IntrinsicUnsafeGetInt32FromReservedSlot:
-      writer.loadFixedSlotTypedResult(objId, offset, ValueType::Int32);
+      writer.loadReservedFixedSlotTypedResult(objId, offset, ValueType::Int32);
       break;
     case InlinableNative::IntrinsicUnsafeGetStringFromReservedSlot:
-      writer.loadFixedSlotTypedResult(objId, offset, ValueType::String);
+      writer.loadReservedFixedSlotTypedResult(objId, offset, ValueType::String);
       break;
     default:
       MOZ_CRASH("unexpected native");
@@ -11078,8 +11078,8 @@ AttachDecision InlinableNativeIRGenerator::tryAttachDateGetTime() {
   ObjOperandId objId = writer.guardToObject(thisValId);
   emitOptimisticClassGuard(objId, &thisval_.toObject(), GuardClassKind::Date);
 
-  writer.loadFixedSlotTypedResult(objId, DateObject::offsetOfUTCTimeSlot(),
-                                  ValueType::Double);
+  writer.loadReservedFixedSlotTypedResult(
+      objId, DateObject::offsetOfUTCTimeSlot(), ValueType::Double);
 
   trackAttached("DateGetTime");
   return AttachDecision::Attach;
