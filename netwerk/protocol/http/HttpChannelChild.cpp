@@ -452,6 +452,7 @@ void HttpChannelChild::OnStartRequest(
   // gHttpHandler->OnExamineResponse(this);
 
   ResourceTimingStructArgsToTimingsStruct(aArgs.timing(), mTransactionTimings);
+  mCacheReadStart = aArgs.timing().cacheReadStart();
 
   if (!mAsyncOpenTime.IsNull() &&
       !aArgs.timing().transactionPending().IsNull()) {

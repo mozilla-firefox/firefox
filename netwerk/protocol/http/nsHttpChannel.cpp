@@ -1627,6 +1627,9 @@ nsresult nsHttpChannel::ContinueConnect() {
     return NS_ERROR_OFFLINE;
   }
 
+  // Not served from cache, so drop any caller-set cacheReadStart.
+  mCacheReadStart = TimeStamp();
+
   // hit the net...
   nsresult rv = DoConnect(mTransactionSticky);
   mTransactionSticky = nullptr;
@@ -6125,6 +6128,12 @@ nsresult nsHttpChannel::ReadFromCache(void) {
   rv = mCachePump->AsyncRead(this);
   if (NS_FAILED(rv)) return rv;
 
+  // Performance timing uses this as responseStart for every cache hit; keep
+  // an earlier value set by the caller, e.g. when a prefetch completed.
+  if (mCacheReadStart.IsNull()) {
+    mCacheReadStart = TimeStamp::Now();
+  }
+
   uint32_t suspendCount = mSuspendCount;
   if (LoadAsyncResumePending()) {
     LOG(
@@ -7973,6 +7982,12 @@ void nsHttpChannel::AsyncOpenFinal(TimeStamp aTimeStamp) {
   // timing.
   if (!LoadAsyncOpenTimeOverriden()) {
     mAsyncOpenTime = aTimeStamp;
+  }
+
+  // A completed prefetch's response was there before the navigation started.
+  if (mLoadInfo->GetActivatedFromNavigationalPrefetch() &&
+      mCacheReadStart.IsNull()) {
+    mCacheReadStart = mAsyncOpenTime;
   }
 
   // Remember we have Authorization header set here.  We need to check on it

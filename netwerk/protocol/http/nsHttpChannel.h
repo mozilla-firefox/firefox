@@ -214,6 +214,12 @@ class nsHttpChannel final : public HttpBaseChannel,
   void SetWarningReporter(HttpChannelSecurityWarningReporter* aReporter);
   HttpChannelSecurityWarningReporter* GetWarningReporter();
 
+  // Overrides when the cached response became available, for callers that
+  // waited on it before AsyncOpen (e.g. DocumentLoadListener waiting for an
+  // in-flight speculation-rules prefetch). Cleared if the load goes to the
+  // network.
+  void SetCacheReadStart(TimeStamp aTime) { mCacheReadStart = aTime; }
+
   enum class SnifferType { Media, Image };
   void DisableIsOpaqueResponseAllowedAfterSniffCheck(SnifferType aType);
 

@@ -699,6 +699,10 @@ void DocumentLoadListener::AsyncOpenAfterPrefetchWait(
              self.get(), rec));
         if (rec) {
           self->ActivateFromPrefetch(rec);
+          if (RefPtr<nsHttpChannel> httpChannel =
+                  do_QueryObject(self->mChannel)) {
+            httpChannel->SetCacheReadStart(TimeStamp::Now());
+          }
         }
         nsresult rv = self->mChannel->AsyncOpen(listener);
         if (NS_FAILED(rv)) {
