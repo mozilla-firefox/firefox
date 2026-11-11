@@ -2354,6 +2354,11 @@ export class CustomizeMode {
         case "whimsy-button":
           this.#togglePong(event.target.checked);
           break;
+      }
+    });
+
+    container.addEventListener("click", event => {
+      switch (event.target.id) {
         case "customization-touchbar-button":
           this.#customizeTouchBar();
           break;
