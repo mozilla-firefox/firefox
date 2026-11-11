@@ -481,49 +481,6 @@ void BigInt::inplaceMultiplyAdd(Digit factor, Digit summand) {
   internalMultiplyAdd(this, factor, summand, digitLength(), this);
 }
 
-// Multiplies `multiplicand` with `multiplier` and adds the result to
-// `accumulator`, starting at `accumulatorIndex` for the least-significant
-// digit.  Callers must ensure that `accumulator`'s digitLength and
-// corresponding digit storage is long enough to hold the result.
-void BigInt::multiplyAccumulate(const BigInt* multiplicand, Digit multiplier,
-                                BigInt* accumulator,
-                                unsigned accumulatorIndex) {
-  MOZ_ASSERT(accumulator->digitLength() >
-             multiplicand->digitLength() + accumulatorIndex);
-  if (!multiplier) {
-    return;
-  }
-
-  auto multiplicandDigits = multiplicand->digits();
-  auto accumulatorDigits = accumulator->digits();
-
-  Digit carry = 0;
-  Digit high = 0;
-  for (unsigned i = 0; i < multiplicandDigits.size(); i++, accumulatorIndex++) {
-    // Add last round's carryovers.
-    Digit acc =
-        digitAdd3(accumulatorDigits[accumulatorIndex], high, carry, &carry);
-
-    // Compute this round's multiplication.
-    Digit multiplicandDigit = multiplicandDigits[i];
-    Digit low = digitMul(multiplier, multiplicandDigit, &high);
-    Digit lowCarry;
-    acc = digitAdd(acc, low, &lowCarry);
-    carry += lowCarry;
-
-    // Store result and prepare for next round.
-    accumulatorDigits[accumulatorIndex] = acc;
-  }
-
-  while (carry || high) {
-    MOZ_ASSERT(accumulatorIndex < accumulatorDigits.size());
-    accumulatorDigits[accumulatorIndex] =
-        digitAdd3(accumulatorDigits[accumulatorIndex], high, carry, &carry);
-    high = 0;
-    accumulatorIndex++;
-  }
-}
-
 inline int8_t BigInt::absoluteCompare(ConstDigits x, ConstDigits y) {
   MOZ_RELEASE_ASSERT(x.size() == y.size());
   int i = x.size() - 1;
@@ -890,15 +847,40 @@ BigInt::Digit BigInt::digitDivByMultiplication(Digit high, Digit low,
   return q1;
 }
 
-void BigInt::multiplyDigits(ConstDigits multiplicand, Digit multiplier,
-                            Digits product) {
-  MOZ_RELEASE_ASSERT(product.size() == multiplicand.size() + 1);
-
+BigInt::Digit BigInt::multiplyDigits(ConstDigits src, Digit multiplier,
+                                     Digits dest) {
+  dest = dest.First(src.size());
   Digit carry = 0;
-  for (size_t i = 0; i < multiplicand.size(); i++) {
-    product[i] = digitMulAdd(multiplicand[i], multiplier, carry, 0, &carry);
+  for (size_t i = 0; i < src.size(); i++) {
+    dest[i] = digitMulAdd(src[i], multiplier, 0, carry, &carry);
   }
-  product[multiplicand.size()] = carry;
+  return carry;
+}
+
+BigInt::Digit BigInt::multiplyAccumulateDigits(ConstDigits src,
+                                               Digit multiplier, Digits acc) {
+  acc = acc.First(src.size());
+  Digit carry = 0;
+  for (size_t i = 0; i < src.size(); i++) {
+    acc[i] = digitMulAdd(src[i], multiplier, acc[i], carry, &carry);
+  }
+  return carry;
+}
+
+void BigInt::schoolbookMultiplyDigits(ConstDigits a, ConstDigits b,
+                                      Digits result) {
+  // Given a choice, it's best to do fewer outer loops over longer digit
+  // spans. Commute the arguments to ensure that `|a| >= |b|`, if needed.
+  if (a.size() < b.size()) {
+    std::swap(b, a);
+  }
+  MOZ_RELEASE_ASSERT(!b.empty());
+  MOZ_RELEASE_ASSERT(result.size() == a.size() + b.size());
+  result[a.size()] = multiplyDigits(a, b[0], result);
+  for (size_t i = 1; i < b.size(); i++) {
+    result[i + a.size()] =
+        b[i] ? multiplyAccumulateDigits(a, b[i], result.From(i)) : 0;
+  }
 }
 
 // Both inplaceSubDigits and inplaceAddDigits check the bounds once, by taking
@@ -996,7 +978,7 @@ void BigInt::divideDigitsInPlace(Digits u, ConstDigits v, Digits q,
     // it from the dividend. If there was "borrow", then the quotient digit
     // was one too high, so we must correct it and undo one subtraction of
     // the (shifted) divisor.
-    multiplyDigits(v, qhat, qhatv);
+    qhatv[n] = multiplyDigits(v, qhat, qhatv);
     Digit c = inplaceSubDigits(uj, qhatv);
     if (c) {
       c = inplaceAddDigits(uj, v);
@@ -2087,27 +2069,13 @@ BigInt* BigInt::mul(JSContext* cx, HandleBigInt x, HandleBigInt y) {
     }
   }
 
-  unsigned resultLength = x->digitLength() + y->digitLength();
+  size_t resultLength = x->digitLength() + y->digitLength();
   BigInt* result = createUninitialized(cx, resultLength, resultNegative);
   if (!result) {
     return nullptr;
   }
-  result->initializeDigitsToZero();
-
-  // Reorder operands to minimize calls to multiplyAccumulate.
-  BigInt* left = x;
-  BigInt* right = y;
-  if (left->digitLength() < right->digitLength()) {
-    std::swap(left, right);
-  }
-
-  {
-    auto rightDigits = right->digits();
-    for (size_t i = 0; i < rightDigits.size(); i++) {
-      multiplyAccumulate(left, rightDigits[i], result, i);
-    }
-  }
-
+  schoolbookMultiplyDigits(x->unguardedDigits(), y->unguardedDigits(),
+                           result->unguardedDigits());
   return destructivelyTrimHighZeroDigits(cx, result);
 }
 

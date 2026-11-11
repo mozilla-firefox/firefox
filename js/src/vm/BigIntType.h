@@ -424,19 +424,22 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
       bool quotientNegative);
   static void internalMultiplyAdd(const BigInt* source, Digit factor,
                                   Digit summand, unsigned, BigInt* result);
-  static void multiplyAccumulate(const BigInt* multiplicand, Digit multiplier,
-                                 BigInt* accumulator,
-                                 unsigned accumulatorIndex);
   static bool absoluteDivWithBigIntDivisor(
       JSContext* cx, Handle<BigInt*> dividend, Handle<BigInt*> divisor,
       const mozilla::Maybe<MutableHandle<BigInt*>>& quotient,
       const mozilla::Maybe<MutableHandle<BigInt*>>& remainder,
       bool quotientNegative);
 
-  // Store `multiplicand * multiplier` into `product`, which must have one more
-  // digit than `multiplicand`.
-  static void multiplyDigits(ConstDigits multiplicand, Digit multiplier,
-                             Digits product);
+  // Store `src * multiplier` into the low `src.size()` digits of `dest`,
+  // returning the carry.
+  static Digit multiplyDigits(ConstDigits src, Digit multiplier, Digits dest);
+  // Add `src * multiplier` to the low `src.size()` digits of `acc`, returning
+  // the carry.  `acc` is an in-out parameter.
+  static Digit multiplyAccumulateDigits(ConstDigits src, Digit multiplier,
+                                        Digits acc);
+  // Store `a * b` into `result`, which must have `a.size() + b.size()` digits.
+  static void schoolbookMultiplyDigits(ConstDigits a, ConstDigits b,
+                                       Digits result);
   // Subtract `y` from the low `y.size()` digits of `x`, returning the borrow.
   static Digit inplaceSubDigits(Digits x, ConstDigits y);
   // Add `y` to the low `y.size()` digits of `x`, returning the carry.
