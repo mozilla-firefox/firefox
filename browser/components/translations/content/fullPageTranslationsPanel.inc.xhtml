@@ -76,19 +76,19 @@
       </vbox>
 
       <html:moz-button-group class="panel-footer translations-panel-footer translations-panel-button-group">
-        <button id="full-page-translations-panel-restore-button"
-                class="footer-button"
-                data-l10n-id="translations-panel-restore-button">
-        </button>
-        <button id="full-page-translations-panel-cancel"
-                class="footer-button"
-                data-l10n-id="translations-panel-translate-cancel">
-        </button>
-        <button id="full-page-translations-panel-translate"
-                class="footer-button"
-                data-l10n-id="translations-panel-translate-button"
-                default="true">
-        </button>
+        <html:moz-button
+          id="full-page-translations-panel-restore-button"
+          data-l10n-id="translations-panel-restore-button"
+        ></html:moz-button>
+        <html:moz-button
+          id="full-page-translations-panel-cancel"
+          data-l10n-id="translations-panel-translate-cancel"
+        ></html:moz-button>
+        <html:moz-button
+          id="full-page-translations-panel-translate"
+          type="primary"
+          data-l10n-id="translations-panel-translate-button"
+        ></html:moz-button>
       </html:moz-button-group>
     </panelview>
 
@@ -115,15 +115,15 @@
       </vbox>
 
       <html:moz-button-group class="panel-footer translations-panel-footer">
-        <button id="full-page-translations-panel-change-source-language"
-                class="footer-button"
-                data-l10n-id="translations-panel-error-change-button">
-        </button>
-        <button id="full-page-translations-panel-dismiss-error"
-                class="footer-button"
-                data-l10n-id="translations-panel-error-dismiss-button"
-                default="true">
-        </button>
+        <html:moz-button
+          id="full-page-translations-panel-change-source-language"
+          data-l10n-id="translations-panel-error-change-button"
+        ></html:moz-button>
+        <html:moz-button
+          id="full-page-translations-panel-dismiss-error"
+          type="primary"
+          data-l10n-id="translations-panel-error-dismiss-button"
+        ></html:moz-button>
       </html:moz-button-group>
     </panelview>
   </panelmultiview>

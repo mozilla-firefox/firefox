@@ -1547,19 +1547,6 @@ var FullPageTranslationsPanel = new (class {
           case "full-page-translations-panel-to-menupopup":
             this.onChangeToLanguage(event);
             break;
-          case "full-page-translations-panel-restore-button":
-            this.onRestore(event);
-            break;
-          case "full-page-translations-panel-cancel":
-          case "full-page-translations-panel-dismiss-error":
-            this.onCancel(event);
-            break;
-          case "full-page-translations-panel-translate":
-            this.onTranslate(event);
-            break;
-          case "full-page-translations-panel-change-source-language":
-            this.onChangeSourceLanguage(event);
-            break;
         }
         break;
       }
@@ -1568,6 +1555,23 @@ var FullPageTranslationsPanel = new (class {
           case "full-page-translations-panel-intro-learn-more-link":
           case "full-page-translations-panel-unsupported-learn-more-link":
             this.onLearnMoreLink();
+            break;
+          case "full-page-translations-panel-restore-button":
+            this.handlePanelButtonEvent(event);
+            this.onRestore(event);
+            break;
+          case "full-page-translations-panel-cancel":
+          case "full-page-translations-panel-dismiss-error":
+            this.handlePanelButtonEvent(event);
+            this.onCancel(event);
+            break;
+          case "full-page-translations-panel-translate":
+            this.handlePanelButtonEvent(event);
+            this.onTranslate(event);
+            break;
+          case "full-page-translations-panel-change-source-language":
+            this.handlePanelButtonEvent(event);
+            this.onChangeSourceLanguage(event);
             break;
           default:
             this.handlePanelButtonEvent(event);

@@ -121,45 +121,46 @@
       </html:div>
       <html:div id="select-translations-panel-footer"
                 class="panel-footer">
-        <button id="select-translations-panel-copy-button"
-                class="footer-button select-translations-panel-copy-button"
-                data-l10n-id="select-translations-panel-copy-button">
-        </button>
+        <html:moz-button
+          id="select-translations-panel-copy-button"
+          class="select-translations-panel-copy-button"
+          iconsrc="chrome://global/skin/icons/edit-copy.svg"
+          data-l10n-id="select-translations-panel-copy-button"
+        ></html:moz-button>
         <html:moz-button-group id="select-translations-panel-footer-button-group"
                                class="translations-panel-button-group">
-          <button id="select-translations-panel-cancel-button"
-                  class="footer-button"
-                  hidden="true"
-                  data-l10n-id="select-translations-panel-cancel-button">
-          </button>
-          <button id="select-translations-panel-done-button-secondary"
-                  hidden="true"
-                  class="footer-button"
-                  data-l10n-id="select-translations-panel-done-button">
-          </button>
-          <button id="select-translations-panel-translate-full-page-button"
-                  class="footer-button"
-                  data-l10n-id="select-translations-panel-translate-full-page-button">
-          </button>
-          <button id="select-translations-panel-done-button-primary"
-                  class="footer-button"
-                  data-l10n-id="select-translations-panel-done-button"
-                  default="true">
-          </button>
-          <button id="select-translations-panel-translate-button"
-                  class="footer-button"
-                  data-l10n-id="select-translations-panel-translate-button"
-                  hidden="true"
-                  default="true"
-                  disabled="true">
-          </button>
-          <button id="select-translations-panel-try-again-button"
-                  class="footer-button"
-                  data-l10n-id="select-translations-panel-try-again-button"
-                  aria-describedby="select-translations-panel-translation-failure-message-bar"
-                  hidden="true"
-                  default="true">
-          </button>
+          <html:moz-button
+            id="select-translations-panel-cancel-button"
+            data-l10n-id="select-translations-panel-cancel-button"
+            hidden="true"
+          ></html:moz-button>
+          <html:moz-button
+            id="select-translations-panel-done-button-secondary"
+            data-l10n-id="select-translations-panel-done-button"
+            hidden="true"
+          ></html:moz-button>
+          <html:moz-button
+            id="select-translations-panel-translate-full-page-button"
+            data-l10n-id="select-translations-panel-translate-full-page-button"
+          ></html:moz-button>
+          <html:moz-button
+            id="select-translations-panel-done-button-primary"
+            type="primary"
+            data-l10n-id="select-translations-panel-done-button"
+          ></html:moz-button>
+          <html:moz-button
+            id="select-translations-panel-translate-button"
+            type="primary"
+            data-l10n-id="select-translations-panel-translate-button"
+            hidden="true"
+            disabled="true"
+          ></html:moz-button>
+          <html:moz-button
+            id="select-translations-panel-try-again-button"
+            type="primary"
+            data-l10n-id="select-translations-panel-try-again-button"
+            hidden="true"
+          ></html:moz-button>
         </html:moz-button-group>
       </html:div>
     </html:div>
