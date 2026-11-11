@@ -3,9 +3,9 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """Launch a Firefox build under Marionette for the probe scripts.
 
-Not a command. `contrast.py` and `pair_walk.py` beside it import it, and so do
-`desktop-theme-probing`'s `firefox-probe.py` and `marker-probe.py`:
-`add_launch_arguments()` gives a parser the launch flags, and
+Not a command. `firefox-probe.py` and `marker-probe.py` import it from their
+own directory, and `desktop-theme-colors`' `contrast.py` and `pair-walk.py`
+from here: `add_launch_arguments()` gives a parser the launch flags, and
 `run(args, prog, body)` launches the binary, verifies the prefs, calls
 `body(client)` and tears the browser down, returning the process exit code.
 `add_page_arguments()` adds the flags that bring the window to the state under
@@ -612,7 +612,7 @@ def run_steps(
 
 
 # JS shared by the probes that lock a state and read it: contrast.py,
-# pair_walk.py and marker-probe.py. Paste it ahead of a probe body.
+# pair-walk.py and marker-probe.py. Paste it ahead of a probe body.
 PRELUDE = r"""
   const parentOf = n => n.assignedSlot || n.parentElement || n.getRootNode().host;
   // Locks `state` ("default", or pseudo-classes such as ":hover:active") on

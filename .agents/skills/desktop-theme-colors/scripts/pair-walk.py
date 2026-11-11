@@ -27,7 +27,7 @@ shadows, the caret and the pixels of a raster image or canvas are not checked.
 image (an img, a background-image, a list-style-image) has its fill checked; an
 image that ignores fill, such as a favicon, can show up as a false finding.
 
-Launches through probelib.py, headless, on a throwaway
+Launches through desktop-theme-probing's probelib.py, headless, on a throwaway
 profile, in the high contrast regime unless you pass other prefs:
 
   ./mach python --virtualenv wpt pair-walk.py --binary <objdir>/dist/bin/firefox \\
@@ -87,7 +87,12 @@ import json
 import sys
 from pathlib import Path
 
-import probelib
+# probelib.py sits beside the probe launcher in desktop-theme-probing.
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[2] / "desktop-theme-probing" / "scripts")
+)
+
+import probelib  # noqa: E402
 
 PROG = "pair-walk"
 

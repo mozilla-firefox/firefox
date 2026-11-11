@@ -44,7 +44,7 @@ inset, outset, groove or ridge border, and a border on an element with native
 `appearance` and no author-level border or background come back not judged; a
 box-shadow ring and an icon are not measured at all and need a pixel sample.
 
-Launches through probelib.py, headless, on a throwaway
+Launches through desktop-theme-probing's probelib.py, headless, on a throwaway
 profile, in whatever regime the prefs give (none by default):
 
   ./mach python --virtualenv wpt contrast.py --binary <objdir>/dist/bin/firefox \\
@@ -98,7 +98,12 @@ import json
 import sys
 from pathlib import Path
 
-import probelib
+# probelib.py sits beside the probe launcher in desktop-theme-probing.
+sys.path.insert(
+    0, str(Path(__file__).resolve().parents[2] / "desktop-theme-probing" / "scripts")
+)
+
+import probelib  # noqa: E402
 
 PROG = "contrast"
 
