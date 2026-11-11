@@ -45,6 +45,11 @@ class MenuCustomizationRepository(
         scope.launch { update { menuInfo.reconciled().toRecord() } }
     }
 
+    /** Reset the customization back to default. */
+    fun reset() {
+        scope.launch { update { CustomizedMenuRecord.getDefaultInstance() } }
+    }
+
     /**
      * Start reading the stored customization ahead of the menu being opened. It is read as soon as this repository is
      * created, so this only ensures that it is.

@@ -22,6 +22,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
@@ -436,6 +437,21 @@ class CustomizeMenuMiddlewareTest {
 
             captureAppActions.assertLastAction(SnackbarAction.ShowSnackbar::class) { action ->
                 assertEquals(cannotHideSectionMessage, action.title)
+            }
+        }
+
+    @Test
+    fun `WHEN the user resets to default THEN reset the repository and update store with default structure`() =
+        runTest {
+            val store =
+                createStore(initialState = CustomizableMenuState(menuGroups = defaultGroups(), isCustomized = true))
+
+            store.dispatch(ResetToDefaultConfirmed)
+            runCurrent()
+
+            verify { repository.reset() }
+            captureActions.assertLastAction(Update::class) { action ->
+                assertFalse(action.isCustomized)
             }
         }
 

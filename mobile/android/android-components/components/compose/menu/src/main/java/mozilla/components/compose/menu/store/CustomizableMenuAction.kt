@@ -59,4 +59,10 @@ sealed interface CustomizableMenuAction : Action {
 
     /** The user tapped or gestured to go back while in the customization screen. */
     data object BackPressed : CustomizableMenuAction
+
+    /** The user tapped "Reset to default" on the customize menu screen. */
+    data object ResetToDefaultClicked : CustomizableMenuAction
+
+    /** The user confirmed resetting the menu to default in the confirmation dialog. */
+    data object ResetToDefaultConfirmed : CustomizableMenuAction
 }

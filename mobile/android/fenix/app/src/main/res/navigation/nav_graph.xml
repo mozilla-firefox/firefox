@@ -1149,7 +1149,7 @@
             app:popExitAnim="@anim/slide_out_right" />
         <action
             android:id="@+id/action_customizationFragment_to_customizeMenuFragment"
-            app:destination="@id/customizeMenuFragment"
+            app:destination="@id/customize_menu_graph"
             app:enterAnim="@anim/slide_in_right"
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
@@ -1937,14 +1937,30 @@
 
       <action
         android:id="@+id/action_menuFragment_to_customizeMenuFragment"
-        app:destination="@id/customizeMenuFragment" />
+        app:destination="@id/customize_menu_graph" />
     </dialog>
   </navigation>
 
-    <fragment
-      android:id="@+id/customizeMenuFragment"
-      android:name="org.mozilla.fenix.components.menu.compose.customize.CustomizeMenuFragment"
-      android:label="@string/customize_menu" />
+    <navigation
+        android:id="@+id/customize_menu_graph"
+        app:startDestination="@id/customizeMenuFragment">
+
+        <fragment
+            android:id="@+id/customizeMenuFragment"
+            android:name="org.mozilla.fenix.components.menu.compose.customize.CustomizeMenuFragment"
+            android:label="@string/customize_menu">
+            <action
+                android:id="@+id/action_customizeMenuFragment_to_menuFragment"
+                app:destination="@id/menu_graph" />
+            <action
+                android:id="@+id/action_customizeMenuFragment_to_resetToDefaultDialogFragment"
+                app:destination="@id/resetToDefaultDialogFragment" />
+        </fragment>
+
+        <dialog
+            android:id="@+id/resetToDefaultDialogFragment"
+            android:name="org.mozilla.fenix.components.menu.compose.customize.ResetToDefaultDialogFragment" />
+    </navigation>
 
     <navigation
         android:id="@+id/trust_panel_graph"

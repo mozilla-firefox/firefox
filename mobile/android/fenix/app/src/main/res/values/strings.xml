@@ -158,6 +158,14 @@
     <string name="customize_menu">Customize menu</string>
     <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
     <string name="customize_menu_cannot_hide_section">Can’t hide this section</string>
+    <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+    <string name="menu_customize_reset_dialog_title">Reset to default menu?</string>
+    <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+    <string name="menu_customize_reset_dialog_message">This removes customizations and can’t be undone.</string>
+    <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+    <string name="menu_customize_reset_dialog_reset">Reset</string>
+    <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+    <string name="menu_customize_reset_dialog_cancel">Cancel</string>
     <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
     <string name="browser_menu_back">Back</string>
     <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->

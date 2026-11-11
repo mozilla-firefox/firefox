@@ -40,6 +40,7 @@ import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
+import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
@@ -54,14 +55,12 @@ import mozilla.components.lib.state.ext.observeAsComposableState
  *
  * @param store The [CustomizableMenuStore] managing the state and dispatching events for menu customization.
  * @param modifier The [Modifier] to be applied to the layout.
- * @param onResetToDefault Callback invoked when the "Reset to default" button is clicked.
  * @param onPreviewClick Callback invoked when the "Preview" button is clicked.
  */
 @Composable
 fun CustomizeMenuContent(
     store: CustomizableMenuStore,
     modifier: Modifier = Modifier,
-    onResetToDefault: () -> Unit = {},
     onPreviewClick: () -> Unit = {},
 ) {
     val windowWidth = LocalWindowInfo.current.containerSize.width
@@ -86,7 +85,6 @@ fun CustomizeMenuContent(
             store = store,
             leftPadding = freeWidth / 2 - shift,
             rightPadding = freeWidth / 2 + shift,
-            onResetToDefault = onResetToDefault,
             onPreviewClick = onPreviewClick,
         )
     }
@@ -97,7 +95,6 @@ private fun CustomizeMenuList(
     store: CustomizableMenuStore,
     leftPadding: Dp,
     rightPadding: Dp,
-    onResetToDefault: () -> Unit,
     onPreviewClick: () -> Unit,
 ) {
     val menuState by store.observeAsComposableState { it }
@@ -158,7 +155,7 @@ private fun CustomizeMenuList(
         if (menuState.isCustomized) {
             item(key = RESET_BUTTON) {
                 CustomizeMenuResetButton(
-                    onClick = onResetToDefault,
+                    onClick = { store.dispatch(ResetToDefaultClicked) },
                     modifier = Modifier.animateItem().padding(top = itemSpacing),
                 )
             }

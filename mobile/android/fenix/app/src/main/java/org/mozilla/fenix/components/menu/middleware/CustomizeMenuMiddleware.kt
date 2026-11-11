@@ -14,6 +14,8 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
+import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
@@ -61,8 +63,10 @@ class CustomizeMenuMiddleware(
         when (action) {
             is Init -> showInitialMenuStructure(store)
             is MenuStructureChanged -> saveMenuStructure(store, action)
+            is ResetToDefaultConfirmed -> resetToDefault(store)
             is AttemptedRemovalOfMandatorySection ->
                 appStore.dispatch(SnackbarAction.ShowSnackbar(title = cannotHideSectionMessage))
+            is ResetToDefaultClicked,
             is MenuEvent,
             is Update,
             is BackPressed,
@@ -103,6 +107,13 @@ class CustomizeMenuMiddleware(
 
     private fun showInitialMenuStructure(store: Store<CustomizableMenuState, CustomizableMenuAction>) = scope.launch {
         val customization = repository.customizedMenuInfo.filterNotNull().first()
+        dispatchMenuStructure(store, customization)
+    }
+
+    private suspend fun dispatchMenuStructure(
+        store: Store<CustomizableMenuState, CustomizableMenuAction>,
+        customization: CustomizedMenuInfo,
+    ) {
         val groups = menuBuilder.menuStructure.first().associateBy { it.id }
         val shownSections =
             BrowserMenuConfiguration.sections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
@@ -127,5 +138,13 @@ class CustomizeMenuMiddleware(
         return shownSections.map { it.id } != defaultShownSections.map { it.id } ||
             customization.hiddenSectionIds.toSet() != default.hiddenSectionIds.toSet() ||
             customization.isNavigationSectionMoved
+    }
+
+    private fun resetToDefault(store: Store<CustomizableMenuState, CustomizableMenuAction>) = scope.launch {
+        isNavigationSectionMoved = false
+        repository.reset()
+
+        val defaultInfo = BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom, isExpandedToolbarEnabled)
+        dispatchMenuStructure(store, defaultInfo)
     }
 }

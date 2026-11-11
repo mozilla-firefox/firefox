@@ -10,6 +10,8 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
+import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
@@ -39,9 +41,11 @@ class CustomizeMenuTelemetryMiddleware : Middleware<CustomizableMenuState, Custo
             is Update -> if (isFirstStructureRead) recordShown(action)
             is MenuStructureChanged -> recordSectionMoved(action)
             is BackPressed -> CustomizeMenu.backPressed.record()
+            is ResetToDefaultConfirmed -> CustomizeMenu.resetToDefaultClicked.record()
             is MenuEvent,
             is Init,
             is CustomizationStatusChanged,
+            is ResetToDefaultClicked,
             is AttemptedRemovalOfMandatorySection -> Unit
         }
     }

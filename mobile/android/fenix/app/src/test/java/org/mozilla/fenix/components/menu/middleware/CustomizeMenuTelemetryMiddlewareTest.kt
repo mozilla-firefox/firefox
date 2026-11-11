@@ -10,6 +10,7 @@ import kotlin.test.assertNull
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
@@ -138,6 +139,16 @@ class CustomizeMenuTelemetryMiddlewareTest {
         store.dispatch(BackPressed)
 
         assertEquals(1, CustomizeMenu.backPressed.testGetValue()?.size)
+    }
+
+    @Test
+    fun `WHEN the user resets to default THEN record it`() {
+        val store = createStore()
+        assertNull(CustomizeMenu.resetToDefaultClicked.testGetValue())
+
+        store.dispatch(ResetToDefaultConfirmed)
+
+        assertEquals(1, CustomizeMenu.resetToDefaultClicked.testGetValue()?.size)
     }
 
     private fun createStore(initialState: CustomizableMenuState = CustomizableMenuState(emptyList())) =
