@@ -43,7 +43,6 @@ class WaylandBuffer {
   void DestroyGLResources() { mBufferSurface->ReleaseTextures(); }
   gfx::SurfaceFormat GetSurfaceFormat() { return mBufferSurface->GetFormat(); }
 
-  BufferSurface* GetSurface() { return mBufferSurface; }
   DMABufSurface* GetDMABufSurface() {
     return mBufferSurface->GetAsDMABufSurface();
   }

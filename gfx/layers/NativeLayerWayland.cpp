@@ -35,8 +35,9 @@
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/gfx/gfxVars.h"
 #include "mozilla/layers/SurfacePoolWayland.h"
-#include "mozilla/webrender/RenderLinuxTextureHost.h"
+#include "mozilla/webrender/RenderDMABUFTextureHost.h"
 #include "mozilla/webrender/RenderThread.h"
+#include "mozilla/webrender/RenderWaylandTextureHost.h"
 #include "mozilla/widget/SHMBufSurface.h"
 #include "mozilla/widget/WaylandSurface.h"
 #include "mozilla/widget/nsWaylandDisplay.h"
@@ -1316,8 +1317,22 @@ NativeLayerWaylandRender::~NativeLayerWaylandRender() {
   mSurfaceHandler.DiscardBackbuffersLocked(&lock, /* aForce */ true);
 }
 
+static RefPtr<BufferSurface> GetBufferSurface(
+    RenderTextureHost* aExternalImage) {
+  if (!aExternalImage) {
+    return nullptr;
+  }
+  if (aExternalImage->AsRenderDMABUFTextureHost()) {
+    return aExternalImage->AsRenderDMABUFTextureHost()->GetSurface();
+  } else if (aExternalImage->AsRenderWaylandTextureHost()) {
+    return aExternalImage->AsRenderWaylandTextureHost()->GetSurface();
+  } else {
+    MOZ_CRASH("Unknow texture type");
+  }
+}
+
 RefPtr<BufferSurface> NativeLayerWaylandExternal::GetSurface() {
-  return mFrontBuffer->GetSurface();
+  return GetBufferSurface(mTextureHost);
 }
 
 NativeLayerWaylandExternal::NativeLayerWaylandExternal(
@@ -1326,15 +1341,13 @@ NativeLayerWaylandExternal::NativeLayerWaylandExternal(
 
 void NativeLayerWaylandExternal::AttachExternalImage(
     RenderTextureHost* aExternalImage) {
-  MOZ_DIAGNOSTIC_ASSERT(aExternalImage);
-  MOZ_DIAGNOSTIC_ASSERT(aExternalImage->AsRenderLinuxTextureHost());
-
   WaylandSurfaceLock lock(mSurface);
 
-  RefPtr surface = aExternalImage->AsRenderLinuxTextureHost()->GetSurface();
+  RefPtr surface = GetBufferSurface(aExternalImage);
   if (!surface) {
     LOG("NativeLayerWayland::AttachExternalImage() failed.");
-    gfxCriticalNoteOnce << "ExternalImage is not RenderLinuxTextureHost";
+    gfxCriticalNoteOnce << "ExternalImage is not RenderDMABUFTextureHost or "
+                           "RenderWaylandTextureHost";
     return;
   }
 
@@ -1357,9 +1370,9 @@ void NativeLayerWaylandExternal::AttachExternalImage(
   LOG("NativeLayerWaylandExternal::AttachExternalImage() host [%s] "
       "Surface [%p] UID %d [%d x %d] HDR %d Opaque %d recycle "
       "%d",
-      surface->GetAsDMABufSurface() ? "DMABuf" : "SHMSurface", surface.get(),
-      surface->GetUID(), mSize.width, mSize.height, mIsHDR, mIsOpaque,
-      surface->CanRecycle());
+      aExternalImage->AsRenderDMABUFTextureHost() ? "DMABuf" : "SHMSurface",
+      surface.get(), surface->GetUID(), mSize.width, mSize.height, mIsHDR,
+      mIsOpaque, surface->CanRecycle());
 
   bool needDMABufUpload = surface->GetAsSHMBufSurface();
   if (needDMABufUpload) {
@@ -1370,9 +1383,6 @@ void NativeLayerWaylandExternal::AttachExternalImage(
       mFrontBuffer = nullptr;
       return;
     }
-    // Copied SHM surface to DMABuf so no need to reference original
-    // SHM surface.
-    mTextureHost = nullptr;
     surface->DisableRecycle();
   }
 
@@ -1390,8 +1400,6 @@ void NativeLayerWaylandExternal::AttachExternalImage(
       mFrontBuffer = nullptr;
       return;
     }
-    // Copied to a new surface, unref the old dmabuf surface.
-    mTextureHost = nullptr;
     surface->DisableRecycle();
     LOG("  HLG->PQ converted, new surface [%p]", surface.get());
   }

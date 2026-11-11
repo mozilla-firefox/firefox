@@ -26,21 +26,14 @@ class DMABufSurface;
 class SHMBufSurface : public BufferSurface {
  public:
   SHMBufSurface* GetAsSHMBufSurface() override { return this; }
-  static RefPtr<SHMBufSurface> Create(
-      uint8_t* aBuffer, const mozilla::layers::BufferDescriptor& aDescriptor);
 
   void* GetImageData() override;
-  virtual uint8_t* MapPlane(uint8_t aPlane, int32_t& aStride,
-                            mozilla::gfx::IntSize& aSize) {
-    return nullptr;
-  }
+  SHMBufSurface();
 
   virtual already_AddRefed<DMABufSurface> UploadToDMABufSurface(
       mozilla::gl::GLContext* aGLContext) {
     return nullptr;
   }
-
-  SHMBufSurface();
 
  protected:
   ~SHMBufSurface() override;
@@ -79,9 +72,6 @@ class SHMBufSurfaceRGBA final : public SHMBufSurface {
       override;
   already_AddRefed<mozilla::gfx::DrawTarget> Lock() override;
 
-  uint8_t* MapPlane(uint8_t aPlane, int32_t& aStride,
-                    mozilla::gfx::IntSize& aSize) override;
-
   already_AddRefed<DMABufSurface> UploadToDMABufSurface(
       mozilla::gl::GLContext* aGLContext) override;
 
@@ -113,9 +103,6 @@ class SHMBufSurfaceYUV final : public SHMBufSurface {
     return nullptr;
   };
 
-  uint8_t* MapPlane(uint8_t aPlane, int32_t& aStride,
-                    mozilla::gfx::IntSize& aSize) override;
-
   already_AddRefed<DMABufSurface> UploadToDMABufSurface(
       mozilla::gl::GLContext* aGLContext) override;
 
@@ -128,6 +115,8 @@ class SHMBufSurfaceYUV final : public SHMBufSurface {
 
   bool CreateImpl(uint8_t* aBuffer,
                   const mozilla::layers::BufferDescriptor& aDescriptor);
+
+  mozilla::layers::YCbCrDescriptor mDescriptor;
 };
 
 #endif

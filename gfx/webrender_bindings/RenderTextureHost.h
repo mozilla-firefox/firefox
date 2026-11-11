@@ -40,7 +40,8 @@ class RenderMacIOSurfaceTextureHost;
 class RenderBufferTextureHost;
 class RenderTextureHostSWGL;
 class RenderTextureHostWrapper;
-class RenderLinuxTextureHost;
+class RenderDMABUFTextureHost;
+class RenderWaylandTextureHost;
 
 void ActivateBindAndTexParameteri(gl::GLContext* aGL, GLenum aActiveTexture,
                                   GLenum aBindTarget, GLuint aBindTexture);
@@ -164,7 +165,13 @@ class RenderTextureHost {
     return nullptr;
   }
 
-  virtual RenderLinuxTextureHost* AsRenderLinuxTextureHost() { return nullptr; }
+  virtual RenderDMABUFTextureHost* AsRenderDMABUFTextureHost() {
+    return nullptr;
+  }
+
+  virtual RenderWaylandTextureHost* AsRenderWaylandTextureHost() {
+    return nullptr;
+  }
 
   virtual void Destroy();
 
