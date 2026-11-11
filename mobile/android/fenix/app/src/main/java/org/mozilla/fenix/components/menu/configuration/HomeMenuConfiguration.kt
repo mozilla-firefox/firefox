@@ -21,43 +21,43 @@ import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 
 /** The sections of the menu shown on the home screen. */
 object HomeMenuConfiguration {
-    @VisibleForTesting internal val GROUP_1_ID = "home_group_1"
-    @VisibleForTesting internal val GROUP_2_ID = "home_group_2"
-    @VisibleForTesting internal val GROUP_3_ID = "home_group_3"
-    @VisibleForTesting internal val GROUP_4_ID = "home_group_4"
-    @VisibleForTesting internal val GROUP_5_ID = "home_group_5"
-    @VisibleForTesting internal val GROUP_6_ID = "home_group_6"
+    @VisibleForTesting internal val PROMO_BANNER_GROUP_ID = "promo_banner"
+    @VisibleForTesting internal val VPN_GROUP_ID = "vpn"
+    @VisibleForTesting internal val EXTENSIONS_GROUP_ID = "extensions"
+    @VisibleForTesting internal val LIBRARY_GROUP_ID = "library"
+    @VisibleForTesting internal val ACCOUNTS_AND_SETTINGS_GROUP_ID = "accounts_and_settings"
+    @VisibleForTesting internal val QUIT_GROUP_ID = "quit"
 
     /** The menu shown on the home screen. */
     fun sections(): List<MenuSectionConfiguration> =
         listOf(
             MenuSectionConfiguration(
-                id = GROUP_1_ID,
+                id = PROMO_BANNER_GROUP_ID,
                 presentationMode = Row,
                 items = listOf(DefaultBrowserBanner),
             ),
             MenuSectionConfiguration(
-                id = GROUP_2_ID,
+                id = VPN_GROUP_ID,
                 presentationMode = Row,
                 items = listOf(IPProtection),
             ),
             MenuSectionConfiguration(
-                id = GROUP_3_ID,
+                id = EXTENSIONS_GROUP_ID,
                 presentationMode = Row,
                 items = listOf(Extensions),
             ),
             MenuSectionConfiguration(
-                id = GROUP_4_ID,
+                id = LIBRARY_GROUP_ID,
                 presentationMode = Grid,
                 items = listOf(History, Bookmarks, Downloads, Passwords),
             ),
             MenuSectionConfiguration(
-                id = GROUP_5_ID,
+                id = ACCOUNTS_AND_SETTINGS_GROUP_ID,
                 presentationMode = Row,
                 items = listOf(MozillaAccount, CustomizeHomepage, Settings),
             ),
             MenuSectionConfiguration(
-                id = GROUP_6_ID,
+                id = QUIT_GROUP_ID,
                 presentationMode = Row,
                 items = listOf(Quit),
             ),

@@ -17,12 +17,12 @@ import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.MozillaAcco
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Passwords
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Quit
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Settings
-import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.GROUP_1_ID
-import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.GROUP_2_ID
-import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.GROUP_3_ID
-import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.GROUP_4_ID
-import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.GROUP_5_ID
-import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.GROUP_6_ID
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.EXTENSIONS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.LIBRARY_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.PROMO_BANNER_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.QUIT_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration.VPN_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Grid
 import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 
@@ -31,12 +31,12 @@ class HomeMenuConfigurationTest {
     fun `WHEN building the home menu THEN show only what needs no page, grouped as before`() {
         assertEquals(
             listOf(
-                section(GROUP_1_ID, Row, DefaultBrowserBanner),
-                section(GROUP_2_ID, Row, IPProtection),
-                section(GROUP_3_ID, Row, Extensions),
-                section(GROUP_4_ID, Grid, History, Bookmarks, Downloads, Passwords),
-                section(GROUP_5_ID, Row, MozillaAccount, CustomizeHomepage, Settings),
-                section(GROUP_6_ID, Row, Quit),
+                section(PROMO_BANNER_GROUP_ID, Row, DefaultBrowserBanner),
+                section(VPN_GROUP_ID, Row, IPProtection),
+                section(EXTENSIONS_GROUP_ID, Row, Extensions),
+                section(LIBRARY_GROUP_ID, Grid, History, Bookmarks, Downloads, Passwords),
+                section(ACCOUNTS_AND_SETTINGS_GROUP_ID, Row, MozillaAccount, CustomizeHomepage, Settings),
+                section(QUIT_GROUP_ID, Row, Quit),
             ),
             HomeMenuConfiguration.sections(),
         )

@@ -35,14 +35,14 @@ import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
-import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_1_ID
-import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_2_ID
-import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_3_ID
-import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_4_ID
-import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_5_ID
-import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_6_ID
-import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.GROUP_7_ID
-import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.NAVIGATION_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.PAGE_CONTROLS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.QUIT_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.READER_VIEW_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TABS_CONTROLS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TOOLS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.VPN_GROUP_ID
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CustomizeMenuMiddlewareTest {
@@ -61,19 +61,34 @@ class CustomizeMenuMiddlewareTest {
             val customization =
                 CustomizedMenuInfo(
                     visibleSectionIds =
-                        listOf(NAVIGATION_ID, GROUP_3_ID, GROUP_1_ID, GROUP_2_ID, GROUP_4_ID, GROUP_5_ID),
-                    hiddenSectionIds = listOf(GROUP_6_ID),
+                        listOf(
+                            PAGE_CONTROLS_GROUP_ID,
+                            TOOLS_GROUP_ID,
+                            READER_VIEW_GROUP_ID,
+                            VPN_GROUP_ID,
+                            LIBRARY_GROUP_ID,
+                            ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                        ),
+                    hiddenSectionIds = listOf(QUIT_GROUP_ID),
                 )
             createStore(customization = MutableStateFlow(customization))
             runCurrent()
 
             captureActions.assertLastAction(Update::class) {
                 assertEquals(
-                    groups(NAVIGATION_ID, GROUP_3_ID, GROUP_1_ID, GROUP_2_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                    groups(
+                        PAGE_CONTROLS_GROUP_ID,
+                        TOOLS_GROUP_ID,
+                        READER_VIEW_GROUP_ID,
+                        VPN_GROUP_ID,
+                        LIBRARY_GROUP_ID,
+                        ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                        QUIT_GROUP_ID,
+                    ),
                     it.items,
                 )
-                assertEquals(setOf(GROUP_5_ID), it.mandatoryGroupIds)
-                assertEquals(setOf(GROUP_6_ID), it.hiddenGroupIds)
+                assertEquals(setOf(ACCOUNTS_AND_SETTINGS_GROUP_ID), it.mandatoryGroupIds)
+                assertEquals(setOf(QUIT_GROUP_ID), it.hiddenGroupIds)
                 assertTrue(it.isCustomized)
             }
         }
@@ -88,7 +103,7 @@ class CustomizeMenuMiddlewareTest {
                 defaultMenuInfo.visibleSectionIds + defaultMenuInfo.hiddenSectionIds,
                 it.items.map { group -> group.id },
             )
-            assertEquals(setOf(GROUP_7_ID), it.hiddenGroupIds)
+            assertEquals(setOf(TABS_CONTROLS_GROUP_ID), it.hiddenGroupIds)
             assertFalse(it.isCustomized)
         }
     }
@@ -97,13 +112,28 @@ class CustomizeMenuMiddlewareTest {
     fun `GIVEN a section has nothing to show WHEN the screen is shown THEN don't show it`() = runTest {
         createStore(
             customization = MutableStateFlow(defaultMenuInfo),
-            menuGroups = groups(NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+            menuGroups =
+                groups(
+                    PAGE_CONTROLS_GROUP_ID,
+                    VPN_GROUP_ID,
+                    TOOLS_GROUP_ID,
+                    LIBRARY_GROUP_ID,
+                    ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                    QUIT_GROUP_ID,
+                ),
         )
         runCurrent()
 
         captureActions.assertLastAction(Update::class) {
             assertEquals(
-                listOf(NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                listOf(
+                    PAGE_CONTROLS_GROUP_ID,
+                    VPN_GROUP_ID,
+                    TOOLS_GROUP_ID,
+                    LIBRARY_GROUP_ID,
+                    ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                    QUIT_GROUP_ID,
+                ),
                 it.items.map { group -> group.id },
             )
         }
@@ -130,8 +160,17 @@ class CustomizeMenuMiddlewareTest {
 
         store.dispatch(
             MenuStructureChanged(
-                items = groups(GROUP_1_ID, NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
-                hiddenGroupIds = setOf(GROUP_6_ID),
+                items =
+                    groups(
+                        READER_VIEW_GROUP_ID,
+                        PAGE_CONTROLS_GROUP_ID,
+                        VPN_GROUP_ID,
+                        TOOLS_GROUP_ID,
+                        LIBRARY_GROUP_ID,
+                        ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                        QUIT_GROUP_ID,
+                    ),
+                hiddenGroupIds = setOf(QUIT_GROUP_ID),
             )
         )
 
@@ -139,8 +178,15 @@ class CustomizeMenuMiddlewareTest {
             repository.save(
                 CustomizedMenuInfo(
                     visibleSectionIds =
-                        listOf(GROUP_1_ID, NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID),
-                    hiddenSectionIds = listOf(GROUP_6_ID),
+                        listOf(
+                            READER_VIEW_GROUP_ID,
+                            PAGE_CONTROLS_GROUP_ID,
+                            VPN_GROUP_ID,
+                            TOOLS_GROUP_ID,
+                            LIBRARY_GROUP_ID,
+                            ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                        ),
+                    hiddenSectionIds = listOf(QUIT_GROUP_ID),
                     isNavigationSectionMoved = true,
                 )
             )
@@ -155,7 +201,15 @@ class CustomizeMenuMiddlewareTest {
             store.dispatch(
                 MenuStructureChanged(
                     items =
-                        groups(NAVIGATION_ID, GROUP_2_ID, GROUP_1_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                        groups(
+                            PAGE_CONTROLS_GROUP_ID,
+                            VPN_GROUP_ID,
+                            READER_VIEW_GROUP_ID,
+                            TOOLS_GROUP_ID,
+                            LIBRARY_GROUP_ID,
+                            ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                            QUIT_GROUP_ID,
+                        ),
                     hiddenGroupIds = emptySet(),
                 )
             )
@@ -165,13 +219,13 @@ class CustomizeMenuMiddlewareTest {
                     CustomizedMenuInfo(
                         visibleSectionIds =
                             listOf(
-                                NAVIGATION_ID,
-                                GROUP_2_ID,
-                                GROUP_1_ID,
-                                GROUP_3_ID,
-                                GROUP_4_ID,
-                                GROUP_5_ID,
-                                GROUP_6_ID,
+                                PAGE_CONTROLS_GROUP_ID,
+                                VPN_GROUP_ID,
+                                READER_VIEW_GROUP_ID,
+                                TOOLS_GROUP_ID,
+                                LIBRARY_GROUP_ID,
+                                ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                                QUIT_GROUP_ID,
                             ),
                         hiddenSectionIds = emptyList(),
                         isNavigationSectionMoved = false,
@@ -187,8 +241,15 @@ class CustomizeMenuMiddlewareTest {
             val customization =
                 CustomizedMenuInfo(
                     visibleSectionIds =
-                        listOf(GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, NAVIGATION_ID),
-                    hiddenSectionIds = listOf(GROUP_6_ID),
+                        listOf(
+                            READER_VIEW_GROUP_ID,
+                            VPN_GROUP_ID,
+                            TOOLS_GROUP_ID,
+                            LIBRARY_GROUP_ID,
+                            ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                            PAGE_CONTROLS_GROUP_ID,
+                        ),
+                    hiddenSectionIds = listOf(QUIT_GROUP_ID),
                     isNavigationSectionMoved = true,
                 )
             val store = createStore(customization = MutableStateFlow(customization), isToolbarAtBottom = true)
@@ -196,8 +257,16 @@ class CustomizeMenuMiddlewareTest {
             store.dispatch(
                 MenuStructureChanged(
                     items =
-                        groups(GROUP_2_ID, GROUP_1_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, NAVIGATION_ID, GROUP_6_ID),
-                    hiddenGroupIds = setOf(GROUP_6_ID),
+                        groups(
+                            VPN_GROUP_ID,
+                            READER_VIEW_GROUP_ID,
+                            TOOLS_GROUP_ID,
+                            LIBRARY_GROUP_ID,
+                            ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                            PAGE_CONTROLS_GROUP_ID,
+                            QUIT_GROUP_ID,
+                        ),
+                    hiddenGroupIds = setOf(QUIT_GROUP_ID),
                 )
             )
 
@@ -205,8 +274,15 @@ class CustomizeMenuMiddlewareTest {
                 repository.save(
                     CustomizedMenuInfo(
                         visibleSectionIds =
-                            listOf(GROUP_2_ID, GROUP_1_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, NAVIGATION_ID),
-                        hiddenSectionIds = listOf(GROUP_6_ID),
+                            listOf(
+                                VPN_GROUP_ID,
+                                READER_VIEW_GROUP_ID,
+                                TOOLS_GROUP_ID,
+                                LIBRARY_GROUP_ID,
+                                ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                                PAGE_CONTROLS_GROUP_ID,
+                            ),
+                        hiddenSectionIds = listOf(QUIT_GROUP_ID),
                         isNavigationSectionMoved = true,
                     )
                 )
@@ -221,14 +297,30 @@ class CustomizeMenuMiddlewareTest {
             store.dispatch(
                 MenuStructureChanged(
                     items =
-                        groups(GROUP_1_ID, NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                        groups(
+                            READER_VIEW_GROUP_ID,
+                            PAGE_CONTROLS_GROUP_ID,
+                            VPN_GROUP_ID,
+                            TOOLS_GROUP_ID,
+                            LIBRARY_GROUP_ID,
+                            ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                            QUIT_GROUP_ID,
+                        ),
                     hiddenGroupIds = emptySet(),
                 )
             )
             store.dispatch(
                 MenuStructureChanged(
                     items =
-                        groups(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                        groups(
+                            PAGE_CONTROLS_GROUP_ID,
+                            READER_VIEW_GROUP_ID,
+                            VPN_GROUP_ID,
+                            TOOLS_GROUP_ID,
+                            LIBRARY_GROUP_ID,
+                            ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                            QUIT_GROUP_ID,
+                        ),
                     hiddenGroupIds = emptySet(),
                 )
             )
@@ -238,13 +330,13 @@ class CustomizeMenuMiddlewareTest {
                     CustomizedMenuInfo(
                         visibleSectionIds =
                             listOf(
-                                NAVIGATION_ID,
-                                GROUP_1_ID,
-                                GROUP_2_ID,
-                                GROUP_3_ID,
-                                GROUP_4_ID,
-                                GROUP_5_ID,
-                                GROUP_6_ID,
+                                PAGE_CONTROLS_GROUP_ID,
+                                READER_VIEW_GROUP_ID,
+                                VPN_GROUP_ID,
+                                TOOLS_GROUP_ID,
+                                LIBRARY_GROUP_ID,
+                                ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                                QUIT_GROUP_ID,
                             ),
                         hiddenSectionIds = emptyList(),
                         isNavigationSectionMoved = true,
@@ -268,7 +360,16 @@ class CustomizeMenuMiddlewareTest {
 
         store.dispatch(
             MenuStructureChanged(
-                items = groups(GROUP_1_ID, NAVIGATION_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
+                items =
+                    groups(
+                        READER_VIEW_GROUP_ID,
+                        PAGE_CONTROLS_GROUP_ID,
+                        VPN_GROUP_ID,
+                        TOOLS_GROUP_ID,
+                        LIBRARY_GROUP_ID,
+                        ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                        QUIT_GROUP_ID,
+                    ),
                 hiddenGroupIds = emptySet(),
             )
         )
@@ -301,8 +402,16 @@ class CustomizeMenuMiddlewareTest {
             store.dispatch(
                 MenuStructureChanged(
                     items =
-                        groups(NAVIGATION_ID, GROUP_1_ID, GROUP_2_ID, GROUP_3_ID, GROUP_4_ID, GROUP_5_ID, GROUP_6_ID),
-                    hiddenGroupIds = setOf(GROUP_6_ID),
+                        groups(
+                            PAGE_CONTROLS_GROUP_ID,
+                            READER_VIEW_GROUP_ID,
+                            VPN_GROUP_ID,
+                            TOOLS_GROUP_ID,
+                            LIBRARY_GROUP_ID,
+                            ACCOUNTS_AND_SETTINGS_GROUP_ID,
+                            QUIT_GROUP_ID,
+                        ),
+                    hiddenGroupIds = setOf(QUIT_GROUP_ID),
                 )
             )
 
@@ -315,7 +424,7 @@ class CustomizeMenuMiddlewareTest {
         runTest {
             val store = createStore(initialState = CustomizableMenuState(menuGroups = defaultGroups()))
 
-            store.dispatch(AttemptedRemovalOfMandatorySection(GROUP_5_ID))
+            store.dispatch(AttemptedRemovalOfMandatorySection(ACCOUNTS_AND_SETTINGS_GROUP_ID))
 
             captureAppActions.assertLastAction(SnackbarAction.ShowSnackbar::class) { action ->
                 assertEquals(cannotHideSectionMessage, action.title)

@@ -22,9 +22,9 @@ import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 
 /** The sections of the menu shown in custom tabs. */
 object CustomTabMenuConfiguration {
-    @VisibleForTesting internal val NAVIGATION_ID = "custom_tab_navigation"
-    @VisibleForTesting internal val GROUP_1_ID = "custom_tab_group_1"
-    @VisibleForTesting internal val GROUP_2_ID = "custom_tab_group_2"
+    @VisibleForTesting internal val PAGE_CONTROLS_GROUP_ID = "page_controls"
+    @VisibleForTesting internal val TOOLS_GROUP_ID = "tools"
+    @VisibleForTesting internal val APP_ITEMS_GROUP_ID = "app_items"
 
     /** The menu shown in custom tabs. */
     fun sections(
@@ -33,7 +33,7 @@ object CustomTabMenuConfiguration {
     ): List<MenuSectionConfiguration> {
         val navSection =
             MenuSectionConfiguration(
-                id = NAVIGATION_ID,
+                id = PAGE_CONTROLS_GROUP_ID,
                 presentationMode = Grid,
                 items = listOf(Back, Forward, Share, Refresh),
                 isSticky = true,
@@ -41,7 +41,7 @@ object CustomTabMenuConfiguration {
         val rest =
             listOf(
                 MenuSectionConfiguration(
-                    id = GROUP_1_ID,
+                    id = TOOLS_GROUP_ID,
                     presentationMode = Row,
                     items =
                         listOfNotNull(
@@ -55,7 +55,7 @@ object CustomTabMenuConfiguration {
                         ),
                 ),
                 MenuSectionConfiguration(
-                    id = GROUP_2_ID,
+                    id = APP_ITEMS_GROUP_ID,
                     presentationMode = Row,
                     items = listOf(CustomTabAppItems),
                 ),

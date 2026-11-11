@@ -6,7 +6,7 @@ package org.mozilla.fenix.components.menu.configuration
 
 import kotlin.test.assertEquals
 import org.junit.Test
-import org.mozilla.fenix.components.menu.configuration.CustomTabMenuConfiguration.GROUP_1_ID
+import org.mozilla.fenix.components.menu.configuration.CustomTabMenuConfiguration.TOOLS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmark
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DesktopSite
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Extensions
@@ -20,10 +20,10 @@ class CustomTabMenuConfigurationTest {
     fun `WHEN building the custom tab menu AND extensions are enabled THEN show items for custom tab including Extensions under DesktopSite`() {
         val configuration = CustomTabMenuConfiguration.sections(isToolbarAtBottom = false, shouldShowExtensions = true)
 
-        val group1 = configuration.first { it.id == GROUP_1_ID }
+        val toolsSection = configuration.first { it.id == TOOLS_GROUP_ID }
         assertEquals(
             listOf(OpenInFirefox, Bookmark, FindInPage, DesktopSite, Extensions, Translate, SummarizePage),
-            group1.items,
+            toolsSection.items,
         )
     }
 
@@ -31,10 +31,10 @@ class CustomTabMenuConfigurationTest {
     fun `WHEN building the custom tab menu AND extensions are disabled THEN show items for custom tab excluding Extensions`() {
         val configuration = CustomTabMenuConfiguration.sections(isToolbarAtBottom = false, shouldShowExtensions = false)
 
-        val group1 = configuration.first { it.id == GROUP_1_ID }
+        val toolsSection = configuration.first { it.id == TOOLS_GROUP_ID }
         assertEquals(
             listOf(OpenInFirefox, Bookmark, FindInPage, DesktopSite, Translate, SummarizePage),
-            group1.items,
+            toolsSection.items,
         )
     }
 }
