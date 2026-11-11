@@ -340,7 +340,7 @@ sub_properties = ["align-items", "justify-items"]
 spec = "https://drafts.csswg.org/css-align/#place-items-property"
 
 [position-try]
-engine = "gecko"
+servo_pref = "layout.css.anchor-positioning.enabled"
 sub_properties = ["position-try-order", "position-try-fallbacks"]
 spec = "https://drafts.csswg.org/css-anchor-position-1/#position-try-prop"
 
