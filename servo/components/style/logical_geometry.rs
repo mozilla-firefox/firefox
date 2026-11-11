@@ -136,6 +136,7 @@ impl WritingMode {
     /// Return a WritingMode bitflags from the relevant CSS properties.
     pub fn new(inheritedbox_style: &style_structs::InheritedBox) -> Self {
         use crate::properties::longhands::direction::computed_value::T as Direction;
+        use crate::properties::longhands::text_orientation::computed_value::T as TextOrientation;
 
         let mut flags = WritingMode::empty();
 
@@ -181,35 +182,30 @@ impl WritingMode {
             },
         }
 
-        #[cfg(feature = "gecko")]
-        {
-            use crate::properties::longhands::text_orientation::computed_value::T as TextOrientation;
+        // text-orientation only has an effect for vertical-rl and
+        // vertical-lr values of writing-mode.
+        match writing_mode {
+            WritingModeProperty::VerticalRl | WritingModeProperty::VerticalLr => {
+                match *inheritedbox_style.get_text_orientation() {
+                    TextOrientation::Mixed => {},
+                    TextOrientation::Upright => {
+                        flags.insert(WritingMode::UPRIGHT);
 
-            // text-orientation only has an effect for vertical-rl and
-            // vertical-lr values of writing-mode.
-            match writing_mode {
-                WritingModeProperty::VerticalRl | WritingModeProperty::VerticalLr => {
-                    match *inheritedbox_style.get_text_orientation() {
-                        TextOrientation::Mixed => {},
-                        TextOrientation::Upright => {
-                            flags.insert(WritingMode::UPRIGHT);
-
-                            // https://drafts.csswg.org/css-writing-modes-3/#valdef-text-orientation-upright:
-                            //
-                            // > This value causes the used value of direction
-                            // > to be ltr, and for the purposes of bidi
-                            // > reordering, causes all characters to be treated
-                            // > as strong LTR.
-                            flags.remove(WritingMode::RTL);
-                            flags.remove(WritingMode::INLINE_REVERSED);
-                        },
-                        TextOrientation::Sideways => {
-                            flags.insert(WritingMode::TEXT_SIDEWAYS);
-                        },
-                    }
-                },
-                _ => {},
-            }
+                        // https://drafts.csswg.org/css-writing-modes-3/#valdef-text-orientation-upright:
+                        //
+                        // > This value causes the used value of direction
+                        // > to be ltr, and for the purposes of bidi
+                        // > reordering, causes all characters to be treated
+                        // > as strong LTR.
+                        flags.remove(WritingMode::RTL);
+                        flags.remove(WritingMode::INLINE_REVERSED);
+                    },
+                    TextOrientation::Sideways => {
+                        flags.insert(WritingMode::TEXT_SIDEWAYS);
+                    },
+                }
+            },
+            _ => {},
         }
 
         flags

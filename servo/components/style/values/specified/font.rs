@@ -1616,10 +1616,13 @@ pub enum FontSynthesis {
     Clone,
     Copy,
     Debug,
+    Deserialize,
     Eq,
+    Hash,
     MallocSizeOf,
     Parse,
     PartialEq,
+    Serialize,
     SpecifiedValueInfo,
     ToComputedValue,
     ToCss,
@@ -2349,6 +2352,13 @@ pub enum FontVariantPosition {
     Super,
 }
 
+fn font_variant_caps_all_values_enabled(_: &ParserContext) -> bool {
+    crate::pref!(
+        "layout.css.font-variant-caps.all-values.enabled",
+        gecko = true
+    )
+}
+
 /// https://drafts.csswg.org/css-fonts/#propdef-font-variant-caps
 #[allow(missing_docs)]
 #[derive(
@@ -2374,14 +2384,14 @@ pub enum FontVariantPosition {
 pub enum FontVariantCaps {
     Normal,
     SmallCaps,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "font_variant_caps_all_values_enabled")]
     AllSmallCaps,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "font_variant_caps_all_values_enabled")]
     PetiteCaps,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "font_variant_caps_all_values_enabled")]
     AllPetiteCaps,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "font_variant_caps_all_values_enabled")]
     Unicase,
-    #[cfg(feature = "gecko")]
+    #[parse(condition = "font_variant_caps_all_values_enabled")]
     TitlingCaps,
 }

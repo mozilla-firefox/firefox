@@ -504,8 +504,6 @@ sub_properties = [
   "font-kerning",
   "font-feature-settings",
   "font-language-override",
-]
-extra_gecko_sub_properties = [
   "font-size-adjust",
   "font-variant-emoji",
 ]
@@ -519,31 +517,30 @@ sub_properties = [
     "font-variant-east-asian",
     "font-variant-ligatures",
     "font-variant-numeric",
-    "font-variant-position"
+    "font-variant-position",
+    "font-variant-emoji"
 ]
-extra_gecko_sub_properties = ["font-variant-emoji"]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font-variant"
 
 [font-synthesis]
-engine = "gecko"
+servo_pref = "layout.css.font-synthesis.enabled"
 sub_properties = ["font-synthesis-weight", "font-synthesis-style", "font-synthesis-small-caps", "font-synthesis-position"]
 spec = "https://drafts.csswg.org/css-fonts-3/#propdef-font-variant"
 derive_value_info = false
 
 [text-box]
-engine = "gecko"
+servo_pref = "layout.css.text-box.enabled"
 sub_properties = ["text-box-trim", "text-box-edge"]
 spec = "https://drafts.csswg.org/css-inline/#text-box-shorthand"
 gecko_pref = "layout.css.text-box.enabled"
 
 [text-emphasis]
-engine = "gecko"
+servo_pref = "layout.css.text-emphasis.enabled"
 sub_properties = ["text-emphasis-style", "text-emphasis-color"]
 spec = "https://drafts.csswg.org/css-text-decor-3/#text-emphasis-property"
 derive_serialize = true
 
 [text-wrap]
-engine = "gecko"
 sub_properties = ["text-wrap-mode", "text-wrap-style"]
 spec = "https://www.w3.org/TR/css-text-4/#text-wrap"
 
