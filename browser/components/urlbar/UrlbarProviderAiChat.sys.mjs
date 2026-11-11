@@ -129,10 +129,14 @@ export class UrlbarProviderAiChat extends UrlbarProvider {
 
     let intent = await this.#determineIntent(queryContext);
 
+    // No chat row when the query was canceled, the input is a URL, or this is
+    // the urlbar and the intent is not chat. Pinning search still shows Ask.
     if (
       instance != this.queryInstance ||
       intent == "navigate" ||
-      (intent != "chat" && queryContext.sapName == "urlbar")
+      (intent != "chat" &&
+        queryContext.sapName == "urlbar" &&
+        lazy.IntentClassifier.smartbarIntent != "search")
     ) {
       return;
     }

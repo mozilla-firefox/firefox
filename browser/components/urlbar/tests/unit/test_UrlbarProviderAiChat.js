@@ -210,6 +210,51 @@ add_task(async function test_startQuery() {
   }
 });
 
+add_task(async function test_urlbar_ask_shown_when_pinned_to_search() {
+  const PREF = "browser.smartwindow.smartbar.intent";
+  Services.prefs.setStringPref(PREF, "search");
+  gEngineStub.resetHistory();
+  const provider = new lazy.UrlbarProviderAiChat();
+  try {
+    for (let input of ["tell me a joke", "search for cute cat pictures"]) {
+      let added = [];
+      await provider.startQuery(
+        createContext(input, { sapName: "urlbar" }),
+        (_provider, result) => added.push(result)
+      );
+      Assert.equal(added.length, 1, `Ask row is shown for "${input}"`);
+      Assert.equal(added[0].type, UrlbarShared.RESULT_TYPE.AI_CHAT);
+      Assert.equal(added[0].heuristic, false);
+      Assert.equal(added[0].suggestedIndex, 1);
+    }
+
+    let added = [];
+    await provider.startQuery(
+      createContext("mozilla.org", { sapName: "urlbar" }),
+      (_provider, result) => added.push(result)
+    );
+    Assert.equal(added.length, 0, "URLs still do not show Ask");
+
+    added = [];
+    await provider.startQuery(
+      createContext("tell me a joke", { sapName: "smartbar" }),
+      (_provider, result) => added.push(result)
+    );
+    Assert.equal(
+      added.length,
+      1,
+      "The smart bar still gets a non-heuristic chat row"
+    );
+    Assert.equal(added[0].heuristic, false);
+    Assert.ok(
+      gEngineStub.notCalled,
+      "A search pin does not run the intent model"
+    );
+  } finally {
+    Services.prefs.clearUserPref(PREF);
+  }
+});
+
 add_task(async function test_intentClassifierThrows() {
   const provider = new lazy.UrlbarProviderAiChat();
 

@@ -21,6 +21,17 @@ const { Region } = ChromeUtils.importESModule(
   "resource://gre/modules/Region.sys.mjs"
 );
 
+const { NimbusFeatures } = ChromeUtils.importESModule(
+  "resource://nimbus/ExperimentAPI.sys.mjs"
+);
+const { NimbusTestUtils } = ChromeUtils.importESModule(
+  "resource://testing-common/NimbusTestUtils.sys.mjs"
+);
+
+const SMARTBAR_INTENT_PREF = "browser.smartwindow.smartbar.intent";
+
+NimbusTestUtils.init(this);
+
 add_task(async function test_getPromptIntent_basic() {
   const sb = sinon.createSandbox();
   try {
@@ -121,6 +132,107 @@ add_task(function test_isForcedChat_is_model_aware() {
     ),
     "Unaccented French input matches the accented allowlist phrase"
   );
+});
+
+add_task(async function test_getPromptIntent_override_skips_classifier() {
+  const sb = sinon.createSandbox();
+  try {
+    const createEngineStub = sb
+      .stub(IntentClassifier, "_createEngine")
+      .resolves({
+        run() {
+          return [
+            { label: "search", score: 0.99 },
+            { label: "chat", score: 0.01 },
+          ];
+        },
+      });
+
+    Services.prefs.setStringPref(SMARTBAR_INTENT_PREF, "search");
+    Assert.equal(
+      await IntentClassifier.getPromptIntent("tell me a joke"),
+      "search",
+      "A search override wins over a forced-chat phrase"
+    );
+    Assert.ok(
+      createEngineStub.notCalled,
+      "A search override does not load the intent model"
+    );
+
+    Services.prefs.setStringPref(SMARTBAR_INTENT_PREF, "chat");
+    Assert.equal(
+      await IntentClassifier.getPromptIntent("search for news"),
+      "chat",
+      "A chat override wins over a search-shaped query"
+    );
+    Assert.ok(
+      createEngineStub.notCalled,
+      "A chat override does not load the intent model"
+    );
+
+    Services.prefs.setStringPref(SMARTBAR_INTENT_PREF, "");
+    Assert.equal(
+      await IntentClassifier.getPromptIntent("search for news"),
+      "search",
+      "An empty override uses the classifier"
+    );
+    Assert.ok(createEngineStub.calledOnce, "The classifier still runs");
+  } finally {
+    Services.prefs.clearUserPref(SMARTBAR_INTENT_PREF);
+    sb.restore();
+  }
+});
+
+add_task(async function test_getPromptIntent_nimbus_override() {
+  const sb = sinon.createSandbox();
+  const { cleanup } = await NimbusTestUtils.setupTest();
+  try {
+    sb.stub(IntentClassifier, "_createEngine").resolves({
+      run() {
+        return [
+          { label: "chat", score: 0.99 },
+          { label: "search", score: 0.01 },
+        ];
+      },
+    });
+
+    Assert.equal(
+      NimbusFeatures.smartWindow.getVariable("smartbarIntent"),
+      null,
+      "smartbarIntent is null before enrollment"
+    );
+
+    const unenroll = await NimbusTestUtils.enrollWithFeatureConfig({
+      featureId: "smartWindow",
+      value: { smartbarIntent: "search" },
+    });
+
+    Assert.equal(
+      await IntentClassifier.getPromptIntent("tell me a joke"),
+      "search",
+      "An enrollment pins the smart bar to search"
+    );
+    Assert.ok(
+      !Services.prefs.prefHasUserValue(SMARTBAR_INTENT_PREF),
+      "The fallbackPref enrollment does not write the pref"
+    );
+
+    await unenroll();
+
+    Assert.equal(
+      NimbusFeatures.smartWindow.getVariable("smartbarIntent"),
+      null,
+      "smartbarIntent is null after unenrollment"
+    );
+    Assert.equal(
+      await IntentClassifier.getPromptIntent("search for news"),
+      "chat",
+      "Unenrollment uses the classifier again"
+    );
+  } finally {
+    await cleanup();
+    sb.restore();
+  }
 });
 
 add_task(async function test_getPromptIntent_selects_model_by_region() {

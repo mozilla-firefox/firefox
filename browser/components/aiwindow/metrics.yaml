@@ -35,7 +35,9 @@ smart_window:
       detected_intent: &detected_intent
         type: string
         description: >
-          What was the detected intent for the request: navigate, search, chat, or action
+          What was the detected intent for the request: navigate, search, chat, or action.
+          When the smartWindow feature's smartbarIntent variable pins search or chat,
+          non-navigate requests report the pinned value rather than the classifier's.
       length: &length
         type: quantity
         unit: characters

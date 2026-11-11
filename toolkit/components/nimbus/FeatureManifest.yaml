@@ -6407,6 +6407,18 @@ smartWindow:
       description: >-
         How Smart Window obtains a guest token: "fetch" requests it in the
         background, "tab" opens the guest verification page in a tab.
+    smartbarIntent:
+      type: string
+      fallbackPref: browser.smartwindow.smartbar.intent
+      enum:
+        - ""
+        - search
+        - chat
+      description: >-
+        "search" or "chat" pins the smart bar to that action instead of the
+        intent classifier. The urlbar Ask suggestion still appears when pinned
+        to search. While pinned, detected_intent telemetry reports the pinned
+        value rather than the classifier's for non-navigate requests.
 
 smartWindowAgentWatch:
   description: >-
