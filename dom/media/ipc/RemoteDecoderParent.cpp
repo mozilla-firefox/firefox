@@ -54,11 +54,11 @@ mozilla::ipc::IPCResult RemoteDecoderParent::RecvInit(
     return IPC_OK();
   }
 
-  if (mInitAttempted) {
+  if (mState != State::Constructed) {
     aResolver(MediaResult(NS_ERROR_ALREADY_INITIALIZED, __func__));
     return IPC_OK();
   }
-  mInitAttempted = true;
+  mState = State::Initializing;
 
   mPendingInitResolver.emplace(std::move(aResolver));
   RefPtr<RemoteDecoderParent> self = this;
@@ -77,6 +77,7 @@ mozilla::ipc::IPCResult RemoteDecoderParent::RecvInit(
               resolver(aValue.RejectValue());
               return;
             }
+            self->mState = State::Initialized;
             auto track = aValue.ResolveValue();
             MOZ_ASSERT(track == TrackInfo::kAudioTrack ||
                        track == TrackInfo::kVideoTrack);
@@ -169,6 +170,11 @@ void RemoteDecoderParent::DecodeNextSample(
 mozilla::ipc::IPCResult RemoteDecoderParent::RecvDecode(
     ArrayOfRemoteMediaRawData* aData, DecodeResolver&& aResolver) {
   MOZ_ASSERT(OnManagerThread());
+  if (!mDecoder || mState != State::Initialized) {
+    aResolver(MediaResult(NS_ERROR_ABORT, __func__));
+    return IPC_OK();
+  }
+
   // If we are here, we know all previously returned DecodedOutputIPDL got
   // used by the child. We can mark all previously sent ShmemBuffer as
   // available again.
@@ -185,7 +191,7 @@ mozilla::ipc::IPCResult RemoteDecoderParent::RecvDecode(
 mozilla::ipc::IPCResult RemoteDecoderParent::RecvFlush(
     FlushResolver&& aResolver) {
   MOZ_ASSERT(OnManagerThread());
-  if (!mDecoder) {
+  if (!mDecoder || mState != State::Initialized) {
     aResolver(MediaResult(NS_ERROR_ABORT, __func__));
     return IPC_OK();
   }
@@ -221,7 +227,7 @@ mozilla::ipc::IPCResult RemoteDecoderParent::RecvFlush(
 mozilla::ipc::IPCResult RemoteDecoderParent::RecvDrain(
     DrainResolver&& aResolver) {
   MOZ_ASSERT(OnManagerThread());
-  if (!mDecoder) {
+  if (!mDecoder || mState != State::Initialized) {
     aResolver(MediaResult(NS_ERROR_ABORT, __func__));
     return IPC_OK();
   }
@@ -282,14 +288,14 @@ mozilla::ipc::IPCResult RemoteDecoderParent::RecvShutdown(
     aResolver(true);
   }
   mDecoder = nullptr;
-  mShutdown = true;
+  mState = State::ShutDown;
   return IPC_OK();
 }
 
 mozilla::ipc::IPCResult RemoteDecoderParent::RecvSetSeekThreshold(
     const TimeUnit& aTime) {
   MOZ_ASSERT(OnManagerThread());
-  if (mDecoder) {
+  if (mDecoder && mState == State::Initialized) {
     mDecoder->SetSeekThreshold(aTime);
   }
   return IPC_OK();
@@ -298,7 +304,7 @@ mozilla::ipc::IPCResult RemoteDecoderParent::RecvSetSeekThreshold(
 void RemoteDecoderParent::ActorDestroy(ActorDestroyReason aWhy) {
   MOZ_ASSERT(OnManagerThread());
   // Ensure a decoder still being created is shut down when it is ready.
-  mShutdown = true;
+  mState = State::ShutDown;
   AbortPendingRequests();
   if (mDecoder) {
     mDecoder->Shutdown();
