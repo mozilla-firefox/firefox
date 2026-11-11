@@ -260,11 +260,6 @@ void Gecko_NoteDirtySubtreeForInvalidation(const Element* aElement) {
   const_cast<Element*>(aElement)->NoteDirtySubtreeForServo();
 }
 
-void Gecko_NoteAnimationOnlyDirtyElement(const Element* aElement) {
-  MOZ_ASSERT(NS_IsMainThread());
-  const_cast<Element*>(aElement)->NoteAnimationOnlyDirtyForServo();
-}
-
 bool Gecko_AnimationNameMayBeReferencedFromStyle(
     const nsPresContext* aPresContext, nsAtom* aName) {
   MOZ_ASSERT(aPresContext);
@@ -667,7 +662,7 @@ static CSSTransition* GetCurrentTransitionAt(const Element* aElement,
                                              size_t aIndex) {
   const auto [element, pseudo] = AnimationUtils::GetElementPseudoPair(aElement);
   auto* collection =
-      nsTransitionManager::CSSTransitionCollection ::Get(element, pseudo);
+      nsTransitionManager::CSSTransitionCollection::Get(element, pseudo);
   if (!collection) {
     return nullptr;
   }

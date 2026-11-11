@@ -5,10 +5,11 @@
 //! Traversing the DOM tree; the bloom filter.
 
 use crate::context::{ElementCascadeInputs, SharedStyleContext, StyleContext};
-use crate::data::{ElementData, ElementStyles, RestyleKind};
+use crate::data::{ElementData, ElementDataFlags, ElementStyles, RestyleKind};
 use crate::dom::{OpaqueNode, TElement, TNode};
 use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::matching::MatchMethods;
+use crate::properties::ComputedValues;
 use crate::selector_parser::PseudoElement;
 use crate::sharing::StyleSharingTarget;
 use crate::style_resolver::{PseudoElementResolution, StyleResolverForElement};
@@ -18,6 +19,7 @@ use hashbrown::HashMap;
 use selectors::matching::SelectorCaches;
 #[cfg(feature = "gecko")]
 use selectors::parser::PseudoElement as PseudoElementTrait;
+use servo_arc::Arc;
 use smallvec::SmallVec;
 
 /// A cache from element reference to known-valid computed style.
@@ -131,9 +133,7 @@ pub trait DomTraversal<E: TElement>: Sync {
         let mut data = root.mutate_data();
         let mut data = data.as_deref_mut();
 
-        if let Some(ref mut data) = data
-            && !traversal_flags.for_animation_only()
-        {
+        if let Some(ref mut data) = data {
             // Invalidate our style, and that of our siblings and
             // descendants as needed.
             let invalidation_result = data.invalidate_style_if_needed(
@@ -181,13 +181,6 @@ pub trait DomTraversal<E: TElement>: Sync {
             Some(d) if d.has_styles() => d,
             _ => return true,
         };
-
-        if traversal_flags.for_animation_only() {
-            // In case of animation-only traversal we need to traverse the element if the element
-            // has animation only dirty descendants bit, or animation-only restyle hint.
-            return el.has_animation_only_dirty_descendants()
-                || data.hint.has_animation_hint_or_recascade();
-        }
 
         // If the dirty descendants bit is set, we need to traverse no matter
         // what. Skip examining the ElementData.
@@ -356,14 +349,16 @@ pub fn recalc_style_at<E, D, F>(
 
     context.thread_local.statistics.elements_traversed += 1;
     debug_assert!(
-        flags.intersects(TraversalFlags::AnimationOnly)
+        flags.intersects(TraversalFlags::Forgetful)
             || is_initial_style
             || !element.has_snapshot()
             || element.handled_snapshot(),
         "Should've handled snapshots here already"
     );
 
-    let restyle_kind = data.restyle_kind(context.shared);
+    data.before_change_style = None;
+
+    let restyle_kind = data.restyle_kind();
     debug!(
         "recalc_style_at: {:?} (restyle_kind={:?}, dirty_descendants={:?}, data={:?})",
         element,
@@ -373,17 +368,13 @@ pub fn recalc_style_at<E, D, F>(
     );
 
     let mut child_restyle_hint = RestyleHint::empty();
+    let mut child_flags = ElementDataFlags::empty();
 
     // Compute style for this element if necessary.
     if let Some(restyle_kind) = restyle_kind {
-        child_restyle_hint = compute_style(context, element, data, restyle_kind);
-
-        if !element.matches_user_and_content_rules() {
-            // We must always cascade native anonymous subtrees, since they
-            // may have pseudo-elements underneath that would inherit from the
-            // closest non-NAC ancestor instead of us.
-            child_restyle_hint |= RestyleHint::RECASCADE_SELF;
-        }
+        let result = compute_style(context, element, data, restyle_kind);
+        child_restyle_hint = result.child_hint;
+        child_flags = result.child_flags;
 
         // If we're restyling this element to display:none, throw away all style
         // data in the subtree, notify the caller to early-return.
@@ -406,33 +397,18 @@ pub fn recalc_style_at<E, D, F>(
         data.set_traversed_without_styling();
     }
 
-    // Now that matching and cascading is done, clear the bits corresponding to
-    // those operations and compute the propagated restyle hint (unless we're
-    // not processing invalidations, in which case don't need to propagate it
-    // and must avoid clearing it).
-    debug_assert!(
-        flags.for_animation_only() || !data.hint.has_animation_hint(),
-        "animation restyle hint should be handled during \
-         animation-only restyles"
-    );
-    let mut propagated_hint = data.hint.propagate(&flags);
+    // Now that matching and cascading is done, clear the bits corresponding to those operations and
+    // compute the propagated restyle hint.
+    child_restyle_hint |= data.hint.propagate();
+
     trace!(
-        "propagated_hint={:?}, restyle_requirement={:?}, \
+        "child_restyle_hint={child_restyle_hint:?}, \
          is_display_none={:?}, implementing_pseudo={:?}",
-        propagated_hint,
-        child_restyle_hint,
         data.styles.is_display_none(),
         element.implemented_pseudo_element()
     );
 
-    // Integrate the child cascade requirement into the propagated hint.
-    propagated_hint |= child_restyle_hint;
-
-    let has_dirty_descendants_for_this_restyle = if flags.for_animation_only() {
-        element.has_animation_only_dirty_descendants()
-    } else {
-        element.has_dirty_descendants()
-    };
+    let has_dirty_descendants_for_this_restyle = element.has_dirty_descendants();
 
     // Before examining each child individually, try to prove that our children
     // don't need style processing. They need processing if any of the following
@@ -444,26 +420,27 @@ pub fn recalc_style_at<E, D, F>(
     //
     // We only do this if we're not a display: none root, since in that case
     // it's useless to style children.
-    let mut traverse_children =
-        has_dirty_descendants_for_this_restyle || !propagated_hint.is_empty();
-
-    traverse_children = traverse_children && !data.styles.is_display_none();
+    let traverse_children = (has_dirty_descendants_for_this_restyle
+        || !child_restyle_hint.is_empty())
+        && !data.styles.is_display_none();
 
     // Examine our children, and enqueue the appropriate ones for traversal.
     if traverse_children {
         note_children::<E, D, F>(
             context,
             element,
-            propagated_hint,
+            child_restyle_hint,
+            child_flags,
             is_initial_style,
             note_child,
         );
+    } else {
+        data.before_change_style = None;
     }
 
     // FIXME(bholley): Make these assertions pass for servo.
     if cfg!(feature = "gecko") && cfg!(debug_assertions) && data.styles.is_display_none() {
         debug_assert!(!element.has_dirty_descendants());
-        debug_assert!(!element.has_animation_only_dirty_descendants());
     }
 
     clear_state_after_traversing(element, data, flags);
@@ -473,21 +450,68 @@ fn clear_state_after_traversing<E>(element: E, data: &mut ElementData, flags: Tr
 where
     E: TElement,
 {
-    if flags.intersects(TraversalFlags::FinalAnimationTraversal) {
-        debug_assert!(flags.for_animation_only());
+    data.flags.remove(
+        ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED
+            | ElementDataFlags::RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS,
+    );
+    if flags.intersects(TraversalFlags::Forgetful) {
         data.clear_restyle_flags_and_damage();
         unsafe {
-            element.unset_animation_only_dirty_descendants();
+            element.unset_dirty_descendants();
         }
     }
 }
 
+/// Computes the old style with animations updated to the current time, inheriting from the
+/// before-change style of the parent.
+fn compute_before_change_style<E>(
+    context: &mut StyleContext<E>,
+    element: E,
+    data: &ElementData,
+    hint: RestyleHint,
+) -> Option<Arc<ComputedValues>>
+where
+    E: TElement,
+{
+    if !hint.has_animation_hint()
+        && !data
+            .flags
+            .contains(ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED)
+    {
+        // We don't need a before-change style if we or an ancestor are not animating.
+        return None;
+    }
+    let mut inputs = ElementCascadeInputs::new_from_element_data(data);
+    let replacements = hint & RestyleHint::for_animations();
+    if !replacements.is_empty() {
+        element.replace_rules(replacements, context, &mut inputs);
+    }
+    Some(
+        StyleResolverForElement::new(
+            element,
+            context,
+            RuleInclusion::All,
+            PseudoElementResolution::IfApplicable,
+        )
+        .before_change_style(inputs.primary),
+    )
+}
+
+/// The result of computing the style of an element.
+struct ComputeStyleResult {
+    /// The restyle hint for the children of the element.
+    child_hint: RestyleHint,
+    /// The flags to set on the children of the element that get a recascade hint.
+    child_flags: ElementDataFlags,
+}
+
+/// Computes the style of the element.
 fn compute_style<E>(
     context: &mut StyleContext<E>,
     element: E,
     data: &mut ElementData,
     kind: RestyleKind,
-) -> RestyleHint
+) -> ComputeStyleResult
 where
     E: TElement,
 {
@@ -496,6 +520,9 @@ where
     context.thread_local.statistics.elements_styled += 1;
     debug!("compute_style: {:?} (kind={:?})", element, kind);
 
+    let hint = data.hint;
+    let animation_only = data.is_animation_only_restyle();
+
     if data.has_styles() {
         data.set_restyled();
     }
@@ -503,10 +530,6 @@ where
     let mut important_rules_changed = false;
     let new_styles = match kind {
         MatchAndCascade => {
-            debug_assert!(
-                !context.shared.traversal_flags.for_animation_only() || !data.has_styles(),
-                "MatchAndCascade shouldn't normally be processed during animation-only traversal"
-            );
             // Ensure the bloom filter is up to date.
             context
                 .thread_local
@@ -616,7 +639,41 @@ where
         },
     };
 
-    element.finish_restyle(context, data, new_styles, important_rules_changed)
+    let before_change_style = if data.has_styles() && !animation_only {
+        compute_before_change_style(context, element, data, hint)
+    } else {
+        None
+    };
+    let before_change_style_changed = before_change_style.is_some();
+
+    let mut child_hint = element.finish_restyle(
+        context,
+        data,
+        new_styles,
+        important_rules_changed,
+        before_change_style,
+        animation_only,
+    );
+
+    if !element.matches_user_and_content_rules() {
+        // We must always cascade native anonymous subtrees, since they
+        // may have pseudo-elements underneath that would inherit from the
+        // closest non-NAC ancestor instead of us.
+        child_hint |= RestyleHint::RECASCADE_SELF;
+    }
+
+    let mut child_flags = ElementDataFlags::empty();
+    if animation_only {
+        child_flags |= ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED
+            | ElementDataFlags::RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS;
+    } else if before_change_style_changed {
+        child_flags |= ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED;
+    }
+
+    ComputeStyleResult {
+        child_hint,
+        child_flags,
+    }
 }
 
 #[cfg(feature = "servo")]
@@ -668,7 +725,8 @@ where
 fn note_children<E, D, F>(
     context: &mut StyleContext<E>,
     element: E,
-    propagated_hint: RestyleHint,
+    child_restyle_hint: RestyleHint,
+    child_flags: ElementDataFlags,
     is_initial_style: bool,
     mut note_child: F,
 ) where
@@ -691,12 +749,22 @@ fn note_children<E, D, F>(
             " > {:?} -> {:?} + {:?}, pseudo: {:?}",
             child,
             child_data.as_ref().map(|d| d.hint),
-            propagated_hint,
+            child_restyle_hint,
             child.implemented_pseudo_element()
         );
 
         if let Some(ref mut child_data) = child_data {
-            child_data.hint.insert(propagated_hint);
+            // FIXME(emilio, bug 2091537): This child_flags business is rather hacky. We need it to
+            // be able to tell an animation-only recascade from a real child recascade, in order to
+            // not incorrectly process transitions. Find a better solution for this!
+            if child_restyle_hint.intersects(RestyleHint::recascade_self()) {
+                let mut flags = child_flags;
+                if child_data.hint.intersects(RestyleHint::RECASCADE_SELF) {
+                    flags.remove(ElementDataFlags::RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS);
+                }
+                child_data.flags.insert(flags);
+            }
+            child_data.hint.insert(child_restyle_hint);
 
             // Handle element snapshots and invalidation of descendants and siblings
             // as needed.
@@ -719,14 +787,8 @@ fn note_children<E, D, F>(
             // Note that these bits may be cleared again at the bottom of
             // recalc_style_at if requested by the caller.
             if !is_initial_style {
-                if flags.for_animation_only() {
-                    unsafe {
-                        element.set_animation_only_dirty_descendants();
-                    }
-                } else {
-                    unsafe {
-                        element.set_dirty_descendants();
-                    }
+                unsafe {
+                    element.set_dirty_descendants();
                 }
             }
         }

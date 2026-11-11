@@ -918,10 +918,8 @@ void ServoStyleSet::StyleNewSubtree(Element* aRoot) {
   // update the styles and clear the animation bits.
   if (GetPresContext()->EffectCompositor()->PreTraverseInSubtree(flags,
                                                                  aRoot)) {
-    postTraversalRequired =
-        Servo_TraverseSubtree(aRoot, mRawData.get(), &snapshots,
-                              ServoTraversalFlags::AnimationOnly |
-                                  ServoTraversalFlags::FinalAnimationTraversal);
+    postTraversalRequired = Servo_TraverseSubtree(
+        aRoot, mRawData.get(), &snapshots, ServoTraversalFlags::Forgetful);
     MOZ_ASSERT(!postTraversalRequired);
   }
 }

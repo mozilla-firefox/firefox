@@ -12,14 +12,13 @@ bitflags! {
     /// Flags that control the traversal process.
     #[derive(Clone, Copy, Debug, Eq, PartialEq)]
     pub struct TraversalFlags: u32 {
-        /// Traverse only elements for animation restyles.
-        const AnimationOnly = 1 << 0;
         /// Traverse and update all elements with CSS animations since
         /// @keyframes rules may have changed. Triggered by CSS rule changes.
         const ForCSSRuleChanges = 1 << 1;
-        /// The final animation-only traversal, which shouldn't really care about other
-        /// style changes anymore.
-        const FinalAnimationTraversal = 1 << 2;
+        /// A traversal that isn't followed by a post-traversal (e.g. when styling a new subtree
+        /// during frame construction), so it doesn't accumulate damage, handle snapshots, or leave
+        /// restyle state behind.
+        const Forgetful = 1 << 2;
         /// Allows the traversal to run in parallel if there are sufficient cores on
         /// the machine.
         const ParallelTraversal = 1 << 7;
@@ -51,18 +50,9 @@ pub fn assert_traversal_flags_match() {
     }
 
     check_traversal_flags! {
-        ServoTraversalFlags_AnimationOnly => TraversalFlags::AnimationOnly,
         ServoTraversalFlags_ForCSSRuleChanges => TraversalFlags::ForCSSRuleChanges,
-        ServoTraversalFlags_FinalAnimationTraversal => TraversalFlags::FinalAnimationTraversal,
+        ServoTraversalFlags_Forgetful => TraversalFlags::Forgetful,
         ServoTraversalFlags_ParallelTraversal => TraversalFlags::ParallelTraversal,
         ServoTraversalFlags_FlushThrottledAnimations => TraversalFlags::FlushThrottledAnimations,
-    }
-}
-
-impl TraversalFlags {
-    /// Returns true if the traversal is for animation-only restyles.
-    #[inline]
-    pub fn for_animation_only(&self) -> bool {
-        self.contains(TraversalFlags::AnimationOnly)
     }
 }

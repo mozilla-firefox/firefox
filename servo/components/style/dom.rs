@@ -314,10 +314,9 @@ fn fmt_with_data<N: TNode>(f: &mut fmt::Formatter, n: N) -> fmt::Result {
     if let Some(el) = n.as_element() {
         write!(
             f,
-            "{:?} dd={} aodd={} data={:?}",
+            "{:?} dd={} data={:?}",
             el,
             el.has_dirty_descendants(),
-            el.has_animation_only_dirty_descendants(),
             el.borrow_data(),
         )
     } else {
@@ -329,14 +328,9 @@ fn fmt_with_data<N: TNode>(f: &mut fmt::Formatter, n: N) -> fmt::Result {
 fn fmt_with_data_and_primary_values<N: TNode>(f: &mut fmt::Formatter, n: N) -> fmt::Result {
     if let Some(el) = n.as_element() {
         let dd = el.has_dirty_descendants();
-        let aodd = el.has_animation_only_dirty_descendants();
         let data = el.borrow_data();
         let values = data.as_ref().and_then(|d| d.styles.get_primary());
-        write!(
-            f,
-            "{:?} dd={} aodd={} data={:?} values={:?}",
-            el, dd, aodd, &data, values
-        )
+        write!(f, "{:?} dd={} data={:?} values={:?}", el, dd, &data, values)
     } else {
         write!(f, "{:?}", n)
     }
@@ -651,28 +645,10 @@ pub trait TElement:
     /// Only safe to call with exclusive access to the element.
     unsafe fn unset_dirty_descendants(&self);
 
-    /// Similar to the dirty_descendants but for representing a descendant of
-    /// the element needs to be updated in animation-only traversal.
-    fn has_animation_only_dirty_descendants(&self) -> bool {
-        false
-    }
-
-    /// Flag that this element has a descendant for animation-only restyle
-    /// processing.
-    ///
-    /// Only safe to call with exclusive access to the element.
-    unsafe fn set_animation_only_dirty_descendants(&self) {}
-
-    /// Flag that this element has no descendant for animation-only restyle processing.
-    ///
-    /// Only safe to call with exclusive access to the element.
-    unsafe fn unset_animation_only_dirty_descendants(&self) {}
-
     /// Clear all bits related describing the dirtiness of descendants.
     ///
-    /// In Gecko, this corresponds to the regular dirty descendants bit, the
-    /// animation-only dirty descendants bit, and the lazy frame construction
-    /// descendants bit.
+    /// In Gecko, this corresponds to the regular dirty descendants bit and the
+    /// lazy frame construction descendants bit.
     unsafe fn clear_descendant_bits(&self) {
         unsafe {
             self.unset_dirty_descendants();
@@ -766,15 +742,6 @@ pub trait TElement:
         context: &SharedStyleContext,
         pseudo_element: Option<PseudoElement>,
     ) -> bool;
-
-    /// Returns true if the element has animation restyle hints.
-    fn has_animation_restyle_hints(&self) -> bool {
-        let data = match self.borrow_data() {
-            Some(d) => d,
-            None => return false,
-        };
-        data.hint.has_animation_hint()
-    }
 
     /// Called when a highlight pseudo-element (::selection, ::highlight,
     /// ::target-text) style is invalidated. These pseudos need explicit repaint

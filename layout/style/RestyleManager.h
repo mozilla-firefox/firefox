@@ -380,11 +380,9 @@ class RestyleManager {
   void ReparentComputedStyleForFirstLine(nsIFrame*);
 
   /**
-   * Performs a Servo animation-only traversal to compute style for all nodes
-   * with the animation-only dirty bit in the document.
+   * Processes pending restyles if there are pending animation style updates,
+   * including the ones for throttled animations.
    *
-   * This processes just the traversal for animation-only restyles and skips the
-   * normal traversal for other restyles unrelated to animations.
    * This is used to bring throttled animations up-to-date such as when we need
    * to get correct position for transform animations that are throttled because
    * they are running on the compositor.

@@ -12,6 +12,7 @@ use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::properties::ComputedValues;
 use crate::selector_parser::{EAGER_PSEUDO_COUNT, PseudoElement, RestyleDamage};
 use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles, ResolvedStyle};
+use crate::traversal_flags::TraversalFlags;
 use crate::values::specified::TreeCountingFunction;
 #[cfg(feature = "gecko")]
 use malloc_size_of::MallocSizeOfOps;
@@ -25,7 +26,7 @@ use atomic_refcell::{AtomicRef, AtomicRefCell, AtomicRefMut};
 
 bitflags! {
     /// Various flags stored on ElementData.
-    #[derive(Debug, Default)]
+    #[derive(Clone, Copy, Debug, Default)]
     pub struct ElementDataFlags: u8 {
         /// Whether the styles changed for this restyle.
         const WAS_RESTYLED = 1 << 0;
@@ -48,6 +49,16 @@ bitflags! {
         /// The former gives us stronger transitive guarantees that allows us to
         /// apply the style sharing cache to cousins.
         const PRIMARY_STYLE_REUSED_VIA_RULE_NODE = 1 << 2;
+
+        /// Whether the style of the parent of this element changed due to animations during the
+        /// current traversal. If so, the before-change style of this element needs to be computed
+        /// if it's restyled for other reasons, see StyleResolverForElement::before_change_style.
+        const ANCESTOR_ANIMATIONS_CHANGED = 1 << 3;
+
+        /// Whether the recascade hints of this element come only from a parent that was restyled
+        /// only due to animations, so that recascading for them doesn't need to update animations
+        /// or transitions.
+        const RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS = 1 << 4;
     }
 }
 
@@ -304,7 +315,7 @@ impl fmt::Debug for ElementStyles {
 /// In Gecko, this hangs directly off the Element. Servo, this is embedded
 /// inside of layout data, which itself hangs directly off the Element. In
 /// both cases, it is wrapped inside an AtomicRefCell to ensure thread safety.
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct ElementData {
     /// The styles for the element and its pseudo-elements.
     pub styles: ElementStyles,
@@ -319,6 +330,26 @@ pub struct ElementData {
 
     /// Flags.
     pub flags: ElementDataFlags,
+
+    /// The before-change style of this element for transitions, if the element was restyled during
+    /// the current traversal, isn't restyled only due to animations, and its children are going to
+    /// be traversed too. See StyleResolverForElement::before_change_style.
+    pub before_change_style: Option<Arc<ComputedValues>>,
+}
+
+impl fmt::Debug for ElementData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut f = f.debug_struct("ElementData");
+        f.field("styles", &self.styles)
+            .field("damage", &self.damage)
+            .field("hint", &self.hint)
+            .field("flags", &self.flags)
+            .field(
+                "before_change_style",
+                &self.before_change_style.as_ref().map(|s| &s.rules),
+            )
+            .finish()
+    }
 }
 
 /// A struct that wraps ElementData, giving it the ability of doing thread-safety checks.
@@ -395,7 +426,7 @@ impl<'a> DerefMut for ElementDataMut<'a> {
 }
 
 // There's one of these per rendered elements so it better be small.
-size_of_test!(ElementData, 24);
+size_of_test!(ElementData, 32);
 
 /// The kind of restyle that a single element should do.
 #[derive(Debug)]
@@ -465,8 +496,10 @@ impl ElementData {
         stack_limit_checker: Option<&StackLimitChecker>,
         selector_caches: &mut SelectorCaches,
     ) -> InvalidationResult {
-        // In animation-only restyle we shouldn't touch snapshot at all.
-        if shared_context.traversal_flags.for_animation_only() {
+        if shared_context
+            .traversal_flags
+            .contains(TraversalFlags::Forgetful)
+        {
             return InvalidationResult::empty();
         }
 
@@ -551,17 +584,33 @@ impl ElementData {
 
     /// Returns the kind of restyling that we're going to need to do on this
     /// element, based of the stored restyle hint.
-    pub fn restyle_kind(&self, shared_context: &SharedStyleContext) -> Option<RestyleKind> {
+    pub fn restyle_kind(&self) -> Option<RestyleKind> {
+        self.restyle_kind_for_hint(self.hint)
+    }
+
+    /// Returns whether the element needs to be restyled only due to animation changes, either on
+    /// itself or on an ancestor, and thus doesn't need to update animations or transitions.
+    pub fn is_animation_only_restyle(&self) -> bool {
+        let mut animation_hints = RestyleHint::for_animations();
+        if self
+            .flags
+            .contains(ElementDataFlags::RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS)
+        {
+            animation_hints |= RestyleHint::recascade_self();
+        }
+        self.has_styles()
+            && self.hint.intersects(animation_hints)
+            && self
+                .restyle_kind_for_hint(self.hint - animation_hints)
+                .is_none()
+    }
+
+    fn restyle_kind_for_hint(&self, hint: RestyleHint) -> Option<RestyleKind> {
         let style = match self.styles.primary {
             Some(ref s) => s,
             None => return Some(RestyleKind::MatchAndCascade),
         };
 
-        if shared_context.traversal_flags.for_animation_only() {
-            return self.restyle_kind_for_animation(shared_context);
-        }
-
-        let hint = self.hint;
         if hint.is_empty() {
             return None;
         }
@@ -571,10 +620,6 @@ impl ElementData {
         }
 
         if hint.has_replacements() {
-            debug_assert!(
-                !hint.has_animation_hint(),
-                "Animation only restyle hint should have already processed"
-            );
             return Some(RestyleKind::CascadeWithReplacements(
                 hint & RestyleHint::replacements(),
             ));
@@ -584,42 +629,6 @@ impl ElementData {
             return Some(RestyleKind::CascadeOnly);
         }
 
-        None
-    }
-
-    /// Returns the kind of restyling for animation-only restyle.
-    fn restyle_kind_for_animation(
-        &self,
-        shared_context: &SharedStyleContext,
-    ) -> Option<RestyleKind> {
-        debug_assert!(shared_context.traversal_flags.for_animation_only());
-        debug_assert!(self.has_styles());
-
-        // FIXME: We should ideally restyle here, but it is a hack to work around our weird
-        // animation-only traversal stuff: If we're display: none and the rules we could
-        // match could change, we consider our style up-to-date. This is because re-cascading with
-        // and old style doesn't guarantee returning the correct animation style (that's
-        // bug 1393323). So if our display changed, and it changed from display: none, we would
-        // incorrectly forget about it and wouldn't be able to correctly style our descendants
-        // later.
-        // XXX Figure out if this still makes sense.
-        let hint = self.hint;
-        if self.styles.is_display_none() && hint.intersects(RestyleHint::RESTYLE_SELF) {
-            return None;
-        }
-
-        let style = self.styles.primary();
-        // Return either CascadeWithReplacements or CascadeOnly in case of animation-only restyle.
-        // I.e. animation-only restyle never does selector matching.
-        if hint.has_animation_hint() {
-            return Some(RestyleKind::CascadeWithReplacements(
-                hint & RestyleHint::for_animations(),
-            ));
-        }
-
-        if needs_to_recascade_self(hint, style) {
-            return Some(RestyleKind::CascadeOnly);
-        }
         None
     }
 
@@ -638,6 +647,7 @@ impl ElementData {
     pub fn clear_restyle_flags_and_damage(&mut self) {
         self.damage = RestyleDamage::empty();
         self.flags.remove(ElementDataFlags::WAS_RESTYLED);
+        self.before_change_style = None;
     }
 
     /// Mark this element as restyled, which is useful to know whether we need

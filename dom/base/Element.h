@@ -169,9 +169,6 @@ already_AddRefed<mozilla::dom::ContentList> NS_GetContentList(
 enum : uint32_t {
   // Whether this node has dirty descendants for Servo's style system.
   ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO = ELEMENT_FLAG_BIT(0),
-  // Whether this node has dirty descendants for animation-only restyle for
-  // Servo's style system.
-  ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO = ELEMENT_FLAG_BIT(1),
 
   // Whether the element has been snapshotted due to attribute or state changes
   // by the Servo restyle manager.
@@ -608,9 +605,7 @@ class Element : public FragmentOrElement {
   Directionality GetComputedDirectionality() const;
 
   static const uint32_t kAllServoDescendantBits =
-      ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO |
-      ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO |
-      NODE_DESCENDANTS_NEED_FRAMES;
+      ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO | NODE_DESCENDANTS_NEED_FRAMES;
 
   /**
    * Notes that something in the given subtree of this element needs dirtying,
@@ -623,7 +618,6 @@ class Element : public FragmentOrElement {
   void NoteDirtySubtreeForServo();
 
   void NoteDirtyForServo();
-  void NoteAnimationOnlyDirtyForServo();
   void NoteDescendantsNeedFramesForServo();
 
   bool HasDirtyDescendantsForServo() const {
@@ -636,18 +630,6 @@ class Element : public FragmentOrElement {
 
   void UnsetHasDirtyDescendantsForServo() {
     UnsetFlags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
-  }
-
-  bool HasAnimationOnlyDirtyDescendantsForServo() const {
-    return HasFlag(ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO);
-  }
-
-  void SetHasAnimationOnlyDirtyDescendantsForServo() {
-    SetFlags(ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO);
-  }
-
-  void UnsetHasAnimationOnlyDirtyDescendantsForServo() {
-    UnsetFlags(ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO);
   }
 
   bool HasServoData() const { return !!mServoData.Get(); }

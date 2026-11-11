@@ -358,9 +358,6 @@ pub extern "C" fn Servo_TraverseSubtree(
         }
     }
 
-    let needs_animation_only_restyle =
-        element.has_animation_only_dirty_descendants() || element.has_animation_restyle_hints();
-
     let per_doc_data = raw_data.borrow();
     debug_assert!(!per_doc_data.stylist.stylesheets_have_changed());
 
@@ -368,21 +365,6 @@ pub extern "C" fn Servo_TraverseSubtree(
     let guard = global_style_data.shared_lock.read();
 
     let was_initial_style = !element.has_data();
-
-    if needs_animation_only_restyle {
-        debug!(
-            "Servo_TraverseSubtree doing animation-only restyle (aodd={})",
-            element.has_animation_only_dirty_descendants()
-        );
-        traverse_subtree(
-            element,
-            &global_style_data,
-            &per_doc_data,
-            &guard,
-            traversal_flags | TraversalFlags::AnimationOnly,
-            unsafe { &*snapshots },
-        );
-    }
 
     traverse_subtree(
         element,
@@ -394,9 +376,8 @@ pub extern "C" fn Servo_TraverseSubtree(
     );
 
     debug!(
-        "Servo_TraverseSubtree complete (dd={}, aodd={}, lfcd={}, lfc={}, data={:?})",
+        "Servo_TraverseSubtree complete (dd={}, lfcd={}, lfc={}, data={:?})",
         element.has_dirty_descendants(),
-        element.has_animation_only_dirty_descendants(),
         element.descendants_need_frames(),
         element.needs_frame(),
         element.borrow_data().unwrap()
@@ -7853,13 +7834,7 @@ pub extern "C" fn Servo_AssertTreeIsClean(root: &RawGeckoElement) {
     debug!("{:?}", ShowSubtreeData(root.as_node()));
 
     fn assert_subtree_is_clean<'le>(el: GeckoElement<'le>) {
-        debug_assert!(
-            !el.has_dirty_descendants() && !el.has_animation_only_dirty_descendants(),
-            "{:?} has still dirty bit {:?} or animation-only dirty bit {:?}",
-            el,
-            el.has_dirty_descendants(),
-            el.has_animation_only_dirty_descendants()
-        );
+        debug_assert!(!el.has_dirty_descendants(), "{:?} has still dirty bit", el);
         for child in el.traversal_children() {
             if let Some(child) = child.as_element() {
                 assert_subtree_is_clean(child);

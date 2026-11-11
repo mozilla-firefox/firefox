@@ -42,7 +42,6 @@ use crate::gecko_bindings::bindings::Gecko_MatchLang;
 use crate::gecko_bindings::bindings::Gecko_UpdateAnimations;
 use crate::gecko_bindings::structs;
 use crate::gecko_bindings::structs::ELEMENT_HANDLED_SNAPSHOT;
-use crate::gecko_bindings::structs::ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO;
 use crate::gecko_bindings::structs::ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO;
 use crate::gecko_bindings::structs::ELEMENT_HAS_SNAPSHOT;
 use crate::gecko_bindings::structs::EffectCompositor_CascadeLevel as CascadeLevel;
@@ -859,10 +858,6 @@ impl<'le> GeckoElement<'le> {
             self, restyle_hint, change_hint
         );
         debug_assert!(unsafe { bindings::Gecko_IsMainThread() });
-        debug_assert!(
-            !(restyle_hint.has_animation_hint() && restyle_hint.has_non_animation_hint()),
-            "Animation restyle hints should not appear with non-animation restyle hints"
-        );
 
         let Some(mut data) = self.mutate_data() else {
             debug!("(Element not styled, discarding hints)");
@@ -871,11 +866,7 @@ impl<'le> GeckoElement<'le> {
 
         // Propagate the bit up the chain.
         unsafe {
-            if restyle_hint.has_animation_hint() {
-                bindings::Gecko_NoteAnimationOnlyDirtyElement(self.0);
-            } else {
-                bindings::Gecko_NoteDirtyElement(self.0);
-            }
+            bindings::Gecko_NoteDirtyElement(self.0);
         }
 
         data.hint.insert(restyle_hint);
@@ -1384,26 +1375,9 @@ impl<'le> TElement for GeckoElement<'le> {
         unsafe { self.unset_flags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO) }
     }
 
-    #[inline]
-    fn has_animation_only_dirty_descendants(&self) -> bool {
-        self.flags() & ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO != 0
-    }
-
-    unsafe fn set_animation_only_dirty_descendants(&self) {
-        self.set_flags(ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO)
-    }
-
-    unsafe fn unset_animation_only_dirty_descendants(&self) {
-        unsafe { self.unset_flags(ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO) }
-    }
-
     unsafe fn clear_descendant_bits(&self) {
         unsafe {
-            self.unset_flags(
-                ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO
-                    | ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO
-                    | NODE_DESCENDANTS_NEED_FRAMES,
-            )
+            self.unset_flags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO | NODE_DESCENDANTS_NEED_FRAMES)
         }
     }
 

@@ -38,13 +38,12 @@ enum class LazyComputeBehavior {
 // Various flags for the servo traversal.
 enum class ServoTraversalFlags : uint32_t {
   Empty = 0,
-  // Perform animation processing but not regular styling.
-  AnimationOnly = 1 << 0,
   // Traverses as normal mode but tries to update all CSS animations.
   ForCSSRuleChanges = 1 << 1,
-  // The final animation-only traversal, which shouldn't really care about other
-  // style changes anymore.
-  FinalAnimationTraversal = 1 << 2,
+  // A traversal that isn't followed by a post-traversal (e.g. when styling a
+  // new subtree during frame construction), so it doesn't accumulate damage,
+  // handle snapshots, or leave restyle state behind.
+  Forgetful = 1 << 2,
   // Allows the traversal to run in parallel if there are sufficient cores on
   // the machine.
   ParallelTraversal = 1 << 7,

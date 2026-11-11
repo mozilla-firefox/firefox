@@ -6699,11 +6699,6 @@ void Element::NoteDirtyForServo() {
   NoteDirtyElement(this, ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
 }
 
-void Element::NoteAnimationOnlyDirtyForServo() {
-  NoteDirtyElement(this,
-                   ELEMENT_HAS_ANIMATION_ONLY_DIRTY_DESCENDANTS_FOR_SERVO);
-}
-
 void Element::NoteDescendantsNeedFramesForServo() {
   // Since lazy frame construction can be required for non-element nodes, this
   // Note() method operates on the parent of the frame-requiring content, unlike
