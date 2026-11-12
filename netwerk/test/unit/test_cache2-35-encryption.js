@@ -32,7 +32,15 @@ function run_test() {
     new OpenCallback(NEW | WAITFORWRITE, META, DATA, function () {
       testingInterface.resumeCacheIOThread();
       // Force pending metadata and data to disk before inspecting the files.
-      testingInterface.flush(makeFlushObserver(afterFlush));
+      // A flush only waits for writes that are already queued, and the data is
+      // only queued for writing once the file has been opened, which can
+      // happen after this first flush is dispatched. The second flush is
+      // dispatched after the file has been opened, so it waits for that write.
+      testingInterface.flush(
+        makeFlushObserver(() => {
+          testingInterface.flush(makeFlushObserver(afterFlush));
+        })
+      );
     })
   );
 
@@ -70,7 +78,10 @@ function afterFlush() {
 
 function makeFlushObserver(callback) {
   return {
-    observe() {
+    observe(subject, topic) {
+      // Flush() never removes its observer, so remove it here, or it would also
+      // be notified by the next flush.
+      Services.obs.removeObserver(this, topic);
       executeSoon(callback);
     },
   };
