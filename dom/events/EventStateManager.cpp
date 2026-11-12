@@ -4467,7 +4467,11 @@ nsresult EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
             break;
           }
 
+          AutoWeakFrame weakScrollTarget(scrollTarget);
           ScrollbarsForWheel::SetActiveScrollTarget(scrollTarget);
+          if (scrollTarget && !weakScrollTarget.IsAlive()) {
+            break;
+          }
 
           ScrollContainerFrame* rootScrollContainerFrame =
               !mCurrentTarget
