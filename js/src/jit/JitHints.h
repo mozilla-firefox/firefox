@@ -27,13 +27,13 @@ class ICScript;
  * The Jit hints map is an in process cache used to collect Baseline
  * Interpreter, Baseline, and Ion JIT hints to try and skip as much of the
  * warmup as possible and jump straight into those tiers. A hint is recorded
- * using the script's filename+sourceStart value, and if we ever encounter this
+ * using the script's filename and source extent, and if we ever encounter this
  * script again later, e.g. during a navigation, then we try to eagerly compile
  * it based on its previous execution history.
  */
 
 class JitHintsMap {
-  // ScriptKey is a hash on the filename+sourceStart.
+  // ScriptKey is a hash on the filename+sourceStart+sourceEnd.
   using ScriptKey = HashNumber;
   ScriptKey getScriptKey(JSScript* script) const;
 

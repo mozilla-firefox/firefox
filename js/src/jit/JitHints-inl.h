@@ -18,7 +18,8 @@ inline JitHintsMap::ScriptKey JitHintsMap::getScriptKey(
   // dynamically created scripts such as eval() and new Function() which
   // have a high probability of containing difference source.
   if (filenameHash && !script->scriptSource()->hasIntroducerFilename()) {
-    return mozilla::AddToHash(filenameHash, script->sourceStart());
+    return mozilla::AddToHash(filenameHash, script->sourceStart(),
+                              script->sourceEnd());
   }
   return 0;
 }
