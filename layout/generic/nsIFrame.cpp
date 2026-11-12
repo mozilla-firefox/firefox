@@ -12333,7 +12333,7 @@ void nsIFrame::SetParent(nsContainerFrame* aParent) {
 
   // Note that the current mParent may already be destroyed at this point.
   mParent = aParent;
-  MOZ_ASSERT(!mParent || PresShell() == mParent->PresShell());
+  MOZ_RELEASE_ASSERT(!mParent || PresContext() == mParent->PresContext());
 
   nsFrameState flagsToPropagateSameDoc =
       GetStateBits() & (NS_FRAME_CONTAINS_RELATIVE_BSIZE |
