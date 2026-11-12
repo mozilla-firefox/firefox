@@ -229,7 +229,7 @@ class nsCSPBaseSrc {
   virtual bool permits(nsIURI* aUri, bool aWasRedirected, bool aReportOnly,
                        bool aUpgradeInsecure) const;
   virtual bool allows(enum CSPKeyword aKeyword,
-                      const nsAString& aHashOrNonce) const;
+                      const nsAString& aContentOrNonce) const;
   virtual bool visit(nsCSPSrcVisitor* aVisitor) const = 0;
   virtual void toString(nsAString& outStr) const = 0;
 
@@ -311,7 +311,7 @@ class nsCSPKeywordSrc : public nsCSPBaseSrc {
   virtual ~nsCSPKeywordSrc();
 
   bool allows(enum CSPKeyword aKeyword,
-              const nsAString& aHashOrNonce) const override;
+              const nsAString& aContentOrNonce) const override;
   bool visit(nsCSPSrcVisitor* aVisitor) const override;
   void toString(nsAString& outStr) const override;
 
@@ -335,7 +335,7 @@ class nsCSPNonceSrc : public nsCSPBaseSrc {
   virtual ~nsCSPNonceSrc();
 
   bool allows(enum CSPKeyword aKeyword,
-              const nsAString& aHashOrNonce) const override;
+              const nsAString& aContentOrNonce) const override;
   bool visit(nsCSPSrcVisitor* aVisitor) const override;
   void toString(nsAString& outStr) const override;
 
@@ -355,7 +355,7 @@ class nsCSPHashSrc : public nsCSPBaseSrc {
   virtual ~nsCSPHashSrc();
 
   bool allows(enum CSPKeyword aKeyword,
-              const nsAString& aHashOrNonce) const override;
+              const nsAString& aContentOrNonce) const override;
   void toString(nsAString& outStr) const override;
   bool visit(nsCSPSrcVisitor* aVisitor) const override;
 
@@ -489,7 +489,7 @@ class nsCSPDirective {
                        nsIURI* aUri, bool aWasRedirected, bool aReportOnly,
                        bool aUpgradeInsecure) const;
   virtual bool allows(enum CSPKeyword aKeyword,
-                      const nsAString& aHashOrNonce) const;
+                      const nsAString& aContentOrNonce) const;
   bool allowsAllInlineBehavior(CSPDirective aDir) const;
 
   // Implements step 2.1 to 2.7 of
@@ -618,7 +618,7 @@ class nsBlockAllMixedContentDirective : public nsCSPDirective {
   bool permits(nsIURI* aUri) const { return false; }
 
   bool allows(enum CSPKeyword aKeyword,
-              const nsAString& aHashOrNonce) const override {
+              const nsAString& aContentOrNonce) const override {
     return false;
   }
 
@@ -676,7 +676,7 @@ class nsUpgradeInsecureDirective : public nsCSPDirective {
   bool permits(nsIURI* aUri) const { return false; }
 
   bool allows(enum CSPKeyword aKeyword,
-              const nsAString& aHashOrNonce) const override {
+              const nsAString& aContentOrNonce) const override {
     return false;
   }
 
@@ -701,7 +701,7 @@ class nsCSPPolicy {
                nsAString& outViolatedDirective,
                nsAString& outViolatedDirectiveString) const;
   bool allows(CSPDirective aDirective, enum CSPKeyword aKeyword,
-              const nsAString& aHashOrNonce) const;
+              const nsAString& aContentOrNonce) const;
   void toString(nsAString& outStr) const;
   void toDomCSPStruct(mozilla::dom::CSP& outCSP) const;
 

@@ -627,10 +627,10 @@ bool nsCSPBaseSrc::permits(nsIURI* aUri, bool aWasRedirected, bool aReportOnly,
 // nsCSPSchemeSrc, nsCSPHostSrc fall back
 // to this base class implementation which will never allow the load.
 bool nsCSPBaseSrc::allows(enum CSPKeyword aKeyword,
-                          const nsAString& aHashOrNonce) const {
-  CSPUTILSLOG(("nsCSPBaseSrc::allows, aKeyWord: %s, a HashOrNonce: %s",
+                          const nsAString& aContentOrNonce) const {
+  CSPUTILSLOG(("nsCSPBaseSrc::allows, aKeyWord: %s, a aContentOrNonce: %s",
                aKeyword == CSP_HASH ? "hash" : CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aHashOrNonce).get()));
+               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
   return false;
 }
 
@@ -940,10 +940,10 @@ nsCSPKeywordSrc::nsCSPKeywordSrc(enum CSPKeyword aKeyword)
 nsCSPKeywordSrc::~nsCSPKeywordSrc() = default;
 
 bool nsCSPKeywordSrc::allows(enum CSPKeyword aKeyword,
-                             const nsAString& aHashOrNonce) const {
-  CSPUTILSLOG(("nsCSPKeywordSrc::allows, aKeyWord: %s, aHashOrNonce: %s",
+                             const nsAString& aContentOrNonce) const {
+  CSPUTILSLOG(("nsCSPKeywordSrc::allows, aKeyWord: %s, aContentOrNonce: %s",
                CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aHashOrNonce).get()));
+               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
   return mKeyword == aKeyword;
 }
 
@@ -962,16 +962,16 @@ nsCSPNonceSrc::nsCSPNonceSrc(const nsAString& aNonce) : mNonce(aNonce) {}
 nsCSPNonceSrc::~nsCSPNonceSrc() = default;
 
 bool nsCSPNonceSrc::allows(enum CSPKeyword aKeyword,
-                           const nsAString& aHashOrNonce) const {
-  CSPUTILSLOG(("nsCSPNonceSrc::allows, aKeyWord: %s, a HashOrNonce: %s",
+                           const nsAString& aContentOrNonce) const {
+  CSPUTILSLOG(("nsCSPNonceSrc::allows, aKeyWord: %s, a aContentOrNonce: %s",
                CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aHashOrNonce).get()));
+               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
 
   if (aKeyword != CSP_NONCE) {
     return false;
   }
   // nonces can not be invalidated by strict-dynamic
-  return mNonce.Equals(aHashOrNonce);
+  return mNonce.Equals(aContentOrNonce);
 }
 
 bool nsCSPNonceSrc::visit(nsCSPSrcVisitor* aVisitor) const {
@@ -1008,10 +1008,10 @@ nsCSPHashSrc::nsCSPHashSrc(const nsAString& aAlgo, const nsAString& aHash)
 nsCSPHashSrc::~nsCSPHashSrc() = default;
 
 bool nsCSPHashSrc::allows(enum CSPKeyword aKeyword,
-                          const nsAString& aHashOrNonce) const {
-  CSPUTILSLOG(("nsCSPHashSrc::allows, aKeyWord: %s, a HashOrNonce: %s",
+                          const nsAString& aContentOrNonce) const {
+  CSPUTILSLOG(("nsCSPHashSrc::allows, aKeyWord: %s, a aContentOrNonce: %s",
                CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aHashOrNonce).get()));
+               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
 
   if (aKeyword != CSP_HASH) {
     return false;
@@ -1019,15 +1019,15 @@ bool nsCSPHashSrc::allows(enum CSPKeyword aKeyword,
 
   // hashes can not be invalidated by strict-dynamic
 
-  // Convert aHashOrNonce to UTF-8
-  NS_ConvertUTF16toUTF8 utf8_hash(aHashOrNonce);
+  // Convert aContentOrNonce to UTF-8
+  NS_ConvertUTF16toUTF8 content(aContentOrNonce);
 
   nsCOMPtr<nsICryptoHash> hasher;
   nsresult rv = NS_NewCryptoHash(NS_ConvertUTF16toUTF8(mAlgorithm),
                                  getter_AddRefs(hasher));
   NS_ENSURE_SUCCESS(rv, false);
 
-  rv = hasher->Update((uint8_t*)utf8_hash.get(), utf8_hash.Length());
+  rv = hasher->Update((uint8_t*)content.get(), content.Length());
   NS_ENSURE_SUCCESS(rv, false);
 
   nsAutoCString hash;
@@ -1374,13 +1374,13 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
 }
 
 bool nsCSPDirective::allows(enum CSPKeyword aKeyword,
-                            const nsAString& aHashOrNonce) const {
-  CSPUTILSLOG(("nsCSPDirective::allows, aKeyWord: %s, aHashOrNonce: %s",
+                            const nsAString& aContentOrNonce) const {
+  CSPUTILSLOG(("nsCSPDirective::allows, aKeyWord: %s, aContentOrNonce: %s",
                CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aHashOrNonce).get()));
+               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
 
   for (uint32_t i = 0; i < mSrcs.Length(); i++) {
-    if (mSrcs[i]->allows(aKeyword, aHashOrNonce)) {
+    if (mSrcs[i]->allows(aKeyword, aContentOrNonce)) {
       return true;
     }
   }
@@ -1855,13 +1855,13 @@ bool nsCSPPolicy::permits(CSPDirective aDir, nsILoadInfo* aLoadInfo,
 }
 
 bool nsCSPPolicy::allows(CSPDirective aDirective, enum CSPKeyword aKeyword,
-                         const nsAString& aHashOrNonce) const {
-  CSPUTILSLOG(("nsCSPPolicy::allows, aKeyWord: %s, a HashOrNonce: %s",
+                         const nsAString& aContentOrNonce) const {
+  CSPUTILSLOG(("nsCSPPolicy::allows, aKeyWord: %s, a aContentOrNonce: %s",
                CSP_EnumToUTF8Keyword(aKeyword),
-               NS_ConvertUTF16toUTF8(aHashOrNonce).get()));
+               NS_ConvertUTF16toUTF8(aContentOrNonce).get()));
 
   if (nsCSPDirective* directive = matchingOrDefaultDirective(aDirective)) {
-    return directive->allows(aKeyword, aHashOrNonce);
+    return directive->allows(aKeyword, aContentOrNonce);
   }
 
   // No matching directive or default directive as fallback found, thus
