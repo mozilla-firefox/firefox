@@ -1611,7 +1611,8 @@ static bool IsEmptyTextFrame(const nsIFrame* aFrame) {
 // about to be emptied, and for out-of-flow placeholders.
 static const nsIFrame* FindFirstNonEmptyBidiLeaf(const nsIFrame* aFrame) {
   if (aFrame->IsPlaceholderFrame()) {
-    const nsIFrame* real = nsPlaceholderFrame::GetRealFrameForPlaceholder(aFrame);
+    const nsIFrame* real =
+        nsPlaceholderFrame::GetRealFrameForPlaceholder(aFrame);
     return real && real->IsLetterFrame() ? FindFirstNonEmptyBidiLeaf(real)
                                          : nullptr;
   }
@@ -1628,18 +1629,20 @@ static const nsIFrame* FindFirstNonEmptyBidiLeaf(const nsIFrame* aFrame) {
   };
   // Same places, in the same order, as FirstChildForBidiLeafSearch.
   if (const nsIFrame* prevInFlow = aFrame->GetPrevInFlow()) {
-    if (const nsIFrame* leaf = searchList(
-            prevInFlow->GetChildList(FrameChildListID::Overflow)
-                .FirstChild())) {
+    if (const nsIFrame* leaf =
+            searchList(prevInFlow->GetChildList(FrameChildListID::Overflow)
+                           .FirstChild())) {
       return leaf;
     }
   }
-  if (const nsIFrame* leaf = searchList(aFrame->PrincipalChildList().FirstChild())) {
+  if (const nsIFrame* leaf =
+          searchList(aFrame->PrincipalChildList().FirstChild())) {
     return leaf;
   }
   for (const nsIFrame* next = aFrame->GetNextInFlow(); next;
        next = next->GetNextInFlow()) {
-    if (const nsIFrame* leaf = searchList(next->PrincipalChildList().FirstChild())) {
+    if (const nsIFrame* leaf =
+            searchList(next->PrincipalChildList().FirstChild())) {
       return leaf;
     }
     if (const nsIFrame* leaf = searchList(

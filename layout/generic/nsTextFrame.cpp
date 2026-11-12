@@ -10733,9 +10733,9 @@ void nsTextFrame::SetLength(int32_t aLength, nsLineLayout* aLineLayout,
       needBidiFromSource = false;
       if (f->HasAnyStateBits(NS_FRAME_IS_BIDI)) {
         FrameBidiData bidi = f->GetBidiData();
-        SetProperty(BidiDataProperty(),
-                    FrameBidiData{bidi.baseLevel, bidi.embeddingLevel,
-                                  kBidiLevelNone});
+        SetProperty(
+            BidiDataProperty(),
+            FrameBidiData{bidi.baseLevel, bidi.embeddingLevel, kBidiLevelNone});
         AddStateBits(NS_FRAME_IS_BIDI);
       }
     }
