@@ -2176,10 +2176,9 @@ class gfxFont {
 
   // Call the appropriate shaper to generate glyphs for aText and store
   // them into aShapedText.
-  virtual bool ShapeText(const char16_t* aText, uint32_t aOffset,
-                         uint32_t aLength, Script aScript, nsAtom* aLanguage,
-                         bool aVertical, RoundingFlags aRounding,
-                         gfxShapedText* aShapedText);
+  bool ShapeText(const char16_t* aText, uint32_t aOffset, uint32_t aLength,
+                 Script aScript, nsAtom* aLanguage, bool aVertical,
+                 RoundingFlags aRounding, gfxShapedText* aShapedText);
 
   // Helper to adjust for synthetic bold and set character-type flags
   // in the shaped text; implementations of ShapeText should call this

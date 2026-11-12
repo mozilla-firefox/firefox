@@ -397,9 +397,6 @@ void CrashStatsLogForwarder::CrashAction(LogReason aReason) {
 #define GFX_PREF_WORD_CACHE_MAXENTRIES "gfx.font_rendering.wordcache.maxentries"
 
 #define GFX_PREF_GRAPHITE_SHAPING "gfx.font_rendering.graphite.enabled"
-#if defined(XP_DARWIN)
-#  define GFX_PREF_CORETEXT_SHAPING "gfx.font_rendering.coretext.enabled"
-#endif
 
 static const char* kObservedPrefs[] = {"gfx.downloadable_fonts.",
                                        "gfx.font_rendering.", nullptr};
@@ -2160,11 +2157,7 @@ void gfxPlatform::FontsPrefsChanged(const char* aPref) {
              !strcmp(GFX_PREF_WORD_CACHE_MAXENTRIES, aPref) ||
              !strcmp(GFX_PREF_GRAPHITE_SHAPING, aPref)) {
     FlushFontAndWordCaches();
-  } else if (
-#if defined(XP_DARWIN)
-      !strcmp(GFX_PREF_CORETEXT_SHAPING, aPref) ||
-#endif
-      !strcmp("gfx.font_rendering.ahem_antialias_none", aPref)) {
+  } else if (!strcmp("gfx.font_rendering.ahem_antialias_none", aPref)) {
     FlushFontAndWordCaches();
   } else if (!strcmp(GFX_PREF_OPENTYPE_SVG, aPref)) {
     gfxFontCache::GetCache()->Flush();

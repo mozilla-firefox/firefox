@@ -8108,15 +8108,6 @@
     mirror: always
 #endif
 
-#if defined(XP_DARWIN)
-  # Set to true to revert from HarfBuzz AAT shaping to the old Core Text
-  # backend.
--   name: gfx.font_rendering.coretext.enabled
-    type: RelaxedAtomicBool
-    value: false
-    mirror: always
-#endif
-
 - name: gfx.font_rendering.opentype_svg.enabled
   type: RelaxedAtomicBool
   value: true

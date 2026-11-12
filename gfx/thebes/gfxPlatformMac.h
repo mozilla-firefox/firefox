@@ -19,7 +19,7 @@ class VsyncSource;
 class gfxPlatformMac : public gfxPlatform {
  public:
   gfxPlatformMac();
-  virtual ~gfxPlatformMac();
+  virtual ~gfxPlatformMac() {}
 
   struct SupplementalFontThread {
     ~SupplementalFontThread() { WaitForFontRegistration(); }

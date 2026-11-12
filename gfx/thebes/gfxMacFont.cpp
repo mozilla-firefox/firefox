@@ -10,7 +10,6 @@
 #include "CoreTextFontList.h"
 #include "cairo-quartz.h"
 #include "gfxContext.h"
-#include "gfxCoreTextShaper.h"
 #include "gfxFontConstants.h"
 #include "gfxFontUtils.h"
 #include "gfxHarfBuzzShaper.h"
@@ -137,48 +136,6 @@ gfxMacFont::~gfxMacFont() {
   if (mCTFont) {
     ::CFRelease(mCTFont);
   }
-}
-
-bool gfxMacFont::ShapeText(const char16_t* aText, uint32_t aOffset,
-                           uint32_t aLength, Script aScript, nsAtom* aLanguage,
-                           bool aVertical, RoundingFlags aRounding,
-                           gfxShapedText* aShapedText) {
-  if (!mIsValid) {
-    NS_WARNING("invalid font! expect incorrect text rendering");
-    return false;
-  }
-
-  // Currently, we don't support vertical shaping via CoreText,
-  // so we ignore RequiresAATLayout if vertical is requested.
-  auto ctFontEntry = static_cast<CTFontEntry*>(GetFontEntry());
-  if (ctFontEntry->RequiresAATLayout() && !aVertical &&
-      StaticPrefs::gfx_font_rendering_coretext_enabled()) {
-    if (!mCoreTextShaper) {
-      mCoreTextShaper = std::make_unique<gfxCoreTextShaper>(this);
-    }
-    if (mCoreTextShaper->ShapeText(aText, aOffset, aLength, aScript, aLanguage,
-                                   aVertical, aRounding, aShapedText)) {
-      PostShapingFixup(aText, aOffset, aLength, aVertical, aShapedText);
-      if (ctFontEntry->HasTrackingTable()) {
-        // Convert font size from device pixels back to CSS px
-        // to use in selecting tracking value
-        float trackSize = GetAdjustedSize() *
-                          aShapedText->GetAppUnitsPerDevUnit() /
-                          AppUnitsPerCSSPixel();
-        float tracking =
-            ctFontEntry->TrackingForCSSPx(trackSize) * mFUnitsConvFactor;
-        // Applying tracking is a lot like the adjustment we do for
-        // synthetic bold: we want to apply between clusters, not to
-        // non-spacing glyphs within a cluster. So we can reuse that
-        // helper here.
-        aShapedText->ApplyTrackingToClusters(tracking, aOffset, aLength);
-      }
-      return true;
-    }
-  }
-
-  return gfxFont::ShapeText(aText, aOffset, aLength, aScript, aLanguage,
-                            aVertical, aRounding, aShapedText);
 }
 
 gfxFont::RunMetrics gfxMacFont::Measure(const gfxTextRun* aTextRun,

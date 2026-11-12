@@ -109,7 +109,6 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] in ("cocoa", "uikit"):
     ]
     SOURCES += [
         "CoreTextFontList.cpp",
-        "gfxCoreTextShaper.cpp",
         "gfxMacFont.cpp",
         "gfxMacUtils.cpp",
         "gfxPlatformMac.cpp",
@@ -119,7 +118,6 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] in ("cocoa", "uikit"):
 
     SOURCE_HEADERS += [
         "CoreTextFontList.h",
-        "gfxCoreTextShaper.h",
         "gfxMacFont.h",
     ]
 elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":

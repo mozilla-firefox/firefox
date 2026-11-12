@@ -7,7 +7,6 @@
 #include "AppleUtils.h"
 #include "CFTypeRefPtr.h"
 #include "gfxConfig.h"
-#include "gfxCoreTextShaper.h"
 #include "gfxMacFont.h"
 #include "gfxQuartzSurface.h"
 #include "gfxTextRun.h"
@@ -112,8 +111,6 @@ gfxPlatformMac::gfxPlatformMac() {
 
   InitBackendPrefs(GetBackendPrefs());
 }
-
-gfxPlatformMac::~gfxPlatformMac() { gfxCoreTextShaper::Shutdown(); }
 
 BackendPrefsData gfxPlatformMac::GetBackendPrefs() const {
   BackendPrefsData data;
