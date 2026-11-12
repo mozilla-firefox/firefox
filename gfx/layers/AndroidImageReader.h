@@ -178,9 +178,10 @@ class AndroidImageReader final
 
   Monitor mMonitor;
 
+  bool mRegistered = false;
   bool mInited MOZ_GUARDED_BY(mMonitor) = false;
-  AImageReader* mAImageReader MOZ_GUARDED_BY(mMonitor);
-  ANativeWindow* mNativeWindow MOZ_GUARDED_BY(mMonitor);
+  AImageReader* mAImageReader MOZ_GUARDED_BY(mMonitor) = nullptr;
+  ANativeWindow* mNativeWindow MOZ_GUARDED_BY(mMonitor) = nullptr;
   AndroidMediaCodecFrameId mCurrentFrameId MOZ_GUARDED_BY(mMonitor);
   RefPtr<AndroidImageWrapper> mCurrentImage MOZ_GUARDED_BY(mMonitor);
   // A rendered codec buffer remains outstanding across notification timeouts.

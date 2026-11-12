@@ -247,6 +247,7 @@ already_AddRefed<AndroidImageReader> AndroidImageReader::Create() {
   }
 
   imageReaderMap->Register(imageReader);
+  imageReader->mRegistered = true;
 
   return imageReader.forget();
 }
@@ -257,7 +258,7 @@ AndroidImageReader::AndroidImageReader()
 
 AndroidImageReader::~AndroidImageReader() {
   auto* imageReaderMap = layers::GpuProcessAndroidImageReaderMap::Get();
-  if (imageReaderMap) {
+  if (imageReaderMap && mRegistered) {
     imageReaderMap->Unregister(mImageReaderId);
   }
   ReleaseResources();
