@@ -10,7 +10,7 @@ Any time we vendor[1] from an external git repo, we want to keep a record of the
 we're pulling from.
 
 This script leaves a record of the merge-base reference tip and cherry-picks that we pull
-into Gecko. (such as gfx/angle/cherry_picks.txt)
+into Gecko. (such as dom/canvas/test/webgl-conf/cherry_picks.txt)
 """
 
 from pathlib import *
