@@ -2290,7 +2290,7 @@ pref("browser.aboutwelcome.experimentsGate.minDisplayMs", 3000);
 pref("browser.aboutwelcome.experimentsGate.maxDisplayMs", 8000);
 
 // Global Nova redesign enabled pref
-pref("browser.nova.enabled", true);
+pref("browser.nova.enabled", true, locked);
 
 // Disable singleProfile messaging mitigation (Bug 1963213) for multiProfile feature users
 pref("messaging-system.profile.singleProfileMessaging.disable", true);
