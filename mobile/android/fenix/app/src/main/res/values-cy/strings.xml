@@ -1281,6 +1281,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Tynnu cyfrif</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Mewngofnodi</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Dechreuwch gysoni tabiau, nodau tudalen, cyfrineiriau, a mwy.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -3939,6 +3947,8 @@
   <string name="protection_panel_permissions_title">Caniatâd</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Cysylltiadau diogel</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Tystysgrif wedi\'i ryddhau i:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Nod ymddiriedolaeth yr UE</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4629,6 +4639,8 @@
   <string name="collections_migration_homepage_card_message">Mae yna ffordd symlach o gadw\'ch tabiau\'n drefnus</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Gweld fy ngrwpiau tabiau</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Cau</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Galluogi Integreiddio Lens Google</string>
   <!-- Lens image search button content description -->

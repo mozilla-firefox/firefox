@@ -9,8 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">അടയാളക്കുറിപ്പുകൾ ഇറക്കുമതിക്കുന്നു</string>
-  <!-- Description for the bookmarks import loading dialog. -->
+  <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">ഈ പ്രതലം അടയ്ക്കരുതു്. ഈ നടപടി കുറച്ചു നേരം മാത്രം എടുക്കും.</string>
-  <!-- Label for the cancel action on the bookmarks import loading dialog. -->
+  <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">റദ്ദാക്കുക</string>
 </resources>

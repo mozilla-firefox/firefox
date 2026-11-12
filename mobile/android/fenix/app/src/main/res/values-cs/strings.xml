@@ -387,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Hlasové vyhledávání</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Zvuk je převáděn na text pomocí služby Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Poslech stránky</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Vaše zařízení může pomocí AI předčítat obsah. Text i zvuk zůstávají soukromé.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Blokovat vylepšování umělou inteligencí?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -717,6 +721,8 @@
   <string name="preferences_search">Vyhledávání</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Vyhledávače</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Přidat vyhledávací widget na domovskou obrazovku</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Widget domovské obrazovky</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -974,6 +980,8 @@
     Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
   -->
   <string name="addon_remove_dialog_title">Odebrat %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Rozšíření i jeho nastavení budou z tohoto zařízení odstraněny.</string>
   <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
   <string name="addon_remove_dialog_confirm">Odebrat</string>
   <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
@@ -1147,6 +1155,8 @@
   <string name="preferences_enable_sync_title">Synchronizovat toto zařízení</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Vaše data jsou zálohována a k dispozici na synchronizovaných zařízeních.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Jsou využívána data uložená ve vašem účtu %1$s.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Spravujte obsah, který se synchronizuje na vašich připojených zařízeních</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1268,6 +1278,14 @@
   <string name="preferences_sync_sign_in_to_reconnect">Pro opětovné připojení se přihlaste</string>
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Odebrat účet</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Přihlásit se</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Začněte synchronizovat panely, záložky, hesla a další položky.</string>
   <!--
     Pairing Feature strings
 
@@ -3913,6 +3931,8 @@
   <string name="protection_panel_permissions_title">Oprávnění</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Zabezpečené připojení</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Certifikát vydán pro:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Značka důvěry EU</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4516,8 +4536,12 @@
   <string name="wrex_widget_wallpapers">Tapety</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Odebrat widget</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">KON</string>
   <!-- Sports widget match status label shown during half-time of a match. -->
   <string name="wrex_widget_match_half_time">Poločasová přestávka</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">PP</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Další možnosti</string>
   <!--
