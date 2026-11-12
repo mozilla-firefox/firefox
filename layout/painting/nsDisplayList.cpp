@@ -3769,14 +3769,6 @@ nsRegion nsDisplayBackgroundImage::GetOpaqueRegion(
   return result;
 }
 
-Maybe<nscolor> nsDisplayBackgroundImage::IsUniform(
-    nsDisplayListBuilder* aBuilder) const {
-  if (!mBackgroundStyle) {
-    return Some(NS_RGBA(0, 0, 0, 0));
-  }
-  return Nothing();
-}
-
 nsRect nsDisplayBackgroundImage::GetPositioningArea() const {
   if (!mBackgroundStyle) {
     return nsRect();
@@ -4005,11 +3997,6 @@ nsRegion nsDisplayThemedBackground::GetOpaqueRegion(
     result = mBackgroundRect;
   }
   return result;
-}
-
-Maybe<nscolor> nsDisplayThemedBackground::IsUniform(
-    nsDisplayListBuilder* aBuilder) const {
-  return Nothing();
 }
 
 nsRect nsDisplayThemedBackground::GetPositioningArea() const {
@@ -4324,15 +4311,6 @@ nsRegion nsDisplayBackgroundColor::GetOpaqueRegion(
   *aSnap = true;
   return GetInsideClipRect(this, mBottomLayerClip, mBackgroundRect,
                            mBackgroundRect);
-}
-
-Maybe<nscolor> nsDisplayBackgroundColor::IsUniform(
-    nsDisplayListBuilder* aBuilder) const {
-  // border-shape clips the background to an arbitrary path.
-  if (!mFrame->StyleBorder()->mBorderShape.IsNone()) {
-    return Nothing();
-  }
-  return Some(mColor.ToABGR());
 }
 
 void nsDisplayBackgroundColor::HitTest(nsDisplayListBuilder* aBuilder,
@@ -5013,12 +4991,6 @@ nsRegion nsDisplayWrapList::GetOpaqueRegion(nsDisplayListBuilder* aBuilder,
   bool snap;
   return ::mozilla::GetOpaqueRegion(aBuilder, GetChildren(),
                                     GetBounds(aBuilder, &snap));
-}
-
-Maybe<nscolor> nsDisplayWrapList::IsUniform(
-    nsDisplayListBuilder* aBuilder) const {
-  // We could try to do something but let's conservatively just return Nothing.
-  return Nothing();
 }
 
 void nsDisplayWrapper::Paint(nsDisplayListBuilder* aBuilder, gfxContext* aCtx) {

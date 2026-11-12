@@ -2589,14 +2589,6 @@ class nsDisplayItem {
     return nsRegion();
   }
   /**
-   * @return Some(nscolor) if the item is guaranteed to paint every pixel in its
-   * bounds with the same (possibly translucent) color
-   */
-  virtual Maybe<nscolor> IsUniform(nsDisplayListBuilder* aBuilder) const {
-    return Nothing();
-  }
-
-  /**
    * Returns true if all layers that can be active should be forced to be
    * active. Requires setting the pref layers.force-active=true.
    */
@@ -3629,10 +3621,6 @@ class nsDisplayContainer final : public nsDisplayItem {
   nsRegion GetOpaqueRegion(nsDisplayListBuilder* aBuilder,
                            bool* aSnap) const override;
 
-  Maybe<nscolor> IsUniform(nsDisplayListBuilder* aBuilder) const override {
-    return Nothing();
-  }
-
   RetainedDisplayList* GetChildren() const override { return &mChildren; }
   RetainedDisplayList* GetSameCoordinateSystemChildren() const override {
     return GetChildren();
@@ -3989,10 +3977,6 @@ class nsDisplaySolidColor final : public nsPaintedDisplayItem {
     return result;
   }
 
-  Maybe<nscolor> IsUniform(nsDisplayListBuilder* aBuilder) const override {
-    return Some(mColor);
-  }
-
   nsDisplaySolidColor(nsDisplayListBuilder* aBuilder, nsIFrame* aFrame,
                       const nsRect& aBounds, nscolor aColor)
       : nsPaintedDisplayItem(aBuilder, aFrame),
@@ -4159,7 +4143,6 @@ class nsDisplayBackgroundImage : public nsPaintedDisplayItem {
                HitTestState* aState, nsTArray<nsIFrame*>* aOutFrames) override;
   nsRegion GetOpaqueRegion(nsDisplayListBuilder* aBuilder,
                            bool* aSnap) const override;
-  Maybe<nscolor> IsUniform(nsDisplayListBuilder* aBuilder) const override;
 
   bool CanApplyOpacity(WebRenderLayerManager* aManager,
                        nsDisplayListBuilder* aBuilder) const override;
@@ -4311,7 +4294,6 @@ class nsDisplayThemedBackground : public nsPaintedDisplayItem {
                HitTestState* aState, nsTArray<nsIFrame*>* aOutFrames) override;
   nsRegion GetOpaqueRegion(nsDisplayListBuilder* aBuilder,
                            bool* aSnap) const override;
-  Maybe<nscolor> IsUniform(nsDisplayListBuilder* aBuilder) const override;
   WebRenderCommandsResult CreateWebRenderCommands(
       wr::DisplayListBuilder& aBuilder, wr::IpcResourceUpdateQueue& aResources,
       const StackingContextHelper& aSc,
@@ -4432,7 +4414,6 @@ class nsDisplayBackgroundColor : public nsPaintedDisplayItem {
       nsDisplayListBuilder* aDisplayListBuilder) override;
   nsRegion GetOpaqueRegion(nsDisplayListBuilder* aBuilder,
                            bool* aSnap) const override;
-  Maybe<nscolor> IsUniform(nsDisplayListBuilder* aBuilder) const override;
   void HitTest(nsDisplayListBuilder* aBuilder, const nsRect& aRect,
                HitTestState* aState, nsTArray<nsIFrame*>* aOutFrames) override;
   bool CanApplyOpacity(WebRenderLayerManager* aManager,
@@ -4861,7 +4842,6 @@ class nsDisplayWrapList : public nsPaintedDisplayItem {
   nsRect GetBounds(nsDisplayListBuilder* aBuilder, bool* aSnap) const override;
   nsRegion GetOpaqueRegion(nsDisplayListBuilder* aBuilder,
                            bool* aSnap) const override;
-  Maybe<nscolor> IsUniform(nsDisplayListBuilder* aBuilder) const override;
 
   /**
    * Try to merge with the other item (which is below us in the display
