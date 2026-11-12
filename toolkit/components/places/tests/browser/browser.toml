@@ -78,9 +78,6 @@ support-files = [
 ["browser_onvisit_title_null_for_navigation.js"]
 https_first_disabled = true
 support-files = ["empty_page.html"]
-skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && swgl && verify-standalone",
-]
 
 ["browser_redirect.js"]
 support-files = [

@@ -1,7 +1,15 @@
+/* Any copyright is dedicated to the Public Domain.
+ * https://creativecommons.org/publicdomain/zero/1.0/ */
+
 const TEST_PATH = getRootDirectory(gTestPath).replace(
   "chrome://mochitests/content",
   "https://example.com"
 );
+
+add_setup(async function () {
+  await PlacesUtils.history.clear();
+  registerCleanupFunction(PlacesUtils.history.clear);
+});
 
 add_task(async function checkTitleNotificationForNavigation() {
   const EXPECTED_URL = Services.io.newURI(TEST_PATH + "empty_page.html");
