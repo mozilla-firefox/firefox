@@ -2419,6 +2419,8 @@ bool DCSurfaceVideo::CalculateSwapChainSize(gfx::Matrix& aTransform) {
       if (!mVideoSwapChain) {
         mFailedYuvSwapChain = true;
         ReleaseDecodeSwapChainResources();
+        swapChainFormat =
+            GetSwapChainFormat(useVpAutoHDR, useHDRRGB10A2, useHDRRGBA16F);
 
         gfxCriticalNote << "Fallback to RGB SwapChain";
       }
@@ -2652,6 +2654,9 @@ bool DCSurfaceVideo::CreateVideoSwapChain(DXGI_FORMAT aSwapChainFormat) {
   if (FAILED(hr)) {
     gfxCriticalNote << "Failed to create video SwapChain: " << gfx::hexa(hr)
                     << " " << mSwapChainSize;
+    // A caller may retry immediately with a different format.
+    ::CloseHandle(mSwapChainSurfaceHandle);
+    mSwapChainSurfaceHandle = 0;
     return false;
   }
 
