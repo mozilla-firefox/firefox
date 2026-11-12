@@ -29,14 +29,20 @@ void ClientManagerParent::ActorDestroy(ActorDestroyReason aReason) {
 
 already_AddRefed<PClientHandleParent>
 ClientManagerParent::AllocPClientHandleParent(
-    const IPCClientInfo& aClientInfo) {
+    Tainted<IPCClientInfo>& aClientInfo) {
   return MakeAndAddRef<ClientHandleParent>();
 }
 
 IPCResult ClientManagerParent::RecvPClientHandleConstructor(
-    PClientHandleParent* aActor, const IPCClientInfo& aClientInfo) {
+    PClientHandleParent* aActor, Tainted<IPCClientInfo>&& aClientInfo) {
+  Maybe<IPCClientInfo&> clientInfo = ValidateClientInfo(
+      aClientInfo, BackgroundParent::GetLoadedOrigins(Manager()));
+  if (!clientInfo) {
+    return IPC_FAIL(this, "Invalid PrincipalInfo!");
+  }
+
   ClientHandleParent* actor = static_cast<ClientHandleParent*>(aActor);
-  return actor->Init(aClientInfo);
+  return actor->Init(*clientInfo);
 }
 
 PClientManagerOpParent* ClientManagerParent::AllocPClientManagerOpParent(
@@ -100,7 +106,7 @@ ClientManagerParent::~ClientManagerParent() = default;
 void ClientManagerParent::Init() { mService->AddManager(this); }
 
 IPCResult ClientManagerParent::RecvExpectFutureClientSource(
-    const IPCClientInfo& aClientInfo) {
+    Tainted<IPCClientInfo>&& aClientInfo) {
   if (BackgroundParent::IsOtherProcessActor(Manager())) {
     return IPC_FAIL(
         this,
@@ -109,12 +115,13 @@ IPCResult ClientManagerParent::RecvExpectFutureClientSource(
 
   RefPtr<ClientManagerService> cms =
       ClientManagerService::GetOrCreateInstance();
-  (void)NS_WARN_IF(!cms->ExpectFutureSource(aClientInfo));
+  (void)NS_WARN_IF(!cms->ExpectFutureSource(
+      MOZ_NO_VALIDATE(aClientInfo, "Only sent by the parent process")));
   return IPC_OK();
 }
 
 IPCResult ClientManagerParent::RecvForgetFutureClientSource(
-    const IPCClientInfo& aClientInfo) {
+    Tainted<IPCClientInfo>&& aClientInfo) {
   if (BackgroundParent::IsOtherProcessActor(Manager())) {
     return IPC_FAIL(
         this,
@@ -122,7 +129,8 @@ IPCResult ClientManagerParent::RecvForgetFutureClientSource(
   }
 
   RefPtr<ClientManagerService> cms = ClientManagerService::GetInstance();
-  cms->ForgetFutureSource(aClientInfo);
+  cms->ForgetFutureSource(
+      MOZ_NO_VALIDATE(aClientInfo, "Only sent by the parent process"));
   return IPC_OK();
 }
 

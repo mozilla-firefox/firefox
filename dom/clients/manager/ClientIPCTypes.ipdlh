@@ -34,7 +34,7 @@ struct ClientSourceConstructorArgs
   FrameType frameType;
 };
 
-[Comparable] struct IPCClientInfo
+[Comparable, Tainted] struct IPCClientInfo
 {
   nsID id;
   nsID? agentClusterId;

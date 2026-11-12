@@ -22,20 +22,20 @@ class ServiceWorkerContainerParent final
   void ActorDestroy(ActorDestroyReason aReason) override;
 
   mozilla::ipc::IPCResult RecvRegister(
-      const IPCClientInfo& aClientInfo, const nsACString& aScopeURL,
+      Tainted<IPCClientInfo>&& aClientInfo, const nsACString& aScopeURL,
       const WorkerType& aType, const nsACString& aScriptURL,
       const ServiceWorkerUpdateViaCache& aUpdateViaCache,
       RegisterResolver&& aResolver) override;
 
   mozilla::ipc::IPCResult RecvGetRegistration(
-      const IPCClientInfo& aClientInfo, const nsACString& aURL,
+      Tainted<IPCClientInfo>&& aClientInfo, const nsACString& aURL,
       GetRegistrationResolver&& aResolver) override;
 
   mozilla::ipc::IPCResult RecvGetRegistrations(
-      const IPCClientInfo& aClientInfo,
+      Tainted<IPCClientInfo>&& aClientInfo,
       GetRegistrationsResolver&& aResolver) override;
 
-  mozilla::ipc::IPCResult RecvGetReady(const IPCClientInfo& aClientInfo,
+  mozilla::ipc::IPCResult RecvGetReady(Tainted<IPCClientInfo>&& aClientInfo,
                                        GetReadyResolver&& aResolver) override;
 
  public:

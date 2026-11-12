@@ -4,6 +4,8 @@
 #ifndef _mozilla_dom_ClientValidation_h
 #define _mozilla_dom_ClientValidation_h
 
+#include "mozilla/Maybe.h"
+#include "mozilla/Tainting.h"
 #include "nsStringFwd.h"
 
 namespace mozilla {
@@ -15,7 +17,11 @@ class PrincipalInfo;
 namespace dom {
 
 class ClientOpConstructorArgs;
+class IPCClientInfo;
 class LoadedOriginSet;
+
+Maybe<IPCClientInfo&> ValidateClientInfo(Tainted<IPCClientInfo>& aClientInfo,
+                                         LoadedOriginSet* aLoadedOrigins);
 
 bool ClientIsValidPrincipalInfo(
     const mozilla::ipc::PrincipalInfo& aPrincipalInfo,

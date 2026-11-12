@@ -22,7 +22,7 @@ void ServiceWorkerContainerParent::ActorDestroy(ActorDestroyReason aReason) {
 }
 
 IPCResult ServiceWorkerContainerParent::RecvRegister(
-    const IPCClientInfo& aClientInfo, const nsACString& aScopeURL,
+    Tainted<IPCClientInfo>&& aClientInfo, const nsACString& aScopeURL,
     const WorkerType& aType, const nsACString& aScriptURL,
     const ServiceWorkerUpdateViaCache& aUpdateViaCache,
     RegisterResolver&& aResolver) {
@@ -31,15 +31,15 @@ IPCResult ServiceWorkerContainerParent::RecvRegister(
     return IPC_OK();
   }
 
-  if (!ClientIsValidPrincipalInfo(
-          aClientInfo.principalInfo(),
-          BackgroundParent::GetLoadedOrigins(Manager()))) {
+  Maybe<IPCClientInfo&> clientInfo = ValidateClientInfo(
+      aClientInfo, BackgroundParent::GetLoadedOrigins(Manager()));
+  if (!clientInfo) {
     return IPC_FAIL(this,
                     "Register ClientInfo principal not valid for remote type");
   }
 
   mProxy
-      ->Register(ClientInfo(aClientInfo), aScopeURL, aType, aScriptURL,
+      ->Register(ClientInfo(*clientInfo), aScopeURL, aType, aScriptURL,
                  aUpdateViaCache)
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
@@ -54,21 +54,21 @@ IPCResult ServiceWorkerContainerParent::RecvRegister(
 }
 
 IPCResult ServiceWorkerContainerParent::RecvGetRegistration(
-    const IPCClientInfo& aClientInfo, const nsACString& aURL,
+    Tainted<IPCClientInfo>&& aClientInfo, const nsACString& aURL,
     GetRegistrationResolver&& aResolver) {
   if (!mProxy) {
     aResolver(CopyableErrorResult(NS_ERROR_DOM_INVALID_STATE_ERR));
     return IPC_OK();
   }
 
-  if (!ClientIsValidPrincipalInfo(
-          aClientInfo.principalInfo(),
-          BackgroundParent::GetLoadedOrigins(Manager()))) {
+  Maybe<IPCClientInfo&> clientInfo = ValidateClientInfo(
+      aClientInfo, BackgroundParent::GetLoadedOrigins(Manager()));
+  if (!clientInfo) {
     return IPC_FAIL(
         this, "GetRegistration ClientInfo principal not valid for remote type");
   }
 
-  mProxy->GetRegistration(ClientInfo(aClientInfo), aURL)
+  mProxy->GetRegistration(ClientInfo(*clientInfo), aURL)
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
           [aResolver](const ServiceWorkerRegistrationDescriptor& aDescriptor) {
@@ -82,21 +82,22 @@ IPCResult ServiceWorkerContainerParent::RecvGetRegistration(
 }
 
 IPCResult ServiceWorkerContainerParent::RecvGetRegistrations(
-    const IPCClientInfo& aClientInfo, GetRegistrationsResolver&& aResolver) {
+    Tainted<IPCClientInfo>&& aClientInfo,
+    GetRegistrationsResolver&& aResolver) {
   if (!mProxy) {
     aResolver(CopyableErrorResult(NS_ERROR_DOM_INVALID_STATE_ERR));
     return IPC_OK();
   }
 
-  if (!ClientIsValidPrincipalInfo(
-          aClientInfo.principalInfo(),
-          BackgroundParent::GetLoadedOrigins(Manager()))) {
+  Maybe<IPCClientInfo&> clientInfo = ValidateClientInfo(
+      aClientInfo, BackgroundParent::GetLoadedOrigins(Manager()));
+  if (!clientInfo) {
     return IPC_FAIL(
         this,
         "GetRegistrations ClientInfo principal not valid for remote type");
   }
 
-  mProxy->GetRegistrations(ClientInfo(aClientInfo))
+  mProxy->GetRegistrations(ClientInfo(*clientInfo))
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
           [aResolver](
@@ -115,20 +116,20 @@ IPCResult ServiceWorkerContainerParent::RecvGetRegistrations(
 }
 
 IPCResult ServiceWorkerContainerParent::RecvGetReady(
-    const IPCClientInfo& aClientInfo, GetReadyResolver&& aResolver) {
+    Tainted<IPCClientInfo>&& aClientInfo, GetReadyResolver&& aResolver) {
   if (!mProxy) {
     aResolver(CopyableErrorResult(NS_ERROR_DOM_INVALID_STATE_ERR));
     return IPC_OK();
   }
 
-  if (!ClientIsValidPrincipalInfo(
-          aClientInfo.principalInfo(),
-          BackgroundParent::GetLoadedOrigins(Manager()))) {
+  Maybe<IPCClientInfo&> clientInfo = ValidateClientInfo(
+      aClientInfo, BackgroundParent::GetLoadedOrigins(Manager()));
+  if (!clientInfo) {
     return IPC_FAIL(this,
                     "GetReady ClientInfo principal not valid for remote type");
   }
 
-  mProxy->GetReady(ClientInfo(aClientInfo))
+  mProxy->GetReady(ClientInfo(*clientInfo))
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
           [aResolver](const ServiceWorkerRegistrationDescriptor& aDescriptor) {

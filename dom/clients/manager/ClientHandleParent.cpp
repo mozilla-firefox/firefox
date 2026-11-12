@@ -8,15 +8,12 @@
 #include "ClientManagerService.h"
 #include "ClientPrincipalUtils.h"
 #include "ClientSourceParent.h"
-#include "ClientValidation.h"
 #include "mozilla/dom/ClientIPCTypes.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/PClientManagerParent.h"
-#include "mozilla/ipc/BackgroundParent.h"
 
 namespace mozilla::dom {
 
-using mozilla::ipc::BackgroundParent;
 using mozilla::ipc::IPCResult;
 
 IPCResult ClientHandleParent::RecvTeardown() {
@@ -63,12 +60,6 @@ ClientHandleParent::ClientHandleParent()
 ClientHandleParent::~ClientHandleParent() { MOZ_DIAGNOSTIC_ASSERT(!mSource); }
 
 IPCResult ClientHandleParent::Init(const IPCClientInfo& aClientInfo) {
-  if (!ClientIsValidPrincipalInfo(
-          aClientInfo.principalInfo(),
-          BackgroundParent::GetLoadedOrigins(Manager()->Manager()))) {
-    return IPC_FAIL(this, "Invalid PrincipalInfo!");
-  }
-
   mClientId = aClientInfo.id();
   mPrincipalInfo = aClientInfo.principalInfo();
 

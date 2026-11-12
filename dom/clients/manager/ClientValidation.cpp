@@ -18,6 +18,13 @@ using mozilla::ipc::ContentPrincipalInfo;
 using mozilla::ipc::PrincipalInfo;
 using mozilla::net::MozURL;
 
+Maybe<IPCClientInfo&> ValidateClientInfo(Tainted<IPCClientInfo>& aClientInfo,
+                                         LoadedOriginSet* aLoadedOrigins) {
+  return aClientInfo.ValidateRef([&](const IPCClientInfo& aInfo) {
+    return ClientIsValidPrincipalInfo(aInfo.principalInfo(), aLoadedOrigins);
+  });
+}
+
 bool ClientIsValidPrincipalInfo(const PrincipalInfo& aPrincipalInfo,
                                 LoadedOriginSet* aLoadedOrigins) {
   auto result = mozilla::ipc::PrincipalInfoToPrincipal(aPrincipalInfo);

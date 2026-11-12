@@ -124,7 +124,7 @@ class BackgroundParentImpl : public PBackgroundParent {
 
   mozilla::ipc::IPCResult RecvCreateWebTransportParent(
       const nsAString& aURL, Tainted<RefPtr<nsIPrincipal>>&& aPrincipal,
-      const uint64_t& aBrowsingContextID, const IPCClientInfo& aClientInfo,
+      const uint64_t& aBrowsingContextID, Tainted<IPCClientInfo>&& aClientInfo,
       const bool& aDedicated, const bool& aRequireUnreliable,
       const uint32_t& aCongestionControl, nsTArray<nsString>&& aProtocols,
       nsTArray<WebTransportHeader>&& aHeaders,
@@ -326,12 +326,12 @@ class BackgroundParentImpl : public PBackgroundParent {
   already_AddRefed<PServiceWorkerRegistrationParent>
   AllocPServiceWorkerRegistrationParent(
       const IPCServiceWorkerRegistrationDescriptor&,
-      const IPCClientInfo&) final;
+      Tainted<IPCClientInfo>&) final;
 
   mozilla::ipc::IPCResult RecvPServiceWorkerRegistrationConstructor(
       PServiceWorkerRegistrationParent* aActor,
       const IPCServiceWorkerRegistrationDescriptor& aDescriptor,
-      const IPCClientInfo& aForClient) override;
+      Tainted<IPCClientInfo>&& aForClient) override;
 
   mozilla::ipc::IPCResult RecvEnsureRDDProcessAndCreateBridge(
       EnsureRDDProcessAndCreateBridgeResolver&& aResolver) override;

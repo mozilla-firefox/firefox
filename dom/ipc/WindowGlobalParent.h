@@ -365,7 +365,7 @@ class WindowGlobalParent final : public WindowContext,
       ParentProcessChannelHandle* aDocumentHandle,
       ParentProcessChannelHandle* aFailedHandle);
   mozilla::ipc::IPCResult RecvSetClientInfo(
-      const IPCClientInfo& aIPCClientInfo);
+      Tainted<IPCClientInfo>&& aIPCClientInfo);
   mozilla::ipc::IPCResult RecvDestroy();
   mozilla::ipc::IPCResult RecvRawMessage(const JSActorMessageMeta& aMeta,
                                          JSIPCValue&& aData,
