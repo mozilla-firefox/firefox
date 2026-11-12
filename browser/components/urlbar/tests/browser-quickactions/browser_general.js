@@ -731,7 +731,7 @@ add_task(async function test_query_context_supplied_without_query() {
     );
     // Paste & Go on a tab whose urlbar never ran a query: no session in
     // progress and nothing cached, which is the state bug 1886140 reproduces.
-    gURLBar.controller.engagementEvent.discard();
+    gURLBar.controller.session.discard();
     gURLBar.parentController.clearLastQueryContextCache();
 
     let loaded = BrowserTestUtils.browserLoaded(browser, false, url);

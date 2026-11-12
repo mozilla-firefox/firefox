@@ -16,7 +16,7 @@ async function doSapTest(testFn, { private: isPrivate } = {}) {
         private: true,
       });
       try {
-        win.gURLBar.controller.engagementEvent.reset();
+        win.gURLBar.controller.session.reset();
         await testFn(win);
       } finally {
         await BrowserTestUtils.closeWindow(win);

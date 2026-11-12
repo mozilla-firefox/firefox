@@ -51,111 +51,111 @@ const lazy = XPCOMUtils.declareLazy({
  */
 
 /**
- * Bounces still being tracked, keyed by the browser of the page they were
- * tracked for. In module scope because a bounce outlives the collector that
- * started it: the New Tab search bar's page -- and with it its actor and parent
- * controller -- is gone by the time the tab navigates back or closes, so the
- * trigger arrives from a chrome window input. `record` closes over the
- * collector that resolves the SAP and makes the Glean call, and the map is weak
- * so a tab that never sees a trigger doesn't keep that collector's window
- * alive.
- *
- * A bounce is tracked before the engagement's page loads, under the tab the
- * engagement happened in, and moves to the browser the page loads in once the
- * load claims it (see `claimBounceForLoad()`).
- *
- * @type {WeakMap<MozBrowser, TrackedBounce>}
- */
-const gTrackedBounces = new WeakMap();
-
-/**
- * Handle a bounce event trigger.
- * These include closing the tab/window and navigating away via
- * browser chrome (this includes clicking on history or bookmark entries,
- * and engaging with the URL bar).
- *
- * @param {MozBrowser} browser
- *   The browser of the tab the trigger happened in.
- */
-export async function handleBounceEventTrigger(browser) {
-  let tracking = gTrackedBounces.get(browser);
-  if (!tracking) {
-    return;
-  }
-  gTrackedBounces.delete(browser);
-  await recordBounceIfShortVisit(browser, tracking);
-}
-
-/**
- * Claims the bounce an engagement in a tab is tracking for the page it is
- * about to load, so the bounce follows that page to the browser it loads in:
- * a new tab or window, or the tab itself.
- *
- * @param {MozBrowser} sourceBrowser
- *   The browser of the tab the engagement happened in.
- * @returns {(browser: MozBrowser) => void}
- *   Moves the bounce to the browser the page loaded in. A no-op when no bounce
- *   is awaiting a load from the tab.
- */
-export function claimBounceForLoad(sourceBrowser) {
-  let tracking = gTrackedBounces.get(sourceBrowser);
-  if (!tracking?.awaitingLoad) {
-    return () => {};
-  }
-  tracking.awaitingLoad = false;
-  return browser => {
-    if (
-      browser == sourceBrowser ||
-      gTrackedBounces.get(sourceBrowser) != tracking
-    ) {
-      return;
-    }
-    gTrackedBounces.delete(sourceBrowser);
-    gTrackedBounces.set(browser, tracking);
-  };
-}
-
-/**
- * Records a bounce no longer tracked if the page it was tracked for was viewed
- * for less than the bounce threshold.
- *
- * @param {MozBrowser} browser
- *   The browser the page loaded in.
- * @param {TrackedBounce} tracking
- *   The bounce.
- */
-async function recordBounceIfShortVisit(browser, tracking) {
-  const interactions =
-    (await lazy.Interactions.getRecentInteractionsForBrowser(browser)) ?? [];
-
-  let totalViewTime = 0;
-  for (let interaction of interactions) {
-    if (interaction.created_at >= tracking.startTime) {
-      totalViewTime += interaction.totalViewTime || 0;
-    }
-  }
-
-  // If the total view time when the user navigates away after a
-  // URL bar interaction is less than the threshold of
-  // events.bounce.maxSecondsFromLastSearch, we record a bounce event.
-  // If totalViewTime is 0, that means the page didn't load yet, so
-  // we wouldn't record a bounce event.
-  if (
-    totalViewTime != 0 &&
-    totalViewTime <
-      lazy.UrlbarPrefs.get("events.bounce.maxSecondsFromLastSearch") * 1000
-  ) {
-    tracking.record(totalViewTime);
-  }
-}
-
-/**
  * Tracks an address bar search session: it records engagement, abandonment,
  * exposure and bounce telemetry, and notifies providers when a session ends.
  * To track a session, invoke start() with a starting event, then either
  * invoke record() with a final event, or discard() to drop the session.
  */
 export class UrlbarSession {
+  /**
+   * Bounces still being tracked, keyed by the browser of the page they were
+   * tracked for. Static because a bounce outlives the collector that started
+   * it: the New Tab search bar's page -- and with it its actor and parent
+   * controller -- is gone by the time the tab navigates back or closes, so the
+   * trigger arrives from a chrome window input. `record` closes over the
+   * collector that resolves the SAP and makes the Glean call, and the map is
+   * weak so a tab that never sees a trigger doesn't keep that collector's
+   * window alive.
+   *
+   * A bounce is tracked before the engagement's page loads, under the tab the
+   * engagement happened in, and moves to the browser the page loads in once the
+   * load claims it (see `claimBounceForLoad()`).
+   *
+   * @type {WeakMap<MozBrowser, TrackedBounce>}
+   */
+  static #trackedBounces = new WeakMap();
+
+  /**
+   * Handle a bounce event trigger.
+   * These include closing the tab/window and navigating away via
+   * browser chrome (this includes clicking on history or bookmark entries,
+   * and engaging with the URL bar).
+   *
+   * @param {MozBrowser} browser
+   *   The browser of the tab the trigger happened in.
+   */
+  static async handleBounceEventTrigger(browser) {
+    let tracking = UrlbarSession.#trackedBounces.get(browser);
+    if (!tracking) {
+      return;
+    }
+    UrlbarSession.#trackedBounces.delete(browser);
+    await UrlbarSession.#recordBounceIfShortVisit(browser, tracking);
+  }
+
+  /**
+   * Claims the bounce an engagement in a tab is tracking for the page it is
+   * about to load, so the bounce follows that page to the browser it loads in:
+   * a new tab or window, or the tab itself.
+   *
+   * @param {MozBrowser} sourceBrowser
+   *   The browser of the tab the engagement happened in.
+   * @returns {(browser: MozBrowser) => void}
+   *   Moves the bounce to the browser the page loaded in. A no-op when no
+   *   bounce is awaiting a load from the tab.
+   */
+  static claimBounceForLoad(sourceBrowser) {
+    let tracking = UrlbarSession.#trackedBounces.get(sourceBrowser);
+    if (!tracking?.awaitingLoad) {
+      return () => {};
+    }
+    tracking.awaitingLoad = false;
+    return browser => {
+      if (
+        browser == sourceBrowser ||
+        UrlbarSession.#trackedBounces.get(sourceBrowser) != tracking
+      ) {
+        return;
+      }
+      UrlbarSession.#trackedBounces.delete(sourceBrowser);
+      UrlbarSession.#trackedBounces.set(browser, tracking);
+    };
+  }
+
+  /**
+   * Records a bounce no longer tracked if the page it was tracked for was
+   * viewed for less than the bounce threshold.
+   *
+   * @param {MozBrowser} browser
+   *   The browser the page loaded in.
+   * @param {TrackedBounce} tracking
+   *   The bounce.
+   */
+  static async #recordBounceIfShortVisit(browser, tracking) {
+    const interactions =
+      (await lazy.Interactions.getRecentInteractionsForBrowser(browser)) ?? [];
+
+    let totalViewTime = 0;
+    for (let interaction of interactions) {
+      if (interaction.created_at >= tracking.startTime) {
+        totalViewTime += interaction.totalViewTime || 0;
+      }
+    }
+
+    // If the total view time when the user navigates away after a
+    // URL bar interaction is less than the threshold of
+    // events.bounce.maxSecondsFromLastSearch, we record a bounce event.
+    // If totalViewTime is 0, that means the page didn't load yet, so
+    // we wouldn't record a bounce event.
+    if (
+      totalViewTime != 0 &&
+      totalViewTime <
+        lazy.UrlbarPrefs.get("events.bounce.maxSecondsFromLastSearch") * 1000
+    ) {
+      tracking.record(totalViewTime);
+    }
+  }
+
   /**
    * @param {UrlbarParentController} controller
    *  The associated UrlbarParentController.
@@ -1171,14 +1171,14 @@ export class UrlbarSession {
     if (!browser) {
       return;
     }
-    let earlier = gTrackedBounces.get(browser);
-    gTrackedBounces.set(browser, {
+    let earlier = UrlbarSession.#trackedBounces.get(browser);
+    UrlbarSession.#trackedBounces.set(browser, {
       startTime: Date.now(),
       record,
       awaitingLoad: true,
     });
     if (earlier) {
-      await recordBounceIfShortVisit(browser, earlier);
+      await UrlbarSession.#recordBounceIfShortVisit(browser, earlier);
     }
   }
 

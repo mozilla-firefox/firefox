@@ -69,8 +69,6 @@ const lazy = XPCOMUtils.declareLazy({
   ExtensionSearchHandler:
     "resource://gre/modules/ExtensionSearchHandler.sys.mjs",
   ExtensionUtils: "resource://gre/modules/ExtensionUtils.sys.mjs",
-  handleBounceEventTrigger:
-    "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   ReaderMode: "moz-src:///toolkit/components/reader/ReaderMode.sys.mjs",
   SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",
@@ -79,6 +77,7 @@ const lazy = XPCOMUtils.declareLazy({
   UrlbarQueryContext: "chrome://browser/content/urlbar/UrlbarQueryContext.mjs",
   UrlbarProviderHeuristicFallback:
     "moz-src:///browser/components/urlbar/UrlbarProviderHeuristicFallback.sys.mjs",
+  UrlbarSession: "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs",
   UrlbarUtils: "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs",
   UrlbarValueFormatter:
     "moz-src:///browser/components/urlbar/UrlbarValueFormatter.sys.mjs",
@@ -1566,7 +1565,7 @@ ${
     // Using browser navigation buttons should potentially trigger a bounce
     // telemetry event.
     if (webProgress.loadType & Ci.nsIDocShell.LOAD_CMD_HISTORY) {
-      lazy.handleBounceEventTrigger(browser);
+      lazy.UrlbarSession.handleBounceEventTrigger(browser);
     }
   }
 
@@ -1792,7 +1791,7 @@ ${
     if (!this.focused) {
       // The CTA can be clicked when the input is not focused:
       // Start an engagement session if none is currently open.
-      this.controller.engagementEvent.start(event, null, this.value);
+      this.controller.session.start(event, null, this.value);
     }
     this.handleNavigation({ event });
   }
@@ -1891,7 +1890,7 @@ ${
     if (!engine) {
       return;
     }
-    this.controller.engagementEvent.record(event, {
+    this.controller.session.record(event, {
       location: this.sapLocation,
       searchString: value,
       searchSource: this.getSearchSource(event),
@@ -1928,7 +1927,7 @@ ${
       flags |= Ci.nsIURIFixup.FIXUP_FLAG_PRIVATE_CONTEXT;
     }
     const fixupInfo = Services.uriFixup.getFixupURIInfo(value, flags);
-    this.controller.engagementEvent.record(event, {
+    this.controller.session.record(event, {
       location: this.sapLocation,
       searchString: value,
       searchSource: this.getSearchSource(event),
@@ -2054,7 +2053,7 @@ ${
     openParams,
     { event, element, selType, typedValue, result }
   ) {
-    this.controller.engagementEvent.record(event, {
+    this.controller.session.record(event, {
       element,
       location: this.sapLocation,
       selType,
@@ -2279,7 +2278,7 @@ ${
     url = this._maybeCanonizeURL(event, url) || url.trim();
 
     let selectedResult = result || this.view.selectedResult;
-    this.controller.engagementEvent.record(event, {
+    this.controller.session.record(event, {
       element,
       location: this.sapLocation,
       selType,
@@ -2515,7 +2514,7 @@ ${
     ) {
       // The user clicked the "Got it" button inside the dismissal
       // acknowledgment tip. Dismiss the tip.
-      this.controller.engagementEvent.record(event, {
+      this.controller.session.record(event, {
         result,
         element,
         location: this.sapLocation,
@@ -2559,7 +2558,7 @@ ${
     }
 
     if (isCanonized) {
-      this.controller.engagementEvent.record(event, {
+      this.controller.session.record(event, {
         result,
         element,
         location: this.sapLocation,
@@ -2646,7 +2645,7 @@ ${
 
         // We cache the search string because switching tab may clear it.
         let searchString = this._lastSearchString;
-        this.controller.engagementEvent.record(event, {
+        this.controller.session.record(event, {
           result,
           element,
           location: this.sapLocation,
@@ -2669,7 +2668,7 @@ ${
       }
       case UrlbarShared.RESULT_TYPE.SEARCH: {
         if (result.payload.providesSearchMode) {
-          this.controller.engagementEvent.record(event, {
+          this.controller.session.record(event, {
             result,
             element,
             location: this.sapLocation,
@@ -2738,7 +2737,7 @@ ${
           break;
         }
         this.handleRevert();
-        this.controller.engagementEvent.record(event, {
+        this.controller.session.record(event, {
           result,
           element,
           location: this.sapLocation,
@@ -2757,7 +2756,7 @@ ${
           // reverting, copy the search mode since it's nulled on revert.
           const { searchMode } = this;
           this.handleRevert();
-          this.controller.engagementEvent.record(event, {
+          this.controller.session.record(event, {
             result,
             element,
             location: this.sapLocation,
@@ -2772,7 +2771,7 @@ ${
         break;
       }
       case UrlbarShared.RESULT_TYPE.OMNIBOX: {
-        this.controller.engagementEvent.record(event, {
+        this.controller.session.record(event, {
           result,
           element,
           location: this.sapLocation,
@@ -2800,7 +2799,7 @@ ${
       }
       case UrlbarShared.RESULT_TYPE.RESTRICT: {
         this.handleRevert();
-        this.controller.engagementEvent.record(event, {
+        this.controller.session.record(event, {
           result,
           element,
           location: this.sapLocation,
@@ -2817,7 +2816,7 @@ ${
         return;
       }
       case UrlbarShared.RESULT_TYPE.AI_CHAT: {
-        this.controller.engagementEvent.record(event, {
+        this.controller.session.record(event, {
           result,
           element,
           location: this.sapLocation,
@@ -2856,7 +2855,7 @@ ${
     // events (navigation, tab close), so it only runs in a browser window. TBD
     // if and how this should work for a moz-urlbar living in a content process.
     if (this.browserWindow.gBrowser) {
-      this.controller.engagementEvent
+      this.controller.session
         .startTrackingBounceEvent(
           this.browserWindow.gBrowser.selectedBrowser.browserId,
           event,
@@ -2873,7 +2872,7 @@ ${
         .catch(e => logger().error(e));
     }
 
-    this.controller.engagementEvent.record(event, {
+    this.controller.session.record(event, {
       result,
       element,
       location: this.sapLocation,
@@ -3306,7 +3305,7 @@ ${
     });
 
     if (event) {
-      this.controller.engagementEvent.start(event, queryContext, searchString);
+      this.controller.session.start(event, queryContext, searchString);
     }
 
     if (this._suppressStartQuery) {
@@ -4338,7 +4337,7 @@ ${
     // unfocused to a focused urlbar, there should be no search session ongoing,
     // so this will be a no-op.
     if (this.focused) {
-      this.controller.engagementEvent.record(event, {
+      this.controller.session.record(event, {
         location: this.sapLocation,
         searchString: this._lastSearchString,
         searchSource: this.getSearchSource(event),
@@ -5071,7 +5070,7 @@ ${
    * @param {HTMLElement} element the picked view element, if available.
    */
   #pickMenuResult(result, event, element) {
-    this.controller.engagementEvent.record(event, {
+    this.controller.session.record(event, {
       result,
       element,
       location: this.sapLocation,
@@ -6142,7 +6141,7 @@ ${
       (!event.target.classList.contains("searchbar-engine-one-off-item") ||
         this.searchMode?.entry != "oneoff")
     ) {
-      this.controller.engagementEvent.discard();
+      this.controller.session.discard();
     }
   }
 
@@ -6158,7 +6157,7 @@ ${
     // the oneoff settings button.
     // For now we detect that case by discarding the event on command, but we
     // may want to figure out a more robust way to detect abandonment.
-    this.controller.engagementEvent.record(event, {
+    this.controller.session.record(event, {
       location: this.sapLocation,
       searchString: this._lastSearchString,
       searchSource: this.getSearchSource(event),
@@ -6430,7 +6429,7 @@ ${
             let blurEvent = new FocusEvent("blur", {
               relatedTarget: this.inputField,
             });
-            this.controller.engagementEvent.record(blurEvent, {
+            this.controller.session.record(blurEvent, {
               location: this.sapLocation,
               searchString: this._lastSearchString,
               searchSource: this.getSearchSource(blurEvent),
@@ -6865,7 +6864,7 @@ ${
   }
 
   _on_TabClose(event) {
-    lazy.handleBounceEventTrigger(event.target.linkedBrowser);
+    lazy.UrlbarSession.handleBounceEventTrigger(event.target.linkedBrowser);
 
     if (this.view.isOpen) {
       // Refresh results when a tab is closed while the results view is open.
@@ -7209,7 +7208,7 @@ ${
       // telemetry, to replace the missing input event.
       let queryContext = this.#makeQueryContext({ searchString: droppedURL });
       this.parentController.setLastQueryContextCache(queryContext);
-      this.controller.engagementEvent.start(event, queryContext);
+      this.controller.session.start(event, queryContext);
       this.handleNavigation({ triggeringPrincipal: principal });
       if (this.#isAddressbar) {
         // For safety reasons, in the drop case we don't want to immediately show

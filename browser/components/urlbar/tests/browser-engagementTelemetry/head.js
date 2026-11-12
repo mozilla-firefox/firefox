@@ -190,7 +190,7 @@ async function doTest(testFn) {
   await Services.fog.testFlushAllChildren();
   Services.fog.testResetFOG();
 
-  gURLBar.controller.engagementEvent.reset();
+  gURLBar.controller.session.reset();
   await PlacesUtils.history.clear();
   await PlacesUtils.bookmarks.eraseEverything();
   await PlacesTestUtils.clearHistoryVisits();

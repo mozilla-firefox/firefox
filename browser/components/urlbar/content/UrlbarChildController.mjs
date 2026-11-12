@@ -95,7 +95,7 @@ export class UrlbarChildController {
 
   /**
    * The content-side engagement-telemetry collector, created lazily on the
-   * message path (where the parent stand-in has no `engagementEvent`).
+   * message path (where the parent stand-in has no `session`).
    *
    * @type {UrlbarChildSession}
    */
@@ -152,10 +152,10 @@ export class UrlbarChildController {
    *
    * @type {UrlbarChildSession|UrlbarSession}
    */
-  get engagementEvent() {
+  get session() {
     return this.#parentController instanceof UrlbarParentControllerProxy
       ? (this.#childSession ??= new UrlbarChildSession(this))
-      : this.#parentController.engagementEvent;
+      : this.#parentController.session;
   }
 
   /**
@@ -707,7 +707,7 @@ export class UrlbarChildController {
       return false;
     }
 
-    this.engagementEvent.record(event, {
+    this.session.record(event, {
       result,
       selType: "dismiss",
       searchString: queryContext.searchString,

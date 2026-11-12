@@ -185,7 +185,7 @@ export class UrlbarSearchOneOffs extends SearchOneOffs {
         "searchbar-engine-one-off-add-engine"
       )
     ) {
-      this.input.controller.engagementEvent.discard();
+      this.input.controller.session.discard();
       this.selectedButton.doCommand();
       this.selectedButton = null;
       return;

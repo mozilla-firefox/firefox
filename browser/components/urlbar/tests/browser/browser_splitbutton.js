@@ -213,11 +213,9 @@ async function doActivateTest({
   expectedMenuCommands,
 }) {
   let engaged;
-  sinon
-    .stub(gURLBar.controller.engagementEvent, "record")
-    .callsFake((...args) => {
-      engaged = args[1].selType;
-    });
+  sinon.stub(gURLBar.controller.session, "record").callsFake((...args) => {
+    engaged = args[1].selType;
+  });
 
   info("Test for main button");
   const splitButtonMain = splitButton.querySelector(

@@ -738,7 +738,7 @@ export class UrlbarView {
     // focus) we should discard the telemetry event created when the view was
     // opened.
     if (!this.input.focused && !elementPicked) {
-      this.controller.engagementEvent.discard();
+      this.controller.session.discard();
     }
 
     window.removeEventListener("resize", this);
@@ -915,7 +915,7 @@ export class UrlbarView {
       }
     }
 
-    this.controller.engagementEvent.discard();
+    this.controller.session.discard();
     queryOptions.searchString = this.input.value;
     queryOptions.autofillIgnoresSelection = true;
     queryOptions.interactionType = "returned";
@@ -1457,7 +1457,7 @@ export class UrlbarView {
 
     // Discard tentative exposures. This is analogous to marking the
     // hypothetical hidden rows of hidden-exposure results as stale.
-    this.controller.engagementEvent.discardTentativeExposures();
+    this.controller.session.discardTentativeExposures();
 
     // Walk rows and find an insertion index for results. To avoid flicker, we
     // skip rows until we find one compatible with the result we want to apply.
@@ -1497,10 +1497,7 @@ export class UrlbarView {
           if (result.isHiddenExposure) {
             // Don't increment `rowIndex` because we're not actually updating
             // the row. We'll visit it again in the next iteration.
-            this.controller.engagementEvent.addExposure(
-              result,
-              this.#queryContext
-            );
+            this.controller.session.addExposure(result, this.#queryContext);
             continue;
           }
 
@@ -1574,16 +1571,13 @@ export class UrlbarView {
         !seenMisplacedResult;
       if (result.isHiddenExposure) {
         if (canBeVisible) {
-          this.controller.engagementEvent.addExposure(
-            result,
-            this.#queryContext
-          );
+          this.controller.session.addExposure(result, this.#queryContext);
         } else {
           // Add a tentative exposure: The hypothetical row for this
           // hidden-exposure result can't be visible now, but as long as it were
           // not marked stale in a later update, it would be shown when stale
           // rows are removed.
-          this.controller.engagementEvent.addTentativeExposure(
+          this.controller.session.addTentativeExposure(
             result,
             this.#queryContext
           );
@@ -3143,10 +3137,7 @@ export class UrlbarView {
           (result.type == UrlbarShared.RESULT_TYPE.SEARCH &&
             result.payload.suggestion);
         if (result.exposureTelemetry) {
-          this.controller.engagementEvent.addExposure(
-            result,
-            this.#queryContext
-          );
+          this.controller.session.addExposure(result, this.#queryContext);
         }
 
         for (let target of item.querySelectorAll(
@@ -3394,7 +3385,7 @@ export class UrlbarView {
 
     // Accept tentative exposures. This is analogous to unhiding the
     // hypothetical non-stale hidden rows of hidden-exposure results.
-    this.controller.engagementEvent.acceptTentativeExposures();
+    this.controller.session.acceptTentativeExposures();
   }
 
   #startRemoveStaleRowsTimer() {

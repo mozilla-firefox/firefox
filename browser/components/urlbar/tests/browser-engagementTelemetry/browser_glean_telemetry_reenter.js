@@ -43,11 +43,11 @@ add_task(async function () {
   let beforeRecordCall = false,
     recordReentered = false;
   let recordStub = sinon
-    .stub(gURLBar.controller.engagementEvent, "record")
+    .stub(gURLBar.controller.session, "record")
     .callsFake((...args) => {
       recordReentered = beforeRecordCall;
       beforeRecordCall = true;
-      recordStub.wrappedMethod.apply(gURLBar.controller.engagementEvent, args);
+      recordStub.wrappedMethod.apply(gURLBar.controller.session, args);
       beforeRecordCall = false;
     });
 

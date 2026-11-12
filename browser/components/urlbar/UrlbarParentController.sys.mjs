@@ -3,10 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
-import {
-  claimBounceForLoad,
-  UrlbarSession,
-} from "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs";
+import { UrlbarSession } from "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs";
 
 /**
  * @import {BrowserSearchTelemetry} from "moz-src:///browser/components/search/BrowserSearchTelemetry.sys.mjs"
@@ -161,7 +158,7 @@ export class UrlbarParentController {
     this.manager =
       manager || lazy.ProvidersManager.getInstanceForSap(this.sapName);
 
-    this.engagementEvent = new UrlbarSession(this);
+    this.session = new UrlbarSession(this);
     lazy.UrlbarProviderTopSites.addTopSitesListener(this.#topSitesListener);
     Services.obs.addObserver(this, "intl:app-locales-changed", true);
   }
@@ -436,7 +433,7 @@ export class UrlbarParentController {
    *   The payload from `UrlbarTelemetryUtils.recordedEngagementToWire()`.
    */
   recordEngagement(wire) {
-    this.engagementEvent.recordFromChild(
+    this.session.recordFromChild(
       lazy.UrlbarTelemetryUtils.recordedEngagementFromWire(
         wire,
         this.liveResults
@@ -449,7 +446,7 @@ export class UrlbarParentController {
    * proxy's `resetEngagement()`.
    */
   resetEngagement() {
-    this.engagementEvent.reset();
+    this.session.reset();
   }
 
   /**
@@ -461,7 +458,7 @@ export class UrlbarParentController {
    * @returns {Promise<void>}
    */
   startTrackingBuiltBounce(payload) {
-    return this.engagementEvent.startTrackingBuiltBounce(payload);
+    return this.session.startTrackingBuiltBounce(payload);
   }
 
   /**
@@ -866,7 +863,8 @@ export class UrlbarParentController {
       {
         inBackground,
         postData,
-        resolveOnContentBrowserCreated: claimBounceForLoad(browser),
+        resolveOnContentBrowserCreated:
+          UrlbarSession.claimBounceForLoad(browser),
         targetBrowser: where == "current" ? browser : null,
         globalHistoryOptions: {
           triggeringSource: this.sapName,
@@ -1080,7 +1078,8 @@ export class UrlbarParentController {
       }
       browser = this.browserWindow.gBrowser.selectedBrowser;
     }
-    params.resolveOnContentBrowserCreated = claimBounceForLoad(browser);
+    params.resolveOnContentBrowserCreated =
+      UrlbarSession.claimBounceForLoad(browser);
 
     let { url, postData, submission } = lazy.UrlbarUtils.loadRequestToUrl(
       loadRequest,

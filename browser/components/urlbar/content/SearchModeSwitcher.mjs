@@ -175,7 +175,7 @@ export class SearchModeSwitcher {
 
   async #onPopupShowing() {
     // Discard event to avoid recording an abandonment.
-    this.#input.controller.engagementEvent.discard();
+    this.#input.controller.session.discard();
     // Close the view before anything is awaited. Closing it collapses the
     // urlbar, and the panel aligns itself asynchronously and abandons the open
     // if its anchor moves mid-alignment.
