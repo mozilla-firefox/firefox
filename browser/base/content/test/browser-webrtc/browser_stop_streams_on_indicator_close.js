@@ -183,9 +183,13 @@ add_task(async function test_close_indicator_with_global_toggles() {
     "expected nothing to be shared"
   );
 
-  // Ensuring we no longer have any active streams.
-  let streams = webrtcUI.getActiveStreams(true, true, true, true);
-  Assert.equal(streams.length, 0, "Should have found no active streams");
+  // getMediaCaptureState only round-trips with the selected tab. webrtcUI
+  // hears about the other stopped streams from their own content processes,
+  // and nothing notifies once the last of them has arrived.
+  await TestUtils.waitForCondition(
+    () => !webrtcUI.getActiveStreams(true, true, true, true).length,
+    "Should have found no active streams"
+  );
 
   // The camera and microphone permissions should have been cleared.
   let { state: camState } = SitePermissions.getForPrincipal(
