@@ -1064,6 +1064,7 @@ add_task(async function test_missing_custom_avatar_falls_back_to_default() {
     return;
   }
   const profile = await setup();
+  Services.fog.testResetFOG();
 
   const mockAvatarFile = await createAvatarFile(100, 100);
   const avatarFile = await File.createFromFileName(mockAvatarFile.path);
