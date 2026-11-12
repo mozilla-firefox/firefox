@@ -6488,9 +6488,10 @@ void CanvasRenderingContext2D::DrawDirectlyToCanvas(
   // FLAG_CLAMP is added for increased performance, since we never tile here.
   uint32_t modifiedFlags = aImage.mDrawingFlags | imgIContainer::FLAG_CLAMP;
 
-  // XXX hmm is scaledImageSize really in CSS pixels?
-  SVGImageContext svgContext(
-      Some(CSSSize(scaledImageSize.width, scaledImageSize.height)));
+  // Vector images are laid out at their natural size, so that the root
+  // <svg>'s preserveAspectRatio applies there, and are then scaled to
+  // scaledImageSize, possibly non-uniformly.
+  SVGImageContext svgContext(Some(CSSSize(aImgSize.width, aImgSize.height)));
 
   if (mContextProperties != CanvasContextProperties::None &&
       aImage.mImgContainer->GetType() == imgIContainer::TYPE_VECTOR) {
