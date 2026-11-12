@@ -54,7 +54,7 @@ openWebLinkIn(url, "tab", { userContextId });
 | `"tab"` | a new tab in the topmost suitable window |
 | `"tabshifted"` | a new tab, with the foreground decision inverted |
 | `"window"` | a new browser window |
-| `"chromeless"` | a new window with no navigation UI, sized by `params.width` and `params.height` |
+| `"chromeless"` | a new window with no navigation UI, sized by `params.width` and `params.height`, optionally centered with `params.shouldCenter` |
 | `"save"` | saves the target instead of loading it |
 
 An unrecognised `where` does nothing at all, and neither does a falsy `url` or

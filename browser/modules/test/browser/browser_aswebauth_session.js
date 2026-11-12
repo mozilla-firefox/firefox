@@ -954,3 +954,57 @@ add_task(async function test_custom_headers() {
   let cancelData = JSON.parse(await cancelPromise);
   Assert.equal(cancelData.uuid, uuid, "cleanup cancel has the correct UUID");
 });
+
+add_task(async function test_auth_window_geometry() {
+  for (let ephemeral of [false, true]) {
+    let source = await BrowserTestUtils.openNewBrowserWindow({
+      private: ephemeral,
+      features: "outerWidth=900,outerHeight=500,left=0,top=0",
+    });
+    let win;
+    try {
+      await SimpleTest.promiseFocus(source);
+      let screen = source.screen;
+      let expectedWidth = Math.floor(Math.min(600, screen.availWidth * 0.9));
+      let expectedHeight = Math.floor(Math.min(700, screen.availHeight * 0.9));
+      let winPromise = BrowserTestUtils.waitForNewWindow({ url: LOGIN_URL });
+      startAuthSession({ url: LOGIN_URL, uuid: newUUID(), ephemeral });
+      win = await winPromise;
+      let expectedLeft =
+        screen.availLeft + (screen.availWidth - win.outerWidth) / 2;
+      let expectedTop =
+        screen.availTop + (screen.availHeight - win.outerHeight) / 2;
+
+      Assert.equal(
+        win.innerWidth,
+        expectedWidth,
+        "Auth window has a fixed width"
+      );
+      Assert.equal(
+        win.innerHeight,
+        expectedHeight,
+        "Auth window has a fixed height"
+      );
+      Assert.lessOrEqual(
+        Math.abs(win.screenX - expectedLeft),
+        1,
+        "Auth window is horizontally centered in the available screen area"
+      );
+      Assert.lessOrEqual(
+        Math.abs(win.screenY - expectedTop),
+        1,
+        "Auth window is vertically centered in the available screen area"
+      );
+      Assert.equal(
+        win.windowState,
+        win.STATE_NORMAL,
+        "Auth window opens in the normal state"
+      );
+    } finally {
+      if (win && !win.closed) {
+        await BrowserTestUtils.closeWindow(win);
+      }
+      await BrowserTestUtils.closeWindow(source);
+    }
+  }
+});

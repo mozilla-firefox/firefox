@@ -515,23 +515,26 @@ export const ASWebAuthSessionService = new (class ASWebAuthSessionService {
   async openAuthWindow(url, { ephemeral, userContextId }) {
     let { promise: browserPromise, resolve: resolveBrowser } =
       Promise.withResolvers();
+    let sourceWindow =
+      lazy.BrowserWindowTracker.getTopWindow({ private: !!ephemeral }) ||
+      Services.appShell.hiddenDOMWindow;
+    let screen = sourceWindow.screen;
+    let width = Math.floor(Math.min(600, screen.availWidth * 0.9));
+    let height = Math.floor(Math.min(700, screen.availHeight * 0.9));
     let openedWindow = this.observeNextWindowOpen();
 
     try {
-      lazy.URILoadingHelper.openWebLinkIn(
-        lazy.BrowserWindowTracker.getTopWindow({ private: !!ephemeral }) ||
-          Services.appShell.hiddenDOMWindow,
-        url,
-        "chromeless",
-        {
-          private: !!ephemeral,
-          forceNonPrivate: !ephemeral,
-          fromExternal: true,
-          userContextId,
-          resolveOnContentBrowserCreated: resolveBrowser,
-          aswebauth: true,
-        }
-      );
+      lazy.URILoadingHelper.openWebLinkIn(sourceWindow, url, "chromeless", {
+        private: !!ephemeral,
+        forceNonPrivate: !ephemeral,
+        fromExternal: true,
+        userContextId,
+        resolveOnContentBrowserCreated: resolveBrowser,
+        aswebauth: true,
+        width,
+        height,
+        shouldCenter: true,
+      });
     } catch (e) {
       openedWindow.unregister();
       throw e;
