@@ -48,12 +48,22 @@ features:
 
             sync-sign-in:
               card-type: sync-sign-in
+              enabled: false
               ordering: 15
               title: nova_onboarding_sync_title
               body: nova_onboarding_sync_subtitle
               image-res: nova_onboarding_sync
               primary-button-label: nova_onboarding_sync_button
               secondary-button-label: nova_onboarding_negative_button
+
+            sync-pairing:
+              card-type: sync-pairing
+              ordering: 16
+              title: nova_onboarding_sync_pairing_title
+              body: nova_onboarding_sync_pairing_body
+              image-res: nova_onboarding_sync_qr
+              primary-button-label: nova_onboarding_sync_pairing_scan_button
+              secondary-button-label: nova_onboarding_sync_pairing_email_button
 
             marketing:
               card-type: marketing-data

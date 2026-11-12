@@ -1342,11 +1342,11 @@ features:
 
   pairing-signin-prompt:
     description: >
-      Controls the Sync sign-in card shown during initial onboarding to users who installed Firefox
+      Controls the pairing sync card shown during initial onboarding to users who installed Firefox
       through a pairing link.
     variables:
       enabled:
-        description: Whether the Sync sign-in card can be shown during initial onboarding.
+        description: Whether the pairing sync card can be shown during initial onboarding.
         type: Boolean
         default: false
       campaign-utm-content:

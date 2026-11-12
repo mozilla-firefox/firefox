@@ -63,7 +63,7 @@ class OnboardingFragment : Fragment() {
     private val logger = Logger("OnboardingFragment")
 
     private val addMarketingFeature = ViewBoundFeatureWrapper<OnboardingPageAdditionSupport>()
-    private val addPairingSyncSignInFeature = ViewBoundFeatureWrapper<OnboardingPageAdditionSupport>()
+    private val addPairingSyncFeature = ViewBoundFeatureWrapper<OnboardingPageAdditionSupport>()
 
     private val rtamoAttributionHandler by lazy {
         RtamoAttributionHandler(
@@ -93,14 +93,14 @@ class OnboardingFragment : Fragment() {
     }
 
     /**
-     * The Sync sign-in page available for pairing campaigns.
+     * The pairing sync page available for pairing campaigns.
      *
-     * Null if the page is absent or the prompt is disabled via Nimbus, preventing [addPairingSyncSignInFeature] from
-     * adding it when attribution resolves later.
+     * Null if the page is absent or the prompt is disabled via Nimbus, preventing [addPairingSyncFeature] from adding
+     * it when attribution resolves later.
      */
-    private val pairingSyncSignInPage by lazy {
+    private val pairingSyncPage by lazy {
         allOnboardingPages
-            .find { it.type == OnboardingPageUiData.Type.SYNC_SIGN_IN }
+            .find { it.type == OnboardingPageUiData.Type.SYNC_PAIRING }
             ?.takeIf { requireComponents.settings.isPairingSignInPromptEnabled }
     }
 
@@ -111,8 +111,8 @@ class OnboardingFragment : Fragment() {
             .filter { page ->
                 when (page.type) {
                     OnboardingPageUiData.Type.MARKETING_DATA -> settings.shouldShowMarketingOnboarding
-                    OnboardingPageUiData.Type.SYNC_SIGN_IN ->
-                        pairingSyncSignInPage != null && settings.isUserPairingCampaignAttributed
+                    OnboardingPageUiData.Type.SYNC_PAIRING ->
+                        pairingSyncPage != null && settings.isUserPairingCampaignAttributed
 
                     else -> true
                 }
@@ -195,13 +195,13 @@ class OnboardingFragment : Fragment() {
             owner = this,
             view = view,
         )
-        addPairingSyncSignInFeature.set(
+        addPairingSyncFeature.set(
             feature =
                 OnboardingPageAdditionSupport(
                     prefKey = requireContext().getString(R.string.pref_key_is_user_pairing_campaign_attributed),
                     pagesToDisplay = pagesToDisplay,
                     settings = requireComponents.settings,
-                    page = pairingSyncSignInPage,
+                    page = pairingSyncPage,
                     lifecycleOwner = viewLifecycleOwner,
                 ),
             owner = this,

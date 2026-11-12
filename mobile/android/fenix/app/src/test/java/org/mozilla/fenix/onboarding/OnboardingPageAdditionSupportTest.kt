@@ -50,12 +50,12 @@ class OnboardingPageAdditionSupportTest {
             mutableListOf<OnboardingPageUiData>().apply {
                 add(
                     OnboardingPageUiData(
-                        type = OnboardingPageUiData.Type.SYNC_SIGN_IN,
+                        type = OnboardingPageUiData.Type.SYNC_PAIRING,
                         imageRes = 0,
-                        title = "sync title",
-                        description = "sync body",
-                        primaryButtonLabel = "sync primary button text",
-                        secondaryButtonLabel = "sync secondary button text",
+                        title = "sync pairing title",
+                        description = "sync pairing body",
+                        primaryButtonLabel = "sync pairing scan button text",
+                        secondaryButtonLabel = "sync pairing email button text",
                     )
                 )
             }
@@ -108,7 +108,7 @@ class OnboardingPageAdditionSupportTest {
 
     @Test
     fun `GIVEN pairing attribution pref is true WHEN a page is eligible THEN the page is added`() = runTest {
-        val syncPage = pages.removeAt(0)
+        val pairingPage = pages.removeAt(0)
         assertTrue(pages.isEmpty())
 
         val addPage =
@@ -116,7 +116,7 @@ class OnboardingPageAdditionSupportTest {
                 prefKey = testContext.getString(R.string.pref_key_is_user_pairing_campaign_attributed),
                 pagesToDisplay = pages,
                 settings = settings,
-                page = syncPage,
+                page = pairingPage,
                 mainContext = testScheduler,
                 ioContext = testScheduler,
                 lifecycleOwner = mockedLifecycleOwner,
@@ -127,12 +127,12 @@ class OnboardingPageAdditionSupportTest {
 
         testScheduler.runCurrent()
 
-        assertEquals(listOf(syncPage), pages)
+        assertEquals(listOf(pairingPage), pages)
     }
 
     @Test
     fun `GIVEN pairing attribution pref is false WHEN a page is eligible THEN the page is not added`() = runTest {
-        val syncPage = pages.removeAt(0)
+        val pairingPage = pages.removeAt(0)
         assertTrue(pages.isEmpty())
 
         val addPage =
@@ -140,7 +140,7 @@ class OnboardingPageAdditionSupportTest {
                 prefKey = testContext.getString(R.string.pref_key_is_user_pairing_campaign_attributed),
                 pagesToDisplay = pages,
                 settings = settings,
-                page = syncPage,
+                page = pairingPage,
                 mainContext = testScheduler,
                 ioContext = testScheduler,
                 lifecycleOwner = mockedLifecycleOwner,
@@ -157,7 +157,7 @@ class OnboardingPageAdditionSupportTest {
     @Test
     fun `GIVEN pairing attribution resolves after start WHEN the pref flips to true THEN the page is added`() =
         runTest {
-            val syncPage = pages.removeAt(0)
+            val pairingPage = pages.removeAt(0)
             assertTrue(pages.isEmpty())
 
             val addPage =
@@ -165,7 +165,7 @@ class OnboardingPageAdditionSupportTest {
                     prefKey = testContext.getString(R.string.pref_key_is_user_pairing_campaign_attributed),
                     pagesToDisplay = pages,
                     settings = settings,
-                    page = syncPage,
+                    page = pairingPage,
                     mainContext = testScheduler,
                     ioContext = testScheduler,
                     lifecycleOwner = mockedLifecycleOwner,
@@ -179,12 +179,12 @@ class OnboardingPageAdditionSupportTest {
             settings.isUserPairingCampaignAttributed = true
             testScheduler.runCurrent()
 
-            assertEquals(listOf(syncPage), pages)
+            assertEquals(listOf(pairingPage), pages)
         }
 
     @Test
     fun `GIVEN the pref was never written WHEN started THEN the page is not added`() = runTest {
-        val syncPage = pages.removeAt(0)
+        val pairingPage = pages.removeAt(0)
         assertTrue(pages.isEmpty())
 
         val addPage =
@@ -192,7 +192,7 @@ class OnboardingPageAdditionSupportTest {
                 prefKey = testContext.getString(R.string.pref_key_is_user_pairing_campaign_attributed),
                 pagesToDisplay = pages,
                 settings = settings,
-                page = syncPage,
+                page = pairingPage,
                 mainContext = testScheduler,
                 ioContext = testScheduler,
                 lifecycleOwner = mockedLifecycleOwner,

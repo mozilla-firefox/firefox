@@ -2479,7 +2479,7 @@ class Settings(
         )
 
     /**
-     * Whether the Sync sign-in card can be shown during initial onboarding for users whose Firefox install is
+     * Whether the pairing sync card can be shown during initial onboarding for users whose Firefox install is
      * attributed to a pairing campaign link.
      */
     var isPairingSignInPromptEnabled by
