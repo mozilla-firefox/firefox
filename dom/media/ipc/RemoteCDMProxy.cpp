@@ -231,6 +231,11 @@ void RemoteCDMProxy::InitInternal(PromiseId aPromiseId,
               return;
             }
 
+            if (NS_FAILED(aValue.ResolveValue().Code())) {
+              self->RejectPromise(aPromiseId, aValue.ResolveValue());
+              return;
+            }
+
             self->mKeys->OnCDMCreated(aPromiseId, 0);
           });
 }
@@ -541,6 +546,17 @@ void RemoteCDMProxy::ResolvePromise(PromiseId aId) {
 
 void RemoteCDMProxy::RejectPromise(PromiseId aId, const MediaResult& aResult) {
   MOZ_ASSERT(NS_FAILED(aResult.Code()));
+
+  if (!NS_IsMainThread()) {
+    NS_DispatchToMainThread(
+        NS_NewRunnableFunction(__func__, [self = RefPtr{this}, aId, aResult]() {
+          if (self->mKeys.IsNull()) {
+            return;
+          }
+          self->RejectPromise(aId, aResult);
+        }));
+    return;
+  }
 
   ErrorResult rv;
   aResult.ThrowTo(rv);

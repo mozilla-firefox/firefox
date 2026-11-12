@@ -326,9 +326,14 @@ mozilla::ipc::IPCResult MediaDrmRemoteCDMParent::RecvInit(
           fmt::ptr(mDrm));
   InitializeStatics();
   sCbMap->insert(std::pair{mDrm, this});
-  aResolver(MediaResult(NS_OK));
 
-  EnsureHasAMediaCrypto();
+  // The decoders need the crypto, so the CDM is not ready until it exists.
+  EnsureHasAMediaCrypto()->Then(
+      GetCurrentSerialEventTarget(), __func__,
+      [self = RefPtr{this}, resolver = std::move(aResolver)](
+          const InternalPromise::ResolveOrRejectValue& aValue) mutable {
+        resolver(aValue.IsReject() ? aValue.RejectValue() : MediaResult(NS_OK));
+      });
   return IPC_OK();
 }
 

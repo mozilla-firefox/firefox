@@ -12862,6 +12862,13 @@
   value: @IS_ANDROID@
   mirror: always
 
+# For tests, the server to send MediaDrm provisioning requests to instead of
+# the one the plugin gives.
+- name: media.eme.mediadrm.provisioning.url-override
+  type: String
+  value: ""
+  mirror: never
+
 - name: media.eme.max-throughput-ms
   type: RelaxedAtomicUint32
   value: 500

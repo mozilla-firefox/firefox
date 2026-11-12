@@ -11,10 +11,19 @@ MediaDrmProvisioning.prototype = {
   ]),
 
   provision(serverUrl, request) {
-    const url = serverUrl + "&signedRequest=" + request;
+    // Tests point this at a local server to simulate a provisioning failure.
+    const override = Services.prefs.getStringPref(
+      "media.eme.mediadrm.provisioning.url-override",
+      ""
+    );
+    const url = (override || serverUrl) + "&signedRequest=" + request;
     return new Promise((resolve, reject) => {
       fetch(url, { method: "POST" })
         .then(response => {
+          if (!response.ok) {
+            reject(new Error(`Provisioning failed: ${response.status}`));
+            return;
+          }
           response
             .bytes()
             .then(bytes => {

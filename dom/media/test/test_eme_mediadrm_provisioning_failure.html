@@ -1,0 +1,107 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test that createMediaKeys rejects when MediaDrm provisioning fails</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+const SJS = "https://example.com/tests/dom/media/test/eme_mediadrm_provisioning.sjs";
+// No other test uses this origin, so its origin ID is not provisioned yet.
+const FRAME =
+  "https://sub2.test2.example.org/tests/dom/media/test/file_eme_mediadrm_provisioning_failure.html";
+
+async function provisioningCount() {
+  const response = await fetch(SJS + "?count");
+  return Number(await response.text());
+}
+
+function runInFrame() {
+  return new Promise(resolve => {
+    const iframe = document.createElement("iframe");
+    iframe.allow = "encrypted-media";
+    window.addEventListener(
+      "message",
+      e => {
+        iframe.remove();
+        resolve(e.data);
+      },
+      { once: true }
+    );
+    iframe.src = FRAME;
+    document.body.appendChild(iframe);
+  });
+}
+
+async function testProvisioningFailure(mode) {
+  info(`Provisioning server mode: ${mode}`);
+  await SpecialPowers.pushPrefEnv({
+    set: [["media.eme.mediadrm.provisioning.url-override", `${SJS}?mode=${mode}`]],
+  });
+  await fetch(SJS + "?reset");
+
+  const r = await runInFrame();
+  const count = await provisioningCount();
+  await SpecialPowers.popPrefEnv();
+
+  if (r.result == "unsupported") {
+    ok(true, `Widevine is not supported: ${r.name}`);
+    return false;
+  }
+
+  if (r.result == "resolved" && count == 0) {
+    // The device does not need provisioning, so there is nothing to fail.
+    ok(true, "MediaDrm is already provisioned");
+    return false;
+  }
+
+  is(r.result, "rejected", "createMediaKeys should reject");
+  is(r.name, "InvalidStateError", `createMediaKeys error: ${r.message}`);
+  is(count, 1, "Provisioning should be requested once");
+  return true;
+}
+
+// The Java MediaCodec pipeline provisions MediaDrm through Java networking,
+// which the url-override cannot intercept, and the remote CDM needs
+// media.ffvpx-hw.enabled, which that pipeline disables.
+const gJavaMedia =
+  SpecialPowers.getBoolPref("media.android-media-codec.enabled") ||
+  !SpecialPowers.getBoolPref("media.ffvpx-hw.enabled");
+
+add_task(async function setup() {
+  if (gJavaMedia) {
+    ok(true, "Skipping, the Java MediaCodec pipeline is enabled");
+    return;
+  }
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      // MediaDrmRemoteCDMParent, which provisions through Gecko.
+      ["media.android-media-codec.enabled", false],
+      ["media.eme.mediadrm.origin-id.enabled", true],
+    ],
+  });
+});
+
+let gCanProvision = !gJavaMedia;
+
+add_task(async function test_server_error() {
+  if (!gCanProvision) {
+    return;
+  }
+  gCanProvision = await testProvisioningFailure("error");
+});
+
+add_task(async function test_invalid_response() {
+  if (!gCanProvision) {
+    return;
+  }
+  await testProvisioningFailure("junk");
+});
+
+</script>
+</pre>
+</body>
+</html>

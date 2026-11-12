@@ -600,6 +600,11 @@ already_AddRefed<DetailedPromise> MediaKeys::Init(ErrorResult& aRv) {
           topLevelOrigin.get());
 
   mProxy = CreateCDMProxy();
+  if (!mProxy) {
+    promise->MaybeRejectWithNotSupportedError(
+        "Couldn't create a CDM proxy in MediaKeys::Init");
+    return promise.forget();
+  }
 
   // The CDMProxy's initialization is asynchronous. The MediaKeys is
   // refcounted, and its instance is returned to JS by promise once

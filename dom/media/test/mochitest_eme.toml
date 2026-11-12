@@ -710,6 +710,14 @@ scheme = "https"
 ["test_eme_initDataTypes.html"]
 scheme = "https"
 
+["test_eme_mediadrm_provisioning_failure.html"]
+run-if = ["os == 'android'"]
+scheme = "https"
+support-files = [
+  "eme_mediadrm_provisioning.sjs",
+  "file_eme_mediadrm_provisioning_failure.html",
+]
+
 ["test_eme_missing_pssh.html"]
 scheme = "https"
 
