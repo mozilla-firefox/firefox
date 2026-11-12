@@ -73,8 +73,9 @@
             }
 
             // See kExpectedRequestsOfFetchAPI from link-tests-data.js
-            // and nsHttpHandler::UrgencyFromCoSFlags.
-            let normalUrgency = 4;
+            // and nsHttpHandler::UrgencyFromCoSFlags. Like XHR, fetch() is
+            // Unblocked.
+            let normalUrgency = 3;
             assert_equals(await fetchAndExtractUrgency("low"), normalUrgency + 1);
             assert_equals(await fetchAndExtractUrgency("high"), normalUrgency - 1);
             assert_equals(await fetchAndExtractUrgency("auto"), normalUrgency);
