@@ -8872,10 +8872,34 @@ class _SessionStore {
 
     // We have a user typed value, load that with fixup:
     let loadPromise = this.#waitForStateStop(browser, tabData.userTypedValue);
-    browser.browsingContext.fixupAndLoadURIString(tabData.userTypedValue, {
-      loadFlags: Ci.nsIWebNavigation.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP,
-      triggeringPrincipal,
-    });
+    try {
+      browser.browsingContext.fixupAndLoadURIString(tabData.userTypedValue, {
+        loadFlags: Ci.nsIWebNavigation.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP,
+        triggeringPrincipal,
+      });
+    } catch (ex) {
+      // Bug 1986173: userTypedValue is the raw text that the user typed, not
+      // the search URL that the address bar built from it. If the text is a
+      // search term, fixup can fail if the search service, which is
+      // lazy-loaded, is not ready. In this case, restore the history entry and
+      // show the typed value in the address bar.
+      this.#log.warn(`Could not load the typed value: ${ex}`);
+      this.#restoreListeners.get(browser.permanentKey)?.unregister(false);
+      let { userTypedValue } = tabData;
+      return this.#restoreTabEntry(browser, {
+        ...tabData,
+        userTypedValue: null,
+      }).then(() => {
+        if (browser.userTypedValue) {
+          return;
+        }
+        browser.userTypedValue = userTypedValue;
+        let win = browser.documentGlobal;
+        if (win.gBrowser.selectedBrowser == browser) {
+          win.gURLBar.setURI();
+        }
+      });
+    }
 
     return loadPromise;
   }
