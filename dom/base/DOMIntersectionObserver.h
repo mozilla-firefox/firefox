@@ -12,6 +12,7 @@
 #include "mozilla/Variant.h"
 #include "mozilla/dom/DOMRect.h"
 #include "mozilla/dom/Document.h"
+#include "mozilla/dom/ECMACollections.h"
 #include "mozilla/dom/IntersectionObserverBinding.h"
 #include "mozilla/dom/NodeOwnedObjectList.h"
 #include "nsDOMNavigationTiming.h"
@@ -216,19 +217,14 @@ class DOMIntersectionObserver final
   StyleRect<LengthPercentage> mScrollMargin;
   AutoTArray<double, 1> mThresholds;
 
-  // These hold raw pointers which are explicitly cleared by UnlinkTarget().
-  //
-  // We keep a set and an array because we need ordered access, but also
-  // constant time lookup.
-  nsTArray<Element*> mObservationTargets;
-
   // Value can be:
   //   -2:   Makes sure next calculated threshold always differs, leading to a
   //         notification task being scheduled.
   //   -1:   Non-intersecting.
   //   >= 0: Intersecting, valid index of aObserver->mThresholds.
   enum ObservationState : int32_t { Uninitialized = -2, NotIntersecting = -1 };
-  nsTHashMap<Element*, int32_t> mObservationTargetMap;
+  // Raw target pointers are explicitly cleared by UnlinkTarget().
+  ECMAMap<Element*, int32_t> mObservationTargets;
 
   nsTArray<RefPtr<DOMIntersectionObserverEntry>> mQueuedEntries;
   bool mConnected = false;
