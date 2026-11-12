@@ -1041,6 +1041,7 @@ async def add_intercept(bidi_session):
 @pytest_asyncio.fixture
 async def setup_blocked_request(
     bidi_session,
+    configuration,
     setup_network_test,
     url,
     add_intercept,
@@ -1117,6 +1118,14 @@ async def setup_blocked_request(
         events = []
         async def on_event(method, data):
             events.append(data)
+            # Also track requests which got blocked after the wait below gave
+            # up, so that they are released on teardown. Removing the intercept
+            # does not release already blocked requests.
+            if data["isBlocked"]:
+                if phase == "authRequired":
+                    blocked_auth_requests.append(data["request"]["request"])
+                else:
+                    blocked_requests.append(data["request"]["request"])
 
         remove_listener = bidi_session.add_event_listener(f"network.{phase}", on_event)
 
@@ -1142,7 +1151,9 @@ async def setup_blocked_request(
             assert len(blocked_events) >= 1, "No blocked request found"
             return blocked_events[0]
 
-        wait = AsyncPoll(bidi_session, timeout=2)
+        wait = AsyncPoll(
+            bidi_session, timeout=2 * configuration["timeout_multiplier"]
+        )
         blocked_event = await wait.until(check_has_blocked_request)
 
         request = blocked_event["request"]["request"]
@@ -1176,7 +1187,9 @@ async def setup_blocked_request(
                 ],
             )
 
-            wait = AsyncPoll(bidi_session, timeout=2)
+            wait = AsyncPoll(
+                bidi_session, timeout=2 * configuration["timeout_multiplier"]
+            )
             blocked_event = await wait.until(check_has_blocked_request)
 
             request = blocked_event["request"]["request"]
