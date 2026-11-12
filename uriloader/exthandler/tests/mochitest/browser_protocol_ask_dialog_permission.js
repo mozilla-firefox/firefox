@@ -478,7 +478,7 @@ async function closeDialog(browser, dialog, confirm, scheme) {
 
 registerCleanupFunction(function () {
   // Clean up test handlers
-  TEST_PROTOS.forEach(scheme => {
+  [...TEST_PROTOS, WALLET_PROTO].forEach(scheme => {
     let handlerInfo = HandlerServiceTestUtils.getHandlerInfo(scheme);
     gHandlerService.remove(handlerInfo);
   });
