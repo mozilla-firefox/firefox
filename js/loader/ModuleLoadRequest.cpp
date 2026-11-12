@@ -110,7 +110,8 @@ void ModuleLoadRequest::ModuleLoaded() {
   // shared module script reflects that it is now part of a normal load.
   MOZ_ASSERT(mModuleScript);
   if (!mLoadContext->IsPreload() && mModuleScript->ForPreload()) {
-    mModuleScript->SetForPreload(false);
+    mLoader->MovePreloadedSetToResolvedSet(mModuleScript);
+    MOZ_ASSERT(!mModuleScript->ForPreload());
   }
 }
 

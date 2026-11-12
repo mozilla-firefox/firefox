@@ -377,14 +377,6 @@ void ModuleScript::SetErrorToRethrow(const Value& aError) {
   mErrorToRethrow = aError;
 }
 
-void ModuleScript::SetForPreload(bool aValue) {
-  mFetchInfo->SetForModulePreload(aValue);
-#ifdef DEBUG
-  if (ModuleRecord()) {
-    SetModulePreload(ModuleRecord(), aValue);
-  }
-#endif
-}
 void ModuleScript::SetHadImportMap(bool aValue) { mHadImportMap = aValue; }
 
 void ModuleScript::ResetPreloadErrors() {

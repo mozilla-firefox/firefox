@@ -1068,7 +1068,8 @@ nsresult ModuleLoaderBase::CreateModuleScript(ModuleLoadRequest* aRequest) {
 
     aRequest->mModuleScript = moduleScript;
 
-    moduleScript->SetForPreload(aRequest->mLoadContext->IsPreload());
+    aRequest->FetchInfo()->SetForModulePreload(
+        aRequest->mLoadContext->IsPreload());
     moduleScript->SetHadImportMap(HasImportMapRegistered());
 
     if (!module) {

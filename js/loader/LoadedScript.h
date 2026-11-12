@@ -821,7 +821,6 @@ class ModuleScript final : public nsISupports {
   void SetModuleRecord(Handle<JSObject*> aModuleRecord);
   void SetParseError(const Value& aError);
   void SetErrorToRethrow(const Value& aError);
-  void SetForPreload(bool aValue);
   void SetHadImportMap(bool aValue);
 
   JSObject* ModuleRecord() const { return mModuleRecord; }
