@@ -9,13 +9,12 @@ const kUnregisterAreaTestWidget = "test-widget-for-unregisterArea-areaType";
 const kTestWidget = "test-widget-no-area-areaType";
 registerCleanupFunction(removeCustomToolbars);
 
-registerCleanupFunction(() => {
-  try {
-    CustomizableUI.destroyWidget(kTestWidget);
-    CustomizableUI.destroyWidget(kUnregisterAreaTestWidget);
-  } catch (ex) {
-    console.error(ex);
-  }
+registerCleanupFunction(async () => {
+  // Destroy the widget before resetting, as resetting marks still registered
+  // API widgets as seen, and getWidget returns null for seen destroyed widgets.
+  CustomizableUI.destroyWidget(kUnregisterAreaTestWidget);
+  await resetCustomization();
+  CustomizableUI.destroyWidget(kTestWidget);
 });
 
 function checkAreaType(widget) {
@@ -63,8 +62,4 @@ add_task(async function () {
   checkAreaType(w);
   // XXXgijs: ensure cleanup function doesn't barf:
   gAddedToolbars.delete(kToolbarName);
-});
-
-add_task(async function asyncCleanup() {
-  await resetCustomization();
 });
