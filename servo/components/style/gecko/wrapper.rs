@@ -1003,6 +1003,9 @@ fn selector_flags_to_node_flags(flags: ElementSelectorFlags) -> u32 {
     if flags.contains(ElementSelectorFlags::MAY_HAVE_TREE_COUNTING_FUNCTION) {
         gecko_flags |= NodeSelectorFlags::MayHaveTreeCountingFunction.0;
     }
+    if flags.contains(ElementSelectorFlags::CONTAINER_QUERY_WITH_UNPARSED_ATTR) {
+        gecko_flags |= NodeSelectorFlags::ContainerQueryWithUnparsedAttr.0;
+    }
 
     gecko_flags
 }

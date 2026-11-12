@@ -83,8 +83,8 @@ use malloc_size_of::{MallocShallowSizeOf, MallocSizeOf, MallocSizeOfOps};
 use selectors::attr::{CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::BloomFilter;
 use selectors::matching::{
-    MatchingContext, MatchingMode, NeedsSelectorFlags, SelectorCaches, SubjectOrPseudoElement,
-    matches_complex_selector, matches_selector, selector_may_match,
+    ElementSelectorFlags, MatchingContext, MatchingMode, NeedsSelectorFlags, SelectorCaches,
+    SubjectOrPseudoElement, matches_complex_selector, matches_selector, selector_may_match,
 };
 use selectors::matching::{MatchingForInvalidation, VisitedHandlingMode};
 use selectors::parser::{
@@ -3468,10 +3468,12 @@ pub struct CascadeData {
     container_attr_function_dependencies:
         PrecomputedHashMap<LocalName, ContainerAttributeDependencyKind>,
 
-    /// Indicates whether a container query contains `attr()` functions with attribute names
-    /// that are not known at parse time (due to nested substitution functions). The enum
-    /// value tells us whether or not the container query condition is named.
-    container_unparsed_attr_function_dependency: ContainerAttributeDependencyKind,
+    /// Container rules where a condition contains `attr()` functions with attribute names
+    /// that are not known at parse time (due to nested substitution functions).
+    ///
+    /// TODO: Measure the Vec's shallow size.
+    #[ignore_malloc_size_of = "Arc, primary refs in the container rules"]
+    container_unparsed_attr_conditions: Vec<ArcSlice<ContainerCondition>>,
 
     /// The list of scope conditions, indexed by their id.
     scope_conditions: SmallVec<[ScopeConditionReference; 1]>,
@@ -3550,7 +3552,7 @@ impl CascadeData {
             layers: CascadeLayers::default(),
             container_conditions: smallvec::smallvec![ContainerConditionReference::none()],
             container_attr_function_dependencies: PrecomputedHashMap::default(),
-            container_unparsed_attr_function_dependency: ContainerAttributeDependencyKind::None,
+            container_unparsed_attr_conditions: Vec::new(),
             scope_conditions: smallvec::smallvec![ScopeConditionReference::none()],
             scope_subject_map: Default::default(),
             extra_data: ExtraStyleData::default(),
@@ -3672,13 +3674,7 @@ impl CascadeData {
     /// of some rule or a container query with `attr()` functions.
     #[inline]
     pub fn might_have_attribute_dependency(&self, local_name: &LocalName) -> bool {
-        // If a container query has an `attr()` function whose target attribute can't
-        // be known at parse time (due to nested substitution functions), then _any_
-        // attribute modification could require style invalidation.
-        //
-        // TODO(Bug 2087544) - Optimize invalidation for these `attr()` cases.
-        self.container_unparsed_attr_function_dependency != ContainerAttributeDependencyKind::None
-            || self.attribute_dependencies.contains(local_name)
+        self.attribute_dependencies.contains(local_name)
     }
 
     /// Whether matching an element that isn't itself a link can depend on
@@ -3694,15 +3690,54 @@ impl CascadeData {
     /// that the value is used in a named container rule. None means the value
     /// is not used in a style container prelude at all.
     #[inline]
-    pub fn might_have_attribute_dependency_in_container(
+    pub fn might_have_attribute_dependency_in_container<E: TElement>(
         &self,
+        stylist: &Stylist,
+        element: E,
         local_name: &LocalName,
     ) -> ContainerAttributeDependencyKind {
-        self.container_attr_function_dependencies
+        let kind = self
+            .container_attr_function_dependencies
             .get(local_name)
             .copied()
-            .unwrap_or(ContainerAttributeDependencyKind::None)
-            .max(self.container_unparsed_attr_function_dependency)
+            .unwrap_or(ContainerAttributeDependencyKind::None);
+        if kind == ContainerAttributeDependencyKind::NamedContainer {
+            return kind;
+        }
+        kind.max(
+            self.might_have_unparsed_attr_dependency_in_container(stylist, element, local_name),
+        )
+    }
+
+    /// Returns whether the element was evaluated as a container by a query
+    /// condition that had an unparsed `attr()` function, and which might
+    /// depend on the given attribute. Since the specific condition that
+    /// was evaluated is not known, this evaluates and checks all conditions
+    /// with unparsed `attr()` functions.
+    fn might_have_unparsed_attr_dependency_in_container<E: TElement>(
+        &self,
+        stylist: &Stylist,
+        element: E,
+        local_name: &LocalName,
+    ) -> ContainerAttributeDependencyKind {
+        if self.container_unparsed_attr_conditions.is_empty()
+            || !element.has_selector_flags(ElementSelectorFlags::CONTAINER_QUERY_WITH_UNPARSED_ATTR)
+        {
+            return ContainerAttributeDependencyKind::None;
+        }
+        let mut result = ContainerAttributeDependencyKind::None;
+        for condition in self
+            .container_unparsed_attr_conditions
+            .iter()
+            .flat_map(|c| c.iter())
+        {
+            let kind = condition.evaluate_unparsed_attr_dependency(stylist, element, local_name);
+            if kind == ContainerAttributeDependencyKind::NamedContainer {
+                return kind;
+            }
+            result = result.max(kind);
+        }
+        result
     }
 
     /// Returns whether the given ID might appear in an ID selector in the
@@ -4433,15 +4468,17 @@ impl CascadeData {
                     containing_rule_state.container_condition_id = id;
 
                     if rebuild_kind.should_rebuild_invalidation() {
+                        let mut has_unparsed = false;
                         for condition in rule.conditions.0.iter() {
-                            let unparsed_dependency_kind = condition
-                                .insert_attribute_references_in_dependency_map(
-                                    &mut self.container_attr_function_dependencies,
-                                    &mut self.attribute_dependencies,
-                                );
-                            self.container_unparsed_attr_function_dependency = self
-                                .container_unparsed_attr_function_dependency
-                                .max(unparsed_dependency_kind);
+                            condition.insert_attribute_references_in_dependency_map(
+                                &mut self.container_attr_function_dependencies,
+                                &mut self.attribute_dependencies,
+                            );
+                            has_unparsed |= condition.has_unparsed_attr_references();
+                        }
+                        if has_unparsed {
+                            self.container_unparsed_attr_conditions
+                                .push(rule.conditions.0.clone());
                         }
                     }
                 },
@@ -4847,7 +4884,7 @@ impl CascadeData {
         self.additional_relative_selector_invalidation_map.clear();
         self.attribute_dependencies.clear();
         self.container_attr_function_dependencies.clear();
-        self.container_unparsed_attr_function_dependency = ContainerAttributeDependencyKind::None;
+        self.container_unparsed_attr_conditions.clear();
         self.nth_of_attribute_dependencies.clear();
         self.nth_of_custom_state_dependencies.clear();
         self.nth_of_class_dependencies.clear();

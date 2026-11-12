@@ -249,6 +249,10 @@ enum class NodeSelectorFlags : uint32_t {
   RelativeSelectorSearchDirectionAncestorSibling =
       RelativeSelectorSearchDirectionSibling |
       RelativeSelectorSearchDirectionAncestor,
+
+  // This node was evaluated as a container for a container query with attr()
+  // functions whose attribute names can't be known at parse time.
+  ContainerQueryWithUnparsedAttr = 1 << 11,
 };
 
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(NodeSelectorFlags);

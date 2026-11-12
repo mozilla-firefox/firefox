@@ -1,0 +1,70 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>
+  Test for bug 2087544: Container queries with attr() functions whose names
+  are only known at evaluation time don't invalidate on unrelated attributes
+</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<style>
+.target {
+  color: red;
+}
+@container style(--my-prop: attr(var(--name))) {
+  #unnamed > .target {
+    color: green;
+  }
+}
+@container outer style(--my-prop: attr(var(--name))) {
+  #named .target {
+    color: green;
+  }
+}
+.container {
+  --name: myattr;
+  --my-prop: "correct";
+}
+#named {
+  container-name: outer;
+}
+</style>
+<div id="unnamed" class="container" myattr="wrong">
+  <div class="target"></div>
+</div>
+<div id="named" class="container" myattr="wrong">
+  <div>
+    <div class="target"></div>
+  </div>
+</div>
+<script>
+SimpleTest.waitForExplicitFinish();
+const utils = SpecialPowers.getDOMWindowUtils(window);
+
+function assertRestyle(callback, expected, message) {
+  document.documentElement.offsetTop;
+  const generation = utils.restyleGeneration;
+  callback();
+  document.documentElement.offsetTop;
+  if (expected) {
+    isnot(utils.restyleGeneration, generation, message);
+  } else {
+    is(utils.restyleGeneration, generation, message);
+  }
+}
+
+for (const id of ["unnamed", "named"]) {
+  const container = document.getElementById(id);
+  const target = container.querySelector(".target");
+  is(getComputedStyle(target).color, "rgb(255, 0, 0)",
+     `${id}: Target initially doesn't match`);
+
+  assertRestyle(() => container.setAttribute("data-unrelated", "1"), false,
+                 `${id}: Unrelated attribute on the container shouldn't restyle`);
+
+  assertRestyle(() => container.setAttribute("myattr", "correct"), true,
+                 `${id}: Attribute named by var(--name) on the container should restyle`);
+  is(getComputedStyle(target).color, "rgb(0, 128, 0)",
+     `${id}: Target matches after attribute change`);
+}
+
+SimpleTest.finish();
+</script>
