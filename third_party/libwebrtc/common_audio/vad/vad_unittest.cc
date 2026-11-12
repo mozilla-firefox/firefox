@@ -19,39 +19,6 @@
 #include "rtc_base/checks.h"
 #include "test/gtest.h"
 
-VadTest::VadTest() {}
-
-void VadTest::SetUp() {}
-
-void VadTest::TearDown() {}
-
-// Returns true if the rate and frame length combination is valid.
-bool VadTest::ValidRatesAndFrameLengths(int rate, size_t frame_length) {
-  if (rate == 8000) {
-    if (frame_length == 80 || frame_length == 160 || frame_length == 240) {
-      return true;
-    }
-    return false;
-  } else if (rate == 16000) {
-    if (frame_length == 160 || frame_length == 320 || frame_length == 480) {
-      return true;
-    }
-    return false;
-  } else if (rate == 32000) {
-    if (frame_length == 320 || frame_length == 640 || frame_length == 960) {
-      return true;
-    }
-    return false;
-  } else if (rate == 48000) {
-    if (frame_length == 480 || frame_length == 960 || frame_length == 1440) {
-      return true;
-    }
-    return false;
-  }
-
-  return false;
-}
-
 namespace webrtc {
 namespace test {
 

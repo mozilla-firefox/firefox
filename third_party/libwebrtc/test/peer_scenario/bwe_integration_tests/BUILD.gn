@@ -9,71 +9,134 @@
 import("../../../webrtc.gni")
 
 if (rtc_include_tests) {
-  rtc_cc_test("bwe_integration_tests") {
+  rtc_library("stats_utilities") {
     testonly = true
-    sources = []
+    sources = [
+      "stats_utilities.cc",
+      "stats_utilities.h",
+    ]
+    deps = [
+      "..:peer_scenario",
+      "../../../api:make_ref_counted",
+      "../../../api:rtc_stats_api",
+      "../../../api:scoped_refptr",
+      "../../../api/units:data_rate",
+      "../../../api/units:time_delta",
+      "../../../api/units:timestamp",
+      "../../../pc:pc_test_utils",
+      "../../../rtc_base:checks",
+    ]
+  }
 
-    # TODO: bugs.webrtc.org / 447037083 - for some reason a "fake" hardware
-    # encoder / decoder is used on
-    # https://ci.chromium.org/ui/p/webrtc/builders/try/android_arm64_rel
-    # generic_decoder.cc: (line 306): Decoder implementation: DecoderInfo {
-    # prefers_late_decoding = implementation_name = 'fake_decoder',
-    # is_hardware_accelerated = true
-    # Figure out how to run libvpx instead.
-    if (rtc_enable_protobuf && !is_android) {
-      sources += [
-        "bwe_ramp_up_test.cc",
-        "l4s_test.cc",
-        "receive_side_bwe_test.cc",
-        "scream_test.cc",
-        "stats_utilities.cc",
-        "stats_utilities.h",
-      ]
-
+  if (rtc_enable_protobuf) {
+    rtc_cc_test("bwe_ramp_up_test") {
+      sources = [ "bwe_ramp_up_test.cc" ]
       deps = [
+        ":stats_utilities",
         "..:peer_scenario",
         "../..:create_frame_generator_capturer",
         "../..:test_support",
-        "../../../api:audio_options_api",
         "../../../api:jsep",
-        "../../../api:make_ref_counted",
-        "../../../api:network_emulation_manager_api",
-        "../../../api:peer_connection_interface",
-        "../../../api:rtc_error",
         "../../../api:rtc_stats_api",
         "../../../api:rtp_parameters",
         "../../../api:rtp_sender_interface",
         "../../../api:rtp_transceiver_direction",
-        "../../../api:rtp_transceiver_interface",
         "../../../api:scoped_refptr",
         "../../../api/test/network_emulation",
         "../../../api/test/network_emulation:network_config_schedule_proto",
         "../../../api/test/network_emulation:network_queue",
         "../../../api/test/network_emulation:schedulable_network_node_builder",
-        "../../../api/test/network_emulation:token_bucket_network_behavior_builder",
         "../../../api/transport:bitrate_settings",
+        "../../../api/units:data_rate",
+        "../../../api/units:time_delta",
+        "../../../modules/rtp_rtcp:rtp_rtcp_format",
+        "../../../pc:media_session",
+      ]
+    }
+
+    rtc_cc_test("l4s_test") {
+      sources = [ "l4s_test.cc" ]
+      deps = [
+        ":stats_utilities",
+        "..:peer_scenario",
+        "../..:create_frame_generator_capturer",
+        "../..:test_support",
+        "../../../api:audio_options_api",
+        "../../../api:jsep",
+        "../../../api:network_emulation_manager_api",
+        "../../../api:peer_connection_interface",
+        "../../../api:rtc_error",
+        "../../../api:rtc_stats_api",
+        "../../../api:rtp_parameters",
+        "../../../api:rtp_transceiver_direction",
+        "../../../api:rtp_transceiver_interface",
+        "../../../api:scoped_refptr",
+        "../../../api/test/network_emulation",
+        "../../../api/test/network_emulation:network_config_schedule_proto",
+        "../../../api/test/network_emulation:schedulable_network_node_builder",
         "../../../api/transport:ecn_marking",
         "../../../api/transport:stun_types",
         "../../../api/units:data_rate",
         "../../../api/units:data_size",
         "../../../api/units:time_delta",
         "../../../api/units:timestamp",
-        "../../../api/video:video_frame",
-        "../../../media:codec",
-        "../../../media:media_constants",
-        "../../../media:stream_params",
         "../../../modules/rtp_rtcp:rtp_rtcp_format",
-        "../../../pc:media_session",
-        "../../../pc:pc_test_utils",
-        "../../../pc:session_description",
         "../../../rtc_base:checks",
-        "../../../rtc_base:copy_on_write_buffer",
         "../../../rtc_base:logging",
         "../../../rtc_base:network_constants",
         "../../network:emulated_network",
-        "../../scenario",
-        "//third_party/abseil-cpp/absl/flags:flag",
         "//third_party/abseil-cpp/absl/strings",
+        "//third_party/abseil-cpp/absl/strings:string_view",
+      ]
+    }
+
+    rtc_cc_test("receive_side_bwe_test") {
+      sources = [ "receive_side_bwe_test.cc" ]
+      deps = [
+        ":stats_utilities",
+        "..:peer_scenario",
+        "../..:create_frame_generator_capturer",
+        "../..:test_support",
+        "../../../api:audio_options_api",
+        "../../../api:jsep",
+        "../../../api:network_emulation_manager_api",
+        "../../../api:rtc_stats_api",
+        "../../../api:rtp_parameters",
+        "../../../api:scoped_refptr",
+        "../../../api/units:data_rate",
+        "../../../api/units:time_delta",
+        "../../../api/units:timestamp",
+        "../../../media:codec",
+        "../../../media:media_constants",
+        "../../../pc:session_description",
+        "../../network:emulated_network",
+      ]
+    }
+
+    rtc_cc_test("scream_test") {
+      sources = [ "scream_test.cc" ]
+      deps = [
+        ":stats_utilities",
+        "..:peer_scenario",
+        "../..:create_frame_generator_capturer",
+        "../..:test_support",
+        "../../../api:audio_options_api",
+        "../../../api:network_emulation_manager_api",
+        "../../../api:rtc_stats_api",
+        "../../../api:rtp_parameters",
+        "../../../api:scoped_refptr",
+        "../../../api/test/network_emulation",
+        "../../../api/test/network_emulation:network_config_schedule_proto",
+        "../../../api/test/network_emulation:network_queue",
+        "../../../api/test/network_emulation:schedulable_network_node_builder",
+        "../../../api/test/network_emulation:token_bucket_network_behavior_builder",
+        "../../../api/units:data_rate",
+        "../../../api/units:data_size",
+        "../../../api/units:time_delta",
+        "../../../api/units:timestamp",
+        "../../../rtc_base:logging",
+        "../../network:emulated_network",
+        "//third_party/abseil-cpp/absl/flags:flag",
       ]
     }
   }

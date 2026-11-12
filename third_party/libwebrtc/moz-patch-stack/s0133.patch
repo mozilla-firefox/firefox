@@ -1,23 +1,142 @@
 From: Byron Campen <docfaraday@gmail.com>
-Date: Tue, 19 May 2026 16:37:00 -0500
-Subject: Bug 2040478 - (fix-de183fb028) Remove this include of override code
- that is gone. r?mjf
+Date: Mon, 25 May 2026 13:02:00 -0500
+Subject: Bug 2040478 - (fix-2d195343e6) Rename this to be more
+ self-explanatory, and convert one call. r?mjf
 
-It appears that this override code is no longer necessary.
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/dbd090975384251d83d3554677efcbb0e133feab
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/ba88bd50d70897cc160f211dacada95de026bc06
 ---
- call/call.h | 1 -
- 1 file changed, 1 deletion(-)
+ api/environment/environment_factory.cc            | 2 +-
+ common_video/include/bitrate_adjuster.h           | 2 +-
+ modules/desktop_capture/desktop_capture_options.h | 2 +-
+ modules/video_capture/video_capture_factory.cc    | 4 ++--
+ rtc_base/event_tracer.cc                          | 2 +-
+ rtc_base/task_utils/repeating_task.h              | 4 ++--
+ system_wrappers/include/clock.h                   | 5 ++++-
+ system_wrappers/source/clock.cc                   | 2 +-
+ 8 files changed, 13 insertions(+), 10 deletions(-)
 
-diff --git a/call/call.h b/call/call.h
-index 43051e68ae..3c77c69796 100644
---- a/call/call.h
-+++ b/call/call.h
-@@ -27,7 +27,6 @@
- #include "api/video/video_stream_encoder_settings.h"
- #include "call/audio_receive_stream.h"
- #include "call/audio_send_stream.h"
--#include "call/call_basic_stats.h"
- #include "call/call_config.h"
- #include "call/flexfec_receive_stream.h"
- #include "call/packet_receiver.h"
+diff --git a/api/environment/environment_factory.cc b/api/environment/environment_factory.cc
+index 72a0fdbbd3..62bbb01741 100644
+--- a/api/environment/environment_factory.cc
++++ b/api/environment/environment_factory.cc
+@@ -109,7 +109,7 @@ Environment EnvironmentFactory::CreateWithDefaults() && {
+     Set(std::make_unique<DeprecatedGlobalFieldTrials>());
+   }
+ #if defined(WEBRTC_MOZILLA_BUILD)
+-  // We want to use our clock, not GetRealTimeClockRaw, and we avoid
++  // We want to use our clock, not GetRealTimeClockOnlyUseForRelativeTime, and we avoid
+   // building the code under third_party/libwebrtc/task_queue.  To
+   // ensure we're setting up things correctly, namely providing an
+   // Environment object with a preset task_queue_factory and clock,
+diff --git a/common_video/include/bitrate_adjuster.h b/common_video/include/bitrate_adjuster.h
+index d414fb7e25..4aeb6e2593 100644
+--- a/common_video/include/bitrate_adjuster.h
++++ b/common_video/include/bitrate_adjuster.h
+@@ -40,7 +40,7 @@ class RTC_EXPORT BitrateAdjuster {
+   ABSL_DEPRECATE_AND_INLINE()
+   BitrateAdjuster(float min_adjusted_bitrate_pct,
+                   float max_adjusted_bitrate_pct)
+-      : BitrateAdjuster(Clock::GetRealTimeClockRaw(),
++      : BitrateAdjuster(Clock::GetRealTimeClockOnlyUseForRelativeTime(),
+                         min_adjusted_bitrate_pct,
+                         max_adjusted_bitrate_pct) {}
+   virtual ~BitrateAdjuster() = default;
+diff --git a/modules/desktop_capture/desktop_capture_options.h b/modules/desktop_capture/desktop_capture_options.h
+index ce3c2416ef..4d0c364cb0 100644
+--- a/modules/desktop_capture/desktop_capture_options.h
++++ b/modules/desktop_capture/desktop_capture_options.h
+@@ -57,7 +57,7 @@ class RTC_EXPORT DesktopCaptureOptions {
+   DesktopCaptureOptions& operator=(DesktopCaptureOptions&& options);
+ 
+   Clock& clock() const {
+-    return env_.has_value() ? env_->clock() : *Clock::GetRealTimeClock();
++    return env_.has_value() ? env_->clock() : *Clock::GetRealTimeClockOnlyUseForRelativeTime();
+   }
+ 
+ #if defined(WEBRTC_USE_X11)
+diff --git a/modules/video_capture/video_capture_factory.cc b/modules/video_capture/video_capture_factory.cc
+index 98e5e5e298..f9863069be 100644
+--- a/modules/video_capture/video_capture_factory.cc
++++ b/modules/video_capture/video_capture_factory.cc
+@@ -20,7 +20,7 @@ namespace webrtc {
+ scoped_refptr<VideoCaptureModule> VideoCaptureFactory::Create(
+     [[maybe_unused]] const char* deviceUniqueIdUTF8) {
+   return videocapturemodule::VideoCaptureImpl::Create(
+-      Clock::GetRealTimeClockRaw(), deviceUniqueIdUTF8);
++      Clock::GetRealTimeClockOnlyUseForRelativeTime(), deviceUniqueIdUTF8);
+ }
+ 
+ scoped_refptr<VideoCaptureModule> VideoCaptureFactory::Create(
+@@ -32,7 +32,7 @@ scoped_refptr<VideoCaptureModule> VideoCaptureFactory::Create(
+   return nullptr;
+ #else
+   return videocapturemodule::VideoCaptureImpl::Create(
+-      Clock::GetRealTimeClockRaw(), options, deviceUniqueIdUTF8);
++      Clock::GetRealTimeClockOnlyUseForRelativeTime(), options, deviceUniqueIdUTF8);
+ #endif
+ }
+ 
+diff --git a/rtc_base/event_tracer.cc b/rtc_base/event_tracer.cc
+index d407d2016f..07e12fb609 100644
+--- a/rtc_base/event_tracer.cc
++++ b/rtc_base/event_tracer.cc
+@@ -121,7 +121,7 @@ class EventLogger final {
+  public:
+   explicit EventLogger(std::optional<Environment> env)
+       : env_(env),
+-        clock_(env.has_value() ? env->clock() : *Clock::GetRealTimeClockRaw()) {}
++        clock_(env.has_value() ? env->clock() : *Clock::GetRealTimeClockOnlyUseForRelativeTime()) {}
+   ~EventLogger() { RTC_DCHECK(thread_checker_.IsCurrent()); }
+ 
+   void AddTraceEvent(const char* name,
+diff --git a/rtc_base/task_utils/repeating_task.h b/rtc_base/task_utils/repeating_task.h
+index d9536b71be..3604f470e3 100644
+--- a/rtc_base/task_utils/repeating_task.h
++++ b/rtc_base/task_utils/repeating_task.h
+@@ -57,7 +57,7 @@ class RepeatingTaskHandle {
+       absl::AnyInvocable<TimeDelta()> closure,
+       TaskQueueBase::DelayPrecision precision =
+           TaskQueueBase::DelayPrecision::kLow,
+-      Clock* clock = Clock::GetRealTimeClockRaw(),
++      Clock* clock = Clock::GetRealTimeClockOnlyUseForRelativeTime(),
+       const Location& location = Location::Current());
+ 
+   // DelayedStart is equivalent to Start except that the first invocation of the
+@@ -68,7 +68,7 @@ class RepeatingTaskHandle {
+       absl::AnyInvocable<TimeDelta()> closure,
+       TaskQueueBase::DelayPrecision precision =
+           TaskQueueBase::DelayPrecision::kLow,
+-      Clock* clock = Clock::GetRealTimeClockRaw(),
++      Clock* clock = Clock::GetRealTimeClockOnlyUseForRelativeTime(),
+       const Location& location = Location::Current());
+ 
+   // Stops future invocations of the repeating task closure. Can only be called
+diff --git a/system_wrappers/include/clock.h b/system_wrappers/include/clock.h
+index fd367cb238..7c90663d72 100644
+--- a/system_wrappers/include/clock.h
++++ b/system_wrappers/include/clock.h
+@@ -67,7 +67,10 @@ class RTC_EXPORT Clock {
+   }
+ 
+   // Returns an instance of the real-time system clock implementation.
+-  static Clock* absl_nonnull GetRealTimeClockRaw();
++  // (MOZ): We have renamed this from GetRealTimeClock in order to detect new
++  // uses of this API within libwebrtc, so we can determine whether we
++  // can/should inject our own clock.
++  static Clock* absl_nonnull GetRealTimeClockOnlyUseForRelativeTime();
+ };
+ 
+ class SimulatedClock : public Clock {
+diff --git a/system_wrappers/source/clock.cc b/system_wrappers/source/clock.cc
+index ec66661fa3..0cf39a75ec 100644
+--- a/system_wrappers/source/clock.cc
++++ b/system_wrappers/source/clock.cc
+@@ -63,7 +63,7 @@ class RealTimeClock : public Clock {
+   }
+ };
+ 
+-Clock* absl_nonnull Clock::GetRealTimeClockRaw() {
++Clock* absl_nonnull Clock::GetRealTimeClockOnlyUseForRelativeTime() {
+   static Clock* const clock = new RealTimeClock();
+   return clock;
+ }

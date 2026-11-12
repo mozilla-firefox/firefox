@@ -3345,6 +3345,27 @@ TEST_P(WebRtcVoiceEngineTestFake, SetsSyncGroupFromStreamId) {
       << "SyncGroup should be set based on stream id";
 }
 
+// Enabling Sframe before a send stream is added is propagated to the stream
+// config at construction.
+TEST_P(WebRtcVoiceEngineTestFake, EnableSframePropagatesToSendStreamConfig) {
+  ASSERT_TRUE(SetupChannel());
+  send_channel_->EnableSframe();
+
+  ASSERT_TRUE(send_channel_->AddSendStream(StreamParams::CreateLegacy(kSsrcX)));
+
+  EXPECT_TRUE(GetSendStreamConfig(kSsrcX).sframe_options.required);
+}
+
+// Enabling Sframe on an existing send stream reconfigures it in place.
+TEST_P(WebRtcVoiceEngineTestFake, EnableSframeReconfiguresExistingSendStream) {
+  ASSERT_TRUE(SetupSendStream());
+  ASSERT_FALSE(GetSendStreamConfig(kSsrcX).sframe_options.required);
+
+  send_channel_->EnableSframe();
+
+  EXPECT_TRUE(GetSendStreamConfig(kSsrcX).sframe_options.required);
+}
+
 // TODO(solenberg): Remove, once recv streams are configured through Call.
 //                  (This is then covered by TestSetRecvRtpHeaderExtensions.)
 TEST_P(WebRtcVoiceEngineTestFake, ConfiguresAudioReceiveStreamRtpExtensions) {
@@ -3400,12 +3421,12 @@ TEST_P(WebRtcVoiceEngineTestFake, ConfiguresAudioReceiveStreamRtpExtensions) {
 TEST_P(WebRtcVoiceEngineTestFake, DeliverAudioPacket_Call) {
   // Test that packets are forwarded to the Call when configured accordingly.
   const uint32_t kAudioSsrc = 1;
-  CopyOnWriteBuffer kPcmuPacket(kPcmuFrame, sizeof(kPcmuFrame));
+  CopyOnWriteBuffer kPcmuPacket(kPcmuFrame);
   static const uint8_t kRtcp[] = {
       0x80, 0xc9, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00,
       0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-  CopyOnWriteBuffer kRtcpPacket(kRtcp, sizeof(kRtcp));
+  CopyOnWriteBuffer kRtcpPacket(kRtcp);
 
   EXPECT_TRUE(SetupSendStream());
   VoiceMediaReceiveChannelInterface* media_channel = ReceiveImpl();

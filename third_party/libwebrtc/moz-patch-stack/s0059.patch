@@ -9,10 +9,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/5b2a7894ef1cf096d
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 46cc5f5a46..68eb06e3c7 100644
+index 5537232c2f..a99de25ff9 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
-@@ -1002,6 +1002,12 @@ void RtpVideoStreamReceiver2::OnRtpPacket(const RtpPacketReceived& packet) {
+@@ -1004,6 +1004,12 @@ void RtpVideoStreamReceiver2::OnRtpPacket(const RtpPacketReceived& packet) {
  
  void RtpVideoStreamReceiver2::RequestKeyFrame() {
    RTC_DCHECK_RUN_ON(worker_queue_);
@@ -25,7 +25,7 @@ index 46cc5f5a46..68eb06e3c7 100644
    // TODO(bugs.webrtc.org/10336): Allow the sender to ignore key frame requests
    // issued by anything other than the LossNotificationController if it (the
    // sender) is relying on LNTF alone.
-@@ -1360,7 +1366,7 @@ std::optional<int64_t> RtpVideoStreamReceiver2::LastReceivedKeyframePacketMs()
+@@ -1363,7 +1369,7 @@ std::optional<int64_t> RtpVideoStreamReceiver2::LastReceivedKeyframePacketMs()
  void RtpVideoStreamReceiver2::RemoteRTCPSenderInfo(
      uint32_t* packet_count, uint32_t* octet_count,
      int64_t* ntp_timestamp_ms, int64_t* remote_ntp_timestamp_ms) const {

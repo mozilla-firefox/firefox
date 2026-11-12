@@ -113,8 +113,8 @@ class CountingNativeBuffer : public VideoFrameBuffer {
       : buffer_(buffer) {}
 
   Type type() const override { return Type::kNative; }
-  int width() const override { return buffer_->width(); }
-  int height() const override { return buffer_->height(); }
+  int width() const override { return buffer_ ? buffer_->width() : 4; }
+  int height() const override { return buffer_ ? buffer_->height() : 4; }
 
   scoped_refptr<I420BufferInterface> ToI420() override {
     ++to_i420_calls_;
@@ -421,6 +421,15 @@ TEST(VideoFrameSampler, DoesNotConvertNV12Buffer) {
   EXPECT_EQ(buffer->to_i420_calls(), 0);
   EXPECT_EQ(sampler->GetSampleValue(VideoFrameSampler::ChannelType::Y, 0, 0),
             1);
+}
+
+TEST(VideoFrameSampler, ReturnsNullptrWhenToI420ForInspectionFails) {
+  auto buffer = make_ref_counted<CountingNativeBuffer>(nullptr);
+  VideoFrame frame =
+      VideoFrame::Builder().set_video_frame_buffer(buffer).build();
+
+  EXPECT_EQ(VideoFrameSampler::Create(frame), nullptr);
+  EXPECT_EQ(buffer->to_i420_for_inspection_calls(), 1);
 }
 
 #if GTEST_HAS_DEATH_TEST

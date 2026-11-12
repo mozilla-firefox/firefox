@@ -27,6 +27,7 @@
 #include "rtc_base/crypto_random.h"
 #include "rtc_base/net_helper.h"
 #include "rtc_base/socket_address.h"
+#include "rtc_base/task_queue_for_test.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 
@@ -383,6 +384,28 @@ TEST_F(JsepSessionDescriptionTest, SerializeDeserializeWithCandidates) {
   EXPECT_EQ(sdp_with_candidate, parsed_sdp_with_candidate);
 }
 
+// Tests that a parsed description, with or without candidates, can be used on
+// another thread than the one that parsed it. E.g. Chromium parses SDP on the
+// main thread and then clones the description on the signaling thread.
+TEST_F(JsepSessionDescriptionTest, CloneOnAnotherThreadAfterDeserialize) {
+  std::unique_ptr<SessionDescriptionInterface> without_candidates =
+      DeSerialize(Serialize(jsep_desc_.get()));
+  IceCandidate jsep_candidate(kAudioMid, 0, candidate_);
+  ASSERT_TRUE(jsep_desc_->AddCandidate(&jsep_candidate));
+  std::unique_ptr<SessionDescriptionInterface> with_candidates =
+      DeSerialize(Serialize(jsep_desc_.get()));
+  ASSERT_THAT(without_candidates, NotNull());
+  ASSERT_THAT(with_candidates, NotNull());
+
+  TaskQueueForTest queue;
+  queue.SendTask([&] {
+    EXPECT_EQ(Serialize(without_candidates->Clone().get()),
+              Serialize(without_candidates.get()));
+    EXPECT_EQ(Serialize(with_candidates->Clone().get()),
+              Serialize(with_candidates.get()));
+  });
+}
+
 // TODO(zhihuang): Modify these tests. These are used to verify that after
 // adding the candidates, the connection_address field is set correctly. Modify
 // those so that the "connection address" is tested directly.
@@ -542,6 +565,37 @@ TEST_F(JsepSessionDescriptionTest, RemoveCandidateAndSetConnectionAddress) {
 
   ASSERT_TRUE(jsep_desc_->RemoveCandidate(&jice1));
   EXPECT_EQ("0.0.0.0:9", media_desc->connection_address().ToString());
+}
+
+// Tests that candidates passed to Create() update the connection address of
+// their media section the same way AddCandidate() does, and that media
+// sections without candidates keep their connection address.
+TEST_F(JsepSessionDescriptionTest,
+       CreateWithCandidatesUpdatesConnectionAddress) {
+  Candidate candidate(ICE_CANDIDATE_COMPONENT_RTP, "udp",
+                      SocketAddress("192.168.1.5", 1234), kCandidatePriority,
+                      "", "", IceCandidateType::kHost, kCandidateGeneration,
+                      kCandidateFoundation);
+  std::vector<IceCandidateCollection> candidates(2);
+  candidates[0].add(std::make_unique<IceCandidate>(kAudioMid, 0, candidate));
+
+  std::unique_ptr<SessionDescription> desc = CreateCricketSessionDescription();
+  const SocketAddress video_address("10.0.0.1", 5678);
+  desc->contents()[1].media_description()->set_connection_address(
+      video_address);
+  std::unique_ptr<SessionDescriptionInterface> jsep_desc =
+      SessionDescriptionInterface::Create(SdpType::kOffer, std::move(desc),
+                                          "id", "version",
+                                          std::move(candidates));
+  ASSERT_THAT(jsep_desc, NotNull());
+  ASSERT_EQ(jsep_desc->number_of_mediasections(), 2u);
+  EXPECT_EQ(jsep_desc->candidates(0)->count(), 1u);
+  EXPECT_EQ(jsep_desc->candidates(1)->count(), 0u);
+  const ContentInfos& contents = jsep_desc->description()->contents();
+  EXPECT_EQ(contents[0].media_description()->connection_address().ToString(),
+            "192.168.1.5:1234");
+  EXPECT_EQ(contents[1].media_description()->connection_address(),
+            video_address);
 }
 
 class EnumerateAllSdpTypesTest : public ::testing::Test,

@@ -124,20 +124,32 @@ std::unique_ptr<VideoFrameSampler> VideoFrameSampler::Create(
   }
   switch (frame.video_frame_buffer()->type()) {
     case VideoFrameBuffer::Type::kNV12: {
-      return std::make_unique<NV12FrameSampler>(
-          scoped_refptr<const NV12BufferInterface>(
-              frame.video_frame_buffer()->GetNV12()));
+      scoped_refptr<const NV12BufferInterface> buffer(
+          frame.video_frame_buffer()->GetNV12());
+      if (buffer == nullptr) {
+        return nullptr;
+      }
+      return std::make_unique<NV12FrameSampler>(std::move(buffer));
     }
     case VideoFrameBuffer::Type::kI420:
-    case VideoFrameBuffer::Type::kI420A:
+    case VideoFrameBuffer::Type::kI420A: {
       // Native I420 and I420A are used directly (Alpha channel ignored).
-      return std::make_unique<I420FrameSampler>(
-          scoped_refptr<const I420BufferInterface>(
-              frame.video_frame_buffer()->GetI420()));
-    default:
+      scoped_refptr<const I420BufferInterface> buffer(
+          frame.video_frame_buffer()->GetI420());
+      if (buffer == nullptr) {
+        return nullptr;
+      }
+      return std::make_unique<I420FrameSampler>(std::move(buffer));
+    }
+    default: {
       // Conversion and copy to I420 from some other format.
-      return std::make_unique<I420FrameSampler>(
-          frame.video_frame_buffer()->ToI420ForInspection());
+      scoped_refptr<const I420BufferInterface> buffer =
+          frame.video_frame_buffer()->ToI420ForInspection();
+      if (buffer == nullptr) {
+        return nullptr;
+      }
+      return std::make_unique<I420FrameSampler>(std::move(buffer));
+    }
   }
 }
 

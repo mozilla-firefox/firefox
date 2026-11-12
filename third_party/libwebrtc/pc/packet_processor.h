@@ -14,6 +14,7 @@
 #include <optional>
 #include <span>
 
+#include "api/transport/ecn_marking.h"
 #include "api/units/timestamp.h"
 #include "rtc_base/copy_on_write_buffer.h"
 
@@ -52,7 +53,8 @@ class PacketProcessor {
   // bytes).
   virtual std::optional<CopyOnWriteBuffer> ProcessIncomingPacket(
       CopyOnWriteBuffer packet,
-      Timestamp receive_time) = 0;
+      Timestamp receive_time,
+      EcnMarking ecn) = 0;
 };
 
 }  // namespace webrtc

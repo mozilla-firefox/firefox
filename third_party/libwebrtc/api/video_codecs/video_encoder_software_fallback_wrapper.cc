@@ -15,6 +15,7 @@
 #include <memory>
 #include <numeric>
 #include <optional>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -171,6 +172,10 @@ class VideoEncoderSoftwareFallbackWrapper final : public VideoEncoder {
 
   void SetRates(const RateControlParameters& parameters) override;
 
+  void SetComplexity(
+      std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+      ComplexityControlMode complexity_control_mode) override;
+
   EncoderInfo GetEncoderInfo() const override;
 
  private:
@@ -210,6 +215,9 @@ class VideoEncoderSoftwareFallbackWrapper final : public VideoEncoder {
   std::optional<float> packet_loss_;
   std::optional<int64_t> rtt_;
   std::optional<LossNotification> loss_notification_;
+  std::optional<std::vector<VideoCodecComplexity>> complexity_by_spatial_layer_;
+  ComplexityControlMode complexity_control_mode_ =
+      ComplexityControlMode::kConstant;
 
   enum class EncoderState {
     kUninitialized,
@@ -266,6 +274,10 @@ void VideoEncoderSoftwareFallbackWrapper::PrimeEncoder(
 
   if (loss_notification_.has_value()) {
     encoder->OnLossNotification(loss_notification_.value());
+  }
+  if (complexity_by_spatial_layer_.has_value()) {
+    encoder->SetComplexity(*complexity_by_spatial_layer_,
+                           complexity_control_mode_);
   }
 }
 
@@ -437,6 +449,16 @@ void VideoEncoderSoftwareFallbackWrapper::SetRates(
     const RateControlParameters& parameters) {
   rate_control_parameters_ = parameters;
   return current_encoder()->SetRates(parameters);
+}
+
+void VideoEncoderSoftwareFallbackWrapper::SetComplexity(
+    std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+    ComplexityControlMode complexity_control_mode) {
+  complexity_by_spatial_layer_.emplace(complexity_by_spatial_layer.begin(),
+                                       complexity_by_spatial_layer.end());
+  complexity_control_mode_ = complexity_control_mode;
+  current_encoder()->SetComplexity(complexity_by_spatial_layer,
+                                   complexity_control_mode);
 }
 
 void VideoEncoderSoftwareFallbackWrapper::OnPacketLossRateUpdate(

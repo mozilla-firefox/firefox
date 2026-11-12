@@ -1,23 +1,23 @@
 From: Michael Froman <mfroman@mozilla.com>
-Date: Mon, 6 Apr 2026 14:37:00 -0500
-Subject: Bug 2029247 - (fix-0fc5aeecfb) base-toolchains build fix
+Date: Mon, 6 Apr 2026 18:41:00 -0500
+Subject: Bug 2029247 - (fix-4520c7897c) fix new usage of GetRealTimeClock in
+ bitrate_adjuster.h
 
-Upstream was assigning a -2 to a uint16_t.
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/f5dfd2e6901c9d79ee528bf3801ded81b6dd65c9
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/a88b1959591bc4ddbf6deb88ff76dcc24fd8ae5d
 ---
- rtc_base/network_constants.h | 2 +-
+ common_video/include/bitrate_adjuster.h | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/rtc_base/network_constants.h b/rtc_base/network_constants.h
-index 0b7ae9d567..8df31b683b 100644
---- a/rtc_base/network_constants.h
-+++ b/rtc_base/network_constants.h
-@@ -40,7 +40,7 @@ constexpr uint16_t kNetworkCostVpn = 1;
- 
- // Add -2 to the network cost when using network slicing so that e.g. premium 5G
- // slice is preferred over regular 5G, everything else being equal.
--constexpr uint16_t kNetworkCostSlice = -2;
-+constexpr int16_t kNetworkCostSlice = -2;
- 
- // Aliases for correct wrap-around with network slice cost.
- constexpr uint16_t kNetworkCostCellular5GSlice =  // 248
+diff --git a/common_video/include/bitrate_adjuster.h b/common_video/include/bitrate_adjuster.h
+index 6cd92b7deb..d414fb7e25 100644
+--- a/common_video/include/bitrate_adjuster.h
++++ b/common_video/include/bitrate_adjuster.h
+@@ -40,7 +40,7 @@ class RTC_EXPORT BitrateAdjuster {
+   ABSL_DEPRECATE_AND_INLINE()
+   BitrateAdjuster(float min_adjusted_bitrate_pct,
+                   float max_adjusted_bitrate_pct)
+-      : BitrateAdjuster(Clock::GetRealTimeClock(),
++      : BitrateAdjuster(Clock::GetRealTimeClockRaw(),
+                         min_adjusted_bitrate_pct,
+                         max_adjusted_bitrate_pct) {}
+   virtual ~BitrateAdjuster() = default;

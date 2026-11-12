@@ -89,6 +89,7 @@
 #include "pc/video_rtp_receiver.h"
 #include "pc/video_track.h"
 #include "rtc_base/checks.h"  // IWYU pragma: keep
+#include "rtc_base/task_queue_for_test.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/unique_id_generator.h"
 #include "test/create_test_environment.h"
@@ -671,6 +672,21 @@ class RtpSenderReceiverTest
                size_t layer_count = 1) {
     ScopedOperationsBatcher worker_tasks(worker_thread_.get());
     worker_tasks.AddWithFinalizer(sender.SetSsrcTask(ssrc, layer_count));
+  }
+
+  // Expects `sender` to return the parameters that `media_channel` reports for
+  // `ssrc`, from its cache, i.e. without a blocking call.
+  void ExpectParametersFromCache(const RtpSenderInternal& sender,
+                                 MediaSendChannelInterface* media_channel,
+                                 uint32_t ssrc) {
+    RtpParameters parameters;
+    {
+      RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
+      parameters = sender.GetParametersInternal(/*with_all_layers=*/false);
+    }
+    EXPECT_EQ(parameters, worker_thread_->BlockingCall([&] {
+      return media_channel->GetRtpSendParameters(ssrc);
+    }));
   }
 
   test::RunLoop run_loop_;
@@ -2125,6 +2141,132 @@ TEST_F(RtpSenderReceiverTest,
   DestroyVideoRtpSender();
 }
 
+// The parameters that are read back after SetParametersAsync() has applied
+// them, are used to populate the cache.
+TEST_F(RtpSenderReceiverTest, SetParametersAsyncPopulatesCachedParameters) {
+  CreateVideoRtpSender();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(1u, params.encodings.size());
+  params.encodings[0].max_bitrate_bps = 100000;
+  std::optional<RTCError> result;
+  video_rtp_sender_->SetParametersAsync(params, [&](RTCError error) {
+    result = std::move(error);
+    run_loop_.Quit();
+  });
+  run_loop_.Run();
+  ASSERT_TRUE(result.has_value());
+  EXPECT_TRUE(result->ok());
+
+  RtpParameters cached_params;
+  {
+    // The parameters must be served from the cache.
+    RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
+    cached_params = video_rtp_sender_->GetParametersInternal();
+  }
+  ASSERT_EQ(1u, cached_params.encodings.size());
+  EXPECT_EQ(cached_params.encodings[0].max_bitrate_bps, 100000);
+
+  DestroyVideoRtpSender();
+}
+
+// The completion of SetParametersAsync() must not overwrite the cache with
+// parameters that are older than the parameters of the media channel. Here the
+// parameters are set again with a blocking call before the completion has run.
+TEST_F(RtpSenderReceiverTest,
+       SetParametersAsyncCompletionDoesNotOverwriteNewerParameters) {
+  CreateVideoRtpSender();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(1u, params.encodings.size());
+  params.encodings[0].max_bitrate_bps = 100000;
+  std::optional<RTCError> async_result;
+  video_rtp_sender_->SetParametersAsync(
+      params, [&](RTCError error) { async_result = std::move(error); });
+
+  // The worker thread applies the asynchronous operation before this one, but
+  // the completion of the asynchronous operation runs on this thread after
+  // this call returns.
+  params.encodings[0].max_bitrate_bps = 200000;
+  EXPECT_TRUE(video_rtp_sender_->SetParameters(params).ok());
+
+  FlushWorker();
+  ASSERT_TRUE(async_result.has_value());
+  EXPECT_TRUE(async_result->ok());
+
+  RtpParameters channel_params = worker_thread_->BlockingCall([&] {
+    return video_media_send_channel()->GetRtpSendParameters(kVideoSsrc);
+  });
+  ASSERT_EQ(1u, channel_params.encodings.size());
+  EXPECT_EQ(channel_params.encodings[0].max_bitrate_bps, 200000);
+  EXPECT_EQ(video_rtp_sender_->GetParametersInternal(), channel_params);
+  EXPECT_EQ(video_rtp_sender_->GetParameters(), channel_params);
+
+  DestroyVideoRtpSender();
+}
+
+// The completion of SetParametersAsync() must not populate the cache with the
+// parameters of the send stream that the sender was attached to when the
+// operation was started, if the sender has been attached to a different send
+// stream since.
+TEST_F(RtpSenderReceiverTest, SetParametersAsyncCompletionAfterSsrcChange) {
+  CreateVideoRtpSender();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(1u, params.encodings.size());
+  params.encodings[0].max_bitrate_bps = 100000;
+  std::optional<RTCError> async_result;
+  video_rtp_sender_->SetParametersAsync(
+      params, [&](RTCError error) { async_result = std::move(error); });
+
+  SetSsrc(kVideoSsrc2, *video_rtp_sender_);
+
+  FlushWorker();
+  ASSERT_TRUE(async_result.has_value());
+  EXPECT_TRUE(async_result->ok());
+
+  RtpParameters channel_params = worker_thread_->BlockingCall([&] {
+    return video_media_send_channel()->GetRtpSendParameters(kVideoSsrc2);
+  });
+  ASSERT_EQ(1u, channel_params.encodings.size());
+  EXPECT_EQ(channel_params.encodings[0].ssrc, kVideoSsrc2);
+  EXPECT_EQ(video_rtp_sender_->GetParametersInternal(), channel_params);
+  EXPECT_EQ(video_rtp_sender_->GetParameters(), channel_params);
+
+  DestroyVideoRtpSender();
+}
+
+// The parameters are read back when the sender is attached to a send stream,
+// also when there are no init parameters to apply.
+TEST_F(RtpSenderReceiverTest, SetSsrcPopulatesCachedParameters) {
+  CreateVideoRtpSender();
+  // The init parameters were applied to `kVideoSsrc`.
+  SetSsrc(kVideoSsrc2, *video_rtp_sender_);
+  ExpectParametersFromCache(*video_rtp_sender_, video_media_send_channel(),
+                            kVideoSsrc2);
+  DestroyVideoRtpSender();
+}
+
+// The parameters are read back after SetVideoSend(), which can change them.
+TEST_F(RtpSenderReceiverTest,
+       VideoSenderContentHintChangePopulatesCachedParameters) {
+  CreateVideoRtpSender();
+  video_track_->set_content_hint(VideoTrackInterface::ContentHint::kDetailed);
+  ExpectParametersFromCache(*video_rtp_sender_, video_media_send_channel(),
+                            kVideoSsrc);
+  DestroyVideoRtpSender();
+}
+
+// The parameters are read back after SetAudioSend().
+TEST_F(RtpSenderReceiverTest,
+       AudioSenderTrackEnabledChangePopulatesCachedParameters) {
+  CreateAudioRtpSender();
+  audio_track_->set_enabled(false);
+  ExpectParametersFromCache(*audio_rtp_sender_, voice_media_send_channel(),
+                            kAudioSsrc);
+  DestroyAudioRtpSender();
+}
+
 TEST_F(RtpSenderReceiverTest, VideoSenderDetectTransactionIdModification) {
   CreateVideoRtpSender();
 
@@ -2893,12 +3035,8 @@ TEST_F(RtpSenderReceiverTest, SetSsrcPropagatesSframeEncryptor) {
             options.mode);
 }
 
-// The application installs keys from its own thread while the media pipeline
-// encrypts on the worker thread. Both have to reach the same encryptor on the
-// same sequence, which is what the returned proxy takes care of: encryption
-// only succeeds if the key set through the handle landed in the object the
-// media channel was given.
-TEST_F(RtpSenderReceiverTest, SframeEncryptorHandleMarshalsToWorkerThread) {
+TEST_F(RtpSenderReceiverTest,
+       SframeEncryptorHandleSharesContextWithMediaThreads) {
   auto mock_channel = std::make_unique<MockVideoMediaSendChannel>(
       VideoOptions(), network_thread_.get());
   MockVideoMediaSendChannel* mock_channel_ptr = mock_channel.get();
@@ -2928,6 +3066,12 @@ TEST_F(RtpSenderReceiverTest, SframeEncryptorHandleMarshalsToWorkerThread) {
                     ->Encrypt(frame, /*additional_data=*/{},
                               std::span<uint8_t>(encrypted_frame))
                     .ok());
+  });
+  // Video frames are encrypted on the encoder or frame transformer queue, which
+  // is neither the signaling nor the worker thread.
+  TaskQueueForTest encoder_queue("EncoderQueue");
+  encoder_queue.SendTask([&] {
+    EXPECT_TRUE(encryptor->Encrypt(frame, {}, encrypted_frame).ok());
   });
 }
 

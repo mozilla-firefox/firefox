@@ -12,7 +12,9 @@
 #define MODULES_DESKTOP_CAPTURE_FALLBACK_DESKTOP_CAPTURER_WRAPPER_H_
 
 #include <memory>
+#include <string>
 
+#include "absl/strings/string_view.h"
 #include "modules/desktop_capture/desktop_capture_types.h"
 #include "modules/desktop_capture/desktop_capturer.h"
 #include "modules/desktop_capture/desktop_frame.h"
@@ -31,9 +33,25 @@ namespace webrtc {
 class FallbackDesktopCapturerWrapper final : public DesktopCapturer,
                                              public DesktopCapturer::Callback {
  public:
+  // Combined SelectSource() results of the main and secondary capturers. The
+  // main capturer counts as failed if it failed in this call or permanently
+  // failed earlier. These values are persisted to logs. Entries should not be
+  // renumbered and numeric values should never be reused.
+  enum class SelectSourceResult {
+    kMainSucceededSecondarySucceeded = 0,
+    kMainSucceededSecondaryFailed = 1,
+    kMainFailedSecondarySucceeded = 2,
+    kMainFailedSecondaryFailed = 3,
+    kMaxValue = kMainFailedSecondaryFailed,
+  };
+
+  // If `select_source_histogram` is non-empty, it must be a valid histogram
+  // name, and every SelectSource() call records a SelectSourceResult to it. An
+  // empty name disables logging.
   FallbackDesktopCapturerWrapper(
       std::unique_ptr<DesktopCapturer> main_capturer,
-      std::unique_ptr<DesktopCapturer> secondary_capturer);
+      std::unique_ptr<DesktopCapturer> secondary_capturer,
+      absl::string_view select_source_histogram = "");
   ~FallbackDesktopCapturerWrapper() override;
 
   // DesktopCapturer interface.
@@ -54,6 +72,7 @@ class FallbackDesktopCapturerWrapper final : public DesktopCapturer,
 
   const std::unique_ptr<DesktopCapturer> main_capturer_;
   const std::unique_ptr<DesktopCapturer> secondary_capturer_;
+  const std::string select_source_histogram_;
   std::unique_ptr<SharedMemoryFactory> shared_memory_factory_;
   bool main_capturer_permanent_error_ = false;
   DesktopCapturer::Callback* callback_ = nullptr;

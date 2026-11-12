@@ -32,7 +32,6 @@
 #include "p2p/base/p2p_transport_channel_ice_field_trials.h"
 #include "p2p/base/transport_description.h"
 #include "rtc_base/network.h"
-#include "rtc_base/network_constants.h"
 
 namespace webrtc {
 
@@ -118,10 +117,8 @@ class BasicIceController : public IceControllerInterface {
   bool ReadyToSend(const Connection* connection) const;
   bool PresumedWritable(const Connection* conn) const;
 
-  int CompareCandidatePairNetworks(
-      const Connection* a,
-      const Connection* b,
-      std::optional<AdapterType> network_preference) const;
+  int CompareCandidatePairNetworks(const Connection* a,
+                                   const Connection* b) const;
 
   // The methods below return a positive value if `a` is preferable to `b`,
   // a negative value if `b` is preferable, and 0 if they're equally preferable.
@@ -147,8 +144,7 @@ class BasicIceController : public IceControllerInterface {
                          std::optional<int64_t> receiving_unchanged_threshold,
                          bool* missed_receiving_unchanged_threshold) const;
 
-  SwitchResult HandleInitialSelectDampening(IceSwitchReason reason,
-                                            const Connection* new_connection);
+  SwitchResult HandleInitialSelectDampening(const Connection* new_connection);
 
   const Environment env_;
   std::function<IceTransportStateInternal()> ice_transport_state_func_;

@@ -19,10 +19,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/58f47eacaf10d12e2
  10 files changed, 24 insertions(+), 24 deletions(-)
 
 diff --git a/BUILD.gn b/BUILD.gn
-index c80e9e69d9..37a3e594c9 100644
+index ab3c8c952f..8a966e1a23 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -463,12 +463,12 @@ config("common_config") {
+@@ -464,12 +464,12 @@ config("common_config") {
      }
    }
  
@@ -37,7 +37,7 @@ index c80e9e69d9..37a3e594c9 100644
      defines += [ "WEBRTC_ARCH_ARM" ]
      if (arm_version >= 7) {
        defines += [ "WEBRTC_ARCH_ARM_V7" ]
-@@ -478,7 +478,7 @@ config("common_config") {
+@@ -479,7 +479,7 @@ config("common_config") {
      }
    }
  
@@ -47,7 +47,7 @@ index c80e9e69d9..37a3e594c9 100644
      if (mips_float_abi == "hard") {
        defines += [ "MIPS_FPU_LE" ]
 diff --git a/common_audio/BUILD.gn b/common_audio/BUILD.gn
-index bb0c878dd2..95e7a33c42 100644
+index 7875db5d4d..298dd42016 100644
 --- a/common_audio/BUILD.gn
 +++ b/common_audio/BUILD.gn
 @@ -67,7 +67,7 @@ rtc_library("common_audio") {
@@ -215,7 +215,7 @@ index ac8ef72633..943e843d53 100644
        suppressed_configs += [ "//build/config/compiler:compiler_arm_fpu" ]
        cflags = [ "-mfpu=neon" ]
 diff --git a/modules/audio_processing/agc2/rnn_vad/BUILD.gn b/modules/audio_processing/agc2/rnn_vad/BUILD.gn
-index 294daa4692..e0bbffd648 100644
+index 1362cbc932..a4bb76f905 100644
 --- a/modules/audio_processing/agc2/rnn_vad/BUILD.gn
 +++ b/modules/audio_processing/agc2/rnn_vad/BUILD.gn
 @@ -18,7 +18,7 @@ rtc_library("rnn_vad") {
@@ -254,7 +254,7 @@ index 0cfd6ef2d1..ef70e0f538 100644
  config("x11_config") {
    if (rtc_use_x11_extensions) {
 diff --git a/webrtc.gni b/webrtc.gni
-index 92eb683a12..d9f904daf5 100644
+index 0015ee78b0..3cc99d87bd 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -160,7 +160,7 @@ declare_args() {

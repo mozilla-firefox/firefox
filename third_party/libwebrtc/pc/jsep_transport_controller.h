@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
 #include "api/async_dns_resolver.h"
@@ -55,6 +56,7 @@
 #include "pc/jsep_transport_collection.h"
 #include "pc/rtp_transport.h"
 #include "pc/rtp_transport_internal.h"
+#include "pc/scoped_operations_batcher.h"
 #include "pc/sctp_transport.h"
 #include "pc/session_description.h"
 #include "pc/transport_stats.h"
@@ -157,6 +159,10 @@ class JsepTransportController final {
   struct TransportState {
     std::optional<SSLRole> dtls_role;
     bool needs_ice_restart = false;
+    // The RTP DTLS transport that the mid uses, and the name of that
+    // transport. With BUNDLE, several mids share a transport.
+    absl_nonnull scoped_refptr<DtlsTransport> dtls_transport;
+    std::string transport_name;
   };
 
   // Per-mid transport states, captured on the network thread. `version` is
@@ -218,7 +224,17 @@ class JsepTransportController final {
   // Gets the externally sharable version of the DtlsTransport.
   scoped_refptr<DtlsTransport> LookupDtlsTransportByMid_n(
       absl::string_view mid);
+  // Same as LookupDtlsTransportByMid_n(), but reads the transport states that
+  // are cached on the signaling thread instead of blocking on the network
+  // thread.
+  //
+  // Must be called on the signaling thread.
   scoped_refptr<DtlsTransport> LookupDtlsTransportByMid(absl::string_view mid);
+  // Returns the cached state of the transport that `mid` uses, or nullopt if
+  // `mid` doesn't use a transport (e.g. if it's rejected).
+  //
+  // Must be called on the signaling thread.
+  std::optional<TransportState> GetTransportState(absl::string_view mid) const;
   scoped_refptr<SctpTransport> GetSctpTransport(absl::string_view mid) const;
 
   DataChannelTransportInterface* GetDataChannelTransport(
@@ -242,20 +258,40 @@ class JsepTransportController final {
   // Must be called on the signaling thread.
   bool NeedsIceRestart(absl::string_view mid) const;
   // Start gathering candidates for any new transports, or transports doing an
-  // ICE restart. Returns the pooled ICE credentials from the port allocator.
+  // ICE restart. New transports take sessions from the port allocator's
+  // candidate pool, if there are any. If `discard_candidate_pool` is true, the
+  // sessions that are left in the pool are discarded afterwards. Doesn't
+  // block: if `on_pooled_credentials` is set, it's called on the signaling
+  // thread with the pooled ICE credentials that are left.
   //
   // Must be called on the signaling thread.
-  std::vector<IceParameters> MaybeStartGathering();
+  void MaybeStartGathering(
+      bool discard_candidate_pool,
+      absl::AnyInvocable<void(std::vector<IceParameters>) &&>
+          on_pooled_credentials);
+  // Discards the sessions in the port allocator's candidate pool. Doesn't
+  // block.
+  //
+  // Must be called on the signaling thread.
+  void DiscardCandidatePool();
   RTCError AddRemoteCandidates(absl::string_view mid,
                                const std::vector<Candidate>& candidates);
+  // Removes `candidate` from the ICE transport that its mid uses. Doesn't
+  // block: the candidate is removed on the network thread. Candidates that are
+  // invalid or have no mid are ignored.
+  //
   // Must be called on the signaling thread.
-  bool RemoveRemoteCandidate(const IceCandidate* candidate);
+  void RemoveRemoteCandidate(const IceCandidate* absl_nonnull candidate);
 
   /**********************
    * DTLS-related methods
    *********************/
   // Specifies the identity to use in this session.
-  // Can only be called once.
+  // Can only be called once. Returns false if a certificate has already been
+  // set or if `certificate` is null. Doesn't block: the certificate is applied
+  // on the network thread, before any description that is set afterwards. If
+  // the signaling and network threads are the same thread, it's applied before
+  // this returns.
   //
   // Must be called on the signaling thread.
   bool SetLocalCertificate(const scoped_refptr<RTCCertificate>& certificate);
@@ -279,8 +315,13 @@ class JsepTransportController final {
 
   bool GetStats(absl::string_view transport_name, TransportStats* stats) const;
 
+  // Returns a task for a network thread ScopedOperationsBatcher that rolls
+  // back the transports to the last stable state. The task returns the result
+  // of the rollback. Its finalizer applies the resulting transport states on
+  // the signaling thread, also if the rollback fails.
+  //
   // Must be called on the signaling thread.
-  RTCError RollbackTransports();
+  ScopedOperationsBatcher::BatchTaskWithFinalizer MakeRollbackTask();
 
   // Must be called on the signaling thread.
   absl::AnyInvocable<void() &&> MakeCloseTask();
@@ -301,18 +342,29 @@ class JsepTransportController final {
                                   const SessionDescription* remote_desc)
       RTC_RUN_ON(network_thread_);
 
-  // Always called via a blocking call from the signaling thread.
-  bool RemoveRemoteCandidate_n(const IceCandidate* candidate)
+  // Called from a task that RemoveRemoteCandidate() posts.
+  void RemoveRemoteCandidate_n(absl::string_view mid,
+                               const Candidate& candidate)
       RTC_RUN_ON(network_thread_);
 
-  // Always called via a blocking call from the signaling thread.
+  // Called from the task that MakeRollbackTask() returns.
   RTCError RollbackTransports_n() RTC_RUN_ON(network_thread_);
 
-  // Always called via a blocking call from the signaling thread.
+  // Called from a task that MaybeStartGathering() posts.
   void MaybeStartGathering_n() RTC_RUN_ON(network_thread_);
 
-  // Always called via a blocking call from the signaling thread.
-  bool SetLocalCertificate_n(const scoped_refptr<RTCCertificate>& certificate)
+  // Runs `task` on the network thread without blocking. If the signaling and
+  // network threads are the same thread, `task` runs right away, as a blocking
+  // call would. Otherwise it's posted. Either way, it runs before any blocking
+  // call to the network thread that is made afterwards. `task` doesn't run
+  // once the transports have been destroyed.
+  //
+  // Must be called on the signaling thread.
+  void RunOnNetworkThread(absl::AnyInvocable<void() &&> task);
+
+  // Called from SetLocalCertificate(), via RunOnNetworkThread().
+  void SetLocalCertificate_n(
+      const absl_nonnull scoped_refptr<RTCCertificate>& certificate)
       RTC_RUN_ON(network_thread_);
 
   // Called from SetLocalDescription and SetRemoteDescription.
@@ -479,6 +531,9 @@ class JsepTransportController final {
   IceConfig ice_config_;
   IceRole ice_role_ = ICEROLE_CONTROLLING;
   scoped_refptr<RTCCertificate> certificate_;
+  // True once SetLocalCertificate() has accepted a certificate. The
+  // certificate itself is only used on the network thread (`certificate_`).
+  bool local_certificate_set_ RTC_GUARDED_BY(signaling_thread_) = false;
 
   BundleManager bundles_;
 
@@ -490,6 +545,9 @@ class JsepTransportController final {
       RTC_GUARDED_BY(signaling_thread_);
   scoped_refptr<PendingTaskSafetyFlag> role_update_safety_flag_n_
       RTC_GUARDED_BY(network_thread_);
+  // Guards the tasks that are posted to the network thread. Set to not alive
+  // on the network thread when the transports are destroyed.
+  const absl_nonnull scoped_refptr<PendingTaskSafetyFlag> network_safety_;
 };
 
 }  // namespace webrtc

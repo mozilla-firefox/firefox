@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "absl/algorithm/container.h"
+#include "absl/base/nullability.h"
 #include "absl/cleanup/cleanup.h"
 #include "absl/functional/any_invocable.h"
 #include "absl/memory/memory.h"
@@ -67,7 +68,6 @@
 #include "p2p/base/ice_transport_internal.h"
 #include "p2p/base/p2p_constants.h"
 #include "p2p/base/p2p_transport_channel.h"
-#include "p2p/base/port_allocator.h"
 #include "p2p/base/transport_description.h"
 #include "p2p/base/transport_description_factory.h"
 #include "p2p/base/transport_info.h"
@@ -212,42 +212,29 @@ flat_map<std::string, const ContentGroup*> GetBundleGroupsByMid(
   return bundle_groups_by_mid;
 }
 
-// Helper function to look up DTLS transports for all transceivers in a single
-// blocking call to the network thread.
+// Helper function to look up DTLS transports for all transceivers. Uses the
+// transport states that are cached on the signaling thread, so no blocking
+// call to the network thread is needed.
 flat_map<std::string, DtlsTransportAndName> GetDtlsTransports(
     const TransceiverList& transceivers,
-    Thread* network_thread,
-    JsepTransportController* transport_controller) {
+    const JsepTransportController* absl_nonnull transport_controller) {
+  RTC_DCHECK_DISALLOW_THREAD_BLOCKING_CALLS();
   const auto& transceiver_list = transceivers.ListRef();
-  std::vector<std::string> mids_to_lookup;
-  mids_to_lookup.reserve(transceiver_list.size());
+  std::vector<std::pair<std::string, DtlsTransportAndName>> entries;
+  entries.reserve(transceiver_list.size());
   for (const auto& transceiver : transceiver_list) {
-    if (const auto mid = transceiver->internal()->mid()) {
-      mids_to_lookup.push_back(*mid);
+    const std::optional<std::string> mid = transceiver->internal()->mid();
+    if (!mid) {
+      continue;
     }
+    std::optional<JsepTransportController::TransportState> state =
+        transport_controller->GetTransportState(*mid);
+    entries.emplace_back(
+        *mid, state ? DtlsTransportAndName{std::move(state->dtls_transport),
+                                           std::move(state->transport_name)}
+                    : DtlsTransportAndName{});
   }
-  if (mids_to_lookup.empty()) {
-    return flat_map<std::string, DtlsTransportAndName>();
-  }
-  return network_thread->BlockingCall([&] {
-    RTC_DCHECK_RUN_ON(network_thread);
-    std::vector<std::pair<std::string, DtlsTransportAndName>> entries;
-    entries.reserve(mids_to_lookup.size());
-    for (const auto& mid : mids_to_lookup) {
-      // Here we essentially look up the same transport twice because
-      // the `transport_controller` doesn't have a public method that allows us
-      // to look up the JsepTransport object. This could be improved.
-      auto transport = transport_controller->LookupDtlsTransportByMid_n(mid);
-      auto internal_transport = transport_controller->GetDtlsTransport(mid);
-      entries.emplace_back(
-          mid, DtlsTransportAndName{
-                   transport, internal_transport
-                                  ? std::optional<std::string>(
-                                        internal_transport->transport_name())
-                                  : std::nullopt});
-    }
-    return flat_map<std::string, DtlsTransportAndName>(std::move(entries));
-  });
+  return flat_map<std::string, DtlsTransportAndName>(std::move(entries));
 }
 
 // Returns true if `new_desc` requests an ICE restart (i.e., new ufrag/pwd).
@@ -1948,12 +1935,6 @@ const DataChannelController* SdpOfferAnswerHandler::data_channel_controller()
     const {
   return pc_->data_channel_controller();
 }
-PortAllocator* SdpOfferAnswerHandler::port_allocator() {
-  return pc_->port_allocator();
-}
-const PortAllocator* SdpOfferAnswerHandler::port_allocator() const {
-  return pc_->port_allocator();
-}
 RtpTransmissionManager* SdpOfferAnswerHandler::rtp_manager() {
   return pc_->rtp_manager();
 }
@@ -1972,7 +1953,19 @@ void SdpOfferAnswerHandler::PrepareForShutdown() {
 void SdpOfferAnswerHandler::UpdateCachedIceCredentials(
     std::vector<IceParameters> credentials) {
   RTC_DCHECK_RUN_ON(signaling_thread());
+  ++cached_pooled_ice_credentials_generation_;
   cached_pooled_ice_credentials_ = std::move(credentials);
+}
+
+void SdpOfferAnswerHandler::OnPooledIceCredentials(
+    uint32_t generation,
+    std::vector<IceParameters> credentials) {
+  RTC_DCHECK_RUN_ON(signaling_thread());
+  // If the cache was set or cleared since the MaybeStartGathering() call, these
+  // credentials are older than what it holds.
+  if (generation == cached_pooled_ice_credentials_generation_) {
+    cached_pooled_ice_credentials_ = std::move(credentials);
+  }
 }
 
 void SdpOfferAnswerHandler::Close() {
@@ -2285,8 +2278,7 @@ RTCError SdpOfferAnswerHandler::ApplyLocalDescription(
       std::vector<scoped_refptr<RtpTransceiverInterface>> remove_list;
       std::vector<scoped_refptr<MediaStreamInterface>> removed_streams;
       flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
-          GetDtlsTransports(*transceivers(), context_->network_thread(),
-                            transport_controller_s());
+          GetDtlsTransports(*transceivers(), transport_controller_s());
 
       for (const auto& transceiver_ext : transceivers()->List()) {
         auto transceiver = transceiver_ext->internal();
@@ -2359,8 +2351,7 @@ RTCError SdpOfferAnswerHandler::ApplyLocalDescription(
     }
     // Plan B transport synchronization.
     flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
-        GetDtlsTransports(*transceivers(), context_->network_thread(),
-                          transport_controller_s());
+        GetDtlsTransports(*transceivers(), transport_controller_s());
     for (const auto& transceiver_ext : transceivers()->List()) {
       auto transceiver = transceiver_ext->internal();
       if (transceiver->mid()) {
@@ -2677,8 +2668,7 @@ void SdpOfferAnswerHandler::ApplyRemoteDescription(
 
     // Plan B transport synchronization.
     flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
-        GetDtlsTransports(*transceivers(), context_->network_thread(),
-                          transport_controller_s());
+        GetDtlsTransports(*transceivers(), transport_controller_s());
     for (const auto& transceiver_ext : transceivers()->List()) {
       auto transceiver = transceiver_ext->internal();
       if (transceiver->mid()) {
@@ -2727,8 +2717,7 @@ void SdpOfferAnswerHandler::ApplyRemoteDescriptionUpdateTransceiverState(
   ScopedOperationsBatcher network_tasks(context_->network_thread());
   ScopedOperationsBatcher worker_tasks(context_->worker_thread());
   flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
-      GetDtlsTransports(*transceivers(), context_->network_thread(),
-                        transport_controller_s());
+      GetDtlsTransports(*transceivers(), transport_controller_s());
 
   for (const auto& transceiver_ext : transceivers()->List()) {
     const auto transceiver = transceiver_ext->internal();
@@ -3179,13 +3168,9 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
         codecs_mangled_to_raw);
   }
 
-  if (local_description()->GetType() == SdpType::kAnswer) {
+  const bool is_answer = local_description()->GetType() == SdpType::kAnswer;
+  if (is_answer) {
     RemoveStoppedTransceivers();
-
-    // TODO(deadbeef): We already had to hop to the network thread for
-    // MaybeStartGathering...
-    context_->network_thread()->BlockingCall(
-        [this] { port_allocator()->DiscardCandidatePool(); });
   }
 
   // Clear last created offer/answer and update SDP munging type.
@@ -3225,8 +3210,22 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
   // MaybeStartGathering needs to be called after informing the observer so
   // that we don't signal any candidates before signaling that
   // SetLocalDescription completed.
-  cached_pooled_ice_credentials_ =
-      transport_controller_s()->MaybeStartGathering();
+  // For an answer, the candidate pool is discarded as well. This must happen
+  // after gathering has started, otherwise the new transports can't take
+  // sessions from the pool (see webrtc:572439023).
+  if (is_answer) {
+    UpdateCachedIceCredentials({});
+  }
+  transport_controller_s()->MaybeStartGathering(
+      /*discard_candidate_pool=*/is_answer,
+      [this_weak_ptr = weak_ptr_factory_.GetWeakPtr(),
+       generation = cached_pooled_ice_credentials_generation_](
+          std::vector<IceParameters> credentials) {
+        if (this_weak_ptr) {
+          this_weak_ptr->OnPooledIceCredentials(generation,
+                                                std::move(credentials));
+        }
+      });
 }
 
 void SdpOfferAnswerHandler::DoCreateOffer(
@@ -3437,10 +3436,11 @@ void SdpOfferAnswerHandler::SetRemoteDescriptionPostProcess(bool was_answer) {
   RTC_DCHECK(remote_description());
 
   if (was_answer) {
-    // TODO(deadbeef): We already had to hop to the network thread for
-    // MaybeStartGathering...
-    context_->network_thread()->BlockingCall(
-        [this] { port_allocator()->DiscardCandidatePool(); });
+    transport_controller_s()->DiscardCandidatePool();
+    // Also drops replies of earlier MaybeStartGathering() calls that are still
+    // in flight. Their credentials are from the pool that is being discarded
+    // and can include the ones that are in use.
+    UpdateCachedIceCredentials({});
   }
 
   pc_->NoteUsageEvent(UsageEvent::SET_REMOTE_DESCRIPTION_SUCCEEDED);
@@ -3629,9 +3629,8 @@ bool SdpOfferAnswerHandler::RemoveIceCandidate(const IceCandidate* candidate) {
   }
 
   bool removed = mutable_remote_description()->RemoveCandidate(candidate);
-  // Remove the candidates from the transport controller.
-  // This involves a hop to the network thread - should we rather do this
-  // asynchronously?
+  // Remove the candidate from the transport controller. This doesn't block;
+  // the candidate is removed on the network thread.
   transport_controller_s()->RemoveRemoteCandidate(candidate);
   return removed;
 }
@@ -4050,17 +4049,23 @@ RTCError SdpOfferAnswerHandler::Rollback(SdpType desc_type) {
     }
   }
 
-  RTCError e = network_tasks.Run();
-  RTC_DCHECK(e.ok());  // only void tasks queued.
-  e = worker_tasks.Run();
+  // Roll back the transports in the same batch, after the tasks above have
+  // detached the channels from their transports. Rolling back destroys the
+  // transports that are no longer used, which can include transports that
+  // those channels are attached to. GetDeleteChannelWorkerTask() has already
+  // made the channels unreachable from their transceivers, so the rollback
+  // can't attach them to a transport again.
+  network_tasks.AddWithFinalizer(transport_controller_s()->MakeRollbackTask());
+
+  RTCError rollback_error = network_tasks.Run();
+  RTCError e = worker_tasks.Run();
   RTC_DCHECK(e.ok());  // only void tasks queued.
 
   for (const auto& [sender, encodings] : senders_to_restore) {
     sender->set_init_send_encodings(encodings);
   }
-  e = transport_controller_s()->RollbackTransports();
-  if (!e.ok()) {
-    return e;
+  if (!rollback_error.ok()) {
+    return rollback_error;
   }
   transceivers()->DiscardStableStates();
   pending_local_description_.reset();

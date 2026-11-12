@@ -806,6 +806,34 @@ void SimulcastEncoderAdapter::SetRates(
   }
 }
 
+void SimulcastEncoderAdapter::SetComplexity(
+    std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+    ComplexityControlMode complexity_control_mode) {
+  RTC_DCHECK_RUN_ON(&encoder_queue_checker_);
+
+  if (!Initialized()) {
+    RTC_LOG(LS_WARNING) << "SetComplexity while not initialized";
+    return;
+  }
+
+  if (bypass_mode_) {
+    stream_contexts_.front().encoder().SetComplexity(
+        complexity_by_spatial_layer, complexity_control_mode);
+    return;
+  }
+
+  for (StreamContext& layer_context : stream_contexts_) {
+    size_t stream_idx = checked_cast<size_t>(layer_context.stream_idx());
+    VideoCodecComplexity complexity =
+        complexity_by_spatial_layer.empty()
+            ? VideoCodecComplexity::kComplexityNormal
+            : complexity_by_spatial_layer[std::min(
+                  stream_idx, complexity_by_spatial_layer.size() - 1)];
+    layer_context.encoder().SetComplexity({&complexity, 1},
+                                          complexity_control_mode);
+  }
+}
+
 void SimulcastEncoderAdapter::OnPacketLossRateUpdate(float packet_loss_rate) {
   for (auto& c : stream_contexts_) {
     c.encoder().OnPacketLossRateUpdate(packet_loss_rate);
@@ -1205,6 +1233,7 @@ VideoEncoder::EncoderInfo SimulcastEncoderAdapter::GetEncoderInfo() const {
       encoder_info.is_hardware_accelerated =
           encoder_impl_info.is_hardware_accelerated;
       encoder_info.is_qp_trusted = encoder_impl_info.is_qp_trusted;
+      encoder_info.min_qp = encoder_impl_info.min_qp;
     } else {
       // Native handle supported if any encoder supports it.
       encoder_info.supports_native_handle |=
@@ -1226,6 +1255,10 @@ VideoEncoder::EncoderInfo SimulcastEncoderAdapter::GetEncoderInfo() const {
       encoder_info.is_qp_trusted =
           encoder_info.is_qp_trusted.value_or(true) &&
           encoder_impl_info.is_qp_trusted.value_or(true);
+
+      if (encoder_info.min_qp != encoder_impl_info.min_qp) {
+        encoder_info.min_qp = std::nullopt;
+      }
     }
     // If any encoder wants CPU overuse detection, enable it for all of them
     encoder_info.enable_cpu_overuse_detection |=

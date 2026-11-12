@@ -68,33 +68,37 @@ TEST(RunLoopTest, RunForWaitsForMaxWaitDurationIfNoQuit) {
   EXPECT_GE(env.clock().CurrentTime() - start, TimeDelta::Millis(19));
 }
 
-TEST(RunLoopTest, RunForQuitsEarlyIfQuitCalled) {
+TEST(RunLoopTest, RunForReturnsBeforeMaxWaitDurationIfQuitCalled) {
+  // Much longer than the delay of the quit task, to leave a large margin for
+  // scheduling delays on loaded test machines.
+  constexpr TimeDelta kMaxWaitDuration = TimeDelta::Seconds(10);
   Environment env = CreateTestEnvironment();
   test::RunLoop loop;
   Timestamp start = env.clock().CurrentTime();
   loop.task_queue()->PostDelayedHighPrecisionTask(loop.QuitClosure(),
                                                   TimeDelta::Millis(10));
-  loop.RunFor(TimeDelta::Millis(20));
-  EXPECT_LE(env.clock().CurrentTime() - start, TimeDelta::Millis(11));
+  loop.RunFor(kMaxWaitDuration);
+  EXPECT_LT(env.clock().CurrentTime() - start, kMaxWaitDuration / 2);
 }
 
-TEST(RunLoopTest, RunForQuitsEarlyAndCancelsQuitCalls) {
-  Environment env = CreateTestEnvironment();
+TEST(RunLoopTest, RunForCancelsTimeoutIfQuitCalled) {
   test::RunLoop loop;
-  Timestamp start = env.clock().CurrentTime();
   loop.task_queue()->PostDelayedHighPrecisionTask(loop.QuitClosure(),
                                                   TimeDelta::Millis(10));
   loop.RunFor(TimeDelta::Millis(20));
-  EXPECT_LE(env.clock().CurrentTime() - start, TimeDelta::Millis(11));
 
-  Timestamp seconds_task_start = env.clock().CurrentTime();
-  loop.task_queue()->PostDelayedHighPrecisionTask(loop.QuitClosure(),
-                                                  TimeDelta::Millis(100));
+  bool ran = false;
+  loop.task_queue()->PostDelayedHighPrecisionTask(
+      [&ran, &loop]() {
+        ran = true;
+        loop.Quit();
+      },
+      TimeDelta::Millis(100));
   loop.Run();
-  // If the old `RunFor` causes the loop to quit then this will be much shorter
-  // than 100ms.
-  EXPECT_GE(env.clock().CurrentTime() - seconds_task_start,
-            TimeDelta::Millis(99));
+  // If the old `RunFor` causes the loop to quit then `Run` returns before the
+  // task above has run. Delayed tasks run in the order of their scheduled
+  // time, so this check doesn't depend on the load of the machine.
+  EXPECT_TRUE(ran);
 }
 
 }  // namespace webrtc

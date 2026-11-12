@@ -52,7 +52,7 @@ TestController::TestController(const Environment& env,
   send_data_.fill(42);
   packet_sender_thread_->SetName("PacketSender", nullptr);
   packet_sender_thread_->Start();
-  packet_sender_thread_->BlockingCall([&] {
+  local_port_ = packet_sender_thread_->BlockingCall([&] {
     RTC_DCHECK_RUN_ON(packet_sender_thread_.get());
     udp_socket_ = socket_factory_.CreateUdpSocket(
         env_, SocketAddress(GetAnyIP(AF_INET), 0), min_port, max_port);
@@ -61,6 +61,7 @@ TestController::TestController(const Environment& env,
         [&](AsyncPacketSocket* socket, const ReceivedIpPacket& packet) {
           OnReadPacket(socket, packet);
         });
+    return udp_socket_->GetLocalAddress().port();
   });
 }
 

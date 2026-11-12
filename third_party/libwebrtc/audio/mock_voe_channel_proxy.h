@@ -39,6 +39,7 @@
 #include "api/units/timestamp.h"
 #include "audio/channel_receive.h"
 #include "audio/channel_send.h"
+#include "call/sframe_options.h"
 #include "call/syncable.h"
 #include "modules/audio_coding/include/audio_coding_module_typedefs.h"
 #include "modules/rtp_rtcp/include/report_block_data.h"
@@ -192,6 +193,10 @@ class MockChannelSend : public voe::ChannelSendInterface {
   MOCK_METHOD(void,
               SetFrameEncryptor,
               (webrtc::scoped_refptr<FrameEncryptorInterface> frame_encryptor),
+              (override));
+  MOCK_METHOD(void,
+              SetSframeOptions,
+              (const SframeSendOptions& options),
               (override));
   MOCK_METHOD(void,
               SetEncoderToPacketizerFrameTransformer,

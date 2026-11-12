@@ -48,6 +48,21 @@ namespace webrtc {
 using Message = DataChannelEventObserverInterface::Message;
 using Direction = DataChannelEventObserverInterface::Message::Direction;
 
+namespace {
+
+// Returns true if `channel` is in `channels`. Used to check if a raw channel
+// pointer, collected before calling out to channels, is still valid. A channel
+// that closes is removed from `channels` and its reference is handed over to
+// the signaling thread, where the channel may then get destroyed.
+bool ContainsChannel(
+    const std::vector<scoped_refptr<SctpDataChannel>>& channels,
+    const SctpDataChannel* channel) {
+  return absl::c_any_of(
+      channels, [channel](const auto& c) { return c.get() == channel; });
+}
+
+}  // namespace
+
 DataChannelController::~DataChannelController() {
   RTC_DCHECK(sctp_data_channels_n_.empty())
       << "Missing call to TeardownDataChannelTransport_n?";
@@ -112,18 +127,22 @@ void DataChannelController::OnChannelStateChanged(
     SctpDataChannel* channel,
     DataChannelInterface::DataState state) {
   RTC_DCHECK_RUN_ON(network_thread());
-  // Stash away the internal id here in case `OnSctpDataChannelClosed` ends up
-  // releasing the last reference to the channel.
   const int channel_id = channel->internal_id();
 
-  if (state == DataChannelInterface::DataState::kClosed)
-    OnSctpDataChannelClosed(channel);
+  scoped_refptr<SctpDataChannel> closed_channel;
+  if (state == DataChannelInterface::DataState::kClosed) {
+    closed_channel = OnSctpDataChannelClosed(channel);
+  }
 
   DataChannelUsage channel_usage = sctp_data_channels_n_.empty()
                                        ? DataChannelUsage::kHaveBeenUsed
                                        : DataChannelUsage::kInUse;
+  // Move `closed_channel` into the signaling_thread() task so that if the
+  // controller held the last reference to the channel, its destructor runs on
+  // `signaling_thread()`.
   signaling_thread()->PostTask(SafeTask(
-      signaling_safety_.flag(), [this, channel_id, state, channel_usage] {
+      signaling_safety_.flag(), [this, channel_id, state, channel_usage,
+                                 closed_channel = std::move(closed_channel)] {
         RTC_DCHECK_RUN_ON(signaling_thread());
         channel_usage_ = channel_usage;
         pc_->OnSctpDataChannelStateChanged(channel_id, state);
@@ -204,42 +223,40 @@ void DataChannelController::OnChannelClosing(int channel_id) {
 void DataChannelController::OnChannelClosed(int channel_id) {
   RTC_DCHECK_RUN_ON(network_thread());
   StreamId sid(channel_id);
-  sid_allocator_.ReleaseSid(sid);
   auto it = absl::c_find_if(sctp_data_channels_n_,
                             [&](const auto& c) { return c->sid_n() == sid; });
 
   if (it != sctp_data_channels_n_.end()) {
-    scoped_refptr<SctpDataChannel> channel = std::move(*it);
-    sctp_data_channels_n_.erase(it);
-    channel->OnClosingProcedureComplete();
+    (*it)->OnClosingProcedureComplete();
   }
 }
 
 void DataChannelController::OnReadyToSend() {
   RTC_DCHECK_RUN_ON(network_thread());
-  auto copy = sctp_data_channels_n_;
-  for (const auto& channel : copy) {
-    // All channels are supposed to either have an ID allocated in
-    // OnConnected, or be deleted at this point.
-    RTC_DCHECK(channel->sid_n().has_value());
-    channel->OnTransportReady();
+  std::vector<SctpDataChannel*> channels;
+  channels.reserve(sctp_data_channels_n_.size());
+  for (const auto& channel : sctp_data_channels_n_) {
+    channels.push_back(channel.get());
+  }
+  for (SctpDataChannel* channel : channels) {
+    if (ContainsChannel(sctp_data_channels_n_, channel)) {
+      // All channels are supposed to either have an ID allocated in
+      // OnConnected, or be deleted at this point.
+      RTC_DCHECK(channel->sid_n().has_value());
+      channel->OnTransportReady();
+    }
   }
 }
 
 void DataChannelController::OnTransportClosed(RTCError error) {
   RTC_DCHECK_RUN_ON(network_thread());
 
-  // This loop will close all data channels and trigger a callback to
-  // `OnSctpDataChannelClosed`. We'll empty `sctp_data_channels_n_`, first
-  // and `OnSctpDataChannelClosed` will become a noop but we'll release the
-  // StreamId here.
-  std::vector<scoped_refptr<SctpDataChannel>> temp_sctp_dcs;
-  temp_sctp_dcs.swap(sctp_data_channels_n_);
-  for (const auto& channel : temp_sctp_dcs) {
+  // Close all data channels, which will trigger `OnChannelStateChanged` ->
+  // `OnSctpDataChannelClosed` and transfer the channel references to the
+  // signaling thread.
+  while (!sctp_data_channels_n_.empty()) {
+    SctpDataChannel* channel = sctp_data_channels_n_.back().get();
     channel->OnTransportChannelClosed(error);
-    if (channel->sid_n().has_value()) {
-      sid_allocator_.ReleaseSid(*channel->sid_n());
-    }
   }
 }
 
@@ -356,10 +373,7 @@ void DataChannelController::OnDataChannelOpenMessage(
   pc_->NoteDataAddedEvent();
 
   if (ready_to_send) {
-    network_thread()->PostTask([channel = std::move(channel)] {
-      if (channel->state() != DataChannelInterface::DataState::kClosed)
-        channel->OnTransportReady();
-    });
+    channel->PostOnTransportReady();
   }
 }
 
@@ -484,10 +498,7 @@ DataChannelController::InternalCreateDataChannelWithProxy(
           // This has to be done async because the upper layer objects (e.g.
           // Chrome glue and WebKit) are not wired up properly until after
           // `InternalCreateDataChannelWithProxy` returns.
-          network_thread()->PostTask([channel = channel.value()] {
-            if (channel->state() != DataChannelInterface::DataState::kClosed)
-              channel->OnTransportReady();
-          });
+          channel.value()->PostOnTransportReady();
         }
 
         return channel;
@@ -506,41 +517,46 @@ void DataChannelController::AllocateSctpSids(SSLRole role) {
   const bool ready_to_send =
       data_channel_transport_ && data_channel_transport_->IsReadyToSend();
 
-  std::vector<scoped_refptr<SctpDataChannel>> channels_to_start;
-  std::vector<scoped_refptr<SctpDataChannel>> channels_to_close;
-  for (auto it = sctp_data_channels_n_.begin();
-       it != sctp_data_channels_n_.end();) {
-    if (!(*it)->sid_n().has_value()) {
+  std::vector<SctpDataChannel*> channels_to_start;
+  std::vector<SctpDataChannel*> channels_to_close;
+  for (const auto& channel : sctp_data_channels_n_) {
+    if (!channel->sid_n().has_value()) {
       std::optional<StreamId> sid = sid_allocator_.AllocateSid(role);
       if (sid.has_value()) {
-        (*it)->SetSctpSid_n(*sid);
-        AddSctpDataStream(*sid, (*it)->priority());
-        channels_to_start.push_back(*it);
+        channel->SetSctpSid_n(*sid);
+        AddSctpDataStream(*sid, channel->priority());
+        channels_to_start.push_back(channel.get());
       } else {
-        channels_to_close.push_back(std::move(*it));
-        it = sctp_data_channels_n_.erase(it);
-        continue;
+        channels_to_close.push_back(channel.get());
       }
     }
-    ++it;
   }
   // Since OnTransportReady can cause sending, and sending may fail and cause
-  // channel to close, do this outside the loop.
+  // channel to close, do this outside the loop. A channel that closes is
+  // removed from `sctp_data_channels_n_` and may then get destroyed on the
+  // signaling thread, so skip channels that are no longer in the list.
   if (ready_to_send) {
-    for (auto& channel : channels_to_start) {
-      RTC_LOG(LS_INFO) << "AllocateSctpSids: Id assigned, ready to send.";
-      channel->OnTransportReady();
+    for (SctpDataChannel* channel : channels_to_start) {
+      if (ContainsChannel(sctp_data_channels_n_, channel)) {
+        RTC_LOG(LS_INFO) << "AllocateSctpSids: Id assigned, ready to send.";
+        channel->OnTransportReady();
+      }
     }
   }
 
   // Since closing modifies the list of channels, we have to do the actual
-  // closing outside the loop.
-  for (const auto& channel : channels_to_close) {
-    channel->CloseAbruptlyWithDataChannelFailure("Failed to allocate SCTP SID");
+  // closing outside the loop. As above, skip channels that have already been
+  // closed and removed from the list.
+  for (SctpDataChannel* channel : channels_to_close) {
+    if (ContainsChannel(sctp_data_channels_n_, channel)) {
+      channel->CloseAbruptlyWithDataChannelFailure(
+          "Failed to allocate SCTP SID");
+    }
   }
 }
 
-void DataChannelController::OnSctpDataChannelClosed(SctpDataChannel* channel) {
+scoped_refptr<SctpDataChannel> DataChannelController::OnSctpDataChannelClosed(
+    SctpDataChannel* channel) {
   RTC_DCHECK_RUN_ON(network_thread());
   // After the closing procedure is done, it's safe to use this ID for
   // another data channel.
@@ -550,8 +566,11 @@ void DataChannelController::OnSctpDataChannelClosed(SctpDataChannel* channel) {
   auto it = absl::c_find_if(sctp_data_channels_n_,
                             [&](const auto& c) { return c.get() == channel; });
   if (it != sctp_data_channels_n_.end()) {
+    scoped_refptr<SctpDataChannel> closed_channel = std::move(*it);
     sctp_data_channels_n_.erase(it);
+    return closed_channel;
   }
+  return nullptr;
 }
 
 void DataChannelController::set_data_channel_transport(

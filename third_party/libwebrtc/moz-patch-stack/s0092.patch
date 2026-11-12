@@ -13,10 +13,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/7017edc7cfc880bb1
  4 files changed, 5 insertions(+), 5 deletions(-)
 
 diff --git a/.gn b/.gn
-index 29f5cd76e4..9962d2845d 100644
+index 30df98fe83..6a99da2a59 100644
 --- a/.gn
 +++ b/.gn
-@@ -18,7 +18,7 @@ script_executable = "python3"
+@@ -17,7 +17,7 @@ script_executable = "//third_party/cpython3/host/bin/python3"
  # The secondary source root is a parallel directory tree where
  # GN build files are placed when they can not be placed directly
  # in the source tree, e.g. for third party source trees.
@@ -26,7 +26,7 @@ index 29f5cd76e4..9962d2845d 100644
  # These are the targets to skip header checking by default. The files in targets
  # matching these patterns (see "gn help label_pattern" for format) will not have
 diff --git a/media/BUILD.gn b/media/BUILD.gn
-index 788e829792..e41b356f99 100644
+index 19941885b4..cee865dcaf 100644
 --- a/media/BUILD.gn
 +++ b/media/BUILD.gn
 @@ -7,7 +7,7 @@
@@ -39,7 +39,7 @@ index 788e829792..e41b356f99 100644
  
  group("media") {
 diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
-index 632552393e..1dd843aa45 100644
+index dbe9c04ba8..a70470aa6f 100644
 --- a/modules/video_coding/BUILD.gn
 +++ b/modules/video_coding/BUILD.gn
 @@ -7,7 +7,7 @@
@@ -52,7 +52,7 @@ index 632552393e..1dd843aa45 100644
  
  rtc_library("encoded_frame") {
 diff --git a/webrtc.gni b/webrtc.gni
-index 1744404d86..4ec85fec6f 100644
+index ddf61a7f60..217de62b36 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -502,8 +502,8 @@ all_poison_types = [

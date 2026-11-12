@@ -89,8 +89,16 @@ class RtpReceiverInternal : public RtpReceiverInterface {
   virtual std::optional<uint32_t> ssrc() const = 0;
   // Signaling-thread accessors for the SSRC. Used by RtpTransceiver on the
   // signaling thread to track and bind SSRCs without cross-thread hops.
+  // Like `ssrc()`, `ssrc_s()` returns the signaled SSRC if there is one and
+  // otherwise the SSRC of the most recent unsignaled stream.
   virtual std::optional<uint32_t> ssrc_s() const = 0;
-  virtual void SetSsrc_s(uint32_t ssrc) = 0;
+  // Returns true if the receiver has been configured with a signaled SSRC via
+  // `GetSetupForMediaChannel()`.
+  virtual bool has_signaled_ssrc_s() const = 0;
+  // Binds the receiver to the SSRC of a new unsignaled stream, replacing a
+  // previously bound unsignaled SSRC. Must only be called when
+  // `has_signaled_ssrc_s()` returns false.
+  virtual void SetUnsignaledSsrc_s(uint32_t ssrc) = 0;
 
   // Call this to notify the RtpReceiver when the first packet has been received
   // on the corresponding channel.
@@ -132,7 +140,8 @@ class RtpReceiverBase : public RtpReceiverInternal {
 
   std::optional<uint32_t> ssrc() const override;
   std::optional<uint32_t> ssrc_s() const override;
-  void SetSsrc_s(uint32_t ssrc) override;
+  bool has_signaled_ssrc_s() const override;
+  void SetUnsignaledSsrc_s(uint32_t ssrc) override;
   void OnFrameDelivered(const RtpPacketInfos& infos,
                         Timestamp delivery_time) override;
 
@@ -159,13 +168,21 @@ class RtpReceiverBase : public RtpReceiverInternal {
   Thread* const worker_thread_;
   SourceTracker source_tracker_ RTC_GUARDED_BY(signaling_thread_checker_);
   std::optional<uint32_t> signaled_ssrc_ RTC_GUARDED_BY(worker_thread_);
-  std::optional<uint32_t> ssrc_s_ RTC_GUARDED_BY(signaling_thread_checker_);
+  // Signaling thread copy of `signaled_ssrc_`.
+  std::optional<uint32_t> signaled_ssrc_s_
+      RTC_GUARDED_BY(signaling_thread_checker_);
   scoped_refptr<FrameDecryptorInterface> frame_decryptor_
       RTC_GUARDED_BY(worker_thread_);
   scoped_refptr<FrameTransformerInterface> frame_transformer_
       RTC_GUARDED_BY(worker_thread_);
 
  private:
+  // SSRC of the most recent unsignaled stream that the receiver was bound to.
+  // Not cleared when the receiver is set up again, since the media channel may
+  // keep an existing unsignaled stream across renegotiation, in which case no
+  // new first packet notification is issued for it.
+  std::optional<uint32_t> unsignaled_ssrc_s_
+      RTC_GUARDED_BY(signaling_thread_checker_);
   RtpReceiverObserverInterface* observer_
       RTC_GUARDED_BY(&signaling_thread_checker_) = nullptr;
   bool received_first_packet_ RTC_GUARDED_BY(&signaling_thread_checker_) =

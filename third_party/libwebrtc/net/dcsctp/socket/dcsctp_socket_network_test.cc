@@ -128,7 +128,7 @@ class BoundSocket : public webrtc::EmulatedNetworkReceiverInterface {
 
   void SendPacket(std::span<const uint8_t> data) {
     endpoint_->SendPacket(source_address_, dest_address_,
-                          webrtc::CopyOnWriteBuffer(data.data(), data.size()));
+                          webrtc::CopyOnWriteBuffer(data));
   }
 
  private:
@@ -166,7 +166,9 @@ class SctpActor : public DcSctpSocketCallbacks {
     emulated_socket.SetReceiver([this](webrtc::CopyOnWriteBuffer buf) {
       // The receiver will be executed on the NetworkEmulation task queue, but
       // the dcSCTP socket is owned by `thread_` and is not thread-safe.
-      thread_->PostTask([this, buf] { this->sctp_socket_.ReceivePacket(buf); });
+      thread_->PostTask([this, buf = std::move(buf)] {
+        this->sctp_socket_.ReceivePacket(buf);
+      });
     });
   }
 

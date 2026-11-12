@@ -55,6 +55,7 @@
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/byte_buffer.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/containers/flat_map.h"
 #include "rtc_base/crypto_random.h"
 #include "rtc_base/dscp.h"
 #include "rtc_base/logging.h"
@@ -78,6 +79,7 @@ namespace webrtc {
 namespace {
 
 using ::testing::Eq;
+using ::testing::HasSubstr;
 using ::testing::IsNull;
 using ::testing::IsTrue;
 using ::testing::NotNull;
@@ -165,10 +167,12 @@ class TestChannel {
  public:
   // Takes ownership of `p1` (but not `p2`).
   TestChannel(std::unique_ptr<Port> p1,
-              GlobalSimulatedTimeController& time_controller)
-      : time_controller_(time_controller), port_(std::move(p1)) {
-    port_->SubscribePortComplete(this,
-                                 [this](Port* port) { OnPortComplete(port); });
+              GlobalSimulatedTimeController& time_controller,
+              flat_map<Port*, TestChannel*>& channels)
+      : time_controller_(time_controller),
+        channels_(channels),
+        port_(std::move(p1)) {
+    channels_[port_.get()] = this;
     port_->SubscribeUnknownAddress(
         this, [this](PortInterface* port, const SocketAddress& address,
                      ProtocolType proto, IceMessage* msg, const std::string& rf,
@@ -179,7 +183,10 @@ class TestChannel {
         this, [this](PortInterface* port) { OnSrcPortDestroyed(port); });
   }
 
-  ~TestChannel() { Stop(); }
+  ~TestChannel() {
+    Stop();
+    channels_.erase(port_.get());
+  }
 
   int complete_count() { return complete_count_; }
   Connection* conn() { return conn_; }
@@ -279,6 +286,7 @@ class TestChannel {
   }
 
   void OnSrcPortDestroyed(PortInterface* port) {
+    channels_.erase(port_.get());
     Port* destroyed_src = port_.release();
     ASSERT_EQ(destroyed_src, port);
   }
@@ -300,6 +308,7 @@ class TestChannel {
   }
 
   GlobalSimulatedTimeController& time_controller_;
+  flat_map<Port*, TestChannel*>& channels_;
   IceMode ice_mode_ = ICEMODE_FULL;
   std::unique_ptr<Port> port_;
 
@@ -343,6 +352,17 @@ class PortTest : public ::testing::Test {
   const Environment& env() const { return env_; }
 
   std::string password() { return password_; }
+
+  TestChannel MakeChannel(std::unique_ptr<Port> port) {
+    return TestChannel(std::move(port), time_controller_, channels_);
+  }
+
+  void NotifyPortComplete(Port* port) {
+    auto it = channels_.find(port);
+    if (it != channels_.end()) {
+      it->second->OnPortComplete(port);
+    }
+  }
 
   void TestLocalToLocal() {
     auto port1 = CreateUdpPort(kLocalAddr1);
@@ -448,14 +468,17 @@ class PortTest : public ::testing::Test {
   }
   std::unique_ptr<UDPPort> CreateUdpPort(const SocketAddress& addr,
                                          PacketSocketFactory* socket_factory) {
-    return UDPPort::Create({.env = env_,
-                            .network_thread = main_,
-                            .socket_factory = socket_factory,
-                            .network = MakeNetwork(addr),
-                            .ice_username_fragment = username_,
-                            .ice_password = password_,
-                            .ice_tiebreaker = kTiebreakerDefault},
-                           0, 0, true, std::nullopt);
+    return UDPPort::Create(
+        {.env = env_,
+         .network_thread = main_,
+         .socket_factory = socket_factory,
+         .network = MakeNetwork(addr),
+         .ice_username_fragment = username_,
+         .ice_password = password_,
+         .ice_tiebreaker = kTiebreakerDefault,
+         .callbacks = {.port_complete =
+                           [this](Port* port) { NotifyPortComplete(port); }}},
+        0, 0, true, std::nullopt);
   }
 
   std::unique_ptr<UDPPort> CreateUdpPortMultipleAddrs(
@@ -469,7 +492,9 @@ class PortTest : public ::testing::Test {
          .network = MakeNetworkMultipleAddrs(global_addr, link_local_addr),
          .ice_username_fragment = username_,
          .ice_password = password_,
-         .ice_tiebreaker = kTiebreakerDefault},
+         .ice_tiebreaker = kTiebreakerDefault,
+         .callbacks = {.port_complete =
+                           [this](Port* port) { NotifyPortComplete(port); }}},
         0, 0, true, std::nullopt);
   }
   std::unique_ptr<TCPPort> CreateTcpPort(const SocketAddress& addr) {
@@ -477,28 +502,34 @@ class PortTest : public ::testing::Test {
   }
   std::unique_ptr<TCPPort> CreateTcpPort(const SocketAddress& addr,
                                          PacketSocketFactory* socket_factory) {
-    return TCPPort::Create({.env = env_,
-                            .network_thread = main_,
-                            .socket_factory = socket_factory,
-                            .network = MakeNetwork(addr),
-                            .ice_username_fragment = username_,
-                            .ice_password = password_,
-                            .ice_tiebreaker = kTiebreakerDefault},
-                           0, 0, true);
+    return TCPPort::Create(
+        {.env = env_,
+         .network_thread = main_,
+         .socket_factory = socket_factory,
+         .network = MakeNetwork(addr),
+         .ice_username_fragment = username_,
+         .ice_password = password_,
+         .ice_tiebreaker = kTiebreakerDefault,
+         .callbacks = {.port_complete =
+                           [this](Port* port) { NotifyPortComplete(port); }}},
+        0, 0, true);
   }
   std::unique_ptr<StunPort> CreateStunPort(
       const SocketAddress& addr,
       PacketSocketFactory* socket_factory) {
     ServerAddresses stun_servers;
     stun_servers.insert(kStunAddr);
-    return StunPort::Create({.env = env_,
-                             .network_thread = main_,
-                             .socket_factory = socket_factory,
-                             .network = MakeNetwork(addr),
-                             .ice_username_fragment = username_,
-                             .ice_password = password_,
-                             .ice_tiebreaker = kTiebreakerDefault},
-                            0, 0, stun_servers, std::nullopt);
+    return StunPort::Create(
+        {.env = env_,
+         .network_thread = main_,
+         .socket_factory = socket_factory,
+         .network = MakeNetwork(addr),
+         .ice_username_fragment = username_,
+         .ice_password = password_,
+         .ice_tiebreaker = kTiebreakerDefault,
+         .callbacks = {.port_complete =
+                           [this](Port* port) { NotifyPortComplete(port); }}},
+        0, 0, stun_servers, std::nullopt);
   }
   std::unique_ptr<Port> CreateRelayPort(const SocketAddress& addr,
                                         ProtocolType int_proto,
@@ -531,8 +562,10 @@ class PortTest : public ::testing::Test {
     args.server_address = &server_address;
     args.config = &config;
     args.ice_tiebreaker = kTiebreakerDefault;
-
-    return TurnPort::Create(args, 0, 0);
+    args.callbacks.port_complete = [this](Port* port) {
+      NotifyPortComplete(port);
+    };
+    return TurnPort::Create(std::move(args), 0, 0);
   }
 
   std::unique_ptr<NATServer> CreateNatServer(const SocketAddress& addr,
@@ -661,12 +694,9 @@ class PortTest : public ::testing::Test {
     auto port2 = CreateTcpPort(kLocalAddr2);
     port2->SetIceRole(ICEROLE_CONTROLLED);
 
-    port1->set_component(ICE_CANDIDATE_COMPONENT_DEFAULT);
-    port2->set_component(ICE_CANDIDATE_COMPONENT_DEFAULT);
-
     // Set up channels and ensure both ports will be deleted.
-    TestChannel ch1(std::move(port1), time_controller_);
-    TestChannel ch2(std::move(port2), time_controller_);
+    TestChannel ch1 = MakeChannel(std::move(port1));
+    TestChannel ch2 = MakeChannel(std::move(port2));
     EXPECT_EQ(0, ch1.complete_count());
     EXPECT_EQ(0, ch2.complete_count());
 
@@ -763,17 +793,26 @@ class PortTest : public ::testing::Test {
       const SocketAddress& addr,
       absl::string_view username,
       absl::string_view password,
-      const FieldTrialsView* field_trials = nullptr) {
-    Port::PortParametersRef args = {
-        .env = CreateTestEnvironment(
-            {.field_trials = field_trials, .time = &time_controller_}),
-        .network_thread = main_,
-        .socket_factory = &socket_factory_,
-        .network = MakeNetwork(addr),
-        .ice_username_fragment = username,
-        .ice_password = password,
-        .ice_tiebreaker = kTiebreakerDefault};
-    auto port = std::make_unique<TestPort>(args, 0, 0);
+      const FieldTrialsView* field_trials = nullptr,
+      int component = ICE_CANDIDATE_COMPONENT_DEFAULT,
+      bool send_retransmit_count_attribute = false) {
+    auto port = std::make_unique<TestPort>(
+        Port::PortParametersRef{
+            .env = CreateTestEnvironment(
+                {.field_trials = field_trials, .time = &time_controller_}),
+            .network_thread = main_,
+            .socket_factory = &socket_factory_,
+            .network = MakeNetwork(addr),
+            .ice_username_fragment = username,
+            .ice_password = password,
+            .component = component,
+            .send_retransmit_count_attribute = send_retransmit_count_attribute,
+            .ice_tiebreaker = kTiebreakerDefault,
+            .callbacks = {.port_complete =
+                              [this](Port* port) {
+                                NotifyPortComplete(port);
+                              }}},
+        0, 0);
     port->SubscribeRoleConflict([this]() { OnRoleConflict(); });
     return port;
   }
@@ -789,26 +828,32 @@ class PortTest : public ::testing::Test {
   std::unique_ptr<TestPort> CreateTestPort(const Network* network,
                                            absl::string_view username,
                                            absl::string_view password) {
-    Port::PortParametersRef args = {.env = env_,
-                                    .network_thread = main_,
-                                    .socket_factory = &socket_factory_,
-                                    .network = network,
-                                    .ice_username_fragment = username,
-                                    .ice_password = password,
-                                    .ice_tiebreaker = kTiebreakerDefault};
-    auto port = std::make_unique<TestPort>(args, 0, 0);
+    auto port = std::make_unique<TestPort>(
+        Port::PortParametersRef{.env = env_,
+                                .network_thread = main_,
+                                .socket_factory = &socket_factory_,
+                                .network = network,
+                                .ice_username_fragment = username,
+                                .ice_password = password,
+                                .ice_tiebreaker = kTiebreakerDefault,
+                                .callbacks = {.port_complete =
+                                                  [this](Port* port) {
+                                                    NotifyPortComplete(port);
+                                                  }}},
+        0, 0);
     port->SubscribeRoleConflict([this]() { OnRoleConflict(); });
     return port;
   }
 
   std::unique_ptr<TestPort> CreateRawTestPort() {
-    Port::PortParametersRef args = {
-        .env = env_,
-        .network_thread = main_,
-        .socket_factory = &socket_factory_,
-        .network = MakeNetwork(kLocalAddr1),
-    };
-    return std::make_unique<TestPort>(args, 0, 0);
+    return std::make_unique<TestPort>(
+        Port::PortParametersRef{
+            .env = env_,
+            .network_thread = main_,
+            .socket_factory = &socket_factory_,
+            .network = MakeNetwork(kLocalAddr1),
+        },
+        0, 0);
   }
 
   void OnRoleConflict() { role_conflict_ = true; }
@@ -849,6 +894,7 @@ class PortTest : public ::testing::Test {
   std::string password_;
   bool role_conflict_;
   int ports_destroyed_;
+  flat_map<Port*, TestChannel*> channels_;
 };
 
 void PortTest::TestConnectivity(absl::string_view name1,
@@ -860,12 +906,10 @@ void PortTest::TestConnectivity(absl::string_view name1,
                                 bool same_addr2,
                                 bool possible) {
   RTC_LOG(LS_INFO) << "Test: " << name1 << " to " << name2 << ": ";
-  port1->set_component(ICE_CANDIDATE_COMPONENT_DEFAULT);
-  port2->set_component(ICE_CANDIDATE_COMPONENT_DEFAULT);
 
   // Set up channels and ensure both ports will be deleted.
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
   EXPECT_EQ(0, ch1.complete_count());
   EXPECT_EQ(0, ch2.complete_count());
 
@@ -1166,6 +1210,11 @@ TEST_F(PortTest, TestLocalToLocal) {
   TestLocalToLocal();
 }
 
+TEST_F(PortTest, ToStringIncludesNetworkDescription) {
+  std::unique_ptr<UDPPort> port = CreateUdpPort(kLocalAddr1);
+  EXPECT_THAT(port->ToString(), HasSubstr(port->Network()->ToString()));
+}
+
 TEST_F(PortTest, TestNetworkSliceInitiallyDefault) {
   std::unique_ptr<UDPPort> port = CreateUdpPort(kLocalAddr1);
   port->PrepareAddress();
@@ -1348,10 +1397,9 @@ TEST_F(PortTest, TestTcpReconnectTimeout) {
 TEST_F(PortTest, TestTcpNeverConnect) {
   auto port1 = CreateTcpPort(kLocalAddr1);
   port1->SetIceRole(ICEROLE_CONTROLLING);
-  port1->set_component(ICE_CANDIDATE_COMPONENT_DEFAULT);
 
   // Set up a channel and ensure the port will be deleted.
-  TestChannel ch1(std::move(port1), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
   EXPECT_EQ(0, ch1.complete_count());
 
   ch1.Start();
@@ -1402,8 +1450,8 @@ TEST_F(PortTest, TestSslTcpToSslTcpRelay) {
 // ii) it has not received anything for kDeadConnectionReceiveTimeout since
 //     last receiving.
 TEST_F(PortTest, TestConnectionDead) {
-  TestChannel ch1(CreateUdpPort(kLocalAddr1), time_controller_);
-  TestChannel ch2(CreateUdpPort(kLocalAddr2), time_controller_);
+  TestChannel ch1 = MakeChannel(CreateUdpPort(kLocalAddr1));
+  TestChannel ch2 = MakeChannel(CreateUdpPort(kLocalAddr2));
   // Acquire address.
   ch1.Start();
   ch2.Start();
@@ -1460,8 +1508,8 @@ TEST_F(PortTest, TestConnectionDead) {
 }
 
 TEST_F(PortTest, TestConnectionDeadWithDeadConnectionTimeout) {
-  TestChannel ch1(CreateUdpPort(kLocalAddr1), time_controller_);
-  TestChannel ch2(CreateUdpPort(kLocalAddr2), time_controller_);
+  TestChannel ch1 = MakeChannel(CreateUdpPort(kLocalAddr1));
+  TestChannel ch2 = MakeChannel(CreateUdpPort(kLocalAddr2));
   // Acquire address.
   ch1.Start();
   ch2.Start();
@@ -1504,8 +1552,8 @@ TEST_F(PortTest, TestConnectionDeadOutstandingPing) {
   port1->SetIceRole(ICEROLE_CONTROLLING);
   auto port2 = CreateUdpPort(kLocalAddr2);
   port2->SetIceRole(ICEROLE_CONTROLLED);
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
   // Acquire address.
   ch1.Start();
   ch2.Start();
@@ -1713,8 +1761,8 @@ TEST_F(PortTest, TestTcpNoDelay) {
 
   // Set up a connection, and verify that option is set on connected sockets at
   // both ends.
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
   // Acquire addresses.
   ch1.Start();
   ch2.Start();
@@ -1985,7 +2033,10 @@ TEST_F(PortTest, TestDefaultDscpValue) {
 // Test sending STUN messages.
 TEST_F(PortTest, TestSendStunMessage) {
   auto lport = CreateTestPort(kLocalAddr1, "lfrag", "lpass");
-  auto rport = CreateTestPort(kLocalAddr2, "rfrag", "rpass");
+  auto rport =
+      CreateTestPort(kLocalAddr2, "rfrag", "rpass",
+                     /*field_trials=*/nullptr, ICE_CANDIDATE_COMPONENT_DEFAULT,
+                     /*send_retransmit_count_attribute=*/true);
   lport->SetIceRole(ICEROLE_CONTROLLING);
   rport->SetIceRole(ICEROLE_CONTROLLED);
   // Send a fake ping from lport to rport.
@@ -2094,7 +2145,6 @@ TEST_F(PortTest, TestSendStunMessage) {
   // Testing STUN binding requests from rport --> lport, having ICE_CONTROLLED
   // and (incremented) RETRANSMIT_COUNT attributes.
   rport->Reset();
-  rport->set_send_retransmit_count_attribute(true);
   rconn->Ping();
   rconn->Ping();
   rconn->Ping();
@@ -2764,9 +2814,9 @@ TEST_F(PortTest, TestHandleStunBindingIndication) {
 }
 
 TEST_F(PortTest, TestComputeCandidatePriority) {
-  auto port = CreateTestPort(kLocalAddr1, "name", "pass");
+  auto port = CreateTestPort(kLocalAddr1, "name", "pass",
+                             /*field_trials=*/nullptr, /*component=*/177);
   port->set_type_preference(90);
-  port->set_component(177);
   port->AddCandidateAddress(SocketAddress("192.168.1.4", 1234));
   port->AddCandidateAddress(SocketAddress("2001:db8::1234", 1234));
   port->AddCandidateAddress(SocketAddress("fc12:3456::1234", 1234));
@@ -2801,9 +2851,9 @@ TEST_F(PortTest, TestComputeCandidatePriority) {
 TEST_F(PortTest, TestComputeCandidatePriorityWithPriorityAdjustment) {
   FieldTrials field_trials = CreateTestFieldTrials(
       "WebRTC-IncreaseIceCandidatePriorityHostSrflx/Enabled/");
-  auto port = CreateTestPort(kLocalAddr1, "name", "pass", &field_trials);
+  auto port = CreateTestPort(kLocalAddr1, "name", "pass", &field_trials,
+                             /*component=*/177);
   port->set_type_preference(90);
-  port->set_component(177);
   port->AddCandidateAddress(SocketAddress("192.168.1.4", 1234));
   port->AddCandidateAddress(SocketAddress("2001:db8::1234", 1234));
   port->AddCandidateAddress(SocketAddress("fc12:3456::1234", 1234));
@@ -2981,14 +3031,14 @@ TEST_F(PortTest, TestCandidatePriority) {
 
 // Test the Connection priority is calculated correctly.
 TEST_F(PortTest, TestConnectionPriority) {
-  auto lport = CreateTestPort(kLocalAddr1, "lfrag", "lpass");
+  auto lport = CreateTestPort(kLocalAddr1, "lfrag", "lpass",
+                              /*field_trials=*/nullptr, /*component=*/123);
   lport->set_type_preference(ICE_TYPE_PREFERENCE_HOST);
 
-  auto rport = CreateTestPort(kLocalAddr2, "rfrag", "rpass");
+  auto rport = CreateTestPort(kLocalAddr2, "rfrag", "rpass",
+                              /*field_trials=*/nullptr, /*component=*/23);
   rport->set_type_preference(ICE_TYPE_PREFERENCE_RELAY_UDP);
-  lport->set_component(123);
   lport->AddCandidateAddress(SocketAddress("192.168.1.4", 1234));
-  rport->set_component(23);
   rport->AddCandidateAddress(SocketAddress("10.1.1.100", 1234));
   rport->set_type_preference(ICE_TYPE_PREFERENCE_RELAY_DTLS);
   rport->AddCandidateAddress(SocketAddress("10.1.1.100", 1234));
@@ -3027,14 +3077,14 @@ TEST_F(PortTest, TestConnectionPriority) {
 TEST_F(PortTest, TestConnectionPriorityWithPriorityAdjustment) {
   FieldTrials field_trials = CreateTestFieldTrials(
       "WebRTC-IncreaseIceCandidatePriorityHostSrflx/Enabled/");
-  auto lport = CreateTestPort(kLocalAddr1, "lfrag", "lpass", &field_trials);
+  auto lport = CreateTestPort(kLocalAddr1, "lfrag", "lpass", &field_trials,
+                              /*component=*/123);
   lport->set_type_preference(ICE_TYPE_PREFERENCE_HOST);
 
-  auto rport = CreateTestPort(kLocalAddr2, "rfrag", "rpass", &field_trials);
+  auto rport = CreateTestPort(kLocalAddr2, "rfrag", "rpass", &field_trials,
+                              /*component=*/23);
   rport->set_type_preference(ICE_TYPE_PREFERENCE_RELAY_UDP);
-  lport->set_component(123);
   lport->AddCandidateAddress(SocketAddress("192.168.1.4", 1234));
-  rport->set_component(23);
   rport->AddCandidateAddress(SocketAddress("10.1.1.100", 1234));
 
   EXPECT_EQ(0x7E001E85U + (kMaxTurnServers << 8),
@@ -3079,8 +3129,8 @@ TEST_F(PortTest, TestWritableState) {
   port2->SetIceRole(ICEROLE_CONTROLLED);
 
   // Set up channels.
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
 
   // Acquire addresses.
   ch1.Start();
@@ -3170,8 +3220,8 @@ TEST_F(PortTest, TestWritableStateWithConfiguredThreshold) {
   port2->SetIceRole(ICEROLE_CONTROLLED);
 
   // Set up channels.
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
 
   // Acquire addresses.
   ch1.Start();
@@ -3234,8 +3284,8 @@ TEST_F(PortTest, TestTimeoutForNeverWritable) {
   port2->SetIceRole(ICEROLE_CONTROLLED);
 
   // Set up channels.
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
 
   // Acquire addresses.
   ch1.Start();
@@ -3269,7 +3319,7 @@ TEST_F(PortTest, TestIceLiteConnectivity) {
   auto ice_lite_port =
       CreateTestPort(kLocalAddr2, "rfrag", "rpass", ICEROLE_CONTROLLED);
   // Setup TestChannel. This behaves like FULL mode client.
-  TestChannel ch1(std::move(ice_full_port), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(ice_full_port));
   ch1.SetIceMode(ICEMODE_FULL);
 
   // Start gathering candidates.
@@ -3393,7 +3443,7 @@ TEST_P(GoogPingTest, TestGoogPingAnnounceEnable) {
   auto port2 =
       CreateTestPort(kLocalAddr2, "rfrag", "rpass", ICEROLE_CONTROLLED);
 
-  TestChannel ch1(std::move(port1_unique), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1_unique));
   // Block usage of STUN_ATTR_USE_CANDIDATE so that
   // ch1.conn() will sent GOOG_PING_REQUEST directly.
   // This only makes test a bit shorter...
@@ -3492,7 +3542,7 @@ TEST_F(PortTest, TestGoogPingUnsupportedVersionInStunBinding) {
   auto port2 =
       CreateTestPort(kLocalAddr2, "rfrag", "rpass", ICEROLE_CONTROLLED);
 
-  TestChannel ch1(std::move(port1_unique), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1_unique));
   // Block usage of STUN_ATTR_USE_CANDIDATE so that
   // ch1.conn() will sent GOOG_PING_REQUEST directly.
   // This only makes test a bit shorter...
@@ -3567,7 +3617,7 @@ TEST_F(PortTest, TestGoogPingUnsupportedVersionInStunBindingResponse) {
   auto port2 =
       CreateTestPort(kLocalAddr2, "rfrag", "rpass", ICEROLE_CONTROLLED);
 
-  TestChannel ch1(std::move(port1_unique), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1_unique));
   // Block usage of STUN_ATTR_USE_CANDIDATE so that
   // ch1.conn() will sent GOOG_PING_REQUEST directly.
   // This only makes test a bit shorter...
@@ -3668,7 +3718,7 @@ TEST_F(PortTest, TestGoogPingEmptyMiscInfoInStunBindingRequest) {
   auto port2 =
       CreateTestPort(kLocalAddr2, "rfrag", "rpass", ICEROLE_CONTROLLED);
 
-  TestChannel ch1(std::move(port1_unique), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1_unique));
   ch1.SetIceMode(ICEMODE_LITE);
   ch1.Start();
   port2->PrepareAddress();
@@ -3733,7 +3783,7 @@ TEST_F(PortTest, TestGoogPingEmptyMiscInfoInStunBindingResponse) {
   auto port2 =
       CreateTestPort(kLocalAddr2, "rfrag", "rpass", ICEROLE_CONTROLLED);
 
-  TestChannel ch1(std::move(port1_unique), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1_unique));
   ch1.SetIceMode(ICEMODE_LITE);
   ch1.Start();
   port2->PrepareAddress();
@@ -3827,7 +3877,7 @@ TEST_F(PortTest, TestChangeInAttributeMakesGoogPingFallsbackToStunBinding) {
   auto port2 =
       CreateTestPort(kLocalAddr2, "rfrag", "rpass", ICEROLE_CONTROLLED);
 
-  TestChannel ch1(std::move(port1_unique), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1_unique));
   // Block usage of STUN_ATTR_USE_CANDIDATE so that
   // ch1.conn() will sent GOOG_PING_REQUEST directly.
   // This only makes test a bit shorter...
@@ -3923,7 +3973,7 @@ TEST_F(PortTest, TestErrorResponseMakesGoogPingFallBackToStunBinding) {
   auto port2 =
       CreateTestPort(kLocalAddr2, "rfrag", "rpass", ICEROLE_CONTROLLED);
 
-  TestChannel ch1(std::move(port1_unique), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1_unique));
   // Block usage of STUN_ATTR_USE_CANDIDATE so that
   // ch1.conn() will sent GOOG_PING_REQUEST directly.
   // This only makes test a bit shorter...
@@ -4028,8 +4078,8 @@ TEST_F(PortTest, TestPortTimeoutIfNotKeptAlive) {
   port2->set_timeout_delay(timeout_delay);  // milliseconds
   port2->SetIceRole(ICEROLE_CONTROLLED);
   // Set up channels and ensure both ports will be deleted.
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
 
   // Simulate a connection that succeeds, and then is destroyed.
   StartConnectAndStopChannels(&ch1, &ch2);
@@ -4055,8 +4105,8 @@ TEST_F(PortTest, TestPortTimeoutAfterNewConnectionCreatedAndDestroyed) {
 
   port2->SetIceRole(ICEROLE_CONTROLLED);
   // Set up channels and ensure both ports will be deleted.
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
 
   // Simulate a connection that succeeds, and then is destroyed.
   StartConnectAndStopChannels(&ch1, &ch2);
@@ -4095,12 +4145,9 @@ TEST_F(PortTest, TestPortNotTimeoutUntilPruned) {
                             // connection is attempted.
   EXPECT_EQ(0, ports_destroyed());
 
-  port1->set_component(ICE_CANDIDATE_COMPONENT_DEFAULT);
-  port2->set_component(ICE_CANDIDATE_COMPONENT_DEFAULT);
-
   // Set up channels and keep the port alive.
-  TestChannel ch1(std::move(port1), time_controller_);
-  TestChannel ch2(std::move(port2), time_controller_);
+  TestChannel ch1 = MakeChannel(std::move(port1));
+  TestChannel ch2 = MakeChannel(std::move(port2));
   // Simulate a connection that succeeds, and then is destroyed. But ports
   // are kept alive. Ports won't be destroyed.
   StartConnectAndStopChannels(&ch1, &ch2);
@@ -4184,7 +4231,7 @@ TEST_F(PortTest, TestAddConnectionWithSameAddress) {
 // subclassed properly.
 class TestPortWrapper : public TurnPort {
   TestPortWrapper()
-      : TurnPort(args_,
+      : TurnPort(CreateArgs(),
                  /*socket=*/nullptr,
                  my_server_address_,
                  credentials_,
@@ -4195,7 +4242,10 @@ class TestPortWrapper : public TurnPort {
                  /*tls_cert_verifier=*/nullptr) {}
 
  private:
-  PortParametersRef args_{.env = CreateTestEnvironment()};
+  static PortParametersRef CreateArgs() {
+    return {.env = CreateTestEnvironment()};
+  }
+
   ProtocolAddress my_server_address_{kLocalAddr1, PROTO_UDP};
   RelayCredentials credentials_;
 };

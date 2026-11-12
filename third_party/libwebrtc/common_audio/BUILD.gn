@@ -325,14 +325,6 @@ if (rtc_include_tests && !build_with_chromium) {
     deps = [ ":sinc_resampler" ]
   }
 
-  rtc_cc_test("allocation_counter_unittest") {
-    sources = [
-      "allocation_counter.cc",
-      "allocation_counter.h",
-    ]
-    deps = [ "../test:test_support" ]
-  }
-
   rtc_cc_test("audio_converter_unittest") {
     sources = [ "audio_converter_unittest.cc" ]
     deps = [
@@ -423,7 +415,7 @@ if (rtc_include_tests && !build_with_chromium) {
   }
 
   rtc_cc_test("common_audio_ring_buffer_unittest") {
-    sources = [ "ring_buffer_unittest.cc" ]
+    sources = [ "common_audio_ring_buffer_unittest.cc" ]
     deps = [
       ":common_audio_c",
       "../test:test_support",
@@ -451,18 +443,54 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
-  rtc_cc_test("vad_unittest") {
-    sources = [
-      "vad/vad_core_unittest.cc",
-      "vad/vad_filterbank_unittest.cc",
-      "vad/vad_gmm_unittest.cc",
-      "vad/vad_sp_unittest.cc",
-      "vad/vad_unittest.cc",
-      "vad/vad_unittest.h",
+  rtc_source_set("vad_unittest_support") {
+    testonly = true
+    sources = [ "vad/vad_unittest.h" ]
+    deps = [ "../test:test_support" ]
+  }
+
+  rtc_cc_test("vad_core_unittest") {
+    sources = [ "vad/vad_core_unittest.cc" ]
+    deps = [
+      ":common_audio_c",
+      ":vad_unittest_support",
+      "../test:test_support",
     ]
+  }
+
+  rtc_cc_test("vad_filterbank_unittest") {
+    sources = [ "vad/vad_filterbank_unittest.cc" ]
+    deps = [
+      ":common_audio_c",
+      ":vad_unittest_support",
+      "../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("vad_gmm_unittest") {
+    sources = [ "vad/vad_gmm_unittest.cc" ]
+    deps = [
+      ":common_audio_c",
+      ":vad_unittest_support",
+      "../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("vad_sp_unittest") {
+    sources = [ "vad/vad_sp_unittest.cc" ]
+    deps = [
+      ":common_audio_c",
+      ":vad_unittest_support",
+      "../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("vad_unittest") {
+    sources = [ "vad/vad_unittest.cc" ]
     deps = [
       ":common_audio",
       ":common_audio_c",
+      ":vad_unittest_support",
       "../rtc_base:checks",
       "../test:test_support",
     ]
@@ -498,7 +526,6 @@ if (rtc_include_tests && !build_with_chromium) {
   rtc_test_suite("common_audio_unittests") {
     testonly = true
     tests = [
-      ":allocation_counter_unittest",
       ":audio_converter_unittest",
       ":audio_util_unittest",
       ":channel_buffer_unittest",
@@ -510,6 +537,10 @@ if (rtc_include_tests && !build_with_chromium) {
       ":resampler_unittest",
       ":signal_processing_unittest",
       ":smoothing_filter_unittest",
+      ":vad_core_unittest",
+      ":vad_filterbank_unittest",
+      ":vad_gmm_unittest",
+      ":vad_sp_unittest",
       ":vad_unittest",
       ":wav_file_unittest",
       ":wav_header_unittest",

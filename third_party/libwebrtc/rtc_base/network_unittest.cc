@@ -351,6 +351,23 @@ TEST_F(NetworkTest, TestNetworkConstruct) {
   EXPECT_EQ(NetworkSlice::NO_SLICE, ipv4_network1.network_slice());
 }
 
+TEST_F(NetworkTest, ToStringDescribesNetwork) {
+  Network network("test_eth0", "Test Network Adapter 1", IPAddress(0x12345600U),
+                  24, ADAPTER_TYPE_ETHERNET);
+  network.set_id(7);
+  EXPECT_EQ(network.ToString(), "Net[Test:18.52.86.x/24:Ethernet:id=7]");
+  EXPECT_EQ(absl::StrCat(network), network.ToString());
+}
+
+TEST_F(NetworkTest, ToStringDescribesVpnAndNetworkSlice) {
+  Network network("tun0", "VPN", IPAddress(0x0A080000U), 24, ADAPTER_TYPE_VPN);
+  network.set_underlying_type_for_vpn(ADAPTER_TYPE_WIFI);
+  network.set_network_slice(NetworkSlice::UNIFIED_COMMUNICATIONS);
+  EXPECT_EQ(network.ToString(),
+            "Net[VPN:10.8.0.x/24:VPN/Wifi/UNIFIED_COMMUNICATIONS:id=0]");
+  EXPECT_EQ(absl::StrCat(network), network.ToString());
+}
+
 TEST_F(NetworkTest, TestIsIgnoredNetworkIgnoresIPsStartingWith0) {
   Network ipv4_network1("test_eth0", "Test Network Adapter 1",
                         IPAddress(0x12345600U), 24, ADAPTER_TYPE_ETHERNET);

@@ -22,6 +22,9 @@ namespace webrtc {
 struct SframeEncryptionConfig {
   SframeMode mode;
   absl_nonnull scoped_refptr<SframeMediaEncryptorInterface> encryptor;
+
+  friend bool operator==(const SframeEncryptionConfig&,
+                         const SframeEncryptionConfig&) = default;
 };
 
 }  // namespace webrtc

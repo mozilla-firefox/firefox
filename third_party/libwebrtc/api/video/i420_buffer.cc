@@ -242,7 +242,7 @@ void I420Buffer::CropAndScaleFrom(const I420BufferInterface& src,
                         StrideY(), MutableDataU(), StrideU(), MutableDataV(),
                         StrideV(), width(), height(), libyuv::kFilterBox);
 
-  RTC_DCHECK_EQ(res, 0);
+  RTC_CHECK_EQ(res, 0);
 }
 
 void I420Buffer::CropAndScaleFrom(const I420BufferInterface& src) {

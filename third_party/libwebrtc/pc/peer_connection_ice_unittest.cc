@@ -19,8 +19,11 @@
 
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
+#include "api/audio_codecs/builtin_audio_decoder_factory.h"
+#include "api/audio_codecs/builtin_audio_encoder_factory.h"
 #include "api/candidate.h"
 #include "api/create_modular_peer_connection_factory.h"
+#include "api/create_peerconnection_factory.h"
 #include "api/enable_media_with_defaults.h"
 #include "api/environment/environment.h"
 #include "api/ice_transport_interface.h"
@@ -31,36 +34,6 @@
 #include "api/rtc_error.h"
 #include "api/scoped_refptr.h"
 #include "api/units/time_delta.h"
-#include "p2p/base/ice_transport_internal.h"
-#include "p2p/base/p2p_constants.h"
-#include "p2p/base/port_allocator.h"
-#include "p2p/base/transport_description.h"
-#include "p2p/base/transport_info.h"
-#include "p2p/test/fake_port_allocator.h"
-#include "pc/dtls_transport.h"
-#include "pc/media_session.h"
-#include "pc/peer_connection.h"
-#include "pc/peer_connection_wrapper.h"
-#include "pc/rtp_transceiver.h"
-#include "pc/session_description.h"
-#include "rtc_base/checks.h"
-#include "rtc_base/internal/default_socket_server.h"
-#include "rtc_base/ip_address.h"
-#include "rtc_base/logging.h"
-#include "rtc_base/net_helper.h"
-#include "rtc_base/socket_address.h"
-#include "rtc_base/socket_server.h"
-#include "rtc_base/thread.h"
-#include "test/create_test_environment.h"
-#include "test/create_test_field_trials.h"
-#include "test/gtest.h"
-#include "test/run_loop.h"
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-#include "api/audio_codecs/builtin_audio_decoder_factory.h"
-#include "api/audio_codecs/builtin_audio_encoder_factory.h"
-#include "api/create_peerconnection_factory.h"
 #include "api/video_codecs/video_decoder_factory_template.h"
 #include "api/video_codecs/video_decoder_factory_template_dav1d_adapter.h"
 #include "api/video_codecs/video_decoder_factory_template_libvpx_vp8_adapter.h"
@@ -71,14 +44,38 @@
 #include "api/video_codecs/video_encoder_factory_template_libvpx_vp8_adapter.h"
 #include "api/video_codecs/video_encoder_factory_template_libvpx_vp9_adapter.h"
 #include "api/video_codecs/video_encoder_factory_template_open_h264_adapter.h"
+#include "p2p/base/ice_transport_internal.h"
+#include "p2p/base/p2p_constants.h"
+#include "p2p/base/port_allocator.h"
+#include "p2p/base/transport_description.h"
+#include "p2p/base/transport_info.h"
+#include "p2p/test/fake_port_allocator.h"
+#include "pc/dtls_transport.h"
+#include "pc/media_session.h"
+#include "pc/peer_connection.h"
 #include "pc/peer_connection_proxy.h"
+#include "pc/peer_connection_wrapper.h"
+#include "pc/rtp_transceiver.h"
+#include "pc/session_description.h"
 #include "pc/test/fake_audio_capture_module.h"
 #include "pc/test/mock_peer_connection_observers.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/fake_network.h"
+#include "rtc_base/internal/default_socket_server.h"
+#include "rtc_base/ip_address.h"
+#include "rtc_base/logging.h"
+#include "rtc_base/net_helper.h"
+#include "rtc_base/socket_address.h"
+#include "rtc_base/socket_server.h"
 #include "rtc_base/strings/string_builder.h"
+#include "rtc_base/thread.h"
 #include "rtc_base/virtual_socket_server.h"
 #include "system_wrappers/include/metrics.h"
+#include "test/create_test_environment.h"
+#include "test/create_test_field_trials.h"
 #include "test/gmock.h"
+#include "test/gtest.h"
+#include "test/run_loop.h"
 
 namespace webrtc {
 
@@ -164,9 +161,6 @@ class PeerConnectionIceBaseTest : public ::testing::Test {
         network_thread_(new Thread(&vss_)),
         sdp_semantics_(sdp_semantics) {
     RTC_CHECK(network_thread_->Start());
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
   }
 
   WrapperPtr CreatePeerConnection() {
@@ -1674,6 +1668,47 @@ TEST_P(PeerConnectionIceTest, IceCredentialsCreateAnswer) {
     EXPECT_EQ(transport_info->description.ice_ufrag, credentials[0].ufrag);
     EXPECT_EQ(transport_info->description.ice_pwd, credentials[0].pwd);
   }
+}
+
+// Applies an offer and its answer in the same task, so that the remote answer
+// is applied before the pooled ICE credentials that gathering for the offer
+// reports arrive. Those credentials can include the ones the transport uses,
+// since the transport relabels whichever pooled session it takes. They must not
+// be used once the answer has discarded the candidate pool, otherwise the ICE
+// restart offer below would keep the current credentials.
+TEST_P(PeerConnectionIceTest, IceRestartAfterRemoteAnswerChangesCredentials) {
+  RTCConfiguration config;
+  config.ice_candidate_pool_size = 2;
+  auto caller = CreatePeerConnection(config);
+  caller->AddAudioTrack("a");
+  auto callee = CreatePeerConnection();
+
+  std::unique_ptr<SessionDescriptionInterface> offer = caller->CreateOffer();
+  ASSERT_TRUE(offer);
+  ASSERT_TRUE(callee->SetRemoteDescription(offer->Clone()));
+  std::unique_ptr<SessionDescriptionInterface> answer = callee->CreateAnswer();
+  ASSERT_TRUE(answer);
+
+  auto sld_observer = make_ref_counted<FakeSetLocalDescriptionObserver>();
+  auto srd_observer = make_ref_counted<FakeSetRemoteDescriptionObserver>();
+  caller->pc()->SetLocalDescription(std::move(offer), sld_observer);
+  caller->pc()->SetRemoteDescription(std::move(answer), srd_observer);
+  ASSERT_TRUE(sld_observer->called());
+  EXPECT_TRUE(sld_observer->error().ok());
+  ASSERT_TRUE(srd_observer->called());
+  EXPECT_TRUE(srd_observer->error().ok());
+  // Run the tasks posted to the network thread, then their replies.
+  caller->network_thread()->BlockingCall([] {});
+  main_.Flush();
+
+  RTCOfferAnswerOptions options;
+  options.ice_restart = true;
+  std::unique_ptr<SessionDescriptionInterface> restart_offer =
+      caller->CreateOffer(options);
+  ASSERT_TRUE(restart_offer);
+  EXPECT_NE(GetFirstTransportDescription(restart_offer.get())->ice_ufrag,
+            GetFirstTransportDescription(caller->pc()->local_description())
+                ->ice_ufrag);
 }
 
 // Regression test for https://bugs.chromium.org/p/webrtc/issues/detail?id=4728

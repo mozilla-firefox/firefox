@@ -21,7 +21,6 @@ NSString *const kRTCFieldTrialAudioForceABWENoTWCCKey =
 NSString *const kRTCFieldTrialFlexFec03AdvertisedKey =
     @"WebRTC-FlexFEC-03-Advertised";
 NSString *const kRTCFieldTrialFlexFec03Key = @"WebRTC-FlexFEC-03";
-NSString *const kRTCFieldTrialH264HighProfileKey = @"WebRTC-H264HighProfile";
 NSString *const kRTCFieldTrialMinimizeResamplingOnMobileKey =
     @"WebRTC-Audio-MinimizeResamplingOnMobile";
 NSString *const kRTCFieldTrialUseNWPathMonitor =

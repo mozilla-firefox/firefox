@@ -39,11 +39,14 @@ TEST(IsolatedOutputTest, ShouldRejectInvalidFileName) {
 
 // Sets isolated_out_dir=<a-writable-path> to execute this test.
 TEST(IsolatedOutputTest, ShouldBeAbleToWriteContent) {
+  const std::string backup = absl::GetFlag(FLAGS_test_artifacts_dir);
+  const std::string temp_dir = OutputPathWithRandomDirectory();
+  absl::SetFlag(&FLAGS_test_artifacts_dir, temp_dir);
+
   const char* filename = "a-file";
   const char* content = "some-contents";
   if (WriteToTestArtifactsDir(filename, content)) {
-    std::string out_file =
-        JoinFilename(absl::GetFlag(FLAGS_test_artifacts_dir), filename);
+    std::string out_file = JoinFilename(temp_dir, filename);
     FileWrapper input = FileWrapper::OpenReadOnly(out_file);
     EXPECT_TRUE(input.is_open());
     EXPECT_TRUE(input.Rewind());
@@ -56,6 +59,8 @@ TEST(IsolatedOutputTest, ShouldBeAbleToWriteContent) {
 
     EXPECT_TRUE(RemoveFile(out_file));
   }
+  EXPECT_TRUE(RemoveDir(temp_dir));
+  absl::SetFlag(&FLAGS_test_artifacts_dir, backup);
 }
 
 }  // namespace test

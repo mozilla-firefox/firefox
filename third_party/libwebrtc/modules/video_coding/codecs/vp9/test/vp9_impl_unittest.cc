@@ -98,6 +98,7 @@ using ::testing::TypedEq;
 using ::testing::UnorderedElementsAreArray;
 using ::testing::Values;
 using ::testing::WithArg;
+using enum webrtc::VideoCodecComplexity;
 using EncoderInfo = VideoEncoder::EncoderInfo;
 using FramerateFractions = absl::InlinedVector<uint8_t, kMaxTemporalStreams>;
 
@@ -3104,6 +3105,100 @@ TEST(Vp9SpeedSettingsTrialsTest, DefaultPerLayerFlagsWithSvc) {
 
     encoded_data.data.frame.flags = 0;  // Following frames are delta frames.
   }
+}
+
+TEST(Vp9SpeedSettingsTrialsTest, SetComplexityPerLayerWithSvc) {
+  FieldTrials trials = CreateTestFieldTrials(
+      "WebRTC-VP9-PerformanceFlags/"
+      "use_per_layer_speed,"
+      "min_pixel_count:0|129600,"
+      "base_layer_speed:5|7,"
+      "high_layer_speed:8|8,"
+      "deblock_mode:1|0/");
+
+  auto* const vpx = new NiceMock<MockLibvpxInterface>();
+  LibvpxVp9Encoder encoder(CreateEnvironment(&trials), {},
+                           absl::WrapUnique<LibvpxInterface>(vpx));
+
+  VideoCodec settings = DefaultCodecSettings();
+  constexpr int kNumSpatialLayers = 3;
+  constexpr int kNumTemporalLayers = 3;
+  ConfigureSvc(settings, kNumSpatialLayers, kNumTemporalLayers);
+  vpx_image_t img;
+  ON_CALL(*vpx, img_wrap).WillByDefault(GetWrapImageFunction(&img));
+  ON_CALL(*vpx, codec_enc_init)
+      .WillByDefault(WithArg<0>([](vpx_codec_ctx_t* ctx) {
+        memset(ctx, 0, sizeof(*ctx));
+        return VPX_CODEC_OK;
+      }));
+  ON_CALL(*vpx, codec_enc_config_default)
+      .WillByDefault(WithArg<1>([](vpx_codec_enc_cfg_t* cfg) {
+        memset(cfg, 0, sizeof(vpx_codec_enc_cfg_t));
+        return VPX_CODEC_OK;
+      }));
+
+  EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK, encoder.InitEncode(&settings, kSettings));
+  Mock::VerifyAndClearExpectations(vpx);
+
+  const int kExpectedSpeed1[VPX_MAX_LAYERS] = {9, 7, 6};
+  EXPECT_CALL(*vpx, codec_control(_, VP9E_SET_SVC_PARAMETERS,
+                                  SafeMatcherCast<vpx_svc_extra_cfg_t*>(Field(
+                                      &vpx_svc_extra_cfg_t::speed_per_layer,
+                                      ElementsAreArray(kExpectedSpeed1)))));
+  // 4th element is outside the configured 3 spatial layers and should be
+  // ignored.
+
+  const VideoCodecComplexity kComplexities1[] = {
+      kComplexityLow, kComplexityNormal, kComplexityHigh, kComplexityMax};
+  encoder.SetComplexity(kComplexities1,
+                        VideoEncoder::ComplexityControlMode::kConstant);
+  Mock::VerifyAndClearExpectations(vpx);
+
+  const int kExpectedSpeed2[VPX_MAX_LAYERS] = {9, 5, 5};
+  EXPECT_CALL(*vpx, codec_control(_, VP9E_SET_SVC_PARAMETERS,
+                                  SafeMatcherCast<vpx_svc_extra_cfg_t*>(Field(
+                                      &vpx_svc_extra_cfg_t::speed_per_layer,
+                                      ElementsAreArray(kExpectedSpeed2)))));
+  const VideoCodecComplexity kComplexities2[] = {kComplexityLow,
+                                                 kComplexityMax};
+  encoder.SetComplexity(kComplexities2,
+                        VideoEncoder::ComplexityControlMode::kConstant);
+}
+
+TEST(Vp9SpeedSettingsTrialsTest,
+     SetComplexityWithoutPerLayerFlagPicksLowestComplexity) {
+  FieldTrials trials = CreateTestFieldTrials(
+      "WebRTC-VP9-PerformanceFlags/"
+      "min_pixel_count:0|129600,"
+      "base_layer_speed:4|8,"
+      "high_layer_speed:5|9,"
+      "deblock_mode:1|0/");
+
+  auto* const vpx = new NiceMock<MockLibvpxInterface>();
+  LibvpxVp9Encoder encoder(CreateEnvironment(&trials), {},
+                           absl::WrapUnique<LibvpxInterface>(vpx));
+
+  VideoCodec settings = DefaultCodecSettings();
+  ConfigureSvc(settings, /*num_spatial_layers=*/2, /*num_temporal_layers=*/3);
+  vpx_image_t img;
+  ON_CALL(*vpx, img_wrap).WillByDefault(GetWrapImageFunction(&img));
+  ON_CALL(*vpx, codec_enc_config_default)
+      .WillByDefault(WithArg<1>([](vpx_codec_enc_cfg_t* cfg) {
+        memset(cfg, 0, sizeof(vpx_codec_enc_cfg_t));
+        return VPX_CODEC_OK;
+      }));
+
+  EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK, encoder.InitEncode(&settings, kSettings));
+  Mock::VerifyAndClearExpectations(vpx);
+
+  // Between layer 0 (kComplexityHigh) and layer 1 (kComplexityNormal), the
+  // lowest complexity is kComplexityNormal (speed 7). The 3rd element
+  // (kComplexityLow) is outside the 2 configured spatial layers and ignored.
+  EXPECT_CALL(*vpx, codec_control(_, VP8E_SET_CPUUSED, TypedEq<int>(7)));
+  const VideoCodecComplexity kComplexities[] = {
+      kComplexityHigh, kComplexityNormal, kComplexityLow};
+  encoder.SetComplexity(kComplexities,
+                        VideoEncoder::ComplexityControlMode::kConstant);
 }
 
 struct SvcFrameDropConfigTestParameters {

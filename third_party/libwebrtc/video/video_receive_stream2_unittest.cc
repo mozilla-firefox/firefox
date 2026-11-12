@@ -60,6 +60,7 @@
 #include "modules/video_coding/nack_requester.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/clock.h"
+#include "system_wrappers/include/metrics.h"
 #include "test/create_test_environment.h"
 #include "test/fake_decoder.h"
 #include "test/fake_encoded_frame.h"
@@ -547,6 +548,7 @@ TEST_P(VideoReceiveStream2Test, UseLowLatencyRenderingSetFromPlayoutDelay) {
 }
 
 TEST_P(VideoReceiveStream2Test, MaxCompositionDelaySetFromMaxPlayoutDelay) {
+  metrics::Reset();
   // The max composition delay is dependent on the number of frames in the
   // pre-decode queue. It's therefore important to advance the time as the test
   // runs to get the correct expectations of max_composition_delay_in_frames.
@@ -606,6 +608,11 @@ TEST_P(VideoReceiveStream2Test, MaxCompositionDelaySetFromMaxPlayoutDelay) {
   video_receive_stream_->OnCompleteFrame(std::move(test_frame3));
   EXPECT_THAT(timing_->RenderParameters().max_composition_delay_in_frames,
               Optional(kExpectedMaxCompositionDelayInFrames));
+
+  video_receive_stream_->Stop();
+  // All 4 modes (1 | 2 | 8 | 4 = 15) were used during the session.
+  EXPECT_METRIC_EQ(1, metrics::NumSamples("WebRTC.Video.PlayoutDelayMode"));
+  EXPECT_METRIC_EQ(1, metrics::NumEvents("WebRTC.Video.PlayoutDelayMode", 15));
 }
 
 TEST_P(VideoReceiveStream2Test, LazyDecoderCreation) {

@@ -92,7 +92,7 @@ rtc_library("bitrate_controller") {
 
 if (rtc_include_tests && !build_with_chromium) {
   rtc_cc_test("pcc_bitrate_controller_unittest") {
-    sources = [ "bitrate_controller_unittest.cc" ]
+    sources = [ "pcc_bitrate_controller_unittest.cc" ]
     deps = [
       ":bitrate_controller",
       ":monitor_interval",

@@ -68,10 +68,7 @@ class MockRtpSenderInternal : public RtpSenderInternal {
               (std::optional<RtpParameters>),
               (override));
   MOCK_METHOD(RtpParameters, GetParameters, (), (const, override));
-  MOCK_METHOD(RtpParameters,
-              GetParametersInternal,
-              (bool, bool),
-              (const, override));
+  MOCK_METHOD(RtpParameters, GetParametersInternal, (bool), (const, override));
   MOCK_METHOD(RtpParameters,
               GetParametersInternalWithAllLayers,
               (),

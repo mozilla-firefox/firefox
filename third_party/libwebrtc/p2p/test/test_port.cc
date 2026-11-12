@@ -33,10 +33,8 @@
 
 namespace webrtc {
 
-TestPort::TestPort(const PortParametersRef& args,
-                   uint16_t min_port,
-                   uint16_t max_port)
-    : Port(args, IceCandidateType::kHost, min_port, max_port) {}
+TestPort::TestPort(PortParametersRef args, uint16_t min_port, uint16_t max_port)
+    : Port(std::move(args), IceCandidateType::kHost, min_port, max_port) {}
 TestPort::~TestPort() = default;
 
 std::span<const uint8_t> TestPort::last_stun_buf() {
@@ -103,7 +101,7 @@ int TestPort::SendTo(std::span<const uint8_t> data,
                      bool payload) {
   if (!payload) {
     auto msg = std::make_unique<IceMessage>();
-    auto buf = std::make_unique<BufferT<uint8_t>>(data);
+    auto buf = std::make_unique<Buffer>(data);
     ByteBufferReader read_buf(*buf);
     if (!msg->Read(&read_buf)) {
       return -1;

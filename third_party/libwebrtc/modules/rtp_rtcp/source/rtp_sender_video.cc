@@ -31,6 +31,8 @@
 #include "api/frame_transformer_interface.h"
 #include "api/make_ref_counted.h"
 #include "api/media_types.h"
+#include "api/rtc_error.h"
+#include "api/sframe/sframe_types.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "api/transport/rtp/corruption_detection_message.h"
 #include "api/transport/rtp/dependency_descriptor.h"
@@ -55,10 +57,14 @@
 #include "modules/rtp_rtcp/source/rtp_generic_frame_descriptor_extension.h"
 #include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
+#include "modules/rtp_rtcp/source/rtp_packetizer_sframe.h"
 #include "modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
 #include "modules/rtp_rtcp/source/rtp_video_layers_allocation_extension.h"
+#include "modules/rtp_rtcp/source/sframe_descriptor.h"
 #include "modules/rtp_rtcp/source/video_fec_generator.h"
+#include "modules/sframe/sframe_encryption_config.h"
+#include "modules/sframe/sframe_media_encryptor_interface.h"
 #include "modules/video_coding/codecs/h264/include/h264_globals.h"
 #include "modules/video_coding/codecs/interface/common_constants.h"
 #include "modules/video_coding/codecs/vp8/include/vp8_globals.h"
@@ -166,28 +172,6 @@ bool PacketWillLikelyBeRequestedForRestransmissionIfLost(
                      video_header.generic->decode_target_indications,
                      DecodeTargetIndication::kDiscardable)
                : false);
-}
-
-PacketizationFormat GetPacketizationFormat(const VideoCodecType codec_type,
-                                           bool raw_packetization) {
-  if (raw_packetization) {
-    return PacketizationFormat::kRaw;
-  }
-
-  switch (codec_type) {
-    case kVideoCodecH264:
-      return PacketizationFormat::kH264;
-    case kVideoCodecVP8:
-      return PacketizationFormat::kVP8;
-    case kVideoCodecVP9:
-      return PacketizationFormat::kVP9;
-    case kVideoCodecAV1:
-      return PacketizationFormat::kAV1;
-    case kVideoCodecH265:
-      return PacketizationFormat::kH265;
-    case kVideoCodecGeneric:
-      return PacketizationFormat::kGeneric;
-  }
 }
 
 }  // namespace
@@ -592,6 +576,17 @@ bool RTPSenderVideo::SendVideoFrame(int payload_type,
                                     std::vector<uint32_t> csrcs) {
   RTC_CHECK_RUNS_SERIALIZED(&send_checker_);
 
+  // Drop frames when Sframe is required but can't be applied. Frames may reach
+  // this point without SendEncodedImage, e.g. from an encoded frame transform.
+  // An encryptor may be configured before negotiation requires Sframe; it stays
+  // unused then.
+  if (sframe_required_by_negotiation_ && !IsSframeEncryptionSupported()) {
+    RTC_LOG(LS_WARNING) << "Dropping video frame: Sframe is required but no "
+                           "supported Sframe encryptor is set up for this "
+                           "stream.";
+    return false;
+  }
+
   uint32_t rtp_timestamp =
       std::holds_alternative<RtpTimestampWithoutOffset>(rtp_timestamp_info)
           ? std::get<RtpTimestampWithoutOffset>(rtp_timestamp_info) +
@@ -759,6 +754,14 @@ bool RTPSenderVideo::SendVideoFrame(int payload_type,
           ? last_packet->headers_size() - middle_packet->headers_size()
           : 0;
 
+  if (IsSframeModeActive(SframeMode::kPerPacket)) {
+    // Every packet carries the Sframe descriptor and its own Sframe header and
+    // authentication tag.
+    limits.max_payload_len -= static_cast<int>(
+        SframeDescriptor::kSize +
+        sframe_encryption_config_->encryptor->GetMaxCiphertextByteSize(0));
+  }
+
   bool has_generic_descriptor =
       first_packet->HasExtension<RtpGenericFrameDescriptorExtension00>() ||
       first_packet->HasExtension<RtpDependencyDescriptorExtension>();
@@ -798,9 +801,29 @@ bool RTPSenderVideo::SendVideoFrame(int payload_type,
            "one is required since require_frame_encryptor is set";
   }
 
+  std::vector<uint8_t> sframe_payload;
+  if (IsSframeModeActive(SframeMode::kPerFrame)) {
+    SframeMediaEncryptorInterface& encryptor =
+        *sframe_encryption_config_->encryptor;
+
+    // Allocate buffer for the largest possible Sframe ciphertext.
+    sframe_payload.resize(encryptor.GetMaxCiphertextByteSize(payload.size()));
+
+    RTCErrorOr<size_t> bytes_written =
+        encryptor.Encrypt(payload, /*additional_data=*/{}, sframe_payload);
+    if (!bytes_written.ok()) {
+      RTC_LOG(LS_WARNING) << "Dropping video frame: "
+                          << bytes_written.error().message();
+      return false;
+    }
+
+    // Resize the Sframe payload buffer to the actual number of bytes written.
+    sframe_payload.resize(bytes_written.value());
+    payload = sframe_payload;
+  }
+
   std::unique_ptr<RtpPacketizer> packetizer = RtpPacketizer::Create(
-      GetPacketizationFormat(codec_type, raw_packetization_), payload, limits,
-      video_header);
+      GetPacketizationFormat(codec_type), payload, limits, video_header);
 
   const size_t num_packets = packetizer->NumPackets();
 
@@ -839,10 +862,38 @@ bool RTPSenderVideo::SendVideoFrame(int payload_type,
     }
 
     packet->set_first_packet_of_frame(i == 0);
+    packet->set_last_packet_of_frame(i == num_packets - 1);
 
     if (!packetizer->NextPacket(packet.get()))
       return false;
     RTC_DCHECK_LE(packet->payload_size(), expected_payload_capacity);
+
+    if (IsSframeModeActive(SframeMode::kPerPacket)) {
+      SframeMediaEncryptorInterface& encryptor =
+          *sframe_encryption_config_->encryptor;
+
+      // Allocate buffer for the largest possible Sframe ciphertext.
+      sframe_payload.resize(
+          encryptor.GetMaxCiphertextByteSize(packet->payload_size()));
+
+      RTCErrorOr<size_t> bytes_written = encryptor.Encrypt(
+          packet->payload(), /*additional_data=*/{}, sframe_payload);
+      if (!bytes_written.ok()) {
+        RTC_LOG(LS_WARNING)
+            << "Dropping video frame: " << bytes_written.error().message();
+        return false;
+      }
+
+      sframe_payload.resize(bytes_written.value());
+      packet->SetPayload(sframe_payload);
+
+      RTCError error = PacketizeSframeRtpPacketOrError(
+          MediaType::VIDEO, packet.get(), SframeEncryptionLevel::kPacket);
+      if (!error.ok()) {
+        RTC_LOG(LS_WARNING) << "Dropping video frame: " << error.message();
+        return false;
+      }
+    }
 
     packet->set_allow_retransmission(allow_retransmission);
     packet->set_is_key_frame(video_header.frame_type ==
@@ -918,12 +969,10 @@ bool RTPSenderVideo::SendEncodedImage(int payload_type,
                                       RTPVideoHeader video_header,
                                       TimeDelta expected_retransmission_time,
                                       const std::vector<uint32_t>& csrcs) {
-  if (sframe_required_by_negotiation_) {
-    // TODO(bugs.webrtc.org/479862368): Enable the encryptor check once frames
-    // are encrypted; until then dropping unconditionally keeps media off the
-    // wire.
+  if (sframe_required_by_negotiation_ && !IsSframeEncryptionSupported()) {
     RTC_LOG(LS_WARNING) << "Dropping video frame: Sframe is required but no "
-                           "Sframe encryptor is set up for this stream.";
+                           "supported Sframe encryptor is set up for this "
+                           "stream.";
     return false;
   }
 
@@ -944,6 +993,44 @@ DataRate RTPSenderVideo::PostEncodeOverhead() const {
   MutexLock lock(&stats_mutex_);
   return post_encode_overhead_bitrate_.Rate(clock_->CurrentTime())
       .value_or(DataRate::Zero());
+}
+
+PacketizationFormat RTPSenderVideo::GetPacketizationFormat(
+    VideoCodecType codec_type) const {
+  // Sframe encrypts the whole frame, so codec packetization doesn't apply.
+  if (IsSframeModeActive(SframeMode::kPerFrame)) {
+    return PacketizationFormat::kSframe;
+  }
+
+  if (raw_packetization_) {
+    return PacketizationFormat::kRaw;
+  }
+
+  switch (codec_type) {
+    case kVideoCodecH264:
+      return PacketizationFormat::kH264;
+    case kVideoCodecVP8:
+      return PacketizationFormat::kVP8;
+    case kVideoCodecVP9:
+      return PacketizationFormat::kVP9;
+    case kVideoCodecAV1:
+      return PacketizationFormat::kAV1;
+    case kVideoCodecH265:
+      return PacketizationFormat::kH265;
+    case kVideoCodecGeneric:
+      return PacketizationFormat::kGeneric;
+  }
+}
+
+bool RTPSenderVideo::IsSframeModeActive(SframeMode mode) const {
+  return sframe_required_by_negotiation_ &&
+         sframe_encryption_config_.has_value() &&
+         sframe_encryption_config_->mode == mode;
+}
+
+bool RTPSenderVideo::IsSframeEncryptionSupported() const {
+  return sframe_encryption_config_.has_value() &&
+         sframe_encryption_config_->encryptor != nullptr;
 }
 
 bool RTPSenderVideo::AllowRetransmission(

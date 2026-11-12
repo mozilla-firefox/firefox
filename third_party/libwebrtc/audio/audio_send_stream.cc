@@ -252,6 +252,10 @@ void AudioSendStream::ConfigureStream(
     channel_send_->SetFrameEncryptor(new_config.frame_encryptor);
   }
 
+  if (first_time || new_config.sframe_options != old_config.sframe_options) {
+    channel_send_->SetSframeOptions(new_config.sframe_options);
+  }
+
   if (first_time ||
       new_config.frame_transformer != old_config.frame_transformer) {
     channel_send_->SetEncoderToPacketizerFrameTransformer(

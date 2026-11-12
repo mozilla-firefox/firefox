@@ -23,7 +23,6 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/sender_report.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/transport_feedback.h"
 #include "modules/rtp_rtcp/source/rtcp_transceiver_config.h"
-#include "rtc_base/buffer.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/event.h"
 #include "rtc_base/task_queue_for_test.h"
@@ -163,10 +162,9 @@ CopyOnWriteBuffer CreateSenderReport(uint32_t ssrc, uint32_t rtp_time) {
   rtcp::SenderReport sr;
   sr.SetSenderSsrc(ssrc);
   sr.SetRtpTimestamp(rtp_time);
-  Buffer buffer = sr.Build();
   // Switch to an efficient way creating CopyOnWriteBuffer from RtcpPacket when
   // there is one. Until then do not worry about extra memcpy in test.
-  return CopyOnWriteBuffer(buffer.data(), buffer.size());
+  return CopyOnWriteBuffer(sr.Build());
 }
 
 TEST(RtcpTransceiverTest, DoesntPostToRtcpObserverAfterCallToRemove) {

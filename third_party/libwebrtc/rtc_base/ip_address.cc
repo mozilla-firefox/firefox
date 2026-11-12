@@ -156,29 +156,41 @@ std::string IPAddress::ToString() const {
 }
 
 std::string IPAddress::ToSensitiveString() const {
-  switch (family_) {
+  return std::string(Sensitive(*this).view());
+}
+
+IPAddress::Sensitive::Sensitive(const IPAddress& ip) {
+  switch (ip.family()) {
     case AF_INET: {
-      std::string address = ToString();
-      size_t find_pos = address.rfind('.');
-      if (find_pos == std::string::npos)
-        return std::string();
-      address.resize(find_pos);
-      address += ".x";
-      return address;
+      in_addr addr = ip.ipv4_address();
+      if (!webrtc::inet_ntop(AF_INET, &addr, buffer_.data(), buffer_.size())) {
+        return;
+      }
+      // Replace the last part with "x".
+      size_t find_pos = absl::string_view(buffer_.data()).rfind('.');
+      if (find_pos == absl::string_view::npos) {
+        return;
+      }
+      buffer_[find_pos + 1] = 'x';
+      length_ = find_pos + 2;
+      return;
     }
     case AF_INET6: {
-      std::string result;
-      result.resize(INET6_ADDRSTRLEN);
-      in6_addr addr = ipv6_address();
-      size_t len = snprintf(&(result[0]), result.size(), "%x:%x:%x:x:x:x:x:x",
-                            (addr.s6_addr[0] << 8) + addr.s6_addr[1],
-                            (addr.s6_addr[2] << 8) + addr.s6_addr[3],
-                            (addr.s6_addr[4] << 8) + addr.s6_addr[5]);
-      result.resize(len);
-      return result;
+      in6_addr addr = ip.ipv6_address();
+      int len = snprintf(buffer_.data(), buffer_.size(), "%x:%x:%x:x:x:x:x:x",
+                         (addr.s6_addr[0] << 8) + addr.s6_addr[1],
+                         (addr.s6_addr[2] << 8) + addr.s6_addr[3],
+                         (addr.s6_addr[4] << 8) + addr.s6_addr[5]);
+      if (len > 0) {
+        length_ = static_cast<size_t>(len);
+      }
+      return;
     }
   }
-  return std::string();
+}
+
+absl::string_view IPAddress::Sensitive::view() const {
+  return absl::string_view(buffer_.data(), length_);
 }
 
 IPAddress IPAddress::Normalized() const {

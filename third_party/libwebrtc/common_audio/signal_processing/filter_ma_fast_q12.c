@@ -29,7 +29,7 @@ void WebRtcSpl_FilterMAFastQ12(const int16_t* in_ptr,
                            B_length + length - 1);
 
   for (i = 0; i < length; i++) {
-    int32_t o = 0;
+    int64_t o = 0;
 
     for (j = 0; j < B_length; j++) {
       // Negative overflow is permitted here, because this is

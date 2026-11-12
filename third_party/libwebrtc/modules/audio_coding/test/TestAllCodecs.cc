@@ -180,7 +180,7 @@ void TestAllCodecs::Perform() {
   Run(channel_a_to_b_);
   RegisterSendCodec(codec_g722, 16000, 64000, 960, 0);
   Run(channel_a_to_b_);
-  outfile_b_.Close();
+  CloseOutFile();
 #endif
   test_count_++;
   OpenOutFile(test_count_);
@@ -193,7 +193,7 @@ void TestAllCodecs::Perform() {
   Run(channel_a_to_b_);
   RegisterSendCodec(codec_l16, 8000, 128000, 320, 0);
   Run(channel_a_to_b_);
-  outfile_b_.Close();
+  CloseOutFile();
 
   test_count_++;
   OpenOutFile(test_count_);
@@ -205,7 +205,7 @@ void TestAllCodecs::Perform() {
   Run(channel_a_to_b_);
   RegisterSendCodec(codec_l16, 16000, 256000, 640, 0);
   Run(channel_a_to_b_);
-  outfile_b_.Close();
+  CloseOutFile();
 
   test_count_++;
   OpenOutFile(test_count_);
@@ -213,7 +213,7 @@ void TestAllCodecs::Perform() {
   Run(channel_a_to_b_);
   RegisterSendCodec(codec_l16, 32000, 512000, 640, 0);
   Run(channel_a_to_b_);
-  outfile_b_.Close();
+  CloseOutFile();
 
   test_count_++;
   OpenOutFile(test_count_);
@@ -244,7 +244,7 @@ void TestAllCodecs::Perform() {
   Run(channel_a_to_b_);
   RegisterSendCodec(codec_pcmu, 8000, 64000, 480, 0);
   Run(channel_a_to_b_);
-  outfile_b_.Close();
+  CloseOutFile();
 #ifdef WEBRTC_CODEC_OPUS
   test_count_++;
   OpenOutFile(test_count_);
@@ -263,7 +263,7 @@ void TestAllCodecs::Perform() {
   Run(channel_a_to_b_);
   RegisterSendCodec(codec_opus, 48000, 500000, 480 * 2, kVariableSize);
   Run(channel_a_to_b_);
-  outfile_b_.Close();
+  CloseOutFile();
 #endif
 }
 
@@ -378,13 +378,15 @@ void TestAllCodecs::Run(TestPack* channel) {
 }
 
 void TestAllCodecs::OpenOutFile(int test_number) {
-  std::string filename = test::OutputPath();
-  StringBuilder test_number_str;
-  test_number_str << test_number;
-  filename += "testallcodecs_out_";
-  filename += test_number_str.str();
-  filename += ".pcm";
-  outfile_b_.Open(filename, 32000, "wb");
+  StringBuilder filename;
+  filename << "testallcodecs_out_" << test_number << ".pcm";
+  outfile_b_name_ = test::TempFilename(test::OutputPath(), filename.str());
+  outfile_b_.Open(outfile_b_name_, 32000, "wb");
+}
+
+void TestAllCodecs::CloseOutFile() {
+  outfile_b_.Close();
+  EXPECT_TRUE(test::RemoveFile(outfile_b_name_));
 }
 
 }  // namespace webrtc

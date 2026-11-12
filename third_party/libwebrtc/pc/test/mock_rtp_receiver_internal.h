@@ -88,7 +88,8 @@ class MockRtpReceiverInternal : public RtpReceiverInternal {
               (override));
   MOCK_METHOD(std::optional<uint32_t>, ssrc, (), (const, override));
   MOCK_METHOD(std::optional<uint32_t>, ssrc_s, (), (const, override));
-  MOCK_METHOD(void, SetSsrc_s, (uint32_t), (override));
+  MOCK_METHOD(bool, has_signaled_ssrc_s, (), (const, override));
+  MOCK_METHOD(void, SetUnsignaledSsrc_s, (uint32_t), (override));
   MOCK_METHOD(void, NotifyFirstPacketReceived, (uint32_t), (override));
   MOCK_METHOD(void,
               NotifyFirstPacketReceivedAfterReceptiveChange,

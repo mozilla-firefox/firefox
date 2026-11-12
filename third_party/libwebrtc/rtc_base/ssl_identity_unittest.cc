@@ -15,7 +15,9 @@
 #else
 #include <openssl/evp.h>  // IWYU pragma: keep
 #endif
+#include <openssl/err.h>
 #include <openssl/sha.h>
+#include <openssl/x509.h>
 
 #include <array>
 #include <cstdint>
@@ -422,6 +424,23 @@ TEST_F(SSLIdentityTest, FromPEMChainStrings) {
   ASSERT_EQ(2u, identity->cert_chain().GetSize());
   EXPECT_EQ(kRSA_CERT_PEM, identity->cert_chain().Get(0).ToPEMString());
   EXPECT_EQ(kTestCertificate, identity->cert_chain().Get(1).ToPEMString());
+}
+
+// Errors left in this thread's OpenSSL error queue by unrelated operations
+// must not make parsing a valid chain fail.
+TEST_F(SSLIdentityTest, FromPEMChainStringsWithStaleOpenSSLError) {
+  const uint8_t kNotACertificate[] = {0x00};
+  const uint8_t* p = kNotACertificate;
+  ASSERT_EQ(d2i_X509(nullptr, &p, sizeof(kNotACertificate)), nullptr);
+  ASSERT_NE(ERR_peek_error(), 0u);
+
+  std::string chain(kRSA_CERT_PEM);
+  chain.append(kTestCertificate);
+  std::unique_ptr<SSLIdentity> identity(
+      SSLIdentity::CreateFromPEMChainStrings(kRSA_PRIVATE_KEY_PEM, chain));
+  ASSERT_NE(identity, nullptr);
+  EXPECT_EQ(2u, identity->cert_chain().GetSize());
+  EXPECT_EQ(ERR_peek_error(), 0u);
 }
 
 TEST_F(SSLIdentityTest, CloneIdentityRSA) {

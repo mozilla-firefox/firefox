@@ -1132,8 +1132,7 @@ scoped_refptr<RTCStatsReport> RTCStatsCollector::CreateReportFilteredBySelector(
     if (sender_selector) {
       // Find outbound-rtp(s) of the sender using ssrc lookup.
       RtpParameters parameters =
-          sender_selector->GetParametersInternal(/*may_use_cache=*/true,
-                                                 /*with_all_layers=*/false);
+          sender_selector->GetParametersInternal(/*with_all_layers=*/false);
       std::vector<RtpEncodingParameters>& encodings = parameters.encodings;
       for (const auto* outbound_rtp :
            report->GetStatsOfType<RTCOutboundRtpStreamStats>()) {

@@ -1,72 +1,32 @@
 From: Michael Froman <mfroman@mozilla.com>
-Date: Tue, 15 Sep 2026 16:49:00 +0000
-Subject: Bug 1996020 - Cleanup remaining usages of
- VideoFrameBuffer::CropAndScale that should check for nullptr. r=bwc
+Date: Tue, 15 Sep 2026 20:40:00 +0000
+Subject: Bug 1996020 - use I420Buffer::CreateOrNull in
+ VideoFrameBufferPool::CreateI420Buffer. r=bwc
 
-Note that while RTCNativeI420Buffer.mm's cropAndScaleWith: uses
-CropAndScale, cropAndScaleWith: is only used in upstream unittests
-and objc_frame_buffer.mm which Mozilla doesn't build.  Since all of
-the crashes we see in Bug 1996020 are Windows related, the point is
-probably moot for objective-c.
+Looking at the crash reports, even after converting DesktopCaptureImpl::OnCaptureResult
+to use the VideoFrameBufferPool, we're still seeing occasional crashes
+in AlignedMalloc so use CreateOrNull so we don't crash in OOM situations.
 
-Differential Revision: https://phabricator.services.mozilla.com/D326238
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/7fc0f681f70e21f6f4ccbb4460141b1f226cc0b7
+Differential Revision: https://phabricator.services.mozilla.com/D326269
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/93cb056a0c8220b5b364f9cd1204ac34bb0d163d
 ---
- modules/video_coding/codecs/av1/libaom_av1_encoder.cc | 6 ++++++
- modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc | 7 +++++++
- modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc | 7 +++++++
- 3 files changed, 20 insertions(+)
+ common_video/video_frame_buffer_pool.cc | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-index 65d2ffc8e3..c3b078abbe 100644
---- a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-+++ b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-@@ -832,6 +832,12 @@ int32_t LibaomAv1Encoder::Encode(
-     scaled_image = buffer->Scale(
-         encoder_settings_.spatialLayers[last_active_layer_].width,
-         encoder_settings_.spatialLayers[last_active_layer_].height);
-+    if (!scaled_image) {
-+      RTC_LOG(LS_ERROR) << "Failed to scale "
-+                        << VideoFrameBufferTypeToString(buffer->type())
-+                        << " image. Can't encode frame.";
-+      return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
-+    }
-   }
+diff --git a/common_video/video_frame_buffer_pool.cc b/common_video/video_frame_buffer_pool.cc
+index 7f65f87302..df349a2d5f 100644
+--- a/common_video/video_frame_buffer_pool.cc
++++ b/common_video/video_frame_buffer_pool.cc
+@@ -139,8 +139,10 @@ scoped_refptr<I420Buffer> VideoFrameBufferPool::CreateI420Buffer(int width,
+   if (buffers_.size() >= max_number_of_buffers_)
+     return nullptr;
+   // Allocate new buffer.
+-  scoped_refptr<I420Buffer> buffer =
+-      make_ref_counted<I420Buffer>(width, height);
++  scoped_refptr<I420Buffer> buffer = I420Buffer::CreateOrNull(width, height);
++  if (!buffer) {
++    return nullptr;
++  }
  
-   scoped_refptr<VideoFrameBuffer> mapped_buffer;
-diff --git a/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc b/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
-index 3e3eb9ce96..c8d3426805 100644
---- a/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
-+++ b/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
-@@ -1542,6 +1542,13 @@ std::vector<scoped_refptr<VideoFrameBuffer>> LibvpxVp8Encoder::PrepareBuffers(
- 
-     auto scaled_buffer =
-         buffer_to_scale->Scale(raw_images_[i].d_w, raw_images_[i].d_h);
-+    if (!scaled_buffer) {
-+      RTC_LOG(LS_ERROR) << "Failed to scale "
-+                        << VideoFrameBufferTypeToString(
-+                               buffer_to_scale->type())
-+                        << " image. Can't encode frame.";
-+      return {};
-+    }
-     if (scaled_buffer->type() == VideoFrameBuffer::Type::kNative) {
-       auto mapped_scaled_buffer =
-           scaled_buffer->GetMappedFrameBuffer(mapped_type);
-diff --git a/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc b/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
-index 82f6d77b3a..967b30d0c8 100644
---- a/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
-+++ b/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
-@@ -1189,6 +1189,13 @@ int LibvpxVp9Encoder::Encode(const VideoFrame& input_image,
-     scaled_image = input_image.video_frame_buffer()->Scale(
-         codec_.spatialLayers[num_active_spatial_layers_ - 1].width,
-         codec_.spatialLayers[num_active_spatial_layers_ - 1].height);
-+    if (!scaled_image) {
-+      RTC_LOG(LS_ERROR) << "Failed to scale "
-+                        << VideoFrameBufferTypeToString(
-+                               input_image.video_frame_buffer()->type())
-+                        << " image. Can't encode frame.";
-+      return WEBRTC_VIDEO_CODEC_ERROR;
-+    }
-   }
- 
-   RTC_DCHECK_EQ(scaled_image->width(), config_->g_w);
+   if (zero_initialize_)
+     buffer->InitializeData();

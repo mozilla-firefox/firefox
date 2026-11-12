@@ -355,9 +355,7 @@ RtpTransceiver::RtpTransceiver(
   receivers_.push_back(std::move(receiver));
   if (media_type_ == MediaType::VIDEO) {
     ConfigureExtraVideoHeaderExtensions(
-        sender_internal
-            ->GetParametersInternal(/*may_use_cache*/ true,
-                                    /*with_all_layers=*/false)
+        sender_internal->GetParametersInternal(/*with_all_layers=*/false)
             .encodings,
         header_extensions_to_negotiate_);
   }
@@ -557,7 +555,7 @@ void RtpTransceiver::CreateChannel(
         [this, media_send_channel = std::move(media_send_channel),
          media_receive_channel = std::move(media_receive_channel),
          construct_channel = std::move(construct_channel)]() mutable
-            -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+            -> ScopedOperationsBatcher::BatchTaskResult {
           RTC_DCHECK_RUN_ON(context()->worker_thread());
           SetMediaChannels(media_send_channel.get(),
                            media_receive_channel.get());
@@ -575,7 +573,7 @@ void RtpTransceiver::CreateChannel(
 
   network_tasks.AddWithFinalizer(
       [this, transport_lookup = std::move(transport_lookup)]() mutable
-          -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+          -> ScopedOperationsBatcher::BatchTaskResult {
         RTC_DCHECK_RUN_ON(context()->network_thread());
         auto result = InitializeOnNetworkThread(std::move(transport_lookup));
         if (!result.ok()) {
@@ -875,11 +873,15 @@ void RtpTransceiver::OnFirstPacketReceived_s(uint32_t ssrc) {
       return;
     }
   }
+  // Bind the first receiver that doesn't have a signaled SSRC. If the receiver
+  // is already bound to an unsignaled SSRC (e.g. the remote endpoint changed
+  // the SSRC), the new SSRC replaces it, matching the worker thread where the
+  // most recent unsignaled stream is used (see `RtpReceiverBase::ssrc()`).
   for (const auto& receiver : receivers_) {
-    if (!receiver->internal()->ssrc_s().has_value()) {
-      receiver->internal()->SetSsrc_s(ssrc);
+    if (!receiver->internal()->has_signaled_ssrc_s()) {
+      receiver->internal()->SetUnsignaledSsrc_s(ssrc);
       receiver->internal()->NotifyFirstPacketReceived(ssrc);
-      break;  // Bind first unbound receiver.
+      break;
     }
   }
 }
@@ -1126,7 +1128,7 @@ RtpTransceiver::StopStandardAsync() {
   auto stop_task = GetStopSendingAndReceiving();
 
   return [this, stop_task = std::move(stop_task)]() mutable
-             -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+             -> ScopedOperationsBatcher::BatchTaskResult {
     RTC_DCHECK_RUN_ON(context()->worker_thread());
     std::move(stop_task)();
     return ScopedOperationsBatcher::FinalizerTask([this]() {
@@ -1336,6 +1338,15 @@ bool IsMandatoryHeaderExtension(absl::string_view uri) {
   return uri == RtpExtension::kMidUri;
 }
 
+void ReofferMandatoryHeaderExtensions(
+    std::vector<RtpHeaderExtensionCapability>& capabilities) {
+  for (auto& capability : capabilities) {
+    if (IsMandatoryHeaderExtension(capability.uri)) {
+      capability.direction = RtpTransceiverDirection::kSendRecv;
+    }
+  }
+}
+
 RTCError RtpTransceiver::SetHeaderExtensionsToNegotiate(
     std::span<const RtpHeaderExtensionCapability> header_extensions) {
   RTC_DCHECK_RUN_ON(thread_);
@@ -1386,6 +1397,7 @@ void RtpTransceiver::OnNegotiationUpdate(
     if (!env_.field_trials().IsDisabled(
             "WebRTC-HeaderExtensionNegotiateMemory")) {
       header_extensions_to_negotiate_ = GetNegotiatedHeaderExtensions();
+      ReofferMandatoryHeaderExtensions(header_extensions_to_negotiate_);
     }
   } else if (sdp_type == SdpType::kOffer) {
     if (!env_.field_trials().IsDisabled(
@@ -1393,6 +1405,7 @@ void RtpTransceiver::OnNegotiationUpdate(
       header_extensions_for_rollback_ = header_extensions_to_negotiate_;
       header_extensions_to_negotiate_ =
           GetOfferedAndImplementedHeaderExtensions(content);
+      ReofferMandatoryHeaderExtensions(header_extensions_to_negotiate_);
     }
   } else if (sdp_type == SdpType::kRollback) {
     if (!env_.field_trials().IsDisabled(
@@ -1527,15 +1540,15 @@ void RtpTransceiver::SetChannelContent(
   batcher.AddWithFinalizer(
       [this, set_content = std::move(set_content),
        sender_parameters = std::move(sender_parameters)]() mutable
-          -> RTCErrorOr<ScopedOperationsBatcher::FinalizerTask> {
+          -> ScopedOperationsBatcher::BatchTaskResult {
         RTC_DCHECK_RUN_ON(context()->worker_thread());
         if (!channel_) {
           return RTCError::InvalidState() << "No channel";
         }
         RTCError result = std::move(set_content)();
-        if (!result.ok()) {
-          return result;
-        }
+        // Read back the parameters, and update the senders' caches, even if
+        // applying the content failed, since the media channel may have been
+        // partially updated before the failure.
         for (auto& entry : sender_parameters) {
           if (entry.ssrc != 0) {
             entry.parameters =
@@ -1543,7 +1556,7 @@ void RtpTransceiver::SetChannelContent(
                     entry.ssrc);
           }
         }
-        return ScopedOperationsBatcher::FinalizerTask(
+        ScopedOperationsBatcher::FinalizerTask finalizer(
             [sender_parameters = std::move(sender_parameters)]() mutable {
               for (auto& entry : sender_parameters) {
                 if (entry.parameters) {
@@ -1552,6 +1565,7 @@ void RtpTransceiver::SetChannelContent(
                 }
               }
             });
+        return {std::move(result), std::move(finalizer)};
       });
 }
 void RtpTransceiver::EnableChannel(bool enable) {

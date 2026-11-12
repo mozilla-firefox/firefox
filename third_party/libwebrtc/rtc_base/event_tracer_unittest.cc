@@ -10,14 +10,23 @@
 
 #include "rtc_base/event_tracer.h"
 
+#include <fstream>
+#include <iterator>
+#include <string>
+
 #include "rtc_base/synchronization/mutex.h"
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/trace_event.h"
+#include "test/gmock.h"
 #include "test/gtest.h"
+#include "test/testsupport/file_utils.h"
 
 namespace webrtc {
 
 namespace {
+
+using ::testing::EndsWith;
+using ::testing::HasSubstr;
 
 class TestStatistics {
  public:
@@ -69,6 +78,29 @@ TEST(EventTracerTest, ScopedTraceEvent) {
   { TRACE_EVENT0("test", "ScopedTraceEvent"); }
   EXPECT_EQ(2, TestStatistics::Get()->Count());
   TestStatistics::Get()->Reset();
+}
+
+TEST(EventTracerTest, StopInternalCaptureCompletesTrace) {
+  const std::string filename =
+      test::TempFilename(test::OutputPath(), "event_tracer_unittest");
+  tracing::SetupInternalTracer();
+  ASSERT_TRUE(tracing::StartInternalCapture(filename));
+  {
+    TRACE_EVENT0("webrtc", "StopInternalCaptureCompletesTrace");
+  }
+  tracing::StopInternalCapture();
+
+  // The trace must be complete when StopInternalCapture() returns, so read it
+  // before ShutdownInternalTracer().
+  std::ifstream file(filename);
+  const std::string trace{std::istreambuf_iterator<char>(file),
+                          std::istreambuf_iterator<char>()};
+  file.close();
+  tracing::ShutdownInternalTracer();
+  test::RemoveFile(filename);
+
+  EXPECT_THAT(trace, HasSubstr("\"StopInternalCaptureCompletesTrace\""));
+  EXPECT_THAT(trace, EndsWith("]}\n"));
 }
 #endif
 

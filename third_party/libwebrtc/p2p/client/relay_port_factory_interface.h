@@ -19,6 +19,7 @@
 #include "api/local_network_access_permission.h"
 #include "api/packet_socket_factory.h"
 #include "api/task_queue/task_queue_base.h"
+#include "p2p/base/p2p_constants.h"
 #include "p2p/base/port.h"
 #include "p2p/base/port_allocator.h"
 #include "rtc_base/async_packet_socket.h"
@@ -50,6 +51,10 @@ struct CreateRelayPortArgs {
   LocalNetworkAccessPermissionFactoryInterface* lna_permission_factory =
       nullptr;
   uint64_t ice_tiebreaker = 0;
+  int component = ICE_CANDIDATE_COMPONENT_DEFAULT;
+  uint32_t generation = 0;
+  bool send_retransmit_count_attribute = false;
+  Port::Callbacks callbacks;
 };
 
 // A factory for creating RelayPort's.
@@ -59,13 +64,16 @@ class RelayPortFactoryInterface {
 
   // This variant is used for UDP connection to the relay server
   // using a already existing shared socket.
-  virtual std::unique_ptr<Port> Create(const CreateRelayPortArgs& args,
+  virtual std::unique_ptr<Port> Create(CreateRelayPortArgs&& args,
                                        AsyncPacketSocket* udp_socket) = 0;
 
   // This variant is used for the other cases.
-  virtual std::unique_ptr<Port> Create(const CreateRelayPortArgs& args,
+  virtual std::unique_ptr<Port> Create(CreateRelayPortArgs&& args,
                                        int min_port,
                                        int max_port) = 0;
+
+ protected:
+  RelayPortFactoryInterface() = default;
 };
 
 }  //  namespace webrtc

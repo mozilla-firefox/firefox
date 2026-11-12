@@ -13,6 +13,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <span>
 #include <string>
 #include <utility>
 
@@ -120,7 +121,7 @@ class EmulatedTURNServer::AsyncPacketSocketWrapper : public AsyncPacketSocket {
              const SocketAddress& addr,
              const AsyncSocketPacketOptions& options) override {
     // Copy from webrtc::AsyncPacketSocket to EmulatedEndpoint.
-    CopyOnWriteBuffer buf(reinterpret_cast<const char*>(pv), cb);
+    CopyOnWriteBuffer buf(std::span(reinterpret_cast<const uint8_t*>(pv), cb));
     endpoint_->SendPacket(local_address_, addr, buf);
     return cb;
   }

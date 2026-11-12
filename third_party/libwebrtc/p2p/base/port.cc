@@ -80,10 +80,10 @@ const int kPortTimeoutDelay = STUN_TOTAL_TIMEOUT + 5000;
 
 }  // namespace
 
-Port::Port(const PortParametersRef& args, IceCandidateType type)
-    : Port(args, type, 0, 0, true) {}
+Port::Port(PortParametersRef args, IceCandidateType type)
+    : Port(std::move(args), type, 0, 0, true) {}
 
-Port::Port(const PortParametersRef& args,
+Port::Port(PortParametersRef args,
            IceCandidateType type,
            uint16_t min_port,
            uint16_t max_port,
@@ -93,13 +93,13 @@ Port::Port(const PortParametersRef& args,
       factory_(args.socket_factory),
       lna_permission_factory_(args.lna_permission_factory),
       type_(type),
-      send_retransmit_count_attribute_(false),
+      send_retransmit_count_attribute_(args.send_retransmit_count_attribute),
       network_(args.network),
       min_port_(min_port),
       max_port_(max_port),
       content_name_(args.content_name),
-      component_(ICE_CANDIDATE_COMPONENT_DEFAULT),
-      generation_(0),
+      component_(args.component),
+      generation_(args.generation),
       ice_username_fragment_(args.ice_username_fragment),
       password_(args.ice_password),
       timeout_delay_(kPortTimeoutDelay),
@@ -130,9 +130,27 @@ Port::Port(const PortParametersRef& args,
         OnNetworkSliceChanged(network);
       });
 
+  RegisterCallbacks(std::move(args.callbacks));
+
   PostDestroyIfDead(/*delayed=*/true);
   RTC_LOG(LS_INFO) << ToString() << ": Port created with network cost "
                    << network_cost_;
+}
+
+void Port::RegisterCallbacks(Callbacks&& callbacks) {
+  RTC_DCHECK_RUN_ON(thread_);
+  candidate_ready_callback_ = std::move(callbacks.candidate_ready);
+  candidate_error_callback_ = std::move(callbacks.candidate_error);
+  port_complete_callback_ = std::move(callbacks.port_complete);
+  if (callbacks.port_destroyed) {
+    port_destroyed_callback_list_.AddReceiver(
+        callbacks.tag, std::move(callbacks.port_destroyed));
+  }
+  port_error_callback_ = std::move(callbacks.port_error);
+  if (callbacks.unknown_address) {
+    unknown_address_callbacks_.AddReceiver(
+        callbacks.tag, std::move(callbacks.unknown_address));
+  }
 }
 
 Port::~Port() {
@@ -299,35 +317,11 @@ void Port::PostAddAddress(bool is_final) {
   }
 }
 
-void Port::SubscribePortComplete(const void* tag,
-                                 absl::AnyInvocable<void(Port*)> callback) {
-  RTC_DCHECK_RUN_ON(thread_);
-  port_complete_callback_list_.AddReceiver(tag, std::move(callback));
-}
-
-void Port::SubscribeCandidateError(
-    const void* tag,
-    std::function<void(Port*, const IceCandidateErrorEvent&)> callback) {
-  RTC_DCHECK_RUN_ON(thread_);
-  candidate_error_callback_list_.AddReceiver(tag, std::move(callback));
-}
-
 void Port::SendCandidateError(const IceCandidateErrorEvent& event) {
   RTC_DCHECK_RUN_ON(thread_);
-  candidate_error_callback_list_.Send(this, event);
-}
-
-void Port::SubscribeCandidateReadyCallback(
-    const void* tag,
-    absl::AnyInvocable<void(Port*, const Candidate&)> callback) {
-  RTC_DCHECK_RUN_ON(thread_);
-  candidate_ready_callback_list_.AddReceiver(tag, std::move(callback));
-}
-
-void Port::SubscribePortError(const void* tag,
-                              absl::AnyInvocable<void(Port*)> callback) {
-  RTC_DCHECK_RUN_ON(thread_);
-  port_error_callback_list_.AddReceiver(tag, std::move(callback));
+  if (candidate_error_callback_) {
+    candidate_error_callback_(this, event);
+  }
 }
 
 void Port::AddOrReplaceConnection(Connection* conn) {
@@ -917,9 +911,11 @@ void Port::OnNetworkSliceChanged(const ::webrtc::Network* network) {
 std::string Port::ToString() const {
   RTC_DCHECK_RUN_ON(thread_);
   StringBuilder ss;
+  // Fits the typical description without reallocations.
+  ss.Reserve(128);
   ss << "Port[" << ToHex(reinterpret_cast<uintptr_t>(this)) << ":"
      << content_name_ << ":" << component_ << ":" << generation_ << ":"
-     << IceCandidateTypeToString(type_) << ":" << network_->ToString() << "]";
+     << IceCandidateTypeToString(type_) << ":" << *network_ << "]";
   return ss.Release();
 }
 

@@ -118,61 +118,24 @@ TimeDelta ScreamV2::ReactionInterval() const {
              : params_.virtual_rtt.Get();
 }
 
-double ScreamV2::ScaleBackoff(const ScreamFeedback& parsed, double backoff) {
-  if (!params_.use_non_linear_backoff_scale.Get()) {
-    // Legacy linear scaling: spread `backoff` evenly across the estimated
-    // number of feedbacks per RTT (`rtt / ReactionInterval()`).
-    return backoff / std::max(1.0, delay_based_congestion_control_.rtt() /
-                                       ReactionInterval());
+double ScreamV2::ScaleBackoff(double backoff, DataSize data_in_flight) const {
+  if (params_.use_spec_backoff.Get()) {
+    // 4.5.3. Reference window undershoot at congestion.
+    // Reduce backoff when target bitrate is lower than the acknowledged rate;
+    // this may be an indication that the target rate is already reduced due to
+    // an increased RTT.
+    if (received_rate_.IsFinite() &&
+        target_rate_ < params_.acked_bitrate_margin.Get() * received_rate_) {
+      if (params_.inhibit_backoff_if_data_in_flight_decreases.Get() &&
+          data_in_flight < data_in_flight_prev_) {
+        backoff = 0.0;
+      } else {
+        backoff *= params_.backoff_scale_low_target_rate.Get();
+      }
+    }
   }
-  // During a burst (e.g. a keyframe or pacing burst), `data_in_flight` can
-  // temporarily exceed `ref_window_`. Scale down the backoff proportionally so
-  // `ref_window_` is not overly reduced due to queue buildup caused by the
-  // excess in-flight bytes rather than `ref_window_` itself being too large.
-  const double ref_window_share =
-      parsed.data_in_flight >
-              ref_window_ * params_.bytes_in_flight_head_room.Get()
-          ? ref_window_ / parsed.data_in_flight
-          : 1.0;
-
-  if (parsed.feedback_time - last_ref_window_decrease_time_ <
-          delay_based_congestion_control_.rtt() &&
-      parsed.data_in_flight > ref_window_) {
-    // State 1: Draining in-flight data after a window reduction.
-    // A reduction in `ref_window_` does not reduce the bottleneck queue until
-    // actual `data_in_flight` drops down to the reduced `ref_window_`. Keep
-    // resetting the 1-RTT observation timer until `data_in_flight <=
-    // ref_window_`, for at most one RTT after the last window reduction.
-    last_backoff_rtt_start_time_ = parsed.feedback_time;
-  }
-  if (parsed.feedback_time - last_backoff_rtt_start_time_ >=
-      delay_based_congestion_control_.rtt()) {
-    // State 2: Start of a new backoff cycle.
-    // Either this is the very first congestion event
-    // (`last_backoff_rtt_start_time_` is MinusInfinity), or at least one full
-    // RTT has elapsed since `data_in_flight` drained to `ref_window_` (or at
-    // most two RTTs since the last window reduction). Apply the full `backoff`
-    // immediately.
-    last_backoff_rtt_start_time_ = parsed.feedback_time;
-    last_backoff_ = backoff;
-    return backoff * ref_window_share;
-  }
-  if (backoff > last_backoff_ && last_backoff_ < 1.0) {
-    // State 3: Congestion is worsening within the current backoff cycle.
-    // `l4s_alpha_` or `l4s_alpha_v()` has increased since the cycle started.
-    // Apply only the incremental reduction `delta_backoff` such that
-    // `(1 - last_backoff_) * (1 - delta_backoff) = 1 - backoff`, ensuring
-    // the cumulative reduction over the cycle matches the peak `backoff`.
-    double delta_backoff =
-        ref_window_share * (backoff - last_backoff_) / (1.0 - last_backoff_);
-    last_backoff_ = backoff;
-    return delta_backoff;
-  }
-  // State 4: Waiting for the current backoff to take effect.
-  // Within the current cycle and `backoff <= last_backoff_`; do not reduce
-  // `ref_window_` further while waiting one RTT after `data_in_flight <=
-  // ref_window_` to observe the effect of the already-applied reduction.
-  return 0.0;
+  return backoff / std::max(1.0, delay_based_congestion_control_.rtt() /
+                                     ReactionInterval());
 }
 
 void ScreamV2::UpdateL4SAlpha(const ScreamFeedback& parsed) {
@@ -188,42 +151,48 @@ void ScreamV2::UpdateL4SAlpha(const ScreamFeedback& parsed) {
           : 1.0;
   double fraction_marked = static_cast<double>(parsed.num_ce_marked_packets) /
                            parsed.num_received_packets;
-  // Fast attack slow decay EWMA filter.
-  if (fraction_marked > l4s_alpha_) {
-    double g_up = params_.l4s_avg_g_up.Get() / steps_per_rtt;
-    l4s_alpha_ =
-        std::min(g_up * fraction_marked + (1.0 - g_up) * l4s_alpha_, 1.0);
-  } else {
-    double g_down = params_.l4s_avg_g_down.Get() / steps_per_rtt;
-    l4s_alpha_ = (1.0 - g_down) * l4s_alpha_;
-  }
+  double g = params_.l4s_avg_g.Get() / steps_per_rtt;
+  l4s_alpha_ =
+      std::clamp(g * fraction_marked + (1.0 - g) * l4s_alpha_, 0.0, 1.0);
 }
 void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
   bool is_ce = parsed.num_ce_marked_packets > 0;
   bool is_loss =
       loss_estimator_.Update(parsed, delay_based_congestion_control_.rtt());
-  bool is_virtual_ce = delay_based_congestion_control_.IsQueueDelayDetected();
   if (is_loss) {
-    if (!loss_estimator_.congested() && !is_virtual_ce) {
+    if (!loss_estimator_.congested() &&
+        !delay_based_congestion_control_.IsQueueDelayDetected()) {
       is_loss = false;
     }
   }
 
-  DataSize previous_ref_window = ref_window_;
-
   TimeDelta time_since_last_reaction =
       parsed.feedback_time - last_reaction_to_congestion_time_;
-  TimeDelta reaction_interval = ReactionInterval();
+  TimeDelta min_reaction_interval =
+      std::min(delay_based_congestion_control_.rtt(), ReactionInterval());
+
+  bool is_virtual_ce = false;
+  if (params_.use_spec_backoff.Get()) {
+    if (time_since_last_reaction >= min_reaction_interval && !is_loss &&
+        !is_ce && delay_based_congestion_control_.IsQueueDelayDetected() &&
+        delay_based_congestion_control_.queue_delay() >=
+            queue_delay_avg_prev_) {
+      is_virtual_ce = true;
+    }
+  } else {
+    is_virtual_ce = delay_based_congestion_control_.IsQueueDelayDetected();
+  }
+
+  DataSize previous_ref_window = ref_window_;
 
   if ((is_virtual_ce || is_ce || is_loss) &&
-      time_since_last_reaction >=
-          std::min(delay_based_congestion_control_.rtt(), reaction_interval)) {
+      time_since_last_reaction >= min_reaction_interval) {
     last_reaction_to_congestion_time_ = parsed.feedback_time;
     double backoff = 0.0;
     if (is_loss) {  // Back off due to loss
       backoff = 1.0 - params_.beta_loss.Get();
     } else if (is_ce) {  // Backoff due to ECN-CE marking
-      backoff = ScaleBackoff(parsed, l4s_alpha_ / 2.0);
+      backoff = ScaleBackoff(l4s_alpha_ / 2.0, parsed.data_in_flight);
 
       if (!delay_based_congestion_control_.IsQueueDelayDetected()) {
         // Scale down backoff if close to the last known max reference window
@@ -253,14 +222,11 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
         // track and thus the congestion episode is shortened.
         ref_window_ = std::clamp(max_data_in_flight_prev_rtt_,
                                  params_.min_ref_window.Get(), ref_window_);
-        // In addition, bump up l4sAlpha to a more credible value
-        // This may over react but it is better than
-        // excessive queue delay
-        l4s_alpha_ = 0.25;
       }
     } else if (is_virtual_ce) {  // Back off due to delay
-      backoff = ScaleBackoff(
-          parsed, delay_based_congestion_control_.l4s_alpha_v() / 2.0);
+      backoff =
+          ScaleBackoff(delay_based_congestion_control_.l4s_alpha_v() / 2.0,
+                       parsed.data_in_flight);
     }
     if (allow_initial_ref_window_clamping_ && received_rate_.IsFinite()) {
       // Clamp ref_window to received rate on the first congestion event,
@@ -269,14 +235,19 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
           std::clamp(received_rate_ * (delay_based_congestion_control_.rtt() +
                                        feedback_hold_time_),
                      params_.min_ref_window.Get(), ref_window_);
-      double initial_backoff = 1.0 - (clamped_ref_window / ref_window_);
-      if (initial_backoff > backoff) {
-        backoff = initial_backoff;
-        last_backoff_ = std::max(last_backoff_, initial_backoff);
-      }
+      backoff = std::max(backoff, 1.0 - (clamped_ref_window / ref_window_));
       allow_initial_ref_window_clamping_ = false;
     }
     ref_window_ = (1.0 - backoff) * ref_window_;
+  }
+
+  if (params_.use_spec_backoff.Get() &&
+      (last_reaction_to_congestion_time_ == parsed.feedback_time ||
+       parsed.feedback_time - last_queue_delay_avg_check_time_ >=
+           min_reaction_interval)) {
+    queue_delay_avg_prev_ = delay_based_congestion_control_.queue_delay();
+    data_in_flight_prev_ = parsed.data_in_flight;
+    last_queue_delay_avg_check_time_ = parsed.feedback_time;
   }
 
   // Increase ref_window.
@@ -296,7 +267,7 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
       double rtt_ratio =
           (delay_based_congestion_control_.rtt() + feedback_hold_time_) /
           params_.virtual_rtt.Get();
-      increase_scale_factor = increase_scale_factor * (rtt_ratio * rtt_ratio);
+      increase_scale_factor = increase_scale_factor * rtt_ratio;
     }
 
     // Limit increase when close to the last inflection point.
@@ -308,13 +279,21 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
     // lot.
     // Better to enforce a slow increase in reference window and get
     // a more stable bitrate.
-    increase_scale_factor = increase_scale_factor *
-                            delay_based_congestion_control_
-                                .ref_window_scale_factor_due_to_avg_min_delay();
-    increase_scale_factor =
-        increase_scale_factor *
-        delay_based_congestion_control_
-            .ref_window_scale_factor_due_to_latency_difference();
+    if (params_.use_min_delay_scale_on_increase.Get()) {
+      increase_scale_factor =
+          increase_scale_factor *
+          std::min(delay_based_congestion_control_
+                       .ref_window_scale_factor_due_to_avg_min_delay(),
+                   delay_based_congestion_control_
+                       .ref_window_scale_factor_due_to_latency_difference());
+    } else {
+      increase_scale_factor =
+          increase_scale_factor *
+          (delay_based_congestion_control_
+               .ref_window_scale_factor_due_to_avg_min_delay() *
+           delay_based_congestion_control_
+               .ref_window_scale_factor_due_to_latency_difference());
+    }
 
     // Use lower multiplicative scale factor if congestion was detected
     // recently.
@@ -327,8 +306,7 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
                    0.0, 1.0);
     double multiplicative_scale =
         1.0 + (ref_window_multiplicative_scale_factor() - 1.0) *
-                  post_congestion_scale *
-                  ref_window_scale_factor_close_to_ref_window_i();
+                  post_congestion_scale;
     RTC_DCHECK_GE(multiplicative_scale, 1.0);
     increase_scale_factor = increase_scale_factor * multiplicative_scale;
 
@@ -341,18 +319,22 @@ void ScreamV2::UpdateRefWindow(const ScreamFeedback& parsed) {
     }
   }
 
-  if (previous_ref_window < ref_window_) {
-    // Allow setting a new `ref_window_i` if `ref_window_` increase.
-    // It means that `ref_window_i` can increase if `rew_window` increase and
-    // there is a congestion event.
-    allow_ref_window_i_update_ = true;
-  }
   if (previous_ref_window > ref_window_) {
     last_ref_window_decrease_time_ = parsed.feedback_time;
-    if (allow_ref_window_i_update_) {
+    // Allow update of `ref_window_i_` only if `ref_window_` before decrease
+    // had increased sufficiently (>5%) above `ref_window_lowest_` or the hold
+    // time has expired. This prevents `ref_window_i_` from being stepped down
+    // during a period of congestion (4.2.2.1).
+    const TimeDelta max_of_virtual_and_smoothed_rtt = std::max(
+        params_.virtual_rtt.Get(), delay_based_congestion_control_.rtt());
+    if (previous_ref_window > ref_window_lowest_ * 1.05 ||
+        parsed.feedback_time - last_ref_window_i_update_time_ >
+            params_.ref_window_i_update_max_hold_rtts.Get() *
+                max_of_virtual_and_smoothed_rtt) {
       ref_window_i_ = previous_ref_window;
-      allow_ref_window_i_update_ = false;
+      last_ref_window_i_update_time_ = parsed.feedback_time;
     }
+    ref_window_lowest_ = ref_window_;
   }
 
   RTC_LOG_IF(LS_VERBOSE, previous_ref_window != ref_window_)
@@ -378,7 +360,9 @@ DataSize ScreamV2::max_data_in_flight() const {
               .ref_window_scale_factor_due_to_avg_min_delay(
                   /*allow_zero=*/true);
 
-  return ref_window_ * ref_window_overhead;
+  return std::max(ref_window_ * ref_window_overhead,
+                  params_.max_segment_size.Get() *
+                      params_.min_max_data_in_flight_mss.Get());
 }
 
 DataSize ScreamV2::max_allowed_ref_window() const {

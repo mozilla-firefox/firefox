@@ -334,6 +334,7 @@ class SendStatisticsProxy : public VideoStreamEncoderObserver,
       RTC_GUARDED_BY(mutex_);
   RateTracker media_byte_rate_tracker_ RTC_GUARDED_BY(mutex_);
   RateTracker encoded_frame_rate_tracker_ RTC_GUARDED_BY(mutex_);
+  RateTracker dropped_due_to_bandwidth_rate_tracker_ RTC_GUARDED_BY(mutex_);
   // Trackers mapped by ssrc.
   std::map<uint32_t, Trackers> trackers_ RTC_GUARDED_BY(mutex_);
 

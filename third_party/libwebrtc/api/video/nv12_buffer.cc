@@ -73,21 +73,24 @@ scoped_refptr<NV12Buffer> NV12Buffer::Copy(
     const I420BufferInterface& i420_buffer) {
   scoped_refptr<NV12Buffer> buffer =
       NV12Buffer::Create(i420_buffer.width(), i420_buffer.height());
-  libyuv::I420ToNV12(
+  int res = libyuv::I420ToNV12(
       i420_buffer.DataY(), i420_buffer.StrideY(), i420_buffer.DataU(),
       i420_buffer.StrideU(), i420_buffer.DataV(), i420_buffer.StrideV(),
       buffer->MutableDataY(), buffer->StrideY(), buffer->MutableDataUV(),
       buffer->StrideUV(), buffer->width(), buffer->height());
+  RTC_CHECK_EQ(res, 0);
   return buffer;
 }
 
 scoped_refptr<I420BufferInterface> NV12Buffer::ToI420() {
   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
-  libyuv::NV12ToI420(DataY(), StrideY(), DataUV(), StrideUV(),
-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
-                     width(), height());
+  if (libyuv::NV12ToI420(DataY(), StrideY(), DataUV(), StrideUV(),
+                         i420_buffer->MutableDataY(), i420_buffer->StrideY(),
+                         i420_buffer->MutableDataU(), i420_buffer->StrideU(),
+                         i420_buffer->MutableDataV(), i420_buffer->StrideV(),
+                         width(), height()) != 0) {
+    return nullptr;
+  }
   return i420_buffer;
 }
 
@@ -156,7 +159,7 @@ void NV12Buffer::CropAndScaleFrom(const NV12BufferInterface& src,
                               StrideY(), MutableDataUV(), StrideUV(), width(),
                               height(), libyuv::kFilterBox);
 
-  RTC_DCHECK_EQ(res, 0);
+  RTC_CHECK_EQ(res, 0);
 }
 
 }  // namespace webrtc

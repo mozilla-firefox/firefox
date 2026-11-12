@@ -39,7 +39,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_cc_test("mock_aec_dump_unittests") {
+  rtc_cc_test("aec_dump_integration_test") {
     configs += [ "..:apm_debug_dump" ]
     sources = [ "aec_dump_integration_test.cc" ]
 
@@ -89,7 +89,7 @@ if (rtc_enable_protobuf) {
   }
 
   if (rtc_include_tests) {
-    rtc_cc_test("aec_dump_unittests") {
+    rtc_cc_test("aec_dump_unittest") {
       defines = []
       deps = [
         ":aec_dump",

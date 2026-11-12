@@ -41,10 +41,7 @@ rtc_source_set("mutex") {
 }
 
 rtc_library("sequence_checker_internal") {
-  visibility = [
-    "../../api:sequence_checker",
-    "../../api:sequence_checker_unittest",
-  ]
+  visibility = [ "../../api:*" ]
   sources = [
     "sequence_checker_internal.cc",
     "sequence_checker_internal.h",

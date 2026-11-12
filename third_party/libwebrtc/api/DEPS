@@ -334,4 +334,8 @@ specific_include_rules = {
     "+video",
     "+third_party",
   ],
+
+  "webrtc_sdp_benchmark\\.cc": [
+    "+benchmark",
+  ],
 }

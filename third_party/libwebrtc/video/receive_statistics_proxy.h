@@ -96,6 +96,8 @@ class ReceiveStatisticsProxy : public VideoStreamBufferControllerStatsObserver,
 
   void OnUniqueFramesCounted(int num_unique_frames);
 
+  void OnPlayoutDelay(std::optional<VideoPlayoutDelay> playout_delay);
+
   // Indicates video stream has been paused (no incoming packets).
   void OnStreamInactive();
 
@@ -213,6 +215,7 @@ class ReceiveStatisticsProxy : public VideoStreamBufferControllerStatsObserver,
       RTC_GUARDED_BY(main_thread_);
   std::optional<int64_t> last_estimated_playout_time_ms_
       RTC_GUARDED_BY(main_thread_);
+  int playout_delay_mode_bitmask_ RTC_GUARDED_BY(main_thread_) = 0;
 
   // The thread on which this instance is constructed and some of its main
   // methods are invoked on such as GetStats().

@@ -84,15 +84,35 @@ rtc_library("simulated_time_task_queue_controller") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("time_controller_unittests") {
-    testonly = true
-    sources = [
-      "simulated_time_controller_unittest.cc",
-      "simulated_time_task_queue_controller_unittest.cc",
-      "time_controller_conformance_test.cc",
+  rtc_cc_test("simulated_time_controller_unittest") {
+    sources = [ "simulated_time_controller_unittest.cc" ]
+    deps = [
+      ":time_controller",
+      "../:test_support",
+      "../../api/task_queue",
+      "../../api/units:time_delta",
+      "../../api/units:timestamp",
+      "../../rtc_base:rtc_base_tests_utils",
+      "../../rtc_base:rtc_event",
+      "../../rtc_base:task_queue_for_test",
+      "../../rtc_base/task_utils:repeating_task",
     ]
+  }
+
+  rtc_cc_test("simulated_time_task_queue_controller_unittest") {
+    sources = [ "simulated_time_task_queue_controller_unittest.cc" ]
     deps = [
       ":simulated_time_task_queue_controller",
+      "../:test_support",
+      "../../api/task_queue",
+      "../../api/units:time_delta",
+      "../../api/units:timestamp",
+    ]
+  }
+
+  rtc_cc_test("time_controller_conformance_test") {
+    sources = [ "time_controller_conformance_test.cc" ]
+    deps = [
       ":time_controller",
       "../:test_support",
       "../../api:time_controller",
@@ -101,12 +121,9 @@ if (rtc_include_tests) {
       "../../api/units:timestamp",
       "../../rtc_base:checks",
       "../../rtc_base:macromagic",
-      "../../rtc_base:rtc_base_tests_utils",
       "../../rtc_base:rtc_event",
-      "../../rtc_base:task_queue_for_test",
       "../../rtc_base:threading",
       "../../rtc_base/synchronization:mutex",
-      "../../rtc_base/task_utils:repeating_task",
     ]
   }
 }

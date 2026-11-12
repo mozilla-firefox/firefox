@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include <cstdint>
+#include <string>
 
 #include "absl/strings/string_view.h"
 #include "api/audio_codecs/audio_format.h"
@@ -92,6 +93,7 @@ class Receiver {
 
  private:
   PCMFile _pcmFile;
+  std::string _out_file_name;
   int16_t* _playoutBuffer;
   uint16_t _playoutLengthSmpls;
   int32_t _frequency;

@@ -59,10 +59,10 @@ index 897af0c2c3..53e882cb8b 100644
  }  // namespace webrtc
  
 diff --git a/api/data_channel_interface.h b/api/data_channel_interface.h
-index 1ae6494e2d..1780d33338 100644
+index e9d5bea8d4..36af204d95 100644
 --- a/api/data_channel_interface.h
 +++ b/api/data_channel_interface.h
-@@ -32,8 +32,10 @@ namespace webrtc {
+@@ -34,8 +34,10 @@ namespace webrtc {
  
  // C++ version of: https://www.w3.org/TR/webrtc/#idl-def-rtcdatachannelinit
  // TODO(deadbeef): Use std::optional for the "-1 if unset" things.
@@ -73,7 +73,7 @@ index 1ae6494e2d..1780d33338 100644
  struct DataChannelInit {
    // Deprecated. Reliability is assumed, and channel will be unreliable if
    // maxRetransmitTime or MaxRetransmits is set.
-@@ -71,7 +73,9 @@ struct DataChannelInit {
+@@ -73,7 +75,9 @@ struct DataChannelInit {
    // https://w3c.github.io/webrtc-priority/#new-rtcdatachannelinit-member
    std::optional<PriorityValue> priority;
  };
@@ -143,10 +143,10 @@ index 7890e58841..4d8a540a17 100644
  
    // Erase the unrecognized characters plus the tone that's just processed.
 diff --git a/pc/sctp_data_channel.cc b/pc/sctp_data_channel.cc
-index 33321340b2..634c23898c 100644
+index 9042de0bc4..74e97bebca 100644
 --- a/pc/sctp_data_channel.cc
 +++ b/pc/sctp_data_channel.cc
-@@ -84,11 +84,15 @@ BYPASS_PROXY_METHOD2(void,
+@@ -83,11 +83,15 @@ BYPASS_PROXY_METHOD2(void,
  END_PROXY_MAP(DataChannel)
  }  // namespace
  

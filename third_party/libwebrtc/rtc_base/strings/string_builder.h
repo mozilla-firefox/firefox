@@ -73,6 +73,10 @@ class RTC_EXPORT StringBuilder {
 
   size_t size() const { return str_.size(); }
 
+  // Pre-allocates capacity for a string of at least `size` characters, to
+  // avoid repeated reallocations when the final size can be estimated.
+  void Reserve(size_t size) { str_.reserve(size); }
+
   // Moves out the internal std::string.
   std::string Release() { return std::move(str_); }
 

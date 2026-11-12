@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <string>
 
 #include "api/audio_codecs/audio_decoder_factory.h"
 #include "api/audio_codecs/audio_encoder_factory.h"
@@ -43,6 +44,7 @@ class TestRedFec final {
                          bool use_red);
   void Run();
   void OpenOutFile(int16_t testNumber);
+  void CloseOutFile();
 
   const Environment env_;
   const scoped_refptr<AudioEncoderFactory> encoder_factory_;
@@ -55,6 +57,7 @@ class TestRedFec final {
 
   PCMFile _inFileA;
   PCMFile _outFileB;
+  std::string _out_file_name;
   int16_t _testCntr;
 };
 

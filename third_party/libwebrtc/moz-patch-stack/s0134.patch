@@ -1,156 +1,33 @@
 From: Byron Campen <docfaraday@gmail.com>
-Date: Mon, 25 May 2026 13:02:00 -0500
-Subject: Bug 2040478 - (fix-2d195343e6) Rename this to be more
- self-explanatory, and convert one call. r?mjf
+Date: Tue, 26 May 2026 14:02:00 -0500
+Subject: Bug 2040478 - (fix-d1ae1e9ad4) Explicitly convert these to a
+ std::string r?mjf
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/ba88bd50d70897cc160f211dacada95de026bc06
+Our toolchain does not yet support implicit conversion from string_view to string
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/1eae5aad7a7622115d156dea2dc974416046cd42
 ---
- api/environment/environment_factory.cc                | 2 +-
- common_video/include/bitrate_adjuster.h               | 2 +-
- modules/desktop_capture/desktop_capture_options.h     | 2 +-
- modules/video_capture/video_capture_factory.cc        | 4 ++--
- modules/video_coding/codecs/av1/libaom_av1_encoder.cc | 2 +-
- rtc_base/event_tracer.cc                              | 2 +-
- rtc_base/task_utils/repeating_task.h                  | 4 ++--
- system_wrappers/include/clock.h                       | 5 ++++-
- system_wrappers/source/clock.cc                       | 2 +-
- 9 files changed, 14 insertions(+), 11 deletions(-)
+ call/payload_type_picker.cc | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/api/environment/environment_factory.cc b/api/environment/environment_factory.cc
-index 72a0fdbbd3..62bbb01741 100644
---- a/api/environment/environment_factory.cc
-+++ b/api/environment/environment_factory.cc
-@@ -109,7 +109,7 @@ Environment EnvironmentFactory::CreateWithDefaults() && {
-     Set(std::make_unique<DeprecatedGlobalFieldTrials>());
-   }
- #if defined(WEBRTC_MOZILLA_BUILD)
--  // We want to use our clock, not GetRealTimeClockRaw, and we avoid
-+  // We want to use our clock, not GetRealTimeClockOnlyUseForRelativeTime, and we avoid
-   // building the code under third_party/libwebrtc/task_queue.  To
-   // ensure we're setting up things correctly, namely providing an
-   // Environment object with a preset task_queue_factory and clock,
-diff --git a/common_video/include/bitrate_adjuster.h b/common_video/include/bitrate_adjuster.h
-index d414fb7e25..4aeb6e2593 100644
---- a/common_video/include/bitrate_adjuster.h
-+++ b/common_video/include/bitrate_adjuster.h
-@@ -40,7 +40,7 @@ class RTC_EXPORT BitrateAdjuster {
-   ABSL_DEPRECATE_AND_INLINE()
-   BitrateAdjuster(float min_adjusted_bitrate_pct,
-                   float max_adjusted_bitrate_pct)
--      : BitrateAdjuster(Clock::GetRealTimeClockRaw(),
-+      : BitrateAdjuster(Clock::GetRealTimeClockOnlyUseForRelativeTime(),
-                         min_adjusted_bitrate_pct,
-                         max_adjusted_bitrate_pct) {}
-   virtual ~BitrateAdjuster() = default;
-diff --git a/modules/desktop_capture/desktop_capture_options.h b/modules/desktop_capture/desktop_capture_options.h
-index 010e5e1e7c..aa3dd331fe 100644
---- a/modules/desktop_capture/desktop_capture_options.h
-+++ b/modules/desktop_capture/desktop_capture_options.h
-@@ -57,7 +57,7 @@ class RTC_EXPORT DesktopCaptureOptions {
-   DesktopCaptureOptions& operator=(DesktopCaptureOptions&& options);
- 
-   Clock& clock() const {
--    return env_.has_value() ? env_->clock() : *Clock::GetRealTimeClock();
-+    return env_.has_value() ? env_->clock() : *Clock::GetRealTimeClockOnlyUseForRelativeTime();
-   }
- 
- #if defined(WEBRTC_USE_X11)
-diff --git a/modules/video_capture/video_capture_factory.cc b/modules/video_capture/video_capture_factory.cc
-index 98e5e5e298..f9863069be 100644
---- a/modules/video_capture/video_capture_factory.cc
-+++ b/modules/video_capture/video_capture_factory.cc
-@@ -20,7 +20,7 @@ namespace webrtc {
- scoped_refptr<VideoCaptureModule> VideoCaptureFactory::Create(
-     [[maybe_unused]] const char* deviceUniqueIdUTF8) {
-   return videocapturemodule::VideoCaptureImpl::Create(
--      Clock::GetRealTimeClockRaw(), deviceUniqueIdUTF8);
-+      Clock::GetRealTimeClockOnlyUseForRelativeTime(), deviceUniqueIdUTF8);
- }
- 
- scoped_refptr<VideoCaptureModule> VideoCaptureFactory::Create(
-@@ -32,7 +32,7 @@ scoped_refptr<VideoCaptureModule> VideoCaptureFactory::Create(
-   return nullptr;
- #else
-   return videocapturemodule::VideoCaptureImpl::Create(
--      Clock::GetRealTimeClockRaw(), options, deviceUniqueIdUTF8);
-+      Clock::GetRealTimeClockOnlyUseForRelativeTime(), options, deviceUniqueIdUTF8);
- #endif
- }
- 
-diff --git a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-index dda9a496bc..65d2ffc8e3 100644
---- a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-+++ b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
-@@ -278,7 +278,7 @@ LibaomAv1Encoder::LibaomAv1Encoder(const Environment& env,
-       drop_repeat_frames_on_enhancement_layers_(env.field_trials().IsEnabled(
-           "WebRTC-LibaomAv1Encoder-DropRepeatFramesOnEnhancementLayers")),
-       encoder_speed_experiment_(env.field_trials()),
--      realtime_clock_(Clock::GetRealTimeClockRaw()) {}
-+      realtime_clock_(Clock::GetRealTimeClockOnlyUseForRelativeTime()) {}
- 
- LibaomAv1Encoder::~LibaomAv1Encoder() {
-   Release();
-diff --git a/rtc_base/event_tracer.cc b/rtc_base/event_tracer.cc
-index 0e6bca7a2c..2ecf454f74 100644
---- a/rtc_base/event_tracer.cc
-+++ b/rtc_base/event_tracer.cc
-@@ -121,7 +121,7 @@ class EventLogger final {
-  public:
-   explicit EventLogger(std::optional<Environment> env)
-       : env_(env),
--        clock_(env.has_value() ? env->clock() : *Clock::GetRealTimeClockRaw()) {}
-+        clock_(env.has_value() ? env->clock() : *Clock::GetRealTimeClockOnlyUseForRelativeTime()) {}
-   ~EventLogger() { RTC_DCHECK(thread_checker_.IsCurrent()); }
- 
-   void AddTraceEvent(const char* name,
-diff --git a/rtc_base/task_utils/repeating_task.h b/rtc_base/task_utils/repeating_task.h
-index d9536b71be..3604f470e3 100644
---- a/rtc_base/task_utils/repeating_task.h
-+++ b/rtc_base/task_utils/repeating_task.h
-@@ -57,7 +57,7 @@ class RepeatingTaskHandle {
-       absl::AnyInvocable<TimeDelta()> closure,
-       TaskQueueBase::DelayPrecision precision =
-           TaskQueueBase::DelayPrecision::kLow,
--      Clock* clock = Clock::GetRealTimeClockRaw(),
-+      Clock* clock = Clock::GetRealTimeClockOnlyUseForRelativeTime(),
-       const Location& location = Location::Current());
- 
-   // DelayedStart is equivalent to Start except that the first invocation of the
-@@ -68,7 +68,7 @@ class RepeatingTaskHandle {
-       absl::AnyInvocable<TimeDelta()> closure,
-       TaskQueueBase::DelayPrecision precision =
-           TaskQueueBase::DelayPrecision::kLow,
--      Clock* clock = Clock::GetRealTimeClockRaw(),
-+      Clock* clock = Clock::GetRealTimeClockOnlyUseForRelativeTime(),
-       const Location& location = Location::Current());
- 
-   // Stops future invocations of the repeating task closure. Can only be called
-diff --git a/system_wrappers/include/clock.h b/system_wrappers/include/clock.h
-index fd367cb238..7c90663d72 100644
---- a/system_wrappers/include/clock.h
-+++ b/system_wrappers/include/clock.h
-@@ -67,7 +67,10 @@ class RTC_EXPORT Clock {
-   }
- 
-   // Returns an instance of the real-time system clock implementation.
--  static Clock* absl_nonnull GetRealTimeClockRaw();
-+  // (MOZ): We have renamed this from GetRealTimeClock in order to detect new
-+  // uses of this API within libwebrtc, so we can determine whether we
-+  // can/should inject our own clock.
-+  static Clock* absl_nonnull GetRealTimeClockOnlyUseForRelativeTime();
- };
- 
- class SimulatedClock : public Clock {
-diff --git a/system_wrappers/source/clock.cc b/system_wrappers/source/clock.cc
-index ec66661fa3..0cf39a75ec 100644
---- a/system_wrappers/source/clock.cc
-+++ b/system_wrappers/source/clock.cc
-@@ -63,7 +63,7 @@ class RealTimeClock : public Clock {
-   }
- };
- 
--Clock* absl_nonnull Clock::GetRealTimeClockRaw() {
-+Clock* absl_nonnull Clock::GetRealTimeClockOnlyUseForRelativeTime() {
-   static Clock* const clock = new RealTimeClock();
-   return clock;
- }
+diff --git a/call/payload_type_picker.cc b/call/payload_type_picker.cc
+index 5d8be2f782..5bb1fd6c90 100644
+--- a/call/payload_type_picker.cc
++++ b/call/payload_type_picker.cc
+@@ -406,7 +406,7 @@ void PayloadTypeRecorder::ReallowRedefinition() {
+ RTCError RtpHeaderExtensionRecorder::AddMapping(RtpHeaderExtensionId id,
+                                                 absl::string_view uri,
+                                                 bool encrypt) {
+-  auto it = uri_to_id_.find(std::pair{uri, encrypt});
++  auto it = uri_to_id_.find(std::pair{std::string(uri), encrypt});
+   if (it != uri_to_id_.end()) {
+     if (it->second != id) {
+       RTC_HISTOGRAM_BOOLEAN(
+@@ -429,7 +429,7 @@ RTCError RtpHeaderExtensionRecorder::AddMapping(RtpHeaderExtensionId id,
+ RTCErrorOr<RtpHeaderExtensionId> RtpHeaderExtensionRecorder::LookupId(
+     absl::string_view uri,
+     bool encrypt) const {
+-  auto it = uri_to_id_.find(std::pair{uri, encrypt});
++  auto it = uri_to_id_.find(std::pair{std::string(uri), encrypt});
+   if (it == uri_to_id_.end()) {
+     return RTCError(RTCErrorType::INVALID_PARAMETER,
+                     "No ID found for extension");

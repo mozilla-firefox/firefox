@@ -23,10 +23,10 @@ index f9d0cb0aa5..db211bbeb7 100644
  #else
  constexpr bool kIsArm = false;
 diff --git a/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc b/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
-index 3e56085b1c..3e3eb9ce96 100644
+index afbb0be102..f32b732029 100644
 --- a/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
 +++ b/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
-@@ -792,7 +792,7 @@ int LibvpxVp8Encoder::InitEncode(const VideoCodec* inst,
+@@ -827,7 +827,7 @@ int LibvpxVp8Encoder::InitEncode(const VideoCodec* inst,
  }
  
  int LibvpxVp8Encoder::GetCpuSpeed(int width, int height) {
@@ -35,7 +35,7 @@ index 3e56085b1c..3e3eb9ce96 100644
    // On mobile platform, use a lower speed setting for lower resolutions for
    // CPUs with 4 or more cores.
    RTC_DCHECK_GT(number_of_cores_, 0);
-@@ -820,6 +820,8 @@ int LibvpxVp8Encoder::GetCpuSpeed(int width, int height) {
+@@ -855,6 +855,8 @@ int LibvpxVp8Encoder::GetCpuSpeed(int width, int height) {
  int LibvpxVp8Encoder::NumberOfThreads(int width, int height, int cpus) {
  #if defined(WEBRTC_ANDROID)
    if (android_specific_threading_settings_) {
@@ -44,7 +44,7 @@ index 3e56085b1c..3e3eb9ce96 100644
      if (width * height >= 320 * 180) {
        if (cpus >= 4) {
          // 3 threads for CPUs with 4 and more cores since most of times only 4
-@@ -832,7 +834,9 @@ int LibvpxVp8Encoder::NumberOfThreads(int width, int height, int cpus) {
+@@ -867,7 +869,9 @@ int LibvpxVp8Encoder::NumberOfThreads(int width, int height, int cpus) {
        }
      }
      return 1;
@@ -54,7 +54,7 @@ index 3e56085b1c..3e3eb9ce96 100644
  #elif defined(WEBRTC_IOS)
    std::string trial_string =
        env_.field_trials().Lookup(kVP8IosMaxNumberOfThreadFieldTrial);
-@@ -890,7 +894,7 @@ int LibvpxVp8Encoder::InitAndSetControlSettings() {
+@@ -925,7 +929,7 @@ int LibvpxVp8Encoder::InitAndSetControlSettings() {
    // for getting the denoised frame from the encoder and using that
    // when encoding lower resolution streams. Would it work with the
    // multi-res encoding feature?

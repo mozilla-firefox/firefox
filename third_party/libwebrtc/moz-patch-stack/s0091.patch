@@ -16,7 +16,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/bbec1b95ddb5e0096
  5 files changed, 26 insertions(+), 6 deletions(-)
 
 diff --git a/modules/audio_coding/BUILD.gn b/modules/audio_coding/BUILD.gn
-index cf681f1e7b..e4c1353bde 100644
+index 5b03ad3042..b59370e06a 100644
 --- a/modules/audio_coding/BUILD.gn
 +++ b/modules/audio_coding/BUILD.gn
 @@ -340,7 +340,7 @@ rtc_library("webrtc_opus_wrapper") {
@@ -61,7 +61,7 @@ index 83dc72ba53..dbcc162510 100644
        }
      }
 diff --git a/sdk/BUILD.gn b/sdk/BUILD.gn
-index 6b85b32b36..e532dbd893 100644
+index b61062967d..6b4c5b368c 100644
 --- a/sdk/BUILD.gn
 +++ b/sdk/BUILD.gn
 @@ -624,6 +624,20 @@ if (is_ios || is_mac) {
@@ -86,7 +86,7 @@ index 6b85b32b36..e532dbd893 100644
  
      if (!build_with_mozilla) {
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index 3c9baafe9e..f2abed9bf9 100644
+index 9ef2c4e1d9..f19666f3c2 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
 @@ -499,6 +499,12 @@ rtc_source_set("test_support") {

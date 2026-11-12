@@ -1,22 +1,181 @@
-From: Byron Campen <docfaraday@gmail.com>
-Date: Wed, 27 May 2026 11:38:00 -0500
-Subject: Bug 2040478 - (fix-2d195343e6) Add missing include of <optional>
- r?mjf
+From: Andreas Pehrson <apehrson@mozilla.com>
+Date: Mon, 4 May 2026 19:30:00 +0000
+Subject: Bug 2034935 - Undelete deprecation of local_ssrc for recv streams.
+ r=webrtc-reviewers,dbaker
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/c2a275c690c1e6ebd529752c0648c23cf3db3742
+This avoids regressing Teams.
+
+Differential Revision: https://phabricator.services.mozilla.com/D297529
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/bc8a96604aaa6f1fbcd58261bf4bd6692cca3d3f
 ---
- modules/desktop_capture/desktop_capture_options.h | 1 +
- 1 file changed, 1 insertion(+)
+ audio/audio_receive_stream.cc       |  3 ++-
+ audio/channel_receive.cc            | 14 +++++++-------
+ audio/channel_receive.h             |  1 +
+ call/flexfec_receive_stream_impl.cc |  4 ++++
+ call/receive_stream.h               |  4 +++-
+ video/rtp_video_stream_receiver2.cc | 15 +++++----------
+ 6 files changed, 22 insertions(+), 19 deletions(-)
 
-diff --git a/modules/desktop_capture/desktop_capture_options.h b/modules/desktop_capture/desktop_capture_options.h
-index aa3dd331fe..4ef972f184 100644
---- a/modules/desktop_capture/desktop_capture_options.h
-+++ b/modules/desktop_capture/desktop_capture_options.h
-@@ -11,6 +11,7 @@
- #define MODULES_DESKTOP_CAPTURE_DESKTOP_CAPTURE_OPTIONS_H_
+diff --git a/audio/audio_receive_stream.cc b/audio/audio_receive_stream.cc
+index f8d5e58730..405a3d485c 100644
+--- a/audio/audio_receive_stream.cc
++++ b/audio/audio_receive_stream.cc
+@@ -95,7 +95,8 @@ std::unique_ptr<voe::ChannelReceiveInterface> CreateChannelReceive(
+       config.decoder_factory, std::move(config.frame_decryptor),
+       config.crypto_options, std::move(config.frame_transformer),
+       std::move(config.on_first_packet), config.rtp.rtcp_event_observer,
+-      packet_router, std::move(config.on_frame_delivered_callback));
++      packet_router, config.rtp.local_ssrc,
++      std::move(config.on_frame_delivered_callback));
+ }
+ }  // namespace
  
- #include <cstdint>
-+#include <optional>
+diff --git a/audio/channel_receive.cc b/audio/channel_receive.cc
+index aa2d9d269c..d446539434 100644
+--- a/audio/channel_receive.cc
++++ b/audio/channel_receive.cc
+@@ -120,7 +120,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
+     bool enable_non_sender_rtt,
+     uint32_t remote_ssrc,
+     RtcpEventObserver* rtcp_event_observer,
+-    PacketRouter* absl_nonnull packet_router) {
++    uint32_t local_ssrc) {
+   RtpRtcpInterface::Configuration configuration = {
+       .audio = true,
+       .receiver_only = true,
+@@ -135,10 +135,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
  
- #include "api/environment/environment.h"
- #include "api/scoped_refptr.h"
+   std::unique_ptr<ModuleRtpRtcpImpl2> rtp_rtcp =
+       ModuleRtpRtcpImpl2::CreateReceiveModule(
+-          env, configuration, [packet_router]() {
+-            return packet_router->SsrcOfFirstSender().value_or(
+-                kFallbackRtcpSsrcForAudio);
+-          });
++          env, configuration, [local_ssrc] { return local_ssrc; });
+   return rtp_rtcp;
+ }
+ 
+@@ -161,6 +158,7 @@ class ChannelReceive : public ChannelReceiveInterface,
+                  absl::AnyInvocable<void(uint32_t ssrc) &&> on_first_packet,
+                  RtcpEventObserver* rtcp_event_observer,
+                  PacketRouter* absl_nonnull packet_router,
++                 uint32_t local_ssrc,
+                  absl::AnyInvocable<void(const RtpPacketInfos&, Timestamp)
+                                         const> on_frame_delivered_callback);
+   ~ChannelReceive() override;
+@@ -605,6 +603,7 @@ ChannelReceive::ChannelReceive(
+     absl::AnyInvocable<void(uint32_t ssrc) &&> on_first_packet,
+     RtcpEventObserver* rtcp_event_observer,
+     PacketRouter* absl_nonnull packet_router,
++    uint32_t local_ssrc,
+     absl::AnyInvocable<void(const RtpPacketInfos&, Timestamp) const>
+         on_frame_delivered_callback)
+     : env_(env),
+@@ -617,7 +616,7 @@ ChannelReceive::ChannelReceive(
+                                     enable_non_sender_rtt,
+                                     remote_ssrc,
+                                     rtcp_event_observer,
+-                                    packet_router)),
++                                    local_ssrc)),
+       remote_ssrc_(remote_ssrc),
+       on_frame_delivered_callback_(std::move(on_frame_delivered_callback)),
+       neteq_(CreateNetEq(neteq_factory,
+@@ -1241,6 +1240,7 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
+     absl::AnyInvocable<void(uint32_t ssrc) &&> on_first_packet,
+     RtcpEventObserver* rtcp_event_observer,
+     PacketRouter* absl_nonnull packet_router,
++    uint32_t local_ssrc,
+     absl::AnyInvocable<void(const RtpPacketInfos&, Timestamp) const>
+         on_frame_delivered_callback) {
+   return std::make_unique<ChannelReceive>(
+@@ -1249,7 +1249,7 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
+       jitter_buffer_min_delay_ms, enable_non_sender_rtt,
+       std::move(decoder_factory), std::move(frame_decryptor), crypto_options,
+       std::move(frame_transformer), std::move(on_first_packet),
+-      rtcp_event_observer, packet_router,
++      rtcp_event_observer, packet_router, local_ssrc,
+       std::move(on_frame_delivered_callback));
+ }
+ 
+diff --git a/audio/channel_receive.h b/audio/channel_receive.h
+index 53c4f655ea..e97ee387b7 100644
+--- a/audio/channel_receive.h
++++ b/audio/channel_receive.h
+@@ -182,6 +182,7 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
+     absl::AnyInvocable<void(uint32_t ssrc) &&> on_first_packet,
+     RtcpEventObserver* rtcp_event_observer,
+     PacketRouter* absl_nonnull packet_router,
++    uint32_t local_ssrc,
+     // Note: `on_frame_delivered_callback` is called synchronously from
+     // audio/packet processing threads and must be thread-safe and non-blocking.
+     absl::AnyInvocable<void(const RtpPacketInfos&, Timestamp) const>
+diff --git a/call/flexfec_receive_stream_impl.cc b/call/flexfec_receive_stream_impl.cc
+index 63d1b5d589..445811a1de 100644
+--- a/call/flexfec_receive_stream_impl.cc
++++ b/call/flexfec_receive_stream_impl.cc
+@@ -124,6 +124,10 @@ FlexfecReceiveStreamImpl::FlexfecReceiveStreamImpl(
+            .rtcp_mode = config.rtcp_mode,
+            .remote_ssrc = config.remote_ssrc},
+           [packet_router] {
++            // Mozilla: Unreachable as Flexfec is not implemented.
++            //          When implementing, wire up signaled recvonly a=ssrc into
++            //          this recv_ssrsc_callback.
++            RTC_CHECK_NOTREACHED();
+             // Use the same logic as for the video receiver.
+             if (packet_router != nullptr) {
+               return packet_router->SsrcOfFirstSender().value_or(
+diff --git a/call/receive_stream.h b/call/receive_stream.h
+index 411f0d35f3..8ce199eef2 100644
+--- a/call/receive_stream.h
++++ b/call/receive_stream.h
+@@ -35,7 +35,9 @@ class ReceiveStreamInterface {
+     // This member is no longer used by WebRTC, but retained in order to
+     // allow downstream code to compile.
+     // TODO: issues.webrtc.org/41480926 - Delete when downstream changed.
+-    [[deprecated("No longer used")]] uint32_t local_ssrc = 0;
++    // Mozilla: Undeprecated to allow using the signaled send ssrc in RTCP for
++    //          recvonly m-sections to make Teams happy.
++    uint32_t local_ssrc = 0;
+   };
+ 
+  protected:
+diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
+index a99de25ff9..2e653c12ff 100644
+--- a/video/rtp_video_stream_receiver2.cc
++++ b/video/rtp_video_stream_receiver2.cc
+@@ -133,7 +133,8 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
+     PacketRouter* packet_router,
+     bool non_sender_rtt_measurement,
+     RtcpEventObserver* rtcp_event_observer,
+-    std::optional<uint32_t> remote_ssrc) {
++    std::optional<uint32_t> remote_ssrc,
++    uint32_t local_ssrc) {
+   RtpRtcpInterface::Configuration configuration;
+   configuration.audio = false;
+   configuration.receiver_only = true;
+@@ -149,14 +150,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
+   configuration.remote_ssrc = remote_ssrc;
+ 
+   auto rtp_rtcp = ModuleRtpRtcpImpl2::CreateReceiveModule(
+-      env, configuration, [packet_router]() {
+-        if (packet_router) {
+-          return packet_router->SsrcOfFirstSender().value_or(
+-              kFallbackRtcpSsrcForVideo);
+-        } else {  // This happens at least in some test configurations.
+-          return kFallbackRtcpSsrcForVideo;
+-        }
+-      });
++      env, configuration, [local_ssrc] { return local_ssrc; });
+ 
+   return rtp_rtcp;
+ }
+@@ -332,7 +326,8 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
+           packet_router,
+           config_.rtp.rtcp_xr.receiver_reference_time_report,
+           config_.rtp.rtcp_event_observer,
+-          config->rtp.remote_ssrc)),
++          config->rtp.remote_ssrc,
++          config_.rtp.local_ssrc)),
+       nack_periodic_processor_(nack_periodic_processor),
+       complete_frame_callback_(complete_frame_callback),
+       keyframe_request_method_(config_.rtp.keyframe_method),

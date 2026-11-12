@@ -47,6 +47,7 @@ namespace webrtc {
 namespace {
 
 using ::testing::_;
+using ::testing::ElementsAre;
 using ::testing::Return;
 using ::testing::ValuesIn;
 
@@ -1006,6 +1007,9 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*hw_, OnLossNotification).Times(0);
   EXPECT_CALL(*sw_, OnLossNotification).Times(0);
 
+  EXPECT_CALL(*hw_, SetComplexity).Times(0);
+  EXPECT_CALL(*sw_, SetComplexity).Times(0);
+
   EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK,
             wrapper_->InitEncode(&codec_settings, kSettings));
   EXPECT_EQ(wrapper_->GetEncoderInfo().implementation_name, "hw");
@@ -1020,6 +1024,9 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   float packet_loss1 = 0.1;
   int64_t rtt1 = 1;
   VideoEncoder::LossNotification lntf1;
+  const VideoCodecComplexity complexity1[] = {
+      VideoCodecComplexity::kComplexityLow,
+      VideoCodecComplexity::kComplexityHigh};
 
   EXPECT_CALL(*hw_, RegisterEncodeCompleteCallback(&callback1));
   EXPECT_CALL(*sw_, RegisterEncodeCompleteCallback).Times(0);
@@ -1045,6 +1052,14 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*sw_, OnLossNotification).Times(0);
   wrapper_->OnLossNotification(lntf1);
 
+  EXPECT_CALL(*hw_,
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
+                                        VideoCodecComplexity::kComplexityHigh),
+                            VideoEncoder::ComplexityControlMode::kVariable));
+  EXPECT_CALL(*sw_, SetComplexity).Times(0);
+  wrapper_->SetComplexity(complexity1,
+                          VideoEncoder::ComplexityControlMode::kVariable);
+
   // Release and re-init, with fallback to software. This should trigger
   // the software encoder to be primed with the current state.
   wrapper_->Release();
@@ -1067,6 +1082,12 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*sw_, OnLossNotification).Times(1);
   EXPECT_CALL(*hw_, OnLossNotification).Times(0);
 
+  EXPECT_CALL(*sw_,
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
+                                        VideoCodecComplexity::kComplexityHigh),
+                            VideoEncoder::ComplexityControlMode::kVariable));
+  EXPECT_CALL(*hw_, SetComplexity).Times(0);
+
   SetSupportsLayers(&hw_info_, false);
   EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK,
             wrapper_->InitEncode(&codec_settings, kSettings));
@@ -1079,6 +1100,8 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   float packet_loss2 = 0.2;
   int64_t rtt2 = 2;
   VideoEncoder::LossNotification lntf2;
+  const VideoCodecComplexity complexity2[] = {
+      VideoCodecComplexity::kComplexityMax};
 
   EXPECT_CALL(*sw_, RegisterEncodeCompleteCallback(&callback2));
   EXPECT_CALL(*hw_, RegisterEncodeCompleteCallback).Times(0);
@@ -1104,6 +1127,13 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*hw_, OnLossNotification).Times(0);
   wrapper_->OnLossNotification(lntf2);
 
+  EXPECT_CALL(*sw_,
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityMax),
+                            VideoEncoder::ComplexityControlMode::kConstant));
+  EXPECT_CALL(*hw_, SetComplexity).Times(0);
+  wrapper_->SetComplexity(complexity2,
+                          VideoEncoder::ComplexityControlMode::kConstant);
+
   // Release and re-init, back to main encoder. This should trigger
   // the main encoder to be primed with the current state.
   wrapper_->Release();
@@ -1125,6 +1155,11 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
 
   EXPECT_CALL(*hw_, OnLossNotification).Times(1);
   EXPECT_CALL(*sw_, OnLossNotification).Times(0);
+
+  EXPECT_CALL(*hw_,
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityMax),
+                            VideoEncoder::ComplexityControlMode::kConstant));
+  EXPECT_CALL(*sw_, SetComplexity).Times(0);
 
   SetSupportsLayers(&hw_info_, true);
   EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK,

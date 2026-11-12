@@ -19,6 +19,7 @@
 #include "absl/strings/string_view.h"
 #include "api/candidate.h"
 #include "api/ref_count.h"
+#include "api/transport/ecn_marking.h"
 #include "api/units/timestamp.h"
 #include "p2p/base/transport_description.h"
 #include "rtc_base/system/rtc_export.h"
@@ -53,6 +54,8 @@ class RTC_EXPORT DatagramConnection : public RefCountInterface {
 
     struct PacketMetadata {
       Timestamp receive_time;
+      // ECN marking of the IP packet as received from the network.
+      EcnMarking ecn = EcnMarking::kNotEct;
     };
     virtual void OnPacketReceived(std::span<const uint8_t> data,
                                   PacketMetadata metadata) = 0;

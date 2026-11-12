@@ -18,6 +18,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <utility>
 
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
@@ -50,13 +51,14 @@ inline constexpr TimeDelta kHighCostPortKeepaliveLifetime =
 class RTC_EXPORT UDPPort : public Port {
  public:
   static std::unique_ptr<UDPPort> Create(
-      const PortParametersRef& args,
+      PortParametersRef args,
       AsyncPacketSocket* socket,
       bool emit_local_for_anyaddress,
       std::optional<TimeDelta> stun_keepalive_interval) {
     // Using `new` to access a non-public constructor.
-    auto port = absl::WrapUnique(new UDPPort(
-        args, IceCandidateType::kHost, socket, emit_local_for_anyaddress));
+    auto port =
+        absl::WrapUnique(new UDPPort(std::move(args), IceCandidateType::kHost,
+                                     socket, emit_local_for_anyaddress));
     port->set_stun_keepalive_delay(stun_keepalive_interval);
     if (!port->Init()) {
       return nullptr;
@@ -65,15 +67,15 @@ class RTC_EXPORT UDPPort : public Port {
   }
 
   static std::unique_ptr<UDPPort> Create(
-      const PortParametersRef& args,
+      PortParametersRef args,
       uint16_t min_port,
       uint16_t max_port,
       bool emit_local_for_anyaddress,
       std::optional<TimeDelta> stun_keepalive_interval) {
     // Using `new` to access a non-public constructor.
-    auto port =
-        absl::WrapUnique(new UDPPort(args, IceCandidateType::kHost, min_port,
-                                     max_port, emit_local_for_anyaddress));
+    auto port = absl::WrapUnique(
+        new UDPPort(std::move(args), IceCandidateType::kHost, min_port,
+                    max_port, emit_local_for_anyaddress));
     port->set_stun_keepalive_delay(stun_keepalive_interval);
     if (!port->Init()) {
       return nullptr;
@@ -118,11 +120,11 @@ class RTC_EXPORT UDPPort : public Port {
   StunRequestManager& request_manager() { return request_manager_; }
 
  protected:
-  UDPPort(const PortParametersRef& args,
+  UDPPort(PortParametersRef args,
           IceCandidateType type,
           AsyncPacketSocket* socket,
           bool emit_local_for_anyaddress);
-  UDPPort(const PortParametersRef& args,
+  UDPPort(PortParametersRef args,
           IceCandidateType type,
           uint16_t min_port,
           uint16_t max_port,
@@ -182,11 +184,11 @@ class RTC_EXPORT UDPPort : public Port {
     typedef std::map<SocketAddress, std::unique_ptr<AsyncDnsResolverInterface>>
         ResolverMap;
 
-    PacketSocketFactory* socket_factory_;
+    PacketSocketFactory* const socket_factory_;
     // The function is called when resolving the specified address is finished.
     // The first argument is the input address, the second argument is the error
     // or 0 if it succeeded.
-    std::function<void(const SocketAddress&, int)> done_;
+    const std::function<void(const SocketAddress&, int)> done_;
     // Resolver may fire callbacks that refer to done_, so ensure
     // that all resolvers are destroyed first.
     ResolverMap resolvers_;
@@ -246,7 +248,7 @@ class RTC_EXPORT UDPPort : public Port {
 
   // This is true by default and false when
   // PORTALLOCATOR_DISABLE_DEFAULT_LOCAL_CANDIDATE is specified.
-  bool emit_local_for_anyaddress_;
+  const bool emit_local_for_anyaddress_;
 
   friend class StunBindingRequest;
 };
@@ -254,7 +256,7 @@ class RTC_EXPORT UDPPort : public Port {
 class StunPort : public UDPPort {
  public:
   static std::unique_ptr<StunPort> Create(
-      const PortParametersRef& args,
+      PortParametersRef args,
       uint16_t min_port,
       uint16_t max_port,
       const ServerAddresses& servers,
@@ -263,7 +265,7 @@ class StunPort : public UDPPort {
   void PrepareAddress() override;
 
  protected:
-  StunPort(const PortParametersRef& args,
+  StunPort(PortParametersRef args,
            uint16_t min_port,
            uint16_t max_port,
            const ServerAddresses& servers);

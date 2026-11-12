@@ -384,6 +384,7 @@ rtc_library("frame_buffer") {
     "../../modules/video_coding:video_coding_utility",
     "../../rtc_base:logging",
     "../../rtc_base:rtc_numerics",
+    "../../rtc_base:sequence_number_util",
     "//third_party/abseil-cpp/absl/algorithm:container",
     "//third_party/abseil-cpp/absl/container:inlined_vector",
   ]

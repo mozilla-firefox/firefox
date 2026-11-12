@@ -282,8 +282,8 @@ TEST(L4STest, NoCcfbSentAfterRenegotiationAndCallerCachesLocalDescription) {
                                       {callee_to_caller});
   PeerScenarioClient::VideoSendTrackConfig video_conf;
   video_conf.generator.squares_video->framerate = 30;
-  video_conf.generator.squares_video->width = 640;
-  video_conf.generator.squares_video->height = 360;
+  video_conf.generator.squares_video->width = 320;
+  video_conf.generator.squares_video->height = 180;
   caller->CreateVideo("FROM_CALLER", video_conf);
   callee->CreateVideo("FROM_CALLEE", video_conf);
 
@@ -399,7 +399,7 @@ TEST_P(FeedbackFormatTest, AdaptToLinkCapacityWithoutEcn) {
   PeerScenarioClient::VideoSendTrackConfig video_conf;
   video_conf.generator.squares_video->framerate = 30;
   video_conf.generator.squares_video->width = 320;
-  video_conf.generator.squares_video->height = 240;
+  video_conf.generator.squares_video->height = 180;
   caller->CreateVideo("FROM_CALLER", video_conf);
   callee->CreateVideo("FROM_CALLEE", video_conf);
   caller->CreateAudio("FROM_CALLER", AudioOptions());
@@ -1016,8 +1016,8 @@ class CcFbSendRateAdaptation : public TestWithParam<TestVariant> {
     // Callee sends AUDIO and VIDEO.
     PeerScenarioClient::VideoSendTrackConfig video_conf;
     video_conf.generator.squares_video->framerate = 30;
-    video_conf.generator.squares_video->width = 1280;
-    video_conf.generator.squares_video->height = 720;
+    video_conf.generator.squares_video->width = 320;
+    video_conf.generator.squares_video->height = 180;
     callee->CreateVideo("VIDEO", video_conf);
     PeerScenarioClient::AudioSendTrack callee_audio =
         callee->CreateAudio("AUDIO", AudioOptions());

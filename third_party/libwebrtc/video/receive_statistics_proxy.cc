@@ -70,6 +70,16 @@ const char* UmaPrefixForContentType(VideoContentType content_type) {
   return "WebRTC.Video";
 }
 
+// Bitmask flags for the `WebRTC.Video.PlayoutDelayMode` histogram.
+// Combinations of these flags yield values in [1, 15].
+enum PlayoutDelayModeBitmask {
+  kPlayoutDelayDefault = 1 << 0,
+  kPlayoutDelayZeroZero = 1 << 1,
+  kPlayoutDelayZeroMax = 1 << 2,
+  kPlayoutDelayMinMax = 1 << 3,
+  kPlayoutDelayModeBoundary = 1 << 4,
+};
+
 }  // namespace
 
 ReceiveStatisticsProxy::ReceiveStatisticsProxy(uint32_t remote_ssrc,
@@ -118,6 +128,14 @@ void ReceiveStatisticsProxy::UpdateHistograms(
                                 stream_duration.seconds());
     log_stream << "WebRTC.Video.ReceiveStreamLifetimeInSeconds "
                << stream_duration.seconds() << '\n';
+  }
+
+  if (playout_delay_mode_bitmask_ > 0) {
+    RTC_HISTOGRAM_ENUMERATION("WebRTC.Video.PlayoutDelayMode",
+                              playout_delay_mode_bitmask_,
+                              kPlayoutDelayModeBoundary);
+    log_stream << "WebRTC.Video.PlayoutDelayMode "
+               << playout_delay_mode_bitmask_ << '\n';
   }
 
   log_stream << "Frames decoded " << stats_.frames_decoded << '\n';
@@ -533,6 +551,24 @@ void ReceiveStatisticsProxy::OnFrameBufferTimingsUpdated(
 void ReceiveStatisticsProxy::OnUniqueFramesCounted(int num_unique_frames) {
   RTC_DCHECK_RUN_ON(&main_thread_);
   num_unique_frames_.emplace(num_unique_frames);
+}
+
+void ReceiveStatisticsProxy::OnPlayoutDelay(
+    std::optional<VideoPlayoutDelay> playout_delay) {
+  RTC_DCHECK_RUN_ON(&main_thread_);
+  if (!playout_delay.has_value()) {
+    if (playout_delay_mode_bitmask_ == 0) {
+      playout_delay_mode_bitmask_ = kPlayoutDelayDefault;
+    }
+    return;
+  }
+  if (playout_delay->min().IsZero() && playout_delay->max().IsZero()) {
+    playout_delay_mode_bitmask_ |= kPlayoutDelayZeroZero;
+  } else if (playout_delay->min().IsZero()) {
+    playout_delay_mode_bitmask_ |= kPlayoutDelayZeroMax;
+  } else {
+    playout_delay_mode_bitmask_ |= kPlayoutDelayMinMax;
+  }
 }
 
 void ReceiveStatisticsProxy::OnTimingFrameInfoUpdated(

@@ -263,7 +263,7 @@ TEST(ScreamV2Test, L4sAlphaScalesUpAndDownWithRtt) {
   TimeDelta feedback_interval = TimeDelta::Millis(25);
 
   // First feedback with 100% CE marks at RTT = 100ms (steps_per_rtt = 4).
-  // With L4sAvgGUp = 1/8 and steps_per_rtt = 4, g_up = (1/8) / 4 = 1/32.
+  // With L4sAvgG = 1/16 and steps_per_rtt = 4, g = (1/16) / 4 = 1/64.
   TransportPacketsFeedback ce_feedback =
       CreateFeedback(clock.CurrentTime(), rtt,
                      /*number_of_ect1_packets=*/20,
@@ -272,10 +272,10 @@ TEST(ScreamV2Test, L4sAlphaScalesUpAndDownWithRtt) {
     packet.ecn = EcnMarking::kCe;
   }
   scream.OnTransportPacketsFeedback(ce_feedback);
-  EXPECT_DOUBLE_EQ(scream.l4s_alpha(), (1.0 / 8.0) / 4.0);
+  EXPECT_DOUBLE_EQ(scream.l4s_alpha(), (1.0 / 16.0) / 4.0);
 
   // Next 4 feedbacks (1 RTT) with 0% CE marks.
-  // With L4sAvgGDown = 1/16 and steps_per_rtt = 4, g_down = (1/16) / 4 = 1/64.
+  // With L4sAvgG = 1/16 and steps_per_rtt = 4, g = (1/16) / 4 = 1/64.
   double alpha_before_decay = scream.l4s_alpha();
   for (int i = 0; i < 4; ++i) {
     clock.AdvanceTime(feedback_interval);
@@ -707,6 +707,74 @@ TEST(ScreamV2Test, KeepsTrackOfReceivedRateOver100msWindow) {
   // Rate is calculated using remote receive duration: 5000 bytes / 101ms.
   EXPECT_EQ(scream.received_rate(),
             DataSize::Bytes(5000) / TimeDelta::Millis(101));
+}
+
+TEST(ScreamV2Test, MaxDataInFlightBoundedByMinMaxDataInFlightMss) {
+  SimulatedClock clock(Timestamp::Seconds(1'234));
+  Environment env_default = CreateTestEnvironment({.time = &clock});
+  ScreamV2 scream_default(env_default);
+  // Default min_ref_window is 1000 bytes, max_segment_size is 1280 bytes, and
+  // min_max_data_in_flight_mss is 4 -> 4 * 1280 = 5120 bytes.
+  EXPECT_EQ(scream_default.ref_window(), DataSize::Bytes(1000));
+  EXPECT_EQ(scream_default.max_data_in_flight(), DataSize::Bytes(4 * 1280));
+
+  Environment env_custom = CreateTestEnvironment(
+      {.field_trials = "WebRTC-Bwe-ScreamV2/MinMaxDataInFlightMss:5/",
+       .time = &clock});
+  ScreamV2 scream_custom(env_custom);
+  EXPECT_EQ(scream_custom.max_data_in_flight(), DataSize::Bytes(5 * 1280));
+}
+
+TEST(ScreamV2Test, DelayBackoffInhibitedWhenQueueDelayDecreases) {
+  SimulatedClock clock(Timestamp::Seconds(1'234));
+  Environment env = CreateTestEnvironment({.time = &clock});
+  ScreamV2 scream(env);
+  scream.SetTargetBitrateConstraints(DataRate::Zero(),
+                                     DataRate::KilobitsPerSec(2000),
+                                     DataRate::KilobitsPerSec(1000));
+  CcFeedbackGenerator feedback_generator(
+      {.network_config = {.queue_delay_ms = 25,
+                          .link_capacity = DataRate::KilobitsPerSec(1000)},
+       .send_as_ect1 = false});
+
+  // Overuse the 1 Mbps link by sending at 2 Mbps until queue delay builds up
+  // well above the congestion threshold (30 ms).
+  for (int i = 0; i < 10; ++i) {
+    TransportPacketsFeedback feedback =
+        feedback_generator.ProcessUntilNextFeedback(
+            DataRate::KilobitsPerSec(2000), clock,
+            [&](const SentPacket& packet) {
+              scream.OnPacketSent(packet.data_in_flight);
+            });
+    scream.OnTransportPacketsFeedback(feedback);
+  }
+  ASSERT_TRUE(scream.delay_based_congestion_control().IsQueueDelayDetected());
+  ASSERT_TRUE(scream.last_reference_window_decrease_time().IsFinite());
+
+  // Reduce send rate below link capacity (500 kbps) so the queue drains.
+  int drained_feedbacks_while_congested = 0;
+  for (int i = 0; i < 20; ++i) {
+    TimeDelta prev_queue_delay =
+        scream.delay_based_congestion_control().queue_delay();
+    DataSize prev_ref_window = scream.ref_window();
+    TransportPacketsFeedback feedback =
+        feedback_generator.ProcessUntilNextFeedback(
+            DataRate::KilobitsPerSec(500), clock,
+            [&](const SentPacket& packet) {
+              scream.OnPacketSent(packet.data_in_flight);
+            });
+    scream.OnTransportPacketsFeedback(feedback);
+
+    if (scream.delay_based_congestion_control().IsQueueDelayDetected() &&
+        scream.delay_based_congestion_control().queue_delay() <
+            prev_queue_delay) {
+      ++drained_feedbacks_while_congested;
+      // Even though queue delay is still above the congestion threshold,
+      // reference window must not decrease while queue delay is decreasing.
+      EXPECT_GE(scream.ref_window(), prev_ref_window);
+    }
+  }
+  EXPECT_GT(drained_feedbacks_while_congested, 0);
 }
 
 }  // namespace

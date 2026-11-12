@@ -44,24 +44,21 @@
 #include "pc/peer_connection_wrapper.h"
 #include "pc/sdp_utils.h"
 #include "pc/session_description.h"
+#include "pc/test/fake_audio_capture_module.h"
+#include "pc/test/fake_rtc_certificate_generator.h"
 #include "pc/test/mock_peer_connection_observers.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/rtc_certificate.h"
 #include "rtc_base/rtc_certificate_generator.h"
 #include "rtc_base/ssl_fingerprint.h"
 #include "rtc_base/thread.h"
+#include "rtc_base/virtual_socket_server.h"
 #include "test/create_test_environment.h"
 #include "test/create_test_field_trials.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 #include "test/run_loop.h"
 #include "test/wait_until.h"
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
-#include "pc/test/fake_audio_capture_module.h"
-#include "pc/test/fake_rtc_certificate_generator.h"
-#include "rtc_base/virtual_socket_server.h"
 
 namespace webrtc {
 
@@ -83,9 +80,6 @@ class PeerConnectionCryptoBaseTest : public ::testing::Test {
       : vss_(new VirtualSocketServer()),
         main_(vss_.get()),
         sdp_semantics_(sdp_semantics) {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
     pc_factory_ = CreatePeerConnectionFactory(
         Thread::Current(), Thread::Current(), FakeAudioCaptureModule::Create(),
         CreateBuiltinAudioEncoderFactory(), CreateBuiltinAudioDecoderFactory(),
@@ -321,6 +315,39 @@ TEST_P(PeerConnectionCryptoTest,
       callee->CreateAnswerAndSetAsLocal();
   ASSERT_THAT(answer, NotNull());
   ASSERT_TRUE(caller->SetRemoteDescription(std::move(answer)));
+}
+
+// The signaling and network threads are the same thread in these tests. A
+// certificate from the configuration must be usable by descriptions that are
+// applied right after the PeerConnection is created, before any posted task
+// has run.
+TEST_P(PeerConnectionCryptoTest,
+       DescriptionsAppliedRightAfterCreationUseCertificateInConfig) {
+  RTCConfiguration config;
+  config.certificates.push_back(
+      FakeRTCCertificateGenerator::GenerateCertificate());
+  auto caller = CreatePeerConnectionWithAudioVideo();
+  std::unique_ptr<SessionDescriptionInterface> offer =
+      caller->CreateOfferAndSetAsLocal();
+  ASSERT_THAT(offer, NotNull());
+  // A PeerConnection with the same certificate creates the answer, so the
+  // answer has the fingerprint of that certificate.
+  auto answerer = CreatePeerConnection(config);
+  ASSERT_TRUE(answerer->SetRemoteDescription(offer->Clone()));
+  std::unique_ptr<SessionDescriptionInterface> answer =
+      answerer->CreateAnswer();
+  ASSERT_THAT(answer, NotNull());
+
+  auto callee = CreatePeerConnection(config);
+  ASSERT_THAT(callee, NotNull());
+  auto srd_observer = make_ref_counted<FakeSetRemoteDescriptionObserver>();
+  callee->pc()->SetRemoteDescription(std::move(offer), srd_observer);
+  auto sld_observer = make_ref_counted<FakeSetLocalDescriptionObserver>();
+  callee->pc()->SetLocalDescription(std::move(answer), sld_observer);
+  ASSERT_TRUE(srd_observer->called());
+  EXPECT_THAT(srd_observer->error(), IsRtcOk());
+  ASSERT_TRUE(sld_observer->called());
+  EXPECT_THAT(sld_observer->error(), IsRtcOk());
 }
 
 // The following parameterized test verifies that CreateOffer/CreateAnswer

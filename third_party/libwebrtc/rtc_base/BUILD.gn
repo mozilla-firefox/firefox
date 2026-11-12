@@ -732,7 +732,7 @@ rtc_library("rtc_operations_chain") {
 if (is_mac || is_ios) {
   rtc_library("rtc_task_queue_gcd") {
     visibility = [
-      ":task_queue_gcd_unittest",
+      ":*",
       "../api/task_queue:default_task_queue_factory",
     ]
     sources = [
@@ -841,6 +841,11 @@ rtc_library("windowed_min_filter") {
   deps = [ ":checks" ]
 }
 
+rtc_source_set("sequence_number_util") {
+  sources = [ "numerics/sequence_number_util.h" ]
+  deps = [ ":mod_ops" ]
+}
+
 rtc_library("rtc_numerics") {
   sources = [
     "numerics/event_based_exponential_moving_average.cc",
@@ -855,11 +860,11 @@ rtc_library("rtc_numerics") {
     "numerics/rational.h",
     "numerics/running_statistics.h",
     "numerics/sequence_number_unwrapper.h",
-    "numerics/sequence_number_util.h",
   ]
   deps = [
     ":checks",
     ":mod_ops",
+    "../api/numerics:sequence_number_unwrapper",
   ]
 }
 
@@ -986,7 +991,7 @@ rtc_library("async_dns_resolver") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("async_dns_resolver_unittests") {
+  rtc_cc_test("async_dns_resolver_unittest") {
     sources = [ "async_dns_resolver_unittest.cc" ]
     deps = [
       ":async_dns_resolver",
@@ -1031,6 +1036,9 @@ rtc_library("socket_address") {
     ":safe_conversions",
     ":stringutils",
     "system:rtc_export",
+    "//third_party/abseil-cpp/absl/base:core_headers",
+    "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/strings:str_format",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
   if (is_win) {
@@ -1327,6 +1335,7 @@ if (!build_with_mozilla) {
     "//third_party/abseil-cpp/absl/functional:any_invocable",
     "//third_party/abseil-cpp/absl/memory",
     "//third_party/abseil-cpp/absl/strings",
+    "//third_party/abseil-cpp/absl/strings:str_format",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
 
@@ -1869,7 +1878,7 @@ rtc_library("testclient") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("callback_list_unittests") {
+  rtc_cc_test("callback_list_unittest") {
     sources = [ "callback_list_unittest.cc" ]
     deps = [
       ":callback_list",
@@ -2034,6 +2043,19 @@ if (rtc_include_tests) {
         "//third_party/google_benchmark",
       ]
     }
+
+    if (!rtc_disable_logging) {
+      rtc_library("logging_benchmark") {
+        testonly = true
+        sources = [ "logging_benchmark.cc" ]
+        deps = [
+          ":logging",
+          "//third_party/abseil-cpp/absl/strings",
+          "//third_party/abseil-cpp/absl/strings:string_view",
+          "//third_party/google_benchmark",
+        ]
+      }
+    }
   }
 
   rtc_cc_test("untyped_function_unittest") {
@@ -2044,7 +2066,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_cc_test("rtc_operations_chain_unittests") {
+  rtc_cc_test("operations_chain_unittest") {
     sources = [ "operations_chain_unittest.cc" ]
     deps = [
       ":checks",
@@ -2178,6 +2200,7 @@ if (rtc_include_tests) {
         ":net_helpers",
         ":socket_address",
         "../test:test_support",
+        "//third_party/abseil-cpp/absl/strings",
       ]
     }
 
@@ -2301,6 +2324,7 @@ if (rtc_include_tests) {
       deps = [
         ":event_tracer",
         ":macromagic",
+        "../test:fileutils",
         "../test:test_support",
         "synchronization:mutex",
       ]
@@ -2342,7 +2366,6 @@ if (rtc_include_tests) {
         "../api/units:timestamp",
         "../system_wrappers",
         "../test:test_support",
-        "//third_party/abseil-cpp/absl/cleanup",
         "//third_party/abseil-cpp/absl/functional:any_invocable",
         "//third_party/abseil-cpp/absl/strings:string_view",
       ]
@@ -2662,12 +2685,13 @@ if (rtc_include_tests) {
           ":rtc_event",
           ":rtc_task_queue_gcd",
           "../api/task_queue",
+          "../api/units:time_delta",
           "../test:test_support",
         ]
       }
     }
 
-    rtc_cc_test("weak_ptr_unittests") {
+    rtc_cc_test("weak_ptr_unittest") {
       sources = [ "weak_ptr_unittest.cc" ]
       deps = [
         ":task_queue_for_test",
@@ -2727,19 +2751,11 @@ if (rtc_include_tests) {
       ]
     }
 
-    rtc_cc_test("sequence_number_unwrapper_unittest") {
-      sources = [ "numerics/sequence_number_unwrapper_unittest.cc" ]
-      deps = [
-        ":rtc_numerics",
-        "../test:test_support",
-      ]
-    }
-
     rtc_cc_test("sequence_number_util_unittest") {
       sources = [ "numerics/sequence_number_util_unittest.cc" ]
       deps = [
         ":mod_ops",
-        ":rtc_numerics",
+        ":sequence_number_util",
         "../test:test_support",
       ]
     }
@@ -2753,7 +2769,7 @@ if (rtc_include_tests) {
       ]
     }
 
-    rtc_cc_test("rtc_json_unittests") {
+    rtc_cc_test("json_unittest") {
       sources = [ "strings/json_unittest.cc" ]
       deps = [
         ":rtc_json",
@@ -3058,10 +3074,16 @@ if (rtc_include_tests) {
         }
       }
 
+      rtc_source_set("distrusted_certificates_for_testing") {
+        testonly = true
+        sources = [ "distrusted_certificates_for_testing.h" ]
+      }
+
       rtc_cc_test("openssl_utility_unittest") {
         sources = [ "openssl_utility_unittest.cc" ]
         deps = [
           ":checks",
+          ":distrusted_certificates_for_testing",
           ":safe_conversions",
           ":ssl",
           ":ssl_header",
@@ -3077,6 +3099,8 @@ if (rtc_include_tests) {
       rtc_cc_test("ssl_adapter_unittest") {
         sources = [ "ssl_adapter_unittest.cc" ]
         deps = [
+          ":buffer",
+          ":distrusted_certificates_for_testing",
           ":ip_address",
           ":logging",
           ":rtc_base_tests_utils",

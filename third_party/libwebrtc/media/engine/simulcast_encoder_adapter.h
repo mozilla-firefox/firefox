@@ -20,6 +20,7 @@
 #include <list>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 
 #include "absl/base/nullability.h"
@@ -71,6 +72,9 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
              const std::vector<VideoFrameType>* frame_types) override;
   int RegisterEncodeCompleteCallback(EncodedImageCallback* callback) override;
   void SetRates(const RateControlParameters& parameters) override;
+  void SetComplexity(
+      std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+      ComplexityControlMode complexity_control_mode) override;
   void OnPacketLossRateUpdate(float packet_loss_rate) override;
   void OnRttUpdate(int64_t rtt_ms) override;
   void OnLossNotification(const LossNotification& loss_notification) override;

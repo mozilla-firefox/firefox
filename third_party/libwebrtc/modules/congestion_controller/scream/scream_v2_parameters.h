@@ -27,10 +27,9 @@ struct ScreamV2Parameters {
   FieldTrialParameter<DataSize> min_ref_window;
 
   // Exponentially Weighted Moving Average (EWMA) factor for l4s_alpha.
-  FieldTrialParameter<double> l4s_avg_g_up;
-  FieldTrialParameter<double> l4s_avg_g_down;
-  // If true, scales `l4s_avg_g_up` and `l4s_avg_g_down` by `steps_per_rtt` so
-  // `l4s_alpha` is updated relative to `max(reaction_interval, rtt)`.
+  FieldTrialParameter<double> l4s_avg_g;
+  // If true, scales `l4s_avg_g` by `steps_per_rtt` so `l4s_alpha` is updated
+  // relative to `max(reaction_interval, rtt)`.
   FieldTrialParameter<bool> scale_l4s_alpha_with_rtt;
 
   // The number of consecutive RTTs with loss required to trigger a backoff.
@@ -78,14 +77,21 @@ struct ScreamV2Parameters {
   FieldTrialParameter<double> backoff_scale_factor_close_to_ref_window_i;
 
   // If CE is detected and this number of RTTs has passed since last
-  // congestion, ref_window_i will be reset.
+  // congestion, ref_window will be clamped to max_data_in_flight_prev_rtt.
   FieldTrialParameter<int>
       number_of_rtts_between_reset_ref_window_i_on_congestion;
+
+  // Maximum number of RTTs before `ref_window_i` is allowed to be updated on
+  // congestion even if `ref_window` has not increased by 5% above the lowest
+  // `ref_window` (`REF_WND_I_UPDATE_MAX_HOLD_RTTS` in the RFC).
+  FieldTrialParameter<int> ref_window_i_update_max_hold_rtts;
 
   // Max/Min used for calculating how much larger the send window is allowed to
   // be than the ref window.
   FieldTrialParameter<double> ref_window_overhead_min;
   FieldTrialParameter<double> ref_window_overhead_max;
+  // Minimum send window (max_data_in_flight), expressed in number of MSS.
+  FieldTrialParameter<int> min_max_data_in_flight_mss;
 
   // Exponentially Weighted Moving Average (EWMA) factor for updating queue
   // delay.
@@ -100,6 +106,10 @@ struct ScreamV2Parameters {
   // Thresholds for average latency difference. Used for limiting ref_window
   // increase.
   FieldTrialParameter<TimeDelta> latency_diff_threshold;
+  // If true, uses the minimum of the avg min delay scale factor and latency
+  // difference scale factor when limiting ref_window increase, instead of
+  // multiplying them.
+  FieldTrialParameter<bool> use_min_delay_scale_on_increase;
   // Minimum (base) window from the latest sent packet in feedback to compute
   // min and max one-way delay.
   FieldTrialParameter<TimeDelta> burst_window_min;
@@ -169,11 +179,14 @@ struct ScreamV2Parameters {
   // congestion event after the first RTT.
   FieldTrialParameter<bool> allow_initial_ref_window_clamping;
 
-  // If true, `ref_window_` is reduced immediately according to `alpha` and then
-  // waits for one RTT after `data_in_flight` drops below `ref_window_` before
-  // starting another full reduction, applying only positive `alpha` deltas in
-  // the meantime.
-  FieldTrialParameter<bool> use_non_linear_backoff_scale;
+  // If true, uses the draft specification's linear per-RTT backoff scaling,
+  // inhibits `is_virtual_ce` when `queue_delay_avg` is decreasing, and scales
+  // down backoff when `target_rate` is below `acked_bitrate_margin *
+  // received_rate`.
+  FieldTrialParameter<bool> use_spec_backoff;
+  FieldTrialParameter<double> acked_bitrate_margin;
+  FieldTrialParameter<double> backoff_scale_low_target_rate;
+  FieldTrialParameter<bool> inhibit_backoff_if_data_in_flight_decreases;
 
   // If the time since last reaction to congestion is larger than this, the
   // pacing window is increased. I.e. packets are allowed to be sent in larger

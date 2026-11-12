@@ -80,8 +80,6 @@ static const size_t TURN_CHANNEL_HEADER_SIZE = 4U;
 // STUN_ERROR_ALLOCATION_MISMATCH error per rfc5766.
 static const size_t MAX_ALLOCATE_MISMATCH_RETRIES = 2;
 
-static const int TURN_SUCCESS_RESULT_CODE = 0;
-
 inline bool IsTurnChannelData(uint16_t msg_type) {
   return ((msg_type & 0xC000) == 0x4000);  // MSB are 0b01
 }
@@ -114,7 +112,7 @@ class TurnAllocateRequest : public StunRequest {
   void OnTryAlternate(StunMessage* response, int code);
   void OnUnknownAttribute(StunMessage* response);
 
-  TurnPort* port_;
+  TurnPort* const port_;
 };
 
 class TurnRefreshRequest : public StunRequest {
@@ -126,7 +124,7 @@ class TurnRefreshRequest : public StunRequest {
   void OnTimeout() override;
 
  private:
-  TurnPort* port_;
+  TurnPort* const port_;
 };
 
 class TurnCreatePermissionRequest : public StunRequest {
@@ -141,9 +139,9 @@ class TurnCreatePermissionRequest : public StunRequest {
   void OnTimeout() override;
 
  private:
-  TurnPort* port_;
+  TurnPort* const port_;
   TurnEntry* entry_;
-  SocketAddress ext_addr_;
+  const SocketAddress ext_addr_;
 };
 
 class TurnChannelBindRequest : public StunRequest {
@@ -224,7 +222,7 @@ class TurnEntry {
   ScopedTaskSafety task_safety_;
 };
 
-TurnPort::TurnPort(const PortParametersRef& args,
+TurnPort::TurnPort(PortParametersRef args,
                    AsyncPacketSocket* socket,
                    const ProtocolAddress& server_address,
                    const RelayCredentials& credentials,
@@ -232,10 +230,13 @@ TurnPort::TurnPort(const PortParametersRef& args,
                    const std::vector<std::string>& tls_alpn_protocols,
                    const std::vector<std::string>& tls_elliptic_curves,
                    TurnCustomizer* customizer,
-                   SSLCertificateVerifier* tls_cert_verifier)
-    : Port(args, IceCandidateType::kRelay),
+                   SSLCertificateVerifier* tls_cert_verifier,
+                   TlsCertPolicy tls_cert_policy,
+                   absl::string_view turn_logging_id)
+    : Port(std::move(args), IceCandidateType::kRelay),
       server_address_(server_address),
       server_url_(ReconstructServerUrl()),
+      tls_cert_policy_(tls_cert_policy),
       tls_alpn_protocols_(tls_alpn_protocols),
       tls_elliptic_curves_(tls_elliptic_curves),
       tls_cert_verifier_(tls_cert_verifier),
@@ -244,7 +245,7 @@ TurnPort::TurnPort(const PortParametersRef& args,
       error_(0),
       stun_dscp_value_(DSCP_NO_CHANGE),
       request_manager_(
-          args.network_thread,
+          thread(),
           [this](std::span<const uint8_t> data, StunRequest* request) {
             OnSendStunPacket(data, request);
           }),
@@ -252,9 +253,10 @@ TurnPort::TurnPort(const PortParametersRef& args,
       state_(STATE_CONNECTING),
       server_priority_(server_priority),
       allocate_mismatch_retries_(0),
-      turn_customizer_(customizer) {}
+      turn_customizer_(customizer),
+      turn_logging_id_(turn_logging_id) {}
 
-TurnPort::TurnPort(const PortParametersRef& args,
+TurnPort::TurnPort(PortParametersRef args,
                    uint16_t min_port,
                    uint16_t max_port,
                    const ProtocolAddress& server_address,
@@ -263,10 +265,13 @@ TurnPort::TurnPort(const PortParametersRef& args,
                    const std::vector<std::string>& tls_alpn_protocols,
                    const std::vector<std::string>& tls_elliptic_curves,
                    TurnCustomizer* customizer,
-                   SSLCertificateVerifier* tls_cert_verifier)
-    : Port(args, IceCandidateType::kRelay, min_port, max_port),
+                   SSLCertificateVerifier* tls_cert_verifier,
+                   TlsCertPolicy tls_cert_policy,
+                   absl::string_view turn_logging_id)
+    : Port(std::move(args), IceCandidateType::kRelay, min_port, max_port),
       server_address_(server_address),
       server_url_(ReconstructServerUrl()),
+      tls_cert_policy_(tls_cert_policy),
       tls_alpn_protocols_(tls_alpn_protocols),
       tls_elliptic_curves_(tls_elliptic_curves),
       tls_cert_verifier_(tls_cert_verifier),
@@ -275,7 +280,7 @@ TurnPort::TurnPort(const PortParametersRef& args,
       error_(0),
       stun_dscp_value_(DSCP_NO_CHANGE),
       request_manager_(
-          args.network_thread,
+          thread(),
           [this](std::span<const uint8_t> data, StunRequest* request) {
             OnSendStunPacket(data, request);
           }),
@@ -283,7 +288,8 @@ TurnPort::TurnPort(const PortParametersRef& args,
       state_(STATE_CONNECTING),
       server_priority_(server_priority),
       allocate_mismatch_retries_(0),
-      turn_customizer_(customizer) {}
+      turn_customizer_(customizer),
+      turn_logging_id_(turn_logging_id) {}
 
 TurnPort::~TurnPort() {
   // TODO(juberti): Should this even be necessary?
@@ -332,10 +338,6 @@ TlsCertPolicy TurnPort::GetTlsCertPolicy() const {
 
 void TurnPort::SetTlsCertPolicy(TlsCertPolicy tls_cert_policy) {
   tls_cert_policy_ = tls_cert_policy;
-}
-
-void TurnPort::SetTurnLoggingId(absl::string_view turn_logging_id) {
-  turn_logging_id_ = std::string(turn_logging_id);
 }
 
 const std::vector<std::string>& TurnPort::GetTlsAlpnProtocols() const {
@@ -1042,9 +1044,6 @@ void TurnPort::Close() {
   state_ = STATE_DISCONNECTED;
   // Delete all existing connections; stop sending data.
   DestroyAllConnections();
-  if (callbacks_for_test_) {
-    callbacks_for_test_->OnTurnPortClosed();
-  }
 }
 
 DiffServCodePoint TurnPort::StunDscpValue() const {
@@ -1339,11 +1338,6 @@ void TurnPort::HandleConnectionDestroyed(Connection* conn) {
                                        }),
                               kTurnPermissionTimeout);
   }
-}
-
-void TurnPort::SetCallbacksForTest(CallbacksForTest* callbacks) {
-  RTC_DCHECK(!callbacks_for_test_);
-  callbacks_for_test_ = callbacks;
 }
 
 std::string TurnPort::ReconstructServerUrl() {
@@ -1653,10 +1647,6 @@ void TurnRefreshRequest::OnResponse(StunMessage* response) {
     port->thread()->PostTask(
         SafeTask(port->task_safety_.flag(), [port] { port->Close(); }));
   }
-
-  if (port_->callbacks_for_test_) {
-    port_->callbacks_for_test_->OnTurnRefreshResult(TURN_SUCCESS_RESULT_CODE);
-  }
 }
 
 void TurnRefreshRequest::OnErrorResponse(StunMessage* response) {
@@ -1673,9 +1663,6 @@ void TurnRefreshRequest::OnErrorResponse(StunMessage* response) {
                         << hex_encode(id()) << ", code=" << error_code
                         << ", rtt=" << Elapsed();
     port_->OnRefreshError();
-    if (port_->callbacks_for_test_) {
-      port_->callbacks_for_test_->OnTurnRefreshResult(error_code);
-    }
   }
 }
 
@@ -1913,10 +1900,6 @@ int TurnEntry::Send(std::span<const uint8_t> data,
 void TurnEntry::OnCreatePermissionSuccess() {
   RTC_LOG(LS_INFO) << port_->ToString() << ": Create permission for "
                    << ext_addr_.ToSensitiveString() << " succeeded";
-  if (port_->callbacks_for_test_) {
-    port_->callbacks_for_test_->OnTurnCreatePermissionResult(
-        TURN_SUCCESS_RESULT_CODE);
-  }
 
   // If `state_` is STATE_BOUND, the permission will be refreshed
   // by ChannelBindRequest.
@@ -1943,9 +1926,6 @@ void TurnEntry::OnCreatePermissionError(StunMessage* response, int code) {
                            "code="
                         << code << "; pruned connection.";
     }
-  }
-  if (port_->callbacks_for_test_) {
-    port_->callbacks_for_test_->OnTurnCreatePermissionResult(code);
   }
 }
 

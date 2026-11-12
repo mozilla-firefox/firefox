@@ -5,17 +5,17 @@ per-file DEPS=*
 per-file WATCHLISTS=*
 per-file whitespace.txt=*
 
-per-file .gn=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
-per-file BUILD.gn=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
-per-file .../BUILD.gn=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
-per-file *.gni=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
-per-file .../*.gni=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
+per-file .gn=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
+per-file BUILD.gn=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
+per-file .../BUILD.gn=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
+per-file *.gni=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
+per-file .../*.gni=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
 
-per-file .vpython=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
-per-file vpython.toml*=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
-per-file pylintrc=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
-per-file pylintrc_old_style=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
-per-file .style.yapf=jleconte@webrtc.org
-per-file *.py=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@webrtc.org
+per-file .vpython=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
+per-file vpython.toml*=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
+per-file pylintrc=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
+per-file pylintrc_old_style=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
+per-file .style.yapf=jleconte@google.com
+per-file *.py=mbonadei@webrtc.org,jansson@webrtc.org,jleconte@google.com
 
-per-file .rustfmt.toml=boivie@webrtc.org,mbonadei@webrtc.org,jleconte@webrtc.org
+per-file .rustfmt.toml=boivie@webrtc.org,mbonadei@webrtc.org,jleconte@google.com

@@ -713,7 +713,7 @@ TEST(NetworkEmulationManagerTest, EndpointLoopback) {
 
   endpoint->SendPacket(SocketAddress(endpoint->GetPeerLocalAddress(), 80),
                        SocketAddress(endpoint->GetPeerLocalAddress(), 80),
-                       "Hello");
+                       CopyOnWriteBuffer("Hello"));
   network_manager.time_controller()->AdvanceTime(TimeDelta::Seconds(1));
 }
 
@@ -733,7 +733,7 @@ TEST(NetworkEmulationManagerTest, EndpointCanSendWithDifferentSourceIp) {
 
   endpoint->SendPacket(SocketAddress(kSourceIp, 80),
                        SocketAddress(endpoint->GetPeerLocalAddress(), 80),
-                       "Hello");
+                       CopyOnWriteBuffer("Hello"));
   network_manager.time_controller()->AdvanceTime(TimeDelta::Seconds(1));
 }
 
@@ -760,7 +760,7 @@ TEST(NetworkEmulationManagerTest,
 
   sender_endpoint->SendPacket(
       SocketAddress(sender_endpoint->GetPeerLocalAddress(), 80),
-      SocketAddress(kDestIp, 80), "Hello");
+      SocketAddress(kDestIp, 80), CopyOnWriteBuffer("Hello"));
   network_manager.time_controller()->AdvanceTime(TimeDelta::Seconds(1));
 }
 
@@ -791,7 +791,7 @@ TEST(NetworkEmulationManagerTURNTest, ClientTraffic) {
   StunMessage ping(STUN_BINDING_REQUEST);
   ByteBufferWriter buf;
   ping.Write(&buf);
-  CopyOnWriteBuffer packet(buf.Data(), buf.Length());
+  CopyOnWriteBuffer packet(buf.DataView());
 
   // We expect to get a ping reply.
   EXPECT_CALL(recv, OnPacketReceived(::testing::_)).Times(1);

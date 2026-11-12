@@ -713,6 +713,8 @@ VideoStreamEncoder::VideoStreamEncoder(
                                     /*source=*/nullptr),
       qp_parsing_allowed_(
           !env_.field_trials().IsEnabled("WebRTC-QpParsingKillSwitch")),
+      qcm_ignore_enhancement_temporal_layers_(!env_.field_trials().IsDisabled(
+          "WebRTC-QCM-IgnoreEnhancementTemporalLayers")),
       switch_encoder_on_init_failures_(!env_.field_trials().IsDisabled(
           kSwitchEncoderOnInitializationFailuresFieldTrial)),
       vp9_low_tier_core_threshold_(
@@ -1339,10 +1341,6 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   codec.SetVideoEncoderComplexity(speed_experiment_.GetComplexity(
       codec.codecType, codec.mode == VideoCodecMode::kScreensharing));
 
-  quality_convergence_controller_.Initialize(
-      codec.numberOfSimulcastStreams, encoder_->GetEncoderInfo().min_qp,
-      codec.codecType, env_.field_trials());
-
   send_codec_ = codec;
 
   // Keep the same encoder, as long as the video_format is unchanged.
@@ -1441,6 +1439,10 @@ void VideoStreamEncoder::ReconfigureEncoder() {
         codec, env_.field_trials(), env_.clock());
     bitrate_adjuster_->OnEncoderInfo(info);
   }
+
+  quality_convergence_controller_.Initialize(codec.numberOfSimulcastStreams,
+                                             info.min_qp, codec.codecType,
+                                             env_.field_trials());
 
   if (rate_allocator_ && last_encoder_rate_settings_) {
     // We have a new rate allocator instance and already configured target
@@ -2307,19 +2309,23 @@ EncodedImageCallback::Result VideoStreamEncoder::OnEncodedImage(
   unsigned int image_height = image_copy._encodedHeight;
   encoder_queue_->PostTask(
       [this, codec_type, image_width, image_height, simulcast_index,
+       temporal_index = image_copy.TemporalIndex().value_or(0),
        qp = image_copy.qp_,
        is_steady_state_refresh_frame = image_copy.IsSteadyStateRefreshFrame()] {
         RTC_DCHECK_RUN_ON(encoder_queue_.get());
 
-        // Check if the encoded image has reached target quality.
-        bool at_target_quality =
-            quality_convergence_controller_.AddSampleAndCheckTargetQuality(
-                simulcast_index, qp, is_steady_state_refresh_frame);
+        if (temporal_index == 0 || !qcm_ignore_enhancement_temporal_layers_) {
+          // Check if the encoded image has reached target quality.
+          bool at_target_quality =
+              quality_convergence_controller_.AddSampleAndCheckTargetQuality(
+                  simulcast_index, qp, is_steady_state_refresh_frame);
 
-        // Let the frame cadence adapter know about quality convergence.
-        if (frame_cadence_adapter_)
-          frame_cadence_adapter_->UpdateLayerQualityConvergence(
-              simulcast_index, at_target_quality);
+          // Let the frame cadence adapter know about quality convergence.
+          if (frame_cadence_adapter_) {
+            frame_cadence_adapter_->UpdateLayerQualityConvergence(
+                simulcast_index, at_target_quality);
+          }
+        }
 
         // Currently, the internal quality scaler is used for VP9 instead of the
         // webrtc qp scaler (in the no-svc case or if only a single spatial

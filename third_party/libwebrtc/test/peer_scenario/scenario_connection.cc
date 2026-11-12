@@ -188,8 +188,7 @@ JsepTransportController::Config ScenarioIceConnectionImpl::CreateJsepConfig() {
 
 void ScenarioIceConnectionImpl::SendRtpPacket(
     std::span<const uint8_t> packet_view) {
-  CopyOnWriteBuffer packet(packet_view.data(), packet_view.size(),
-                           kMaxRtpPacketLen);
+  CopyOnWriteBuffer packet(packet_view, kMaxRtpPacketLen);
   network_thread_->PostTask([this, packet = std::move(packet)]() mutable {
     RTC_DCHECK_RUN_ON(network_thread_);
     if (rtp_transport_ != nullptr)
@@ -200,8 +199,7 @@ void ScenarioIceConnectionImpl::SendRtpPacket(
 
 void ScenarioIceConnectionImpl::SendRtcpPacket(
     std::span<const uint8_t> packet_view) {
-  CopyOnWriteBuffer packet(packet_view.data(), packet_view.size(),
-                           kMaxRtpPacketLen);
+  CopyOnWriteBuffer packet(packet_view, kMaxRtpPacketLen);
   network_thread_->PostTask([this, packet = std::move(packet)]() mutable {
     RTC_DCHECK_RUN_ON(network_thread_);
     if (rtp_transport_ != nullptr)
@@ -240,7 +238,8 @@ void ScenarioIceConnectionImpl::SetLocalSdp(SdpType type,
       local_description_->GetType(), local_description_->description(),
       remote_description_ ? remote_description_->description() : nullptr);
   RTC_CHECK(res.ok()) << res.message();
-  jsep_controller_->MaybeStartGathering();
+  jsep_controller_->MaybeStartGathering(/*discard_candidate_pool=*/false,
+                                        /*on_pooled_credentials=*/nullptr);
 }
 
 bool ScenarioIceConnectionImpl::OnTransportChanged(

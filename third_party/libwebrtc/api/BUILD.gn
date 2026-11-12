@@ -96,7 +96,6 @@ if (!build_with_chromium && !build_with_mozilla) {
       ":peer_connection_interface",
       ":scoped_refptr",
       "../rtc_base:threading",
-      "../rtc_base/system:ignore_warnings",
       "../rtc_base/system:rtc_export",
       "audio:audio_device",
       "audio:audio_mixer_api",
@@ -435,6 +434,7 @@ rtc_library("data_channel_interface") {
     "../rtc_base:copy_on_write_buffer",
     "../rtc_base/system:rtc_export",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
+    "//third_party/abseil-cpp/absl/strings:string_view",
   ]
 }
 
@@ -1216,6 +1216,7 @@ rtc_library("datagram_connection") {
     ":ref_count",
     "../p2p:transport_description",
     "../rtc_base/system:rtc_export",
+    "transport:ecn_marking",
     "units:timestamp",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
     "//third_party/abseil-cpp/absl/strings:string_view",
@@ -1829,7 +1830,7 @@ if (rtc_include_tests) {
   }
 
   rtc_cc_test("peer_connection_interface_api_unittest") {
-    sources = [ "peer_connection_interface_unittest.cc" ]
+    sources = [ "peer_connection_interface_api_unittest.cc" ]
     deps = [
       ":peer_connection_interface",
       "../test:test_support",
@@ -1966,6 +1967,19 @@ if (rtc_include_tests) {
     ]
   }
 
+  if (rtc_enable_google_benchmarks) {
+    rtc_library("webrtc_sdp_benchmark") {
+      testonly = true
+      sources = [ "webrtc_sdp_benchmark.cc" ]
+      deps = [
+        ":jsep",
+        "../rtc_base:checks",
+        "../rtc_base:stringutils",
+        "//third_party/google_benchmark",
+      ]
+    }
+  }
+
   rtc_cc_test("webrtc_sdp_unittest") {
     sources = [ "webrtc_sdp_unittest.cc" ]
     deps = [
@@ -1999,9 +2013,6 @@ if (rtc_include_tests) {
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
-    if (is_android) {
-      deps += [ "../pc:android_black_magic" ]
-    }
   }
 
   rtc_library("compile_all_headers") {

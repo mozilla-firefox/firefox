@@ -140,8 +140,9 @@ class BufferT {
 
   ~BufferT() { MaybeZeroCompleteBuffer(); }
 
-  // Implicit conversion to absl::string_view if T is compatible with char.
+  // Explicit conversion to absl::string_view if T is compatible with char.
   template <typename U = T>
+  explicit
   operator typename std::enable_if<internal::BufferCompat<U, char>::value,
                                    absl::string_view>::type() const {
     return absl::string_view(data<char>(), size());

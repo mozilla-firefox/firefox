@@ -34,7 +34,7 @@ namespace webrtc {
 // Stub port class for testing STUN generation and processing.
 class TestPort : public Port {
  public:
-  TestPort(const PortParametersRef& args, uint16_t min_port, uint16_t max_port);
+  TestPort(PortParametersRef args, uint16_t min_port, uint16_t max_port);
   ~TestPort() override;
 
   // Expose GetStunMessage so that we can test it.
@@ -76,7 +76,7 @@ class TestPort : public Port {
  private:
   void OnSentPacket(AsyncPacketSocket* socket,
                     const SentPacketInfo& sent_packet) override;
-  std::unique_ptr<BufferT<uint8_t>> last_stun_buf_;
+  std::unique_ptr<Buffer> last_stun_buf_;
   std::unique_ptr<IceMessage> last_stun_msg_;
   int type_preference_ = 0;
 };

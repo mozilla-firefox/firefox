@@ -53,11 +53,8 @@ if (!build_with_chromium && !build_with_mozilla) {
     }
     if (rtc_include_tests) {
       deps += [
-        ":audio_engine_tests",
-        ":rtc_p2p_unittests",
         ":rust_tests",
         ":test_suites",
-        ":voip_unittests",
         "examples:examples_unittests",
         "modules/audio_coding:audio_coding_tests",
         "modules/audio_processing:audio_processing_tests",
@@ -66,7 +63,6 @@ if (!build_with_chromium && !build_with_mozilla) {
         "modules/video_capture:video_capture_internal_impl",
         "modules/video_coding:video_codec_perf_tests",
         "p2p:dtls_ice_integration_bench",
-        "pc:rtc_pc_unittests",
         "pc:slow_peer_connection_unittests",
         "pc:svc_tests",
         "rtc_tools:video_encoder",
@@ -127,8 +123,10 @@ if (rtc_include_tests) {
     testonly = true
     deps = [
       ":rtc_unittests",
+      ":voip_unittests",
       ":webrtc_nonparallel_tests",
       ":webrtc_perf_tests",
+      "//audio:audio_engine_tests",
       "//call:call_tests",
       "//call/adaptation:resource_adaptation_tests",
       "//common_audio:common_audio_unittests",
@@ -140,7 +138,10 @@ if (rtc_include_tests) {
       "//modules/rtp_rtcp:rtp_rtcp_unittests",
       "//modules/video_coding:video_coding_unittests",
       "//net/dcsctp:dcsctp_unittests",
+      "//p2p:rtc_p2p_unittests",
       "//pc:peerconnection_unittests",
+      "//pc:rtc_pc_unittests",
+      "//rtc_tools:tools_unittests",
       "//stats:rtc_stats_unittests",
       "//system_wrappers:system_wrappers_unittests",
       "//test:test_support_unittests",
@@ -732,10 +733,11 @@ if (rtc_include_tests && !build_with_chromium) {
       "api/audio_codecs/test:audio_decoder_factory_template_unittest",
       "api/audio_codecs/test:audio_encoder_factory_template_unittest",
       "api/crypto:crypto_options_unittest",
-      "api/environment:environment_unittests",
-      "api/numerics:numerics_unittests",
-      "api/task_queue:pending_task_safety_flag_unittests",
-      "api/task_queue:task_queue_default_factory_unittests",
+      "api/environment:environment_unittest",
+      "api/numerics:samples_stats_counter_unittest",
+      "api/numerics:sequence_number_unwrapper_unittest",
+      "api/task_queue:default_task_queue_factory_unittest",
+      "api/task_queue:pending_task_safety_flag_unittest",
       "api/test/metrics:global_metrics_logger_and_exporter_test",
       "api/test/metrics:metrics_accumulator_test",
       "api/test/metrics:metrics_logger_test",
@@ -785,8 +787,8 @@ if (rtc_include_tests && !build_with_chromium) {
       "api/video_codecs/test:video_encoder_functional_unittest",
       "api/video_codecs/test:video_encoder_rate_control_unittest",
       "api/video_codecs/test:video_encoder_software_fallback_wrapper_unittest",
-      "call:fake_network_pipe_unittests",
-      "rtc_base:async_dns_resolver_unittests",
+      "call:fake_network_pipe_unittest",
+      "rtc_base:async_dns_resolver_unittest",
       "rtc_base:async_packet_socket_unittest",
       "rtc_base:async_tcp_socket_unittest",
       "rtc_base:async_udp_socket_unittest",
@@ -799,7 +801,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base:buffer_unittest",
       "rtc_base:byte_buffer_unittest",
       "rtc_base:byte_order_unittest",
-      "rtc_base:callback_list_unittests",
+      "rtc_base:callback_list_unittest",
       "rtc_base:checks_unittest",
       "rtc_base:clock_aligner_unittest",
       "rtc_base:copy_on_write_buffer_unittest",
@@ -816,6 +818,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base:frequency_tracker_unittest",
       "rtc_base:histogram_percentile_counter_unittest",
       "rtc_base:ip_address_unittest",
+      "rtc_base:json_unittest",
       "rtc_base:logging_unittest",
       "rtc_base:memory_usage_unittest",
       "rtc_base:message_digest_unittest",
@@ -827,6 +830,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base:network_unittest",
       "rtc_base:one_time_event_unittest",
       "rtc_base:openssl_stream_adapter_unittest",
+      "rtc_base:operations_chain_unittest",
       "rtc_base:percentile_filter_unittest",
       "rtc_base:platform_thread_unittest",
       "rtc_base:random_unittest",
@@ -838,8 +842,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base:rolling_accumulator_unittest",
       "rtc_base:rtc_certificate_generator_unittest",
       "rtc_base:rtc_certificate_unittest",
-      "rtc_base:rtc_json_unittests",
-      "rtc_base:rtc_operations_chain_unittests",
       "rtc_base:rtp_to_ntp_estimator_unittest",
       "rtc_base:running_statistics_unittest",
       "rtc_base:safe_compare_unittest",
@@ -847,7 +849,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base:safe_minmax_unittest",
       "rtc_base:sample_counter_unittest",
       "rtc_base:sanitizer_unittest",
-      "rtc_base:sequence_number_unwrapper_unittest",
       "rtc_base:sequence_number_util_unittest",
       "rtc_base:str_join_unittest",
       "rtc_base:string_builder_unittest",
@@ -867,7 +868,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base:unique_id_generator_unittest",
       "rtc_base:untyped_function_unittest",
       "rtc_base:virtual_socket_unittest",
-      "rtc_base:weak_ptr_unittests",
+      "rtc_base:weak_ptr_unittest",
       "rtc_base:windowed_min_filter_unittest",
       "rtc_base:zero_memory_unittest",
       "rtc_base/containers:flat_map_unittest",
@@ -891,15 +892,15 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base/memory:aligned_malloc_unittest",
       "rtc_base/memory:always_valid_pointer_unittest",
       "rtc_base/memory:fifo_buffer_unittest",
-      "rtc_base/system:file_wrapper_unittests",
-      "rtc_base/task_utils:repeating_task_unittests",
-      "rtc_base/units:units_unittests",
-      "sdk:sdk_tests",
+      "rtc_base/system:file_wrapper_unittest",
+      "rtc_base/task_utils:repeating_task_unittest",
+      "rtc_base/units:unit_base_unittest",
+      "sdk:media_constraints_unittest",
       "test/network:cross_traffic_unittest",
       "test/network:network_emulation_pc_unittest",
       "test/network:network_emulation_unittest",
       "test/network:simulated_network_unittest",
-      "test/network:token_bucket_network_behavior_test",
+      "test/network:token_bucket_network_behavior_unittest",
     ]
 
     if (rtc_use_h265) {
@@ -975,29 +976,18 @@ if (rtc_include_tests && !build_with_chromium) {
     }
   }
 
-  rtc_test("rtc_p2p_unittests") {
-    testonly = true
-
-    deps = [ "p2p:rtc_p2p_unittests" ]
-  }
-
   if (rtc_enable_google_benchmarks) {
     rtc_executable("benchmarks") {
       testonly = true
       deps = [
+        "api:webrtc_sdp_benchmark",
         "rtc_base:base64_benchmark",
         "rtc_base/synchronization:mutex_benchmark",
         "test:benchmark_main",
       ]
-    }
-  }
-
-  rtc_test("audio_engine_tests") {
-    testonly = true
-    deps = [ "audio:audio_tests" ]
-
-    if (is_android) {
-      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
+      if (!rtc_disable_logging) {
+        deps += [ "rtc_base:logging_benchmark" ]
+      }
     }
   }
 
@@ -1025,15 +1015,13 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
-  rtc_test("voip_unittests") {
-    testonly = true
-    deps = [
-      "api/voip:compile_all_headers",
-      "api/voip:voip_engine_factory_unittests",
-      "audio/voip/test:audio_channel_unittests",
-      "audio/voip/test:audio_egress_unittests",
-      "audio/voip/test:audio_ingress_unittests",
-      "audio/voip/test:voip_core_unittests",
+  rtc_test_suite("voip_unittests") {
+    tests = [
+      "api/voip:voip_engine_factory_unittest",
+      "audio/voip/test:audio_channel_unittest",
+      "audio/voip/test:audio_egress_unittest",
+      "audio/voip/test:audio_ingress_unittest",
+      "audio/voip/test:voip_core_unittest",
     ]
   }
 

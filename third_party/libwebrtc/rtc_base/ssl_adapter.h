@@ -41,7 +41,9 @@ class SSLAdapterFactory {
   // Specifies whether TLS or DTLS is to be used for the SSL adapters.
   virtual void SetMode(SSLMode mode) = 0;
 
-  // Specify a custom certificate verifier for SSL.
+  // Specify a custom certificate verifier for SSL. Chains containing a
+  // certificate with a distrusted public key are rejected even if the verifier
+  // accepts them.
   virtual void SetCertVerifier(SSLCertificateVerifier* ssl_cert_verifier) = 0;
 
   // Set the certificate this socket will present to incoming clients.
@@ -79,7 +81,9 @@ class SSLAdapter : public AsyncSocketAdapter {
   virtual void SetAlpnProtocols(const std::vector<std::string>& protos) = 0;
   virtual void SetEllipticCurves(const std::vector<std::string>& curves) = 0;
 
-  // Specify a custom certificate verifier for SSL.
+  // Specify a custom certificate verifier for SSL. Chains containing a
+  // certificate with a distrusted public key are rejected even if the verifier
+  // accepts them.
   virtual void SetCertVerifier(SSLCertificateVerifier* ssl_cert_verifier) = 0;
 
   // Set the certificate this socket will present to incoming clients.

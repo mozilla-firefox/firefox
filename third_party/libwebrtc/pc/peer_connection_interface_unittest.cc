@@ -62,16 +62,20 @@
 #include "media/base/media_config.h"
 #include "media/base/stream_params.h"
 #include "p2p/base/p2p_constants.h"
+#include "p2p/base/p2p_transport_channel.h"
 #include "p2p/base/port.h"
 #include "p2p/base/port_allocator.h"
 #include "p2p/base/transport_description.h"
 #include "p2p/base/transport_info.h"
+#include "p2p/dtls/dtls_transport_internal.h"
 #include "p2p/test/fake_port_allocator.h"
 #include "pc/audio_track.h"
+#include "pc/jsep_transport_controller.h"
 #include "pc/media_session.h"
 #include "pc/media_stream.h"
 #include "pc/peer_connection.h"
 #include "pc/peer_connection_factory.h"
+#include "pc/peer_connection_proxy.h"
 #include "pc/rtp_media_utils.h"
 #include "pc/rtp_sender.h"
 #include "pc/rtp_sender_proxy.h"
@@ -97,10 +101,6 @@
 #include "test/gtest.h"
 #include "test/run_loop.h"
 #include "test/wait_until.h"
-
-#ifdef WEBRTC_ANDROID
-#include "pc/test/android_test_initializer.h"
-#endif
 
 namespace webrtc {
 namespace {
@@ -644,11 +644,7 @@ class PeerConnectionInterfaceBaseTest : public ::testing::Test {
       : env_(CreateTestEnvironment()),
         vss_(new VirtualSocketServer()),
         main_(vss_.get()),
-        sdp_semantics_(sdp_semantics) {
-#ifdef WEBRTC_ANDROID
-    InitializeAndroidObjects();
-#endif
-  }
+        sdp_semantics_(sdp_semantics) {}
 
   void SetUp() override {
     // Use fake audio capture module since we're only testing the interface
@@ -2410,6 +2406,43 @@ TEST_P(PeerConnectionInterfaceTest,
   network_thread_->BlockingCall([&] {
     const PortAllocatorSession* session = port_allocator_->GetPooledSession();
     EXPECT_EQ(nullptr, session);
+  });
+}
+
+// Test that applying a local answer lets the new transports take sessions from
+// the ICE candidate pool before the rest of the pool is discarded (RFC 8829,
+// sections 3.5.4 and 5.11).
+TEST_P(PeerConnectionInterfaceTest,
+       LocalAnswerTakesPooledSessionBeforePoolIsDiscarded) {
+  CreatePeerConnection();
+  PeerConnectionInterface::RTCConfiguration config = pc_->GetConfiguration();
+  config.ice_candidate_pool_size = 1;
+  EXPECT_TRUE(pc_->SetConfiguration(config).ok());
+
+  AddAudioTrack(kAudioTracks[0], {kStreamId1});
+  CreateOfferAsRemoteDescription();
+  CreateAnswerAsLocalDescription();
+
+  const ContentInfos& contents =
+      pc_->local_description()->description()->contents();
+  ASSERT_FALSE(contents.empty());
+  const std::string mid(contents[0].mid());
+  auto* pc_proxy =
+      static_cast<PeerConnectionProxyWithInternal<PeerConnectionInterface>*>(
+          pc_.get());
+  PeerConnection* pc = static_cast<PeerConnection*>(pc_proxy->internal());
+  network_thread_->BlockingCall([&] {
+    DtlsTransportInternal* dtls_transport =
+        pc->transport_controller_n()->GetDtlsTransport(mid);
+    ASSERT_NE(dtls_transport, nullptr);
+    // The default ICE transport factory creates P2PTransportChannels.
+    const auto* session = static_cast<const FakePortAllocatorSession*>(
+        static_cast<P2PTransportChannel*>(dtls_transport->ice_transport())
+            ->allocator_session());
+    ASSERT_NE(session, nullptr);
+    // Only a session that is taken from the pool gets new ICE parameters.
+    EXPECT_EQ(session->transport_info_update_count(), 1);
+    EXPECT_EQ(port_allocator_->GetPooledSession(), nullptr);
   });
 }
 

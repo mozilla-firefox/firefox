@@ -212,13 +212,6 @@ void SessionDescriptionInterface::RelinquishThreadOwnership() {
   // signaling) where a call is made into webrtc. At that point we'd hit a
   // dcheck like this in webrtc: RTC_DCHECK_RUN_ON(&sequence_checker_);
   sequence_checker_.Detach();
-  // Tie the checker to the current thread, which permits iterating
-  // `candidate_collection_`
-  RTC_DCHECK_RUN_ON(&sequence_checker_);
-  for (IceCandidateCollection& collection : candidate_collection_) {
-    collection.RelinquishThreadOwnership();
-  }
-  sequence_checker_.Detach();  // Unties the checker from the current thread.
 }
 
 SessionDescriptionInterface::SessionDescriptionInterface(
@@ -238,6 +231,12 @@ SessionDescriptionInterface::SessionDescriptionInterface(
   RTC_DCHECK(candidate_collection_.empty() ||
              candidate_collection_.size() == number_of_mediasections());
   candidate_collection_.resize(number_of_mediasections());
+  for (size_t i = 0; i < candidate_collection_.size(); ++i) {
+    if (!candidate_collection_[i].empty()) {
+      UpdateConnectionAddress(candidate_collection_[i],
+                              description_->contents()[i].media_description());
+    }
+  }
 }
 
 size_t SessionDescriptionInterface::number_of_mediasections() const {

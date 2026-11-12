@@ -777,9 +777,10 @@ RTCError ResolveSendCodecs(
                                                *requested_codec);
           });
       if (matched_codec == negotiated_codecs.end()) {
-        return RTCError(RTCErrorType::INVALID_MODIFICATION,
-                        "Attempted to use an unsupported codec for layer " +
-                            std::to_string(i));
+        return RTC_LOG_ERROR(RTCError(RTCErrorType::INVALID_MODIFICATION)
+                             << "Attempted to use an unsupported codec "
+                             << requested_codec->name << " for encodings[" << i
+                             << "].");
       }
       found_codec = *matched_codec;
     }
@@ -1412,14 +1413,7 @@ RtpParameters WebRtcVideoSendChannel::GetRtpSendParameters(
   // Need to add the common list of codecs to the send stream-specific
   // RTP parameters.
   for (const Codec& codec : send_params_.codecs) {
-    if (send_codec() && send_codec()->codec.id == codec.id) {
-      // Put the current send codec to the front of the codecs list.
-      RTC_DCHECK_EQ(codec.name, send_codec()->codec.name);
-      rtp_params.codecs.insert(rtp_params.codecs.begin(),
-                               codec.ToCodecParameters());
-    } else {
-      rtp_params.codecs.push_back(codec.ToCodecParameters());
-    }
+    rtp_params.codecs.push_back(codec.ToCodecParameters());
   }
 
   return rtp_params;
@@ -3051,13 +3045,15 @@ bool WebRtcVideoReceiveChannel::GetChangedReceiverParameters(
 
   // Verify that every mapped codec is supported locally.
   if (params.is_stream_active) {
-    const std::vector<Codec> local_supported_codecs =
-        GetPayloadTypesAndDefaultCodecs(decoder_factory_,
-                                        /*is_decoder_factory=*/true,
-                                        /*include_rtx=*/true,
-                                        env_.field_trials());
+    // Only the codec name and codec specific parameters are compared, so
+    // there is no need to assign payload types to the local codecs.
+    const std::vector<SdpVideoFormat> local_supported_formats =
+        GetDefaultSupportedFormats(decoder_factory_,
+                                   /*is_decoder_factory=*/true,
+                                   env_.field_trials());
     for (const VideoCodecSettings& mapped_codec : mapped_codecs) {
-      if (!FindMatchingVideoCodec(local_supported_codecs, mapped_codec.codec)) {
+      if (!SdpVideoFormat(mapped_codec.codec.name, mapped_codec.codec.params)
+               .IsCodecInList(local_supported_formats)) {
         RTC_LOG(LS_ERROR) << "GetChangedReceiverParameters called with "
                              "unsupported video codec: "
                           << mapped_codec.codec.ToString();

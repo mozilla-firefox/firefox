@@ -14,7 +14,6 @@
 #include <utility>
 
 #include "p2p/base/port.h"
-#include "p2p/base/port_allocator.h"
 #include "p2p/base/turn_port.h"
 #include "p2p/client/relay_port_factory_interface.h"
 #include "rtc_base/async_packet_socket.h"
@@ -23,25 +22,15 @@ namespace webrtc {
 
 TurnPortFactory::~TurnPortFactory() {}
 
-std::unique_ptr<Port> TurnPortFactory::Create(const CreateRelayPortArgs& args,
+std::unique_ptr<Port> TurnPortFactory::Create(CreateRelayPortArgs&& args,
                                               AsyncPacketSocket* udp_socket) {
-  auto port = TurnPort::Create(args, udp_socket);
-  if (!port)
-    return nullptr;
-  port->SetTlsCertPolicy(args.config->tls_cert_policy);
-  port->SetTurnLoggingId(args.config->turn_logging_id);
-  return std::move(port);
+  return TurnPort::Create(std::move(args), udp_socket);
 }
 
-std::unique_ptr<Port> TurnPortFactory::Create(const CreateRelayPortArgs& args,
+std::unique_ptr<Port> TurnPortFactory::Create(CreateRelayPortArgs&& args,
                                               int min_port,
                                               int max_port) {
-  auto port = TurnPort::Create(args, min_port, max_port);
-  if (!port)
-    return nullptr;
-  port->SetTlsCertPolicy(args.config->tls_cert_policy);
-  port->SetTurnLoggingId(args.config->turn_logging_id);
-  return std::move(port);
+  return TurnPort::Create(std::move(args), min_port, max_port);
 }
 
 }  // namespace webrtc

@@ -23,6 +23,7 @@
 
 #include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
+#include "absl/strings/str_format.h"
 #include "absl/strings/string_view.h"
 #include "api/environment/environment.h"
 #include "api/field_trials_view.h"
@@ -444,6 +445,28 @@ class RTC_EXPORT Network {
 
   // Debugging description of this network
   std::string ToString() const;
+
+  // Writes the same description as ToString() to `sink`, without creating a
+  // temporary string, e.g. when appending the description to a StringBuilder.
+  template <typename Sink>
+  friend void AbslStringify(Sink& sink, const Network& network) {
+    // Print out the first space-terminated token of the network desc, plus
+    // the IP address.
+    absl::string_view description = network.description_;
+    absl::Format(&sink, "Net[%s:%v/%d:%s",
+                 description.substr(0, description.find(' ')),
+                 IPAddress::Sensitive(network.prefix_), network.prefix_length_,
+                 AdapterTypeToString(network.type_));
+    if (network.IsVpn()) {
+      sink.Append("/");
+      sink.Append(AdapterTypeToString(network.underlying_type_for_vpn_));
+    }
+    if (network.network_slice_ != NetworkSlice::NO_SLICE) {
+      sink.Append("/");
+      sink.Append(NetworkSliceToString(network.network_slice_));
+    }
+    absl::Format(&sink, ":id=%d]", network.id_);
+  }
 
  private:
   const DefaultLocalAddressProvider* default_local_address_provider_ = nullptr;

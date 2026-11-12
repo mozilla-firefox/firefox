@@ -1721,9 +1721,13 @@ void DcSctpSocket::HandleShutdown(
     // with a SHUTDOWN ACK to its peer, and move into the SHUTDOWN-ACK-SENT
     // state restarting its T2-shutdown timer."
     SendShutdownAck();
+    t2_shutdown_->set_duration(tcb_->current_rto());
+    t2_shutdown_->Start();
     SetState(State::kShutdownAckSent, "SHUTDOWN received");
   } else if (state_ == State::kShutdownAckSent) {
     SendShutdownAck();
+    t2_shutdown_->set_duration(tcb_->current_rto());
+    t2_shutdown_->Start();
     return;
   } else if (state_ != State::kShutdownReceived) {
     RTC_DLOG(LS_VERBOSE) << log_prefix()
@@ -1869,6 +1873,8 @@ void DcSctpSocket::MaybeSendShutdownOrAck() {
     // the timer expires, the endpoint must resend the SHUTDOWN ACK."
 
     SendShutdownAck();
+    t2_shutdown_->set_duration(tcb_->current_rto());
+    t2_shutdown_->Start();
     SetState(State::kShutdownAckSent, "No more outstanding data");
   }
 }
@@ -1881,8 +1887,6 @@ void DcSctpSocket::SendShutdown() {
 
 void DcSctpSocket::SendShutdownAck() {
   packet_sender_.Send(tcb_->PacketBuilder().Add(ShutdownAckChunk()));
-  t2_shutdown_->set_duration(tcb_->current_rto());
-  t2_shutdown_->Start();
 }
 
 HandoverReadinessStatus DcSctpSocket::GetHandoverReadiness() const {

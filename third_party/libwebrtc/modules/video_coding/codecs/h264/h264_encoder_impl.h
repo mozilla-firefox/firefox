@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 
 #include "absl/container/inlined_vector.h"
@@ -85,6 +86,9 @@ class H264EncoderImpl : public VideoEncoder {
   int32_t RegisterEncodeCompleteCallback(
       EncodedImageCallback* callback) override;
   void SetRates(const RateControlParameters& parameters) override;
+  void SetComplexity(
+      std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+      ComplexityControlMode complexity_control_mode) override;
 
   // The result of encoding - an EncodedImage and CodecSpecificInfo - are
   // passed to the encode complete callback.
@@ -97,6 +101,8 @@ class H264EncoderImpl : public VideoEncoder {
   H264PacketizationMode PacketizationModeForTesting() const {
     return packetization_mode_;
   }
+  std::optional<ECOMPLEXITY_MODE> ComplexityModeForTesting(
+      size_t stream_idx = 0) const;
 
  private:
   SEncParamExt CreateEncoderParams(size_t i) const;

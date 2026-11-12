@@ -61,55 +61,6 @@ class RTC_EXPORT CopyOnWriteBuffer {
   explicit CopyOnWriteBuffer(std::span<const uint8_t> data);
   CopyOnWriteBuffer(std::span<const uint8_t> data, size_t capacity);
 
-  // Construct a buffer and copy the specified number of bytes into it. The
-  // source array may be (const) uint8_t*, int8_t*, or char*.
-  template <typename T,
-            typename std::enable_if<
-                internal::BufferCompat<uint8_t, T>::value>::type* = nullptr>
-  ABSL_DEPRECATE_AND_INLINE()
-  CopyOnWriteBuffer(const T* data, size_t size)
-      : CopyOnWriteBuffer(
-            std::span(reinterpret_cast<const uint8_t*>(data), size)) {}
-  template <typename T,
-            typename std::enable_if<
-                internal::BufferCompat<uint8_t, T>::value>::type* = nullptr>
-  ABSL_DEPRECATE_AND_INLINE()
-  CopyOnWriteBuffer(const T* data, size_t size, size_t capacity)
-      : CopyOnWriteBuffer(
-            std::span(reinterpret_cast<const uint8_t*>(data), size),
-            capacity) {}
-
-  // Construct a buffer from the contents of an array.
-  template <typename T,
-            size_t N,
-            typename std::enable_if<
-                internal::BufferCompat<uint8_t, T>::value>::type* = nullptr>
-  CopyOnWriteBuffer(const T (&array)[N])  // NOLINT: runtime/explicit
-      : CopyOnWriteBuffer(std::span(array)) {}
-
-  // Construct a buffer from a vector like type.
-  template <typename VecT,
-            typename ElemT = typename std::remove_pointer_t<
-                decltype(std::declval<VecT>().data())>,
-            typename std::enable_if_t<
-                !std::is_same<VecT, CopyOnWriteBuffer>::value &&
-                HasDataAndSize<VecT, ElemT>::value &&
-                internal::BufferCompat<uint8_t, ElemT>::value>* = nullptr>
-  explicit CopyOnWriteBuffer(const VecT& v)
-      : CopyOnWriteBuffer(
-            std::span(reinterpret_cast<const uint8_t*>(v.data()), v.size())) {}
-
-  // Construct a buffer from a vector like type and a capacity argument
-  template <typename VecT,
-            typename ElemT = typename std::remove_pointer_t<
-                decltype(std::declval<VecT>().data())>,
-            typename std::enable_if_t<
-                !std::is_same<VecT, CopyOnWriteBuffer>::value &&
-                HasDataAndSize<VecT, ElemT>::value &&
-                internal::BufferCompat<uint8_t, ElemT>::value>* = nullptr>
-  explicit CopyOnWriteBuffer(const VecT& v, size_t capacity)
-      : CopyOnWriteBuffer(v.data(), v.size(), capacity) {}
-
   ~CopyOnWriteBuffer();
 
   // Get a pointer to the data. Just .data() will give you a (const) uint8_t*,

@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 
 #include "api/fec_controller_override.h"
@@ -68,6 +69,12 @@ class MockVideoEncoder : public VideoEncoder {
               SetRates,
               (const RateControlParameters& parameters),
               (override));
+  MOCK_METHOD(
+      void,
+      SetComplexity,
+      (std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+       ComplexityControlMode complexity_control_mode),
+      (override));
   MOCK_METHOD(void,
               OnPacketLossRateUpdate,
               (float packet_loss_rate),

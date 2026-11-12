@@ -127,7 +127,9 @@ class RTC_EXPORT SSLCertChain final {
 
 // SSLCertificateVerifier provides a simple interface to allow third parties to
 // define their own certificate verification code. It is completely independent
-// from the underlying SSL implementation.
+// from the underlying SSL implementation. Even if the verifier accepts a chain,
+// the SSL adapter rejects it if any presented certificate has a distrusted
+// public key (see openssl::IsDistrustedCertificate()).
 class SSLCertificateVerifier {
  public:
   virtual ~SSLCertificateVerifier() = default;

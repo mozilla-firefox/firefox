@@ -143,14 +143,13 @@ void Receiver::Setup(NetEq* neteq,
   }
 
   int playSampFreq;
-  std::string file_name;
   StringBuilder file_stream;
-  file_stream << test::OutputPath() << out_file_name << file_num << ".pcm";
-  file_name = file_stream.str();
+  file_stream << out_file_name << file_num << ".pcm";
+  _out_file_name = test::TempFilename(test::OutputPath(), file_stream.str());
   _rtpStream = rtpStream;
 
   playSampFreq = 32000;
-  _pcmFile.Open(file_name, 32000, "wb+");
+  _pcmFile.Open(_out_file_name, 32000, "wb+");
 
   _realPayloadSizeBytes = 0;
   _playoutBuffer = new int16_t[kWebRtc10MsPcmAudio];
@@ -162,6 +161,7 @@ void Receiver::Setup(NetEq* neteq,
 void Receiver::Teardown() {
   delete[] _playoutBuffer;
   _pcmFile.Close();
+  EXPECT_TRUE(test::RemoveFile(_out_file_name));
 }
 
 bool Receiver::IncomingPacket() {
@@ -277,6 +277,7 @@ void EncodeDecodeTest::Perform() {
     receiver.Run();
     receiver.Teardown();
     rtpFile.Close();
+    EXPECT_TRUE(test::RemoveFile(fileName));
 
     file_num++;
   }

@@ -93,8 +93,8 @@ declare_args() {
 
   # Setting this to false will require the API user to pass in their own
   # SSLCertificateVerifier to verify the certificates presented from a
-  # TLS-TURN server. In return disabling this saves around 100kb in the binary.
-  rtc_builtin_ssl_root_certificates = true
+  # TLS-TURN server.
+  rtc_builtin_ssl_root_certificates = !build_with_chromium
 
   # Disable this to avoid building the Opus audio codec.
   rtc_include_opus = true

@@ -1,32 +1,26 @@
-From: Michael Froman <mfroman@mozilla.com>
-Date: Tue, 15 Sep 2026 20:40:00 +0000
-Subject: Bug 1996020 - use I420Buffer::CreateOrNull in
- VideoFrameBufferPool::CreateI420Buffer. r=bwc
+From: Byron Campen <docfaraday@gmail.com>
+Date: Thu, 29 Oct 2026 14:46:00 -0500
+Subject: Bug 2086269 - (fix-f00ee0bdfc) Revert f00ee0bdfc, which introduced a
+ dependency on an in-tree python executable.
 
-Looking at the crash reports, even after converting DesktopCaptureImpl::OnCaptureResult
-to use the VideoFrameBufferPool, we're still seeing occasional crashes
-in AlignedMalloc so use CreateOrNull so we don't crash in OOM situations.
-
-Differential Revision: https://phabricator.services.mozilla.com/D326269
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/93cb056a0c8220b5b364f9cd1204ac34bb0d163d
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/d5803eca60b77e33d4769a2d5e49acec5ac8b8a2
 ---
- common_video/video_frame_buffer_pool.cc | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ .gn | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/common_video/video_frame_buffer_pool.cc b/common_video/video_frame_buffer_pool.cc
-index 07d3fd00c8..dc204423a4 100644
---- a/common_video/video_frame_buffer_pool.cc
-+++ b/common_video/video_frame_buffer_pool.cc
-@@ -139,8 +139,10 @@ scoped_refptr<I420Buffer> VideoFrameBufferPool::CreateI420Buffer(int width,
-   if (buffers_.size() >= max_number_of_buffers_)
-     return nullptr;
-   // Allocate new buffer.
--  scoped_refptr<I420Buffer> buffer =
--      make_ref_counted<I420Buffer>(width, height);
-+  scoped_refptr<I420Buffer> buffer = I420Buffer::CreateOrNull(width, height);
-+  if (!buffer) {
-+    return nullptr;
-+  }
+diff --git a/.gn b/.gn
+index fb1ddfa62c..41d0ada2cf 100644
+--- a/.gn
++++ b/.gn
+@@ -11,8 +11,9 @@ import("//chromium/build/dotfile_settings.gni")
+ # The location of the build configuration file.
+ buildconfig = "//chromium/build/config/BUILDCONFIG.gn"
  
-   if (zero_initialize_)
-     buffer->InitializeData();
+-# The hermetic Python interpreter to use by default.
+-script_executable = "//third_party/cpython3/host/bin/python3"
++# The python interpreter to use by default. On Windows, this will look
++# for python3.exe and python3.bat.
++script_executable = "python3"
+ 
+ # The secondary source root is a parallel directory tree where
+ # GN build files are placed when they can not be placed directly

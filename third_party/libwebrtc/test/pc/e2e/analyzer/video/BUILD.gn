@@ -33,25 +33,6 @@ if (!build_with_chromium) {
       ]
     }
   }
-
-  if (rtc_include_tests) {
-    rtc_cc_test("video_analyzer_unittests") {
-      deps = [
-        ":analyzing_video_sink_test",
-        ":analyzing_video_sinks_helper_test",
-        ":default_video_quality_analyzer_frames_comparator_test",
-        ":default_video_quality_analyzer_metric_names_test",
-        ":default_video_quality_analyzer_stream_state_test",
-        ":default_video_quality_analyzer_test",
-        ":multi_reader_queue_test",
-        ":names_collection_test",
-        ":simulcast_dummy_buffer_helper_test",
-        ":single_process_encoded_image_data_injector_unittest",
-        ":video_dumping_test",
-        ":video_frame_tracking_id_injector_unittest",
-      ]
-    }
-  }
 }
 
 rtc_library("video_dumping") {
@@ -214,13 +195,7 @@ rtc_library("example_video_quality_analyzer") {
 # This target contains implementation details of DefaultVideoQualityAnalyzer,
 # so headers exported by it shouldn't be used in other places.
 rtc_library("default_video_quality_analyzer_internal") {
-  visibility = [
-    ":default_video_quality_analyzer",
-    ":default_video_quality_analyzer_frames_comparator_test",
-    ":default_video_quality_analyzer_stream_state_test",
-    ":names_collection_test",
-    ":video_analyzer",
-  ]
+  visibility = [ ":*" ]
 
   testonly = true
   sources = [
@@ -429,8 +404,7 @@ rtc_library("default_video_quality_analyzer_shared") {
 }
 
 if (rtc_include_tests) {
-  rtc_library("simulcast_dummy_buffer_helper_test") {
-    testonly = true
+  rtc_cc_test("simulcast_dummy_buffer_helper_test") {
     sources = [ "simulcast_dummy_buffer_helper_test.cc" ]
     deps = [
       ":simulcast_dummy_buffer_helper",
@@ -441,8 +415,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("analyzing_video_sink_test") {
-    testonly = true
+  rtc_cc_test("analyzing_video_sink_test") {
     sources = [ "analyzing_video_sink_test.cc" ]
     deps = [
       ":analyzing_video_sink",
@@ -466,8 +439,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("analyzing_video_sinks_helper_test") {
-    testonly = true
+  rtc_cc_test("analyzing_video_sinks_helper_test") {
     sources = [ "analyzing_video_sinks_helper_test.cc" ]
     deps = [
       ":analyzing_video_sinks_helper",
@@ -478,8 +450,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("default_video_quality_analyzer_frames_comparator_test") {
-    testonly = true
+  rtc_cc_test("default_video_quality_analyzer_frames_comparator_test") {
     sources = [ "default_video_quality_analyzer_frames_comparator_test.cc" ]
     deps = [
       ":default_video_quality_analyzer_internal",
@@ -498,8 +469,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("names_collection_test") {
-    testonly = true
+  rtc_cc_test("names_collection_test") {
     sources = [ "names_collection_test.cc" ]
     deps = [
       ":default_video_quality_analyzer_internal",
@@ -507,8 +477,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("multi_reader_queue_test") {
-    testonly = true
+  rtc_cc_test("multi_reader_queue_test") {
     sources = [ "multi_reader_queue_test.cc" ]
     deps = [
       ":multi_reader_queue",
@@ -516,8 +485,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("default_video_quality_analyzer_stream_state_test") {
-    testonly = true
+  rtc_cc_test("default_video_quality_analyzer_stream_state_test") {
     sources = [ "default_video_quality_analyzer_stream_state_test.cc" ]
     deps = [
       ":default_video_quality_analyzer_internal",
@@ -528,8 +496,7 @@ if (rtc_include_tests) {
   }
 
   if (!build_with_chromium) {
-    rtc_library("default_video_quality_analyzer_test") {
-      testonly = true
+    rtc_cc_test("default_video_quality_analyzer_test") {
       sources = [ "default_video_quality_analyzer_test.cc" ]
       deps = [
         ":default_video_quality_analyzer",
@@ -557,8 +524,7 @@ if (rtc_include_tests) {
       ]
     }
 
-    rtc_library("default_video_quality_analyzer_metric_names_test") {
-      testonly = true
+    rtc_cc_test("default_video_quality_analyzer_metric_names_test") {
       sources = [ "default_video_quality_analyzer_metric_names_test.cc" ]
       deps = [
         ":default_video_quality_analyzer",
@@ -586,8 +552,7 @@ if (rtc_include_tests) {
     }
   }
 
-  rtc_library("video_dumping_test") {
-    testonly = true
+  rtc_cc_test("video_dumping_test") {
     sources = [ "video_dumping_test.cc" ]
     deps = [
       ":video_dumping",
@@ -602,8 +567,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("single_process_encoded_image_data_injector_unittest") {
-    testonly = true
+  rtc_cc_test("single_process_encoded_image_data_injector_unittest") {
     sources = [ "single_process_encoded_image_data_injector_unittest.cc" ]
     deps = [
       ":encoded_image_data_injector_api",
@@ -616,8 +580,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_library("video_frame_tracking_id_injector_unittest") {
-    testonly = true
+  rtc_cc_test("video_frame_tracking_id_injector_unittest") {
     sources = [ "video_frame_tracking_id_injector_unittest.cc" ]
     deps = [
       ":encoded_image_data_injector_api",

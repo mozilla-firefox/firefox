@@ -16,6 +16,7 @@
 #include <optional>
 
 #include "absl/container/inlined_vector.h"
+#include "api/field_trials_view.h"
 #include "modules/rtp_rtcp/source/frame_object.h"
 
 namespace webrtc {
@@ -27,8 +28,10 @@ class RtpFrameReferenceFinder {
  public:
   using ReturnVector = absl::InlinedVector<std::unique_ptr<RtpFrameObject>, 3>;
 
-  RtpFrameReferenceFinder();
-  explicit RtpFrameReferenceFinder(int64_t picture_id_offset);
+  explicit RtpFrameReferenceFinder(
+      const FieldTrialsView* field_trials = nullptr);
+  RtpFrameReferenceFinder(const FieldTrialsView* field_trials,
+                          int64_t picture_id_offset);
   ~RtpFrameReferenceFinder();
 
   // The RtpFrameReferenceFinder will hold onto the frame until:

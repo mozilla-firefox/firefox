@@ -24,6 +24,7 @@
 #include "api/video/video_frame_type.h"
 #include "api/video/video_rotation.h"
 #include "api/video_codecs/scalability_mode.h"
+#include "system_wrappers/include/clock.h"
 #include "test/create_test_environment.h"
 #include "test/gtest.h"
 
@@ -191,14 +192,18 @@ TEST(FrameSelectorTest, TreatsDeltaAsKeyframeWithInterLayerPrediction) {
 }
 
 TEST(FrameSelector, SelectsAboutHalfInMiddleOfSpan) {
-  FrameSelector selector(CreateTestEnvironment(), ScalabilityMode::kL1T1,
-                         kLowOverheadSpan, kHighOverheadSpan);
+  // FrameSelector seeds its random number generator from the clock.
+  SimulatedClock clock(Timestamp::Seconds(1));
+  FrameSelector selector(CreateTestEnvironment({.time = &clock}),
+                         ScalabilityMode::kL1T1, kLowOverheadSpan,
+                         kHighOverheadSpan);
   Timestamp timestamp = Timestamp::Millis(1000);  // Arbitrary start timestamp;
   const TimeDelta p50_delta =
       (kLowOverheadSpan.lower_bound + kLowOverheadSpan.upper_bound) / 2;
   int num_selected = 0;
   int num_total = 0;
-  for (int i = 0; i < 100; ++i) {
+  // Enough frames for the check below to pass with practically any seed.
+  for (int i = 0; i < 1000; ++i) {
     if (selector.ShouldInstrumentFrame(
             CreateLowOverheadFrame(timestamp),
             CreateEncodedImage(VideoFrameType::kVideoFrameDelta, timestamp))) {

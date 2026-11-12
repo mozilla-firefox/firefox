@@ -186,10 +186,10 @@ index ad6990c4eb..a9dfaa7952 100644
  
    void ForceSpsPpsIdrIsH264Keyframe();
 diff --git a/video/receive_statistics_proxy.cc b/video/receive_statistics_proxy.cc
-index eb8ba32702..8b61f6bf0d 100644
+index fd8f57329c..b74748a592 100644
 --- a/video/receive_statistics_proxy.cc
 +++ b/video/receive_statistics_proxy.cc
-@@ -812,6 +812,11 @@ void ReceiveStatisticsProxy::OnDroppedFrames(uint32_t frames_dropped) {
+@@ -848,6 +848,11 @@ void ReceiveStatisticsProxy::OnDroppedFrames(uint32_t frames_dropped) {
        }));
  }
  
@@ -202,10 +202,10 @@ index eb8ba32702..8b61f6bf0d 100644
    RTC_DCHECK_RUN_ON(&main_thread_);
    last_codec_type_ = codec_type;
 diff --git a/video/receive_statistics_proxy.h b/video/receive_statistics_proxy.h
-index 5ac8a77130..0b6b1ec6d7 100644
+index 6067ea57ef..5b1eb36fe3 100644
 --- a/video/receive_statistics_proxy.h
 +++ b/video/receive_statistics_proxy.h
-@@ -107,6 +107,7 @@ class ReceiveStatisticsProxy : public VideoStreamBufferControllerStatsObserver,
+@@ -109,6 +109,7 @@ class ReceiveStatisticsProxy : public VideoStreamBufferControllerStatsObserver,
    void OnDecodableFrame(TimeDelta jitter_buffer_delay,
                          TimeDelta target_delay,
                          TimeDelta minimum_delay) override;
@@ -214,7 +214,7 @@ index 5ac8a77130..0b6b1ec6d7 100644
                                     int current_delay_ms,
                                     int target_delay_ms,
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 6549206d24..f25486e902 100644
+index 23e7a0c9b5..3555ac2fe6 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
 @@ -298,6 +298,7 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
@@ -232,8 +232,8 @@ index 6549206d24..f25486e902 100644
 +      vcm_receive_statistics_(vcm_receive_statistics),
        packet_buffer_(kPacketBufferStartSize,
                       PacketBufferMaxSize(env_.field_trials())),
-       reference_finder_(std::make_unique<RtpFrameReferenceFinder>()),
-@@ -1633,7 +1635,8 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
+       reference_finder_(
+@@ -1636,7 +1638,8 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
      last_timestamp_for_pic_id_.erase(last_timestamp_for_pic_id_.begin(),
                                       ++ts_it);
    }
@@ -272,7 +272,7 @@ index 6f45a592c2..80f3753488 100644
    // h26x_packet_buffer_ is applicable to H.264 and H.265. For H.265 it is
    // always used but for H.264 it is only used if WebRTC-Video-H26xPacketBuffer
 diff --git a/video/video_receive_stream2.cc b/video/video_receive_stream2.cc
-index 05fb700936..280b8cbda9 100644
+index 5026d4f1c3..1a622af14b 100644
 --- a/video/video_receive_stream2.cc
 +++ b/video/video_receive_stream2.cc
 @@ -272,6 +272,7 @@ VideoReceiveStream2::VideoReceiveStream2(

@@ -47,27 +47,6 @@ CreatePeerConnectionFactory(
     std::unique_ptr<AudioFrameProcessor> audio_frame_processor = nullptr,
     std::unique_ptr<FieldTrialsView> field_trials = nullptr);
 
-// Deprecated overload accepting worker_thread. Support for a worker thread
-// that is distinct from the network thread is being removed; use the overload
-// without worker_thread instead. See
-// https://groups.google.com/g/discuss-webrtc/c/Fs_Hd5XNJh0
-[[deprecated(
-    "Use the CreatePeerConnectionFactory overload without worker_thread.")]]
-RTC_EXPORT scoped_refptr<PeerConnectionFactoryInterface>
-CreatePeerConnectionFactory(
-    Thread* network_thread,
-    Thread* worker_thread,
-    Thread* signaling_thread,
-    scoped_refptr<AudioDeviceModule> default_adm,
-    scoped_refptr<AudioEncoderFactory> audio_encoder_factory,
-    scoped_refptr<AudioDecoderFactory> audio_decoder_factory,
-    std::unique_ptr<VideoEncoderFactory> video_encoder_factory,
-    std::unique_ptr<VideoDecoderFactory> video_decoder_factory,
-    scoped_refptr<AudioMixer> audio_mixer,
-    scoped_refptr<AudioProcessing> audio_processing,
-    std::unique_ptr<AudioFrameProcessor> audio_frame_processor = nullptr,
-    std::unique_ptr<FieldTrialsView> field_trials = nullptr);
-
 }  // namespace webrtc
 
 #endif  // API_CREATE_PEERCONNECTION_FACTORY_H_

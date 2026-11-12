@@ -116,7 +116,7 @@ rtc_library("audio_decoder_multiopus") {
 
 if (rtc_include_tests) {
   rtc_cc_test("audio_decoder_opus_api_unittest") {
-    sources = [ "audio_decoder_opus_unittest.cc" ]
+    sources = [ "audio_decoder_opus_api_unittest.cc" ]
     deps = [
       ":audio_decoder_opus",
       "..:audio_codecs_api",

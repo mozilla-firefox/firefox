@@ -18,10 +18,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/0300b32b7de70fb89
  5 files changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 37a3e594c9..82d65b35a2 100644
+index 8a966e1a23..07eea067bd 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -274,6 +274,9 @@ config("common_inherited_config") {
+@@ -275,6 +275,9 @@ config("common_inherited_config") {
    if (is_linux || is_chromeos) {
      defines += [ "WEBRTC_LINUX" ]
    }
@@ -74,7 +74,7 @@ index 20bf4afc44..697bedadb9 100644
  #endif  // defined(WEBRTC_POSIX)
  }
 diff --git a/webrtc.gni b/webrtc.gni
-index d9f904daf5..dd1acdb831 100644
+index 3cc99d87bd..81a1d8dd71 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -352,7 +352,7 @@ rtc_opus_dir = "//third_party/opus"

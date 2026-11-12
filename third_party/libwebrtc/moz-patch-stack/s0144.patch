@@ -1,86 +1,119 @@
 From: Michael Froman <mfroman@mozilla.com>
 Date: Thu, 20 Aug 2026 15:17:00 +0000
-Subject: Bug 1996020 - add AlignedMallocOrNull to allow low-mem alloc attempts
- without crashing. r=bwc
+Subject: Bug 1996020 - Add I420Buffer::CreateOrNull and use it in
+ VideoCaptureImpl::IncomingFrame. r=bwc
 
-Differential Revision: https://phabricator.services.mozilla.com/D318846
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/d79be5854fe56d92642014904c4079643e86ace0
+Differential Revision: https://phabricator.services.mozilla.com/D318847
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/f0c6e846e0d33294378079b83208d1a91c5bf293
 ---
- rtc_base/memory/aligned_malloc.cc | 21 +++++++++++++++++++--
- rtc_base/memory/aligned_malloc.h  |  9 ++++++++-
- 2 files changed, 27 insertions(+), 3 deletions(-)
+ api/video/i420_buffer.cc                    | 27 ++++++++++++++++++---
+ api/video/i420_buffer.h                     | 15 +++++++++++-
+ modules/video_capture/video_capture_impl.cc | 11 ++++++++-
+ 3 files changed, 47 insertions(+), 6 deletions(-)
 
-diff --git a/rtc_base/memory/aligned_malloc.cc b/rtc_base/memory/aligned_malloc.cc
-index 36aa749898..6399264d22 100644
---- a/rtc_base/memory/aligned_malloc.cc
-+++ b/rtc_base/memory/aligned_malloc.cc
-@@ -50,7 +50,7 @@ void* GetRightAlign(const void* pointer, size_t alignment) {
-   return reinterpret_cast<void*>(GetRightAlign(start_pos, alignment));
+diff --git a/api/video/i420_buffer.cc b/api/video/i420_buffer.cc
+index bea6e07cde..2acb160b6e 100644
+--- a/api/video/i420_buffer.cc
++++ b/api/video/i420_buffer.cc
+@@ -54,15 +54,18 @@ I420Buffer::I420Buffer(int width,
+                        int height,
+                        int stride_y,
+                        int stride_u,
+-                       int stride_v)
++                       int stride_v,
++                       uint8_t* data)
+     : width_(width),
+       height_(height),
+       stride_y_(stride_y),
+       stride_u_(stride_u),
+       stride_v_(stride_v),
+-      data_(static_cast<uint8_t*>(AlignedMalloc(
+-          I420DataSize(width, height, stride_y, stride_u, stride_v),
+-          kBufferAlignment))) {
++      data_(data ? data
++                 : static_cast<uint8_t*>(AlignedMalloc(
++                       I420DataSize(width, height, stride_y, stride_u,
++                                    stride_v),
++                       kBufferAlignment))) {
+   RTC_DCHECK_GE(stride_u, (width + 1) / 2);
+   RTC_DCHECK_GE(stride_v, (width + 1) / 2);
+ }
+@@ -84,6 +87,22 @@ scoped_refptr<I420Buffer> I420Buffer::Create(int width,
+                                       stride_v);
  }
  
--void* AlignedMalloc(size_t size, size_t alignment) {
-+void* AlignedMallocOrNull(size_t size, size_t alignment) {
-   if (size == 0) {
-     return nullptr;
-   }
-@@ -63,7 +63,9 @@ void* AlignedMalloc(size_t size, size_t alignment) {
-   // A pointer to the start of the memory must be stored so that it can be
-   // retreived for deletion, ergo the sizeof(uintptr_t).
-   void* memory_pointer = malloc(size + sizeof(uintptr_t) + alignment - 1);
--  RTC_CHECK(memory_pointer) << "Couldn't allocate memory in AlignedMalloc";
-+  if (memory_pointer == nullptr) {
++// static
++scoped_refptr<I420Buffer> I420Buffer::CreateOrNull(int width,
++                                                   int height,
++                                                   int stride_y,
++                                                   int stride_u,
++                                                   int stride_v) {
++  uint8_t* data = AlignedMallocOrNull<uint8_t>(
++      I420DataSize(width, height, stride_y, stride_u, stride_v),
++      kBufferAlignment);
++  if (!data) {
 +    return nullptr;
 +  }
- 
-   // Aligning after the sizeof(uintptr_t) bytes will leave room for the header
-   // in the same memory block.
-@@ -82,6 +84,21 @@ void* AlignedMalloc(size_t size, size_t alignment) {
-   return aligned_pointer;
- }
- 
-+void* AlignedMalloc(size_t size, size_t alignment) {
-+  // Do these checks first so the same checks in AlignedMallocOrNull
-+  // don't trip the RTC_CHECK below.
-+  if (size == 0) {
-+    return nullptr;
-+  }
-+  if (!ValidAlignment(alignment)) {
-+    return nullptr;
-+  }
-+
-+  void* aligned_pointer = AlignedMallocOrNull(size, alignment);
-+  RTC_CHECK(aligned_pointer) << "Couldn't allocate memory in AlignedMalloc";
-+  return aligned_pointer;
++  return make_ref_counted<I420Buffer>(width, height, stride_y, stride_u,
++                                      stride_v, data);
 +}
 +
- void AlignedFree(void* mem_block) {
-   if (mem_block == nullptr) {
-     return;
-diff --git a/rtc_base/memory/aligned_malloc.h b/rtc_base/memory/aligned_malloc.h
-index 1c7d303885..914c221276 100644
---- a/rtc_base/memory/aligned_malloc.h
-+++ b/rtc_base/memory/aligned_malloc.h
-@@ -29,8 +29,11 @@ void* GetRightAlign(const void* ptr, size_t alignment);
+ // static
+ scoped_refptr<I420Buffer> I420Buffer::Copy(const I420BufferInterface& source) {
+   return Copy(source.width(), source.height(), source.DataY(), source.StrideY(),
+diff --git a/api/video/i420_buffer.h b/api/video/i420_buffer.h
+index a7a0fb014d..e4935b430c 100644
+--- a/api/video/i420_buffer.h
++++ b/api/video/i420_buffer.h
+@@ -32,6 +32,11 @@ class RTC_EXPORT I420Buffer : public I420BufferInterface {
+                                           int stride_y,
+                                           int stride_u,
+                                           int stride_v);
++  static scoped_refptr<I420Buffer> CreateOrNull(int width,
++                                                int height,
++                                                int stride_y,
++                                                int stride_u,
++                                                int stride_v);
  
- // Allocates memory of `size` bytes aligned on an `alignment` boundry.
- // The return value is a pointer to the memory. Note that the memory must
--// be de-allocated using AlignedFree.
-+// be de-allocated using AlignedFree. Crashes if the allocation fails.
- void* AlignedMalloc(size_t size, size_t alignment);
-+// Same as AlignedMalloc, but returns nullptr instead of crashing when the
-+// allocation fails.
-+void* AlignedMallocOrNull(size_t size, size_t alignment);
- // De-allocates memory created using the AlignedMalloc() API.
- void AlignedFree(void* mem_block);
+   // Create a new buffer and copy the pixel data.
+   static scoped_refptr<I420Buffer> Copy(const I420BufferInterface& buffer);
+@@ -100,7 +105,15 @@ class RTC_EXPORT I420Buffer : public I420BufferInterface {
  
-@@ -45,6 +48,10 @@ template <typename T>
- T* AlignedMalloc(size_t size, size_t alignment) {
-   return reinterpret_cast<T*>(AlignedMalloc(size, alignment));
- }
-+template <typename T>
-+T* AlignedMallocOrNull(size_t size, size_t alignment) {
-+  return reinterpret_cast<T*>(AlignedMallocOrNull(size, alignment));
-+}
+  protected:
+   I420Buffer(int width, int height);
+-  I420Buffer(int width, int height, int stride_y, int stride_u, int stride_v);
++  // If `data` is non-null, it must have been allocated with AlignedMalloc and
++  // be large enough to hold the planes described by the strides; the buffer
++  // takes ownership of it. Otherwise the data is allocated by the constructor.
++  I420Buffer(int width,
++             int height,
++             int stride_y,
++             int stride_u,
++             int stride_v,
++             uint8_t* data = nullptr);
  
- // Deleter for use with unique_ptr. E.g., use as
- //   std::unique_ptr<Foo, AlignedFreeDeleter> foo;
+   ~I420Buffer() override;
+ 
+diff --git a/modules/video_capture/video_capture_impl.cc b/modules/video_capture/video_capture_impl.cc
+index ed83ab6e57..7bf88028ef 100644
+--- a/modules/video_capture/video_capture_impl.cc
++++ b/modules/video_capture/video_capture_impl.cc
+@@ -200,8 +200,17 @@ int32_t VideoCaptureImpl::IncomingFrame(uint8_t* videoFrame,
+   // Setting absolute height (in case it was negative).
+   // In Windows, the image starts bottom left, instead of top left.
+   // Setting a negative source height, inverts the image (within LibYuv).
+-  scoped_refptr<I420Buffer> buffer = I420Buffer::Create(
++  scoped_refptr<I420Buffer> buffer = I420Buffer::CreateOrNull(
+       target_width, target_height, stride_y, stride_uv, stride_uv);
++  if (!buffer) {
++    RTC_LOG(LS_ERROR) << "Unable to allocate I420Buffer"
++                      << " (w: " << target_width
++                      << ", h: " << target_height
++                      << ", stride_y: " << stride_y
++                      << ", stride_u: " << stride_uv
++                      << ", stride_v: " << stride_uv << ")";
++    return -1;
++  }
+ 
+   libyuv::RotationMode rotation_mode = libyuv::kRotate0;
+   if (apply_rotation_) {

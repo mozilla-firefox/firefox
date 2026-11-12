@@ -120,7 +120,7 @@ absl::AnyInvocable<void() &&>
 VideoRtpReceiver::GetRestartFunctionForMediaChannel(
     std::optional<uint32_t> ssrc) {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  ssrc_s_ = ssrc;
+  signaled_ssrc_s_ = ssrc;
   MediaSourceInterface::SourceState state = source_->state();
   source_->SetState(MediaSourceInterface::kLive);
   return [this, ssrc = std::move(ssrc), state]() mutable {
@@ -307,7 +307,7 @@ absl::AnyInvocable<void() &&> VideoRtpReceiver::GetSetupForMediaChannel(
     VideoMediaReceiveChannelInterface* media_channel) {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
   RTC_DCHECK(media_channel);
-  ssrc_s_ = ssrc;
+  signaled_ssrc_s_ = ssrc;
   MediaSourceInterface::SourceState state = source_->state();
   source_->SetState(MediaSourceInterface::kLive);
   return [this, ssrc = std::move(ssrc), media_channel, state]() mutable {

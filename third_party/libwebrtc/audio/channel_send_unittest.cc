@@ -141,6 +141,20 @@ class ChannelSendTest : public ::testing::Test {
   scoped_refptr<AudioEncoderFactory> encoder_factory_;
 };
 
+TEST_F(ChannelSendTest, SframeRequirementUpdateDropsAudioFrames) {
+  channel_->SetSframeOptions({.required = false});
+  channel_->StartSend();
+  EXPECT_CALL(transport_, SendRtp).Times(1);
+  ProcessNextFrame();
+  ProcessNextFrame();
+
+  channel_->SetSframeOptions({.required = true});
+  EXPECT_CALL(transport_, SendRtp).Times(0);
+  ProcessNextFrame();
+  ProcessNextFrame();
+  channel_->StopSend();
+}
+
 TEST_F(ChannelSendTest, StopSendShouldResetEncoder) {
   channel_->StartSend();
   // Insert two frames which should trigger a new packet.

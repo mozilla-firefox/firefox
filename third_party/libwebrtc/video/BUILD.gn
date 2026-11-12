@@ -166,6 +166,7 @@ rtc_library("video") {
     "../rtc_base:rtp_to_ntp_estimator",
     "../rtc_base:safe_conversions",
     "../rtc_base:sample_counter",
+    "../rtc_base:sequence_number_util",
     "../rtc_base:stringutils",
     "../rtc_base:timeutils",
     "../rtc_base/experiments:alr_experiment",
@@ -998,9 +999,11 @@ if (rtc_include_tests) {
       "../api:rtp_parameters",
       "../api/environment",
       "../api/test/video:function_video_factory",
+      "../api/transport:bitrate_settings",
       "../api/units:timestamp",
       "../api/video:video_frame",
       "../api/video:video_rtp_headers",
+      "../api/video_codecs:scalability_mode",
       "../api/video_codecs:video_codecs_api",
       "../call:video_receive_stream_api",
       "../call:video_send_stream_api",
@@ -1009,6 +1012,9 @@ if (rtc_include_tests) {
       "../modules/video_coding:webrtc_h264",
       "../modules/video_coding:webrtc_vp8",
       "../modules/video_coding:webrtc_vp9",
+      "../modules/video_coding/codecs/av1:dav1d_decoder",
+      "../modules/video_coding/codecs/av1:libaom_av1_encoder",
+      "../modules/video_coding/svc:scalability_mode_util",
       "../test:frame_generator_capturer",
       "../test:test_common",
       "../test:test_support",
@@ -1400,7 +1406,6 @@ if (rtc_include_tests) {
     sources = [ "end_to_end_tests/transport_feedback_tests.cc" ]
     deps = [
       ":multi_stream_tester",
-      ":multi_stream_tests",
       "../api:rtp_header_extension_id",
       "../api:rtp_parameters",
       "../api:simulated_network_api",
@@ -1487,6 +1492,18 @@ if (rtc_include_tests) {
     ]
   }
 
+  rtc_cc_test("frame_dumping_encoder_unittest") {
+    sources = [ "frame_dumping_encoder_unittest.cc" ]
+    deps = [
+      ":frame_dumping_encoder",
+      "../api:mock_video_encoder",
+      "../api/environment",
+      "../api/video_codecs:video_codecs_api",
+      "../test:create_test_environment",
+      "../test:test_support",
+    ]
+  }
+
   rtc_cc_test("frame_encode_metadata_writer_unittest") {
     sources = [ "frame_encode_metadata_writer_unittest.cc" ]
     deps = [
@@ -1530,6 +1547,7 @@ if (rtc_include_tests) {
       "../rtc_base:macromagic",
       "../rtc_base:mod_ops",
       "../rtc_base:rtc_numerics",
+      "../rtc_base:sequence_number_util",
       "../rtc_base:task_queue_for_test",
       "../rtc_base/synchronization:mutex",
       "../test:test_common",
@@ -1833,6 +1851,7 @@ if (rtc_include_tests) {
       "../modules/video_coding:nack_requester",
       "../rtc_base:logging",
       "../system_wrappers",
+      "../system_wrappers:metrics",
       "../test:create_test_environment",
       "../test:create_test_field_trials",
       "../test:fake_encoded_frame",
@@ -2210,6 +2229,7 @@ if (rtc_include_tests) {
       ":fec_tests",
       ":frame_cadence_adapter_unittest",
       ":frame_decode_timing_unittest",
+      ":frame_dumping_encoder_unittest",
       ":frame_encode_metadata_writer_unittest",
       ":frame_encryption_tests",
       ":histogram_tests",
@@ -2244,9 +2264,21 @@ if (rtc_include_tests) {
       ":video_source_sink_controller_unittest",
       ":video_stream_buffer_controller_unittest",
       ":video_stream_encoder_unittest",
-      "corruption_detection:corruption_detection_unittests",
-      "corruption_detection/evaluation:corruption_detection_eval_unittests",
-      "config:video_config_tests",
+      "corruption_detection:corruption_classifier_unittest",
+      "corruption_detection:utils_unittest",
+      "corruption_detection:frame_instrumentation_generator_unittest",
+      "corruption_detection:frame_pair_corruption_score_unittest",
+      "corruption_detection:frame_selector_unittest",
+      "corruption_detection:generic_mapping_functions_unittest",
+      "corruption_detection:halton_frame_sampler_unittest",
+      "corruption_detection:halton_sequence_unittest",
+      "corruption_detection:video_frame_sampler_unittest",
+      "corruption_detection/evaluation:corruption_qp_parser_unittest",
+      "corruption_detection/evaluation:corruption_utils_unittest",
+      "corruption_detection/evaluation:test_clip_unittest",
+      "corruption_detection/evaluation:webrtc_picture_pair_provider_unittest",
+      "config:encoder_stream_factory_unittest",
+      "config:simulcast_unittest",
     ]
   }
 }

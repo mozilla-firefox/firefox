@@ -153,8 +153,7 @@ std::vector<EmulatedNetworkNode*> CreateNetworkPath(
     bool use_dual_pi) {
   std::unique_ptr<NetworkQueueFactory> queue_factory;
   if (use_dual_pi) {
-    queue_factory = std::make_unique<DualPi2NetworkQueueFactory>(
-        DualPi2NetworkQueue::Config({.target_delay = TimeDelta::Millis(10)}));
+    queue_factory = std::make_unique<DualPi2NetworkQueueFactory>();
     network_builder.queue_factory(*queue_factory);
   }
   return {network_builder.Build().node};
@@ -282,11 +281,10 @@ std::vector<EmulatedNetworkNode*> CreateNetworkPathWithVaryingCapacity(
 
   SchedulableNetworkNodeBuilder schedulable_builder(*s.net(),
                                                     std::move(schedule));
+  LeakyBucketNetworkQueueFactory queue_factory(LeakyBucketNetworkQueue::Config{
+      .max_ect1_sojourn_time = TimeDelta::Millis(40),
+      .target_ect1_sojourn_time = TimeDelta::Millis(20)});
   if (use_ecn) {
-    LeakyBucketNetworkQueueFactory queue_factory(
-        LeakyBucketNetworkQueue::Config{
-            .max_ect1_sojourn_time = TimeDelta::Millis(40),
-            .target_ect1_sojourn_time = TimeDelta::Millis(20)});
     schedulable_builder.set_queue_factory(queue_factory);
   }
   return {schedulable_builder.Build()};
@@ -495,7 +493,7 @@ TEST(
   EXPECT_THAT(
       result.caller().subspan(1, 3),
       Each(AvailableSendBitrateIsBetween(DataRate::KilobitsPerSec(10),
-                                         DataRate::KilobitsPerSec(140))));
+                                         DataRate::KilobitsPerSec(150))));
   EXPECT_THAT(result.caller()[3],
               CurrentRoundTripTimeIsBetween(TimeDelta::Millis(40),
                                             TimeDelta::Millis(200)));
@@ -538,8 +536,8 @@ TEST(ScreamTest, MaybeTest(LinkCapacity600KbpsRtt100msEcn)) {
   SendMediaTestResult result = SendMedia(std::move(params), s);
   // Allow rampup to take 3s.
   EXPECT_THAT(result.caller().subspan(3), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(350),
-                                              DataRate::KilobitsPerSec(660))));
+                                              DataRate::KilobitsPerSec(370),
+                                              DataRate::KilobitsPerSec(620))));
 }
 
 TEST(ScreamTest, MaybeTest(LinkCapacity1000KbpsRtt100msEcn)) {
@@ -556,8 +554,8 @@ TEST(ScreamTest, MaybeTest(LinkCapacity1000KbpsRtt100msEcn)) {
   // Ignore result first 2s since ramp up is rather slow at higher RTT.
   ASSERT_GT(result.caller().subspan(2).size(), 0u);
   EXPECT_THAT(result.caller().subspan(2), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(600),
-                                              DataRate::KilobitsPerSec(1000))));
+                                              DataRate::KilobitsPerSec(650),
+                                              DataRate::KilobitsPerSec(950))));
 }
 
 void TestVaryingCapacity1000To500KbpsRtt100ms(bool use_ecn) {
@@ -623,7 +621,7 @@ TEST(ScreamTest, MaybeTest(LinkCapacity1500KbpsRtt30msNoEcn)) {
 
   SendMediaTestResult result = SendMedia(std::move(params), s);
   EXPECT_THAT(result.caller().subspan(1), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(600),
+                                              DataRate::KilobitsPerSec(1100),
                                               DataRate::KilobitsPerSec(2200))));
 }
 
@@ -657,8 +655,8 @@ TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msEcn)) {
 
   SendMediaTestResult result = SendMedia(std::move(params), s);
   EXPECT_THAT(result.caller().subspan(3), Each(AvailableSendBitrateIsBetween(
-                                              DataRate::KilobitsPerSec(1300),
-                                              DataRate::KilobitsPerSec(2300))));
+                                              DataRate::KilobitsPerSec(1400),
+                                              DataRate::KilobitsPerSec(2100))));
 }
 
 TEST(ScreamTest, MaybeTest(LinkCapacity2MbpsRtt50msNoEcnWithGoogCC)) {
@@ -1218,11 +1216,11 @@ TEST(ScreamTest,
   ASSERT_GT(result.caller().subspan(2).size(), 0u);
   EXPECT_THAT(result.caller().subspan(2),
               Each(CurrentRoundTripTimeIsBetween(TimeDelta::Millis(180),
-                                                 TimeDelta::Millis(500))));
+                                                 TimeDelta::Millis(600))));
   ASSERT_GT(result.callee().subspan(2).size(), 0u);
   EXPECT_THAT(result.callee().subspan(2),
               Each(CurrentRoundTripTimeIsBetween(TimeDelta::Millis(180),
-                                                 TimeDelta::Millis(500))));
+                                                 TimeDelta::Millis(600))));
   EXPECT_THAT(result.caller().subspan(2),
               Each(AvailableSendBitrateIsBetween(
                   DataRate::KilobitsPerSec(5), DataRate::KilobitsPerSec(60))));

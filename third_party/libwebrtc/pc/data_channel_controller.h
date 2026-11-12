@@ -115,7 +115,11 @@ class DataChannelController : public SctpDataChannelControllerInterface,
   Thread* signaling_thread() const;
 
  private:
-  void OnSctpDataChannelClosed(SctpDataChannel* channel);
+  // Releases the sid of `channel`, stops tracking the channel and returns the
+  // reference to it that `sctp_data_channels_n_` held (or null if the channel
+  // wasn't tracked).
+  scoped_refptr<SctpDataChannel> OnSctpDataChannelClosed(
+      SctpDataChannel* channel);
 
   // Creates a new SctpDataChannel object on the network thread.
   RTCErrorOr<scoped_refptr<SctpDataChannel>> CreateDataChannel(

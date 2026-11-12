@@ -29,7 +29,9 @@
 #endif  // defined(WEBRTC_WIN)
 
 #if defined(RTC_ENABLE_WIN_WGC)
+#include "modules/desktop_capture/fallback_desktop_capturer_wrapper.h"
 #include "modules/desktop_capture/win/wgc_capturer_win.h"
+#include "modules/desktop_capture/win/window_capturer_win_gdi.h"
 #include "rtc_base/win/windows_version.h"
 #endif  // defined(RTC_ENABLE_WIN_WGC)
 
@@ -82,9 +84,34 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateWindowCapturer(
 #if defined(RTC_ENABLE_WIN_WGC)
   if (options.allow_wgc_window_capturer() &&
       IsWgcSupported(CaptureType::kWindow)) {
-    RTC_LOG(LS_INFO) << "DesktopCapturer::CreateWindowCapturer "
-                        "creates DesktopCapturer of type WgcCapturerWin";
-    return WgcCapturerWin::CreateRawWindowCapturer(options);
+    std::unique_ptr<DesktopCapturer> wgc_capturer =
+        WgcCapturerWin::CreateRawWindowCapturer(options);
+    if (!options.allow_fallback_for_wgc_window_capturer()) {
+      RTC_LOG(LS_INFO) << "DesktopCapturer::CreateWindowCapturer "
+                          "creates DesktopCapturer of type WgcCapturerWin";
+      return wgc_capturer;
+    }
+    // Use CroppingWindowCapturer if it's allowed, as in the non-WGC path below,
+    // so that full-screen window detection keeps working after a fallback.
+    std::unique_ptr<DesktopCapturer> fallback_capturer;
+    if (options.allow_cropping_window_capturer()) {
+      RTC_LOG(LS_INFO) << "DesktopCapturer::CreateWindowCapturer creates "
+                          "DesktopCapturer of type WgcCapturerWin with "
+                          "CroppingWindowCapturerWin fallback";
+      DesktopCaptureOptions fallback_options = options;
+      fallback_options.set_allow_wgc_capturer_fallback(false);
+      fallback_capturer =
+          CroppingWindowCapturer::CreateCapturer(fallback_options);
+    } else {
+      RTC_LOG(LS_INFO) << "DesktopCapturer::CreateWindowCapturer creates "
+                          "DesktopCapturer of type WgcCapturerWin with "
+                          "WindowCapturerWinGdi fallback";
+      fallback_capturer =
+          WindowCapturerWinGdi::CreateRawWindowCapturer(options);
+    }
+    return std::make_unique<FallbackDesktopCapturerWrapper>(
+        std::move(wgc_capturer), std::move(fallback_capturer),
+        "WebRTC.DesktopCapture.Win.WgcWindowFallbackSelectSource");
   }
 #endif  // defined(RTC_ENABLE_WIN_WGC)
 

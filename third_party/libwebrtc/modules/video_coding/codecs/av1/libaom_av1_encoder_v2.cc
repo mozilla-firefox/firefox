@@ -40,7 +40,6 @@
 #include "api/video_codecs/video_encoder_interface.h"
 #include "api/video_codecs/video_encoding_general.h"
 #include "modules/video_coding/utility/cbr_layer_rate_tracker.h"
-#include "modules/video_coding/utility/reference_buffer_tracker.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/rational.h"
@@ -83,6 +82,11 @@ constexpr int kRtpTicksPerSecond = 90000;
 constexpr int kRtpTicksPerMs = kRtpTicksPerSecond / 1000;
 // Only used in CQP mode, where libaom requires a value but does not act on it.
 constexpr int kDefaultMaxIntraBitratePct = 300;
+// Offset in [0, 63] quantizer units (16 q_index steps) around the target
+// quantizer in CQP mode, giving internal cyclic refresh and dynamic loop
+// filter / CDEF logic room to operate while keeping `worst_quality` close to
+// the target QP.
+constexpr int kCqpQuantizerOffset = 4;
 
 // The maximum number of spatial and temporal layers this encoder advertises.
 //
@@ -445,8 +449,7 @@ void PrepareInputImage(const VideoFrameBuffer& input_buffer,
 }
 
 aom_svc_ref_frame_config_t GetSvcRefFrameConfig(
-    const FrameEncodeSettings& settings,
-    const ReferenceBufferTracker& reference_buffer_tracker) {
+    const FrameEncodeSettings& settings) {
   // Buffer alias to use for each position. In particular when there are two
   // buffers being used, prefer to alias them as LAST and GOLDEN, since the AV1
   // bitstream format has dedicated fields for them. See last_frame_idx and
@@ -459,8 +462,8 @@ aom_svc_ref_frame_config_t GetSvcRefFrameConfig(
   // should be specified in order of how useful they are for prediction. Libaom
   // could be updated to make LAST, GOLDEN and ALTREF equivalent, but that is
   // not a priority for now. All aliases can be used to update buffers.
-  // Buffers are ordered so that the most recent update is aliased as LAST,
-  // the next oldest as GOLDEN, ALTREF, and so on.
+  // Reference buffers are given in order of preference, so the first one is
+  // aliased as LAST, the second as GOLDEN, ALTREF, and so on.
   static constexpr std::array<int, 7> kPreferredAlias = {0,  // LAST
                                                          3,  // GOLDEN
                                                          6,  // ALTREF
@@ -473,19 +476,20 @@ aom_svc_ref_frame_config_t GetSvcRefFrameConfig(
 
   int alias_index = 0;
   if (!settings.reference_buffers().empty()) {
-    std::vector<int> sorted_references =
-        reference_buffer_tracker.OrderByTimestamp(settings.reference_buffers());
-    for (size_t i = 0; i < sorted_references.size(); ++i) {
-      ref_idx_view[kPreferredAlias[alias_index]] = sorted_references[i];
+    std::span<const int> references = settings.reference_buffers();
+    RTC_DCHECK_LE(references.size(), kMaxReferences);
+    for (int ref : references) {
+      ref_idx_view[kPreferredAlias[alias_index]] = ref;
       reference_view[kPreferredAlias[alias_index]] = 1;
       alias_index++;
     }
 
-    // Delta frames must not alias unused buffers, and since start frames only
-    // update some buffers it is not safe to leave unused aliases to simply
-    // point to buffer 0.
-    for (size_t i = sorted_references.size(); i < ref_idx_view.size(); ++i) {
-      ref_idx_view[kPreferredAlias[i]] = sorted_references.back();
+    // Delta frames must not alias unpopulated buffers. Because a preceding
+    // start frame only populates its `update_buffer` (unlike a keyframe, which
+    // populates all buffers), buffer 0 is not guaranteed to hold a valid frame,
+    // so point unused aliases to a known-valid referenced buffer.
+    for (size_t i = references.size(); i < ref_idx_view.size(); ++i) {
+      ref_idx_view[kPreferredAlias[i]] = references.back();
     }
   }
 
@@ -625,8 +629,13 @@ aom_svc_params_t LibaomAv1EncoderV2::GetSvcParams(
               // disabled or not. Set `layer_target_bitrate` to 1 so that libaom
               // knows the layer is active.
               layer_target_bitrate_view[id] = 1;
-              max_quantizers_view[id] = quantizer;
-              min_quantizers_view[id] = quantizer;
+              max_quantizers_view[id] =
+                  quantizer == 0 ? 0
+                                 : std::min(kMaxQuantizer,
+                                            quantizer + kCqpQuantizerOffset);
+              min_quantizers_view[id] =
+                  quantizer == 0 ? 0
+                                 : std::max(1, quantizer - kCqpQuantizerOffset);
             }
             RTC_LOG(LS_VERBOSE)
                 << __FUNCTION__ << " svc_params.qp[" << first_layer_id
@@ -729,10 +738,10 @@ bool LibaomAv1EncoderV2::InitEncode(
   }
 
   last_resolution_in_buffer_ = {};
-  reference_buffer_tracker_.Reset();
   rate_tracker_ = std::make_unique<CbrLayerRateTracker>();
   content_type_.reset();
   effort_level_.reset();
+  cq_level_.reset();
   applied_cfg_.reset();
   applied_svc_params_.reset();
   num_spatial_layers_ = 0;
@@ -890,16 +899,20 @@ void LibaomAv1EncoderV2::Encode(
                         << " cfg_.rc_target_bitrate=" << cfg_.rc_target_bitrate;
   } else if (cfg_.rc_end_usage == AOM_Q) {
     cfg_.rc_target_bitrate = 1;
-    // libaom disables SVC, and with it everything configured through
-    // `AV1E_SET_SVC_PARAMS`, when there is only a single layer. Pin the
-    // quantizer through the encoder config as well so that constant QP is
-    // honored in that case too. Only the lowest spatial layer is represented
-    // here; streams with several spatial layers keep SVC enabled and are
-    // configured per layer in `GetSvcParams`.
+    // With `use_fixed_qp_offsets == 2` the base q is `cq_level` (set per
+    // spatial layer via `AOME_SET_CQ_LEVEL`), while constraining the quantizer
+    // range to +/- `kCqpQuantizerOffset` around the target (or 0 when lossless
+    // is requested) so that cyclic refresh and dynamic loop-filter/CDEF logic
+    // can operate.
     int quantizer = ToLibaomQuantizer(
         std::get<Cqp>(frame_settings[0].rate_options()).target_qp);
-    cfg_.rc_min_quantizer = quantizer;
-    cfg_.rc_max_quantizer = quantizer;
+    cfg_.use_fixed_qp_offsets = 2;
+    cfg_.rc_min_quantizer =
+        quantizer == 0 ? 0 : std::max(1, quantizer - kCqpQuantizerOffset);
+    cfg_.rc_max_quantizer =
+        quantizer == 0
+            ? 0
+            : std::min(kMaxQuantizer, quantizer + kCqpQuantizerOffset);
   }
 
   if (static_cast<int>(cfg_.g_w) != frame_buffer->width() ||
@@ -985,8 +998,7 @@ void LibaomAv1EncoderV2::Encode(
                                            : frame_settings[0].temporal_id(),
     };
     SET_OR_RETURN(AV1E_SET_SVC_LAYER_ID, &layer_id);
-    aom_svc_ref_frame_config_t ref_config =
-        GetSvcRefFrameConfig(settings, reference_buffer_tracker_);
+    aom_svc_ref_frame_config_t ref_config = GetSvcRefFrameConfig(settings);
     SET_OR_RETURN(AV1E_SET_SVC_REF_FRAME_CONFIG, &ref_config);
     // Enable compound prediction for frames with two or three references
     // (`GOLDEN_LAST` at index 0 and `ALTREF_LAST` at index 2). Keep
@@ -1003,6 +1015,15 @@ void LibaomAv1EncoderV2::Encode(
       comp_pred.use_comp_pred[2] = 1;
     }
     SET_OR_RETURN(AV1E_SET_SVC_REF_FRAME_COMP_PRED, &comp_pred);
+
+    if (layer_enabled && std::holds_alternative<Cqp>(settings.rate_options())) {
+      const int cq_level =
+          ToLibaomQuantizer(std::get<Cqp>(settings.rate_options()).target_qp);
+      if (cq_level != cq_level_) {
+        SET_OR_RETURN(AOME_SET_CQ_LEVEL, cq_level);
+        cq_level_ = cq_level;
+      }
+    }
 
     if (layer_enabled && settings.effort_level() != effort_level_) {
       // For RTC we use speed level 5 to 11, with 9 being the default. Note
@@ -1042,14 +1063,11 @@ void LibaomAv1EncoderV2::Encode(
 
     if (settings.frame_type() == VideoEncoderInterface::FrameType::kKeyframe) {
       last_resolution_in_buffer_ = {};
-      reference_buffer_tracker_.Reset();
     }
 
     if (settings.update_buffer()) {
       last_resolution_in_buffer_[*settings.update_buffer()] =
           settings.resolution();
-      reference_buffer_tracker_.Update(*settings.update_buffer(),
-                                       tu_settings.presentation_timestamp());
     }
 
     VideoEncoderInterface::EncodedData result;

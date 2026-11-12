@@ -182,6 +182,15 @@ void JsepTransportCollection::ForEachActiveTransport(
   absl::c_for_each(mid_to_transport_, [&](auto& kv) { callback(*kv.second); });
 }
 
+void JsepTransportCollection::ForEachMid(
+    FunctionView<void(absl::string_view mid, JsepTransport& transport)>
+        callback) {
+  RTC_DCHECK_RUN_ON(&sequence_checker_);
+  for (const auto& [mid, transport] : mid_to_transport_) {
+    callback(mid, *transport);
+  }
+}
+
 void JsepTransportCollection::DestroyAllTransports() {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
   for (const auto& jsep_transport : transports_) {

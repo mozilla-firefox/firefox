@@ -1,22 +1,22 @@
 From: Byron Campen <docfaraday@gmail.com>
-Date: Tue, 26 May 2026 18:03:00 -0500
-Subject: Bug 2040478 - (fix-834ea60925) Add missing std namespace r?mjf
+Date: Wed, 27 May 2026 11:38:00 -0500
+Subject: Bug 2040478 - (fix-2d195343e6) Add missing include of <optional>
+ r?mjf
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/89a59f60370f6df6f89b2d03eb7c8d4be7aac1c7
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/c2a275c690c1e6ebd529752c0648c23cf3db3742
 ---
- rtc_base/ssl_stream_adapter.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ modules/desktop_capture/desktop_capture_options.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/rtc_base/ssl_stream_adapter.h b/rtc_base/ssl_stream_adapter.h
-index 00fd5f2da9..22a854e3d3 100644
---- a/rtc_base/ssl_stream_adapter.h
-+++ b/rtc_base/ssl_stream_adapter.h
-@@ -129,7 +129,7 @@ class SSLStreamAdapter : public StreamInterface {
-   static std::unique_ptr<SSLStreamAdapter> Create(
-       std::unique_ptr<StreamInterface> stream,
-       absl::AnyInvocable<void(SSLHandshakeError)> handshake_error,
--      nullptr_t /*field_trials*/) {
-+      std::nullptr_t /*field_trials*/) {
-     return Create(std::move(stream), std::move(handshake_error));
-   }
+diff --git a/modules/desktop_capture/desktop_capture_options.h b/modules/desktop_capture/desktop_capture_options.h
+index 4d0c364cb0..8dc342a949 100644
+--- a/modules/desktop_capture/desktop_capture_options.h
++++ b/modules/desktop_capture/desktop_capture_options.h
+@@ -11,6 +11,7 @@
+ #define MODULES_DESKTOP_CAPTURE_DESKTOP_CAPTURE_OPTIONS_H_
  
+ #include <cstdint>
++#include <optional>
+ 
+ #include "api/environment/environment.h"
+ #include "api/scoped_refptr.h"

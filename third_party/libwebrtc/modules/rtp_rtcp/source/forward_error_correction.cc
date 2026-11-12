@@ -15,6 +15,7 @@
 #include <cstring>
 #include <list>
 #include <memory>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -26,6 +27,7 @@
 #include "modules/rtp_rtcp/source/flexfec_03_header_reader_writer.h"
 #include "modules/rtp_rtcp/source/forward_error_correction_internal.h"
 #include "modules/rtp_rtcp/source/ulpfec_header_reader_writer.h"
+#include "rtc_base/byte_order.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/mod_ops.h"
@@ -167,7 +169,9 @@ int ForwardErrorCorrection::EncodeFec(const PacketList& media_packets,
 
   internal::PacketMaskTable mask_table(fec_mask_type, num_media_packets);
   packet_mask_size_ = internal::PacketMaskSize(num_media_packets);
-  memset(packet_masks_, 0, num_fec_packets * packet_mask_size_);
+  std::ranges::fill(
+      std::span(packet_masks_).first(num_fec_packets * packet_mask_size_), 0);
+
   internal::GeneratePacketMasks(num_media_packets, num_fec_packets,
                                 num_important_packets, use_unequal_protection,
                                 &mask_table, packet_masks_);
@@ -186,9 +190,9 @@ int ForwardErrorCorrection::EncodeFec(const PacketList& media_packets,
   GenerateFecPayloads(media_packets, num_fec_packets);
   // TODO(brandtr): Generalize this when multistream protection support is
   // added.
-  const uint32_t media_ssrc = ParseSsrc(media_packets.front()->data.data());
+  const uint32_t media_ssrc = ParseSsrc(media_packets.front()->data);
   const uint16_t seq_num_base =
-      ParseSequenceNumber(media_packets.front()->data.data());
+      ParseSequenceNumber(media_packets.front()->data);
   FinalizeFecHeaders(num_fec_packets, media_ssrc, seq_num_base);
 
   return 0;
@@ -220,8 +224,7 @@ void ForwardErrorCorrection::GenerateFecPayloads(
 
     size_t media_pkt_idx = 0;
     auto media_packets_it = media_packets.cbegin();
-    uint16_t prev_seq_num =
-        ParseSequenceNumber((*media_packets_it)->data.data());
+    uint16_t prev_seq_num = ParseSequenceNumber((*media_packets_it)->data);
     while (media_packets_it != media_packets.end()) {
       Packet* const media_packet = media_packets_it->get();
       // Should `media_packet` be protected by `fec_packet`?
@@ -233,8 +236,8 @@ void ForwardErrorCorrection::GenerateFecPayloads(
         if (fec_packet_length > fec_packet->data.size()) {
           size_t old_size = fec_packet->data.size();
           fec_packet->data.SetSize(fec_packet_length);
-          memset(fec_packet->data.MutableData() + old_size, 0,
-                 fec_packet_length - old_size);
+          std::ranges::fill(fec_packet->data.AsMutableSpan().subspan(old_size),
+                            0);
         }
         XorHeaders(*media_packet, fec_packet);
         XorPayloads(*media_packet, media_payload_length, fec_header_size,
@@ -242,8 +245,7 @@ void ForwardErrorCorrection::GenerateFecPayloads(
       }
       media_packets_it++;
       if (media_packets_it != media_packets.end()) {
-        uint16_t seq_num =
-            ParseSequenceNumber((*media_packets_it)->data.data());
+        uint16_t seq_num = ParseSequenceNumber((*media_packets_it)->data);
         media_pkt_idx += static_cast<uint16_t>(seq_num - prev_seq_num);
         prev_seq_num = seq_num;
       }
@@ -262,10 +264,8 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
   if (num_media_packets <= 1) {
     return num_media_packets;
   }
-  uint16_t last_seq_num =
-      ParseSequenceNumber(media_packets.back()->data.data());
-  uint16_t first_seq_num =
-      ParseSequenceNumber(media_packets.front()->data.data());
+  uint16_t last_seq_num = ParseSequenceNumber(media_packets.back()->data);
+  uint16_t first_seq_num = ParseSequenceNumber(media_packets.front()->data);
   size_t total_missing_seq_nums =
       static_cast<uint16_t>(last_seq_num - first_seq_num) - num_media_packets +
       1;
@@ -281,7 +281,9 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
   // Allocate the new mask.
   size_t tmp_packet_mask_size =
       internal::PacketMaskSize(total_missing_seq_nums + num_media_packets);
-  memset(tmp_packet_masks_, 0, num_fec_packets * tmp_packet_mask_size);
+  std::ranges::fill(std::span(tmp_packet_masks_)
+                        .first(num_fec_packets * tmp_packet_mask_size),
+                    0);
 
   auto media_packets_it = media_packets.cbegin();
   uint16_t prev_seq_num = first_seq_num;
@@ -302,7 +304,7 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
       // to protect turned to be larger than earlier estimated.
       return -1;
     }
-    uint16_t seq_num = ParseSequenceNumber((*media_packets_it)->data.data());
+    uint16_t seq_num = ParseSequenceNumber((*media_packets_it)->data);
     const int num_zeros_to_insert =
         static_cast<uint16_t>(seq_num - prev_seq_num - 1);
     if (num_zeros_to_insert > 0) {
@@ -330,8 +332,9 @@ int ForwardErrorCorrection::InsertZerosInPacketMasks(
     }
   }
   // Replace the old mask with the new.
-  memcpy(packet_masks_, tmp_packet_masks_,
-         num_fec_packets * tmp_packet_mask_size);
+  std::ranges::copy(std::span(tmp_packet_masks_)
+                        .first(num_fec_packets * tmp_packet_mask_size),
+                    packet_masks_.begin());
   return new_bit_index;
 }
 
@@ -572,20 +575,19 @@ bool ForwardErrorCorrection::StartPacketRecovery(
   }
   // Initialize recovered packet data.
   recovered_packet->pkt->data.EnsureCapacity(IP_PACKET_SIZE);
-  recovered_packet->pkt->data.SetSize(fec_packet.protection_length +
-                                      kRtpHeaderSize);
+
   recovered_packet->returned = false;
   recovered_packet->was_recovered = true;
   // Copy bytes corresponding to minimum RTP header size.
   // Note that the sequence number and SSRC fields will be overwritten
   // at the end of packet recovery.
-  memcpy(recovered_packet->pkt->data.MutableData(),
-         fec_packet.pkt->data.cdata(), kRtpHeaderSize);
+  recovered_packet->pkt->data.Set(
+      std::span(fec_packet.pkt->data).first(kRtpHeaderSize));
   // Copy remaining FEC payload.
   if (fec_packet.protection_length > 0) {
-    memcpy(recovered_packet->pkt->data.MutableData() + kRtpHeaderSize,
-           fec_packet.pkt->data.cdata() + fec_packet.fec_header_size,
-           fec_packet.protection_length);
+    recovered_packet->pkt->data.Append(
+        std::span(fec_packet.pkt->data)
+            .subspan(fec_packet.fec_header_size, fec_packet.protection_length));
   }
   return true;
 }
@@ -593,13 +595,12 @@ bool ForwardErrorCorrection::StartPacketRecovery(
 bool ForwardErrorCorrection::FinishPacketRecovery(
     const ReceivedFecPacket& /* fec_packet */,
     RecoveredPacket* recovered_packet) {
-  uint8_t* data = recovered_packet->pkt->data.MutableData();
+  std::span<uint8_t> data = recovered_packet->pkt->data.AsMutableSpan();
   // Set the RTP version to 2.
   data[0] |= 0x80;  // Set the 1st bit.
   data[0] &= 0xbf;  // Clear the 2nd bit.
   // Recover the packet length, from temporary location.
-  const size_t new_size =
-      ByteReader<uint16_t>::ReadBigEndian(&data[2]) + kRtpHeaderSize;
+  const size_t new_size = GetBE16(data.subspan(2)) + kRtpHeaderSize;
   if (new_size > size_t{IP_PACKET_SIZE - kRtpHeaderSize}) {
     RTC_LOG(LS_WARNING) << "The recovered packet had a length larger than a "
                            "typical IP packet, and is thus dropped.";
@@ -607,21 +608,21 @@ bool ForwardErrorCorrection::FinishPacketRecovery(
   }
   size_t old_size = recovered_packet->pkt->data.size();
   recovered_packet->pkt->data.SetSize(new_size);
-  data = recovered_packet->pkt->data.MutableData();
+  data = recovered_packet->pkt->data.AsMutableSpan();
   if (new_size > old_size) {
-    memset(data + old_size, 0, new_size - old_size);
+    std::ranges::fill(data.subspan(old_size), 0);
   }
 
   // Set the SN field.
-  ByteWriter<uint16_t>::WriteBigEndian(&data[2], recovered_packet->seq_num);
+  SetBE16(data.subspan(2), recovered_packet->seq_num);
   // Set the SSRC field.
-  ByteWriter<uint32_t>::WriteBigEndian(&data[8], recovered_packet->ssrc);
+  SetBE32(data.subspan(8), recovered_packet->ssrc);
   return true;
 }
 
 void ForwardErrorCorrection::XorHeaders(const Packet& src, Packet* dst) {
-  uint8_t* dst_data = dst->data.MutableData();
-  const uint8_t* src_data = src.data.cdata();
+  std::span<uint8_t> dst_data = dst->data.AsMutableSpan();
+  std::span<const uint8_t> src_data = src.data;
   // XOR the first 2 bytes of the header: V, P, X, CC, M, PT fields.
   dst_data[0] ^= src_data[0];
   dst_data[1] ^= src_data[1];
@@ -651,12 +652,11 @@ void ForwardErrorCorrection::XorPayloads(const Packet& src,
   RTC_DCHECK_LE(dst_offset + payload_length, dst->data.capacity());
   if (dst_offset + payload_length > dst->data.size()) {
     size_t old_size = dst->data.size();
-    size_t new_size = dst_offset + payload_length;
-    dst->data.SetSize(new_size);
-    memset(dst->data.MutableData() + old_size, 0, new_size - old_size);
+    dst->data.SetSize(dst_offset + payload_length);
+    std::ranges::fill(dst->data.AsMutableSpan().subspan(old_size), 0);
   }
-  uint8_t* dst_data = dst->data.MutableData();
-  const uint8_t* src_data = src.data.cdata();
+  std::span<uint8_t> dst_data = dst->data.AsMutableSpan();
+  std::span<const uint8_t> src_data = src.data;
   for (size_t i = 0; i < payload_length; ++i) {
     dst_data[dst_offset + i] ^= src_data[kRtpHeaderSize + i];
   }
@@ -781,12 +781,13 @@ bool ForwardErrorCorrection::IsOldFecPacket(
           kOldSequenceThreshold);
 }
 
-uint16_t ForwardErrorCorrection::ParseSequenceNumber(const uint8_t* packet) {
-  return (packet[2] << 8) + packet[3];
+uint16_t ForwardErrorCorrection::ParseSequenceNumber(
+    std::span<const uint8_t> packet) {
+  return GetBE16(packet.subspan(2));
 }
 
-uint32_t ForwardErrorCorrection::ParseSsrc(const uint8_t* packet) {
-  return (packet[8] << 24) + (packet[9] << 16) + (packet[10] << 8) + packet[11];
+uint32_t ForwardErrorCorrection::ParseSsrc(std::span<const uint8_t> packet) {
+  return GetBE32(packet.subspan(8));
 }
 
 ForwardErrorCorrection::DecodeFecResult ForwardErrorCorrection::DecodeFec(

@@ -52,8 +52,8 @@ static const float kSamples[] = {0.0, 10.0, 4e4, -1e9};
 
 // Write a tiny WAV file with the C++ interface and verify the result.
 TEST(WavWriterTest, MAYBE_CPP) {
-  const std::string outfile =
-      test::OutputPathWithRandomDirectory() + "wavtest1.wav";
+  const std::string outdir = test::OutputPathWithRandomDirectory();
+  const std::string outfile = outdir + "wavtest1.wav";
   static const size_t kNumSamples = 3;
   {
     WavWriter w(outfile, 14099, 1);
@@ -117,6 +117,8 @@ TEST(WavWriterTest, MAYBE_CPP) {
     EXPECT_EQ(0, memcmp(kTruncatedSamples, samples, sizeof(samples)));
     EXPECT_EQ(0u, r.ReadSamples(kNumSamples, samples));
   }
+  EXPECT_TRUE(test::RemoveFile(outfile));
+  EXPECT_TRUE(test::RemoveDir(outdir));
 }
 
 // Write a larger WAV file. You can listen to this file to sanity-check it.
@@ -209,8 +211,8 @@ TEST(WavWriterTest, LargeFile) {
             EXPECT_EQ(0u, r.ReadSamples(kNumSamples, read_samples));
           }
         }
-        RTC_CHECK(test::RemoveFile(outfile));
-        RTC_CHECK(test::RemoveDir(outdir));
+        EXPECT_TRUE(test::RemoveFile(outfile));
+        EXPECT_TRUE(test::RemoveDir(outdir));
       }
     }
   }
@@ -218,8 +220,8 @@ TEST(WavWriterTest, LargeFile) {
 
 // Write a tiny WAV file with the C++ interface then read-reset-read.
 TEST(WavReaderTest, MAYBE_CPPReset) {
-  const std::string outfile =
-      test::OutputPathWithRandomDirectory() + "wavtest4.wav";
+  const std::string outdir = test::OutputPathWithRandomDirectory();
+  const std::string outfile = outdir + "wavtest4.wav";
   static const size_t kNumSamples = 3;
   {
     WavWriter w(outfile, 14099, 1);
@@ -288,6 +290,8 @@ TEST(WavReaderTest, MAYBE_CPPReset) {
     EXPECT_EQ(0, memcmp(kTruncatedSamples, samples, sizeof(samples)));
     EXPECT_EQ(0u, r.ReadSamples(kNumSamples, samples));
   }
+  EXPECT_TRUE(test::RemoveFile(outfile));
+  EXPECT_TRUE(test::RemoveDir(outdir));
 }
 
 }  // namespace webrtc

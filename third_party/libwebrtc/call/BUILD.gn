@@ -43,6 +43,7 @@ rtc_library("call_interfaces") {
     ":audio_sender_interface",
     ":receive_stream_interface",
     ":rtp_interfaces",
+    ":sframe_options",
     ":video_receive_stream_api",
     ":video_send_stream_api",
     "../api:fec_controller_api",
@@ -1084,7 +1085,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_cc_test("fake_network_pipe_unittests") {
+  rtc_cc_test("fake_network_pipe_unittest") {
     sources = [ "fake_network_pipe_unittest.cc" ]
     deps = [
       ":fake_network",

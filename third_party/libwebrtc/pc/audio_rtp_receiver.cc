@@ -204,7 +204,7 @@ absl::AnyInvocable<void() &&>
 AudioRtpReceiver::GetRestartFunctionForMediaChannel(
     std::optional<uint32_t> ssrc) {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  ssrc_s_ = ssrc;
+  signaled_ssrc_s_ = ssrc;
   bool enabled = track_->internal()->enabled();
   MediaSourceInterface::SourceState state = source_->state();
   source_->SetState(MediaSourceInterface::kLive);

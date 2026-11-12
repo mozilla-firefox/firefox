@@ -14,9 +14,11 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
+#include "api/field_trials_view.h"
 #include "api/video/video_codec_type.h"
 #include "modules/rtp_rtcp/source/frame_object.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
@@ -34,7 +36,8 @@ namespace webrtc {
 namespace internal {
 class RtpFrameReferenceFinderImpl {
  public:
-  RtpFrameReferenceFinderImpl() = default;
+  explicit RtpFrameReferenceFinderImpl(const FieldTrialsView* field_trials)
+      : field_trials_(field_trials) {}
 
   RtpFrameReferenceFinder::ReturnVector ManageFrame(
       std::unique_ptr<RtpFrameObject> frame);
@@ -51,6 +54,8 @@ class RtpFrameReferenceFinderImpl {
 
   template <typename T>
   T& GetRefFinderAs();
+
+  const FieldTrialsView* const field_trials_;
   RefFinder ref_finder_;
 };
 
@@ -147,17 +152,25 @@ T& RtpFrameReferenceFinderImpl::GetRefFinderAs() {
   if (auto* ref_finder = std::get_if<T>(&ref_finder_)) {
     return *ref_finder;
   }
-  return ref_finder_.emplace<T>();
+  if constexpr (std::is_same_v<T, RtpSeqNumOnlyRefFinder>) {
+    return ref_finder_.emplace<T>(field_trials_);
+  } else {
+    return ref_finder_.emplace<T>();
+  }
 }
 
 }  // namespace internal
 
-RtpFrameReferenceFinder::RtpFrameReferenceFinder()
-    : RtpFrameReferenceFinder(0) {}
+RtpFrameReferenceFinder::RtpFrameReferenceFinder(
+    const FieldTrialsView* field_trials)
+    : RtpFrameReferenceFinder(field_trials, 0) {}
 
-RtpFrameReferenceFinder::RtpFrameReferenceFinder(int64_t picture_id_offset)
+RtpFrameReferenceFinder::RtpFrameReferenceFinder(
+    const FieldTrialsView* field_trials,
+    int64_t picture_id_offset)
     : picture_id_offset_(picture_id_offset),
-      impl_(std::make_unique<internal::RtpFrameReferenceFinderImpl>()) {}
+      impl_(std::make_unique<internal::RtpFrameReferenceFinderImpl>(
+          field_trials)) {}
 
 RtpFrameReferenceFinder::~RtpFrameReferenceFinder() = default;
 

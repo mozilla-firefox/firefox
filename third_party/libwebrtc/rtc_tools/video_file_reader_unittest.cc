@@ -10,6 +10,8 @@
 
 #include "rtc_tools/video_file_reader.h"
 
+#include <stdio.h>
+
 #include <cstdio>
 #include <string>
 
@@ -24,11 +26,10 @@ namespace test {
 class Y4mFileReaderTest : public ::testing::Test {
  public:
   void SetUp() override {
-    const std::string filename =
-        TempFilename(test::OutputPath(), "test_video_file.y4m");
+    filename_ = TempFilename(test::OutputPath(), "test_video_file.y4m");
 
     // Create simple test video of size 6x4.
-    FILE* file = fopen(filename.c_str(), "wb");
+    FILE* file = fopen(filename_.c_str(), "wb");
     ASSERT_TRUE(file != nullptr);
     fprintf(file, "YUV4MPEG2 W6 H4 F57:10 C420 dummyParam\n");
     fprintf(file, "FRAME\n");
@@ -46,10 +47,16 @@ class Y4mFileReaderTest : public ::testing::Test {
     fclose(file);
 
     // Open the newly created file.
-    video = test::OpenY4mFile(filename);
+    video = test::OpenY4mFile(filename_);
     ASSERT_TRUE(video);
   }
 
+  void TearDown() override {
+    video = nullptr;
+    EXPECT_TRUE(RemoveFile(filename_));
+  }
+
+  std::string filename_;
   scoped_refptr<test::Video> video;
 };
 
@@ -77,11 +84,10 @@ TEST_F(Y4mFileReaderTest, TestPixelContent) {
 class YuvFileReaderTest : public ::testing::Test {
  public:
   void SetUp() override {
-    const std::string filename =
-        TempFilename(test::OutputPath(), "test_video_file.yuv");
+    filename_ = TempFilename(test::OutputPath(), "test_video_file.yuv");
 
     // Create simple test video of size 6x4.
-    FILE* file = fopen(filename.c_str(), "wb");
+    FILE* file = fopen(filename_.c_str(), "wb");
     ASSERT_TRUE(file != nullptr);
 
     const int width = 6;
@@ -96,10 +102,16 @@ class YuvFileReaderTest : public ::testing::Test {
     fclose(file);
 
     // Open the newly created file.
-    video = test::OpenYuvFile(filename, 6, 4);
+    video = test::OpenYuvFile(filename_, 6, 4);
     ASSERT_TRUE(video);
   }
 
+  void TearDown() override {
+    video = nullptr;
+    EXPECT_TRUE(RemoveFile(filename_));
+  }
+
+  std::string filename_;
   scoped_refptr<test::Video> video;
 };
 

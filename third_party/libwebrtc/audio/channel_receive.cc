@@ -624,14 +624,14 @@ ChannelReceive::ChannelReceive(
                          jitter_buffer_fast_playout,
                          jitter_buffer_min_delay_ms,
                          env_,
-                         decoder_factory)),
+                         std::move(decoder_factory))),
       ntp_estimator_(&env_.clock()),
       capture_start_rtp_time_stamp_(-1),
       capture_start_ntp_time_ms_(-1),
       audio_device_module_(audio_device_module),
       output_gain_(1.0f),
       packet_router_(packet_router),
-      frame_decryptor_(frame_decryptor),
+      frame_decryptor_(std::move(frame_decryptor)),
       crypto_options_(crypto_options),
       absolute_capture_time_interpolator_(&env_.clock()),
       on_first_packet_(std::move(on_first_packet)) {
@@ -1246,10 +1246,11 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
   return std::make_unique<ChannelReceive>(
       env, neteq_factory, audio_device_module, rtcp_send_transport, remote_ssrc,
       jitter_buffer_max_packets, jitter_buffer_fast_playout,
-      jitter_buffer_min_delay_ms, enable_non_sender_rtt, decoder_factory,
-      std::move(frame_decryptor), crypto_options, std::move(frame_transformer),
-      std::move(on_first_packet), rtcp_event_observer, packet_router,
-      local_ssrc, std::move(on_frame_delivered_callback));
+      jitter_buffer_min_delay_ms, enable_non_sender_rtt,
+      std::move(decoder_factory), std::move(frame_decryptor), crypto_options,
+      std::move(frame_transformer), std::move(on_first_packet),
+      rtcp_event_observer, packet_router, local_ssrc,
+      std::move(on_frame_delivered_callback));
 }
 
 }  // namespace voe

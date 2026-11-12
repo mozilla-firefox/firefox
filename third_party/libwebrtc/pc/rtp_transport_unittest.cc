@@ -316,11 +316,11 @@ TEST(RtpTransportTest, RegisterAndUnregisterRtpHeaderExtensionMap) {
   transport.RegisterRtpHeaderExtensionMap("audio", extensions1);
 
   // Parse a packet with an extension from the first map.
-  const unsigned char kRtpData1[] = {0x90, 0x11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                     0xBE, 0xDE, 0, 1,
-                                     // ID=1, len=0 (1 byte payload)
-                                     0x10, 0x00, 0x00, 0x00};
-  CopyOnWriteBuffer rtp_packet1(kRtpData1, sizeof(kRtpData1));
+  constexpr uint8_t kRtpData1[] = {0x90, 0x11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                   0xBE, 0xDE, 0, 1,
+                                   // ID=1, len=0 (1 byte payload)
+                                   0x10, 0x00, 0x00, 0x00};
+  CopyOnWriteBuffer rtp_packet1(kRtpData1);
   RtpPacketReceived parsed_packet1;
   FakePacketTransport fake_rtp(env, "fake_rtp");
   fake_rtp.SetDestination(&fake_rtp, true);
@@ -348,11 +348,11 @@ TEST(RtpTransportTest, RegisterAndUnregisterRtpHeaderExtensionMap) {
   transport.RegisterRtpHeaderExtensionMap("video", extensions2);
 
   // Parse a packet with an extension from the second map.
-  const unsigned char kRtpData2[] = {0x90, 0x11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                     0xBE, 0xDE, 0, 1,
-                                     // ID=2, len=2 (3 byte payload)
-                                     0x22, 0x01, 0x02, 0x03};
-  CopyOnWriteBuffer rtp_packet2(kRtpData2, sizeof(kRtpData2));
+  constexpr uint8_t kRtpData2[] = {0x90, 0x11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                   0xBE, 0xDE, 0, 1,
+                                   // ID=2, len=2 (3 byte payload)
+                                   0x22, 0x01, 0x02, 0x03};
+  CopyOnWriteBuffer rtp_packet2(kRtpData2);
 
   fake_rtp.SendPacket(rtp_packet2.data<char>(), rtp_packet2.size(),
                       AsyncSocketPacketOptions(), 0);
@@ -451,8 +451,8 @@ TEST(RtpTransportTest, SignalDemuxedRtcp) {
   EXPECT_EQ(0, observer.rtp_count());
 }
 
-const unsigned char kRtpData[] = {0x80, 0x11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-const int kRtpLen = 12;
+constexpr uint8_t kRtpData[] = {0x80, 0x11, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+constexpr int kRtpLen = 12;
 
 // Test that SignalPacketReceived fires with rtcp=false when a RTP packet with a
 // handled payload type is received.
@@ -609,12 +609,12 @@ TEST(RtpTransportTest, RecursiveOnSentPacketDoesNotCrash) {
 
   fake_rtp.SetWritable(true);
   observer.SetActionOnSentPacket([&]() {
-    CopyOnWriteBuffer rtp_data(kRtpData, kRtpLen);
+    CopyOnWriteBuffer rtp_data(kRtpData);
     if (observer.sent_packet_count() < 2) {
       transport.SendRtpPacket(&rtp_data, options, flags);
     }
   });
-  CopyOnWriteBuffer rtp_data(kRtpData, kRtpLen);
+  CopyOnWriteBuffer rtp_data(kRtpData);
   transport.SendRtpPacket(&rtp_data, options, flags);
   EXPECT_THAT(WaitUntil([&] { return observer.sent_packet_count(); }, Eq(2),
                         {.timeout = TimeDelta::Millis(kShortTimeout)}),

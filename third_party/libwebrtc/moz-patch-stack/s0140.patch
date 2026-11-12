@@ -1,31 +1,2088 @@
-From: Nico Grunbaum <ngrunbaum@mozilla.com>
-Date: Tue, 16 Jun 2026 15:40:00 -0700
-Subject: Bug 2047265 - (fix-8703bc12a1) disable new testonly av1 qp parser
- library
+From: Michael Froman <mfroman@mozilla.com>
+Date: Thu, 9 Jul 2026 15:55:00 -0500
+Subject: Bug 2049872 - (fix-0b0f9f61eb) revert until we can build jni source
+ files.
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/8e18fa212189c66b060f0217757c99eea14c3883
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/d619aaf26629db4f31eb76e09e7663314c2ef5c3
+Fixing this properly will require build at least parts of
+third_party/libwebrtc/third_party/jni_zero which we've never done before
+and hooking up the third_party/libwebrtc/sdk/android/BUILD.gn with other
+source in that directory that we've traditionally avoided.
+
+See Bug 2053926 for the eventual proper fix.
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/98da8060c3ad5cf8d766d9a2e1f594b0e3b406ab
 ---
- modules/video_coding/BUILD.gn | 2 ++
- 1 file changed, 2 insertions(+)
+ examples/androidnativeapi/BUILD.gn            |   2 -
+ examples/androidvoip/BUILD.gn                 |   3 -
+ rtc_tools/network_tester/BUILD.gn             |   2 -
+ sdk/android/api/org/webrtc/AudioTrack.java    |   9 +-
+ .../BuiltinAudioDecoderFactoryFactory.java    |   9 +-
+ .../BuiltinAudioEncoderFactoryFactory.java    |   9 +-
+ .../CallSessionFileRotatingLogSink.java       |  24 +--
+ sdk/android/api/org/webrtc/DataChannel.java   |  46 ++---
+ sdk/android/api/org/webrtc/Dav1dDecoder.java  |   9 +-
+ sdk/android/api/org/webrtc/DtmfSender.java    |  30 ++-
+ sdk/android/api/org/webrtc/Environment.java   |  18 +-
+ .../api/org/webrtc/JavaI420Buffer.java        |  52 +----
+ .../api/org/webrtc/LibaomAv1Encoder.java      |   9 +-
+ .../api/org/webrtc/LibvpxVp8Decoder.java      |   9 +-
+ .../api/org/webrtc/LibvpxVp8Encoder.java      |   9 +-
+ .../api/org/webrtc/LibvpxVp9Decoder.java      |  11 +-
+ .../api/org/webrtc/LibvpxVp9Encoder.java      |  13 +-
+ sdk/android/api/org/webrtc/MediaSource.java   |   9 +-
+ .../api/org/webrtc/MediaStreamTrack.java      |  30 ++-
+ sdk/android/api/org/webrtc/Metrics.java       |  13 +-
+ .../webrtc/SoftwareVideoDecoderFactory.java   |  23 +--
+ .../webrtc/SoftwareVideoEncoderFactory.java   |  23 +--
+ .../api/org/webrtc/TimestampAligner.java      |  19 +-
+ .../api/org/webrtc/TurnCustomizer.java        |  12 +-
+ .../api/org/webrtc/VideoDecoderFallback.java  |  10 +-
+ .../api/org/webrtc/VideoEncoderFallback.java  |  10 +-
+ sdk/android/api/org/webrtc/VideoTrack.java    |  27 +--
+ sdk/android/api/org/webrtc/YuvHelper.java     | 177 +++---------------
+ .../webrtc/audio/JavaAudioDeviceModule.java   |  33 +---
+ .../src/java/org/webrtc/CalledByNative.java   |   1 -
+ .../src/java/org/webrtc/EglBase10Impl.java    |  10 +-
+ .../src/java/org/webrtc/H264Utils.java        |  11 +-
+ .../src/java/org/webrtc/Histogram.java        |   2 -
+ .../src/java/org/webrtc/JniCommon.java        |  30 +--
+ .../src/java/org/webrtc/NV12Buffer.java       |  48 +----
+ .../src/java/org/webrtc/NV21Buffer.java       |  43 +----
+ .../webrtc/NativeAndroidVideoTrackSource.java |  85 +++------
+ .../java/org/webrtc/VideoDecoderWrapper.java  |  12 +-
+ .../java/org/webrtc/VideoEncoderWrapper.java  |  11 +-
+ .../org/webrtc/audio/WebRtcAudioRecord.java   |  21 +--
+ .../org/webrtc/audio/WebRtcAudioTrack.java    |  15 +-
+ webrtc.gni                                    |  20 +-
+ 42 files changed, 239 insertions(+), 720 deletions(-)
 
-diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
-index c6580781f7..8948d4834e 100644
---- a/modules/video_coding/BUILD.gn
-+++ b/modules/video_coding/BUILD.gn
-@@ -400,6 +400,7 @@ rtc_library("video_coding_utility") {
- }
+diff --git a/examples/androidnativeapi/BUILD.gn b/examples/androidnativeapi/BUILD.gn
+index fd6a836223..28589325c3 100644
+--- a/examples/androidnativeapi/BUILD.gn
++++ b/examples/androidnativeapi/BUILD.gn
+@@ -80,8 +80,6 @@ if (is_android) {
+       "//sdk/android:native_api_jni",
+       "//sdk/android:native_api_video",
+     ]
+-
+-    java_targets = [ ":androidnativeapi" ]
+   }
  
- rtc_library("av1_qp_parser") {
-+if (!build_with_mozilla) {
-   testonly = true
-   sources = [
-     "utility/av1_qp_parser.cc",
-@@ -413,6 +414,7 @@ rtc_library("av1_qp_parser") {
-   ]
-   public_configs = [ "//third_party/libgav1:libgav1_public_config" ]
+   android_resources("resources") {
+diff --git a/examples/androidvoip/BUILD.gn b/examples/androidvoip/BUILD.gn
+index 2f2834fb28..47557d31ba 100644
+--- a/examples/androidvoip/BUILD.gn
++++ b/examples/androidvoip/BUILD.gn
+@@ -29,7 +29,6 @@ if (is_android) {
+       "//rtc_base:base_java",
+       "//sdk/android:base_java",
+       "//sdk/android:java_audio_device_module_java",
+-      "//sdk/android:libjingle_peerconnection_metrics_default_java",
+       "//sdk/android:video_java",
+       "//third_party/androidx:androidx_core_core_java",
+       "//third_party/androidx:androidx_legacy_legacy_support_v4_java",
+@@ -88,8 +87,6 @@ if (is_android) {
+       "//third_party/abseil-cpp/absl/memory",
+       "//third_party/jni_zero",
+     ]
+-
+-    java_targets = [ ":androidvoip" ]
+   }
+ 
+   android_resources("resources") {
+diff --git a/rtc_tools/network_tester/BUILD.gn b/rtc_tools/network_tester/BUILD.gn
+index c2f5f58b78..dd655db4d0 100644
+--- a/rtc_tools/network_tester/BUILD.gn
++++ b/rtc_tools/network_tester/BUILD.gn
+@@ -197,7 +197,5 @@ if (is_android) {
+     configs += [ "//chromium/build/config/android:hide_all_but_jni" ]
+ 
+     output_extension = "so"
+-
+-    java_targets = [ ":NetworkTesterMobile" ]
+   }
  }
+diff --git a/sdk/android/api/org/webrtc/AudioTrack.java b/sdk/android/api/org/webrtc/AudioTrack.java
+index 24d35d8573..66ca1deb00 100644
+--- a/sdk/android/api/org/webrtc/AudioTrack.java
++++ b/sdk/android/api/org/webrtc/AudioTrack.java
+@@ -10,8 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /** Java wrapper for a C++ AudioTrackInterface */
+ public class AudioTrack extends MediaStreamTrack {
+   public AudioTrack(long nativeTrack) {
+@@ -22,7 +20,7 @@ public class AudioTrack extends MediaStreamTrack {
+    * Sets the volume for the underlying MediaSource. Volume is a gain value in the range 0 to 10.
+    */
+   public void setVolume(double volume) {
+-    lifecycleLock.run(nativeTrack -> AudioTrackJni.get().setVolume(nativeTrack, volume));
++    lifecycleLock.run(nativeTrack -> nativeSetVolume(nativeTrack, volume));
+   }
+ 
+   /** Returns a pointer to webrtc::AudioTrackInterface. */
+@@ -30,8 +28,5 @@ public class AudioTrack extends MediaStreamTrack {
+     return getNativeMediaStreamTrack();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void setVolume(long track, double volume);
+-  }
++  private static native void nativeSetVolume(long track, double volume);
+ }
+diff --git a/sdk/android/api/org/webrtc/BuiltinAudioDecoderFactoryFactory.java b/sdk/android/api/org/webrtc/BuiltinAudioDecoderFactoryFactory.java
+index a7ea17f5a8..5ebc19f25d 100644
+--- a/sdk/android/api/org/webrtc/BuiltinAudioDecoderFactoryFactory.java
++++ b/sdk/android/api/org/webrtc/BuiltinAudioDecoderFactoryFactory.java
+@@ -10,19 +10,14 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /**
+  * Creates a native {@code webrtc::AudioDecoderFactory} with the builtin audio decoders.
+  */
+ public class BuiltinAudioDecoderFactoryFactory implements AudioDecoderFactoryFactory {
+   @Override
+   public long createNativeAudioDecoderFactory() {
+-    return BuiltinAudioDecoderFactoryFactoryJni.get().createBuiltinAudioDecoderFactory();
++    return nativeCreateBuiltinAudioDecoderFactory();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createBuiltinAudioDecoderFactory();
+-  }
++  private static native long nativeCreateBuiltinAudioDecoderFactory();
+ }
+diff --git a/sdk/android/api/org/webrtc/BuiltinAudioEncoderFactoryFactory.java b/sdk/android/api/org/webrtc/BuiltinAudioEncoderFactoryFactory.java
+index 897d2e6a58..e884d4c3b9 100644
+--- a/sdk/android/api/org/webrtc/BuiltinAudioEncoderFactoryFactory.java
++++ b/sdk/android/api/org/webrtc/BuiltinAudioEncoderFactoryFactory.java
+@@ -10,19 +10,14 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /**
+  * This class creates a native {@code webrtc::AudioEncoderFactory} with the builtin audio encoders.
+  */
+ public class BuiltinAudioEncoderFactoryFactory implements AudioEncoderFactoryFactory {
+   @Override
+   public long createNativeAudioEncoderFactory() {
+-    return BuiltinAudioEncoderFactoryFactoryJni.get().createBuiltinAudioEncoderFactory();
++    return nativeCreateBuiltinAudioEncoderFactory();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createBuiltinAudioEncoderFactory();
+-  }
++  private static native long nativeCreateBuiltinAudioEncoderFactory();
+ }
+diff --git a/sdk/android/api/org/webrtc/CallSessionFileRotatingLogSink.java b/sdk/android/api/org/webrtc/CallSessionFileRotatingLogSink.java
+index 35bc00b4fd..46dfa401a7 100644
+--- a/sdk/android/api/org/webrtc/CallSessionFileRotatingLogSink.java
++++ b/sdk/android/api/org/webrtc/CallSessionFileRotatingLogSink.java
+@@ -10,12 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+-/**
+- * Java wrapper for Logging::LogSink which is used to output logs to a call session file rotating
+- * log sink.
+- */
+ public class CallSessionFileRotatingLogSink {
+   private final NativeLifecycleLock lifecycleLock;
+ 
+@@ -23,7 +17,7 @@ public class CallSessionFileRotatingLogSink {
+     if (dirPath == null) {
+       throw new IllegalArgumentException("dirPath may not be null.");
+     }
+-    return CallSessionFileRotatingLogSinkJni.get().getLogData(dirPath);
++    return nativeGetLogData(dirPath);
+   }
+ 
+   @SuppressWarnings("EnumOrdinal")
+@@ -35,21 +29,15 @@ public class CallSessionFileRotatingLogSink {
+     this.lifecycleLock =
+         new NativeLifecycleLock(
+             "CallSessionFileRotatingLogSink",
+-            CallSessionFileRotatingLogSinkJni.get()
+-                .addSink(dirPath, maxFileSize, severity.ordinal()));
++            nativeAddSink(dirPath, maxFileSize, severity.ordinal()));
+   }
+ 
+   public void dispose() {
+     lifecycleLock.dispose(
+-        nativeSink -> CallSessionFileRotatingLogSinkJni.get().deleteSink(nativeSink));
++        nativeSink -> nativeDeleteSink(nativeSink));
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long addSink(String dirPath, int maxFileSize, int severity);
+-
+-    void deleteSink(long sink);
+-
+-    byte[] getLogData(String dirPath);
+-  }
++  private static native long nativeAddSink(String dirPath, int maxFileSize, int severity);
++  private static native void nativeDeleteSink(long sink);
++  private static native byte[] nativeGetLogData(String dirPath);
+ }
+diff --git a/sdk/android/api/org/webrtc/DataChannel.java b/sdk/android/api/org/webrtc/DataChannel.java
+index 06cbaa8225..0225a91c2e 100644
+--- a/sdk/android/api/org/webrtc/DataChannel.java
++++ b/sdk/android/api/org/webrtc/DataChannel.java
+@@ -11,8 +11,6 @@
+ package org.webrtc;
+ 
+ import java.nio.ByteBuffer;
+-import org.jni_zero.CalledByNative;
+-import org.jni_zero.NativeMethods;
+ 
+ /** Java wrapper for a C++ DataChannelInterface. */
+ public class DataChannel {
+@@ -117,9 +115,9 @@ public class DataChannel {
+     lifecycleLock.run(
+         () -> {
+           if (nativeObserver != 0) {
+-            DataChannelJni.get().unregisterObserver(this, nativeObserver);
++            nativeUnregisterObserver(nativeObserver);
+           }
+-          nativeObserver = DataChannelJni.get().registerObserver(this, observer);
++          nativeObserver = nativeRegisterObserver(observer);
+         });
+   }
+ 
+@@ -127,21 +125,21 @@ public class DataChannel {
+   public void unregisterObserver() {
+     lifecycleLock.runIfAlive(
+         () -> {
+-          DataChannelJni.get().unregisterObserver(this, nativeObserver);
++          nativeUnregisterObserver(nativeObserver);
+           nativeObserver = 0;
+         });
+   }
+ 
+   public String label() {
+-    return lifecycleLock.call(() -> DataChannelJni.get().label(this));
++    return lifecycleLock.call(() -> nativeLabel());
+   }
+ 
+   public int id() {
+-    return lifecycleLock.call(() -> DataChannelJni.get().id(this));
++    return lifecycleLock.call(() -> nativeId());
+   }
+ 
+   public State state() {
+-    return lifecycleLock.call(() -> DataChannelJni.get().state(this));
++    return lifecycleLock.call(() -> nativeState());
+   }
+ 
+   /**
+@@ -149,12 +147,12 @@ public class DataChannel {
+    * queued using SendBuffer but have not yet been transmitted to the network.
+    */
+   public long bufferedAmount() {
+-    return lifecycleLock.call(() -> DataChannelJni.get().bufferedAmount(this));
++    return lifecycleLock.call(() -> nativeBufferedAmount());
+   }
+ 
+   /** Close the channel. */
+   public void close() {
+-    lifecycleLock.runIfAlive(() -> DataChannelJni.get().close(this));
++    lifecycleLock.runIfAlive(() -> nativeClose());
+   }
+ 
+   /** Send `data` to the remote peer; return success. */
+@@ -165,7 +163,7 @@ public class DataChannel {
+           // ByteBuffer is direct and/or is backed by an array.
+           byte[] data = new byte[buffer.data.remaining()];
+           buffer.data.get(data);
+-          return DataChannelJni.get().send(this, data, buffer.binary);
++          return nativeSend(data, buffer.binary);
+         });
+   }
+ 
+@@ -185,22 +183,12 @@ public class DataChannel {
+     return lifecycleLock.getNativePointer();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long registerObserver(DataChannel caller, Observer observer);
+-
+-    void unregisterObserver(DataChannel caller, long observer);
+-
+-    String label(DataChannel caller);
+-
+-    int id(DataChannel caller);
+-
+-    State state(DataChannel caller);
+-
+-    long bufferedAmount(DataChannel caller);
+-
+-    void close(DataChannel caller);
+-
+-    boolean send(DataChannel caller, byte[] data, boolean binary);
+-  }
++  private native long nativeRegisterObserver(Observer observer);
++  private native void nativeUnregisterObserver(long observer);
++  private native String nativeLabel();
++  private native int nativeId();
++  private native State nativeState();
++  private native long nativeBufferedAmount();
++  private native void nativeClose();
++  private native boolean nativeSend(byte[] data, boolean binary);
+ }
+diff --git a/sdk/android/api/org/webrtc/Dav1dDecoder.java b/sdk/android/api/org/webrtc/Dav1dDecoder.java
+index c160dc49ba..2a79988470 100644
+--- a/sdk/android/api/org/webrtc/Dav1dDecoder.java
++++ b/sdk/android/api/org/webrtc/Dav1dDecoder.java
+@@ -10,16 +10,11 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ public class Dav1dDecoder extends WrappedNativeVideoDecoder {
+   @Override
+   public long createNative(long webrtcEnvRef) {
+-    return Dav1dDecoderJni.get().createDecoder();
++    return nativeCreateDecoder();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createDecoder();
+-  }
++  static native long nativeCreateDecoder();
+ }
+diff --git a/sdk/android/api/org/webrtc/DtmfSender.java b/sdk/android/api/org/webrtc/DtmfSender.java
+index 071c7273da..c9260fbd21 100644
+--- a/sdk/android/api/org/webrtc/DtmfSender.java
++++ b/sdk/android/api/org/webrtc/DtmfSender.java
+@@ -10,8 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /** Java wrapper for a C++ DtmfSenderInterface. */
+ public class DtmfSender {
+   private final NativeLifecycleLock lifecycleLock;
+@@ -25,7 +23,7 @@ public class DtmfSender {
+    */
+   public boolean canInsertDtmf() {
+     return lifecycleLock.call(
+-        nativeDtmfSender -> DtmfSenderJni.get().canInsertDtmf(nativeDtmfSender));
++        nativeDtmfSender -> nativeCanInsertDtmf(nativeDtmfSender));
+   }
+ 
+   /**
+@@ -47,14 +45,14 @@ public class DtmfSender {
+   public boolean insertDtmf(String tones, int duration, int interToneGap) {
+     return lifecycleLock.call(
+         nativeDtmfSender ->
+-            DtmfSenderJni.get().insertDtmf(nativeDtmfSender, tones, duration, interToneGap));
++            nativeInsertDtmf(nativeDtmfSender, tones, duration, interToneGap));
+   }
+ 
+   /**
+    * @return The tones remaining to be played out
+    */
+   public String tones() {
+-    return lifecycleLock.call(nativeDtmfSender -> DtmfSenderJni.get().tones(nativeDtmfSender));
++    return lifecycleLock.call(nativeDtmfSender -> nativeTones(nativeDtmfSender));
+   }
+ 
+   /**
+@@ -62,7 +60,7 @@ public class DtmfSender {
+    *     insertDtmf() method, or the default value of 100 ms if insertDtmf() was never called.
+    */
+   public int duration() {
+-    return lifecycleLock.call(nativeDtmfSender -> DtmfSenderJni.get().duration(nativeDtmfSender));
++    return lifecycleLock.call(nativeDtmfSender -> nativeDuration(nativeDtmfSender));
+   }
+ 
+   /**
+@@ -72,23 +70,17 @@ public class DtmfSender {
+    */
+   public int interToneGap() {
+     return lifecycleLock.call(
+-        nativeDtmfSender -> DtmfSenderJni.get().interToneGap(nativeDtmfSender));
++        nativeDtmfSender -> nativeInterToneGap(nativeDtmfSender));
+   }
+ 
+   public void dispose() {
+     lifecycleLock.dispose(JniCommon::nativeReleaseRef);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    boolean canInsertDtmf(long dtmfSender);
+-
+-    boolean insertDtmf(long dtmfSender, String tones, int duration, int interToneGap);
+-
+-    String tones(long dtmfSender);
+-
+-    int duration(long dtmfSender);
+-
+-    int interToneGap(long dtmfSender);
+-  }
++  private static native boolean nativeCanInsertDtmf(long dtmfSender);
++  private static native boolean nativeInsertDtmf(
++      long dtmfSender, String tones, int duration, int interToneGap);
++  private static native String nativeTones(long dtmfSender);
++  private static native int nativeDuration(long dtmfSender);
++  private static native int nativeInterToneGap(long dtmfSender);
+ }
+diff --git a/sdk/android/api/org/webrtc/Environment.java b/sdk/android/api/org/webrtc/Environment.java
+index ece0a7fa8d..5808776d01 100644
+--- a/sdk/android/api/org/webrtc/Environment.java
++++ b/sdk/android/api/org/webrtc/Environment.java
+@@ -11,7 +11,6 @@
+ package org.webrtc;
+ 
+ import androidx.annotation.Nullable;
+-import org.jni_zero.NativeMethods;
+ 
+ /** Wrapper for the webrtc::Environment native class. */
+ public final class Environment implements AutoCloseable {
+@@ -45,24 +44,19 @@ public final class Environment implements AutoCloseable {
+    * normally same as System.nanoTime(), but call this function to be safe.
+    */
+   public long getCurrentTimeNanos() {
+-    return EnvironmentJni.get().currentTimeNanos(webrtcEnv);
++    return nativeCurrentTimeNanos(webrtcEnv);
+   }
+ 
+   @Override
+   public void close() {
+-    EnvironmentJni.get().free(webrtcEnv);
++    nativeFree(webrtcEnv);
+   }
+ 
+   private Environment(@Nullable String fieldTrials) {
+-    this.webrtcEnv = EnvironmentJni.get().create(fieldTrials);
++    this.webrtcEnv = nativeCreate(fieldTrials);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long create(@Nullable String fieldTrials);
+-
+-    long currentTimeNanos(long webrtcEnv);
+-
+-    void free(long webrtcEnv);
+-  }
++  private static native long nativeCreate(@Nullable String fieldTrials);
++  private static native long nativeCurrentTimeNanos(long webrtcEnv);
++  private static native void nativeFree(long webrtcEnv);
+ }
+diff --git a/sdk/android/api/org/webrtc/JavaI420Buffer.java b/sdk/android/api/org/webrtc/JavaI420Buffer.java
+index 722551e6a7..322b8f38c9 100644
+--- a/sdk/android/api/org/webrtc/JavaI420Buffer.java
++++ b/sdk/android/api/org/webrtc/JavaI420Buffer.java
+@@ -12,7 +12,6 @@ package org.webrtc;
+ 
+ import androidx.annotation.Nullable;
+ import java.nio.ByteBuffer;
+-import org.jni_zero.NativeMethods;
+ import org.webrtc.VideoFrame.I420Buffer;
+ 
+ /** Implementation of VideoFrame.I420Buffer backed by Java direct byte buffers. */
+@@ -186,49 +185,16 @@ public class JavaI420Buffer implements VideoFrame.I420Buffer {
+     }
+ 
+     JavaI420Buffer newBuffer = JavaI420Buffer.allocate(scaleWidth, scaleHeight);
+-    JavaI420BufferJni.get()
+-        .cropAndScaleI420(
+-            buffer.getDataY(),
+-            buffer.getStrideY(),
+-            buffer.getDataU(),
+-            buffer.getStrideU(),
+-            buffer.getDataV(),
+-            buffer.getStrideV(),
+-            cropX,
+-            cropY,
+-            cropWidth,
+-            cropHeight,
+-            newBuffer.getDataY(),
+-            newBuffer.getStrideY(),
+-            newBuffer.getDataU(),
+-            newBuffer.getStrideU(),
+-            newBuffer.getDataV(),
+-            newBuffer.getStrideV(),
+-            scaleWidth,
+-            scaleHeight);
++    nativeCropAndScaleI420(buffer.getDataY(), buffer.getStrideY(), buffer.getDataU(),
++        buffer.getStrideU(), buffer.getDataV(), buffer.getStrideV(), cropX, cropY, cropWidth,
++        cropHeight, newBuffer.getDataY(), newBuffer.getStrideY(), newBuffer.getDataU(),
++        newBuffer.getStrideU(), newBuffer.getDataV(), newBuffer.getStrideV(), scaleWidth,
++        scaleHeight);
+     return newBuffer;
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void cropAndScaleI420(
+-        ByteBuffer srcY,
+-        int srcStrideY,
+-        ByteBuffer srcU,
+-        int srcStrideU,
+-        ByteBuffer srcV,
+-        int srcStrideV,
+-        int cropX,
+-        int cropY,
+-        int cropWidth,
+-        int cropHeight,
+-        ByteBuffer dstY,
+-        int dstStrideY,
+-        ByteBuffer dstU,
+-        int dstStrideU,
+-        ByteBuffer dstV,
+-        int dstStrideV,
+-        int scaleWidth,
+-        int scaleHeight);
+-  }
++  private static native void nativeCropAndScaleI420(ByteBuffer srcY, int srcStrideY,
++      ByteBuffer srcU, int srcStrideU, ByteBuffer srcV, int srcStrideV, int cropX, int cropY,
++      int cropWidth, int cropHeight, ByteBuffer dstY, int dstStrideY, ByteBuffer dstU,
++      int dstStrideU, ByteBuffer dstV, int dstStrideV, int scaleWidth, int scaleHeight);
+ }
+diff --git a/sdk/android/api/org/webrtc/LibaomAv1Encoder.java b/sdk/android/api/org/webrtc/LibaomAv1Encoder.java
+index b850a6323c..340586ef81 100644
+--- a/sdk/android/api/org/webrtc/LibaomAv1Encoder.java
++++ b/sdk/android/api/org/webrtc/LibaomAv1Encoder.java
+@@ -10,18 +10,13 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ public class LibaomAv1Encoder extends WrappedNativeVideoEncoder {
+   @Override
+   public long createNative(long webrtcEnvRef) {
+-    return LibaomAv1EncoderJni.get().create(webrtcEnvRef);
++    return nativeCreate(webrtcEnvRef);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long create(long webrtcEnvRef);
+-  }
++  static native long nativeCreate(long webrtcEnvRef);
+ 
+   @Override
+   public boolean isHardwareEncoder() {
+diff --git a/sdk/android/api/org/webrtc/LibvpxVp8Decoder.java b/sdk/android/api/org/webrtc/LibvpxVp8Decoder.java
+index 6969b75eaf..7d3e95973d 100644
+--- a/sdk/android/api/org/webrtc/LibvpxVp8Decoder.java
++++ b/sdk/android/api/org/webrtc/LibvpxVp8Decoder.java
+@@ -10,16 +10,11 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ public class LibvpxVp8Decoder extends WrappedNativeVideoDecoder {
+   @Override
+   public long createNative(long webrtcEnvRef) {
+-    return LibvpxVp8DecoderJni.get().createDecoder(webrtcEnvRef);
++    return nativeCreateDecoder(webrtcEnvRef);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createDecoder(long webrtcEnvRef);
+-  }
++  static native long nativeCreateDecoder(long webrtcEnvRef);
+ }
+diff --git a/sdk/android/api/org/webrtc/LibvpxVp8Encoder.java b/sdk/android/api/org/webrtc/LibvpxVp8Encoder.java
+index 6c5577b71c..46eb67ea9f 100644
+--- a/sdk/android/api/org/webrtc/LibvpxVp8Encoder.java
++++ b/sdk/android/api/org/webrtc/LibvpxVp8Encoder.java
+@@ -10,18 +10,13 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ public class LibvpxVp8Encoder extends WrappedNativeVideoEncoder {
+   @Override
+   public long createNative(long webrtcEnvRef) {
+-    return LibvpxVp8EncoderJni.get().create(webrtcEnvRef);
++    return nativeCreate(webrtcEnvRef);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long create(long webrtcEnvRef);
+-  }
++  static native long nativeCreate(long webrtcEnvRef);
+ 
+   @Override
+   public boolean isHardwareEncoder() {
+diff --git a/sdk/android/api/org/webrtc/LibvpxVp9Decoder.java b/sdk/android/api/org/webrtc/LibvpxVp9Decoder.java
+index 0f98050454..34718cfa8c 100644
+--- a/sdk/android/api/org/webrtc/LibvpxVp9Decoder.java
++++ b/sdk/android/api/org/webrtc/LibvpxVp9Decoder.java
+@@ -10,18 +10,13 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ public class LibvpxVp9Decoder extends WrappedNativeVideoDecoder {
+   @Override
+   public long createNative(long webrtcEnvRef) {
+-    return LibvpxVp9DecoderJni.get().createDecoder();
++    return nativeCreateDecoder();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createDecoder();
++  static native long nativeCreateDecoder();
+ 
+-    boolean isSupported();
+-  }
++  static native boolean nativeIsSupported();
+ }
+diff --git a/sdk/android/api/org/webrtc/LibvpxVp9Encoder.java b/sdk/android/api/org/webrtc/LibvpxVp9Encoder.java
+index e9cfa01271..71bcd1374b 100644
+--- a/sdk/android/api/org/webrtc/LibvpxVp9Encoder.java
++++ b/sdk/android/api/org/webrtc/LibvpxVp9Encoder.java
+@@ -10,23 +10,18 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ public class LibvpxVp9Encoder extends WrappedNativeVideoEncoder {
+   @Override
+   public long createNative(long webrtcEnvRef) {
+-    return LibvpxVp9EncoderJni.get().create(webrtcEnvRef);
++    return nativeCreate(webrtcEnvRef);
+   }
+ 
++  static native long nativeCreate(long webrtcEnvRef);
++
+   @Override
+   public boolean isHardwareEncoder() {
+     return false;
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long create(long webrtcEnvRef);
+-
+-    boolean isSupported();
+-  }
++  static native boolean nativeIsSupported();
+ }
+diff --git a/sdk/android/api/org/webrtc/MediaSource.java b/sdk/android/api/org/webrtc/MediaSource.java
+index 6334832177..1216187cdf 100644
+--- a/sdk/android/api/org/webrtc/MediaSource.java
++++ b/sdk/android/api/org/webrtc/MediaSource.java
+@@ -10,8 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /** Java wrapper for a C++ MediaSourceInterface. */
+ public class MediaSource {
+   /** Tracks MediaSourceInterface.SourceState */
+@@ -36,7 +34,7 @@ public class MediaSource {
+   }
+ 
+   public State state() {
+-    return lifecycleLock.call(nativeSource -> MediaSourceJni.get().getState(nativeSource));
++    return lifecycleLock.call(nativeSource -> nativeGetState(nativeSource));
+   }
+ 
+   public void dispose() {
+@@ -62,8 +60,5 @@ public class MediaSource {
+     }
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    State getState(long pointer);
+-  }
++  private static native State nativeGetState(long pointer);
+ }
+diff --git a/sdk/android/api/org/webrtc/MediaStreamTrack.java b/sdk/android/api/org/webrtc/MediaStreamTrack.java
+index c3948aa098..c172b7cf64 100644
+--- a/sdk/android/api/org/webrtc/MediaStreamTrack.java
++++ b/sdk/android/api/org/webrtc/MediaStreamTrack.java
+@@ -11,7 +11,6 @@
+ package org.webrtc;
+ 
+ import androidx.annotation.Nullable;
+-import org.jni_zero.NativeMethods;
+ 
+ /** Java wrapper for a C++ MediaStreamTrackInterface. */
+ public class MediaStreamTrack {
+@@ -61,7 +60,7 @@ public class MediaStreamTrack {
+     if (nativeTrack == 0) {
+       return null;
+     }
+-    String trackKind = MediaStreamTrackJni.get().getKind(nativeTrack);
++    String trackKind = nativeGetKind(nativeTrack);
+     if (trackKind.equals(AUDIO_TRACK_KIND)) {
+       return new AudioTrack(nativeTrack);
+     } else if (trackKind.equals(VIDEO_TRACK_KIND)) {
+@@ -81,24 +80,24 @@ public class MediaStreamTrack {
+   }
+ 
+   public String id() {
+-    return lifecycleLock.call(nativeTrack -> MediaStreamTrackJni.get().getId(nativeTrack));
++    return lifecycleLock.call(nativeTrack -> nativeGetId(nativeTrack));
+   }
+ 
+   public String kind() {
+-    return lifecycleLock.call(nativeTrack -> MediaStreamTrackJni.get().getKind(nativeTrack));
++    return lifecycleLock.call(nativeTrack -> nativeGetKind(nativeTrack));
+   }
+ 
+   public boolean enabled() {
+-    return lifecycleLock.call(nativeTrack -> MediaStreamTrackJni.get().getEnabled(nativeTrack));
++    return lifecycleLock.call(nativeTrack -> nativeGetEnabled(nativeTrack));
+   }
+ 
+   public boolean setEnabled(boolean enable) {
+     return lifecycleLock.call(
+-        nativeTrack -> MediaStreamTrackJni.get().setEnabled(nativeTrack, enable));
++        nativeTrack -> nativeSetEnabled(nativeTrack, enable));
+   }
+ 
+   public State state() {
+-    return lifecycleLock.call(nativeTrack -> MediaStreamTrackJni.get().getState(nativeTrack));
++    return lifecycleLock.call(nativeTrack -> nativeGetState(nativeTrack));
+   }
+ 
+   public void dispose() {
+@@ -109,16 +108,9 @@ public class MediaStreamTrack {
+     return lifecycleLock.getNativePointer();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    String getId(long track);
+-
+-    String getKind(long track);
+-
+-    boolean getEnabled(long track);
+-
+-    boolean setEnabled(long track, boolean enabled);
+-
+-    State getState(long track);
+-  }
++  private static native String nativeGetId(long track);
++  private static native String nativeGetKind(long track);
++  private static native boolean nativeGetEnabled(long track);
++  private static native boolean nativeSetEnabled(long track, boolean enabled);
++  private static native State nativeGetState(long track);
+ }
+diff --git a/sdk/android/api/org/webrtc/Metrics.java b/sdk/android/api/org/webrtc/Metrics.java
+index 607dfd58ea..6f641bdbc4 100644
+--- a/sdk/android/api/org/webrtc/Metrics.java
++++ b/sdk/android/api/org/webrtc/Metrics.java
+@@ -12,7 +12,6 @@ package org.webrtc;
+ 
+ import java.util.HashMap;
+ import java.util.Map;
+-import org.jni_zero.NativeMethods;
+ 
+ // Java-side of androidmetrics.cc
+ //
+@@ -69,18 +68,14 @@ public class Metrics {
+   // Enables gathering of metrics (which can be fetched with getAndReset()).
+   // Must be called before PeerConnectionFactory is created.
+   public static void enable() {
+-    MetricsJni.get().enable();
++    nativeEnable();
+   }
+ 
+   // Gets and clears native histograms.
+   public static Metrics getAndReset() {
+-    return MetricsJni.get().getAndReset();
++    return nativeGetAndReset();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void enable();
+-
+-    Metrics getAndReset();
+-  }
++  private static native void nativeEnable();
++  private static native Metrics nativeGetAndReset();
+ }
+diff --git a/sdk/android/api/org/webrtc/SoftwareVideoDecoderFactory.java b/sdk/android/api/org/webrtc/SoftwareVideoDecoderFactory.java
+index 176004f5d2..1b1cd44a92 100644
+--- a/sdk/android/api/org/webrtc/SoftwareVideoDecoderFactory.java
++++ b/sdk/android/api/org/webrtc/SoftwareVideoDecoderFactory.java
+@@ -12,7 +12,6 @@ package org.webrtc;
+ 
+ import androidx.annotation.Nullable;
+ import java.util.List;
+-import org.jni_zero.NativeMethods;
+ 
+ public class SoftwareVideoDecoderFactory implements VideoDecoderFactory {
+   private static final String TAG = "SoftwareVideoDecoderFactory";
+@@ -20,39 +19,35 @@ public class SoftwareVideoDecoderFactory implements VideoDecoderFactory {
+   private final long nativeFactory;
+ 
+   public SoftwareVideoDecoderFactory() {
+-    this.nativeFactory = SoftwareVideoDecoderFactoryJni.get().createFactory();
++    this.nativeFactory = nativeCreateFactory();
+   }
+ 
+   @Nullable
+   @Override
+   public VideoDecoder createDecoder(VideoCodecInfo info) {
+-    if (!SoftwareVideoDecoderFactoryJni.get().isSupported(nativeFactory, info)) {
++    if (!nativeIsSupported(nativeFactory, info)) {
+       Logging.w(TAG, "Trying to create decoder for unsupported format. " + info);
+       return null;
+     }
+     return new WrappedNativeVideoDecoder() {
+       @Override
+       public long createNative(long webrtcEnvRef) {
+-        return SoftwareVideoDecoderFactoryJni.get().create(nativeFactory, webrtcEnvRef, info);
++        return nativeCreate(nativeFactory, webrtcEnvRef, info);
+       }
+     };
+   }
+ 
+   @Override
+   public VideoCodecInfo[] getSupportedCodecs() {
+-    return SoftwareVideoDecoderFactoryJni.get()
+-        .getSupportedCodecs(nativeFactory)
+-        .toArray(new VideoCodecInfo[0]);
++    return nativeGetSupportedCodecs(nativeFactory).toArray(new VideoCodecInfo[0]);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createFactory();
++  private static native long nativeCreateFactory();
+ 
+-    boolean isSupported(long factory, VideoCodecInfo info);
++  private static native boolean nativeIsSupported(long factory, VideoCodecInfo info);
+ 
+-    long create(long factory, long webrtcEnvRef, VideoCodecInfo info);
++  private static native long nativeCreate(
++      long factory, long webrtcEnvRef, VideoCodecInfo info);
+ 
+-    List<VideoCodecInfo> getSupportedCodecs(long factory);
+-  }
++  private static native List<VideoCodecInfo> nativeGetSupportedCodecs(long factory);
+ }
+diff --git a/sdk/android/api/org/webrtc/SoftwareVideoEncoderFactory.java b/sdk/android/api/org/webrtc/SoftwareVideoEncoderFactory.java
+index 88a6b04f17..ad19b4c8c1 100644
+--- a/sdk/android/api/org/webrtc/SoftwareVideoEncoderFactory.java
++++ b/sdk/android/api/org/webrtc/SoftwareVideoEncoderFactory.java
+@@ -11,8 +11,8 @@
+ package org.webrtc;
+ 
+ import androidx.annotation.Nullable;
++import java.util.Arrays;
+ import java.util.List;
+-import org.jni_zero.NativeMethods;
+ 
+ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
+   private static final String TAG = "SoftwareVideoEncoderFactory";
+@@ -20,13 +20,13 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
+   private final long nativeFactory;
+ 
+   public SoftwareVideoEncoderFactory() {
+-    this.nativeFactory = SoftwareVideoEncoderFactoryJni.get().createFactory();
++    this.nativeFactory = nativeCreateFactory();
+   }
+ 
+   @Nullable
+   @Override
+   public VideoEncoder createEncoder(VideoCodecInfo info) {
+-    if (!SoftwareVideoEncoderFactoryJni.get().isSupported(nativeFactory, info)) {
++    if (!nativeIsSupported(nativeFactory, info)) {
+       Logging.w(TAG, "Trying to create encoder for unsupported format. " + info);
+       return null;
+     }
+@@ -34,7 +34,7 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
+     return new WrappedNativeVideoEncoder() {
+       @Override
+       public long createNative(long webrtcEnvRef) {
+-        return SoftwareVideoEncoderFactoryJni.get().create(nativeFactory, webrtcEnvRef, info);
++        return nativeCreate(nativeFactory, webrtcEnvRef, info);
+       }
+ 
+       @Override
+@@ -46,19 +46,14 @@ public class SoftwareVideoEncoderFactory implements VideoEncoderFactory {
+ 
+   @Override
+   public VideoCodecInfo[] getSupportedCodecs() {
+-    return SoftwareVideoEncoderFactoryJni.get()
+-        .getSupportedCodecs(nativeFactory)
+-        .toArray(new VideoCodecInfo[0]);
++    return nativeGetSupportedCodecs(nativeFactory).toArray(new VideoCodecInfo[0]);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createFactory();
++  private static native long nativeCreateFactory();
+ 
+-    boolean isSupported(long factory, VideoCodecInfo info);
++  private static native boolean nativeIsSupported(long factory, VideoCodecInfo info);
+ 
+-    long create(long factory, long webrtcEnvRef, VideoCodecInfo info);
++  private static native long nativeCreate(long factory, long webrtcEnvRef, VideoCodecInfo info);
+ 
+-    List<VideoCodecInfo> getSupportedCodecs(long factory);
+-  }
++  private static native List<VideoCodecInfo> nativeGetSupportedCodecs(long factory);
+ }
+diff --git a/sdk/android/api/org/webrtc/TimestampAligner.java b/sdk/android/api/org/webrtc/TimestampAligner.java
+index 565db59e70..4e54050113 100644
+--- a/sdk/android/api/org/webrtc/TimestampAligner.java
++++ b/sdk/android/api/org/webrtc/TimestampAligner.java
+@@ -10,8 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /**
+  * The TimestampAligner class helps translating camera timestamps into the same timescale as is
+  * used by webrtc. Some cameras have built in timestamping which is more accurate than
+@@ -41,7 +39,7 @@ public class TimestampAligner {
+   public TimestampAligner(Environment webrtcEnv) {
+     this.lifecycleLock =
+         new NativeLifecycleLock(
+-            "TimestampAligner", TimestampAlignerJni.get().createTimestampAligner(webrtcEnv.ref()));
++            "TimestampAligner", nativeCreateTimestampAligner(webrtcEnv.ref()));
+   }
+ 
+   /**
+@@ -52,22 +50,17 @@ public class TimestampAligner {
+   public long translateTimestamp(long cameraTimeNs) {
+     return lifecycleLock.call(
+         nativeTimestampAligner ->
+-            TimestampAlignerJni.get().translateTimestamp(nativeTimestampAligner, cameraTimeNs));
++            nativeTranslateTimestamp(nativeTimestampAligner, cameraTimeNs));
+   }
+ 
+   /** Dispose native timestamp aligner. */
+   public void dispose() {
+     lifecycleLock.dispose(
+         nativeTimestampAligner ->
+-            TimestampAlignerJni.get().releaseTimestampAligner(nativeTimestampAligner));
++            nativeReleaseTimestampAligner(nativeTimestampAligner));
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createTimestampAligner(long webrtcEnvRef);
+-
+-    void releaseTimestampAligner(long timestampAligner);
+-
+-    long translateTimestamp(long timestampAligner, long cameraTimeNs);
+-  }
++  private static native long nativeCreateTimestampAligner(long webrtcEnvRef);
++  private static native void nativeReleaseTimestampAligner(long timestampAligner);
++  private static native long nativeTranslateTimestamp(long timestampAligner, long cameraTimeNs);
+ }
+diff --git a/sdk/android/api/org/webrtc/TurnCustomizer.java b/sdk/android/api/org/webrtc/TurnCustomizer.java
+index 89f5a6edc6..2681822388 100644
+--- a/sdk/android/api/org/webrtc/TurnCustomizer.java
++++ b/sdk/android/api/org/webrtc/TurnCustomizer.java
+@@ -10,9 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.CalledByNative;
+-import org.jni_zero.NativeMethods;
+-
+ /** Java wrapper for a C++ TurnCustomizer. */
+ public class TurnCustomizer {
+   private final NativeLifecycleLock lifecycleLock;
+@@ -23,17 +20,14 @@ public class TurnCustomizer {
+ 
+   public void dispose() {
+     lifecycleLock.dispose(
+-        nativeTurnCustomizer -> TurnCustomizerJni.get().freeTurnCustomizer(nativeTurnCustomizer));
++        nativeTurnCustomizer -> nativeFreeTurnCustomizer(nativeTurnCustomizer));
+   }
+ 
++  private static native void nativeFreeTurnCustomizer(long turnCustomizer);
++
+   /** Return a pointer to webrtc::TurnCustomizer. */
+   @CalledByNative
+   long getNativeTurnCustomizer() {
+     return lifecycleLock.getNativePointer();
+   }
+-
+-  @NativeMethods
+-  interface Natives {
+-    void freeTurnCustomizer(long turnCustomizer);
+-  }
+ }
+diff --git a/sdk/android/api/org/webrtc/VideoDecoderFallback.java b/sdk/android/api/org/webrtc/VideoDecoderFallback.java
+index 54519f7af8..1e7bae9b27 100644
+--- a/sdk/android/api/org/webrtc/VideoDecoderFallback.java
++++ b/sdk/android/api/org/webrtc/VideoDecoderFallback.java
+@@ -10,8 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /**
+  * A combined video decoder that falls back on a secondary decoder if the primary decoder fails.
+  */
+@@ -26,11 +24,9 @@ public class VideoDecoderFallback extends WrappedNativeVideoDecoder {
+ 
+   @Override
+   public long createNative(long webrtcEnvRef) {
+-    return VideoDecoderFallbackJni.get().create(webrtcEnvRef, fallback, primary);
++    return nativeCreate(webrtcEnvRef, fallback, primary);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long create(long webrtcEnvRef, VideoDecoder fallback, VideoDecoder primary);
+-  }
++  private static native long nativeCreate(
++      long webrtcEnvRef, VideoDecoder fallback, VideoDecoder primary);
+ }
+diff --git a/sdk/android/api/org/webrtc/VideoEncoderFallback.java b/sdk/android/api/org/webrtc/VideoEncoderFallback.java
+index 9f693288f0..86b6507691 100644
+--- a/sdk/android/api/org/webrtc/VideoEncoderFallback.java
++++ b/sdk/android/api/org/webrtc/VideoEncoderFallback.java
+@@ -10,8 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /**
+  * A combined video encoder that falls back on a secondary encoder if the primary encoder fails.
+  */
+@@ -26,7 +24,7 @@ public class VideoEncoderFallback extends WrappedNativeVideoEncoder {
+ 
+   @Override
+   public long createNative(long webrtcEnvRef) {
+-    return VideoEncoderFallbackJni.get().create(webrtcEnvRef, fallback, primary);
++    return nativeCreate(webrtcEnvRef, fallback, primary);
+   }
+ 
+   @Override
+@@ -34,8 +32,6 @@ public class VideoEncoderFallback extends WrappedNativeVideoEncoder {
+     return primary.isHardwareEncoder();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long create(long webrtcEnvRef, VideoEncoder fallback, VideoEncoder primary);
+-  }
++  private static native long nativeCreate(
++      long webrtcEnvRef, VideoEncoder fallback, VideoEncoder primary);
+ }
+diff --git a/sdk/android/api/org/webrtc/VideoTrack.java b/sdk/android/api/org/webrtc/VideoTrack.java
+index fd4d42c153..8bd431a3f8 100644
+--- a/sdk/android/api/org/webrtc/VideoTrack.java
++++ b/sdk/android/api/org/webrtc/VideoTrack.java
+@@ -11,7 +11,6 @@
+ package org.webrtc;
+ 
+ import java.util.IdentityHashMap;
+-import org.jni_zero.NativeMethods;
+ 
+ /** Java version of VideoTrackInterface. */
+ public class VideoTrack extends MediaStreamTrack {
+@@ -38,9 +37,9 @@ public class VideoTrack extends MediaStreamTrack {
+         nativeTrack -> {
+           synchronized (sinks) {
+             if (!sinks.containsKey(sink)) {
+-              final long nativeSink = VideoTrackJni.get().wrapSink(sink);
++              final long nativeSink = nativeWrapSink(sink);
+               sinks.put(sink, nativeSink);
+-              VideoTrackJni.get().addSink(nativeTrack, nativeSink);
++              nativeAddSink(nativeTrack, nativeSink);
+             }
+           }
+         });
+@@ -57,8 +56,8 @@ public class VideoTrack extends MediaStreamTrack {
+           synchronized (sinks) {
+             final Long nativeSink = sinks.remove(sink);
+             if (nativeSink != null) {
+-              VideoTrackJni.get().removeSink(nativeTrack, nativeSink);
+-              VideoTrackJni.get().freeSink(nativeSink);
++              nativeRemoveSink(nativeTrack, nativeSink);
++              nativeFreeSink(nativeSink);
+             }
+           }
+         });
+@@ -70,8 +69,8 @@ public class VideoTrack extends MediaStreamTrack {
+         nativeTrack -> {
+           synchronized (sinks) {
+             for (long nativeSink : sinks.values()) {
+-              VideoTrackJni.get().removeSink(nativeTrack, nativeSink);
+-              VideoTrackJni.get().freeSink(nativeSink);
++              nativeRemoveSink(nativeTrack, nativeSink);
++              nativeFreeSink(nativeSink);
+             }
+             sinks.clear();
+           }
+@@ -84,14 +83,8 @@ public class VideoTrack extends MediaStreamTrack {
+     return getNativeMediaStreamTrack();
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void addSink(long track, long nativeSink);
+-
+-    void removeSink(long track, long nativeSink);
+-
+-    long wrapSink(VideoSink sink);
+-
+-    void freeSink(long sink);
+-  }
++  private static native void nativeAddSink(long track, long nativeSink);
++  private static native void nativeRemoveSink(long track, long nativeSink);
++  private static native long nativeWrapSink(VideoSink sink);
++  private static native void nativeFreeSink(long sink);
+ }
+diff --git a/sdk/android/api/org/webrtc/YuvHelper.java b/sdk/android/api/org/webrtc/YuvHelper.java
+index 3740848113..8a46a57162 100644
+--- a/sdk/android/api/org/webrtc/YuvHelper.java
++++ b/sdk/android/api/org/webrtc/YuvHelper.java
+@@ -11,7 +11,6 @@
+ package org.webrtc;
+ 
+ import java.nio.ByteBuffer;
+-import org.jni_zero.NativeMethods;
+ 
+ /** Wraps libyuv methods to Java. All passed byte buffers must be direct byte buffers. */
+ public class YuvHelper {
+@@ -143,53 +142,23 @@ public class YuvHelper {
+     dst.position(startV);
+     final ByteBuffer dstV = dst.slice();
+ 
+-    YuvHelperJni.get()
+-        .i420Rotate(
+-            srcY,
+-            srcStrideY,
+-            srcU,
+-            srcStrideU,
+-            srcV,
+-            srcStrideV,
+-            dstY,
+-            dstWidth,
+-            dstU,
+-            dstChromaWidth,
+-            dstV,
+-            dstChromaWidth,
+-            srcWidth,
+-            srcHeight,
+-            rotationMode);
++    nativeI420Rotate(srcY, srcStrideY, srcU, srcStrideU, srcV, srcStrideV, dstY, dstWidth, dstU,
++        dstChromaWidth, dstV, dstChromaWidth, srcWidth, srcHeight, rotationMode);
+   }
+ 
+   /** Helper method for copying a single colour plane. */
+   public static void copyPlane(
+       ByteBuffer src, int srcStride, ByteBuffer dst, int dstStride, int width, int height) {
+-    YuvHelperJni.get()
+-        .copyPlane(
+-            checkNotNull(src, "src"),
+-            srcStride,
+-            checkNotNull(dst, "dst"),
+-            dstStride,
+-            width,
+-            height);
++    nativeCopyPlane(
++        checkNotNull(src, "src"), srcStride, checkNotNull(dst, "dst"), dstStride, width, height);
+   }
+ 
+   /** Converts ABGR little endian (rgba in memory) to I420. */
+   public static void ABGRToI420(ByteBuffer src, int srcStride, ByteBuffer dstY, int dstStrideY,
+       ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV, int width, int height) {
+-    YuvHelperJni.get()
+-        .abgrToI420(
+-            checkNotNull(src, "src"),
+-            srcStride,
+-            checkNotNull(dstY, "dstY"),
+-            dstStrideY,
+-            checkNotNull(dstU, "dstU"),
+-            dstStrideU,
+-            checkNotNull(dstV, "dstV"),
+-            dstStrideV,
+-            width,
+-            height);
++    nativeABGRToI420(checkNotNull(src, "src"), srcStride, checkNotNull(dstY, "dstY"), dstStrideY,
++        checkNotNull(dstU, "dstU"), dstStrideU, checkNotNull(dstV, "dstV"), dstStrideV, width,
++        height);
+   }
+ 
+   /**
+@@ -209,22 +178,8 @@ public class YuvHelper {
+     if (width <= 0 || height <= 0) {
+       throw new IllegalArgumentException("I420Copy: width and height should not be negative");
+     }
+-    YuvHelperJni.get()
+-        .i420Copy(
+-            srcY,
+-            srcStrideY,
+-            srcU,
+-            srcStrideU,
+-            srcV,
+-            srcStrideV,
+-            dstY,
+-            dstStrideY,
+-            dstU,
+-            dstStrideU,
+-            dstV,
+-            dstStrideV,
+-            width,
+-            height);
++    nativeI420Copy(srcY, srcStrideY, srcU, srcStrideU, srcV, srcStrideV, dstY, dstStrideY, dstU,
++        dstStrideU, dstV, dstStrideV, width, height);
+   }
+ 
+   public static void I420ToNV12(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU, int srcStrideU,
+@@ -238,20 +193,8 @@ public class YuvHelper {
+     if (width <= 0 || height <= 0) {
+       throw new IllegalArgumentException("I420ToNV12: width and height should not be negative");
+     }
+-    YuvHelperJni.get()
+-        .i420ToNV12(
+-            srcY,
+-            srcStrideY,
+-            srcU,
+-            srcStrideU,
+-            srcV,
+-            srcStrideV,
+-            dstY,
+-            dstStrideY,
+-            dstUV,
+-            dstStrideUV,
+-            width,
+-            height);
++    nativeI420ToNV12(srcY, srcStrideY, srcU, srcStrideU, srcV, srcStrideV, dstY, dstStrideY, dstUV,
++        dstStrideUV, width, height);
+   }
+ 
+   public static void I420Rotate(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU, int srcStrideU,
+@@ -264,23 +207,8 @@ public class YuvHelper {
+     checkNotNull(dstY, "dstY");
+     checkNotNull(dstU, "dstU");
+     checkNotNull(dstV, "dstV");
+-    YuvHelperJni.get()
+-        .i420Rotate(
+-            srcY,
+-            srcStrideY,
+-            srcU,
+-            srcStrideU,
+-            srcV,
+-            srcStrideV,
+-            dstY,
+-            dstStrideY,
+-            dstU,
+-            dstStrideU,
+-            dstV,
+-            dstStrideV,
+-            srcWidth,
+-            srcHeight,
+-            rotationMode);
++    nativeI420Rotate(srcY, srcStrideY, srcU, srcStrideU, srcV, srcStrideV, dstY, dstStrideY, dstU,
++        dstStrideU, dstV, dstStrideV, srcWidth, srcHeight, rotationMode);
+   }
+ 
+   private static <T> T checkNotNull(T obj, String description) {
+@@ -290,68 +218,19 @@ public class YuvHelper {
+     return obj;
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void copyPlane(
+-        ByteBuffer src, int srcStride, ByteBuffer dst, int dstStride, int width, int height);
+-
+-    void i420Copy(
+-        ByteBuffer srcY,
+-        int srcStrideY,
+-        ByteBuffer srcU,
+-        int srcStrideU,
+-        ByteBuffer srcV,
+-        int srcStrideV,
+-        ByteBuffer dstY,
+-        int dstStrideY,
+-        ByteBuffer dstU,
+-        int dstStrideU,
+-        ByteBuffer dstV,
+-        int dstStrideV,
+-        int width,
+-        int height);
+-
+-    void i420ToNV12(
+-        ByteBuffer srcY,
+-        int srcStrideY,
+-        ByteBuffer srcU,
+-        int srcStrideU,
+-        ByteBuffer srcV,
+-        int srcStrideV,
+-        ByteBuffer dstY,
+-        int dstStrideY,
+-        ByteBuffer dstUV,
+-        int dstStrideUV,
+-        int width,
+-        int height);
+-
+-    void i420Rotate(
+-        ByteBuffer srcY,
+-        int srcStrideY,
+-        ByteBuffer srcU,
+-        int srcStrideU,
+-        ByteBuffer srcV,
+-        int srcStrideV,
+-        ByteBuffer dstY,
+-        int dstStrideY,
+-        ByteBuffer dstU,
+-        int dstStrideU,
+-        ByteBuffer dstV,
+-        int dstStrideV,
+-        int srcWidth,
+-        int srcHeight,
+-        int rotationMode);
+-
+-    void abgrToI420(
+-        ByteBuffer src,
+-        int srcStride,
+-        ByteBuffer dstY,
+-        int dstStrideY,
+-        ByteBuffer dstU,
+-        int dstStrideU,
+-        ByteBuffer dstV,
+-        int dstStrideV,
+-        int width,
+-        int height);
+-  }
++  private static native void nativeCopyPlane(
++      ByteBuffer src, int srcStride, ByteBuffer dst, int dstStride, int width, int height);
++  private static native void nativeI420Copy(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU,
++      int srcStrideU, ByteBuffer srcV, int srcStrideV, ByteBuffer dstY, int dstStrideY,
++      ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV, int width, int height);
++  private static native void nativeI420ToNV12(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU,
++      int srcStrideU, ByteBuffer srcV, int srcStrideV, ByteBuffer dstY, int dstStrideY,
++      ByteBuffer dstUV, int dstStrideUV, int width, int height);
++  private static native void nativeI420Rotate(ByteBuffer srcY, int srcStrideY, ByteBuffer srcU,
++      int srcStrideU, ByteBuffer srcV, int srcStrideV, ByteBuffer dstY, int dstStrideY,
++      ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV, int srcWidth, int srcHeight,
++      int rotationMode);
++  private static native void nativeABGRToI420(ByteBuffer src, int srcStride, ByteBuffer dstY,
++      int dstStrideY, ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV, int width,
++      int height);
+ }
+diff --git a/sdk/android/api/org/webrtc/audio/JavaAudioDeviceModule.java b/sdk/android/api/org/webrtc/audio/JavaAudioDeviceModule.java
+index 9ecfed24ed..bbf1c3a753 100644
+--- a/sdk/android/api/org/webrtc/audio/JavaAudioDeviceModule.java
++++ b/sdk/android/api/org/webrtc/audio/JavaAudioDeviceModule.java
+@@ -17,7 +17,6 @@ import android.media.AudioManager;
+ import android.os.Build;
+ import androidx.annotation.RequiresApi;
+ import java.util.concurrent.ScheduledExecutorService;
+-import org.jni_zero.NativeMethods;
+ import org.webrtc.JniCommon;
+ import org.webrtc.Logging;
+ 
+@@ -390,18 +389,9 @@ public class JavaAudioDeviceModule implements AudioDeviceModule {
+   public long getNative(long webrtcEnvRef) {
+     synchronized (nativeLock) {
+       if (nativeAudioDeviceModule == 0) {
+-        nativeAudioDeviceModule =
+-            JavaAudioDeviceModuleJni.get()
+-                .createAudioDeviceModule(
+-                    context,
+-                    audioManager,
+-                    audioInput,
+-                    audioOutput,
+-                    webrtcEnvRef,
+-                    inputSampleRate,
+-                    outputSampleRate,
+-                    useStereoInput,
+-                    useStereoOutput);
++        nativeAudioDeviceModule = nativeCreateAudioDeviceModule(context, audioManager, audioInput,
++            audioOutput, webrtcEnvRef, inputSampleRate, outputSampleRate, useStereoInput,
++            useStereoOutput);
+       }
+       return nativeAudioDeviceModule;
+     }
+@@ -447,17 +437,8 @@ public class JavaAudioDeviceModule implements AudioDeviceModule {
+     audioInput.setPreferredDevice(preferredInputDevice);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long createAudioDeviceModule(
+-        Context context,
+-        AudioManager audioManager,
+-        WebRtcAudioRecord audioInput,
+-        WebRtcAudioTrack audioOutput,
+-        long webrtcEnvRef,
+-        int inputSampleRate,
+-        int outputSampleRate,
+-        boolean useStereoInput,
+-        boolean useStereoOutput);
+-  }
++  private static native long nativeCreateAudioDeviceModule(Context context,
++      AudioManager audioManager, WebRtcAudioRecord audioInput, WebRtcAudioTrack audioOutput,
++      long webrtcEnvRef, int inputSampleRate, int outputSampleRate, boolean useStereoInput,
++      boolean useStereoOutput);
+ }
+diff --git a/sdk/android/src/java/org/webrtc/CalledByNative.java b/sdk/android/src/java/org/webrtc/CalledByNative.java
+index 666f347608..9b410ceaef 100644
+--- a/sdk/android/src/java/org/webrtc/CalledByNative.java
++++ b/sdk/android/src/java/org/webrtc/CalledByNative.java
+@@ -21,7 +21,6 @@ import java.lang.annotation.Target;
+  */
+ @Target({ElementType.CONSTRUCTOR, ElementType.METHOD})
+ @Retention(RetentionPolicy.CLASS)
+-@UsedReflectively
+ public @interface CalledByNative {
+   /*
+    *  If present, tells which inner class the method belongs to.
+diff --git a/sdk/android/src/java/org/webrtc/EglBase10Impl.java b/sdk/android/src/java/org/webrtc/EglBase10Impl.java
+index 8b58160644..5f9e27234c 100644
+--- a/sdk/android/src/java/org/webrtc/EglBase10Impl.java
++++ b/sdk/android/src/java/org/webrtc/EglBase10Impl.java
+@@ -22,7 +22,6 @@ import javax.microedition.khronos.egl.EGLConfig;
+ import javax.microedition.khronos.egl.EGLContext;
+ import javax.microedition.khronos.egl.EGLDisplay;
+ import javax.microedition.khronos.egl.EGLSurface;
+-import org.jni_zero.NativeMethods;
+ 
+ /**
+  * Holds EGL state and utility methods for handling an egl 1.0 EGLContext, an EGLDisplay,
+@@ -73,7 +72,7 @@ class EglBase10Impl implements EglBase10 {
+           }
+         }
+ 
+-        return EglBase10ImplJni.get().getCurrentNativeEGLContext();
++        return nativeGetCurrentNativeEGLContext();
+       } finally {
+         if (tempEglSurface != null) {
+           egl.eglMakeCurrent(
+@@ -457,8 +456,5 @@ class EglBase10Impl implements EglBase10 {
+     return eglContext;
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    long getCurrentNativeEGLContext();
+-  }
+-}
+\ No newline at end of file
++  private static native long nativeGetCurrentNativeEGLContext();
 +}
+diff --git a/sdk/android/src/java/org/webrtc/H264Utils.java b/sdk/android/src/java/org/webrtc/H264Utils.java
+index 069d1f386e..abb79c6582 100644
+--- a/sdk/android/src/java/org/webrtc/H264Utils.java
++++ b/sdk/android/src/java/org/webrtc/H264Utils.java
+@@ -10,9 +10,8 @@
  
- rtc_library("encoder_speed_controller_impl") {
-   visibility = [ "*" ]
+ package org.webrtc;
+ 
+-import java.util.HashMap;
+ import java.util.Map;
+-import org.jni_zero.NativeMethods;
++import java.util.HashMap;
+ 
+ /** Container for static helper functions related to dealing with H264 codecs. */
+ class H264Utils {
+@@ -45,11 +44,9 @@ class H264Utils {
+ 
+   public static boolean isSameH264Profile(
+       Map<String, String> params1, Map<String, String> params2) {
+-    return H264UtilsJni.get().isSameH264Profile(params1, params2);
++    return nativeIsSameH264Profile(params1, params2);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    boolean isSameH264Profile(Map<String, String> params1, Map<String, String> params2);
+-  }
++  private static native boolean nativeIsSameH264Profile(
++      Map<String, String> params1, Map<String, String> params2);
+ }
+diff --git a/sdk/android/src/java/org/webrtc/Histogram.java b/sdk/android/src/java/org/webrtc/Histogram.java
+index 90eda633b8..c1d2d61a71 100644
+--- a/sdk/android/src/java/org/webrtc/Histogram.java
++++ b/sdk/android/src/java/org/webrtc/Histogram.java
+@@ -10,8 +10,6 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
+-
+ /**
+  * Class for holding the native pointer of a histogram. Since there is no way to destroy a
+  * histogram, please don't create unnecessary instances of this object. This class is thread safe.
+diff --git a/sdk/android/src/java/org/webrtc/JniCommon.java b/sdk/android/src/java/org/webrtc/JniCommon.java
+index d372655597..f982368041 100644
+--- a/sdk/android/src/java/org/webrtc/JniCommon.java
++++ b/sdk/android/src/java/org/webrtc/JniCommon.java
+@@ -11,35 +11,13 @@
+ package org.webrtc;
+ 
+ import java.nio.ByteBuffer;
+-import org.jni_zero.NativeMethods;
+ 
+ /** Class with static JNI helper functions that are used in many places. */
+ public class JniCommon {
+   /** Functions to increment/decrement an RefCountInterface pointer. */
+-  public static void nativeAddRef(long refCountedPointer) {
+-    JniCommonJni.get().addRef(refCountedPointer);
+-  }
++  public static native void nativeAddRef(long refCountedPointer);
++  public static native void nativeReleaseRef(long refCountedPointer);
+ 
+-  public static void nativeReleaseRef(long refCountedPointer) {
+-    JniCommonJni.get().releaseRef(refCountedPointer);
+-  }
+-
+-  public static ByteBuffer nativeAllocateByteBuffer(int size) {
+-    return JniCommonJni.get().allocateByteBuffer(size);
+-  }
+-
+-  public static void nativeFreeByteBuffer(ByteBuffer buffer) {
+-    JniCommonJni.get().freeByteBuffer(buffer);
+-  }
+-
+-  @NativeMethods
+-  interface Natives {
+-    void addRef(long refCountedPointer);
+-
+-    void releaseRef(long refCountedPointer);
+-
+-    ByteBuffer allocateByteBuffer(int size);
+-
+-    void freeByteBuffer(ByteBuffer buffer);
+-  }
++  public static native ByteBuffer nativeAllocateByteBuffer(int size);
++  public static native void nativeFreeByteBuffer(ByteBuffer buffer);
+ }
+diff --git a/sdk/android/src/java/org/webrtc/NV12Buffer.java b/sdk/android/src/java/org/webrtc/NV12Buffer.java
+index 25e8a020a9..fe0221d826 100644
+--- a/sdk/android/src/java/org/webrtc/NV12Buffer.java
++++ b/sdk/android/src/java/org/webrtc/NV12Buffer.java
+@@ -12,7 +12,6 @@ package org.webrtc;
+ 
+ import androidx.annotation.Nullable;
+ import java.nio.ByteBuffer;
+-import org.jni_zero.NativeMethods;
+ 
+ public class NV12Buffer implements VideoFrame.Buffer {
+   private final int width;
+@@ -61,47 +60,14 @@ public class NV12Buffer implements VideoFrame.Buffer {
+   public VideoFrame.Buffer cropAndScale(
+       int cropX, int cropY, int cropWidth, int cropHeight, int scaleWidth, int scaleHeight) {
+     JavaI420Buffer newBuffer = JavaI420Buffer.allocate(scaleWidth, scaleHeight);
+-    NV12BufferJni.get()
+-        .cropAndScale(
+-            cropX,
+-            cropY,
+-            cropWidth,
+-            cropHeight,
+-            scaleWidth,
+-            scaleHeight,
+-            buffer,
+-            width,
+-            height,
+-            stride,
+-            sliceHeight,
+-            newBuffer.getDataY(),
+-            newBuffer.getStrideY(),
+-            newBuffer.getDataU(),
+-            newBuffer.getStrideU(),
+-            newBuffer.getDataV(),
+-            newBuffer.getStrideV());
++    nativeCropAndScale(cropX, cropY, cropWidth, cropHeight, scaleWidth, scaleHeight, buffer, width,
++        height, stride, sliceHeight, newBuffer.getDataY(), newBuffer.getStrideY(),
++        newBuffer.getDataU(), newBuffer.getStrideU(), newBuffer.getDataV(), newBuffer.getStrideV());
+     return newBuffer;
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void cropAndScale(
+-        int cropX,
+-        int cropY,
+-        int cropWidth,
+-        int cropHeight,
+-        int scaleWidth,
+-        int scaleHeight,
+-        ByteBuffer src,
+-        int srcWidth,
+-        int srcHeight,
+-        int srcStride,
+-        int srcSliceHeight,
+-        ByteBuffer dstY,
+-        int dstStrideY,
+-        ByteBuffer dstU,
+-        int dstStrideU,
+-        ByteBuffer dstV,
+-        int dstStrideV);
+-  }
++  private static native void nativeCropAndScale(int cropX, int cropY, int cropWidth, int cropHeight,
++      int scaleWidth, int scaleHeight, ByteBuffer src, int srcWidth, int srcHeight, int srcStride,
++      int srcSliceHeight, ByteBuffer dstY, int dstStrideY, ByteBuffer dstU, int dstStrideU,
++      ByteBuffer dstV, int dstStrideV);
+ }
+diff --git a/sdk/android/src/java/org/webrtc/NV21Buffer.java b/sdk/android/src/java/org/webrtc/NV21Buffer.java
+index f37c4a0d52..0fb1afe74b 100644
+--- a/sdk/android/src/java/org/webrtc/NV21Buffer.java
++++ b/sdk/android/src/java/org/webrtc/NV21Buffer.java
+@@ -12,7 +12,6 @@ package org.webrtc;
+ 
+ import androidx.annotation.Nullable;
+ import java.nio.ByteBuffer;
+-import org.jni_zero.NativeMethods;
+ 
+ public class NV21Buffer implements VideoFrame.Buffer {
+   private final byte[] data;
+@@ -58,43 +57,13 @@ public class NV21Buffer implements VideoFrame.Buffer {
+   public VideoFrame.Buffer cropAndScale(
+       int cropX, int cropY, int cropWidth, int cropHeight, int scaleWidth, int scaleHeight) {
+     JavaI420Buffer newBuffer = JavaI420Buffer.allocate(scaleWidth, scaleHeight);
+-    NV21BufferJni.get()
+-        .cropAndScale(
+-            cropX,
+-            cropY,
+-            cropWidth,
+-            cropHeight,
+-            scaleWidth,
+-            scaleHeight,
+-            data,
+-            width,
+-            height,
+-            newBuffer.getDataY(),
+-            newBuffer.getStrideY(),
+-            newBuffer.getDataU(),
+-            newBuffer.getStrideU(),
+-            newBuffer.getDataV(),
+-            newBuffer.getStrideV());
++    nativeCropAndScale(cropX, cropY, cropWidth, cropHeight, scaleWidth, scaleHeight, data, width,
++        height, newBuffer.getDataY(), newBuffer.getStrideY(), newBuffer.getDataU(),
++        newBuffer.getStrideU(), newBuffer.getDataV(), newBuffer.getStrideV());
+     return newBuffer;
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void cropAndScale(
+-        int cropX,
+-        int cropY,
+-        int cropWidth,
+-        int cropHeight,
+-        int scaleWidth,
+-        int scaleHeight,
+-        byte[] src,
+-        int srcWidth,
+-        int srcHeight,
+-        ByteBuffer dstY,
+-        int dstStrideY,
+-        ByteBuffer dstU,
+-        int dstStrideU,
+-        ByteBuffer dstV,
+-        int dstStrideV);
+-  }
++  private static native void nativeCropAndScale(int cropX, int cropY, int cropWidth, int cropHeight,
++      int scaleWidth, int scaleHeight, byte[] src, int srcWidth, int srcHeight, ByteBuffer dstY,
++      int dstStrideY, ByteBuffer dstU, int dstStrideU, ByteBuffer dstV, int dstStrideV);
+ }
+diff --git a/sdk/android/src/java/org/webrtc/NativeAndroidVideoTrackSource.java b/sdk/android/src/java/org/webrtc/NativeAndroidVideoTrackSource.java
+index 67a4c2d3e2..d4fba481e8 100644
+--- a/sdk/android/src/java/org/webrtc/NativeAndroidVideoTrackSource.java
++++ b/sdk/android/src/java/org/webrtc/NativeAndroidVideoTrackSource.java
+@@ -11,16 +11,17 @@
+ package org.webrtc;
+ 
+ import androidx.annotation.Nullable;
+-import org.jni_zero.NativeMethods;
++import org.webrtc.VideoFrame;
++import org.webrtc.VideoProcessor;
+ 
+ /**
+  * This class is meant to be a simple layer that only handles the JNI wrapping of a C++
+  * AndroidVideoTrackSource, that can easily be mocked out in Java unit tests. Refrain from adding
+- * any unnecessary logic to this class. This class is thread safe and methods can be called from any
+- * thread, but if frames A, B, ..., are sent to adaptFrame(), the adapted frames adaptedA, adaptedB,
+- * ..., needs to be passed in the same order to onFrameCaptured().
++ * any unnecessary logic to this class.
++ * This class is thred safe and methods can be called from any thread, but if frames A, B, ..., are
++ * sent to adaptFrame(), the adapted frames adaptedA, adaptedB, ..., needs to be passed in the same
++ * order to onFrameCaptured().
+  */
+-
+ class NativeAndroidVideoTrackSource {
+   // Pointer to webrtc::jni::AndroidVideoTrackSource.
+   private final long nativeAndroidVideoTrackSource;
+@@ -34,7 +35,7 @@ class NativeAndroidVideoTrackSource {
+    * SourceState::kLive or SourceState::kEnded.
+    */
+   public void setState(boolean isLive) {
+-    NativeAndroidVideoTrackSourceJni.get().setState(nativeAndroidVideoTrackSource, isLive);
++    nativeSetState(nativeAndroidVideoTrackSource, isLive);
+   }
+ 
+   /**
+@@ -45,13 +46,8 @@ class NativeAndroidVideoTrackSource {
+    */
+   @Nullable
+   public VideoProcessor.FrameAdaptationParameters adaptFrame(VideoFrame frame) {
+-    return NativeAndroidVideoTrackSourceJni.get()
+-        .adaptFrame(
+-            nativeAndroidVideoTrackSource,
+-            frame.getBuffer().getWidth(),
+-            frame.getBuffer().getHeight(),
+-            frame.getRotation(),
+-            frame.getTimestampNs());
++    return nativeAdaptFrame(nativeAndroidVideoTrackSource, frame.getBuffer().getWidth(),
++        frame.getBuffer().getHeight(), frame.getRotation(), frame.getTimestampNs());
+   }
+ 
+   /**
+@@ -59,12 +55,8 @@ class NativeAndroidVideoTrackSource {
+    * expected to be called first and that the passed frame conforms to those parameters.
+    */
+   public void onFrameCaptured(VideoFrame frame) {
+-    NativeAndroidVideoTrackSourceJni.get()
+-        .onFrameCaptured(
+-            nativeAndroidVideoTrackSource,
+-            frame.getRotation(),
+-            frame.getTimestampNs(),
+-            frame.getBuffer());
++    nativeOnFrameCaptured(nativeAndroidVideoTrackSource, frame.getRotation(),
++        frame.getTimestampNs(), frame.getBuffer());
+   }
+ 
+   /**
+@@ -75,21 +67,13 @@ class NativeAndroidVideoTrackSource {
+   public void adaptOutputFormat(VideoSource.AspectRatio targetLandscapeAspectRatio,
+       @Nullable Integer maxLandscapePixelCount, VideoSource.AspectRatio targetPortraitAspectRatio,
+       @Nullable Integer maxPortraitPixelCount, @Nullable Integer maxFps) {
+-    NativeAndroidVideoTrackSourceJni.get()
+-        .adaptOutputFormat(
+-            nativeAndroidVideoTrackSource,
+-            targetLandscapeAspectRatio.width,
+-            targetLandscapeAspectRatio.height,
+-            maxLandscapePixelCount,
+-            targetPortraitAspectRatio.width,
+-            targetPortraitAspectRatio.height,
+-            maxPortraitPixelCount,
+-            maxFps);
++    nativeAdaptOutputFormat(nativeAndroidVideoTrackSource, targetLandscapeAspectRatio.width,
++        targetLandscapeAspectRatio.height, maxLandscapePixelCount, targetPortraitAspectRatio.width,
++        targetPortraitAspectRatio.height, maxPortraitPixelCount, maxFps);
+   }
+ 
+   public void setIsScreencast(boolean isScreencast) {
+-    NativeAndroidVideoTrackSourceJni.get()
+-        .setIsScreencast(nativeAndroidVideoTrackSource, isScreencast);
++    nativeSetIsScreencast(nativeAndroidVideoTrackSource, isScreencast);
+   }
+ 
+   @CalledByNative
+@@ -100,31 +84,16 @@ class NativeAndroidVideoTrackSource {
+         cropX, cropY, cropWidth, cropHeight, scaleWidth, scaleHeight, timestampNs, drop);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void setIsScreencast(long nativeAndroidVideoTrackSource, boolean isScreencast);
+-
+-    void setState(long nativeAndroidVideoTrackSource, boolean isLive);
+-
+-    void adaptOutputFormat(
+-        long nativeAndroidVideoTrackSource,
+-        int landscapeWidth,
+-        int landscapeHeight,
+-        @Nullable Integer maxLandscapePixelCount,
+-        int portraitWidth,
+-        int portraitHeight,
+-        @Nullable Integer maxPortraitPixelCount,
+-        @Nullable Integer maxFps);
+-
+-    @Nullable
+-    VideoProcessor.FrameAdaptationParameters adaptFrame(
+-        long nativeAndroidVideoTrackSource, int width, int height, int rotation, long timestampNs);
+-
+-    void onFrameCaptured(
+-        long nativeAndroidVideoTrackSource,
+-        int rotation,
+-        long timestampNs,
+-        VideoFrame.Buffer buffer);
+-  }
++  private static native void nativeSetIsScreencast(
++      long nativeAndroidVideoTrackSource, boolean isScreencast);
++  private static native void nativeSetState(long nativeAndroidVideoTrackSource, boolean isLive);
++  private static native void nativeAdaptOutputFormat(long nativeAndroidVideoTrackSource,
++      int landscapeWidth, int landscapeHeight, @Nullable Integer maxLandscapePixelCount,
++      int portraitWidth, int portraitHeight, @Nullable Integer maxPortraitPixelCount,
++      @Nullable Integer maxFps);
++  @Nullable
++  private static native VideoProcessor.FrameAdaptationParameters nativeAdaptFrame(
++      long nativeAndroidVideoTrackSource, int width, int height, int rotation, long timestampNs);
++  private static native void nativeOnFrameCaptured(
++      long nativeAndroidVideoTrackSource, int rotation, long timestampNs, VideoFrame.Buffer buffer);
+ }
+-
+diff --git a/sdk/android/src/java/org/webrtc/VideoDecoderWrapper.java b/sdk/android/src/java/org/webrtc/VideoDecoderWrapper.java
+index edaa2ffaa7..1adb61ef3c 100644
+--- a/sdk/android/src/java/org/webrtc/VideoDecoderWrapper.java
++++ b/sdk/android/src/java/org/webrtc/VideoDecoderWrapper.java
+@@ -10,7 +10,7 @@
+ 
+ package org.webrtc;
+ 
+-import org.jni_zero.NativeMethods;
++import org.webrtc.VideoDecoder;
+ 
+ /**
+  * This class contains the Java glue code for JNI generation of VideoDecoder.
+@@ -31,8 +31,7 @@ class VideoDecoderWrapper {
+     public void onDecodedFrame(VideoFrame frame, Integer decodeTimeMs, Integer qp) {
+       lifecycleLock.runIfAlive(
+           (long nativeDecoder)
+-              -> VideoDecoderWrapperJni.get().onDecodedFrame(
+-                  nativeDecoder, frame, decodeTimeMs, qp));
++              -> nativeOnDecodedFrame(nativeDecoder, frame, decodeTimeMs, qp));
+     }
+ 
+     // Called by the native VideoDecoderWrapper. Blocks until an ongoing onDecodedFrame() call, if
+@@ -48,9 +47,6 @@ class VideoDecoderWrapper {
+     return new NativeDecoderCallback(nativeDecoder);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void onDecodedFrame(
+-        long nativeVideoDecoderWrapper, VideoFrame frame, Integer decodeTimeMs, Integer qp);
+-  }
++  private static native void nativeOnDecodedFrame(
++      long nativeVideoDecoderWrapper, VideoFrame frame, Integer decodeTimeMs, Integer qp);
+ }
+diff --git a/sdk/android/src/java/org/webrtc/VideoEncoderWrapper.java b/sdk/android/src/java/org/webrtc/VideoEncoderWrapper.java
+index 5e7c66c18b..7888f16686 100644
+--- a/sdk/android/src/java/org/webrtc/VideoEncoderWrapper.java
++++ b/sdk/android/src/java/org/webrtc/VideoEncoderWrapper.java
+@@ -12,7 +12,7 @@ package org.webrtc;
+ 
+ // Explicit imports necessary for JNI generation.
+ import androidx.annotation.Nullable;
+-import org.jni_zero.NativeMethods;
++import org.webrtc.VideoEncoder;
+ 
+ /**
+  * This class contains the Java glue code for JNI generation of VideoEncoder.
+@@ -49,8 +49,7 @@ class VideoEncoderWrapper {
+     @Override
+     public void onEncodedFrame(EncodedImage frame, VideoEncoder.CodecSpecificInfo info) {
+       lifecycleLock.runIfAlive(
+-          (long nativeEncoder) ->
+-              VideoEncoderWrapperJni.get().onEncodedFrame(nativeEncoder, frame));
++          (long nativeEncoder) -> nativeOnEncodedFrame(nativeEncoder, frame));
+     }
+ 
+     // Called by the native VideoEncoderWrapper. Blocks until an ongoing onEncodedFrame() call, if
+@@ -66,8 +65,6 @@ class VideoEncoderWrapper {
+     return new NativeEncoderCallback(nativeEncoder);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void onEncodedFrame(long nativeVideoEncoderWrapper, EncodedImage frame);
+-  }
++  private static native void nativeOnEncodedFrame(
++      long nativeVideoEncoderWrapper, EncodedImage frame);
+ }
+diff --git a/sdk/android/src/java/org/webrtc/audio/WebRtcAudioRecord.java b/sdk/android/src/java/org/webrtc/audio/WebRtcAudioRecord.java
+index 2a59e364d7..c484103fcc 100644
+--- a/sdk/android/src/java/org/webrtc/audio/WebRtcAudioRecord.java
++++ b/sdk/android/src/java/org/webrtc/audio/WebRtcAudioRecord.java
+@@ -23,6 +23,7 @@ import android.os.Build;
+ import android.os.Process;
+ import androidx.annotation.Nullable;
+ import androidx.annotation.RequiresApi;
++import java.lang.System;
+ import java.nio.ByteBuffer;
+ import java.util.Arrays;
+ import java.util.Iterator;
+@@ -35,7 +36,6 @@ import java.util.concurrent.ThreadFactory;
+ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicInteger;
+ import java.util.concurrent.atomic.AtomicReference;
+-import org.jni_zero.NativeMethods;
+ import org.webrtc.CalledByNative;
+ import org.webrtc.Logging;
+ import org.webrtc.ThreadUtils;
+@@ -131,6 +131,7 @@ class WebRtcAudioRecord {
+       // Audio recording has started and the client is informed about it.
+       doAudioRecordStateCallback(AUDIO_RECORD_START);
+ 
++      long lastTime = System.nanoTime();
+       AudioTimestamp audioTimestamp = null;
+       if (Build.VERSION.SDK_INT >= 24) {
+         audioTimestamp = new AudioTimestamp();
+@@ -153,9 +154,7 @@ class WebRtcAudioRecord {
+                 captureTimeNs = audioTimestamp.nanoTime;
+               }
+             }
+-            WebRtcAudioRecordJni.get()
+-                .dataIsRecorded(
+-                    nativeAudioRecord, WebRtcAudioRecord.this, bytesRead, captureTimeNs);
++            nativeDataIsRecorded(nativeAudioRecord, bytesRead, captureTimeNs);
+           }
+           if (audioSamplesReadyCallback != null) {
+             // Copy the entire byte buffer array. The start of the byteBuffer is not necessarily
+@@ -309,7 +308,7 @@ class WebRtcAudioRecord {
+     // Rather than passing the ByteBuffer with every callback (requiring
+     // the potentially expensive GetDirectBufferAddress) we simply have the
+     // the native class cache the address to the memory once.
+-    WebRtcAudioRecordJni.get().cacheDirectBufferAddress(nativeAudioRecord, this, byteBuffer);
++    nativeCacheDirectBufferAddress(nativeAudioRecord, byteBuffer);
+ 
+     // Get the minimum buffer size required for the successful creation of
+     // an AudioRecord object, in byte units.
+@@ -528,14 +527,10 @@ class WebRtcAudioRecord {
+     return (channels == 1 ? AudioFormat.CHANNEL_IN_MONO : AudioFormat.CHANNEL_IN_STEREO);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void cacheDirectBufferAddress(
+-        long nativeAudioRecordJni, WebRtcAudioRecord caller, ByteBuffer byteBuffer);
+-
+-    void dataIsRecorded(
+-        long nativeAudioRecordJni, WebRtcAudioRecord caller, int bytes, long captureTimestampNs);
+-  }
++  private native void nativeCacheDirectBufferAddress(
++      long nativeAudioRecordJni, ByteBuffer byteBuffer);
++  private native void nativeDataIsRecorded(
++      long nativeAudioRecordJni, int bytes, long captureTimestampNs);
+ 
+   // Sets all recorded samples to zero if `mute` is true, i.e., ensures that
+   // the microphone is muted.
+diff --git a/sdk/android/src/java/org/webrtc/audio/WebRtcAudioTrack.java b/sdk/android/src/java/org/webrtc/audio/WebRtcAudioTrack.java
+index 58f2743d16..40d4dacec9 100644
+--- a/sdk/android/src/java/org/webrtc/audio/WebRtcAudioTrack.java
++++ b/sdk/android/src/java/org/webrtc/audio/WebRtcAudioTrack.java
+@@ -20,13 +20,13 @@ import android.os.Build;
+ import android.os.Process;
+ import androidx.annotation.Nullable;
+ import java.nio.ByteBuffer;
+-import org.jni_zero.NativeMethods;
+ import org.webrtc.CalledByNative;
+ import org.webrtc.Logging;
+ import org.webrtc.ThreadUtils;
+ import org.webrtc.audio.JavaAudioDeviceModule.AudioTrackErrorCallback;
+ import org.webrtc.audio.JavaAudioDeviceModule.AudioTrackStartErrorCode;
+ import org.webrtc.audio.JavaAudioDeviceModule.AudioTrackStateCallback;
++import org.webrtc.audio.LowLatencyAudioBufferManager;
+ 
+ class WebRtcAudioTrack {
+   private static final String TAG = "WebRtcAudioTrackExternal";
+@@ -109,7 +109,7 @@ class WebRtcAudioTrack {
+         // Get 10ms of PCM data from the native WebRTC client. Audio data is
+         // written into the common ByteBuffer using the address that was
+         // cached at construction.
+-        WebRtcAudioTrackJni.get().getPlayoutData(nativeAudioTrack, sizeInBytes);
++        nativeGetPlayoutData(nativeAudioTrack, sizeInBytes);
+         // Write data until all data has been written to the audio sink.
+         // Upon return, the buffer position will have been advanced to reflect
+         // the amount of data that was successfully written to the AudioTrack.
+@@ -202,7 +202,7 @@ class WebRtcAudioTrack {
+     // Rather than passing the ByteBuffer with every callback (requiring
+     // the potentially expensive GetDirectBufferAddress) we simply have the
+     // the native class cache the address to the memory once.
+-    WebRtcAudioTrackJni.get().cacheDirectBufferAddress(nativeAudioTrack, byteBuffer);
++    nativeCacheDirectBufferAddress(nativeAudioTrack, byteBuffer);
+ 
+     // Get the minimum buffer size required for the successful creation of an
+     // AudioTrack object to be created in the MODE_STREAM mode.
+@@ -542,12 +542,9 @@ class WebRtcAudioTrack {
+     return (channels == 1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO);
+   }
+ 
+-  @NativeMethods
+-  interface Natives {
+-    void cacheDirectBufferAddress(long nativeAudioTrackJni, ByteBuffer byteBuffer);
+-
+-    void getPlayoutData(long nativeAudioTrackJni, int bytes);
+-  }
++  private static native void nativeCacheDirectBufferAddress(
++      long nativeAudioTrackJni, ByteBuffer byteBuffer);
++  private static native void nativeGetPlayoutData(long nativeAudioTrackJni, int bytes);
+ 
+   // Sets all samples to be played out to zero if `mute` is true, i.e.,
+   // ensures that the speaker is muted.
+diff --git a/webrtc.gni b/webrtc.gni
+index 4805b5d8d3..e8e4414b2d 100644
+--- a/webrtc.gni
++++ b/webrtc.gni
+@@ -31,10 +31,6 @@ if (is_ios) {
+   import("//chromium/build/config/ios/rules.gni")
+ }
+ 
+-if (is_android) {
+-  import("//third_party/jni_zero/jni_zero.gni")
+-}
+-
+ if (is_mac) {
+   import("//chromium/build/config/mac/rules.gni")
+ }
+@@ -1103,13 +1099,7 @@ template("rtc_executable") {
+ }
+ 
+ template("rtc_shared_library") {
+-  if (is_android) {
+-    target_type = "shared_library_with_jni"
+-  } else {
+-    target_type = "shared_library"
+-  }
+-
+-  target(target_type, target_name) {
++  shared_library(target_name) {
+     forward_variables_from(invoker,
+                            "*",
+                            [
+@@ -1393,14 +1383,6 @@ if (is_android && !build_with_mozilla) {
+                                "suppressed_configs",
+                                "visibility",
+                              ])
+-      if (defined(invoker.shared_libraries)) {
+-        if (!defined(srcjar_deps)) {
+-          srcjar_deps = []
+-        }
+-        foreach(_dep, invoker.shared_libraries) {
+-          srcjar_deps += [ "${_dep}__jni_registration" ]
+-        }
+-      }
+     }
+   }
+ 

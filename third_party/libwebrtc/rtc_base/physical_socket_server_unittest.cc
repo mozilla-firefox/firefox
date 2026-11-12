@@ -471,13 +471,10 @@ TEST_F(PhysicalSocketTest, TestSocketRecvTimestampIPv6) {
   SocketTest::TestSocketRecvTimestampIPv6();
 }
 
-#if !defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
-// TODO(bugs.webrtc.org/15368): IpV4 fails on IOS and MAC. IPV6 works.
 TEST_F(PhysicalSocketTest, TestSocketSendRecvWithEcnIPv4) {
-  MAYBE_SKIP_IPV6;
+  MAYBE_SKIP_IPV4;
   SocketTest::TestSocketSendRecvWithEcnIPV4();
 }
-#endif
 
 TEST_F(PhysicalSocketTest, TestSocketSendRecvWithEcnIPv6) {
   MAYBE_SKIP_IPV6;

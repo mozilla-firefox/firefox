@@ -205,6 +205,21 @@ class RTC_EXPORT DesktopCaptureOptions {
     allow_wgc_window_capturer_ = allow;
   }
 
+  // This flag wraps the WGC window capturer in a FallbackDesktopCapturerWrapper
+  // that switches to a fallback capturer if WGC fails to select a source or
+  // returns a permanent capture error. The fallback capturer is
+  // CroppingWindowCapturer if allow_cropping_window_capturer is set, and
+  // WindowCapturerWinGdi otherwise.
+  // The switch is permanent: once WGC fails, sources selected later on the
+  // same capturer are captured with the fallback capturer too.
+  // When it's disabled, it just initializes WGC as the only capturer.
+  bool allow_fallback_for_wgc_window_capturer() const {
+    return allow_fallback_for_wgc_window_capturer_;
+  }
+  void set_allow_fallback_for_wgc_window_capturer(bool allow) {
+    allow_fallback_for_wgc_window_capturer_ = allow;
+  }
+
   // This flag enables the WGC capturer for fallback capturer.
   // The flag is useful when the first capturer (eg. WindowCapturerWinGdi) is
   // unreliable in certain devices where WGC is supported, but not used by
@@ -306,6 +321,7 @@ class RTC_EXPORT DesktopCaptureOptions {
 #if defined(RTC_ENABLE_WIN_WGC)
   bool allow_wgc_screen_capturer_ = false;
   bool allow_wgc_window_capturer_ = false;
+  bool allow_fallback_for_wgc_window_capturer_ = false;
   bool allow_wgc_capturer_fallback_ = false;
   bool allow_wgc_zero_hertz_ = false;
   bool wgc_require_border_ = false;

@@ -13,10 +13,12 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "absl/functional/any_invocable.h"
 #include "api/make_ref_counted.h"
 #include "api/media_stream_interface.h"
 #include "api/media_types.h"
@@ -105,6 +107,10 @@ class VideoRtpReceiverTest : public testing::Test {
   void SetMediaChannel(MediaReceiveChannelInterface* media_channel) {
     worker_thread_->BlockingCall(
         [&]() { receiver_->SetMediaChannel(media_channel); });
+  }
+
+  void RunOnWorkerThread(absl::AnyInvocable<void() &&> task) {
+    worker_thread_->BlockingCall([&] { std::move(task)(); });
   }
 
   VideoTrackSourceInterface* Source() {
@@ -317,6 +323,43 @@ TEST_F(VideoRtpReceiverTest, ObserverTeardownStopsNotifications) {
       Timestamp::Millis(120));
 
   EXPECT_EQ(observer.source_changed_count(), 1);
+}
+
+// When the receiver is set up for unsignaled streams again (e.g. on
+// renegotiation), the media channel may keep the existing unsignaled stream, in
+// which case there's no new first packet notification. So the SSRC that the
+// receiver was bound to must be kept.
+TEST_F(VideoRtpReceiverTest, KeepsUnsignaledSsrcWhenSetUpAsUnsignaledAgain) {
+  constexpr uint32_t kVideoSsrc = 12345;
+  RunOnWorkerThread(receiver_->GetSetupForUnsignaledMediaChannel());
+  EXPECT_FALSE(receiver_->has_signaled_ssrc_s());
+  EXPECT_EQ(receiver_->ssrc_s(), std::nullopt);
+
+  receiver_->SetUnsignaledSsrc_s(kVideoSsrc);
+  EXPECT_EQ(receiver_->ssrc_s(), kVideoSsrc);
+
+  RunOnWorkerThread(receiver_->GetSetupForUnsignaledMediaChannel());
+  EXPECT_FALSE(receiver_->has_signaled_ssrc_s());
+  EXPECT_EQ(receiver_->ssrc_s(), kVideoSsrc);
+}
+
+TEST_F(VideoRtpReceiverTest, SignaledSsrcTakesPrecedenceOverUnsignaledSsrc) {
+  constexpr uint32_t kVideoSsrc = 12345;
+  constexpr uint32_t kSignaledSsrc = kVideoSsrc + 1;
+  constexpr uint32_t kNewUnsignaledSsrc = kVideoSsrc + 2;
+  RunOnWorkerThread(receiver_->GetSetupForUnsignaledMediaChannel());
+  receiver_->SetUnsignaledSsrc_s(kVideoSsrc);
+
+  RunOnWorkerThread(receiver_->GetSetupForMediaChannel(kSignaledSsrc));
+  EXPECT_TRUE(receiver_->has_signaled_ssrc_s());
+  EXPECT_EQ(receiver_->ssrc_s(), kSignaledSsrc);
+
+  // When set up for unsignaled streams again, the receiver can be bound to a
+  // new unsignaled stream.
+  RunOnWorkerThread(receiver_->GetSetupForUnsignaledMediaChannel());
+  EXPECT_FALSE(receiver_->has_signaled_ssrc_s());
+  receiver_->SetUnsignaledSsrc_s(kNewUnsignaledSsrc);
+  EXPECT_EQ(receiver_->ssrc_s(), kNewUnsignaledSsrc);
 }
 
 }  // namespace

@@ -78,7 +78,7 @@ TEST(CopyOnWriteBufferTest, CreateEmptyDataWithCapacity) {
 TEST(CopyOnWriteBufferTest, TestMoveConstruct) {
   EXPECT_TRUE(std::is_nothrow_move_constructible_v<CopyOnWriteBuffer>);
 
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   size_t buf1_size = buf1.size();
   size_t buf1_capacity = buf1.capacity();
   const uint8_t* buf1_data = buf1.cdata();
@@ -95,7 +95,7 @@ TEST(CopyOnWriteBufferTest, TestMoveConstruct) {
 }
 
 TEST(CopyOnWriteBufferTest, TestMoveAssign) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   size_t buf1_size = buf1.size();
   size_t buf1_capacity = buf1.capacity();
   const uint8_t* buf1_data = buf1.cdata();
@@ -111,12 +111,12 @@ TEST(CopyOnWriteBufferTest, TestMoveAssign) {
 }
 
 TEST(CopyOnWriteBufferTest, TestSwap) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   size_t buf1_size = buf1.size();
   size_t buf1_capacity = buf1.capacity();
   const uint8_t* buf1_data = buf1.cdata();
 
-  CopyOnWriteBuffer buf2(kTestData, 6, 20);
+  CopyOnWriteBuffer buf2(std::span(kTestData).first(6), 20);
   size_t buf2_size = buf2.size();
   size_t buf2_capacity = buf2.capacity();
   const uint8_t* buf2_data = buf2.cdata();
@@ -131,7 +131,7 @@ TEST(CopyOnWriteBufferTest, TestSwap) {
 }
 
 TEST(CopyOnWriteBufferTest, Append) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
 
   EnsureBuffersShareData(buf1, buf2);
@@ -168,7 +168,7 @@ TEST(CopyOnWriteBufferTest, SetNoMoreThanCapacityDoesntCauseReallocation) {
 }
 
 TEST(CopyOnWriteBufferTest, AssignMakeReferenceCopy) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2;
 
   buf2 = buf1;
@@ -178,7 +178,7 @@ TEST(CopyOnWriteBufferTest, AssignMakeReferenceCopy) {
 
 TEST(CopyOnWriteBufferTest, SetOnSharedKeepsOriginal) {
   const uint8_t data[] = "foo";
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   const uint8_t* const original_allocation = buf1.cdata();
   CopyOnWriteBuffer buf2(buf1);
 
@@ -191,7 +191,7 @@ TEST(CopyOnWriteBufferTest, SetOnSharedKeepsOriginal) {
 }
 
 TEST(CopyOnWriteBufferTest, SetOnSharedKeepsCapacity) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
   EnsureBuffersShareData(buf1, buf2);
 
@@ -203,7 +203,7 @@ TEST(CopyOnWriteBufferTest, SetOnSharedKeepsCapacity) {
 }
 
 TEST(CopyOnWriteBufferTest, TestEnsureCapacity) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
 
   // Smaller than existing capacity -> no change and still same contents.
@@ -226,7 +226,7 @@ TEST(CopyOnWriteBufferTest, TestEnsureCapacity) {
 }
 
 TEST(CopyOnWriteBufferTest, SetSizeDoesntChangeOriginal) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   const uint8_t* const original_allocation = buf1.cdata();
   CopyOnWriteBuffer buf2(buf1);
 
@@ -239,7 +239,7 @@ TEST(CopyOnWriteBufferTest, SetSizeDoesntChangeOriginal) {
 }
 
 TEST(CopyOnWriteBufferTest, SetSizeCloneContent) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
 
   buf2.SetSize(16);
@@ -249,7 +249,7 @@ TEST(CopyOnWriteBufferTest, SetSizeCloneContent) {
 }
 
 TEST(CopyOnWriteBufferTest, SetSizeMayIncreaseCapacity) {
-  CopyOnWriteBuffer buf(kTestData, 3, 10);
+  CopyOnWriteBuffer buf(std::span(kTestData).first(3), 10);
 
   buf.SetSize(16);
 
@@ -258,7 +258,7 @@ TEST(CopyOnWriteBufferTest, SetSizeMayIncreaseCapacity) {
 }
 
 TEST(CopyOnWriteBufferTest, SetSizeDoesntDecreaseCapacity) {
-  CopyOnWriteBuffer buf1(kTestData, 5, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(5), 10);
   CopyOnWriteBuffer buf2(buf1);
 
   buf2.SetSize(2);
@@ -268,7 +268,7 @@ TEST(CopyOnWriteBufferTest, SetSizeDoesntDecreaseCapacity) {
 }
 
 TEST(CopyOnWriteBufferTest, ClearDoesntChangeOriginal) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   const uint8_t* const original_allocation = buf1.cdata();
   CopyOnWriteBuffer buf2(buf1);
 
@@ -282,7 +282,7 @@ TEST(CopyOnWriteBufferTest, ClearDoesntChangeOriginal) {
 }
 
 TEST(CopyOnWriteBufferTest, ClearDoesntChangeCapacity) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
 
   buf2.Clear();
@@ -292,14 +292,14 @@ TEST(CopyOnWriteBufferTest, ClearDoesntChangeCapacity) {
 }
 
 TEST(CopyOnWriteBufferTest, DataAccessorDoesntCloneData) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
 
   EXPECT_EQ(buf1.data(), buf2.data());
 }
 
 TEST(CopyOnWriteBufferTest, MutableDataClonesDataWhenShared) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
   const uint8_t* cdata = buf1.data();
 
@@ -320,13 +320,13 @@ TEST(CopyOnWriteBufferTest, MutableSpanReturnsEmptyOnEmptyBuffer) {
 }
 
 TEST(CopyOnWriteBufferTest, MutableSpanReturnsSizedSpan) {
-  CopyOnWriteBuffer buf(kTestData, /*size=*/3, /*capacity=*/10);
+  CopyOnWriteBuffer buf(std::span(kTestData).first(3), /*capacity=*/10);
 
   EXPECT_THAT(buf.AsMutableSpan(), SizeIs(3));
 }
 
 TEST(CopyOnWriteBufferTest, MutableSpanClonesDataWhenShared) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
   const uint8_t* cdata = buf1.data();
 
@@ -339,7 +339,7 @@ TEST(CopyOnWriteBufferTest, MutableSpanClonesDataWhenShared) {
 }
 
 TEST(CopyOnWriteBufferTest, SeveralReads) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
 
   EnsureBuffersShareData(buf1, buf2);
@@ -350,7 +350,7 @@ TEST(CopyOnWriteBufferTest, SeveralReads) {
 }
 
 TEST(CopyOnWriteBufferTest, SeveralWrites) {
-  CopyOnWriteBuffer buf1(kTestData, 3, 10);
+  CopyOnWriteBuffer buf1(std::span(kTestData).first(3), 10);
   CopyOnWriteBuffer buf2(buf1);
 
   EnsureBuffersShareData(buf1, buf2);
@@ -365,20 +365,20 @@ TEST(CopyOnWriteBufferTest, SeveralWrites) {
 }
 
 TEST(CopyOnWriteBufferTest, CreateSlice) {
-  CopyOnWriteBuffer buf(kTestData, 10, 10);
+  CopyOnWriteBuffer buf(std::span(kTestData).first(10));
   CopyOnWriteBuffer slice = buf.Slice(3, 4);
   EXPECT_EQ(slice.size(), 4u);
   EXPECT_EQ(0, memcmp(buf.cdata() + 3, slice.cdata(), 4));
 }
 
 TEST(CopyOnWriteBufferTest, NoCopyDataOnSlice) {
-  CopyOnWriteBuffer buf(kTestData, 10, 10);
+  CopyOnWriteBuffer buf(std::span(kTestData).first(10));
   CopyOnWriteBuffer slice = buf.Slice(3, 4);
   EXPECT_EQ(buf.cdata() + 3, slice.cdata());
 }
 
 TEST(CopyOnWriteBufferTest, WritingCopiesData) {
-  CopyOnWriteBuffer buf(kTestData, 10, 10);
+  CopyOnWriteBuffer buf(std::span(kTestData).first(10));
   CopyOnWriteBuffer slice = buf.Slice(3, 4);
   slice.MutableData()[0] = 0xaa;
   EXPECT_NE(buf.cdata() + 3, slice.cdata());
@@ -386,7 +386,7 @@ TEST(CopyOnWriteBufferTest, WritingCopiesData) {
 }
 
 TEST(CopyOnWriteBufferTest, WritingToBufferDoesntAffectsSlice) {
-  CopyOnWriteBuffer buf(kTestData, 10, 10);
+  CopyOnWriteBuffer buf(std::span(kTestData).first(10));
   CopyOnWriteBuffer slice = buf.Slice(3, 4);
   buf.MutableData()[0] = 0xaa;
   EXPECT_NE(buf.cdata() + 3, slice.cdata());
@@ -394,7 +394,7 @@ TEST(CopyOnWriteBufferTest, WritingToBufferDoesntAffectsSlice) {
 }
 
 TEST(CopyOnWriteBufferTest, SliceOfASlice) {
-  CopyOnWriteBuffer buf(kTestData, 10, 10);
+  CopyOnWriteBuffer buf(std::span(kTestData).first(10));
   CopyOnWriteBuffer slice = buf.Slice(3, 7);
   CopyOnWriteBuffer slice2 = slice.Slice(2, 3);
   EXPECT_EQ(slice2.size(), 3u);
@@ -403,7 +403,7 @@ TEST(CopyOnWriteBufferTest, SliceOfASlice) {
 }
 
 TEST(CopyOnWriteBufferTest, SlicesAreIndependent) {
-  CopyOnWriteBuffer buf(kTestData, 10, 10);
+  CopyOnWriteBuffer buf(std::span(kTestData).first(10));
   CopyOnWriteBuffer slice = buf.Slice(3, 7);
   CopyOnWriteBuffer slice2 = buf.Slice(3, 7);
   slice2.MutableData()[0] = 0xaa;

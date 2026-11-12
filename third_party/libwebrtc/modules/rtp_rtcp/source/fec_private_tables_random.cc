@@ -10,6 +10,7 @@
 
 #include "modules/rtp_rtcp/source/fec_private_tables_random.h"
 
+#include <array>
 #include <cstdint>
 
 namespace webrtc {
@@ -643,7 +644,7 @@ namespace {
 
 namespace fec_private_tables {
 
-const uint8_t kPacketMaskRandomTbl[] = {
+constexpr std::array<uint8_t, kPacketMaskRandomTblSize> kPacketMaskRandomTbl = {
     12,
     kPacketMaskRandom1,  // 2 byte entries.
     kPacketMaskRandom2,
@@ -658,6 +659,12 @@ const uint8_t kPacketMaskRandomTbl[] = {
     kPacketMaskRandom11,
     kPacketMaskRandom12,
 };
+
+// Check size is set correctly. If size is too small, compiler would warn there
+// are excess elements in struct initializer. If size is too large, compiler
+// would initialize unspecfied values with default value 0. Check size is not
+// too large by checking last element wasn't default initialized to 0.
+static_assert(kPacketMaskRandomTbl.back() != 0);
 
 }  // namespace fec_private_tables
 }  // namespace webrtc

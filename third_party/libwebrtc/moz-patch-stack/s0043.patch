@@ -56,7 +56,7 @@ index bde365fe18..5df6b2a8af 100644
  FlexfecReceiver::FlexfecReceiver(
      Clock* clock,
 diff --git a/rtc_base/event_tracer.cc b/rtc_base/event_tracer.cc
-index dd8e293a06..0e6bca7a2c 100644
+index 2397948009..d407d2016f 100644
 --- a/rtc_base/event_tracer.cc
 +++ b/rtc_base/event_tracer.cc
 @@ -121,7 +121,7 @@ class EventLogger final {

@@ -77,6 +77,7 @@ namespace webrtc {
 namespace {
 
 using ::testing::Contains;
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::IsTrue;
 using ::testing::Not;
@@ -2585,6 +2586,19 @@ TEST_F(BasicPortAllocatorTest, TestDoNotUseTurnServerAsStunSever) {
   port_config.AddRelay(turn_servers);
 
   EXPECT_EQ(1U, port_config.StunServers().size());
+}
+
+// Test that a TURN server is used as a STUN server at the address of its UDP
+// port, even when that is not the first port of the server.
+TEST_F(BasicPortAllocatorTest, TestUseTurnServerUdpPortAsStunServer) {
+  PortConfiguration port_config(ServerAddresses(), /*username=*/"",
+                                /*password=*/"");
+  RelayServerConfig turn_server;
+  turn_server.ports.push_back(ProtocolAddress(kTurnTcpIntAddr, PROTO_TCP));
+  turn_server.ports.push_back(ProtocolAddress(kTurnUdpIntAddr, PROTO_UDP));
+  port_config.AddRelay(turn_server);
+
+  EXPECT_THAT(port_config.StunServers(), ElementsAre(kTurnUdpIntAddr));
 }
 
 // Test that candidates from different servers get assigned a unique local

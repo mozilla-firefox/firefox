@@ -413,7 +413,7 @@ index 316e4365d9..4ff8b2d617 100644
  
  bool RtpExtension::IsSupportedForVideo(absl::string_view uri) {
 diff --git a/call/BUILD.gn b/call/BUILD.gn
-index 9147ea7d6d..a950a57217 100644
+index c5939e1ebb..0bf2a14db0 100644
 --- a/call/BUILD.gn
 +++ b/call/BUILD.gn
 @@ -25,6 +25,7 @@ rtc_library("call_interfaces") {
@@ -1286,7 +1286,7 @@ index 29e34dc3b5..a0addc53c0 100644
  
    int64_t _lastProcessFrameTimeNanos RTC_GUARDED_BY(capture_checker_);
 diff --git a/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc b/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
-index b66ff0fe89..5fe9f3db58 100644
+index cdd45921fb..aa5c7ead83 100644
 --- a/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
 +++ b/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
 @@ -287,6 +287,7 @@ LibvpxVp9Encoder::LibvpxVp9Encoder(const Environment& env,
@@ -1297,7 +1297,7 @@ index b66ff0fe89..5fe9f3db58 100644
        is_flexible_mode_(false),
        variable_framerate_controller_(variable_framerate_screenshare::kMinFps),
        quality_scaler_experiment_(ParseQualityScalerConfig(env.field_trials())),
-@@ -608,6 +609,7 @@ int LibvpxVp9Encoder::InitEncode(const VideoCodec* inst,
+@@ -659,6 +660,7 @@ int LibvpxVp9Encoder::InitEncode(const VideoCodec* inst,
  
    force_key_frame_ = true;
    pics_since_key_ = 0;
@@ -1305,7 +1305,7 @@ index b66ff0fe89..5fe9f3db58 100644
  
    scalability_mode_ = codec_.GetScalabilityMode();
    if (scalability_mode_.has_value()) {
-@@ -1166,6 +1168,14 @@ int LibvpxVp9Encoder::Encode(const VideoFrame& input_image,
+@@ -1211,6 +1213,14 @@ int LibvpxVp9Encoder::Encode(const VideoFrame& input_image,
      config_changed_ = false;
    }
  
@@ -1320,7 +1320,7 @@ index b66ff0fe89..5fe9f3db58 100644
    // Set input image for use in the callback.
    // This was necessary since you need some information from input_image.
    // You can save only the necessary information (such as timestamp) instead of
-@@ -1312,6 +1322,48 @@ int LibvpxVp9Encoder::Encode(const VideoFrame& input_image,
+@@ -1357,6 +1367,48 @@ int LibvpxVp9Encoder::Encode(const VideoFrame& input_image,
    return WEBRTC_VIDEO_CODEC_OK;
  }
  
@@ -1370,10 +1370,10 @@ index b66ff0fe89..5fe9f3db58 100644
                                               std::optional<int>* spatial_idx,
                                               std::optional<int>* temporal_idx,
 diff --git a/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.h b/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.h
-index 849c7ce530..27f1b22422 100644
+index 75b30782ae..1b0f102f61 100644
 --- a/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.h
 +++ b/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.h
-@@ -83,6 +83,9 @@ class LibvpxVp9Encoder : public VideoEncoder {
+@@ -88,6 +88,9 @@ class LibvpxVp9Encoder : public VideoEncoder {
    // Call encoder initialize function and set control settings.
    int InitAndSetControlSettings();
  
@@ -1383,7 +1383,7 @@ index 849c7ce530..27f1b22422 100644
    bool PopulateCodecSpecific(CodecSpecificInfo* codec_specific,
                               std::optional<int>* spatial_idx,
                               std::optional<int>* temporal_idx,
-@@ -171,6 +174,7 @@ class LibvpxVp9Encoder : public VideoEncoder {
+@@ -176,6 +179,7 @@ class LibvpxVp9Encoder : public VideoEncoder {
    VideoBitrateAllocation current_bitrate_allocation_;
    bool ss_info_needed_;
    bool force_all_active_layers_;
@@ -1392,7 +1392,7 @@ index 849c7ce530..27f1b22422 100644
    const bool enable_svc_for_simulcast_;
    std::optional<SimulcastToSvcConverter> simulcast_to_svc_converter_;
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 59c902b1c9..a11e75fd88 100644
+index 9d28dc9686..7eb3121714 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -526,6 +526,12 @@ rtc_library("logging") {
@@ -1409,10 +1409,10 @@ index 59c902b1c9..a11e75fd88 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index 00f49c9a52..409c040026 100644
+index 267f54e724..e1611826b6 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
-@@ -27,6 +27,7 @@
+@@ -28,6 +28,7 @@
  #include "absl/strings/string_view.h"
  #include "api/task_queue/task_queue_base.h"
  #include "api/units/timestamp.h"
@@ -1420,7 +1420,7 @@ index 00f49c9a52..409c040026 100644
  #include "rtc_base/checks.h"
  #include "rtc_base/platform_thread_types.h"
  #include "rtc_base/string_encode.h"
-@@ -55,6 +56,24 @@ static const int kMaxLogLineSize = 1024 - 60;
+@@ -56,6 +57,24 @@ static const int kMaxLogLineSize = 1024 - 60;
  #endif  // WEBRTC_MAC && !defined(WEBRTC_IOS) || WEBRTC_ANDROID
  
  namespace webrtc {
@@ -1445,7 +1445,7 @@ index 00f49c9a52..409c040026 100644
  namespace {
  
  // By default, release builds don't log, debug builds at info level
-@@ -169,7 +188,7 @@ std::string LogLineRef::DefaultLogLine() const {
+@@ -199,7 +218,7 @@ std::string LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  
@@ -1455,10 +1455,10 @@ index 00f49c9a52..409c040026 100644
  // The list of logging streams currently configured.
  // Note: we explicitly do not clean this up, because of the uncertain ordering
 diff --git a/rtc_base/logging.h b/rtc_base/logging.h
-index 5721ba6054..bf58f612fa 100644
+index 5c39fa5100..b0a9f8cae0 100644
 --- a/rtc_base/logging.h
 +++ b/rtc_base/logging.h
-@@ -651,6 +651,12 @@ class LogMessage {
+@@ -701,6 +701,12 @@ class LogMessage {
    }
  #endif  // RTC_LOG_ENABLED()
  
@@ -1471,7 +1471,7 @@ index 5721ba6054..bf58f612fa 100644
   private:
    friend class LogMessageForTesting;
  
-@@ -698,6 +704,9 @@ class LogMessage {
+@@ -748,6 +754,9 @@ class LogMessage {
  
    // The stringbuilder that buffers the formatted message before output
    StringBuilder print_stream_;
@@ -1510,7 +1510,7 @@ index b7933130bd..428fc9615d 100644
    vcm_ = nullptr;
  }
 diff --git a/webrtc.gni b/webrtc.gni
-index 42c6a4acaa..10aa1021b0 100644
+index 50b527d8d3..3ef3d5f480 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -110,7 +110,7 @@ declare_args() {

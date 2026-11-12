@@ -23,6 +23,7 @@
 #include "api/make_ref_counted.h"
 #include "api/scoped_refptr.h"
 #include "api/test/mock_datagram_connection_observer.h"
+#include "api/transport/ecn_marking.h"
 #include "api/transport/enums.h"
 #include "api/units/timestamp.h"
 #include "modules/rtp_rtcp/source/rtp_packet.h"
@@ -32,6 +33,7 @@
 #include "p2p/base/p2p_constants.h"
 #include "p2p/test/fake_ice_transport.h"
 #include "pc/datagram_connection_internal.h"
+#include "pc/dtls_packet_processor.h"
 #include "pc/test/fake_rtc_certificate_generator.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "rtc_base/network/sent_packet.h"
@@ -186,6 +188,7 @@ TEST_F(DatagramConnectionTest, ObserverCalledOnReceivedRtpPacket) {
   RtpPacketReceived packet;
   packet.Parse(packet_data);
   packet.set_arrival_time(Timestamp::Seconds(1234));
+  packet.set_ecn(EcnMarking::kCe);
 
   bool callback_called = false;
   EXPECT_CALL(*observer1_ptr_, OnPacketReceived(_, _))
@@ -196,11 +199,38 @@ TEST_F(DatagramConnectionTest, ObserverCalledOnReceivedRtpPacket) {
             EXPECT_EQ(
                 memcmp(data.data(), packet_data.data(), packet_data.size()), 0);
             EXPECT_EQ(metadata.receive_time, packet.arrival_time());
+            EXPECT_EQ(metadata.ecn, packet.ecn());
             callback_called = true;
             loop_.Quit();
           });
 
   conn1_->OnRtpPacket(packet);
+
+  loop_.Run();
+  EXPECT_TRUE(callback_called);
+}
+
+TEST_F(DatagramConnectionTest, DtlsWithFeedbackPacketReportsEcnMarking) {
+  CreateConnections(WireProtocol::kDtlsWithFeedback);
+
+  const std::vector<uint8_t> payload = {1, 2, 3, 4, 5};
+  DtlsPacketProcessor sender;
+  CopyOnWriteBuffer wire =
+      sender.ProcessOutgoingPacket(payload, Timestamp::Millis(1));
+
+  bool callback_called = false;
+  EXPECT_CALL(*observer1_ptr_, OnPacketReceived)
+      .WillOnce(
+          [&](std::span<const uint8_t> data,
+              const DatagramConnection::Observer::PacketMetadata& metadata) {
+            EXPECT_THAT(data, ElementsAreArray(payload));
+            EXPECT_EQ(metadata.receive_time, Timestamp::Millis(2));
+            EXPECT_EQ(metadata.ecn, EcnMarking::kCe);
+            callback_called = true;
+            loop_.Quit();
+          });
+
+  conn1_->OnDtlsPacket(wire, Timestamp::Millis(2), EcnMarking::kCe);
 
   loop_.Run();
   EXPECT_TRUE(callback_called);

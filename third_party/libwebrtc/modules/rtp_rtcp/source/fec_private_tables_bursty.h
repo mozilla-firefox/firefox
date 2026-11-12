@@ -25,12 +25,23 @@
 // (i.e., more packets/symbols in the code, so larger (k,m), i.e.,  k > 4,
 // m > 3).
 
-#include <stdint.h>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 
 namespace webrtc {
 namespace fec_private_tables {
 
-extern const uint8_t kPacketMaskBurstyTbl[];
+// Size of the flattened table for up to N=12 media packets.
+// The flattened table keeps 12 square tables sizes from 1 to 12.
+// Sum of all squared numbers N^2 from 1 to 12: 650.
+// Each line in each table is prepended by size.
+// Sum of all numbers N from 1 to 12: 78
+// Each 2d table is prepended by its size, adding 12 more entries.
+// Table itself is prepended by the number of subtables, adding 1 more entry.
+// Total number of entries = 1 + 12 + 78 + 650 = 741.
+inline constexpr size_t kPacketMaskBurstyTblSize = 741;
+extern const std::array<uint8_t, kPacketMaskBurstyTblSize> kPacketMaskBurstyTbl;
 
 }  // namespace fec_private_tables
 }  // namespace webrtc

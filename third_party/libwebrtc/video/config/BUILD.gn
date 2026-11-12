@@ -60,32 +60,40 @@ rtc_library("encoder_config") {
 }
 
 if (rtc_include_tests) {
-  rtc_cc_test("video_config_tests") {
-    testonly = true
-
-    defines = []
-    sources = [
-      "encoder_stream_factory_unittest.cc",
-      "simulcast_unittest.cc",
-    ]
+  rtc_cc_test("encoder_stream_factory_unittest") {
+    sources = [ "encoder_stream_factory_unittest.cc" ]
     deps = [
       ":encoder_config",
       ":streams_config",
       "../../api:field_trials",
       "../../api:field_trials_view",
       "../../api:make_ref_counted",
-      "../../api/units:data_rate",
       "../../api/video:resolution",
       "../../api/video:video_frame",
       "../../api/video_codecs:scalability_mode",
       "../../api/video_codecs:video_codecs_api",
       "../../call/adaptation:resource_adaptation",
-      "../../media:media_constants",
       "../../rtc_base:safe_conversions",
       "../../rtc_base/experiments:min_video_bitrate_experiment",
       "../../test:create_test_field_trials",
       "../../test:test_support",
       "//third_party/abseil-cpp/absl/strings:string_view",
+    ]
+  }
+
+  rtc_cc_test("simulcast_unittest") {
+    sources = [ "simulcast_unittest.cc" ]
+    deps = [
+      ":encoder_config",
+      ":streams_config",
+      "../../api:field_trials",
+      "../../api/units:data_rate",
+      "../../api/video:resolution",
+      "../../api/video:video_frame",
+      "../../api/video_codecs:video_codecs_api",
+      "../../media:media_constants",
+      "../../test:create_test_field_trials",
+      "../../test:test_support",
     ]
   }
 }

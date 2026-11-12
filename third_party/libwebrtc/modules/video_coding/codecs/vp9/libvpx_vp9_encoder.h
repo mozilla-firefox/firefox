@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <vector>
 
 #include "api/environment/environment.h"
@@ -73,6 +74,10 @@ class LibvpxVp9Encoder : public VideoEncoder {
   int RegisterEncodeCompleteCallback(EncodedImageCallback* callback) override;
 
   void SetRates(const RateControlParameters& parameters) override;
+
+  void SetComplexity(
+      std::span<const VideoCodecComplexity> complexity_by_spatial_layer,
+      ComplexityControlMode complexity_control_mode) override;
 
   EncoderInfo GetEncoderInfo() const override;
 

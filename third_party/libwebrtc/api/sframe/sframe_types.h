@@ -24,6 +24,9 @@ enum class SframeCipherSuite {
   kAes128CtrHmacSha256_32,
   kAes128GcmSha256_128,
   kAes256GcmSha512_128,
+  kAes256CtrHmacSha512_80,
+  kAes256CtrHmacSha512_64,
+  kAes256CtrHmacSha512_32,
 };
 
 }  // namespace webrtc

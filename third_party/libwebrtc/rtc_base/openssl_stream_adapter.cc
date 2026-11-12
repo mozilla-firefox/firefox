@@ -1244,8 +1244,8 @@ bool OpenSSLStreamAdapter::VerifyPeerCertificate() {
     RTC_LOG(LS_WARNING)
         << "Rejected peer certificate due to mismatched digest using "
         << peer_certificate_digest_algorithm_ << ". Expected "
-        << hex_encode_with_delimiter(peer_certificate_digest_value_, ':')
-        << " got " << hex_encode_with_delimiter(computed_digest, ':');
+        << HexEncodeWithDelimiter(peer_certificate_digest_value_, ':')
+        << " got " << HexEncodeWithDelimiter(computed_digest, ':');
     return false;
   }
   // Ignore any verification error if the digest matches, since there is no

@@ -1,33 +1,22 @@
 From: Byron Campen <docfaraday@gmail.com>
-Date: Tue, 26 May 2026 14:02:00 -0500
-Subject: Bug 2040478 - (fix-d1ae1e9ad4) Explicitly convert these to a
- std::string r?mjf
+Date: Tue, 26 May 2026 18:03:00 -0500
+Subject: Bug 2040478 - (fix-834ea60925) Add missing std namespace r?mjf
 
-Our toolchain does not yet support implicit conversion from string_view to string
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/1eae5aad7a7622115d156dea2dc974416046cd42
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/89a59f60370f6df6f89b2d03eb7c8d4be7aac1c7
 ---
- call/payload_type_picker.cc | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ rtc_base/ssl_stream_adapter.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/call/payload_type_picker.cc b/call/payload_type_picker.cc
-index 5d8be2f782..5bb1fd6c90 100644
---- a/call/payload_type_picker.cc
-+++ b/call/payload_type_picker.cc
-@@ -406,7 +406,7 @@ void PayloadTypeRecorder::ReallowRedefinition() {
- RTCError RtpHeaderExtensionRecorder::AddMapping(RtpHeaderExtensionId id,
-                                                 absl::string_view uri,
-                                                 bool encrypt) {
--  auto it = uri_to_id_.find(std::pair{uri, encrypt});
-+  auto it = uri_to_id_.find(std::pair{std::string(uri), encrypt});
-   if (it != uri_to_id_.end()) {
-     if (it->second != id) {
-       RTC_HISTOGRAM_BOOLEAN(
-@@ -429,7 +429,7 @@ RTCError RtpHeaderExtensionRecorder::AddMapping(RtpHeaderExtensionId id,
- RTCErrorOr<RtpHeaderExtensionId> RtpHeaderExtensionRecorder::LookupId(
-     absl::string_view uri,
-     bool encrypt) const {
--  auto it = uri_to_id_.find(std::pair{uri, encrypt});
-+  auto it = uri_to_id_.find(std::pair{std::string(uri), encrypt});
-   if (it == uri_to_id_.end()) {
-     return RTCError(RTCErrorType::INVALID_PARAMETER,
-                     "No ID found for extension");
+diff --git a/rtc_base/ssl_stream_adapter.h b/rtc_base/ssl_stream_adapter.h
+index 00fd5f2da9..22a854e3d3 100644
+--- a/rtc_base/ssl_stream_adapter.h
++++ b/rtc_base/ssl_stream_adapter.h
+@@ -129,7 +129,7 @@ class SSLStreamAdapter : public StreamInterface {
+   static std::unique_ptr<SSLStreamAdapter> Create(
+       std::unique_ptr<StreamInterface> stream,
+       absl::AnyInvocable<void(SSLHandshakeError)> handshake_error,
+-      nullptr_t /*field_trials*/) {
++      std::nullptr_t /*field_trials*/) {
+     return Create(std::move(stream), std::move(handshake_error));
+   }
+ 

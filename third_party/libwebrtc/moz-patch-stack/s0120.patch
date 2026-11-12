@@ -4,14 +4,14 @@ Subject: Bug 2006933 - (fix-d381cc8b23) fix base-toolchains build
 
 Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/ff7279205c599769b913c9359873562896b80799
 ---
- modules/rtp_rtcp/source/rtp_format.cc | 15 +++++++--------
- 1 file changed, 7 insertions(+), 8 deletions(-)
+ modules/rtp_rtcp/source/rtp_format.cc | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
 diff --git a/modules/rtp_rtcp/source/rtp_format.cc b/modules/rtp_rtcp/source/rtp_format.cc
-index 9e6b9acb2c..3c5a2282bc 100644
+index 7c218021ac..4d81562024 100644
 --- a/modules/rtp_rtcp/source/rtp_format.cc
 +++ b/modules/rtp_rtcp/source/rtp_format.cc
-@@ -56,32 +56,31 @@ absl_nonnull std::unique_ptr<RtpPacketizer> RtpPacketizer::Create(
+@@ -57,35 +57,34 @@ absl_nonnull std::unique_ptr<RtpPacketizer> RtpPacketizer::Create(
      return std::make_unique<EmptyRtpPacketizer>();
    }
  
@@ -45,12 +45,16 @@ index 9e6b9acb2c..3c5a2282bc 100644
        return std::make_unique<RtpPacketizerAv1>(
            payload, limits, rtp_video_header.frame_type,
            rtp_video_header.is_last_frame_in_picture);
+-    case kSframe:
++    case PacketizationFormat::kSframe:
+       return std::make_unique<RtpPacketizerSframe>(
+           payload, limits, rtp_video_header.is_last_frame_in_picture);
 -    case kH265: {
 +    case PacketizationFormat::kH265: {
  #ifdef RTC_ENABLE_H265
        return std::make_unique<RtpPacketizerH265>(payload, limits);
  #else
-@@ -89,7 +88,7 @@ absl_nonnull std::unique_ptr<RtpPacketizer> RtpPacketizer::Create(
+@@ -93,7 +92,7 @@ absl_nonnull std::unique_ptr<RtpPacketizer> RtpPacketizer::Create(
                                                      rtp_video_header);
  #endif
      }

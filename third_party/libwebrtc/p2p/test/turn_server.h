@@ -98,6 +98,7 @@ class TurnServerAllocation final {
 
   void HandleTurnMessage(const TurnMessage* msg, EcnMarking ecn);
   void HandleChannelData(std::span<const uint8_t> payload, EcnMarking ecn);
+  bool HasPermission(const IPAddress& addr);
 
  private:
   struct Channel {
@@ -124,7 +125,6 @@ class TurnServerAllocation final {
                         const ReceivedIpPacket& packet);
 
   static TimeDelta ComputeLifetime(const TurnMessage& msg);
-  bool HasPermission(const IPAddress& addr);
   void AddPermission(const IPAddress& addr);
   PermissionList::iterator FindPermission(const IPAddress& addr);
   ChannelList::iterator FindChannel(int channel_id);

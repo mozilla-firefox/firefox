@@ -90,7 +90,6 @@ def get_included_path_overrides():
         "sdk/android/src/java/org/webrtc/CameraCapturer.java",
         "sdk/android/src/java/org/webrtc/CameraSession.java",
         "sdk/android/src/java/org/webrtc/H264Utils.java",
-        "sdk/android/src/java/org/webrtc/Empty.java",
         "sdk/android/src/java/org/webrtc/DynamicBitrateAdjuster.java",
         "sdk/android/src/java/org/webrtc/Camera1Session.java",
         "sdk/android/src/java/org/webrtc/JniCommon.java",

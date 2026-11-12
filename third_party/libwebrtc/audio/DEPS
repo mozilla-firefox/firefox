@@ -13,6 +13,7 @@ include_rules = [
   "+modules/congestion_controller",
   "+modules/pacing",
   "+modules/rtp_rtcp",
+  "+modules/sframe",
   "+modules/utility",
   "+system_wrappers",
 ]

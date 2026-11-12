@@ -33,11 +33,21 @@ namespace webrtc {
 class DualPi2NetworkQueue : public NetworkQueue {
  public:
   struct Config {
-    // Target delay for the PI2 controller.
-    TimeDelta target_delay = TimeDelta::Micros(500);
-    // Step threshold for the L4S queue. If the sojourn time of a packet in the
-    // L4S queue exceeds this value on dequeue, it will be CE marked.
-    TimeDelta step_threshold = TimeDelta::PlusInfinity();
+    // Target delay for the coupled PI2 controller (RFC 9332 default is 15ms).
+    // Governs the classic queue delay target and L4S overload protection.
+    TimeDelta target_delay = TimeDelta::Millis(15);
+    // Step threshold for the native L4S AQM. If the sojourn time of a packet in
+    // the L4S queue exceeds this value on dequeue (while standing backlog >=
+    // `min_backlog_packets`), it will be CE marked.
+    // RFC 9332 / Linux sch_dualpi2 defaults to 1ms for broadband links (4-200
+    // Mbps), but notes (RFC 9332 Section A.2) that on lower-capacity links the
+    // threshold should be at least 1-2 MTU serialization time so packets are
+    // not prematurely marked while waiting for a single packet in flight on the
+    // wire. A 10ms default corresponds to ~1 MTU (1200B) serialization time at
+    // ~1 Mbps, making these defaults suitable for link capacities >= ~500 kbps
+    // while keeping L4S queuing delay below `target_delay` (15ms) so the slow
+    // PI2 controller stays at zero under normal L4S load.
+    TimeDelta step_threshold = TimeDelta::Millis(10);
     // Minimum standing queue backlog (in packets) required before taking
     // marking or dropping actions.
     size_t min_backlog_packets = 2;
@@ -112,7 +122,8 @@ class DualPi2NetworkQueue : public NetworkQueue {
 
 class DualPi2NetworkQueueFactory : public NetworkQueueFactory {
  public:
-  explicit DualPi2NetworkQueueFactory(const DualPi2NetworkQueue::Config& config)
+  explicit DualPi2NetworkQueueFactory(
+      const DualPi2NetworkQueue::Config& config = DualPi2NetworkQueue::Config())
       : config_(config) {}
 
   std::unique_ptr<NetworkQueue> CreateQueue() override {

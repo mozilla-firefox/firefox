@@ -305,7 +305,7 @@ if (rtc_include_tests) {
       if (rtc_enable_protobuf) {
         deps += [
           ":audioproc_unittest_proto",
-          "aec_dump:aec_dump_unittests",
+          "aec_dump:aec_dump_unittest",
           "test/conversational_speech",
         ]
       }
@@ -727,28 +727,28 @@ if (rtc_include_tests) {
         "aec3:suppression_filter_unittest",
         "aec3:suppression_gain_unittest",
         "aec3:vector_math_unittest",
-        "aec_dump:mock_aec_dump_unittests",
+        "aec_dump:aec_dump_integration_test",
         "agc:agc_manager_direct_unittest",
         "agc:loudness_histogram_unittest",
         "agc2:adaptive_digital_gain_controller_unittest",
         "agc2:agc2_testing_common_unittest",
-        "agc2:biquad_filter_unittests",
+        "agc2:biquad_filter_unittest",
         "agc2:clipping_predictor_level_buffer_unittest",
         "agc2:clipping_predictor_unittest",
         "agc2:fixed_digital_level_estimator_unittest",
         "agc2:gain_applier_unittest",
         "agc2:input_volume_controller_unittest",
-        "agc2:input_volume_stats_reporter_unittests",
+        "agc2:input_volume_stats_reporter_unittest",
         "agc2:interpolated_gain_curve_unittest",
         "agc2:limiter_db_gain_curve_unittest",
         "agc2:limiter_unittest",
-        "agc2:noise_estimator_unittests",
+        "agc2:noise_level_estimator_unittest",
         "agc2:saturation_protector_buffer_unittest",
-        "agc2:saturation_protector_unittest_test",
+        "agc2:saturation_protector_unittest",
         "agc2:speech_level_estimator_experimental_unittest",
-        "agc2:speech_level_estimator_unittest_test",
+        "agc2:speech_level_estimator_unittest",
         "agc2:speech_probability_buffer_unittest",
-        "agc2:vad_wrapper_unittests",
+        "agc2:vad_wrapper_unittest",
         "agc2/rnn_vad:auto_correlation_unittest",
         "agc2/rnn_vad:features_extraction_unittest",
         "agc2/rnn_vad:lp_residual_unittest",
@@ -795,7 +795,7 @@ if (rtc_include_tests) {
           ":debug_dump_test",
           "aec3/neural_residual_echo_estimator:neural_feature_extractor_unittest",
           "aec3/neural_residual_echo_estimator:neural_residual_echo_estimator_impl_unittest",
-          "aec_dump:aec_dump_unittests",
+          "aec_dump:aec_dump_unittest",
         ]
       }
     }

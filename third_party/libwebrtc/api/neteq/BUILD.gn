@@ -125,13 +125,14 @@ rtc_library("tick_timer") {
   deps = [ "../../rtc_base:checks" ]
 }
 
-rtc_library("tick_timer_unittest") {
-  visibility = [ "*" ]
-  testonly = true
-  sources = [ "tick_timer_unittest.cc" ]
-  deps = [
-    ":tick_timer",
-    "../../test:test_support",
-    "//testing/gtest",
-  ]
+if (rtc_include_tests) {
+  rtc_cc_test("tick_timer_unittest") {
+    visibility = [ "*" ]
+    sources = [ "tick_timer_unittest.cc" ]
+    deps = [
+      ":tick_timer",
+      "../../test:test_support",
+      "//testing/gtest",
+    ]
+  }
 }

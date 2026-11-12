@@ -27,19 +27,6 @@ if (!build_with_chromium) {
   }
 
   if (rtc_include_tests) {
-    rtc_cc_test("e2e_unittests") {
-      data_deps = [ "../../../resources:scenario_config_resources" ]
-      deps = [
-        ":peer_connection_e2e_smoke_test",
-        ":peer_connection_quality_test_metric_names_test",
-        ":peer_connection_quality_test_test",
-        ":stats_based_network_quality_metrics_reporter_test",
-        ":stats_poller_test",
-      ]
-    }
-  }
-
-  if (rtc_include_tests) {
     rtc_library("echo_emulation") {
       testonly = true
       sources = [
@@ -299,21 +286,7 @@ if (!build_with_chromium) {
       ]
     }
 
-    peer_connection_e2e_smoke_test_resources = [
-      "../../../resources/pc_quality_smoke_test_alice_source.wav",
-      "../../../resources/pc_quality_smoke_test_bob_source.wav",
-    ]
-    if (is_ios) {
-      bundle_data("peer_connection_e2e_smoke_test_resources_bundle_data") {
-        testonly = true
-        sources = peer_connection_e2e_smoke_test_resources
-        outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-      }
-    }
-
-    rtc_library("peer_connection_e2e_smoke_test") {
-      testonly = true
-
+    rtc_cc_test("peer_connection_e2e_smoke_test") {
       sources = [ "peer_connection_e2e_smoke_test.cc" ]
       deps = [
         ":default_audio_quality_analyzer",
@@ -353,17 +326,16 @@ if (!build_with_chromium) {
         "analyzer/video:default_video_quality_analyzer",
         "analyzer/video:default_video_quality_analyzer_shared",
       ]
-      data = peer_connection_e2e_smoke_test_resources
+      data_deps = [ "../../../test:test_support_unittests_resources" ]
       if (is_mac || is_ios) {
         deps += [ "../../../modules/video_coding:objc_codec_factory_helper" ]
       }
       if (is_ios) {
-        deps += [ ":peer_connection_e2e_smoke_test_resources_bundle_data" ]
+        deps += [ "../../../test:test_support_unittests_bundle_data" ]
       }
     }
 
-    rtc_library("peer_connection_quality_test_metric_names_test") {
-      testonly = true
+    rtc_cc_test("peer_connection_quality_test_metric_names_test") {
       sources = [ "peer_connection_quality_test_metric_names_test.cc" ]
       deps = [
         ":metric_metadata_keys",
@@ -391,8 +363,7 @@ if (!build_with_chromium) {
       ]
     }
 
-    rtc_library("stats_based_network_quality_metrics_reporter_test") {
-      testonly = true
+    rtc_cc_test("stats_based_network_quality_metrics_reporter_test") {
       sources = [ "stats_based_network_quality_metrics_reporter_test.cc" ]
       deps = [
         ":metric_metadata_keys",
@@ -418,8 +389,7 @@ if (!build_with_chromium) {
       ]
     }
 
-    rtc_library("peer_connection_quality_test_test") {
-      testonly = true
+    rtc_cc_test("peer_connection_quality_test_test") {
       sources = [ "peer_connection_quality_test_test.cc" ]
       deps = [
         ":peerconnection_quality_test",
@@ -471,8 +441,7 @@ if (!build_with_chromium) {
       ]
     }
 
-    rtc_library("stats_poller_test") {
-      testonly = true
+    rtc_cc_test("stats_poller_test") {
       sources = [ "stats_poller_test.cc" ]
       deps = [
         ":stats_poller",

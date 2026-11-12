@@ -16,17 +16,19 @@
 #include <openssl/ssl.h>
 #ifdef OPENSSL_IS_BORINGSSL
 #include <openssl/pool.h>
-#else
+#endif
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
-#endif
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "rtc_base/checks.h"
+#include "rtc_base/distrusted_certificates_for_testing.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/openssl.h"
 #include "test/gtest.h"
@@ -294,6 +296,88 @@ TEST(OpenSSLUtilityTest, VerifyPeerCertMatchesHostLegacy) {
   EXPECT_FALSE(openssl::VerifyPeerCertMatchesHost(ssl, "webrtc.org"));
 
   SSL_free(ssl);
+}
+
+TEST(OpenSSLUtilityTest, IsDistrustedCertificateMatchesOnPublicKey) {
+  EXPECT_TRUE(openssl::IsDistrustedCertificate(kDistrustedCertificate));
+  // Cross-signed certificate with the same key.
+  EXPECT_TRUE(
+      openssl::IsDistrustedCertificate(kDistrustedCertificateCrossSigned));
+  EXPECT_FALSE(openssl::IsDistrustedCertificate(kFakeSSLCertificate));
+  EXPECT_FALSE(openssl::IsDistrustedCertificate(kFakeSSLCertificateLegacy));
+}
+
+TEST(OpenSSLUtilityTest, IsDistrustedCertificateTreatsMalformedAsDistrusted) {
+  EXPECT_TRUE(openssl::IsDistrustedCertificate(std::span<const uint8_t>()));
+  // Truncated before the SubjectPublicKeyInfo.
+  EXPECT_TRUE(openssl::IsDistrustedCertificate(
+      std::span<const uint8_t>(kDistrustedCertificate).first(100)));
+}
+
+TEST(OpenSSLUtilityTest,
+     IsDistrustedCertificateRejectsBerReencodingOfDistrustedCertificate) {
+  // Re-encode the outer Certificate SEQUENCE with a non-minimal length. The
+  // outer SEQUENCE is not covered by the issuer's signature, so a lenient
+  // parser would still consider the certificate validly signed.
+  std::span<const uint8_t> der(kDistrustedCertificate);
+  ASSERT_EQ(der[0], 0x30);  // SEQUENCE
+  ASSERT_EQ(der[1], 0x82);  // Two length bytes follow.
+  std::vector<uint8_t> ber = {0x30, 0x83, 0x00, der[2], der[3]};
+  std::span<const uint8_t> contents = der.subspan(4);
+  ber.insert(ber.end(), contents.begin(), contents.end());
+  EXPECT_TRUE(openssl::IsDistrustedCertificate(ber));
+}
+
+#ifdef OPENSSL_IS_BORINGSSL
+TEST(OpenSSLUtilityTest, ContainsDistrustedCertificateCryptoBufferStack) {
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(
+      static_cast<const STACK_OF(CRYPTO_BUFFER)*>(nullptr)));
+
+  bssl::UniquePtr<STACK_OF(CRYPTO_BUFFER)> chain(sk_CRYPTO_BUFFER_new_null());
+  ASSERT_NE(chain, nullptr);
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(chain.get()));
+
+  bssl::UniquePtr<CRYPTO_BUFFER> trusted_cert(
+      CRYPTO_BUFFER_new(kFakeSSLCertificate, std::size(kFakeSSLCertificate),
+                        openssl::GetBufferPool()));
+  ASSERT_NE(trusted_cert, nullptr);
+  ASSERT_TRUE(bssl::PushToStack(chain.get(), std::move(trusted_cert)));
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(chain.get()));
+
+  bssl::UniquePtr<CRYPTO_BUFFER> distrusted_cert(CRYPTO_BUFFER_new(
+      kDistrustedCertificate, std::size(kDistrustedCertificate),
+      openssl::GetBufferPool()));
+  ASSERT_NE(distrusted_cert, nullptr);
+  ASSERT_TRUE(bssl::PushToStack(chain.get(), std::move(distrusted_cert)));
+  EXPECT_TRUE(openssl::ContainsDistrustedCertificate(chain.get()));
+}
+#endif
+
+TEST(OpenSSLUtilityTest, ContainsDistrustedCertificateX509Stack) {
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(
+      static_cast<const STACK_OF(X509)*>(nullptr)));
+
+  STACK_OF(X509)* chain = sk_X509_new_null();
+  ASSERT_NE(chain, nullptr);
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(chain));
+
+  const unsigned char* trusted_ptr = kFakeSSLCertificate;
+  X509* trusted_cert =
+      d2i_X509(nullptr, &trusted_ptr,
+               checked_cast<long>(std::size(kFakeSSLCertificate)));  // NOLINT
+  ASSERT_NE(trusted_cert, nullptr);
+  ASSERT_GT(static_cast<int>(sk_X509_push(chain, trusted_cert)), 0);
+  EXPECT_FALSE(openssl::ContainsDistrustedCertificate(chain));
+
+  const unsigned char* distrusted_ptr = kDistrustedCertificate;
+  X509* distrusted_cert = d2i_X509(
+      nullptr, &distrusted_ptr,
+      checked_cast<long>(std::size(kDistrustedCertificate)));  // NOLINT
+  ASSERT_NE(distrusted_cert, nullptr);
+  ASSERT_GT(static_cast<int>(sk_X509_push(chain, distrusted_cert)), 0);
+  EXPECT_TRUE(openssl::ContainsDistrustedCertificate(chain));
+
+  sk_X509_pop_free(chain, X509_free);
 }
 
 }  // namespace webrtc

@@ -36,6 +36,7 @@
 #include "modules/rtp_rtcp/source/source_tracker.h"
 #include "pc/media_stream.h"
 #include "pc/media_stream_proxy.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/thread.h"
 #include "system_wrappers/include/clock.h"
 
@@ -80,12 +81,21 @@ std::optional<uint32_t> RtpReceiverBase::ssrc() const {
 
 std::optional<uint32_t> RtpReceiverBase::ssrc_s() const {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  return ssrc_s_;
+  if (!signaled_ssrc_s_.has_value()) {
+    return unsignaled_ssrc_s_;
+  }
+  return signaled_ssrc_s_;
 }
 
-void RtpReceiverBase::SetSsrc_s(uint32_t ssrc) {
+bool RtpReceiverBase::has_signaled_ssrc_s() const {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
-  ssrc_s_ = ssrc;
+  return signaled_ssrc_s_.has_value();
+}
+
+void RtpReceiverBase::SetUnsignaledSsrc_s(uint32_t ssrc) {
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  RTC_DCHECK(!signaled_ssrc_s_.has_value());
+  unsignaled_ssrc_s_ = ssrc;
 }
 
 void RtpReceiverBase::SetFrameDecryptor(

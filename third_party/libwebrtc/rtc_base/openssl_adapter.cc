@@ -16,6 +16,7 @@
 #include <openssl/x509.h>
 
 #include <cerrno>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <ctime>
@@ -162,14 +163,12 @@ static void LogSslError() {
   uint32_t error_code;
   const char* file;
   int line;
-  do {
-    error_code = ERR_get_error_line(&file, &line);
+  while ((error_code = ERR_get_error_line(&file, &line)) != 0) {
     if (ERR_GET_LIB(error_code) == ERR_LIB_SSL) {
       RTC_LOG(LS_ERROR) << "ERR_LIB_SSL: " << error_code << ", " << file << ":"
                         << line;
-      break;
     }
-  } while (error_code != 0);
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -177,7 +176,6 @@ static void LogSslError() {
 /////////////////////////////////////////////////////////////////////////////
 
 namespace webrtc {
-
 
 bool OpenSSLAdapter::InitializeSSL() {
   // TODO: https://issues.webrtc.org/issues/339300437 - remove once
@@ -418,6 +416,9 @@ int OpenSSLAdapter::ContinueSSL() {
     case SSL_ERROR_WANT_WRITE:
       break;
 
+    case SSL_ERROR_SSL:
+      LogSslError();
+      [[fallthrough]];
     case SSL_ERROR_ZERO_RETURN:
     default:
       RTC_LOG(LS_WARNING) << "ContinueSSL -- error " << code;
@@ -774,6 +775,16 @@ bool OpenSSLAdapter::SSLPostConnectionCheck(SSL* ssl, absl::string_view host) {
   return is_valid_cert_name;
 }
 
+// The ContainsDistrustedCertificate checks in SSLVerifyCallback below see the
+// certificates the peer presented in the handshake and, in the X509 build, the
+// chain OpenSSL built from them. This leaves two gaps when a custom
+// SSLCertificateVerifier builds its own path: intermediates it adds itself,
+// e.g. from a cache or via AIA fetching, are not checked, so a server could
+// leave a distrusted intermediate out of the handshake; and the trust anchor it
+// chains to is not checked either. Conversely, a distrusted certificate that
+// the peer presents but that is not needed for the path still causes the chain
+// to be rejected. All of this is acceptable for this defense-in-depth check.
+
 #ifdef WEBRTC_USE_CRYPTO_BUFFER_CALLBACK
 // static
 enum ssl_verify_result_t OpenSSLAdapter::SSLVerifyCallback(SSL* ssl,
@@ -783,6 +794,17 @@ enum ssl_verify_result_t OpenSSLAdapter::SSLVerifyCallback(SSL* ssl,
       reinterpret_cast<OpenSSLAdapter*>(SSL_get_app_data(ssl));
 
   ssl_verify_result_t ret = stream->SSLVerifyInternal(ssl, out_alert);
+
+  // Reject chains containing distrusted certificates even if accepted by the
+  // custom verifier.
+  if (ret == ssl_verify_ok &&
+      openssl::ContainsDistrustedCertificate(SSL_get0_peer_certificates(ssl))) {
+    RTC_LOG(LS_WARNING) << "Peer certificate chain contains a distrusted "
+                           "certificate.";
+    stream->custom_cert_verifier_status_ = false;
+    *out_alert = SSL_AD_BAD_CERTIFICATE;
+    ret = ssl_verify_invalid;
+  }
 
   // Should only be used for debugging and development.
   if (ret != ssl_verify_ok && stream->ignore_bad_cert_) {
@@ -836,6 +858,21 @@ int OpenSSLAdapter::SSLVerifyCallback(int status, X509_STORE_CTX* store) {
   // Update status with the custom verifier.
   // Status is unchanged if verification fails.
   status = stream->SSLVerifyInternal(status, ssl, store);
+
+  // Reject chains containing distrusted certificates even if accepted by the
+  // trust store or custom verifier. The untrusted stack holds the certificates
+  // the peer presented; the chain is the path built so far, which may also
+  // include certificates from the trust store.
+  if (status && (openssl::ContainsDistrustedCertificate(
+                     X509_STORE_CTX_get0_untrusted(store)) ||
+                 openssl::ContainsDistrustedCertificate(
+                     X509_STORE_CTX_get0_chain(store)))) {
+    RTC_LOG(LS_WARNING) << "Certificate chain contains a distrusted "
+                           "certificate.";
+    X509_STORE_CTX_set_error(store, X509_V_ERR_CERT_REJECTED);
+    stream->custom_cert_verifier_status_ = false;
+    status = 0;
+  }
 
   // Should only be used for debugging and development.
   if (!status && stream->ignore_bad_cert_) {

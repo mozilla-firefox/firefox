@@ -96,7 +96,7 @@ rtc_library("libaom_av1_encoder") {
 
 rtc_library("libaom_av1_encoder_v2") {
   visibility = [
-    ":libaom_av1_encoder_v2_unittest",
+    ":*",
     "../../../../api/video_codecs:libaom_av1_encoder_factory",
   ]
   poisonous = [ "software_video_codecs" ]
@@ -174,6 +174,7 @@ if (rtc_include_tests) {
     sources = [ "libaom_av1_encoder_unittest.cc" ]
     deps = [
       ":av1_svc_config",
+      ":dav1d_decoder",
       ":libaom_av1_encoder",
       "../..:encoded_video_frame_producer",
       "../..:video_codec_interface",
@@ -181,6 +182,7 @@ if (rtc_include_tests) {
       "../../../../api:field_trials",
       "../../../../api:frame_generator_api",
       "../../../../api:mock_video_encoder",
+      "../../../../api:scoped_refptr",
       "../../../../api/environment",
       "../../../../api/environment:environment_factory",
       "../../../../api/units:data_size",
@@ -193,8 +195,10 @@ if (rtc_include_tests) {
       "../../../../api/video:video_frame_type",
       "../../../../api/video_codecs:scalability_mode",
       "../../../../api/video_codecs:video_codecs_api",
+      "../../../../common_video",
       "../../../../modules/rtp_rtcp:rtp_rtcp_format",
       "../../../../rtc_base:checks",
+      "../../../../system_wrappers",
       "../../../../test:create_test_environment",
       "../../../../test:create_test_field_trials",
       "../../../../test:fileutils",
@@ -243,6 +247,7 @@ if (rtc_include_tests) {
       ":libaom_av1_encoder_v2",
       "../../../../api:scoped_refptr",
       "../../../../api/units:data_size",
+      "../../../../api/units:time_delta",
       "../../../../api/units:timestamp",
       "../../../../api/video:resolution",
       "../../../../api/video:video_frame",

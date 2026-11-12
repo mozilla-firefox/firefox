@@ -459,7 +459,10 @@ struct FrameEncodeSettings {
   reference buffer used for prediction must have a resolution that is a multiple
   of the supported scaling factors.
 - **`reference_buffers`**: List of reference buffer slots the encoder is allowed
-  to reference when encoding this frame. It may choose to use only a subset.
+  to reference when encoding this frame. It may choose to use only a subset. The
+  list is in order of preference, most useful (typically the most recently
+  updated) first, and encoders that favor some references over others should
+  follow that order.
 - **`update_buffer`**: Which buffer that the encoded frame should be placed in.
   For keyframes and startframes this must be set.
 - **`effort_level`**: Indicates the amount of effort the encoder should spend

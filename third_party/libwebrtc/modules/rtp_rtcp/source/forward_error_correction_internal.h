@@ -11,9 +11,9 @@
 #ifndef MODULES_RTP_RTCP_SOURCE_FORWARD_ERROR_CORRECTION_INTERNAL_H_
 #define MODULES_RTP_RTCP_SOURCE_FORWARD_ERROR_CORRECTION_INTERNAL_H_
 
-#include <stddef.h>
-#include <stdint.h>
-
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <span>
 
 #include "modules/include/module_fec_types.h"
@@ -47,13 +47,13 @@ class PacketMaskTable {
   std::span<const uint8_t> LookUp(int num_media_packets, int num_fec_packets);
 
  private:
-  static const uint8_t* PickTable(FecMaskType fec_mask_type,
-                                  int num_media_packets);
-  const uint8_t* table_;
-  uint8_t fec_packet_mask_[kFECPacketMaskMaxSize];
+  static std::span<const uint8_t> PickTable(FecMaskType fec_mask_type,
+                                            int num_media_packets);
+  const std::span<const uint8_t> table_;
+  std::array<uint8_t, kFECPacketMaskMaxSize> fec_packet_mask_;
 };
 
-std::span<const uint8_t> LookUpInFecTable(const uint8_t* table,
+std::span<const uint8_t> LookUpInFecTable(std::span<const uint8_t> table,
                                           int media_packet_index,
                                           int fec_index);
 
@@ -75,15 +75,14 @@ std::span<const uint8_t> LookUpInFecTable(const uint8_t* table,
 //                                     class, which contains the type of FEC
 //                                     packet mask used, and a pointer to the
 //                                     corresponding packet masks.
-// \param[out] packet_mask             A pointer to hold the packet mask array,
-//                                     of size: num_fec_packets *
-//                                     "number of mask bytes".
+// \param[out] packet_mask             Packet mask array, of size:
+//                                     `num_fec_packets * number of mask bytes`.
 void GeneratePacketMasks(int num_media_packets,
                          int num_fec_packets,
                          int num_imp_packets,
                          bool use_unequal_protection,
                          PacketMaskTable* mask_table,
-                         uint8_t* packet_mask);
+                         std::span<uint8_t> packet_mask);
 
 // Returns the required packet mask size, given the number of sequence numbers
 // that will be covered.
@@ -94,7 +93,7 @@ size_t PacketMaskSize(size_t num_sequence_numbers);
 // byte will be filled with zeros from `new_bit_index`, but the next byte will
 // be untouched.
 void InsertZeroColumns(int num_zeros,
-                       uint8_t* new_mask,
+                       std::span<uint8_t> new_mask,
                        int new_mask_bytes,
                        int num_fec_packets,
                        int new_bit_index);
@@ -107,9 +106,9 @@ void InsertZeroColumns(int num_zeros,
 // The copied bit is shifted out from `old_mask` and is shifted one step to
 // the left in `new_mask`. `new_mask` will contain "xxxx xxn0" after this
 // operation, where x are previously inserted bits and n is the new bit.
-void CopyColumn(uint8_t* new_mask,
+void CopyColumn(std::span<uint8_t> new_mask,
                 int new_mask_bytes,
-                uint8_t* old_mask,
+                std::span<uint8_t> old_mask,
                 int old_mask_bytes,
                 int num_fec_packets,
                 int new_bit_index,

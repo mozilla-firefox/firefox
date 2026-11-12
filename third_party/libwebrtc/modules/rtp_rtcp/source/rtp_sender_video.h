@@ -22,6 +22,7 @@
 #include "api/field_trials_view.h"
 #include "api/frame_transformer_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sframe/sframe_types.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "api/transport/rtp/dependency_descriptor.h"
 #include "api/units/data_rate.h"
@@ -36,6 +37,7 @@
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/absolute_capture_time_sender.h"
 #include "modules/rtp_rtcp/source/active_decode_targets_helper.h"
+#include "modules/rtp_rtcp/source/rtp_format.h"
 #include "modules/rtp_rtcp/source/rtp_sender.h"
 #include "modules/rtp_rtcp/source/rtp_sender_video_frame_transformer_delegate.h"
 #include "modules/rtp_rtcp/source/rtp_video_header.h"
@@ -52,7 +54,6 @@
 namespace webrtc {
 
 class FrameEncryptorInterface;
-class RtpPacketizer;
 class RtpPacketToSend;
 
 // kConditionallyRetransmitHigherLayers allows retransmission of video frames
@@ -212,6 +213,15 @@ class RTPSenderVideo : public RTPVideoFrameSenderInterface {
       size_t encoder_output_size);
 
   bool red_enabled() const { return red_payload_type_.has_value(); }
+
+  RtpPacketizer::PacketizationFormat GetPacketizationFormat(
+      VideoCodecType codec_type) const;
+
+  // Returns whether an Sframe encryptor is configured.
+  bool IsSframeEncryptionSupported() const;
+
+  // Returns whether negotiation requires Sframe and `mode` is configured.
+  bool IsSframeModeActive(SframeMode mode) const;
 
   bool UpdateConditionalRetransmit(uint8_t temporal_id,
                                    TimeDelta expected_retransmission_time)

@@ -1,63 +1,33 @@
 From: Michael Froman <mfroman@mozilla.com>
-Date: Tue, 7 Apr 2026 19:06:00 -0500
-Subject: Bug 2030139 - (fix-15fd636394) disable perfetto usage to avoid new
- third_party library.
+Date: Wed, 8 Apr 2026 10:58:00 -0500
+Subject: Bug 2030139 - (fix-bb3693c382) fix linux builds for constexpr
+ containing std::string
 
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/f1981bae2720ec8087be98eb7f5f323c1d233640
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/cab51cf0d4e9e67e9f5b053128d05e859d47b7c2
 ---
- video/video_stream_encoder.cc | 20 ++++++++------------
- 1 file changed, 8 insertions(+), 12 deletions(-)
+ modules/portal/pipewire_utils.cc | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/video/video_stream_encoder.cc b/video/video_stream_encoder.cc
-index 5eceb29d7c..438b74a8d0 100644
---- a/video/video_stream_encoder.cc
-+++ b/video/video_stream_encoder.cc
-@@ -844,13 +844,11 @@ void VideoStreamEncoder::AddAdaptationResource(
-   // Map any externally added resources as kCpu for the sake of stats reporting.
-   // TODO(hbos): Make the manager map any unknown resources to kCpu and get rid
-   // of this MapResourceToReason() call.
--  TRACE_EVENT_BEGIN("webrtc",
--                    "VideoStreamEncoder::AddAdaptationResource(latency)",
--                    perfetto::Track::FromPointer(this));
-+  TRACE_EVENT_ASYNC_BEGIN0(
-+      "webrtc", "VideoStreamEncoder::AddAdaptationResource(latency)", this);
-   encoder_queue_->PostTask([this, resource = std::move(resource)] {
--    TRACE_EVENT_END("webrtc",
--                    /* VideoStreamEncoder::AddAdaptationResource(latency) */
--                    perfetto::Track::FromPointer(this));
-+    TRACE_EVENT_ASYNC_END0(
-+        "webrtc", "VideoStreamEncoder::AddAdaptationResource(latency)", this);
-     RTC_DCHECK_RUN_ON(encoder_queue_.get());
-     additional_resources_.push_back(resource);
-     stream_resource_manager_.AddResource(resource, VideoAdaptationReason::kCpu);
-@@ -1691,8 +1689,7 @@ void VideoStreamEncoder::TraceFrameDropStart() {
-   RTC_DCHECK_RUN_ON(encoder_queue_.get());
-   // Start trace event only on the first frame after encoder is paused.
-   if (!encoder_paused_and_dropped_frame_) {
--    TRACE_EVENT_BEGIN("webrtc", "EncoderPaused",
--                      perfetto::Track::FromPointer(this));
-+    TRACE_EVENT_ASYNC_BEGIN0("webrtc", "EncoderPaused", this);
-   }
-   encoder_paused_and_dropped_frame_ = true;
- }
-@@ -1701,8 +1698,7 @@ void VideoStreamEncoder::TraceFrameDropEnd() {
-   RTC_DCHECK_RUN_ON(encoder_queue_.get());
-   // End trace event on first frame after encoder resumes, if frame was dropped.
-   if (encoder_paused_and_dropped_frame_) {
--    TRACE_EVENT_END("webrtc", /* EncoderPaused */
--                    perfetto::Track::FromPointer(this));
-+    TRACE_EVENT_ASYNC_END0("webrtc", "EncoderPaused", this);
-   }
-   encoder_paused_and_dropped_frame_ = false;
- }
-@@ -2158,8 +2154,8 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
-   }
-   accumulated_update_rect_is_valid_ = true;
+diff --git a/modules/portal/pipewire_utils.cc b/modules/portal/pipewire_utils.cc
+index b17b4d1065..bdea4318e7 100644
+--- a/modules/portal/pipewire_utils.cc
++++ b/modules/portal/pipewire_utils.cc
+@@ -33,9 +33,18 @@
  
--  TRACE_EVENT_INSTANT("webrtc", "Encode", perfetto::Track::FromPointer(this),
--                      "render_time", video_frame.render_time_ms());
-+  TRACE_EVENT_ASYNC_STEP_INTO0("webrtc", "Video", video_frame.render_time_ms(),
-+                               "Encode");
+ namespace webrtc {
  
-   stream_resource_manager_.OnEncodeStarted(out_frame, time_when_posted_us);
++#if defined(__GNUC__) && defined(WEBRTC_MOZILLA_BUILD)
++// Mozilla linux builds are using -std=gnu++20, which doesn't approve
++// of using std::string in a constexpr.  PipewireVersion now contains
++// std::string as of libwebrtc commit d167fe9296.
++static const PipeWireVersion kReentrantDeinitMinVersion = {.major = 0,
++                                                           .minor = 3,
++                                                           .micro = 49};
++#else
+ constexpr PipeWireVersion kReentrantDeinitMinVersion = {.major = 0,
+                                                         .minor = 3,
+                                                         .micro = 49};
++#endif
  
+ PipeWireVersion PipeWireVersion::Parse(const std::string_view& version) {
+   std::vector<std::string_view> parsed_version = split(version, '.');

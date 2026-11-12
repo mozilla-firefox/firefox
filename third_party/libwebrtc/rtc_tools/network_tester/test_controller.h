@@ -65,6 +65,11 @@ class TestController {
 
   bool IsTestDone();
 
+  int local_port() const {
+    RTC_DCHECK_RUN_ON(&test_controller_thread_checker_);
+    return local_port_;
+  }
+
  private:
   void OnReadPacket(AsyncPacketSocket* socket,
                     const ReceivedIpPacket& received_packet);
@@ -83,6 +88,7 @@ class TestController {
       RTC_GUARDED_BY(packet_sender_thread_);
   std::unique_ptr<AsyncPacketSocket> udp_socket_
       RTC_GUARDED_BY(packet_sender_thread_);
+  int local_port_ RTC_GUARDED_BY(test_controller_thread_checker_) = 0;
   SocketAddress remote_address_;
   std::unique_ptr<PacketSender> packet_sender_
       RTC_GUARDED_BY(packet_sender_thread_);

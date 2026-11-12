@@ -13,6 +13,7 @@
 #include <optional>
 #include <vector>
 
+#include "api/transport/ecn_marking.h"
 #include "api/units/timestamp.h"
 #include "rtc_base/copy_on_write_buffer.h"
 #include "test/gtest.h"
@@ -40,8 +41,8 @@ TEST(DtlsPacketProcessorTest, FramesAndStripsDataOnlyPacket) {
   EXPECT_EQ(wire[0], DtlsPacketProcessor::kPacketTypeData);
   EXPECT_EQ(wire.size(), payload.size() + 3);
 
-  std::optional<CopyOnWriteBuffer> app_payload =
-      receiver.ProcessIncomingPacket(wire, Timestamp::Millis(101));
+  std::optional<CopyOnWriteBuffer> app_payload = receiver.ProcessIncomingPacket(
+      wire, Timestamp::Millis(101), EcnMarking::kNotEct);
   ASSERT_TRUE(app_payload.has_value());
   EXPECT_EQ(ToVector(*app_payload), payload);
 }
@@ -62,16 +63,20 @@ TEST(DtlsPacketProcessorTest, ReservedTypeIsDropped) {
   DtlsPacketProcessor receiver;
 
   CopyOnWriteBuffer junk(std::vector<uint8_t>{0x02, 1, 2, 3});
-  EXPECT_FALSE(
-      receiver.ProcessIncomingPacket(junk, Timestamp::Millis(1)).has_value());
+  EXPECT_FALSE(receiver
+                   .ProcessIncomingPacket(junk, Timestamp::Millis(1),
+                                          EcnMarking::kNotEct)
+                   .has_value());
 }
 
 TEST(DtlsPacketProcessorTest, EmptyPacketIsDropped) {
   DtlsPacketProcessor receiver;
 
-  EXPECT_FALSE(
-      receiver.ProcessIncomingPacket(CopyOnWriteBuffer(), Timestamp::Millis(1))
-          .has_value());
+  EXPECT_FALSE(receiver
+                   .ProcessIncomingPacket(CopyOnWriteBuffer(),
+                                          Timestamp::Millis(1),
+                                          EcnMarking::kNotEct)
+                   .has_value());
 }
 
 TEST(DtlsPacketProcessorTest, TruncatedDataPacketIsDropped) {
@@ -80,7 +85,9 @@ TEST(DtlsPacketProcessorTest, TruncatedDataPacketIsDropped) {
   // Type byte present but missing part of the sequence number.
   CopyOnWriteBuffer truncated(
       std::vector<uint8_t>{DtlsPacketProcessor::kPacketTypeData, 0x00});
-  EXPECT_FALSE(receiver.ProcessIncomingPacket(truncated, Timestamp::Millis(1))
+  EXPECT_FALSE(receiver
+                   .ProcessIncomingPacket(truncated, Timestamp::Millis(1),
+                                          EcnMarking::kNotEct)
                    .has_value());
 }
 

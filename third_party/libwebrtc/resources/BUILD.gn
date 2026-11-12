@@ -189,24 +189,6 @@ group("video_engine_tests_data") {
   data = video_engine_tests_resources
 }
 
-scenario_config_resources = [
-  "difficult_photo_1850_1110.yuv",
-  "photo_1850_1110.yuv",
-  "presentation_1850_1110.yuv",
-  "web_screenshot_1850_1110.yuv",
-]
-
-group("scenario_config_resources") {
-  data = scenario_config_resources
-}
-if (is_ios) {
-  bundle_data("scenario_config_resources_bundle_data") {
-    testonly = true
-    sources = scenario_config_resources
-    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-  }
-}
-
 video_coding_tests_resources = [
   "foreman_128x96.yuv",
   "foreman_160x120.yuv",

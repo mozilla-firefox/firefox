@@ -7,7 +7,7 @@ Differential Revision: https://phabricator.services.mozilla.com/D106145
 Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/d0b311007c033e83824f5f6996a70ab9e870f31f
 ---
  audio/audio_receive_stream.cc                |  6 ++++--
- audio/channel_receive.cc                     |  8 +++++++-
+ audio/channel_receive.cc                     |  9 ++++++++-
  audio/channel_receive.h                      |  2 ++
  call/audio_receive_stream.h                  |  3 +++
  call/video_receive_stream.cc                 |  2 ++
@@ -17,7 +17,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/d0b311007c033e838
  modules/rtp_rtcp/source/rtcp_receiver.h      |  1 +
  modules/rtp_rtcp/source/rtp_rtcp_interface.h |  3 +++
  video/rtp_video_stream_receiver2.cc          |  3 +++
- 11 files changed, 53 insertions(+), 6 deletions(-)
+ 11 files changed, 54 insertions(+), 6 deletions(-)
 
 diff --git a/audio/audio_receive_stream.cc b/audio/audio_receive_stream.cc
 index aff523be6c..f8d5e58730 100644
@@ -44,7 +44,7 @@ index aff523be6c..f8d5e58730 100644
  }  // namespace
  
 diff --git a/audio/channel_receive.cc b/audio/channel_receive.cc
-index 4adf6ed84d..c8fb2b1c09 100644
+index 875de922ba..aa2d9d269c 100644
 --- a/audio/channel_receive.cc
 +++ b/audio/channel_receive.cc
 @@ -119,12 +119,14 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
@@ -94,12 +94,13 @@ index 4adf6ed84d..c8fb2b1c09 100644
      PacketRouter* absl_nonnull packet_router,
      absl::AnyInvocable<void(const RtpPacketInfos&, Timestamp) const>
          on_frame_delivered_callback) {
-@@ -1242,7 +1248,7 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
+@@ -1242,7 +1248,8 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
        jitter_buffer_max_packets, jitter_buffer_fast_playout,
-       jitter_buffer_min_delay_ms, enable_non_sender_rtt, decoder_factory,
-       std::move(frame_decryptor), crypto_options, std::move(frame_transformer),
--      std::move(on_first_packet), packet_router,
-+      std::move(on_first_packet), rtcp_event_observer, packet_router,
+       jitter_buffer_min_delay_ms, enable_non_sender_rtt,
+       std::move(decoder_factory), std::move(frame_decryptor), crypto_options,
+-      std::move(frame_transformer), std::move(on_first_packet), packet_router,
++      std::move(frame_transformer), std::move(on_first_packet),
++      rtcp_event_observer, packet_router,
        std::move(on_frame_delivered_callback));
  }
  
@@ -272,7 +273,7 @@ index 0063849904..b5878404d8 100644
  
      RtcpRttStats* rtt_stats = nullptr;
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 52691cfc80..bfbb9d0345 100644
+index 1d3bb151e4..9883bc5208 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
 @@ -131,6 +131,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(

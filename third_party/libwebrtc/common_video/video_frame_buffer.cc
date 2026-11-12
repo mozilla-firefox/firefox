@@ -122,11 +122,13 @@ class I444BufferBase : public I444BufferInterface {
 
 scoped_refptr<I420BufferInterface> I444BufferBase::ToI420() {
   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
-  libyuv::I444ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
-                     width(), height());
+  if (libyuv::I444ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
+                         StrideV(), i420_buffer->MutableDataY(),
+                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
+                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
+                         i420_buffer->StrideV(), width(), height()) != 0) {
+    return nullptr;
+  }
   return i420_buffer;
 }
 
@@ -137,11 +139,13 @@ class I422BufferBase : public I422BufferInterface {
 
 scoped_refptr<I420BufferInterface> I422BufferBase::ToI420() {
   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
-  libyuv::I422ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
-                     width(), height());
+  if (libyuv::I422ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
+                         StrideV(), i420_buffer->MutableDataY(),
+                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
+                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
+                         i420_buffer->StrideV(), width(), height()) != 0) {
+    return nullptr;
+  }
   return i420_buffer;
 }
 
@@ -207,11 +211,13 @@ class I010BufferBase : public I010BufferInterface {
 
 scoped_refptr<I420BufferInterface> I010BufferBase::ToI420() {
   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
-  libyuv::I010ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
-                     width(), height());
+  if (libyuv::I010ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
+                         StrideV(), i420_buffer->MutableDataY(),
+                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
+                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
+                         i420_buffer->StrideV(), width(), height()) != 0) {
+    return nullptr;
+  }
   return i420_buffer;
 }
 
@@ -222,11 +228,13 @@ class I210BufferBase : public I210BufferInterface {
 
 scoped_refptr<I420BufferInterface> I210BufferBase::ToI420() {
   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
-  libyuv::I210ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
-                     width(), height());
+  if (libyuv::I210ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
+                         StrideV(), i420_buffer->MutableDataY(),
+                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
+                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
+                         i420_buffer->StrideV(), width(), height()) != 0) {
+    return nullptr;
+  }
   return i420_buffer;
 }
 
@@ -237,11 +245,13 @@ class I410BufferBase : public I410BufferInterface {
 
 scoped_refptr<I420BufferInterface> I410BufferBase::ToI420() {
   scoped_refptr<I420Buffer> i420_buffer = I420Buffer::Create(width(), height());
-  libyuv::I410ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(), StrideV(),
-                     i420_buffer->MutableDataY(), i420_buffer->StrideY(),
-                     i420_buffer->MutableDataU(), i420_buffer->StrideU(),
-                     i420_buffer->MutableDataV(), i420_buffer->StrideV(),
-                     width(), height());
+  if (libyuv::I410ToI420(DataY(), StrideY(), DataU(), StrideU(), DataV(),
+                         StrideV(), i420_buffer->MutableDataY(),
+                         i420_buffer->StrideY(), i420_buffer->MutableDataU(),
+                         i420_buffer->StrideU(), i420_buffer->MutableDataV(),
+                         i420_buffer->StrideV(), width(), height()) != 0) {
+    return nullptr;
+  }
   return i420_buffer;
 }
 
