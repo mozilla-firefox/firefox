@@ -1652,7 +1652,7 @@ def run(venv=None, config_cls=ConfigBuilder, route_builder=None,
         if bind_address:
             stash_address = (config.server_host, 0)
 
-        with stash.StashServer(stash_address, authkey=str(uuid.uuid4())):
+        with stash.StashServer(stash_address, authkey=str(uuid.uuid4()), mp_context=mp_context):
             servers = start(logger, config, routes, mp_context, log_handlers, **kwargs)
 
             if not kwargs.get("exit_after_start"):
