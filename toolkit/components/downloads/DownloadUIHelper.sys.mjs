@@ -21,7 +21,7 @@ ChromeUtils.defineLazyGetter(
   "l10n",
   () =>
     new Localization(
-      ["toolkit/downloads/downloadUI.ftl", "toolkit/branding/brandings.ftl"],
+      ["toolkit/downloads/downloadUI.ftl", "branding/brand.ftl"],
       true
     )
 );
