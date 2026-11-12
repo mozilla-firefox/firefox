@@ -860,7 +860,9 @@ pub fn substitute_references_if_needed_and_apply(
                 .substitution_functions
                 .insert_attr(name, value);
         },
-        SubstitutionFunctionKind::Env | SubstitutionFunctionKind::Ident => {
+        SubstitutionFunctionKind::Env
+        | SubstitutionFunctionKind::Ident
+        | SubstitutionFunctionKind::Inherit => {
             unreachable!("Kind must be `var` or `attr`.")
         },
     }

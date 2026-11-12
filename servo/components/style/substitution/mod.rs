@@ -8,10 +8,12 @@
 pub mod attr;
 pub mod env;
 pub mod ident;
+pub mod inherit;
 pub mod var;
 
+use crate::Atom;
 use crate::custom_properties::{
-    ComputedSubstitutionFunctions, ComputedValue, Name, VariableValue, compute_value,
+    ComputedSubstitutionFunctions, ComputedValue, Name, VariableValue, compute_value, parse_name,
 };
 use crate::derives::*;
 use crate::dom::AttributeTracker;
@@ -37,6 +39,7 @@ use style_traits::{ParseError, ParsingMode, StyleParseErrorKind};
 pub use self::attr::AttrFunction;
 pub use self::env::EnvFunction;
 pub use self::ident::IdentFunction;
+pub use self::inherit::InheritFunction;
 pub use self::var::VarFunction;
 
 /// Substitution function name.
@@ -51,6 +54,8 @@ pub enum SubstitutionFunctionKind {
     Attr,
     /// The ident() substitution function
     Ident,
+    /// The inherit() substitution function
+    Inherit,
 }
 
 impl SubstitutionFunctionKind {
@@ -64,6 +69,9 @@ impl SubstitutionFunctionKind {
             "attr" => Self::Attr,
             "ident" if static_prefs::pref!("layout.css.ident-function.enabled") => {
                 Self::Ident
+            },
+            "inherit" if static_prefs::pref!("layout.css.inherit-function.enabled") => {
+                Self::Inherit
             },
             _ => return Err(()),
         })
@@ -470,6 +478,8 @@ pub enum SubstitutionFunction {
     Attr(AttrFunction),
     /// An `ident()` reference.
     Ident(IdentFunction),
+    /// An `inherit()` reference.
+    Inherit(InheritFunction),
 }
 
 impl SubstitutionFunction {
@@ -485,6 +495,9 @@ impl SubstitutionFunction {
             SubstitutionFunctionKind::Env => Self::Env(EnvFunction::parse(input, context)?),
             SubstitutionFunctionKind::Attr => Self::Attr(AttrFunction::parse(input, context)?),
             SubstitutionFunctionKind::Ident => Self::Ident(IdentFunction::parse(input, context)?),
+            SubstitutionFunctionKind::Inherit => {
+                Self::Inherit(InheritFunction::parse(input, context)?)
+            },
         })
     }
 
@@ -495,7 +508,7 @@ impl SubstitutionFunction {
             Self::Var(..) => ReferenceFlags::VAR,
             Self::Env(..) => ReferenceFlags::ENV,
             Self::Attr(..) => ReferenceFlags::ATTR,
-            Self::Ident(..) => ReferenceFlags::empty(),
+            Self::Ident(..) | Self::Inherit(..) => ReferenceFlags::empty(),
         }
     }
 
@@ -509,6 +522,7 @@ impl SubstitutionFunction {
             Self::Env(function) => function.replace(source, context),
             Self::Attr(function) => function.replace(source, context),
             Self::Ident(function) => function.replace(source, context),
+            Self::Inherit(function) => function.replace(source, context),
         }
     }
 
@@ -523,6 +537,7 @@ impl SubstitutionFunction {
             Self::Env(function) => function.for_each_unparsed_value(f),
             Self::Attr(function) => function.for_each_unparsed_value(f),
             Self::Ident(function) => function.for_each_unparsed_value(f),
+            Self::Inherit(function) => function.for_each_unparsed_value(f),
         }
     }
 }
@@ -977,4 +992,17 @@ pub fn substitute<'a>(
         css: v.css,
         attr_taint,
     })
+}
+
+/// A custom property name, without the leading `--`.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct CustomPropertyName(pub Name);
+
+impl Parse for CustomPropertyName {
+    fn parse(_: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        parse_name(input.expect_ident()?.as_ref())
+            .map(Atom::from)
+            .map(CustomPropertyName)
+            .map_err(|_| ParseError::custom(StyleParseErrorKind::UnexpectedIdent))
+    }
 }
