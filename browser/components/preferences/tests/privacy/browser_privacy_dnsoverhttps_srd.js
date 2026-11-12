@@ -317,3 +317,122 @@ add_task(async function testProviderSelectFallsBackToCustom() {
     id: "global",
   });
 });
+
+// Bug 2052678: switching the resolver dropdown away from
+// "custom" to a built-in provider used to lose the previously entered custom
+// URI.
+add_task(async function testCustomProviderTextbox() {
+  await DoHTestUtils.loadRemoteSettingsConfig({
+    providers: "example-1, example-2",
+    rolloutEnabled: true,
+    steeringEnabled: false,
+    steeringProviders: "",
+    autoDefaultEnabled: false,
+    autoDefaultProviders: "",
+    id: "global",
+  });
+
+  const CUSTOM_URI = "https://custom-provider.example/dns-query";
+
+  Services.prefs.setIntPref(TRR_MODE_PREF, Ci.nsIDNSService.MODE_TRRFIRST);
+  Services.prefs.setStringPref(TRR_CUSTOM_URI_PREF, CUSTOM_URI);
+  Services.prefs.setStringPref(TRR_URI_PREF, CUSTOM_URI);
+
+  await openPreferencesViaOpenPreferencesAPI("dnsOverHttps", {
+    leaveOpen: true,
+  });
+  let win = gBrowser.selectedBrowser.contentWindow;
+
+  let providerSelect = await TestUtils.waitForCondition(() =>
+    win.Preferences.getSetting("dohProviderSelect")
+  );
+  let customProvider = await TestUtils.waitForCondition(() =>
+    win.Preferences.getSetting("dohCustomProvider")
+  );
+
+  is(
+    providerSelect.value,
+    "custom",
+    "URI outside the provider list starts the dropdown on 'custom'"
+  );
+  is(
+    customProvider.value,
+    CUSTOM_URI,
+    "dohCustomProvider is backed by network.trr.custom_uri"
+  );
+  ok(
+    customProvider.visible,
+    "Custom textbox is visible while 'custom' is selected"
+  );
+
+  info("Switch dropdown to a built-in provider");
+  providerSelect.userChange(FIRST_RESOLVER_VALUE);
+
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    FIRST_RESOLVER_VALUE,
+    "Selecting a built-in provider updates network.trr.uri"
+  );
+  is(
+    Services.prefs.getStringPref(TRR_CUSTOM_URI_PREF),
+    CUSTOM_URI,
+    "network.trr.custom_uri is not clobbered by switching to a built-in"
+  );
+  ok(
+    !customProvider.visible,
+    "Custom textbox is hidden while a built-in provider is selected"
+  );
+
+  info("Switch back to 'custom'; the last custom URI must be restored");
+  providerSelect.userChange("custom");
+
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    CUSTOM_URI,
+    "Re-selecting 'custom' restores network.trr.uri from network.trr.custom_uri"
+  );
+  is(
+    customProvider.value,
+    CUSTOM_URI,
+    "dohCustomProvider still exposes the stored custom URI"
+  );
+  ok(customProvider.visible, "Custom textbox is visible again");
+
+  gBrowser.removeCurrentTab();
+
+  info("With an empty custom_uri, switching to 'custom' falls back to a space");
+  Services.prefs.setStringPref(TRR_URI_PREF, FIRST_RESOLVER_VALUE);
+  Services.prefs.clearUserPref(TRR_CUSTOM_URI_PREF);
+
+  await openPreferencesViaOpenPreferencesAPI("dnsOverHttps", {
+    leaveOpen: true,
+  });
+  win = gBrowser.selectedBrowser.contentWindow;
+  providerSelect = await TestUtils.waitForCondition(() =>
+    win.Preferences.getSetting("dohProviderSelect")
+  );
+
+  providerSelect.userChange("custom");
+  is(
+    Services.prefs.getStringPref(TRR_URI_PREF),
+    FIRST_RESOLVER_VALUE,
+    "Empty custom_uri when switching to custom keeps the current resolver in the TRR URI pref"
+  );
+  is(
+    Services.prefs.getStringPref(TRR_CUSTOM_URI_PREF),
+    FIRST_RESOLVER_VALUE,
+    "Empty custom_uri when switching to custom moves the current resolver into the custom TRR URI pref"
+  );
+
+  gBrowser.removeCurrentTab();
+  await resetPrefs();
+  await DoHTestUtils.loadRemoteSettingsConfig({
+    providers: "",
+    rolloutEnabled: false,
+    steeringEnabled: false,
+    steeringProviders: "",
+    autoDefaultEnabled: false,
+    autoDefaultProviders: "",
+    id: "global",
+  });
+});
