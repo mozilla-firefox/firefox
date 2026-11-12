@@ -92,7 +92,7 @@ span.unexpected_pass,
 #results-table td {
   padding: 5px;
   border: 1px solid #e6e6e6;
-  text-align: left;
+  text-align: start;
 }
 #results-table th {
   font-weight: bold;
@@ -118,8 +118,8 @@ span.unexpected_pass,
 }
 div.screenshot {
   border: 1px solid #e6e6e6;
-  float: left;
-  margin-left: 5px;
+  float: inline-start;
+  margin-inline-start: 5px;
   height: 220px;
 }
 div.screenshot img {
@@ -141,14 +141,14 @@ div.screenshot img {
 
 .sort-icon {
   font-size: 0;
-  float: left;
-  margin-right: 5px;
+  float: inline-start;
+  margin-inline-end: 5px;
   margin-top: 5px;
   /*triangle*/
   width: 0;
   height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
+  border-inline-start: 8px solid transparent;
+  border-inline-end: 8px solid transparent;
 }
 
 .inactive .sort-icon {

@@ -13,10 +13,7 @@ body {
 
 .layerHover > .layerPreview::after {
   position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   content: "";
   background-color: rgba(0, 0, 0, 0.2);
   box-shadow: -2px 2px 0 #fff;

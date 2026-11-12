@@ -12,8 +12,7 @@ body {
   bottom: 0;
   /* Overrides the singletest height: 100% so that bottom: 0 applies. */
   height: auto;
-  right: 0;
-  left: 0;
+  inset-inline: 0;
   overflow: auto;
 }
 
@@ -21,9 +20,8 @@ th,
 td {
   font-family: Verdana, Helvetica, Arial, sans-serif;
   font-size: 11px;
-  padding-left: 0.2em;
-  padding-right: 0.2em;
-  text-align: left;
+  padding-inline: 0.2em;
+  text-align: start;
   height: 15px;
   margin: 0;
 }
@@ -38,19 +36,19 @@ li.dir {
 ul {
   list-style: none;
   margin: 0;
-  margin-left: 1em;
+  margin-inline-start: 1em;
   padding: 0;
   border: none;
 }
 
 ul.top {
   padding: 0;
-  padding-left: 1em;
+  padding-inline-start: 1em;
 }
 
 table#test-table {
   background: #f6f6f6;
-  margin-left: 1em;
+  margin-inline-start: 1em;
   padding: 0;
 }
 

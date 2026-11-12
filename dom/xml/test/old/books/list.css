@@ -32,8 +32,8 @@ Synopsis {
 
 ListPrice {
   display: none;
-  text-align: right;
-  padding-right: 15px;
+  text-align: end;
+  padding-inline-end: 15px;
   text-decoration: line-through;
 }
 
@@ -41,7 +41,7 @@ Price {
   display: block;
   color: rgb(20, 100, 0);
   font-weight: bold;
-  text-align: left;
+  text-align: start;
 }
 
 Price:before {

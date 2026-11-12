@@ -35,10 +35,7 @@ body {
   display: block;
   font-size: 16px;
   position: relative;
-  padding-left: 15px;
-  padding-right: 15px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding: 10px 15px;
   margin-bottom: 0;
   user-select: none;
   vertical-align: middle;
@@ -81,7 +78,7 @@ body {
   position: fixed;
   top: 70px;
   bottom: 0;
-  margin-left: 66%;
+  margin-inline-start: 66%;
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -111,7 +108,7 @@ body {
 }
 
 #artifact-option {
-  margin-right: 0;
+  margin-inline-end: 0;
 }
 
 #large-push-warning {
@@ -126,7 +123,7 @@ body {
 
 #push {
   background-color: #00e9b7;
-  margin-left: 5px;
+  margin-inline-start: 5px;
   width: 100%;
 }
 
@@ -166,7 +163,7 @@ body {
 
 .selection-remove {
   flex-shrink: 0;
-  margin-left: 6px;
+  margin-inline-start: 6px;
   padding: 0 6px;
   background: transparent;
   border: none;

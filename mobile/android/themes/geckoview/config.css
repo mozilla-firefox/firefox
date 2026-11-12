@@ -47,7 +47,7 @@ body {
   display: flow-root;
   position: sticky;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   z-index: 10;
   /* This page's --toolbar-background-color is a local variable, not the token; the text color comes from the html, body rule above. */
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-paired-color-tokens */
@@ -126,7 +126,7 @@ body {
   display: inline-block;
   height: 3em;
   min-width: 3em;
-  float: right;
+  float: inline-end;
 }
 
 #content {
@@ -163,7 +163,7 @@ body {
   max-height: 100%;
   position: fixed;
   top: 3em;
-  left: auto;
+  inset-inline-start: auto;
   display: none;
   z-index: 5;
 }
@@ -256,7 +256,7 @@ body {
   display: flex;
   opacity: 1;
   flex: 0 1 auto;
-  float: right;
+  float: inline-end;
 }
 
 #new-pref-container .pref-button.cancel,
@@ -341,7 +341,7 @@ body {
   background-color: rgba(0, 0, 0, 0.45);
   position: fixed;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   opacity: 0;
   transition-property: opacity;
   transition-duration: 500ms;
@@ -360,7 +360,7 @@ body {
   height: 1.25em;
   border: 0.15em solid currentColor;
   margin: 1em auto;
-  border-right-color: transparent;
+  border-inline-end-color: transparent;
   border-radius: 100%;
   opacity: 0.8;
   animation: 1.1s linear infinite spin;
