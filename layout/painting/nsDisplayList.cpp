@@ -8970,16 +8970,10 @@ void nsDisplayMasksAndClipPaths::PrintEffects(nsACString& aTo) {
   // XXX Check return value?
   SVGObserverUtils::GetAndObserveClipPath(firstFrame, &clipPathFrame);
   if (clipPathFrame) {
-    if (!first) {
-      aTo += ", ";
-    }
     aTo += nsPrintfCString(
         "clip(%s)", clipPathFrame->IsTrivial() ? "trivial" : "non-trivial");
     first = false;
   } else if (mFrame->StyleSVGReset()->HasClipPath()) {
-    if (!first) {
-      aTo += ", ";
-    }
     aTo += "clip(basic-shape)";
     first = false;
   }
@@ -9222,16 +9216,12 @@ WebRenderCommandsResult nsDisplayFilters::CreateWebRenderCommands(
 void nsDisplayFilters::PrintEffects(nsACString& aTo) {
   nsIFrame* firstFrame =
       nsLayoutUtils::FirstContinuationOrIBSplitSibling(mFrame);
-  bool first = true;
   aTo += " effects=(";
   // We may exist for a mix of CSS filter functions and/or references to SVG
   // filters.  If we have invalid references to SVG filters then we paint
   // nothing, but otherwise we will apply one or more filters.
   if (SVGObserverUtils::GetAndObserveFilters(firstFrame, nullptr) !=
       SVGObserverUtils::ReferenceState::HasRefsSomeInvalid) {
-    if (!first) {
-      aTo += ", ";
-    }
     aTo += "filter";
   }
   aTo += ")";
