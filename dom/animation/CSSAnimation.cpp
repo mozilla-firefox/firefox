@@ -9,6 +9,8 @@
 #include "mozilla/TimeStamp.h"
 #include "mozilla/dom/CSSAnimationBinding.h"
 #include "mozilla/dom/KeyframeEffectBinding.h"
+#include "nsAnimationManager.h"
+#include "nsContentUtils.h"
 #include "nsPresContext.h"
 
 namespace mozilla::dom {
@@ -79,6 +81,55 @@ bool CSSAnimation::PendingFromJS() const {
   // changed its possible we should now be pending.
   FlushUnanimatedStyle();
   return Animation::PendingFromJS();
+}
+
+void CSSAnimation::RemovedNamedTimelineReference(const nsAtom* aName) {
+  // Go through the owning element: the effect's target may have been changed
+  // or removed by script. An animation that style no longer owns has already
+  // been dropped.
+  if (!mOwningElement.IsSet()) {
+    return;
+  }
+  nsPresContext* presContext =
+      nsContentUtils::GetContextForContent(mOwningElement.Target().mElement);
+  if (!presContext) {
+    return;
+  }
+  if (auto* manager = presContext->AnimationManager()) {
+    manager->RemoveNamedTimelineAnimation(aName, this);
+  }
+}
+
+void CSSAnimation::CancelFromStyle(PostRestyleMode aPostRestyle) {
+  // Style no longer owns this animation, so nsAnimationManager must stop
+  // updating its named timeline reference.
+  if (const nsAtom* name = GetTimelineName().mName) {
+    RemovedNamedTimelineReference(name);
+  }
+
+  Animation::Cancel(aPostRestyle);
+
+  // When an animation is disassociated with style it enters an odd state
+  // where its composite order is undefined until it first transitions
+  // out of the idle state.
+  //
+  // Even if the composite order isn't defined we don't want it to be random
+  // in case we need to determine the order to dispatch events associated
+  // with an animation in this state. To solve this we treat the animation as
+  // if it had been added to the end of the global animation list so that
+  // its sort order is defined. We'll update this index again once the
+  // animation leaves the idle state.
+  //
+  // Note: We have to update |mAnimationIndex| after calling
+  // Animation::Cancel(), which enqueues animationcancel event, to make sure
+  // we have the correct |mAnimationIndex| in AnimationEventInfo.
+  mAnimationIndex = sNextAnimationIndex++;
+  mNeedsNewAnimationIndexWhenRun = true;
+
+  // We need to do this *after* calling Cancel() since
+  // Cancel() might synchronously trigger a cancel event for which
+  // we need an owning element to target the event at.
+  mOwningElement = OwningElementRef();
 }
 
 void CSSAnimation::PlayFromJS(ErrorResult& aRv) {

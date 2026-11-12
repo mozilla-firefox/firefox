@@ -34,14 +34,16 @@ class TimelineManager {
   }
 
   void Disconnect() {
-    mScrollTimelineNameMap.Clear();
+    // Destroying a collection unregisters its timelines, so the maps are
+    // cleared afterwards.
     while (auto* head = mScrollTimelineCollections.getFirst()) {
       head->Destroy();
     }
-    mViewTimelineNameMap.Clear();
+    mScrollTimelineNameMap.Clear();
     while (auto* head = mViewTimelineCollections.getFirst()) {
       head->Destroy();
     }
+    mViewTimelineNameMap.Clear();
     while (auto* head = mTimelineScopes.getFirst()) {
       head->Destroy();
     }
@@ -56,6 +58,11 @@ class TimelineManager {
   nsTArray<RefPtr<const nsAtom>> UpdateTimelines(
       dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest,
       const ComputedStyle* aComputedStyle, ProgressTimelineType aType);
+  // Called by a collection's destructor to remove its timelines from the name
+  // maps.
+  void UnregisterTimelines(
+      TimelineCollection<dom::ScrollTimeline>& aCollection);
+  void UnregisterTimelines(TimelineCollection<dom::ViewTimeline>& aCollection);
 
   void UpdateTimelineScopes(dom::Element* aElement,
                             const PseudoStyleRequest& aPseudoRequest,
@@ -113,11 +120,15 @@ class TimelineManager {
       const PseudoStyleRequest& aPseudoRequest,
       TimelineNameMap<TimelineType>& aTimelineNameMap);
 
+  template <typename TimelineType>
+  static void DoUnregisterTimelines(
+      TimelineCollection<TimelineType>& aCollection,
+      TimelineNameMap<TimelineType>& aTimelineNameMap);
+
   // Destroy all timelines relating to the given (pseudo) element.
   template <typename TimelineType>
   nsTArray<RefPtr<const nsAtom>> TryDestroyTimeline(
-      dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest,
-      TimelineNameMap<TimelineType>& aTimelineNameMap);
+      dom::Element* aElement, const PseudoStyleRequest& aPseudoRequest);
 
 #ifdef DEBUG
   // Assert that we do not have a timeline target for the given (pseudo) element
