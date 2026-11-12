@@ -753,8 +753,6 @@ class XPCShellRemote(xpcshell.XPCShellTests):
                 self.env.pop(key, None)
 
     def shutdownNode(self):
-        self.device.pull_ccov()
-
         super().shutdownNode()
 
         if "MOZHTTP2_PORT" in self.env:

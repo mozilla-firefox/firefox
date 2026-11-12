@@ -161,7 +161,6 @@ class RemoteCPPUnitTests(cppunittests.CPPUnitTests):
             if mozcrash.check_for_crashes(tempdir, symbols_path, test_name=basename):
                 self.log.test_end(basename, status="CRASH", expected="PASS")
                 return False
-        self.device.pull_ccov()
         result = returncode == 0
         if not result:
             self.log.test_end(

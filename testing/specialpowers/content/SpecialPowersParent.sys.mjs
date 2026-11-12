@@ -1188,10 +1188,6 @@ export class SpecialPowersParent extends JSWindowActorParent {
           return lazy.PerTestCoverageUtils.beforeTest();
         }
 
-        case "SPRequestFinalDumpCoverageCounters": {
-          return lazy.PerTestCoverageUtils.afterSuite();
-        }
-
         case "SPCheckServiceWorkers": {
           let swm = Cc["@mozilla.org/serviceworkers/manager;1"].getService(
             Ci.nsIServiceWorkerManager

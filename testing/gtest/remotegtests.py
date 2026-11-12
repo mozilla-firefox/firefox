@@ -152,7 +152,6 @@ class RemoteGTests:
         )
         timed_out = waiter.wait(self.package)
         self.shutdown(use_kill=True if timed_out else False)
-        self.device.pull_ccov()
         if self.perfherder_data and "MOZ_AUTOMATION" in os.environ:
             upload_dir = pathlib.Path(os.getenv("MOZ_UPLOAD_DIR"))
             upload_dir.mkdir(parents=True, exist_ok=True)

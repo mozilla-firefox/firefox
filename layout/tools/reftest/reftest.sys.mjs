@@ -1028,8 +1028,6 @@ async function StartCurrentURI(aURLTargetType) {
 function DoneTests() {
   PerTestCoverageUtils.afterTest()
     .catch(e => logger.error("EXCEPTION: " + e))
-    .then(PerTestCoverageUtils.afterSuite)
-    .catch(e => logger.error("EXCEPTION: " + e))
     .then(() => {
       if (g.manageSuite) {
         g.suiteStarted = false;

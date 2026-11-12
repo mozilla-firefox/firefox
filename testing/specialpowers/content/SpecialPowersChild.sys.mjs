@@ -1959,15 +1959,6 @@ export class SpecialPowersChild extends JSWindowActorChild {
     await this.sendQuery("SPRequestResetCoverageCounters", {});
   }
 
-  async requestFinalDumpCoverageCounters() {
-    // We want to avoid a roundtrip between child and parent.
-    if (!lazy.PerTestCoverageUtils.enabled_on_exit) {
-      return;
-    }
-
-    await this.sendQuery("SPRequestFinalDumpCoverageCounters", {});
-  }
-
   loadExtension(ext, handler) {
     if (this._extensionListeners == null) {
       this._extensionListeners = new Set();

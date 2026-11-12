@@ -83,24 +83,6 @@ export var PerTestCoverageUtils = class PerTestCoverageUtilsClass {
   static afterTestSync() {
     awaitPromise(this.afterTest());
   }
-
-  // Dumps counters for non-per-test coverage on Android where the atexit handler doesn't run
-  static async afterSuite() {
-    if (!PerTestCoverageUtils.enabled_on_exit) {
-      return;
-    }
-
-    // Flush the counters.
-    let codeCoverageService = Cc[
-      "@mozilla.org/tools/code-coverage;1"
-    ].getService(Ci.nsICodeCoverage);
-    await codeCoverageService.flushCounters();
-  }
-
-  static afterSuiteSync() {
-    awaitPromise(this.afterSuite());
-  }
 };
 
 PerTestCoverageUtils.enabled = !!gcovResultsPath;
-PerTestCoverageUtils.enabled_on_exit = !!gcovPrefixPath && !gcovResultsPath;
