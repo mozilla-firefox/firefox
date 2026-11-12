@@ -8587,7 +8587,7 @@
 # is performed by the enclosing nsDisplayBlendMode stacking context.
 - name: gfx.webrender.svg-shapes.blend
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 # SVG <text> with a plain opaque fill and no stroke is drawn with WebRender
