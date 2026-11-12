@@ -399,5 +399,90 @@ def test_build_decision_perfherder_data(
     jsonschema.validate(data, schema)
 
 
+@pytest.mark.parametrize(
+    "project,override,ttc,expected",
+    (
+        pytest.param("autoland", False, None, True, id="autoland"),
+        pytest.param("try", True, None, False, id="no try_task_config"),
+        pytest.param(
+            "try",
+            True,
+            {"version": 2, "parameters": {"test_manifest_loader": "bugbug"}},
+            True,
+            id="bugbug loader",
+        ),
+        pytest.param(
+            "try",
+            False,
+            {"version": 2, "parameters": {"test_manifest_loader": "bugbug"}},
+            False,
+            id="override disallowed",
+        ),
+        pytest.param(
+            "try",
+            True,
+            {"version": 2, "parameters": {"test_manifest_loader": "default"}},
+            False,
+            id="default loader",
+        ),
+        pytest.param("try", True, {"tasks": ["a"]}, False, id="version 1"),
+    ),
+)
+def test_uses_bugbug(project, override, ttc, expected):
+    options = {"project": project, "allow_parameter_override": override}
+    with MockedOpen({TTC_FILE: json.dumps(ttc) if ttc is not None else None}):
+        assert decision.uses_bugbug(options) == expected
+
+
+def test_shared_bugbug_query(monkeypatch):
+    from gecko_taskgraph.util.bugbug import PUSH_SCHEDULES_ENV
+
+    monkeypatch.setattr(decision.create, "testing", False)
+    monkeypatch.delenv(PUSH_SCHEDULES_ENV, raising=False)
+    started = []
+    calls = []
+
+    class FakeProc:
+        def kill(self):
+            calls.append("kill")
+
+        def wait(self):
+            calls.append("wait")
+
+    def fake_start_push_schedules(branch, rev, result_path):
+        started.append((branch, rev, result_path))
+        return FakeProc()
+
+    monkeypatch.setattr(decision, "start_push_schedules", fake_start_push_schedules)
+    options = {"project": "autoland", "head_rev": "abcdef"}
+
+    with decision.shared_bugbug_query(options) as yielded_path:
+        [(branch, rev, result_path)] = started
+        assert yielded_path == result_path
+        assert (branch, rev) == ("autoland", "abcdef")
+        assert os.environ[PUSH_SCHEDULES_ENV] == result_path
+        result_dir = os.path.dirname(result_path)
+        assert os.path.isdir(result_dir)
+        with open(result_path, "w") as fh:
+            fh.write("{}")
+
+    assert calls == ["kill", "wait"]
+    assert not os.path.exists(result_dir)
+    assert PUSH_SCHEDULES_ENV not in os.environ
+
+
+def test_shared_bugbug_query_unused(monkeypatch):
+    from gecko_taskgraph.util.bugbug import PUSH_SCHEDULES_ENV
+
+    monkeypatch.setattr(decision.create, "testing", False)
+    monkeypatch.delenv(PUSH_SCHEDULES_ENV, raising=False)
+    monkeypatch.setattr(decision, "start_push_schedules", None)
+    options = {"project": "mozilla-central", "head_rev": "abcdef"}
+
+    with decision.shared_bugbug_query(options) as result_path:
+        assert result_path is None
+        assert PUSH_SCHEDULES_ENV not in os.environ
+
+
 if __name__ == "__main__":
     main()

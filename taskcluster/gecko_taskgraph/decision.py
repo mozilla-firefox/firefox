@@ -35,7 +35,12 @@ from .actions import render_actions_json
 from .files_changed import get_changed_files
 from .parameters import get_app_version, get_version
 from .util.backstop import ANDROID_PERFTEST_BACKSTOP_INDEX, BACKSTOP_INDEX, is_backstop
-from .util.bugbug import push_schedules, start_push_schedules
+from .util.bugbug import (
+    PUSH_SCHEDULES_ENV,
+    push_schedules,
+    read_push_schedules_data,
+    start_push_schedules,
+)
 from .util.hg import get_hg_revision_metadata
 from .util.partials import populate_release_history
 from .util.taskcluster import insert_index
@@ -234,7 +239,7 @@ def build_decision_perfherder_data(trust_domain, params_time, taskgraph_time):
     }
 
 
-def taskgraph_decision(options, parameters):
+def taskgraph_decision(options, parameters, bugbug_result_path=None):
     """
     Run the decision task.  This function implements `mach taskgraph decision`,
     and is responsible for
@@ -245,18 +250,11 @@ def taskgraph_decision(options, parameters):
      * calling TaskCluster APIs to create the graph
 
     The ``parameters`` argument must be a pre-resolved ``Parameters`` object.
+    ``bugbug_result_path`` is the path yielded by ``shared_bugbug_query``, if
+    any; the result written there is stored as an artifact if it is ready.
     """
 
     decision_task_id = os.environ["TASK_ID"]
-
-    # Start querying bugbug early, so its results are ready sooner for the
-    # optimizers, and so they are stored even on pushes that don't use them
-    # (e.g. backstop pushes).
-    bugbug_future = None
-    if not create.testing and parameters["project"] == "autoland":
-        bugbug_future = start_push_schedules(
-            parameters["project"], parameters["head_rev"]
-        )
 
     with source_bundle(parameters["head_rev"], parameters["repository_type"]):
         # create a TaskGraphGenerator instance
@@ -346,13 +344,19 @@ def taskgraph_decision(options, parameters):
         )
 
         # write bugbug scheduling information if it was invoked or is ready
+        bugbug_data = None
         if push_schedules.cache_info().currsize > 0:
-            write_artifact(
-                "bugbug-push-schedules.json",
-                push_schedules(tgg.parameters["project"], tgg.parameters["head_rev"]),
+            bugbug_data = push_schedules(
+                tgg.parameters["project"], tgg.parameters["head_rev"]
             )
-        elif bugbug_future and bugbug_future.done() and not bugbug_future.exception():
-            write_artifact("bugbug-push-schedules.json", bugbug_future.result())
+        elif bugbug_result_path:
+            bugbug_data = read_push_schedules_data(
+                bugbug_result_path,
+                tgg.parameters["project"],
+                tgg.parameters["head_rev"],
+            )
+        if bugbug_data is not None:
+            write_artifact("bugbug-push-schedules.json", bugbug_data)
         else:
             logger.info(
                 "Bugbug results not available, not writing bugbug-push-schedules.json"
@@ -520,11 +524,7 @@ def get_decision_parameters(graph_config, options):
     # load extra parameters from file or note if able
     if options.get("allow_parameter_override"):
         note_ref = "refs/notes/decision-parameters"
-        if options.get("try_task_config_file"):
-            task_config_file = os.path.abspath(options.get("try_task_config_file"))
-        else:
-            task_config_file = os.path.join(os.getcwd(), "try_task_config.json")
-
+        task_config_file = get_try_task_config_file(options)
         if os.path.isfile(task_config_file):
             set_try_config(parameters, task_config_file)
             parameters["try_mode"] = "try_task_config"
@@ -601,6 +601,55 @@ def get_git_files_changed(repo, parameters):
             SystemResourceMonitor.end_marker("git", text)
 
     return repo.get_changed_files(rev=parameters["head_rev"], base=base_rev)
+
+
+@contextmanager
+def shared_bugbug_query(options):
+    """Start the bugbug query for the push, if the test kinds will use it, and
+    share its result with them for the duration of the context.
+
+    Yields the path the query writes its result to, or None if it wasn't
+    started.
+    """
+    if create.testing or not uses_bugbug(options):
+        yield None
+        return
+
+    result_dir = tempfile.mkdtemp(prefix="bugbug-")
+    result_path = os.path.join(result_dir, "bugbug-push-schedules.json")
+    os.environ[PUSH_SCHEDULES_ENV] = result_path
+    proc = start_push_schedules(options["project"], options["head_rev"], result_path)
+    try:
+        yield result_path
+    finally:
+        proc.kill()
+        proc.wait()
+        os.environ.pop(PUSH_SCHEDULES_ENV, None)
+        shutil.rmtree(result_dir, ignore_errors=True)
+
+
+def get_try_task_config_file(options):
+    if options.get("try_task_config_file"):
+        return os.path.abspath(options["try_task_config_file"])
+    return os.path.join(os.getcwd(), "try_task_config.json")
+
+
+def uses_bugbug(options):
+    """Whether the test kinds will query bugbug, as far as can be told before
+    the parameters are resolved."""
+    if options["project"] == "autoland":
+        return True
+    if not options.get("allow_parameter_override"):
+        return False
+    try:
+        with open(get_try_task_config_file(options)) as fh:
+            task_config = json.load(fh)
+    except (OSError, ValueError):
+        return False
+    return (
+        task_config.get("version") == 2
+        and task_config["parameters"].get("test_manifest_loader") == "bugbug"
+    )
 
 
 def set_try_config(parameters, task_config_file):

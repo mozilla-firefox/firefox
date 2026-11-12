@@ -274,6 +274,7 @@ def taskgraph_decision(command_context, **options):
     from gecko_taskgraph.decision import (
         build_decision_perfherder_data,
         get_decision_parameters,
+        shared_bugbug_query,
         taskgraph_decision,
     )
     from taskgraph.config import load_graph_config
@@ -296,31 +297,37 @@ def taskgraph_decision(command_context, **options):
                 monitor.accept_forwarded(forward_path)
 
         try:
-            t_params_start = time.monotonic()
-            if monitor is not None:
-                monitor.begin_phase("parameters")
-            graph_config = load_graph_config(options.get("root") or "taskcluster")
-            register_gecko_taskgraph(graph_config)
-            # Honor the graph_config's own register hook (e.g.
-            # comm_taskgraph:register for Thunderbird) before parameters
-            # resolve. GraphConfig.register() inserts root_dir into sys.path
-            # and then calls the hook, which extends sys.path further and
-            # registers comm-specific parameters with the schema.
-            register_path = graph_config["taskgraph"].get("register")
-            if register_path and register_path != "gecko_taskgraph:register":
-                graph_config.register()
-            parameters = get_decision_parameters(graph_config, options)
-            t_params_end = time.monotonic()
-            if monitor is not None:
-                monitor.finish_phase("parameters")
+            # Start the bugbug query before anything else, as it takes a while to
+            # complete and blocks generating the tasks of the test kinds, which
+            # wait for its result rather than querying bugbug again.
+            with shared_bugbug_query(options) as bugbug_result_path:
+                t_params_start = time.monotonic()
+                if monitor is not None:
+                    monitor.begin_phase("parameters")
+                graph_config = load_graph_config(options.get("root") or "taskcluster")
+                register_gecko_taskgraph(graph_config)
+                # Honor the graph_config's own register hook (e.g.
+                # comm_taskgraph:register for Thunderbird) before parameters
+                # resolve. GraphConfig.register() inserts root_dir into sys.path
+                # and then calls the hook, which extends sys.path further and
+                # registers comm-specific parameters with the schema.
+                register_path = graph_config["taskgraph"].get("register")
+                if register_path and register_path != "gecko_taskgraph:register":
+                    graph_config.register()
+                parameters = get_decision_parameters(graph_config, options)
+                t_params_end = time.monotonic()
+                if monitor is not None:
+                    monitor.finish_phase("parameters")
 
-            t_taskgraph_start = time.monotonic()
-            if monitor is not None:
-                monitor.begin_phase("taskgraph")
-            ret = taskgraph_decision(options, parameters)
-            t_taskgraph_end = time.monotonic()
-            if monitor is not None:
-                monitor.finish_phase("taskgraph")
+                t_taskgraph_start = time.monotonic()
+                if monitor is not None:
+                    monitor.begin_phase("taskgraph")
+                ret = taskgraph_decision(
+                    options, parameters, bugbug_result_path=bugbug_result_path
+                )
+                t_taskgraph_end = time.monotonic()
+                if monitor is not None:
+                    monitor.finish_phase("taskgraph")
         finally:
             if monitor is not None:
                 monitor.stop()

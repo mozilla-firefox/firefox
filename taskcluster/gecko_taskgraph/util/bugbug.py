@@ -7,13 +7,12 @@ import functools
 import hashlib
 import os
 import pathlib
+import subprocess
 import sys
-import threading
 import time
-from concurrent.futures import Future
 
 import requests
-from mozsystemmonitor.resourcemonitor import SystemResourceMonitor
+from mozsystemmonitor.resourcemonitor import FORWARD_ENV, SystemResourceMonitor
 from taskgraph import create
 from taskgraph.util import json
 from taskgraph.util.taskcluster import requests_retry_session
@@ -27,6 +26,13 @@ except ImportError:
 BUGBUG_BASE_URL = "https://bugbug.moz.tools"
 RETRY_TIMEOUT = 9 * 60  # seconds
 RETRY_INTERVAL = 2  # seconds
+
+# Names the file a query started by start_push_schedules writes its result to,
+# for push_schedules to wait for rather than querying bugbug itself. Being in
+# the environment, it reaches the processes kinds are loaded in, however they
+# are started.
+PUSH_SCHEDULES_ENV = "GECKO_BUGBUG_PUSH_SCHEDULES"
+RESULT_POLL_INTERVAL = 0.2  # seconds
 
 # Preset confidence thresholds.
 CT_VERY_LOW = 0.3
@@ -140,17 +146,16 @@ def _write_perfherder_data(lower_is_better):
             json.dump(perfherder_data, f)
 
 
-def _get_when_ready(url, session, timeout):
+def _get_when_ready(url, session, deadline):
     """Query ``url`` until bugbug stops answering 202 (result still being
-    computed) or ``timeout`` seconds have passed. Returns the last response
-    and the number of retries."""
-    attempts = timeout / RETRY_INTERVAL
+    computed) or ``deadline`` is reached. Returns the last response and the
+    number of retries."""
     i = 0
-    while i < attempts:
+    while True:
         r = session.get(url)
         r.raise_for_status()
 
-        if r.status_code != 202:
+        if r.status_code != 202 or monotonic() + RETRY_INTERVAL > deadline:
             break
 
         time.sleep(RETRY_INTERVAL)
@@ -158,26 +163,83 @@ def _get_when_ready(url, session, timeout):
     return r, i
 
 
-def _fetch_push_schedules(branch, rev, session, *, write_perfherder_data=True):
-    # Noop if we're in test-action-callback
-    if create.testing:
-        return
+def _push_schedules_url(branch, rev):
+    return BUGBUG_BASE_URL + f"/push/{branch}/{rev}/schedules"
 
-    url = BUGBUG_BASE_URL + f"/push/{branch}/{rev}/schedules"
-    start = monotonic()
 
+def _push_schedules_timeout(branch):
     # On try there is no fallback and pulling is slower, so we allow bugbug more
     # time to compute the results.
     # See https://github.com/mozilla/bugbug/issues/1673.
     timeout = RETRY_TIMEOUT
     if branch == "try":
         timeout += int(timeout / 3)
+    return timeout
 
+
+def _write_push_schedules_result(path, result):
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w") as fh:
+        json.dump(result, fh)
+    os.replace(tmp_path, path)
+
+
+def _read_push_schedules_result(path):
     try:
-        r, i = _get_when_ready(url, session, timeout)
+        with open(path) as fh:
+            return json.load(fh)
+    except FileNotFoundError:
+        return None
+
+
+def read_push_schedules_data(path, branch, rev):
+    """Return the data a query started by start_push_schedules wrote to `path`,
+    or None if it isn't there (yet), failed, or is for another push."""
+    result = _read_push_schedules_result(path)
+    if result is None or (result["branch"], result["rev"]) != (branch, rev):
+        return None
+    return result.get("data")
+
+
+def _wait_for_push_schedules_result(path, branch, rev):
+    """Wait for the result a query started by start_push_schedules writes to
+    `path`, and return it, or None if it doesn't come or is for another push."""
+    start = monotonic()
+    # The query gives up after the same timeout, counted from when it started,
+    # which is before we did; leave time for its last request.
+    deadline = start + _push_schedules_timeout(branch) + 60
+    result = None
+    try:
+        while result is None and monotonic() < deadline:
+            result = _read_push_schedules_result(path)
+            if result is None:
+                time.sleep(RESULT_POLL_INTERVAL)
+    finally:
+        SystemResourceMonitor.record_marker(
+            "bugbug wait",
+            start,
+            monotonic(),
+            {"type": "Text", "text": _push_schedules_url(branch, rev)},
+        )
+    if result is None or (result["branch"], result["rev"]) != (branch, rev):
+        return None
+    return result
+
+
+def _fetch_push_schedules(branch, rev, session, *, write_perfherder_data=True):
+    # Noop if we're in test-action-callback
+    if create.testing:
+        return
+
+    url = _push_schedules_url(branch, rev)
+    start = monotonic()
+
+    deadline = start + _push_schedules_timeout(branch)
+    try:
+        r, i = _get_when_ready(url, session, deadline)
     finally:
         end = monotonic()
-        SystemResourceMonitor.record_marker(
+        SystemResourceMonitor.forward_marker(
             "bugbug", start, end, {"type": "Text", "text": url}
         )
 
@@ -206,6 +268,13 @@ def _fetch_push_schedules(branch, rev, session, *, write_perfherder_data=True):
 
 @functools.cache
 def push_schedules(branch, rev):
+    if path := os.environ.get(PUSH_SCHEDULES_ENV):
+        result = _wait_for_push_schedules_result(path, branch, rev)
+        if result is not None:
+            if "data" in result:
+                return result["data"]
+            if "timeout" in result:
+                raise BugbugTimeoutException(result["timeout"])
     return _fetch_push_schedules(branch, rev, get_session())
 
 
@@ -214,37 +283,46 @@ def push_perf_risk(branch, rev):
     """Return bugbug's performance regression risk prediction for the push
     of ``rev``, which scores each of its commits."""
     url = BUGBUG_BASE_URL + f"/perfregressionpredictor/predict/push/{branch}/{rev}"
-    r, _ = _get_when_ready(url, get_session(), RETRY_TIMEOUT)
+    deadline = monotonic() + RETRY_TIMEOUT
+    r, _ = _get_when_ready(url, get_session(), deadline)
     if r.status_code == 202:
         raise BugbugTimeoutException(f"Timed out waiting for result from '{url}'")
     return r.json()
 
 
-def start_push_schedules(branch, rev):
-    """Start querying bugbug for the push schedules in a daemon thread.
+def start_push_schedules(branch, rev, result_path):
+    """Start querying bugbug for the push schedules in a child process, which
+    writes the result to `result_path`, for push_schedules to read when
+    PUSH_SCHEDULES_ENV names it. Returns the `subprocess.Popen` object.
 
-    Returns a `Future` that callers can either check or ignore; since the
-    thread is a daemon, it won't keep the process alive if bugbug is slow.
-
-    The future isn't cached, so that the processes taskgraph forks to load kinds
-    don't wait for a thread that isn't copied into them. The thread uses its own
-    session, so that those processes don't inherit and reuse its open
-    connections, and so that it doesn't share a session with the main thread.
+    This doesn't use a thread because taskgraph forks processes to load kinds,
+    and a fork while the thread holds a lock (e.g. the one of sys.stderr, when
+    logging) leaves the lock held forever in the forked process.
     """
-    future = Future()
+    env = dict(os.environ, PYTHONPATH=os.pathsep.join(sys.path))
+    monitor = SystemResourceMonitor.instance
+    if monitor and monitor.children_forward_path:
+        env[FORWARD_ENV] = monitor.children_forward_path
+    return subprocess.Popen(
+        [sys.executable, "-m", __name__, branch, rev, result_path],
+        env=env,
+        stdin=subprocess.DEVNULL,
+    )
 
-    def run():
-        try:
-            future.set_result(
-                _fetch_push_schedules(
-                    branch, rev, _new_session(), write_perfherder_data=False
-                )
-            )
-        except Exception as e:
-            future.set_exception(e)
 
-    threading.Thread(target=run, daemon=True).start()
-    return future
+def _run_push_schedules_query(branch, rev, result_path):
+    result = {"branch": branch, "rev": rev}
+    try:
+        result["data"] = _fetch_push_schedules(branch, rev, _new_session())
+    except BugbugTimeoutException as e:
+        result["timeout"] = str(e)
+    except Exception as e:
+        result["error"] = repr(e)
+    try:
+        _write_push_schedules_result(result_path, result)
+    except OSError:
+        # The decision task may have finished and cleaned up already.
+        pass
 
 
 @functools.cache
@@ -313,3 +391,7 @@ def patch_schedules(base_rev, patch_content, mode="quick"):
         )
 
     return {k: v for k, v in data["groups"].items() if v >= confidence_threshold}
+
+
+if __name__ == "__main__":
+    _run_push_schedules_query(*sys.argv[1:])
