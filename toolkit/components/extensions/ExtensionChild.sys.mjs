@@ -532,7 +532,7 @@ export class ExtensionChild extends EventEmitter {
   }
 
   getAPIManager() {
-    /** @type {InstanceType<typeof ExtensionCommon.LazyAPIManager>[]} */
+    /** @type {InstanceType<typeof ExtensionCommon.SchemaAPIManager>[]} */
     let apiManagers = [lazy.ExtensionPageChild.apiManager];
 
     if (this.dependencies) {
@@ -566,6 +566,7 @@ export class ExtensionChild extends EventEmitter {
     lazy.ExtensionContent.shutdownExtension(this);
     Services.cpmm.removeMessageListener(this.MESSAGE_EMIT_EVENT, this);
     this.emit("shutdown");
+    this.experimentAPIManager?.disableNewScripts();
   }
 
   getContext(window) {

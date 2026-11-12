@@ -1463,6 +1463,8 @@ class SchemaAPIManager extends EventEmitter {
     this._scriptScopes = [];
   }
 
+  lazyInit() {}
+
   onStartup(extension) {
     let promises = [];
     for (let apiName of this.eventModules.get("startup")) {
@@ -1696,6 +1698,7 @@ class SchemaAPIManager extends EventEmitter {
     }
 
     this._checkLoadModule(module, name);
+    this._checkExecuteModule(module, name);
 
     this.initGlobal();
 
@@ -1728,12 +1731,16 @@ class SchemaAPIManager extends EventEmitter {
     }
 
     this._checkLoadModule(module, name);
+    this._checkExecuteModule(module, name);
 
     module.asyncLoaded = ChromeUtils.compileScript(module.url).then(script => {
       // In some rare cases, loadModule() may have been called since we started
       // the async compileScript call. In that case, return the result that we
       // already got from loadModule.
       if (!module.loaded) {
+        // Check again, because async.
+        this._checkExecuteModule(module, name);
+
         this.initGlobal();
         script.executeInGlobal(this.global);
 
@@ -1813,6 +1820,14 @@ class SchemaAPIManager extends EventEmitter {
       );
     }
   }
+
+  /**
+   * Checks whether the given API module's script may be executed. Unlike
+   * `_checkLoadModule`, the result may change while a module is being loaded
+   * asynchronously, so callers must check again immediately before executing
+   * the script.
+   */
+  _checkExecuteModule(_module, _name) {}
 
   /**
    * Create a global object that is used as the shared global for all ext-*.js
@@ -1903,9 +1918,27 @@ class LazyAPIManager extends SchemaAPIManager {
     this.initModuleData(moduleData);
 
     this.schemaURLs = schemaURLs;
+    this.newScriptsDisabled = false;
   }
 
-  lazyInit() {}
+  /**
+   * Prevents any module scripts that have not already been executed from
+   * being loaded or executed, including those still being loaded
+   * asynchronously. Called when the extension that declared the modules shuts
+   * down, so that none of its scripts start running afterwards.
+   */
+  disableNewScripts() {
+    this.newScriptsDisabled = true;
+  }
+
+  _checkExecuteModule(module, name) {
+    super._checkExecuteModule(module, name);
+    if (this.newScriptsDisabled) {
+      throw new Error(
+        `Cannot load module '${name}' because new scripts are disabled`
+      );
+    }
+  }
 }
 
 defineLazyGetter(LazyAPIManager.prototype, "schema", function () {
