@@ -1,0 +1,37 @@
+//expect: PTaintedCompoundParent.cpp: maybe__a = IPC::ReadParam<Tainted<TaintedStruct>>
+//expect: PTaintedCompoundParent.cpp: maybe__b = IPC::ReadParam<Tainted<mozilla::Maybe<TaintedStruct>>>
+//expect: PTaintedCompoundParent.cpp: maybe__c = IPC::ReadParam<Tainted<nsTArray<TaintedStruct>>>
+//expect: PTaintedCompoundParent.cpp: maybe__d = IPC::ReadParam<Tainted<TaintedHeaderStruct>>
+//expect: PTaintedCompoundParent.cpp: maybe__e = IPC::ReadParam<TaintedStruct>
+//expect: PTaintedCompoundParent.cpp: maybe__f = IPC::ReadParam<PlainStruct>
+//expect: PTaintedCompoundParent.cpp: maybe__g = IPC::ReadParam<Tainted<TaintedUnion>>
+//expect: PTaintedCompoundParent.cpp: maybe__h = IPC::ReadParam<Tainted<TaintedHeaderUnion>>
+//expect: PTaintedCompoundParent.cpp: maybe__i = IPC::ReadParam<TaintedUnion>
+//expect: PTaintedCompoundChild.cpp: maybe__a = IPC::ReadParam<TaintedStruct>
+//expect: PTaintedCompoundChild.cpp: maybe__b = IPC::ReadParam<TaintedUnion>
+
+include TaintedCompoundHeader;
+
+[Tainted] struct TaintedStruct {
+    int x;
+};
+
+struct PlainStruct {
+    int x;
+};
+
+[Tainted] union TaintedUnion {
+    int;
+    bool;
+};
+
+[ChildProc=any]
+protocol PTaintedCompound {
+parent:
+    async Foo(TaintedStruct a, TaintedStruct? b, TaintedStruct[] c,
+              TaintedHeaderStruct d, [NoTaint=passback] TaintedStruct e,
+              PlainStruct f, TaintedUnion g, TaintedHeaderUnion h,
+              [NoTaint=allvalid] TaintedUnion i);
+child:
+    async Bar(TaintedStruct a, TaintedUnion b);
+};

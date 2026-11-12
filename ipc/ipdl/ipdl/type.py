@@ -524,9 +524,13 @@ class ActorType(IPDLType):
 
 
 class _CompoundType(IPDLType):
-    def __init__(self):
+    def __init__(self, tainted=False):
         self.defined = False  # bool
         self.mutualRec = set()  # set(_CompoundType | ArrayType)
+        self.tainted = tainted
+
+    def isTainted(self):
+        return self.tainted
 
     def isAtom(self):
         return False
@@ -567,8 +571,8 @@ class _CompoundType(IPDLType):
 
 
 class StructType(_CompoundType):
-    def __init__(self, qname, fields):
-        _CompoundType.__init__(self)
+    def __init__(self, qname, fields, tainted=False):
+        _CompoundType.__init__(self, tainted)
         self.qname = qname
         self.fields = fields  # [ Type ]
 
@@ -586,8 +590,8 @@ class StructType(_CompoundType):
 
 
 class UnionType(_CompoundType):
-    def __init__(self, qname, components):
-        _CompoundType.__init__(self)
+    def __init__(self, qname, components, tainted=False):
+        _CompoundType.__init__(self, tainted)
         self.qname = qname
         self.components = components  # [ Type ]
 
@@ -778,8 +782,8 @@ def iteractortypes(t, visited=None):
 
 def hasTaintedBaseType(t):
     """Return true iff |t|, or the type wrapped by a nullable/maybe/array/
-    uniqueptr modifier, is a [Tainted] imported C++ type. Does not look inside
-    structs or unions."""
+    uniqueptr modifier, is a [Tainted] type. Does not look inside structs or
+    unions."""
     while t.isIPDL() and t.hasBaseType():
         t = t.basetype
     return t.isTainted()
@@ -1166,10 +1170,11 @@ class GatherDecls(TcheckVisitor):
         qname = su.qname()
         fullname = str(qname)
 
+        tainted = "Tainted" in su.attributes
         if isinstance(su, StructDecl):
-            sutype = StructType(qname, [])
+            sutype = StructType(qname, [], tainted)
         elif isinstance(su, UnionDecl):
-            sutype = UnionType(qname, [])
+            sutype = UnionType(qname, [], tainted)
         else:
             assert 0 and "unknown type"
 
@@ -1213,7 +1218,7 @@ class GatherDecls(TcheckVisitor):
         self.symtab.enterScope()
         sd.visited = True
 
-        self.checkAttributes(sd.attributes, {"Comparable": None})
+        self.checkAttributes(sd.attributes, {"Comparable": None, "Tainted": None})
 
         for f in sd.fields:
             ftypedecl = self.symtab.lookup(f.typespec.basename())
@@ -1244,7 +1249,7 @@ class GatherDecls(TcheckVisitor):
         if len(utype.components):
             return
 
-        self.checkAttributes(ud.attributes, {"Comparable": None})
+        self.checkAttributes(ud.attributes, {"Comparable": None, "Tainted": None})
 
         for c in ud.components:
             cdecl = self.symtab.lookup(c.basename())

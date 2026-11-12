@@ -1,0 +1,11 @@
+//error: argument typename `PlainStruct' of message `Foo' has a NoTaint attribute, but neither the message nor the type is Tainted
+
+struct PlainStruct {
+    int x;
+};
+
+[ChildProc=any]
+protocol PNoTaintUntaintedStruct {
+parent:
+    async Foo([NoTaint=passback] PlainStruct a);
+};

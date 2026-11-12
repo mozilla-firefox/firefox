@@ -1,0 +1,8 @@
+[Tainted] struct TaintedHeaderStruct {
+    int x;
+};
+
+[Tainted] union TaintedHeaderUnion {
+    int;
+    bool;
+};

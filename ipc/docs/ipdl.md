@@ -522,12 +522,15 @@ parameter security. The values of tainted parameters cannot be used until you
 vouch for their safety. They are discussed in [Actors and Messages in C++](#actors-and-messages-in-c).
 
 Tainting can also be applied to individual types instead of whole messages,
-by importing them with `[Tainted] using ...`. Any parameter of such a type,
-in any message, is then tainted on each actor side that may run in the parent
-process while the other side may run in a different process. This is
-determined from the `[ParentProc]` and `[ChildProc]` attributes of the
-protocol's toplevel protocols, so for `[ParentProc=GPU, ChildProc=Parent]`
-the child side is tainted instead of the parent side.
+by importing them with `[Tainted] using ...` or by declaring IPDL structs and
+unions as `[Tainted] struct ...` or `[Tainted] union ...`. Any parameter of
+such a type, in any message, is then tainted on each actor side that may run
+in the parent process while the other side may run in a different process.
+Tainting a struct or union does not taint other structs or unions that
+contain it. Which sides are tainted is determined from the `[ParentProc]` and
+`[ChildProc]` attributes of the protocol's toplevel protocols, so for
+`[ParentProc=GPU, ChildProc=Parent]` the child side is tainted instead of the
+parent side.
 
 Individual parameters can opt out of tainting with `[NoTaint=passback]`,
 `[NoTaint=allvalid]` or `[NoTaint="Bug XXXX"]`, where the value documents why
@@ -728,9 +731,9 @@ for use in IPDL files:
                               receive parameters that it is required to
                               manually validate.  Parameters of type ``T``
                               become ``Tainted<T>`` in C++.  When applied to
-                              an imported C++ type, parameters of that type
-                              received by the parent process from another
-                              process are tainted.
+                              an imported C++ type or an IPDL struct/union,
+                              parameters of that type received by the parent
+                              process from another process are tainted.
 ``[NoTaint=...]``             Excludes a message parameter from tainting.
                               The value is ``passback``, ``allvalid`` or
                               a string such as ``"Bug XXXX"``.

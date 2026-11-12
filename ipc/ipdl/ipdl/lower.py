@@ -1129,8 +1129,8 @@ class MessageDecl(ipdl.ast.MessageDecl):
     def isParamTainted(self, d, side):
         """Whether the in-param |d| received by |side| should be wrapped in
         Tainted<>: either the whole message is [Tainted], or |d|'s type is a
-        [Tainted] imported type (possibly wrapped) and |side| may receive it
-        from a less trusted process."""
+        [Tainted] type (possibly wrapped) and |side| may receive it from a less
+        trusted process."""
         if "NoTaint" in d.attributes:
             return False
         if self.decl.type.tainted:
