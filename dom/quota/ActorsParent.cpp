@@ -2818,7 +2818,9 @@ void QuotaManager::InitQuotaForOrigin(
   // state. Enqueuing here ensures the corrected metadata is flushed back.
   //
   // We set mMetadataDirty directly because the OriginInfo is not yet
-  // registered in GroupInfo, so DirtyTrackingAutoLock cannot look it up.
+  // registered in GroupInfo, so DirtyTrackingAutoLock cannot look it up. Set
+  // mLastModifiedTime here as well to match OriginInfo::MakeDirty; otherwise,
+  // FlushDirtyOriginInfos subtracts a null TimeStamp from now.
   //
   // Enqueue for storage-database flush when the existing row is stale or
   // missing.
@@ -2834,6 +2836,7 @@ void QuotaManager::InitQuotaForOrigin(
   if (!aFullOriginMetadata.mIsPrivate && !cacheRowMatches &&
       (fullOriginMetadata.mDirty || !aCacheMap.IsActive()) &&
       aDirectoryExists && !mUsageModificationDisabled.load()) {
+    originInfo->mLastModifiedTime = TimeStamp::Now();
     originInfo->mMetadataDirty = true;
     auto* message = new UnboundedMPSCQueue<RefPtr<OriginInfo>>::Message();
     message->data = originInfo;
