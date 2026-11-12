@@ -8553,7 +8553,7 @@
 # WebRender image's color multiplier instead of being rasterized in a blob.
 - name: gfx.webrender.svg-images.opacity
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 - name: gfx.webrender.svg-shapes
