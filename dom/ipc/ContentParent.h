@@ -678,17 +678,15 @@ class ContentParent final : public PContentParent,
       nsIPrincipal* aPrincipal,
       const EnumSet<ValidatePrincipalOptions>& aOptions = {});
 
-  // Validates a tainted principal received over IPC. Returns the untainted
-  // principal on success, or Nothing() if validation failed, in which case
-  // aPrincipal can still be passed to PrincipalValidationIpcFail.
+  // Validates a tainted principal received over IPC. Returns a reference to
+  // the untainted principal on success, or Nothing() if validation failed, in
+  // which case aPrincipal can still be passed to PrincipalValidationIpcFail.
   template <typename T>
-  Maybe<T> ValidatePrincipal(
+  Maybe<T&> ValidatePrincipal(
       Tainted<T>& aPrincipal,
       const EnumSet<ValidatePrincipalOptions>& aOptions = {}) {
-    if (!MOZ_IS_VALID(aPrincipal, ValidatePrincipal(aPrincipal, aOptions))) {
-      return Nothing();
-    }
-    return Some(MOZ_NO_VALIDATE(aPrincipal, "Validated above"));
+    return aPrincipal.ValidateRef(
+        [&](const T& aValue) { return ValidatePrincipal(aValue, aOptions); });
   }
 
   nsIDOMProcessParent* ProcessParent() override { return this; }

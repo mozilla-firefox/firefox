@@ -476,3 +476,30 @@ TEST(Tainting, moz_no_validate)
       "dictionary is not shared between actors.");
   ASSERT_TRUE(result == EXPECTED_INT);
 }
+
+// ==================================================================
+// Tainted::ValidateRef ============================================
+TEST(Tainting, validate_ref)
+{
+  Tainted<int> foo = Tainted<int>(EXPECTED_INT);
+
+  mozilla::Maybe<int&> valid =
+      foo.ValidateRef([](int aValue) { return aValue == EXPECTED_INT; });
+  ASSERT_TRUE(valid);
+  ASSERT_EQ(*valid, EXPECTED_INT);
+
+  mozilla::Maybe<int&> invalid =
+      foo.ValidateRef([](int aValue) { return aValue != EXPECTED_INT; });
+  ASSERT_TRUE(invalid.isNothing());
+
+  const Tainted<nsTArray<int>> array =
+      Tainted<nsTArray<int>>(nsTArray<int>{1, 2});
+  mozilla::Maybe<const nsTArray<int>&> constValid = array.ValidateRef(
+      [](const nsTArray<int>& aValue) { return aValue.Length() == 2; });
+  ASSERT_TRUE(constValid);
+  ASSERT_EQ(&*constValid, &MOZ_NO_VALIDATE(array, "Testing reference"));
+
+  mozilla::Maybe<const nsTArray<int>&> constInvalid = array.ValidateRef(
+      [](const nsTArray<int>& aValue) { return aValue.IsEmpty(); });
+  ASSERT_TRUE(constInvalid.isNothing());
+}

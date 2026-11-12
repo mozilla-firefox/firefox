@@ -9,9 +9,12 @@
 #ifndef mozilla_Tainting_h
 #define mozilla_Tainting_h
 
+#include <functional>
+#include <type_traits>
 #include <utility>
 
 #include "mozilla/MacroArgs.h"
+#include "mozilla/Maybe.h"
 
 namespace IPC {
 template <typename P>
@@ -44,7 +47,8 @@ class Tainted;
  * Simple Tainted<foo> class
  *
  * Class should not support any de-reference or comparison operator and instead
- * force all access to the member variable through the MOZ_VALIDATE macros.
+ * force all access to the member variable through the MOZ_VALIDATE macros, or
+ * the ValidateRef helper methods.
  *
  * While the Coerce() function is publicly accessible on the class, it should
  * only be used by the MOZ_VALIDATE macros, and static analysis will prevent
@@ -65,6 +69,34 @@ class Tainted {
 
   T& Coerce() { return this->mValue; }
   const T& Coerce() const { return this->mValue; }
+
+  /*
+   * Validate the wrapped value by passing it to |aValidator|, which must
+   * return true iff the value is valid. On success, a reference to the
+   * untainted value is returned, otherwise Nothing().
+   *
+   * Example:
+   *
+   *   Maybe<int&> bar =
+   *       foo.ValidateRef([](int aValue) { return aValue < 20; });
+   */
+  template <typename F>
+    requires std::is_invocable_r_v<bool, F, const T&>
+  Maybe<T&> ValidateRef(F&& aValidator) & {
+    if (!std::invoke(std::forward<F>(aValidator), std::as_const(mValue))) {
+      return Nothing();
+    }
+    return SomeRef(mValue);
+  }
+
+  template <typename F>
+    requires std::is_invocable_r_v<bool, F, const T&>
+  Maybe<const T&> ValidateRef(F&& aValidator) const& {
+    if (!std::invoke(std::forward<F>(aValidator), mValue)) {
+      return Nothing();
+    }
+    return SomeRef(mValue);
+  }
 
   friend struct IPC::ParamTraits<Tainted<T>>;
 };
@@ -327,7 +359,7 @@ class Tainted {
  *                   permissible to omit validation
  */
 #define MOZ_NO_VALIDATE(tainted_value, justification)      \
-  [&tainted_value] {                                       \
+  [&tainted_value]() -> decltype(auto) {                   \
     static_assert(sizeof(justification) > 3,               \
                   "Must provide a justification string."); \
     return tainted_value.Coerce();                         \
