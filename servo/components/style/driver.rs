@@ -106,16 +106,7 @@ where
         None
     };
 
-    // Declare the main-thread context, as well as the worker-thread contexts,
-    // which we may or may not instantiate. It's important to declare the worker-
-    // thread contexts first, so that they get dropped second. This matters because:
-    //   * ThreadLocalContexts borrow AtomicRefCells in TLS.
-    //   * Dropping a ThreadLocalContext can run SequentialTasks.
-    //   * Sequential tasks may call into functions like
-    //     Servo_StyleSet_GetBaseComputedValuesForElement, which instantiate a
-    //     ThreadLocalStyleContext on the main thread. If the main thread
-    //     ThreadLocalStyleContext has not released its TLS borrow by that point,
-    //     we'll panic on double-borrow.
+    // Dropped before the sequential tasks run, see below.
     let mut scoped_tls = ScopedTLS::<ThreadLocalStyleContext<E>>::new(pool);
     // Process the nodes breadth-first. This helps keep similar traversal characteristics for the
     // style sharing cache.
@@ -166,6 +157,22 @@ where
                 println!("{}", stats);
             }
         }
+    }
+
+    // Run the sequential tasks the traversal queued. The thread-local contexts
+    // must be gone first, since a task may call into functions like
+    // Servo_StyleSet_GetBaseComputedValuesForElement, which create a
+    // ThreadLocalStyleContext on the main thread and would otherwise
+    // double-borrow the sharing cache and bloom filter storage in TLS.
+    let mut tasks = Vec::new();
+    for slot in scoped_tls.slots() {
+        if let Some(cx) = slot.get_mut() {
+            tasks.append(&mut cx.tasks);
+        }
+    }
+    drop(scoped_tls);
+    for task in tasks {
+        task.execute();
     }
 
     root

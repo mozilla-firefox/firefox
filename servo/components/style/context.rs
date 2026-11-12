@@ -494,7 +494,8 @@ impl<E: TElement> SequentialTask<E> {
     }
 }
 
-/// A list of SequentialTasks that get executed on Drop.
+/// A list of SequentialTasks, run by `driver::traverse_dom` once the traversal
+/// is done.
 pub struct SequentialTaskList<E>(Vec<SequentialTask<E>>)
 where
     E: TElement;
@@ -524,10 +525,10 @@ where
     E: TElement,
 {
     fn drop(&mut self) {
-        debug_assert!(thread_state::get().contains(ThreadState::LAYOUT));
-        for task in self.0.drain(..) {
-            task.execute()
-        }
+        debug_assert!(
+            self.0.is_empty(),
+            "Sequential tasks are run by driver::traverse_dom"
+        );
     }
 }
 
@@ -648,11 +649,8 @@ pub struct ThreadLocalStyleContext<E: TElement> {
     pub current_dom_depth: usize,
     /// A set of tasks to be run (on the parent thread) in sequential mode after
     /// the rest of the styling is complete. This is useful for
-    /// infrequently-needed non-threadsafe operations.
-    ///
-    /// It's important that goes after the style sharing cache and the bloom
-    /// filter, to ensure they're dropped before we execute the tasks, which
-    /// could create another ThreadLocalStyleContext for style computation.
+    /// infrequently-needed non-threadsafe operations. The traversal driver runs
+    /// them once every thread-local context has been dropped.
     pub tasks: SequentialTaskList<E>,
     /// Statistics about the traversal.
     pub statistics: PerThreadTraversalStatistics,
