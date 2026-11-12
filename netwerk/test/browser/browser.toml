@@ -212,9 +212,6 @@ skip-if = [
 ["browser_necko_l10n.js"]
 
 ["browser_nsIFormPOSTActionChannel.js"]
-skip-if = [
-  "true", # protocol handler and channel does not work in content process
-]
 
 ["browser_post_auth.js"]
 
