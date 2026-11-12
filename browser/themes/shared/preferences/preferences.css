@@ -199,12 +199,6 @@ radio {
   margin: var(--space-small) 0;
 }
 
-.learnMore {
-  margin-inline-start: 0;
-  font-weight: normal;
-  white-space: nowrap;
-}
-
 .accessory-button {
   min-width: 150px;
   margin: 4px 0;
