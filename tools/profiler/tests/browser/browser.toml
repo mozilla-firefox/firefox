@@ -133,6 +133,9 @@ support-files = ["single_frame.html"]
 
 ["browser_test_markers_gc_cc.js"]
 
+["browser_test_markers_navigation_rate_limit.js"]
+support-files = ["single_frame.html"]
+
 ["browser_test_markers_parent_process.js"]
 
 ["browser_test_markers_preferencereads.js"]

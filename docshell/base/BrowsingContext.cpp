@@ -159,6 +159,31 @@ DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::dom::EmbedderColorSchemes, mUsed,
 
 }  // namespace IPC
 
+namespace geckoprofiler::markers {
+
+class NavigationRateLimitedMarker
+    : public mozilla::BaseMarkerType<NavigationRateLimitedMarker> {
+ public:
+  static constexpr const char* Name = "NavigationRateLimited";
+  static constexpr const char* Description =
+      "A location or history API call was ignored because the navigation rate "
+      "limit was reached.";
+
+  using MS = mozilla::MarkerSchema;
+  static constexpr MS::PayloadField PayloadFields[] = {
+      {"limit", MS::InputType::Uint32, "Limit", MS::Format::Integer},
+      {"timespan", MS::InputType::TimeDuration, "Timespan",
+       MS::Format::Duration}};
+
+  static constexpr MS::Location Locations[] = {MS::Location::MarkerChart,
+                                               MS::Location::MarkerTable};
+  static constexpr const char* TableLabel =
+      "Limit of {marker.data.limit} calls per {marker.data.timespan} reached";
+  static constexpr const char* ChartLabel = "{marker.name}";
+};
+
+}  // namespace geckoprofiler::markers
+
 namespace mozilla {
 namespace dom {
 
@@ -4604,6 +4629,12 @@ bool BrowsingContext::CheckNavigationRateLimit(CallerType aCallerType) {
                                       PropertiesFile::DOM_PROPERTIES,
                                       "NavigationChangeFloodingPrevented");
     }
+
+    PROFILER_MARKER(
+        "Navigation rate limited", DOM,
+        MarkerOptions(MarkerStack::Capture(),
+                      MarkerInnerWindowId(GetCurrentInnerWindowId())),
+        NavigationRateLimitedMarker, limitCount, throttleSpan);
 
     return false;
   }
