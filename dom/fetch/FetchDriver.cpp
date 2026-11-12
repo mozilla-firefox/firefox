@@ -366,6 +366,10 @@ already_AddRefed<PreloaderBase> FetchDriver::FindPreload(nsIURI* aURI) {
     // Preloads are mapped on the document, no document, no preload.
     return nullptr;
   }
+  if (mRequest->ContentPolicyType() != nsIContentPolicy::TYPE_FETCH) {
+    // Only plain fetch() requests can consume an as=fetch preload.
+    return nullptr;
+  }
   CORSMode cors;
   switch (mRequest->Mode()) {
     case RequestMode::No_cors:
