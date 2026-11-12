@@ -49,11 +49,18 @@ add_task(async function test_toolbar_collapsed_states() {
   // Make sure we're configured to show the bookmarks toolbar on about:newtab.
   setToolbarVisibility(bookmarksToolbar, "newtab");
 
+  // Without a preloaded about:newtab browser, the tab is still on about:blank
+  // when it gets selected, and the toolbar only shows once it navigates.
+  let toolbarShown = BrowserTestUtils.waitForEvent(
+    bookmarksToolbar,
+    "toolbarvisibilitychange"
+  );
   let newTab = await BrowserTestUtils.openNewForegroundTab({
     gBrowser,
     opening: "about:newtab",
     waitForLoad: false,
   });
+  await toolbarShown;
   // Now that we've opened about:newtab, the bookmarks toolbar should now
   // be visible.
   assertCollapsedToolbarIds([CustomizableUI.AREA_MENUBAR]);
