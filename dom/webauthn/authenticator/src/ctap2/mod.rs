@@ -175,7 +175,9 @@ fn ask_user_for_pin(
     retries: Option<u8>,
     status: &Sender<StatusUpdate>,
 ) -> Result<Pin, AuthenticatorError> {
-    info!("PIN Error that requires user interaction detected. Sending it back and waiting for a reply");
+    info!(
+        "PIN Error that requires user interaction detected. Sending it back and waiting for a reply"
+    );
     let (tx, rx) = channel();
     if was_invalid {
         send_status(
@@ -217,9 +219,24 @@ fn ask_user_for_large_blob(
     }
 }
 
-/// Try to fetch PinUvAuthToken from the device and derive from it PinUvAuthParam.
-/// Prefer UV, fallback to PIN.
-/// Prefer newer pinUvAuth-methods, if supported by the device.
+/// Try to fetch a PinUvAuthToken from the device to authenticate `cmd`.
+///
+/// This will prefer to use built-in user verification where possible, and fall back to PIN. This
+/// will prefer to use `pinUvAuth` methods [where possible][0].
+///
+/// # Arguments
+///
+/// * `cmd`: The command that will be sent, to have authentication (maybe) added to it.
+/// * `dev`: [The device][FidoDevice] that the command will be sent to.
+/// * `permission`: [Permission bitmask][PinUvAuthTokenPermission] to be used for the command.
+/// * `skip_uv`: When `true`, don't use built-in user verification to authenticate. This may result
+///   in the operation requiring PIN authentication.
+/// * `uv_req`: The [user verification requirement][UserVerificationRequirement] for the command.
+/// * `alive`: Keep-alive check function. This function should return `true` if the operation should
+///   continue, or `false` if it should be aborted.
+/// * `pin`: The PIN to use to authenticate the request.
+///
+/// [0]: crate::ctap2::commands::get_info::AuthenticatorOptions::pin_uv_auth_token
 fn get_pin_uv_auth_param<Dev: FidoDevice, T: PinUvAuthCommand + RequestCtap2>(
     cmd: &mut T,
     dev: &mut Dev,
@@ -252,7 +269,7 @@ fn get_pin_uv_auth_param<Dev: FidoDevice, T: PinUvAuthCommand + RequestCtap2>(
     //       if UV is blocked (too many failed attempts). But the CTAP2.0-spec is
     //       vague and I don't trust all tokens to implement it that way. So we
     //       keep track of it ourselves, using `skip_uv`.
-    let supports_uv = info.options.user_verification == Some(true);
+    let uv_configured = info.options.user_verification.unwrap_or_default();
     let supports_pin = info.options.client_pin.is_some();
     let pin_configured = info.options.client_pin == Some(true);
 
@@ -263,8 +280,8 @@ fn get_pin_uv_auth_param<Dev: FidoDevice, T: PinUvAuthCommand + RequestCtap2>(
     }
 
     // Device does not support any (remaining) auth-method
-    if (skip_uv || !supports_uv) && !supports_pin {
-        if supports_uv && uv_req == UserVerificationRequirement::Required {
+    if (skip_uv || !uv_configured) && !supports_pin {
+        if uv_configured && uv_req == UserVerificationRequirement::Required {
             // We should always set the uv option in the Required case, but the CTAP 2.1 spec
             // says 'Platforms MUST NOT include the "uv" option key if the authenticator does
             // not support built-in user verification.' This is to work around some CTAP 2.0
@@ -278,12 +295,12 @@ fn get_pin_uv_auth_param<Dev: FidoDevice, T: PinUvAuthCommand + RequestCtap2>(
 
     // Device supports PINs, but a PIN is not configured. Signal that we
     // can complete the operation if the user sets a PIN first.
-    if (skip_uv || !supports_uv) && !pin_configured {
+    if (skip_uv || !uv_configured) && !pin_configured {
         return Err(AuthenticatorError::PinError(PinError::PinNotSet));
     }
 
     if info.options.pin_uv_auth_token == Some(true) {
-        if !skip_uv && supports_uv {
+        if !skip_uv && uv_configured {
             // CTAP 2.1 - UV
             let pin_auth_token = dev
                 .get_pin_uv_auth_token_using_uv_with_permissions(permission, cmd.get_rp_id(), alive)
@@ -309,7 +326,7 @@ fn get_pin_uv_auth_param<Dev: FidoDevice, T: PinUvAuthCommand + RequestCtap2>(
         }
     } else {
         // CTAP 2.0 fallback
-        if !skip_uv && supports_uv && pin.is_none() {
+        if !skip_uv && uv_configured && pin.is_none() {
             // If the device supports internal user-verification (e.g. fingerprints),
             // skip PIN-stuff
 
@@ -942,27 +959,22 @@ pub(crate) fn bio_enrollment(
     callback: StateCallback<crate::Result<crate::ManageResult>>,
     alive: &dyn Fn() -> bool,
 ) -> bool {
-    let authinfo = match dev.get_authenticator_info() {
-        Some(i) => i,
-        None => {
-            callback.call(Err(HIDError::DeviceNotInitialized.into()));
-            return false;
-        }
+    let Some(authinfo) = dev.get_authenticator_info() else {
+        callback.call(Err(HIDError::DeviceNotInitialized.into()));
+        return false;
     };
 
     if authinfo.options.bio_enroll.is_none()
         && authinfo.options.user_verification_mgmt_preview.is_none()
     {
-        callback.call(Err(AuthenticatorError::HIDError(
-            HIDError::UnsupportedCommand,
-        )));
+        callback.call(Err(HIDError::UnsupportedCommand.into()));
         return false;
     }
 
     let use_legacy_preview = authinfo.options.bio_enroll.is_none();
 
     // We are not allowed to request the BE-permission using UV, so we have to skip UV
-    let mut skip_uv = authinfo.options.uv_bio_enroll != Some(true);
+    let mut skip_uv = use_legacy_preview || !authinfo.options.uv_bio_enroll.unwrap_or_default();
     // Currently not used, but if we want, we can just set the value here.
     let timeout = None;
 
@@ -1019,7 +1031,7 @@ pub(crate) fn bio_enrollment(
                     dev,
                     skip_uv,
                     PinUvAuthTokenPermission::BioEnrollment,
-                    UserVerificationRequirement::Preferred,
+                    UserVerificationRequirement::Required,
                     &status,
                     alive,
                     &mut pin,
@@ -1210,25 +1222,20 @@ pub fn credential_management<Dev: FidoDevice>(
     callback: StateCallback<crate::Result<crate::ManageResult>>,
     alive: &dyn Fn() -> bool,
 ) -> bool {
-    let mut skip_uv = false;
-    let authinfo = match dev.get_authenticator_info() {
-        Some(i) => i.clone(),
-        None => {
-            callback.call(Err(HIDError::DeviceNotInitialized.into()));
-            return false;
-        }
+    let Some(authinfo) = dev.get_authenticator_info() else {
+        callback.call(Err(HIDError::DeviceNotInitialized.into()));
+        return false;
     };
 
-    if authinfo.options.cred_mgmt != Some(true)
-        && authinfo.options.credential_mgmt_preview != Some(true)
+    if !authinfo.options.cred_mgmt.unwrap_or_default()
+        && !authinfo.options.credential_mgmt_preview.unwrap_or_default()
     {
-        callback.call(Err(AuthenticatorError::HIDError(
-            HIDError::UnsupportedCommand,
-        )));
+        callback.call(Err(HIDError::UnsupportedCommand.into()));
         return false;
     }
 
     let use_legacy_preview = authinfo.options.cred_mgmt != Some(true);
+    let mut skip_uv = use_legacy_preview;
 
     // FIDO_2_1_PRE-devices do not support UpdateUserInformation.
     if use_legacy_preview
@@ -1289,7 +1296,7 @@ pub fn credential_management<Dev: FidoDevice>(
                     dev,
                     skip_uv,
                     PinUvAuthTokenPermission::CredentialManagement,
-                    UserVerificationRequirement::Preferred,
+                    UserVerificationRequirement::Required,
                     &status,
                     alive,
                     &mut pin,
@@ -1533,22 +1540,19 @@ pub(crate) fn configure_authenticator(
     alive: &dyn Fn() -> bool,
 ) -> bool {
     let mut authcfg = AuthenticatorConfig::new(cfg_subcommand);
-    let mut skip_uv = false;
-    let authinfo = match dev.get_authenticator_info() {
-        Some(i) => i.clone(),
-        None => {
-            callback.call(Err(HIDError::DeviceNotInitialized.into()));
-            return false;
-        }
+    let Some(authinfo) = dev.get_authenticator_info() else {
+        callback.call(Err(HIDError::DeviceNotInitialized.into()));
+        return false;
     };
 
     if authinfo.options.authnr_cfg != Some(true) {
-        callback.call(Err(AuthenticatorError::HIDError(
-            HIDError::UnsupportedCommand,
-        )));
+        callback.call(Err(HIDError::UnsupportedCommand.into()));
         return false;
     }
 
+    // Built-in user verification for AuthConfig is only supported when `uvAcfg: true`. Otherwise
+    // we need a PIN.
+    let mut skip_uv = !authinfo.options.uv_acfg.unwrap_or_default();
     let mut skip_puap = false;
     let mut cached_puat = false; // If we were provided with a cached puat from the outside
     let mut pin_uv_auth_result = puat_result
