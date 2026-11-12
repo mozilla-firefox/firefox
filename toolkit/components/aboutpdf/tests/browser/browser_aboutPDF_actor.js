@@ -127,10 +127,29 @@ add_task(async function testBrowseButtonOpensPickedPDF() {
     false,
     url => url === fileURL
   );
-  const pickerShown = promisePickerShown();
-  // A scripted click would not grant user activation.
+  MockFilePicker.showCallback = async () => {
+    MockFilePicker.showCallback = null;
+    // Let hover transitions finish before navigation (bug 2091848).
+    // A throwing callback would silently cancel the picker, so report instead.
+    try {
+      await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+        let animations;
+        while ((animations = content.document.getAnimations()).length) {
+          // Cancelled transitions reject `finished`.
+          await Promise.allSettled(animations.map(a => a.finished));
+        }
+        await new Promise(resolve =>
+          content.requestAnimationFrame(() =>
+            content.requestAnimationFrame(resolve)
+          )
+        );
+      });
+    } catch (e) {
+      ok(false, `Waiting for about:pdf animations failed: ${e}`);
+    }
+  };
+  // A scripted click doesn't grant user activation.
   await clickInAboutPDF(tab, "#browse-files");
-  await pickerShown;
   await navigated;
 
   is(
