@@ -280,19 +280,7 @@ MOZ_DEFINE_MALLOC_SIZE_OF(SharedScriptCacheMallocSizeOf)
 
 SharedScriptCache::SharedScriptCache() = default;
 
-void SharedScriptCache::Init() {
-  RegisterWeakMemoryReporter(this);
-
-  // URL classification (tracking protection etc) are handled inside
-  // nsHttpChannel.
-  // The cache reflects the policy for whether to block or not, and once
-  // the policy is modified, we should discard the cache, to avoid running
-  // a cached script which is supposed to be blocked.
-  auto ClearCache = [](const char*, void*) { Clear(); };
-  Preferences::RegisterPrefixCallback(ClearCache, "urlclassifier.");
-  Preferences::RegisterCallback(ClearCache,
-                                "privacy.trackingprotection.enabled");
-}
+void SharedScriptCache::Init() { RegisterWeakMemoryReporter(this); }
 
 SharedScriptCache::~SharedScriptCache() {
   UnregisterWeakMemoryReporter(this);
