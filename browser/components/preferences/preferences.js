@@ -251,7 +251,7 @@ const CONFIG_PANES = Object.freeze({
   about: {
     l10nId: "about-firefox-header",
     iconSrc: "chrome://browser/skin/sidebar/firefox.svg",
-    groupIds: ["updates", "support"],
+    groupIds: ["updates", "support", "newsletter"],
     module: "chrome://browser/content/preferences/config/about-firefox.mjs",
     visible: () => srdSectionPrefs.all,
   },

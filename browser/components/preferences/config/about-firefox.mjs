@@ -17,6 +17,8 @@ const BACKGROUND_UPDATE_CHANGED_TOPIC =
   UpdateUtils.PER_INSTALLATION_PREFS["app.update.background.enabled"]
     .observerTopic;
 
+const NEWSLETTER_LOCALES = new Set(["en-US", "en-CA", "en-GB", "de", "fr"]);
+
 if (AppConstants.MOZ_UPDATER) {
   Preferences.addAll([
     { id: "app.update.disable_button.showUpdateHistory", type: "bool" },
@@ -472,6 +474,12 @@ Preferences.addSetting({
   id: "supportShareIdeas",
 });
 
+// Firefox newsletter settings
+Preferences.addSetting({
+  id: "newsletterSignUp",
+  visible: () => NEWSLETTER_LOCALES.has(Services.locale.appLocaleAsBCP47),
+});
+
 SettingGroupManager.registerGroups({
   updates: {
     l10nId: "update-application-heading",
@@ -585,6 +593,26 @@ SettingGroupManager.registerGroups({
             },
           },
         ],
+      },
+    ],
+  },
+  newsletter: {
+    l10nId: "newsletter-settings-heading",
+    iconSrc: "chrome://global/skin/icons/newsfeed.svg",
+    headingLevel: 2,
+    items: [
+      {
+        id: "newsletterSignUp",
+        l10nId: "newsletter-sign-up-link",
+        control: "moz-box-link",
+        controlAttrs: {
+          href: `https://www.firefox.com/newsletter/?${new URLSearchParams({
+            utm_source: "firefox-settings",
+            utm_campaign: "newsletter-signup",
+            utm_medium: "referral",
+            utm_content: "about-firefox",
+          })}`,
+        },
       },
     ],
   },
