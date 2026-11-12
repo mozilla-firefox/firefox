@@ -598,7 +598,7 @@ struct MOZ_NEEDS_MEMMOVABLE_MEMBERS nsStyleBorder {
         return true;
       }
     }
-    return !mBorderImageSource.IsNone();
+    return !mBorderImageSource.IsNone() || !mBorderShape.IsNone();
   }
 
   // Get the actual border width for a particular side, in appunits.  Note that

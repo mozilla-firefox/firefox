@@ -22,6 +22,7 @@
 #include "gfxGradientCache.h"
 #include "gfxUtils.h"
 #include "imgIContainer.h"
+#include "mozilla/CSSClipPathInstance.h"
 #include "mozilla/ComputedStyle.h"
 #include "mozilla/PresShell.h"
 #include "mozilla/ProfilerLabels.h"
@@ -684,6 +685,12 @@ ImgDrawResult nsCSSRendering::CreateWebRenderCommandsForBorderWithStyleBorder(
     mozilla::layers::RenderRootStateManager* aManager,
     nsDisplayListBuilder* aDisplayListBuilder,
     const nsStyleBorder& aStyleBorder) {
+  // TODO(bug 2091458): paint border-shape with WebRender paths instead of
+  // falling back.
+  if (!aStyleBorder.mBorderShape.IsNone()) {
+    return ImgDrawResult::NOT_SUPPORTED;
+  }
+
   auto& borderImage = aStyleBorder.mBorderImageSource;
   // First try to create commands for simple borders.
   if (borderImage.IsNone()) {
@@ -804,6 +811,125 @@ static nsCSSBorderRenderer ConstructBorderRenderer(
       *aNeedsClip ? Some(NSRectToRect(aBorderArea, oneDevPixel)) : Nothing());
 }
 
+static nsRect BorderShapeRefBox(StyleBorderShapeGeometryBox aBox,
+                                nsIFrame* aForFrame,
+                                const nsRect& aBorderArea) {
+  nsRect refBox = aBorderArea;
+  switch (aBox) {
+    case StyleBorderShapeGeometryBox::HalfBorderBox: {
+      const nsMargin border = aForFrame->GetUsedBorder();
+      refBox.Deflate(nsMargin(border.top / 2, border.right / 2,
+                              border.bottom / 2, border.left / 2));
+      break;
+    }
+    case StyleBorderShapeGeometryBox::MarginBox:
+      refBox.Inflate(aForFrame->GetUsedMargin());
+      break;
+    case StyleBorderShapeGeometryBox::PaddingBox:
+      refBox.Deflate(aForFrame->GetUsedBorder());
+      break;
+    case StyleBorderShapeGeometryBox::ContentBox:
+    case StyleBorderShapeGeometryBox::FillBox:
+      refBox.Deflate(aForFrame->GetUsedBorderAndPadding());
+      break;
+    case StyleBorderShapeGeometryBox::BorderBox:
+    case StyleBorderShapeGeometryBox::StrokeBox:
+    case StyleBorderShapeGeometryBox::ViewBox:
+    default:
+      break;
+  }
+  return refBox;
+}
+
+mozilla::Side nsCSSRendering::BorderShapeRelevantSide(
+    nsIFrame* aForFrame, const nsStyleBorder& aStyleBorder) {
+  const WritingMode wm = aForFrame->GetWritingMode();
+  for (const LogicalSide logical : {LogicalSide::BStart, LogicalSide::IStart,
+                                    LogicalSide::BEnd, LogicalSide::IEnd}) {
+    const mozilla::Side side = wm.PhysicalSide(logical);
+    if (aStyleBorder.GetBorderStyle(side) != StyleBorderStyle::None) {
+      return side;
+    }
+  }
+  return wm.PhysicalSide(LogicalSide::BStart);
+}
+
+static already_AddRefed<Path> BuildBorderShapeComponentPath(
+    DrawTarget* aDrawTarget, nsIFrame* aForFrame,
+    const StyleGenericBorderShapeComponent<StyleBasicShape>& aComponent,
+    const nsRect& aBorderArea) {
+  const nsRect refBox =
+      BorderShapeRefBox(aComponent.geometry_box, aForFrame, aBorderArea);
+  return CSSClipPathInstance::CreateBasicShapePath(aDrawTarget, aForFrame,
+                                                   aComponent.shape, refBox);
+}
+
+nsMargin nsCSSRendering::BorderShapePaintOverflow(nsIFrame* aForFrame) {
+  MOZ_ASSERT(!aForFrame->StyleBorder()->mBorderShape.IsNone());
+  nsMargin margin = aForFrame->GetUsedMargin();
+  const nsStyleBorder* styleBorder = aForFrame->StyleBorder();
+  const nscoord strokeWidth = styleBorder->GetComputedBorder().Side(
+      BorderShapeRelevantSide(aForFrame, *styleBorder));
+  margin += nsMargin(strokeWidth, strokeWidth, strokeWidth, strokeWidth);
+  return margin;
+}
+
+ImgDrawResult nsCSSRendering::PaintBorderShape(
+    nsPresContext* aPresContext, gfxContext& aRenderingContext,
+    nsIFrame* aForFrame, const nsRect& aBorderArea,
+    const nsStyleBorder& aStyleBorder, ComputedStyle* aStyle) {
+  MOZ_ASSERT(!aStyleBorder.mBorderShape.IsNone());
+  DrawTarget* drawTarget = aRenderingContext.GetDrawTarget();
+  const auto& components = aStyleBorder.mBorderShape.Components();
+  const mozilla::Side relevantSide =
+      BorderShapeRelevantSide(aForFrame, aStyleBorder);
+  const nscolor color = aStyle->GetVisitedDependentColor(
+      nsStyleBorder::BorderColorFieldFor(relevantSide));
+  const ColorPattern pattern(ToDeviceColor(color));
+
+  if (components.Length() == 1) {
+    RefPtr<Path> path = BuildBorderShapeComponentPath(
+        drawTarget, aForFrame, components[0], aBorderArea);
+    if (!path) {
+      return ImgDrawResult::SUCCESS;
+    }
+    const Float strokeWidth =
+        Float(aStyleBorder.GetComputedBorder().Side(relevantSide)) /
+        Float(aPresContext->AppUnitsPerDevPixel());
+    if (strokeWidth > 0.0f) {
+      drawTarget->Stroke(path, pattern, StrokeOptions(strokeWidth));
+    }
+    return ImgDrawResult::SUCCESS;
+  }
+
+  RefPtr<Path> outer = BuildBorderShapeComponentPath(
+      drawTarget, aForFrame, components[0], aBorderArea);
+  if (!outer) {
+    return ImgDrawResult::SUCCESS;
+  }
+  RefPtr<Path> inner = BuildBorderShapeComponentPath(
+      drawTarget, aForFrame, components[1], aBorderArea);
+  RefPtr<PathBuilder> builder =
+      drawTarget->CreatePathBuilder(FillRule::FILL_EVEN_ODD);
+  outer->StreamToSink(builder);
+  if (inner) {
+    inner->StreamToSink(builder);
+  }
+  RefPtr<Path> borderArea = builder->Finish();
+  drawTarget->Fill(borderArea, pattern);
+  return ImgDrawResult::SUCCESS;
+}
+
+already_AddRefed<Path> nsCSSRendering::BorderShapeOuterPath(
+    nsIFrame* aForFrame, const nsRect& aBorderArea, DrawTarget* aDrawTarget) {
+  const auto& borderShape = aForFrame->StyleBorder()->mBorderShape;
+  if (borderShape.IsNone()) {
+    return nullptr;
+  }
+  return BuildBorderShapeComponentPath(
+      aDrawTarget, aForFrame, borderShape.Components()[0], aBorderArea);
+}
+
 ImgDrawResult nsCSSRendering::PaintBorderWithStyleBorder(
     nsPresContext* aPresContext, gfxContext& aRenderingContext,
     nsIFrame* aForFrame, const nsRect& aDirtyRect, const nsRect& aBorderArea,
@@ -822,6 +948,11 @@ ImgDrawResult nsCSSRendering::PaintBorderWithStyleBorder(
     if (theme->ThemeSupportsWidget(aPresContext, aForFrame, appearance)) {
       return ImgDrawResult::SUCCESS;  // Let the theme handle it.
     }
+  }
+
+  if (!aStyleBorder.mBorderShape.IsNone()) {
+    return PaintBorderShape(aPresContext, aRenderingContext, aForFrame,
+                            aBorderArea, aStyleBorder, aStyle);
   }
 
   if (!aStyleBorder.mBorderImageSource.IsNone()) {

@@ -3885,6 +3885,9 @@ class nsDisplayBorder : public nsPaintedDisplayItem {
   }
 
  protected:
+  // Inflates the frame rect by nsCSSRendering::BorderShapePaintOverflow.
+  nsRect CalculateBorderShapeBounds() const;
+
   template <typename T>
   T CalculateBounds(const nsStyleBorder& aStyleBorder) const {
     nsRect borderBounds(ToReferenceFrame(), mFrame->GetSize());
@@ -3893,7 +3896,12 @@ class nsDisplayBorder : public nsPaintedDisplayItem {
       return borderBounds;
     }
 
+    if (!aStyleBorder.mBorderShape.IsNone()) {
+      return T(CalculateBorderShapeBounds());
+    }
+
     nsMargin border = aStyleBorder.GetComputedBorder();
+
     T result;
     if (border.top > 0) {
       result = nsRect(borderBounds.X(), borderBounds.Y(), borderBounds.Width(),
@@ -4443,6 +4451,10 @@ class nsDisplayBackgroundColor : public nsPaintedDisplayItem {
     }
 
     if (mBottomLayerClip == StyleBackgroundClip::BorderArea) {
+      return false;
+    }
+
+    if (!mFrame->StyleBorder()->mBorderShape.IsNone()) {
       return false;
     }
 

@@ -3530,6 +3530,9 @@ bool nsDisplayBackgroundImage::CanBuildWebRenderDisplayItems(
     WebRenderLayerManager* aManager, nsDisplayListBuilder* aBuilder) const {
   return mBackgroundStyle->StyleBackground()->mImage.mLayers[mLayer].mClip !=
              StyleBackgroundClip::Text &&
+         // TODO(bug 2091458): clip by the border-shape outer path with a
+         // WebRender path clip instead of falling back.
+         StyleFrame()->StyleBorder()->mBorderShape.IsNone() &&
          nsCSSRendering::CanBuildWebRenderDisplayItemsForStyleImageLayer(
              aManager, *StyleFrame()->PresContext(), StyleFrame(),
              mBackgroundStyle->StyleBackground(), mLayer,
@@ -3756,7 +3759,9 @@ nsRegion nsDisplayBackgroundImage::GetOpaqueRegion(
         layer.mClip != StyleBackgroundClip::Text &&
         // 'border-area' leaves a hole in the middle, so nothing is reliably
         // opaque.
-        layer.mClip != StyleBackgroundClip::BorderArea) {
+        layer.mClip != StyleBackgroundClip::BorderArea &&
+        // border-shape clips the background to an arbitrary path.
+        mFrame->StyleBorder()->mBorderShape.IsNone()) {
       result = GetInsideClipRect(this, layer.mClip, mBounds, mBackgroundRect);
     }
   }
@@ -3836,6 +3841,14 @@ void nsDisplayBackgroundImage::PaintInternal(nsDisplayListBuilder* aBuilder,
   if (clip == StyleBackgroundClip::BorderArea) {
     borderAreaClip.emplace(ctx);
     ClipBackgroundToBorderArea(ctx, StyleFrame(), layer, mBackgroundRect);
+  }
+
+  Maybe<gfxContextAutoSaveRestore> borderShapeClip;
+  if (RefPtr<Path> shapePath = nsCSSRendering::BorderShapeOuterPath(
+          StyleFrame(), nsRect(ToReferenceFrame(), mFrame->GetSize()),
+          ctx->GetDrawTarget())) {
+    borderShapeClip.emplace(ctx);
+    ctx->Clip(shapePath);
   }
 
   nsCSSRendering::PaintBGParams params =
@@ -4119,6 +4132,12 @@ WebRenderCommandsResult nsDisplayBackgroundColor::CreateWebRenderCommands(
     return Err("background-clip: text is not supported");
   }
 
+  // TODO(bug 2091458): clip by the border-shape outer path with a WebRender
+  // path clip instead of falling back.
+  if (!mFrame->StyleBorder()->mBorderShape.IsNone()) {
+    return Err("border-shape clips the background with an arbitrary path");
+  }
+
   uint64_t animationsId = 0;
   // We don't support background-color animations on table elements yet.
   if (GetType() == DisplayItemType::TYPE_BACKGROUND_COLOR) {
@@ -4157,6 +4176,7 @@ void nsDisplayBackgroundColor::PaintWithClip(nsDisplayListBuilder* aBuilder,
                                              const DisplayItemClip& aClip) {
   MOZ_ASSERT(!HasBackgroundClipText());
   MOZ_ASSERT(mBottomLayerClip != StyleBackgroundClip::BorderArea);
+  MOZ_ASSERT(mFrame->StyleBorder()->mBorderShape.IsNone());
 
   if (mColor == sRGBColor()) {
     return;
@@ -4248,6 +4268,14 @@ void nsDisplayBackgroundColor::Paint(nsDisplayListBuilder* aBuilder,
         ctx, mFrame, mFrame->StyleBackground()->BottomLayer(), mBackgroundRect);
   }
 
+  Maybe<gfxContextAutoSaveRestore> borderShapeClip;
+  if (RefPtr<Path> shapePath = nsCSSRendering::BorderShapeOuterPath(
+          mFrame, nsRect(ToReferenceFrame(), mFrame->GetSize()),
+          ctx->GetDrawTarget())) {
+    borderShapeClip.emplace(ctx);
+    ctx->Clip(shapePath);
+  }
+
   ctx->SetColor(mColor);
   ctx->NewPath();
   ctx->SnappedRectangle(bounds);
@@ -4269,7 +4297,9 @@ nsRegion nsDisplayBackgroundColor::GetOpaqueRegion(
   }
 
   if (!mHasStyle || HasBackgroundClipText() ||
-      mBottomLayerClip == StyleBackgroundClip::BorderArea) {
+      mBottomLayerClip == StyleBackgroundClip::BorderArea ||
+      // border-shape clips the background to an arbitrary path.
+      !mFrame->StyleBorder()->mBorderShape.IsNone()) {
     return nsRegion();
   }
 
@@ -4280,6 +4310,10 @@ nsRegion nsDisplayBackgroundColor::GetOpaqueRegion(
 
 Maybe<nscolor> nsDisplayBackgroundColor::IsUniform(
     nsDisplayListBuilder* aBuilder) const {
+  // border-shape clips the background to an arbitrary path.
+  if (!mFrame->StyleBorder()->mBorderShape.IsNone()) {
+    return Nothing();
+  }
   return Some(mColor.ToABGR());
 }
 
@@ -4492,12 +4526,19 @@ nsDisplayBorder::nsDisplayBorder(nsDisplayListBuilder* aBuilder,
   mBounds = CalculateBounds<nsRect>(*mFrame->StyleBorder());
 }
 
+nsRect nsDisplayBorder::CalculateBorderShapeBounds() const {
+  nsRect bounds(ToReferenceFrame(), mFrame->GetSize());
+  bounds.Inflate(nsCSSRendering::BorderShapePaintOverflow(mFrame));
+  return bounds;
+}
+
 bool nsDisplayBorder::IsInvisibleInRect(const nsRect& aRect) const {
   nsRect paddingRect = GetPaddingRect();
   const nsStyleBorder* styleBorder;
   if (paddingRect.Contains(aRect) &&
       !(styleBorder = mFrame->StyleBorder())->IsBorderImageSizeAvailable() &&
-      !nsLayoutUtils::HasNonZeroCorner(styleBorder->mBorderRadius)) {
+      !nsLayoutUtils::HasNonZeroCorner(styleBorder->mBorderRadius) &&
+      styleBorder->mBorderShape.IsNone()) {
     // aRect is entirely inside the content rect, and no part
     // of the border is rendered inside the content rect, so we are not
     // visible

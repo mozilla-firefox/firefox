@@ -177,6 +177,42 @@ struct nsCSSRendering {
       const nsStyleBorder& aBorderStyle, mozilla::ComputedStyle* aStyle,
       mozilla::PaintBorderFlags aFlags, Sides aSkipSides = Sides());
 
+  /**
+   * Paint the border described by border-shape. A single shape is stroked
+   * with the border width along its path; two shapes fill the area between
+   * the outer and the inner shape.
+   */
+  static ImgDrawResult PaintBorderShape(nsPresContext* aPresContext,
+                                        gfxContext& aRenderingContext,
+                                        nsIFrame* aForFrame,
+                                        const nsRect& aBorderArea,
+                                        const nsStyleBorder& aBorderStyle,
+                                        mozilla::ComputedStyle* aStyle);
+
+  /**
+   * Returns the path of the outermost border-shape edge, which clips the
+   * element's background, or nullptr if border-shape is none.
+   */
+  static already_AddRefed<mozilla::gfx::Path> BorderShapeOuterPath(
+      nsIFrame* aForFrame, const nsRect& aBorderArea,
+      mozilla::gfx::DrawTarget* aDrawTarget);
+
+  /**
+   * The "relevant side for border shape" (css-borders-4): the first side in
+   * the order block-start, inline-start, block-end, inline-end whose border
+   * style is not none, or block-start if they all are. It determines the
+   * stroke width and color of a border-shape border.
+   */
+  static mozilla::Side BorderShapeRelevantSide(
+      nsIFrame* aForFrame, const nsStyleBorder& aStyleBorder);
+
+  /**
+   * How far outside aForFrame's border box its border-shape may paint: into
+   * the margin area for a margin-box geometry, plus the relevant side's
+   * border width for a lone component's centered stroke.
+   */
+  static nsMargin BorderShapePaintOverflow(nsIFrame* aForFrame);
+
   static mozilla::Maybe<nsCSSBorderRenderer> CreateBorderRenderer(
       nsPresContext* aPresContext, DrawTarget* aDrawTarget, nsIFrame* aForFrame,
       const nsRect& aDirtyRect, const nsRect& aBorderArea,

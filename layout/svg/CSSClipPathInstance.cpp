@@ -109,20 +109,27 @@ already_AddRefed<Path> CSSClipPathInstance::CreateClipPath(
 
   r = ToAppUnits(r.ToNearestPixels(appUnitsPerDevPixel), appUnitsPerDevPixel);
 
-  const auto& basicShape = *mClipPathStyle.AsShape()._0;
-  switch (basicShape.tag) {
+  return CreateBasicShapePath(aDrawTarget, mTargetFrame,
+                              *mClipPathStyle.AsShape()._0, r);
+}
+
+/* static */
+already_AddRefed<Path> CSSClipPathInstance::CreateBasicShapePath(
+    DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+    const nsRect& aRefBox) {
+  switch (aShape.tag) {
     case StyleBasicShape::Tag::Circle:
-      return CreateClipPathCircle(aDrawTarget, r);
+      return CreateClipPathCircle(aDrawTarget, aFrame, aShape, aRefBox);
     case StyleBasicShape::Tag::Ellipse:
-      return CreateClipPathEllipse(aDrawTarget, r);
+      return CreateClipPathEllipse(aDrawTarget, aFrame, aShape, aRefBox);
     case StyleBasicShape::Tag::Polygon:
-      return CreateClipPathPolygon(aDrawTarget, r);
+      return CreateClipPathPolygon(aDrawTarget, aFrame, aShape, aRefBox);
     case StyleBasicShape::Tag::Rect:
-      return CreateClipPathInset(aDrawTarget, r);
+      return CreateClipPathInset(aDrawTarget, aFrame, aShape, aRefBox);
     case StyleBasicShape::Tag::PathOrShape:
-      return basicShape.AsPathOrShape().IsPath()
-                 ? CreateClipPathPath(aDrawTarget, r)
-                 : CreateClipPathShape(aDrawTarget, r);
+      return aShape.AsPathOrShape().IsPath()
+                 ? CreateClipPathPath(aDrawTarget, aFrame, aShape, aRefBox)
+                 : CreateClipPathShape(aDrawTarget, aFrame, aShape, aRefBox);
     default:
       MOZ_MAKE_COMPILER_ASSUME_IS_UNREACHABLE("Unexpected shape type");
   }
@@ -131,76 +138,83 @@ already_AddRefed<Path> CSSClipPathInstance::CreateClipPath(
   return builder->Finish();
 }
 
+/* static */
 already_AddRefed<Path> CSSClipPathInstance::CreateClipPathCircle(
-    DrawTarget* aDrawTarget, const nsRect& aRefBox) {
-  const StyleBasicShape& shape = *mClipPathStyle.AsShape()._0;
+    DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+    const nsRect& aRefBox) {
   const nsPoint& center =
-      ShapeUtils::ComputeCircleOrEllipseCenter(shape, aRefBox);
+      ShapeUtils::ComputeCircleOrEllipseCenter(aShape, aRefBox);
   RefPtr<PathBuilder> builder = aDrawTarget->CreatePathBuilder();
   return ShapeUtils::BuildCirclePath(
-      shape, aRefBox, center,
-      mTargetFrame->PresContext()->AppUnitsPerDevPixel(), builder);
+      aShape, aRefBox, center, aFrame->PresContext()->AppUnitsPerDevPixel(),
+      builder);
 }
 
+/* static */
 already_AddRefed<Path> CSSClipPathInstance::CreateClipPathEllipse(
-    DrawTarget* aDrawTarget, const nsRect& aRefBox) {
-  const StyleBasicShape& shape = *mClipPathStyle.AsShape()._0;
+    DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+    const nsRect& aRefBox) {
   const nsPoint& center =
-      ShapeUtils::ComputeCircleOrEllipseCenter(shape, aRefBox);
+      ShapeUtils::ComputeCircleOrEllipseCenter(aShape, aRefBox);
   RefPtr<PathBuilder> builder = aDrawTarget->CreatePathBuilder();
   return ShapeUtils::BuildEllipsePath(
-      shape, aRefBox, center,
-      mTargetFrame->PresContext()->AppUnitsPerDevPixel(), builder);
+      aShape, aRefBox, center, aFrame->PresContext()->AppUnitsPerDevPixel(),
+      builder);
 }
 
+/* static */
 already_AddRefed<Path> CSSClipPathInstance::CreateClipPathPolygon(
-    DrawTarget* aDrawTarget, const nsRect& aRefBox) {
-  const auto& basicShape = *mClipPathStyle.AsShape()._0;
-  auto fillRule = basicShape.AsPolygon().fill == StyleFillRule::Nonzero
+    DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+    const nsRect& aRefBox) {
+  auto fillRule = aShape.AsPolygon().fill == StyleFillRule::Nonzero
                       ? FillRule::FILL_WINDING
                       : FillRule::FILL_EVEN_ODD;
   RefPtr<PathBuilder> builder = aDrawTarget->CreatePathBuilder(fillRule);
   return ShapeUtils::BuildPolygonPath(
-      basicShape, aRefBox, mTargetFrame->PresContext()->AppUnitsPerDevPixel(),
-      builder);
+      aShape, aRefBox, aFrame->PresContext()->AppUnitsPerDevPixel(), builder);
 }
 
+/* static */
 already_AddRefed<Path> CSSClipPathInstance::CreateClipPathInset(
-    DrawTarget* aDrawTarget, const nsRect& aRefBox) {
+    DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+    const nsRect& aRefBox) {
   RefPtr<PathBuilder> builder = aDrawTarget->CreatePathBuilder();
   return ShapeUtils::BuildInsetPath(
-      *mClipPathStyle.AsShape()._0, aRefBox,
-      mTargetFrame->PresContext()->AppUnitsPerDevPixel(), builder);
+      aShape, aRefBox, aFrame->PresContext()->AppUnitsPerDevPixel(), builder);
 }
 
+/* static */
 already_AddRefed<Path> CSSClipPathInstance::CreateClipPathPath(
-    DrawTarget* aDrawTarget, const nsRect& aRefBox) {
-  const auto& path = mClipPathStyle.AsShape()._0->AsPathOrShape().AsPath();
+    DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+    const nsRect& aRefBox) {
+  const auto& path = aShape.AsPathOrShape().AsPath();
 
   RefPtr<PathBuilder> builder = aDrawTarget->CreatePathBuilder(
       path.fill == StyleFillRule::Nonzero ? FillRule::FILL_WINDING
                                           : FillRule::FILL_EVEN_ODD);
   const nscoord appUnitsPerDevPixel =
-      mTargetFrame->PresContext()->AppUnitsPerDevPixel();
+      aFrame->PresContext()->AppUnitsPerDevPixel();
   const Point offset =
       LayoutDevicePoint::FromAppUnits(aRefBox.TopLeft(), appUnitsPerDevPixel)
           .ToUnknownPoint();
-  const float scale = mTargetFrame->Style()->EffectiveZoom().Zoom(
+  const float scale = aFrame->Style()->EffectiveZoom().Zoom(
       float(AppUnitsPerCSSPixel()) / float(appUnitsPerDevPixel));
   return SVGPathData::BuildPath(path.path._0.AsSpan(), builder,
                                 StyleStrokeLinecap::Butt, 0.0, {}, offset,
                                 scale);
 }
 
+/* static */
 already_AddRefed<Path> CSSClipPathInstance::CreateClipPathShape(
-    DrawTarget* aDrawTarget, const nsRect& aRefBox) {
-  const auto& shape = mClipPathStyle.AsShape()._0->AsPathOrShape().AsShape();
+    DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+    const nsRect& aRefBox) {
+  const auto& shape = aShape.AsPathOrShape().AsShape();
 
   RefPtr<PathBuilder> builder = aDrawTarget->CreatePathBuilder(
       shape.fill == StyleFillRule::Nonzero ? FillRule::FILL_WINDING
                                            : FillRule::FILL_EVEN_ODD);
   const nscoord appUnitsPerDevPixel =
-      mTargetFrame->PresContext()->AppUnitsPerDevPixel();
+      aFrame->PresContext()->AppUnitsPerDevPixel();
   const CSSSize basis = CSSSize::FromAppUnits(aRefBox.Size());
   const Point offset =
       LayoutDevicePoint::FromAppUnits(aRefBox.TopLeft(), appUnitsPerDevPixel)

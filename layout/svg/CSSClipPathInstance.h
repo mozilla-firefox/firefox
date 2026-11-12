@@ -34,6 +34,12 @@ class MOZ_STACK_CLASS CSSClipPathInstance {
   static Maybe<Rect> GetBoundingRectForBasicShapeOrPathClip(
       nsIFrame* aFrame, const StyleClipPath&);
 
+  // Builds a device-pixel path for a basic shape resolved against aRefBox
+  // (app units, in aFrame's coordinate space).
+  static already_AddRefed<Path> CreateBasicShapePath(
+      DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+      const nsRect& aRefBox);
+
  private:
   explicit CSSClipPathInstance(nsIFrame* aFrame, const StyleClipPath& aClipPath)
       : mTargetFrame(aFrame), mClipPathStyle(aClipPath) {}
@@ -41,23 +47,29 @@ class MOZ_STACK_CLASS CSSClipPathInstance {
   already_AddRefed<Path> CreateClipPath(DrawTarget* aDrawTarget,
                                         const gfxMatrix& aTransform);
 
-  already_AddRefed<Path> CreateClipPathCircle(DrawTarget* aDrawTarget,
-                                              const nsRect& aRefBox);
+  static already_AddRefed<Path> CreateClipPathCircle(
+      DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+      const nsRect& aRefBox);
 
-  already_AddRefed<Path> CreateClipPathEllipse(DrawTarget* aDrawTarget,
-                                               const nsRect& aRefBox);
+  static already_AddRefed<Path> CreateClipPathEllipse(
+      DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+      const nsRect& aRefBox);
 
-  already_AddRefed<Path> CreateClipPathPolygon(DrawTarget* aDrawTarget,
-                                               const nsRect& aRefBox);
+  static already_AddRefed<Path> CreateClipPathPolygon(
+      DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+      const nsRect& aRefBox);
 
-  already_AddRefed<Path> CreateClipPathInset(DrawTarget* aDrawTarget,
-                                             const nsRect& aRefBox);
+  static already_AddRefed<Path> CreateClipPathInset(
+      DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+      const nsRect& aRefBox);
 
-  already_AddRefed<Path> CreateClipPathPath(DrawTarget* aDrawTarget,
-                                            const nsRect& aRefBox);
+  static already_AddRefed<Path> CreateClipPathPath(
+      DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+      const nsRect& aRefBox);
 
-  already_AddRefed<Path> CreateClipPathShape(DrawTarget* aDrawTarget,
-                                             const nsRect& aRefBox);
+  static already_AddRefed<Path> CreateClipPathShape(
+      DrawTarget* aDrawTarget, nsIFrame* aFrame, const StyleBasicShape& aShape,
+      const nsRect& aRefBox);
 
   /**
    * The frame for the element that is currently being clipped.
