@@ -16,6 +16,9 @@ enum class FenixFxAEntryPoint(override val entryName: String) : FxAEntryPoint, P
     /** Manual sign in from the onboarding menu */
     OnboardingManualSignIn("onboarding-manual-sign-in"),
 
+    /** The user accessed the sign in through the onboarding pairing sync card */
+    OnboardingPairing("onboarding-pairing"),
+
     /** User used a deep link to get to firefox accounts authentication */
     DeepLink("deep-link"),
 

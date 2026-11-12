@@ -13,6 +13,7 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlin.test.assertNull
 import kotlinx.coroutines.CoroutineScope
 import mozilla.components.concept.sync.AccountObserver
 import mozilla.components.concept.sync.AuthType
@@ -28,7 +29,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mozilla.fenix.GleanMetrics.Onboarding
 import org.mozilla.fenix.GleanMetrics.SyncAuth
+import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.helpers.perf.TestStrictModeManager
@@ -54,6 +57,8 @@ class BackgroundServicesTest {
     fun setup() {
         MockKAnnotations.init(this)
         every { settings.signedInFxaAccount = any() } just Runs
+        every { settings.lastAuthFlowEntrypoint } returns null
+        every { settings.lastAuthFlowEntrypoint = any() } just Runs
 
         val mockComponents: Components = mockk()
         every { mockComponents.settings } returns settings
@@ -77,6 +82,7 @@ class BackgroundServicesTest {
         assertEquals(1, SyncAuth.signIn.testGetValue()!!.size)
         assertEquals(null, SyncAuth.signIn.testGetValue()!!.single().extra)
         verify { settings.signedInFxaAccount = true }
+        verify { settings.lastAuthFlowEntrypoint }
         confirmVerified(settings)
     }
 
@@ -88,6 +94,7 @@ class BackgroundServicesTest {
         assertEquals(1, SyncAuth.signUp.testGetValue()!!.size)
         assertEquals(null, SyncAuth.signUp.testGetValue()!!.single().extra)
         verify { settings.signedInFxaAccount = true }
+        verify { settings.lastAuthFlowEntrypoint }
         confirmVerified(settings)
     }
 
@@ -99,6 +106,7 @@ class BackgroundServicesTest {
         assertEquals(1, SyncAuth.paired.testGetValue()!!.size)
         assertEquals(null, SyncAuth.paired.testGetValue()!!.single().extra)
         verify { settings.signedInFxaAccount = true }
+        verify { settings.lastAuthFlowEntrypoint }
         confirmVerified(settings)
     }
 
@@ -170,6 +178,77 @@ class BackgroundServicesTest {
         assertTrue(supportedEngines.contains(SyncEngine.History))
         assertTrue(supportedEngines.contains(SyncEngine.Bookmarks))
         assertTrue(supportedEngines.contains(SyncEngine.Tabs))
+    }
+
+    @Test
+    fun `GIVEN a pairing card flow WHEN the user pairs THEN the sign in is recorded and the entrypoint is cleared`() {
+        every { settings.lastAuthFlowEntrypoint } returns FenixFxAEntryPoint.OnboardingPairing.entryName
+
+        registry.notifyObservers { onAuthenticated(mockk(), AuthType.Pairing) }
+
+        val event = Onboarding.syncPairingCardSignedIn.testGetValue()!!.single()
+        assertEquals("pairing", event.extra?.getValue("auth_type"))
+        verify { settings.lastAuthFlowEntrypoint = null }
+    }
+
+    @Test
+    fun `GIVEN a pairing card flow WHEN the user signs in THEN the sign in is recorded and the entrypoint is cleared`() {
+        every { settings.lastAuthFlowEntrypoint } returns FenixFxAEntryPoint.OnboardingPairing.entryName
+
+        registry.notifyObservers { onAuthenticated(mockk(), AuthType.Signin) }
+
+        val event = Onboarding.syncPairingCardSignedIn.testGetValue()!!.single()
+        assertEquals("sign_in", event.extra?.getValue("auth_type"))
+        verify { settings.lastAuthFlowEntrypoint = null }
+    }
+
+    @Test
+    fun `GIVEN a pairing card flow WHEN the user signs up THEN the sign in is recorded and the entrypoint is cleared`() {
+        every { settings.lastAuthFlowEntrypoint } returns FenixFxAEntryPoint.OnboardingPairing.entryName
+
+        registry.notifyObservers { onAuthenticated(mockk(), AuthType.Signup) }
+
+        val event = Onboarding.syncPairingCardSignedIn.testGetValue()!!.single()
+        assertEquals("sign_up", event.extra?.getValue("auth_type"))
+        verify { settings.lastAuthFlowEntrypoint = null }
+    }
+
+    @Test
+    fun `GIVEN a flow from another entrypoint WHEN the user signs in THEN the sign in is not recorded and the entrypoint is cleared`() {
+        every { settings.lastAuthFlowEntrypoint } returns FenixFxAEntryPoint.SettingsMenu.entryName
+
+        registry.notifyObservers { onAuthenticated(mockk(), AuthType.Signin) }
+
+        assertNull(Onboarding.syncPairingCardSignedIn.testGetValue())
+        verify { settings.lastAuthFlowEntrypoint = null }
+    }
+
+    @Test
+    fun `GIVEN a flow from the new user onboarding entrypoint WHEN the user signs in THEN the sign in is not recorded and the entrypoint is cleared`() {
+        every { settings.lastAuthFlowEntrypoint } returns FenixFxAEntryPoint.NewUserOnboarding.entryName
+
+        registry.notifyObservers { onAuthenticated(mockk(), AuthType.Signin) }
+
+        assertNull(Onboarding.syncPairingCardSignedIn.testGetValue())
+        verify { settings.lastAuthFlowEntrypoint = null }
+    }
+
+    @Test
+    fun `GIVEN no pairing flow WHEN the user signs in THEN the sign in is not recorded`() {
+        registry.notifyObservers { onAuthenticated(mockk(), AuthType.Signin) }
+
+        assertNull(Onboarding.syncPairingCardSignedIn.testGetValue())
+        verify(exactly = 0) { settings.lastAuthFlowEntrypoint = any() }
+    }
+
+    @Test
+    fun `GIVEN a pairing card flow WHEN the account is recovered THEN the sign in is not recorded and the entrypoint is unchanged`() {
+        every { settings.lastAuthFlowEntrypoint } returns FenixFxAEntryPoint.NewUserOnboarding.entryName
+
+        registry.notifyObservers { onAuthenticated(mockk(), AuthType.Recovered) }
+
+        assertNull(Onboarding.syncPairingCardSignedIn.testGetValue())
+        verify(exactly = 0) { settings.lastAuthFlowEntrypoint = any() }
     }
 
     private fun createBackgroundServices(areCredentialsSyncable: Boolean) =

@@ -13,33 +13,40 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.accounts.FirefoxAccountsAuthFeature
 import mozilla.components.feature.app.links.AppLinksInterceptor
 import mozilla.components.service.fxa.manager.FxaAccountManager
+import org.mozilla.fenix.components.accounts.EntrypointTrackingAuthFeature
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.utils.PersistStoryUTMRequestInterceptor
+import org.mozilla.fenix.utils.Settings
 
 /** Component group which encapsulates foreground-friendly services. */
 class Services(
     private val context: Context,
     private val store: BrowserStore,
     private val accountManager: FxaAccountManager,
+    private val settings: Settings,
 ) {
     val accountsAuthFeature by lazy {
-        FirefoxAccountsAuthFeature(accountManager, FxaServer.REDIRECT_URL) { context, authUrl ->
-            var url = authUrl
-            if (context.components.settings.useReactFxAServer) {
-                url =
-                    url.toUri()
-                        .buildUpon()
-                        .appendQueryParameter("forceExperiment", "generalizedReactApp")
-                        .appendQueryParameter("forceExperimentGroup", "react")
-                        .build()
-                        .toString()
-            }
-            CoroutineScope(Dispatchers.Main).launch {
-                val intent = SupportUtils.createAuthCustomTabIntent(context, url)
-                context.startActivity(intent)
-            }
-        }
+        EntrypointTrackingAuthFeature(
+            feature =
+                FirefoxAccountsAuthFeature(accountManager, FxaServer.REDIRECT_URL) { context, authUrl ->
+                    var url = authUrl
+                    if (settings.useReactFxAServer) {
+                        url =
+                            url.toUri()
+                                .buildUpon()
+                                .appendQueryParameter("forceExperiment", "generalizedReactApp")
+                                .appendQueryParameter("forceExperimentGroup", "react")
+                                .build()
+                                .toString()
+                    }
+                    CoroutineScope(Dispatchers.Main).launch {
+                        val intent = SupportUtils.createAuthCustomTabIntent(context, url)
+                        context.startActivity(intent)
+                    }
+                },
+            settings = settings,
+        )
     }
 
     val appLinksInterceptor by lazy {

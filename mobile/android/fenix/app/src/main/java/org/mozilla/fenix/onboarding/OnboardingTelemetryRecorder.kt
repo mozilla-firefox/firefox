@@ -109,7 +109,8 @@ class OnboardingTelemetryRecorder(
                 )
             }
 
-            OnboardingPageUiData.Type.SYNC_PAIRING -> Unit
+            OnboardingPageUiData.Type.SYNC_PAIRING ->
+                recordSyncPairingCard(ACTION_IMPRESSION, ET_ONBOARDING_CARD, sequenceId, sequencePosition)
 
             OnboardingPageUiData.Type.TERMS_OF_SERVICE -> {
                 Onboarding.termsOfServiceCard.record(
@@ -177,6 +178,59 @@ class OnboardingTelemetryRecorder(
             Onboarding.SignInExtra(
                 action = ACTION_CLICK,
                 elementType = ET_PRIMARY_BUTTON,
+                sequenceId = sequenceId,
+                sequencePosition = sequencePosition,
+                onboardingReason = onboardingReason.value,
+                installSource = installSource,
+            )
+        )
+    }
+
+    /**
+     * Records the scan click event of the pairing sync card.
+     *
+     * @param sequenceId The identifier of the onboarding sequence shown to the user.
+     * @param sequencePosition The sequence position of the pairing sync card.
+     */
+    fun onSyncPairingScanClick(sequenceId: String, sequencePosition: String) {
+        recordSyncPairingCard(ACTION_CLICK, ET_PRIMARY_BUTTON, sequenceId, sequencePosition)
+    }
+
+    /**
+     * Records the email click event of the pairing sync card.
+     *
+     * @param sequenceId The identifier of the onboarding sequence shown to the user.
+     * @param sequencePosition The sequence position of the pairing sync card.
+     */
+    fun onSyncPairingEmailClick(sequenceId: String, sequencePosition: String) {
+        recordSyncPairingCard(ACTION_CLICK, ET_SECONDARY_BUTTON, sequenceId, sequencePosition)
+    }
+
+    /**
+     * Records the skip click event of the pairing sync card.
+     *
+     * @param sequenceId The identifier of the onboarding sequence shown to the user.
+     * @param sequencePosition The sequence position of the pairing sync card.
+     */
+    fun onSyncPairingSkipClick(sequenceId: String, sequencePosition: String) {
+        recordSyncPairingCard(ACTION_CLICK, ET_SKIP_BUTTON, sequenceId, sequencePosition)
+    }
+
+    private fun recordSyncPairingCard(
+        action: String,
+        elementType: String,
+        sequenceId: String,
+        sequencePosition: String,
+    ) {
+        logger.debug(
+            "Recording sync pairing card event, action: $action, elementType: $elementType, sequenceId: $sequenceId, " +
+                "sequencePosition: $sequencePosition"
+        )
+
+        Onboarding.syncPairingCard.record(
+            Onboarding.SyncPairingCardExtra(
+                action = action,
+                elementType = elementType,
                 sequenceId = sequenceId,
                 sequencePosition = sequencePosition,
                 onboardingReason = onboardingReason.value,
@@ -431,6 +485,7 @@ class OnboardingTelemetryRecorder(
         private const val ET_PRIMARY_BUTTON = "primary_button"
         private const val ET_SECONDARY_BUTTON = "secondary_button"
         const val ET_CARD_CLOSE_BUTTON = "card_close_button"
+        private const val ET_SKIP_BUTTON = "skip_button"
     }
 }
 

@@ -53,9 +53,11 @@ import mozilla.components.support.utils.RunWhenReadyQueue
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.Config
 import org.mozilla.fenix.GleanMetrics.ClientAssociation
+import org.mozilla.fenix.GleanMetrics.Onboarding
 import org.mozilla.fenix.GleanMetrics.Pings.fxAccounts
 import org.mozilla.fenix.GleanMetrics.SyncAuth
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.maxActiveTime
 import org.mozilla.fenix.ext.recordEventInNimbus
@@ -348,11 +350,21 @@ internal class TelemetryAccountObserver(
                 // no-op, events not recorded in Glean
             }
         }
+        authType.signInTelemetryId?.let { recordPairingCardSignIn(it) }
     }
 
     override fun onLoggedOut() {
         SyncAuth.signOut.record(NoExtras())
         settings.signedInFxaAccount = false
+    }
+
+    private fun recordPairingCardSignIn(authType: String) {
+        val entrypoint = settings.lastAuthFlowEntrypoint ?: return
+        settings.lastAuthFlowEntrypoint = null
+
+        if (entrypoint == FenixFxAEntryPoint.OnboardingPairing.entryName) {
+            Onboarding.syncPairingCardSignedIn.record(Onboarding.SyncPairingCardSignedInExtra(authType = authType))
+        }
     }
 }
 
@@ -381,3 +393,20 @@ internal class SyncedTabsClosedNotificationObserver(
         notificationManager.showSyncedTabsClosed(context, urls.size)
     }
 }
+
+/**
+ * The `auth_type` recorded in `onboarding.sync_pairing_card_signed_in`, or null when the authentication has not been
+ * initiated by the app.
+ */
+private val AuthType.signInTelemetryId: String?
+    get() =
+        when (this) {
+            AuthType.Pairing -> "pairing"
+            AuthType.Signin -> "sign_in"
+            AuthType.Signup -> "sign_up"
+            is AuthType.OtherExternal,
+            AuthType.Existing,
+            AuthType.MigratedCopy,
+            AuthType.MigratedReuse,
+            AuthType.Recovered -> null
+        }

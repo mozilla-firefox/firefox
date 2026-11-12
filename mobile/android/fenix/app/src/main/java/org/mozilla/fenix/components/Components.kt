@@ -152,7 +152,7 @@ class Components(
             applicationScope,
         )
     }
-    val services by lazy { Services(context, core.store, backgroundServices.accountManager) }
+    val services by lazy { Services(context, core.store, backgroundServices.accountManager, settings) }
     val core by lazy {
         Core(context, analytics.crashReporter, strictMode, performance.visualCompletenessQueue, applicationScope)
     }

@@ -268,24 +268,37 @@ class OnboardingFragment : Fragment() {
                 )
             },
             onSyncPairingScanClick = {
+                telemetryRecorder.onSyncPairingScanClick(
+                    pagesToDisplay.telemetrySequenceId(),
+                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_PAIRING),
+                )
                 findNavController()
                     .nav(
                         id = R.id.onboardingFragment,
                         directions =
                             OnboardingFragmentDirections.actionGlobalPairFragment(
-                                entrypoint = FenixFxAEntryPoint.NewUserOnboarding
+                                entrypoint = FenixFxAEntryPoint.OnboardingPairing
                             ),
                     )
             },
             onSyncPairingEmailClick = {
+                telemetryRecorder.onSyncPairingEmailClick(
+                    pagesToDisplay.telemetrySequenceId(),
+                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_PAIRING),
+                )
                 requireComponents.services.accountsAuthFeature.beginAuthentication(
                     context = requireContext(),
-                    entrypoint = FenixFxAEntryPoint.NewUserOnboarding,
+                    entrypoint = FenixFxAEntryPoint.OnboardingPairing,
                     service = FxaService.Sync.identifier,
                     scopes = setOf(SCOPE_PROFILE, SCOPE_SYNC),
                 )
             },
-            onSyncPairingSkipClick = {},
+            onSyncPairingSkipClick = {
+                telemetryRecorder.onSyncPairingSkipClick(
+                    pagesToDisplay.telemetrySequenceId(),
+                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_PAIRING),
+                )
+            },
             onFinish = {
                 onFinish(it)
             },

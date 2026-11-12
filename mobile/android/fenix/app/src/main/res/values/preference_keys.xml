@@ -386,6 +386,7 @@
     <string name="pref_key_is_user_skyflag_attributed" translatable="false">pref_key_is_user_skyflag_attributed</string>
     <string name="pref_key_is_user_quora_attributed" translatable="false">pref_key_is_user_quora_attributed</string>
     <string name="pref_key_is_user_pairing_campaign_attributed" translatable="false">pref_key_is_user_pairing_campaign_attributed</string>
+    <string name="pref_key_last_auth_flow_entrypoint" translatable="false">pref_key_last_auth_flow_entrypoint</string>
     <string name="pref_key_referral_ping_submitted" translatable="false">pref_key_referral_ping_submitted</string>
     <string name="pref_key_referral_code" translatable="false">pref_key_referral_code</string>
 

@@ -1644,4 +1644,25 @@ class SettingsTest {
 
         assertEquals("2026-11-01T00:00:00Z", settings.ipProtectionLastDataLimitNoticeCycleResetTime)
     }
+
+    @Test
+    fun `GIVEN a fresh install WHEN reading the last auth flow entrypoint THEN it is null`() {
+        assertNull(settings.lastAuthFlowEntrypoint)
+    }
+
+    @Test
+    fun `GIVEN no last auth flow entrypoint WHEN setting it THEN it is persisted`() {
+        settings.lastAuthFlowEntrypoint = "newuser-onboarding"
+
+        assertEquals("newuser-onboarding", settings.lastAuthFlowEntrypoint)
+    }
+
+    @Test
+    fun `GIVEN a last auth flow entrypoint is set WHEN clearing it THEN it is null`() {
+        settings.lastAuthFlowEntrypoint = "newuser-onboarding"
+
+        settings.lastAuthFlowEntrypoint = null
+
+        assertNull(settings.lastAuthFlowEntrypoint)
+    }
 }

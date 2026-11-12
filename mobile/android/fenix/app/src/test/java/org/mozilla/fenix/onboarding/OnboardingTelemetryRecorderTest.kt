@@ -15,6 +15,7 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.GleanMetrics.Onboarding
 import org.mozilla.fenix.GleanMetrics.Pings
 import org.mozilla.fenix.helpers.FenixGleanTestRule
+import org.mozilla.fenix.onboarding.view.OnboardingPageUiData
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
@@ -99,5 +100,59 @@ class OnboardingTelemetryRecorderTest {
 
         job.join()
         assertTrue(sent)
+    }
+
+    @Test
+    fun `GIVEN the pairing sync card WHEN it is shown THEN the impression is recorded`() {
+        telemetryRecorder.onImpression(
+            sequenceId = "sequence",
+            pageType = OnboardingPageUiData.Type.SYNC_PAIRING,
+            sequencePosition = "2",
+        )
+
+        val event = Onboarding.syncPairingCard.testGetValue()!!.single()
+
+        assertEquals("impression", event.extra?.getValue("action"))
+        assertEquals("onboarding_card", event.extra?.getValue("element_type"))
+        assertEquals("sequence", event.extra?.getValue("sequence_id"))
+        assertEquals("2", event.extra?.getValue("sequence_position"))
+        assertEquals("source", event.extra?.getValue("install_source"))
+        assertEquals(OnboardingReason.NEW_USER.value, event.extra?.getValue("onboarding_reason"))
+    }
+
+    @Test
+    fun `GIVEN the pairing sync card WHEN the scan button is clicked THEN the scan click is recorded`() {
+        telemetryRecorder.onSyncPairingScanClick(sequenceId = "sequence", sequencePosition = "2")
+
+        val event = Onboarding.syncPairingCard.testGetValue()!!.single()
+
+        assertEquals("primary_button", event.extra?.getValue("element_type"))
+        assertEquals("click", event.extra?.getValue("action"))
+        assertEquals("sequence", event.extra?.getValue("sequence_id"))
+        assertEquals("2", event.extra?.getValue("sequence_position"))
+    }
+
+    @Test
+    fun `GIVEN the pairing sync card WHEN the email button is clicked THEN the email click is recorded`() {
+        telemetryRecorder.onSyncPairingEmailClick(sequenceId = "sequence", sequencePosition = "2")
+
+        val event = Onboarding.syncPairingCard.testGetValue()!!.single()
+
+        assertEquals("secondary_button", event.extra?.getValue("element_type"))
+        assertEquals("click", event.extra?.getValue("action"))
+        assertEquals("sequence", event.extra?.getValue("sequence_id"))
+        assertEquals("2", event.extra?.getValue("sequence_position"))
+    }
+
+    @Test
+    fun `GIVEN the pairing sync card WHEN the skip button is clicked THEN the skip click is recorded`() {
+        telemetryRecorder.onSyncPairingSkipClick(sequenceId = "sequence", sequencePosition = "2")
+
+        val event = Onboarding.syncPairingCard.testGetValue()!!.single()
+
+        assertEquals("skip_button", event.extra?.getValue("element_type"))
+        assertEquals("click", event.extra?.getValue("action"))
+        assertEquals("sequence", event.extra?.getValue("sequence_id"))
+        assertEquals("2", event.extra?.getValue("sequence_position"))
     }
 }
