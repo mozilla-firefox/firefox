@@ -41,6 +41,7 @@ function closingPopupEndsDrag(popup) {
         "dragover",
         "dragleave",
         "dragend",
+        "popuphidden",
       ];
       for (let event_name of event_names) {
         this.addEventListener(event_name, this);
@@ -429,7 +430,8 @@ function closingPopupEndsDrag(popup) {
 
       // Force a copy action if parent node is a query or we are dragging a
       // not-removable node.
-      if (!this._rootView.controller.canMoveNode(draggedElt)) {
+      let canMove = this._rootView.controller.canMoveNode(draggedElt);
+      if (!canMove) {
         event.dataTransfer.effectAllowed = "copyLink";
       }
 
@@ -437,6 +439,12 @@ function closingPopupEndsDrag(popup) {
       this._rootView._draggedElt = draggedElt;
       this._rootView.controller.setDataTransfer(event);
       this.setAttribute("dragstart", "true");
+      if (canMove) {
+        // Keep the popup from shrinking while the dragged item moves out of
+        // it, since open submenus stay where they were anchored.
+        this.style.minWidth = this.getBoundingClientRect().width + "px";
+        elt._dragSourcePopup = this;
+      }
       event.stopPropagation();
     }
 
@@ -582,7 +590,18 @@ function closingPopupEndsDrag(popup) {
       event.stopPropagation();
     }
 
-    on_dragend() {
+    on_popuphidden(event) {
+      if (event.target == this) {
+        this.style.removeProperty("min-width");
+      }
+    }
+
+    on_dragend(event) {
+      let elt = event.target;
+      if (elt._dragSourcePopup) {
+        elt._dragSourcePopup.style.removeProperty("min-width");
+        delete elt._dragSourcePopup;
+      }
       this._cleanupDragDetails();
     }
 
@@ -683,6 +702,7 @@ function closingPopupEndsDrag(popup) {
     }
 
     on_popuphidden(event) {
+      super.on_popuphidden(event);
       if (event.target == this) {
         this.removeAttribute("panelopen");
         this.removeAttribute("animate");
