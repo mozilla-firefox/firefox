@@ -254,45 +254,23 @@ private fun OnboardingPageNotificationPreview() {
 
 @PreviewLightDark
 @Composable
-private fun OnboardingPageButtonLeadingIconPreview() {
+private fun OnboardingPageSyncPairingPreview() {
     FirefoxTheme {
         OnboardingPage(
             pageState =
                 OnboardingPageState(
-                    imageRes = R.drawable.nova_onboarding_sync,
-                    title = stringResource(R.string.nova_onboarding_sync_title),
-                    description = stringResource(R.string.nova_onboarding_sync_subtitle),
+                    imageRes = R.drawable.nova_onboarding_sync_qr,
+                    title = stringResource(R.string.nova_onboarding_sync_pairing_title),
+                    description = stringResource(R.string.nova_onboarding_sync_pairing_body),
                     primaryButton =
                         Action(
-                            text = stringResource(R.string.nova_onboarding_sync_button),
+                            text = stringResource(R.string.nova_onboarding_sync_pairing_scan_button),
                             onClick = {},
                             leadingIconRes = iconsR.drawable.mozac_ic_qr_code_24,
                         ),
                     secondaryButton =
                         Action(
-                            text = stringResource(R.string.nova_onboarding_negative_button),
-                            onClick = {},
-                            leadingIconRes = iconsR.drawable.mozac_ic_qr_code_24,
-                        ),
-                    onRecordImpressionEvent = {},
-                )
-        )
-    }
-}
-
-@PreviewLightDark
-@Composable
-private fun OnboardingPageBoldDescriptionPreview() {
-    FirefoxTheme {
-        OnboardingPage(
-            pageState =
-                OnboardingPageState(
-                    imageRes = R.drawable.nova_onboarding_sync,
-                    title = stringResource(R.string.nova_onboarding_sync_title),
-                    description = "No QR code? Go to <b>firefox.com/pair</b> on your computer.",
-                    primaryButton =
-                        Action(
-                            text = stringResource(R.string.nova_onboarding_sync_button),
+                            text = stringResource(R.string.nova_onboarding_sync_pairing_email_button),
                             onClick = {},
                         ),
                     onRecordImpressionEvent = {},

@@ -552,6 +552,15 @@
     <!-- Sync onboarding button. -->
     <string name="nova_onboarding_sync_button">Start syncing</string>
 
+    <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+    <string name="nova_onboarding_sync_pairing_title">Scan to finish pairing with your computer</string>
+    <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+    <string name="nova_onboarding_sync_pairing_body"><![CDATA[No QR code? Go to <b>firefox.com/pair</b> on your computer.]]></string>
+    <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+    <string name="nova_onboarding_sync_pairing_scan_button">Scan pairing code</string>
+    <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+    <string name="nova_onboarding_sync_pairing_email_button">Sign in with email</string>
+
     <!-- Marketing onboarding title. -->
     <string name="nova_onboarding_marketing_title">Help us build a better internet</string>
 

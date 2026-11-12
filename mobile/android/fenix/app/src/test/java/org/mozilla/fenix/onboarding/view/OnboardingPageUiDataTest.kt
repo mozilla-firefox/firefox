@@ -43,6 +43,13 @@ class OnboardingPageUiDataTest {
     }
 
     @Test
+    fun `GIVEN a pairing install sequence WHEN sequenceId() is called THEN should map to the correct sequence id`() {
+        val pages = listOf(termsOfServicePageUiData, syncPairingPageUiData)
+
+        assertEquals("terms_of_service_sync_pairing", pages.telemetrySequenceId())
+    }
+
+    @Test
     fun `GIVEN a single known page WHEN sequenceId() called THEN should map to the correct sequence id`() {
         val expected = "default"
         val actual = listOf(defaultBrowserPageUiData).telemetrySequenceId()
@@ -69,6 +76,16 @@ val syncPageUiData =
         description = "sync body",
         primaryButtonLabel = "sync primary button text",
         secondaryButtonLabel = "sync secondary button text",
+    )
+
+val syncPairingPageUiData =
+    OnboardingPageUiData(
+        type = OnboardingPageUiData.Type.SYNC_PAIRING,
+        imageRes = R.drawable.nova_onboarding_sync_qr,
+        title = "sync pairing title",
+        description = "sync pairing body",
+        primaryButtonLabel = "sync pairing scan button text",
+        secondaryButtonLabel = "sync pairing email button text",
     )
 
 val termsOfServicePageUiData =

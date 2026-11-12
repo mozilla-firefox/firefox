@@ -26,6 +26,7 @@ data class OnboardingPageUiData(
     enum class Type(val telemetryId: String) {
         DEFAULT_BROWSER(telemetryId = "default"),
         SYNC_SIGN_IN(telemetryId = "sync"),
+        SYNC_PAIRING(telemetryId = "sync_pairing"),
         TERMS_OF_SERVICE(telemetryId = "terms_of_service"),
         MARKETING_DATA(telemetryId = "marketing_data"),
     }

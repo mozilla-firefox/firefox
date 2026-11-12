@@ -264,6 +264,10 @@ enums:
         description: Allows user to set Firefox as the default browser.
       sync-sign-in:
         description: Allows user to sync with a Firefox account.
+      sync-pairing:
+        description: >
+          Lets a user who installed from a pairing campaign link scan the pairing QR code or sign
+          in with email.
       terms-of-service:
         description: Page to display the terms of services.
       marketing-data:

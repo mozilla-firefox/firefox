@@ -4,6 +4,8 @@
 
 package org.mozilla.fenix.onboarding.view
 
+import androidx.annotation.DrawableRes
+import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.nimbus.MarketingData
 import org.mozilla.fenix.nimbus.OnboardingCardData
 import org.mozilla.fenix.nimbus.OnboardingCardType
@@ -97,6 +99,7 @@ private fun OnboardingCardType.toPageUiDataType() =
     when (this) {
         OnboardingCardType.DEFAULT_BROWSER -> OnboardingPageUiData.Type.DEFAULT_BROWSER
         OnboardingCardType.SYNC_SIGN_IN -> OnboardingPageUiData.Type.SYNC_SIGN_IN
+        OnboardingCardType.SYNC_PAIRING -> OnboardingPageUiData.Type.SYNC_PAIRING
         OnboardingCardType.TERMS_OF_SERVICE -> OnboardingPageUiData.Type.TERMS_OF_SERVICE
         OnboardingCardType.MARKETING_DATA -> OnboardingPageUiData.Type.MARKETING_DATA
     }
@@ -138,6 +141,9 @@ internal fun mapToOnboardingPageState(
     onMakeFirefoxDefaultSkipClick: () -> Unit,
     onSignInButtonClick: () -> Unit,
     onSignInSkipClick: () -> Unit,
+    onSyncPairingScanClick: () -> Unit,
+    onSyncPairingEmailClick: () -> Unit,
+    onSyncPairingSkipClick: () -> Unit,
     onTermsOfServiceButtonClick: () -> Unit,
     onMarketingDataContinueClick: () -> Unit = {},
 ): OnboardingPageState =
@@ -156,6 +162,16 @@ internal fun mapToOnboardingPageState(
                 onPositiveButtonClick = onSignInButtonClick,
                 onNegativeButtonClick = onSignInSkipClick,
                 isSmallDevice = isSmallDevice,
+            )
+
+        OnboardingPageUiData.Type.SYNC_PAIRING ->
+            createOnboardingPageState(
+                onboardingPageUiData = onboardingPageUiData,
+                onPositiveButtonClick = onSyncPairingScanClick,
+                onNegativeButtonClick = onSyncPairingEmailClick,
+                onSkipClick = onSyncPairingSkipClick,
+                isSmallDevice = isSmallDevice,
+                primaryButtonLeadingIconRes = iconsR.drawable.mozac_ic_qr_code_24,
             )
 
         OnboardingPageUiData.Type.TERMS_OF_SERVICE ->
@@ -180,16 +196,24 @@ private fun createOnboardingPageState(
     isSmallDevice: Boolean,
     onPositiveButtonClick: () -> Unit,
     onNegativeButtonClick: () -> Unit,
+    onSkipClick: (() -> Unit)? = null,
+    @DrawableRes primaryButtonLeadingIconRes: Int? = null,
 ): OnboardingPageState =
     OnboardingPageState(
         imageRes = onboardingPageUiData.imageRes,
         title = onboardingPageUiData.title,
         description = onboardingPageUiData.description,
-        primaryButton = Action(onboardingPageUiData.primaryButtonLabel, onPositiveButtonClick),
+        primaryButton =
+            Action(
+                text = onboardingPageUiData.primaryButtonLabel,
+                onClick = onPositiveButtonClick,
+                leadingIconRes = primaryButtonLeadingIconRes,
+            ),
         secondaryButton =
             onboardingPageUiData.secondaryButtonLabel?.let {
                 Action(it, onNegativeButtonClick)
             },
+        onSkipClick = onSkipClick,
         termsOfService = onboardingPageUiData.termsOfService,
         marketingData = onboardingPageUiData.marketingData,
         isSmallDevice = isSmallDevice,

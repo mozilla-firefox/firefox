@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.onboarding.view
 
+import mozilla.components.ui.icons.R as iconsR
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mozilla.fenix.R
@@ -38,6 +39,9 @@ class OnboardingMapperTest {
                 onMakeFirefoxDefaultSkipClick = unitLambda,
                 onSignInButtonClick = {},
                 onSignInSkipClick = {},
+                onSyncPairingScanClick = {},
+                onSyncPairingEmailClick = {},
+                onSyncPairingSkipClick = {},
                 onTermsOfServiceButtonClick = {},
             )
 
@@ -71,6 +75,45 @@ class OnboardingMapperTest {
                 onMakeFirefoxDefaultSkipClick = {},
                 onSignInButtonClick = unitLambda,
                 onSignInSkipClick = unitLambda,
+                onSyncPairingScanClick = {},
+                onSyncPairingEmailClick = {},
+                onSyncPairingSkipClick = {},
+                onTermsOfServiceButtonClick = {},
+            )
+
+        assertEquals(expected, actual)
+    }
+
+    @Test
+    fun `GIVEN a sync pairing page WHEN mapToOnboardingPageState is called THEN creates the expected OnboardingPageState`() {
+        val onScanClick = { dummyUnitFunc() }
+        val onEmailClick = { dummyUnitFunc() }
+        val onSkipClick = { dummyUnitFunc() }
+        val expected =
+            OnboardingPageState(
+                imageRes = R.drawable.nova_onboarding_sync_qr,
+                title = "sync pairing title",
+                description = "sync pairing body",
+                primaryButton =
+                    Action(
+                        text = "sync pairing scan button text",
+                        onClick = onScanClick,
+                        leadingIconRes = iconsR.drawable.mozac_ic_qr_code_24,
+                    ),
+                secondaryButton = Action("sync pairing email button text", onEmailClick),
+                onSkipClick = onSkipClick,
+            )
+
+        val actual =
+            mapToOnboardingPageState(
+                onboardingPageUiData = syncPairingPageUiData,
+                onMakeFirefoxDefaultClick = {},
+                onMakeFirefoxDefaultSkipClick = {},
+                onSignInButtonClick = {},
+                onSignInSkipClick = {},
+                onSyncPairingScanClick = onScanClick,
+                onSyncPairingEmailClick = onEmailClick,
+                onSyncPairingSkipClick = onSkipClick,
                 onTermsOfServiceButtonClick = {},
             )
 
@@ -113,6 +156,9 @@ class OnboardingMapperTest {
                 onMakeFirefoxDefaultSkipClick = {},
                 onSignInButtonClick = {},
                 onSignInSkipClick = {},
+                onSyncPairingScanClick = {},
+                onSyncPairingEmailClick = {},
+                onSyncPairingSkipClick = {},
                 onTermsOfServiceButtonClick = {},
                 onMarketingDataContinueClick = unitLambda,
             )

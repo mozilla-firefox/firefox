@@ -264,6 +264,9 @@ class OnboardingFragment : Fragment() {
                     pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_SIGN_IN),
                 )
             },
+            onSyncPairingScanClick = {},
+            onSyncPairingEmailClick = {},
+            onSyncPairingSkipClick = {},
             onFinish = {
                 onFinish(it)
             },

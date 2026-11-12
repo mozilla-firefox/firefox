@@ -109,6 +109,8 @@ class OnboardingTelemetryRecorder(
                 )
             }
 
+            OnboardingPageUiData.Type.SYNC_PAIRING -> Unit
+
             OnboardingPageUiData.Type.TERMS_OF_SERVICE -> {
                 Onboarding.termsOfServiceCard.record(
                     Onboarding.TermsOfServiceCardExtra(
