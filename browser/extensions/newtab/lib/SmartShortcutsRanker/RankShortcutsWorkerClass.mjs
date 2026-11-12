@@ -170,8 +170,8 @@ export function normHistDict(dict) {
 /**
  * Compute linear combination of scores, weighted
  *
- * @param {object[]} scores Dictionary of scores
- * @param {object[]} weights Dictionary of weights
+ * @param {object} scores Dictionary of scores
+ * @param {object} weights Dictionary of weights
  * @returns {number} Linear combination of scores*weights
  */
 export function computeLinearScore(scores, weights) {
@@ -447,20 +447,45 @@ export async function weightedSampleTopSites(input) {
     });
   }
 
-  // 7) Final score
+  // 7) Training and ranking scores
+  const trainingWeights = Object.fromEntries(
+    (input.training_features ?? input.features).map(feature => [
+      feature,
+      (input.training_weights ?? input.weights)[feature] ?? 0,
+    ])
+  );
+  const rankingWeights = Object.fromEntries(
+    (input.ranking_features ?? input.features).map(feature => [
+      feature,
+      input.weights[feature] ?? 0,
+    ])
+  );
   for (const g of input.guid) {
-    score_map[g].final = computeLinearScore(score_map[g], input.weights);
+    // Cached prediction used by the next weight update to learn from later interactions.
+    score_map[g].training = computeLinearScore(score_map[g], trainingWeights);
+    // Score used to sort shortcuts for the current ranking.
+    score_map[g].ranking = computeLinearScore(score_map[g], rankingWeights);
   }
 
   return { score_map, norms: updated_norms };
 }
 
-export function clampWeights(weights, maxNorm = 100) {
-  const norm = Math.hypot(...Object.values(weights));
+export function clampWeights(
+  weights,
+  maxNorm = 100,
+  features = Object.keys(weights)
+) {
+  const selectedFeatures = new Set(features);
+  const norm = Math.hypot(
+    ...[...selectedFeatures].map(key => weights[key] ?? 0)
+  );
   if (norm > maxNorm) {
     const scale = maxNorm / norm;
     return Object.fromEntries(
-      Object.entries(weights).map(([k, v]) => [k, v * scale])
+      Object.entries(weights).map(([k, v]) => [
+        k,
+        selectedFeatures.has(k) ? v * scale : v,
+      ])
     );
   }
   return weights;
@@ -475,7 +500,7 @@ export function clampWeights(weights, maxNorm = 100) {
  * @param {object} input.data
  *   Mapping guid -> { clicks: number, impressions: number }.
  * @param {object} input.scores
- *   Mapping guid -> { final: number, [feature]: number } (final = w·x).
+ *   Mapping guid -> { training: number, ranking: number, [feature]: number }.
  * @param {object} input.weights
  *   Current weight vector, keyed by feature
  * @param {number} input.eta
@@ -507,7 +532,7 @@ export function updateWeights(input, do_clamp = true) {
     if (
       score_map &&
       score_map[guid] &&
-      typeof score_map[guid].final === "number"
+      typeof score_map[guid].training === "number"
     ) {
       /* impressions without a click can happen for many reasons
       that are unrelated to the item. clicks are almost
@@ -522,7 +547,7 @@ export function updateWeights(input, do_clamp = true) {
         continue;
       }
 
-      const z = score_map[guid].final;
+      const z = score_map[guid].training;
       const p = 1 / (1 + Math.exp(-z)); // sigmoid
       const factor = clicks * (p - 1) + impressions * p;
 
@@ -542,7 +567,7 @@ export function updateWeights(input, do_clamp = true) {
     }
   }
   if (do_clamp) {
-    weights = clampWeights(weights);
+    weights = clampWeights(weights, 100, features);
   }
   return weights;
 }

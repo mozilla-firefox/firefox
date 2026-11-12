@@ -63,7 +63,24 @@ const FEATURE_META = {
   bias: { pref: "bias_weight", def: 0 },
 };
 
-const FEATURES = ["thom", "rece", "freq", "bmark", "ctr"];
+const DEFAULT_FEATURE_LISTS = {
+  // Features in the training score and whose weights are updated.
+  training_features: ["thom", "rece", "freq", "bmark", "ctr"],
+  // Features in the ranking score used to sort shortcuts.
+  ranking_features: ["thom", "rece", "freq", "bmark", "ctr"],
+  // Features whose scores and weights are attached for telemetry.
+  reporting_features: [
+    "thom",
+    "rece",
+    "freq",
+    "bmark",
+    "ctr",
+    "training",
+    "ranking",
+  ],
+};
+// Combined scores computed from the features; never inputs themselves.
+const SCORE_KEYS = ["training", "ranking"];
 const SHORTCUT_POSITIVE_PRIOR = 1;
 const SHORTCUT_NEGATIVE_PRIOR = 1000;
 const SHORTCUT_TAU = 100;
@@ -240,25 +257,35 @@ export const roundNum = (x, sig = 4, eps = 1e-6) => {
  * Copies rounded scores and weights onto sites so telemetry can report them.
  *
  * @param {Array<object>} sites
- * @param {object} [scoreMap] guid -> feature scores.
- * @param {object} [weights] Feature weights used for the ranking.
+ * @param {object|undefined} scoreMap guid -> feature, training and ranking
+ *   scores.
+ * @param {object|undefined} weights Learned feature weights.
+ * @param {string[]} reportingFeatures Features whose scores and weights are
+ *   reported.
  */
-function attachTelemetryScores(sites, scoreMap, weights) {
+function attachTelemetryScores(sites, scoreMap, weights, reportingFeatures) {
+  const reported = new Set(reportingFeatures);
   const roundWeights = Object.fromEntries(
-    Object.entries(weights ?? {}).map(([key, v]) => [
-      key,
-      typeof v === "number" && isFinite(v) ? roundNum(v) : (v ?? null),
-    ])
+    Object.entries(weights ?? {})
+      .filter(([key]) => reported.has(key))
+      .map(([key, v]) => [
+        key,
+        typeof v === "number" && isFinite(v) ? roundNum(v) : (v ?? null),
+      ])
   );
   sites.forEach(s => {
     const raw = scoreMap?.[s.guid];
     s.scores =
       raw && typeof raw === "object"
         ? Object.fromEntries(
-            Object.entries(raw).map(([k, v]) => [
-              k,
-              typeof v === "number" && isFinite(v) ? roundNum(v) : (v ?? null),
-            ])
+            Object.entries(raw)
+              .filter(([key]) => reported.has(key))
+              .map(([k, v]) => [
+                k,
+                typeof v === "number" && isFinite(v)
+                  ? roundNum(v)
+                  : (v ?? null),
+              ])
           )
         : null;
     s.weights = roundWeights;
@@ -701,13 +728,22 @@ function checkWeights(all_weights, features) {
   }
   for (const fkey of features) {
     if (
-      !Number.isFinite(all_weights.current[fkey]) ||
-      all_weights.old_init[fkey] !== all_weights.new_init[fkey]
+      Object.hasOwn(all_weights.old_init, fkey) &&
+      (!Number.isFinite(all_weights.current[fkey]) ||
+        all_weights.old_init[fkey] !== all_weights.new_init[fkey])
     ) {
       return [all_weights.new_init, all_weights.new_init];
     }
   }
-  return [all_weights.current, all_weights.old_init];
+  const weights = { ...all_weights.current };
+  const initWeights = { ...all_weights.old_init };
+  for (const fkey of features) {
+    if (!Object.hasOwn(initWeights, fkey)) {
+      weights[fkey] = all_weights.new_init[fkey];
+      initWeights[fkey] = all_weights.new_init[fkey];
+    }
+  }
+  return [weights, initWeights];
 }
 
 /**
@@ -976,8 +1012,27 @@ export class RankShortcutsProvider {
       return topsites;
     }
     // get our feature set
-    const features =
-      prefValues.trainhopConfig?.smartShortcuts?.features ?? FEATURES;
+    const config = prefValues.trainhopConfig?.smartShortcuts;
+    const featureLists = {
+      training_features:
+        config?.training_features ??
+        config?.features ??
+        DEFAULT_FEATURE_LISTS.training_features,
+      ranking_features:
+        config?.ranking_features ??
+        config?.features ??
+        DEFAULT_FEATURE_LISTS.ranking_features,
+      reporting_features:
+        config?.reporting_features ??
+        (config?.features && [...config.features, ...SCORE_KEYS]) ??
+        DEFAULT_FEATURE_LISTS.reporting_features,
+    };
+    const weightFeatures = [
+      ...new Set([
+        ...featureLists.training_features,
+        ...featureLists.ranking_features,
+      ]),
+    ];
 
     // split topsites into two arrays, we only rank those with guid
     const [withGuid, withoutGuid] = topsites.reduce(
@@ -1027,7 +1082,8 @@ export class RankShortcutsProvider {
         attachTelemetryScores(
           combined,
           sc_cache.score_map,
-          sc_cache.ranking_weights
+          sc_cache.weights,
+          featureLists.reporting_features
         );
       }
       return combined;
@@ -1045,10 +1101,10 @@ export class RankShortcutsProvider {
     let [weights, init_weights] = checkWeights(
       {
         current: sc_cache.weights,
-        new_init: initShortcutWeights(prefValues, features),
+        new_init: initShortcutWeights(prefValues, weightFeatures),
         old_init: sc_cache.init_weights,
       },
-      features
+      weightFeatures
     );
 
     // update our weights
@@ -1069,7 +1125,7 @@ export class RankShortcutsProvider {
       {
         data: latest_interaction_data,
         scores: sc_cache.score_map,
-        features,
+        features: featureLists.training_features,
         weights,
         eta: learningConfig.eta,
         click_bonus:
@@ -1078,35 +1134,38 @@ export class RankShortcutsProvider {
       },
     ]);
 
-    const rankingConfig = gateRuntimeConfigByEngagement(
+    const scoringConfig = gateRuntimeConfigByEngagement(
       { weights },
       prefValues.trainhopConfig?.smartShortcuts,
       engagement
     );
-    const rankingWeights = rankingConfig.weights;
+    const scoringWeights = scoringConfig.weights;
 
     // write the weights and init... sometimes redundant
     sc_cache.weights = weights;
     sc_cache.init_weights = init_weights;
-    // Kept so telemetry on reused orders reports the weights that ranked them.
-    sc_cache.ranking_weights = rankingWeights;
 
     // feature data
-    const hourly_seasonality = features?.includes?.("hour")
+    const allFeatures = new Set(
+      Object.values(featureLists)
+        .flat()
+        .filter(f => !SCORE_KEYS.includes(f))
+    );
+    const hourly_seasonality = allFeatures.has("hour")
       ? await this.getHourlySeasonalityData(withGuid, sc_cache, options)
       : null;
-    const daily_seasonality = features?.includes?.("daily")
+    const daily_seasonality = allFeatures.has("daily")
       ? await this.getDailySeasonalityData(withGuid, sc_cache, options)
       : null;
-    const bmark_scores = features?.includes?.("bmark")
+    const bmark_scores = allFeatures.has("bmark")
       ? await fetchBookmarkedFlags(withGuid, BOOKMARK_TABLE, PLACES_TABLE)
       : null;
     const refrec_scores = ["rece", "freq", "refre", "unid"].some(f =>
-      features.includes(f)
+      allFeatures.has(f)
     )
       ? await this.fetchRefreFeatures(withGuid)
       : { rece: null, freq: null, refre: null, unid: null };
-    const open_scores = features?.includes?.("open")
+    const open_scores = allFeatures.has("open")
       ? await getIsOpen(
           withGuid.map(t => t.guid),
           options
@@ -1118,7 +1177,10 @@ export class RankShortcutsProvider {
       "weightedSampleTopSites",
       [
         {
-          features,
+          features: [...allFeatures],
+          training_features: featureLists.training_features,
+          ranking_features: featureLists.ranking_features,
+          training_weights: scoringWeights,
           alpha:
             prefValues.trainhopConfig?.smartShortcuts?.positive_prior ??
             SHORTCUT_POSITIVE_PRIOR,
@@ -1131,8 +1193,8 @@ export class RankShortcutsProvider {
           impressions,
           norms:
             sc_cache.norms ??
-            Object.fromEntries(features.map(key => [key, null])),
-          weights: rankingWeights,
+            Object.fromEntries([...allFeatures].map(key => [key, null])),
+          weights: scoringWeights,
           frecency: frecency_scores,
           hourly_seasonality,
           daily_seasonality,
@@ -1150,19 +1212,24 @@ export class RankShortcutsProvider {
     sc_cache.score_map = output.score_map;
 
     // final score for ranking as an array
-    let final_scores = withGuid.map(g => output.score_map[g.guid].final);
+    let rankingScores = withGuid.map(g => output.score_map[g.guid].ranking);
     //catch nan errors
-    if (final_scores.some(x => Number.isNaN(x))) {
-      final_scores = frecency_scores;
+    if (rankingScores.some(x => Number.isNaN(x))) {
+      rankingScores = frecency_scores;
     }
 
-    const [sortedSites] = sortKeysValues(final_scores, withGuid);
+    const [sortedSites] = sortKeysValues(rankingScores, withGuid);
     // grab topsites without guid
     const combined = sortedSites.concat(withoutGuid);
 
     // tack weights and scores so they can pass through to telemetry
     if (telemEnabled) {
-      attachTelemetryScores(combined, output.score_map, rankingWeights);
+      attachTelemetryScores(
+        combined,
+        output.score_map,
+        weights,
+        featureLists.reporting_features
+      );
     }
     sc_cache.ranked_state = {
       guids: sortedSites.map(site => site.guid),
