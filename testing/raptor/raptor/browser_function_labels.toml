@@ -601,6 +601,20 @@ funcPrefixes = [
 ]
 
 [[labels]]
+name = "Accessibility"
+# Disable it with accessibility.force_disabled=1 to compare engines without it.
+funcPrefixes = [
+  "mozilla::a11y::",
+  "nsAccessibilityService::",
+  "blink::AX",
+  "content::RenderAccessibility",
+  "ui::AX", # Chromium's shared accessibility code, e.g. ui::AXTreeSerializer
+  "WebCore::AX",
+  "WebCore::Accessibility",
+  "-[WebAccessibilityObjectWrapper", # WebKit's Objective-C accessibility objects
+]
+
+[[labels]]
 name = "Form Autofill + Login Manager"
 funcPrefixes = [
   "identifyAutofillFields", # https://share.firefox.dev/3Ph0bpv
