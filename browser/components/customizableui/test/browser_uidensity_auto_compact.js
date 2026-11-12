@@ -490,6 +490,9 @@ add_task(async function test_expand_on_hover_keeps_compact() {
     });
   });
 
+  // Must happen before popPrefEnv: leaving vertical tabs in expand-on-hover
+  // makes SidebarManager restore it the next time vertical tabs are enabled.
+  Services.prefs.clearUserPref("sidebar.visibility");
   await SpecialPowers.popPrefEnv();
 });
 
