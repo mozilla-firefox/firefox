@@ -76,7 +76,7 @@ class MOZ_STACK_CLASS DebugOnly {
 #else
   DebugOnly() = default;
   MOZ_IMPLICIT DebugOnly(const T&) {}
-  DebugOnly(const DebugOnly&) {}
+  DebugOnly(const DebugOnly&) = default;
   DebugOnly& operator=(const T&) { return *this; }
   MOZ_IMPLICIT DebugOnly(T&&) {}
   DebugOnly& operator=(T&&) { return *this; }
