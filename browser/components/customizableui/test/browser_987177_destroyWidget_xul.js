@@ -32,4 +32,7 @@ add_task(function () {
   ok(firstWrapper.node, "Node should be there on old wrapper.");
   ok(secondWrapper.node, "Node should be there on second wrapper.");
   ok(thirdWrapper.node, "Node should be there on third wrapper.");
+
+  btn.remove();
+  CustomizableUI.destroyWidget(BUTTONID);
 });
