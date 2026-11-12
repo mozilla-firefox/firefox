@@ -30,7 +30,16 @@ funcPrefixTemplates = [
   "blink::(anonymous namespace)::v8_{Class:blink_snake}::{method:pascal}StaticOperation",
   "blink::`anonymous namespace'::v8_{Class:blink_snake}::{method:pascal}Operation",
   "blink::(anonymous namespace)::v8_{Class:blink_snake}::{method:pascal}Operation",
-  "WebCore::js{Class}PrototypeFunction_{method}",
+  # WebKit's binding entry point and the ...Body() it calls. The entry point often leaves no
+  # frame (it tail-calls into the body), so the body has to be matched too; matching both
+  # gives one label, since a label is not repeated inside itself. An overloaded method has
+  # one body per overload, numbered (fill1Body, fill2Body), so those come first, before
+  # {method} could swallow the number.
+  "WebCore::js{Class}PrototypeFunction_{method}(JSC::JSGlobalObject*, JSC::CallFrame*)",
+  "WebCore::js{Class}PrototypeFunction_{method}1Body(JSC::JSGlobalObject*, JSC::CallFrame*,",
+  "WebCore::js{Class}PrototypeFunction_{method}2Body(JSC::JSGlobalObject*, JSC::CallFrame*,",
+  "WebCore::js{Class}PrototypeFunction_{method}3Body(JSC::JSGlobalObject*, JSC::CallFrame*,",
+  "WebCore::js{Class}PrototypeFunction_{method}Body(JSC::JSGlobalObject*, JSC::CallFrame*,",
 ]
 
 [[auto_labels]]
@@ -39,7 +48,8 @@ funcPrefixTemplates = [
   "mozilla::dom::{Class}_Binding::set_{prop}(",
   "blink::`anonymous namespace'::v8_{Class:blink_snake}::{prop:pascal}AttributeSetCallback",
   "blink::(anonymous namespace)::v8_{Class:blink_snake}::{prop:pascal}AttributeSetCallback",
-  "WebCore::setJS{Class}_{prop}(",
+  # WebKit's binding entry point, not the ...Setter(JSC::JSGlobalObject&, ...) it calls.
+  "WebCore::setJS{Class}_{prop}(JSC::JSGlobalObject*,",
 ]
 
 [[auto_labels]]
@@ -49,6 +59,11 @@ funcPrefixTemplates = [
   "blink::`anonymous namespace'::v8_{Class:blink_snake}::{prop:pascal}AttributeGetCallback",
   "blink::(anonymous namespace)::v8_{Class:blink_snake}::{prop:pascal}AttributeGetCallback",
   "WebCore::getJS{Class}_{prop}(",
+  # WebKit's binding entry point, not the ...Getter(JSC::JSGlobalObject&, ...) it calls. The
+  # full signature keeps prototype functions (jsElementPrototypeFunction_x) from matching.
+  # EncodedJSValue demangles as "long long" on macOS and "long" on Linux.
+  "WebCore::js{Class}_{prop}(JSC::JSGlobalObject*, long long, JSC::PropertyName)",
+  "WebCore::js{Class}_{prop}(JSC::JSGlobalObject*, long, JSC::PropertyName)",
 ]
 
 [[auto_labels]]
@@ -68,7 +83,7 @@ funcPrefixTemplates = [
   "blink::`anonymous namespace'::v8_canvas_rendering_context_2d::{method:pascal}Operation",
   "blink::(anonymous namespace)::v8_canvas_rendering_context_2d::{method:pascal}Operation",
   "blink::Canvas2DRecorderContext::{method}(",
-  "WebCore::jsCanvasRenderingContext2DPrototypeFunction_{method}(",
+  "WebCore::jsCanvasRenderingContext2DPrototypeFunction_{method}(JSC::JSGlobalObject*, JSC::CallFrame*)",
 ]
 
 [[auto_labels]]
@@ -78,7 +93,7 @@ funcPrefixTemplates = [
   "mozilla::dom::OffscreenCanvasRenderingContext2D_Binding::set_{prop}(",
   "blink::`anonymous namespace'::v8_canvas_rendering_context_2d::{prop:pascal}AttributeSetCallback",
   "blink::(anonymous namespace)::v8_canvas_rendering_context_2d::{prop:pascal}AttributeSetCallback",
-  "WebCore::setJSCanvasRenderingContext2D_{prop}(",
+  "WebCore::setJSCanvasRenderingContext2D_{prop}(JSC::JSGlobalObject*,",
 ]
 
 [[labels]]
