@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -36,6 +37,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
+import mozilla.components.compose.base.utils.parseHtml
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.ScrollIndicator
@@ -155,8 +157,9 @@ private fun ColumnScope.Content(
                     )
                 }
 
+                val description = remember(pageState.description) { parseHtml(pageState.description) }
                 Text(
-                    text = pageState.description,
+                    text = description,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = FirefoxTheme.typography.subtitle1,
                 )
@@ -270,6 +273,27 @@ private fun OnboardingPageButtonLeadingIconPreview() {
                             text = stringResource(R.string.nova_onboarding_negative_button),
                             onClick = {},
                             leadingIconRes = iconsR.drawable.mozac_ic_qr_code_24,
+                        ),
+                    onRecordImpressionEvent = {},
+                )
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun OnboardingPageBoldDescriptionPreview() {
+    FirefoxTheme {
+        OnboardingPage(
+            pageState =
+                OnboardingPageState(
+                    imageRes = R.drawable.nova_onboarding_sync,
+                    title = stringResource(R.string.nova_onboarding_sync_title),
+                    description = "No QR code? Go to <b>firefox.com/pair</b> on your computer.",
+                    primaryButton =
+                        Action(
+                            text = stringResource(R.string.nova_onboarding_sync_button),
+                            onClick = {},
                         ),
                     onRecordImpressionEvent = {},
                 )
