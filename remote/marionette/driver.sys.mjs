@@ -38,6 +38,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   NavigableManager: "chrome://remote/content/shared/NavigableManager.sys.mjs",
   navigate: "chrome://remote/content/marionette/navigate.sys.mjs",
   permissions: "chrome://remote/content/shared/Permissions.sys.mjs",
+  PerTestCoverageUtils:
+    "chrome://remote/content/marionette/PerTestCoverageUtils.sys.mjs",
   pprint: "chrome://remote/content/shared/Format.sys.mjs",
   print: "chrome://remote/content/shared/PDF.sys.mjs",
   PollPromise: "chrome://remote/content/shared/Sync.sys.mjs",
@@ -875,6 +877,8 @@ export class GeckoDriver {
       this.currentSession.destroy();
       this.#currentSession = null;
     }
+
+    lazy.PerTestCoverageUtils.afterSuiteSync();
   }
 
   /**

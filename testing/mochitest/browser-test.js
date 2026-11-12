@@ -961,6 +961,8 @@ Tester.prototype = {
   },
 
   finish: function Tester_finish() {
+    this.PerTestCoverageUtils.afterSuiteSync();
+
     var passCount = this.tests.reduce((a, f) => a + f.passCount, 0);
     var failCount = this.tests.reduce((a, f) => a + f.failCount, 0);
     var todoCount = this.tests.reduce((a, f) => a + f.todoCount, 0);

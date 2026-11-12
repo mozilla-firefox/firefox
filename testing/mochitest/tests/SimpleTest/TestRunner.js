@@ -625,6 +625,8 @@ async function _runNextTest() {
 
     let e10sMode = SpecialPowers.isMainProcess() ? "non-e10s" : "e10s";
 
+    await SpecialPowers.requestFinalDumpCoverageCounters();
+
     TestRunner.structuredLogger.info("TEST-START | Shutdown");
     TestRunner.structuredLogger.info("Passed:  " + passCount);
     TestRunner.structuredLogger.info("Failed:  " + failCount);
