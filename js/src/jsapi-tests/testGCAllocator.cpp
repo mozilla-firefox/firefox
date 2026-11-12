@@ -1128,6 +1128,38 @@ bool testVector(bool allocInNursery, bool dieInNursery) {
 }
 END_TEST(testBufferAllocPolicy_vector)
 
+// JS_EXPECT_HAZARDS will cause the hazard analysis to fail here if a hazard is
+// *not* found when holding a gc::Buffer subclass live across a GC.
+BEGIN_TEST_WITH_ATTRIBUTES(testBufferAllocator_unrootedBuffer,
+                           JS_EXPECT_HAZARDS) {
+  AutoLeaveZeal leaveZeal(cx);
+
+  // The owner is tenured so the buffer will not move and this will not crash.
+  Rooted<VectorObject*> obj(cx, VectorObject::create(cx, false));
+  CHECK(obj);
+
+  VectorObject::VectorT* vector = obj->getVector();
+  JS_GC(cx);
+  CHECK(vector->empty());
+
+  return true;
+}
+END_TEST(testBufferAllocator_unrootedBuffer)
+
+BEGIN_TEST(testBufferAllocator_rootedNoHazard) {
+  AutoLeaveZeal leaveZeal(cx);
+
+  Rooted<VectorObject*> obj(cx, VectorObject::create(cx, false));
+  CHECK(obj);
+
+  RootedBuffer<VectorObject::VectorT> vector(cx, obj->getVector());
+  JS_GC(cx);
+  CHECK(vector->empty());
+
+  return true;
+}
+END_TEST(testBufferAllocator_rootedNoHazard)
+
 // A JS object that holds a buffer-allocated hash set.
 class HashSetObject : public NativeObject {
  public:
