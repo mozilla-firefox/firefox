@@ -7269,7 +7269,7 @@ QuotaManager::EnsureTemporaryOriginIsInitializedInternal(
     originMetadataWithEncryption.mIsEncrypted = mStorageEncryptionEnabled;
 
     FullOriginMetadata fullOriginMetadata{
-        originMetadataWithEncryption,
+        std::move(originMetadataWithEncryption),
         OriginStateMetadata{
             /* aLastAccessTime */ timestamp,
             /* aLastMaintenanceDate */ Date::FromTimestamp(timestamp).ToDays(),
