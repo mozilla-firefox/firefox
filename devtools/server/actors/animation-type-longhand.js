@@ -31,6 +31,7 @@ exports.ANIMATION_TYPE_FOR_LONGHANDS = [
       "border-image-source",
       "border-left-style",
       "border-right-style",
+      "border-shape",
       "border-top-style",
       "-moz-box-align",
       "box-decoration-break",

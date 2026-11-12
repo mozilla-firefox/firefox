@@ -16,6 +16,7 @@ use crate::values::generics::{
 use crate::values::specified::svg_path::{PathCommand, SVGPathData};
 use std::fmt::{self, Write};
 use style_traits::{CssWriter, ToCss};
+use thin_vec::ThinVec;
 
 /// <https://drafts.fxtf.org/css-masking-1/#typedef-geometry-box>
 #[allow(missing_docs)]
@@ -165,6 +166,120 @@ pub enum GenericShapeOutside<BasicShape, I> {
 }
 
 pub use self::GenericShapeOutside as ShapeOutside;
+
+/// The reference box for a `border-shape` component.
+///
+/// <https://drafts.csswg.org/css-borders-4/#border-shape>
+#[allow(missing_docs)]
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    MallocSizeOf,
+    Parse,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToComputedValue,
+    ToCss,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(u8)]
+pub enum BorderShapeGeometryBox {
+    /// The path runs along the middle of the border area.
+    HalfBorderBox,
+    MarginBox,
+    BorderBox,
+    PaddingBox,
+    ContentBox,
+    FillBox,
+    StrokeBox,
+    ViewBox,
+}
+
+/// One `<basic-shape> <geometry-box>?` component of `border-shape`.
+/// An omitted `<geometry-box>` is resolved to its positional default at
+/// parse time.
+#[derive(
+    Clone,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+)]
+#[repr(C)]
+pub struct GenericBorderShapeComponent<BasicShape> {
+    /// The `<basic-shape>` of this component.
+    pub shape: BasicShape,
+    /// The `<geometry-box>` the shape is resolved against.
+    pub geometry_box: BorderShapeGeometryBox,
+}
+
+pub use self::GenericBorderShapeComponent as BorderShapeComponent;
+
+/// A value for the `border-shape` property: `none` or one or two
+/// `<basic-shape> <geometry-box>?` components in one buffer.
+///
+/// <https://drafts.csswg.org/css-borders-4/#border-shape>
+#[derive(
+    Clone,
+    Debug,
+    MallocSizeOf,
+    PartialEq,
+    SpecifiedValueInfo,
+    ToAnimatedValue,
+    ToComputedValue,
+    ToResolvedValue,
+    ToShmem,
+    ToTyped,
+)]
+#[repr(C)]
+#[typed(todo_derive_fields)]
+pub struct GenericBorderShape<BasicShape>(pub ThinVec<GenericBorderShapeComponent<BasicShape>>);
+
+pub use self::GenericBorderShape as BorderShape;
+
+/// Resolves an omitted `<geometry-box>`: `half-border-box` for a lone
+/// component, `border-box` / `padding-box` for the first / second of a pair.
+pub fn border_shape_default_geometry_box(index: usize, len: usize) -> BorderShapeGeometryBox {
+    if len == 1 {
+        BorderShapeGeometryBox::HalfBorderBox
+    } else if index == 0 {
+        BorderShapeGeometryBox::BorderBox
+    } else {
+        BorderShapeGeometryBox::PaddingBox
+    }
+}
+
+// A box matching the positional default is omitted (shortest serialization).
+impl<BasicShape: ToCss> ToCss for GenericBorderShape<BasicShape> {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: Write,
+    {
+        if self.0.is_empty() {
+            return dest.write_str("none");
+        }
+        for (i, component) in self.0.iter().enumerate() {
+            if i != 0 {
+                dest.write_char(' ')?;
+            }
+            component.shape.to_css(dest)?;
+            if component.geometry_box != border_shape_default_geometry_box(i, self.0.len()) {
+                dest.write_char(' ')?;
+                component.geometry_box.to_css(dest)?;
+            }
+        }
+        Ok(())
+    }
+}
 
 /// The <basic-shape>.
 ///
@@ -816,7 +931,6 @@ pub enum GenericShapeCommand<Angle, AxisPosition, Position, LengthPercentage> {
 }
 
 pub use self::GenericShapeCommand as ShapeCommand;
-
 
 impl<Angle, AxisPosition, Position, LengthPercentage> ToCss
     for ShapeCommand<Angle, AxisPosition, Position, LengthPercentage>

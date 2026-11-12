@@ -14757,6 +14757,40 @@ if (IsCSSPropertyPrefEnabled("layout.css.text-decoration-inset.enabled")) {
   }
 }
 
+if (IsCSSPropertyPrefEnabled("layout.css.border-shape.enabled")) {
+  gCSSProperties["border-shape"] = {
+    domProp: "borderShape",
+    inherited: false,
+    type: CSS_TYPE_LONGHAND,
+    initial_values: ["none"],
+    other_values: [
+      "circle()",
+      "circle(closest-side at 25% 25%)",
+      "circle(closest-corner at 20px 50px)",
+      "ellipse(50px 60px)",
+      "polygon(10px 10px, 100px 10px, 10px 100px)",
+      "inset(10px round 5px)",
+      "circle() circle()",
+      "circle() polygon(10px 10px, 100px 10px, 10px 100px)",
+      "circle() border-box",
+      "circle() half-border-box",
+      "circle() margin-box circle() view-box",
+      "circle() border-box circle() content-box",
+    ],
+    invalid_values: [
+      "circle() none",
+      "none circle()",
+      "polygon(bla 10px 10px, 100px 10px, 10px 100px)",
+      "nonsense",
+      "1px",
+      "border-box",
+      "border-box circle()",
+      "circle() padding-box margin-box",
+      "circle() padding-box circle() margin-box circle()",
+    ],
+  };
+}
+
 if (IsCSSPropertyPrefEnabled("layout.css.corner-shape.enabled")) {
   const cornerShapeLonghand = {
     inherited: false,

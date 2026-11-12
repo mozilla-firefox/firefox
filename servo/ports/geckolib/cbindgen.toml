@@ -320,6 +320,7 @@ include = [
   "JustifyContent",
   "TransformStyle",
   "Image",
+  "BorderShape",
   "ClipPath",
   "ShapeOutside",
   "GridAutoFlow",
@@ -504,6 +505,11 @@ renaming_overrides_prefixing = true
 "AnchorPosOffsetResolutionParams" = "AnchorPosOffsetResolutionParams"
 
 [export.body]
+"GenericBorderShape" = """
+  bool IsNone() const { return _0.IsEmpty(); }
+  const auto& Components() const { return _0; }
+"""
+
 "CSSPixelLength" = """
   static StyleCSSPixelLength FromPixels(CSSCoord aCoord) { return {aCoord}; }
   static StyleCSSPixelLength Zero() { return FromPixels(0.0f); }

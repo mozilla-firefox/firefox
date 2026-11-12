@@ -11332,6 +11332,13 @@
   mirror: always
   rust: true
 
+# Is support for CSS Borders 4 border-shape enabled?
+- name: layout.css.border-shape.enabled
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+  rust: true
+
 # Is support for CSS Borders 4 corner-shape enabled?
 - name: layout.css.corner-shape.enabled
   type: RelaxedAtomicBool

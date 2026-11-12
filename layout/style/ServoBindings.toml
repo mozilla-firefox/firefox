@@ -603,6 +603,8 @@ cbindgen-types = [
     { gecko = "StyleImage", servo = "crate::values::computed::Image" },
     { gecko = "StyleShapeOutside", servo = "crate::values::computed::basic_shape::ShapeOutside" },
     { gecko = "StyleClipPath", servo = "crate::values::computed::basic_shape::ClipPath" },
+    { gecko = "StyleGenericBorderShape", servo = "crate::values::generics::basic_shape::GenericBorderShape" },
+    { gecko = "StyleBorderShapeGeometryBox", servo = "crate::values::generics::basic_shape::BorderShapeGeometryBox" },
     { gecko = "StyleGridAutoFlow", servo = "crate::values::computed::GridAutoFlow" },
     { gecko = "StyleFlexWrap", servo = "crate::values::computed::FlexWrap" },
     { gecko = "StyleCursor", servo = "crate::values::computed::Cursor" },

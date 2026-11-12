@@ -3173,6 +3173,18 @@ logical_group = "border-radius"
 logical = true
 affects = "paint"
 
+[border-shape]
+type = "basic_shape::BorderShape"
+initial = "generics::basic_shape::BorderShape(Default::default())"
+initial_specified_value = "generics::basic_shape::BorderShape(Default::default())"
+struct = "border"
+gecko_pref = "layout.css.border-shape.enabled"
+servo_pref = "layout.unimplemented"
+spec = "https://drafts.csswg.org/css-borders-4/#border-shape"
+gecko_ffi_name = "mBorderShape"
+animation_type = "discrete"
+affects = "paint"
+
 [corner-top-left-shape]
 type = "CornerShape"
 initial = "computed::CornerShape::round()"

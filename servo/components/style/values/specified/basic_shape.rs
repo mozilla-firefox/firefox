@@ -40,6 +40,12 @@ pub type ClipPath = generic::GenericClipPath<BasicShape, SpecifiedUrl>;
 /// A specified `shape-outside` value.
 pub type ShapeOutside = generic::GenericShapeOutside<BasicShape, Image>;
 
+/// A specified `border-shape` value.
+pub type BorderShape = generic::GenericBorderShape<BasicShape>;
+
+/// A specified `border-shape` component.
+pub type BorderShapeComponent = generic::GenericBorderShapeComponent<BasicShape>;
+
 /// A specified basic shape.
 pub type BasicShape =
     generic::GenericBasicShape<Angle, AxisPosition, Position, LengthPercentage, BasicShapeRect>;
@@ -283,6 +289,42 @@ impl Parse for ShapeOutside {
             ShapeOutside::Box,
             AllowedBasicShapes::SHAPE_OUTSIDE,
         )
+    }
+}
+
+impl Parse for BorderShape {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        use thin_vec::ThinVec;
+        if input.try_parse(|i| i.expect_ident_matching("none")).is_ok() {
+            return Ok(Self(ThinVec::new()));
+        }
+        fn parse_component(
+            context: &ParserContext,
+            input: &mut Parser,
+        ) -> Result<(BasicShape, Option<generic::BorderShapeGeometryBox>), ParseError> {
+            let shape =
+                BasicShape::parse(context, input, AllowedBasicShapes::ALL, ShapeType::Filled)?;
+            let geometry_box = input.try_parse(generic::BorderShapeGeometryBox::parse).ok();
+            Ok((shape, geometry_box))
+        }
+        let first = parse_component(context, input)?;
+        let second = input.try_parse(|i| parse_component(context, i)).ok();
+        let len = 1 + second.is_some() as usize;
+        let mut components = ThinVec::with_capacity(len);
+        for (i, (shape, geometry_box)) in [Some(first), second].into_iter().flatten().enumerate() {
+            components.push(BorderShapeComponent {
+                shape,
+                geometry_box: geometry_box
+                    .unwrap_or_else(|| generic::border_shape_default_geometry_box(i, len)),
+            });
+        }
+        // A pair with the same shape and box collapses to one component.
+        if let [first, second] = components.as_slice() {
+            if first == second {
+                components.truncate(1);
+            }
+        }
+        Ok(Self(components))
     }
 }
 
