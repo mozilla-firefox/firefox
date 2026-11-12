@@ -872,15 +872,6 @@ bool nsComputedDOMStyle::NeedsToFlushStyle(
   return false;
 }
 
-static bool IsNonReplacedInline(nsIFrame* aFrame) {
-  // FIXME: this should be IsInlineInsideStyle() since width/height
-  // doesn't apply to ruby boxes.
-  return aFrame->StyleDisplay()->IsInlineFlow() && !aFrame->IsReplaced() &&
-         !aFrame->IsFieldSetFrame() && !aFrame->IsBlockFrame() &&
-         !aFrame->IsScrollContainerFrame() &&
-         !aFrame->IsColumnSetWrapperFrame();
-}
-
 static Side SideForPaddingOrMarginOrInsetProperty(
     NonCustomCSSPropertyId aPropId) {
   switch (aPropId) {
@@ -948,7 +939,7 @@ bool nsComputedDOMStyle::NeedsToFlushLayout(
              frame->StylePosition()->mMinHeight.HasAnchorPositioningFunction();
     case eCSSProperty_width:
     case eCSSProperty_height:
-      return !IsNonReplacedInline(frame);
+      return !frame->IsNonReplacedInline();
     case eCSSProperty_grid_template_rows:
     case eCSSProperty_grid_template_columns:
       return !!nsGridContainerFrame::GetGridContainerFrame(frame);
@@ -1801,7 +1792,7 @@ already_AddRefed<CSSValue> nsComputedDOMStyle::DoGetMarginRight() {
 }
 
 already_AddRefed<CSSValue> nsComputedDOMStyle::DoGetHeight() {
-  if (mInnerFrame && !IsNonReplacedInline(mInnerFrame)) {
+  if (mInnerFrame && !mInnerFrame->IsNonReplacedInline()) {
     AssertFlushedPendingReflows();
     const nsMargin adjustedValues = GetAdjustedValuesForBoxSizing();
     return AppUnitsToCSSValue(mInnerFrame->GetContentRect().height +
@@ -1814,7 +1805,7 @@ already_AddRefed<CSSValue> nsComputedDOMStyle::DoGetHeight() {
 }
 
 already_AddRefed<CSSValue> nsComputedDOMStyle::DoGetWidth() {
-  if (mInnerFrame && !IsNonReplacedInline(mInnerFrame)) {
+  if (mInnerFrame && !mInnerFrame->IsNonReplacedInline()) {
     AssertFlushedPendingReflows();
     nsMargin adjustedValues = GetAdjustedValuesForBoxSizing();
     return AppUnitsToCSSValue(mInnerFrame->GetContentRect().width +

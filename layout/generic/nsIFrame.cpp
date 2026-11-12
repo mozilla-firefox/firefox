@@ -618,6 +618,14 @@ bool nsIFrame::IsAtomicInline() const {
          (IsReplaced() || !StyleDisplay()->IsInlineInsideStyle());
 }
 
+bool nsIFrame::IsNonReplacedInline() const {
+  // Note that width/height don't apply to ruby boxes either, see
+  // https://drafts.csswg.org/css-ruby/#box-style
+  return StyleDisplay()->IsInlineInsideStyle() && !IsReplaced() &&
+         !IsFieldSetFrame() && !IsBlockFrame() && !IsScrollContainerFrame() &&
+         !IsColumnSetWrapperFrame();
+}
+
 bool nsIFrame::ShouldPropagateRepaintsToRoot() const {
   if (!IsPrimaryFrame()) {
     // special case for table frames because style images are associated to the

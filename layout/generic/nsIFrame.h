@@ -3749,6 +3749,12 @@ class nsIFrame : public nsQueryFrame {
   bool IsAtomicInline() const;
 
   /**
+   * Returns true if this frame is a non-replaced inline box (including ruby
+   * boxes), i.e. one to which 'width' and 'height' don't apply.
+   */
+  bool IsNonReplacedInline() const;
+
+  /**
    * Returns a transformation matrix that converts points in this frame's
    * coordinate space to points in some ancestor frame's coordinate space.
    * The frame decides which ancestor it will use as a reference point.
