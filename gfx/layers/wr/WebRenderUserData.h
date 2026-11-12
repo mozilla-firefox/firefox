@@ -338,6 +338,11 @@ class WebRenderMaskData : public WebRenderUserData {
   nsStyleImageLayers mMaskStyle;
   gfx::MatrixScales mScale;
   bool mShouldHandleOpacity;
+  // The recording behind mBlobKey, made with deterministic reference ids, so
+  // that an identical new recording doesn't need to be uploaded and
+  // rasterized again. Empty if it was too large to keep.
+  nsTArray<uint8_t> mRecording;
+  gfx::IntSize mRecordingSize;
 };
 
 extern void DestroyWebRenderUserDataTable(WebRenderUserDataTable* aTable);

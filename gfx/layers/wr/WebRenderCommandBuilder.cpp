@@ -2871,6 +2871,7 @@ void WebRenderMaskData::ClearImageKey() {
     mManager->AddBlobImageKeyForDiscard(mBlobKey.value());
   }
   mBlobKey.reset();
+  mRecording.Clear();
 }
 
 void WebRenderMaskData::Invalidate() {
@@ -3030,12 +3031,14 @@ Maybe<wr::ImageMask> WebRenderCommandBuilder::BuildWrMaskImage(
                   validFonts = false;
                   break;
                 }
-                BlobFont font = {key.value(), scaled};
+                BlobFont font = {key.value(),
+                                 MapReferenceForStream(aStream, scaled.get())};
                 aStream.write((const char*)&font, sizeof(font));
               }
 
               fonts = std::move(aScaledFonts);
             });
+    recorder->UseDeterministicReferenceIds();
 
     RefPtr<DrawTarget> dummyDt = Factory::CreateDrawTarget(
         BackendType::SKIA, IntSize(1, 1), SurfaceFormat::A8);
@@ -3086,24 +3089,44 @@ Maybe<wr::ImageMask> WebRenderCommandBuilder::BuildWrMaskImage(
 
     Range<uint8_t> bytes((uint8_t*)recorder->mOutputStream.mData,
                          recorder->mOutputStream.mLength);
-    wr::BlobImageKey key =
-        wr::BlobImageKey{mManager->WrBridge()->GetNextImageKey()};
-    auto imageFormat = wr::SurfaceFormatToImageFormat(dt->GetFormat());
-    if (NS_WARN_IF(!imageFormat)) {
-      return Nothing();
+    // Masks are often recorded again without their content changing, for
+    // example when the frame is restyled. Reuse the existing blob in that case
+    // rather than rasterizing it again.
+    const bool sameRecording =
+        maskData->mBlobKey &&
+        mManager->WrBridge()->MatchesNamespace(*maskData->mBlobKey) &&
+        maskData->mRecordingSize == size &&
+        maskData->mRecording.Length() == bytes.length() &&
+        memcmp(maskData->mRecording.Elements(), bytes.begin().get(),
+               bytes.length()) == 0;
+    if (!sameRecording) {
+      wr::BlobImageKey key =
+          wr::BlobImageKey{mManager->WrBridge()->GetNextImageKey()};
+      auto imageFormat = wr::SurfaceFormatToImageFormat(dt->GetFormat());
+      if (NS_WARN_IF(!imageFormat)) {
+        return Nothing();
+      }
+      wr::ImageDescriptor descriptor(size, 0, *imageFormat,
+                                     wr::OpacityType::HasAlphaChannel);
+      if (!aResources.AddBlobImage(
+              key, descriptor, bytes,
+              ImageIntRect(0, 0, size.width, size.height),
+              BlobTileSizeForBlur(recorder->MaxBlurStdDeviation()))) {
+        return Nothing();
+      }
+      maskData->ClearImageKey();
+      maskData->mBlobKey = Some(key);
+      maskData->mFonts = fonts;
+      TakeExternalSurfaces(recorder, maskData->mExternalSurfaces,
+                           mManager->GetRenderRootStateManager(), aResources);
+      // Keeping a copy of large recordings isn't worth the memory.
+      static const size_t kMaxKeptRecordingSize = 256 * 1024;
+      if (bytes.length() <= kMaxKeptRecordingSize) {
+        maskData->mRecording.AppendElements(bytes.begin().get(),
+                                            bytes.length());
+        maskData->mRecordingSize = size;
+      }
     }
-    wr::ImageDescriptor descriptor(size, 0, *imageFormat,
-                                   wr::OpacityType::HasAlphaChannel);
-    if (!aResources.AddBlobImage(
-            key, descriptor, bytes, ImageIntRect(0, 0, size.width, size.height),
-            BlobTileSizeForBlur(recorder->MaxBlurStdDeviation()))) {
-      return Nothing();
-    }
-    maskData->ClearImageKey();
-    maskData->mBlobKey = Some(key);
-    maskData->mFonts = fonts;
-    TakeExternalSurfaces(recorder, maskData->mExternalSurfaces,
-                         mManager->GetRenderRootStateManager(), aResources);
     if (maskIsComplete) {
       maskData->mItemRect = itemRect;
       maskData->mResidual = residual;
