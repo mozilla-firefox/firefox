@@ -3448,17 +3448,15 @@ Preferences.addSetting({
     return deps.dohProviderSelect.value == "custom";
   },
   disabled: ({ dohMode, dohURL }) => dohMode.locked || dohURL.locked,
-  set(val, deps) {
-    // Apply the edit to the effective TRR URI as well; otherwise
-    // network.trr.uri would still match a built-in provider and
-    // dohProviderSelect would flip off "custom" the moment the user
-    // committed the edit.
-    // We also can't set the value to an empty string or the DoH
-    // service ignores the dohURL pref. So we use a single space
-    // that tells the service "there is an empty value here"
-    let newValue = val?.trim() || " ";
-    deps.dohURL.value = newValue;
-    return newValue;
+  set(val) {
+    // Empty string is ignored by the DoH service; use a space instead.
+    return val?.trim() || " ";
+  },
+  onUserChange(val, deps, setting) {
+    // Keep network.trr.uri in sync with the value set() just committed, so
+    // dohProviderSelect doesn't flip off "custom". Reading it back (rather
+    // than recomputing it here) keeps the two prefs from falling out of sync.
+    deps.dohURL.value = setting.pref.value;
   },
 });
 
