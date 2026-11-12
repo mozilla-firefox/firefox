@@ -388,6 +388,7 @@ class Http3Session final : public Http3SessionBase,
 
   void QueueStream(Http3StreamBase* stream);
   void RemoveStreamFromQueues(Http3StreamBase*);
+  void AddStreamToReadyForWrite(Http3StreamBase*);
   void ProcessPending();
   void ApplyAnticipatedWebTransportStreams(Http3StreamBase* aStream,
                                            uint64_t aSessionId);
