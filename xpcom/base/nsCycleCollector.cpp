@@ -909,6 +909,8 @@ struct nsPurpleBufferEntry {
     Swap(aOther);
   }
 
+  bool HasRefCount0() const { return mRefCnt->get() == 0; }
+
   void Swap(nsPurpleBufferEntry& aOther) {
     std::swap(mObject, aOther.mObject);
     std::swap(mRefCnt, aOther.mRefCnt);
@@ -1096,7 +1098,7 @@ struct SelectPointersVisitor {
 
   bool Visit(nsPurpleBuffer& aBuffer, nsPurpleBufferEntry* aEntry) {
     MOZ_ASSERT(aEntry->mObject, "Null object in purple buffer");
-    MOZ_ASSERT(aEntry->mRefCnt->get() != 0,
+    MOZ_ASSERT(!aEntry->HasRefCount0(),
                "SelectPointersVisitor: snow-white object in the purple buffer");
     if (!aEntry->mRefCnt->IsPurple() ||
         AddPurpleRoot(mBuilder, aEntry->mObject, aEntry->mParticipant)) {
@@ -2639,6 +2641,10 @@ class SnowWhiteKiller : public TraceCallbacks {
     void* mPointer;
     nsCycleCollectionParticipant* mParticipant;
     nsCycleCollectingAutoRefCnt* mRefCnt;
+
+    bool OkayToKill() const {
+      return mRefCnt->get() == 0 && !mRefCnt->IsInPurpleBuffer();
+    }
   };
 
   // Segments are 4 KiB on 32-bit and 8 KiB on 64-bit.
@@ -2661,21 +2667,23 @@ class SnowWhiteKiller : public TraceCallbacks {
   ~SnowWhiteKiller() {
     for (auto iter = mObjects.Iter(); !iter.Done(); iter.Next()) {
       SnowWhiteObject& o = iter.Get();
-      MaybeKillObject(o);
+      if (o.OkayToKill()) {
+        KillObject(o);
+      }
     }
   }
 
  private:
-  void MaybeKillObject(SnowWhiteObject& aObject) {
-    if (!aObject.mRefCnt->get() && !aObject.mRefCnt->IsInPurpleBuffer()) {
-      mCollector->RemoveObjectFromGraph(aObject.mPointer);
-      aObject.mRefCnt->stabilizeForDeletion();
-      {
-        JS::AutoEnterCycleCollection autocc(mCollector->Runtime()->Runtime());
-        aObject.mParticipant->Trace(aObject.mPointer, *this, nullptr);
-      }
-      aObject.mParticipant->DeleteCycleCollectable(aObject.mPointer);
+  void KillObject(SnowWhiteObject& aObject) {
+    MOZ_ASSERT(aObject.OkayToKill());
+
+    mCollector->RemoveObjectFromGraph(aObject.mPointer);
+    aObject.mRefCnt->stabilizeForDeletion();
+    {
+      JS::AutoEnterCycleCollection autocc(mCollector->Runtime()->Runtime());
+      aObject.mParticipant->Trace(aObject.mPointer, *this, nullptr);
     }
+    aObject.mParticipant->DeleteCycleCollectable(aObject.mPointer);
   }
 
  public:
@@ -2688,19 +2696,19 @@ class SnowWhiteKiller : public TraceCallbacks {
     }
 
     MOZ_ASSERT(aEntry->mObject, "Null object in purple buffer");
-    if (!aEntry->mRefCnt->get()) {
-      mSawSnowWhiteObjects = true;
-      void* o = aEntry->mObject;
-      nsCycleCollectionParticipant* cp = aEntry->mParticipant;
-      ToParticipant(o, &cp);
-      SnowWhiteObject swo = {o, cp, aEntry->mRefCnt};
-      if (!mBudget) {
-        mObjects.InfallibleAppend(swo);
-      }
-      aBuffer.Remove(aEntry);
-      if (mBudget) {
-        MaybeKillObject(swo);
-      }
+    if (!aEntry->HasRefCount0()) {
+      return true;
+    }
+    mSawSnowWhiteObjects = true;
+    void* o = aEntry->mObject;
+    nsCycleCollectionParticipant* cp = aEntry->mParticipant;
+    ToParticipant(o, &cp);
+    SnowWhiteObject swo = {o, cp, aEntry->mRefCnt};
+    aBuffer.Remove(aEntry);
+    if (mBudget) {
+      KillObject(swo);
+    } else {
+      mObjects.InfallibleAppend(swo);
     }
     return true;
   }
@@ -2793,7 +2801,7 @@ class RemoveSkippableVisitor : public SnowWhiteKiller {
     // isOverBudget actually checks whether we're over the time budget.
     mBudget.step(5);
     MOZ_ASSERT(aEntry->mObject, "null mObject in purple buffer");
-    if (!aEntry->mRefCnt->get()) {
+    if (aEntry->HasRefCount0()) {
       if (!mAsyncSnowWhiteFreeing) {
         SnowWhiteKiller::Visit(aBuffer, aEntry);
       } else if (!mDispatchedDeferredDeletion) {
@@ -3000,7 +3008,7 @@ class PurpleScanBlackVisitor {
   bool Visit(nsPurpleBuffer& aBuffer, nsPurpleBufferEntry* aEntry) {
     MOZ_ASSERT(aEntry->mObject,
                "Entries with null mObject shouldn't be in the purple buffer.");
-    MOZ_ASSERT(aEntry->mRefCnt->get() != 0,
+    MOZ_ASSERT(!aEntry->HasRefCount0(),
                "Snow-white objects shouldn't be in the purple buffer.");
 
     void* obj = aEntry->mObject;
