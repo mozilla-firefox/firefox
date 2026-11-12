@@ -895,7 +895,14 @@ void ReflowInput::InitResizeFlags(nsPresContext* aPresContext,
   // of table cells) can cause not just a single percentage height to
   // become fixed, but an entire descendant chain of percentage height
   // to become fixed.
-  if (dependsOnCBBSize && mCBReflowInput) {
+  //
+  // We skip this for absolutely positioned frames: they are reflowed by their
+  // containing block's AbsoluteContainingBlock after the containing block's
+  // size is final, and that code checks FrameDependsOnContainer() itself when
+  // the containing block's size changes. So their block-size dependency
+  // doesn't need to be recorded on the containing block or its ancestors.
+  if (dependsOnCBBSize && mCBReflowInput &&
+      !mFrame->IsAbsolutelyPositioned(mStyleDisplay)) {
     const ReflowInput* rs = this;
     bool hitCBReflowInput = false;
     do {
