@@ -18,15 +18,27 @@ function finish_test(element) {
   manager.finished(element.token);
 }
 
+// Tearing an element down while its decoder is still being created defers the
+// decoder's shutdown until the creation completes, so wait for the first frame.
+function afterLoadedData(e, callback) {
+  if (e.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+    callback();
+    return;
+  }
+  e.addEventListener("loadeddata", callback, { once: true });
+}
+
 function onmetadataloaded(e) {
   var t = e.target;
   ++t.srcIndex;
   ok(true, "The media loads when loaded via " + t.src);
-  if (t.srcIndex < t.srcList.length) {
-    t.src = t.srcList[t.srcIndex];
-  } else {
-    finish_test(t);
-  }
+  afterLoadedData(t, () => {
+    if (t.srcIndex < t.srcList.length) {
+      t.src = t.srcList[t.srcIndex];
+    } else {
+      finish_test(t);
+    }
+  });
 }
 
 function onerror(e) {

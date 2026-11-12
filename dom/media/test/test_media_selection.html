@@ -12,6 +12,16 @@
 
 var manager = new MediaTestManager;
 
+// Tearing an element down while its decoder is still being created defers the
+// decoder's shutdown until the creation completes, so wait for the first frame.
+function afterLoadedData(e, callback) {
+  if (e.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+    callback();
+    return;
+  }
+  e.addEventListener("loadeddata", callback, { once: true });
+}
+
 function maketest(attach_media, name, type, check_metadata) {
   return function (token) {
     var e = document.createElement('video');
@@ -28,8 +38,10 @@ function maketest(attach_media, name, type, check_metadata) {
           ok(e.networkState >= HTMLMediaElement.NETWORK_IDLE,
               'test ' + token + ' networkState = ' + e.networkState + ' expected >= ' + HTMLMediaElement.NETWORK_IDLE);
           check_metadata(e);
-          removeNodeAndSource(e);
-          manager.finished(token);
+          afterLoadedData(e, () => {
+            removeNodeAndSource(e);
+            manager.finished(token);
+          });
         });
     } else {
       e.addEventListener('error', function onerror() {
