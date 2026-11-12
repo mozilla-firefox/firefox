@@ -179,7 +179,9 @@ add_task(async function test_cancel_after_connect_http2proxy() {
       //   0,
       //   `No requests should have been made at this point`
       // );
-      Assert.equal(await proxy.execute(`global.session_counter`), 1);
+      // For the same reason, the proxy might not have set up the HTTP/2
+      // session yet when the channel gets cancelled.
+      Assert.lessOrEqual(await proxy.execute(`global.session_counter`), 1);
 
       chan = makeChan(`${server.origin()}/test`);
       await new Promise(resolve => {
