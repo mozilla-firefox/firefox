@@ -2391,34 +2391,24 @@ nsRect nsDisplayImage::GetDestRectViewTransition() const {
     return destRect;
   }
 
-  // Scale the ink overflow offset to maintain its position relative to
-  // the destination border box, as if the offset scaled with the element.
-  auto xRatio = static_cast<float>(inkOverflowRect.X()) / borderBoxSize.Width();
-  auto yRatio =
-      static_cast<float>(inkOverflowRect.Y()) / borderBoxSize.Height();
-  auto scaledX = std::round(xRatio * destRect.Width());
-  auto scaledY = std::round(yRatio * destRect.Height());
+  // The snapshot covers the active rect if the capture was restricted, or the
+  // ink overflow rect otherwise, both relative to the captured element's border
+  // box. Scale it to maintain its position and size relative to the
+  // destination border box, as if it scaled with the element.
+  const nsRect& capturedRect = activeRect ? *activeRect : inkOverflowRect;
+  auto xRatio = static_cast<float>(capturedRect.X()) / borderBoxSize.Width();
+  auto yRatio = static_cast<float>(capturedRect.Y()) / borderBoxSize.Height();
+  const nsPoint scaledOffset(std::round(xRatio * destRect.Width()),
+                             std::round(yRatio * destRect.Height()));
 
-  const nsPoint scaledInkOverflowOffset(scaledX, scaledY);
-
-  // Scale destRect’s size to match the captured element’s relative ink overflow
-  // size.
   auto widthRatio =
-      static_cast<float>(inkOverflowRect.Width()) / borderBoxSize.Width();
+      static_cast<float>(capturedRect.Width()) / borderBoxSize.Width();
   auto heightRatio =
-      static_cast<float>(inkOverflowRect.Height()) / borderBoxSize.Height();
-  const nsSize scaledInkOverflowSize(
-      std::round(widthRatio * destRect.Width()),
-      std::round(heightRatio * destRect.Height()));
+      static_cast<float>(capturedRect.Height()) / borderBoxSize.Height();
+  const nsSize scaledSize(std::round(widthRatio * destRect.Width()),
+                          std::round(heightRatio * destRect.Height()));
 
-  destRect = nsRect(destRect.TopLeft() + scaledInkOverflowOffset,
-                    scaledInkOverflowSize);
-
-  if (activeRect) {
-    destRect = destRect.Intersect(activeRect.value());
-  }
-
-  return destRect;
+  return nsRect(destRect.TopLeft() + scaledOffset, scaledSize);
 }
 
 nsRegion nsDisplayImage::GetOpaqueRegion(nsDisplayListBuilder* aBuilder,
