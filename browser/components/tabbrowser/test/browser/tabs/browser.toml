@@ -591,6 +591,7 @@ skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt && a11y_checks", # Bug 2014213
 ]
 
+
 ["browser_tab_splitview_alt_click.js"]
 
 ["browser_tab_splitview_click_target.js"]
