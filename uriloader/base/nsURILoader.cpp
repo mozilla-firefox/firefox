@@ -301,6 +301,15 @@ NS_IMETHODIMP nsDocumentOpenInfo::OnStopRequest(nsIRequest* request,
   // whether the Content-Length header is missing or lying
   nsresult rv = CheckContentLengthDiscrepancy(request);
   if (NS_FAILED(rv)) {
+    if (NS_SUCCEEDED(aStatus)) {
+      // Also fail the request itself: the docshell decides whether to show an
+      // error page based on the status the request reports to its load group,
+      // not the status we pass on to our listener. This matters in the content
+      // process, where the parent may not have been able to detect the empty
+      // body because it only saw the still content-encoded data (e.g. a
+      // 1-byte empty brotli stream).
+      request->Cancel(rv);
+    }
     aStatus = rv;
   }
 

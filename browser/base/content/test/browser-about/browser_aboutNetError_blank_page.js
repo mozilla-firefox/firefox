@@ -22,7 +22,7 @@ async function test_blankPage(
   expectedL10nID,
   responseStatus,
   responseStatusText,
-  header = "show" // show (zero content-length), hide (no content-length), or lie (non-empty content-length)
+  header = "show" // show (zero content-length), hide (no content-length), lie (non-empty content-length), or brotli/gzip (encoded body that decodes to nothing)
 ) {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.http.blank_page_with_error_response.enabled", false]],
@@ -173,6 +173,50 @@ add_task(async function test_blankPage_lyingHeader_5xx() {
     "Service Unavailable",
     "lie"
   );
+});
+
+add_task(async function test_blankPage_emptyBrotliBody_4xx() {
+  await test_blankPage(
+    BLANK_PAGE,
+    "problem-with-this-site-title",
+    403,
+    "Forbidden",
+    "brotli"
+  );
+});
+
+add_task(async function test_blankPage_emptyGzipBody_5xx() {
+  await test_blankPage(
+    BLANK_PAGE,
+    "problem-with-this-site-title",
+    503,
+    "Service Unavailable",
+    "gzip"
+  );
+});
+
+add_task(async function test_encodedNonEmptyBody_4xx() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.http.blank_page_with_error_response.enabled", false]],
+  });
+
+  let tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    `${BLANK_PAGE}?status=404&message=Not%20Found&header=gzip-content`,
+    true // wait for the load to complete
+  );
+
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+    const doc = content.document;
+    ok(
+      !doc.documentURI.startsWith("about:neterror"),
+      "Should not be showing error page for an encoded non-empty body"
+    );
+    is(doc.body.textContent, "Not Found", "Decoded body should be shown");
+  });
+
+  BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.popPrefEnv();
 });
 
 add_task(async function test_emptyPage_viewSource() {
