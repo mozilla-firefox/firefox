@@ -7,11 +7,13 @@ const HOMEPAGE_PREF = "browser.startup.homepage";
 const PRIVACY_SEGMENTATION_PREF = "browser.dataFeatureRecommendations.enabled";
 const MESSAGING_ACTION_PREF = "special-message-testpref";
 const TIMESTAMP_PREF = "termsofuse.acceptedDate";
+const FIRST_ACCEPTED_TIMESTAMP_PREF = "termsofuse.firstAcceptedDate";
 
 const PREFS_TO_CLEAR = [
   HOMEPAGE_PREF,
   PRIVACY_SEGMENTATION_PREF,
   TIMESTAMP_PREF,
+  FIRST_ACCEPTED_TIMESTAMP_PREF,
   `messaging-system-action.${MESSAGING_ACTION_PREF}`,
 ];
 
@@ -569,5 +571,30 @@ add_task(async function test_copyFromPref_overwrite_same_type() {
     Services.prefs.getStringPref(targetPrefName),
     Services.prefs.getStringPref(sourcePrefName),
     "Overwrote existing target value with source value (same type)"
+  );
+});
+
+add_task(async function test_write_once_pref_not_overwritten() {
+  const firstAcceptedDate = "1748736000000";
+  Services.prefs.setStringPref(
+    FIRST_ACCEPTED_TIMESTAMP_PREF,
+    firstAcceptedDate
+  );
+  Services.prefs.setStringPref(TIMESTAMP_PREF, "1756684800000");
+
+  await SMATestUtils.executeAndValidateAction({
+    type: "SET_PREF",
+    data: {
+      pref: {
+        name: FIRST_ACCEPTED_TIMESTAMP_PREF,
+        value: { copyFromPref: TIMESTAMP_PREF },
+      },
+    },
+  });
+
+  Assert.equal(
+    Services.prefs.getStringPref(FIRST_ACCEPTED_TIMESTAMP_PREF),
+    firstAcceptedDate,
+    "Write once pref with a non default value not overwritten"
   );
 });

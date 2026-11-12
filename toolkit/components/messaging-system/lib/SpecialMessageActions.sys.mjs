@@ -468,6 +468,9 @@ export const SpecialMessageActions = {
       "browser.startup.couldRestoreSession.count",
     ];
 
+    // Prefs that keep the first non-default value written to them, rewrites ignored.
+    const writeOncePrefs = ["termsofuse.firstAcceptedDate"];
+
     // allowedPrefs above is the in-tree baseline. It can be extended off-train
     // via Remote Settings, but not for onImpression prefs, which stay
     // deliberately restricted to prefs reviewed in-tree, and not for the prefs
@@ -496,6 +499,12 @@ export const SpecialMessageActions = {
       !pref.name.startsWith("messaging-system-action.")
     ) {
       pref.name = `messaging-system-action.${pref.name}`;
+    }
+    if (
+      writeOncePrefs.includes(pref.name) &&
+      Services.prefs.prefHasUserValue(pref.name)
+    ) {
+      return;
     }
     // If pref has no value, reset it, otherwise set it to desired value
     switch (typeof pref.value) {

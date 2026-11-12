@@ -18,6 +18,9 @@ const { SpecialMessageActions } = ChromeUtils.importESModule(
 const { RemoteL10n } = ChromeUtils.importESModule(
   "resource:///modules/asrouter/RemoteL10n.sys.mjs"
 );
+const { OnboardingMessageProvider } = ChromeUtils.importESModule(
+  "resource:///modules/asrouter/OnboardingMessageProvider.sys.mjs"
+);
 
 // Helper to record impressions in ASRouter state when dispatching an IMPRESSION
 // action
@@ -2060,9 +2063,6 @@ add_task(async function test_inline_icons_falls_back_to_ltr_url_in_rtl() {
 });
 
 add_task(async function test_restore_session_startup_infobar_renders() {
-  const { OnboardingMessageProvider } = ChromeUtils.importESModule(
-    "resource:///modules/asrouter/OnboardingMessageProvider.sys.mjs"
-  );
   const message = (await OnboardingMessageProvider.getMessages()).find(
     m => m.id === "RESTORE_SESSION_STARTUP_INFOBAR"
   );
@@ -2096,6 +2096,47 @@ add_task(async function test_restore_session_startup_infobar_renders() {
     "Inline icon resolves to the application menu icon"
   );
 
+  infobar.notification.closeButton.click();
+  await TestUtils.waitForCondition(() => !InfoBar._activeInfobar);
+});
+
+add_task(async function test_PN_infobar_keeps_first_accepted_date() {
+  const message = (await OnboardingMessageProvider.getMessages()).find(
+    m => m.id === "updated-privacy-notice-notification-infobar"
+  );
+  Assert.ok(message, "Found PN infobar");
+
+  const FIRST_ACCEPTED_PREF = "termsofuse.firstAcceptedDate";
+  const firstAcceptedDate = "1748736000000";
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [FIRST_ACCEPTED_PREF, firstAcceptedDate],
+      ["termsofuse.acceptedDate", "1756684800000"],
+    ],
+  });
+
+  const browser = BrowserWindowTracker.getTopWindow().gBrowser.selectedBrowser;
+  let infobar = await InfoBar.showInfoBarMessage(
+    browser,
+    message,
+    sinon.stub()
+  );
+  Assert.equal(
+    Services.prefs.getStringPref(FIRST_ACCEPTED_PREF),
+    firstAcceptedDate,
+    "Existing firstAcceptedDate was not overwritten"
+  );
+  infobar.notification.closeButton.click();
+  await TestUtils.waitForCondition(() => !InfoBar._activeInfobar);
+
+  Services.prefs.clearUserPref(FIRST_ACCEPTED_PREF);
+  const acceptedDate = Services.prefs.getStringPref("termsofuse.acceptedDate");
+  infobar = await InfoBar.showInfoBarMessage(browser, message, sinon.stub());
+  Assert.equal(
+    Services.prefs.getStringPref(FIRST_ACCEPTED_PREF),
+    acceptedDate,
+    "Default firstAcceptedDate was copied from acceptedDate"
+  );
   infobar.notification.closeButton.click();
   await TestUtils.waitForCondition(() => !InfoBar._activeInfobar);
 });
