@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import unittest
 from urllib.parse import quote
 
 from marionette_driver import Wait, errors
@@ -63,7 +64,7 @@ class SessionStoreTestCase(WindowManagerMixin, MarionetteTestCase):
             ),
         ])
 
-        self.marionette.enforce_gecko_prefs({
+        self._restart_with_clean_profile({
             # Set browser restore previous session pref,
             # depending on what the test requires.
             "browser.startup.page": startup_page,
@@ -94,12 +95,40 @@ class SessionStoreTestCase(WindowManagerMixin, MarionetteTestCase):
             self.all_windows.update(self.private_windows)
             self.open_windows(self.private_windows, is_private=True)
 
+    def _restart_with_clean_profile(self, prefs):
+        """Unlike enforce_gecko_prefs, always restart, so each test starts
+        from a fresh profile even when the previous test used the same prefs.
+
+        Rather than restarting again after every test, a single clean restart
+        is scheduled for the end of the test file so that tests from other
+        files don't inherit this profile."""
+        context = self.marionette._send_message("Marionette:GetContext", key="value")
+        self.marionette.delete_session()
+        self.marionette.instance.restart(prefs, clean=True)
+        self.marionette.raise_for_port()
+        self.marionette.start_session(self.marionette.requested_capabilities)
+        self.marionette.set_context(context)
+
+        if not SessionStoreTestCase._final_restart_scheduled:
+            SessionStoreTestCase._final_restart_scheduled = True
+            unittest.addModuleCleanup(
+                SessionStoreTestCase._final_restart, self.marionette
+            )
+
+    _final_restart_scheduled = False
+
+    @staticmethod
+    def _final_restart(marionette):
+        # The harness has already deleted the session by the time module
+        # cleanups run, so restart the instance directly.
+        SessionStoreTestCase._final_restart_scheduled = False
+        marionette.instance.restart(clean=True)
+        marionette.raise_for_port()
+
     def tearDown(self):
-        try:
-            # Create a fresh profile for subsequent tests.
-            self.marionette.restart(in_app=False, clean=True)
-        finally:
-            super().tearDown()
+        # Skip WindowManagerMixin's check for leftover windows and tabs: the
+        # next test, or the end of the file, starts over with a clean profile.
+        super(WindowManagerMixin, self).tearDown()
 
     def open_windows(self, window_sets, is_private=False):
         """Open a set of windows with tabs pointing at some URLs.
