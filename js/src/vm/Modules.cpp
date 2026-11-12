@@ -578,6 +578,32 @@ JS_PUBLIC_API void JS::ResetPreloadedModule(JSObject* module) {
   moduleObj.loadedModules().clear();
 }
 
+JS_PUBLIC_API bool JS::GetLoadedModules(JSContext* cx,
+                                        Handle<JSObject*> moduleRecordArg,
+                                        MutableHandleObjectVector result) {
+  AssertHeapIsIdle();
+  CHECK_THREAD(cx);
+  cx->check(moduleRecordArg);
+
+  result.clear();
+
+  auto& moduleRecord = moduleRecordArg->as<ModuleObject>();
+  if (!moduleRecord.hasCyclicModuleFields()) {
+    return true;
+  }
+
+  LoadedModuleMap& loadedModules = moduleRecord.loadedModules();
+  if (!result.reserve(loadedModules.count())) {
+    return false;
+  }
+
+  for (auto iter = loadedModules.iter(); !iter.done(); iter.next()) {
+    result.infallibleAppend(iter.get().value().get());
+  }
+
+  return true;
+}
+
 JS_PUBLIC_API bool JS::ModuleLink(JSContext* cx, Handle<JSObject*> moduleArg) {
   AssertHeapIsIdle();
   CHECK_THREAD(cx);

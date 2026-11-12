@@ -15,6 +15,7 @@
 #include "js/ColumnNumber.h"    // JS::ColumnNumberOneOrigin
 #include "js/CompileOptions.h"  // JS::ReadOnlyCompileOptions
 #include "js/RootingAPI.h"      // JS::{Mutable,}Handle
+#include "js/TypeDecls.h"       // JS::MutableHandleObjectVector
 #include "js/Value.h"           // JS::Value
 #include "js/Vector.h"          // js::Vector
 
@@ -276,6 +277,14 @@ extern JS_PUBLIC_API void SetModulePreload(JSObject* module, bool isPreload);
  * their specifiers may have changed.
  */
 extern JS_PUBLIC_API void ResetPreloadedModule(JSObject* module);
+
+/**
+ * Set |result| to every module record in |moduleRecord|'s [[LoadedModules]]
+ * list, discarding its previous contents. Returns false on OOM.
+ */
+extern JS_PUBLIC_API bool GetLoadedModules(JSContext* cx,
+                                           Handle<JSObject*> moduleRecord,
+                                           MutableHandleObjectVector result);
 
 /*
  * Perform the ModuleLink operation on the given source text module record.
