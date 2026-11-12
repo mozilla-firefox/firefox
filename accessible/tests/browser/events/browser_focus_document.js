@@ -64,11 +64,17 @@ addAccessibleTask(
     const url =
       "https://example.com/document-builder.sjs?html=" +
       encodeURIComponent(`<!doctype html><input autofocus>`);
-    let loaded = BrowserTestUtils.browserLoaded(browser);
+    let focused = waitForEvent(
+      EVENT_FOCUS,
+      event => event.accessible.role == nsIAccessibleRole.ROLE_ENTRY
+    );
     browser.loadURI(Services.io.newURI(url), {
       triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
     });
-    await loaded;
+    await focused;
+    // In the content process, the input is focused. In the parent process
+    // the focused element should be the browser element that contains the
+    // example.com (remote) doc.
     is(Services.focus.focusedElement, browser, "<browser> should be focused");
     is(
       Services.focus.focusedWindow,
