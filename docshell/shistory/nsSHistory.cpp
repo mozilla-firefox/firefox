@@ -1339,6 +1339,15 @@ static const mozilla::dom::SessionHistoryInfo* TraversalViewTransitionTarget(
   return nullptr;
 }
 
+static bool CanRestoreFrameLoader(nsFrameLoader* aFrameLoader) {
+  if (!aFrameLoader->IsRemoteFrame()) {
+    return true;
+  }
+  BrowserParent* browserParent = aFrameLoader->GetBrowserParent();
+  return browserParent && browserParent->CanSend() &&
+         !browserParent->IsDestroyed();
+}
+
 MOZ_CAN_RUN_SCRIPT
 static void FinishRestore(CanonicalBrowsingContext* aBrowsingContext,
                           nsDocShellLoadState* aLoadState,
@@ -1359,7 +1368,7 @@ static void FinishRestore(CanonicalBrowsingContext* aBrowsingContext,
   nsCOMPtr<nsFrameLoaderOwner> frameLoaderOwner =
       do_QueryInterface(aBrowsingContext->GetEmbedderElement());
   if (frameLoaderOwner && aFrameLoader->GetMaybePendingBrowsingContext() &&
-      indexOfHistoryLoad >= 0) {
+      CanRestoreFrameLoader(aFrameLoader) && indexOfHistoryLoad >= 0) {
     RefPtr<BrowsingContextWebProgress> webProgress =
         aBrowsingContext->GetWebProgress();
     if (webProgress) {
