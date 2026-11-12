@@ -15,9 +15,6 @@ crash:
     type: memory_distribution
     description: >
       Size (in bytes) of the compressed crash store JSON file.
-
-      This metric was generated to correspond to the Legacy Telemetry
-      exponential histogram CRASH_STORE_COMPRESSED_BYTES.
     memory_unit: byte
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1950710
@@ -27,15 +24,11 @@ crash:
       - crash-reporting-wg@mozilla.org
       - stability@mozilla.org
     expires: never
-    telemetry_mirror: CRASH_STORE_COMPRESSED_BYTES
 
   submit_attempt:
     type: labeled_counter
     description: >
       An attempt to submit a crash. Keyed on the CrashManager Crash.type.
-
-      This metric was generated to correspond to the Legacy Telemetry count
-      histogram PROCESS_CRASH_SUBMIT_ATTEMPT.
     labels:
       - main-crash
       - main-hang
@@ -67,16 +60,12 @@ crash:
       - crash-reporting-wg@mozilla.org
       - stability@mozilla.org
     expires: never
-    telemetry_mirror: h#PROCESS_CRASH_SUBMIT_ATTEMPT
 
   submit_success:
     type: dual_labeled_counter
     description: >
       The submission status when main/plugin/content crashes are submitted. 1 is
       success, 0 is failure. Keyed on the CrashManager Crash.type.
-
-      This metric was generated to correspond to the Legacy Telemetry boolean
-      histogram PROCESS_CRASH_SUBMIT_SUCCESS.
     dual_labels:
       key:
         description: The crash type.
@@ -93,7 +82,6 @@ crash:
       - crash-reporting-wg@mozilla.org
       - stability@mozilla.org
     expires: never
-    telemetry_mirror: PROCESS_CRASH_SUBMIT_SUCCESS
 
 crash_submission:
   success:

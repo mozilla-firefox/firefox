@@ -1276,15 +1276,6 @@
     "description": "Records search counts for search access points. The format is: <engine-name>.<search-access-point>. For the urlbar when in search mode, the format is <engine name>.urlbar-searchmode. For the urlbar when an internal @engine shortcut is used, the format is: <engine-name>.alias.",
     "record_into_store": ["main", "account-ecosystem"]
   },
-  "CRASH_STORE_COMPRESSED_BYTES": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "exponential",
-    "high": 1000000,
-    "n_buckets": 202,
-    "description": "Size (in bytes) of the compressed crash store JSON file."
-  },
   "MEDIA_MP4_PARSE_SAMPLE_DESCRIPTION_ENTRIES_HAVE_MULTIPLE_CODECS": {
     "record_in_processes": ["main", "content"],
     "products": ["firefox", "fennec"],
@@ -1822,48 +1813,6 @@
     "keyed": true,
     "releaseChannelCollection": "opt-out",
     "description": "Counts the number of times launching a subprocess fails. Counts are by subprocess-type using the GeckoProcessType enum."
-  },
-  "PROCESS_CRASH_SUBMIT_ATTEMPT": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec", "thunderbird"],
-    "expires_in_version": "never",
-    "kind": "count",
-    "keyed": true,
-    "keys": [
-      "main-crash",
-      "main-hang",
-      "content-crash",
-      "content-hang",
-      "plugin-crash",
-      "plugin-hang",
-      "gmplugin-crash",
-      "gmplugin-hang",
-      "gpu-crash",
-      "gpu-hang",
-      "vr-crash",
-      "vr-hang",
-      "rdd-crash",
-      "rdd-hang",
-      "socket-crash",
-      "socket-hang",
-      "utility-crash",
-      "utility-hang",
-      "sandboxbroker-crash",
-      "sandboxbroker-hang",
-      "forkserver-crash",
-      "forkserver-hang"
-    ],
-    "releaseChannelCollection": "opt-out",
-    "description": "An attempt to submit a crash. Keyed on the CrashManager Crash.type."
-  },
-  "PROCESS_CRASH_SUBMIT_SUCCESS": {
-    "record_in_processes": ["main", "content"],
-    "products": ["firefox", "fennec"],
-    "expires_in_version": "never",
-    "kind": "boolean",
-    "keyed": true,
-    "releaseChannelCollection": "opt-out",
-    "description": "The submission status when main/plugin/content crashes are submitted. 1 is success, 0 is failure. Keyed on the CrashManager Crash.type."
   },
   "VIDEO_PLAY_TIME_MS": {
     "record_in_processes": ["main", "content"],

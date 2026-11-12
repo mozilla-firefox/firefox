@@ -887,10 +887,6 @@ add_task(async function test_addCrashWrong() {
 });
 
 add_task(async function test_telemetryHistogram() {
-  let Telemetry = Services.telemetry;
-  let h = Telemetry.getKeyedHistogramById("PROCESS_CRASH_SUBMIT_ATTEMPT");
-  h.clear();
-  Telemetry.clearScalars();
   Services.fog.testResetFOG();
 
   let m = await getManager();
@@ -929,11 +925,11 @@ add_task(async function test_telemetryHistogram() {
   Assert.greater(keysCount, 2);
 
   // Check that we have the expected keys.
-  let snap = h.snapshot();
+  let snap = Glean.crash.submitAttempt.testGetValue();
   Assert.equal(
     Object.keys(snap).length,
     keysCount,
-    "Some crash types have not been recorded, see the list in Histograms.json"
+    "Some crash types have not been recorded"
   );
   Assert.deepEqual(
     Object.keys(snap).sort(),
