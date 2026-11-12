@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Test that registering an import map does not reset the normally loaded dependencies of a preload</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="preload_linked_helpers.js"></script>
+<body>
+<script>
+  const requestWaiters = new Map();
+
+  // When hold is true, the fetch will be suspended, this is used to simulate
+  // the ongoing fetch.
+  function waitForRequest(name, { hold = false } = {}) {
+    return new Promise(resolve => requestWaiters.set(name, { resolve, hold }));
+  }
+
+  const observer = {
+    observe(subject) {
+      const channel = subject.QueryInterface(SpecialPowers.Ci.nsIChannel);
+      const name = channel.URI.spec.split("?")[0].split("/").pop();
+      const waiter = requestWaiters.get(name);
+      if (!waiter) {
+        return;
+      }
+      requestWaiters.delete(name);
+      if (waiter.hold) {
+        channel.suspend();
+      }
+      waiter.resolve(channel);
+    },
+  };
+  SpecialPowers.addObserver(observer, "http-on-opening-request");
+  SimpleTest.registerCleanupFunction(() => {
+    SpecialPowers.removeObserver(observer, "http-on-opening-request");
+  });
+
+  // preload_root.mjs and normal_root.mjs both import chain_root.mjs. An import
+  // map is registered while the module graph of normal_root.mjs is still
+  // loading; the chain modules it reuses from the preload must not be reset.
+  add_task(async function testStillLoadingGraph() {
+    SpecialPowers.ChromeUtils.clearResourceCache({ types: ["script"] });
+
+    const grandchildLoaded =
+      waitForResponse("preload_linked_chain_grandchild.mjs");
+    await addPreload("./preload_linked_stillloading_preload_root.mjs");
+    await grandchildLoaded;
+
+    const slowRequested = waitForRequest("preload_linked_stillloading_slow.mjs",
+                                         { hold: true });
+    const pending = import("./preload_linked_stillloading_normal_root.mjs");
+
+    const slowChannel = await slowRequested;
+
+    addImportMap({ "preload-linked-stillloading-unused": "./preload_linked_bare.mjs" });
+
+    slowChannel.resume();
+    const ns = await pending;
+    is(ns.default, "stillloading-normal-root",
+       "stillloading_normal_root should load");
+
+    const child =
+      await import("./preload_linked_chain_child.mjs");
+    is(child.default, "chain-child",
+       "chain_child should still be usable");
+  });
+</script>
+</body>

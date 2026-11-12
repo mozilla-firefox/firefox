@@ -1,6 +1,18 @@
 [DEFAULT]
 prefs = ["dom.multiple_import_maps.enabled=true"]
+support-files = [
+  "preload_linked_bare.mjs",
+  "preload_linked_chain_child.mjs",
+  "preload_linked_chain_grandchild.mjs",
+  "preload_linked_chain_root.mjs",
+  "preload_linked_helpers.js",
+  "preload_linked_stillloading_normal_root.mjs",
+  "preload_linked_stillloading_preload_root.mjs",
+  "preload_linked_stillloading_slow.mjs",
+]
 
 ["test_bug_2054717.html"]
 
 ["test_bug_2058272.html"]
+
+["test_preload_linked_normal_deps_not_reset.html"]
