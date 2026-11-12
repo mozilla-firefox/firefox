@@ -16,7 +16,6 @@ browser.jar:
    content/browser/preferences/dialogs/dohExceptions.js
    content/browser/preferences/dialogs/fonts.xhtml
    content/browser/preferences/dialogs/fonts.js
-   content/browser/preferences/dialogs/handlers.css
    content/browser/preferences/dialogs/languages.xhtml
    content/browser/preferences/dialogs/languages.js
    content/browser/preferences/dialogs/permissions.xhtml

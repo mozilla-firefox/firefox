@@ -623,7 +623,6 @@ function init_all() {
   }
 
   gSearchResultsPane.init();
-  gMainPane.preInit();
 
   let categories = document.getElementById("categories");
   categories.addEventListener("change-view", event => {

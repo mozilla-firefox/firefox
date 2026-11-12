@@ -593,9 +593,7 @@ spellcheck-promo =
     .heading = How to use spell checking
     .message = Right-click a text field to turn spell check on or off or to change the language. Not all fields support spell check.
 
-## General Section - Files and Applications
-
-files-and-applications-title = Files and Applications
+## Downloads
 
 download-save-files-header =
     .label = Save files to
@@ -610,9 +608,7 @@ download-private-browsing-delete2 =
     .label = Delete private window downloads on close
     .accesskey = D
 
-applications-header = Applications
-
-applications-description = Choose how { -brand-short-name } handles the files you download from the web or the applications you use while browsing.
+## Downloads - Files and applications
 
 applications-setting2 =
     .label = Files and applications
@@ -621,15 +617,7 @@ applications-setting2 =
 applications-filter =
     .placeholder = Search file types or applications
 
-applications-type-column =
-    .label = Content Type
-    .accesskey = T
-
 applications-type-heading = Content Type
-
-applications-action-column =
-    .label = Action
-    .accesskey = A
 
 applications-action-heading = Action
 
@@ -679,48 +667,13 @@ applications-file-ending-with-type = { applications-file-ending } ({ $type })
 applications-open-inapp =
     .label = Open in { -brand-short-name }
 
-## The strings in this group are used to populate
-## selected label element based on the string from
-## the selected menu item.
-
-applications-action-save-label =
-    .value = { applications-action-save.label }
-
-applications-use-app-label =
-    .value = { applications-use-app.label }
-
-applications-open-inapp-label =
-    .value = { applications-open-inapp.label }
-
-applications-always-ask-label =
-    .value = { applications-always-ask.label }
-
-applications-use-app-default-label =
-    .value = { applications-use-app-default.label }
-
-applications-use-other-label =
-    .value = { applications-use-other.label }
-
-applications-use-os-default-label =
-    .value = { applications-use-os-default.label }
-
-##
-
-applications-handle-new-file-types-description = What should { -brand-short-name } do with other files?
-
 applications-setting-new-file-types =
      .label = What should { -brand-short-name } do with other files?
 
-applications-save-for-new-types =
-    .label = Save files
-    .accesskey = S
 applications-save-for-new-types2 =
     .label = Automatically save files
     .accesskey = S
 
-applications-ask-before-handling =
-    .label = Ask whether to open or save files
-    .accesskey = A
 applications-ask-before-handling2 =
     .label = Ask to open or save files
     .accesskey = A

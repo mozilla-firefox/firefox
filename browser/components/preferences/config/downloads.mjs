@@ -161,9 +161,9 @@ let DownloadsHelpers = new (class DownloadsHelpers {
     let firefoxLocalizedName;
     if (folderIndex == 2 && currentDirPref.value) {
       file = currentDirPref.value;
-      if (file.equals(this.downloadsDir)) {
+      if (this.downloadsDir && file.equals(this.downloadsDir)) {
         folderIndex = 1;
-      } else if (file.equals(this.desktopDir)) {
+      } else if (this.desktopDir && file.equals(this.desktopDir)) {
         folderIndex = 0;
       }
     }
@@ -194,9 +194,9 @@ let DownloadsHelpers = new (class DownloadsHelpers {
       if (AppConstants.platform == "linux") {
         if (this.folderHostPath && displayName == this.folderPath) {
           displayName = this.folderHostPath;
-          if (displayName == this.downloadsDir.path) {
+          if (displayName == this.downloadsDir?.path) {
             firefoxLocalizedName = this.downloadsFolderLocalizedName;
-          } else if (displayName == this.desktopDir.path) {
+          } else if (displayName == this.desktopDir?.path) {
             firefoxLocalizedName = this.desktopFolderLocalizedName;
           }
         } else if (displayName != this.folderPath) {
@@ -353,7 +353,7 @@ Preferences.addSetting({
       await ApplicationsHandler.preInitApplications();
       /**
        * Need to send an observer notification so that tests will know when
-       * everything in the handlersView is built and loaded.
+       * everything in the applicationsHandlersView is built and loaded.
        */
       Services.obs.notifyObservers(window, "app-handler-loaded");
       window.removeEventListener("paneshown", appInitializer);
@@ -366,10 +366,6 @@ Preferences.addSetting({
       window.removeEventListener("paneshown", appInitializer);
     };
   },
-});
-
-Preferences.addSetting({
-  id: "applicationsGroup",
 });
 
 Preferences.addSetting({
@@ -415,7 +411,7 @@ const ICON_URL_APP =
  * We don't implement all the original nsIHandlerInfo functionality,
  * just the stuff that the prefpane needs.
  */
-export class HandlerInfoWrapper {
+class HandlerInfoWrapper {
   /**
    * @type {nsIHandlerInfo}
    */
@@ -474,58 +470,6 @@ export class HandlerInfoWrapper {
     }
 
     return this.description;
-  }
-
-  get actionIconClass() {
-    if (this.alwaysAskBeforeHandling) {
-      return "ask";
-    }
-
-    switch (this.preferredAction) {
-      case Ci.nsIHandlerInfo.saveToDisk:
-        return "save";
-
-      case Ci.nsIHandlerInfo.handleInternally:
-        if (this instanceof InternalHandlerInfoWrapper) {
-          return "handleInternally";
-        }
-        break;
-    }
-
-    return "";
-  }
-
-  get actionIconSrcset() {
-    let icon = this.actionIcon;
-    if (!icon || !icon.startsWith("moz-icon:")) {
-      return icon;
-    }
-    // We rely on the icon already having the ?size= parameter.
-    let srcset = [];
-    for (let scale of [1, 2, 3]) {
-      let scaledIcon = icon + "&scale=" + scale;
-      srcset.push(`${scaledIcon} ${scale}x`);
-    }
-    return srcset.join(", ");
-  }
-
-  get actionIcon() {
-    switch (this.preferredAction) {
-      case Ci.nsIHandlerInfo.useSystemDefault:
-        return this.iconURLForSystemDefault;
-
-      case Ci.nsIHandlerInfo.useHelperApp: {
-        let preferredApp = this.preferredApplicationHandler;
-        if (ApplicationsHandler.isValidHandlerApp(preferredApp)) {
-          return getIconURLForHandlerApp(preferredApp);
-        }
-      }
-      // This should never happen, but if preferredAction is set to some weird
-      // value, then fall back to the generic application icon.
-      // Explicit fall-through
-      default:
-        return ICON_URL_APP;
-    }
   }
 
   get iconURLForSystemDefault() {
@@ -681,18 +625,6 @@ export class HandlerInfoWrapper {
     gHandlerService.store(this.wrappedHandlerInfo);
   }
 
-  get iconSrcSet() {
-    let srcset = [];
-    for (let scale of [1, 2]) {
-      let icon = this._getIcon(16, scale);
-      if (!icon) {
-        return null;
-      }
-      srcset.push(`${icon} ${scale}x`);
-    }
-    return srcset.join(", ");
-  }
-
   /**
    * @param {number} aSize
    * @param {number} aScale
@@ -718,7 +650,7 @@ export class HandlerInfoWrapper {
  * mime type handler that can be enabled/disabled in the applications preference
  * menu.
  */
-export class InternalHandlerInfoWrapper extends HandlerInfoWrapper {
+class InternalHandlerInfoWrapper extends HandlerInfoWrapper {
   constructor(mimeType, extension) {
     let type = gMIMEService.getFromTypeAndExtension(mimeType, extension);
     super(mimeType || type.type, type);
@@ -761,60 +693,9 @@ class ViewableInternallyHandlerInfoWrapper extends InternalHandlerInfoWrapper {
   }
 }
 
-/**
- * Functions that are common to both the {@link ApplicationsHandler} class and the
- * legacy {@link AppFileHandler} class. Can be moved into ApplicationsHandler when we no
- * longer support the old "Applications" section.
- */
-export const HandlerServiceHelpers = {
-  /**
-   * Load higher level internal handlers so they can be turned on/off in the
-   * applications menu.
-   */
-  loadInternalHandlers(handledTypes) {
-    let internalHandlers = [new PDFHandlerInfoWrapper()];
-
-    let enabledHandlers = Services.prefs
-      .getCharPref("browser.download.viewableInternally.enabledTypes", "")
-      .trim();
-    if (enabledHandlers) {
-      for (let ext of enabledHandlers.split(",")) {
-        internalHandlers.push(
-          new ViewableInternallyHandlerInfoWrapper(null, ext.trim())
-        );
-      }
-    }
-
-    for (let internalHandler of internalHandlers) {
-      if (internalHandler.enabled) {
-        handledTypes[internalHandler.type] = internalHandler;
-      }
-    }
-  },
-  /**
-   * Load the set of handlers defined by the application datastore.
-   */
-  loadApplicationHandlers(handledTypes) {
-    for (let wrappedHandlerInfo of gHandlerService.enumerate()) {
-      let type = wrappedHandlerInfo.type;
-      let handlerInfoWrapper;
-      if (type in handledTypes) {
-        handlerInfoWrapper = handledTypes[type];
-      } else {
-        if (lazy.DownloadIntegration.shouldViewDownloadInternally(type)) {
-          handlerInfoWrapper = new ViewableInternallyHandlerInfoWrapper(type);
-        } else {
-          handlerInfoWrapper = new HandlerInfoWrapper(type, wrappedHandlerInfo);
-        }
-        handledTypes[type] = handlerInfoWrapper;
-      }
-    }
-  },
-};
-
 // Utilities
 
-export function getFileDisplayName(file) {
+function getFileDisplayName(file) {
   if (AppConstants.platform == "win") {
     if (file instanceof Ci.nsILocalFileWin) {
       try {
@@ -832,16 +713,6 @@ export function getFileDisplayName(file) {
   return file.leafName;
 }
 
-export function getLocalHandlerApp(aFile) {
-  var localHandlerApp = Cc[
-    "@mozilla.org/uriloader/local-handler-app;1"
-  ].createInstance(Ci.nsILocalHandlerApp);
-  localHandlerApp.name = getFileDisplayName(aFile);
-  localHandlerApp.executable = aFile;
-
-  return localHandlerApp;
-}
-
 function getIconURLForAppId(aAppId) {
   return "moz-icon://" + aAppId + "?size=16";
 }
@@ -855,7 +726,7 @@ function getIconURLForFile(aFile) {
   return "moz-icon://" + urlSpec + "?size=16";
 }
 
-export function getIconURLForHandlerApp(aHandlerApp) {
+function getIconURLForHandlerApp(aHandlerApp) {
   if (aHandlerApp instanceof Ci.nsILocalHandlerApp) {
     return getIconURLForFile(aHandlerApp.executable);
   }
@@ -872,7 +743,7 @@ export function getIconURLForHandlerApp(aHandlerApp) {
   return "";
 }
 
-export function getIconURLForWebApp(aWebAppURITemplate) {
+function getIconURLForWebApp(aWebAppURITemplate) {
   var uri = Services.io.newURI(aWebAppURITemplate);
 
   // Unfortunately we can't use the favicon service to get the favicon,
@@ -918,7 +789,7 @@ var gNodeToObjectMap = new WeakMap();
 /**
  * This is associated to <moz-box-item> elements in the handlers view.
  */
-export class ApplicationListItem {
+class ApplicationListItem {
   /**
    * @param {Node} node
    * @returns {Node | undefined}
@@ -1373,21 +1244,68 @@ const ApplicationsHandler = (function () {
       this.initialized = true;
 
       /**
-       * handlersView won't be available in many
+       * applicationsHandlersView won't be available in many
        * test implementations, so skip initializing for those.
        */
       if (!this._list) {
         return;
       }
 
-      HandlerServiceHelpers.loadInternalHandlers(this._handledTypes);
-      HandlerServiceHelpers.loadApplicationHandlers(this._handledTypes);
+      this._loadInternalHandlers();
+      this._loadApplicationHandlers();
       await this._list.updateComplete;
 
       this.headerElement = this._buildHeader();
       this._list.appendChild(this.headerElement);
       await this._rebuildVisibleTypes();
       await this._buildView();
+    }
+
+    /**
+     * Load higher level internal handlers so they can be turned on/off in the
+     * applications menu.
+     */
+    _loadInternalHandlers() {
+      let internalHandlers = [new PDFHandlerInfoWrapper()];
+
+      let enabledHandlers = Services.prefs
+        .getCharPref("browser.download.viewableInternally.enabledTypes", "")
+        .trim();
+      if (enabledHandlers) {
+        for (let ext of enabledHandlers.split(",")) {
+          internalHandlers.push(
+            new ViewableInternallyHandlerInfoWrapper(null, ext.trim())
+          );
+        }
+      }
+
+      for (let internalHandler of internalHandlers) {
+        if (internalHandler.enabled) {
+          this._handledTypes[internalHandler.type] = internalHandler;
+        }
+      }
+    }
+
+    /**
+     * Load the set of handlers defined by the application datastore.
+     */
+    _loadApplicationHandlers() {
+      for (let wrappedHandlerInfo of gHandlerService.enumerate()) {
+        let type = wrappedHandlerInfo.type;
+        if (type in this._handledTypes) {
+          continue;
+        }
+        if (lazy.DownloadIntegration.shouldViewDownloadInternally(type)) {
+          this._handledTypes[type] = new ViewableInternallyHandlerInfoWrapper(
+            type
+          );
+        } else {
+          this._handledTypes[type] = new HandlerInfoWrapper(
+            type,
+            wrappedHandlerInfo
+          );
+        }
+      }
     }
 
     async _rebuildVisibleTypes() {
@@ -1640,6 +1558,10 @@ const ApplicationsHandler = (function () {
      * @param {ApplicationListItem} handlerItem
      */
     manageApp(handlerItem) {
+      let handlerAppHelpers = {
+        isValidHandlerApp: this.isValidHandlerApp.bind(this),
+        getIconURLForHandlerApp,
+      };
       gSubDialog.open(
         "chrome://browser/content/preferences/dialogs/applicationManager.xhtml",
         {
@@ -1649,7 +1571,8 @@ const ApplicationsHandler = (function () {
             handlerItem.buildActionsMenu();
           },
         },
-        handlerItem.handlerInfoWrapper
+        handlerItem.handlerInfoWrapper,
+        handlerAppHelpers
       );
     }
 
@@ -1841,7 +1764,6 @@ SettingGroupManager.registerGroups({
   applications: {
     l10nId: "applications-setting2",
     headingLevel: 2,
-    inProgress: true,
     items: [
       {
         id: "applicationsFilter",

@@ -324,11 +324,6 @@ radio {
   padding: 0.3em;
 }
 
-#filter {
-  flex: 1;
-  margin: 4px 0 8px;
-}
-
 /** SRD applications section START **/
 #applicationsHandlersView {
   --box-group-max-height: 500px;
@@ -348,66 +343,6 @@ radio {
   }
 }
 /** SRD applications section END **/
-
-/* Override overflow-wrap: anywhere from moz-card
- TODO: Eventually we should update to make this
- section more responsive to screen width */
-moz-fieldset#applicationsGroup {
-  overflow-wrap: normal;
-}
-
-#handlersView {
-  height: 25em;
-  margin-inline-end: 0;
-}
-
-#handlersView > richlistitem {
-  min-height: 30px;
-}
-
-#handlersView .actionsMenu {
-  margin: 0;
-  min-height: 0;
-  padding: 0;
-  border: none;
-  padding-inline-end: 8px;
-}
-
-#handlersView .actionsMenu::part(label) {
-  margin: 0;
-}
-
-.typeIcon,
-.actionIcon,
-.actionsMenu::part(icon) {
-  height: 16px;
-  width: 16px;
-}
-
-.typeIcon {
-  margin-inline: 10px 9px !important;
-  &:not([srcset]) {
-    visibility: hidden;
-  }
-}
-
-#handlersView .actionsMenu::part(icon),
-.actionIcon {
-  margin-inline: 11px 8px !important;
-}
-
-.actionsMenu > menupopup > menuitem {
-  padding-inline-start: 10px !important;
-}
-
-.actionsMenu > menupopup > menuitem > .menu-icon {
-  margin-inline-end: 8px !important;
-}
-
-/* Increase the specificity to override common.inc.css */
-richlistitem[selected] .actionsMenu:focus-visible {
-  outline-offset: -3px;
-}
 
 /** SRD Search Pane START **/
 

@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-/* import-globals-from ../main.js */
+/* global MozXULElement */
 
 var gAppManagerDialog = {
   _removed: [],
@@ -13,12 +13,11 @@ var gAppManagerDialog = {
 
   async init() {
     this.handlerInfo = window.arguments[0];
+    let { isValidHandlerApp, getIconURLForHandlerApp } = window.arguments[1];
 
     document.addEventListener("dialogaccept", function () {
       gAppManagerDialog.onOK();
     });
-
-    let gMainPane = window.parent.gMainPane;
 
     document
       .getElementById("cmd_remove")
@@ -50,7 +49,7 @@ var gAppManagerDialog = {
     list.addEventListener("select", () => this.onSelect());
     let listFragment = document.createDocumentFragment();
     for (let app of this.handlerInfo.possibleApplicationHandlers.enumerate()) {
-      if (!gMainPane.isValidHandlerApp(app)) {
+      if (!isValidHandlerApp(app)) {
         continue;
       }
 
@@ -59,7 +58,7 @@ var gAppManagerDialog = {
       item.app = app;
 
       let image = document.createXULElement("image");
-      image.setAttribute("src", gMainPane._getIconURLForHandlerApp(app));
+      image.setAttribute("src", getIconURLForHandlerApp(app));
       item.appendChild(image);
 
       let label = document.createXULElement("label");

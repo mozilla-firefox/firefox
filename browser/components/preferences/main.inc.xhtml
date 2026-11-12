@@ -133,52 +133,6 @@
 
 <html:setting-group data-category="paneGeneral" groupid="spellCheck" data-srd-migrated="" hidden="true"/>
 
-<!-- Files and Applications -->
-<hbox id="filesAndApplicationsCategory"
-      class="subcategory"
-      hidden="true"
-      data-srd-groupid="applications"
-      data-category="paneGeneral">
-  <html:h1 data-l10n-id="files-and-applications-title"/>
-</hbox>
-
-<!-- Downloads -->
-<html:setting-group groupid="downloads" data-category="paneGeneral" data-srd-migrated="" hidden="true"/>
-
-<!-- Applications -->
-<groupbox id="applicationsGroup" data-category="paneGeneral" hidden="true" data-srd-migrated=""
-  data-srd-groupid="applications">
-  <label><html:h2 data-l10n-id="applications-header"/></label>
-  <description class="description-deemphasized" data-l10n-id="applications-description"/>
-  <html:moz-input-search
-      id="filter"
-      data-l10n-id="applications-filter"
-      data-l10n-attrs="placeholder"
-      aria-controls="handlersView"/>
-
-  <listheader id="handlersViewHeader">
-    <treecol id="typeColumn" data-l10n-id="applications-type-column" value="type"
-             persist="sortDirection"
-             style="flex: 1 50%" sortDirection="ascending"/>
-    <treecol id="actionColumn" data-l10n-id="applications-action-column" value="action"
-             persist="sortDirection"
-             style="flex: 1 50%"/>
-  </listheader>
-  <richlistbox id="handlersView"
-               preference="pref.downloads.disable_button.edit_actions"/>
-  <label id="handleNewFileTypesDesc"
-         data-l10n-id="applications-handle-new-file-types-description"/>
-  <radiogroup id="handleNewFileTypes"
-              preference="browser.download.always_ask_before_handling_new_types">
-    <radio id="saveForNewTypes"
-           value="false"
-           data-l10n-id="applications-save-for-new-types"/>
-    <radio id="askBeforeHandling"
-           value="true"
-           data-l10n-id="applications-ask-before-handling"/>
-  </radiogroup>
-</groupbox>
-
 <!-- DRM Content -->
 <html:setting-group groupid="drm" data-category="paneGeneral" data-subcategory="drm" hidden="true" data-srd-migrated="" />
 
