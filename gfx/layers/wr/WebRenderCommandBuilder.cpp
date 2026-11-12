@@ -25,6 +25,7 @@
 #include "mozilla/StaticPrefs_layout.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/gfx/2D.h"
+#include "mozilla/gfx/Blur.h"
 #include "mozilla/gfx/Logging.h"
 #include "mozilla/gfx/Types.h"
 #include "mozilla/image/WebRenderImageProvider.h"
@@ -2876,6 +2877,24 @@ void WebRenderMaskData::Invalidate() {
   mMaskStyle = nsStyleImageLayers(nsStyleImageLayers::LayerType::Mask);
 }
 
+// Blob tiles are rasterized independently, and each one has to process the
+// pixels a blur reads around it. Returns a tile size large enough for that
+// margin to stay small compared to the tile, or 0 to use the default.
+static uint16_t BlobTileSizeForBlur(float aStdDeviation) {
+  if (aStdDeviation <= 0.0f) {
+    return 0;
+  }
+  // The blur is three box blurs, each extending CalculateBlurRadius by half.
+  IntSize radius =
+      GaussianBlur::CalculateBlurRadius(Point(aStdDeviation, 0.0f));
+  float margin = 1.5f * float(radius.width);
+  uint32_t tileSize = 512;
+  while (tileSize < 5.0f * margin && tileSize < 2048) {
+    tileSize *= 2;
+  }
+  return tileSize > 512 ? uint16_t(tileSize) : 0;
+}
+
 Maybe<wr::ImageMask> WebRenderCommandBuilder::BuildWrMaskImage(
     nsDisplayMasksAndClipPaths* aMaskItem, wr::DisplayListBuilder& aBuilder,
     wr::IpcResourceUpdateQueue& aResources, const StackingContextHelper& aSc,
@@ -3075,8 +3094,9 @@ Maybe<wr::ImageMask> WebRenderCommandBuilder::BuildWrMaskImage(
     }
     wr::ImageDescriptor descriptor(size, 0, *imageFormat,
                                    wr::OpacityType::HasAlphaChannel);
-    if (!aResources.AddBlobImage(key, descriptor, bytes,
-                                 ImageIntRect(0, 0, size.width, size.height))) {
+    if (!aResources.AddBlobImage(
+            key, descriptor, bytes, ImageIntRect(0, 0, size.width, size.height),
+            BlobTileSizeForBlur(recorder->MaxBlurStdDeviation()))) {
       return Nothing();
     }
     maskData->ClearImageKey();

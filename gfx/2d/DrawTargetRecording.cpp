@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 
+#include "Blur.h"
 #include "DrawTargetSkia.h"
 #include "Filters.h"
 #include "ImageContainer.h"
@@ -149,8 +150,9 @@ class FilterNodeRecording : public FilterNode {
   MOZ_DECLARE_REFCOUNTED_VIRTUAL_TYPENAME(FilterNodeRecording, override)
   using FilterNode::SetAttribute;
 
-  explicit FilterNodeRecording(DrawEventRecorderPrivate* aRecorder)
-      : mRecorder(aRecorder) {
+  explicit FilterNodeRecording(DrawEventRecorderPrivate* aRecorder,
+                               Maybe<FilterType> aType = Nothing())
+      : mRecorder(aRecorder), mType(aType) {
     mRecorder->AddStoredObject(this);
   }
 
@@ -179,7 +181,15 @@ class FilterNodeRecording : public FilterNode {
 
   FORWARD_SET_ATTRIBUTE(bool, BOOL);
   FORWARD_SET_ATTRIBUTE(uint32_t, UINT32);
-  FORWARD_SET_ATTRIBUTE(Float, FLOAT);
+  void SetAttribute(uint32_t aIndex, Float aValue) override {
+    if (aIndex == 0 && (mType == Some(FilterType::GAUSSIAN_BLUR) ||
+                        mType == Some(FilterType::DIRECTIONAL_BLUR))) {
+      mRecorder->NoteFilterBlurStdDeviation(
+          std::min(aValue, GaussianBlur::kMaxSoftwareStdDeviation));
+    }
+    mRecorder->RecordEvent(RecordedFilterNodeSetAttribute(
+        this, aIndex, aValue, RecordedFilterNodeSetAttribute::ARGTYPE_FLOAT));
+  }
   FORWARD_SET_ATTRIBUTE(const Size&, SIZE);
   FORWARD_SET_ATTRIBUTE(const IntSize&, INTSIZE);
   FORWARD_SET_ATTRIBUTE(const IntPoint&, INTPOINT);
@@ -202,6 +212,7 @@ class FilterNodeRecording : public FilterNode {
   FilterBackend GetBackendType() override { return FILTER_BACKEND_RECORDING; }
 
   RefPtr<DrawEventRecorderPrivate> mRecorder;
+  Maybe<FilterType> mType;
 };
 
 DrawTargetRecording::DrawTargetRecording(
@@ -691,12 +702,16 @@ void DrawTargetRecording::DrawFilter(FilterNode* aNode, const Rect& aSourceRect,
 
   MOZ_ASSERT(mRecorder->HasStoredObject(aNode));
 
+  MatrixScales scales = mTransform.ScaleFactors();
+  mRecorder->NoteFilterDrawScale(
+      std::max(std::abs(scales.xScale), std::abs(scales.yScale)));
+
   RecordEventSelf(RecordedDrawFilter(aNode, aSourceRect, aDestPoint, aOptions));
 }
 
 already_AddRefed<FilterNode> DrawTargetRecording::CreateFilter(
     FilterType aType) {
-  RefPtr retNode = MakeRefPtr<FilterNodeRecording>(mRecorder);
+  RefPtr retNode = MakeRefPtr<FilterNodeRecording>(mRecorder, Some(aType));
 
   RecordEventSelfSkipFlushTransform(RecordedFilterNodeCreation(retNode, aType));
 

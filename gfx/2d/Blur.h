@@ -146,6 +146,12 @@ class GFX2D_API GaussianBlur final {
   static IntSize CalculateBlurRadius(const Point& aStandardDeviation);
   static Float CalculateBlurSigma(int32_t aBlurRadius);
 
+  /**
+   * Software blur filters clamp their standard deviation to this value, in
+   * filter space, for performance reasons.
+   */
+  static constexpr Float kMaxSoftwareStdDeviation = 100.0f;
+
  private:
   /**
    * A rect indicating the area where blurring is unnecessary, and the blur

@@ -5,6 +5,7 @@
 #ifndef MOZILLA_GFX_DRAWEVENTRECORDER_H_
 #define MOZILLA_GFX_DRAWEVENTRECORDER_H_
 
+#include <algorithm>
 #include <functional>
 #include <vector>
 
@@ -36,6 +37,28 @@ class DrawEventRecorderPrivate : public DrawEventRecorder {
 
   DrawEventRecorderPrivate();
   virtual ~DrawEventRecorderPrivate();
+
+  /**
+   * An upper bound of the blur standard deviations drawn through filters so
+   * far, in device pixels.
+   */
+  Float MaxBlurStdDeviation() const { return mMaxBlurStdDeviation; }
+  /**
+   * Called when a blur filter's standard deviation is recorded, in filter
+   * space.
+   */
+  void NoteFilterBlurStdDeviation(Float aStdDeviation) {
+    mMaxFilterBlurStdDeviation =
+        std::max(mMaxFilterBlurStdDeviation, aStdDeviation);
+  }
+  /**
+   * Called when a filter is drawn, with the scale from filter space to device
+   * space. Assumes the filter may contain any of the blurs recorded so far.
+   */
+  void NoteFilterDrawScale(Float aScale) {
+    mMaxBlurStdDeviation =
+        std::max(mMaxBlurStdDeviation, mMaxFilterBlurStdDeviation * aScale);
+  }
   RecorderType GetRecorderType() const override {
     return RecorderType::PRIVATE;
   }
@@ -292,6 +315,8 @@ class DrawEventRecorderPrivate : public DrawEventRecorder {
   ExternalImagesHolder mExternalImages;
   bool mExternalFonts;
   bool mSupportsGlyphSourceText = false;
+  Float mMaxFilterBlurStdDeviation = 0.0f;
+  Float mMaxBlurStdDeviation = 0.0f;
 };
 
 typedef std::function<void(MemStream& aStream,
