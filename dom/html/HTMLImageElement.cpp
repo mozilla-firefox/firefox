@@ -1181,15 +1181,8 @@ void HTMLImageElement::InvalidateAttributeMapping() {
     return;
   }
 
-  // Note: Unfortunately, we have to use RESTYLE_SELF, instead of using
-  // RESTYLE_STYLE_ATTRIBUTE or other ways, to avoid re-selector-match because
-  // we are using Gecko_GetExtraContentStyleDeclarations() to retrieve the
-  // extra declaration block from |this|'s width and height attributes, and
-  // other restyle hints seems not enough.
-  // FIXME: We may refine this together with the restyle for presentation
-  // attributes in RestyleManger::AttributeChagned()
   presContext->RestyleManager()->PostRestyleEvent(
-      this, RestyleHint::RESTYLE_SELF, nsChangeHint(0));
+      this, RestyleHint::RESTYLE_PRES_HINTS, nsChangeHint(0));
 }
 
 void HTMLImageElement::SetResponsiveSelector(

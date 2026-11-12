@@ -100,6 +100,27 @@ impl CascadePriority {
         RuleCascadeFlags::empty(),
     );
 
+    /// Same but for animations.
+    pub const ANIMATIONS: Self = Self::new(
+        CascadeLevel::new(CascadeOrigin::Animations),
+        LayerOrder::root(),
+        RuleCascadeFlags::empty(),
+    );
+
+    /// Same but for SMIL.
+    pub const SMIL: Self = Self::new(
+        CascadeLevel::new(CascadeOrigin::SMILOverride),
+        LayerOrder::root(),
+        RuleCascadeFlags::empty(),
+    );
+
+    /// Same but for pres hints.
+    pub const PRES_HINTS: Self = Self::new(
+        CascadeLevel::new(CascadeOrigin::PresHints),
+        LayerOrder::root(),
+        RuleCascadeFlags::empty(),
+    );
+
     /// Construct a new CascadePriority for a given (level, order, flags) triple.
     pub const fn new(
         cascade_level: CascadeLevel,
@@ -160,6 +181,12 @@ impl CascadePriority {
             flags: self.flags,
             layer_order: self.layer_order,
         }
+    }
+
+    /// Whether this cascade priority is important or not.
+    #[inline]
+    pub fn is_important(&self) -> bool {
+        self.cascade_level.is_important()
     }
 
     /// Convert this priority from "non-important" to "important", if needed.

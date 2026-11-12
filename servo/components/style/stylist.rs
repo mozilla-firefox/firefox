@@ -1456,24 +1456,17 @@ impl Stylist {
             let mut inputs = CascadeInputs::new_from_style(style);
             // @position-try doesn't care about any :visited-dependent property.
             inputs.visited_rules = None;
-            let rules = inputs.rules.as_ref().unwrap_or(self.rule_tree.root());
-            let mut important_rules_changed = false;
             if let Some(fallback_block) = fallback_block {
-                let new_rules = self.rule_tree.update_rule_at_level(
+                let mut rules = inputs
+                    .rules
+                    .unwrap_or_else(|| self.rule_tree.root().clone());
+                self.rule_tree.replace_single_rule_at_level(
                     CascadeLevel::new(CascadeOrigin::PositionFallback),
                     LayerOrder::root(),
                     Some(fallback_block.borrow_arc()),
-                    rules,
-                    guards,
-                    &mut important_rules_changed,
+                    &mut rules,
                 );
-                if new_rules.is_some() {
-                    inputs.rules = new_rules;
-                } else {
-                    // This will return an identical style to `style`. We could consider optimizing
-                    // this a bit more but for now just perform the cascade, this can only happen with
-                    // the same position-try name repeated multiple times anyways.
-                }
+                inputs.rules = Some(rules);
             }
             inputs
         };

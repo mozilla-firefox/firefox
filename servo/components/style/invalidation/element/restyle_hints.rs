@@ -64,6 +64,9 @@ bitflags! {
         /// We don't need to match this element but do a selector match of it's
         /// children if they are affected by style container queries.
         const RESTYLE_CHILD_IF_AFFECTED_BY_STYLE_QUERIES = 1 <<14;
+
+        /// Replace presentational hints without re-running selector matching.
+        const RESTYLE_PRES_HINTS = 1 << 15;
     }
 }
 
@@ -138,7 +141,9 @@ impl RestyleHint {
 
     /// Returns a hint that contains all the replacement hints.
     pub fn replacements() -> Self {
-        RestyleHint::RESTYLE_STYLE_ATTRIBUTE | Self::for_animations()
+        RestyleHint::RESTYLE_STYLE_ATTRIBUTE
+            | RestyleHint::RESTYLE_PRES_HINTS
+            | Self::for_animations()
     }
 
     /// The replacements for the animation cascade levels.

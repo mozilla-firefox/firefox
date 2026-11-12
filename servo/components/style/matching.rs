@@ -20,13 +20,11 @@ use crate::dom::TElement;
 use crate::dom::TNode;
 use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::properties::ComputedValues;
-use crate::properties::PropertyDeclarationBlock;
 use crate::properties::longhands::display::computed_value::T as Display;
 #[cfg(feature = "servo")]
 use crate::rule_tree::RuleCascadeFlags;
-use crate::rule_tree::{CascadeLevel, CascadeOrigin, StrongRuleNode};
+use crate::rule_tree::{CascadeLevel, CascadeOrigin};
 use crate::selector_parser::{PseudoElement, RestyleDamage};
-use crate::shared_lock::Locked;
 use crate::style_resolver::StyleResolverForElement;
 use crate::style_resolver::{PseudoElementResolution, ResolvedElementStyles};
 use crate::stylesheets::layer_rule::LayerOrder;
@@ -34,7 +32,7 @@ use crate::stylist::RuleInclusion;
 use crate::traversal_flags::TraversalFlags;
 use crate::values::generics::animation::GenericAnimationTimeline;
 use crate::values::specified::animation::Scroller;
-use servo_arc::{Arc, ArcBorrow};
+use servo_arc::Arc;
 
 /// Represents the result of comparing an element's old and new style.
 #[derive(Debug)]
@@ -71,31 +69,6 @@ enum CascadeVisitedMode {
 }
 
 trait PrivateMatchMethods: TElement {
-    fn replace_single_rule_node(
-        context: &SharedStyleContext,
-        level: CascadeLevel,
-        layer_order: LayerOrder,
-        pdb: Option<ArcBorrow<Locked<PropertyDeclarationBlock>>>,
-        path: &mut StrongRuleNode,
-    ) -> bool {
-        let stylist = &context.stylist;
-        let guards = &context.guards;
-
-        let mut important_rules_changed = false;
-        let new_node = stylist.rule_tree().update_rule_at_level(
-            level,
-            layer_order,
-            pdb,
-            path,
-            guards,
-            &mut important_rules_changed,
-        );
-        if let Some(n) = new_node {
-            *path = n;
-        }
-        important_rules_changed
-    }
-
     /// Updates the rule nodes without re-running selector matching, using just
     /// the rule tree, for a specific visited mode.
     ///
@@ -122,29 +95,40 @@ trait PrivateMatchMethods: TElement {
             None => return false,
         };
 
+        let rule_tree = context.shared.stylist.rule_tree();
+        let guards = &context.shared.guards;
         let mut result = false;
+        if replacements.contains(RestyleHint::RESTYLE_PRES_HINTS) {
+            use selectors::matching::VisitedHandlingMode;
+            let mut hints = smallvec::SmallVec::<[_; 3]>::new();
+            self.synthesize_presentational_hints_for_legacy_attributes(
+                match cascade_visited {
+                    CascadeVisitedMode::Unvisited => VisitedHandlingMode::AllLinksUnvisited,
+                    CascadeVisitedMode::Visited => VisitedHandlingMode::RelevantLinkVisited,
+                },
+                &mut hints,
+            );
+            rule_tree.replace_pres_hints(&hints, primary_rules);
+        }
         if replacements.contains(RestyleHint::RESTYLE_STYLE_ATTRIBUTE) {
             let style_attribute = self.style_attribute();
-            result |= Self::replace_single_rule_node(
-                context.shared,
+            // Replace !important first since if it exists it is in the shorter path.
+            result |= rule_tree.replace_single_rule_at_level(
+                CascadeLevel::same_tree_author_important(),
+                LayerOrder::style_attribute(),
+                style_attribute.filter(|attr| attr.read_with(guards.author).any_important()),
+                primary_rules,
+            );
+            result |= rule_tree.replace_single_rule_at_level(
                 CascadeLevel::same_tree_author_normal(),
                 LayerOrder::style_attribute(),
                 style_attribute,
                 primary_rules,
             );
-            result |= Self::replace_single_rule_node(
-                context.shared,
-                CascadeLevel::same_tree_author_important(),
-                LayerOrder::style_attribute(),
-                style_attribute,
-                primary_rules,
-            );
         }
-
         if replacements.intersects(RestyleHint::for_animations()) {
             if replacements.contains(RestyleHint::RESTYLE_SMIL) {
-                Self::replace_single_rule_node(
-                    context.shared,
+                rule_tree.replace_single_rule_at_level(
                     CascadeLevel::new(CascadeOrigin::SMILOverride),
                     LayerOrder::root(),
                     self.smil_override(),
@@ -153,8 +137,7 @@ trait PrivateMatchMethods: TElement {
             }
 
             if replacements.contains(RestyleHint::RESTYLE_CSS_TRANSITIONS) {
-                Self::replace_single_rule_node(
-                    context.shared,
+                rule_tree.replace_single_rule_at_level(
                     CascadeLevel::new(CascadeOrigin::Transitions),
                     LayerOrder::root(),
                     self.transition_rule(context.shared)
@@ -165,8 +148,7 @@ trait PrivateMatchMethods: TElement {
             }
 
             if replacements.contains(RestyleHint::RESTYLE_CSS_ANIMATIONS) {
-                Self::replace_single_rule_node(
-                    context.shared,
+                rule_tree.replace_single_rule_at_level(
                     CascadeLevel::new(CascadeOrigin::Animations),
                     LayerOrder::root(),
                     self.animation_rule(context.shared)

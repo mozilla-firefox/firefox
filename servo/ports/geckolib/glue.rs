@@ -1121,10 +1121,10 @@ pub extern "C" fn Servo_StyleSet_GetBaseComputedValuesForElement(
     };
 
     let doc_data = raw_style_set.borrow();
-    let without_animations_rules = doc_data.stylist.rule_tree().remove_animation_rules(rules);
-    if without_animations_rules == *rules {
+    let Some(without_animations_rules) = doc_data.stylist.rule_tree().remove_animation_rules(rules)
+    else {
         return computed_values.clone_arc().into();
-    }
+    };
 
     let element = GeckoElement(element);
 

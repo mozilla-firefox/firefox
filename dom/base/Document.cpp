@@ -9743,11 +9743,7 @@ void Document::ScheduleForPresAttrEvaluation(Element* aElement) {
   DebugOnly<bool> inserted = mLazyPresElements.EnsureInserted(aElement);
   MOZ_ASSERT(inserted);
   if (aElement->HasServoData()) {
-    // TODO(emilio): RESTYLE_SELF is too strong, there should be no need to
-    // re-selector-match, but right now this is needed to pick up the new mapped
-    // attributes. We need something like RESTYLE_STYLE_ATTRIBUTE but for mapped
-    // attributes.
-    nsLayoutUtils::PostRestyleEvent(aElement, RestyleHint::RESTYLE_SELF,
+    nsLayoutUtils::PostRestyleEvent(aElement, RestyleHint::RESTYLE_PRES_HINTS,
                                     nsChangeHint(0));
   } else if (auto* presContext = GetPresContext()) {
     presContext->RestyleManager()->IncrementUndisplayedRestyleGeneration();

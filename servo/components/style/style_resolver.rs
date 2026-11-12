@@ -674,13 +674,7 @@ where
             .shared
             .stylist
             .rule_tree()
-            .remove_transition_rule_if_applicable(rule_node);
-        if without_transition_rules == *rule_node {
-            // We don't have transition rule in this case, so return None to let
-            // the caller use the original ComputedValues.
-            return None;
-        }
-
+            .remove_transition_rule_if_applicable(rule_node)?;
         // FIXME(bug 868975): We probably need to transition visited style as well.
         let inputs = CascadeInputs {
             rules: Some(without_transition_rules),

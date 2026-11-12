@@ -1674,6 +1674,8 @@ impl<'le> TElement for GeckoElement<'le> {
         }
 
         // Support for link, vlink, and alink presentation hints on <body>
+        // FIXME(emilio): It seems we should change color resolution or so instead like we do for
+        // Canvas/CanvasText?
         if self.is_link() {
             // Unvisited vs. visited styles are computed up-front based on the
             // visited mode (not the element's actual state).
