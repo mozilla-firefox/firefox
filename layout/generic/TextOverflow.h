@@ -8,6 +8,7 @@
 #include <algorithm>
 
 #include "mozilla/Likely.h"
+#include "mozilla/Maybe.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/WritingModes.h"
 #include "nsDisplayList.h"
@@ -98,8 +99,7 @@ class TextOverflow final {
 
   // Edges to align the IStart and IEnd markers to.
   struct AlignmentEdges {
-    AlignmentEdges()
-        : mIStart(0), mIEnd(0), mIEndOuter(0), mAssignedInner(false) {}
+    constexpr AlignmentEdges() = default;
     void AccumulateInner(WritingMode aWM, const LogicalRect& aRect) {
       if (MOZ_LIKELY(mAssignedInner)) {
         mIStart = std::min(mIStart, aRect.IStart(aWM));
@@ -111,21 +111,22 @@ class TextOverflow final {
       }
     }
     void AccumulateOuter(WritingMode aWM, const LogicalRect& aRect) {
-      mIEndOuter = std::max(mIEndOuter, aRect.IEnd(aWM));
+      mIEndOuter =
+          Some(std::max(mIEndOuter.valueOr(aRect.IEnd(aWM)), aRect.IEnd(aWM)));
     }
     nscoord ISize() { return mIEnd - mIStart; }
 
     // The outermost edges of all text and atomic inline-level frames that are
     // inside the area between the markers.
-    nscoord mIStart;
-    nscoord mIEnd;
+    nscoord mIStart = 0;
+    nscoord mIEnd = 0;
 
     // The closest IEnd edge of all text and atomic inline-level frames that
     // fall completely before the IStart edge of the content area.  (Used to
     // align a block ellipsis when there are no visible frames to align to.)
-    nscoord mIEndOuter;
+    Maybe<nscoord> mIEndOuter;
 
-    bool mAssignedInner;
+    bool mAssignedInner = false;
   };
 
   struct InnerClipEdges {

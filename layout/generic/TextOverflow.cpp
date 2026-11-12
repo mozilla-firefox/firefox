@@ -562,6 +562,7 @@ LogicalRect TextOverflow::ExamineLineFrames(nsLineBox* aLine,
   bool clippedIStartMarker = false;
   bool clippedIEndMarker = false;
   do {
+    aAlignmentEdges->mIEndOuter.reset();
     // Setup marker strings as needed.
     if (guessIStart) {
       mIStart.SetupString(mBlock);
@@ -600,7 +601,6 @@ LogicalRect TextOverflow::ExamineLineFrames(nsLineBox* aLine,
     }
     if (!foundVisibleTextOrAtomic && retryEmptyLine) {
       aAlignmentEdges->mAssignedInner = false;
-      aAlignmentEdges->mIEndOuter = 0;
       aFramesToHide->Clear();
       pass = -1;
       if (mIStart.IsNeeded() && mIStart.mActive && !clippedIStartMarker) {
@@ -637,18 +637,17 @@ LogicalRect TextOverflow::ExamineLineFrames(nsLineBox* aLine,
       mIStart.mActive = guessIStart = istartWantsMarker;
       mIEnd.mISize = mIEnd.mIntrinsicISize;
       mIEnd.mActive = guessIEnd = iendWantsMarker;
-      // If we wanted to place a block ellipsis but didn't, due to not having
-      // any visible content to align to or the line's content being scrolled
-      // out of view, then clip the ellipsis so that it looks like it is aligned
-      // with the out of view content.
-      if (mIEnd.IsNeeded() && mIEnd.mActive && mIEnd.HasBlockEllipsis()) {
+      // Clip the block ellipsis only when there is out-of-view content to align
+      // it to, rather than a genuinely empty line.
+      if (mIEnd.IsNeeded() && mIEnd.mActive && mIEnd.HasBlockEllipsis() &&
+          aAlignmentEdges->mIEndOuter) {
         NS_ASSERTION(nonSnappedContentArea.IStart(mBlockWM) >
-                         aAlignmentEdges->mIEndOuter,
+                         *aAlignmentEdges->mIEndOuter,
                      "Expected the alignment edge for the out of view content "
                      "to be before the start of the content area");
         mIEnd.mISize = std::max(
             mIEnd.mIntrinsicISize - (nonSnappedContentArea.IStart(mBlockWM) -
-                                     aAlignmentEdges->mIEndOuter),
+                                     *aAlignmentEdges->mIEndOuter),
             0);
       }
       continue;
@@ -736,16 +735,12 @@ void TextOverflow::ProcessLine(const nsDisplayListSet& aLists, nsLineBox* aLine,
                               alignmentEdges.ISize(), 1);
     insideMarkersArea.IntersectRect(insideMarkersArea, alignmentRect);
   } else {
-    // There was no content on the line that was visible at the current scolled
-    // position.  If we wanted to place a block ellipsis but failed due to
-    // having no visible content to align it to, we still need to ensure it
-    // is displayed.  It goes at the start of the line, even though it's an
-    // IEnd marker, since that is the side of the line that the content has
-    // been scrolled past.  We set the insideMarkersArea to a zero-sized
-    // rectangle placed next to the scrolled-out-of-view content.
+    // Place the block ellipsis next to scrolled-out-of-view content, or at the
+    // line's start if there is no content to align it to.
     if (mIEnd.HasBlockEllipsis()) {
-      insideMarkersArea = LogicalRect(mBlockWM, alignmentEdges.mIEndOuter,
-                                      insideMarkersArea.BStart(mBlockWM), 0, 1);
+      insideMarkersArea = LogicalRect(
+          mBlockWM, alignmentEdges.mIEndOuter.valueOr(aLine->IStart()),
+          insideMarkersArea.BStart(mBlockWM), 0, 1);
     }
   }
 
