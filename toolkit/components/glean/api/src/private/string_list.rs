@@ -189,7 +189,6 @@ mod test {
     use crate::{common_test::*, ipc, metrics};
 
     #[test]
-    #[ignore] // TODO: Enable them back when bug 1677454 lands.
     fn sets_string_list_value() {
         let _lock = lock_test();
 
@@ -207,7 +206,6 @@ mod test {
     }
 
     #[test]
-    #[ignore] // TODO: Enable them back when bug 1677454 lands.
     fn string_list_ipc() {
         // StringListMetric supports IPC only for `add`, not `set`.
         let _lock = lock_test();
@@ -227,14 +225,12 @@ mod test {
             child_metric.set(vec!["not gonna be set".to_string()]);
 
             child_metric.add("child_value");
-            assert!(ipc::take_buf().unwrap().len() > 0);
         }
 
-        // TODO: implement replay. See bug 1646165.
-        // Then perform the replay and assert we have the values from both "processes".
+        // Perform the replay and assert we have the values from both "processes".
         assert!(ipc::replay_from_buf(&ipc::take_buf().unwrap()).is_ok());
         assert_eq!(
-            vec!["test_string_value", "another test value"],
+            vec!["test_string_value", "another test value", "child_value"],
             parent_metric
                 .test_get_value(Some("test-ping".to_string()))
                 .unwrap()
