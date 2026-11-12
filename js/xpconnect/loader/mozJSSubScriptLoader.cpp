@@ -325,8 +325,7 @@ static bool CheckAllowedURI(JSContext* aCx, bool aAllowUnsafe, nsIURI* aURI) {
   }
 
   if (aAllowUnsafe || StaticPrefs::security_allow_unsafe_subscript_loads()) {
-    // TODO(Bug 1976115) experiment_apis scripts are run from jar:file: URL
-    // instead of moz-extension:-URL
+    // TODO(Bug 2091786) Tighten or remove the file: and jar: exceptions.
     if (aURI->SchemeIs("file") || aURI->SchemeIs("jar")) {
       return true;
     }

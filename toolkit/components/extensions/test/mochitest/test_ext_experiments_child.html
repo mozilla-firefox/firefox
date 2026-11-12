@@ -1,0 +1,102 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test loading experiment API child scripts in the extension process</title>
+  <script type="text/javascript" src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="/tests/SimpleTest/ExtensionTestUtils.js"></script>
+  <script type="text/javascript" src="head.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css">
+</head>
+<body>
+
+<script type="text/javascript">
+"use strict";
+
+// This is a mochitest to make sure that we verify the behavior with the content
+// sandbox. xpcshell tests run with MOZ_DISABLE_CONTENT_SANDBOX=1 which makes
+// them an ill fit for verifying correctness with the sandbox.
+
+// The experiment is provided by a separate extension, so that its package has
+// not already been opened in the extension process by other loads.
+add_task(async function test_unbundled_experiment_in_child_process() {
+  let apiExtension = ExtensionTestUtils.loadExtension({
+    isPrivileged: true,
+    manifest: {
+      browser_specific_settings: {
+        gecko: { id: "childexp@experiments.addons.mozilla.org" },
+      },
+      experiment_apis: {
+        childexp: {
+          schema: "schema.json",
+          child: {
+            scopes: ["addon_child"],
+            script: "child.js",
+            paths: [["experiments", "childexp"]],
+          },
+        },
+      },
+    },
+    files: {
+      "schema.json": JSON.stringify([
+        {
+          namespace: "experiments.childexp",
+          functions: [
+            {
+              name: "ping",
+              type: "function",
+              parameters: [],
+              returns: { type: "string" },
+            },
+          ],
+        },
+      ]),
+      "child.js": () => {
+        /* globals ExtensionAPI */
+        this.childexp = class extends ExtensionAPI {
+          getAPI() {
+            return {
+              experiments: {
+                childexp: {
+                  ping() {
+                    return "pong";
+                  },
+                },
+              },
+            };
+          }
+        };
+      },
+    },
+  });
+
+  let extension = ExtensionTestUtils.loadExtension({
+    isPrivileged: true,
+    manifest: { permissions: ["experiments.childexp"] },
+    background() {
+      let result;
+      try {
+        result = browser.experiments.childexp.ping();
+      } catch (e) {
+        result = String(e);
+      }
+      browser.test.sendMessage("result", result);
+    },
+  });
+
+  await apiExtension.startup();
+  await extension.startup();
+
+  is(
+    await extension.awaitMessage("result"),
+    "pong",
+    "Experiment child script is loaded in the extension process"
+  );
+
+  await extension.unload();
+  await apiExtension.unload();
+});
+</script>
+
+</body>
+</html>

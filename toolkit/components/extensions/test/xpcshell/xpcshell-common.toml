@@ -406,9 +406,6 @@ skip-if = [
 ["test_ext_eventpage_warning.js"]
 
 ["test_ext_experiments.js"]
-skip-if = [
-  "isolated_process", # Bug 1709961
-]
 
 ["test_ext_experiments_console.js"]
 

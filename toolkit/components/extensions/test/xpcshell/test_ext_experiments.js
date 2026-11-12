@@ -509,3 +509,28 @@ add_task(async function test_experiment_module_not_executed_after_shutdown() {
     "Module compiled during shutdown is not executed"
   );
 });
+
+add_task(async function test_experiment_module_urls() {
+  let extension = ExtensionTestUtils.loadExtension({
+    isPrivileged: true,
+    manifest: { experiment_apis: fooExperimentAPIs },
+    files: fooExperimentFiles,
+  });
+  await extension.startup();
+
+  let { modules } = extension.extension;
+  let getModuleURL = scope =>
+    modules[scope].deserialize({}, true).modules.get("foo").url;
+  equal(
+    getModuleURL("parent"),
+    `moz-extension://${extension.uuid}/parent.js`,
+    "Parent module is loaded from a moz-extension: URL"
+  );
+  equal(
+    getModuleURL("child"),
+    `moz-extension://${extension.uuid}/child.js`,
+    "Child module is loaded from a moz-extension: URL"
+  );
+
+  await extension.unload();
+});
