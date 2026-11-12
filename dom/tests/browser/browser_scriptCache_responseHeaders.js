@@ -24,7 +24,12 @@ add_task(async function test_redirectCache() {
   await SpecialPowers.pushPrefEnv({
     set: [["dom.script_loader.experimental.navigation_cache", true]],
   });
-  registerCleanupFunction(() => SpecialPowers.popPrefEnv());
+  registerCleanupFunction(() => {
+    SpecialPowers.popPrefEnv();
+    // The script served by responseHeaders_server.sjs sets a cookie, which
+    // would match the cached ?vary response if the test runs again.
+    Services.cookies.removeCookiesFromExactHost("example.com", "{}");
+  });
 
   const tests = [
     {
