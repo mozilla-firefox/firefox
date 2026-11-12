@@ -427,9 +427,8 @@ class WindowGlobalParent final : public WindowContext,
       GetStorageAccessPermissionResolver&& aResolve);
 
   mozilla::ipc::IPCResult RecvSetCookies(
-      const nsCString& aBaseDomain, const OriginAttributes& aOriginAttributes,
-      nsIURI* aHost, bool aIsThirdParty,
-      const nsTArray<CookieStruct>& aCookies);
+      const OriginAttributes& aOriginAttributes, nsIURI* aHost,
+      bool aIsThirdParty, const nsTArray<CookieStruct>& aCookies);
 
   mozilla::ipc::IPCResult RecvRecordUserActivationForBTP();
 

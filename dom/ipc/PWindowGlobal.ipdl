@@ -251,8 +251,7 @@ parent:
   async GetStorageAccessPermission(bool aIncludeIdentityCredential) returns(uint32_t permission_action);
 
 
-  async SetCookies(nsCString baseDomain,
-                                      OriginAttributes attrs,
+  async SetCookies(OriginAttributes attrs,
                                       nullable nsIURI host,
                                       bool isThirdParty,
                                       CookieStruct[] cookies);

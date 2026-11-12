@@ -2134,8 +2134,12 @@ void WindowGlobalParent::SetShouldReportHasBlockedOpaqueResponse(
 }
 
 IPCResult WindowGlobalParent::RecvSetCookies(
-    const nsCString& aBaseDomain, const OriginAttributes& aOriginAttributes,
-    nsIURI* aHost, bool aIsThirdParty, const nsTArray<CookieStruct>& aCookies) {
+    const OriginAttributes& aOriginAttributes, nsIURI* aHost,
+    bool aIsThirdParty, const nsTArray<CookieStruct>& aCookies) {
+  if (!aHost) {
+    return IPC_FAIL(this, "aHost must not be null");
+  }
+
   // Only content principals should be setting cookies via this path.
   // Reject non-content principals (system, null, expanded) to prevent a
   // compromised content process from bypassing the baseDomain check below.
@@ -2148,12 +2152,20 @@ IPCResult WindowGlobalParent::RecvSetCookies(
   // file:// principals have no meaningful baseDomain for cookie validation,
   // skip the domain check.
   if (!documentPrincipal->SchemeIs("file")) {
+    nsCOMPtr<nsIEffectiveTLDService> tldService =
+        components::EffectiveTLD::Service();
+    NS_ENSURE_TRUE(tldService, IPC_OK());
+
     nsAutoCString principalBaseDomain;
+    nsAutoCString hostBaseDomain;
+    bool requireHostMatch = false;
     if (NS_FAILED(net::CookieCommons::GetBaseDomain(documentPrincipal,
                                                     principalBaseDomain)) ||
-        !principalBaseDomain.Equals(aBaseDomain)) {
-      return IPC_FAIL(
-          this, "SetCookies baseDomain does not match document principal");
+        NS_FAILED(net::CookieCommons::GetBaseDomain(
+            tldService, aHost, hostBaseDomain, requireHostMatch)) ||
+        !principalBaseDomain.Equals(hostBaseDomain)) {
+      return IPC_FAIL(this,
+                      "SetCookies host does not match document principal");
     }
   }
 
@@ -2170,23 +2182,8 @@ IPCResult WindowGlobalParent::RecvSetCookies(
   NS_ENSURE_TRUE(csParent, IPC_OK());
   auto* cs = static_cast<net::CookieServiceParent*>(csParent);
 
-  if (!aHost) {
-    return IPC_FAIL(this, "aHost must not be null");
-  }
-
-  // Authorize the write if the process has already loaded this cookie key, or
-  // could legitimately load this principal. The latter covers documents with no
-  // channel registration (e.g. file://), which never populate the key set.
-  nsCOMPtr<nsIPrincipal> principal =
-      BasePrincipal::CreateContentPrincipal(aHost, aOriginAttributes);
-  if (!cs->ContentProcessHasCookie(aBaseDomain, aOriginAttributes) &&
-      !contentParent->ValidatePrincipal(principal)) {
-    return IPC_FAIL(this,
-                    "Content process not authorized for this cookie domain");
-  }
-
-  return cs->SetCookies(aBaseDomain, aOriginAttributes, aHost, aIsThirdParty,
-                        aCookies, GetBrowsingContext());
+  return cs->SetCookies(aOriginAttributes, aHost, aIsThirdParty, aCookies,
+                        GetBrowsingContext());
 }
 
 IPCResult WindowGlobalParent::RecvRecordUserActivationForBTP() {

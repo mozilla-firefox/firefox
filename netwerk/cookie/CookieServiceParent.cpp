@@ -324,10 +324,26 @@ void CookieServiceParent::ActorDestroy(ActorDestroyReason aWhy) {
 }
 
 IPCResult CookieServiceParent::RecvSetCookies(
-    const nsCString& aBaseDomain, const OriginAttributes& aOriginAttributes,
-    nsIURI* aHost, bool aIsThirdParty, const nsTArray<CookieStruct>& aCookies) {
+    const OriginAttributes& aOriginAttributes, nsIURI* aHost,
+    bool aIsThirdParty, const nsTArray<CookieStruct>& aCookies) {
+  return SetCookies(aOriginAttributes, aHost, aIsThirdParty, aCookies);
+}
+
+IPCResult CookieServiceParent::SetCookies(
+    const OriginAttributes& aOriginAttributes, nsIURI* aHost,
+    bool aIsThirdParty, const nsTArray<CookieStruct>& aCookies,
+    dom::BrowsingContext* aBrowsingContext) {
+  // Deserialize URI. Having a host URI is mandatory and should always be
+  // provided by the child; thus we consider failure fatal.
   if (!aHost) {
     return IPC_FAIL(this, "aHost must not be null");
+  }
+
+  nsAutoCString baseDomain;
+  bool requireHostMatch = false;
+  if (NS_FAILED(CookieCommons::GetBaseDomain(mTLDService, aHost, baseDomain,
+                                             requireHostMatch))) {
+    return IPC_FAIL(this, "Invalid host in set-cookie request");
   }
 
   // Authorize the write if the process has already loaded this cookie key, or
@@ -336,27 +352,13 @@ IPCResult CookieServiceParent::RecvSetCookies(
   auto* contentParent = static_cast<dom::ContentParent*>(Manager()->Manager());
   nsCOMPtr<nsIPrincipal> principal =
       BasePrincipal::CreateContentPrincipal(aHost, aOriginAttributes);
-  if (!ContentProcessHasCookie(aBaseDomain, aOriginAttributes) &&
+  if (!ContentProcessHasCookie(baseDomain, aOriginAttributes) &&
       !(contentParent && contentParent->ValidatePrincipal(principal))) {
     return IPC_FAIL(this, "Invalid set-cookie request from content process");
   }
 
-  return SetCookies(aBaseDomain, aOriginAttributes, aHost, aIsThirdParty,
-                    aCookies);
-}
-
-IPCResult CookieServiceParent::SetCookies(
-    const nsCString& aBaseDomain, const OriginAttributes& aOriginAttributes,
-    nsIURI* aHost, bool aIsThirdParty, const nsTArray<CookieStruct>& aCookies,
-    dom::BrowsingContext* aBrowsingContext) {
   if (!mCookieService) {
     return IPC_OK();
-  }
-
-  // Deserialize URI. Having a host URI is mandatory and should always be
-  // provided by the child; thus we consider failure fatal.
-  if (!aHost) {
-    return IPC_FAIL(this, "aHost must not be null");
   }
 
   // We set the cookie processing flag to true while processing this cookie
@@ -364,7 +366,7 @@ IPCResult CookieServiceParent::SetCookies(
   CookieProcessingGuard guard(this);
 
   nsICookieValidation::ValidationError error =
-      mCookieService->SetCookiesFromIPC(aBaseDomain, aOriginAttributes, aHost,
+      mCookieService->SetCookiesFromIPC(baseDomain, aOriginAttributes, aHost,
                                         aIsThirdParty, aCookies,
                                         aBrowsingContext);
   MOZ_DIAGNOSTIC_ASSERT(error == nsICookieValidation::eOK);

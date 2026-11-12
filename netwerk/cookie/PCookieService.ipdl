@@ -31,8 +31,7 @@ namespace net {
   manager PNecko;
 
 parent:
-  [Nested=inside_cpow] async SetCookies(nsCString baseDomain,
-                                        OriginAttributes attrs,
+  [Nested=inside_cpow] async SetCookies(OriginAttributes attrs,
                                         nullable nsIURI host,
                                         bool isThirdParty,
                                         CookieStruct[] cookies);
