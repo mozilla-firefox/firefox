@@ -387,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Hlasové vyhľadávanie</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Zvuk sa prevádza na text pomocou služby Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Vypočutie stránok</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Vaše zariadenie môže pomocou umelej inteligencie čítať text nahlas. Text aj zvuk zostávajú súkromné.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Zablokovať funkcie využívajúce umelú inteligenciu?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -717,6 +721,8 @@
   <string name="preferences_search">Vyhľadávanie</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Vyhľadávače</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Pridať miniaplikáciu vyhľadávania na domovskú obrazovku</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Miniaplikácia na domovskú obrazovku</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -969,6 +975,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Kolekcia rozšírení bola upravená. Aplikácia sa ukončuje a zmeny budú použité…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Chcete odstrániť %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Rozšírenie aj jeho nastavenia sa odstránia z tohto zariadenia.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Odstrániť</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Zrušiť</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1133,6 +1151,12 @@
   <string name="preferences_sync_category">Vyberte si, čo chcete synchronizovať</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Synchronizované údaje</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Synchronizovať toto zariadenie</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Vaše údaje sú zálohované a dostupné v synchronizovaných zariadeniach.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Používajú sa dáta uložené vo vašom účte %1$su.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Spravujte, čo sa synchronizuje na všetkých vašich pripojených zariadeniach</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -3897,6 +3921,10 @@
   <string name="protection_panel_privacy_and_security_settings_2">Nastavenia ochrany súkromia</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Oprávnenia</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Zabezpečené pripojenie</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">Značka dôvery EÚ</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4488,6 +4516,8 @@
   <string name="wrex_widget_match_suspended">Prerušené</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Odložené</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Aktualizovať</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Výsledky</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4496,19 +4526,57 @@
   <string name="wrex_widget_wallpapers">Tapety</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Odstrániť miniaplikáciu</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">KON.</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Polčas</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">PP</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Penalty</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Ďalšie možnosti</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s - %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, prebiehajúci zápas</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s - %3$s, %2$d : %4$d, %5$s, naživo</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Odohrané minúty: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, strana %2$d z %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Vyzerá to, že nie ste pripojení k internetu</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Skontrolujte pripojenie k internetu a skúste to znova.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Informácie o zápase teraz nemožno zobraziť</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Skúste stránku obnoviť alebo sa vráťte neskôr.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Výsledky teraz nemožno zobraziť</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Tím bude upresnený</string>
   <!--
     Privacy notice homepage banner
 

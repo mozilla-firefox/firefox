@@ -277,7 +277,7 @@
   <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_permissions_dialog_title_2">%1$s toevoegen</string>
   <!-- This is the title of a dialog that asks the users to grant optional permissions. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_optional_permissions_with_data_collection_dialog_title">%1$s vraagt aanvullende instellingen</string>
+  <string name="mozac_feature_addons_optional_permissions_with_data_collection_dialog_title">%1$s vraagt om aanvullende instellingen</string>
   <!-- This is the title of a dialog that asks the users to grant optional data collection permissions only. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_optional_permissions_with_data_collection_only_dialog_title">%1$s vraagt om aanvullende gegevensverzameling</string>
   <!-- Heading for the permissions section in the add-on install dialog. -->

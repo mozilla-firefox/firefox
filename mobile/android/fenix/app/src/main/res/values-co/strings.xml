@@ -180,6 +180,12 @@
   <string name="recently_visited_menu_item_remove">Caccià</string>
   <!-- Content description for the button which navigates the user to show all of their history. -->
   <string name="past_explorations_show_all_content_description_2">Affissà tutte l’esplurazioni scorse</string>
+  <!--
+    Browser Fragment
+
+    Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
+  -->
+  <string name="customize_menu">Persunalizà u listinu</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Pagina precedente</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -207,6 +213,10 @@
   <string name="browser_menu_no_extensions_installed_description">Nisuna estensione attivata</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Pruvà un’estensione ricumandata</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">Esaminà a messa à livellu di %1$s</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Esaminà i parametri à mette à livellu</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Infurmazione nant’à u contu</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -377,6 +387,10 @@
   <string name="ai_controls_voice_search_title">Ricerca vucale</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">L’audio hè cunvertitu in testu da Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Stà à sente a pagina</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">U vostru apparechju pò impiegà l’IA per leghje ad alta voce. U testu è l’audio stanu cunfidenziali.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Bluccà l’amendamenti impieghendu l’IA\u00a0?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -673,6 +687,12 @@
   <string name="search_widget_voice">Ricerca vucale</string>
   <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
   <string name="search_widget_private_search">Ricerca privata</string>
+  <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for private search and for voice search -->
+  <string name="search_bar_widget_description">Barra di ricerca cù ricerca privata è vucale</string>
+  <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for image search, private search and voice search -->
+  <string name="search_bar_with_lens_widget_description">Barra di ricerca cù ricerca da a fiura, privata è vucale</string>
+  <!-- Widget description in the widget picker screen for the compact search bar widget -->
+  <string name="compact_search_bar_widget_description">Barra di ricerca cumpatta</string>
   <!--
     Preferences
 
@@ -699,6 +719,8 @@
   <string name="preferences_search">Ricerca</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Mutori di ricerca</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Aghjunghje u widget di ricerca nant’à u screnu d’accolta</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Widget nant’à u screnu d’accolta</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -788,6 +810,8 @@
   <string name="preferences_toolbar_select_shortcut">Selezziunà un accurtatoghju</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Mudificà l’accurtatoghju</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Listinu</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Mosse</string>
   <!-- Preference for settings related to visual options -->
@@ -864,6 +888,10 @@
   <string name="preferences_open_links_in_apps_ask">Dumandà prima d’apre</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">Mai</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">Multimedià</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">Apre i liami in l’appiecazione YouTube</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Allucamentu di schedariu</string>
   <!-- Preference title for downloads default location. -->
@@ -944,6 +972,18 @@
   <string name="customize_addon_collection_user_hint">Prupietariu di a cullezzione (Id. d’utilizatore)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Cullezzione d’estensioni mudificata. Chjusura di l’appiecazione per piglià i cambiamenti in contu…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Caccià %1$s\u00a0?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">L’estensione è i so parametri seranu cacciati da st’apparechju.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Caccià</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Abbandunà</string>
   <!--
     Customize Home
 
@@ -1109,6 +1149,12 @@
   <string name="preferences_sync_category">Sceglie l’infurmazioni à sincrunizà</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Dati sincrunizati</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Sincrunizà st’apparechju</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">I vostri dati sò arregistrati è dispunibule nant’à l’apparechji sincrunizati.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Impiegu di i dati arregistrati in u vostru contu %1$s.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Amministrà i dati à sincrunizà nant’à tutti i vostri apparechji cunnessi</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1247,7 +1293,13 @@
   <!-- Preference for using simple toolbar -->
   <string name="preference_simple_toolbar">Simplice</string>
   <!-- Preference for using expanded toolbar -->
-  <string name="preference_expanded_toolbar">Allargatu</string>
+  <string name="preference_expanded_toolbar">Sviluppatu</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Pusizione di a barra di ricerca nant’à a pagina d’accolta</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">À u mezu</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Insù</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Apre un’unghjetta nova</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1656,6 +1708,11 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Abbandunà</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Ozzioni addiziunale</string>
+  <!--
+    Content description for the Expand button on the contracted menu for a tab group:
+    when tapped, tabs are displayed in an expanded grid or list view, taking up the full screen.
+  -->
+  <string name="tab_groups_strip_expand_group_content_description">Sviluppà per affissà l’unghjette in screnu sanu</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">Mudificà</string>
   <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
@@ -1901,6 +1958,8 @@
   <string name="download_search_no_results_found">Nisunu risultatu trovu</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Tuttu selezziunà</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(dati)</string>
   <!--
     Downloads Content Type Filters
 
@@ -2387,6 +2446,8 @@
   <string name="sync_send_tab_empty_state_title">Nisunu apparechju cunnessu</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Per mandà un’unghjetta, cunnittitevi à u vostru contu Firefox nant’à omancu un altru apparechju.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Scopre cumu cunnette un apparechju</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">Verificate a vostra cunnessione internet</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -2952,7 +3013,7 @@
   <!-- Title of warning dialog if users have no device authentication set up -->
   <string name="logins_warning_dialog_title_2">Prutigite e vostre parolle d’intesa arregistrate</string>
   <!-- Message of warning dialog if users have no device authentication set up -->
-  <string name="logins_warning_dialog_message_2">Definite un dissegnu di chjuditura, un codice PIN o una parolla d’intesa per prutege e vostre parolle d’intesa arregistrate s’ellu ci era qualchissia chì accidissi à u vostru apparechju.</string>
+  <string name="logins_warning_dialog_message_2">Definite un dissegnu di chjuditura, un codice PIN o una parolla d’intesa per prutege e vostre parolle d’intesa arregistrate s’ellu ci sia qualchissia chì accidissi à u vostru apparechju.</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="logins_warning_dialog_later">Dopu</string>
   <!-- Positive button to send users to set up a pin of warning dialog if users have no device authentication set up -->
@@ -3083,7 +3144,7 @@
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Micca subitu</string>
   <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
-  <string name="ip_protection_connection_error_snackbar">Ùn pò micca cunnettassi à a VPN. Pruvate torna trà qualchì minutu.</string>
+  <string name="ip_protection_connection_error_snackbar">Ùn si pò micca cunnette à a VPN. Pruvate torna trà qualchì minutu.</string>
   <!-- Snackbar (in-app pop-up notification) text to signal the VPN location has been reset due to the previously selected VPN location being no longer available. -->
   <string name="ip_protection_location_selection_reset_snackbar">A pusizione VPN selezziunata hè indispunibule. Cunnessione à a pusizione ricumandata.</string>
   <!--
@@ -3198,11 +3259,19 @@
   <!-- Title of warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_title_2">Prutigite e vostre metode di pagamentu arregistrate</string>
   <!-- Message of warning dialog if users have no device authentication set up -->
-  <string name="credit_cards_warning_dialog_message_3">Definite un dissegnu di chjusura, un codice PIN o una parolla d’intesa per prutege e vostre metode di pagamentu arregistrate s’ellu ci era qualchissia chì accidissi à u vostru apparechju.</string>
+  <string name="credit_cards_warning_dialog_message_3">Definite un dissegnu di chjusura, un codice PIN o una parolla d’intesa per prutege e vostre metode di pagamentu arregistrate s’ellu ci sia qualchissia chì accidissi à u vostru apparechju.</string>
   <!-- Positive button to send users to set up a pin of warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_set_up_now">Cunfigurà subitu</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Dopu</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Prutigite i vostri dati sensibile</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">Definite un dissegnu di chjusura, un codice PIN o una parolla d’intesa per prutege i vostri dati sensibile arregistrati s’ellu ci sia qualchissia chì cunducissi a vostra vittura.</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Cunfigurà subitu</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Abbandunà</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Spalancate u vostru apparechju</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3540,7 +3609,7 @@
   -->
   <string name="a11y_action_label_collapse">riduce</string>
   <!-- Action label for elements that can be expanded if interacting with them. Talkback will append this to say "Double tap to expand". -->
-  <string name="a11y_action_label_expand">allargà</string>
+  <string name="a11y_action_label_expand">sviluppà</string>
   <!-- Action label for links to a website containing documentation about a wallpaper collection. Talkback will append this to say "Double tap to open link to learn more about this collection". -->
   <string name="a11y_action_label_wallpaper_collection_learn_more">apre u liame per sapene di più nant’à sta cullezzione</string>
   <!--
@@ -3836,6 +3905,10 @@
   <string name="protection_panel_privacy_and_security_settings_2">Parametri di cunfidenzialità</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Permessi</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Cunnessione assicurizata</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">Marca di cunfidenza di l’UE</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4402,6 +4475,79 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">quì</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">IN VIVU</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">Ritardatu</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">Interrottu</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">Attimpatu</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Attualizà</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Risultati</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Classificazioni</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Sfonduli di screnu</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Caccià u widget</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Partita finita</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Mezutempu</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Prulungazioni</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Tiri à u puntu</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Ozzioni addiziunale</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s contr’à %2$s, %3$s</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, partita in vivu</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, in vivu</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Tempu scorsu in minuti\u00a0: %1$s</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, pagina %2$d nant’à %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Pare chì vo site fora di linea</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Ci vole à verificà a vostra cunnessione internet è pruvà torna.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Ùn si pò micca affissà avà l’infurmazioni apprupositu di a partita</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Pruvate d’attualizà a pagina o verificate un’altra volta.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Ùn si pò micca affissà avà i risultati</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Squadra à determinà</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4457,8 +4603,16 @@
   <string name="lens_camera_mode_qr">Analiza di codice QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">Nisunu codice QR trovu in a fiura</string>
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Ricerca in corsu</string>
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Abbandunà</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">Ùn si pò micca caricà sta fiura.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">Ùn si pò micca caricà sta fiura. Pruvatene un’altra.</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Ùn si pò micca ottene i risultati da Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Pruvà torna</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4515,6 +4669,12 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Isulamentu di situ web</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Una prutezzione addiziunale trà i siti web chì vi aiuta à prutege i vostri dati d’una unghjetta à l’altra. L’isulamentu pò avè un effettu nant’à e perfurmenze, a stabilità, a cumpatibilità di i siti web è cumu a cronolugia di navigazione hè arregistrata.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description_2">Aghjunghje una segnatura</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Scaricà u PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
@@ -4535,6 +4695,14 @@
   <string name="pdf_tools_signature_clear_button">Squassà</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Aghjunghje</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
+  <string name="pdf_tools_signature_adding_content_description">Aghjuntu di a segnatura</string>
+  <!--
+    Listen to page
+
+    Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
+  -->
+  <string name="reader_mode_panel_content_description_2">Ozzioni di u modu di lettura</string>
   <!--
     Listen to page
 
@@ -4545,4 +4713,6 @@
   <string name="reader_mode_panel_listen_content_description">Leghje ad alta voce</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">Lettore multimedià</string>
+  <!-- Content description for the reader view button Reader view facilitates readability and has a Listen to Page feature. Button icon is a document with headphones, and is displayed next to the page URL when the feature is available. -->
+  <string name="browser_menu_read_or_listen">Modu di lettura, leghje o stà à sente a pagina</string>
 </resources>

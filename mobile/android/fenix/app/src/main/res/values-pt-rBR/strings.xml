@@ -719,6 +719,8 @@
   <string name="preferences_search">Pesquisa</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Mecanismos de pesquisa</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Adicionar widget de pesquisa à tela inicial</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Widget na tela inicial do dispositivo</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -3905,6 +3907,8 @@
   <string name="protection_panel_permissions_title">Permissões</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Conexão segura</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">Selo de confiança da UE</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4492,8 +4496,12 @@
   <string name="wrex_widget_wallpapers">Fundos de tela</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Remover widget</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Fim</string>
   <!-- Sports widget match status label shown during half-time of a match. -->
   <string name="wrex_widget_match_half_time">Intervalo</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Prorrogação</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="wrex_widget_match_penalties">Pênaltis</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->

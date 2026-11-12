@@ -387,6 +387,10 @@
   <string name="ai_controls_voice_search_title">ਆਵਾਜ਼ ਰਾਹੀਂ ਖੋਜੋ</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">ਆਡੀਓ ਨੂੰ Google ਸਪੀਚ ਸਰਵਿਸਾਂ ਰਾਹੀਂ ਲਿਖਤ ਵਿੱਚ ਬਦਲਿਆ ਗਿਆ ਹੈ।</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">ਸਫ਼ੇ ਨੂੰ ਸੁਣੋ</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">ਤੁਹਾਡਾ ਡਿਵਾਈਸ ਉਚੀ ਆਵਾਜ਼ ਵਿੱਚ ਪੜ੍ਹਨ ਲਈ AI ਨੂੰ ਵਰਤ ਸਕਦਾ ਹੈ। ਲਿਖਤ ਅਤੇ ਆਡੀਓ ਪ੍ਰਾਈਵੇਟ ਹੀ ਰਹਿਣਗੇ।</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">AI ਸੁਧਾਰਾਂ ਉੱਤੇ ਪਾਬੰਦੀ ਲਾਉਣੀ ਹੈ?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -715,6 +719,8 @@
   <string name="preferences_search">ਖੋਜੋ</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">ਖੋਜ ਇੰਜਣ</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">ਖੋਜ ਵਿਜੈੱਟ ਨੂੰ ਮੁੱਖ ਸਕਰੀਨ ਉੱਤੇ ਜੋੜੋ</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">ਮੁੱਖ ਸਕਰੀਨ ਵਿਜੈਟ</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -967,6 +973,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">ਇਕਸਟੈਨਸ਼ਨ ਭੰਡਾਰ ਨੂੰ ਸੋਧਿਆ ਗਿਆ। ਤਬਦੀਲੀਆਂ ਲਾਗੂ ਕਰਨ ਲਈ ਐਪਲੀਕੇਸ਼ਨ ਨੂੰਬੰਦ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">%1$s ਨੂੰ ਹਟਾਉਣਾ ਹੈ?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">ਇਸ ਨਾਲ ਇਸ ਡਿਵਾਈਸ ਤੋਂ ਇਕਸਟੈਨਸ਼ਨ ਅਤੇ ਇਸ ਦੀਆਂ ਸੈਟਿੰਗਾਂ ਨੂੰ ਹਟਾਇਆ ਜਾਂਦਾ ਹੈ।</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">ਹਟਾਓ</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">ਰੱਦ ਕਰੋ</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1131,6 +1149,12 @@
   <string name="preferences_sync_category">ਚੁਣੋ ਕਿ ਕੀ ਸਿੰਕ ਕਰਨਾ ਹੈ</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">ਸਿੰਕ ਕੀਤਾ ਡਾਟਾ</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">ਇਹ ਡਿਵਾਈਸ ਸਿੰਕ ਕਰੋ</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">ਤੁਹਾਡੇ ਡਾਟੇ ਦਾ ਬੈਕਅੱਪ ਲਿਆ ਗਿਆ ਹੈ ਅਤੇ ਸਿੰਕ ਕੀਤੇ ਡਿਵਾਈਸਾਂ ਲਈ ਮੌਜੂਦ ਹੈ।</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">ਤੁਹਾਡੇ %1$s ਖਾਤੇ ਵਿੱਚ ਸੰਭਾਲੇ ਡਾਟੇ ਦੀ ਵਰਤੋਂ ਕਰਕੇ।</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">ਆਪਣੇ ਸਾਰੇ ਡਿਵਾਈਸਾਂ ਵਿਚਾਲੇ ਹੋਣ ਵਾਲੇ ਸਿੰਕ ਦਾ ਇੰਤਜ਼ਾਮ ਕਰੋ</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -3881,6 +3905,10 @@
   <string name="protection_panel_privacy_and_security_settings_2">ਪਰਦੇਦਾਰੀ ਸੈਟਿੰਗਾਂ</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">ਇਜਾਜ਼ਤਾਂ</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">ਸੁਰੱਖਿਅਤ ਕਨੈਕਸ਼ਨ</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">EU ਟਰੱਸਟ ਮਾਰਕ</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4458,6 +4486,8 @@
   <string name="wrex_widget_match_suspended">ਮੁਅੱਤਲ ਕੀਤਾ</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">ਟਾਲਿਆ</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">ਤਾਜ਼ਾ ਕਰੋ</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">ਨਤੀਜੇ</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4466,19 +4496,57 @@
   <string name="wrex_widget_wallpapers">ਵਾਲਪੇਪਰ</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">ਵਿਜੈੱਟ ਨੂੰ ਹਟਾਓ</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">ਪੂਰਾ ਸਮਾਂ</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">ਅੱਧਾ ਸਮਾਂ</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">ਵਾਧੂ ਸਮਾਂ</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">ਪਨੈਲਟੀਆਂ</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">ਹੋਰ ਚੋਣਾਂ</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s ਬਨਾਮ %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, ਲਾਈਵ ਗੇਮ</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, ਲਾਈਵ</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">ਬੀਤਿਆ ਸਮਾਂ ਮਿੰਟਾਂ ਵਿੱਚ: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, \u0020%3$d ਵਿੱਚੋਂ %2$d ਸਫ਼ਾ</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">ਤੁਸੀਂ ਆਫਲਾਈਨ ਜਾਪਦੇ ਹੋ</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">ਆਪਣੇ ਇੰਟਰਨੈੱਟ ਕਨੈਕਸ਼ਨ ਦੀ ਜਾਂਚ ਕਰਕੇ ਫੇਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ।</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">ਇਸ ਵੇਲੇ ਮਿਲਦੀ ਜਾਣਕਾਰੀ ਨਹੀਂ ਦਿਖਾਈ ਜਾ ਸਕਦੀ ਹੈ</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">ਤਾਜ਼ਾ ਕਰਕੇ ਵੇਖੋ ਜਾਂ ਬਾਅਦ ਵਿੱਚ ਚੈਕ ਕਰਿਓ।</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">ਇਸ ਵੇਲੇ ਨਤੀਜੇ ਨਹੀਂ ਦਿਖਾਏ ਜਾ ਸਕਦੇ ਹਨ</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">ਟੀਮ ਦਾ ਪਤਾ ਲੱਗਣਾ ਹੈ</string>
   <!--
     Privacy notice homepage banner
 
