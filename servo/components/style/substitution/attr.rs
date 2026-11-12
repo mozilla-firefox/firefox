@@ -6,17 +6,14 @@
 //! https://drafts.csswg.org/css-values-5/#funcdef-attr
 
 use super::{
-    ArbitraryDeclarationValue, AttrTaint, ParsedArgument, Substitution, SubstitutionArgument,
+    ArbitraryDeclarationValue, ParsedArgument, Substitution, SubstitutionArgument,
     SubstitutionParserContext, SubstitutionReplacementContext, parse_optional_fallback,
 };
 use crate::custom_properties::{ComputedValue, Name, VariableValue};
 use crate::parser::{Parse, ParserContext};
 use crate::properties_and_values::{
     syntax::Descriptor as SyntaxDescriptor,
-    value::{
-        AllowComputationallyDependent, ComputedValue as ComputedRegisteredValue,
-        SpecifiedValue as SpecifiedRegisteredValue,
-    },
+    value::{ComputedValue as ComputedRegisteredValue, SpecifiedValue as SpecifiedRegisteredValue},
 };
 use crate::stylesheets::UrlExtraData;
 use crate::values::generics::calc::SortKey as AttrUnit;
@@ -103,10 +100,10 @@ pub struct AttrName {
 impl AttrName {
     /// Attribute values may reference other substitution functions we may need to process.
     /// See step 6: https://drafts.csswg.org/css-values-5/#attr-substitution
-    pub fn value_for_cycle_resolution(
+    pub fn value_for_cycle_resolution<'a>(
         &self,
-        context: &mut SubstitutionReplacementContext,
-        url_data: &UrlExtraData,
+        context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
+        url_data: &'a UrlExtraData,
     ) -> Result<ComputedRegisteredValue, ()> {
         let ParsedNamespace::Known(ref namespace) = self.namespace else {
             return Err(());
@@ -117,10 +114,13 @@ impl AttrName {
                 .query(local_name, namespace)
                 .ok_or(())
         })?;
-        let parser_context = context.parser_context(url_data);
         let mut parser = Parser::new(&attr);
         // TODO(Bug 2021110): Support namespaced attributes in chained references.
-        let value = VariableValue::parse(&parser_context, &mut parser).map_err(|_| ())?;
+        let value = context
+            .parse_early(url_data, |parser_context| {
+                VariableValue::parse(parser_context, &mut parser)
+            })
+            .map_err(|_| ())?;
         Ok(ComputedRegisteredValue::universal(Arc::new(value)))
     }
 }
@@ -190,7 +190,7 @@ impl AttrFunction {
         let arg = SubstitutionArgument::try_parse(input, context, Delimiter::Comma)?;
         let namespaces = match arg {
             SubstitutionArgument::Unparsed(..) => {
-                Some(context.parser_context.namespaces.prefixes.clone())
+                Some(context.early_parser_context.namespaces.prefixes.clone())
             },
             SubstitutionArgument::Parsed(..) | SubstitutionArgument::Invalid => None,
         };
@@ -281,15 +281,16 @@ impl AttrFunction {
                             ))
                         },
                         AttrType::Type(syntax) => {
-                            let value = SpecifiedRegisteredValue::parse(
-                                &mut parser,
-                                syntax,
-                                &source.url_data,
-                                AllowComputationallyDependent::Yes,
-                                AttrTaint::default(),
-                                context.property_id,
-                            )
-                            .ok()?;
+                            let value = context
+                                .parse_early(&source.url_data, |parser_context| {
+                                    SpecifiedRegisteredValue::parse_with_context(
+                                        parser_context,
+                                        &mut parser,
+                                        syntax,
+                                        &source.url_data,
+                                    )
+                                })
+                                .ok()?;
                             let value = value.to_variable_value();
                             Some(Substitution::from_value(
                                 value, /* attr_tainted */ true,
