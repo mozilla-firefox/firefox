@@ -4,6 +4,13 @@
 
 use std::collections::{BTreeSet, HashMap};
 
+use selectors::context::{
+    MatchingContext, MatchingForInvalidation, MatchingMode, NeedsSelectorFlags, SelectorCaches,
+};
+use selectors::matching::matches_selector_list;
+use selectors::Element as _;
+use style::dom::{TDocument, TElement, TNode};
+use style::gecko::wrapper::GeckoElement;
 use style::gecko_bindings::structs::Element;
 use thin_vec::ThinVec;
 use url::Url;
@@ -16,11 +23,15 @@ use crate::{
 
 impl Predicate {
     // https://html.spec.whatwg.org/#dr-predicate-matches
-    pub fn matches(&self, element: &Element) -> bool {
+    pub fn matches(&self, element: &Element, selector_caches: &mut SelectorCaches) -> bool {
         match self {
-            Self::Conjunction(clauses) => clauses.iter().all(|clause| clause.matches(element)),
-            Self::Disjunction(clauses) => clauses.iter().any(|clause| clause.matches(element)),
-            Self::Negation(clause) => !clause.matches(element),
+            Self::Conjunction(clauses) => clauses
+                .iter()
+                .all(|clause| clause.matches(element, selector_caches)),
+            Self::Disjunction(clauses) => clauses
+                .iter()
+                .any(|clause| clause.matches(element, selector_caches)),
+            Self::Negation(clause) => !clause.matches(element, selector_caches),
             Self::UrlPattern(patterns) => patterns.iter().any(|pattern| {
                 pattern
                     .test(UrlPatternMatchInput::Url(match element.href_url() {
@@ -29,9 +40,20 @@ impl Predicate {
                     }))
                     .unwrap_or(false)
             }),
-            // TODO(avandolder): selectors, once they are parsed, need to be
-            // matched against the element here.
-            Self::Selector(_selectors) => false,
+            Self::Selector(selectors) => {
+                let element = GeckoElement(element);
+                let mut context = MatchingContext::new(
+                    MatchingMode::Normal,
+                    None,
+                    selector_caches,
+                    element.as_node().owner_doc().quirks_mode(),
+                    NeedsSelectorFlags::No,
+                    MatchingForInvalidation::No,
+                );
+                // The scoping root is the element's root, so we leave the scope_element field unset.
+                context.current_host = element.containing_shadow_host().map(|e| e.opaque());
+                matches_selector_list(selectors, element, &mut context)
+            }
         }
     }
 }
@@ -41,6 +63,7 @@ impl SpeculationRule {
         &self,
         candidates: &mut ThinVec<PrefetchCandidate>,
         elements: &[&Element],
+        selector_caches: &mut SelectorCaches,
     ) {
         // https://html.spec.whatwg.org/#inner-consider-speculative-loads-steps
         // Step 3.1.1-3.1.2.
@@ -51,7 +74,7 @@ impl SpeculationRule {
         // Step 3.1.4.
         if let Some(predicate) = &self.predicate {
             candidates.extend(elements.iter().filter_map(|&element| {
-                if !predicate.matches(&element) {
+                if !predicate.matches(&element, selector_caches) {
                     return None;
                 }
                 Some(PrefetchCandidate {
@@ -91,9 +114,10 @@ impl SpeculationRuleSet {
     ) {
         // https://html.spec.whatwg.org/#inner-consider-speculative-loads-steps
         // Step 3.1.
-        self.0
-            .iter()
-            .for_each(|rule| rule.consider_speculative_loads(candidates, elements));
+        let mut selector_caches = SelectorCaches::default();
+        self.0.iter().for_each(|rule| {
+            rule.consider_speculative_loads(candidates, elements, &mut selector_caches)
+        });
     }
 }
 
