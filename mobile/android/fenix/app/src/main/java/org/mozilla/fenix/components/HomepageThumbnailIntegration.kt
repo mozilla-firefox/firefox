@@ -5,7 +5,6 @@
 package org.mozilla.fenix.components
 
 import android.content.Context
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
@@ -19,10 +18,14 @@ import mozilla.components.browser.thumbnails.RequestHomepageScreenshot
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.compose.base.theme.acornDarkColorScheme
 import mozilla.components.compose.base.theme.acornLightColorScheme
+import mozilla.components.compose.base.theme.acornOledColorScheme
 import mozilla.components.compose.base.theme.acornPrivateColorScheme
 import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.support.base.feature.LifecycleAwareFeature
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
+import org.mozilla.fenix.ext.components
+import org.mozilla.fenix.ext.isSystemInDarkTheme
+import org.mozilla.fenix.theme.getTheme
 
 /**
  * Homepage delegate to take screenshot of homepage when view loads and display as a thumbnail in tabs tray.
@@ -95,20 +98,12 @@ class HomepageThumbnailIntegration(
         return Bitmap.createBitmap(this, left, top, croppedWidth, croppedHeight)
     }
 
-    /**
-     * Get the color palette based on the current browsing mode.
-     *
-     * N.B: This logic was taken from [Theme.getTheme] in FirefoxTheme, however we cannot use it directly because those
-     * functions are annotated to be Composable and refactoring that can be done in a follow-up when needed.
-     */
-    private fun getColor(context: Context, mode: BrowsingMode): ColorScheme {
-        val isDarkMode = context.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK)
-        return if (mode == BrowsingMode.Private) {
-            acornPrivateColorScheme()
-        } else if (isDarkMode == Configuration.UI_MODE_NIGHT_YES) {
-            acornDarkColorScheme()
-        } else {
-            acornLightColorScheme()
+    /** Get the color palette for the [Theme] resolved from the current browsing mode. */
+    private fun getColor(context: Context, mode: BrowsingMode): ColorScheme =
+        when (getTheme(mode, context.isSystemInDarkTheme(), context.components.settings.shouldUseOledTheme)) {
+            Theme.Light -> acornLightColorScheme()
+            Theme.Dark -> acornDarkColorScheme()
+            Theme.Oled -> acornOledColorScheme()
+            Theme.Private -> acornPrivateColorScheme()
         }
-    }
 }
