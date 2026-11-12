@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Test that a normal load reusing a preloaded root keeps its dependencies when another preload is reset</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="preload_linked_helpers.js"></script>
+<body>
+<script>
+  add_task(async function testRootImportedDirectly() {
+    SpecialPowers.ChromeUtils.clearResourceCache({ types: ["script"] });
+
+    const grandchildLoaded =
+      waitForResponse("preload_linked_chain_grandchild.mjs");
+    await addPreload("./preload_linked_chain_root.mjs");
+    await grandchildLoaded;
+
+    const ns = await import("./preload_linked_chain_root.mjs");
+    is(ns.default, "chain-root", "chain_root should load");
+
+    // Preload a module with unsupported import attribute. Although the import
+    // fails the resolved module specifier is still recorded.
+    await addPreload("./preload_linked_rootdirect_unsupported.mjs");
+
+    addImportMap({ "preload-linked-rootdirect-unused": "./preload_linked_bare.mjs" });
+
+    const child = await import("./preload_linked_chain_child.mjs");
+    is(child.default, "chain-child", "chain_child should still be usable");
+  });
+</script>
+</body>
