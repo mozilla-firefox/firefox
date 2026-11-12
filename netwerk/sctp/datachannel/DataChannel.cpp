@@ -561,6 +561,13 @@ void DataChannelConnection::HandleOpenRequestMessage(
           "DataChannelConnection::HandleOpenRequestMessage",
           [this, self = RefPtr<DataChannelConnection>(this), stream, prPolicy,
            prValue, ordered, label, protocol]() {
+            if (!mListener) {
+              DC_INFO(
+                  ("%p: Ignoring open request for stream %u after "
+                   "Destroy",
+                   this, stream));
+              return;
+            }
             RefPtr<DataChannel> channel = FindChannelByStream(stream);
             if (channel) {
               if (!channel->mNegotiated) {
