@@ -595,6 +595,15 @@ nsCString CalculateFrecencyFunction::BuildFrecencySQL(
       "    moz_places_metadata "
       "  WHERE "
       "    place_id = :pageId "
+      // Interactions older than the oldest sampled visit, by more than the
+      // visit gap, can't be sampled nor make a sampled visit interesting.
+      // Skipping them bounds the scan for pages with many interactions.
+      "      AND created_at >= IFNULL(( "
+      "        SELECT visit_date FROM moz_historyvisits "
+      "        WHERE place_id = :pageId AND visit_type NOT IN (7, 8, 9) "
+      "        ORDER BY visit_date DESC "
+      "        LIMIT 1 OFFSET {numSampledVisits} - 1 "
+      "      ) / 1000 - :maxVisitGapSeconds * 1000, 0) "
       // The view time preferences are in seconds while the total view time is
       // in milliseconds.
       "      AND (total_view_time >= :viewTimeSeconds * 1000 "
@@ -877,6 +886,15 @@ nsCString CalculateAltFrecencyFunction::BuildFrecencySQL(
       "    moz_places_metadata "
       "  WHERE "
       "    place_id = :pageId "
+      // Interactions older than the oldest sampled visit, by more than the
+      // visit gap, can't be sampled nor make a sampled visit interesting.
+      // Skipping them bounds the scan for pages with many interactions.
+      "      AND created_at >= IFNULL(( "
+      "        SELECT visit_date FROM moz_historyvisits "
+      "        WHERE place_id = :pageId "
+      "        ORDER BY visit_date DESC "
+      "        LIMIT 1 OFFSET {numSampledVisits} - 1 "
+      "      ) / 1000 - :maxVisitGapSeconds * 1000, 0) "
       // The view time preferences are in seconds while the total view time is
       // in milliseconds.
       "      AND (total_view_time >= :viewTimeSeconds * 1000 "

@@ -387,8 +387,10 @@ add_task(async function max_samples_threshold() {
   const today = new Date();
   const yesterday = new Date();
   const twoDaysAgo = new Date();
+  const longAgo = new Date();
   yesterday.setDate(today.getDate() - 1);
   twoDaysAgo.setDate(today.getDate() - 2);
+  longAgo.setDate(today.getDate() - 400);
   const TESTS = [
     {
       title: "Interactions are beyond sample threshold",
@@ -406,6 +408,32 @@ add_task(async function max_samples_threshold() {
       },
       expectIncrease: true,
     },
+    {
+      title: "Interactions are at the visit gap from the oldest sampled visit",
+      interactionData: {
+        total_view_time: VIEWTIME_THRESHOLD,
+        created_at: yesterday.getTime() - MAX_VISIT_GAP * 1000,
+      },
+      expectIncrease: true,
+    },
+    {
+      title: "Interactions are at sampled visits older than reloads",
+      reloadDate: today,
+      interactionData: {
+        total_view_time: VIEWTIME_THRESHOLD,
+        created_at: yesterday.getTime(),
+      },
+      expectIncrease: true,
+    },
+    {
+      title: "Interactions are at old sampled visits",
+      visitDate: longAgo,
+      interactionData: {
+        total_view_time: VIEWTIME_THRESHOLD,
+        created_at: longAgo.getTime(),
+      },
+      expectIncrease: true,
+    },
   ];
 
   for (let test of TESTS) {
@@ -415,9 +443,19 @@ add_task(async function max_samples_threshold() {
       await PlacesTestUtils.addVisits([
         {
           url,
-          visitDate: yesterday.getTime() * 1000,
+          visitDate: (test.visitDate ?? yesterday).getTime() * 1000,
         },
       ]);
+      if (test.reloadDate) {
+        // Reloads are not sampled.
+        await PlacesTestUtils.addVisits([
+          {
+            url,
+            visitDate: test.reloadDate.getTime() * 1000,
+            transition: PlacesUtils.history.TRANSITION_RELOAD,
+          },
+        ]);
+      }
     }
 
     let page = await getPageWithUrl(url);
