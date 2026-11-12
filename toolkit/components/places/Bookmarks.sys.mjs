@@ -2595,10 +2595,10 @@ async function fetchBookmarksByGUIDPrefix(info, options = {}) {
        FROM moz_bookmarks b
        LEFT JOIN moz_bookmarks p ON p.id = b.parent
        LEFT JOIN moz_places h ON h.id = b.fk
-       WHERE b.guid LIKE :guidPrefix
+       WHERE b.guid GLOB :guidPrefix
        ORDER BY b.lastModified DESC
       `,
-      { guidPrefix: info.guidPrefix + "%" }
+      { guidPrefix: info.guidPrefix + "*" }
     );
 
     return rows.length ? rowsToItemsArray(rows) : null;

@@ -301,9 +301,11 @@ add_task(async function fetch_byguid_prefix() {
   checkBookmarkObject(bm3);
   Assert.ok(bm3.guid.startsWith(PREFIX));
 
-  // Bookmark 4 doesn't have the same guid prefix, so it shouldn't be returned in the results.
+  // Bookmark 4 has the same guid prefix in a different case, so it shouldn't
+  // be returned in the results.
   let bm4 = await PlacesUtils.bookmarks.insert({
     parentGuid: PlacesUtils.bookmarks.unfiledGuid,
+    guid: PlacesUtils.generateGuidWithPrefix(PREFIX.toLowerCase()),
     url: "http://bm3.example.com/",
     title: "bookmark 4",
   });
