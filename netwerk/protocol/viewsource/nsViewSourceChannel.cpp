@@ -353,11 +353,11 @@ nsViewSourceChannel::AsyncOpen(nsIStreamListener* aListener) {
 
   mListener = aListener;
 
-  /*
-   * We want to add ourselves to the loadgroup before opening
-   * mChannel, since we want to make sure we're in the loadgroup
-   * when mChannel finishes and fires OnStopRequest()
-   */
+  nsresult rv = mChannel->AsyncOpen(this);
+  if (NS_FAILED(rv)) {
+    ReleaseListeners();
+    return rv;
+  }
 
   nsCOMPtr<nsILoadGroup> loadGroup;
   mChannel->GetLoadGroup(getter_AddRefs(loadGroup));
@@ -365,30 +365,16 @@ nsViewSourceChannel::AsyncOpen(nsIStreamListener* aListener) {
     loadGroup->AddRequest(static_cast<nsIViewSourceChannel*>(this), nullptr);
   }
 
-  nsresult rv = NS_OK;
-  rv = mChannel->AsyncOpen(this);
+  // We do this here to make sure all notification callbacks changes have been
+  // made first before we inject this view-source channel.
+  mChannel->GetNotificationCallbacks(getter_AddRefs(mCallbacks));
+  mChannel->SetNotificationCallbacks(this);
 
-  if (NS_FAILED(rv) && loadGroup) {
-    loadGroup->RemoveRequest(static_cast<nsIViewSourceChannel*>(this), nullptr,
-                             rv);
-  }
+  MOZ_ASSERT(mCallbacks != this, "We have a cycle");
 
-  if (NS_SUCCEEDED(rv)) {
-    // We do this here to make sure all notification callbacks changes have been
-    // made first before we inject this view-source channel.
-    mChannel->GetNotificationCallbacks(getter_AddRefs(mCallbacks));
-    mChannel->SetNotificationCallbacks(this);
+  mOpened = true;
 
-    MOZ_ASSERT(mCallbacks != this, "We have a cycle");
-
-    mOpened = true;
-  }
-
-  if (NS_FAILED(rv)) {
-    ReleaseListeners();
-  }
-
-  return rv;
+  return NS_OK;
 }
 
 /*
