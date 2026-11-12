@@ -1027,7 +1027,29 @@ export class ProtonScreen extends React.PureComponent {
     return <>{elements}</>;
   }
 
-  renderRTAMOIcon(addonType, themeScreenshots, addonIconURL) {
+  renderRTAMOIcon(position, addonType, themeScreenshots, addonIconURL) {
+    if (position === "center-large") {
+      return (
+        <div className="rtamo-icon-wrapper">
+          <div className="rtamo-icon">
+            <img
+              className={`${addonType?.includes("theme") ? "rtamo-theme-icon" : "brand-logo"}`}
+              src={
+                addonType?.includes("theme")
+                  ? themeScreenshots[0].url
+                  : addonIconURL
+              }
+              loading={MultiStageUtils.getLoadingStrategyFor(addonIconURL)}
+              alt=""
+              role="presentation"
+            />
+          </div>
+          <div className="logo-separator"></div>
+          <div className="rtamo-logo">{this.renderPicture({})}</div>
+        </div>
+      );
+    }
+
     return (
       <div className="rtamo-icon">
         <img
@@ -1289,6 +1311,7 @@ export class ProtonScreen extends React.PureComponent {
               : null}
             {isRtamo && !content.fullscreen
               ? this.renderRTAMOIcon(
+                  content.position,
                   addonType,
                   this.props.themeScreenshots,
                   this.props.addonIconURL
@@ -1304,6 +1327,7 @@ export class ProtonScreen extends React.PureComponent {
                 : null}
               {isRtamo && content.fullscreen
                 ? this.renderRTAMOIcon(
+                    content.position,
                     addonType,
                     this.props.themeScreenshots,
                     this.props.addonIconURL

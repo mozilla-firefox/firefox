@@ -536,6 +536,50 @@ html {
               border: none;
             }
           }
+
+          .rtamo-icon-wrapper {
+            display: flex;
+            margin: auto;
+            background: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-80));
+            border-radius: var(--border-radius-xlarge);
+
+            .logo-separator {
+              background: url('chrome://global/skin/icons/close.svg') center center / 100% no-repeat;
+              height: 12px;
+              width: 12px;
+              margin-block: auto;
+              fill: currentColor;
+              -moz-context-properties: fill;
+            }
+          }
+
+          .rtamo-icon {
+            text-align: center;
+            margin-inline: 40px 10px;
+
+            .brand-logo {
+              height: 60px;
+              margin-block: 40px;
+            }
+
+            .rtamo-theme-icon {
+              max-height: unset;
+              height: 60px;
+              width: 60px;
+              margin-block: 40px;
+              object-fit: cover;
+              object-position: -54px;
+            }
+          }
+
+          .rtamo-logo {
+            margin-inline: 10px 40px;
+
+            .brand-logo {
+              height: 60px;
+              margin-block: 40px;
+            }
+          }
         }
       }
     }

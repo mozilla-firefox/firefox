@@ -820,7 +820,8 @@ async function getAddonFromRepository(data) {
     addonId: addonInfo.id,
     name: addonInfo.name,
     url: addonInfo.sourceURI.spec,
-    iconURL: addonInfo.icons["64"] || addonInfo.icons["32"],
+    iconURL:
+      addonInfo.icons["128"] || addonInfo.icons["64"] || addonInfo.icons["32"],
     type: addonInfo.type,
     screenshots: addonInfo.screenshots,
   };

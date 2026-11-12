@@ -1267,6 +1267,52 @@ describe("MultiStageAboutWelcomeProton module", () => {
       );
     });
 
+    it("should render the RTAMO icon wrapper with the add-on icon in center-large", () => {
+      const wrapper = mount(
+        <MultiStageProtonScreen
+          isRtamo={true}
+          addonType="extension"
+          addonIconURL="chrome://test/icon.png"
+          content={{
+            title: "Test RTAMO",
+            fullscreen: true,
+            position: "center-large",
+            primary_button: { label: { string_id: "test-add" }, action: {} },
+          }}
+        />
+      );
+
+      assert.isTrue(wrapper.find(".rtamo-icon-wrapper").exists());
+      assert.isTrue(wrapper.find(".logo-separator").exists());
+      assert.isTrue(wrapper.find(".rtamo-logo").exists());
+      assert.equal(
+        wrapper.find(".rtamo-icon img.brand-logo").prop("src"),
+        "chrome://test/icon.png"
+      );
+    });
+
+    it("should render the theme screenshot in the RTAMO icon wrapper in center-large", () => {
+      const wrapper = mount(
+        <MultiStageProtonScreen
+          isRtamo={true}
+          addonType="theme"
+          themeScreenshots={[{ url: "chrome://test/theme.png" }]}
+          content={{
+            title: "Test RTAMO theme",
+            fullscreen: true,
+            position: "center-large",
+            primary_button: { label: { string_id: "test-add" }, action: {} },
+          }}
+        />
+      );
+
+      assert.isTrue(wrapper.find(".rtamo-icon-wrapper").exists());
+      assert.equal(
+        wrapper.find(".rtamo-icon img.rtamo-theme-icon").prop("src"),
+        "chrome://test/theme.png"
+      );
+    });
+
     it("should render a progress bar if there are 2 steps", () => {
       const SCREEN_PROPS = {
         content: {

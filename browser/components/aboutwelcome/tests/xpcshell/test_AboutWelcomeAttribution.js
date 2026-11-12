@@ -52,7 +52,7 @@ add_task(async function test_formatAttributionData() {
   const TEST_ADDON_INFO = {
     sourceURI: { scheme: "https", spec: "https://test.xpi" },
     name: "Test Add-on",
-    icons: { 64: "http://test.svg" },
+    icons: { 64: "http://test.svg", 128: "http://test-128.svg" },
   };
   sandbox
     .stub(AttributionCode, "getAttrDataAsync")
@@ -64,6 +64,7 @@ add_task(async function test_formatAttributionData() {
   equal(AddonRepository.getAddonsByIDs.callCount, 1, "Retrieve addon content");
   equal(result.template, "return_to_amo", "RTAMO template returned");
   equal(result.name, TEST_ADDON_INFO.name, "AddonInfo returned");
+  equal(result.iconURL, TEST_ADDON_INFO.icons["128"], "Prefers 128px icon");
 
   sandbox.restore();
 });
