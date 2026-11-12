@@ -1805,7 +1805,7 @@ bool SavedStacks::checkForEvalInFramePrev(
       LiveSavedFrameCache::FramePtr::create(cx, iter);
   MOZ_ASSERT(maybeTarget);
 
-  LiveSavedFrameCache::FramePtr target = *maybeTarget;
+  const LiveSavedFrameCache::FramePtr& target = *maybeTarget;
 
   // If we're caching the frame to which |lookup| refers, then we should
   // definitely have the target frame in the cache as well.
