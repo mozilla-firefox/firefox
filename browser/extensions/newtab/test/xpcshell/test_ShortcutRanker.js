@@ -1,6 +1,8 @@
 "use strict";
 
 ChromeUtils.defineESModuleGetters(this, {
+  PlacesTestUtils: "resource://testing-common/PlacesTestUtils.sys.mjs",
+  PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   sinon: "resource://testing-common/Sinon.sys.mjs",
 });
 
@@ -3293,4 +3295,49 @@ add_task(async function test_rankShortcutsWorker() {
     "the worker dispatches to RankShortcutsWorker"
   );
   worker.terminate();
+});
+
+add_task(async function test_fetchLast10VisitsByGuid_database() {
+  const Ranker = ChromeUtils.importESModule(
+    "resource://newtab/lib/SmartShortcutsRanker/RankShortcuts.mjs"
+  );
+  await PlacesUtils.history.clear();
+
+  const now = Date.now();
+  const visits = (url, count) =>
+    Array.from({ length: count }, (_, i) => ({
+      url,
+      visitDate: (now - i * 60000) * 1000,
+      transition:
+        i % 2
+          ? PlacesUtils.history.TRANSITION_TYPED
+          : PlacesUtils.history.TRANSITION_LINK,
+    }));
+  const manyVisits = visits("https://many.example.com/", 12);
+  const fewVisits = visits("https://few.example.com/", 3);
+  await PlacesTestUtils.addVisits([...manyVisits, ...fewVisits]);
+
+  const many = await PlacesUtils.history.fetch("https://many.example.com/");
+  const few = await PlacesUtils.history.fetch("https://few.example.com/");
+  const out = await Ranker.fetchLast10VisitsByGuid(
+    [{ guid: many.guid }, { guid: few.guid }, { guid: "missingGuid0" }],
+    "moz_historyvisits",
+    "moz_places"
+  );
+
+  const expected = list =>
+    list.map(v => ({ visit_date_us: v.visitDate, visit_type: v.transition }));
+  Assert.deepEqual(
+    out[many.guid],
+    expected(manyVisits.slice(0, 10)),
+    "Only the 10 most recent visits, newest first"
+  );
+  Assert.deepEqual(
+    out[few.guid],
+    expected(fewVisits),
+    "All the visits of a page with less than 10"
+  );
+  Assert.deepEqual(out.missingGuid0, [], "No visits for an unknown page");
+
+  await PlacesUtils.history.clear();
 });

@@ -428,8 +428,7 @@ export async function fetchLast10VisitsByGuid(topsites, table, placeTable) {
       v.visit_type
     FROM input i
     JOIN ${placeTable} h ON h.guid = i.guid
-    JOIN ${table} v ON v.place_id = h.id
-    WHERE v.id IN (
+    JOIN ${table} v ON v.id IN (
       SELECT vv.id
       FROM ${table} vv
       WHERE vv.place_id = h.id
