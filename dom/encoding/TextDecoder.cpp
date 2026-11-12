@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "mozilla/Encoding.h"
+#include "mozilla/ScopeExit.h"
 #include "mozilla/dom/BufferSourceBinding.h"
 #include "mozilla/dom/UnionTypes.h"
 #include "nsContentUtils.h"
@@ -49,6 +50,21 @@ void TextDecoderCommon::DecodeNative(Span<const uint8_t> aInput,
                                      ErrorResult& aRv) {
   aOutDecodedString.Truncate();
 
+  auto resetState = mozilla::MakeScopeExit([&] {
+    // This reuses existing memory, so it's OK to do this even
+    // when we fail on OOM.
+
+    // If the internal streaming flag of the decoder object is not set,
+    // then reset the encoding algorithm state to the default values
+    if (!aStream) {
+      if (mIgnoreBOM) {
+        mDecoder->Encoding()->NewDecoderWithoutBOMHandlingInto(*mDecoder);
+      } else {
+        mDecoder->Encoding()->NewDecoderWithBOMRemovalInto(*mDecoder);
+      }
+    }
+  });
+
   CheckedInt<nsAString::size_type> needed =
       mDecoder->MaxUTF16BufferLength(aInput.Length());
   if (!needed.isValid()) {
@@ -83,16 +99,6 @@ void TextDecoderCommon::DecodeNative(Span<const uint8_t> aInput,
   if (!aOutDecodedString.SetLength(written, fallible)) {
     aRv.Throw(NS_ERROR_OUT_OF_MEMORY);
     return;
-  }
-
-  // If the internal streaming flag of the decoder object is not set,
-  // then reset the encoding algorithm state to the default values
-  if (!aStream) {
-    if (mIgnoreBOM) {
-      mDecoder->Encoding()->NewDecoderWithoutBOMHandlingInto(*mDecoder);
-    } else {
-      mDecoder->Encoding()->NewDecoderWithBOMRemovalInto(*mDecoder);
-    }
   }
 }
 
