@@ -110,12 +110,6 @@ class MakeBackend(CommonBackend):
                 ret.append("%s: %s ;" % (output, stub_file))
             ret.append("EXTRA_MDDEPEND_FILES += %s" % dep_file)
 
-            formatted_flags = []
-            for flag in obj.flags:
-                quoted_flag = shell_quote(flag)
-                formatted_flag = quoted_flag.replace(",", "$(comma)")
-                formatted_flags.append(f" {formatted_flag}")
-
             ret.append(
                 (
                     """{stub}: {script}{inputs}{extra_deps}{backend}{force}
@@ -130,7 +124,11 @@ class MakeBackend(CommonBackend):
                     dep_file=dep_file,
                     inputs=" " + " ".join(inputs) if inputs else "",
                     extra_deps=" " + " ".join(extra_deps) if extra_deps else "",
-                    flags="".join(formatted_flags),
+                    flags=(
+                        " " + " ".join(shell_quote(f) for f in obj.flags)
+                        if obj.flags
+                        else ""
+                    ),
                     backend=" " + extra_dependencies if extra_dependencies else "",
                     # Locale repacks repack multiple locales from a single configured objdir,
                     # so standard mtime dependencies won't work properly when the build is re-run
