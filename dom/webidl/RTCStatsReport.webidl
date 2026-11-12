@@ -358,6 +358,7 @@ dictionary RTCIceServerInternal {
 dictionary RTCConfigurationInternal {
   RTCBundlePolicy                bundlePolicy;
   required boolean               certificatesProvided;
+  octet                          iceCandidatePoolSize;
   sequence<RTCIceServerInternal> iceServers = [];
   RTCIceTransportPolicy          iceTransportPolicy;
   required boolean               peerIdentityProvided;

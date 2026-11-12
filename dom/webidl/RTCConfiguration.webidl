@@ -41,6 +41,7 @@ dictionary RTCConfiguration {
     RTCRtcpMuxPolicy rtcpMuxPolicy = "require";
     DOMString? peerIdentity = null;
     sequence<RTCCertificate> certificates = [];
+    [EnforceRange] octet iceCandidatePoolSize = 0;
 
     // Non-standard. Only here to be able to detect and warn in web console.
     // Uses DOMString over enum as a trade-off between type errors and safety.
