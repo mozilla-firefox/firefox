@@ -351,7 +351,7 @@ class MainMenuTest : BaseTest() {
             .mozClickIfPresent(AddToHomeScreenSelectors.ADD_DIALOG_BUTTON)
             .mozClick(AddToHomeScreenSelectors.SYSTEM_PROMPT_ADD_TO_HOME_SCREEN_BUTTON)
             .mozClickIfPresent(AddToHomeScreenSelectors.HOME_SCREEN_SHORTCUT(testPage.title))
-        on.browserPage.navigateToPage().verifyPageContent(testPage.content)
+        on.browserPage.verifyPageContent(testPage.content)
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3080118
