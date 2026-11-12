@@ -11,7 +11,7 @@ UNSUPPORTED_CSS = "#divBrowserAlert"
 async def test_enabled(client):
     await client.navigate(URL)
     assert client.await_css(SUPPORTED_CSS)
-    assert client.find_css(UNSUPPORTED_CSS, is_displayed=False)
+    assert not client.find_css(UNSUPPORTED_CSS, is_displayed=True)
 
 
 @pytest.mark.asyncio

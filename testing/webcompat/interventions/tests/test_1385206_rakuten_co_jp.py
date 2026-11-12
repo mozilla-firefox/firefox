@@ -2,7 +2,7 @@ import pytest
 
 URL = "http://www.rakuten.co.jp/"
 MOBILE_CSS = "#top-area"
-DESKTOP_CSS = "#header-group"
+DESKTOP_CSS = "#container"
 
 
 @pytest.mark.only_platforms("android")

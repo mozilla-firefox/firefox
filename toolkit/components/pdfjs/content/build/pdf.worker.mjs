@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.65
- * pdfjsBuild = 6619bf0c6
+ * pdfjsVersion = 7.0.84
+ * pdfjsBuild = 94a48f3c8
  */
 
 ;// ./src/shared/util.js
@@ -1364,13 +1364,6 @@ function arrayBuffersToBytes(arr) {
     pos += item.byteLength;
   }
   return data;
-}
-async function fetchBinaryData(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch file "${url}" with "${response.statusText}".`);
-  }
-  return response.bytes();
 }
 function getInheritableProperty({
   dict,
@@ -6569,6 +6562,13 @@ let makeBrotliDecode = () => {
     }
     return 17;
   }
+  function enableLargeWindow(s) {
+    if (s.runningState !== 1) {
+      return makeError(s, -24);
+    }
+    s.isLargeWindow = 1;
+    return 0;
+  }
   function attachDictionaryChunk(s, data) {
     if (s.runningState !== 1) {
       return makeError(s, -24);
@@ -8362,6 +8362,7 @@ let makeBrotliDecode = () => {
     let s = new State();
     s.input = new InputStream(bytes);
     initState(s);
+    enableLargeWindow(s);
     if (options) {
       let customDictionary = options["customDictionary"];
       if (customDictionary) attachDictionaryChunk(s, customDictionary);
@@ -8722,7 +8723,6 @@ async function JBig2(moduleArg = {}) {
 /* harmony default export */ const jbig2 = (JBig2);
 ;// ./src/core/wasm_loader.js
 
-
 class WasmLoader {
   static #modules = new Map();
   static async fetch(context, kind, filename) {
@@ -8731,27 +8731,64 @@ class WasmLoader {
       options
     } = context;
     if (options.useWorkerFetch) {
-      return fetchBinaryData(`${options[kind]}${filename}`);
+      return (await this.#workerFetch(options[kind], filename)).bytes();
     }
     throw new Error("Only worker-thread fetching supported.");
+  }
+  static async #workerFetch(baseUrl, filename) {
+    const url = `${baseUrl}${filename}`,
+      response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file "${url}" with "${response.statusText}".`);
+    }
+    return response;
+  }
+  static async #fetchAndCompile(context, filename) {
+    const {
+      options
+    } = context;
+    const {
+      body
+    } = await this.#workerFetch(options.wasmUrl, filename);
+    return WebAssembly.compileStreaming(new Response(body, {
+      headers: {
+        "Content-Type": "application/wasm"
+      }
+    }));
   }
   static #compile(context, filename) {
     const cached = this.#modules.get(filename);
     if (cached) {
       return cached.catch(() => this.#compile(context, filename));
     }
-    const promise = this.fetch(context, "wasmUrl", filename).then(bytes => WebAssembly.compile(bytes)).catch(ex => {
+    const promise = this.#fetchAndCompile(context, filename).catch(ex => {
       this.#modules.delete(filename);
       throw ex;
     });
     this.#modules.set(filename, promise);
     return promise;
   }
-  static #importFallback(wasmUrl, filename) {
-    return import(
-    /*webpackIgnore: true*/
-    /*@vite-ignore*/
-    `${wasmUrl}${filename}`);
+  static async #importFallback(wasmUrl, filename) {
+    const {
+      body
+    } = await this.#workerFetch(wasmUrl, `${filename}.br`);
+    const stream = body.pipeThrough(new DecompressionStream("brotli"));
+    const blob = await new Response(stream, {
+      headers: {
+        "Content-Type": "text/javascript"
+      }
+    }).blob();
+    const url = URL.createObjectURL(blob);
+    try {
+      return await import(
+      /*webpackIgnore: true*/
+      /*@vite-ignore*/
+      url);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+    // removed by dead control flow
+
   }
   static async load(context, filename, noWasmFilename, init) {
     const {
@@ -10600,6 +10637,9 @@ class Parser {
         case "JBIG2Decode":
           return new Jbig2Stream(stream, maybeLength, params);
         case "BrotliDecode":
+          if (params) {
+            return new PredictorStream(new BrotliStream(stream, maybeLength), maybeLength, params);
+          }
           return new BrotliStream(stream, maybeLength);
         case "Crypt":
           {
@@ -11451,10 +11491,10 @@ async function createBuiltInCMap(name, fetchBuiltInCMap) {
   }
   const {
     cMapData,
-    isCompressed
+    cMapPacked
   } = await fetchBuiltInCMap(name);
   const cMap = new CMap(true);
-  if (isCompressed) {
+  if (cMapPacked) {
     return new BinaryCMapReader().process(cMapData, cMap, useCMap => extendCMap(cMap, fetchBuiltInCMap, useCMap));
   }
   const lexer = new Lexer(new Stream(cMapData));
@@ -34083,6 +34123,7 @@ class PDFImage {
 
 
 
+
 const DefaultPartialEvaluatorOptions = Object.freeze({
   disableFontFace: false,
   ignoreErrors: false,
@@ -34191,6 +34232,8 @@ class TimeSlotManager {
   }
 }
 class PartialEvaluator {
+  _regionalImageCache = new RegionalImageCache();
+  type3FontRefs = null;
   constructor({
     xref,
     handler,
@@ -34202,7 +34245,7 @@ class PartialEvaluator {
     globalColorSpaceCache,
     globalImageCache,
     systemFontCache,
-    options = null
+    options = DefaultPartialEvaluatorOptions
   }) {
     this.xref = xref;
     this.handler = handler;
@@ -34210,14 +34253,12 @@ class PartialEvaluator {
     this.pageProxyId = pageProxyId;
     this.idFactory = idFactory;
     this.fontCache = fontCache;
-    this.builtInCMapCache = builtInCMapCache;
     this.globalColorSpaceCache = globalColorSpaceCache;
     this.globalImageCache = globalImageCache;
     this.systemFontCache = systemFontCache;
-    this.options = options || DefaultPartialEvaluatorOptions;
-    this.type3FontRefs = null;
-    this._regionalImageCache = new RegionalImageCache();
-    this._fetchBuiltInCMapBound = this.fetchBuiltInCMap.bind(this);
+    this.options = options;
+    const fetchBuiltInCMap = this.fetchBuiltInCMap.bind(this);
+    this._fetchBuiltInCMapBound = name => builtInCMapCache.getOrInsertComputed(name, fetchBuiltInCMap);
   }
   get _pdfFunctionFactory() {
     return shadow(this, "_pdfFunctionFactory", new PDFFunctionFactory({
@@ -34326,21 +34367,22 @@ class PartialEvaluator {
     return false;
   }
   async fetchBuiltInCMap(name) {
-    const cachedData = this.builtInCMapCache.get(name);
-    if (cachedData) {
-      return cachedData;
-    }
-    let data;
-    if (this.options.useWorkerFetch) {
-      data = {
-        cMapData: await fetchBinaryData(`${this.options.cMapUrl}${name}.bcmap`),
-        isCompressed: true
-      };
-    } else {
-      throw new Error("Only worker-thread fetching supported.");
-    }
-    this.builtInCMapCache.set(name, data);
-    return data;
+    const {
+      cMapPacked,
+      cMapUrl,
+      useWorkerFetch
+    } = this.options;
+    const cMapData = await WasmLoader.fetch({
+      handler: this.handler,
+      options: {
+        cMapUrl,
+        useWorkerFetch: useWorkerFetch && cMapPacked
+      }
+    }, "cMapUrl", `${name}${cMapPacked ? ".bcmap" : ""}`);
+    return {
+      cMapData,
+      cMapPacked
+    };
   }
   async buildFormXObject(resources, xobj, smask, operatorList, task, initialState, localColorSpaceCache, seenRefs) {
     const {
@@ -52192,8 +52234,7 @@ class XhtmlObject extends XmlObject {
       this[$content] += str;
     }
   }
-  [$pushGlyphs](measure, mustPop = true) {
-    const xfaFont = Object.create(null);
+  [$pushGlyphs](measure, mustPop = true, xfaFont = Object.create(null)) {
     const margin = {
       top: NaN,
       bottom: NaN,
@@ -52311,11 +52352,9 @@ class B extends XhtmlObject {
     super(attributes, "b");
   }
   [$pushGlyphs](measure) {
-    measure.pushFont({
+    super[$pushGlyphs](measure, true, {
       weight: "bold"
     });
-    super[$pushGlyphs](measure);
-    measure.popFont();
   }
 }
 class Body extends XhtmlObject {
@@ -52392,11 +52431,9 @@ class I extends XhtmlObject {
     super(attributes, "i");
   }
   [$pushGlyphs](measure) {
-    measure.pushFont({
+    super[$pushGlyphs](measure, true, {
       posture: "italic"
     });
-    super[$pushGlyphs](measure);
-    measure.popFont();
   }
 }
 class Li extends XhtmlObject {
@@ -64716,7 +64753,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "7.0.65";
+    const workerVersion = "7.0.84";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }

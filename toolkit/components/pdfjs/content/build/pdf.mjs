@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.65
- * pdfjsBuild = 6619bf0c6
+ * pdfjsVersion = 7.0.84
+ * pdfjsBuild = 94a48f3c8
  */
 
 ;// ./src/shared/util.js
@@ -2052,7 +2052,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "9ca1b0ec-6d8f-4df1-97eb-4c3b691c44a8";
+const INTERNAL_EVT = "7c2d88f0-b1d4-4f20-9ce1-090bc0ccf65a";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -14655,7 +14655,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.65";
+      const apiVersion = "7.0.84";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -15290,7 +15290,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.65",
+    apiVersion: "7.0.84",
     data,
     password,
     disableAutoFetch,
@@ -16991,8 +16991,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.65";
-const build = "6619bf0c6";
+const version = "7.0.84";
+const build = "94a48f3c8";
 
 ;// ./src/display/editor/color_picker.js
 
@@ -28164,9 +28164,9 @@ globalThis.pdfjsLib = {
   updateUrlHash: updateUrlHash,
   Util: Util,
   VerbosityLevel: VerbosityLevel,
-  version: (/* inlined export .version */"7.0.65"),
+  version: (/* inlined export .version */"7.0.84"),
   XfaLayer: XfaLayer
 };
 
-const __webpack_exports__version = (/* inlined export .version */"7.0.65");
+const __webpack_exports__version = (/* inlined export .version */"7.0.84");
 export { AbortException, AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationLayer, AnnotationMode, AnnotationType, CSSConstants, ColorPicker, DOMSVGFactory, DrawLayer, FeatureTest, GlobalWorkerOptions, ImageKind, InvalidPDFException, MathClamp, OPS, OutputScale, PDFDataRangeTransport, PDFDateString, PDFWorker, PasswordException, PasswordResponses, PermissionFlag, PixelsPerInch, RenderingCancelledException, ResponseException, SignatureExtractor, SupportedImageMimeTypes, TextLayer, TextLayerImages, TouchManager, Util, VerbosityLevel, XfaLayer, applyOpacity, build, createValidAbsoluteUrl, fetchData, findContrastColor, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getRGB, getRGBA, getUuid, isDataScheme, isPdfFile, isValidExplicitDest, makeArr, makeMap, makeObj, makeSet, noContextMenu, normalizeUnicode, renderRichText, setLayerDimensions, shadow, stopEvent, updateUrlHash, __webpack_exports__version as version };

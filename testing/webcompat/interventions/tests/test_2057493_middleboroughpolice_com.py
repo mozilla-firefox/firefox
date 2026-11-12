@@ -1,7 +1,7 @@
 import pytest
 
 URL = "https://www.middleboroughpolice.com/"
-SUPPORTED_CSS = "#menu-primary-navigation"
+SUPPORTED_CSS = "#menu-primary-navigation, .nav-primary"
 UNSUPPORTED_TEXT = "403 Forbidden"
 
 
