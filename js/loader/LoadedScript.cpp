@@ -263,7 +263,13 @@ bool LoadedScript::ReadFromEncodingHeader(const EncodingHeader* aHeader) {
   mDependsOnClassicScriptHintEncoding =
       aHeader->mDependsOnClassicScriptHintEncoding;
 
-  size_t encodingStringLen = strlen(aHeader->mClassicScriptEncoding);
+  size_t encodingStringLen =
+      strnlen(aHeader->mClassicScriptEncoding,
+              EncodingHeader::ClassicScriptEncodingMaxLength);
+  if (encodingStringLen == EncodingHeader::ClassicScriptEncodingMaxLength) {
+    return false;
+  }
+
   if (encodingStringLen == 0) {
     mClassicScriptEncoding = nullptr;
     return true;
