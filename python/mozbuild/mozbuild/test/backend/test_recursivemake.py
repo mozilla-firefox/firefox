@@ -479,9 +479,9 @@ class TestRecursiveMakeBackend(BackendTester):
             "PRE_COMPILE_TARGETS += $(MDDEPDIR)/bar.c.stub",
             "bar.c: $(MDDEPDIR)/bar.c.stub ;",
             "EXTRA_MDDEPEND_FILES += $(MDDEPDIR)/bar.c.pp",
-            "$(MDDEPDIR)/bar.c.stub: %s/generate-bar.py" % env.topsrcdir,
+            "$(MDDEPDIR)/bar.c.stub: %s/generate-bar.py backend.mk" % env.topsrcdir,
             "$(REPORT_BUILD)",
-            "$(call py_action,file_generate bar.c,%s/generate-bar.py baz bar.c $(MDDEPDIR)/bar.c.pp $(MDDEPDIR)/bar.c.stub)"  # noqa
+            "$(call py_action,file_generate bar.c,%s/generate-bar.py baz bar.c $(MDDEPDIR)/bar.c.pp $(MDDEPDIR)/bar.c.stub --plain '--spaces=a b c' --commas=a$(comma)b$(comma)c)"  # noqa
             % env.topsrcdir,
             "@$(TOUCH) $@",
             "",
