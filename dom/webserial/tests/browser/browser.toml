@@ -25,3 +25,6 @@ support-files = [
 
 ["browser_webserial_sharing_icon.js"]
 support-files = ["worker_open_close.js"]
+
+["browser_webserial_tab_sharing_icon.js"]
+support-files = ["blank.html"]

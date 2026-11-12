@@ -662,6 +662,10 @@ tab-split-view-wrapper[dragtarget] {
     list-style-image: url("chrome://browser/skin/notification-icons/screen.svg");
   }
 
+  &[sharing="serial"] {
+    list-style-image: url("chrome://browser/skin/notification-icons/serial.svg");
+  }
+
   &[sharing]:not([selected]) {
     display: revert;
   }

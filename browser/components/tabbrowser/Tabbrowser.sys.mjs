@@ -2461,13 +2461,15 @@ export class Tabbrowser {
     }
     aBrowser._sharingState = Object.assign(aBrowser._sharingState, aState);
 
-    if ("webRTC" in aState) {
-      if (aBrowser._sharingState.webRTC?.sharing) {
-        if (aBrowser._sharingState.webRTC.paused) {
-          tab.removeAttribute("sharing");
-        } else {
-          tab.setAttribute("sharing", aState.webRTC.sharing);
-        }
+    if ("webRTC" in aState || "serial" in aState) {
+      let { webRTC, serial } = aBrowser._sharingState;
+      // If both are being shared, prefer showing the webRTC
+      // sharing icon since microphone/camera/screen are
+      // more sensitive than a serial device.
+      if (webRTC?.sharing && !webRTC.paused) {
+        tab.setAttribute("sharing", webRTC.sharing);
+      } else if (serial) {
+        tab.setAttribute("sharing", "serial");
       } else {
         tab.removeAttribute("sharing");
       }
