@@ -1,6 +1,6 @@
 /* Shared helpers for the test_preload_linked_*.html tests. */
 
-/* exported waitForResponse, addPreload, addImportMap */
+/* exported waitForResponse, addPreload, addImportMap, addModule */
 
 // Resolves once a resource whose file name is |name| has been fetched.
 function waitForResponse(name) {
@@ -31,4 +31,16 @@ function addImportMap(imports) {
   s.type = "importmap";
   s.textContent = JSON.stringify({ imports });
   document.head.appendChild(s);
+}
+
+// Resolves once the module script has loaded or failed. A failure is reported
+// through the window's error event rather than by rejecting.
+function addModule(href) {
+  return new Promise(resolve => {
+    const s = document.createElement("script");
+    s.type = "module";
+    s.src = href;
+    s.onload = s.onerror = resolve;
+    document.body.appendChild(s);
+  });
 }

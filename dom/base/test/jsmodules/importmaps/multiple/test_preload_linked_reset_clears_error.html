@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Test that resetting a dormant preloaded module also clears its recorded error</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="preload_linked_helpers.js"></script>
+<body>
+<script>
+  // The preloaded module is never used by a normal load before the import map
+  // registers, so it goes through the reset path, which must clear its recorded
+  // error as well as its [[LoadedModules]].
+  add_task(async function testResetClearsStaleError() {
+    SpecialPowers.ChromeUtils.clearResourceCache({ types: ["script"] });
+
+    // Preload errorreset_root. Its bare specifier fails to resolve (no
+    // matching import map yet), so it never links.
+    await addPreload("./preload_linked_errorreset_root.mjs");
+
+    // Registering an import map first resets the dormant preload graph, which
+    // must clear the error recorded from the failed resolution, then maps the
+    // bare specifier.
+    addImportMap({ "preload-linked-errorreset-bare": "./preload_linked_bare.mjs" });
+
+    // Evaluate errorreset_root via a <script> element: only that path rethrows
+    // a recorded error, so a stale one would be thrown instead of running the
+    // module body.
+
+    window.__errorresetRootEvaluated = false;
+    let uncaughtMessage = null;
+    const onError = e => {
+      uncaughtMessage = e.message;
+    };
+    window.addEventListener("error", onError);
+    await addModule("./preload_linked_errorreset_root.mjs");
+    window.removeEventListener("error", onError);
+
+    ok(!uncaughtMessage,
+       "errorreset_root should evaluate, not rethrow its stale error" +
+       (uncaughtMessage ? (": " + uncaughtMessage) : ""));
+    ok(window.__errorresetRootEvaluated,
+       "errorreset_root's body should have run");
+  });
+</script>
+</body>

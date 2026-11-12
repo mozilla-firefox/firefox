@@ -5,6 +5,7 @@ support-files = [
   "preload_linked_chain_child.mjs",
   "preload_linked_chain_grandchild.mjs",
   "preload_linked_chain_root.mjs",
+  "preload_linked_errorreset_root.mjs",
   "preload_linked_helpers.js",
   "preload_linked_rootdirect_unsupported.mjs",
   "preload_linked_stillloading_normal_root.mjs",
@@ -17,5 +18,7 @@ support-files = [
 ["test_bug_2058272.html"]
 
 ["test_preload_linked_normal_deps_not_reset.html"]
+
+["test_preload_linked_reset_clears_error.html"]
 
 ["test_preload_linked_root_imported_directly.html"]
