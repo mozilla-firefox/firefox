@@ -1,0 +1,251 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <script type="application/javascript" src="pc.js"></script>
+</head>
+<body>
+<pre id="test">
+<script type="application/javascript">
+  createHTML({
+    bug: "1529398",
+    title: "iceCandidatePoolSize: rapid changes before setLocalDescription"
+  });
+
+  // Torture test: hammer iceCandidatePoolSize with increases and decreases
+  // before setLocalDescription, while the pool gathers against the test ICE
+  // server (STUN, TURN UDP, TURN TCP and TURNS), then check that the
+  // PeerConnection still gathers sensibly and connects.
+
+  const kSizes = [0, 1, 4, 2, 5, 0, 3, 1, 1, 5, 4, 0, 2, 5, 3, 0, 4, 1];
+  const kRounds = 10;
+  // Scales the yields between pool size changes, so that pool gathering for an
+  // earlier size has time to get further before the next change lands.
+  const kYieldMultiplierMs = 20;
+
+  async function churnPoolSize(pc, finalSize, yieldBetweenChanges) {
+    for (let round = 0; round < kRounds; round++) {
+      for (const size of kSizes) {
+        pc.setConfiguration({
+          iceServers: iceServersArray,
+          iceCandidatePoolSize: size,
+        });
+        if (yieldBetweenChanges) {
+          await wait((round % 3) * kYieldMultiplierMs);
+        }
+      }
+    }
+    pc.setConfiguration({
+      iceServers: iceServersArray,
+      iceCandidatePoolSize: finalSize,
+    });
+    is(pc.getConfiguration().iceCandidatePoolSize, finalSize,
+      "the last iceCandidatePoolSize set should be reflected");
+  }
+
+  // Records the icecandidate events fired on pc, from before anything else is
+  // done to it. Any event that fires before setLocalDescriptionResolved is set
+  // is also recorded in early.
+  function recordCandidates(pc) {
+    const record = {
+      candidates: [],
+      early: [],
+      setLocalDescriptionResolved: false,
+    };
+    pc.addEventListener("icecandidate", ({candidate}) => {
+      if (!record.setLocalDescriptionResolved) {
+        record.early.push(candidate ? candidate.candidate : null);
+      }
+      if (candidate?.candidate) {
+        record.candidates.push(candidate);
+      }
+    });
+    return record;
+  }
+
+  // Trickles candidates from pcFrom to pcTo.
+  function trickle(pcFrom, pcTo) {
+    pcFrom.addEventListener("icecandidate", ({candidate}) => {
+      if (pcTo.signalingState != "closed") {
+        pcTo.addIceCandidate(candidate).catch(() => {});
+      }
+    });
+  }
+
+  // Negotiates a data channel from pc1 to pc2, marking in record when pc1's
+  // setLocalDescription resolves, and resolves to the open channel pair.
+  async function connectDataChannel(pc1, pc2, record) {
+    const dc1 = pc1.createDataChannel("");
+    const dc1Open = new Promise(r => dc1.onopen = r);
+    const dc2Open = new Promise(r => pc2.ondatachannel = ({channel}) => {
+      channel.onopen = () => r(channel);
+    });
+    trickle(pc1, pc2);
+    trickle(pc2, pc1);
+    await pc1.setLocalDescription();
+    record.setLocalDescriptionResolved = true;
+    await pc2.setRemoteDescription(pc1.localDescription);
+    await pc2.setLocalDescription();
+    await pc1.setRemoteDescription(pc2.localDescription);
+    const [, dc2] = await Promise.all([dc1Open, dc2Open]);
+    return [dc1, dc2];
+  }
+
+  function gatheringComplete(pc) {
+    return new Promise(r => {
+      if (pc.iceGatheringState == "complete") {
+        r();
+        return;
+      }
+      pc.addEventListener("icegatheringstatechange", function listener() {
+        if (pc.iceGatheringState == "complete") {
+          pc.removeEventListener("icegatheringstatechange", listener);
+          r();
+        }
+      });
+    });
+  }
+
+  // Checks that data flows from dc1 to dc2, that pc1's gathering completes, and
+  // that what pc1 gathered is sane: no icecandidate event before its
+  // setLocalDescription resolved, no candidate surfaced more than once, every
+  // candidate carrying the negotiated ice-ufrag, and a candidate of every type
+  // the test ICE server can provide.
+  async function checkConnectionAndCandidates(pc1, dc1, dc2, record) {
+    const message = new Promise(r => dc2.onmessage = ({data}) => r(data));
+    dc1.send("hello");
+    is(await message, "hello", "data should flow over the connection");
+
+    await gatheringComplete(pc1);
+    is(JSON.stringify(record.early), "[]",
+      "no icecandidate event should fire before setLocalDescription resolves");
+    ok(record.candidates.length, "at least one candidate should be gathered");
+    const keys = record.candidates.map(c => `${c.sdpMid}|${c.candidate}`);
+    is(new Set(keys).size, keys.length,
+      "no candidate should be surfaced more than once");
+    const ufrag = pc1.localDescription.sdp.match(/a=ice-ufrag:(\S+)/)[1];
+    for (const c of record.candidates) {
+      is(c.usernameFragment, ufrag,
+        `${c.candidate} should carry the negotiated ice-ufrag`);
+    }
+
+    const types = new Set();
+    for (const stat of (await pc1.getStats()).values()) {
+      if (stat.type == "local-candidate") {
+        types.add(stat.candidateType == "relay" ?
+                  `relay-${stat.relayProtocol}` : stat.candidateType);
+      }
+    }
+    for (const type of ["host", "srflx", "relay-udp", "relay-tcp",
+                        "relay-tls"]) {
+      ok(types.has(type), `pc1 should have gathered a ${type} candidate`);
+    }
+  }
+
+  function makePeerConnections() {
+    const config = { iceServers: iceServersArray };
+    return [new RTCPeerConnection(config), new RTCPeerConnection(config)];
+  }
+
+  const tests = [];
+
+  // icecandidate must not fire until setLocalDescription has resolved, whether
+  // or not a pool is in use. With a pool, wait first so that the pool has had
+  // time to gather candidates that could otherwise be surfaced too early.
+  for (const poolSize of [0, 2]) {
+    tests.push({
+      name: `With iceCandidatePoolSize ${poolSize}, icecandidate does not ` +
+            `fire before setLocalDescription resolves`,
+      async run(pc1, pc2) {
+        const record = recordCandidates(pc1);
+        pc1.setConfiguration({
+          iceServers: iceServersArray,
+          iceCandidatePoolSize: poolSize,
+        });
+        if (poolSize) {
+          await wait(2000);
+        }
+        is(JSON.stringify(record.early), "[]",
+          "no icecandidate event should fire before setLocalDescription " +
+          "is called");
+        const [dc1, dc2] = await connectDataChannel(pc1, pc2, record);
+        await checkConnectionAndCandidates(pc1, dc1, dc2, record);
+      },
+    });
+  }
+
+  // One test for each combination of:
+  //   - yieldBetweenChanges: whether the pool size changes are made back to
+  //     back in a single task, or with short timer yields between them so that
+  //     they land while pool gathering for an earlier size is still in flight;
+  //   - finalSize: the pool size the churn ends on, either 0 (the pool must be
+  //     emptied) or 2 (pooled transports must be available for adoption).
+  // Each test records pc1's icecandidate events from the start, so that a
+  // candidate leaking from a discarded pool during the churn is caught too. It
+  // churns pc1's pool size through kSizes kRounds times, then negotiates a data
+  // channel between pc1 and pc2 and sends a message over it. It then waits for
+  // pc1's gathering to complete and checks that no icecandidate event fired
+  // before setLocalDescription resolved, that every candidate was surfaced only
+  // once and that each carries the negotiated ice-ufrag, so that nothing from a
+  // discarded pool leaks into the session, and that every candidate type was
+  // gathered. Finally it checks that the pool size is now locked, since
+  // setLocalDescription has been called.
+  for (const yieldBetweenChanges of [false, true]) {
+    for (const finalSize of [0, 2]) {
+      const mode = yieldBetweenChanges ? "with yields between changes" :
+                                         "synchronously";
+      tests.push({
+        name: `Changing iceCandidatePoolSize rapidly ${mode} and ending at ` +
+              `${finalSize} still gathers and connects`,
+        async run(pc1, pc2) {
+          const record = recordCandidates(pc1);
+          await churnPoolSize(pc1, finalSize, yieldBetweenChanges);
+          const [dc1, dc2] = await connectDataChannel(pc1, pc2, record);
+          await checkConnectionAndCandidates(pc1, dc1, dc2, record);
+
+          let error;
+          try {
+            pc1.setConfiguration({
+              iceServers: iceServersArray,
+              iceCandidatePoolSize: finalSize + 1,
+            });
+          } catch (e) {
+            error = e;
+          }
+          is(error?.name, "InvalidModificationError",
+            "changing iceCandidatePoolSize after setLocalDescription should " +
+            "throw");
+          is(pc1.getConfiguration().iceCandidatePoolSize, finalSize,
+            "iceCandidatePoolSize should be unchanged");
+        },
+      });
+    }
+  }
+
+  runNetworkTest(async () => {
+    await pushPrefs(
+      // The NAT simulator gives us srflx candidates from the STUN server.
+      ["media.peerconnection.nat_simulator.filtering_type",
+       "ENDPOINT_INDEPENDENT"],
+      ["media.peerconnection.nat_simulator.mapping_type",
+       "ENDPOINT_INDEPENDENT"],
+      ["media.peerconnection.ice.loopback", true],
+      // The test ICE server has enough servers to trigger a warning.
+      ["media.peerconnection.treat_warnings_as_errors", false]);
+
+    for (const test of tests) {
+      info(`Running test: ${test.name}`);
+      const [pc1, pc2] = makePeerConnections();
+      try {
+        await test.run(pc1, pc2);
+      } catch (e) {
+        ok(false, `Caught ${e.name}: ${e.message} ${e.stack}`);
+      }
+      pc1.close();
+      pc2.close();
+      info(`Done running test: ${test.name}`);
+    }
+  }, { useIceServer: true });
+</script>
+</pre>
+</body>
+</html>

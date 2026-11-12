@@ -267,6 +267,12 @@ skip-if = [
 ]
 scheme = "http"
 
+["test_peerConnection_iceCandidatePoolSizeChurn.html"]
+skip-if = [
+  "os == 'android'", # websockets don't work on android (bug 1266217)
+]
+scheme = "http"
+
 ["test_peerConnection_iceCandidateSelection.html"]
 skip-if = [
   "os == 'android'", # websockets don't work on android (bug 1266217)

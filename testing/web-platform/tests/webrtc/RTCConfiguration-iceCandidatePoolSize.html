@@ -114,4 +114,217 @@ test(() => {
     });
   });
 }, "Reconfigure RTCPeerConnection instance iceCandidatePoolSize to 256 (Out Of Range)");
+
+/*
+  4.4.1.5 Set the configuration, step 3.6
+    If the value of configuration.iceCandidatePoolSize differs from
+    oldConfig.iceCandidatePoolSize, and setLocalDescription has already been
+    called, then fail.
+*/
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  pc.addTransceiver("audio");
+  await pc.setLocalDescription();
+  assert_throws_dom("InvalidModificationError", () => {
+    pc.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+}, "Reconfigure iceCandidatePoolSize after setLocalDescription(offer) throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  // No m-sections, so no ICE gathering is started by setLocalDescription.
+  await pc.setLocalDescription();
+  assert_throws_dom("InvalidModificationError", () => {
+    pc.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+}, "Reconfigure iceCandidatePoolSize after setLocalDescription with no m-sections throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc1 = new RTCPeerConnection();
+  const pc2 = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => {
+    pc1.close();
+    pc2.close();
+  });
+  pc1.addTransceiver("audio");
+  await pc2.setRemoteDescription(await pc1.createOffer());
+  // The answer becomes the current, not the pending, local description.
+  await pc2.setLocalDescription();
+  assert_throws_dom("InvalidModificationError", () => {
+    pc2.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc2.getConfiguration().iceCandidatePoolSize, 1);
+}, "Reconfigure iceCandidatePoolSize after setLocalDescription(answer) throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  pc.addTransceiver("audio");
+  await pc.setLocalDescription();
+  pc.setConfiguration({ iceCandidatePoolSize: 1 });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+}, "Reconfigure iceCandidatePoolSize to the same value after setLocalDescription is allowed");
+
+/*
+  The spec only says "setLocalDescription has already been called". It says
+  nothing about that setLocalDescription call having completed, succeeded,
+  failed or been rolled back, so the following tests expect the change to
+  fail in all of those cases. See
+  https://github.com/w3c/webrtc-pc/issues/3148
+*/
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  pc.addTransceiver("audio");
+  await pc.setLocalDescription();
+  await pc.setLocalDescription({ type: "rollback" });
+  assert_equals(pc.localDescription, null,
+    "rollback should leave no local description");
+  assert_throws_dom("InvalidModificationError", () => {
+    pc.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+}, "Reconfigure iceCandidatePoolSize after setLocalDescription is rolled back throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  pc.addTransceiver("audio");
+  // The implicit createOffer is still running, so the "real"
+  // setLocalDescription has not been reached yet.
+  const sld = pc.setLocalDescription();
+  assert_equals(pc.localDescription, null,
+    "no local description should be applied yet");
+  assert_throws_dom("InvalidModificationError", () => {
+    pc.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+  await sld;
+}, "Reconfigure iceCandidatePoolSize while parameterless setLocalDescription() creating an offer is pending throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc1 = new RTCPeerConnection();
+  const pc2 = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => {
+    pc1.close();
+    pc2.close();
+  });
+  pc1.addTransceiver("audio");
+  await pc2.setRemoteDescription(await pc1.createOffer());
+  // The implicit createAnswer is still running, so the "real"
+  // setLocalDescription has not been reached yet.
+  const sld = pc2.setLocalDescription();
+  assert_equals(pc2.localDescription, null,
+    "no local description should be applied yet");
+  assert_equals(pc2.signalingState, "have-remote-offer");
+  assert_throws_dom("InvalidModificationError", () => {
+    pc2.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc2.getConfiguration().iceCandidatePoolSize, 1);
+  await sld;
+}, "Reconfigure iceCandidatePoolSize while parameterless setLocalDescription() creating an answer is pending throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  pc.addTransceiver("audio");
+  const offer = await pc.createOffer();
+  const sld = pc.setLocalDescription(offer);
+  assert_equals(pc.localDescription, null,
+    "no local description should be applied yet");
+  assert_throws_dom("InvalidModificationError", () => {
+    pc.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+  await sld;
+}, "Reconfigure iceCandidatePoolSize while setLocalDescription(offer) is pending throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  await pc.setLocalDescription({ type: "offer", sdp: "not an SDP" }).then(
+    () => assert_unreached("setLocalDescription with invalid SDP should reject"),
+    () => {});
+  assert_equals(pc.localDescription, null,
+    "a rejected setLocalDescription should leave no local description");
+  assert_throws_dom("InvalidModificationError", () => {
+    pc.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+}, "Reconfigure iceCandidatePoolSize after setLocalDescription rejects throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  pc.addTransceiver("audio");
+  const offer = await pc.createOffer();
+  // Rejected by the initial chained steps of setLocalDescription, since the
+  // sdp does not match [[LastCreatedAnswer]]. Only the rejection matters here.
+  await pc.setLocalDescription({ type: "answer", sdp: offer.sdp }).then(
+    () => assert_unreached("setLocalDescription(answer) with an offer's sdp should reject"),
+    () => {});
+  assert_equals(pc.localDescription, null,
+    "a rejected setLocalDescription should leave no local description");
+  assert_throws_dom("InvalidModificationError", () => {
+    pc.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+}, "Reconfigure iceCandidatePoolSize after setLocalDescription(answer) with an offer's sdp rejects throws InvalidModificationError");
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+  t.add_cleanup(() => pc.close());
+  // Rejected by the initial steps of "set a local session description", since
+  // rollback is not valid in the "stable" signaling state.
+  await promise_rejects_dom(t, "InvalidStateError",
+    pc.setLocalDescription({ type: "rollback" }));
+  assert_equals(pc.signalingState, "stable");
+  assert_throws_dom("InvalidModificationError", () => {
+    pc.setConfiguration({ iceCandidatePoolSize: 2 });
+  });
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+}, "Reconfigure iceCandidatePoolSize after setLocalDescription(rollback) in stable rejects throws InvalidModificationError");
+
+/*
+  An RTCConfiguration without iceCandidatePoolSize gets the default of 0, so
+  it is handled the same as an explicit iceCandidatePoolSize: 0.
+*/
+
+for (const [label, config] of [
+  ["omitted", {}],
+  ["explicitly 0", { iceCandidatePoolSize: 0 }],
+]) {
+  test(t => {
+    const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+    t.add_cleanup(() => pc.close());
+    pc.setConfiguration(config);
+    assert_equals(pc.getConfiguration().iceCandidatePoolSize, 0);
+  }, `Reconfigure iceCandidatePoolSize from 1 with iceCandidatePoolSize ${label} before setLocalDescription sets it to 0`);
+
+  promise_test(async t => {
+    const pc = new RTCPeerConnection();
+    t.add_cleanup(() => pc.close());
+    pc.addTransceiver("audio");
+    await pc.setLocalDescription();
+    pc.setConfiguration(config);
+    assert_equals(pc.getConfiguration().iceCandidatePoolSize, 0);
+  }, `Reconfigure iceCandidatePoolSize from 0 with iceCandidatePoolSize ${label} after setLocalDescription is allowed`);
+
+  promise_test(async t => {
+    const pc = new RTCPeerConnection({ iceCandidatePoolSize: 1 });
+    t.add_cleanup(() => pc.close());
+    pc.addTransceiver("audio");
+    await pc.setLocalDescription();
+    assert_throws_dom("InvalidModificationError", () => {
+      pc.setConfiguration(config);
+    });
+    assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1);
+  }, `Reconfigure iceCandidatePoolSize from 1 with iceCandidatePoolSize ${label} after setLocalDescription throws InvalidModificationError`);
+}
 </script>
