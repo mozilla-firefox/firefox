@@ -3664,6 +3664,14 @@ pref("browser.pageextractor.youtube.enabled", true);
 // after it is opened before giving up and returning metadata alone.
 pref("browser.pageextractor.youtube.timeoutMs", 3000);
 
+// Read Google Docs documents through their plain HTML view during page
+// extraction.
+pref("browser.pageextractor.googledocs.enabled", true);
+
+// How long, in milliseconds, to wait for a Google Docs plain HTML view before
+// keeping the generic page extraction.
+pref("browser.pageextractor.googledocs.timeoutMs", 5000);
+
 // When a user cancels this number of authentication dialogs coming from
 // a single web page in a row, all following authentication dialogs will
 // be blocked (automatically canceled) for that page. The counter resets

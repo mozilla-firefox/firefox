@@ -234,6 +234,10 @@ export class PageExtractorEvent {
       name: "youtube-extract",
       label: "Read video transcript",
     },
+    googleDocsExtract: {
+      name: "google-docs-extract",
+      label: "Read Google Doc",
+    },
   });
 
   static #phases = new Set(Object.values(this.Phase));

@@ -34,6 +34,10 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///toolkit/components/pageextractor/YouTubeExtraction.sys.mjs",
   getYouTubeContent:
     "moz-src:///toolkit/components/pageextractor/YouTubeExtraction.sys.mjs",
+  shouldExtractGoogleDoc:
+    "moz-src:///toolkit/components/pageextractor/GoogleDocsExtraction.sys.mjs",
+  getGoogleDocContent:
+    "moz-src:///toolkit/components/pageextractor/GoogleDocsExtraction.sys.mjs",
   PageExtractorEvent:
     "moz-src:///toolkit/components/pageextractor/PageExtractorEvents.sys.mjs",
   Phase: () => lazy.PageExtractorEvent.Phase,
@@ -41,6 +45,10 @@ const lazy = XPCOMUtils.declareLazy({
   youtubeTimeoutMs: {
     pref: "browser.pageextractor.youtube.timeoutMs",
     default: 3000,
+  },
+  googleDocsTimeoutMs: {
+    pref: "browser.pageextractor.googledocs.timeoutMs",
+    default: 5000,
   },
 });
 
@@ -438,6 +446,45 @@ export class PageExtractorChild extends JSWindowActorChild {
             lazy.console.warn("Failed to extract YouTube content", error);
             return { text: "", replacesContent: false };
           });
+        }
+
+        // The view covers the whole document, so it's skipped for viewport-only
+        // reads. Any failure or empty view falls through to the generic walk.
+        if (lazy.shouldExtractGoogleDoc(sourceUrl) && !options.justViewport) {
+          const googleDocExtraction = await this.#trace(
+            lazy.Phase.googleDocsExtract,
+            { traceId: event.traceId, strategy: "google-docs" },
+            async googleDocEvent => {
+              const { document: googleDoc, status } =
+                await lazy.getGoogleDocContent(
+                  window,
+                  lazy.googleDocsTimeoutMs
+                );
+              const extraction =
+                googleDoc &&
+                lazy.extractTextFromDOM(googleDoc, googleDoc.body, options);
+              googleDocEvent.finish({
+                status: googleDoc && !extraction.text ? "empty" : status,
+                textLength: extraction?.text.length,
+                linkCount: extraction?.links.length,
+              });
+              return extraction;
+            }
+          ).catch(error => {
+            lazy.console.warn("Failed to read a Google Docs view", error);
+            return null;
+          });
+          if (googleDocExtraction?.text) {
+            const { text, links } = googleDocExtraction;
+            event.finish({
+              status: "success",
+              strategy: "google-docs",
+              textLength: text.length,
+              linkCount: links.length,
+              canvasCount: 0,
+            });
+            return { text, links, canvasSnapshots: [] };
+          }
         }
 
         if (this.isAboutReader()) {

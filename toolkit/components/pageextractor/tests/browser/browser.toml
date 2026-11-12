@@ -20,6 +20,8 @@ support-files = [
 
 ["browser_dom_extractor_search_tool.js"]
 
+["browser_google_docs_extraction.js"]
+
 ["browser_headless_extractor.js"]
 
 ["browser_page_extractor_marker_colors.js"]

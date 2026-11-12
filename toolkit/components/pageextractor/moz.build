@@ -13,6 +13,7 @@ FINAL_TARGET_FILES.actors += [
 
 MOZ_SRC_FILES += [
     "DOMExtractor.sys.mjs",
+    "GoogleDocsExtraction.sys.mjs",
     "PageExtractorEvents.sys.mjs",
     "YouTubeExtraction.sys.mjs",
 ]

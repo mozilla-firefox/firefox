@@ -28,8 +28,8 @@ page_extractor:
       Slice by `phase` for a route's outcome and latency (e.g.
       "headless-extractor" for headless loads, "pdf-extract" for PDFs), by
       `strategy` for how a get-text call read the page ("dom", "reader",
-      "youtube-dom", "youtube-transcript", "about-reader"), and by
-      `site_strategy` for site-specific handling ("google-search",
+      "youtube-dom", "youtube-transcript", "google-docs", "about-reader"),
+      and by `site_strategy` for site-specific handling ("google-search",
       "youtube"). `status` and `error_name` give success rate and failure
       reasons per slice; `duration_ms` gives latency per slice.
 
@@ -64,8 +64,9 @@ page_extractor:
         type: string
         description: >
           The extraction/load strategy used, e.g. "dom", "pdf", "reader",
-          "youtube-dom", "youtube-transcript", "about-reader", "headless",
-          "headless-anonymous". Omitted when not applicable to this phase.
+          "youtube-dom", "youtube-transcript", "google-docs", "about-reader",
+          "headless", "headless-anonymous". Omitted when not applicable to this
+          phase.
       site_strategy:
         type: string
         description: >
