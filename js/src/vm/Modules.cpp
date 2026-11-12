@@ -952,7 +952,10 @@ ModuleObject* js::GetImportedModule(
   //         Impl note: Updated to perform lookup using ModuleRequestObject as
   //         per the Import Attributes Proposal.
   auto record = referrer->loadedModules().lookup(moduleRequest);
-  MOZ_ASSERT(record);
+
+  // Use a release assert in case the [[LoadedModules]] is cleared by
+  // JS::ResetPreloadedModule.
+  MOZ_RELEASE_ASSERT(record);
 
   // Step 2. Let record be the Record in referrer.[[LoadedModules]] whose
   //         [[Specifier]] is specifier.

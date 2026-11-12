@@ -56,7 +56,8 @@ struct SpecifierResolutionRecord {
 
   const nsString mNormalizedSpecifier;
 
-  // Resolved result during preload.
+  // The resolved URL. Released before the record is added to a resolved module
+  // set.
   nsCOMPtr<nsIURI> mResult;
 
   const bool mIsURLLike;

@@ -1982,6 +1982,8 @@ bool ScriptLoader::ProcessInlineScript(nsIScriptElement* aElement,
 
     // Remove any module preloads. Module specifier resolution is invalidated by
     // adding an import map, and incorrect dependencies may have been loaded.
+    // With multiple import maps, the preloaded module scripts are kept in the
+    // module map, and only their module graphs are reset.
     mPreloads.RemoveElementsBy(
         [this, multiImportMapsEnabled](const PreloadInfo& info) {
           if (!info.mRequest->IsModuleRequest()) {
@@ -1990,7 +1992,7 @@ bool ScriptLoader::ProcessInlineScript(nsIScriptElement* aElement,
 
           info.mRequest->Cancel();
           if (multiImportMapsEnabled) {
-            mModuleLoader->ClearPreloadedModuleGraph(
+            mModuleLoader->ResetPreloadedModuleGraph(
                 info.mRequest->AsModuleRequest());
           }
 
@@ -2169,7 +2171,9 @@ ScriptLoadRequest* ScriptLoader::LookupPreloadRequest(
     // script. Now the preload request is reused, so adding the resolved
     // specifiers into the global's resolved module set.
     if (request->IsModuleRequest()) {
-      mModuleLoader->MovePreloadedSetToResolvedSet(request->AsModuleRequest());
+      if (ModuleScript* ms = request->AsModuleRequest()->mModuleScript) {
+        mModuleLoader->MovePreloadedSetToResolvedSet(ms);
+      }
     }
   }
 

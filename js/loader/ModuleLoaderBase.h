@@ -390,9 +390,17 @@ class ModuleLoaderBase : public nsISupports {
 
   ResolvedModuleSet* GetResolvedModuleSet();
 
-  void MovePreloadedSetToResolvedSet(ModuleLoadRequest* aRootRequest);
+  // Called when a preloaded module script is reused by a normal load. Clear the
+  // preload flag of aModuleScript and move its preloaded resolved set, if any,
+  // into the global's resolved module set.
+  void MovePreloadedSetToResolvedSet(ModuleScript* aModuleScript);
 
-  void ClearPreloadedModuleGraph(ModuleLoadRequest* aRootRequest);
+  // Called for each module preload removed before registering an import map.
+  // The preloaded module scripts stay in the module map, but the state computed
+  // while preloading is reset, as the new import map may change how their
+  // specifiers resolve: the [[LoadedModules]] and status of each module that is
+  // still a preload, their preloaded resolved sets, and the root's errors.
+  void ResetPreloadedModuleGraph(ModuleLoadRequest* aRootRequest);
 
   // Returns true if the module for given module key is already fetched.
   bool IsModuleFetched(const ModuleMapKey& key) const;
@@ -491,6 +499,10 @@ class ModuleLoaderBase : public nsISupports {
 
   void ResetPreloadFlag(nsIURI* aURI);
   void ResetPreloadedModule(nsIURI* aURI);
+
+  // Migrates aFetchInfo's preloaded resolved set, if any, into the global
+  // resolved module set.
+  void MigratePreloadedResolvedSet(ScriptFetchInfo* aFetchInfo);
 
  protected:
   void SetModuleFetchStarted(ModuleLoadRequest* aRequest);
