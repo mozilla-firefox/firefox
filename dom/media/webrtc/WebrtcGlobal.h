@@ -90,8 +90,9 @@ DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::dom::RTCIceServerInternal, mUrls,
 
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::dom::RTCConfigurationInternal,
                                   mBundlePolicy, mCertificatesProvided,
-                                  mIceServers, mIceTransportPolicy,
-                                  mPeerIdentityProvided, mSdpSemantics);
+                                  mIceCandidatePoolSize, mIceServers,
+                                  mIceTransportPolicy, mPeerIdentityProvided,
+                                  mSdpSemantics);
 
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::dom::RTCSdpParsingErrorInternal,
                                   mLineNumber, mError);

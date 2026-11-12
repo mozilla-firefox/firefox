@@ -233,6 +233,7 @@ export class RTCPeerConnection {
     this._pendingRemoteDescription = null;
     this._currentLocalDescription = null;
     this._currentRemoteDescription = null;
+    this._setLocalDescriptionCalled = false;
 
     // http://rtcweb-wg.github.io/jsep/#rfc.section.4.1.9
     // canTrickle == null means unknown; when a remote description is received it
@@ -344,8 +345,17 @@ export class RTCPeerConnection {
         );
       }
 
-      // TODO (bug 1529398): iceCandidatePoolSize must match if sLD has ever
-      // been called.
+      // iceCandidatePoolSize must match once setLocalDescription has been
+      // called (https://www.w3.org/TR/webrtc/#set-the-configuration step 3.6).
+      if (
+        rtcConfig.iceCandidatePoolSize !== this._config.iceCandidatePoolSize &&
+        this._setLocalDescriptionCalled
+      ) {
+        throw new this._win.DOMException(
+          "Cannot change iceCandidatePoolSize after setLocalDescription has been called",
+          "InvalidModificationError"
+        );
+      }
     }
 
     if (rtcConfig.rtcpMuxPolicy == "negotiate") {
@@ -959,6 +969,7 @@ export class RTCPeerConnection {
 
   _setLocalDescription({ type, sdp }) {
     this._checkClosed();
+    this._setLocalDescriptionCalled = true;
     return this._chain(async () => {
       // Avoid Promise.all ahead of synchronous part of spec algorithm, since it
       // defers. NOTE: The spec says to return an already-rejected promise in

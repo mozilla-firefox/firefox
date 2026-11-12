@@ -4191,6 +4191,9 @@ void PeerConnectionImpl::StoreConfigurationForAboutWebrtc(
     mJsConfiguration.mSdpSemantics.Construct(aConfig.mSdpSemantics.Value());
   }
 
+  mJsConfiguration.mIceCandidatePoolSize.Reset();
+  mJsConfiguration.mIceCandidatePoolSize.Construct(
+      aConfig.mIceCandidatePoolSize);
   mJsConfiguration.mIceTransportPolicy.Reset();
   mJsConfiguration.mIceTransportPolicy.Construct(aConfig.mIceTransportPolicy);
   mJsConfiguration.mBundlePolicy.Reset();

@@ -1409,6 +1409,7 @@ function renderConfiguration(rndr, c) {
       ...cfg(c, "iceTransportPolicy"),
       ...pro(c, "peerIdentity"),
       ...cfg(c, "sdpSemantics"),
+      ...cfg(c, "iceCandidatePoolSize"),
       renderElement("br"),
       "iceServers: ",
       ...(!c.iceServers
