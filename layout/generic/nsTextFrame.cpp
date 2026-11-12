@@ -10715,10 +10715,30 @@ void nsTextFrame::SetLength(int32_t aLength, nsLineLayout* aLineLayout,
   // our empty next-in-flow, it will take text from its next-in-flow and
   // dirty that line.
 
+  // If we're currently empty, the text we're about to take over may belong to
+  // a different bidi paragraph than the one we were created for (e.g. we were
+  // left empty when the text before a preserved newline was pulled back into
+  // an earlier frame, and the text after the newline is in the next
+  // paragraph). In that case we need to copy the bidi levels from the first
+  // frame that actually has text to give us.
+  bool needBidiFromSource = GetContentLength() == 0;
+
   // Note that in the process we may end up removing some frames from
   // the flow if they end up empty.
   nsTextFrame* framesToRemove = nullptr;
   while (f && f->mContentOffset < end) {
+    if (needBidiFromSource && f->GetContentLength() > 0) {
+      // This must happen before we update f's offset below (which empties it),
+      // and before f could be removed from the flow.
+      needBidiFromSource = false;
+      if (f->HasAnyStateBits(NS_FRAME_IS_BIDI)) {
+        FrameBidiData bidi = f->GetBidiData();
+        SetProperty(BidiDataProperty(),
+                    FrameBidiData{bidi.baseLevel, bidi.embeddingLevel,
+                                  kBidiLevelNone});
+        AddStateBits(NS_FRAME_IS_BIDI);
+      }
+    }
     f->mContentOffset = end;
     if (f->GetTextRun(nsTextFrame::eInflated) != mTextRun) {
       ClearTextRuns();
