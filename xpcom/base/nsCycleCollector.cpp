@@ -1279,7 +1279,7 @@ class nsCycleCollector : public nsIMemoryReporter {
   void RemoveObjectFromGraph(void* aPtr);
 
   void PrepareForGarbageCollection();
-  void FinishAnyCurrentCollection(CCReason aReason);
+  void FinishAnyCurrentCollection();
 
   bool Collect(CCReason aReason, ccIsManual aIsManual, SliceBudget& aBudget,
                nsICycleCollectorListener* aManualListener,
@@ -3914,10 +3914,10 @@ void nsCycleCollector::PrepareForGarbageCollection() {
     return;
   }
 
-  FinishAnyCurrentCollection(CCReason::GC_WAITING);
+  FinishAnyCurrentCollection();
 }
 
-void nsCycleCollector::FinishAnyCurrentCollection(CCReason aReason) {
+void nsCycleCollector::FinishAnyCurrentCollection() {
   if (IsIdle()) {
     return;
   }
@@ -3925,7 +3925,8 @@ void nsCycleCollector::FinishAnyCurrentCollection(CCReason aReason) {
   SliceBudget unlimitedBudget = SliceBudget::unlimited();
   PrintPhase("FinishAnyCurrentCollection");
   // Use CCIsNotManual because we only want to finish the CC in progress.
-  Collect(aReason, ccIsManual::CCIsNotManual, unlimitedBudget, nullptr);
+  Collect(CCReason::GC_WAITING_NOW, ccIsManual::CCIsNotManual, unlimitedBudget,
+          nullptr);
 
   // We need to be past the point where the CC will look at JS objects so that
   // it is safe to GC.
@@ -4438,7 +4439,7 @@ void nsCycleCollector_finishAnyCurrentCollection() {
     return;
   }
 
-  data->mCollector->FinishAnyCurrentCollection(CCReason::API);
+  data->mCollector->FinishAnyCurrentCollection();
 }
 
 void nsCycleCollector_shutdown(bool aDoCollect) {
