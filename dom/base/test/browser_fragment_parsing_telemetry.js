@@ -1,7 +1,6 @@
 "use strict";
 
 const PREF = "dom.html_fragment_fast_path.enabled";
-const URL = "https://example.com/browser/dom/base/test/empty.html";
 
 function counts(metric, labels) {
   return Object.fromEntries(
@@ -32,23 +31,20 @@ add_task(async function test_fragment_parsing_timing() {
         ["dom.html_fragment_fast_path.telemetry_sample_shift", 0],
       ],
     });
+    const parser = new DOMParser();
+    const doc = parser.parseFromString("", "text/html");
+    const div = doc.createElement("div");
     await Services.fog.testFlushAllChildren();
     Services.fog.testResetFOG();
 
-    // A new tab, so that its content process has the pref.
-    const tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, URL);
-    await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
-      const div = content.document.createElement("div");
-      // Short text without markup isn't parsed, so it isn't recorded.
-      div.innerHTML = "plain text";
-      div.innerHTML = "<span class=a>x</span>";
-      div.innerHTML = "<table><tr><td>x</td></tr></table>";
-      div.innerHTML = `<span>${"x".repeat(2000)}</span>`;
-      const parser = new content.DOMParser();
-      parser.parseFromString("<span class=a>x</span>", "text/html");
-      parser.parseFromString("<table><tr><td>x</td></tr></table>", "text/html");
-    });
-    await Services.fog.testFlushAllChildren();
+    // Keep parsing and assertions synchronous so unrelated calls cannot interfere.
+    // Short text without markup isn't parsed, so it isn't recorded.
+    div.innerHTML = "plain text";
+    div.innerHTML = "<span class=a>x</span>";
+    div.innerHTML = "<table><tr><td>x</td></tr></table>";
+    div.innerHTML = `<span>${"x".repeat(2000)}</span>`;
+    parser.parseFromString("<span class=a>x</span>", "text/html");
+    parser.parseFromString("<table><tr><td>x</td></tr></table>", "text/html");
 
     const metrics = Glean.domFragmentParsing;
     Assert.deepEqual(
@@ -100,7 +96,6 @@ add_task(async function test_fragment_parsing_timing() {
       `DOMParser fast path rejections with the fast path ${enabled}`
     );
 
-    BrowserTestUtils.removeTab(tab);
     await SpecialPowers.popPrefEnv();
   }
 });
