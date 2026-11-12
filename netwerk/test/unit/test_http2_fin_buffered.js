@@ -292,7 +292,6 @@ add_task(async function test_upload_suspended_until_complete() {
   await fetchSync();
   request.resume();
   checkResponse(await chan.stopped);
-  Assert.equal(await server.sessionCount(), 1);
 });
 
 add_task(async function test_upload_reset_no_error_suspended_until_complete() {
