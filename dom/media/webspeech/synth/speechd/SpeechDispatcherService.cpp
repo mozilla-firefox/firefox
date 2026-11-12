@@ -219,6 +219,12 @@ SpeechDispatcherCallback::OnVolumeChanged(float aVolume) {
   return NS_OK;
 }
 
+// CANCEL/END/PAUSE/RESUME can arrive before BEGIN (e.g. speak()+cancel()
+// race with speech-dispatcher). mStartTime stays null in that case.
+static double ElapsedSeconds(const TimeStamp& aStart) {
+  return aStart.IsNull() ? 0.0 : (TimeStamp::Now() - aStart).ToSeconds();
+}
+
 bool SpeechDispatcherCallback::OnSpeechEvent(SPDNotificationType state) {
   bool remove = false;
 
@@ -229,16 +235,16 @@ bool SpeechDispatcherCallback::OnSpeechEvent(SPDNotificationType state) {
       break;
 
     case SPD_EVENT_PAUSE:
-      mTask->DispatchPause((TimeStamp::Now() - mStartTime).ToSeconds(), 0);
+      mTask->DispatchPause(ElapsedSeconds(mStartTime), 0);
       break;
 
     case SPD_EVENT_RESUME:
-      mTask->DispatchResume((TimeStamp::Now() - mStartTime).ToSeconds(), 0);
+      mTask->DispatchResume(ElapsedSeconds(mStartTime), 0);
       break;
 
     case SPD_EVENT_CANCEL:
     case SPD_EVENT_END:
-      mTask->DispatchEnd((TimeStamp::Now() - mStartTime).ToSeconds(), 0);
+      mTask->DispatchEnd(ElapsedSeconds(mStartTime), 0);
       remove = true;
       break;
 
