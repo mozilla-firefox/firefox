@@ -97,7 +97,16 @@ from mozlog.formatters import TestSummaryFormatter
             id="process_start_dropped",
         ),
         pytest.param(
-            {"action": "tsan_error", "stack": "race"}, False, id="tsan_error_dropped"
+            {
+                "action": "tsan_error",
+                "kind": "data race",
+                "signature": "pk11slot.c:1350:17 in PK11_InitToken",
+                "pid": 1596,
+                "stacks": [{"label": "Write of size 2 by thread T9", "stack": []}],
+                "scope": "browser_syncedtabs_errors_firefoxview.js",
+            },
+            True,
+            id="tsan_error_kept",
         ),
         pytest.param(
             {"action": "assertion_failure", "kind": "MOZ_ASSERT", "stack": []},
@@ -495,6 +504,50 @@ def test_testsummary_ubsan_error_keeps_stack():
     assert result["column"] == 33
     assert "thread" not in result
     assert "pid" not in result
+
+
+def test_testsummary_tsan_error_keeps_pid_and_stacks():
+    fmt = TestSummaryFormatter()
+    stacks = [
+        {
+            "label": "Write of size 2 at 0x725c002ac828 by thread T9",
+            "stack": [
+                {
+                    "function": "PK11_InitToken",
+                    "module": "libnss3.so",
+                    "module_offset": "0xd9c2f",
+                    "file": "/builds/worker/checkouts/gecko/security/nss/lib/pk11wrap/pk11slot.c",
+                    "line": 1350,
+                    "column": 17,
+                }
+            ],
+        }
+    ]
+    scope = "browser/components/firefoxview/tests/browser/browser_syncedtabs_errors_firefoxview.js"
+    record = {
+        "action": "tsan_error",
+        "time": 1793990929939,
+        "thread": "MainThread",
+        # The racing process, not the harness that logged the record.
+        "pid": 1596,
+        "source": "mochitest",
+        "kind": "data race",
+        "signature": "pk11slot.c:1350:17 in PK11_InitToken",
+        "description": None,
+        "stacks": stacks,
+        "scope": scope,
+    }
+    result = json.loads(fmt(record))
+    assert result == {
+        "action": "tsan_error",
+        "time": 1793990929939,
+        "pid": 1596,
+        "kind": "data race",
+        "signature": "pk11slot.c:1350:17 in PK11_InitToken",
+        "description": None,
+        "stacks": stacks,
+        "scope": scope,
+    }
 
 
 def test_testsummary_log_error_keeps_stack():
