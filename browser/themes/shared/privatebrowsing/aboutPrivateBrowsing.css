@@ -98,8 +98,7 @@ p {
   background: var(--color-white-alpha-20);
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 

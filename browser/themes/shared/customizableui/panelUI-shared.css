@@ -1228,7 +1228,7 @@ toolbarbutton[constrain-size="true"][cui-areatype="panel"] > .toolbarbutton-badg
       position: absolute;
       top: calc(var(--icon-size) - 6px);
       /* Avatar icon size minus its circle width minus half of the little circle icon size */
-      left: calc(var(--icon-size) - 1px - 6px / 2);
+      inset-inline-start: calc(var(--icon-size) - 1px - 6px / 2);
       /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       height: 6px;
       /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */

@@ -59,9 +59,9 @@
       dialog::backdrop {
         /* GTK exposes the titlebar radius via an environment variable. */
         /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-        border-top-left-radius: env(-moz-gtk-csd-titlebar-radius);
+        border-start-start-radius: env(-moz-gtk-csd-titlebar-radius);
         /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-        border-top-right-radius: env(-moz-gtk-csd-titlebar-radius);
+        border-start-end-radius: env(-moz-gtk-csd-titlebar-radius);
         @media -moz-pref("widget.gtk.rounded-bottom-corners.enabled") {
           /* Use an uniform clip to allow WebRender to optimize it better */
           /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
