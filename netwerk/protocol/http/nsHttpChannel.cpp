@@ -2368,6 +2368,15 @@ nsresult nsHttpChannel::CallOnStartRequest() {
     return mStatus;
   }
 
+  // Alt-data describes the cached body, so it doesn't apply to a body coming
+  // from the network.  ContinueProcessNormal() has already dropped it, but
+  // other paths (e.g. OnAuthCancelled()) deliver a network body without it.
+  if (!mCachePump) {
+    mAvailableCachedAltDataType.Truncate();
+    StoreDeliveringAltData(false);
+    mAltDataLength = -1;
+  }
+
   // Ensure mListener->OnStartRequest will be invoked before exiting
   // this function.
   auto onStartGuard = MakeScopeExit([&] {
