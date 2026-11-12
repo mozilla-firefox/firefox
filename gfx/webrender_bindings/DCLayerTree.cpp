@@ -2661,7 +2661,15 @@ bool DCSurfaceVideo::CreateVideoSwapChain(DXGI_FORMAT aSwapChainFormat) {
   }
 
   mSwapChainFormat = aSwapChainFormat;
-  mContentVisual->SetContent(mVideoSwapChain);
+  hr = mContentVisual->SetContent(mVideoSwapChain);
+  if (FAILED(hr)) {
+    gfxCriticalNoteOnce << "SetContent(video swap chain) failed: "
+                        << gfx::hexa(hr);
+    ReleaseDecodeSwapChainResources();
+    return false;
+  }
+  // Geometry can remain unchanged when the video swap chain is replaced.
+  mDCLayerTree->SetPendingCommit();
   return true;
 }
 
