@@ -6107,13 +6107,15 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
 }
 
 BufferOffset MacroAssemblerRiscv64::ma_jump(ImmPtr dest) {
-  // 6 instruction to materialize the constant.
+  // The target never changes, so materialize it in as few instructions as
+  // possible. Up to 8 instructions to materialize the constant.
   // + 1 instruction for jr.
-  AutoForbidPoolsAndNops afp(this, 7);
+  AutoForbidPoolsAndNops afp(this, 9);
 
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
-  BufferOffset offset = ma_liPatchable(scratch, dest);
+  BufferOffset offset = nextOffset();
+  ma_li(scratch, ImmWord(uintptr_t(dest.value)));
   jr(scratch);
   return offset;
 }
@@ -6499,14 +6501,16 @@ void MacroAssemblerRiscv64::ma_push(FloatRegister f) {
 }
 
 BufferOffset MacroAssemblerRiscv64::ma_call(ImmPtr dest) {
-  // 6 instruction to materialize the constant.
+  // The target never changes, so materialize it in as few instructions as
+  // possible. Up to 8 instructions to materialize the constant.
   // + 1 instruction for jalr.
-  AutoForbidPoolsAndNops afp(this, 7);
+  AutoForbidPoolsAndNops afp(this, 9);
 
   UseScratchRegisterScope temps(this);
   temps.Acquire(CallReg);
 
-  BufferOffset offset = ma_liPatchable(CallReg, dest);
+  BufferOffset offset = nextOffset();
+  ma_li(CallReg, ImmWord(uintptr_t(dest.value)));
   jalr(CallReg);
   return offset;
 }
