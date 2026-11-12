@@ -4,7 +4,6 @@
 
 #include "mozilla/dom/HTMLTemplateElement.h"
 
-#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/HTMLTemplateElementBinding.h"
 #include "mozilla/dom/NameSpaceConstants.h"
@@ -110,8 +109,7 @@ bool HTMLTemplateElement::ParseAttribute(int32_t aNamespaceID,
       return aResult.ParseEnumValue(aValue, kShadowRootModeTable, false,
                                     nullptr);
     }
-    if (aAttribute == nsGkAtoms::shadowrootslotassignment &&
-        StaticPrefs::dom_shadowdom_shadowRootSlotAssignment_enabled()) {
+    if (aAttribute == nsGkAtoms::shadowrootslotassignment) {
       return aResult.ParseEnumValue(aValue, kSlotAssignmentTable, false,
                                     kSlotAssignmentDefault);
     }

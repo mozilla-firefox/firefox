@@ -11694,8 +11694,7 @@ static bool StartSerializingShadowDOM(
 
   // 6. If shadow's slot assignment is "manual", then append "
   // shadowrootslotassignment="manual"".
-  if (StaticPrefs::dom_shadowdom_shadowRootSlotAssignment_enabled() &&
-      shadow->SlotAssignment() == SlotAssignmentMode::Manual) {
+  if (shadow->SlotAssignment() == SlotAssignmentMode::Manual) {
     aBuilder.Append(u" shadowrootslotassignment=\"manual\"");
   }
 

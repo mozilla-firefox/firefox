@@ -2343,8 +2343,7 @@ nsIContentHandle* nsHtml5TreeBuilder::getShadowRootFromHost(
   }
 
   SlotAssignmentMode slotAssignment = SlotAssignmentMode::Named;
-  if (mozilla::StaticPrefs::dom_shadowdom_shadowRootSlotAssignment_enabled() &&
-      aShadowRootSlotAssignment.LowerCaseEqualsASCII("manual")) {
+  if (aShadowRootSlotAssignment.LowerCaseEqualsASCII("manual")) {
     slotAssignment = SlotAssignmentMode::Manual;
   }
 
