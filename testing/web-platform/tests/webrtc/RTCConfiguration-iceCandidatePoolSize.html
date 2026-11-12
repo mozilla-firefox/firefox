@@ -24,24 +24,27 @@ dictionary RTCConfiguration {
 
 ... of type octet
 */
-test(() => {
+test(t => {
   const pc = new RTCPeerConnection();
+  t.add_cleanup(() => pc.close());
   assert_idl_attribute(pc, "getConfiguration");
   assert_equals(pc.getConfiguration().iceCandidatePoolSize, 0);
 }, "Initialize a new RTCPeerConnection with no iceCandidatePoolSize");
 
-test(() => {
+test(t => {
   const pc = new RTCPeerConnection({
     iceCandidatePoolSize: 0
   });
+  t.add_cleanup(() => pc.close());
   assert_idl_attribute(pc, "getConfiguration");
   assert_equals(pc.getConfiguration().iceCandidatePoolSize, 0);
 }, "Initialize a new RTCPeerConnection with iceCandidatePoolSize: 0");
 
-test(() => {
+test(t => {
   const pc = new RTCPeerConnection({
     iceCandidatePoolSize: 255
   });
+  t.add_cleanup(() => pc.close());
   assert_idl_attribute(pc, "getConfiguration");
   assert_equals(pc.getConfiguration().iceCandidatePoolSize, 255);
 }, "Initialize a new RTCPeerConnection with iceCandidatePoolSize: 255");
@@ -67,8 +70,9 @@ test(() => {
 Reconfiguration
 */
 
-test(() => {
+test(t => {
   const pc = new RTCPeerConnection();
+  t.add_cleanup(() => pc.close());
   assert_idl_attribute(pc, "getConfiguration");
   assert_idl_attribute(pc, "setConfiguration");
   pc.setConfiguration({
@@ -77,8 +81,9 @@ test(() => {
   assert_equals(pc.getConfiguration().iceCandidatePoolSize, 0);
 }, "Reconfigure RTCPeerConnection instance iceCandidatePoolSize to 0");
 
-test(() => {
+test(t => {
   const pc = new RTCPeerConnection();
+  t.add_cleanup(() => pc.close());
   assert_idl_attribute(pc, "getConfiguration");
   assert_idl_attribute(pc, "setConfiguration");
   pc.setConfiguration({
@@ -95,8 +100,9 @@ non-existent setConfiguration method (in cases where it has not yet
 been implemented). Without this check, these tests will pass incorrectly.
 */
 
-test(() => {
+test(t => {
   const pc = new RTCPeerConnection();
+  t.add_cleanup(() => pc.close());
   assert_equals(typeof pc.setConfiguration, "function", "RTCPeerConnection.prototype.setConfiguration is not implemented");
   assert_throws_js(TypeError, () => {
     pc.setConfiguration({
@@ -105,8 +111,9 @@ test(() => {
   });
 }, "Reconfigure RTCPeerConnection instance iceCandidatePoolSize to -1 (Out Of Range)");
 
-test(() => {
+test(t => {
   const pc = new RTCPeerConnection();
+  t.add_cleanup(() => pc.close());
   assert_equals(typeof pc.setConfiguration, "function", "RTCPeerConnection.prototype.setConfiguration is not implemented");
   assert_throws_js(TypeError, () => {
     pc.setConfiguration({
