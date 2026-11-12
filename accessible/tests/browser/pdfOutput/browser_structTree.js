@@ -511,3 +511,88 @@ addPdfStructTreeTest(
     },
   ]
 );
+
+// mtext is a MathML text integration point, so this (invalid) nested mtext is
+// actually parsed as an unknown HTML element, not a MathML one. It therefore
+// gets no Accessible of its own; the text ends up as a direct child Accessible
+// of the outer (real) mtext.
+addPdfStructTreeTest(
+  "testMathNestedMtext",
+  `<math><mtext><mtext>1</mtext></mtext></math>`,
+  [
+    {
+      role: "Root",
+      children: [
+        {
+          role: "Document",
+          children: [
+            {
+              role: "Formula",
+              children: [
+                {
+                  role: "math",
+                  children: [
+                    {
+                      role: "mtext",
+                      children: [{ content: ["1"] }],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  { chrome: true, topLevel: true }
+);
+
+// HTML content is valid directly inside mtext. Unlike testMathNestedMtext,
+// the link here gets its own Accessible, so it needs its own struct element
+// rather than being folded into mtext.
+addPdfStructTreeTest(
+  "testMathLinkInMtext",
+  `<math><mtext><a href="https://example.com/">1</a></mtext></math>`,
+  [
+    {
+      role: "Root",
+      children: [
+        {
+          role: "Document",
+          children: [
+            {
+              role: "Formula",
+              children: [
+                {
+                  role: "math",
+                  children: [
+                    {
+                      role: "mtext",
+                      children: [
+                        {
+                          role: "Link",
+                          children: [
+                            {
+                              role: "NonStruct",
+                              children: [{ content: ["1"] }],
+                            },
+                            {
+                              annotation: "Link",
+                              url: "https://example.com/",
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  { chrome: true, topLevel: true }
+);

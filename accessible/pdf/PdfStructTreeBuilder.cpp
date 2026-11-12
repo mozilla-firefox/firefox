@@ -134,15 +134,6 @@ PdfStructTreeBuilder::GlobalAccessibleId PdfStructTreeBuilder::GetAccId(
   if (!content) {
     return {};
   }
-  if (content->IsText()) {
-    nsINode* parent = content->GetParent();
-    if (parent->IsMathMLElement()) {
-      // Inside MathML, we can't represent a TextLeafAccessible as a separate
-      // PDF structure element, as NonStruct isn't valid in a PDF MathML
-      // subtree. Therefore, map any content to the parent MathML element.
-      content = parent->AsContent();
-    }
-  }
   dom::Document* doc = content->OwnerDoc();
   // This should only ever be called for a document being printed and those are
   // always static documents.
@@ -151,9 +142,22 @@ PdfStructTreeBuilder::GlobalAccessibleId PdfStructTreeBuilder::GetAccId(
   if (!docAcc) {
     return {};
   }
-  Accessible* acc = docAcc->GetAccessible(content);
+  LocalAccessible* acc = docAcc->GetAccessible(content);
   if (!acc) {
     return {};
+  }
+  if (content->IsText()) {
+    LocalAccessible* parent = acc->LocalParent();
+    if (parent && parent->GetContent() &&
+        parent->GetContent()->IsMathMLElement()) {
+      // Inside MathML, we can't represent a TextLeafAccessible as a separate
+      // PDF structure element, as NonStruct isn't valid in a PDF MathML
+      // subtree. Therefore, map it to the parent Accessible. We check the
+      // parent Accessible rather than the parent DOM element because invalid
+      // markup (e.g. <mtext><mtext>) results in an intervening DOM node which
+      // doesn't get an Accessible.
+      acc = parent;
+    }
   }
   uint64_t innerWindowId = doc->InnerWindowID();
   if (!innerWindowId) {
@@ -533,14 +537,18 @@ void PdfStructTreeBuilder::BuildStructSubtree(Accessible* aAcc,
     }
   }
 
+  // Determine whether aAcc itself is a MathML element. In contrast, aInMath
+  // tracks whether any ancestor is a MathML element. There's no way to ask this
+  // directly for a RemoteAccessible, so we check the namespace we set above.
+  const bool accIsMathMLElement = aPdf.fNamespace.equals(kNamespaceMathMl);
   uint32_t count = aAcc->ChildCount();
   aPdf.fChildVector.resize(count);
   for (uint32_t c = 0; c < count; ++c) {
     aPdf.fChildVector[c] = std::make_unique<SkPDF::StructureElementNode>();
     Accessible* child = aAcc->ChildAt(c);
-    if (aInMath && child->IsTextLeaf()) {
-      // For MathML, we map a TextLeafAccessible to the parent MathML element.
-      // See GetAccId().
+    if (accIsMathMLElement && child->IsTextLeaf()) {
+      // For MathML, we map a TextLeafAccessible to its parent Accessible. See
+      // GetAccId().
       continue;
     }
     BuildStructSubtree(child, *aPdf.fChildVector[c], aInMath);
