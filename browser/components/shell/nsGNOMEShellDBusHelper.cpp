@@ -363,7 +363,7 @@ static void DBusLaunchWithAllResults(
   }
 
   // When there isn't any uri to open pass search at least.
-  if (!childCount) {
+  if (urlListElements == 1) {
     urlList[urlListElements++] = strdup("--search");
     urlList[urlListElements++] = strdup(aSearchResult->GetSearchTerm().get());
   }
