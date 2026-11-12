@@ -3732,9 +3732,9 @@ bool Simulator::DecodeRvvVS() {
 void Simulator::DecodeRVIType() {
   switch (instr_.InstructionBits() & kITypeMask) {
     case RO_JALR: {
-      set_rd(get_pc() + kInstrSize);
       // Note: No need to shift 2 for JALR's imm12, but set lowest bit to 0.
       sreg_t next_pc = (rs1() + imm12()) & ~sreg_t(1);
+      set_rd(get_pc() + kInstrSize);
       set_pc(next_pc);
       break;
     }
@@ -4256,8 +4256,9 @@ void Simulator::DecodeCRType() {
         DieOrDebug();
       } else if (instr_.RvcRdValue() != 0 &&
                  instr_.RvcRs2Value() == 0) {  // c.jalr
+        sreg_t next_pc = rvc_rs1();
         setRegister(ra, get_pc() + kShortInstrSize);
-        set_pc(rvc_rs1());
+        set_pc(next_pc);
       } else if (instr_.RvcRdValue() != 0 &&
                  instr_.RvcRs2Value() != 0) {  // c.add
         set_rvc_rd(sext_xlen(rvc_rs1() + rvc_rs2()));
