@@ -176,7 +176,7 @@ RefPtr<PRemoteEncoderChild::EncodePromise> RemoteMediaDataEncoder::DoSendEncode(
       audioSamples.AppendElement(sample->As<AudioData>());
     }
 
-    auto samples = MakeRefPtr<ArrayOfRemoteAudioData>();
+    auto samples = MakeNotNull<RefPtr<ArrayOfRemoteAudioData>>();
     if (!samples->Fill(audioSamples, [&](size_t aSize) {
           return mChild->AllocateBuffer(aSize, aTicket);
         })) {
@@ -194,7 +194,7 @@ RefPtr<PRemoteEncoderChild::EncodePromise> RemoteMediaDataEncoder::DoSendEncode(
       videoSamples.AppendElement(sample->As<VideoData>());
     }
 
-    auto samples = MakeRefPtr<ArrayOfRemoteVideoData>();
+    auto samples = MakeNotNull<RefPtr<ArrayOfRemoteVideoData>>();
     for (const auto& videoSample : videoSamples) {
       if (layers::Image* videoImage = videoSample->mImage) {
         // We don't need to supply a working deallocator because the ticket is
@@ -266,24 +266,23 @@ RefPtr<MediaDataEncoder::EncodePromise> RemoteMediaDataEncoder::Encode(
                       aResponse.get_EncodeCompletionIPDL();
 
                   nsTArray<RefPtr<MediaRawData>> samples;
-                  if (auto remoteSamples = encodeResponse.samples()) {
-                    size_t count = remoteSamples->Count();
-                    samples.SetCapacity(count);
-                    for (size_t i = 0; i < count; ++i) {
-                      AUTO_MARKER(marker, ".Encode.ElementAt");
-                      if (RefPtr<MediaRawData> sample =
-                              remoteSamples->ElementAt(i)) {
-                        marker.End();
-                        samples.AppendElement(std::move(sample));
-                      } else {
-                        LOGE(
-                            "[{}] Encode resolved, failed to buffer "
-                            "samples",
-                            fmt::ptr(self.get()));
-                        promise->Reject(MediaResult(NS_ERROR_OUT_OF_MEMORY),
-                                        __func__);
-                        return;
-                      }
+                  const auto& remoteSamples = encodeResponse.samples();
+                  size_t count = remoteSamples->Count();
+                  samples.SetCapacity(count);
+                  for (size_t i = 0; i < count; ++i) {
+                    AUTO_MARKER(marker, ".Encode.ElementAt");
+                    if (RefPtr<MediaRawData> sample =
+                            remoteSamples->ElementAt(i)) {
+                      marker.End();
+                      samples.AppendElement(std::move(sample));
+                    } else {
+                      LOGE(
+                          "[{}] Encode resolved, failed to buffer "
+                          "samples",
+                          fmt::ptr(self.get()));
+                      promise->Reject(MediaResult(NS_ERROR_OUT_OF_MEMORY),
+                                      __func__);
+                      return;
                     }
                   }
 
@@ -325,20 +324,18 @@ RefPtr<MediaDataEncoder::EncodePromise> RemoteMediaDataEncoder::Drain() {
               const auto& encodeResponse = aResponse.get_EncodeCompletionIPDL();
 
               nsTArray<RefPtr<MediaRawData>> samples;
-              if (auto remoteSamples = encodeResponse.samples()) {
-                size_t count = remoteSamples->Count();
-                samples.SetCapacity(count);
-                for (size_t i = 0; i < count; ++i) {
-                  if (RefPtr<MediaRawData> sample =
-                          remoteSamples->ElementAt(i)) {
-                    samples.AppendElement(std::move(sample));
-                  } else {
-                    LOGE("[{}] Drain resolved, failed to buffer samples",
-                         fmt::ptr(self.get()));
-                    self->mDrainPromise.Reject(
-                        MediaResult(NS_ERROR_OUT_OF_MEMORY), __func__);
-                    return;
-                  }
+              const auto& remoteSamples = encodeResponse.samples();
+              size_t count = remoteSamples->Count();
+              samples.SetCapacity(count);
+              for (size_t i = 0; i < count; ++i) {
+                if (RefPtr<MediaRawData> sample = remoteSamples->ElementAt(i)) {
+                  samples.AppendElement(std::move(sample));
+                } else {
+                  LOGE("[{}] Drain resolved, failed to buffer samples",
+                       fmt::ptr(self.get()));
+                  self->mDrainPromise.Reject(
+                      MediaResult(NS_ERROR_OUT_OF_MEMORY), __func__);
+                  return;
                 }
               }
 
@@ -368,8 +365,8 @@ RemoteMediaDataEncoder::Reconfigure(
           -> RefPtr<MediaDataEncoder::ReconfigurationPromise> {
         LOGD("[{}] Reconfigure send", fmt::ptr(self.get()));
         self->mChild
-            ->SendReconfigure(
-                const_cast<EncoderConfigurationChangeList*>(changes.get()))
+            ->SendReconfigure(WrapNotNull(
+                const_cast<EncoderConfigurationChangeList*>(changes.get())))
             ->Then(
                 self->mThread, __func__,
                 [self](const MediaResult& aResult) {

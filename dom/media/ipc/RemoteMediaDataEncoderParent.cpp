@@ -210,7 +210,7 @@ IPCResult RemoteMediaDataEncoderParent::RecvEncode(
             }
 
             auto ticket = MakeRefPtr<ShmemRecycleTicket>();
-            auto samples = MakeRefPtr<ArrayOfRemoteMediaRawData>();
+            auto samples = MakeNotNull<RefPtr<ArrayOfRemoteMediaRawData>>();
             if (!samples->Fill(aValue.ResolveValue(), [&](size_t aSize) {
                   return self->AllocateBuffer(aSize, ticket);
                 })) {
@@ -234,14 +234,14 @@ IPCResult RemoteMediaDataEncoderParent::RecvEncode(
 }
 
 IPCResult RemoteMediaDataEncoderParent::RecvReconfigure(
-    EncoderConfigurationChangeList* aConfigurationChanges,
+    NotNull<EncoderConfigurationChangeList*> aConfigurationChanges,
     ReconfigureResolver&& aResolver) {
   if (!mEncoder || !mInitialized) {
     aResolver(MediaResult(NS_ERROR_ABORT, __func__));
     return IPC_OK();
   }
 
-  mEncoder->Reconfigure(aConfigurationChanges)
+  mEncoder->Reconfigure(aConfigurationChanges.get())
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
           [encoder = RefPtr{mEncoder}, resolver = std::move(aResolver)](
@@ -273,7 +273,7 @@ IPCResult RemoteMediaDataEncoderParent::RecvDrain(DrainResolver&& aResolver) {
         }
 
         auto ticket = MakeRefPtr<ShmemRecycleTicket>();
-        auto samples = MakeRefPtr<ArrayOfRemoteMediaRawData>();
+        auto samples = MakeNotNull<RefPtr<ArrayOfRemoteMediaRawData>>();
         if (!samples->Fill(aValue.ResolveValue(), [&](size_t aSize) {
               return self->AllocateBuffer(aSize, ticket);
             })) {

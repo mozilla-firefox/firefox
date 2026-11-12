@@ -168,7 +168,7 @@ void RemoteDecoderParent::DecodeNextSample(
 }
 
 mozilla::ipc::IPCResult RemoteDecoderParent::RecvDecode(
-    ArrayOfRemoteMediaRawData* aData, DecodeResolver&& aResolver) {
+    NotNull<ArrayOfRemoteMediaRawData*> aData, DecodeResolver&& aResolver) {
   MOZ_ASSERT(OnManagerThread());
   if (!mDecoder || mState != State::Initialized) {
     aResolver(MediaResult(NS_ERROR_ABORT, __func__));
@@ -183,7 +183,7 @@ mozilla::ipc::IPCResult RemoteDecoderParent::RecvDecode(
                         "overlapping Decode in RemoteDecoderParent");
   mPendingDecodeResolver.emplace(std::move(aResolver));
   MediaDataDecoder::DecodedData output;
-  DecodeNextSample(aData, 0, std::move(output));
+  DecodeNextSample(aData.get(), 0, std::move(output));
 
   return IPC_OK();
 }

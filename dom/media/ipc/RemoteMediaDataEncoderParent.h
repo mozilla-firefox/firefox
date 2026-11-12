@@ -36,7 +36,7 @@ class RemoteMediaDataEncoderParent final
   IPCResult RecvEncode(const EncodedInputIPDL& aData,
                        EncodeResolver&& aResolver);
   IPCResult RecvReconfigure(
-      EncoderConfigurationChangeList* aConfigurationChanges,
+      NotNull<EncoderConfigurationChangeList*> aConfigurationChanges,
       ReconfigureResolver&& aResolver);
   IPCResult RecvDrain(DrainResolver&& aResolver);
   IPCResult RecvReleaseTicket(const uint32_t& aTicketId);

@@ -157,7 +157,7 @@ MediaResult RemoteAudioDecoderParent::ProcessDecodedData(
     AudioData* audio = static_cast<AudioData*>(element.get());
     data.AppendElement(audio);
   }
-  auto array = MakeRefPtr<ArrayOfRemoteAudioData>();
+  auto array = MakeNotNull<RefPtr<ArrayOfRemoteAudioData>>();
   if (!array->Fill(std::move(data),
                    [&](size_t aSize) { return AllocateBuffer(aSize); })) {
     return MediaResult(

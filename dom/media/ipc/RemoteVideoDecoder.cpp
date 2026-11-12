@@ -332,7 +332,7 @@ MediaResult RemoteVideoDecoderParent::ProcessDecodedData(
 
   // If the video decoder bridge has shut down, stop.
   if (mKnowsCompositor && !mKnowsCompositor->GetTextureForwarder()) {
-    aDecodedData = MakeRefPtr<ArrayOfRemoteVideoData>();
+    aDecodedData = MakeNotNull<RefPtr<ArrayOfRemoteVideoData>>();
     return NS_OK;
   }
 
@@ -458,7 +458,7 @@ MediaResult RemoteVideoDecoderParent::ProcessDecodedData(
     array.AppendElement(std::move(output));
   }
 
-  aDecodedData = MakeRefPtr<ArrayOfRemoteVideoData>(std::move(array));
+  aDecodedData = MakeNotNull<RefPtr<ArrayOfRemoteVideoData>>(std::move(array));
 
   return NS_OK;
 }

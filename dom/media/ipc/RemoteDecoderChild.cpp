@@ -111,7 +111,7 @@ RefPtr<MediaDataDecoder::DecodePromise> RemoteDecoderChild::Decode(
         GetCrashedErrorCode(), __func__);
   }
 
-  auto samples = MakeRefPtr<ArrayOfRemoteMediaRawData>();
+  auto samples = MakeNotNull<RefPtr<ArrayOfRemoteMediaRawData>>();
   if (!samples->Fill(aSamples,
                      [&](size_t aSize) { return AllocateBuffer(aSize); })) {
     return MediaDataDecoder::DecodePromise::CreateAndReject(

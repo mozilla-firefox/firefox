@@ -19,8 +19,8 @@ namespace mozilla {
 
 union EncodedInputIPDL
 {
-  nullable ArrayOfRemoteAudioData;
-  nullable ArrayOfRemoteVideoData;
+  ArrayOfRemoteAudioData;
+  ArrayOfRemoteVideoData;
 };
 
 struct EncodeInitCompletionIPDL
@@ -38,7 +38,7 @@ union EncodeInitResultIPDL
 
 struct EncodeCompletionIPDL
 {
-  nullable ArrayOfRemoteMediaRawData samples;
+  ArrayOfRemoteMediaRawData samples;
   uint32_t ticketId;
 };
 
@@ -66,7 +66,7 @@ parent:
   async Init() returns (EncodeInitResultIPDL result);
 
   async Encode(EncodedInputIPDL data) returns (EncodeResultIPDL result);
-  async Reconfigure(nullable EncoderConfigurationChangeList configurationChanges) returns (MediaResult error);
+  async Reconfigure(EncoderConfigurationChangeList configurationChanges) returns (MediaResult error);
   async Drain() returns (EncodeResultIPDL result);
   async ReleaseTicket(uint32_t ticketId);
   async Shutdown() returns (bool unused);

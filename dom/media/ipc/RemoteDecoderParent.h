@@ -34,7 +34,7 @@ class RemoteDecoderParent : public ShmemRecycleAllocator<RemoteDecoderParent>,
   // PRemoteDecoderParent
   virtual IPCResult RecvConstruct(ConstructResolver&& aResolver) = 0;
   IPCResult RecvInit(InitResolver&& aResolver);
-  IPCResult RecvDecode(ArrayOfRemoteMediaRawData* aData,
+  IPCResult RecvDecode(NotNull<ArrayOfRemoteMediaRawData*> aData,
                        DecodeResolver&& aResolver);
   IPCResult RecvFlush(FlushResolver&& aResolver);
   IPCResult RecvDrain(DrainResolver&& aResolver);

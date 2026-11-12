@@ -22,8 +22,8 @@ namespace mozilla {
 
 union DecodedOutputIPDL
 {
-  nullable ArrayOfRemoteAudioData;
-  nullable ArrayOfRemoteVideoData;
+  ArrayOfRemoteAudioData;
+  ArrayOfRemoteVideoData;
 };
 
 struct DecodePropertyIPDL {
@@ -74,7 +74,7 @@ parent:
   // frame. This SurfaceDescriptor can be used on the Layers IPDL protocol, but
   // must be released explicitly using DeallocateSurfaceDescriptorGPUVideo
   // on the manager protocol.
-  async Decode(nullable ArrayOfRemoteMediaRawData data) returns (DecodeResultIPDL result);
+  async Decode(ArrayOfRemoteMediaRawData data) returns (DecodeResultIPDL result);
   async Flush() returns (MediaResult error);
   async Drain() returns (DecodeResultIPDL result);
   async Shutdown() returns (bool unused);
