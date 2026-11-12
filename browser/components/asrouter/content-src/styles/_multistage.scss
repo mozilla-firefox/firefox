@@ -537,6 +537,16 @@ html {
             }
           }
 
+          .language-switcher-container {
+            width: 100%;
+            margin: 16px auto;
+
+            .primary {
+              margin-bottom: 5px;
+              width: 72%;
+            }
+          }
+
           .rtamo-icon-wrapper {
             display: flex;
             margin: auto;

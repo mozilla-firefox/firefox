@@ -1645,6 +1645,14 @@ html {
   background-color: var(--button-background-color-active);
   color: var(--button-text-color-active);
 }
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .main-content-inner .language-switcher-container {
+  width: 100%;
+  margin: 16px auto;
+}
+.onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .main-content-inner .language-switcher-container .primary {
+  margin-bottom: 5px;
+  width: 72%;
+}
 .onboardingContainer:has([pos=center-large][fullscreen]) .section-main .main-content .main-content-inner .rtamo-icon-wrapper {
   display: flex;
   margin: auto;
