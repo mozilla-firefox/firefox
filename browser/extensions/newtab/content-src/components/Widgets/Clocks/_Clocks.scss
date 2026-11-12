@@ -206,13 +206,12 @@
   .clocks-edit-list {
     display: flex;
     flex-direction: column;
-    justify-content: space-evenly;
     gap: var(--space-xsmall);
     flex: 1 1 0;
     min-block-size: 0;
     overflow-y: auto;
     margin: 0;
-    padding: 0;
+    padding-block: var(--space-xxsmall) 0;
     padding-inline: var(--space-xxsmall);
     list-style: none;
   }
