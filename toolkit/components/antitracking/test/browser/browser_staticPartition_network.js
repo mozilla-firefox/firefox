@@ -1,5 +1,9 @@
 add_setup(function () {
   registerCleanupFunction(clearSiteTestData);
+  // Clears the Alt-Svc mappings, which the test expects to start empty.
+  registerCleanupFunction(() =>
+    Services.obs.notifyObservers(null, "browser:purge-session-history")
+  );
 });
 
 function altSvcCacheKeyIsolated(parsed) {
