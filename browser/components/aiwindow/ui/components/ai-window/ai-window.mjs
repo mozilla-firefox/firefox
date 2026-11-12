@@ -68,6 +68,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyManager.sys.mjs",
   MemoriesManager:
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesManager.sys.mjs",
+  AUTO_MODEL_CHOICE_ID:
+    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   getAllModelsData:
     "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   getCurrentModelChoiceId:
@@ -1051,7 +1053,10 @@ export class AIWindow extends MozLitElement {
    * Loads all available models.
    */
   async #loadAvailableModels() {
-    const allModels = await lazy.getAllModelsData();
+    // TODO Bug 2083836: show the Auto model in the smartbar model picker.
+    const { [lazy.AUTO_MODEL_CHOICE_ID]: _unusedAuto, ...allModels } =
+      await lazy.getAllModelsData();
+    void _unusedAuto;
 
     // Only show custom model option if a custom endpoint has been configured
     if (lazy.openAIEngine.hasCustomEndpoint()) {

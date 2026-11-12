@@ -120,7 +120,8 @@ function getPromotedChoiceId(modelData) {
 }
 
 function buildModelCards(modelData, promotedChoiceId) {
-  return getModelDisplayOrder().map(choiceId => {
+  const choiceIds = getModelDisplayOrder().filter(id => id in MODEL_CARDS);
+  return choiceIds.map(choiceId => {
     const model = modelData[choiceId] ?? {};
     const cardContent = MODEL_CARDS[choiceId] ?? {};
     const card = {
