@@ -50,7 +50,7 @@ struct GLContextDesc final : public GLContextCreateDesc {
 
 MOZ_DEFINE_ENUM_CLASS_WITH_BASE(GLVendor, uint8_t,
                                 (Intel, NVIDIA, ATI, Qualcomm, Imagination,
-                                 Nouveau, Vivante, VMware, ARM, Other));
+                                 Nouveau, Vivante, VMware, ARM, AMD, Other));
 
 } /* namespace gl */
 } /* namespace mozilla */
