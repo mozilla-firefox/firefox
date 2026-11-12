@@ -63,7 +63,10 @@ ChromeUtils.importESModule("resource://services-sync/telemetry.sys.mjs");
 import { Svc, Utils } from "resource://services-sync/util.sys.mjs";
 
 import { getFxAccountsSingleton } from "resource://gre/modules/FxAccounts.sys.mjs";
-import { SCOPE_APP_SYNC } from "resource://gre/modules/FxAccountsCommon.sys.mjs";
+import {
+  PREF_LAST_FXA_USER_UID,
+  SCOPE_APP_SYNC,
+} from "resource://gre/modules/FxAccountsCommon.sys.mjs";
 
 const fxAccounts = getFxAccountsSingleton();
 
@@ -116,6 +119,9 @@ function getEngineModules() {
 const lazy = {};
 
 const ACCOUNT_CHOICES_PREF = "perDeviceEngineChoices.accountChoices";
+// Engine choices are per device, so we save them for the last
+// signed in user upon signing out
+const SAVED_CHOICES_PREF = "perDeviceEngineChoices.saved";
 
 // A unique identifier for this browser session. Used for logging so
 // we can easily see whether 2 logs are in the same browser session or
@@ -575,12 +581,20 @@ Sync11Service.prototype = {
   maybeUpdateEngineState(meta) {
     // Set once a sync completes, and cleared on disconnect.
     if (Svc.PrefBranch.getStringPref("lastSync", "")) {
+      Svc.PrefBranch.clearUserPref(SAVED_CHOICES_PREF);
       return;
     }
 
     const { engines, declined } = meta.isNew ? {} : meta.payload;
-    const enabled = engines ? Object.keys(engines) : [];
-    const disabled = Array.isArray(declined) ? declined : [];
+    const saved = this._savedEngineChoices();
+    if (!saved) {
+      // Another account's, or unusable.
+      Svc.PrefBranch.clearUserPref(SAVED_CHOICES_PREF);
+    }
+    const { enabled, disabled } = saved ?? {
+      enabled: engines ? Object.keys(engines) : [],
+      disabled: Array.isArray(declined) ? declined : [],
+    };
 
     this._log.info("Applying initial account choices", { enabled, disabled });
     // Account choices aren't local user changes.
@@ -610,6 +624,41 @@ Sync11Service.prototype = {
     } finally {
       this._ignorePrefObserver = false;
     }
+  },
+
+  /**
+   * @returns {?{enabled: string[], disabled: string[]}} the engines this
+   *   device had enabled and disabled when it signed out, if the same account
+   *   has signed back in.
+   */
+  _savedEngineChoices() {
+    let saved;
+    try {
+      saved = JSON.parse(Svc.PrefBranch.getStringPref(SAVED_CHOICES_PREF, ""));
+    } catch {}
+    // FxA sets this to the new account's hash on sign-in, before Sync starts.
+    if (
+      saved?.uid !== Services.prefs.getStringPref(PREF_LAST_FXA_USER_UID, "") ||
+      !Array.isArray(saved.enabled) ||
+      !Array.isArray(saved.disabled)
+    ) {
+      return null;
+    }
+    this._log.info("Restoring this device's choices from before sign-out");
+    return saved;
+  },
+
+  _engineChoicesToSave() {
+    const uid = Services.prefs.getStringPref(PREF_LAST_FXA_USER_UID, "");
+    if (!Weave.perDeviceEngineChoices || !uid) {
+      return null;
+    }
+    const all = this.engineManager.getAll();
+    return JSON.stringify({
+      uid,
+      enabled: all.filter(e => e.enabled).map(e => e.name),
+      disabled: all.filter(e => !e.enabled).map(e => e.name),
+    });
   },
 
   /**
@@ -1099,6 +1148,9 @@ Sync11Service.prototype = {
   // resets/turns-off sync.
   async startOver() {
     this._log.trace("Invoking Service.startOver.");
+    // Without a completed sync, keep any choices saved by an earlier sign-out.
+    const hasSynced = !!Svc.PrefBranch.getStringPref("lastSync", "");
+    const choicesToSave = hasSynced && this._engineChoicesToSave();
     await this._stopTracking();
     this.status.resetSync();
 
@@ -1131,7 +1183,12 @@ Sync11Service.prototype = {
     // Reset Weave prefs.
     this._ignorePrefObserver = true;
     for (const pref of Svc.PrefBranch.getChildList("")) {
-      Svc.PrefBranch.clearUserPref(pref);
+      if (pref != SAVED_CHOICES_PREF || hasSynced) {
+        Svc.PrefBranch.clearUserPref(pref);
+      }
+    }
+    if (choicesToSave) {
+      Svc.PrefBranch.setStringPref(SAVED_CHOICES_PREF, choicesToSave);
     }
     this._ignorePrefObserver = false;
     this.clusterURL = null;

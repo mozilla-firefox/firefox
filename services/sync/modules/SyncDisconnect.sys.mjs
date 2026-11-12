@@ -103,6 +103,10 @@ export const SyncDisconnectInternal = {
       // data from the profile.
       Services.prefs.clearUserPref(lazy.PREF_LAST_FXA_USER_EMAIL);
       Services.prefs.clearUserPref(lazy.PREF_LAST_FXA_USER_UID);
+      // Choices saved for that user, restored only if they sign back in.
+      Services.prefs.clearUserPref(
+        "services.sync.perDeviceEngineChoices.saved"
+      );
 
       log.info("Finished wiping sync data");
     } catch (ex) {

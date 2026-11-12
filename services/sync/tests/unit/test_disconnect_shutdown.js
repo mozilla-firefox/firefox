@@ -62,6 +62,14 @@ add_task(async function test_shutdown_blocker() {
     PREF_LAST_FXA_USER_UID,
     "dGVzdEBleGFtcGxlLmNvbQ=="
   );
+  Services.prefs.setStringPref(
+    "services.sync.perDeviceEngineChoices.saved",
+    JSON.stringify({
+      uid: "dGVzdEBleGFtcGxlLmNvbQ==",
+      enabled: ["bookmarks"],
+      disabled: [],
+    })
+  );
 
   let promiseDisconnected = SyncDisconnect.disconnect(true);
 
@@ -77,6 +85,12 @@ add_task(async function test_shutdown_blocker() {
   Assert.ok(
     !Services.prefs.prefHasUserValue(PREF_LAST_FXA_USER_UID),
     "Should have reset different user warning pref"
+  );
+  Assert.ok(
+    !Services.prefs.prefHasUserValue(
+      "services.sync.perDeviceEngineChoices.saved"
+    ),
+    "Should have forgotten the choices saved for that user"
   );
   Assert.equal(
     Weave.Service.unlock.callCount,

@@ -1326,3 +1326,98 @@ add_task(async function test_perDevice_engineStateWaitsForMeta() {
     await promiseStopServer(server);
   }
 });
+
+const LAST_USER_PREF = "identity.fxaccounts.lastSignedInUserIdHash";
+const SAVED_CHOICES_PREF = "services.sync.perDeviceEngineChoices.saved";
+
+// A per-device device that synced with Steam enabled signs out. The account
+// declines Steam, so signing back in with no saved choices would disable it.
+async function signOutWithSteamEnabled() {
+  Service.syncID = "abcdefghij";
+  let metaWBO = new ServerWBO("global", {
+    syncID: Service.syncID,
+    storageVersion: STORAGE_VERSION,
+    declined: ["steam"],
+    engines: {},
+  });
+  let server = sync_httpd_setup({
+    "/1.1/johndoe/storage/meta/global": metaWBO.handler(),
+    "/1.1/johndoe/storage/steam": new ServerWBO("steam", {}).handler(),
+  });
+  await setUp(server);
+  enableValidationPrefs();
+  enablePerDeviceSync();
+  Service._ignorePrefObserver = true;
+  Service.engineManager.get("steam").enabled = true;
+  Service._ignorePrefObserver = false;
+  Svc.PrefBranch.setStringPref("lastSync", new Date().toString());
+  Services.prefs.setStringPref(LAST_USER_PREF, "account-a");
+
+  await Service.startOver();
+  return server;
+}
+
+async function signIn(server, uidHash) {
+  Services.prefs.setStringPref(LAST_USER_PREF, uidHash);
+  await setUp(server);
+  enableValidationPrefs();
+  enablePerDeviceSync();
+}
+
+async function cleanUpSignOut(server) {
+  Services.prefs.clearUserPref(LAST_USER_PREF);
+  await Service.startOver();
+  Services.prefs.clearUserPref(SAVED_CHOICES_PREF);
+  await promiseStopServer(server);
+}
+
+add_task(async function test_perDevice_signInRestoresSavedChoices() {
+  _(
+    "Test: Signing back in to the same account restores this device's choices."
+  );
+  let steam = Service.engineManager.get("steam");
+  let server = await signOutWithSteamEnabled();
+  try {
+    Assert.ok(!steam.enabled, "Signing out resets the choice.");
+    Assert.ok(Services.prefs.prefHasUserValue(SAVED_CHOICES_PREF));
+
+    await Service.startOver();
+    Assert.ok(
+      Services.prefs.prefHasUserValue(SAVED_CHOICES_PREF),
+      "A second startOver, as on FxA logout, keeps the saved choices."
+    );
+
+    Services.prefs.setStringPref(LAST_USER_PREF, "account-a");
+    enablePerDeviceSync();
+    Service.identity._findCluster = () => server.baseURI + "/1.1/johndoe/";
+    await Service.updateLocalEnginesState();
+    Assert.ok(steam.enabled, "The setup dialog shows the saved choice.");
+
+    await signIn(server, "account-a");
+
+    await Service.sync();
+    Assert.ok(steam.enabled, "The saved choice wins over the account's.");
+
+    await Service.sync();
+    Assert.ok(
+      !Services.prefs.prefHasUserValue(SAVED_CHOICES_PREF),
+      "The saved choices are dropped once a sync has completed."
+    );
+  } finally {
+    await cleanUpSignOut(server);
+  }
+});
+
+add_task(async function test_perDevice_otherAccountIgnoresSavedChoices() {
+  _("Test: Another account gets the account's choices, not the saved ones.");
+  let steam = Service.engineManager.get("steam");
+  let server = await signOutWithSteamEnabled();
+  try {
+    await signIn(server, "account-b");
+    await Service.sync();
+    Assert.ok(!steam.enabled, "The account's decline is applied.");
+    Assert.ok(!Services.prefs.prefHasUserValue(SAVED_CHOICES_PREF));
+  } finally {
+    await cleanUpSignOut(server);
+  }
+});
