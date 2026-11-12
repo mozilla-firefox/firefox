@@ -37,7 +37,7 @@ export interface Modules {
   "chrome://browser/content/sidebar/sidebar-panel-header.mjs": typeof import("chrome://browser/content/sidebar/sidebar-panel-header.mjs"),
   "chrome://browser/content/sidebar/sidebar-permissions-ui.mjs": typeof import("chrome://browser/content/sidebar/sidebar-permissions-ui.mjs"),
   "chrome://browser/content/sidebar/sidebar-permissions.mjs": typeof import("chrome://browser/content/sidebar/sidebar-permissions.mjs"),
-  "chrome://browser/content/tabbrowser/split-view-footer.mjs": typeof import("chrome://browser/content/tabbrowser/split-view-footer.mjs"),
+  "chrome://browser/content/tabbrowser/address-footer.mjs": typeof import("chrome://browser/content/tabbrowser/address-footer.mjs"),
   "chrome://browser/content/tabbrowser/tab-groups-list.mjs": typeof import("chrome://browser/content/tabbrowser/tab-groups-list.mjs"),
   "chrome://browser/content/tabbrowser/tab-hover-preview.mjs": typeof import("chrome://browser/content/tabbrowser/tab-hover-preview.mjs"),
   "chrome://browser/content/tabbrowser/tab.mjs": typeof import("chrome://browser/content/tabbrowser/tab.mjs"),

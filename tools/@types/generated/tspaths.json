@@ -445,8 +445,8 @@
       "chrome://browser/content/tabbrowser/drag-and-drop.mjs": [
         "../../../browser/components/tabbrowser/content/drag-and-drop.mjs"
       ],
-      "chrome://browser/content/tabbrowser/split-view-footer.mjs": [
-        "../../../browser/components/tabbrowser/content/split-view-footer.mjs"
+      "chrome://browser/content/tabbrowser/address-footer.mjs": [
+        "../../../browser/components/tabbrowser/content/address-footer.mjs"
       ],
       "chrome://browser/content/tabbrowser/tab-groups-list.mjs": [
         "../../../browser/components/tabbrowser/content/tab-groups-list.mjs"

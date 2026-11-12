@@ -40,7 +40,7 @@ async function openSplitViewIconMenu() {
 async function openSplitViewFooterMenu(panel) {
   const footerMenu = document.getElementById("split-view-menu");
   const promiseShown = BrowserTestUtils.waitForPopupEvent(footerMenu, "shown");
-  const footer = panel.querySelector("split-view-footer");
+  const footer = panel.querySelector("address-footer");
   AccessibilityUtils.setEnv({ focusableRule: false });
   EventUtils.synthesizeMouseAtCenter(footer.menuButtonElement, {});
   AccessibilityUtils.resetEnv();

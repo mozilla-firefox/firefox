@@ -4229,7 +4229,7 @@ export class Tabbrowser {
     const panels = [];
     for (const tab of tabs) {
       this.#insertBrowser(tab);
-      this.#insertSplitViewFooter(tab);
+      this.#insertAddressFooter(tab);
       if (tab.linkedBrowser) {
         tab.linkedBrowser.docShellIsActive = true;
         panels.push(tab.linkedPanel);
@@ -4245,13 +4245,13 @@ export class Tabbrowser {
    *
    * @param {MozTabbrowserTab} tab
    */
-  #insertSplitViewFooter(tab) {
+  #insertAddressFooter(tab) {
     const panelEl = this.document.getElementById(tab.linkedPanel);
-    if (panelEl?.querySelector("split-view-footer")) {
+    if (panelEl?.querySelector("address-footer")) {
       return;
     }
     if (panelEl) {
-      const footer = this.document.createXULElement("split-view-footer");
+      const footer = this.document.createXULElement("address-footer");
       footer.setTab(tab);
       panelEl.querySelector(".browserStack").appendChild(footer);
     }
@@ -4261,7 +4261,7 @@ export class Tabbrowser {
     const menu = this.document.getElementById("split-view-menu");
     const isFromFooter =
       anchorElement?.localName === "toolbarbutton" &&
-      anchorElement?.parentElement?.localName === "split-view-footer";
+      anchorElement?.parentElement?.localName === "address-footer";
     menu.setAttribute("data-trigger-source", isFromFooter ? "footer" : "icon");
     menu.openPopup(anchorElement, "after_start");
   }

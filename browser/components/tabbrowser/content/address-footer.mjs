@@ -16,7 +16,7 @@ const lazy = XPCOMUtils.declareLazy({
  *
  * The footer displays the favicon and domain name of the site.
  */
-export class MozSplitViewFooter extends MozXULElement {
+export class MozAddressFooter extends MozXULElement {
   #initialized = false;
 
   #isInsecure = false;
@@ -55,12 +55,12 @@ export class MozSplitViewFooter extends MozXULElement {
   #tab = null;
 
   static markup = `
-    <hbox class="split-view-security-warning" hidden="">
-      <html:img class="split-view-icon split-view-icon-insecure" role="presentation" src="chrome://global/skin/icons/security-broken.svg" />
+    <hbox class="address-footer-security-warning" hidden="">
+      <html:img class="address-footer-icon address-footer-icon-insecure" role="presentation" src="chrome://global/skin/icons/security-broken.svg" />
       <html:span data-l10n-id="urlbar-trust-icon-notsecure-label"></html:span>
     </hbox>
-    <html:img class="split-view-icon split-view-tab-image" hidden="" role="presentation"/>
-    <html:span class="split-view-uri"></html:span>
+    <html:img class="address-footer-icon address-footer-tab-image" hidden="" role="presentation"/>
+    <html:span class="address-footer-uri"></html:span>
     <toolbarbutton image="chrome://global/skin/icons/more.svg"
                    data-l10n-id="urlbar-split-view-button" />
   `;
@@ -70,12 +70,14 @@ export class MozSplitViewFooter extends MozXULElement {
       return;
     }
     this.appendChild(
-      /** @type {typeof MozSplitViewFooter} */ (this.constructor).fragment
+      /** @type {typeof MozAddressFooter} */ (this.constructor).fragment
     );
 
-    this.securityElement = this.querySelector(".split-view-security-warning");
-    this.tabImageIconElement = this.querySelector(".split-view-tab-image");
-    this.uriElement = this.querySelector(".split-view-uri");
+    this.securityElement = this.querySelector(
+      ".address-footer-security-warning"
+    );
+    this.tabImageIconElement = this.querySelector(".address-footer-tab-image");
+    this.uriElement = this.querySelector(".address-footer-uri");
     this.menuButtonElement = this.querySelector("toolbarbutton");
 
     // Ensure these elements are up-to-date, as this info may have been set
@@ -228,4 +230,4 @@ export class MozSplitViewFooter extends MozXULElement {
   }
 }
 
-customElements.define("split-view-footer", MozSplitViewFooter);
+customElements.define("address-footer", MozAddressFooter);

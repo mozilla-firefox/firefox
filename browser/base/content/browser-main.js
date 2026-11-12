@@ -18,7 +18,7 @@
   Services.scriptloader.loadSubScript("chrome://browser/content/sidebar/browser-sidebar.js", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/browser-customtitlebar.js", this);
   Services.scriptloader.loadSubScript("chrome://browser/content/browser-unified-extensions.js", this);
-  ChromeUtils.importESModule("chrome://browser/content/tabbrowser/split-view-footer.mjs", { global: "current" });
+  ChromeUtils.importESModule("chrome://browser/content/tabbrowser/address-footer.mjs", { global: "current" });
   Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/status-panel.js", this);
   ChromeUtils.importESModule("chrome://browser/content/tabbrowser/tab.mjs", { global: "current" });
   Services.scriptloader.loadSubScript("chrome://browser/content/tabbrowser/tab-bar-visibility.js", this);

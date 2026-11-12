@@ -50,7 +50,7 @@ async function setupSplitView() {
 async function activateCommand(panel, command) {
   const footerMenu = document.getElementById("split-view-menu");
   const promiseShown = BrowserTestUtils.waitForPopupEvent(footerMenu, "shown");
-  const footer = panel.querySelector("split-view-footer");
+  const footer = panel.querySelector("address-footer");
   // Only the urlbar menu is focusable, not the footer menu.
   AccessibilityUtils.setEnv({ focusableRule: false });
   EventUtils.synthesizeMouseAtCenter(footer.menuButtonElement, {});
@@ -70,8 +70,8 @@ add_task(async function test_displayed_over_inactive_panel() {
 
   const panel1 = document.getElementById(tab1.linkedPanel);
   const panel2 = document.getElementById(tab2.linkedPanel);
-  const panel1Footer = panel1.querySelector("split-view-footer");
-  const panel2Footer = panel2.querySelector("split-view-footer");
+  const panel1Footer = panel1.querySelector("address-footer");
+  const panel2Footer = panel2.querySelector("address-footer");
 
   info("Focus the first panel.");
   await SimpleTest.promiseFocus(tab1.linkedBrowser);
@@ -119,7 +119,7 @@ add_task(async function test_security_warning() {
   await SimpleTest.promiseFocus(tab1.linkedBrowser);
 
   const inactivePanel = document.getElementById(tab2.linkedPanel);
-  const footer = inactivePanel.querySelector("split-view-footer");
+  const footer = inactivePanel.querySelector("address-footer");
   Assert.ok(
     BrowserTestUtils.isHidden(footer.securityElement),
     "No security warning for HTTPS."

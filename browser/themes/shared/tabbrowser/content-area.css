@@ -578,8 +578,8 @@
       }
     }
 
-    /* Display split view footer within inactive panels. */
-    .split-view-panel:not(.deck-selected) > .browserContainer > .browserStack > split-view-footer {
+    /* Display the address footer within inactive split view panels. */
+    .split-view-panel:not(.deck-selected) > .browserContainer > .browserStack > address-footer {
       display: flex;
 
       &[hidden] {
@@ -626,17 +626,17 @@
     --info-bar-background-color: var(--toolbar-background-color);
   }
 
-  /* Make sure the split-view-footer aligns with the true outer edge after
+  /* Make sure the address-footer aligns with the true outer edge after
    * factoring in the browserContainer's border width. */
-  #tabbrowser-tabpanels[splitview] .split-view-panel:not(.deck-selected) > .browserContainer split-view-footer {
+  #tabbrowser-tabpanels[splitview] .split-view-panel:not(.deck-selected) > .browserContainer address-footer {
     inset-block-end: calc(-1 * var(--border-width));
     inset-inline-end: calc(-1 * var(--border-width));
   }
 }
 
-/* Split view */
+/* Address footer */
 
-split-view-footer {
+address-footer {
   max-width: calc(100% - var(--space-xsmall));
   display: none;
   position: absolute;
@@ -670,23 +670,23 @@ split-view-footer {
   }
 }
 
-.split-view-icon {
+.address-footer-icon {
   width: var(--icon-size);
   height: var(--icon-size);
 }
 
-.split-view-icon-insecure {
+.address-footer-icon-insecure {
   -moz-context-properties: fill, stroke;
   stroke: var(--icon-color-critical);
 }
 
-.split-view-uri {
+.address-footer-uri {
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-split-view-footer,
-.split-view-security-warning {
+address-footer,
+.address-footer-security-warning {
   align-items: center;
   gap: var(--space-small);
   white-space: nowrap;
@@ -756,7 +756,7 @@ split-view-footer,
 }
 
 #statuspanel-label,
-split-view-footer {
+address-footer {
   color-scheme: env(-moz-content-preferred-color-scheme);
   background-color: -moz-dialog;
   border-color: ThreeDShadow;
