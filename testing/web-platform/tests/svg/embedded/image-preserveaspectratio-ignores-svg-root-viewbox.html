@@ -3,8 +3,8 @@
 <meta charset="utf-8">
 <title>An image element ignores the referenced SVG root's preserveAspectRatio when fitting its viewBox</title>
 <link rel="author" title="Sam Weinig" href="mailto:sam@webkit.org">
-<link rel="help" href="https://svgwg.org/svg2-draft/embedded.html#ImageElement">
-<link rel="help" href="https://svgwg.org/svg2-draft/coords.html#PreserveAspectRatioAttribute">
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/embedded.html#ImageElement">
+<link rel="help" href="https://w3c.github.io/svgwg/svg2-draft/coords.html#PreserveAspectRatioAttribute">
 <link rel="match" href="image-preserveaspectratio-ignores-svg-root-viewbox-ref.html">
 <meta name="assert" content="The referenced SVG is 100x100 with a 200x100 viewBox. Its natural aspect ratio comes from its width and height, so the image element's default xMidYMid meet fits it into the 200x100 positioning rectangle as a centered 100x100 square. The root's preserveAspectRatio is treated as none, so the 2:1 viewBox is stretched to fill that square rather than letterboxed inside it.">
 <style>
