@@ -66,10 +66,10 @@ export const useWidgetTelemetry = ({
     sizeRef.current = widgetSize;
   }, [widgetSize]);
 
+  // Set during render, so an impression observed in the same commit that
+  // supplies the variant already reports it.
   const variantRef = useRef(widgetVariant);
-  useEffect(() => {
-    variantRef.current = widgetVariant;
-  }, [widgetVariant]);
+  variantRef.current = widgetVariant;
 
   // Legacy bridge types are fixed per call site, so capture once at mount;
   // refs keep them out of the recorder callbacks' dependency arrays.

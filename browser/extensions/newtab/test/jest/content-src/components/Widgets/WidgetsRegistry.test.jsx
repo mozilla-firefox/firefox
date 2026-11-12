@@ -19,6 +19,9 @@ import {
   resolveSidebarWidget,
   hasContentAreaWidgets,
   isAllowedFrameUrl,
+  resolveWidgetEventSource,
+  resolveFrameVariant,
+  isRecordedFrameUserEvent,
   resolveWidgetFrame,
   resolvePrivacyBlankChance,
   resolvePrivacyMaxCount,
@@ -1527,5 +1530,42 @@ describe("isWeatherAvailable", () => {
         trainhopConfig: { widgetsSettings: { weatherVisible: true } },
       })
     ).toBe(true);
+  });
+});
+
+describe("resolveWidgetEventSource", () => {
+  it("is iframe for framed widgets and widget otherwise", () => {
+    const byId = id => WIDGET_REGISTRY.find(w => w.id === id);
+    expect(resolveWidgetEventSource(byId("travel"))).toBe("iframe");
+    expect(resolveWidgetEventSource(byId("crossword"))).toBe("iframe");
+    expect(resolveWidgetEventSource(byId("stocks"))).toBe("widget");
+  });
+});
+
+describe("framed widget telemetry allowlists", () => {
+  const travel = WIDGET_REGISTRY.find(w => w.id === "travel");
+  const stocks = WIDGET_REGISTRY.find(w => w.id === "stocks");
+
+  it("records only listed variants", () => {
+    expect(resolveFrameVariant(travel, "lagoon")).toBe("lagoon");
+    expect(resolveFrameVariant(travel, "london")).toBeUndefined();
+    expect(resolveFrameVariant(stocks, "lagoon")).toBeUndefined();
+  });
+
+  it("records only listed user_actions and action_values", () => {
+    const ok = payload => isRecordedFrameUserEvent(travel, payload);
+    expect(ok({ user_action: "search_open", action_value: "beach" })).toBe(
+      true
+    );
+    expect(ok({ user_action: "search_open" })).toBe(true);
+    expect(ok({ user_action: "route_swap" })).toBe(true);
+    expect(ok({ user_action: "route_swap", action_value: "cars" })).toBe(false);
+    expect(ok({ user_action: "search_submit", action_value: "london" })).toBe(
+      false
+    );
+    expect(ok({ user_action: "constructor" })).toBe(false);
+    expect(
+      isRecordedFrameUserEvent(stocks, { user_action: "route_swap" })
+    ).toBe(false);
   });
 });

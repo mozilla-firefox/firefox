@@ -228,6 +228,8 @@ export const PREF_WREXHAMAFC_VIEW = "widgets.wrexhamAFC.view";
  * @property {string|null} [trainhopNamespace] - When set, the widget ships its whole config in one dedicated object at trainhopConfig.<namespace>. Its `enabled` overrides the default value of enabledPref on the default branch (user toggle still wins, like widgetsSettings.*Enabled); `visible` reveals the widget (isWidgetAddable) without writing a pref; `size` is read by resolveWidgetSize. All widgets define this today.
  * @property {string} [src] - URL of the widget's document; a trainhop namespace `iframeSrcOverride` overrides it.
  * @property {boolean} [framed] - When true, the widget's document URL comes from its entry in the Merino framed widgets manifest, which FramedWidgetsFeed stores in the FramedWidgets state under its id; the widget is hidden while it has no enabled entry (see resolveWidgetFrame). A trainhop namespace `iframeSrcOverride` still overrides it, but only when isAllowedFrameUrl accepts it and the widget isn't marked unavailable in the FramedWidgets state. The frame-src CSP in render-activity-stream-html.js must allow the host too.
+ * @property {string[]} [frameVariants] - For a framed widget, the variants its document may send with widget_ready. One of them is recorded as widget_variant; any other is dropped (see resolveFrameVariant).
+ * @property {{[key: string]: string[]}} [frameUserEvents] - For a framed widget, the user_actions its document may record with a telemetry user_event, each with the action_values it may send ([] for none). Any other is dropped (see isRecordedFrameUserEvent), so text the user types in the frame can't reach telemetry.
  * @property {string} [extensionID] - ID of an extension that provides the widget's document. getWidgets keeps the entry only while the ExtensionWidgets state has this extension.
  * @property {string} [icon] - URL of a 16px image drawn before the widget's name in its MozWidgetCard header.
  * @property {"FramedWidgetCard"} [card] - The name of the card component that draws an entry without its own row component: FramedWidgetCard, for a document a hosted page provides. A web page can report its own state only through FramedWidgetCard. Without it, MozWidgetCard draws the entry.
@@ -235,6 +237,20 @@ export const PREF_WREXHAMAFC_VIEW = "widgets.wrexhamAFC.view";
  * @property {string} [l10nId] - Fluent id of the widget's name. The message carries .title, .label and .menu-label attributes.
  * @property {string} [errorL10nId] - Fluent id of the message shown when the widget fails to load. Falls back to the generic message in WidgetError.
  */
+
+// Backgrounds the travel frame shows, sent as widget_ready's variant and as
+// search_open's action_value.
+const TRAVEL_BACKGROUNDS = [
+  "alpine_lake",
+  "autumn_garden",
+  "beach",
+  "coastal_road",
+  "desert",
+  "italian_coast",
+  "lagoon",
+  "sunset_village",
+];
+const TRAVEL_SEARCH_TABS = ["hotels", "flights", "cars"];
 
 // If you add a widget market pref to firefox.js that older hosts don't have,
 // also add it to MARKET_PREF_FALLBACKS in ActivityStream.sys.mjs as a
@@ -455,6 +471,14 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsEnabledKey: "travelEnabled",
     trainhopNamespace: "widgetTravel",
     framed: true,
+    frameVariants: TRAVEL_BACKGROUNDS,
+    frameUserEvents: {
+      search_open: TRAVEL_BACKGROUNDS,
+      tab_change: TRAVEL_SEARCH_TABS,
+      trip_type_change: ["roundtrip", "oneway"],
+      route_swap: [],
+      search_submit: TRAVEL_SEARCH_TABS,
+    },
   },
   {
     id: "solitaire",
@@ -664,6 +688,50 @@ export function isAllowedFrameUrl(value, prefs) {
   return (
     url.protocol === "https:" &&
     suffixes.some(suffix => url.hostname.endsWith(suffix))
+  );
+}
+
+/**
+ * Returns the widget_source for user events from a widget's own content:
+ * "iframe" for a framed widget, whose document sends them, "widget" otherwise.
+ *
+ * @param {object} widget - a WIDGET_REGISTRY entry
+ * @returns {"iframe" | "widget"}
+ */
+export function resolveWidgetEventSource(widget) {
+  return widget?.framed ? "iframe" : "widget";
+}
+
+/**
+ * Returns the widget_ready variant to record for a framed widget, or undefined
+ * when the widget doesn't list it in frameVariants.
+ *
+ * @param {object} widget - a WIDGET_REGISTRY entry
+ * @param {string} [variant] - the variant the widget's document sent
+ * @returns {string|undefined}
+ */
+export function resolveFrameVariant(widget, variant) {
+  return widget?.frameVariants?.includes(variant) ? variant : undefined;
+}
+
+/**
+ * Returns whether a framed widget's telemetry user_event may be recorded: its
+ * user_action and any action_value must be listed in frameUserEvents.
+ *
+ * @param {object} widget - a WIDGET_REGISTRY entry
+ * @param {{user_action: string, action_value?: string}} payload
+ * @returns {boolean}
+ */
+export function isRecordedFrameUserEvent(
+  widget,
+  { user_action, action_value }
+) {
+  const events = widget?.frameUserEvents;
+  if (!events || !Object.hasOwn(events, user_action)) {
+    return false;
+  }
+  return (
+    action_value === undefined || events[user_action].includes(action_value)
   );
 }
 

@@ -9,6 +9,8 @@ import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
   FRAMED_WIDGET_SANDBOX,
   WIDGET_REGISTRY,
+  isRecordedFrameUserEvent,
+  resolveWidgetEventSource,
   resolveWidgetFrame,
   resolveWidgetSize,
 } from "common/WidgetsRegistry.mjs";
@@ -18,6 +20,7 @@ import { WidgetMenuFooter } from "../WidgetMenuFooter";
 import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import {
+  useFramedWidgetMessages,
   useFramedWidgetReady,
   useFramedWidgetSize,
 } from "../useFramedWidgetMessages";
@@ -84,25 +87,50 @@ function Travel({
   const displaySize =
     widgetsMayBeMaximized && requestedSize ? requestedSize : widgetSize;
 
-  const { impressionRef, recordUserAction, recordError } = useWidgetTelemetry({
-    dispatch,
-    widget: TRAVEL_ENTRY,
-    widgetSize: displaySize,
-  });
+  // Set below: the telemetry hook needs the variant this hook returns.
+  const recordErrorRef = useRef(null);
   // The frame stays hidden until the widget's document sends widget_ready. A
   // load timeout or terminal widget_error hides the whole widget.
-  const ready = useFramedWidgetReady({
+  const { ready, variant } = useFramedWidgetReady({
     widget: TRAVEL_ENTRY,
     src,
     iframeRef,
     onError(reason, terminal) {
-      recordError(reason);
+      recordErrorRef.current(reason);
       if (terminal) {
         dispatch({
           type: at.FRAMED_WIDGET_UNAVAILABLE,
           data: { id: TRAVEL_ENTRY.id },
         });
       }
+    },
+  });
+  // widget_variant is the background the frame shows, from widget_ready, so
+  // the impression waits for it.
+  const { impressionRef, recordUserAction, recordError } = useWidgetTelemetry({
+    dispatch,
+    widget: TRAVEL_ENTRY,
+    widgetSize: displaySize,
+    widgetVariant: variant,
+  });
+  recordErrorRef.current = recordError;
+  // The frame's user events count as the user interacting once the frame is
+  // showing, but only allowlisted ones reach Glean.
+  useFramedWidgetMessages({
+    widget: TRAVEL_ENTRY,
+    src,
+    iframeRef,
+    onMessage(type, message, payload) {
+      if (!ready || type !== "telemetry" || message !== "user_event") {
+        return;
+      }
+      if (isRecordedFrameUserEvent(TRAVEL_ENTRY, payload)) {
+        recordUserAction(payload.user_action, {
+          source: resolveWidgetEventSource(TRAVEL_ENTRY),
+          value: payload.action_value,
+        });
+      }
+      handleInteraction();
     },
   });
 
@@ -142,7 +170,7 @@ function Travel({
     <article
       className={`travel widget col-4 ${displaySize}-widget`}
       data-ready={ready || undefined}
-      ref={impressionRef}
+      ref={ready ? impressionRef : undefined}
       aria-labelledby="travel-widget-label"
     >
       <h2

@@ -139,6 +139,75 @@ describe("Travel widget", () => {
     expect(userEvent[0].data.widget_size).toBe("large");
   });
 
+  describe("frame user events", () => {
+    const postUserEvent = (container, payload) =>
+      postFrameMessage(container, {
+        type: "telemetry",
+        message: "user_event",
+        payload,
+      });
+    const userEvents = dispatch =>
+      dispatch.mock.calls
+        .map(([action]) => action)
+        .filter(action => action?.type === at.WIDGETS_USER_EVENT)
+        .map(action => action.data);
+    const renderReady = () => {
+      const rendered = renderWidget();
+      postFrameMessage(rendered.container, {
+        type: "widget_ready",
+        payload: { protocol: 1 },
+      });
+      return rendered;
+    };
+
+    it("records allowlisted events and counts them as an interaction", () => {
+      const { container, dispatch, handleUserInteraction } = renderReady();
+      postUserEvent(container, {
+        user_action: "search_open",
+        action_value: "beach",
+      });
+      postUserEvent(container, { user_action: "route_swap" });
+      expect(userEvents(dispatch)).toEqual([
+        {
+          widget_name: "travel",
+          widget_size: "medium",
+          widget_source: "iframe",
+          user_action: "search_open",
+          action_value: "beach",
+        },
+        {
+          widget_name: "travel",
+          widget_size: "medium",
+          widget_source: "iframe",
+          user_action: "route_swap",
+        },
+      ]);
+      expect(handleUserInteraction).toHaveBeenCalledWith("travel");
+    });
+
+    it("drops actions and values outside the allowlist but still counts the interaction", () => {
+      const { container, dispatch, handleUserInteraction } = renderReady();
+      postUserEvent(container, { user_action: "something_new" });
+      postUserEvent(container, {
+        user_action: "search_submit",
+        action_value: "london",
+      });
+      postUserEvent(container, {
+        user_action: "route_swap",
+        action_value: "flights",
+      });
+      expect(userEvents(dispatch)).toEqual([]);
+      expect(handleUserInteraction).toHaveBeenCalledWith("travel");
+    });
+
+    it("ignores events before widget_ready", () => {
+      const { container, dispatch, handleUserInteraction } = renderWidget();
+      postUserEvent(container, { user_action: "route_swap" });
+      expect(userEvents(dispatch)).toEqual([]);
+      expect(handleUserInteraction).not.toHaveBeenCalled();
+    });
+  });
+
   it("keeps its size when the layout can't host a larger widget", () => {
     const { container } = renderWidget(jest.fn(), {
       widgetsMayBeMaximized: false,
@@ -358,12 +427,17 @@ describe("Travel widget", () => {
       global.IntersectionObserver = originalIntersectionObserver;
     });
 
-    it("dispatches WIDGETS_IMPRESSION once, keyed on the telemetry name", () => {
+    it("waits for widget_ready, then dispatches WIDGETS_IMPRESSION once with the variant", () => {
       const dispatch = jest.fn();
-      renderWidget(dispatch);
+      const { container } = renderWidget(dispatch);
       const [observer] = observerInstances;
-      const [target] = observer.observed;
+      expect(observer.observed).toEqual([]);
 
+      postFrameMessage(container, {
+        type: "widget_ready",
+        payload: { protocol: 1, variant: "lagoon" },
+      });
+      const [target] = observer.observed;
       observer.callback([{ isIntersecting: true, target }], observer);
       observer.callback([{ isIntersecting: true, target }], observer);
 
@@ -374,6 +448,7 @@ describe("Travel widget", () => {
       expect(impressions[0][0].data).toMatchObject({
         widget_name: "travel",
         widget_size: "medium",
+        widget_variant: "lagoon",
       });
     });
   });

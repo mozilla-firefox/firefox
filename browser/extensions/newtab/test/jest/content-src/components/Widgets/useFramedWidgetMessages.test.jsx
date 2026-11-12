@@ -16,6 +16,7 @@ const WIDGET = {
   id: "travel",
   telemetryName: "travel",
   validSizes: ["medium", "large"],
+  frameVariants: ["lagoon"],
 };
 
 let iframe;
@@ -48,6 +49,8 @@ function message(type, payload = {}, extra = {}) {
 }
 
 const action = (name, payload) => message("action", payload, { message: name });
+const userEvent = payload =>
+  message("telemetry", payload, { message: "user_event" });
 
 describe("useFramedWidgetMessages", () => {
   function renderMessages() {
@@ -67,9 +70,17 @@ describe("useFramedWidgetMessages", () => {
     const onMessage = renderMessages();
     post(action("explore_travel", { a: 1 }));
     post(message("widget_ready", { protocol: 1 }));
+    post(userEvent({ user_action: "search_open", action_value: "beach" }));
+    post(userEvent({ user_action: "route_swap" }));
     expect(onMessage.mock.calls).toEqual([
       ["action", "explore_travel", { a: 1 }],
       ["widget_ready", undefined, { protocol: 1 }],
+      [
+        "telemetry",
+        "user_event",
+        { user_action: "search_open", action_value: "beach" },
+      ],
+      ["telemetry", "user_event", { user_action: "route_swap" }],
     ]);
   });
 
@@ -85,6 +96,15 @@ describe("useFramedWidgetMessages", () => {
     post(message("widget_error", { reason: "Oops", terminal: true }));
     post(message("widget_error", { terminal: true }));
     post(message("action"));
+    post(message("telemetry", { user_action: "x" }, { message: "impression" }));
+    post(
+      message("telemetry", { user_action: "x" }, { message: "constructor" })
+    );
+    post(message("telemetry", { user_action: "x" }));
+    post(userEvent({ user_action: "search_open", extra: true }));
+    post(userEvent({ user_action: "Search Open" }));
+    post(userEvent({ user_action: "search_open", action_value: "Beach" }));
+    post(userEvent({ action_value: "beach" }));
     expect(onMessage).not.toHaveBeenCalled();
   });
 });
@@ -101,19 +121,25 @@ describe("useFramedWidgetReady", () => {
     return { ...hook, onError };
   }
 
-  it("is ready after widget_ready, with no timeout", () => {
+  it("is ready after widget_ready, with its variant and no timeout", () => {
     const { result, onError } = renderReady();
-    expect(result.current).toBe(false);
-    post(message("widget_ready", { protocol: 1 }));
-    expect(result.current).toBe(true);
+    expect(result.current).toEqual({ ready: false, variant: undefined });
+    post(message("widget_ready", { protocol: 1, variant: "lagoon" }));
+    expect(result.current).toEqual({ ready: true, variant: "lagoon" });
     act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("drops a variant the widget doesn't list", () => {
+    const { result } = renderReady();
+    post(message("widget_ready", { protocol: 1, variant: "london" }));
+    expect(result.current).toEqual({ ready: true, variant: undefined });
   });
 
   it("reports a terminal load_timeout without widget_ready", () => {
     const { result, onError } = renderReady();
     act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
-    expect(result.current).toBe(false);
+    expect(result.current.ready).toBe(false);
     expect(onError).toHaveBeenCalledWith("load_timeout", true);
   });
 
@@ -123,7 +149,7 @@ describe("useFramedWidgetReady", () => {
       useFramedWidgetReady({ widget: WIDGET, src: "", iframeRef, onError })
     );
     act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
-    expect(result.current).toBe(false);
+    expect(result.current.ready).toBe(false);
     expect(onError).not.toHaveBeenCalled();
   });
 

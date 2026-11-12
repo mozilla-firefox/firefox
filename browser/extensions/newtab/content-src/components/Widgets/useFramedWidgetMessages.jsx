@@ -3,6 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { resolveFrameVariant } from "common/WidgetsRegistry.mjs";
 
 // Protocol v1 rules from the framed-widgets host integration doc.
 const TOKEN = /^[a-z][a-z0-9_]{0,63}$/;
@@ -12,6 +13,14 @@ const isToken = x => typeof x === "string" && TOKEN.test(x);
 const isValue = x => typeof x === "string" && VALUE.test(x);
 const onlyKeys = (payload, keys) =>
   Object.keys(payload).every(key => keys.includes(key));
+
+// Telemetry checks by message. Each new Glean event is opted in here.
+const TELEMETRY_VALIDATORS = {
+  user_event: p =>
+    onlyKeys(p, ["user_action", "action_value"]) &&
+    isToken(p.user_action) &&
+    (p.action_value === undefined || isValue(p.action_value)),
+};
 
 // Payload checks by message type. Messages of any other type, or that fail
 // their check, are dropped.
@@ -25,6 +34,9 @@ const PAYLOAD_VALIDATORS = {
     isToken(p.reason) &&
     typeof p.terminal === "boolean",
   action: (p, message) => isToken(message),
+  telemetry: (p, message) =>
+    Object.hasOwn(TELEMETRY_VALIDATORS, message) &&
+    TELEMETRY_VALIDATORS[message](p),
 };
 
 // Without widget_ready by then, the widget is treated as failed. The iframe
@@ -81,7 +93,8 @@ export function useFramedWidgetMessages({ widget, src, iframeRef, onMessage }) {
 
 /**
  * Returns whether a framed widget's document has sent widget_ready, so the
- * frame can stay hidden until it has. Calls onError with (reason, terminal)
+ * frame can stay hidden until it has, and the variant it sent with it when
+ * the widget's frameVariants list it. Calls onError with (reason, terminal)
  * for widget_errors, and with ("load_timeout", true) when widget_ready doesn't
  * arrive in time. So a frame can't flood telemetry, each load reports a
  * non-terminal reason once and nothing after its first terminal error. A
@@ -89,17 +102,18 @@ export function useFramedWidgetMessages({ widget, src, iframeRef, onMessage }) {
  *
  * @param {object} options - see useFramedWidgetMessages, without onMessage
  * @param {Function} options.onError - called with (reason, terminal)
- * @returns {boolean}
+ * @returns {{ready: boolean, variant: string|undefined}}
  */
 export function useFramedWidgetReady({ widget, src, iframeRef, onError }) {
-  const [ready, setReady] = useState(false);
+  const [readyPayload, setReadyPayload] = useState(null);
+  const ready = readyPayload !== null;
   const onErrorRef = useRef(onError);
   onErrorRef.current = onError;
   const [reportedReasons] = useState(() => new Set());
   const failedRef = useRef(false);
 
   useEffect(() => {
-    setReady(false);
+    setReadyPayload(null);
     reportedReasons.clear();
     failedRef.current = false;
   }, [src, reportedReasons]);
@@ -124,7 +138,7 @@ export function useFramedWidgetReady({ widget, src, iframeRef, onError }) {
     iframeRef,
     onMessage(type, message, payload) {
       if (type === "widget_ready") {
-        setReady(true);
+        setReadyPayload(payload);
       } else if (type === "widget_error") {
         if (
           failedRef.current ||
@@ -139,7 +153,7 @@ export function useFramedWidgetReady({ widget, src, iframeRef, onError }) {
     },
   });
 
-  return ready;
+  return { ready, variant: resolveFrameVariant(widget, readyPayload?.variant) };
 }
 
 /**
