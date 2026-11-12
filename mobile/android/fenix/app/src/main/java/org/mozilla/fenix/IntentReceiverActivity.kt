@@ -34,6 +34,7 @@ import org.mozilla.fenix.ext.isIntentInternal
 import org.mozilla.fenix.perf.MarkersActivityLifecycleCallbacks
 import org.mozilla.fenix.perf.StartupTimeline
 import org.mozilla.fenix.settings.SupportUtils
+import org.mozilla.fenix.settings.account.AuthCustomTabActivity
 import org.mozilla.fenix.shortcut.NewTabShortcutIntentProcessor
 import org.mozilla.fenix.shortcut.UninstallShortcutIntentProcessor
 
@@ -137,12 +138,7 @@ class IntentReceiverActivity : Activity() {
 
     /** Opens [HomeActivity] without forwarding the incoming intent. */
     private fun launchHome() {
-        val intent = Intent(this, HomeActivity::class.java)
-        // StrictMode violation on certain devices such as Samsung
-        components.strictMode.allowViolation(StrictMode::allowThreadDiskReads) {
-            startActivity(intent)
-        }
-        finish()
+        startActivityAndFinish(Intent(this, HomeActivity::class.java))
     }
 
     /** Returns whether onboarding is complete. If onboarding is disabled, it is treated as onboarded. */
@@ -171,24 +167,28 @@ class IntentReceiverActivity : Activity() {
                 intentProcessorType.shouldOpenToBrowser(intent),
             )
         }
-        // StrictMode violation on certain devices such as Samsung
-        components.strictMode.allowViolation(StrictMode::allowThreadDiskReads) {
-            startActivity(intent)
-        }
-        finish() // must finish() after starting the other activity
+        startActivityAndFinish(intent)
     }
 
-    /** Opens a scanned Firefox Accounts pairing link in [org.mozilla.fenix.settings.account.AuthCustomTabActivity]. */
+    /** Opens a scanned Firefox Accounts pairing link in [AuthCustomTabActivity]. */
     @VisibleForTesting
     internal fun launchAuthCustomTab(pairingUrl: Uri) {
         // Neither the receiver's transparent theme nor the application context defines colorSurface, which the custom
         // tab intent reads, so resolve it against the app theme explicitly.
         val themedContext = ContextThemeWrapper(this, R.style.NormalTheme)
-        val intent = SupportUtils.createAuthCustomTabIntent(themedContext, pairingUrl.toString())
+        val intent =
+            SupportUtils.createAuthCustomTabIntent(themedContext, pairingUrl.toString())
+                .putExtra(AuthCustomTabActivity.EXTRA_OPEN_HOME_ON_AUTHENTICATED, true)
+        startActivityAndFinish(intent)
+    }
+
+    private fun startActivityAndFinish(intent: Intent) {
         // StrictMode violation on certain devices such as Samsung
         components.strictMode.allowViolation(StrictMode::allowThreadDiskReads) {
             startActivity(intent)
         }
+        // Finish after starting the next activity, or intents from other apps won't reuse the existing activity
+        // (https://github.com/mozilla-mobile/fenix/issues/8544).
         finish()
     }
 

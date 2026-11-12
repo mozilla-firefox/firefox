@@ -4,11 +4,14 @@
 
 package org.mozilla.fenix.settings.account
 
+import android.content.Intent
+import androidx.annotation.VisibleForTesting
 import mozilla.components.concept.sync.AccountObserver
 import mozilla.components.concept.sync.AuthType
 import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.feature.ipprotection.auth.fxa.IPProtectionActivityAuthFlowObserver
 import mozilla.components.feature.ipprotection.auth.fxa.IPProtectionFxaAuthFlow.Companion.INTENT_ON_COMPLETE
+import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.customtabs.ExternalAppBrowserActivity
 import org.mozilla.fenix.ext.components
 
@@ -26,15 +29,29 @@ class AuthCustomTabActivity : ExternalAppBrowserActivity() {
             /** Navigate away from this activity when we have successful authentication */
             override fun onAuthenticated(account: OAuthAccount, authType: AuthType) {
                 // N.B: This is no where close to perfect because we need to know when authentication is complete for
-                // our
-                // specific scope, but we don't have this capability today.
-                // We've tried doing this in the `FxaAccountStoreSync` but because our AuthCustomTabActivity extends
-                // from
-                // `HomeActivity` those observes experience an "Authentication" event immediately that resets the state
-                // machine.
-                finish()
+                // our specific scope, but we don't have this capability today. We've tried doing this in the
+                // `FxaAccountStoreSync` but because our AuthCustomTabActivity extends from `HomeActivity` those
+                // observes experience an "Authentication" event immediately that resets the state machine.
+                onAuthenticationComplete()
             }
         }
+
+    /**
+     * Closes this activity once the user is signed in.
+     *
+     * When sign-in is launched by another app, such as a camera scanning a pairing link, this activity is the only one
+     * left in its task, so finishing it would return the user to that app.
+     *
+     * When [EXTRA_OPEN_HOME_ON_AUTHENTICATED] is true, opens [HomeActivity] before finishing so the user lands in
+     * Firefox.
+     */
+    @VisibleForTesting
+    internal fun onAuthenticationComplete() {
+        if (intent.getBooleanExtra(EXTRA_OPEN_HOME_ON_AUTHENTICATED, false)) {
+            startActivity(Intent(this, HomeActivity::class.java))
+        }
+        finish()
+    }
 
     override fun onResume() {
         super.onResume()
@@ -52,5 +69,11 @@ class AuthCustomTabActivity : ExternalAppBrowserActivity() {
         components.backgroundServices.accountManager.unregister(accountStateObserver)
 
         super.onDestroy()
+    }
+
+    companion object {
+        /** Intent extra to open [HomeActivity] once authentication completes. */
+        const val EXTRA_OPEN_HOME_ON_AUTHENTICATED =
+            "org.mozilla.fenix.settings.account.EXTRA_OPEN_HOME_ON_AUTHENTICATED"
     }
 }
