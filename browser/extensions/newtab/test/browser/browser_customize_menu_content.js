@@ -155,12 +155,6 @@ test_newtab({
 
 test_newtab({
   async before({ pushPrefs }) {
-    // @nova-cleanup(remove-pref): Remove novaEnabled detection
-    const novaEnabled = Services.prefs.getBoolPref(
-      "browser.newtabpage.activity-stream.nova.enabled",
-      false
-    );
-
     // WeatherFeed calls fetchWeatherReport() on the merino client instance.
     // The old "fetch" method no longer exists on the client.
     sinon.stub(WeatherFeed.prototype, "MerinoClient").returns({
@@ -168,7 +162,7 @@ test_newtab({
       fetchHourlyForecasts: () => Promise.resolve([]),
     });
 
-    const prefs = [
+    await pushPrefs(
       ["browser.newtabpage.activity-stream.system.showWeather", true],
       ["browser.newtabpage.activity-stream.widgets.system.enabled", true],
       ["browser.newtabpage.activity-stream.widgets.enabled", true],
@@ -177,33 +171,15 @@ test_newtab({
         true,
       ],
       ["browser.newtabpage.activity-stream.widgets.weather.enabled", false],
-      ["browser.newtabpage.activity-stream.widgets.weather.size", "small"],
-    ];
-
-    // @nova-cleanup(remove-conditional): Remove this block; showWeather is a classic-only pref
-    if (!novaEnabled) {
-      prefs.push(["browser.newtabpage.activity-stream.showWeather", false]);
-    }
-
-    await pushPrefs(...prefs);
+      ["browser.newtabpage.activity-stream.widgets.weather.size", "small"]
+    );
   },
   test: async function test_render_customizeMenuWeather() {
-    // @nova-cleanup(remove-pref): Remove novaEnabled detection
-    const novaEnabled = Services.prefs.getBoolPref(
-      "browser.newtabpage.activity-stream.nova.enabled",
-      false
-    );
+    const WEATHER_PREF =
+      "browser.newtabpage.activity-stream.widgets.weather.enabled";
 
-    // @nova-cleanup(remove-conditional): Remove novaEnabled check; always use widgets.weather.enabled
-    const WEATHER_PREF = novaEnabled
-      ? "browser.newtabpage.activity-stream.widgets.weather.enabled"
-      : "browser.newtabpage.activity-stream.showWeather";
-
-    // @nova-cleanup(remove-conditional): Remove novaEnabled check; always use .weather-widget
     function getWeatherWidget() {
-      return novaEnabled
-        ? content.document.querySelector(".weather-widget")
-        : content.document.querySelector(".weather");
+      return content.document.querySelector(".weather-widget");
     }
 
     await ContentTaskUtils.waitForCondition(
@@ -227,21 +203,16 @@ test_newtab({
       "Customize Menu should have finished opening"
     );
 
-    // @nova-cleanup(remove-conditional): Remove novaEnabled guard; always open the widgets sub-panel
-    if (novaEnabled) {
-      await ContentTaskUtils.waitForCondition(
-        () =>
-          content.document.querySelector(
-            "#widgets-management-panel moz-box-button"
-          ),
-        "Widgets management button should be present"
-      );
-      Cu.waiveXrays(
+    await ContentTaskUtils.waitForCondition(
+      () =>
         content.document.querySelector(
           "#widgets-management-panel moz-box-button"
-        )
-      ).click();
-    }
+        ),
+      "Widgets management button should be present"
+    );
+    Cu.waiveXrays(
+      content.document.querySelector("#widgets-management-panel moz-box-button")
+    ).click();
 
     // Wait for the weather toggle to be present in the DOM (it is unmounted
     // until the sub-panel opens).
@@ -272,10 +243,6 @@ test_newtab({
   },
   async after() {
     sinon.restore();
-    // @nova-cleanup(remove-conditional): Remove; showWeather is a classic-only pref
-    Services.prefs.clearUserPref(
-      "browser.newtabpage.activity-stream.showWeather"
-    );
     Services.prefs.clearUserPref(
       "browser.newtabpage.activity-stream.system.showWeather"
     );

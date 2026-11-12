@@ -86,17 +86,11 @@ add_task(async function test_newtab_last_LinkMenu() {
     "Should render activity stream content"
   );
 
-  // @nova-cleanup(remove-conditional): Remove novaEnabled; use 900 and 740
-  // unconditionally.
-  const novaEnabled = Services.prefs.getBoolPref(
-    "browser.newtabpage.activity-stream.nova.enabled",
-    false
-  );
   // Top sites and stories sit at different places in the layout, so each needs
   // its own width to put its menu at the edge. Top sites must also clear
   // $break-point-large (866px) for open-left to match the rendered columns.
-  const topSitesWidth = novaEnabled ? 900 : 600;
-  const storiesWidth = novaEnabled ? 740 : 600;
+  const topSitesWidth = 900;
+  const storiesWidth = 740;
 
   await setSize(topSitesWidth, 450);
 
