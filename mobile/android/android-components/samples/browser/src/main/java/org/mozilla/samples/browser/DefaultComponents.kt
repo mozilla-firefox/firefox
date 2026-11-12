@@ -205,7 +205,7 @@ open class DefaultComponents(private val applicationContext: Context) {
                         SearchMiddleware(applicationContext),
                         RecordingDevicesMiddleware(applicationContext, notificationsDelegate),
                         LastAccessMiddleware(),
-                        PromptMiddleware(),
+                        PromptMiddleware(applicationScope),
                         SessionPrioritizationMiddleware(),
                     ) + EngineMiddleware.create(engine)
             )

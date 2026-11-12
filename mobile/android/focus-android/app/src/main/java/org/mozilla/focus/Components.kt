@@ -234,7 +234,7 @@ class Components(
                             searchEngineSelectorConfig = getSearchEngineSelectorConfig(context),
                         ),
                         SearchFilterMiddleware(),
-                        PromptMiddleware(),
+                        PromptMiddleware(applicationScope),
                         AdsTelemetryMiddleware(adsTelemetry),
                         BlockedTrackersMiddleware(context),
                         RecordingDevicesMiddleware(context, notificationsDelegate),

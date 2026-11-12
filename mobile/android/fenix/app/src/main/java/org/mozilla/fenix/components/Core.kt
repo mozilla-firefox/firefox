@@ -385,7 +385,7 @@ class Core(
                     searchEngineSelectorConfig = getSearchEngineSelectorConfig(),
                 ),
                 RecordingDevicesMiddleware(context, context.components.notificationsDelegate),
-                PromptMiddleware(),
+                PromptMiddleware(applicationScope),
                 AdsTelemetryMiddleware(adsTelemetry),
                 LastMediaAccessMiddleware(),
                 HistoryMetadataMiddleware(historyMetadataService),
