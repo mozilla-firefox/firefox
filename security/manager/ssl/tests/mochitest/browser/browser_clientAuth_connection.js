@@ -368,10 +368,21 @@ add_task(async function testCertFilteringWithIntermediate() {
     true
   );
   cars.clearRememberedDecisions();
-  // This will reset the added intermediate.
+  // Changing this pref resets the added intermediate. Whichever of the two
+  // changes sets it to true re-imports the OS enterprise roots on a background
+  // task, which would drop an intermediate added by a later run if it finished
+  // after it.
+  let imported = TestUtils.topicObserved("psm:enterprise-certs-imported");
   await SpecialPowers.pushPrefEnv({
-    set: [["security.enterprise_roots.enabled", true]],
+    set: [
+      [
+        "security.enterprise_roots.enabled",
+        !Services.prefs.getBoolPref("security.enterprise_roots.enabled"),
+      ],
+    ],
   });
+  await SpecialPowers.popPrefEnv();
+  await imported;
 });
 
 // Test that if the server certificate does not validate successfully,
