@@ -65,10 +65,9 @@ impl EnvFunction {
         let mut substitution = name
             .value
             .and_then(|name| {
-                context
-                    .parse_early(&source.url_data, |parser_context| {
-                        device.environment().get(&name.0, device, parser_context)
-                    })
+                device
+                    .environment()
+                    .get(&name.0, device, &context.parser_context(&source.url_data))
                     .map(|v| Substitution::from_value(v, /* attr_tainted */ false))
             })
             .ok_or(())

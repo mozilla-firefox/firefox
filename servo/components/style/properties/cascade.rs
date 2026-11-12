@@ -32,12 +32,11 @@ use crate::selector_map::PrecomputedHashMap;
 use crate::selector_parser::PseudoElement;
 use crate::shared_lock::StylesheetGuards;
 use crate::style_adjuster::StyleAdjuster;
-use crate::stylesheets::UrlExtraData;
 use crate::stylesheets::container_rule::ContainerSizeQuery;
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::Stylist;
 use crate::substitution::{
-    InheritFunction, ReferenceFlags, References, SubstitutionArgument, SubstitutionFunction,
+    ReferenceFlags, References, SubstitutionArgument, SubstitutionFunction,
     SubstitutionFunctionKind, SubstitutionReplacementContext,
 };
 use crate::values::computed::ToComputedValue;
@@ -2241,7 +2240,6 @@ fn substitute_all(
         fn replacement_context<'s>(
             &'s mut self,
             property_id: PropertyIdRef<'s>,
-            url_data: &'s UrlExtraData,
         ) -> SubstitutionReplacementContext<'s, 's, 'b, 'e> {
             SubstitutionReplacementContext::new(
                 Some(property_id),
@@ -2249,7 +2247,6 @@ fn substitute_all(
                 self.stylist,
                 self.computed_context,
                 self.attribute_tracker,
-                url_data,
             )
         }
     }
@@ -2311,7 +2308,7 @@ fn substitute_all(
                                     continue;
                                 }
                                 let mut replacement_context =
-                                    context.replacement_context(property_id, &source.url_data);
+                                    context.replacement_context(property_id);
                                 env_fn
                                     .replace_name(source, &mut replacement_context)
                                     .value
@@ -2322,15 +2319,13 @@ fn substitute_all(
                         };
 
                         let device = context.stylist.device();
-                        let mut replacement_context =
-                            context.replacement_context(property_id, &source.url_data);
+                        let replacement_context = context.replacement_context(property_id);
                         let present = name
                             .and_then(|name| {
-                                replacement_context.parse_early(
-                                    &source.url_data,
-                                    |parser_context| {
-                                        device.environment().get(&name.0, device, parser_context)
-                                    },
+                                device.environment().get(
+                                    &name.0,
+                                    device,
+                                    &replacement_context.parser_context(&source.url_data),
                                 )
                             })
                             .is_some();
@@ -2348,8 +2343,7 @@ fn substitute_all(
                                 attr_fn
                                     .replace_arg(
                                         source,
-                                        &mut context
-                                            .replacement_context(property_id, &source.url_data),
+                                        &mut context.replacement_context(property_id),
                                     )
                                     .value
                                     .map(|arg| Cow::Owned(arg.into_owned()))
@@ -2371,7 +2365,7 @@ fn substitute_all(
                         }
                         if context.map().get_attr(&arg.name.name).is_none()
                             && let Ok(val) = arg.name.value_for_cycle_resolution(
-                                &mut context.replacement_context(property_id, &source.url_data),
+                                &mut context.replacement_context(property_id),
                                 &source.url_data,
                             )
                         {
@@ -2389,7 +2383,7 @@ fn substitute_all(
                                     continue;
                                 }
                                 let mut replacement_context =
-                                    context.replacement_context(property_id, &source.url_data);
+                                    context.replacement_context(property_id);
                                 var_fn
                                     .replace_name(source, &mut replacement_context)
                                     .value
@@ -2409,39 +2403,6 @@ fn substitute_all(
                     SubstitutionFunction::Ident(ref ident_fn) => {
                         if let SubstitutionArgument::Unparsed(ref arg) = ident_fn.arg {
                             refs_stack.push(&arg.references);
-                        }
-                        continue;
-                    },
-                    SubstitutionFunction::Inherit(ref inherit_fn) => {
-                        let name = match &inherit_fn.name {
-                            SubstitutionArgument::Unparsed(arg) => {
-                                if check_declaration_value_cycle!(arg) {
-                                    continue;
-                                }
-                                let mut replacement_context =
-                                    context.replacement_context(property_id, &source.url_data);
-                                inherit_fn
-                                    .replace_name(source, &mut replacement_context)
-                                    .value
-                                    .map(|name| Cow::Owned(name.into_owned()))
-                            },
-                            SubstitutionArgument::Parsed(name) => Some(Cow::Borrowed(name)),
-                            SubstitutionArgument::Invalid => None,
-                        };
-                        let replacement_context =
-                            context.replacement_context(property_id, &source.url_data);
-                        let present = name
-                            .and_then(|name| {
-                                let (_, parent_value) =
-                                    InheritFunction::resolve_parent_custom_property(
-                                        &replacement_context,
-                                        &name,
-                                    );
-                                parent_value
-                            })
-                            .is_some();
-                        if !present && let Some(ref fallback) = inherit_fn.fallback {
-                            refs_stack.push(&fallback.references);
                         }
                         continue;
                     },

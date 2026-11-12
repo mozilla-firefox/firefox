@@ -11601,7 +11601,6 @@ fn compute_arbritrary_substitution_functions(
                 stylist,
                 context,
                 &mut attribute_tracker,
-                parser_context.url_data,
             );
             let arg = attr.replace_arg(&variable_value, &mut replacement_context);
             let arg = arg.value.filter(|arg| arg.has_type())?;
@@ -11759,7 +11758,7 @@ pub unsafe extern "C" fn Servo_GetComputationSteps(
 
     let property = unsafe { property.as_str_unchecked() };
     let string = unsafe { string.as_str_unchecked() };
-    let mut parser_context = dummy_author_style_rule_context();
+    let parser_context = dummy_author_style_rule_context();
     let property_id = PropertyId::parse(&property, &parser_context).ok();
     let mut substituted = None;
     let element = GeckoElement(raw_element);

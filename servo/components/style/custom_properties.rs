@@ -763,7 +763,6 @@ pub fn substitute_references_if_needed_and_apply(
         stylist,
         context,
         attribute_tracker,
-        url_data,
     )
     .substitute_variable_value(value, None);
 
@@ -860,9 +859,7 @@ pub fn substitute_references_if_needed_and_apply(
                 .substitution_functions
                 .insert_attr(name, value);
         },
-        SubstitutionFunctionKind::Env
-        | SubstitutionFunctionKind::Ident
-        | SubstitutionFunctionKind::Inherit => {
+        SubstitutionFunctionKind::Env | SubstitutionFunctionKind::Ident => {
             unreachable!("Kind must be `var` or `attr`.")
         },
     }

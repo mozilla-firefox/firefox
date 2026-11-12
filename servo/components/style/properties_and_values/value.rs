@@ -366,18 +366,9 @@ impl SpecifiedValue {
             attr_taint,
             property_id,
         );
-        Self::parse_with_context(&context, input, syntax, url_data)
-    }
 
-    /// Like `parse`, but with a caller-provided parser context.
-    pub fn parse_with_context(
-        context: &ParserContext,
-        input: &mut CSSParser,
-        syntax: &Descriptor,
-        url_data: &UrlExtraData,
-    ) -> Result<Self, StyleParseError> {
         if syntax.is_universal() {
-            let parsed = ComputedPropertyValue::parse(context, input)?;
+            let parsed = ComputedPropertyValue::parse(&context, input)?;
             return Ok(Self::new(
                 ValueInner::Universal(Arc::new(parsed)),
                 url_data.clone(),
@@ -388,7 +379,7 @@ impl SpecifiedValue {
         let mut multiplier = None;
         {
             let mut parser = Parser::new(syntax, &mut values, &mut multiplier);
-            parser.parse(context, input)?;
+            parser.parse(&context, input)?;
         }
         let v = if let Some(multiplier) = multiplier {
             ValueInner::List(ComponentList {

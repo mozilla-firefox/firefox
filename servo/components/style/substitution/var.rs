@@ -6,14 +6,27 @@
 //! https://drafts.csswg.org/css-variables-2/#funcdef-var
 
 use super::{
-    ArbitraryDeclarationValue, CustomPropertyName, ParsedArgument, Substitution,
-    SubstitutionArgument, SubstitutionParserContext, SubstitutionReplacementContext,
-    parse_optional_fallback,
+    ArbitraryDeclarationValue, ParsedArgument, Substitution, SubstitutionArgument,
+    SubstitutionParserContext, SubstitutionReplacementContext, parse_optional_fallback,
 };
-use crate::custom_properties::{Name, VariableValue};
-use crate::derives::*;
+use crate::custom_properties::{Name, VariableValue, parse_name};
+use crate::parser::Parse;
+use crate::{Atom, derives::*};
 use cssparser::{Delimiter, Parser};
-use style_traits::ParseError;
+use style_traits::{ParseError, StyleParseErrorKind};
+
+/// A custom property name, without the leading `--`.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct CustomPropertyName(pub Name);
+
+impl Parse for CustomPropertyName {
+    fn parse(_: &crate::parser::ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        parse_name(input.expect_ident()?.as_ref())
+            .map(Atom::from)
+            .map(CustomPropertyName)
+            .map_err(|_| ParseError::custom(StyleParseErrorKind::UnexpectedIdent))
+    }
+}
 
 /// Data specific to a `var()` function.
 #[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]

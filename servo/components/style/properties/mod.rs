@@ -592,15 +592,6 @@ impl<'a> From<&'a PropertyId> for PropertyIdRef<'a> {
     }
 }
 
-impl<'a> From<PropertyIdRef<'a>> for PropertyId {
-    fn from(value: PropertyIdRef<'a>) -> Self {
-        match value {
-            PropertyIdRef::NonCustom(id) => Self::NonCustom(id),
-            PropertyIdRef::Custom(name) => Self::Custom(name.clone()),
-        }
-    }
-}
-
 impl<'a> From<&'a custom_properties::Name> for PropertyIdRef<'a> {
     fn from(value: &'a custom_properties::Name) -> Self {
         Self::Custom(value)
