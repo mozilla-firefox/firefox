@@ -2318,17 +2318,6 @@
     "n_values": 10,
     "description": "Media decoder backend (0=WMF Software, 1=DXVA2D3D9, 2=DXVA2D3D11)"
   },
-  "SANDBOX_FAILED_LAUNCH_KEYED": {
-    "record_in_processes": ["main"],
-    "products": ["firefox", "fennec"],
-    "alert_emails": ["bowen@mozilla.com"],
-    "expires_in_version": "never",
-    "kind": "enumerated",
-    "keyed": true,
-    "n_values": 50,
-    "bug_numbers": [1368600],
-    "description": "Error code when a Windows sandboxed process fails to launch, keyed by process type and Windows error code. See https://searchfox.org/mozilla-central/search?q=ResultCode++path%3Asandbox_types.h&redirect=true for definitions of the error codes."
-  },
   "SUBPROCESS_KILL_HARD": {
     "record_in_processes": ["main", "content"],
     "products": ["firefox", "fennec"],

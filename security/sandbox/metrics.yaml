@@ -35,7 +35,6 @@ sandbox:
     type: labeled_custom_distribution
     description: |
       Error code when a Windows sandboxed process fails to launch, keyed by process type and Windows error code. See https://searchfox.org/mozilla-central/search?q=ResultCode++path%3Asandbox_types.h&redirect=true for definitions of the error codes.
-      This metric was generated to correspond to the Legacy Telemetry enumerated histogram SANDBOX_FAILED_LAUNCH_KEYED.
     range_min: 0
     range_max: 50
     bucket_count: 51
@@ -47,7 +46,6 @@ sandbox:
     notification_emails:
       - bowen@mozilla.com
     expires: never
-    telemetry_mirror: SANDBOX_FAILED_LAUNCH_KEYED
 
   effective_content_process_level:
     type: quantity
