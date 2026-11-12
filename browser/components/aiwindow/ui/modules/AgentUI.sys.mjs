@@ -312,6 +312,7 @@ export class AgentUI {
           watchUrlTitles,
           condition: args.prompt,
           status: this.#statusForKind("watching"),
+          checkLimit: lazy.MonitorAgent.checkLimit(),
           schedule: updateData?.schedule,
           expanded: updateData?.autoExpandAndCheck === true, // Auto-expand if requested
         },
@@ -322,7 +323,8 @@ export class AgentUI {
     conversation.emit("chat-conversation:message-complete", message);
 
     // If auto-expand and check was requested, trigger a check-now after a short delay
-    if (updateData?.autoExpandAndCheck) {
+    // A new card checks itself straight away, which the service would only refuse
+    if (updateData?.autoExpandAndCheck && !lazy.MonitorAgent.checkLimit()) {
       // Wait for the UI to update
       Services.tm.dispatchToMainThread(async () => {
         try {
@@ -535,8 +537,12 @@ export class AgentUI {
     try {
       await lazy.MonitorAgent.runNow(id);
     } catch (error) {
-      lazy.console.error("AgentUI: failed to run monitor", error);
-      return false;
+      // A refusal is not a failure to report. The limit landed after the card
+      // rendered, so syncing below is what disables the button.
+      if (error.name !== "MonitorAgentLimitedError") {
+        lazy.console.error("AgentUI: failed to run monitor", error);
+        return false;
+      }
     }
 
     // The manual run fires MONITOR_AGENTS_CHANGED_TOPIC but sync this
@@ -682,8 +688,13 @@ export class AgentUI {
     const history = (monitor.history ?? [])
       .filter(entry => entry.status === "success" || entry.status === "error")
       .reverse();
+    const checkLimit = monitor.checkLimit ?? null;
 
-    if (JSON.stringify(history) === JSON.stringify(agent.history ?? [])) {
+    if (
+      JSON.stringify(history) === JSON.stringify(agent.history ?? []) &&
+      checkLimit?.until === agent.checkLimit?.until &&
+      checkLimit?.errorCode === agent.checkLimit?.errorCode
+    ) {
       return false;
     }
 
@@ -691,7 +702,7 @@ export class AgentUI {
       ...message.toolUIData,
       properties: {
         ...message.toolUIData.properties,
-        agent: { ...agent, history },
+        agent: { ...agent, history, checkLimit },
       },
     };
     return true;

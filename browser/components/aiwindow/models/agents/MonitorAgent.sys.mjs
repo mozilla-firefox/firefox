@@ -109,6 +109,53 @@ export const NOTIFICATION_TYPES = {
   EXPIRED: "expired",
 };
 
+const CHECK_BACKOFF_MS = 15 * 60 * 1000;
+
+let gLastServiceAnswer = null;
+
+const LAST_SERVICE_ANSWER_PREF = "browser.smartwindow.agent.lastServiceAnswer";
+
+export const CHECK_LIMITS = Object.freeze({
+  BUDGET: "budget",
+  THROTTLE: "throttle",
+});
+
+const CHECK_LIMIT_POLICIES = Object.freeze({
+  [CHECK_LIMITS.BUDGET]: {
+    codes: new Set([MONITOR_ERROR_CODES.BUDGET_EXCEEDED]),
+    // The agent's allowance is a seven-day budget on the service, which runs
+    // to Monday 00:00 US/Eastern.
+    // TODO: Bug 2091498 - the boundary is the service's to know, so read the
+    // reset time it reports instead of repeating its schedule here.
+    resumesAt: answeredAt => {
+      const at =
+        Temporal.Instant.fromEpochMilliseconds(answeredAt).toZonedDateTimeISO(
+          "America/New_York"
+        );
+      // dayOfWeek is Monday 1 through Sunday 7.
+      return at.startOfDay().add({ days: 8 - at.dayOfWeek }).epochMilliseconds;
+    },
+  },
+  [CHECK_LIMITS.THROTTLE]: {
+    codes: new Set([
+      MONITOR_ERROR_CODES.RATE_LIMIT,
+      MONITOR_ERROR_CODES.UPSTREAM_RATE_LIMIT,
+      MONITOR_ERROR_CODES.FASTLY_RATE_LIMIT,
+      // Shared service budgets have no known reset time,
+      // so they are retried like a throttle
+      MONITOR_ERROR_CODES.GLOBAL_BUDGET_EXCEEDED,
+      MONITOR_ERROR_CODES.GUEST_BUDGET_EXCEEDED,
+    ]),
+    resumesAt: answeredAt => answeredAt + CHECK_BACKOFF_MS,
+  },
+});
+
+function checkLimitPolicyFor(errorCode) {
+  return Object.entries(CHECK_LIMIT_POLICIES).find(([, { codes }]) =>
+    codes.has(errorCode)
+  );
+}
+
 // Failures the user already knows about, or that only mean Firefox is going
 // away: telling them their monitor could not run would be noise.
 const UNREPORTED_ERROR_CODES = new Set([
@@ -130,6 +177,44 @@ function seedNotifiedRunIds(monitors) {
       }
     }
   }
+}
+
+function isServiceAnswer(entry) {
+  return entry?.status === "success" || !!checkLimitPolicyFor(entry?.errorCode);
+}
+
+/**
+ * When a run finished, which is when the service answered it.
+ *
+ * @param {object} entry - A history entry, as run() leaves it
+ * @returns {number} Epoch ms
+ */
+function serviceAnswerTime(entry) {
+  return new Date(entry?.finishedAt).getTime();
+}
+
+/**
+ * The last answer from the service, kept separately from the monitors. Their
+ * history can't stand in for it, because deleting a task removes its history
+ * along with any answer recorded there.
+ *
+ * @returns {?{answeredAt: number, errorCode: ?string}}
+ */
+function loadLastServiceAnswer() {
+  try {
+    const { answeredAt, errorCode } = JSON.parse(
+      Services.prefs.getCharPref(LAST_SERVICE_ANSWER_PREF, "")
+    );
+    return Number.isFinite(answeredAt)
+      ? { answeredAt, errorCode: errorCode ?? null }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveLastServiceAnswer(answer) {
+  Services.prefs.setCharPref(LAST_SERVICE_ANSWER_PREF, JSON.stringify(answer));
 }
 
 function isShuttingDown() {
@@ -305,6 +390,18 @@ class MonitorAgentBlockedError extends Error {
 }
 
 /**
+ * Indicates that a check was refused because the service is still holding
+ * checks back. Carries the limit so a caller can say when they resume.
+ */
+class MonitorAgentLimitedError extends Error {
+  constructor(checkLimit) {
+    super(`Checks are unavailable until ${new Date(checkLimit.until)}.`);
+    this.name = "MonitorAgentLimitedError";
+    this.checkLimit = checkLimit;
+  }
+}
+
+/**
  * Monitor Agent state and behavior.
  *
  * Monitor agent is responsible for managing the collection of monitors, including creating,
@@ -399,7 +496,39 @@ export const MonitorAgent = {
 
   async listMonitors() {
     await this._ensureLoaded();
-    return Array.from(gMonitors.values(), monitor => monitor.toSerializable());
+    const checkLimit = this.checkLimit();
+    return Array.from(gMonitors.values(), monitor => ({
+      ...monitor.toSerializable(),
+      checkLimit,
+    }));
+  },
+
+  /**
+   * Records a finished run if the service answered it, so the most recent
+   * answer decides whether checks are limited.
+   *
+   * @param {object} entry - The run's history entry
+   */
+  _noteServiceAnswer(entry) {
+    if (isServiceAnswer(entry)) {
+      gLastServiceAnswer = {
+        answeredAt: serviceAnswerTime(entry),
+        errorCode: entry.errorCode ?? null,
+      };
+      saveLastServiceAnswer(gLastServiceAnswer);
+    }
+  },
+
+  /**
+   * Returns when Check now can be used again after the service refused a check.
+   *
+   * @returns {?{until: number, reason: string, errorCode: string}}
+   */
+  checkLimit() {
+    const { answeredAt, errorCode } = gLastServiceAnswer ?? {};
+    const [reason, policy] = checkLimitPolicyFor(errorCode) ?? [];
+    const until = policy?.resumesAt(answeredAt);
+    return until > Date.now() ? { until, reason, errorCode } : null;
   },
 
   /**
@@ -691,6 +820,13 @@ export const MonitorAgent = {
     if (!monitor) {
       return;
     }
+
+    // The card disables Check now while a limit is in force, so reaching here
+    // means a limit landed between the render and the click.
+    const checkLimit = this.checkLimit();
+    if (checkLimit) {
+      throw new MonitorAgentLimitedError(checkLimit);
+    }
     await monitor.run({ manual: true });
   },
 
@@ -735,6 +871,7 @@ export const MonitorAgent = {
     }
 
     gMonitors = monitors;
+    gLastServiceAnswer = loadLastServiceAnswer();
 
     seedNotifiedRunIds(monitors.values());
     this._updateActionGauges();
@@ -1231,6 +1368,7 @@ export const MonitorAgent = {
   _unloadForTesting() {
     this.uninit();
     gMonitors = null;
+    gLastServiceAnswer = null;
     gLoadPromise = null;
     gNotifiedRunIds.clear();
     gSnapshotRefreshPromises.clear();
@@ -1263,6 +1401,7 @@ export const MonitorAgent = {
 
   async _resetForTesting() {
     this._unloadForTesting();
+    Services.prefs.clearUserPref(LAST_SERVICE_ANSWER_PREF);
     await lazy.MonitorStore.destroyDatabase();
   },
 };

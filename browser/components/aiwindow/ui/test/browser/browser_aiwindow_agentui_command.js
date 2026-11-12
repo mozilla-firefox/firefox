@@ -245,6 +245,54 @@ add_task(async function test_create_monitor_localizes_schedule_summary() {
   }
 });
 
+add_task(async function test_created_card_carries_an_active_check_limit() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF_AGENT_ENABLED, true]] });
+  await MonitorAgent._resetForTesting();
+
+  const checkLimit = { until: Date.now() + 60000, reason: "throttle" };
+  const originalCheckLimit = MonitorAgent.checkLimit;
+  MonitorAgent.checkLimit = () => checkLimit;
+
+  const message = {
+    id: "monitor-msg-limit",
+    content: { body: "" },
+    toolUIData: { toolCallId: "monitor-limit", properties: { agent: {} } },
+  };
+  const conversation = {
+    messages: [message],
+    emit: () => {},
+    updateToolUI: () => {},
+    resolvePendingToolConfirmation: () => false,
+  };
+
+  try {
+    const handled = await AgentUI.handleUpdate(
+      {
+        messageId: message.id,
+        toolCallId: "monitor-limit",
+        updateType: "create-watch",
+        updateData: {
+          condition: "the price drops",
+          watchUrls: ["https://example.com/product"],
+        },
+      },
+      conversation
+    );
+    Assert.ok(handled, "The create update is handled");
+
+    const { agent } = message.toolUIData.properties;
+    Assert.deepEqual(
+      agent.checkLimit,
+      checkLimit,
+      "A card created while checks are refused starts out holding the wait"
+    );
+  } finally {
+    MonitorAgent.checkLimit = originalCheckLimit;
+    await MonitorAgent._resetForTesting();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
 add_task(async function test_cancel_monitor_replaces_setup_message() {
   const message = {
     id: "monitor-msg-1",

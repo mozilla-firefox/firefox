@@ -132,7 +132,8 @@ ai-tasks-alert-delete-button =
 ai-tasks-alert-edit-button = Edit
 ai-tasks-alert-pause-button = Pause
 ai-tasks-alert-resume-button = Resume
-ai-tasks-alert-check-now-button = Check now
+ai-tasks-alert-check-now-button =
+  .label = Check now
 
 ## Dialog Headers - Titles for alert dialogs
 
@@ -321,7 +322,7 @@ ai-tasks-alert-history-error-network = { -smart-window-brand-name } couldn’t c
 
 ai-tasks-alert-history-error-timeout = The page took too long to respond. This task will try again at its next scheduled time.
 
-ai-tasks-alert-history-error-budget = { -smart-window-brand-name } has reached its daily check limit. This task will try again at its next scheduled time.
+ai-tasks-alert-history-error-budget = { -smart-window-brand-name } has reached its weekly check limit. This task will try again at its next scheduled time.
 
 ai-tasks-alert-history-error-rate-limit = { -smart-window-brand-name } has reached its request limit for now. This task will try again at its next scheduled time.
 

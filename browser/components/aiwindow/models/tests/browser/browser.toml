@@ -26,6 +26,7 @@ prefs = [
 ["browser_llmaj_telemetry.js"]
 ["browser_monitor_agent.js"]
 ["browser_monitor_agent_limits.js"]
+["browser_monitor_check_limit.js"]
 ["browser_monitor_errors.js"]
 ["browser_monitor_store.js"]
 ["browser_monitor_telemetry.js"]

@@ -306,6 +306,12 @@ moz-input-text::part(label),
   gap: var(--space-small);
 }
 
+.check-limit-reason {
+  margin: 0;
+  color: var(--text-color-deemphasized);
+  font-size: var(--font-size-small);
+}
+
 .mono-dim {
   color: var(--text-color-deemphasized);
   font-size: var(--font-size-small);

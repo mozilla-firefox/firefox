@@ -398,6 +398,7 @@ export class Monitor {
     const historyEntry = {
       id: crypto.randomUUID(),
       checkedAt: checkedAt.toISOString(),
+      finishedAt: null,
       status: "running",
       resultExplanation: "",
       conditionMet: false,
@@ -448,11 +449,14 @@ export class Monitor {
       historyEntry.resultExplanation = error.message || String(error);
       historyEntry.errorCode = monitorErrorCode(error, timedOut);
     } finally {
+      const finishedAt = new Date().toISOString();
+      historyEntry.finishedAt = finishedAt;
+      lazy.MonitorAgent._noteServiceAnswer(historyEntry);
       this.lastRunTime = checkedAt.toISOString();
       this.nextRunTime = this.schedule
         .getNextRunTime(this.lastRunTime)
         .toISOString();
-      this.updatedAt = new Date().toISOString();
+      this.updatedAt = finishedAt;
 
       // save the updated monitor state to disk and notify observers, even if the run failed or timed out
       try {

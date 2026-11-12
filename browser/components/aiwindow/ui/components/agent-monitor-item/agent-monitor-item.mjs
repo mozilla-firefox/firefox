@@ -54,6 +54,10 @@ const DEFAULT_MAX_WATCH_URLS = 5;
 // How long to coalesce typing before mirroring the form to the host
 const DRAFT_PERSIST_DELAY_MS = 250;
 
+// Poll rather than wait in one go, since a long setTimeout can
+// overshoot its deadline across a suspend or clock change.
+const MAX_REENABLE_DELAY_MS = 60_000;
+
 // Check times offered by the create card in 30-minute increments
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
   const hour24 = Math.floor(i / 2);
@@ -232,10 +236,12 @@ export class AgentMonitorItem extends MozLitElement {
   #draftName;
   #draftPersistTimer = null;
   #requestedTitleUrls = new Set();
+  #checkLimitTimer = null;
 
   willUpdate(changed) {
     if (changed.has("agent")) {
       this.#seedFromAgent();
+      this.#armCheckLimitTimer();
     }
 
     if (changed.has("agent") || changed.has("draft")) {
@@ -271,11 +277,53 @@ export class AgentMonitorItem extends MozLitElement {
     return this.resolvedTitles[url] || this.agent?.watchUrlTitles?.[url];
   }
 
+  connectedCallback() {
+    super.connectedCallback();
+    this.#armCheckLimitTimer();
+  }
+
   disconnectedCallback() {
     if (this.#draftPersistTimer) {
       this.#flushDraft();
     }
+    this.#clearCheckLimitTimer();
     super.disconnectedCallback();
+  }
+
+  /**
+   * The service's refusal that checks are waiting out, or null when they are
+   * available.
+   *
+   * @returns {?{until: number, reason: string, errorCode: string}}
+   */
+  get #activeCheckLimit() {
+    const limit = this.agent?.checkLimit;
+    return limit?.until > Date.now() ? limit : null;
+  }
+
+  #clearCheckLimitTimer() {
+    if (this.#checkLimitTimer) {
+      clearTimeout(this.#checkLimitTimer);
+      this.#checkLimitTimer = null;
+    }
+  }
+
+  // render again once the wait is over, so the button comes back on its own
+  #armCheckLimitTimer() {
+    this.#clearCheckLimitTimer();
+    const until = this.agent?.checkLimit?.until;
+    if (!this.isConnected || !(until > Date.now())) {
+      return;
+    }
+    const delay = Math.min(until - Date.now(), MAX_REENABLE_DELAY_MS);
+    this.#checkLimitTimer = setTimeout(() => {
+      this.#checkLimitTimer = null;
+      if (this.agent?.checkLimit?.until > Date.now()) {
+        this.#armCheckLimitTimer();
+      } else {
+        this.requestUpdate();
+      }
+    }, delay);
   }
 
   #seedFromAgent() {
@@ -1122,6 +1170,7 @@ export class AgentMonitorItem extends MozLitElement {
 
   #renderExpand() {
     const agent = this.agent ?? {};
+    const checkLimit = this.#activeCheckLimit;
     return html`
       <div class="watch-expand" @click=${e => e.stopPropagation()}>
         ${this.editing
@@ -1157,6 +1206,13 @@ export class AgentMonitorItem extends MozLitElement {
                 : nothing}
               <div class="monitor-row">${this.#renderScheduleSummary()}</div>`}
         ${!this.editing ? this.#renderHistory() : nothing}
+        ${!this.editing && checkLimit
+          ? html`<p
+              id="check-limit-reason"
+              class="check-limit-reason"
+              data-l10n-id=${monitorErrorL10nId(checkLimit.errorCode)}
+            ></p>`
+          : nothing}
 
         <div class="monitor-card-actions">
           ${!this.editing
@@ -1185,7 +1241,9 @@ export class AgentMonitorItem extends MozLitElement {
                   data-l10n-attrs="label"
                 ></moz-button>
                 <moz-button
+                  id="check-now-button"
                   type="default"
+                  ?disabled=${!!checkLimit}
                   @click=${() =>
                     this.#dispatch("agent-monitor-item:check-now", {
                       id: agent.id,

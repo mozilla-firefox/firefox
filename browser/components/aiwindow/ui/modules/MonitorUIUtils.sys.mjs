@@ -234,6 +234,7 @@ export const MonitorUIUtils = {
       condition: monitor.monitorPrompt || "",
       enabled: !!monitor.enabled,
       status: monitorStatus,
+      checkLimit: monitor.checkLimit ?? null,
       history: (monitor.history || []).slice().reverse(),
       // Pass the schedule data directly - agent-monitor-item will format it using FTL strings
       schedule: monitor.schedule

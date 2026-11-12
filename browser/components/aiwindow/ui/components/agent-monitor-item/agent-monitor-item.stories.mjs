@@ -5,6 +5,8 @@
 import { html } from "chrome://global/content/vendor/lit.all.mjs";
 import "chrome://browser/content/aiwindow/components/agent-monitor-item.mjs";
 
+window.MozXULElement.insertFTLIfNeeded("preview/aiWindow.ftl");
+
 export default {
   title: "Domain-specific UI Widgets/AI Window/Agent Monitor Item",
   component: "agent-monitor-item",
@@ -154,4 +156,17 @@ HistoryWithFailedChecks.args = {
   expanded: true,
   editing: false,
   showLastResult: true,
+};
+
+export const CheckNowHeldBackByBudget = Template.bind({});
+CheckNowHeldBackByBudget.args = {
+  ...DisplayExpanded.args,
+  agent: {
+    ...AGENT,
+    checkLimit: {
+      until: Date.now() + 3 * 24 * 60 * 60 * 1000,
+      reason: "budget",
+      errorCode: "budget_exceeded",
+    },
+  },
 };
