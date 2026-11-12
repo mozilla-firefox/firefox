@@ -426,6 +426,39 @@ bool AndroidImageReader::UpdateTexImageWithReadback(
   const auto& gle = gl::GLContextEGL::Cast(aGL);
   const auto& egl = gle->mEgl;
 
+  auto writeFenceFd = mCurrentImage->CloneWriteFenceFd();
+  if (writeFenceFd) {
+    if (!egl->IsExtensionSupported(
+            gl::EGLExtension::ANDROID_native_fence_sync) ||
+        !egl->IsExtensionSupported(gl::EGLExtension::KHR_fence_sync)) {
+      return false;
+    }
+
+    // EGL takes ownership of the fd even if creating the sync fails.
+    const EGLint fenceAttrs[] = {LOCAL_EGL_SYNC_NATIVE_FENCE_FD_ANDROID,
+                                 writeFenceFd.release(), LOCAL_EGL_NONE};
+    EGLSync sync =
+        egl->fCreateSyncKHR(LOCAL_EGL_SYNC_NATIVE_FENCE_ANDROID, fenceAttrs);
+    if (!sync) {
+      gfxCriticalNote << "Failed to create ImageReader readback acquire sync";
+      return false;
+    }
+
+    // Order sampling after the decoder's writes on this GL context. Readback
+    // subsequently waits for the GL work to complete.
+    const bool waited =
+        egl->IsExtensionSupported(gl::EGLExtension::KHR_wait_sync)
+            ? egl->fWaitSync(sync, 0) == LOCAL_EGL_TRUE
+            : egl->fClientWaitSync(sync, 0, LOCAL_EGL_FOREVER) ==
+                  LOCAL_EGL_CONDITION_SATISFIED;
+    egl->fDestroySync(sync);
+    if (!waited) {
+      gfxCriticalNote
+          << "Failed to wait for ImageReader readback acquire fence";
+      return false;
+    }
+  }
+
   const EGLint attrs[] = {
       LOCAL_EGL_IMAGE_PRESERVED,
       LOCAL_EGL_TRUE,
