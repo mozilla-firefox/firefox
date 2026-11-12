@@ -387,11 +387,8 @@ void ModuleScript::SetForPreload(bool aValue) {
 }
 void ModuleScript::SetHadImportMap(bool aValue) { mHadImportMap = aValue; }
 
-void ModuleScript::ResetPreload() {
+void ModuleScript::ResetPreloadErrors() {
   MOZ_ASSERT(mFetchInfo->IsForModulePreload());
-  if (mModuleRecord) {
-    ResetPreloadedModule(mModuleRecord);
-  }
 
   if (HasParseError()) {
     mParseError = UndefinedValue();

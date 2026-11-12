@@ -835,9 +835,9 @@ class ModuleScript final : public nsISupports {
 
   ScriptFetchInfo* FetchInfo() const { return mFetchInfo; }
 
-  // This is used to reset the module graph information which happened during
-  // preload.
-  void ResetPreload();
+  // Clear the parse error and the error to rethrow recorded while loading a
+  // preloaded module graph, so that a later load can retry.
+  void ResetPreloadErrors();
   void Shutdown();
 
   friend void CheckModuleScriptPrivate(LoadedScript*, const Value&);

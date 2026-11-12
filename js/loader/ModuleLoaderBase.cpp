@@ -1204,24 +1204,6 @@ void ModuleLoaderBase::AddToResolvedModuleSet(
   AddToGlobalResolvedSet(std::move(aRecord));
 }
 
-// This just flip the preload flag in the module script and ModuleObject.
-void ModuleLoaderBase::ResetPreloadFlag(nsIURI* aURI) {
-  MOZ_ASSERT(aURI);
-  ModuleMapKey key(aURI, ModuleType::JavaScript);
-  if (!IsModuleFetched(key)) {
-    return;
-  }
-
-  RefPtr<ModuleScript> ms;
-  MOZ_ALWAYS_TRUE(mFetchedModules.Get(key, getter_AddRefs(ms)));
-
-  // This function is called from a preloaded module graph, but it may have a
-  // module script from another preloaded module graph which has been turned
-  // into a normal load, so we don't assert the module script is a preloaded
-  // one.
-  ms->SetForPreload(false);
-}
-
 void ModuleLoaderBase::MigratePreloadedResolvedSet(
     ScriptFetchInfo* aFetchInfo) {
   MOZ_ASSERT(aFetchInfo);
@@ -1328,28 +1310,6 @@ void ModuleLoaderBase::MovePreloadedSetToResolvedSet(
   }
 }
 
-// If the module script is preloaded, reset the [[LoadedModules]]
-//
-void ModuleLoaderBase::ResetPreloadedModule(nsIURI* aURI) {
-  MOZ_ASSERT(aURI);
-  ModuleMapKey key(aURI, ModuleType::JavaScript);
-  if (!IsModuleFetched(key)) {
-    return;
-  }
-
-  RefPtr<ModuleScript> ms;
-  MOZ_ALWAYS_TRUE(mFetchedModules.Get(key, getter_AddRefs(ms)));
-  if (!ms->ForPreload()) {
-    return;
-  }
-
-  LOG(
-      ("ModuleLoaderBase::ResetPreloadedModule: module script (%p) reset "
-       "preloaded info",
-       ms.get()));
-  ms->ResetPreload();
-}
-
 void ModuleLoaderBase::ResetPreloadedModuleGraph(
     ModuleLoadRequest* aRootRequest) {
   MOZ_ASSERT(ImportMap::IsMultipleImportMapsSupported());
@@ -1385,10 +1345,11 @@ void ModuleLoaderBase::ResetPreloadedModuleGraph(
         GetModuleFetchInfo(module)->ReleasePreloadedResolvedSet();
       }
     }
+    JS::ResetPreloadedModule(ms->ModuleRecord());
   }
 
   ms->FetchInfo()->ReleasePreloadedResolvedSet();
-  ms->ResetPreload();
+  ms->ResetPreloadErrors();
 }
 
 void ModuleLoaderBase::StartFetchingModuleDependencies(
