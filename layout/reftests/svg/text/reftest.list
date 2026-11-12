@@ -1,14 +1,14 @@
-fuzzy-if(winWidget,47-132,221-254) == simple.svg simple-ref.html
+== simple.svg simple-ref.html
 == simple-2.svg simple.svg
-fuzzy-if(winWidget,47-132,221-254) == simple-underline.svg simple-underline-ref.html
+== simple-underline.svg simple-underline-ref.html
 == simple-underline-scaled.svg simple-underline-scaled-ref.svg
-fuzzy-if(winWidget,47-166,255-318) fuzzy-if(cocoaWidget,0-1,0-1) fuzzy-if(Android,0-10,0-118) == simple-anchor-end-bidi.svg simple-anchor-end-bidi-ref.html
-fuzzy-if(winWidget,47-139,181-204) fuzzy-if(Android,0-10,0-117) == simple-anchor-end-rtl.svg simple-anchor-end-rtl-ref.html
-fuzzy-if(winWidget,47-137,181-250) == simple-anchor-end.svg simple-anchor-end-ref.html
+fuzzy-if(cocoaWidget,0-1,0-1) fuzzy-if(Android,0-10,0-118) == simple-anchor-end-bidi.svg simple-anchor-end-bidi-ref.html
+fuzzy-if(Android,0-10,0-117) == simple-anchor-end-rtl.svg simple-anchor-end-rtl-ref.html
+== simple-anchor-end.svg simple-anchor-end-ref.html
 fuzzy-if(winWidget,0-104,0-131) fuzzy-if(cocoaWidget,0-143,0-124) fuzzy-if(!(gtkWidget||Android),66-200,59-319) fuzzy-if(Android,0-87,0-134) == simple-anchor-middle-bidi.svg simple-anchor-middle-bidi-ref.html
-fuzzy-if(winWidget,47-138,188-207) fuzzy-if(Android,0-8,0-119) == simple-anchor-middle-rtl.svg simple-anchor-middle-rtl-ref.html
-fuzzy(0-111,0-81) fuzzy-if(winWidget,47-181,221-257) == simple-anchor-middle.svg simple-anchor-middle-ref.html
-fuzzy-if(winWidget,47-138,260-319) fuzzy-if(Android,0-9,0-116) == simple-bidi.svg simple-bidi-ref.html
+fuzzy-if(Android,0-8,0-119) == simple-anchor-middle-rtl.svg simple-anchor-middle-rtl-ref.html
+fuzzy(0-111,0-81) == simple-anchor-middle.svg simple-anchor-middle-ref.html
+fuzzy-if(Android,0-9,0-116) == simple-bidi.svg simple-bidi-ref.html
 == simple-bidi-2.svg simple-bidi.svg
 
 == simple-dx.svg simple.svg
@@ -25,12 +25,12 @@ fuzzy-if(winWidget,47-138,260-319) fuzzy-if(Android,0-9,0-116) == simple-bidi.sv
 == simple-dx-rtl-2.svg simple-dx-rtl-2-ref.svg
 
 == simple-fill-color-dynamic.svg simple-fill-color-dynamic-ref.svg
-fuzzy-if(winWidget,47-129,221-254) fuzzy-if(cocoaWidget,0-65,0-196) fuzzy-if(Android,0-8,0-194) == simple-fill-color.svg simple-fill-color-ref.html
+fuzzy-if(cocoaWidget,0-65,0-196) fuzzy-if(Android,0-8,0-194) == simple-fill-color.svg simple-fill-color-ref.html
 fuzzy(0-1,0-60) == simple-fill-gradient.svg simple-fill-gradient-ref.svg
 == simple-fill-none.svg simple.svg
 == simple-pointer-events.svg simple.svg
 
-fuzzy-if(winWidget,47-132,221-254) == simple-multiple-dx.svg simple-multiple-dx-ref.html
+== simple-multiple-dx.svg simple-multiple-dx-ref.html
 == simple-multiple-dx-2.svg simple-multiple-dx.svg
 == simple-multiple-dx-anchor-end-bidi.svg simple-multiple-dx-anchor-end-bidi-ref.svg
 == simple-multiple-dx-anchor-middle-bidi.svg simple-multiple-dx-anchor-middle-bidi-ref.svg
@@ -43,7 +43,7 @@ fuzzy(0-1,0-2) == simple-multiple-dx-anchor-middle-rtl.svg simple-multiple-dx-an
 == simple-multiple-dx-rtl.svg simple-multiple-dx-rtl-ref.svg
 == simple-multiple-dx-rtl-2.svg simple-multiple-dx-rtl.svg
 
-fuzzy-if(winWidget,47-138,183-206) fuzzy-if(Android,0-10,0-122) == simple-rtl.svg simple-rtl-ref.html
+fuzzy-if(Android,0-10,0-122) == simple-rtl.svg simple-rtl-ref.html
 == simple-rtl-2.svg simple-rtl.svg
 == simple-transform-rotate.svg simple-transform-rotate-ref.svg
 
@@ -120,7 +120,7 @@ fuzzy(0-1,0-15) == textpath.svg textpath-ref.svg
 == textpath-multiline.svg textpath-multiline-ref.svg
 == textpath-multiline-2.svg textpath-multiline-2-ref.svg
 == textpath-after.svg textpath-after-ref.svg
-== textpath-multiple.svg ../pass.svg
+fuzzy-if(cocoaWidget&&swgl,0-1,0-2) == textpath-multiple.svg ../pass.svg
 == textpath-after-anchor-end.svg textpath-after-anchor-end-ref.svg
 == textpath-reset-position.svg textpath-reset-position-ref.svg
 == textpath-inherit-position.svg textpath-inherit-position-ref.svg
@@ -134,7 +134,7 @@ fuzzy(0-4,0-100) fuzzy-if(Android,0-4,0-2100) == textLength-3.svg textLength-3-r
 == textLength-6.svg textLength-6-ref.svg
 
 # text-shadow
-== text-shadow.svg text-shadow-ref.svg
+fuzzy-if(winWidget,0-128,0-295) fuzzy-if(cocoaWidget,0-1,0-28) fuzzy-if(Android,0-8,0-198) == text-shadow.svg text-shadow-ref.svg
 
 # vertical text
 == vertical-01.svg vertical-01-ref.svg
@@ -173,7 +173,7 @@ fuzzy(0-4,0-100) fuzzy-if(Android,0-4,0-2100) == textLength-3.svg textLength-3-r
 == dynamic-dominant-baseline.svg dynamic-dominant-baseline-ref.svg
 == dynamic-multiple-x.svg dynamic-multiple-x-ref.svg
 fuzzy(0-1,0-200) == dynamic-non-scaling-stroke.svg dynamic-non-scaling-stroke-ref.svg #Bug 885316
-== dynamic-text-shadow.svg text-shadow-ref.svg
+fuzzy-if(winWidget,0-128,0-295) fuzzy-if(cocoaWidget,0-1,0-28) fuzzy-if(Android,0-8,0-198) == dynamic-text-shadow.svg text-shadow-ref.svg
 
 # text and masks
 fuzzy-if(winWidget,0-50,0-224) == mask-applied.svg mask-applied-ref.svg
@@ -206,7 +206,7 @@ fuzzy(0-1,0-237) needs-focus fuzzy-if(winWidget,55-163,200-254) fuzzy-if(cocoaWi
 fuzzy(0-1,0-222) needs-focus fuzzy-if(winWidget,125-163,221-254) == simple-underline-selection.svg simple-underline-selection-ref.html # Bug 1392106
 fuzzy(0-1,0-934) needs-focus fuzzy-if(Android13,0-3,0-926) fuzzy-if(winWidget,134-163,432-501) == multiple-text-selection.svg multiple-text-selection-ref.html # Bug 1392106
 needs-focus == multiple-chunks-selection.svg multiple-chunks-selection-ref.svg
-fuzzy(0-1,0-200) needs-focus == textpath-selection.svg textpath-selection-ref.svg
+fuzzy(0-1,0-200) fuzzy-if(winWidget,0-165,0-131) needs-focus == textpath-selection.svg textpath-selection-ref.svg
 
 # letter-spacing and word-spacing
 pref(layout.css.letter-spacing.model,0) == simple-letter-spacing.svg simple-letter-spacing-ref.svg

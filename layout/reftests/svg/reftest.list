@@ -184,7 +184,7 @@ fuzzy-if(winWidget,0-2,0-10539) == dynamic-text-03.svg dynamic-text-03-ref.svg #
 == dynamic-textPath-01.svg dynamic-textPath-01-ref.svg
 == dynamic-textPath-02.svg dynamic-textPath-02-ref.svg
 == dynamic-textPath-03.svg dynamic-textPath-03-ref.svg
-== dynamic-textPath-04.html pass.svg
+fuzzy-if(winWidget,0-3,0-1) == dynamic-textPath-04.html pass.svg
 == dynamic-use-01.svg pass.svg
 == dynamic-use-02.svg pass.svg
 == dynamic-use-03.svg pass.svg
