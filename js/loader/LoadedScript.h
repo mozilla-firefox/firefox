@@ -798,7 +798,7 @@ class ModuleScript final : public nsISupports {
 
   // A copy of ScriptLoadRequest::mFetchInfo, to read and update the
   // ScriptFetchInfo::mIsForModulePreload field.
-  RefPtr<ScriptFetchInfo> mFetchInfoForAccessingPreloadFlag;
+  RefPtr<ScriptFetchInfo> mFetchInfo;
 
   bool mHadImportMap = false;
 
@@ -824,9 +824,7 @@ class ModuleScript final : public nsISupports {
   Value ErrorToRethrow() const { return mErrorToRethrow; }
   bool HasParseError() const { return !mParseError.isUndefined(); }
   bool HasErrorToRethrow() const { return !mErrorToRethrow.isUndefined(); }
-  bool ForPreload() const {
-    return mFetchInfoForAccessingPreloadFlag->IsForModulePreload();
-  }
+  bool ForPreload() const { return mFetchInfo->IsForModulePreload(); }
   bool HadImportMap() const { return mHadImportMap; }
 
   // This is used to reset the module graph information which happened during

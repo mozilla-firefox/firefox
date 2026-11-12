@@ -312,7 +312,7 @@ NS_IMPL_CYCLE_COLLECTION_TRACE_BEGIN(ModuleScript)
 NS_IMPL_CYCLE_COLLECTION_TRACE_END
 
 ModuleScript::ModuleScript(ScriptFetchInfo* aFetchInfo)
-    : mFetchInfoForAccessingPreloadFlag(aFetchInfo) {
+    : mFetchInfo(aFetchInfo) {
   MOZ_ASSERT(!ModuleRecord());
   MOZ_ASSERT(!HasParseError());
   MOZ_ASSERT(!HasErrorToRethrow());
@@ -342,8 +342,7 @@ void ModuleScript::SetModuleRecord(Handle<JSObject*> aModuleRecord) {
 #ifdef DEBUG
   // Sync the [[PreloadSlot]] in ModuleObject.
   if (mModuleRecord) {
-    SetModulePreload(mModuleRecord,
-                     mFetchInfoForAccessingPreloadFlag->IsForModulePreload());
+    SetModulePreload(mModuleRecord, mFetchInfo->IsForModulePreload());
   }
 #endif
 
@@ -371,7 +370,7 @@ void ModuleScript::SetErrorToRethrow(const Value& aError) {
 }
 
 void ModuleScript::SetForPreload(bool aValue) {
-  mFetchInfoForAccessingPreloadFlag->SetForModulePreload(aValue);
+  mFetchInfo->SetForModulePreload(aValue);
 #ifdef DEBUG
   if (ModuleRecord()) {
     SetModulePreload(ModuleRecord(), aValue);
@@ -389,7 +388,7 @@ ResolvedModuleSet* ModuleScript::GetPreloadedResolvedSet() {
 }
 
 void ModuleScript::ResetPreload() {
-  MOZ_ASSERT(mFetchInfoForAccessingPreloadFlag->IsForModulePreload());
+  MOZ_ASSERT(mFetchInfo->IsForModulePreload());
   if (mModuleRecord) {
     ResetPreloadedModule(mModuleRecord);
   }
