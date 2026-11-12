@@ -361,8 +361,6 @@ describe("ActivityStream", () => {
     const FEATURE_ENABLED_PREF = "system.showWeather";
     const REGION_WEATHER_CONFIG =
       "browser.newtabpage.activity-stream.discoverystream.region-weather-config";
-    const LOCALE_WEATHER_CONFIG =
-      "browser.newtabpage.activity-stream.discoverystream.locale-weather-config";
     beforeEach(() => {
       services.locale.appLocaleAsBCP47 = "en-US";
 
@@ -371,11 +369,6 @@ describe("ActivityStream", () => {
 
       // Set default regions
       getStringPrefStub.whenCalledWith(REGION_WEATHER_CONFIG).returns("US, CA");
-
-      // Set default locales
-      getStringPrefStub
-        .whenCalledWith(LOCALE_WEATHER_CONFIG)
-        .returns("en-US,en-GB,en-CA");
     });
     it("should turn off when region and locale are not set", () => {
       region.home = "";
@@ -398,27 +391,21 @@ describe("ActivityStream", () => {
       as._updateDynamicPrefs();
       expect(PREFS_CONFIG.get(FEATURE_ENABLED_PREF).value).toBe(false);
     });
-    it("should turn off when locale is not set", () => {
+    it("should turn on in any locale when region is supported", () => {
       region.home = "US";
-      services.locale.appLocaleAsBCP47 = "";
-      as._updateDynamicPrefs();
-      expect(PREFS_CONFIG.get(FEATURE_ENABLED_PREF).value).toBe(false);
-    });
-    it("should turn on when locale is supported", () => {
-      region.home = "US";
-      services.locale.appLocaleAsBCP47 = "en-US";
+      services.locale.appLocaleAsBCP47 = "ja";
       as._updateDynamicPrefs();
       expect(PREFS_CONFIG.get(FEATURE_ENABLED_PREF).value).toBe(true);
     });
-    it("should turn off when locale is not supported", () => {
+    it("should turn on when locale is not set and region is supported", () => {
       region.home = "US";
-      services.locale.appLocaleAsBCP47 = "fr";
+      services.locale.appLocaleAsBCP47 = "";
       as._updateDynamicPrefs();
-      expect(PREFS_CONFIG.get(FEATURE_ENABLED_PREF).value).toBe(false);
+      expect(PREFS_CONFIG.get(FEATURE_ENABLED_PREF).value).toBe(true);
     });
-    it("should turn off when region and locale are both not supported", () => {
+    it("should turn off in any locale when region is not supported", () => {
       region.home = "FR";
-      services.locale.appLocaleAsBCP47 = "fr";
+      services.locale.appLocaleAsBCP47 = "en-US";
       as._updateDynamicPrefs();
       expect(PREFS_CONFIG.get(FEATURE_ENABLED_PREF).value).toBe(false);
     });

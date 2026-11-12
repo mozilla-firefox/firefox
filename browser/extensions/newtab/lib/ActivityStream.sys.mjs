@@ -97,8 +97,6 @@ const LOCALE_SOV_CONFIG =
 
 const REGION_WEATHER_CONFIG =
   "browser.newtabpage.activity-stream.discoverystream.region-weather-config";
-const LOCALE_WEATHER_CONFIG =
-  "browser.newtabpage.activity-stream.discoverystream.locale-weather-config";
 
 const REGION_TOPICS_CONFIG =
   "browser.newtabpage.activity-stream.discoverystream.topicSelection.region-topics-config";
@@ -367,11 +365,8 @@ function showSpocs({ geo }) {
   return spocsGeo.includes(geo);
 }
 
-function showWeather({ geo, locale }) {
-  return (
-    csvPrefHasValue(REGION_WEATHER_CONFIG, geo) &&
-    csvPrefHasValue(LOCALE_WEATHER_CONFIG, locale)
-  );
+function showWeather({ geo }) {
+  return csvPrefHasValue(REGION_WEATHER_CONFIG, geo);
 }
 
 /**
