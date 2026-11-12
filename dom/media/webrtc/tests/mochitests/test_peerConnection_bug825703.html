@@ -94,6 +94,7 @@ runNetworkTest(async () => {
     iceTransportPolicy: "relay",
     peerIdentity: null,
     certificates: [],
+    iceCandidatePoolSize: 0,
     iceServers: [
       { urls: ["stun:127.0.0.1", "stun:localhost"], credentialType:"password" },
       { urls: ["turn:[::1]:3478"], username:"p", credential:"p", credentialType:"password" },
