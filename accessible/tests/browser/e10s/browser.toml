@@ -97,6 +97,8 @@ skip-if = [
 
 ["browser_treeupdate_hidden.js"]
 
+["browser_treeupdate_iframe_reframe.js"]
+
 ["browser_treeupdate_image.js"]
 
 ["browser_treeupdate_imagemap.js"]
