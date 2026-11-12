@@ -32,10 +32,17 @@ data class OnboardingPageState(
     val isSmallDevice: Boolean = false,
 )
 
-/** Model containing text and action for a button. */
+/**
+ * Model for an onboarding card button.
+ *
+ * @property text The button text.
+ * @property onClick The action to be performed when the button is clicked.
+ * @property leadingIconRes An optional drawable resource shown before the button text.
+ */
 data class Action(
     val text: String,
     val onClick: () -> Unit,
+    @param:DrawableRes val leadingIconRes: Int? = null,
 )
 
 /** Model containing data for the terms of service page during onboarding. */
