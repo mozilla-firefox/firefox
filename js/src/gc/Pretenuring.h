@@ -106,7 +106,7 @@ class AllocSite {
   // last processed by processSite().
   uint32_t nurseryPromotedCount : 24;
 
-  // Number of times the script has been invalidated.
+  // Number of times this site was reset or had its script invalidated.
   uint32_t invalidationCount : 4;
 
   // The trace kind of the allocation. Only kinds up to NurseryTraceKinds are

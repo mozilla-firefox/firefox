@@ -431,6 +431,11 @@ class alignas(16) Instance {
   int32_t readHotnessCounter(uint32_t funcIndex) const;
   void submitCallRefHints(uint32_t funcIndex);
 
+  // Reset this instance's pretenured allocation sites so that they allocate in
+  // the nursery again. Compiled code checks the site state on every
+  // allocation, so no code needs to be invalidated.
+  void resetPretenuredAllocSites();
+
   bool debugFilter(uint32_t funcIndex) const;
   void setDebugFilter(uint32_t funcIndex, bool value);
 

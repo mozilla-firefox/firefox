@@ -65,6 +65,11 @@ class Realm {
 
   void ensureProfilingLabels(bool profilingEnabled);
 
+  // Reset the pretenured allocation sites of all Instances in this Realm when
+  // we decide our pretenuring decisions were wrong.
+
+  void resetPretenuredAllocSites();
+
   // about:memory reporting
 
   void addSizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf,

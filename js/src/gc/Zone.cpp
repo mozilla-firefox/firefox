@@ -493,6 +493,12 @@ void Zone::discardJitCode(JS::GCContext* gcx,
   }
 }
 
+void JS::Zone::resetPretenuredWasmAllocSites() {
+  for (RealmsInZoneIter realm(this); !realm.done(); realm.next()) {
+    realm->wasm.resetPretenuredAllocSites();
+  }
+}
+
 void JS::Zone::traceWeakJitScripts(JSTracer* trc) {
   if (jitZone()) {
     jitZone()->forEachJitScript(

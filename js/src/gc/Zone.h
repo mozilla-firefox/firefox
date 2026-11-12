@@ -658,6 +658,8 @@ class Zone : public js::ZoneAllocator, public js::gc::GraphNodeBase<JS::Zone> {
 
   void discardJitCodeForAllRealms(JS::GCContext* gcx);
 
+  void resetPretenuredWasmAllocSites();
+
   void traceWeakJitScripts(JSTracer* trc);
 
   bool registerObjectWithWeakPointers(JSObject* obj);

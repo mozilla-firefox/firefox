@@ -3031,6 +3031,10 @@ void GCRuntime::maybeDiscardJitCodeForGC() {
     options.resetPretenuredAllocSites = resetPretenuredSites;
     zone->discardJitCode(rt->gcContext(), options);
 
+    if (resetPretenuredSites) {
+      zone->resetPretenuredWasmAllocSites();
+    }
+
     if (resetNurserySites) {
       nurserySiteResetCount++;
     }

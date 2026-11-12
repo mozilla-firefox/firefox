@@ -3193,6 +3193,20 @@ void Instance::submitCallRefHints(uint32_t funcIndex) {
   }
 }
 
+void Instance::resetPretenuredAllocSites() {
+  if (!allocSites_) {
+    return;
+  }
+
+  uint32_t allocSitesCount = codeTailMeta().numAllocSites;
+  for (uint32_t i = 0; i < allocSitesCount; i++) {
+    gc::AllocSite* site = &allocSites_[i];
+    if (site->initialHeap() == gc::Heap::Tenured) {
+      site->maybeResetState();
+    }
+  }
+}
+
 bool Instance::debugFilter(uint32_t funcIndex) const {
   return (debugFilter_[funcIndex / 32] >> funcIndex % 32) & 1;
 }

@@ -93,6 +93,12 @@ void wasm::Realm::ensureProfilingLabels(bool profilingEnabled) {
   }
 }
 
+void wasm::Realm::resetPretenuredAllocSites() {
+  for (auto iter = instances_.iter(); !iter.done(); iter.next()) {
+    iter.get()->resetPretenuredAllocSites();
+  }
+}
+
 void wasm::Realm::addSizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf,
                                          size_t* realmTables) {
   *realmTables += instances_.shallowSizeOfExcludingThis(mallocSizeOf);

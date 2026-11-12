@@ -13,6 +13,7 @@
 #include "jit/BaselineJIT.h"
 #include "jit/Invalidation.h"
 #include "js/Prefs.h"
+#include "vm/Realm.h"
 
 #include "gc/Marking-inl.h"
 #include "gc/PrivateIterators-inl.h"
@@ -26,8 +27,8 @@ using namespace js::gc;
 // prevents unbounded time traversing the list during minor GC.
 static constexpr size_t MaxAllocSitesPerMinorGC = 600;
 
-// The maximum number of times to invalidate JIT code for a site. After this we
-// leave the site's state as Unknown and don't pretenure allocations.
+// The maximum number of times to reset a site or invalidate its JIT code. After
+// this we leave the site's state as Unknown and don't pretenure allocations.
 // Note we use 4 bits to store the invalidation count.
 static constexpr size_t MaxInvalidationCount = 5;
 
