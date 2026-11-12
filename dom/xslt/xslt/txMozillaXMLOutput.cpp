@@ -156,7 +156,7 @@ nsresult txMozillaXMLOutput::attributeInternal(nsAtom* aPrefix,
 
   NS_ASSERTION(!mBadChildLevel, "mBadChildLevel set when element is opened");
 
-  return mOpenedElement->SetAttr(aNsID, aLocalName, aPrefix, aValue, false,
+  return mOpenedElement->SetAttr(aNsID, aLocalName, aPrefix, aValue, true,
                                  IsKnownNewAttr::No);
 }
 
