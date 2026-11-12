@@ -170,11 +170,22 @@ size_t DrawEventRecorderMemory::RecordingSize() {
   return mOutputStream.mLength;
 }
 
+void DrawEventRecorderMemory::UseDeterministicReferenceIds() {
+  NS_ASSERT_OWNINGTHREAD(DrawEventRecorderMemory);
+  if (!mReferenceIds) {
+    mReferenceIds.reset(new ReferenceIdMap());
+    mOutputStream.mReferenceIds = mReferenceIds.get();
+  }
+}
+
 void DrawEventRecorderMemory::WipeRecording() {
   NS_ASSERT_OWNINGTHREAD(DrawEventRecorderMemory);
 
   mOutputStream.reset();
   mIndex.reset();
+  if (mReferenceIds) {
+    mReferenceIds->Clear();
+  }
 
   WriteHeader(mOutputStream);
 }

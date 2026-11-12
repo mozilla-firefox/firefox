@@ -14,6 +14,7 @@ UNIFIED_SOURCES += [
     "TestConvolutionFilter.cpp",
     "TestCoord.cpp",
     "TestCopyPlane.cpp",
+    "TestDrawEventRecording.cpp",
     "TestFilterNodeSoftware.cpp",
     "TestFontFallback.cpp",
     "TestFontOverlapPrevention.cpp",

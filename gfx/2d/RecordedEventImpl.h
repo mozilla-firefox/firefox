@@ -2007,6 +2007,8 @@ void RecordedEvent::ReadPatternData(S& aStream,
 
 inline void RecordedEvent::StorePattern(PatternStorage& aDestination,
                                         const Pattern& aSource) const {
+  // Zero the storage so that its padding is written as zeroes.
+  memset(&aDestination, 0, sizeof(aDestination));
   aDestination.mType = aSource.GetType();
 
   switch (aSource.GetType()) {

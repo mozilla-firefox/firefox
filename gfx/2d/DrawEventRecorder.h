@@ -16,6 +16,7 @@
 #include "RecordingTypes.h"
 #include "mozilla/DataMutex.h"
 #include "mozilla/ThreadSafeWeakPtr.h"
+#include "mozilla/UniquePtr.h"
 #include "nsISupportsImpl.h"
 #include "nsTHashMap.h"
 #include "nsTHashSet.h"
@@ -355,9 +356,17 @@ class DrawEventRecorderMemory : public DrawEventRecorderPrivate {
    */
   void WipeRecording();
   bool Finish() override;
+
+  /**
+   * Records object references as sequential ids rather than addresses, so
+   * that recording the same content twice produces identical bytes. Must be
+   * called before anything is recorded.
+   */
+  void UseDeterministicReferenceIds();
   void FlushItem(IntRect) override;
 
   MemStream mOutputStream;
+  UniquePtr<ReferenceIdMap> mReferenceIds;
   /* The index stream is of the form:
    * ItemIndex { size_t dataEnd; size_t extraDataEnd; }
    * It gets concatenated to the end of mOutputStream in Finish()

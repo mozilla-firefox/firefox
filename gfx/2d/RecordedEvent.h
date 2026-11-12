@@ -9,6 +9,7 @@
 #include <functional>
 #include <ostream>
 #include <sstream>
+#include <unordered_map>
 
 #include "RecordingTypes.h"
 #include "mozilla/PodOperations.h"
@@ -63,6 +64,37 @@ struct ReferencePtr {
   auto operator<=>(const ReferencePtr& aOther) const = default;
 
   uint64_t mLongPtr;
+};
+
+/**
+ * Maps the addresses recorded in ReferencePtrs to sequential ids.
+ *
+ * ReferencePtr uses the addresses of the recorded objects (paths, filter
+ * nodes, etc.), so two recordings containing the same values are not
+ * byte-identical when these objects were re-created at different addresses.
+ * Remapping ReferencePtrs to monotonically increasing integers keeps the same
+ * behavior within a recording, and prevents re-created objects from producing
+ * different recordings.
+ *
+ * This is particularly useful for blob masks, which don't have invalidation
+ * and rely on whether recordings are byte-identical. Regular blob images would
+ * benefit much less, if at all, because they are invalidated before recording
+ * and identical items are skipped on the next recording.
+ */
+class ReferenceIdMap {
+ public:
+  ReferencePtr Map(const ReferencePtr& aReference) {
+    if (!aReference.mLongPtr) {
+      return aReference;
+    }
+    return ReferencePtr(uintptr_t(
+        mIds.try_emplace(aReference.mLongPtr, mIds.size() + 1).first->second));
+  }
+
+  void Clear() { mIds.clear(); }
+
+ private:
+  std::unordered_map<uint64_t, uint64_t> mIds;
 };
 
 struct RecordedFontDetails {
@@ -229,12 +261,16 @@ struct SizeCollector {
 };
 
 struct MemWriter {
-  constexpr explicit MemWriter(char* aPtr) : mPtr(aPtr) {}
+  constexpr explicit MemWriter(char* aPtr,
+                               ReferenceIdMap* aReferenceIds = nullptr)
+      : mPtr(aPtr), mReferenceIds(aReferenceIds) {}
   void write(const char* aData, size_t aSize) {
     memcpy(mPtr, aData, aSize);
     mPtr += aSize;
   }
   char* mPtr;
+  // If set, ReferencePtrs are written as the ids this maps them to.
+  ReferenceIdMap* mReferenceIds;
 };
 
 // An istream like class for reading from memory
@@ -367,7 +403,92 @@ struct MemStream {
 
   MemStream() : mData(nullptr), mLength(0), mCapacity(0) {}
   ~MemStream() { free(mData); }
+
+  // If set, ReferencePtrs are written as the ids this maps them to.
+  ReferenceIdMap* mReferenceIds = nullptr;
 };
+
+template <class S>
+ReferencePtr MapReferenceForStream(S& aStream, const ReferencePtr& aReference) {
+  return aReference;
+}
+
+inline ReferencePtr MapReferenceForStream(MemWriter& aStream,
+                                          const ReferencePtr& aReference) {
+  return aStream.mReferenceIds ? aStream.mReferenceIds->Map(aReference)
+                               : aReference;
+}
+
+inline ReferencePtr MapReferenceForStream(MemStream& aStream,
+                                          const ReferencePtr& aReference) {
+  return aStream.mReferenceIds ? aStream.mReferenceIds->Map(aReference)
+                               : aReference;
+}
+
+template <class S>
+struct ElementStreamFormat<S, ReferencePtr> {
+  static void Write(S& aStream, const ReferencePtr& aElement) {
+    ReferencePtr mapped = MapReferenceForStream(aStream, aElement);
+    aStream.write(reinterpret_cast<const char*>(&mapped), sizeof(mapped));
+  }
+
+  [[nodiscard]] static bool Read(S& aStream, ReferencePtr& aElement) {
+    return aStream.read(reinterpret_cast<char*>(&aElement), sizeof(aElement));
+  }
+};
+
+// Pattern storages are written as raw bytes, but contain a ReferencePtr that
+// must be mapped like the others.
+template <class S, class Storage, ReferencePtr Storage::* Member>
+struct PatternStorageStreamFormat {
+  static void Write(S& aStream, const Storage& aElement) {
+    Storage mapped;
+    memcpy(&mapped, &aElement, sizeof(Storage));
+    mapped.*Member = MapReferenceForStream(aStream, aElement.*Member);
+    aStream.write(reinterpret_cast<const char*>(&mapped), sizeof(mapped));
+  }
+
+  [[nodiscard]] static bool Read(S& aStream, Storage& aElement) {
+    return aStream.read(reinterpret_cast<char*>(&aElement), sizeof(aElement));
+  }
+};
+
+// DrawOptions has padding, which is written as zeroes so that equal options
+// are always written as identical bytes.
+template <class S>
+struct ElementStreamFormat<S, DrawOptions> {
+  static void Write(S& aStream, const DrawOptions& aElement) {
+    char bytes[sizeof(DrawOptions)] = {};
+    memcpy(bytes + offsetof(DrawOptions, mAlpha), &aElement.mAlpha,
+           sizeof(aElement.mAlpha));
+    memcpy(bytes + offsetof(DrawOptions, mCompositionOp),
+           &aElement.mCompositionOp, sizeof(aElement.mCompositionOp));
+    memcpy(bytes + offsetof(DrawOptions, mAntialiasMode),
+           &aElement.mAntialiasMode, sizeof(aElement.mAntialiasMode));
+    aStream.write(bytes, sizeof(bytes));
+  }
+
+  [[nodiscard]] static bool Read(S& aStream, DrawOptions& aElement) {
+    return aStream.read(reinterpret_cast<char*>(&aElement), sizeof(aElement));
+  }
+};
+
+template <class S>
+struct ElementStreamFormat<S, LinearGradientPatternStorage>
+    : PatternStorageStreamFormat<S, LinearGradientPatternStorage,
+                                 &LinearGradientPatternStorage::mStops> {};
+template <class S>
+struct ElementStreamFormat<S, RadialGradientPatternStorage>
+    : PatternStorageStreamFormat<S, RadialGradientPatternStorage,
+                                 &RadialGradientPatternStorage::mStops> {};
+template <class S>
+struct ElementStreamFormat<S, ConicGradientPatternStorage>
+    : PatternStorageStreamFormat<S, ConicGradientPatternStorage,
+                                 &ConicGradientPatternStorage::mStops> {};
+template <class S>
+struct ElementStreamFormat<S, SurfacePatternStorage>
+    : PatternStorageStreamFormat<S, SurfacePatternStorage,
+                                 &SurfacePatternStorage::mSurface> {};
 
 class EventStream {
  public:
@@ -634,7 +755,8 @@ class RecordedEventDerived : public RecordedEvent {
       return;
     }
 
-    MemWriter writer(aStream.mData + aStream.mLength - size.mTotalSize);
+    MemWriter writer(aStream.mData + aStream.mLength - size.mTotalSize,
+                     aStream.mReferenceIds);
     WriteElement(writer, this->mType);
     static_cast<const Derived*>(this)->Record(writer);
   }
