@@ -474,12 +474,10 @@ export class UrlbarProviderAutofill extends UrlbarProvider {
       return false;
     }
 
-    // Autofill doesn't search tags or titles
+    // Autofill doesn't search tags
     if (
       queryContext.tokens.some(
-        t =>
-          t.type == lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_TAG ||
-          t.type == lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_TITLE
+        t => t.type == lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_TAG
       )
     ) {
       return false;

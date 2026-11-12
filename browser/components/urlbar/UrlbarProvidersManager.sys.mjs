@@ -1089,19 +1089,11 @@ function updateSourcesIfEmpty(context) {
             lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_TAG,
             lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_OPENPAGE,
             lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_SEARCH,
-            lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_TITLE,
-            lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_URL,
             lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_ACTION,
           ]).includes(t.type)
         );
 
-  // RESTRICT_TITLE and RESTRICT_URL do not affect query sources.
-  let restrictTokenType =
-    restrictToken &&
-    restrictToken.type != lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_TITLE &&
-    restrictToken.type != lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_URL
-      ? restrictToken.type
-      : undefined;
+  let restrictTokenType = restrictToken ? restrictToken.type : undefined;
 
   for (let source of Object.values(lazy.UrlbarShared.RESULT_SOURCE)) {
     // Check prefs and restriction tokens.

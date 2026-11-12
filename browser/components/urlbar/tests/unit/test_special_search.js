@@ -281,48 +281,6 @@ add_task(async function test_special_searches() {
     ],
   });
 
-  info(`foo ${UrlbarShared.RESTRICT_TOKENS.TITLE} -> in title`);
-  context = createContext(`foo ${UrlbarShared.RESTRICT_TOKENS.TITLE}`, {
-    isPrivate: false,
-  });
-  await check_results({
-    context,
-    matches: [
-      makeSearchResult(context, {
-        engineName: SUGGESTIONS_ENGINE_NAME,
-        heuristic: true,
-      }),
-      makeVisitResult(context, { uri: uri4.spec, title: "foo.bar" }),
-      makeBookmarkResult(context, { uri: uri6.spec, title: "foo.bar" }),
-      makeBookmarkResult(context, { uri: uri8.spec, title: "foo.bar" }),
-      makeVisitResult(context, { uri: uri9.spec, title: "title" }),
-      makeVisitResult(context, { uri: uri10.spec, title: "foo.bar" }),
-      makeVisitResult(context, { uri: uri11.spec, title: "title" }),
-      makeVisitResult(context, { uri: uri12.spec, title: "foo.bar" }),
-      makeVisitResult(context, { uri: uri2.spec, title: "foo.bar" }),
-    ],
-  });
-
-  info(`foo ${UrlbarShared.RESTRICT_TOKENS.URL} -> in url`);
-  context = createContext(`foo ${UrlbarShared.RESTRICT_TOKENS.URL}`, {
-    isPrivate: false,
-  });
-  await check_results({
-    context,
-    matches: [
-      makeSearchResult(context, {
-        engineName: SUGGESTIONS_ENGINE_NAME,
-        heuristic: true,
-      }),
-      makeVisitResult(context, { uri: uri4.spec, title: "foo.bar" }),
-      makeBookmarkResult(context, { uri: uri7.spec, title: "title" }),
-      makeBookmarkResult(context, { uri: uri8.spec, title: "foo.bar" }),
-      makeVisitResult(context, { uri: uri11.spec, title: "title" }),
-      makeVisitResult(context, { uri: uri12.spec, title: "foo.bar" }),
-      makeVisitResult(context, { uri: uri3.spec, title: "title" }),
-    ],
-  });
-
   info(`foo ${UrlbarShared.RESTRICT_TOKENS.TAG} -> is tag`);
   context = createContext(`foo ${UrlbarShared.RESTRICT_TOKENS.TAG}`, {
     isPrivate: false,
@@ -353,39 +311,6 @@ add_task(async function test_special_searches() {
         uri: uri12.spec,
         title: "foo.bar",
         tags: ["foo.bar"],
-      }),
-    ],
-  });
-
-  // Test conflicting restrictions.
-
-  info(
-    `conflict ${UrlbarShared.RESTRICT_TOKENS.TITLE} ${UrlbarShared.RESTRICT_TOKENS.URL} -> url wins`
-  );
-  await PlacesTestUtils.addVisits([
-    {
-      uri: `http://conflict.com/${UrlbarShared.RESTRICT_TOKENS.TITLE}`,
-      title: "test",
-    },
-    {
-      uri: "http://conflict.com/",
-      title: `test${UrlbarShared.RESTRICT_TOKENS.TITLE}`,
-    },
-  ]);
-  context = createContext(
-    `conflict ${UrlbarShared.RESTRICT_TOKENS.TITLE} ${UrlbarShared.RESTRICT_TOKENS.URL}`,
-    { isPrivate: false }
-  );
-  await check_results({
-    context,
-    matches: [
-      makeSearchResult(context, {
-        engineName: SUGGESTIONS_ENGINE_NAME,
-        heuristic: true,
-      }),
-      makeVisitResult(context, {
-        uri: `http://conflict.com/${UrlbarShared.RESTRICT_TOKENS.TITLE}`,
-        title: "test",
       }),
     ],
   });

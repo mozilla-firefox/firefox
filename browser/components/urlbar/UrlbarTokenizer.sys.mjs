@@ -119,7 +119,7 @@ export var UrlbarTokenizer = {
     return (
       token &&
       token.type >= UrlbarShared.TOKEN_TYPE.RESTRICT_HISTORY &&
-      token.type <= UrlbarShared.TOKEN_TYPE.RESTRICT_URL
+      token.type <= UrlbarShared.TOKEN_TYPE.RESTRICT_SEARCH
     );
   },
 
@@ -304,23 +304,14 @@ function filterTokens(tokens) {
     let matchingRestrictionFound = false;
     let typeRestrictionFound = false;
     function assignRestriction(r) {
-      if (r && !(matchingRestrictionFound && typeRestrictionFound)) {
-        if (
-          [
-            UrlbarShared.TOKEN_TYPE.RESTRICT_TITLE,
-            UrlbarShared.TOKEN_TYPE.RESTRICT_URL,
-          ].includes(r.type)
-        ) {
-          if (!matchingRestrictionFound) {
-            matchingRestrictionFound = true;
-            filtered[r.index].type = r.type;
-            return true;
-          }
-        } else if (!typeRestrictionFound) {
-          typeRestrictionFound = true;
-          filtered[r.index].type = r.type;
-          return true;
-        }
+      if (
+        r &&
+        !(matchingRestrictionFound && typeRestrictionFound) &&
+        !typeRestrictionFound
+      ) {
+        typeRestrictionFound = true;
+        filtered[r.index].type = r.type;
+        return true;
       }
       return false;
     }

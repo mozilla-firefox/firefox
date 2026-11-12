@@ -125,8 +125,6 @@ const lazy = XPCOMUtils.declareLazy({
         [lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_TAG, "tag"],
         [lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_OPENPAGE, "openpage"],
         [lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_SEARCH, "search"],
-        [lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_TITLE, "title"],
-        [lazy.UrlbarShared.TOKEN_TYPE.RESTRICT_URL, "url"],
       ])
     );
   },

@@ -184,12 +184,10 @@ export const UrlbarShared = {
     RESTRICT_TAG: 6,
     RESTRICT_OPENPAGE: 7,
     RESTRICT_SEARCH: 8,
-    RESTRICT_TITLE: 9,
-    RESTRICT_URL: 10,
-    RESTRICT_ACTION: 11,
+    RESTRICT_ACTION: 9,
     // `looksLikeOrigin()` returned `LOOKS_LIKE_ORIGIN.OTHER` for this token.
     // It may or may not be an origin.
-    POSSIBLE_ORIGIN_BUT_SEARCH_ALLOWED: 12,
+    POSSIBLE_ORIGIN_BUT_SEARCH_ALLOWED: 10,
   }),
 
   /**
@@ -207,8 +205,6 @@ export const UrlbarShared = {
     TAG: "+",
     OPENPAGE: "%",
     SEARCH: "?",
-    TITLE: "#",
-    URL: "$",
     ACTION: ">",
   }),
 
