@@ -347,17 +347,15 @@ class nsCSPNonceSrc : public nsCSPBaseSrc {
   nsString mNonce;
 };
 
-/* =============== nsCSPHashSource ============ */
+/* =============== nsCSPHashSrcBase ============ */
 
-class nsCSPHashSrc : public nsCSPBaseSrc {
+class nsCSPHashSrcBase : public nsCSPBaseSrc {
+ protected:
+  nsCSPHashSrcBase(const nsAString& aAlgorithm, const nsAString& aHash);
+  virtual ~nsCSPHashSrcBase();
+
  public:
-  nsCSPHashSrc(const nsAString& algo, const nsAString& hash);
-  virtual ~nsCSPHashSrc();
-
-  bool allows(enum CSPKeyword aKeyword,
-              const nsAString& aContentOrNonce) const override;
   void toString(nsAString& outStr) const override;
-  bool visit(nsCSPSrcVisitor* aVisitor) const override;
 
   inline void getAlgorithm(nsAString& outStr) const {
     outStr.Assign(mAlgorithm);
@@ -365,11 +363,23 @@ class nsCSPHashSrc : public nsCSPBaseSrc {
 
   inline void getHash(nsAString& outStr) const { outStr.Assign(mHash); };
 
-  bool isHash() const final { return true; }
-
- private:
+ protected:
   nsString mAlgorithm;
   nsString mHash;
+};
+
+/* =============== nsCSPHashSrc ============ */
+
+class nsCSPHashSrc final : public nsCSPHashSrcBase {
+ public:
+  nsCSPHashSrc(const nsAString& aAlgorithm, const nsAString& aHash)
+      : nsCSPHashSrcBase(aAlgorithm, aHash) {}
+
+  bool allows(enum CSPKeyword aKeyword,
+              const nsAString& aContentOrNonce) const override;
+  bool visit(nsCSPSrcVisitor* aVisitor) const override;
+
+  bool isHash() const final { return true; }
 };
 
 /* =============== nsCSPReportURI ============ */
