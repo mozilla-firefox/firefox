@@ -5,196 +5,168 @@
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_birmingham` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_birmingham.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_birmingham.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_blackburn_rovers` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_blackburn_rovers.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_blackburn_rovers.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_bolton` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_bolton.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_bolton.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_bristol_city` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_bristol_city.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_bristol_city.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_burnley` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_burnley.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_burnley.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_cardiff` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_cardiff.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_cardiff.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_charlton` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_charlton.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_charlton.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_derby_county` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_derby_county.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_derby_county.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_lincoln_city` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_lincoln_city.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_lincoln_city.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_man_united` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_man_united.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_man_united.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_middlesbrough` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_middlesbrough.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_middlesbrough.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_millwall` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_millwall.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_millwall.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_norwich_city` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_norwich_city.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_norwich_city.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_portsmouth` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_portsmouth.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_portsmouth.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_preston` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_preston.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_preston.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_qpr` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_qpr.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_qpr.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_sheffield_united` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_sheffield_united.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_sheffield_united.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_southampton` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_southampton.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_southampton.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_stoke_city` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_stoke_city.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_stoke_city.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_swansea_city` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_swansea_city.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_swansea_city.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_watford` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_watford.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_watford.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_west_brom` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_west_brom.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_west_brom.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_west_ham` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_west_ham.webp"/>
+            file="src/main/res/drawable-hdpi/team_badge_west_ham.webp"/>
     </issue>
 
     <issue
         id="UnusedResources"
         message="The resource `R.drawable.team_badge_wolves` appears to be unused">
         <location
-            file="src/main/res/drawable-xxhdpi/team_badge_wolves.webp"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.drawable.team_badge_wrexham` appears to be unused">
-        <location
-            file="src/main/res/drawable-xxhdpi/team_badge_wrexham.webp"/>
-    </issue>
-
-    <issue
-        id="IconDensities"
-        message="Missing the following drawables in `drawable-hdpi`: team_badge_birmingham.webp, team_badge_blackburn_rovers.webp, team_badge_bolton.webp, team_badge_bristol_city.webp, team_badge_burnley.webp... (20 more)">
-        <location
-            file="src/main/res/drawable-hdpi"/>
-    </issue>
-
-    <issue
-        id="IconDensities"
-        message="Missing the following drawables in `drawable-mdpi`: team_badge_birmingham.webp, team_badge_blackburn_rovers.webp, team_badge_bolton.webp, team_badge_bristol_city.webp, team_badge_burnley.webp... (20 more)">
-        <location
-            file="src/main/res/drawable-mdpi"/>
-    </issue>
-
-    <issue
-        id="IconDensities"
-        message="Missing the following drawables in `drawable-xhdpi`: team_badge_birmingham.webp, team_badge_blackburn_rovers.webp, team_badge_bolton.webp, team_badge_bristol_city.webp, team_badge_burnley.webp... (20 more)">
-        <location
-            file="src/main/res/drawable-xhdpi"/>
+            file="src/main/res/drawable-hdpi/team_badge_wolves.webp"/>
     </issue>
 
 </issues>
