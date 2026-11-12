@@ -98,10 +98,6 @@ class nsColumnSetFrame final : public nsContainerFrame {
     // The inline-size of each individual column.
     nscoord mColISize = NS_UNCONSTRAINEDSIZE;
 
-    // The amount of inline-size that is expected to be left over after all the
-    // columns and column gaps are laid out.
-    nscoord mExpectedISizeLeftOver = 0;
-
     // The width (inline-size) of each column gap.
     nscoord mColGap = NS_UNCONSTRAINEDSIZE;
 
