@@ -80,12 +80,7 @@ class IntentReceiverActivity : Activity() {
     fun processIntent(intent: Intent) {
         val data = intent.toSafeIntent().data
         if (intent.action == Intent.ACTION_VIEW && data != null && isFxaPairingLink(data, fxaServerUrl())) {
-            SyncAuth.pairingLinkOpened.record(
-                SyncAuth.PairingLinkOpenedExtra(
-                    campaignAttributed = components.settings.isUserPairingCampaignAttributed
-                )
-            )
-            launchAuthCustomTab(data)
+            processPairingLink(data)
             return
         }
 
@@ -122,6 +117,37 @@ class IntentReceiverActivity : Activity() {
 
         launch(intent, intentProcessorType)
     }
+
+    /**
+     * Opens a Firefox Accounts pairing link in the pairing flow if onboarding is complete. Otherwise, the link is
+     * dropped and onboarding is shown instead.
+     */
+    private fun processPairingLink(data: Uri) {
+        if (hasCompletedOnboarding()) {
+            SyncAuth.pairingLinkOpened.record(
+                SyncAuth.PairingLinkOpenedExtra(
+                    campaignAttributed = components.settings.isUserPairingCampaignAttributed
+                )
+            )
+            launchAuthCustomTab(data)
+        } else {
+            launchHome()
+        }
+    }
+
+    /** Opens [HomeActivity] without forwarding the incoming intent. */
+    private fun launchHome() {
+        val intent = Intent(this, HomeActivity::class.java)
+        // StrictMode violation on certain devices such as Samsung
+        components.strictMode.allowViolation(StrictMode::allowThreadDiskReads) {
+            startActivity(intent)
+        }
+        finish()
+    }
+
+    /** Returns whether onboarding is complete. If onboarding is disabled, it is treated as onboarded. */
+    private fun hasCompletedOnboarding(): Boolean =
+        components.fenixOnboarding.userHasBeenOnboarded() || !components.settings.onboardingFeatureEnabled
 
     /** Returns the configured Firefox Accounts server URL. */
     private fun fxaServerUrl(): String = FxaServer.config(this).server.contentUrl()

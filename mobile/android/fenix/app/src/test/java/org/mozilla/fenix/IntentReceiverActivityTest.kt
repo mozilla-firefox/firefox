@@ -44,6 +44,7 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.helpers.perf.TestStrictModeManager
 import org.mozilla.fenix.home.intent.StartSearchIntentProcessor
+import org.mozilla.fenix.onboarding.FenixOnboarding
 import org.mozilla.fenix.settings.account.AuthIntentReceiverActivity
 import org.mozilla.fenix.shortcut.NewTabShortcutIntentProcessor
 import org.mozilla.fenix.shortcut.PasswordManagerIntentProcessor
@@ -57,6 +58,7 @@ class IntentReceiverActivityTest {
 
     private lateinit var settings: Settings
     private lateinit var intentProcessors: IntentProcessors
+    private lateinit var fenixOnboarding: FenixOnboarding
 
     @get:Rule val gleanTestRule = FenixGleanTestRule(testContext)
 
@@ -64,6 +66,7 @@ class IntentReceiverActivityTest {
     fun setup() {
         settings = mockk()
         intentProcessors = mockk()
+        fenixOnboarding = mockk()
 
         every { settings.openLinksInAPrivateTab } returns false
         every { settings.enableHomepageAsNewTab } returns false
@@ -79,6 +82,8 @@ class IntentReceiverActivityTest {
         every { settings.isUserPairingCampaignAttributed } returns false
         every { settings.overrideFxAServer } returns ""
         every { settings.overrideSyncTokenServer } returns ""
+        every { fenixOnboarding.userHasBeenOnboarded() } returns true
+        every { settings.onboardingFeatureEnabled } returns true
 
         coEvery { intentProcessors.intentProcessor.process(any()) } returns true
     }
@@ -373,7 +378,7 @@ class IntentReceiverActivityTest {
     }
 
     @Test
-    fun `GIVEN a pairing link intent WHEN processing the intent THEN it opens in the auth custom tab instead of a tab`() =
+    fun `GIVEN onboarding is complete and a pairing link intent WHEN processing the intent THEN it opens in the auth custom tab instead of a tab`() =
         runTest {
             val url = "https://accounts.firefox.com/pair#channel_id=test_id&channel_key=test_key&v=2"
             val intent = Intent(Intent.ACTION_VIEW, url.toUri())
@@ -448,6 +453,72 @@ class IntentReceiverActivityTest {
             activity.processIntent(intent)
 
             assertNull(SyncAuth.pairingLinkOpened.testGetValue())
+        }
+
+    @Test
+    fun `GIVEN onboarding is not complete WHEN processing a pairing link intent THEN it opens the home activity without the link`() =
+        runTest {
+            every { fenixOnboarding.userHasBeenOnboarded() } returns false
+            val url = "https://accounts.firefox.com/pair#channel_id=test_id&channel_key=test_key&v=2"
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+
+            val activity = Robolectric.buildActivity(IntentReceiverActivity::class.java, intent).get()
+            attachMocks(activity)
+            activity.processIntent(intent)
+
+            val actualIntent = shadowOf(activity).peekNextStartedActivity()
+            assertEquals(HomeActivity::class.java.name, actualIntent.component?.className)
+            assertNull(actualIntent.data)
+            assertTrue(activity.isFinishing)
+            coVerify(exactly = 0) { intentProcessors.intentProcessor.process(any()) }
+        }
+
+    @Test
+    fun `GIVEN onboarding is not complete WHEN processing a pairing link intent THEN pairingLinkOpened is not recorded`() =
+        runTest {
+            every { fenixOnboarding.userHasBeenOnboarded() } returns false
+            val url = "https://accounts.firefox.com/pair#channel_id=test_id&channel_key=test_key&v=2"
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+
+            val activity = Robolectric.buildActivity(IntentReceiverActivity::class.java, intent).get()
+            attachMocks(activity)
+            activity.processIntent(intent)
+
+            assertNull(SyncAuth.pairingLinkOpened.testGetValue())
+        }
+
+    @Test
+    fun `GIVEN onboarding is disabled WHEN processing a pairing link intent THEN it opens in the auth custom tab`() =
+        runTest {
+            every { fenixOnboarding.userHasBeenOnboarded() } returns false
+            every { settings.onboardingFeatureEnabled } returns false
+            val url = "https://accounts.firefox.com/pair#channel_id=test_id&channel_key=test_key&v=2"
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+
+            val activity = Robolectric.buildActivity(IntentReceiverActivity::class.java, intent).get()
+            attachMocks(activity)
+            activity.processIntent(intent)
+
+            val actualIntent = shadowOf(activity).peekNextStartedActivity()
+            assertThat(actualIntent, hasComponent(AuthIntentReceiverActivity::class.java.name))
+            assertEquals(url, actualIntent.dataString)
+        }
+
+    @Test
+    fun `GIVEN onboarding is not complete WHEN processing a non-pairing link intent THEN it is forwarded with its link`() =
+        runTest {
+            every { fenixOnboarding.userHasBeenOnboarded() } returns false
+            val url = "https://mozilla.org"
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+
+            val activity = Robolectric.buildActivity(IntentReceiverActivity::class.java, intent).get()
+            attachMocks(activity)
+            activity.processIntent(intent)
+
+            val actualIntent = shadowOf(activity).peekNextStartedActivity()
+            assertEquals(HomeActivity::class.java.name, actualIntent.component?.className)
+            assertEquals(url, actualIntent.dataString)
+            coVerify { intentProcessors.intentProcessor.process(any()) }
         }
 
     @Test
@@ -535,6 +606,7 @@ class IntentReceiverActivityTest {
         every { activity.components.core } returns mockk(relaxed = true)
         every { activity.components.intentProcessors } returns intentProcessors
         every { activity.components.strictMode } returns TestStrictModeManager()
+        every { activity.components.fenixOnboarding } returns fenixOnboarding
     }
 
     private inline fun <reified T : IntentProcessor> mockIntentProcessor(): T {
