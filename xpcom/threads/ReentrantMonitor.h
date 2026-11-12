@@ -139,11 +139,11 @@ class MOZ_CAPABILITY("reentrant monitor") ReentrantMonitor
 
 #endif  // ifdef DEBUG
 
- private:
-  ReentrantMonitor();
-  ReentrantMonitor(const ReentrantMonitor&);
-  ReentrantMonitor& operator=(const ReentrantMonitor&);
+  ReentrantMonitor() = delete;
+  ReentrantMonitor(const ReentrantMonitor&) = delete;
+  ReentrantMonitor& operator=(const ReentrantMonitor&) = delete;
 
+ private:
   PRMonitor* mReentrantMonitor;
 #ifdef DEBUG
   int32_t mEntryCount;

@@ -64,13 +64,13 @@ class MOZ_CAPABILITY("monitor") TimerThreadMonitor {
     return aTolerance <= TimeDuration::FromMilliseconds(16);
   }
 
- private:
   TimerThreadMonitor() = delete;
   TimerThreadMonitor(const TimerThreadMonitor&) = delete;
   TimerThreadMonitor& operator=(const TimerThreadMonitor&) = delete;
   TimerThreadMonitor(TimerThreadMonitor&&) = delete;
   TimerThreadMonitor& operator=(TimerThreadMonitor&&) = delete;
 
+ private:
   void BeginWait() MOZ_REQUIRES(this) {
 #ifdef DEBUG
     MOZ_ASSERT(!mWaiterThread,
