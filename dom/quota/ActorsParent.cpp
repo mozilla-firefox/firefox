@@ -6232,14 +6232,15 @@ void QuotaManager::FlushDirtyOriginInfos() {
       continue;
     }
 
-    if (!IsOriginInitialized(groupInfo->GetPersistenceType(), info->Origin())) {
-      continue;
-    }
-
     // The OriginInfo may have been cleaned by a direct CreateDirectoryMetadata2
     // call (e.g. via InitializeOrigin) since it was queued. Skip the redundant
     // write in that case.
     if (!info->LockedDirty()) {
+      continue;
+    }
+
+    if (!IsOriginInitialized(groupInfo->GetPersistenceType(), info->Origin())) {
+      itemsToRequeue.AppendElement(std::move(info));
       continue;
     }
 
