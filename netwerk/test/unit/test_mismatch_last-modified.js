@@ -108,6 +108,15 @@ ChromeUtils.defineLazyGetter(this, "listener_1", function () {
 function run_test() {
   do_get_profile();
 
+  // On Windows, dooming the disk cache entry intermittently fails because its
+  // file is locked by another process, which leaves the stale entry in place.
+  if (mozinfo.os == "win") {
+    Services.prefs.setBoolPref("browser.cache.disk.enable", false);
+    registerCleanupFunction(() => {
+      Services.prefs.clearUserPref("browser.cache.disk.enable");
+    });
+  }
+
   evict_cache_entries();
 
   httpserver.registerPathHandler("/test1", handler);
