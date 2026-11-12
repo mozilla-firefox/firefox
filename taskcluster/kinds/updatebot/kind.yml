@@ -40,6 +40,9 @@ tasks:
             - secrets:get:project/updatebot/{level}/ai-api-key
             - hooks:trigger-hook:project-gecko/in-tree-action-1-generic/*
         run:
+            # Updatebot commits, shelves and pushes to try with Mercurial, so it needs an
+            # hg checkout of the full tree.
+            clone-with: hg
             using: run-task
             command: /builds/worker/run.py /builds/worker/checkouts/gecko /builds/worker/updatebot
         notifications:
