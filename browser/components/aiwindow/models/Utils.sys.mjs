@@ -15,6 +15,8 @@ export { openAIEngine };
 export const MODEL_PREF = "browser.smartwindow.model";
 export const GENERIC_MODEL_NAME = "generic";
 const MODEL_CHOICE_PREF = "browser.smartwindow.firstrun.modelChoice";
+const AUTO_MODEL_PREF = "browser.smartwindow.firstrun.singlePageWithAutoModel";
+export const AUTO_MODEL_CHOICE_ID = "4";
 
 const RS_AI_WINDOW_COLLECTION = "ai-window-prompts";
 
@@ -387,6 +389,7 @@ export const FALLBACK_MODELS = {
     shortName: "Mistral Small 4",
     brandName: "Mistral",
   },
+  [AUTO_MODEL_CHOICE_ID]: { model: "auto", ownerName: "", labelId: "auto" },
 };
 
 /**
@@ -586,12 +589,25 @@ export async function resolveChatModelChoice(
  * Single source of truth for the order model choices are shown in across the
  * UI (smartbar selector, settings, onboarding). Choice IDs keep their
  * server-defined identity; only the display position lives here. Change this
- * list to reorder every surface at once.
+ * list to reorder every surface at once. Custom ("0") is not listed; each
+ * surface places it.
  *
  * @returns {string[]} Choice IDs in display order.
  */
 export function getModelDisplayOrder() {
-  return ["3", "1", "2"];
+  return isAutoModelEnabled()
+    ? [AUTO_MODEL_CHOICE_ID, "2", "3", "1"]
+    : ["3", "1", "2"];
+}
+
+/**
+ * Whether the Auto model choice is offered. Shares its pref with the
+ * single-page onboarding.
+ *
+ * @returns {boolean}
+ */
+export function isAutoModelEnabled() {
+  return Services.prefs.getBoolPref(AUTO_MODEL_PREF, false);
 }
 
 /**
@@ -639,6 +655,14 @@ export async function refreshModelsDataCache() {
   _modelsDataCache = null;
   await getAllModelsData();
 }
+
+// The cache only holds models in getModelDisplayOrder(), which changes with the
+// Auto pref, so reload it when the pref flips.
+Services.prefs.addObserver(AUTO_MODEL_PREF, () => {
+  refreshModelsDataCache().catch(e =>
+    console.error("Failed to refresh models cache on Auto pref change", e)
+  );
+});
 
 /**
  * Gets metadata for all models, with fallback. Result is cached after first call.

@@ -40,9 +40,17 @@ smart-window-model-section =
     .label = Assistant model
     .description = Choose a model based on what’s important to you.
 
+smart-window-model-section-v2 =
+    .label = Model
+    .description = Models are what power chats and actions.
+
 smart-window-model-radio-group =
     .aria-label = Assistant model
 smart-window-model-learn-link = Learn about models
+
+smart-window-model-auto =
+    .label = Auto model
+    .description = { -smart-window-brand-name } picks the best model for your task
 
 ## Full name indicates the full version name of the model currently listed along with its publisher
 ##   $shortName (string) - The display name of the model collection
@@ -58,6 +66,15 @@ smart-window-model-flexible-v2 =
 smart-window-model-personal-v2 =
     .label = {$shortName}: Personal
     .description = Built for personalized help across languages. Full name: { $model } by { $ownerName }
+smart-window-model-qwen =
+    .label = { $shortName }
+    .description = Ready for a variety of tasks. Full name: { $model } by { $ownerName }
+smart-window-model-mistral =
+    .label = { $shortName }
+    .description = Good if you chat and browse in multiple languages. Full name: { $model } by { $ownerName }
+smart-window-model-gemini =
+    .label = { $shortName }
+    .description = Quick answers when you’re moving fast. Full name: { $model } by { $ownerName }
 
 smart-window-model-custom =
     .label = Custom: Use your own LLM
@@ -79,6 +96,10 @@ smart-window-model-custom-save-confirmation = Model details saved. Start a new c
 ai-window-memories-section =
     .label = Memories
     .description = { -brand-short-name } can learn from your activity to create memories. They’re used to help personalize responses and are stored locally on this device.
+
+ai-window-memories-section-v2 =
+    .label = Memories
+    .description = { -brand-short-name } can learn from your activity to create memories. They’re used to help tailor your experience and are stored locally on your device.
 
 ai-window-learn-from-chat-activity =
     .label = Learn from chats in { -smart-window-brand-name }
