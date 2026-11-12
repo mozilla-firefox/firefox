@@ -34,6 +34,11 @@ DEFAULT_WINDOWS = set([
 
 
 class SessionStoreTestCase(WindowManagerMixin, MarionetteTestCase):
+    # Prefs a test class needs the browser to start up with. Unlike the prefs
+    # set in setUp, these are written to prefs.js rather than user.js, so they
+    # aren't reapplied at later startups and the browser can change them.
+    startup_prefs = {}
+
     def setUp(
         self,
         startup_page=1,
@@ -104,7 +109,14 @@ class SessionStoreTestCase(WindowManagerMixin, MarionetteTestCase):
         files don't inherit this profile."""
         context = self.marionette._send_message("Marionette:GetContext", key="value")
         self.marionette.delete_session()
-        self.marionette.instance.restart(prefs, clean=True)
+        instance = self.marionette.instance
+        instance.close(clean=True)
+        instance.prefs = prefs
+        # Create the new profile before starting so startup_prefs can be added.
+        instance.profile = None
+        if self.startup_prefs:
+            instance.profile.set_preferences(self.startup_prefs, filename="prefs.js")
+        instance.start()
         self.marionette.raise_for_port()
         self.marionette.start_session(self.marionette.requested_capabilities)
         self.marionette.set_context(context)

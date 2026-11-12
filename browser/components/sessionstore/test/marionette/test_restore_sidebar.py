@@ -15,11 +15,7 @@ def inline(title):
     return f"data:text/html;charset=utf-8,<html><head><title>{title}</title></head><body></body></html>"
 
 
-class TestSessionRestore(SessionStoreTestCase):
-    """
-    Test that the sidebar and its attributes are restored on reopening of window.
-    """
-
+class SidebarSessionRestoreTestCase(SessionStoreTestCase):
     def setUp(self):
         super().setUp(
             startup_page=1,
@@ -32,6 +28,12 @@ class TestSessionRestore(SessionStoreTestCase):
                 ),
             ]),
         )
+
+
+class TestSessionRestore(SidebarSessionRestoreTestCase):
+    """
+    Test that the sidebar and its attributes are restored on reopening of window.
+    """
 
     def test_restore_sidebar_open(self):
         self.assertEqual(
@@ -162,19 +164,17 @@ class TestSessionRestore(SessionStoreTestCase):
             "Sidebar width has been restored.",
         )
 
-    def test_restore_for_always_show(self):
-        self.marionette.execute_script(
-            """
-            Services.prefs.setBoolPref("sidebar.revamp", true);
-            // Always show is only available with vertical tabs
-            Services.prefs.setBoolPref("sidebar.verticalTabs", true);
-            Services.prefs.setBoolPref("sidebar.animation.enabled", false);
-            Services.prefs.setStringPref("sidebar.visibility", "always-show");
-            """
-        )
-        self.marionette.restart()
-        self.marionette.set_context("chrome")
 
+class TestRestoreSidebarAlwaysShow(SidebarSessionRestoreTestCase):
+    startup_prefs = {
+        "sidebar.revamp": True,
+        # Always show is only available with vertical tabs
+        "sidebar.verticalTabs": True,
+        "sidebar.animation.enabled": False,
+        "sidebar.visibility": "always-show",
+    }
+
+    def test_restore_for_always_show(self):
         self.assertEqual(
             len(self.marionette.chrome_window_handles),
             1,
@@ -210,16 +210,14 @@ class TestSessionRestore(SessionStoreTestCase):
             "Sidebar expanded state has been restored.",
         )
 
-    def test_restore_for_hide_sidebar(self):
-        self.marionette.execute_script(
-            """
-            Services.prefs.setBoolPref("sidebar.revamp", true);
-            Services.prefs.setStringPref("sidebar.visibility", "hide-sidebar");
-            """
-        )
-        self.marionette.restart()
-        self.marionette.set_context("chrome")
 
+class TestRestoreHiddenSidebar(SidebarSessionRestoreTestCase):
+    startup_prefs = {
+        "sidebar.revamp": True,
+        "sidebar.visibility": "hide-sidebar",
+    }
+
+    def test_restore_for_hide_sidebar(self):
         self.assertEqual(
             len(self.marionette.chrome_window_handles),
             1,
@@ -247,16 +245,14 @@ class TestSessionRestore(SessionStoreTestCase):
             "Sidebar visibility state has been restored.",
         )
 
-    def test_restore_sidebar_open_from_backup_pref(self):
-        self.marionette.execute_script(
-            """
-            Services.prefs.setBoolPref("sidebar.revamp", true);
-            Services.prefs.setBoolPref("browser.privatebrowsing.autostart", true);
-            """
-        )
-        self.marionette.restart()
-        self.marionette.set_context("chrome")
 
+class TestRestoreSidebarFromBackupPref(SidebarSessionRestoreTestCase):
+    startup_prefs = {
+        "sidebar.revamp": True,
+        "browser.privatebrowsing.autostart": True,
+    }
+
+    def test_restore_sidebar_open_from_backup_pref(self):
         # Open the history panel.
         self.marionette.execute_async_script(
             """
@@ -301,4 +297,7 @@ class TestSessionRestore(SessionStoreTestCase):
             );
             """
         )
+        # The migration runs at the next startup.
+        self.marionette.restart()
+        self.marionette.set_context("chrome")
         self.test_restore_sidebar_open_from_backup_pref()
