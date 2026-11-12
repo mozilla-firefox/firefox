@@ -318,22 +318,22 @@ bool AndroidImageReader::Init() {
 }
 
 void AndroidImageReader::ReleaseResources() {
-  MonitorAutoLock lock(mMonitor);
-
-  if (!mAImageReader) {
+  AImageReader* reader = nullptr;
+  {
+    MonitorAutoLock lock(mMonitor);
+    reader = mAImageReader;
+    mAImageReader = nullptr;
+    // The native window is owned by AImageReader.
+    mNativeWindow = nullptr;
+  }
+  if (!reader) {
     return;
   }
 
-  AImageReader_setImageListener(mAImageReader, nullptr);
-
-  // Delete all images before closing the associated image reader.
-
-  // Delete the image reader.
-  AImageReader_delete(mAImageReader);
-  mAImageReader = nullptr;
-  // mNativeWindow is not owned by AndroidImageReader.
-  // It is owned by AImageReader.
-  mNativeWindow = nullptr;
+  // Deletion stops the callback thread. Do not hold the monitor that an
+  // in-flight OnFrameAvailable callback needs to finish.
+  AImageReader_setImageListener(reader, nullptr);
+  AImageReader_delete(reader);
 }
 
 /* static */
