@@ -876,7 +876,7 @@ interface GleanImpl {
     carouselNavigate: GleanEventWithExtras<{ direction?: string, newtab_visit_id?: string, section?: string, section_position?: string, slide_index?: string|number }>;
     carouselToggleAutoplay: GleanEventWithExtras<{ newtab_visit_id?: string, paused?: string|boolean, section?: string, section_position?: string }>;
     closed: GleanEventWithExtras<{ newtab_visit_id?: string }>;
-    customizePanelOpen: GleanEventWithExtras<{ newtab_visit_id?: string }>;
+    customizePanelOpen: GleanEventWithExtras<{ newtab_visit_id?: string, source?: string, subpanel?: string }>;
     customizePanelSubpanelOpen: GleanEventWithExtras<{ newtab_visit_id?: string, panel?: string }>;
     dwellTime: GleanTimingDistribution;
     featureHighlightDismiss: GleanEventWithExtras<{ feature?: string, newtab_visit_id?: string }>;

@@ -298,4 +298,6 @@ export class _CustomizeMenu extends React.PureComponent {
 export const CustomizeMenu = connect(state => ({
   DiscoveryStream: state.DiscoveryStream,
   Prefs: state.Prefs,
+  customizePanelSource: state.App.customizePanelSource,
+  customizePanelWallpaperCategory: state.App.customizePanelWallpaperCategory,
 }))(_CustomizeMenu);

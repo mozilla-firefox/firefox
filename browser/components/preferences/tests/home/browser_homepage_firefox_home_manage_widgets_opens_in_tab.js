@@ -23,7 +23,7 @@ add_setup(async function () {
 add_task(async function test_manage_widgets_opens_in_tab() {
   await assertHomeSettingLinkOpens({
     settingId: "manageWidgets",
-    expectedUrl: "about:home#customize-widgets",
+    expectedUrl: "about:home#customize-widgets?source=settings",
     expectedWhere: "tab",
   });
 });

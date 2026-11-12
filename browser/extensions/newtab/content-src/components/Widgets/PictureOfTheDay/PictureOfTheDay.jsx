@@ -214,7 +214,10 @@ const PictureOfTheDay = ({
   };
 
   const handleManageWallpaper = () => {
-    dispatch({ type: at.SHOW_PERSONALIZE });
+    dispatch({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: PICTURE_OF_THE_DAY_ENTRY.telemetryName },
+    });
     recordUserAction("manage_wallpaper", { source: "context_menu" });
     handleInteraction();
   };

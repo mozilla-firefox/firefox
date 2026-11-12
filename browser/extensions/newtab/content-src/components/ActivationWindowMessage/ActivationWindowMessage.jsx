@@ -4,6 +4,7 @@
 
 import React, { useCallback } from "react";
 import { actionTypes as at } from "common/Actions.mjs";
+import { CUSTOMIZE_PANEL_SOURCES } from "content-src/lib/constants.mjs";
 
 export function ActivationWindowMessage({
   dispatch,
@@ -33,7 +34,10 @@ export function ActivationWindowMessage({
     }
 
     if (content.primaryButton?.action?.type === "SHOW_PERSONALIZE") {
-      dispatch({ type: at.SHOW_PERSONALIZE });
+      dispatch({
+        type: at.SHOW_PERSONALIZE,
+        data: { source: CUSTOMIZE_PANEL_SOURCES.ACTIVATION_WINDOW_MESSAGE },
+      });
     }
   }, [dispatch, handleClick, handleDismiss, handleBlock, content]);
 

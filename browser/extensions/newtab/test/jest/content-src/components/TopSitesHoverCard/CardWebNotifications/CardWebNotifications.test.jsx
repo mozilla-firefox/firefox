@@ -139,6 +139,20 @@ describe("<CardWebNotifications>", () => {
     ).toBe(true);
   });
 
+  it("dispatches SHOW_PERSONALIZE with its source from the settings button", () => {
+    const { container, dispatch } = renderCard(link, {
+      notifications: NOTIFICATIONS,
+      byOrigin: BY_ORIGIN,
+    });
+    fireEvent.click(
+      container.querySelector("button.top-sites-hover-card-settings")
+    );
+    expect(dispatchedActions(dispatch)).toContainEqual({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "top_sites_web_notifications" },
+    });
+  });
+
   it("dispatches WEB_NOTIFICATIONS_DISMISS from the per-row dismiss", () => {
     const { container, dispatch } = renderCard(link, {
       notifications: {

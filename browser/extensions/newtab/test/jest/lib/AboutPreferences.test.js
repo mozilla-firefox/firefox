@@ -9,6 +9,7 @@ import {
 } from "lib/AboutPreferences.sys.mjs";
 import { actionTypes as at } from "common/Actions.mjs";
 import { WIDGET_REGISTRY } from "common/WidgetsRegistry.mjs";
+import { CUSTOMIZE_PANEL_SOURCES } from "content-src/lib/constants";
 import { mockServices, stubGlobals } from "test/jest/test-utils";
 
 describe("AboutPreferences Feed", () => {
@@ -594,9 +595,28 @@ describe("AboutPreferences Feed", () => {
           id: "manageWidgets",
           l10nId: "home-prefs-manage-widgets-link",
           control: "moz-box-link",
-          controlAttrs: { href: "about:home#customize-widgets" },
+          controlAttrs: {
+            href: "about:home#customize-widgets?source=settings",
+          },
         },
       ]);
+    });
+
+    it("marks the Firefox Home links with the settings source", () => {
+      setBoolPrefs({ "browser.newtabpage.activity-stream.nova.enabled": true });
+      instance.store.getState = () => ({
+        Prefs: { values: { "widgets.system.enabled": true } },
+      });
+
+      const group = instance._setupHomeGroup({ Preferences });
+
+      const links = group.items.flatMap(i => [i, ...(i.items ?? [])]);
+      for (const id of ["chooseWallpaper", "manageWidgets", "manageTopics"]) {
+        const { href } = links.find(i => i.id === id).controlAttrs;
+        expect(href).toMatch(
+          new RegExp(`\\?source=${CUSTOMIZE_PANEL_SOURCES.SETTINGS}$`)
+        );
+      }
     });
 
     it("shows Manage widgets only while Firefox Home is in use and Widgets is on", () => {
@@ -629,12 +649,12 @@ describe("AboutPreferences Feed", () => {
       onUserClick({ preventDefault }, { homepageNewTabs: { value: "home" } });
       expect(preventDefault).toHaveBeenCalled();
       expect(openTrustedLinkIn).toHaveBeenLastCalledWith(
-        "about:home#customize-widgets",
+        "about:home#customize-widgets?source=settings",
         "tab"
       );
       onUserClick({ preventDefault }, { homepageNewTabs: { value: "blank" } });
       expect(openTrustedLinkIn).toHaveBeenLastCalledWith(
-        "about:home#customize-widgets",
+        "about:home#customize-widgets?source=settings",
         "window"
       );
     });

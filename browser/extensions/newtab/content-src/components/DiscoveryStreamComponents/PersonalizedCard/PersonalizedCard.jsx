@@ -5,6 +5,7 @@
 import React, { useCallback } from "react";
 import { SafeAnchor } from "../SafeAnchor/SafeAnchor";
 import { actionTypes as at } from "common/Actions.mjs";
+import { CUSTOMIZE_PANEL_SOURCES } from "content-src/lib/constants.mjs";
 
 export const PersonalizedCard = ({
   dispatch,
@@ -22,7 +23,10 @@ export const PersonalizedCard = ({
 
   const onToggleClick = useCallback(
     elementId => {
-      dispatch({ type: at.SHOW_PERSONALIZE });
+      dispatch({
+        type: at.SHOW_PERSONALIZE,
+        data: { source: CUSTOMIZE_PANEL_SOURCES.PERSONALIZED_CARD },
+      });
       handleClick(elementId);
     },
     [dispatch, handleClick]

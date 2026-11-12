@@ -529,11 +529,14 @@ newtab:
     type: event
     description: >
       Recorded when the customize panel becomes visible, whichever control
-      or message opened it.
+      or message opened it. The extras record the source of the open and
+      the subpanel showing at that moment.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066344
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2066847
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066344
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2066847
     data_sensitivity:
       - interaction
     notification_emails:
@@ -541,6 +544,46 @@ newtab:
     expires: never
     extra_keys:
       newtab_visit_id: *newtab_visit_id
+      source:
+        description: >
+          What opened the panel. The following values are tested against
+          CUSTOMIZE_PANEL_SOURCES in
+          browser/extensions/newtab/content-src/lib/constants.mjs by
+          customize-panel-telemetry.test.js, which reads this list:
+            - customize_button
+            - manage_widgets
+            - wallpaper_feature_highlight
+            - promo_card
+            - personalized_card
+            - activation_window_message
+            - top_sites_web_notifications
+            - settings
+            - external_link
+
+          The value is also the telemetry name of each widget with a "Manage
+          wallpaper" menu item.
+          settings is an open from the "Choose a wallpaper", "Manage widgets"
+          or "Manage topics" links in the Home section of Settings.
+          external_link is any other link to the panel, such as the
+          "Customize" button on the What's New Page.
+        type: string
+      subpanel:
+        description: >
+          The subpanel showing when the panel opened. The following values
+          are tested against CUSTOMIZE_SUBPANELS in
+          browser/extensions/newtab/content-src/lib/constants.mjs by
+          customize-panel-telemetry.test.js, which reads this list:
+            - sections_management
+            - widgets_management
+            - themes_management
+            - wallpaper_categories
+
+          Left out when the panel opened on its main
+          view. When source is wallpaper_feature_highlight and the highlight
+          links to a wallpaper category, this is wallpaper_categories, even
+          if that category isn't available and the panel opened on its main
+          view.
+        type: string
     send_in_pings:
       - newtab
 
@@ -563,10 +606,14 @@ newtab:
       newtab_visit_id: *newtab_visit_id
       panel:
         description: >
-          Which subpanel opened. One of themes_management,
-          wallpaper_categories, sections_management, widgets_management,
-          the ids of CUSTOMIZE_SUBPANELS in
-          browser/extensions/newtab/content-src/lib/constants.mjs.
+          Which subpanel opened. The following values are tested against
+          CUSTOMIZE_SUBPANELS in
+          browser/extensions/newtab/content-src/lib/constants.mjs by
+          customize-panel-telemetry.test.js, which reads this list:
+            - themes_management
+            - wallpaper_categories
+            - sections_management
+            - widgets_management
         type: string
     send_in_pings:
       - newtab

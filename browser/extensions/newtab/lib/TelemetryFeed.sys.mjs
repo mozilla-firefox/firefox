@@ -1790,6 +1790,8 @@ export class TelemetryFeed {
       case "SHOW_PERSONALIZE": {
         Glean.newtab.customizePanelOpen.record({
           newtab_visit_id: session.session_id,
+          source: action.data.source,
+          subpanel: action.data.subpanel,
         });
         break;
       }

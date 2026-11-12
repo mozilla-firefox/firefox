@@ -39,7 +39,7 @@ add_setup(async function () {
 add_task(async function test_manage_topics_opens_in_window() {
   await assertHomeSettingLinkOpens({
     settingId: "manageTopics",
-    expectedUrl: "about:home#customize-topics",
+    expectedUrl: "about:home#customize-topics?source=settings",
     expectedWhere: "window",
   });
 });

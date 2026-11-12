@@ -51,6 +51,7 @@ describe("<PromoCard>", () => {
     });
     expect(dispatch.mock.calls[1][0]).toMatchObject({
       type: at.SHOW_PERSONALIZE,
+      data: { source: "promo_card" },
     });
   });
 });

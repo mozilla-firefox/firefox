@@ -10,7 +10,10 @@ import { DiscoveryStreamBase } from "content-src/components/DiscoveryStreamBase/
 import { ErrorBoundary } from "content-src/components/ErrorBoundary/ErrorBoundary";
 import { CustomizeMenu } from "content-src/components/CustomizeMenu/CustomizeMenu";
 import { BaseContext } from "content-src/lib/BaseContext";
-import { CUSTOMIZE_SUBPANELS } from "content-src/lib/constants";
+import {
+  CUSTOMIZE_PANEL_SOURCES,
+  CUSTOMIZE_SUBPANELS,
+} from "content-src/lib/constants";
 import React, { useState, useEffect } from "react";
 import { Search } from "content-src/components/Search/Search";
 import { TopSites } from "content-src/components/TopSites/TopSites";
@@ -135,6 +138,7 @@ export class BaseContent extends React.PureComponent {
     super(props);
     this.openPreferences = this.openPreferences.bind(this);
     this.openCustomizationMenu = this.openCustomizationMenu.bind(this);
+    this.openFromCustomizeButton = this.openFromCustomizeButton.bind(this);
     this.closeCustomizationMenu = this.closeCustomizationMenu.bind(this);
     this.onWindowScroll = debounce(this.onWindowScroll.bind(this), 5);
     this.setPref = this.setPref.bind(this);
@@ -309,13 +313,25 @@ export class BaseContent extends React.PureComponent {
 
     this._onHashChange = () => {
       const hash = globalThis.location?.hash || "";
-      if (hash === "#customize" || hash === "#customize-topics") {
-        this.openCustomizationMenu();
+      const [route, query] = hash.split("?");
+      const hasMarker =
+        query !== undefined &&
+        (route === "#customize" ||
+          route === "#customize-topics" ||
+          route === "#customize-widgets");
+      const source =
+        new URLSearchParams(query).get("source") ===
+        CUSTOMIZE_PANEL_SOURCES.SETTINGS
+          ? CUSTOMIZE_PANEL_SOURCES.SETTINGS
+          : CUSTOMIZE_PANEL_SOURCES.EXTERNAL_LINK;
 
-        if (hash === "#customize-topics") {
+      if (route === "#customize" || route === "#customize-topics") {
+        this.openCustomizationMenu(source);
+
+        if (route === "#customize-topics") {
           this.toggleSectionsMgmtPanel();
         }
-      } else if (hash === "#customize-widgets") {
+      } else if (route === "#customize-widgets") {
         const currentPrefs = this.props.Prefs.values;
         // The widgets subpanel only exists with Nova and a visible widgets
         // container. Opening it in any other state leaves the main view
@@ -326,12 +342,18 @@ export class BaseContent extends React.PureComponent {
           currentPrefs[PREF_NOVA_ENABLED] &&
           isWidgetsContainerVisible(currentPrefs)
         ) {
-          this.openWidgetsPanel();
+          this.openWidgetsPanel(source);
         } else {
-          this.openCustomizationMenu();
+          this.openCustomizationMenu(source);
         }
       } else if (this.props.App.customizeMenuVisible) {
         this.closeCustomizationMenu();
+      }
+
+      if (hasMarker) {
+        // Drop the query once read, so going back to this page or opening a
+        // bookmark of it isn't recorded as another Settings open.
+        globalThis.history.replaceState(globalThis.history.state, "", route);
       }
     };
 
@@ -594,8 +616,12 @@ export class BaseContent extends React.PureComponent {
     this.props.dispatch(ac.UserEvent({ event: "OPEN_NEWTAB_PREFS" }));
   }
 
-  openCustomizationMenu() {
-    this.props.dispatch({ type: at.SHOW_PERSONALIZE });
+  openCustomizationMenu(source) {
+    this.props.dispatch({ type: at.SHOW_PERSONALIZE, data: { source } });
+  }
+
+  openFromCustomizeButton() {
+    this.openCustomizationMenu(CUSTOMIZE_PANEL_SOURCES.CUSTOMIZE_BUTTON);
   }
 
   closeCustomizationMenu() {
@@ -897,8 +923,8 @@ export class BaseContent extends React.PureComponent {
     this.setState(CLOSED_SUBPANELS);
   }
 
-  openWidgetsPanel() {
-    this.openCustomizationMenu();
+  openWidgetsPanel(source) {
+    this.openCustomizationMenu(source);
     this.setState({ activeSubpanel: CUSTOMIZE_SUBPANELS.WIDGETS });
   }
 
@@ -1392,7 +1418,7 @@ export class BaseContent extends React.PureComponent {
             <menu className="personalizeButtonWrapper nova-enabled">
               <CustomizeMenu
                 onClose={this.closeCustomizationMenu}
-                onOpen={this.openCustomizationMenu}
+                onOpen={this.openFromCustomizeButton}
                 openPreferences={this.openPreferences}
                 setPref={this.setPref}
                 enabledSections={enabledSections}
@@ -1569,7 +1595,7 @@ export class BaseContent extends React.PureComponent {
           <menu className="personalizeButtonWrapper">
             <CustomizeMenu
               onClose={this.closeCustomizationMenu}
-              onOpen={this.openCustomizationMenu}
+              onOpen={this.openFromCustomizeButton}
               openPreferences={this.openPreferences}
               setPref={this.setPref}
               enabledSections={enabledSections}

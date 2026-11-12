@@ -3,6 +3,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { actionCreators as ac } from "../../common/Actions.mjs";
+import { CUSTOMIZE_SUBPANELS } from "./constants.mjs";
 
 export function getCustomizePanelTransitions(prevProps, props) {
   const panelOpened = Boolean(props.showing && !prevProps.showing);
@@ -21,7 +22,21 @@ export function recordCustomizePanelTransitions(dispatch, prevProps, props) {
     props
   );
   if (panelOpened) {
-    dispatch(ac.UserEvent({ event: "SHOW_PERSONALIZE" }));
+    const source = props.customizePanelSource;
+    // The wallpaper feature highlight opens its category one update after the
+    // panel shows, so its request stands in for the subpanel.
+    const subpanel =
+      props.activeSubpanel ||
+      (props.customizePanelWallpaperCategory
+        ? CUSTOMIZE_SUBPANELS.WALLPAPERS
+        : null);
+    dispatch(
+      ac.UserEvent({
+        event: "SHOW_PERSONALIZE",
+        ...(source && { source }),
+        ...(subpanel && { subpanel }),
+      })
+    );
   }
   if (subpanelOpened) {
     dispatch(

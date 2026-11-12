@@ -192,8 +192,11 @@ describe("PictureOfTheDay widget", () => {
     expect(
       dispatch.mock.calls.find(
         ([action]) => action.type === at.SHOW_PERSONALIZE
-      )
-    ).toBeTruthy();
+      )?.[0]
+    ).toEqual({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "picture_of_the_day" },
+    });
   });
 
   describe("populated state", () => {

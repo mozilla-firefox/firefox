@@ -517,12 +517,40 @@ add_task(async function test_customize_panel_open_event() {
 
   instance.handleUserEvent({
     meta: { fromTarget: PORT_ID },
-    data: { event: "SHOW_PERSONALIZE" },
+    data: {
+      event: "SHOW_PERSONALIZE",
+      source: "settings",
+      subpanel: "widgets_management",
+    },
   });
 
   let events = Glean.newtab.customizePanelOpen.testGetValue();
   Assert.equal(events.length, 1, "One customize_panel_open event");
-  Assert.deepEqual(events[0].extra, { newtab_visit_id: session.session_id });
+  Assert.deepEqual(events[0].extra, {
+    newtab_visit_id: session.session_id,
+    source: "settings",
+    subpanel: "widgets_management",
+  });
+});
+
+add_task(async function test_customize_panel_open_event_without_subpanel() {
+  info("handleUserEvent leaves subpanel out when the action has none");
+  Services.fog.testResetFOG();
+  const PORT_ID = "port123";
+  let instance = new TelemetryFeed();
+  let session = instance.addSession(PORT_ID);
+
+  instance.handleUserEvent({
+    meta: { fromTarget: PORT_ID },
+    data: { event: "SHOW_PERSONALIZE", source: "customize_button" },
+  });
+
+  let events = Glean.newtab.customizePanelOpen.testGetValue();
+  Assert.equal(events.length, 1, "One customize_panel_open event");
+  Assert.deepEqual(events[0].extra, {
+    newtab_visit_id: session.session_id,
+    source: "customize_button",
+  });
 });
 
 add_task(async function test_customize_panel_subpanel_open_event() {

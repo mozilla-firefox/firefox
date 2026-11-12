@@ -207,9 +207,12 @@ export class AboutPreferences {
     const firefoxHomeActive = ({ homepageNewWindows, homepageNewTabs }) =>
       homepageNewWindows.value === "home" || homepageNewTabs.value === "home";
 
-    const HOME_CUSTOMIZE_URL = "about:home#customize";
-    const HOME_CUSTOMIZE_TOPICS_URL = "about:home#customize-topics";
-    const HOME_CUSTOMIZE_WIDGETS_URL = "about:home#customize-widgets";
+    // A literal because this parent-process module can't import content-src,
+    // where Base.jsx checks it against CUSTOMIZE_PANEL_SOURCES.SETTINGS.
+    const SETTINGS_MARKER = "?source=settings";
+    const HOME_CUSTOMIZE_URL = `about:home#customize${SETTINGS_MARKER}`;
+    const HOME_CUSTOMIZE_TOPICS_URL = `about:home#customize-topics${SETTINGS_MARKER}`;
+    const HOME_CUSTOMIZE_WIDGETS_URL = `about:home#customize-widgets${SETTINGS_MARKER}`;
 
     // Open in a new tab if "New tabs" is Firefox Home, else a new window.
     const dispatchForHomeLink = ({ homepageNewTabs }) =>

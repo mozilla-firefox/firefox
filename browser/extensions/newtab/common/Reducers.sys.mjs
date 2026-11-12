@@ -34,6 +34,7 @@ export const INITIAL_STATE = {
     // specific wallpaper category (e.g. "firefox"), this holds that category id
     // so WallpaperCategories can open it. Cleared when the panel closes.
     customizePanelWallpaperCategory: null,
+    customizePanelSource: null,
   },
   Ads: {
     initialized: false,
@@ -365,11 +366,13 @@ function App(prevState = INITIAL_STATE.App, action) {
       return Object.assign({}, prevState, {
         customizeMenuVisible: true,
         customizePanelWallpaperCategory: action.data?.wallpaperCategory ?? null,
+        customizePanelSource: action.data?.source ?? null,
       });
     case at.HIDE_PERSONALIZE:
       return Object.assign({}, prevState, {
         customizeMenuVisible: false,
         customizePanelWallpaperCategory: null,
+        customizePanelSource: null,
       });
     default:
       return prevState;

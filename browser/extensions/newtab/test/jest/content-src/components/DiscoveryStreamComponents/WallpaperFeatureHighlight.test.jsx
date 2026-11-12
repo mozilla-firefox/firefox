@@ -181,7 +181,10 @@ describe("<WallpaperFeatureHighlight>", () => {
     fireEvent.click(container.querySelector(".button-wrapper moz-button"));
     expect(dispatch).toHaveBeenCalledWith({
       type: at.SHOW_PERSONALIZE,
-      data: { wallpaperCategory: "firefox" },
+      data: {
+        source: "wallpaper_feature_highlight",
+        wallpaperCategory: "firefox",
+      },
     });
   });
 
@@ -220,7 +223,10 @@ describe("<WallpaperFeatureHighlight>", () => {
     fireEvent.click(container.querySelector(".button-wrapper moz-button"));
     expect(dispatch).toHaveBeenCalledWith({
       type: at.SHOW_PERSONALIZE,
-      data: { wallpaperCategory: "celestial" },
+      data: {
+        source: "wallpaper_feature_highlight",
+        wallpaperCategory: "celestial",
+      },
     });
   });
 
@@ -259,7 +265,7 @@ describe("<WallpaperFeatureHighlight>", () => {
     fireEvent.click(container.querySelector(".button-wrapper moz-button"));
     expect(dispatch).toHaveBeenCalledWith({
       type: at.SHOW_PERSONALIZE,
-      data: { wallpaperCategory: null },
+      data: { source: "wallpaper_feature_highlight", wallpaperCategory: null },
     });
   });
 
@@ -298,7 +304,7 @@ describe("<WallpaperFeatureHighlight>", () => {
     fireEvent.click(container.querySelector(".button-wrapper moz-button"));
     expect(dispatch).toHaveBeenCalledWith({
       type: at.SHOW_PERSONALIZE,
-      data: { wallpaperCategory: null },
+      data: { source: "wallpaper_feature_highlight", wallpaperCategory: null },
     });
   });
 
@@ -337,7 +343,7 @@ describe("<WallpaperFeatureHighlight>", () => {
     fireEvent.click(container.querySelector(".button-wrapper moz-button"));
     expect(dispatch).toHaveBeenCalledWith({
       type: at.SHOW_PERSONALIZE,
-      data: { wallpaperCategory: null },
+      data: { source: "wallpaper_feature_highlight", wallpaperCategory: null },
     });
   });
 });

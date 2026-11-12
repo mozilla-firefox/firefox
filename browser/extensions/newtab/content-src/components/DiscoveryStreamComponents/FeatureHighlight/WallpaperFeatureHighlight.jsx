@@ -5,7 +5,10 @@
 import React, { useCallback } from "react";
 import { useSelector } from "react-redux";
 import { actionTypes as at } from "common/Actions.mjs";
-import { WALLPAPER_CATEGORIES } from "content-src/lib/constants.mjs";
+import {
+  CUSTOMIZE_PANEL_SOURCES,
+  WALLPAPER_CATEGORIES,
+} from "content-src/lib/constants.mjs";
 import { FeatureHighlight } from "./FeatureHighlight";
 
 export function WallpaperFeatureHighlight({
@@ -49,7 +52,10 @@ export function WallpaperFeatureHighlight({
       }
       dispatch({
         type: at.SHOW_PERSONALIZE,
-        data: { wallpaperCategory: category },
+        data: {
+          source: CUSTOMIZE_PANEL_SOURCES.WALLPAPER_FEATURE_HIGHLIGHT,
+          wallpaperCategory: category,
+        },
       });
       handleClick(elementId);
       onDismiss();

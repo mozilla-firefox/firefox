@@ -6,6 +6,7 @@ import React, { useCallback } from "react";
 import { useDispatch } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import { useIntersectionObserver } from "../../../lib/utils";
+import { CUSTOMIZE_PANEL_SOURCES } from "content-src/lib/constants.mjs";
 
 const PREF_PROMO_CARD_DISMISSED = "discoverystream.promoCard.visible";
 const PROMO_CARD_IMAGE_SRC =
@@ -25,7 +26,10 @@ const PromoCard = () => {
         type: at.PROMO_CARD_CLICK,
       })
     );
-    dispatch({ type: at.SHOW_PERSONALIZE });
+    dispatch({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: CUSTOMIZE_PANEL_SOURCES.PROMO_CARD },
+    });
   }, [dispatch]);
 
   const onDismissClick = useCallback(() => {

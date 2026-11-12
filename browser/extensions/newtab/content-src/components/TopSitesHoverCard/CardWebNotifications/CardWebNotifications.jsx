@@ -10,6 +10,7 @@ import {
   originFromUrl,
 } from "content-src/lib/web-notification-match.mjs";
 import { proxiedIconUrl } from "content-src/lib/web-notification-icon.mjs";
+import { CUSTOMIZE_PANEL_SOURCES } from "content-src/lib/constants.mjs";
 import React from "react";
 
 // Origins whose notification icon just repeats the site's own shortcut icon, so
@@ -145,7 +146,10 @@ function CardWebNotifications({ link }) {
   const now = Date.now();
 
   const openSettings = () => {
-    dispatch({ type: at.SHOW_PERSONALIZE });
+    dispatch({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: CUSTOMIZE_PANEL_SOURCES.TOP_SITES_WEB_NOTIFICATIONS },
+    });
   };
 
   const activate = notification =>

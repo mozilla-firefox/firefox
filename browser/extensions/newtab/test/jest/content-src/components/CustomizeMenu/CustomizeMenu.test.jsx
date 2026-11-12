@@ -6,7 +6,10 @@ import React from "react";
 import { render, fireEvent, act, waitFor } from "@testing-library/react";
 import { WrapWithProvider } from "test/jest/test-utils";
 import { INITIAL_STATE } from "common/Reducers.sys.mjs";
-import { _CustomizeMenu as CustomizeMenu } from "content-src/components/CustomizeMenu/CustomizeMenu";
+import {
+  _CustomizeMenu as CustomizeMenu,
+  CustomizeMenu as ConnectedCustomizeMenu,
+} from "content-src/components/CustomizeMenu/CustomizeMenu";
 import { ContentSection } from "content-src/components/CustomizeMenu/ContentSection/ContentSection";
 import { CUSTOMIZE_SUBPANELS } from "content-src/lib/constants";
 import { actionCreators as ac } from "common/Actions.mjs";
@@ -616,7 +619,12 @@ describe("<CustomizeMenu> Nova", () => {
     const dispatch = jest.fn();
     HTMLDialogElement.prototype.showModal = jest.fn();
     HTMLDialogElement.prototype.close = jest.fn();
-    const props = { ...DEFAULT_PROPS, dispatch, activeSubpanel: null };
+    const props = {
+      ...DEFAULT_PROPS,
+      dispatch,
+      activeSubpanel: null,
+      customizePanelSource: "customize_button",
+    };
     const { rerender } = render(
       <WrapWithProvider>
         <CustomizeMenu {...props} showing={false} />
@@ -628,7 +636,7 @@ describe("<CustomizeMenu> Nova", () => {
       </WrapWithProvider>
     );
     expect(dispatch).toHaveBeenCalledWith(
-      ac.UserEvent({ event: "SHOW_PERSONALIZE" })
+      ac.UserEvent({ event: "SHOW_PERSONALIZE", source: "customize_button" })
     );
     rerender(
       <WrapWithProvider>
@@ -648,6 +656,37 @@ describe("<CustomizeMenu> Nova", () => {
     expect(dispatch).toHaveBeenCalledTimes(2);
   });
 
+  it("records the source and wallpaper category from the store", () => {
+    const userEventSpy = jest.spyOn(ac, "UserEvent");
+    HTMLDialogElement.prototype.showModal = jest.fn();
+    HTMLDialogElement.prototype.close = jest.fn();
+    const state = {
+      ...DEFAULT_STATE,
+      App: {
+        ...DEFAULT_STATE.App,
+        customizePanelSource: "wallpaper_feature_highlight",
+        customizePanelWallpaperCategory: "celestial",
+      },
+    };
+    const { rerender } = render(
+      <WrapWithProvider state={state}>
+        <ConnectedCustomizeMenu {...DEFAULT_PROPS} showing={false} />
+      </WrapWithProvider>
+    );
+    rerender(
+      <WrapWithProvider state={state}>
+        <ConnectedCustomizeMenu {...DEFAULT_PROPS} showing={true} />
+      </WrapWithProvider>
+    );
+
+    expect(userEventSpy).toHaveBeenCalledWith({
+      event: "SHOW_PERSONALIZE",
+      source: "wallpaper_feature_highlight",
+      subpanel: CUSTOMIZE_SUBPANELS.WALLPAPERS,
+    });
+    userEventSpy.mockRestore();
+  });
+
   it("does not record a panel open on a mount that is already showing with a subpanel active", () => {
     const dispatch = jest.fn();
     HTMLDialogElement.prototype.showModal = jest.fn();
@@ -662,15 +701,13 @@ describe("<CustomizeMenu> Nova", () => {
         />
       </WrapWithProvider>
     );
-    expect(dispatch).not.toHaveBeenCalledWith(
-      ac.UserEvent({ event: "SHOW_PERSONALIZE" })
-    );
-    expect(dispatch).not.toHaveBeenCalledWith(
-      ac.UserEvent({
-        event: "SHOW_PERSONALIZE_SUBPANEL",
-        source: CUSTOMIZE_SUBPANELS.WIDGETS,
-      })
-    );
+    for (const event of ["SHOW_PERSONALIZE", "SHOW_PERSONALIZE_SUBPANEL"]) {
+      expect(dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ event }),
+        })
+      );
+    }
   });
 
   describe("theme picker shown()", () => {

@@ -5,17 +5,19 @@ describe("<ActivationWindowMessage>", () => {
   let handleBlock;
   let handleClick;
   let handleDismiss;
+  let dispatch;
 
   beforeEach(() => {
     handleBlock = jest.fn();
     handleClick = jest.fn();
     handleDismiss = jest.fn();
+    dispatch = jest.fn();
   });
 
   function renderMessage(messageData) {
     return render(
       <ActivationWindowMessage
-        dispatch={jest.fn()}
+        dispatch={dispatch}
         handleBlock={handleBlock}
         handleClick={handleClick}
         handleDismiss={handleDismiss}
@@ -308,6 +310,25 @@ describe("<ActivationWindowMessage>", () => {
     fireEvent.click(container.querySelector("moz-button[type='primary']"));
     expect(handleClick).toHaveBeenCalledTimes(1);
     expect(handleClick).toHaveBeenCalledWith("primary-button");
+  });
+
+  it("should dispatch SHOW_PERSONALIZE with its source when the primary action asks for it", () => {
+    const { container } = renderMessage({
+      content: {
+        heading: "Test",
+        message: "Test",
+        primaryButton: {
+          label: "Customize",
+          action: { type: "SHOW_PERSONALIZE" },
+        },
+      },
+    });
+
+    fireEvent.click(container.querySelector("moz-button[type='primary']"));
+    expect(dispatch).toHaveBeenCalledWith({
+      type: "SHOW_PERSONALIZE",
+      data: { source: "activation_window_message" },
+    });
   });
 
   it("should call handleClick when secondary button is clicked", () => {

@@ -21,7 +21,7 @@ add_setup(async function () {
 add_task(async function test_choose_wallpaper_opens_in_tab() {
   await assertHomeSettingLinkOpens({
     settingId: "chooseWallpaper",
-    expectedUrl: "about:home#customize",
+    expectedUrl: "about:home#customize?source=settings",
     expectedWhere: "tab",
   });
 });

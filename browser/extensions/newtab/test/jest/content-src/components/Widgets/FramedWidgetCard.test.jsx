@@ -527,7 +527,10 @@ describe("<FramedWidgetCard>", () => {
         menu.querySelector("panel-item[data-l10n-id='tally-wallpapers']")
       );
 
-      expect(dispatch).toHaveBeenCalledWith({ type: at.SHOW_PERSONALIZE });
+      expect(dispatch).toHaveBeenCalledWith({
+        type: at.SHOW_PERSONALIZE,
+        data: { source: "extension_widget" },
+      });
       expect(findUserEvent(dispatch, "wallpapers").data).toMatchObject({
         widget_name: "extension_widget",
         widget_source: "context_menu",

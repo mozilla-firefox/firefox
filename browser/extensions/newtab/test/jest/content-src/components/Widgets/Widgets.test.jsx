@@ -808,6 +808,7 @@ describe("<Widgets> handleToggleMaximize", () => {
       );
 
       expect(openWidgetsPanel).toHaveBeenCalledTimes(1);
+      expect(openWidgetsPanel).toHaveBeenCalledWith("manage_widgets");
     });
 
     it("should render the Add widgets button when at least one widget is not enabled", () => {
@@ -845,6 +846,7 @@ describe("<Widgets> handleToggleMaximize", () => {
       fireEvent.click(container.querySelector(".widgets-add-button"));
 
       expect(openWidgetsPanel).toHaveBeenCalledTimes(1);
+      expect(openWidgetsPanel).toHaveBeenCalledWith("manage_widgets");
     });
 
     it("should match the largest current widget size on the Add widgets button", () => {
@@ -1774,6 +1776,7 @@ describe("<Widgets> manage widgets menu item", () => {
     expect(manageItem).toBeInTheDocument();
     fireEvent.click(manageItem);
     expect(openWidgetsPanel).toHaveBeenCalledTimes(1);
+    expect(openWidgetsPanel).toHaveBeenCalledWith("manage_widgets");
   });
 });
 

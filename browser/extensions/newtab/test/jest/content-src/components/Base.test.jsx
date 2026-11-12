@@ -207,8 +207,11 @@ describe("<BaseContent>", () => {
       },
       ref
     );
-    ref.current.openCustomizationMenu();
-    expect(dispatch).toHaveBeenCalledWith({ type: at.SHOW_PERSONALIZE });
+    ref.current.openFromCustomizeButton();
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "customize_button" },
+    });
     ref.current.closeCustomizationMenu();
     expect(dispatch).toHaveBeenCalledWith({ type: at.HIDE_PERSONALIZE });
     expect(dispatch).toHaveBeenCalledWith(
@@ -269,12 +272,27 @@ describe("<BaseContent>", () => {
       CUSTOMIZE_SUBPANELS.WALLPAPERS
     );
     act(() => {
-      ref.current.openWidgetsPanel();
+      ref.current.openWidgetsPanel("manage_widgets");
     });
     expect(ref.current.state).toMatchObject({
       activeSubpanel: CUSTOMIZE_SUBPANELS.WIDGETS,
       wallpapersPanelCategory: "celestial",
     });
+  });
+
+  it("openWidgetsPanel passes its source on", () => {
+    const dispatch = jest.fn();
+    const ref = React.createRef();
+    renderBaseContent({ ...DEFAULT_PROPS, dispatch }, ref);
+
+    act(() => {
+      ref.current.openWidgetsPanel("manage_widgets");
+    });
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "manage_widgets" },
+    });
+    expect(ref.current.state.activeSubpanel).toBe(CUSTOMIZE_SUBPANELS.WIDGETS);
   });
 
   it("opens the widgets subpanel for #customize-widgets with Nova on", () => {
@@ -292,7 +310,10 @@ describe("<BaseContent>", () => {
       ref
     );
 
-    expect(dispatch).toHaveBeenCalledWith({ type: at.SHOW_PERSONALIZE });
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "external_link" },
+    });
     expect(ref.current.state.activeSubpanel).toBe(CUSTOMIZE_SUBPANELS.WIDGETS);
   });
 
@@ -311,7 +332,10 @@ describe("<BaseContent>", () => {
       ref
     );
 
-    expect(dispatch).toHaveBeenCalledWith({ type: at.SHOW_PERSONALIZE });
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "external_link" },
+    });
     expect(ref.current.state.activeSubpanel).toBeNull();
   });
 
@@ -328,7 +352,10 @@ describe("<BaseContent>", () => {
       ref
     );
 
-    expect(dispatch).toHaveBeenCalledWith({ type: at.SHOW_PERSONALIZE });
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "external_link" },
+    });
     expect(ref.current.state.activeSubpanel).toBeNull();
   });
 
@@ -352,8 +379,143 @@ describe("<BaseContent>", () => {
       globalThis.dispatchEvent(new HashChangeEvent("hashchange"));
     });
 
-    expect(dispatch).toHaveBeenCalledWith({ type: at.SHOW_PERSONALIZE });
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "external_link" },
+    });
     expect(ref.current.state.activeSubpanel).toBe(CUSTOMIZE_SUBPANELS.WIDGETS);
+  });
+
+  it("records the settings source for a marked #customize-widgets and removes the marker", () => {
+    globalThis.location.hash = "#customize-widgets?source=settings";
+    const dispatch = jest.fn();
+    const ref = React.createRef();
+    renderBaseContent(
+      {
+        ...DEFAULT_PROPS,
+        dispatch,
+        Prefs: {
+          values: { "nova.enabled": true, "widgets.system.enabled": true },
+        },
+      },
+      ref
+    );
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "settings" },
+    });
+    expect(ref.current.state.activeSubpanel).toBe(CUSTOMIZE_SUBPANELS.WIDGETS);
+    expect(globalThis.location.hash).toBe("#customize-widgets");
+  });
+
+  it("records the settings source for a marked #customize-topics", () => {
+    globalThis.location.hash = "#customize-topics?source=settings";
+    const dispatch = jest.fn();
+    const ref = React.createRef();
+    renderBaseContent({ ...DEFAULT_PROPS, dispatch }, ref);
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "settings" },
+    });
+    expect(ref.current.state.activeSubpanel).toBe(CUSTOMIZE_SUBPANELS.SECTIONS);
+    expect(globalThis.location.hash).toBe("#customize-topics");
+  });
+
+  it("records the settings source for a marked #customize", () => {
+    globalThis.location.hash = "#customize?source=settings";
+    const dispatch = jest.fn();
+    const ref = React.createRef();
+    renderBaseContent({ ...DEFAULT_PROPS, dispatch }, ref);
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "settings" },
+    });
+    expect(ref.current.state.activeSubpanel).toBeNull();
+    expect(globalThis.location.hash).toBe("#customize");
+  });
+
+  it.each([
+    "?source=bogus",
+    "?source=",
+    "?foo=bar",
+    "?",
+    "?source=promo_card",
+    "?source=customize_button",
+  ])("treats the marker %p on #customize-widgets as external_link", marker => {
+    globalThis.location.hash = `#customize-widgets${marker}`;
+    const dispatch = jest.fn();
+    const ref = React.createRef();
+    renderBaseContent(
+      {
+        ...DEFAULT_PROPS,
+        dispatch,
+        Prefs: {
+          values: { "nova.enabled": true, "widgets.system.enabled": true },
+        },
+      },
+      ref
+    );
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "external_link" },
+    });
+    expect(ref.current.state.activeSubpanel).toBe(CUSTOMIZE_SUBPANELS.WIDGETS);
+    expect(globalThis.location.hash).toBe("#customize-widgets");
+  });
+
+  it.each([
+    ["#customize", null],
+    ["#customize-topics", CUSTOMIZE_SUBPANELS.SECTIONS],
+  ])("records external_link for an unmarked %s", (hash, subpanel) => {
+    globalThis.location.hash = hash;
+    const dispatch = jest.fn();
+    const ref = React.createRef();
+    renderBaseContent({ ...DEFAULT_PROPS, dispatch }, ref);
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: "external_link" },
+    });
+    expect(ref.current.state.activeSubpanel).toBe(subpanel);
+  });
+
+  it("leaves a hash with a query on another route alone and closes the panel", () => {
+    globalThis.location.hash = "#devtools?x";
+    const dispatch = jest.fn();
+    renderBaseContent(
+      { ...DEFAULT_PROPS, dispatch, App: { customizeMenuVisible: true } },
+      React.createRef()
+    );
+
+    expect(dispatch).toHaveBeenCalledWith({ type: at.HIDE_PERSONALIZE });
+    expect(globalThis.location.hash).toBe("#devtools?x");
+  });
+
+  it("does not open the panel on a reload of a marked URL", () => {
+    const entriesSpy = jest
+      .spyOn(globalThis.performance, "getEntriesByType")
+      .mockReturnValue([{ type: "reload" }]);
+    globalThis.location.hash = "#customize-widgets?source=settings";
+    const dispatch = jest.fn();
+    renderBaseContent(
+      {
+        ...DEFAULT_PROPS,
+        dispatch,
+        Prefs: {
+          values: { "nova.enabled": true, "widgets.system.enabled": true },
+        },
+      },
+      React.createRef()
+    );
+    entriesSpy.mockRestore();
+
+    expect(dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: at.SHOW_PERSONALIZE })
+    );
   });
 
   it("closeSubpanels closes the open subpanel and clears the wallpaper category", () => {

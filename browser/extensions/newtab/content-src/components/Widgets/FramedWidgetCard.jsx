@@ -17,7 +17,11 @@ const REASON_PATTERN = /^[a-z][a-z0-9_]{0,63}$/;
 
 // The host actions a WidgetMenuItem of type "action" can run.
 const MENU_ACTIONS = {
-  "show-customize": dispatch => dispatch({ type: at.SHOW_PERSONALIZE }),
+  "show-customize": (dispatch, entry) =>
+    dispatch({
+      type: at.SHOW_PERSONALIZE,
+      data: { source: entry.telemetryName },
+    }),
 };
 
 const withoutFragment = url => url.split("#")[0];
@@ -166,7 +170,7 @@ export function FramedWidgetCard(props) {
   };
 
   const handleAction = item => {
-    MENU_ACTIONS[item.action]?.(dispatch);
+    MENU_ACTIONS[item.action]?.(dispatch, entry);
     recordUserAction(item.id, { source: "context_menu" });
   };
 

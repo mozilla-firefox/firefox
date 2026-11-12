@@ -70,6 +70,27 @@ describe("Reducers", () => {
 
       expect(nextState.customizePanelWallpaperCategory).toBe("firefox");
     });
+    it("should store the open source on SHOW_PERSONALIZE", () => {
+      const nextState = App(undefined, {
+        type: at.SHOW_PERSONALIZE,
+        data: { source: "promo_card" },
+      });
+
+      expect(nextState.customizePanelSource).toBe("promo_card");
+    });
+    it("should store no source when SHOW_PERSONALIZE has none", () => {
+      const nextState = App(undefined, { type: at.SHOW_PERSONALIZE });
+
+      expect(nextState.customizePanelSource).toBeNull();
+    });
+    it("should clear the open source on HIDE_PERSONALIZE", () => {
+      const nextState = App(
+        { customizeMenuVisible: true, customizePanelSource: "promo_card" },
+        { type: at.HIDE_PERSONALIZE }
+      );
+
+      expect(nextState.customizePanelSource).toBeNull();
+    });
     it("should clear customize panel state on HIDE_PERSONALIZE", () => {
       const nextState = App(
         {
