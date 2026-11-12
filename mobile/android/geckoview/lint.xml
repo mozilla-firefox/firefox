@@ -3,11 +3,6 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <lint>
-    <!-- The android-lint mozlint task reports every issue in the lint report as a failure, including
-         the informational note lint emits about findings filtered by the baseline. Silence just that
-         note; the baseline itself still grandfathers the underlying findings. -->
-    <issue id="LintBaseline" severity="ignore" />
-
     <!-- libwebrtc is vendored third-party source, pulled into geckoview's sourceSet via srcDir
          entries in build.gradle. We don't hand-edit vendored code (it is overwritten on the next
          libwebrtc update), so exclude the entire tree from every lint check. -->
