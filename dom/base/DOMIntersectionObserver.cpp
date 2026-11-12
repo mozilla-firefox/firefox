@@ -285,13 +285,21 @@ void DOMIntersectionObserver::GetThresholds(nsTArray<double>& aRetVal) {
 }
 
 bool DOMIntersectionObserver::Observes(Element& aTarget) const {
-  return mObservationTargets.Has(&aTarget);
+  return mObservationTargetMap.Contains(&aTarget);
 }
 
 // https://w3c.github.io/IntersectionObserver/#observe-target-element
 void DOMIntersectionObserver::Observe(Element& aTarget) {
   // 1. If target is in observer’s internal [[ObservationTargets]] slot, return.
-  if (mObservationTargets.Has(&aTarget)) {
+  bool wasPresent =
+      mObservationTargetMap.WithEntryHandle(&aTarget, [](auto handle) {
+        if (handle.HasEntry()) {
+          return true;
+        }
+        handle.Insert(Uninitialized);
+        return false;
+      });
+  if (wasPresent) {
     return;
   }
 
@@ -307,7 +315,9 @@ void DOMIntersectionObserver::Observe(Element& aTarget) {
     static_cast<DOMIntersectionObserver*>(aObserver)->UnlinkTarget(
         *aTarget->AsElement());
   });
-  mObservationTargets.Set(&aTarget, Uninitialized);
+  mObservationTargets.AppendElement(&aTarget);
+
+  MOZ_ASSERT(mObservationTargets.Length() == mObservationTargetMap.Count());
 
   Connect();
   if (mDocument) {
@@ -322,13 +332,17 @@ void DOMIntersectionObserver::Unobserve(Element& aTarget) {
   // 1. Remove the IntersectionObserverRegistration record whose observer
   // property is equal to this from target’s internal
   // [[RegisteredIntersectionObservers]] slot, if present.
-  // 2. Remove target from this’s internal [[ObservationTargets]] slot, if
-  // present
-  if (!mObservationTargets.Delete(&aTarget)) {
+  if (!mObservationTargetMap.Remove(&aTarget)) {
     return;
   }
 
+  // 2. Remove target from this’s internal [[ObservationTargets]] slot, if
+  // present
+  mObservationTargets.RemoveElement(&aTarget);
+
   aTarget.UnbindObject(this);
+
+  MOZ_ASSERT(mObservationTargets.Length() == mObservationTargetMap.Count());
 
   if (mObservationTargets.IsEmpty()) {
     Disconnect();
@@ -342,7 +356,8 @@ void DOMIntersectionObserver::UnlinkTarget(Element& aTarget) {
   // property is equal to this from target’s internal
   // [[RegisteredIntersectionObservers]] slot.
   // 2. Remove target from this’s internal [[ObservationTargets]] slot.
-  mObservationTargets.Delete(&aTarget);
+  mObservationTargets.RemoveElement(&aTarget);
+  mObservationTargetMap.Remove(&aTarget);
 
   if (mObservationTargets.IsEmpty()) {
     Disconnect();
@@ -368,7 +383,7 @@ void DOMIntersectionObserver::Disconnect() {
 
   mConnected = false;
   // 1. For each target in this’s internal [[ObservationTargets]] slot:
-  for (const auto& [target, thresholdIndex] : mObservationTargets) {
+  for (Element* target : mObservationTargets) {
     // 2. Remove the IntersectionObserverRegistration record whose observer
     // property is equal to this from target’s internal
     // [[RegisteredIntersectionObservers]] slot.
@@ -377,6 +392,7 @@ void DOMIntersectionObserver::Disconnect() {
   }
 
   mObservationTargets.Clear();
+  mObservationTargetMap.Clear();
   if (mDocument) {
     mDocument->RemoveIntersectionObserver(*this);
   }
@@ -913,8 +929,7 @@ void DOMIntersectionObserver::Update(Document& aDocument,
 
   // 2. For each target in observer’s internal [[ObservationTargets]] slot,
   // processed in the same order that observe() was called on each target:
-  mObservationTargets.ForEachLiveEntry([&](auto& aObservation) {
-    auto& [target, previousThresholdIndex] = aObservation;
+  for (Element* target : mObservationTargets) {
     // 2.1 - 2.4.
     IntersectionOutput output = Intersect(input, *target);
 
@@ -970,8 +985,13 @@ void DOMIntersectionObserver::Update(Document& aDocument,
     }
 
     // Steps 2.10 - 2.15.
-    const bool updated = previousThresholdIndex != thresholdIndex;
-    previousThresholdIndex = thresholdIndex;
+    bool updated = false;
+    if (auto entry = mObservationTargetMap.Lookup(target)) {
+      updated = entry.Data() != thresholdIndex;
+      entry.Data() = thresholdIndex;
+    } else {
+      MOZ_ASSERT_UNREACHABLE("Target not properly registered?");
+    }
 
     if (updated) {
       // See https://github.com/w3c/IntersectionObserver/issues/432 about
@@ -983,7 +1003,7 @@ void DOMIntersectionObserver::Update(Document& aDocument,
           output.mTargetRect, output.mIntersectionRect, thresholdIndex > 0,
           intersectionRatio);
     }
-  });
+  }
 }
 
 void DOMIntersectionObserver::QueueIntersectionObserverEntry(
