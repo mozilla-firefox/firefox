@@ -2369,9 +2369,9 @@ void ViewTransition::UpdateActiveRectForCapturedFrame(
   capSize.width *= aInheritedScale.xScale;
   capSize.height *= aInheritedScale.yScale;
 
-  // If the capture size is smaller than the visual viewport, it's a good
+  // If the capture size is not larger than the visual viewport, it's a good
   // indication that it is not unreasonably large, so we can early out.
-  if (capSize.width < vvpSize.width && capSize.height < vvpSize.height) {
+  if (capSize.width <= vvpSize.width && capSize.height <= vvpSize.height) {
     return;
   }
 
