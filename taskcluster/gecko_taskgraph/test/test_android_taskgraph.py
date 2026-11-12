@@ -11,7 +11,8 @@ import os
 
 import pytest
 from android_taskgraph import job
-from android_taskgraph.transforms import build_android_app
+from android_taskgraph.transforms import build_android_app, push_android_app
+from android_taskgraph.worker_types import build_push_apk_payload
 from mozunit import main
 from taskgraph.config import load_graph_config
 from taskgraph.task import Task
@@ -193,6 +194,72 @@ def test_mapping_published_for_each_variant(
         "path": "/builds/worker/workspace/obj-build/gradle/build/mobile/android/"
         f"{expected_path}/mapping.txt",
     } in task["worker"]["artifacts"]
+
+
+@pytest.mark.parametrize("store", ["samsung", "huawei", "vivo"])
+@pytest.mark.parametrize("release_eta", ["2025-04-29T13:00:00.000Z", None, ""])
+@pytest.mark.parametrize("level", ["1", "3"])
+def test_push_android_scheduled_submit(
+    run_transform, config, caplog, store, release_eta, level
+):
+    task = {
+        "name": "fenix-release",
+        "label": f"push-android-{store}-fenix-release",
+        "attributes": {"build-type": "fenix-release"},
+        "worker": {
+            "target-store": store,
+            "submit": {"by-level": {"3": True, "default": False}},
+            "channel": "fenix-release",
+            "commit": True,
+            "product": "fenix",
+            "dep": False,
+            "upstream-artifacts": [],
+        },
+    }
+    params = FakeParameters({"level": level, "release_eta": release_eta})
+    [result] = run_transform(push_android_app.transforms, task, params=params)
+    task_def = {"tags": {}, "scopes": []}
+    build_push_apk_payload(config, result, task_def)
+    payload = task_def["payload"]
+    assert payload["submit"] == bool(level == "3" and release_eta)
+    if level == "3" and release_eta:
+        assert payload["scheduled_release_date"] == release_eta
+    else:
+        assert "scheduled_release_date" not in payload
+    assert "rollout_percentage" not in payload
+    if level == "3" and not release_eta:
+        assert task["label"] in caplog.text
+        assert "upload only" in caplog.text
+    else:
+        assert not caplog.records
+
+
+def test_push_android_google_unchanged(run_transform, config):
+    task = {
+        "name": "fenix-release",
+        "label": "push-android-google-fenix-release",
+        "attributes": {"build-type": "fenix-release"},
+        "worker": {
+            "target-store": "google",
+            "certificate-alias": "fenix-release",
+            "channel": "fenix-release",
+            "commit": True,
+            "product": "fenix",
+            "dep": False,
+            "upstream-artifacts": [],
+        },
+    }
+    params = FakeParameters({"level": "3", "release_eta": "2025-04-29T13:00:00.000Z"})
+    [result] = run_transform(push_android_app.transforms, task, params=params)
+    task_def = {"tags": {}, "scopes": []}
+    build_push_apk_payload(config, result, task_def)
+    assert task_def["payload"] == {
+        "target_store": "google",
+        "certificate_alias": "fenix-release",
+        "channel": "fenix-release",
+        "commit": True,
+        "upstreamArtifacts": [],
+    }
 
 
 if __name__ == "__main__":

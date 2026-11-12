@@ -104,6 +104,10 @@ tasks:
                     - focus-release
         worker:
             target-store: samsung
+            submit:
+                by-level:
+                    '3': true
+                    default: false
             commit:
                 by-level:
                     '3': true
@@ -136,6 +140,10 @@ tasks:
                     - fenix-release
         worker:
             target-store: huawei
+            submit:
+                by-level:
+                    '3': true
+                    default: false
             commit:
                 by-level:
                     '3': true
@@ -164,6 +172,10 @@ tasks:
                     - fenix-release
         worker:
             target-store: vivo
+            submit:
+                by-level:
+                    '3': true
+                    default: false
             commit:
                 by-level:
                     '3': true

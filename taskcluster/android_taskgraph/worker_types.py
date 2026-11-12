@@ -75,6 +75,8 @@ class ScriptworkerPushApkSchema(Schema, forbid_unknown_fields=False, kw_only=Tru
     upstream_artifacts: list[PushApkUpstreamArtifactSchema]
     certificate_alias: Optional[str] = None
     target_store: Optional[str] = None
+    submit: Optional[bool] = None
+    scheduled_release_date: Optional[str] = None
     channel: str
     commit: bool
     product: str
@@ -98,6 +100,12 @@ def build_push_apk_payload(config, task, task_def):
 
     if "target-store" in worker:
         task_def["payload"]["target_store"] = worker["target-store"]
+
+    if "submit" in worker:
+        task_def["payload"]["submit"] = worker["submit"]
+
+    if "scheduled-release-date" in worker:
+        task_def["payload"]["scheduled_release_date"] = worker["scheduled-release-date"]
 
     scope_prefix = config.graph_config["scriptworker"]["scope-prefix"]
     task_def["scopes"].append(

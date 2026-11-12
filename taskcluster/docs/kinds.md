@@ -968,6 +968,9 @@ Push Focus, Klar and Fenix to the Android app stores: AABs to Google Play,
 Focus and Fenix APKs to the Samsung Galaxy Store, Fenix APKs to the Huawei
 AppGallery, and the Fenix universal APK to the vivo App Store.
 
+During release promotion's push phase at level 3, Samsung, Huawei and vivo
+submissions are scheduled for `release_eta`; without an ETA, they only upload.
+
 ## android-l10n
 
 Update android string resources from android-l10n repo.
