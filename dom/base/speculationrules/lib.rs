@@ -6,6 +6,7 @@ use std::collections::BTreeSet;
 
 use nsstring::{nsACString, nsCString};
 use selectors::SelectorList;
+use style::gecko_bindings::structs::Element;
 use style::selector_parser::SelectorImpl;
 use thin_vec::{thin_vec, ThinVec};
 use url::{Origin, Url};
@@ -130,27 +131,28 @@ pub unsafe extern "C" fn speculation_rule_set_destroy(rules: *mut SpeculationRul
     let _ = unsafe { Box::from_raw(rules) };
 }
 
-// Opaque binding for DOM Element.
-#[allow(dead_code)]
-pub struct Element(());
-
-#[allow(improper_ctypes)] // Allow *const Element to be passed to extern function
+#[allow(improper_ctypes)] // Allow &Element to be passed to extern function
 unsafe extern "C" {
-    fn Gecko_Element_GetHrefURI(element: *const Element, spec: *mut nsACString) -> bool;
-    fn Gecko_Element_GetReferrerPolicy(element: *const Element) -> ReferrerPolicy;
+    fn Gecko_Element_GetHrefURI(element: &Element, spec: &mut nsACString) -> bool;
+    fn Gecko_Element_GetReferrerPolicy(element: &Element) -> ReferrerPolicy;
 }
 
-impl Element {
+trait LinkElement {
+    fn href_url(&self) -> Option<Url>;
+    fn referrer_policy(&self) -> ReferrerPolicy;
+}
+
+impl LinkElement for Element {
     fn href_url(&self) -> Option<Url> {
         let mut spec = nsCString::new();
-        if !unsafe { Gecko_Element_GetHrefURI(self as *const _, &mut *spec) } {
+        if !unsafe { Gecko_Element_GetHrefURI(self, &mut *spec) } {
             return None;
         }
         Url::parse(&spec.to_utf8()).ok()
     }
 
     fn referrer_policy(&self) -> ReferrerPolicy {
-        unsafe { Gecko_Element_GetReferrerPolicy(self as *const _) }
+        unsafe { Gecko_Element_GetReferrerPolicy(self) }
     }
 }
 

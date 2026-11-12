@@ -4,12 +4,13 @@
 
 use std::collections::{BTreeSet, HashMap};
 
+use style::gecko_bindings::structs::Element;
 use thin_vec::ThinVec;
 use url::Url;
 use urlpattern::UrlPatternMatchInput;
 
 use crate::{
-    Element, Predicate, PrefetchCandidate, PrefetchCandidates, ReferrerPolicy, SpeculationRule,
+    LinkElement, Predicate, PrefetchCandidate, PrefetchCandidates, ReferrerPolicy, SpeculationRule,
     SpeculationRuleSet,
 };
 
@@ -176,15 +177,12 @@ mod tests {
     static sEmptyTArrayHeader: [u32; 2] = [0, 0];
 
     #[unsafe(no_mangle)]
-    extern "C" fn Gecko_Element_GetHrefURI(
-        _element: *const Element,
-        _spec: *mut nsACString,
-    ) -> bool {
+    extern "C" fn Gecko_Element_GetHrefURI(_element: &Element, _spec: &mut nsACString) -> bool {
         unimplemented!()
     }
 
     #[unsafe(no_mangle)]
-    extern "C" fn Gecko_Element_GetReferrerPolicy(_element: *const Element) -> ReferrerPolicy {
+    extern "C" fn Gecko_Element_GetReferrerPolicy(_element: &Element) -> ReferrerPolicy {
         unimplemented!()
     }
 
