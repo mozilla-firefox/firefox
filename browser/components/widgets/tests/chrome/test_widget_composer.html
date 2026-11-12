@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>widget-composer tests</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+    <link
+      rel="stylesheet"
+      href="chrome://global/skin/design-system/tokens-brand.css"
+    />
+    <link rel="localization" href="toolkit/global/mozButton.ftl" />
+    <link rel="localization" href="preview/widgets.ftl" />
+    <script
+      type="module"
+      src="chrome://browser/content/widgets/widget-composer.mjs"
+    ></script>
+  </head>
+
+  <body>
+    <p id="display"></p>
+    <div id="content"></div>
+    <pre id="test"></pre>
+    <script>
+      const { BrowserTestUtils } = ChromeUtils.importESModule(
+        "resource://testing-common/BrowserTestUtils.sys.mjs"
+      );
+
+      async function createComposer(props = {}) {
+        await customElements.whenDefined("widget-composer");
+        let composer = document.createElement("widget-composer");
+        Object.assign(composer, props);
+        document.getElementById("content").append(composer);
+        await composer.updateComplete;
+        return composer;
+      }
+
+      function nextSubmit(composer) {
+        return BrowserTestUtils.waitForEvent(
+          composer,
+          "WidgetComposer:Submit"
+        ).then(event => event.detail);
+      }
+
+      add_task(async function test_enter_submits() {
+        let composer = await createComposer();
+        let submitted = false;
+        composer.addEventListener("WidgetComposer:Submit", () => {
+          submitted = true;
+        });
+        let submit = composer.shadowRoot.querySelector(".submit");
+        ok(submit.disabled, "empty disabled");
+        composer.focus();
+        synthesizeKey("KEY_Enter");
+        ok(!submitted, "empty prompt held");
+
+        let detail = nextSubmit(composer);
+        sendString(" weather ");
+        await composer.updateComplete;
+        ok(!submit.disabled, "typed enabled");
+        synthesizeKey("KEY_Enter");
+        isDeeply(await detail, { prompt: "weather" }, "submit detail");
+        composer.remove();
+      });
+
+      add_task(async function test_field_focused() {
+        let composer = await createComposer({ value: "weather" });
+        let field = composer.shadowRoot.querySelector(".field");
+        composer.focus();
+        await composer.updateComplete;
+        ok(field.hasAttribute("focused"), "textarea focused");
+        composer.shadowRoot.querySelector(".submit").focus();
+        await composer.updateComplete;
+        ok(!field.hasAttribute("focused"), "submit focused");
+        composer.remove();
+      });
+
+      add_task(async function test_escape_dismisses() {
+        let composer = await createComposer();
+        let dismissed = BrowserTestUtils.waitForEvent(
+          composer,
+          "WidgetComposer:Dismiss"
+        );
+        composer.focus();
+        synthesizeKey("KEY_Escape");
+        await dismissed;
+        ok(true, "dismissed");
+        composer.remove();
+      });
+    </script>
+  </body>
+</html>
