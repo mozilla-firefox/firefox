@@ -216,9 +216,7 @@ prefs = ["network.allow_raw_sockets_in_content_processes=true"]
 # Do not test the channel.redirectTo() API under e10s until 827269 is resolved
 
 ["test_redirect_from_script_wrap.js"]
-skip-if = [
-  "true",
-]
+prefs = ["network.allow_raw_sockets_in_content_processes=true"]
 
 ["test_redirect_history_wrap.js"]
 prefs = ["network.allow_raw_sockets_in_content_processes=true"]

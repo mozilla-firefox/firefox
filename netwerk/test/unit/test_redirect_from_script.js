@@ -114,7 +114,13 @@ function bait3Handler(metadata, response) {
   response.setHeader("Location", baitURI);
 }
 
-function Redirector() {
+function inChildProcess() {
+  return Services.appinfo.processType != Ci.nsIXULRuntime.PROCESS_TYPE_DEFAULT;
+}
+
+// Maps the spec of a request URI to the URI it gets redirected to.
+function Redirector(redirects) {
+  this.redirects = redirects;
   this.register();
 }
 
@@ -122,13 +128,10 @@ Redirector.prototype = {
   // This class observes an event and uses that to
   // trigger a redirectTo(uri) redirect using the new API
   register() {
-    Services.obs.addObserver(this, redirectHook, true);
+    Services.obs.addObserver(this, redirectHook);
   },
 
-  QueryInterface: ChromeUtils.generateQI([
-    "nsIObserver",
-    "nsISupportsWeakReference",
-  ]),
+  QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
 
   observe(subject, topic) {
     if (topic == redirectHook) {
@@ -136,16 +139,7 @@ Redirector.prototype = {
         do_throw(redirectHook + " observed a non-HTTP channel");
       }
       var channel = subject.QueryInterface(Ci.nsIHttpChannel);
-      var target = null;
-      if (channel.URI.spec == baitURI) {
-        target = redirectedURI;
-      }
-      if (channel.URI.spec == bait2URI) {
-        target = redirected2URI;
-      }
-      if (channel.URI.spec == bait4URI) {
-        target = baitURI;
-      }
+      var target = this.redirects[channel.URI.spec];
       // if we have a target, redirect there
       if (target) {
         var tURI = Services.io.newURI(target);
@@ -190,33 +184,27 @@ var testViaAsyncOpen3 = null;
 var testViaAsyncOpen2 = null;
 var testViaAsyncOpen = null;
 
-function testViaXHR() {
-  runXHRTest(baitURI, testHeaderVal);
-  runXHRTest(bait2URI, testHeaderVal2);
-  runXHRTest(bait3URI, testHeaderVal);
-  runXHRTest(bait4URI, testHeaderVal);
+async function testViaXHR() {
+  await runXHRTest(baitURI, testHeaderVal);
+  await runXHRTest(bait2URI, testHeaderVal2);
+  await runXHRTest(bait3URI, testHeaderVal);
+  await runXHRTest(bait4URI, testHeaderVal);
 }
 
-function runXHRTest(uri, headerValue) {
+async function runXHRTest(uri, headerValue) {
   // Check that making an XHR request for uri winds up redirecting to a result with the
   // appropriate headerValue
   var req = new XMLHttpRequest();
-  req.open("GET", uri, false);
-  req.send();
+  req.open("GET", uri);
+  await new Promise(resolve => {
+    req.onloadend = resolve;
+    req.send();
+  });
   Assert.equal(req.getResponseHeader(testHeaderName), headerValue);
   Assert.equal(req.response, redirectedText);
 }
 
-function done() {
-  httpServer.stop(function () {
-    httpServer2.stop(do_test_finished);
-  });
-}
-
-// Needed for side-effects
-new Redirector();
-
-function run_test() {
+add_task(async function test_redirect_from_script() {
   httpServer = new HttpServer();
   httpServer.registerPathHandler(baitPath, baitHandler);
   httpServer.registerPathHandler(bait2Path, baitHandler);
@@ -228,20 +216,41 @@ function run_test() {
   httpServer2.registerPathHandler(redirectedPath, redirected2Handler);
   httpServer2.start(-1);
 
-  // The tests depend on each other, and therefore need to be defined in the
-  // reverse of the order they are called in.  It is therefore best to read this
-  // stanza backwards!
-  testViaAsyncOpen4 = makeAsyncTest(bait4URI, testHeaderVal, done);
-  testViaAsyncOpen3 = makeAsyncTest(bait3URI, testHeaderVal, testViaAsyncOpen4);
-  testViaAsyncOpen2 = makeAsyncTest(
-    bait2URI,
-    testHeaderVal2,
-    testViaAsyncOpen3
-  );
-  testViaAsyncOpen = makeAsyncTest(baitURI, testHeaderVal, testViaAsyncOpen2);
+  const redirects = {
+    [baitURI]: redirectedURI,
+    [bait2URI]: redirected2URI,
+    [bait4URI]: baitURI,
+  };
+  // http-on-* observers only work in the parent process.
+  if (inChildProcess()) {
+    do_send_remote_message("register-redirector", redirects);
+    await do_await_remote_message("register-redirector-done");
+  } else {
+    new Redirector(redirects);
+  }
 
-  testViaXHR();
-  testViaAsyncOpen(); // will call done() asynchronously for cleanup
+  await testViaXHR();
 
-  do_test_pending();
-}
+  await new Promise(done => {
+    // The tests depend on each other, and therefore need to be defined in the
+    // reverse of the order they are called in.  It is therefore best to read
+    // this stanza backwards!
+    testViaAsyncOpen4 = makeAsyncTest(bait4URI, testHeaderVal, done);
+    testViaAsyncOpen3 = makeAsyncTest(
+      bait3URI,
+      testHeaderVal,
+      testViaAsyncOpen4
+    );
+    testViaAsyncOpen2 = makeAsyncTest(
+      bait2URI,
+      testHeaderVal2,
+      testViaAsyncOpen3
+    );
+    testViaAsyncOpen = makeAsyncTest(baitURI, testHeaderVal, testViaAsyncOpen2);
+
+    testViaAsyncOpen();
+  });
+
+  await httpServer.stop();
+  await httpServer2.stop();
+});
