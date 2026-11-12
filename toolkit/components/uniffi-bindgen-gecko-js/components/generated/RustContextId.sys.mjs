@@ -163,7 +163,7 @@ export class ContextIdComponent extends ContextIdComponentInterface {
         FfiConverterBoolean.checkType(runningInTestAutomation);
         FfiConverterTypeContextIdCallback.checkType(callback);
         const result = UniFFIScaffolding.callSync(
-            123, // uniffi_context_id_fn_constructor_contextidcomponent_new
+            165, // uniffi_context_id_fn_constructor_contextidcomponent_new
             FfiConverterString.lower(initContextId),
             FfiConverterInt64.lower(creationTimestampS),
             FfiConverterBoolean.lower(runningInTestAutomation),
@@ -182,7 +182,7 @@ export class ContextIdComponent extends ContextIdComponentInterface {
     async forceRotation() {
        
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            124, // uniffi_context_id_fn_method_contextidcomponent_force_rotation
+            166, // uniffi_context_id_fn_method_contextidcomponent_force_rotation
             FfiConverterTypeContextIDComponent.lowerReceiver(this),
         )
         return handleRustResult(
@@ -202,7 +202,7 @@ export class ContextIdComponent extends ContextIdComponentInterface {
        
         FfiConverterUInt8.checkType(rotationDaysInS);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            125, // uniffi_context_id_fn_method_contextidcomponent_request
+            167, // uniffi_context_id_fn_method_contextidcomponent_request
             FfiConverterTypeContextIDComponent.lowerReceiver(this),
             FfiConverterUInt8.lower(rotationDaysInS),
         )
@@ -220,7 +220,7 @@ export class ContextIdComponent extends ContextIdComponentInterface {
     async unsetCallback() {
        
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            126, // uniffi_context_id_fn_method_contextidcomponent_unset_callback
+            168, // uniffi_context_id_fn_method_contextidcomponent_unset_callback
             FfiConverterTypeContextIDComponent.lowerReceiver(this),
         )
         return handleRustResult(

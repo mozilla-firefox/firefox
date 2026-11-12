@@ -3485,7 +3485,7 @@ export class MozAdsClient extends MozAdsClientInterface {
     async clearCache() {
        
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            40, // uniffi_ads_client_fn_method_mozadsclient_clear_cache
+            82, // uniffi_ads_client_fn_method_mozadsclient_clear_cache
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
         )
         return handleRustResult(
@@ -3507,7 +3507,7 @@ export class MozAdsClient extends MozAdsClientInterface {
         FfiConverterString.checkType(clickUrl);
         FfiConverterOptionalTypeMozAdsCallbackOptions.checkType(options);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            41, // uniffi_ads_client_fn_method_mozadsclient_record_click
+            83, // uniffi_ads_client_fn_method_mozadsclient_record_click
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
             FfiConverterString.lower(clickUrl),
             FfiConverterOptionalTypeMozAdsCallbackOptions.lower(options),
@@ -3531,7 +3531,7 @@ export class MozAdsClient extends MozAdsClientInterface {
         FfiConverterString.checkType(impressionUrl);
         FfiConverterOptionalTypeMozAdsCallbackOptions.checkType(options);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            42, // uniffi_ads_client_fn_method_mozadsclient_record_impression
+            84, // uniffi_ads_client_fn_method_mozadsclient_record_impression
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
             FfiConverterString.lower(impressionUrl),
             FfiConverterOptionalTypeMozAdsCallbackOptions.lower(options),
@@ -3558,7 +3558,7 @@ export class MozAdsClient extends MozAdsClientInterface {
         FfiConverterTypeMozAdsReportReason.checkType(reason);
         FfiConverterOptionalTypeMozAdsCallbackOptions.checkType(options);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            43, // uniffi_ads_client_fn_method_mozadsclient_report_ad
+            85, // uniffi_ads_client_fn_method_mozadsclient_report_ad
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
             FfiConverterString.lower(reportUrl),
             FfiConverterTypeMozAdsReportReason.lower(reason),
@@ -3585,7 +3585,7 @@ export class MozAdsClient extends MozAdsClientInterface {
         FfiConverterSequenceTypeMozAdsPlacementRequest.checkType(mozAdRequests);
         FfiConverterOptionalTypeMozAdsRequestOptions.checkType(options);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            44, // uniffi_ads_client_fn_method_mozadsclient_request_image_ads
+            86, // uniffi_ads_client_fn_method_mozadsclient_request_image_ads
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
             FfiConverterSequenceTypeMozAdsPlacementRequest.lower(mozAdRequests),
             FfiConverterOptionalTypeMozAdsRequestOptions.lower(options),
@@ -3611,7 +3611,7 @@ export class MozAdsClient extends MozAdsClientInterface {
         FfiConverterSequenceTypeMozAdsPlacementRequestWithCount.checkType(mozAdRequests);
         FfiConverterOptionalTypeMozAdsRequestOptions.checkType(options);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            45, // uniffi_ads_client_fn_method_mozadsclient_request_spoc_ads
+            87, // uniffi_ads_client_fn_method_mozadsclient_request_spoc_ads
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
             FfiConverterSequenceTypeMozAdsPlacementRequestWithCount.lower(mozAdRequests),
             FfiConverterOptionalTypeMozAdsRequestOptions.lower(options),
@@ -3638,7 +3638,7 @@ export class MozAdsClient extends MozAdsClientInterface {
         FfiConverterSequenceTypeMozAdsPlacementRequestWithCount.checkType(mozAdRequests);
         FfiConverterOptionalTypeMozAdsRequestOptions.checkType(options);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            46, // uniffi_ads_client_fn_method_mozadsclient_request_spoc_or_image_ads
+            88, // uniffi_ads_client_fn_method_mozadsclient_request_spoc_or_image_ads
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
             FfiConverterSequenceTypeMozAdsPlacementRequestWithCount.lower(mozAdRequests),
             FfiConverterOptionalTypeMozAdsRequestOptions.lower(options),
@@ -3664,7 +3664,7 @@ export class MozAdsClient extends MozAdsClientInterface {
         FfiConverterSequenceTypeMozAdsPlacementRequest.checkType(mozAdRequests);
         FfiConverterOptionalTypeMozAdsRequestOptions.checkType(options);
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            47, // uniffi_ads_client_fn_method_mozadsclient_request_tile_ads
+            89, // uniffi_ads_client_fn_method_mozadsclient_request_tile_ads
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
             FfiConverterSequenceTypeMozAdsPlacementRequest.lower(mozAdRequests),
             FfiConverterOptionalTypeMozAdsRequestOptions.lower(options),
@@ -3685,7 +3685,7 @@ export class MozAdsClient extends MozAdsClientInterface {
     async shutdown() {
        
         const result = await UniFFIScaffolding.callAsyncWrapper(
-            48, // uniffi_ads_client_fn_method_mozadsclient_shutdown
+            90, // uniffi_ads_client_fn_method_mozadsclient_shutdown
             FfiConverterTypeMozAdsClient.lowerReceiver(this),
         )
         return handleRustResult(
@@ -3955,7 +3955,7 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
     static init() {
        
         const result = UniFFIScaffolding.callSync(
-            49, // uniffi_ads_client_fn_constructor_mozadsclientbuilder_new
+            91, // uniffi_ads_client_fn_constructor_mozadsclientbuilder_new
         )
         return handleRustResult(
             result,
@@ -3972,7 +3972,7 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
     build() {
        
         const result = UniFFIScaffolding.callSync(
-            50, // uniffi_ads_client_fn_method_mozadsclientbuilder_build
+            92, // uniffi_ads_client_fn_method_mozadsclientbuilder_build
             FfiConverterTypeMozAdsClientBuilder.lowerReceiver(this),
         )
         return handleRustResult(
@@ -3993,7 +3993,7 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
        
         FfiConverterTypeMozAdsCacheConfig.checkType(cacheConfig);
         const result = UniFFIScaffolding.callSync(
-            51, // uniffi_ads_client_fn_method_mozadsclientbuilder_cache_config
+            93, // uniffi_ads_client_fn_method_mozadsclientbuilder_cache_config
             FfiConverterTypeMozAdsClientBuilder.lowerReceiver(this),
             FfiConverterTypeMozAdsCacheConfig.lower(cacheConfig),
         )
@@ -4014,7 +4014,7 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
        
         FfiConverterTypeMozAdsEnvironment.checkType(environment);
         const result = UniFFIScaffolding.callSync(
-            52, // uniffi_ads_client_fn_method_mozadsclientbuilder_environment
+            94, // uniffi_ads_client_fn_method_mozadsclientbuilder_environment
             FfiConverterTypeMozAdsClientBuilder.lowerReceiver(this),
             FfiConverterTypeMozAdsEnvironment.lower(environment),
         )
@@ -4036,7 +4036,7 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
        
         FfiConverterTypeMozAdsTelemetry.checkType(telemetry);
         const result = UniFFIScaffolding.callSync(
-            53, // uniffi_ads_client_fn_method_mozadsclientbuilder_telemetry
+            95, // uniffi_ads_client_fn_method_mozadsclientbuilder_telemetry
             FfiConverterTypeMozAdsClientBuilder.lowerReceiver(this),
             FfiConverterTypeMozAdsTelemetry.lower(telemetry),
         )
@@ -4058,7 +4058,7 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
        
         FfiConverterString.checkType(userAgent);
         const result = UniFFIScaffolding.callSync(
-            54, // uniffi_ads_client_fn_method_mozadsclientbuilder_user_agent
+            96, // uniffi_ads_client_fn_method_mozadsclientbuilder_user_agent
             FfiConverterTypeMozAdsClientBuilder.lowerReceiver(this),
             FfiConverterString.lower(userAgent),
         )

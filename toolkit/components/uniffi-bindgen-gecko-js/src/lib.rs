@@ -205,6 +205,7 @@ fn root_and_pipeline(
             .namespaces
             .into_iter()
             .chain(fixtures_root.namespaces)
+            .filter(|(name, _)| name != "glean")
             .collect(),
         cdylib: None,
     };

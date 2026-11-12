@@ -38,7 +38,7 @@ export var UnitTestObjs = {
 export function allowAndroidEmulatorLoopback() {
    
 const result = UniFFIScaffolding.callSync(
-    32, // uniffi_viaduct_fn_func_allow_android_emulator_loopback
+    74, // uniffi_viaduct_fn_func_allow_android_emulator_loopback
 )
 return handleRustResult(
     result,
@@ -53,7 +53,7 @@ return handleRustResult(
 export function clearOhttpChannels() {
    
 const result = UniFFIScaffolding.callSync(
-    33, // uniffi_viaduct_fn_func_clear_ohttp_channels
+    75, // uniffi_viaduct_fn_func_clear_ohttp_channels
 )
 return handleRustResult(
     result,
@@ -71,7 +71,7 @@ return handleRustResult(
 export function configureDefaultOhttpChannels() {
    
 const result = UniFFIScaffolding.callSync(
-    34, // uniffi_viaduct_fn_func_configure_default_ohttp_channels
+    76, // uniffi_viaduct_fn_func_configure_default_ohttp_channels
 )
 return handleRustResult(
     result,
@@ -93,7 +93,7 @@ export function configureOhttpChannel(
 FfiConverterString.checkType(channel);
 FfiConverterTypeOhttpConfig.checkType(config);
 const result = UniFFIScaffolding.callSync(
-    35, // uniffi_viaduct_fn_func_configure_ohttp_channel
+    77, // uniffi_viaduct_fn_func_configure_ohttp_channel
     FfiConverterString.lower(channel),
     FfiConverterTypeOhttpConfig.lower(config),
 )
@@ -113,7 +113,7 @@ export function initBackend(
    
 FfiConverterTypeBackend.checkType(backend);
 const result = UniFFIScaffolding.callSync(
-    36, // uniffi_viaduct_fn_func_init_backend
+    78, // uniffi_viaduct_fn_func_init_backend
     FfiConverterTypeBackend.lower(backend),
 )
 return handleRustResult(
@@ -130,7 +130,7 @@ return handleRustResult(
 export function listOhttpChannels() {
    
 const result = UniFFIScaffolding.callSync(
-    37, // uniffi_viaduct_fn_func_list_ohttp_channels
+    79, // uniffi_viaduct_fn_func_list_ohttp_channels
 )
 return handleRustResult(
     result,
@@ -172,7 +172,7 @@ export async function sendOhttpRequest(
 FfiConverterTypeRequest.checkType(request);
 FfiConverterString.checkType(channel);
 const result = await UniFFIScaffolding.callAsync(
-    38, // uniffi_viaduct_fn_func_send_ohttp_request
+    80, // uniffi_viaduct_fn_func_send_ohttp_request
     FfiConverterTypeRequest.lower(request),
     FfiConverterString.lower(channel),
 )
@@ -195,7 +195,7 @@ export function setGlobalDefaultUserAgent(
    
 FfiConverterString.checkType(userAgent);
 const result = UniFFIScaffolding.callSync(
-    39, // uniffi_viaduct_fn_func_set_global_default_user_agent
+    81, // uniffi_viaduct_fn_func_set_global_default_user_agent
     FfiConverterString.lower(userAgent),
 )
 return handleRustResult(
@@ -1530,7 +1530,7 @@ export class BackendImpl extends Backend {
         FfiConverterTypeRequest.checkType(request);
         FfiConverterTypeClientSettings.checkType(settings);
         const result = await UniFFIScaffolding.callAsync(
-            291, // uniffi_viaduct_fn_method_backend_send_request
+            454, // uniffi_viaduct_fn_method_backend_send_request
             FfiConverterTypeBackend.lowerReceiver(this),
             FfiConverterTypeRequest.lower(request),
             FfiConverterTypeClientSettings.lower(settings),

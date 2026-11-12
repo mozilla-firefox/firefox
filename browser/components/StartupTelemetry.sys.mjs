@@ -18,6 +18,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TelemetryReportingPolicy:
     "resource://gre/modules/TelemetryReportingPolicy.sys.mjs",
   UsageReporting: "resource://gre/modules/UsageReporting.sys.mjs",
+  initializeGlean:
+    "moz-src:///toolkit/components/uniffi-bindgen-gecko-js/components/generated/RustInitRustComponents.sys.mjs",
 });
 
 /**
@@ -134,6 +136,7 @@ export let StartupTelemetry = {
     // completed.  See comments in `TelemetryReportingPolicy`.
     await lazy.TelemetryReportingPolicy.ensureUserIsNotified();
 
+    lazy.initializeGlean();
     Services.fog.initializeFOG();
 
     // A ping we schedule ourselves because it depends on the FxA state, but
