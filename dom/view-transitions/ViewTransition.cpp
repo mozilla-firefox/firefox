@@ -2072,6 +2072,18 @@ void ViewTransition::SkipTransition(SkipTransitionReason aReason) {
   SkipTransition(aReason, JS::UndefinedHandleValue);
 }
 
+/* static */
+void ViewTransition::SkipAllAfterRenderingReset(Document& aDocument) {
+  if (RefPtr<ViewTransition> transition = aDocument.GetActiveViewTransition()) {
+    transition->SkipTransition(SkipTransitionReason::ResetRendering);
+  }
+
+  aDocument.EnumerateSubDocuments([&](Document& aSubDoc) {
+    SkipAllAfterRenderingReset(aSubDoc);
+    return CallState::Continue;
+  });
+}
+
 // https://drafts.csswg.org/css-view-transitions-1/#skip-the-view-transition
 // https://drafts.csswg.org/css-view-transitions-1/#dom-viewtransition-skiptransition
 void ViewTransition::SkipTransition(

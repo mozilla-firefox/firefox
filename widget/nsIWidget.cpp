@@ -36,6 +36,7 @@
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/SimpleGestureEventBinding.h"
+#include "mozilla/dom/ViewTransition.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/GPUProcessManager.h"
 #include "mozilla/gfx/gfxVars.h"
@@ -1894,6 +1895,11 @@ void nsIWidget::CreateCompositor(int aWidth, int aHeight) {
 
 void nsIWidget::NotifyCompositorSessionLost(CompositorSession* aSession) {
   MOZ_ASSERT(aSession == mCompositorSession);
+  if (PresShell* presShell = GetPresShell()) {
+    if (RefPtr<Document> doc = presShell->GetDocument()) {
+      ViewTransition::SkipAllAfterRenderingReset(*doc);
+    }
+  }
   DestroyLayerManager();
 }
 

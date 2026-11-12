@@ -132,6 +132,11 @@ class ViewTransition final : public nsISupports, public nsWrapperCache {
   static void AdoptOldSnapshots(WindowRenderer* aRenderer,
                                 ViewTransitionNamedElements& aNamedElements);
 
+  // Skips the active view transitions of aDocument and its subdocuments.
+  // Snapshot image keys are not valid anymore after the WebRender instance or
+  // id namespace changes.
+  static void SkipAllAfterRenderingReset(Document& aDocument);
+
   [[nodiscard]] MOZ_CAN_RUN_SCRIPT UniquePtr<ViewTransitionParams>
   CaptureOldStateForCrossDocument();
 

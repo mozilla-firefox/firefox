@@ -3520,22 +3520,11 @@ void BrowserChild::SchedulePaint() {
   }
 }
 
-void SkipViewTransitionsAfterRenderingReset(Document& aDocument) {
-  if (RefPtr<ViewTransition> transition = aDocument.GetActiveViewTransition()) {
-    transition->SkipTransition(SkipTransitionReason::ResetRendering);
-  }
-
-  aDocument.EnumerateSubDocuments([&](Document& aSubDoc) {
-    SkipViewTransitionsAfterRenderingReset(aSubDoc);
-    return CallState::Continue;
-  });
-}
-
 void BrowserChild::ReinitRendering() {
   MOZ_ASSERT(mLayersId.IsValid());
 
   if (RefPtr<Document> doc = GetTopLevelDocument()) {
-    SkipViewTransitionsAfterRenderingReset(*doc);
+    ViewTransition::SkipAllAfterRenderingReset(*doc);
   }
 
   // In some cases, like when we create a windowless browser,

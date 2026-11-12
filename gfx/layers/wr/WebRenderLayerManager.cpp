@@ -11,6 +11,8 @@
 #include "mozilla/StaticPrefs_apz.h"
 #include "mozilla/StaticPrefs_layers.h"
 #include "mozilla/dom/BrowserChild.h"
+#include "mozilla/dom/Document.h"
+#include "mozilla/dom/ViewTransition.h"
 #include "mozilla/gfx/DrawEventRecorder.h"
 #include "mozilla/layers/APZTestData.h"
 #include "mozilla/layers/CompositorBridgeChild.h"
@@ -661,6 +663,9 @@ void WebRenderLayerManager::WrUpdated() {
   DiscardLocalImages();
   if (mWidget) {
     if (dom::BrowserChild* browserChild = mWidget->GetOwningBrowserChild()) {
+      if (RefPtr<dom::Document> doc = browserChild->GetTopLevelDocument()) {
+        dom::ViewTransition::SkipAllAfterRenderingReset(*doc);
+      }
       browserChild->SchedulePaint();
     }
   }
