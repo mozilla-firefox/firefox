@@ -453,6 +453,8 @@ class JUnitTestRunner(MochitestDesktop):
         finally:
             self.log.suite_end()
 
+        self.device.pull_ccov()
+
         if self.check_for_crashes():
             self.fail_count = 1
 
