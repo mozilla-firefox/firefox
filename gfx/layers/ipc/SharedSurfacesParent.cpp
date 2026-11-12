@@ -402,8 +402,9 @@ bool SharedSurfacesParent::AgeAndExpireOneGeneration() {
 /* static */
 void SharedSurfacesParent::ExpireMap(
     nsTArray<RefPtr<SourceSurfaceSharedDataWrapper>>& aExpired) {
+  // The surfaces may have lost their last consumer after being taken out of
+  // the tracker, since sMutex is not held here. Unmapping them is still safe.
   for (auto& surface : aExpired) {
-    MOZ_RELEASE_ASSERT(surface->GetConsumers() > 0);
     surface->ExpireMap();
   }
 }
