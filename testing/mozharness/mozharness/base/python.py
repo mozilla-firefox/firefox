@@ -347,7 +347,7 @@ class VirtualenvMixin:
             if no_deps:
                 pip_command_args += ["--no-deps"]
 
-            pip_command_non_uv_args += ["--no-use-pep517"]
+            pip_command_non_uv_args += ["--no-build-isolation"]
 
             # To avoid timeouts with our pypi server, increase default timeout:
             # https://bugzilla.mozilla.org/show_bug.cgi?id=1007230#c802
