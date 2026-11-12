@@ -9,6 +9,7 @@
 #include "ErrorList.h"
 #include "FileSystemContentTypeGuess.h"
 #include "FileSystemDataManager.h"
+#include "FileSystemEncryptedFileStreams.h"
 #include "FileSystemFileManager.h"
 #include "FileSystemHashSource.h"
 #include "FileSystemHashStorageFunction.h"
@@ -17,6 +18,7 @@
 #include "StartedTransaction.h"
 #include "mozStorageHelper.h"
 #include "mozilla/FunctionRef.h"
+#include "mozilla/dom/FileSystemCipherKeyManager.h"
 #include "mozilla/dom/FileSystemDataManager.h"
 #include "mozilla/dom/FileSystemHandle.h"
 #include "mozilla/dom/FileSystemLog.h"
@@ -537,7 +539,25 @@ nsresult FileSystemDatabaseManagerVersion002::GetFile(
 
   if (aMode == FileMode::SHARED_FROM_COPY) {
     QM_WARNONLY_TRY_UNWRAP(Maybe<FileId> mainFileId, GetFileId(aEntryId));
-    if (mainFileId) {
+    if (mainFileId && mDataManager->OriginMetadataRef().mIsPrivate) {
+      const RefPtr<FileSystemCipherKeyManager> cipherKeyManager =
+          mDataManager->MaybeCipherKeyManager();
+      MOZ_ASSERT(cipherKeyManager,
+                 "Under private mode, we should be able to get the manager");
+
+      QM_TRY_INSPECT(const auto& mainFile,
+                     mFileManager->GetFile(mainFileId.value()));
+      QM_TRY_UNWRAP(aFile, mFileManager->GetOrCreateFile(aFileId));
+
+      // CopyEncryptedFile() writes through streams from
+      // CreateFileRandomAccessStream(), which are FileQuotaStreams. They get a
+      // QuotaObject for the file when it is opened and charge every write to
+      // it. So unlike the raw copy below, don't call UpdateCachedQuotaUsage(),
+      // it would count the copy twice.
+      QM_TRY(MOZ_TO_RESULT(CopyEncryptedFile(
+          mDataManager->OriginMetadataRef(), *cipherKeyManager,
+          mainFileId.value(), mainFile, aFileId, aFile)));
+    } else if (mainFileId) {
       QM_TRY_UNWRAP(aFile,
                     mFileManager->CreateFileFrom(aFileId, mainFileId.value()));
       int64_t fileSize = 0;

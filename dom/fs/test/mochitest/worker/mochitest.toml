@@ -8,6 +8,7 @@ support-files = [
   "test_basics_worker.js",
   "test_fileSystemDirectoryHandle_worker.js",
   "test_syncAccessHandle_worker.js",
+  "test_writableFileStream_for_pbm_worker.js",
   "test_writableFileStream_worker.js",
 ]
 

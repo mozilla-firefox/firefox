@@ -33,11 +33,11 @@ fail-if = ["true"] # getFile() is not supported in private browsing yet
 
 ["test_fileSystemDirectoryHandle.html"]
 scheme = "https"
-fail-if = ["true"] # createWritable() is not supported in private browsing yet
+fail-if = ["true"] # Usage in plaintext bytes is not supported in private browsing
 
 ["test_fileSystemDirectoryHandle_worker.html"]
 scheme = "https"
-fail-if = ["true"] # createWritable() is not supported in private browsing yet
+fail-if = ["true"] # Usage in plaintext bytes is not supported in private browsing
 
 ["test_iframes.html"]
 scheme = "https"
@@ -47,8 +47,11 @@ scheme = "https"
 
 ["test_writableFileStream.html"]
 scheme = "https"
-fail-if = ["true"] # createWritable() is not supported in private browsing yet
+fail-if = ["true"] # getFile() is not supported in private browsing yet
+
+["test_writableFileStream_for_pbm_worker.html"]
+scheme = "https"
 
 ["test_writableFileStream_worker.html"]
 scheme = "https"
-fail-if = ["true"] # createWritable() is not supported in private browsing yet
+fail-if = ["true"] # getFile() is not supported in private browsing yet

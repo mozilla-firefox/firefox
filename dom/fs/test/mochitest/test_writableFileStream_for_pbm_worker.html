@@ -1,0 +1,22 @@
+<!--
+  Any copyright is dedicated to the Public Domain.
+  http://creativecommons.org/publicdomain/zero/1.0/
+-->
+<html>
+<head>
+  <title>File System Test</title>
+
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+
+  <script type="text/javascript" src="head.js"></script>
+  <script type="text/javascript">
+    add_task(async function worker() {
+      await run_test_in_worker("worker/test_writableFileStream_for_pbm_worker.js");
+    });
+  </script>
+</head>
+
+<body></body>
+
+</html>

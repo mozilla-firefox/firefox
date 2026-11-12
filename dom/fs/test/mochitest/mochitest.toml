@@ -36,5 +36,8 @@ scheme = "https"
 ["test_writableFileStream.html"]
 scheme = "https"
 
+["test_writableFileStream_for_pbm_worker.html"]
+scheme = "https"
+
 ["test_writableFileStream_worker.html"]
 scheme = "https"

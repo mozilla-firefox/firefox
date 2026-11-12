@@ -5614,6 +5614,7 @@
 # Whether OPFS is enabled in Private Browsing Mode.
 # TODO: Before enabling, please handle crash safety in
 # EncryptedRandomAccessStream::SetEOF, see bug 2072949 for details.
+# Also, please fix bug 2087589.
 - name: dom.fs.privateBrowsing.enabled
   type: RelaxedAtomicBool
   value: false

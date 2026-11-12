@@ -5,12 +5,14 @@
 #include "FileSystemManagerParent.h"
 
 #include "FileSystemDatabaseManager.h"
+#include "FileSystemEncryptedFileStreams.h"
 #include "FileSystemParentTypes.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/dom/FileBlobImpl.h"
 #include "mozilla/dom/FileSystemAccessHandle.h"
 #include "mozilla/dom/FileSystemAccessHandleControlParent.h"
 #include "mozilla/dom/FileSystemAccessHandleParent.h"
+#include "mozilla/dom/FileSystemCipherKeyManager.h"
 #include "mozilla/dom/FileSystemDataManager.h"
 #include "mozilla/dom/FileSystemLog.h"
 #include "mozilla/dom/FileSystemTypes.h"
@@ -196,12 +198,6 @@ mozilla::ipc::IPCResult FileSystemManagerParent::RecvGetWritable(
   AssertIsOnIOTarget();
   MOZ_ASSERT(mDataManager);
 
-  // TODO: The implementation should support PBM.
-  if (mDataManager->OriginMetadataRef().mIsPrivate) {
-    aResolver(NS_ERROR_DOM_NOT_SUPPORTED_ERR);
-    return IPC_OK();
-  }
-
   const fs::FileMode mode = mDataManager->GetMode(aRequest.keepData());
 
   auto reportError = [aResolver](const auto& aRv) {
@@ -243,17 +239,25 @@ mozilla::ipc::IPCResult FileSystemManagerParent::RecvGetWritable(
     }
   }
 
+  const auto& originMetadata = mDataManager->OriginMetadataRef();
+
+  const RefPtr<fs::FileSystemCipherKeyManager> cipherKeyManager =
+      mDataManager->MaybeCipherKeyManager();
+  MOZ_ASSERT(!originMetadata.mIsPrivate || cipherKeyManager);
+
+  QM_TRY_UNWRAP(nsCOMPtr<nsIRandomAccessStream> stream,
+                originMetadata.mIsPrivate
+                    ? fs::CreateEncryptedFileRandomAccessStream(
+                          originMetadata, *cipherKeyManager, fileId, file)
+                    : CreateFileRandomAccessStream(
+                          originMetadata.mPersistenceType, originMetadata,
+                          quota::Client::FILESYSTEM, file, -1, -1,
+                          nsIFileRandomAccessStream::DEFER_OPEN),
+                IPC_OK(), reportError);
+
   auto writableFileStreamParent =
       MakeNotNull<RefPtr<FileSystemWritableFileStreamParent>>(
           this, aRequest.entryId(), fileId, mode == fs::FileMode::EXCLUSIVE);
-
-  QM_TRY_UNWRAP(
-      nsCOMPtr<nsIRandomAccessStream> stream,
-      CreateFileRandomAccessStream(quota::PERSISTENCE_TYPE_DEFAULT,
-                                   mDataManager->OriginMetadataRef(),
-                                   quota::Client::FILESYSTEM, file, -1, -1,
-                                   nsIFileRandomAccessStream::DEFER_OPEN),
-      IPC_OK(), reportError);
 
   RandomAccessStreamParams streamParams =
       mozilla::ipc::SerializeRandomAccessStream(

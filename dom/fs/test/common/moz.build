@@ -16,4 +16,5 @@ TESTING_JS_MODULES.dom.fs.test.common += [
     "test_fileSystemDirectoryHandle.js",
     "test_syncAccessHandle.js",
     "test_writableFileStream.js",
+    "test_writableFileStream_for_pbm.js",
 ]

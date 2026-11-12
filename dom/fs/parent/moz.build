@@ -24,6 +24,7 @@ UNIFIED_SOURCES += [
     "FileSystemAccessHandleControlParent.cpp",
     "FileSystemAccessHandleParent.cpp",
     "FileSystemContentTypeGuess.cpp",
+    "FileSystemEncryptedFileStreams.cpp",
     "FileSystemHashSource.cpp",
     "FileSystemHashStorageFunction.cpp",
     "FileSystemManagerParent.cpp",
@@ -64,6 +65,7 @@ if CONFIG["COMPILE_ENVIRONMENT"]:
 
 SOURCE_HEADERS += [
     "FileSystemContentTypeGuess.h",
+    "FileSystemEncryptedFileStreams.h",
     "FileSystemHashSource.h",
     "FileSystemHashStorageFunction.h",
     "FileSystemStreamCallbacks.h",
