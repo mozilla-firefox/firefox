@@ -31,7 +31,7 @@ setup(
     packages=["mozfile"],
     include_package_data=True,
     zip_safe=False,
-    install_requires=[],
+    install_requires=["redo"],
     tests_require=["wptserve"],
     python_requires=">=3.8",
 )

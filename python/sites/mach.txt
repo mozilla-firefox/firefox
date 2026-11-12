@@ -96,6 +96,7 @@ vendored:third_party/python/platformdirs
 vendored:third_party/python/pyproject_hooks
 vendored:third_party/python/pyrsistent
 vendored:third_party/python/python-hglib
+vendored:third_party/python/redo
 vendored:third_party/python/requests
 vendored:third_party/python/sentry_sdk
 vendored:third_party/python/setuptools

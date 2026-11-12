@@ -35,7 +35,6 @@ vendored:third_party/python/pyasn1_modules
 vendored:third_party/python/pygments
 vendored:third_party/python/pylru
 vendored:third_party/python/pyyaml/lib/
-vendored:third_party/python/redo
 vendored:third_party/python/requests_unixsocket
 vendored:third_party/python/rich
 vendored:third_party/python/rsa

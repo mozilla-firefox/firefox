@@ -9,7 +9,6 @@ import os
 import re
 import stat
 import sys
-import time
 import warnings
 from contextlib import contextmanager
 from textwrap import dedent
@@ -199,32 +198,28 @@ def _call_windows_retry(func, args=(), retry_max=5, retry_delay=0.5):
     It's possible to see spurious errors on Windows due to various things
     keeping a handle to the directory open (explorer, virus scanners, etc)
     So we try a few times if it fails with a known error.
-    retry_delay is multiplied by the number of failed attempts to increase
-    the likelihood of success in subsequent attempts.
+    retry_delay is doubled after each failed attempt to increase the
+    likelihood of success in subsequent attempts.
     """
-    retry_count = 0
-    while True:
+    import redo
+
+    error = None
+    for _ in redo.retrier(
+        attempts=retry_max + 1, sleeptime=retry_delay, sleepscale=2, jitter=0
+    ):
         try:
-            func(*args)
+            return func(*args)
         except OSError as e:
             # Error codes are defined in:
             # http://docs.python.org/2/library/errno.html#module-errno
             if e.errno not in (errno.EACCES, errno.ENOTEMPTY):
                 raise
-
-            if retry_count == retry_max:
-                raise
-
-            retry_count += 1
-
+            error = e
             print(
                 '%s() failed for "%s". Reason: %s (%s). Retrying...'
                 % (func.__name__, args, e.strerror, e.errno)
             )
-            time.sleep(retry_count * retry_delay)
-        else:
-            # If no exception has been thrown it should be done
-            break
+    raise error
 
 
 def remove(path):

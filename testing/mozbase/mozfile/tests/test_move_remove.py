@@ -8,6 +8,7 @@ import threading
 import time
 import unittest
 from contextlib import contextmanager
+from unittest import mock
 
 import mozfile
 import mozinfo
@@ -54,6 +55,9 @@ def wait_file_opened_in_thread(*args, **kwargs):
         yield thread
     finally:
         thread.join()
+
+
+RETRY_ATTEMPTS = 6
 
 
 class MozfileRemoveTestCase(unittest.TestCase):
@@ -124,6 +128,19 @@ class MozfileRemoveTestCase(unittest.TestCase):
 
         # Check deletion was successful
         self.assertFalse(os.path.exists(filepath))
+
+    def test_remove_gives_up_after_max_retries(self):
+        """Test that remove() stops retrying and raises after the last attempt"""
+        filepath = os.path.join(self.tempdir, *stubs.files[1])
+        busy = OSError(errno.EACCES, "Permission denied")
+
+        with mock.patch("os.remove", autospec=True, side_effect=busy) as remove_mock:
+            with self.assertRaises(OSError) as ctx:
+                mozfile.remove(filepath)
+
+        self.assertEqual(ctx.exception.errno, errno.EACCES)
+        self.assertEqual(remove_mock.call_count, RETRY_ATTEMPTS)
+        self.assertTrue(os.path.exists(filepath))
 
     def test_remove_readonly_tree(self):
         """Test removing a read-only directory"""
@@ -247,6 +264,20 @@ class MozFileMoveTestCase(unittest.TestCase):
             mozfile.move(file_path, moved_path)
             self.assertFalse(os.path.exists(file_path))
             self.assertTrue(os.path.isfile(moved_path))
+
+    def test_move_gives_up_after_max_retries(self):
+        file_path = os.path.join(self.tempdir, *stubs.files[1])
+        moved_path = file_path + ".moved"
+        busy = OSError(errno.EACCES, "Permission denied")
+
+        with mock.patch("shutil.move", autospec=True, side_effect=busy) as move_mock:
+            with self.assertRaises(OSError) as ctx:
+                mozfile.move(file_path, moved_path)
+
+        self.assertEqual(ctx.exception.errno, errno.EACCES)
+        self.assertEqual(move_mock.call_count, RETRY_ATTEMPTS)
+        self.assertTrue(os.path.isfile(file_path))
+        self.assertFalse(os.path.exists(moved_path))
 
 
 if __name__ == "__main__":

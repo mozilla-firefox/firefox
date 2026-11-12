@@ -42,7 +42,6 @@ vendored:third_party/python/propcache
 vendored:third_party/python/py_serializable
 vendored:third_party/python/pylru
 vendored:third_party/python/pyyaml/lib/
-vendored:third_party/python/redo
 vendored:third_party/python/requests_unixsocket
 vendored:third_party/python/responses
 vendored:third_party/python/slugid

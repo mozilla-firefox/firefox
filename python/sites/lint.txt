@@ -40,7 +40,6 @@ vendored:third_party/python/pathspec
 vendored:third_party/python/propcache
 vendored:third_party/python/python_dateutil
 vendored:third_party/python/pyyaml/lib/
-vendored:third_party/python/redo
 vendored:third_party/python/requests_unixsocket
 vendored:third_party/python/slugid
 vendored:third_party/python/taskcluster
