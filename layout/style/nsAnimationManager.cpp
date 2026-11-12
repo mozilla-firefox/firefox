@@ -24,6 +24,7 @@
 #include "mozilla/dom/ScrollTimeline.h"
 #include "mozilla/dom/TimelineName.h"
 #include "mozilla/dom/ViewTimeline.h"
+#include "nsContentUtils.h"
 #include "nsDOMMutationObserver.h"
 #include "nsIFrame.h"
 #include "nsINode.h"
@@ -516,15 +517,15 @@ static void CheckNamedTimelineMap(
 #endif
 
 void nsAnimationManager::UpdateNamedTimelineAnimations(
-    const nsTArray<RefPtr<const nsAtom>>& aChanged) {
+    const nsTHashSet<RefPtr<const nsAtom>>& aChanged) {
   auto* document = mPresContext->Document();
-  for (const auto& name : aChanged) {
+  for (const nsAtom* name : aChanged) {
     auto entries = mAnimationsWithNamedTimeline.Lookup(name);
     if (!entries) {
       continue;
     }
     for (auto& animation : *entries) {
-      UpdateNamedTimelineAnimation(document, animation.get(), name.get(),
+      UpdateNamedTimelineAnimation(document, animation.get(), name,
                                    SomeRef(mAnimationsWithDeferredUpdate));
     }
   }
@@ -547,12 +548,49 @@ void nsAnimationManager::UpdateAllNamedTimelineAnimations() {
 #endif
 }
 
+void nsAnimationManager::MarkNamedTimelineAnimationForUpdate(
+    const nsAtom* aName) {
+  if (mAllNamedTimelineAnimationsPending) {
+    return;
+  }
+  mTimelineNamesPendingUpdate.Insert(aName);
+}
+
+void nsAnimationManager::MarkNamedTimelineAnimationsForUpdate(
+    Span<const RefPtr<const nsAtom>> aNames) {
+  for (const auto& name : aNames) {
+    MarkNamedTimelineAnimationForUpdate(name);
+  }
+}
+
+void nsAnimationManager::FlushPendingNamedTimelineUpdates() {
+  if (!HasPendingNamedTimelineUpdates()) {
+    return;
+  }
+  // Timeline changes must not run script, see UpdateDeferredTimelineChanges().
+  MOZ_ASSERT(!nsContentUtils::IsSafeToRunScript());
+  nsAutoAnimationMutationBatch mb(mPresContext->Document());
+  if (mAllNamedTimelineAnimationsPending) {
+    mAllNamedTimelineAnimationsPending = false;
+    mTimelineNamesPendingUpdate.Clear();
+    UpdateAllNamedTimelineAnimations();
+    return;
+  }
+  const auto names = std::move(mTimelineNamesPendingUpdate);
+  MOZ_ASSERT(mTimelineNamesPendingUpdate.IsEmpty());
+  UpdateNamedTimelineAnimations(names);
+}
+
 void nsAnimationManager::UpdateDeferredTimelineChanges() {
-  if (mAnimationsWithDeferredUpdate.IsEmpty()) {
+  if (!HasPendingNamedTimelineUpdates() &&
+      mAnimationsWithDeferredUpdate.IsEmpty()) {
     return;
   }
   // This is unneeded once we resolve Bug 2033912.
   nsAutoScriptBlocker scriptBlocker;
+  // Names marked outside of a style traversal, e.g. by removing a timeline's
+  // element from the tree, are flushed here.
+  FlushPendingNamedTimelineUpdates();
   auto* document = mPresContext->Document();
   for (auto* animation : mAnimationsWithDeferredUpdate) {
     if (!animation->GetTimelineName().mName) {

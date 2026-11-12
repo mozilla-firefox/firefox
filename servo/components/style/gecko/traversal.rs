@@ -7,6 +7,7 @@
 use crate::context::{SharedStyleContext, StyleContext};
 use crate::dom::{TElement, TNode};
 use crate::gecko::wrapper::{GeckoElement, GeckoNode};
+use crate::gecko_bindings::bindings::Gecko_FlushPendingNamedTimelineUpdates;
 use crate::traversal::{DomTraversal, recalc_style_at};
 
 /// This is the simple struct that Gecko uses to encapsulate a DOM traversal for
@@ -48,5 +49,9 @@ impl<'recalc, 'le> DomTraversal<GeckoElement<'le>> for RecalcStyleOnly<'recalc> 
 
     fn shared_context(&self) -> &SharedStyleContext<'recalc> {
         &self.shared
+    }
+
+    fn after_sequential_tasks(&self, root: GeckoElement<'le>) {
+        unsafe { Gecko_FlushPendingNamedTimelineUpdates(root.0) };
     }
 }

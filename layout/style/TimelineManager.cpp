@@ -11,6 +11,7 @@
 #include "mozilla/dom/ScrollTimeline.h"
 #include "mozilla/dom/TimelineName.h"
 #include "mozilla/dom/ViewTimeline.h"
+#include "nsAnimationManager.h"
 #include "nsPresContext.h"
 
 namespace mozilla {
@@ -88,9 +89,13 @@ template <typename TimelineType>
 void TimelineManager::DoUnregisterTimelines(
     TimelineCollection<TimelineType>& aCollection,
     TimelineNameMap<TimelineType>& aTimelineNameMap) {
+  auto* animationManager = mPresContext->AnimationManager();
+  MOZ_ASSERT(animationManager);
   for (const auto& name : aCollection.Timelines().Keys()) {
     RemoveTimelineTargetByName(name, &aCollection.OwningElement(),
                                aCollection.PseudoRequest(), aTimelineNameMap);
+    // Animations attached to this timeline need to look for another one.
+    animationManager->MarkNamedTimelineAnimationForUpdate(name);
   }
 }
 
@@ -160,6 +165,19 @@ void TimelineManager::UpdateTimelineScopes(
     Element* aElement, const PseudoStyleRequest& aPseudoRequest,
     const ComputedStyle* aComputedStyle) {
   auto* scope = TimelineScope::Get(aElement, aPseudoRequest);
+  // Animations referring to the names scoped before or after this change may
+  // now see a different timeline.
+  auto* animationManager = mPresContext->AnimationManager();
+  auto MarkForUpdate = [&](const TimelineScope& aScope) {
+    if (aScope.ScopesAll()) {
+      animationManager->MarkAllNamedTimelineAnimationsForUpdate();
+    } else {
+      animationManager->MarkNamedTimelineAnimationsForUpdate(aScope.Names());
+    }
+  };
+  if (scope) {
+    MarkForUpdate(*scope);
+  }
   const auto timelineScope =
       aComputedStyle->StyleUIReset()->mTimelineScope.value.AsSpan();
   if (timelineScope.IsEmpty()) {
@@ -187,6 +205,7 @@ void TimelineManager::UpdateTimelineScopes(
     }
   }
   scope->SetNames(std::move(names));
+  MarkForUpdate(*scope);
 }
 
 static bool ScopedNameLooselyMatches(const dom::ShadowRoot* aTargetShadowRoot,

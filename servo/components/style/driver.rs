@@ -171,8 +171,11 @@ where
         }
     }
     drop(scoped_tls);
-    for task in tasks {
-        task.execute();
+    if !tasks.is_empty() {
+        for task in tasks {
+            task.execute();
+        }
+        traversal.after_sequential_tasks(root);
     }
 
     root

@@ -121,9 +121,8 @@ class TimelineManager {
       TimelineNameMap<TimelineType>& aTimelineNameMap);
 
   template <typename TimelineType>
-  static void DoUnregisterTimelines(
-      TimelineCollection<TimelineType>& aCollection,
-      TimelineNameMap<TimelineType>& aTimelineNameMap);
+  void DoUnregisterTimelines(TimelineCollection<TimelineType>& aCollection,
+                             TimelineNameMap<TimelineType>& aTimelineNameMap);
 
   // Destroy all timelines relating to the given (pseudo) element.
   template <typename TimelineType>

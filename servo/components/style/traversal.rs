@@ -219,6 +219,10 @@ pub trait DomTraversal<E: TElement>: Sync {
 
     /// Return the shared style context common to all worker threads.
     fn shared_context(&self) -> &SharedStyleContext<'_>;
+
+    /// Called once per traversal after the sequential tasks it queued have run.
+    /// Not called when the traversal queued no task.
+    fn after_sequential_tasks(&self, _root: E) {}
 }
 
 /// Manually resolve style by sequentially walking up the parent chain to the
