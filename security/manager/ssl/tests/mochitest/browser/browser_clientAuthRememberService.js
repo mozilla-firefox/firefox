@@ -246,6 +246,7 @@ add_task(async function testDeletingRememberedDecisions() {
   let cars = Cc["@mozilla.org/security/clientAuthRememberService;1"].getService(
     Ci.nsIClientAuthRememberService
   );
+  registerCleanupFunction(() => cars.clearRememberedDecisions());
 
   await openRequireClientCert();
   Assert.ok(
