@@ -45,7 +45,7 @@ class TabsCleanupFeatureTest {
 
     @RelaxedMockK private lateinit var viewModel: HomeScreenViewModel
 
-    @RelaxedMockK private lateinit var browserStore: BrowserStore
+    private var browserStore = BrowserStore()
 
     @RelaxedMockK private lateinit var browsingModeManager: BrowsingModeManager
 
@@ -59,14 +59,8 @@ class TabsCleanupFeatureTest {
 
     private val snackbarHostState = SnackbarHostState()
 
-    private lateinit var feature: TabsCleanupFeature
-
-    @Before
-    fun setup() {
-        MockKAnnotations.init(this)
-
-        feature =
-            spyk(
+    private val feature by lazy {
+        spyk(
                 TabsCleanupFeature(
                     context = testContext,
                     viewModel = viewModel,
@@ -80,8 +74,12 @@ class TabsCleanupFeatureTest {
                     viewLifecycleScope = testCoroutineScope,
                 )
             )
+            .also { every { it.showUndoSnackbar(any(), any()) } just Runs }
+    }
 
-        every { feature.showUndoSnackbar(any(), any()) } just Runs
+    @Before
+    fun setup() {
+        MockKAnnotations.init(this)
     }
 
     @Test
@@ -119,7 +117,7 @@ class TabsCleanupFeatureTest {
             )
 
         every { settings.inactiveTabsAreEnabled } returns true
-        every { browserStore.state } returns BrowserState(tabs = tabs)
+        browserStore = BrowserStore(BrowserState(tabs = tabs))
         every { viewModel.sessionToDelete } returns ALL_ACTIVE_NORMAL_TABS
 
         feature.start()
@@ -143,12 +141,10 @@ class TabsCleanupFeatureTest {
         val tabsCount = 3
         val mockTabs =
             List(tabsCount) {
-                mockk<TabSessionState> {
-                    every { content.private } returns false
-                }
+                createTab(url = "https://mozilla.org", private = false)
             }
 
-        every { browserStore.state } returns BrowserState(tabs = mockTabs)
+        browserStore = BrowserStore(BrowserState(tabs = mockTabs))
         every { viewModel.sessionToDelete } returns ALL_NORMAL_TABS
 
         feature.start()
@@ -170,13 +166,11 @@ class TabsCleanupFeatureTest {
         val tabsCount = 4
         val mockTabs =
             List(tabsCount) {
-                mockk<TabSessionState> {
-                    every { content.private } returns true
-                }
+                createTab(url = "https://mozilla.org", private = true)
             }
 
         every { viewModel.sessionToDelete } returns ALL_PRIVATE_TABS
-        every { browserStore.state } returns BrowserState(tabs = mockTabs)
+        browserStore = BrowserStore(BrowserState(tabs = mockTabs))
 
         feature.start()
 
@@ -197,11 +191,11 @@ class TabsCleanupFeatureTest {
         every { settings.enableHomepageAsNewTab } returns true
         every { viewModel.sessionToDelete } returns ALL_NORMAL_TABS
 
-        val tab1 = mockk<TabSessionState> { every { content.private } returns false }
-        val tab2 = mockk<TabSessionState> { every { content.private } returns false }
+        val tab1 = createTab(url = "https://mozilla.org", private = false)
+        val tab2 = createTab(url = "https://mozilla.org", private = false)
         val mockTabs = listOf(tab1, tab2)
 
-        every { browserStore.state } returns BrowserState(tabs = mockTabs, selectedTabId = null)
+        browserStore = BrowserStore(BrowserState(tabs = mockTabs, selectedTabId = null))
 
         feature.start()
 
@@ -227,12 +221,10 @@ class TabsCleanupFeatureTest {
         val tabsCount = 3
         val mockTabs =
             List(tabsCount) {
-                mockk<TabSessionState> {
-                    every { content.private } returns true
-                }
+                createTab(url = "https://mozilla.org", private = true)
             }
 
-        every { browserStore.state } returns BrowserState(tabs = mockTabs)
+        browserStore = BrowserStore(BrowserState(tabs = mockTabs))
         every { browsingModeManager.mode.isPrivate } returns true
 
         feature.start()
@@ -256,13 +248,11 @@ class TabsCleanupFeatureTest {
         val tabsCount = 5
         val mockTabs =
             List(tabsCount) {
-                mockk<TabSessionState> {
-                    every { content.private } returns true
-                }
+                createTab(url = "https://mozilla.org", private = true)
             }
 
         every { viewModel.sessionToDelete } returns ALL_PRIVATE_TABS
-        every { browserStore.state } returns BrowserState(tabs = mockTabs)
+        browserStore = BrowserStore(BrowserState(tabs = mockTabs))
 
         feature.start()
 
@@ -289,7 +279,7 @@ class TabsCleanupFeatureTest {
             every { id } returns sessionId
         }
 
-        every { browserStore.state.tabs } returns listOf(tab)
+        browserStore = BrowserStore(BrowserState(tabs = listOf(tab)))
         every { viewModel.sessionToDelete } returns sessionId
 
         feature.start()
@@ -320,7 +310,7 @@ class TabsCleanupFeatureTest {
         every { browsingModeManager.mode.isPrivate } returns private
         every { viewModel.sessionToDelete } returns sessionId
 
-        every { browserStore.state.tabs } returns listOf(tab)
+        browserStore = BrowserStore(BrowserState(tabs = listOf(tab)))
 
         feature.start()
 
@@ -358,7 +348,7 @@ class TabsCleanupFeatureTest {
         every { browsingModeManager.mode.isPrivate } returns private
         every { viewModel.sessionToDelete } returns sessionId
 
-        every { browserStore.state.tabs } returns listOf(tab, secondTab)
+        browserStore = BrowserStore(BrowserState(tabs = listOf(tab, secondTab)))
 
         feature.start()
 
@@ -434,7 +424,7 @@ class TabsCleanupFeatureTest {
                 createdAt = 0L,
             )
 
-        every { browserStore.state } returns BrowserState(tabs = listOf(activeTab, inactiveTab))
+        browserStore = BrowserStore(BrowserState(tabs = listOf(activeTab, inactiveTab)))
         every { viewModel.sessionToDelete } returns "1"
 
         every { settings.inactiveTabsAreEnabled } returns true
@@ -461,7 +451,7 @@ class TabsCleanupFeatureTest {
                 createdAt = System.currentTimeMillis(),
             )
 
-        every { browserStore.state } returns BrowserState(tabs = listOf(activeTab))
+        browserStore = BrowserStore(BrowserState(tabs = listOf(activeTab)))
 
         every { viewModel.sessionToDelete } returns "1"
 

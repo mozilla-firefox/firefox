@@ -37,7 +37,8 @@ internal class ActivationPingTest {
         verify(exactly = 1) { mockAp.triggerPing() }
         // Marking the ping as triggered happens in a co-routine off the main thread,
         // so wait a bit for it.
-        verify(timeout = 5000, exactly = 1) { mockAp.markAsTriggered() }
+        verify(timeout = 5000) { mockAp.markAsTriggered() }
+        verify(exactly = 1) { mockAp.markAsTriggered() }
     }
 
     @Test
