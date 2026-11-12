@@ -5785,15 +5785,6 @@
       "resource://gre/modules/ContentDispatchChooser.sys.mjs": [
         "../../../toolkit/mozapps/handling/ContentDispatchChooser.sys.mjs"
       ],
-      "resource://gre/modules/ContentPrefServiceChild.sys.mjs": [
-        "../../../toolkit/components/contentprefs/ContentPrefServiceChild.sys.mjs"
-      ],
-      "resource://gre/modules/ContentPrefStore.sys.mjs": [
-        "../../../toolkit/components/contentprefs/ContentPrefStore.sys.mjs"
-      ],
-      "resource://gre/modules/ContentPrefUtils.sys.mjs": [
-        "../../../toolkit/components/contentprefs/ContentPrefUtils.sys.mjs"
-      ],
       "resource://gre/modules/ContentRelevancyManager.sys.mjs": [
         "../../../toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs"
       ],
@@ -7137,15 +7128,6 @@
       ],
       "resource://pdf.js/build/pdf.worker.mjs": [
         "../../../toolkit/components/pdfjs/content/build/pdf.worker.mjs"
-      ],
-      "resource://pdf.js/web/wasm/hellbox_nowasm_fallback.js": [
-        "../../../toolkit/components/pdfjs/content/web/wasm/hellbox_nowasm_fallback.js"
-      ],
-      "resource://pdf.js/web/wasm/jbig2_nowasm_fallback.js": [
-        "../../../toolkit/components/pdfjs/content/web/wasm/jbig2_nowasm_fallback.js"
-      ],
-      "resource://pdf.js/web/wasm/openjpeg_nowasm_fallback.js": [
-        "../../../toolkit/components/pdfjs/content/web/wasm/openjpeg_nowasm_fallback.js"
       ],
       "resource://reftest/AsyncSpellCheckTestHelper.sys.mjs": [
         "../../../editor/AsyncSpellCheckTestHelper.sys.mjs"

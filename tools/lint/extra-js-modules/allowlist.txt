@@ -242,11 +242,6 @@ toolkit/components/contentanalysis/ContentAnalysisWasmChild.sys.mjs
 toolkit/components/contentanalysis/ContentAnalysisWasmParent.sys.mjs
 toolkit/components/contentanalysis/ContentAnalysisWasmRunner.sys.mjs
 toolkit/components/contentanalysis/content-analysis-wasm-sandbox.js
-toolkit/components/contentprefs/ContentPrefService2.sys.mjs
-toolkit/components/contentprefs/ContentPrefServiceChild.sys.mjs
-toolkit/components/contentprefs/ContentPrefServiceParent.sys.mjs
-toolkit/components/contentprefs/ContentPrefStore.sys.mjs
-toolkit/components/contentprefs/ContentPrefUtils.sys.mjs
 toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs
 toolkit/components/contentrelevancy/private/InputUtils.sys.mjs
 toolkit/components/crashes/CrashService.sys.mjs

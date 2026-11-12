@@ -8,7 +8,7 @@ XPCSHELL_TESTS_MANIFESTS += [
 
 BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "ContentPrefService2.sys.mjs",
     "ContentPrefServiceChild.sys.mjs",
     "ContentPrefServiceParent.sys.mjs",

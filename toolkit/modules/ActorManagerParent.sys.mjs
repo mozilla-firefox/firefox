@@ -41,10 +41,12 @@ let JSPROCESSACTORS = {
 
   ContentPrefs: {
     parent: {
-      esModuleURI: "resource://gre/modules/ContentPrefServiceParent.sys.mjs",
+      esModuleURI:
+        "moz-src:///toolkit/components/contentprefs/ContentPrefServiceParent.sys.mjs",
     },
     child: {
-      esModuleURI: "resource://gre/modules/ContentPrefServiceChild.sys.mjs",
+      esModuleURI:
+        "moz-src:///toolkit/components/contentprefs/ContentPrefServiceChild.sys.mjs",
     },
     safeForUntrustedWebProcess: true,
   },

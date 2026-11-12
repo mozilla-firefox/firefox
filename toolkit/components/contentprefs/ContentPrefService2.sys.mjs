@@ -7,9 +7,9 @@ import {
   cbHandleCompletion,
   cbHandleError,
   cbHandleResult,
-} from "resource://gre/modules/ContentPrefUtils.sys.mjs";
+} from "moz-src:///toolkit/components/contentprefs/ContentPrefUtils.sys.mjs";
 
-import { ContentPrefStore } from "resource://gre/modules/ContentPrefStore.sys.mjs";
+import { ContentPrefStore } from "moz-src:///toolkit/components/contentprefs/ContentPrefStore.sys.mjs";
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -28,7 +28,7 @@ const GROUP_CLAUSE = `
 export function ContentPrefService2() {
   if (Services.appinfo.processType === Services.appinfo.PROCESS_TYPE_CONTENT) {
     return ChromeUtils.importESModule(
-      "resource://gre/modules/ContentPrefServiceChild.sys.mjs"
+      "moz-src:///toolkit/components/contentprefs/ContentPrefServiceChild.sys.mjs"
     ).ContentPrefServiceChild;
   }
 

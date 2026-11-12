@@ -7,7 +7,8 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  _methodsCallableFromChild: "resource://gre/modules/ContentPrefUtils.sys.mjs",
+  _methodsCallableFromChild:
+    "moz-src:///toolkit/components/contentprefs/ContentPrefUtils.sys.mjs",
 });
 
 let loadContext = Cu.createLoadContext();
