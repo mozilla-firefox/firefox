@@ -589,14 +589,17 @@ static bool IsBidiSplittable(nsIFrame* aFrame) {
          frameType == LayoutFrameType::Text;
 }
 
+// Does this frame require bidi resolution of its children?
+static bool RequiresBidiResolution(const nsIFrame* aFrame) {
+  return aFrame->IsBidiInlineContainer() ||
+         RubyUtils::IsRubyBox(aFrame->Type());
+}
+
 // Should this frame be treated as a leaf (e.g. when building mLogicalFrames)?
 static bool IsBidiLeaf(const nsIFrame* aFrame) {
   nsIFrame* kid = aFrame->PrincipalChildList().FirstChild();
-  if (kid) {
-    if (aFrame->IsBidiInlineContainer() ||
-        RubyUtils::IsRubyBox(aFrame->Type())) {
-      return false;
-    }
+  if (kid && RequiresBidiResolution(aFrame)) {
+    return false;
   }
   return true;
 }
@@ -1227,7 +1230,7 @@ void nsBidiPresUtils::TraverseFrames(nsIFrame* aCurrentFrame,
     char16_t controlChar = 0;
     char16_t overrideChar = 0;
     LayoutFrameType frameType = frame->Type();
-    if (frame->IsBidiInlineContainer() || RubyUtils::IsRubyBox(frameType)) {
+    if (RequiresBidiResolution(frame)) {
       if (!frame->HasAnyStateBits(NS_FRAME_FIRST_REFLOW)) {
         nsContainerFrame* c = static_cast<nsContainerFrame*>(frame);
         MOZ_ASSERT(c == do_QueryFrame(frame),
@@ -1591,13 +1594,79 @@ static const nsIFrame* FirstChildForBidiLeafSearch(const nsIFrame* aFrame) {
   return nullptr;
 }
 
+static bool IsEmptyTextFrame(const nsIFrame* aFrame) {
+  if (!aFrame->IsTextFrame()) {
+    return false;
+  }
+  auto [start, end] = aFrame->GetOffsets();
+  return start == end;
+}
+
+// Returns the first bidi leaf in aFrame's subtree that will actually hold
+// content on the line, or null if there isn't one. Empty text frames are
+// skipped: they can be left over (e.g. after text-wrap: balance trial layouts
+// or removed line breaks) until they are reflowed and removed, and they carry
+// the base level of the *preceding* paragraph rather than the one that the
+// line's real content belongs to. Likewise for inline continuations that are
+// about to be emptied, and for out-of-flow placeholders.
+static const nsIFrame* FindFirstNonEmptyBidiLeaf(const nsIFrame* aFrame) {
+  if (aFrame->IsPlaceholderFrame()) {
+    const nsIFrame* real = nsPlaceholderFrame::GetRealFrameForPlaceholder(aFrame);
+    return real && real->IsLetterFrame() ? FindFirstNonEmptyBidiLeaf(real)
+                                         : nullptr;
+  }
+  if (!RequiresBidiResolution(aFrame)) {
+    return IsEmptyTextFrame(aFrame) ? nullptr : aFrame;
+  }
+  auto searchList = [](const nsIFrame* aFirst) -> const nsIFrame* {
+    for (const nsIFrame* f = aFirst; f; f = f->GetNextSibling()) {
+      if (const nsIFrame* leaf = FindFirstNonEmptyBidiLeaf(f)) {
+        return leaf;
+      }
+    }
+    return nullptr;
+  };
+  // Same places, in the same order, as FirstChildForBidiLeafSearch.
+  if (const nsIFrame* prevInFlow = aFrame->GetPrevInFlow()) {
+    if (const nsIFrame* leaf = searchList(
+            prevInFlow->GetChildList(FrameChildListID::Overflow)
+                .FirstChild())) {
+      return leaf;
+    }
+  }
+  if (const nsIFrame* leaf = searchList(aFrame->PrincipalChildList().FirstChild())) {
+    return leaf;
+  }
+  for (const nsIFrame* next = aFrame->GetNextInFlow(); next;
+       next = next->GetNextInFlow()) {
+    if (const nsIFrame* leaf = searchList(next->PrincipalChildList().FirstChild())) {
+      return leaf;
+    }
+    if (const nsIFrame* leaf = searchList(
+            next->GetChildList(FrameChildListID::Overflow).FirstChild())) {
+      return leaf;
+    }
+  }
+  return nullptr;
+}
+
+BidiEmbeddingLevel nsBidiPresUtils::GetLineBaseLevel(
+    const nsIFrame* aFirstFrameOnLine) {
+  for (const nsIFrame* f = aFirstFrameOnLine; f; f = f->GetNextSibling()) {
+    if (const nsIFrame* leaf = FindFirstNonEmptyBidiLeaf(f)) {
+      return leaf->GetBaseLevel();
+    }
+  }
+  // Nothing with content; fall back to the first frame.
+  return GetFrameBaseLevel(aFirstFrameOnLine);
+}
+
 BidiEmbeddingLevel nsBidiPresUtils::GetFrameBaseLevel(const nsIFrame* aFrame) {
   // Same notion of "bidi leaf" as IsBidiLeaf(), but also looking through the
   // pending overflow children of fresh continuations (see above).
   const nsIFrame* firstLeaf = aFrame;
   for (;;) {
-    if (!firstLeaf->IsBidiInlineContainer() &&
-        !RubyUtils::IsRubyBox(firstLeaf->Type())) {
+    if (!RequiresBidiResolution(firstLeaf)) {
       break;
     }
     const nsIFrame* kid = FirstChildForBidiLeafSearch(firstLeaf);

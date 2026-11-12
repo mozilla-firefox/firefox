@@ -322,6 +322,17 @@ class nsBidiPresUtils {
       const nsIFrame* aFrame);
 
   /**
+   * Get the bidi base level (i.e. paragraph level) to use for the line that
+   * starts with aFirstFrameOnLine, based on the first frame that will actually
+   * have content on the line. Unlike GetFrameBaseLevel, this is safe to call
+   * from line layout before the line's frames have been reflowed: it skips
+   * empty text frames and looks at children that are about to be moved into
+   * inline continuations.
+   */
+  static mozilla::intl::BidiEmbeddingLevel GetLineBaseLevel(
+      const nsIFrame* aFirstFrameOnLine);
+
+  /**
    * Get a mozilla::intl::BidiDirection representing the direction implied by
    * the bidi base level of the frame.
    * @return mozilla::intl::BidiDirection
