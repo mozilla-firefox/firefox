@@ -171,7 +171,7 @@ skip-if = [
 ["test_http3_prio_enabled_wrap.js"]
 run-sequentially = ["true"] # http3server
 skip-if = [
-  "true", # Will be reenabled in bug 1865394
+  "os == 'win' && msix", # Bug 1807925
 ]
 
 ["test_httpcancel_wrap.js"]

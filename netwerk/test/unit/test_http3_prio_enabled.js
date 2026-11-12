@@ -36,7 +36,7 @@ async function test_http3_prio_enabled(incremental) {
   await test_flag_priority(
     "enabled (urgent_start)",
     Ci.nsIClassOfService.UrgentStart,
-    "u=1",
+    "u=0",
     incremental,
     incremental
   );

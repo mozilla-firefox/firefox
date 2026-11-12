@@ -537,7 +537,9 @@ prefs = ["browser.cache.disk.encryption.enabled=true"]
 
 ["test_captive_portal_service.js"]
 run-sequentially = ["true"] # node server exceptions dont replay well
-skip-if = ["os == 'android'"] # The captive detector is not built on Android
+skip-if = [
+  "os == 'android'", # The captive detector is not built on Android
+]
 
 ["test_cert_info.js"]
 
@@ -887,7 +889,9 @@ skip-if = [
 ["test_happy_eyeballs_ip_preference.js"]
 
 ["test_happy_eyeballs_ipv6_link_local.js"]
-run-if = ["os == 'mac'"] # needs a link-local address on the loopback interface
+run-if = [
+  "os == 'mac'", # needs a link-local address on the loopback interface
+]
 
 ["test_happy_eyeballs_local_addr_retry.js"]
 skip-if = [
@@ -1192,7 +1196,7 @@ skip-if = [
 ["test_http3_prio_enabled.js"]
 run-sequentially = ["true"] # http3server
 skip-if = [
-  "true", # Will be reenabled in bug 1865394
+  "os == 'win' && msix", # Bug 1807931
 ]
 
 ["test_http3_protocol_error_fallback.js"]
@@ -1327,17 +1331,6 @@ skip-if = [
 
 ["test_httpcancel.js"]
 
-["test_https_rr_ech_prefs.js"]
-
-["test_https_rr_sorted_alpn.js"]
-
-["test_httpssvc_ech_with_alpn.js"]
-requesttimeoutfactor = 2  # Slow on Android debug
-skip-if = [
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 1808048
-]
-run-sequentially = ["true"] # node server exceptions dont replay well
-
 ["test_https_proxy_h3_outer_via_https_rr.js"]
 run-sequentially = ["true"] # node server exceptions dont replay well
 requesttimeoutfactor = 2
@@ -1352,6 +1345,17 @@ requesttimeoutfactor = 2
 skip-if = [
   "os == 'win' && msix",
 ]
+
+["test_https_rr_ech_prefs.js"]
+
+["test_https_rr_sorted_alpn.js"]
+
+["test_httpssvc_ech_with_alpn.js"]
+requesttimeoutfactor = 2  # Slow on Android debug
+skip-if = [
+  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 1808048
+]
+run-sequentially = ["true"] # node server exceptions dont replay well
 
 ["test_httpssvc_https_upgrade.js"]
 
@@ -1401,7 +1405,9 @@ run-sequentially = ["true"] # node server exceptions dont replay well
 ["test_large_port.js"]
 
 ["test_lna_captive_portal.js"]
-skip-if = ["os == 'android'"] # The captive detector is not built on Android
+skip-if = [
+  "os == 'android'", # The captive detector is not built on Android
+]
 
 ["test_loadgroup_cancel.js"]
 
@@ -1468,7 +1474,9 @@ run-if = [
 ["test_network_id_match.js"]
 
 ["test_network_interfaces.js"]
-run-if = ["enterprise"]
+run-if = [
+  "enterprise",
+]
 
 ["test_no_cookies_after_last_pb_exit.js"]
 
@@ -1741,9 +1749,6 @@ run-if = [
 
 ["test_sockettransportsvc_available.js"]
 
-["test_socks_proxy_fetch.js"]
-run-sequentially = ["true"] # node server exceptions dont replay well
-
 ["test_socks.js"]
 # Bug 675039: test fails consistently on Android
 fail-if = [
@@ -1753,6 +1758,9 @@ fail-if = [
 skip-if = [
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 1808048
 ]
+
+["test_socks_proxy_fetch.js"]
+run-sequentially = ["true"] # node server exceptions dont replay well
 
 ["test_speculative_connect.js"]
 
@@ -2035,7 +2043,9 @@ skip-if = [
 ]
 
 ["test_windows_sso.js"]
-run-if = ["os == 'win'"]
+run-if = [
+  "os == 'win'",
+]
 
 ["test_xmlhttprequest.js"]
 prefs = ["network.xhr.block_sync_system_requests=false"] # Bug 721336
