@@ -154,11 +154,19 @@ RenderTextureHostSWGL* RenderTextureHostWrapper::AsRenderTextureHostSWGL() {
   return mTextureHost->AsRenderTextureHostSWGL();
 }
 
-RenderLinuxTextureHost* RenderTextureHostWrapper::AsRenderLinuxTextureHost() {
+RenderDMABUFTextureHost* RenderTextureHostWrapper::AsRenderDMABUFTextureHost() {
   if (!mTextureHost) {
     return nullptr;
   }
-  return mTextureHost->AsRenderLinuxTextureHost();
+  return mTextureHost->AsRenderDMABUFTextureHost();
+}
+
+RenderWaylandTextureHost*
+RenderTextureHostWrapper::AsRenderWaylandTextureHost() {
+  if (!mTextureHost) {
+    return nullptr;
+  }
+  return mTextureHost->AsRenderWaylandTextureHost();
 }
 
 RenderAndroidHardwareBufferTextureHost*

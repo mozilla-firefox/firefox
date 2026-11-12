@@ -203,8 +203,6 @@ class BufferSurface {
   bool CanRecycle() const { return mCanRecycle && mPID; }
   void DisableRecycle() { mCanRecycle = false; }
 
-  bool SupportsDirectComposition();
-
  protected:
   BufferSurface() = default;
   virtual ~BufferSurface();

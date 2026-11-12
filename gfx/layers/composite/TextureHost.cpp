@@ -51,8 +51,7 @@
 
 #ifdef MOZ_WAYLAND
 #  include "mozilla/WidgetUtilsGtk.h"
-#  include "mozilla/webrender/RenderLinuxTextureHost.h"
-#  include "mozilla/widget/SHMBufSurface.h"
+#  include "mozilla/webrender/RenderWaylandTextureHost.h"
 #endif
 
 #if 0
@@ -500,12 +499,11 @@ BufferTextureHost::BufferTextureHost(const BufferDescriptor& aDesc,
       MOZ_CRASH("GFX: Bad descriptor");
   }
 
-  mUseExternalTextures = false;
 #ifdef MOZ_WAYLAND
-  if (widget::GdkIsWaylandDisplay() && gfx::gfxVars::UseWebRenderCompositor()) {
-    RefPtr<SHMBufSurface> surface = SHMBufSurface::Create(nullptr, aDesc);
-    mUseExternalTextures = surface->SupportsDirectComposition();
-  }
+  mUseExternalTextures =
+      widget::GdkIsWaylandDisplay() && gfx::gfxVars::UseWebRenderCompositor();
+#else
+  mUseExternalTextures = false;
 #endif
 }
 
@@ -524,8 +522,8 @@ void BufferTextureHost::CreateRenderTexture(
   RefPtr<wr::RenderTextureHost> texture;
 #ifdef MOZ_WAYLAND
   if (UseExternalTextures()) {
-    texture = MakeRefPtr<wr::RenderLinuxTextureHost>(GetBuffer(),
-                                                     GetBufferDescriptor());
+    texture = MakeRefPtr<wr::RenderWaylandTextureHost>(GetBuffer(),
+                                                       GetBufferDescriptor());
   } else
 #endif
   {
@@ -562,12 +560,9 @@ void BufferTextureHost::PushResourceUpdates(
       aResources.GetCapabilities().mBackendType, GetSize());
   bool useNativeTexture =
       (policy == REQUIRE) || (policy != FORBID && UseExternalTextures());
-  // External textures are used on Wayland where texture 2D is used.
-  auto textureType = UseExternalTextures() ? wr::ImageBufferKind::Texture2D
-                                           : wr::ImageBufferKind::TextureRect;
-  auto imageType = useNativeTexture
-                       ? wr::ExternalImageType::TextureHandle(textureType)
-                       : wr::ExternalImageType::Buffer();
+  auto imageType = useNativeTexture ? wr::ExternalImageType::TextureHandle(
+                                          wr::ImageBufferKind::TextureRect)
+                                    : wr::ExternalImageType::Buffer();
 
   if (!IsYCbCr()) {
     if (aImageKeys.length() != 1) {
@@ -626,7 +621,8 @@ void BufferTextureHost::PushDisplayItems(wr::DisplayListBuilder& aBuilder,
   // SWGL should always try to bypass shaders and composite directly.
   bool preferCompositorSurface =
       aFlags.contains(PushDisplayItemFlag::PREFER_COMPOSITOR_SURFACE);
-
+  bool useExternalSurface =
+      aFlags.contains(PushDisplayItemFlag::SUPPORTS_EXTERNAL_BUFFER_TEXTURES);
   if (!IsYCbCr()) {
     if (aImageKeys.length() != 1) {
       MOZ_ASSERT_UNREACHABLE("unexpected key length");
@@ -635,7 +631,7 @@ void BufferTextureHost::PushDisplayItems(wr::DisplayListBuilder& aBuilder,
     aBuilder.PushImage(aBounds, aClip, true, false, aFilter, aImageKeys[0],
                        !(mFlags & TextureFlags::NON_PREMULTIPLIED),
                        wr::ColorF{1.0f, 1.0f, 1.0f, 1.0f},
-                       preferCompositorSurface, UseExternalTextures());
+                       preferCompositorSurface, useExternalSurface);
   } else {
     if (aImageKeys.length() != 3) {
       MOZ_ASSERT_UNREACHABLE("unexpected key length");
@@ -647,7 +643,7 @@ void BufferTextureHost::PushDisplayItems(wr::DisplayListBuilder& aBuilder,
         wr::ToWrColorDepth(desc.colorDepth()),
         wr::ToWrYuvColorSpace(desc.yUVColorSpace()),
         wr::ToWrColorRange(desc.colorRange()), aFilter, preferCompositorSurface,
-        UseExternalTextures());
+        useExternalSurface);
   }
 }
 
