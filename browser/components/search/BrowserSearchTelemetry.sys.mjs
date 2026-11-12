@@ -14,6 +14,12 @@ const lazy = XPCOMUtils.declareLazy({
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
   UrlbarSearchUtils:
     "moz-src:///browser/components/urlbar/UrlbarSearchUtils.sys.mjs",
+  logConsole: () => {
+    return console.createInstance({
+      logModule: "SearchTelemetry",
+      maxLogLevel: lazy.SearchUtils.loggingEnabled ? "Debug" : "Warn",
+    });
+  },
 });
 
 /**
@@ -238,16 +244,20 @@ class BrowserSearchTelemetryHandler {
         partnerCodeToUse !== "" &&
         !engine.getURLOfType(searchUrlType)?.excludePartnerCodeFromTelemetry;
 
-      Glean.sap.counts.record({
+      let providerId =
+        engine instanceof lazy.ConfigSearchEngine ? engine.id : "other";
+      /** @type {Parameters<typeof Glean.sap.counts["record"]>[0]} */
+      let sapData = {
         source,
-        provider_id:
-          engine instanceof lazy.ConfigSearchEngine ? engine.id : "other",
+        provider_id: providerId,
         provider_name: engine.name,
         // If no code is reported, we must returned undefined, Glean will then
         // not report the field.
         partner_code: reportPartnerCode ? partnerCodeToUse : undefined,
         overridden_by_third_party: isOverridden.toString(),
-      });
+      };
+      lazy.logConsole.log("Reported SAP", sapData);
+      Glean.sap.counts.record(sapData);
 
       // Dispatch the search signal to other handlers.
       switch (source) {
