@@ -7,6 +7,7 @@ package mozilla.components.feature.listentopage.settings
 import java.io.IOException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -175,7 +176,7 @@ class ListenSettingsTest {
             )
         runCurrent()
 
-        assertTrue(caught is IllegalStateException)
+        assertIs<IllegalStateException>(caught)
         assertEquals(ListenEnabledState.Loading, settings.enabled.value)
         scope.cancel()
     }
