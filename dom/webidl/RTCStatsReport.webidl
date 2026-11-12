@@ -157,6 +157,15 @@ dictionary RTCMediaSourceStats : RTCStats {
   required DOMString kind;
 };
 
+dictionary RTCAudioSourceStats : RTCMediaSourceStats {
+  double audioLevel;
+  double totalAudioEnergy;
+  double totalSamplesDuration;
+  // TODO BUG 2087679
+  // double echoReturnLoss;
+  // double echoReturnLossEnhancement;
+};
+
 dictionary RTCVideoSourceStats : RTCMediaSourceStats {
   unsigned long   width;
   unsigned long   height;
@@ -318,6 +327,7 @@ dictionary RTCStatsCollection {
   sequence<RTCRemoteInboundRtpStreamStats>  remoteInboundRtpStreamStats = [];
   sequence<RTCRemoteOutboundRtpStreamStats> remoteOutboundRtpStreamStats = [];
   sequence<RTCMediaSourceStats>             mediaSourceStats = [];
+  sequence<RTCAudioSourceStats>             audioSourceStats = [];
   sequence<RTCVideoSourceStats>             videoSourceStats = [];
   sequence<RTCPeerConnectionStats>          peerConnectionStats = [];
   sequence<RTCRTPContributingSourceStats>   rtpContributingSourceStats = [];
