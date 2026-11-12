@@ -1014,9 +1014,44 @@ FFmpegVideoDecoder<LIBAV_VER>::FFmpegVideoDecoder(
   // initialization.
   mExtraData = new MediaByteBuffer;
   mExtraData->AppendElements(*aConfig.mExtraData);
+}
+
+RefPtr<PlatformDecoderModule::CreateDecoderPromise>
+FFmpegVideoDecoder<LIBAV_VER>::InitHWDecoderIfAllowed() {
+  using CreateDecoderPromise = PlatformDecoderModule::CreateDecoderPromise;
+  // Ensure that decoding is exclusively performed using HW decoding in
+  // the GPU process. If the decoder could not create a HW (or on Android,
+  // MediaCodec) decoding context, reject to allow PDMFactory to select an
+  // alternative HW-capable decoder module if available. In contrast, in the
+  // RDD process, it is acceptable to fallback to SW decoding when HW decoding
+  // is not available.
+  const bool requireHW = XRE_IsGPUProcess();
 #ifdef MOZ_USE_HWDECODE
-  InitHWDecoderIfAllowed();
-#endif  // MOZ_USE_HWDECODE
+  if (!mHardwareDecodingDisabled) {
+    return InvokeAsync(
+        mTaskQueue, __func__, [self = RefPtr{this}, requireHW]() {
+          MediaResult rv = self->ProcessInitHWDecoder();
+          if (NS_FAILED(rv)) {
+            FFMPEGV_LOG("Can't perform hw decoding: {}",
+                        rv.Description().get());
+            if (requireHW) {
+              (void)self->Shutdown();
+              return CreateDecoderPromise::CreateAndReject(rv, __func__);
+            }
+          }
+          return CreateDecoderPromise::CreateAndResolve(
+              RefPtr<MediaDataDecoder>(self), __func__);
+        });
+  }
+#endif
+  if (requireHW) {
+    return CreateDecoderPromise::CreateAndReject(
+        MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
+                    RESULT_DETAIL("hardware decoding disabled")),
+        __func__);
+  }
+  return CreateDecoderPromise::CreateAndResolve(RefPtr<MediaDataDecoder>(this),
+                                                __func__);
 }
 
 FFmpegVideoDecoder<LIBAV_VER>::~FFmpegVideoDecoder() {
@@ -1041,49 +1076,59 @@ FFmpegVideoDecoder<LIBAV_VER>::~FFmpegVideoDecoder() {
 }
 
 #ifdef MOZ_USE_HWDECODE
-void FFmpegVideoDecoder<LIBAV_VER>::InitHWDecoderIfAllowed() {
-  if (mHardwareDecodingDisabled) {
-    return;
-  }
+MediaResult FFmpegVideoDecoder<LIBAV_VER>::ProcessInitHWDecoder() {
+  MediaResult rv(NS_ERROR_DOM_MEDIA_FATAL_ERR,
+                 RESULT_DETAIL("no hardware decoder available"));
 
 #  ifdef MOZ_USE_HWDECODE_VULKAN
-  if (NS_SUCCEEDED(InitVulkanDecoder())) {
-    return;
+  rv = InitVulkanDecoder();
+  if (NS_SUCCEEDED(rv)) {
+    return rv;
   }
 #  endif
 
 #  ifdef FFVPX_VERSION
   if (!StaticPrefs::media_ffvpx_hw_enabled()) {
-    return;
+    return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
+                       RESULT_DETAIL("media.ffvpx-hw.enabled is false"));
   }
 #  endif
 
 #  ifdef MOZ_ENABLE_VAAPI
-  if (NS_SUCCEEDED(InitVAAPIDecoder())) {
-    return;
+  rv = InitVAAPIDecoder();
+  if (NS_SUCCEEDED(rv)) {
+    return rv;
   }
 #  endif  // MOZ_ENABLE_VAAPI
 
 #  ifdef MOZ_ENABLE_V4L2
   // VAAPI didn't work or is disabled, so try V4L2 with DRM
-  if (NS_SUCCEEDED(InitV4L2Decoder())) {
-    return;
+  rv = InitV4L2Decoder();
+  if (NS_SUCCEEDED(rv)) {
+    return rv;
   }
 #  endif  // MOZ_ENABLE_V4L2
 
 #  ifdef MOZ_ENABLE_D3D11VA
-  if (XRE_IsGPUProcess() && NS_SUCCEEDED(InitD3D11VADecoder())) {
-    return;
+  if (XRE_IsGPUProcess()) {
+    rv = InitD3D11VADecoder();
+    if (NS_SUCCEEDED(rv)) {
+      return rv;
+    }
   }
 #  endif  // MOZ_ENABLE_D3D11VA
 
 #  ifdef MOZ_WIDGET_ANDROID
-  if ((XRE_IsRDDProcess() || XRE_IsGPUProcess() ||
-       (XRE_IsParentProcess() && PR_GetEnv("MOZ_RUN_GTEST"))) &&
-      NS_SUCCEEDED(InitMediaCodecDecoder())) {
-    return;
+  if (XRE_IsRDDProcess() || XRE_IsGPUProcess() ||
+      (XRE_IsParentProcess() && PR_GetEnv("MOZ_RUN_GTEST"))) {
+    rv = InitMediaCodecDecoder();
+    if (NS_SUCCEEDED(rv)) {
+      return rv;
+    }
   }
 #  endif
+
+  return rv;
 }
 #endif  // MOZ_USE_HWDECODE
 
@@ -1096,7 +1141,8 @@ RefPtr<MediaDataDecoder::InitPromise> FFmpegVideoDecoder<LIBAV_VER>::Init() {
   AUTO_PROFILER_LABEL("FFmpegVideoDecoder::Init", MEDIA_PLAYBACK);
   FFMPEG_LOG("FFmpegVideoDecoder, init, IsHardwareAccelerated={}\n",
              IsHardwareAccelerated());
-  // We've finished the HW decoder initialization in the ctor.
+  // FFmpegDecoderModule::CreateDecoderAsync already did HW decoder
+  // initialization via InitHWDecoderIfAllowed.
   if (IsHardwareAccelerated()) {
     return InitPromise::CreateAndResolve(TrackInfo::kVideoTrack, __func__);
   }

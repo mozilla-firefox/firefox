@@ -100,6 +100,7 @@ class FFmpegVideoDecoder<LIBAV_VER>
   ~FFmpegVideoDecoder();
 
   RefPtr<InitPromise> Init() override;
+  RefPtr<PlatformDecoderModule::CreateDecoderPromise> InitHWDecoderIfAllowed();
   void InitCodecContext() MOZ_REQUIRES(sMutex) override;
   nsCString GetDescriptionName() const override {
 #ifdef USING_MOZFFVPX
@@ -207,8 +208,7 @@ class FFmpegVideoDecoder<LIBAV_VER>
       AVHWDeviceType aDeviceType = AV_HWDEVICE_TYPE_NONE);
 
  private:
-  // This will be called inside the ctor.
-  void InitHWDecoderIfAllowed();
+  MediaResult ProcessInitHWDecoder();
 
   enum class ContextType {
     D3D11VA,     // Windows
