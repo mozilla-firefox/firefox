@@ -5,7 +5,6 @@ const TEST_URL =
   "https://example.com/document-builder.sjs?html=<h1>Test serial tab sharing icon</h1>";
 const BLANK_URL =
   "https://example.com/browser/dom/webserial/tests/browser/blank.html";
-
 async function requestAndOpenPort(browser, filters = []) {
   await SpecialPowers.spawn(browser, [filters], async aFilters => {
     content.navigator.serial.autoselectPorts = true;
@@ -179,4 +178,64 @@ add_task(async function testWebRTCSharingTakesPriority() {
   ok(!tab.hasAttribute("sharing"), "Tab should no longer be sharing");
 
   BrowserTestUtils.removeTab(tab);
+});
+
+add_task(async function testTabSharingIconAfterTearOff() {
+  info("Test that the open port count follows a tab torn off into a window");
+
+  let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, TEST_URL);
+  await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+    content.navigator.serial.autoselectPorts = true;
+    SpecialPowers.wrap(content.document).notifyUserGestureActivation();
+    content.testPort1 = await content.navigator.serial.requestPort({
+      filters: [{ usbVendorId: 0x2341, usbProductId: 0x0043 }],
+    });
+    SpecialPowers.wrap(content.document).notifyUserGestureActivation();
+    content.testPort2 = await content.navigator.serial.requestPort({
+      filters: [{ usbVendorId: 0x0403, usbProductId: 0x6002 }],
+    });
+    await content.testPort1.open({ baudRate: 9600 });
+    await content.testPort2.open({ baudRate: 9600 });
+  });
+  await waitForTabSharing(tab, "serial", "Tab should be sharing serial");
+
+  let delayedStartup = TestUtils.topicObserved(
+    "browser-delayed-startup-finished"
+  );
+  let win = gBrowser.replaceTabWithWindow(tab);
+  await delayedStartup;
+  let newTab = win.gBrowser.selectedTab;
+  let newBrowser = newTab.linkedBrowser;
+  await waitForTabSharing(
+    newTab,
+    "serial",
+    "Torn off tab should still be sharing serial"
+  );
+
+  let portClosed = TestUtils.topicObserved(
+    "serial-device-state-changed",
+    subject =>
+      !subject.QueryInterface(Ci.nsIPropertyBag2).getPropertyAsBool("connected")
+  );
+  await SpecialPowers.spawn(newBrowser, [], async () => {
+    await content.testPort1.close();
+  });
+  await portClosed;
+  await TestUtils.waitForTick();
+  is(
+    newTab.getAttribute("sharing"),
+    "serial",
+    "Tab should still be sharing while one port remains open"
+  );
+
+  await SpecialPowers.spawn(newBrowser, [], async () => {
+    await content.testPort2.close();
+  });
+  await waitForTabSharing(
+    newTab,
+    null,
+    "Tab should stop sharing after both ports are closed"
+  );
+
+  await BrowserTestUtils.closeWindow(win);
 });
