@@ -115,6 +115,7 @@ function test() {
     MockFilePicker.cleanup();
     Services.obs.removeObserver(observer, "http-on-modify-request");
     Services.obs.removeObserver(observer, "http-on-examine-response");
+    Services.cookies.removeAll();
     info("Finished running the cleanup code");
   });
 

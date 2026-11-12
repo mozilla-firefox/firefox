@@ -374,9 +374,6 @@ support-files = ["test_remoteTroubleshoot.html"]
 
 ["browser_save_link-perwindowpb.js"]
 # DO NOT ADD MORE TESTS HERE. USE A TOPICAL DIRECTORY INSTEAD.
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_save_link_when_window_navigates.js"]
 # DO NOT ADD MORE TESTS HERE. USE A TOPICAL DIRECTORY INSTEAD.
