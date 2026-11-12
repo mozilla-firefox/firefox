@@ -24,7 +24,6 @@
 //   ValueForCache() and ExpirationTime() members. For style, this is the
 //   SheetLoadData.
 
-#include "mozilla/Preferences.h"
 #include "mozilla/PrincipalHashKey.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/StaticPtr.h"
@@ -162,27 +161,7 @@ class SharedSubResourceCache {
  public:
   SharedSubResourceCache(const SharedSubResourceCache&) = delete;
   SharedSubResourceCache(SharedSubResourceCache&&) = delete;
-  SharedSubResourceCache() {
-    // URL classification (tracking protection etc) are handled inside
-    // nsHttpChannel.
-    // The cache reflects the policy for whether to block or not, and once
-    // the policy is modified, we should discard the cache, to avoid running
-    // a cached script which is supposed to be blocked.
-    auto ClearCache = [](const char* s, void*) {
-      if (!sSingleton) {
-        return;
-      }
-      // The preference callbacks are called on each process, and thus we don't
-      // have to clear other processes' cache.
-      sSingleton->ClearInProcess(Nothing(), Nothing(), Nothing(), Nothing(),
-                                 Nothing());
-    };
-    Preferences::RegisterPrefixCallback(ClearCache, "urlclassifier.");
-    Preferences::RegisterPrefixCallback(ClearCache,
-                                        "privacy.trackingprotection.");
-  }
-
-  ~SharedSubResourceCache() {}
+  SharedSubResourceCache() = default;
 
   static Derived* Get() {
     static_assert(

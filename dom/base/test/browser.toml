@@ -294,12 +294,6 @@ support-files = [
   "file_js_cache_large.js",
 ]
 
-["browser_script_loader_js_cache_prefs.js"]
-support-files = [
-  "empty.html",
-  "file_js_cache_large.js",
-]
-
 ["browser_script_loader_js_cache_serviceworker.js"]
 support-files = [
   "empty.html",
