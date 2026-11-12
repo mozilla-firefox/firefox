@@ -2368,4 +2368,37 @@ BEGIN_TEST(testAssemblerBuffer_RISCV64_PendingDeadlinesExceedNewBranchRange) {
 }
 END_TEST(testAssemblerBuffer_RISCV64_PendingDeadlinesExceedNewBranchRange)
 
+BEGIN_TEST(testAssemblerBuffer_RISCV64_PatchableWord) {
+  using namespace js::jit;
+
+  js::LifoAlloc lifo(4096, js::MallocArena);
+  TempAllocator alloc(&lifo);
+  JitContext jc(cx);
+  StackMacroAssembler masm(cx, alloc);
+  AutoCreatedBy acb(masm, __func__);
+
+  // A patchable word that fits in 48 bits, as pointers and the -1 placeholder
+  // do, is loaded with the six instructions of li_ptr, any other with the
+  // eight of li_constant.
+  CodeOffset placeholder = masm.movWithPatch(ImmWord(uintptr_t(-1)), a0);
+  CodeOffset value = masm.movWithPatch(ImmWord(0xfffe'0000'1234'5678), a1);
+  CodeOffset end(masm.currentOffset());
+  CHECK(!masm.oom());
+  CHECK_EQUAL(value.offset() - placeholder.offset(), size_t(6 * kInstrSize));
+  CHECK_EQUAL(end.offset() - value.offset(), size_t(8 * kInstrSize));
+
+  Instruction* inst = masm.getInstructionAt(BufferOffset(placeholder.offset()));
+  CHECK_EQUAL(Assembler::ExtractLoad64Value(inst), uint64_t(-1));
+  Assembler::UpdateLoad64Value(inst, 0x7fff'1234'5678);
+  CHECK_EQUAL(Assembler::ExtractLoad64Value(inst), uint64_t(0x7fff'1234'5678));
+  Assembler::UpdateLoad64Value(inst, uint64_t(-1));
+  CHECK_EQUAL(Assembler::ExtractLoad64Value(inst), uint64_t(-1));
+
+  inst = masm.getInstructionAt(BufferOffset(value.offset()));
+  CHECK_EQUAL(Assembler::ExtractLoad64Value(inst), 0xfffe'0000'1234'5678);
+
+  return true;
+}
+END_TEST(testAssemblerBuffer_RISCV64_PatchableWord)
+
 #endif /* JS_CODEGEN_RISCV64 */

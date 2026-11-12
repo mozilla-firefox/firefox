@@ -195,7 +195,12 @@ class MacroAssemblerRiscv64 : public Assembler {
   BufferOffset ma_liPatchable(Register dest, ImmPtr imm) {
     return li_ptr(dest, uintptr_t(imm.value));
   }
+  // Use the shorter li_ptr when the value fits, as pointers and placeholders
+  // such as -1 do. Any value patched in later must fit too.
   BufferOffset ma_liPatchable(Register dest, ImmWord imm) {
+    if (IsLiPtrImmediate(imm.value)) {
+      return li_ptr(dest, imm.value);
+    }
     return li_constant(dest, imm.value);
   }
   void ma_li(Register dest, ImmGCPtr ptr);

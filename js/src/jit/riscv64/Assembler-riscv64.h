@@ -511,9 +511,13 @@ class Assembler : public AssemblerShared,
   // so that it can be modified later.
   BufferOffset li_constant(Register rd, int64_t imm);
 
-  // Loads an immediate, always using 6 instructions, regardless of the value,
-  // so that it can be modified later.
+  // Loads a sign-extended 48-bit immediate, such as a pointer, always using 6
+  // instructions, regardless of the value, so that it can be modified later.
   BufferOffset li_ptr(Register rd, int64_t imm);
+
+  static constexpr bool IsLiPtrImmediate(int64_t imm) {
+    return imm == (imm << 16) >> 16;
+  }
 
   void SignExtendByte(Register rd, Register rs) {
     if (HasZbbExtension()) {
