@@ -59,6 +59,7 @@ add_task(async function testAddOnBeforeCreatedWidget() {
   await panelHidden;
 
   CustomizableUI.destroyWidget(kWidgetId);
+  viewNode.remove();
 });
 
 add_task(async function asyncCleanup() {
