@@ -29,7 +29,8 @@ server.registerPathHandler("/echoheaders", (req, res) => {
   dropDefaultHeader("accept-language");
   dropDefaultHeader("accept-encoding");
   dropDefaultHeader("connection");
-  dropDefaultHeader("priority");
+  // fetch() uses the default urgency, so it does not send a priority header.
+  delete headers.priority;
 
   res.write(JSON.stringify(headers));
 });

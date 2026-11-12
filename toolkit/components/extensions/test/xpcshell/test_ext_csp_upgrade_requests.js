@@ -23,6 +23,10 @@ add_task(async function test_csp_upgrade() {
       ["blocking"]
     );
 
+    // Round-trip through ext-webRequest.js implementation to ensure that the
+    // listener has been registered (workaround for bug 1300234).
+    await browser.webRequest.handlerBehaviorChanged();
+
     await browser.test.assertRejects(
       fetch("http://example.com/"),
       "NetworkError when attempting to fetch resource.",

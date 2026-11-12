@@ -73,7 +73,7 @@ add_task(async function test_webRequest_background_events() {
         "<all_urls>",
       ],
     },
-    background() {
+    async background() {
       let eventNames = new Set([
         "onBeforeRequest",
         "onBeforeSendHeaders",
@@ -100,6 +100,10 @@ add_task(async function test_webRequest_background_events() {
           {urls: ["https://example.com/*"]}
         );
       }
+
+      // Round-trip through ext-webRequest.js implementation to ensure that the
+      // listeners have been registered (workaround for bug 1300234).
+      await browser.webRequest.handlerBehaviorChanged();
 
       fetch("https://example.com/example.txt").then(() => {
         browser.test.succeed("Fetch succeeded.");
