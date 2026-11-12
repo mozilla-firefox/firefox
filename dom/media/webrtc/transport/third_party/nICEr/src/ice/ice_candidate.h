@@ -109,8 +109,6 @@ struct nr_ice_candidate_ : public nr_ice_candidate_parsedbits {
   NR_async_cb done_cb;
   void *cb_arg;
 
-  NR_async_cb ready_cb;
-  void *ready_cb_arg;
   void *ready_cb_timer;
 
   TAILQ_ENTRY(nr_ice_candidate_) entry_sock;

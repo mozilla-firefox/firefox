@@ -480,10 +480,6 @@ void nr_ice_gather_finished_cb(NR_SOCKET s, int h, void *cb_arg)
             ctx->label, cand->label, ctx->uninitialized_candidates);
     }
 
-    /* Avoid the need for yet another initialization function */
-    if (cand->state == NR_ICE_CAND_STATE_INITIALIZING && cand->type == HOST)
-      cand->state = NR_ICE_CAND_STATE_INITIALIZED;
-
     if (cand->state == NR_ICE_CAND_STATE_INITIALIZED) {
       int was_pruned = 0;
 
