@@ -423,6 +423,14 @@ void StyleSheet::GetHref(nsAString& aHref, ErrorResult& aRv) {
   }
 }
 
+already_AddRefed<nsINode> StyleSheet::GetOwnerNodeForBindings() const {
+  return do_AddRef(GetOwnerNode());
+}
+
+already_AddRefed<StyleSheet> StyleSheet::GetParentStyleSheet() const {
+  return do_AddRef(GetParentSheet());
+}
+
 void StyleSheet::GetTitle(nsAString& aTitle) {
   // From https://drafts.csswg.org/cssom/#dom-stylesheet-title:
   //
