@@ -3,14 +3,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 use log::info;
+use selectors::SelectorList;
 use serde_json::{Map, Value};
+use style::gecko_bindings::structs::URLExtraData_sDummy;
+use style::selector_parser::SelectorParser;
+use style::stylesheets::UrlExtraData;
 use thin_vec::{thin_vec, ThinVec};
 use url::Url;
 use urlpattern::{UrlPattern, UrlPatternInit};
 
 use crate::{
-    Eagerness, Predicate, ReferrerPolicy, Selector, Source, SpeculationRule,
-    SpeculationRuleParseError, SpeculationRuleSet, UrlSearchVariance,
+    Eagerness, Predicate, ReferrerPolicy, Source, SpeculationRule, SpeculationRuleParseError,
+    SpeculationRuleSet, UrlSearchVariance,
 };
 
 fn log_to_console(msg: &str) {
@@ -213,20 +217,27 @@ impl Predicate {
                     }
                 };
                 // Steps 7.4-7.6.
-                let mut selectors = thin_vec![];
+                let url_data = unsafe {
+                    let dummy = &(*&raw const URLExtraData_sDummy).mRawPtr;
+                    debug_assert!(!dummy.is_null());
+                    UrlExtraData::from_ptr_ref(dummy)
+                };
+                let mut selectors = Vec::new();
                 for raw_selector in raw_selectors {
-                    match raw_selector {
-                        Value::String(s) => {
-                            // TODO(avandolder): parse a selector given s
-                            selectors.push(Selector(s));
-                        }
-                        _ => {
-                            log_to_console("Supplied selector list was invalid.");
-                            return None;
-                        }
-                    }
+                    let Value::String(s) = raw_selector else {
+                        log_to_console("Supplied selector must be a string");
+                        return None;
+                    };
+                    let Ok(list) = SelectorParser::parse_author_origin_no_namespace(&s, url_data)
+                    else {
+                        log_to_console(&format!("Supplied selector '{}' was invalid", s));
+                        return None;
+                    };
+                    selectors.extend_from_slice(list.slice());
                 }
-                Some(Predicate::Selector(selectors))
+                Some(Predicate::Selector(SelectorList::from_iter(
+                    selectors.into_iter(),
+                )))
             }
         }
     }

@@ -5,6 +5,8 @@
 use std::collections::BTreeSet;
 
 use nsstring::{nsACString, nsCString};
+use selectors::SelectorList;
+use style::selector_parser::SelectorImpl;
 use thin_vec::{thin_vec, ThinVec};
 use url::{Origin, Url};
 use urlpattern::UrlPattern;
@@ -21,10 +23,6 @@ pub enum UrlSearchVariance {
     Default,
     String(String),
 }
-
-#[allow(dead_code)]
-#[derive(Debug)]
-pub struct Selector(String);
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord, serde::Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -72,7 +70,7 @@ pub enum Predicate {
     Disjunction(ThinVec<Predicate>),
     Negation(Box<Predicate>),
     UrlPattern(ThinVec<UrlPattern>),
-    Selector(ThinVec<Selector>),
+    Selector(SelectorList<SelectorImpl>),
 }
 
 #[allow(dead_code)]
