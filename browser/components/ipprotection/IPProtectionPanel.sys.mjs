@@ -576,7 +576,7 @@ export class IPProtectionPanel {
   }
 
   #errorMessage(error) {
-    if ([lazy.ERRORS.NETWORK, lazy.ERRORS.VPN_UNAVAILABLE].includes(error)) {
+    if (error == lazy.ERRORS.NETWORK) {
       return error;
     }
     return lazy.ERRORS.GENERIC;
