@@ -299,6 +299,9 @@ class SingleTestMixin:
         import manifest as wptmanifest
 
         tests_root = os.path.join(dirs["abs_wpttest_dir"], "tests")
+        test_types = {"testharness", "reftest", "wdspec", "crashtest"}
+        if mozinfo.info.get("buildapp") != "mobile/android":
+            test_types.add("print-reftest")
 
         for extra in ("", "mozilla"):
             base_path = os.path.join(dirs["abs_wpttest_dir"], extra)
@@ -309,13 +312,7 @@ class SingleTestMixin:
             repo_tests_path = os.path.join("testing", "web-platform", extra, "tests")
             tests_path = os.path.join("tests", "web-platform", extra, "tests")
             for type, path, test in man:
-                if type not in [
-                    "testharness",
-                    "reftest",
-                    "wdspec",
-                    "crashtest",
-                    "print-reftest",
-                ]:
+                if type not in test_types:
                     continue
                 repo_path = os.path.join(repo_tests_path, path)
                 # manifest paths use os.sep (like backslash on Windows) but
