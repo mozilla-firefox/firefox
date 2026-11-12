@@ -4147,7 +4147,7 @@
 # Enable mutiple import maps.
 - name: dom.multiple_import_maps.enabled
   type: bool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 # Limit of navigations initiated by content in a time span per
