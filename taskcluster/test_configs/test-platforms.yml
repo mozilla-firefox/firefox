@@ -122,13 +122,13 @@ linux2404-64-artifact/debug:
     test-sets:
         - artifact-tests
 
-windows11-64-24h2-artifact/opt:
+windows11-64-25h2-artifact/opt:
     build-platform: win64-artifact/opt
     build-signing-label: build-signing-win64-artifact/opt
     test-sets:
         - artifact-tests
 
-windows11-64-24h2-artifact/debug:
+windows11-64-25h2-artifact/debug:
     build-platform: win64-artifact/debug
     build-signing-label: build-signing-win64-artifact/debug
     test-sets:
