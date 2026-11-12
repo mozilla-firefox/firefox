@@ -64,6 +64,10 @@ class ScriptFetchInfo : public nsISupports {
   bool IsForModulePreload() const { return mIsForModulePreload; }
   void SetForModulePreload(bool aValue) { mIsForModulePreload = aValue; }
 
+  bool HasPreloadedResolvedSet() const { return bool(mPreloadedResolvedSet); }
+  JS::loader::ResolvedModuleSet* GetPreloadedResolvedSet();
+  void ReleasePreloadedResolvedSet() { mPreloadedResolvedSet = nullptr; }
+
   bool IsForModuleScript() const { return mKind == ScriptKind::eModule; }
   bool IsForEvent() const { return mKind == ScriptKind::eEvent; }
 
@@ -118,6 +122,10 @@ class ScriptFetchInfo : public nsISupports {
   //
   // This field can be overwritten based on the response.
   nsCOMPtr<nsIURI> mBaseURL;
+
+  // The module specifiers resolved during preloading. This set is merged into
+  // the global resolved module set when the preload request is reused.
+  mozilla::UniquePtr<JS::loader::ResolvedModuleSet> mPreloadedResolvedSet;
 };
 
 // A LoadedScript is a place where the Script is stored once it is loaded. It is
@@ -796,13 +804,11 @@ class ModuleScript final : public nsISupports {
   Heap<Value> mParseError;
   Heap<Value> mErrorToRethrow;
 
-  // A copy of ScriptLoadRequest::mFetchInfo, to read and update the
-  // ScriptFetchInfo::mIsForModulePreload field.
+  // A copy of ScriptLoadRequest::mFetchInfo, also used to access its
+  // ScriptFetchInfo::mIsForModulePreload and preloaded resolved set fields.
   RefPtr<ScriptFetchInfo> mFetchInfo;
 
   bool mHadImportMap = false;
-
-  mozilla::UniquePtr<JS::loader::ResolvedModuleSet> mPreloadedResolvedSet;
 
   ~ModuleScript();
 
@@ -827,16 +833,14 @@ class ModuleScript final : public nsISupports {
   bool ForPreload() const { return mFetchInfo->IsForModulePreload(); }
   bool HadImportMap() const { return mHadImportMap; }
 
+  ScriptFetchInfo* FetchInfo() const { return mFetchInfo; }
+
   // This is used to reset the module graph information which happened during
   // preload.
   void ResetPreload();
   void Shutdown();
 
   friend void CheckModuleScriptPrivate(LoadedScript*, const Value&);
-
-  bool HasPreloadedResolvedSet() { return !!mPreloadedResolvedSet; }
-  ResolvedModuleSet* GetPreloadedResolvedSet();
-  void ReleasePreloadedResolvedSet() { mPreloadedResolvedSet = nullptr; }
 };
 
 }  // namespace JS::loader

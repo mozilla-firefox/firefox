@@ -40,6 +40,14 @@ size_t ScriptFetchInfo::SizeOfIncludingThis(
          mFetchOptions->SizeOfIncludingThis(aMallocSizeOf);
 }
 
+ResolvedModuleSet* ScriptFetchInfo::GetPreloadedResolvedSet() {
+  if (!mPreloadedResolvedSet) {
+    mPreloadedResolvedSet = std::make_unique<ResolvedModuleSet>();
+  }
+
+  return mPreloadedResolvedSet.get();
+}
+
 static bool IsInternalURIScheme(nsIURI* uri) {
   return uri->SchemeIs("moz-extension") || uri->SchemeIs("resource") ||
          uri->SchemeIs("moz-src") || uri->SchemeIs("chrome");
@@ -378,14 +386,6 @@ void ModuleScript::SetForPreload(bool aValue) {
 #endif
 }
 void ModuleScript::SetHadImportMap(bool aValue) { mHadImportMap = aValue; }
-
-ResolvedModuleSet* ModuleScript::GetPreloadedResolvedSet() {
-  if (!mPreloadedResolvedSet) {
-    mPreloadedResolvedSet = std::make_unique<ResolvedModuleSet>();
-  }
-
-  return mPreloadedResolvedSet.get();
-}
 
 void ModuleScript::ResetPreload() {
   MOZ_ASSERT(mFetchInfo->IsForModulePreload());
