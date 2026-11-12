@@ -20,6 +20,7 @@ doctest = false
 [features]
 gecko = [
     "bindgen",
+    "log",
     "malloc_size_of/gecko",
     "mozbuild",
     "nsstring",
@@ -107,7 +108,7 @@ gecko-profiler = { path = "../../../tools/profiler/rust-api" }
 url = { version = "2.5", optional = true, features = ["serde"] }
 
 [build-dependencies]
-log = { version = "0.4", features = ["std"] }
+log = { version = "0.4", optional = true, features = ["std"] }
 bindgen = {version = "0.73", optional = true, default-features = false}
 regex = {version = "1.0", optional = true, default-features = false, features = ["perf", "std"]}
 walkdir = "2.1.4"
