@@ -124,17 +124,17 @@ export class ProfileAutoCompleteResult {
   }
 
   /**
-   * The item groups in display order: the profile rows, then the entries
-   * contributed by other providers, then the footer.
+   * The item groups in display order: the entries contributed by other
+   * providers, then the profile rows, then the footer. On an insecure form
+   * the warning row stays first.
    *
    * @returns {Array<Array<object>>} The groups, in display order.
    */
   _orderedGroups() {
-    return [
-      this._popupLabels,
-      this.externalEntries,
-      this._footerLabel ? [this._footerLabel] : [],
-    ];
+    const groups = this._isSecure
+      ? [this.externalEntries, this._popupLabels]
+      : [this._popupLabels, this.externalEntries];
+    return [...groups, this._footerLabel ? [this._footerLabel] : []];
   }
 
   _footerIndex() {

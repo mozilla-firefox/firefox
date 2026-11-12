@@ -674,15 +674,15 @@ add_task(async function test_external_entries_order() {
   const smartFormFill = makeExternalEntry("smartFormFill", "Smart Form Fill");
   const generic = makeExternalEntry("generic", "Use Firefox Relay");
 
-  info("An external entry sits between the profile rows and the footer");
+  info("An external entry before the profile rows and the footer");
   let result = newResult([smartFormFill]);
   Assert.deepEqual(stylesOf(result), [
-    "autofill",
-    "autofill",
     "smartFormFill",
+    "autofill",
+    "autofill",
     "action",
   ]);
-  equal(result.getLabelAt(2), "Smart Form Fill");
+  equal(result.getLabelAt(0), "Smart Form Fill");
   equal(
     result.getTypeOfIndex(3),
     "manage",
@@ -690,12 +690,12 @@ add_task(async function test_external_entries_order() {
   );
 
   info("The footer stays last whatever the external entries are");
-  result = newResult([generic, smartFormFill]);
+  result = newResult([smartFormFill, generic]);
   Assert.deepEqual(stylesOf(result), [
-    "autofill",
-    "autofill",
-    "generic",
     "smartFormFill",
+    "generic",
+    "autofill",
+    "autofill",
     "action",
   ]);
   equal(result.matchCount, 5, "Reordering does not change the match count");
@@ -1010,12 +1010,12 @@ add_task(async function test_dedup_does_not_disturb_external_entries() {
 
   equal(result.matchCount, 3, "One address row, one external entry, a footer");
   Assert.deepEqual(
-    JSON.parse(result.getCommentAt(0)).fillMessageData.profile,
+    JSON.parse(result.getCommentAt(1)).fillMessageData.profile,
     profiles[0],
     "The address row still fills its own address"
   );
   equal(
-    result.getLabelAt(1),
+    result.getLabelAt(0),
     "Use Firefox Relay",
     "The external entry moved up with the dropped row"
   );
