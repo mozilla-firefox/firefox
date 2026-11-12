@@ -16,6 +16,7 @@
 #include "WebGLFormats.h"
 #include "WebGLRenderbuffer.h"
 #include "WebGLTexture.h"
+#include "WebGLTypes.h"
 #include "mozilla/IntegerRange.h"
 #include "mozilla/dom/WebGLRenderingContextBinding.h"
 #include "nsPrintfCString.h"
@@ -1606,6 +1607,38 @@ void WebGLFramebuffer::BlitFramebuffer(WebGLContext* webgl, GLint _srcX0,
 
   const auto& gl = webgl->gl;
   const ScopedDrawCallWrapper wrapper(*webgl);
+
+  const auto hasMultipleColorAttachmentsOrNonZeroBaseLevel =
+      [](const WebGLFramebuffer* fb) {
+        if (!fb) return false;
+
+        bool hasColorAttachment = false;
+        for (size_t i = 0; i < fb->mColorDrawBuffers.size(); ++i) {
+          const auto& cur = fb->mColorDrawBuffers[i];
+          if (!cur->HasAttachment()) continue;
+          if (!fb->mDrawBufferEnabled[i]) continue;
+          if (hasColorAttachment) return true;
+          hasColorAttachment = true;
+
+          const auto& texture = cur->Texture();
+          if (texture && texture->Es3_level_base() > 0) return true;
+        }
+        return false;
+      };
+
+  // All Mali devices as of this writing require a glFinish() call when
+  // using multiple color attachments or non-zero base level textures.
+  //
+  // ANGLE will do this for us, but if we're not on ANGLE we need to.
+  if (hasMultipleColorAttachmentsOrNonZeroBaseLevel(dstFB)) {
+    int32_t forceFinish = StaticPrefs::
+        webgl_workarounds_finish_before_blitframebuffer_with_multiple_attachments();
+    if (forceFinish >= 0 &&
+        (forceFinish > 0 ||
+         (gl->Vendor() == gl::GLVendor::ARM && !gl->IsANGLE()))) {
+      gl->fFinish();
+    }
+  }
 
   gl->fBlitFramebuffer(srcP0.x, srcP0.y, srcP1.x, srcP1.y, dstP0.x, dstP0.y,
                        dstP1.x, dstP1.y, mask, filter);

@@ -21125,6 +21125,12 @@
   value: true
   mirror: always
 
+
+- name: webgl.workarounds.finish-before-blitframebuffer-with-multiple-attachments
+  type: RelaxedAtomicInt32
+  value: 0
+  mirror: always
+
 #---------------------------------------------------------------------------
 # Prefs starting with "widget."
 #---------------------------------------------------------------------------
