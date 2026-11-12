@@ -37,6 +37,7 @@ async function focusWithKeyboard(element, keyCode, contentWindow) {
  * @param {function(splitViewMenuItem: Element, unsplitMenuItem: Element) => Promise<void>} callback
  */
 const withTabMenu = async function (tab, callback) {
+  const { window, document } = tab.documentGlobal;
   const tabContextMenu = document.getElementById("tabContextMenu");
   Assert.equal(
     tabContextMenu.state,
@@ -689,6 +690,56 @@ add_task(async function test_about_opentabs_reverts_to_newtab_when_no_tabs() {
   while (gBrowser.tabs.length > 1) {
     BrowserTestUtils.removeTab(gBrowser.tabs.at(-1));
   }
+});
+
+// about:opentabs is the default URL for new tab in a split view, but if there
+// are no other tabs, about:newtab is used instead (about:newtab tested in
+// test_about_opentabs_reverts_to_newtab_when_no_tabs). In private browsing
+// mode, we expect "about:privatebrowsing" instead.
+add_task(async function test_about_opentabs_in_private_browsing_when_no_tabs() {
+  const privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  const tab1 = privateWin.gBrowser.selectedTab;
+
+  EventUtils.synthesizeMouseAtCenter(tab1, {});
+
+  let tabContainer = privateWin.gBrowser.tabContainer;
+  let splitViewCreated = BrowserTestUtils.waitForEvent(
+    tabContainer,
+    "SplitViewCreated"
+  );
+  let openedTab;
+  await withTabMenu(tab1, async moveTabToNewSplitViewItem => {
+    await BrowserTestUtils.waitForMutationCondition(
+      moveTabToNewSplitViewItem,
+      { attributes: true },
+      () =>
+        !moveTabToNewSplitViewItem.hidden &&
+        !moveTabToNewSplitViewItem.disabled,
+      { msg: "moveTabToNewSplitViewItem is visible and not disabled" }
+    );
+
+    let openTabsPromise = BrowserTestUtils.waitForNewTab(
+      privateWin.gBrowser,
+      // Accept "about:opentabs" since it is the default new tab; we expect
+      // "about:privatebrowsing" to be the final URL (checked below).
+      u => u === "about:opentabs" || u === "about:privatebrowsing"
+    );
+
+    info("Click menu option to add new split view");
+    moveTabToNewSplitViewItem.click();
+    await splitViewCreated;
+    openedTab = await openTabsPromise;
+    info("about:opentabs or about:privatebrowsing has been opened");
+  });
+
+  await TestUtils.waitForCondition(
+    () => openedTab.linkedBrowser.currentURI.spec === "about:privatebrowsing",
+    "about:opentabs has been automatically replaced with about:privatebrowsing"
+  );
+
+  await BrowserTestUtils.closeWindow(privateWin);
 });
 
 add_task(async function test_opentabs_search() {

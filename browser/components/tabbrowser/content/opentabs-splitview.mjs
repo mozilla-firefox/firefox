@@ -9,7 +9,6 @@ import { escapeHtmlEntities } from "chrome://browser/content/firefoxview/helpers
 const { XPCOMUtils } = ChromeUtils.importESModule(
   "resource://gre/modules/XPCOMUtils.sys.mjs"
 );
-const BROWSER_NEW_TAB_URL = "about:newtab";
 const BROWSER_OPEN_TABS_URL = "about:opentabs";
 
 const lazy = XPCOMUtils.declareLazy({
@@ -160,11 +159,12 @@ class OpenTabsInSplitView extends MozLitElement {
     ) {
       // If there are no unpinned, unsplit tabs to display or about:opentabs
       // is opened outside of a split view, open about:newtab instead.
+      // (or whatever the default URL is, e.g. about:privatebrowsing).
       //
       // Given this is still during the initialization, wait for the
       // next microtask checkpoint.
       queueMicrotask(() => {
-        this.getWindow().openTrustedLinkIn(BROWSER_NEW_TAB_URL, "current");
+        location.href = this.getWindow().BROWSER_NEW_TAB_URL;
       });
       return null;
     }
