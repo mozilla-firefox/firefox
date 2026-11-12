@@ -177,9 +177,6 @@ const statsExpectedByType = {
   "media-source": {
     expected: ["id", "timestamp", "type", "trackIdentifier", "kind"],
     unimplemented: [
-      "audioLevel",
-      "totalAudioEnergy",
-      "totalSamplesDuration",
       "echoReturnLoss",
       "echoReturnLossEnhancement",
       "droppedSamplesDuration",
@@ -187,7 +184,7 @@ const statsExpectedByType = {
       "totalCaptureDelay",
       "totalSamplesCaptured",
     ],
-    localAudioOnly: [],
+    localAudioOnly: ["audioLevel", "totalAudioEnergy", "totalSamplesDuration"],
     localVideoOnly: ["frames", "framesPerSecond", "width", "height"],
     optional: [],
     deprecated: [],
@@ -1366,6 +1363,44 @@ function pedanticChecks(report) {
             stat[field] === undefined,
             `${stat.type} does not have field ` +
               `${field} when kind is not 'video'`
+          );
+        });
+      }
+      if (stat.inner.kind == "audio") {
+        expectations.localAudioOnly.forEach(field => {
+          ok(
+            stat.inner[field] !== undefined,
+            `${stat.type} has field ${field} when kind is audio`
+          );
+        });
+
+        // audioLevel
+        ok(
+          stat.audioLevel >= 0 && stat.audioLevel <= 1,
+          `${stat.type}.audioLevel is a sane number for a ` +
+            `${stat.kind} test. value=${stat.audioLevel}`
+        );
+
+        // totalSamplesDuration
+        ok(
+          stat.totalSamplesDuration >= 0 && stat.totalSamplesDuration < 300,
+          `${stat.type}.totalSamplesDuration is a sane number for a short ` +
+            `${stat.kind} test. value=${stat.totalSamplesDuration}`
+        );
+
+        // totalAudioEnergy
+        ok(
+          stat.totalAudioEnergy >= 0 &&
+            stat.totalAudioEnergy <= stat.totalSamplesDuration,
+          `${stat.type}.totalAudioEnergy is a sane number for a short ` +
+            `${stat.kind} test. value=${stat.totalAudioEnergy}`
+        );
+      } else {
+        expectations.localAudioOnly.forEach(field => {
+          ok(
+            stat[field] === undefined,
+            `${stat.type} does not have field ` +
+              `${field} when kind is not 'audio'`
           );
         });
       }
