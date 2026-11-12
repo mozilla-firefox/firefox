@@ -659,6 +659,8 @@ export default [
     "  ├ enterKeyHint: \"\"",
     "  ├ firstChild: null",
     "  ├ firstElementChild: null",
+    "  ├ headingOffset: 0",
+    "  ├ headingReset: false",
     "  ├ hidden: true",
     "  ├ id: \"my-element\"",
     "  ├ inert: false",
