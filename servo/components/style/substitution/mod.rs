@@ -710,6 +710,16 @@ impl<'a> Substitution<'a> {
         }
     }
 
+    /// Creates a substitution borrowing the CSS of a variable value.
+    pub fn from_borrowed_value(v: &'a VariableValue, attr_tainted: bool) -> Self {
+        Substitution {
+            css: Cow::Borrowed(&v.css),
+            first_token_type: v.first_token_type,
+            last_token_type: v.last_token_type,
+            attr_tainted,
+        }
+    }
+
     /// Computes the substitution against the registration of a custom property.
     pub fn into_value(
         self,
