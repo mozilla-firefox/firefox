@@ -96,6 +96,66 @@ add_task(async function test_scrolling_and_overflowing_attribute() {
   }
 });
 
+add_task(async function test_long_word_wraps_in_assistant_reply() {
+  const longWord = "3." + "1415926535".repeat(100);
+  const { restoreSignIn, restore } = await setupChatContent([longWord]);
+
+  try {
+    const win = await openAIWindow();
+    const browser = win.gBrowser.selectedBrowser;
+
+    const aiWindowEl = browser.contentDocument?.querySelector("ai-window");
+    const aichatBrowser = await TestUtils.waitForCondition(
+      () => aiWindowEl.shadowRoot?.querySelector("#aichat-browser"),
+      "Wait for aichat-browser"
+    );
+
+    await typeInSmartbar(browser, "List 1000 digits of pi");
+    await submitSmartbar(browser);
+
+    await SpecialPowers.spawn(aichatBrowser, [longWord], async expected => {
+      const chatContent = content.document.querySelector("ai-chat-content");
+      await ContentTaskUtils.waitForMutationCondition(
+        chatContent.shadowRoot,
+        { childList: true, subtree: true },
+        () =>
+          ContentTaskUtils.querySelectorDeep(
+            chatContent.shadowRoot,
+            ".message-assistant"
+          )?.textContent.includes(expected)
+      );
+      const messageText = ContentTaskUtils.querySelectorDeep(
+        chatContent.shadowRoot,
+        ".message-assistant"
+      );
+      const bubble = chatContent.shadowRoot.querySelector(
+        ".chat-bubble-assistant"
+      );
+      const range = content.document.createRange();
+      range.selectNodeContents(messageText);
+      Assert.lessOrEqual(
+        range.getBoundingClientRect().width,
+        bubble.getBoundingClientRect().width,
+        "The long word wraps within the assistant bubble"
+      );
+
+      const chatContentWrapper = chatContent.shadowRoot.querySelector(
+        ".chat-content-wrapper"
+      );
+      Assert.lessOrEqual(
+        chatContentWrapper.scrollWidth,
+        chatContentWrapper.clientWidth,
+        "The chat doesn't scroll horizontally"
+      );
+    });
+
+    await BrowserTestUtils.closeWindow(win);
+  } finally {
+    restoreSignIn();
+    await restore();
+  }
+});
+
 /**
  * Test that the overflowing attribute DOESN'T show up when the scrollbar is NOT visible
  */

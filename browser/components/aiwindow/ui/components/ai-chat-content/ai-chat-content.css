@@ -230,6 +230,7 @@
 }
 
 .chat-bubble-assistant {
+  overflow-wrap: break-word;
   width: 100%;
 
   .chat-bubble-inner {
