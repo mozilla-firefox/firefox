@@ -527,6 +527,7 @@ class StunHandler(object):
 
             allocate_response.add_message_integrity(turn_user, turn_realm, turn_pass)
             allocations[self.get_allocation_tuple()] = allocation
+            print("Allocation created for {}".format(self.get_allocation_tuple()))
         return allocate_response
 
     def handle_refresh(self, request):

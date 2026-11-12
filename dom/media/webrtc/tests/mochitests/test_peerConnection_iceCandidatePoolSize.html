@@ -1,0 +1,97 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <script type="application/javascript" src="pc.js"></script>
+</head>
+<body>
+<pre id="test">
+<script type="application/javascript">
+  createHTML({
+    bug: "1529398",
+    title: "iceCandidatePoolSize gathers before setLocalDescription"
+  });
+
+  // Resolves with the next ICE server log line that contains text, or with
+  // "timeout" if none arrives in time.
+  function nextIceServerLog(text, timeoutMs) {
+    return new Promise(resolve => {
+      const onMessage = ({data}) => {
+        if (data.includes(text)) {
+          iceServerWebsocket.removeEventListener("message", onMessage);
+          resolve(data);
+        }
+      };
+      iceServerWebsocket.addEventListener("message", onMessage);
+      setTimeout(() => {
+        iceServerWebsocket.removeEventListener("message", onMessage);
+        resolve("timeout");
+      }, timeoutMs);
+    });
+  }
+
+  // Resolves once the ICE server has logged no allocation for quietMs, so that
+  // allocations a previous test set off are not mistaken for the next test's.
+  async function iceServerQuiet(quietMs) {
+    while (await nextIceServerLog("Allocation created", quietMs) != "timeout") {
+    }
+  }
+
+  // Whether the pool supplies the candidates a page eventually sees is not
+  // observable from content, but the TURN allocations it makes are visible to
+  // the ICE server, and happen before any local description is applied.
+  const tests = [
+    async function noPoolDoesNotAllocate() {
+      const allocated = nextIceServerLog("Allocation created", 2000);
+      const pc = new RTCPeerConnection({ iceServers: iceServersArray });
+      is(await allocated, "timeout",
+        "without a pool, nothing should be allocated on the TURN server " +
+        "before setLocalDescription");
+      pc.close();
+    },
+
+    async function poolFromConstructorAllocates() {
+      const allocated = nextIceServerLog("Allocation created", 10000);
+      const pc = new RTCPeerConnection({
+        iceServers: iceServersArray,
+        iceCandidatePoolSize: 1,
+      });
+      isnot(await allocated, "timeout",
+        "the pool should allocate on the TURN server before " +
+        "setLocalDescription");
+      is(pc.iceGatheringState, "new",
+        "pre-gathering for the pool should not change iceGatheringState");
+      pc.close();
+    },
+
+    async function poolFromSetConfigurationAllocates() {
+      const pc = new RTCPeerConnection({ iceServers: iceServersArray });
+      const allocated = nextIceServerLog("Allocation created", 10000);
+      pc.setConfiguration({
+        iceServers: iceServersArray,
+        iceCandidatePoolSize: 1,
+      });
+      isnot(await allocated, "timeout",
+        "a pool asked for with setConfiguration should allocate on the TURN " +
+        "server before setLocalDescription");
+      is(pc.iceGatheringState, "new",
+        "pre-gathering for the pool should not change iceGatheringState");
+      pc.close();
+    },
+  ];
+
+  runNetworkTest(async () => {
+    for (const test of tests) {
+      info(`Running test: ${test.name}`);
+      try {
+        await test();
+      } catch (e) {
+        ok(false, `Caught ${e.name}: ${e.message} ${e.stack}`);
+      }
+      await iceServerQuiet(1000);
+      info(`Done running test: ${test.name}`);
+    }
+  }, { useIceServer: true });
+</script>
+</pre>
+</body>
+</html>
