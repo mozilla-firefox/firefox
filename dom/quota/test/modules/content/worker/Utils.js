@@ -23,4 +23,11 @@ const Utils = {
     const result = await UtilsChild.getCachedOriginUsage();
     return result;
   },
+
+  async isPrivateBrowsing() {
+    await ensureUtilsChild();
+
+    const result = await UtilsChild.isPrivateBrowsing();
+    return result;
+  },
 };

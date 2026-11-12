@@ -14,6 +14,12 @@ export const UtilsParent = {
         break;
       }
 
+      case "isPrivateBrowsing": {
+        const result = await Utils.isPrivateBrowsing();
+        worker.postMessage(result);
+        break;
+      }
+
       default:
         throw new Error(`Unknown op ${msg.op}`);
     }

@@ -30,6 +30,14 @@ export const Utils = {
     return result;
   },
 
+  async isPrivateBrowsing() {
+    const principal = Cc["@mozilla.org/systemprincipal;1"].createInstance(
+      Ci.nsIPrincipal
+    );
+    // Always false by construction for the system principal.
+    return principal.isInPrivateBrowsing;
+  },
+
   async shrinkStorageSize(size) {
     Services.prefs.setIntPref(
       "dom.quotaManager.temporaryStorage.fixedLimit",

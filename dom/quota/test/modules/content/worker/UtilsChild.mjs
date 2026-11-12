@@ -3,20 +3,41 @@
  * http://creativecommons.org/publicdomain/zero/1.0/
  */
 
+function _sendMessage(messageBody) {
+  const messageHeader = {
+    moduleName: "UtilsParent",
+    objectName: "UtilsParent",
+  };
+
+  const message = { ...messageHeader, ...messageBody };
+
+  postMessage(message);
+}
+
+function _recvMessage() {
+  return new Promise(function (resolve) {
+    addEventListener("message", async function onMessage(event) {
+      removeEventListener("message", onMessage);
+      const data = event.data;
+      resolve(data);
+    });
+  });
+}
+
 export const UtilsChild = {
   async getCachedOriginUsage() {
-    postMessage({
-      moduleName: "UtilsParent",
-      objectName: "UtilsParent",
+    _sendMessage({
       op: "getCachedOriginUsage",
     });
 
-    return new Promise(function (resolve) {
-      addEventListener("message", async function onMessage(event) {
-        removeEventListener("message", onMessage);
-        const data = event.data;
-        resolve(data);
-      });
+    return _recvMessage();
+  },
+
+  async isPrivateBrowsing() {
+    _sendMessage({
+      op: "isPrivateBrowsing",
     });
+
+    return _recvMessage();
   },
 };

@@ -15,4 +15,8 @@ export const Utils = {
     const result = await getCachedUsageForOrigin(principal);
     return result;
   },
+
+  async isPrivateBrowsing() {
+    return SpecialPowers.wrap(document).nodePrincipal.isInPrivateBrowsing;
+  },
 };

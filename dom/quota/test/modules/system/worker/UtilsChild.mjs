@@ -33,6 +33,14 @@ export const UtilsChild = {
     return _recvMessage();
   },
 
+  async isPrivateBrowsing() {
+    _sendMessage({
+      op: "isPrivateBrowsing",
+    });
+
+    return _recvMessage();
+  },
+
   async shrinkStorageSize(size) {
     _sendMessage({
       op: "shrinkStorageSize",

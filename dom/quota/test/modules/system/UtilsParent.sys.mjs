@@ -13,6 +13,11 @@ export const UtilsParent = {
         worker.postMessage(result);
         break;
       }
+      case "isPrivateBrowsing": {
+        const result = await Utils.isPrivateBrowsing();
+        worker.postMessage(result);
+        break;
+      }
       case "shrinkStorageSize": {
         const result = await Utils.shrinkStorageSize(msg.size);
         worker.postMessage(result);

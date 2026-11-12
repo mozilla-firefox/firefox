@@ -100,6 +100,8 @@ exported_symbols.quotaTest = async function () {
     const fileHandle = await root.getFileHandle("test.txt", allowCreate);
     Assert.ok(!!fileHandle, "Can we get file handle?");
 
+    const isPrivate = await Utils.isPrivateBrowsing();
+
     const usageAtStart = await Utils.getCachedOriginUsage();
     Assert.ok(true, "usageAtStart: " + usageAtStart);
 
@@ -121,9 +123,10 @@ exported_symbols.quotaTest = async function () {
 
     const usageAtWriteDone = await Utils.getCachedOriginUsage();
     // Note: Usage should change only on close after 1824305
+    // In private browsing, the last encrypted block is only written on close.
     Assert.equal(
       usageAtWriteDone - usageAtWritableCreated,
-      buffer.byteLength,
+      isPrivate ? 0 : buffer.byteLength,
       "Is write immediately reflected in usage?"
     );
 
@@ -131,9 +134,10 @@ exported_symbols.quotaTest = async function () {
 
     const usageAtWritableClosed = await Utils.getCachedOriginUsage();
 
+    // In private browsing, files are encrypted on disk in blocks of 4096 bytes.
     Assert.equal(
       usageAtWritableClosed - usageAtWritableCreated,
-      buffer.byteLength,
+      isPrivate ? 4096 : buffer.byteLength,
       "Did usage increase by the amount of bytes written?"
     );
 
