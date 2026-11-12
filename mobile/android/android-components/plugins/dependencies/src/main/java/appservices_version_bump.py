@@ -32,7 +32,7 @@ def get_contents(path):
 
 
 def write_contents(path, new_content):
-    with open(path, "w") as f:
+    with open(path, "w", newline="\n") as f:
         f.write(new_content)
 
 
