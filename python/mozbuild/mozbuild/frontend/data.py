@@ -1615,6 +1615,7 @@ class GeneratedFile(ContextDerived):
 
         suffixes = [
             ".h",
+            ".inc",
             ".py",
             ".rs",
             # We need to compile Java to generate JNI wrappers for native code
@@ -1654,7 +1655,6 @@ class GeneratedFile(ContextDerived):
                 ".c",
                 ".cpp",
                 ".dat",  # ICU data, read by icu_data.S via .incbin
-                ".inc",
                 ".m",
                 ".mm",
                 ".def",

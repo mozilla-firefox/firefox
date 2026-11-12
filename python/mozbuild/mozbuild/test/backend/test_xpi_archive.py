@@ -159,7 +159,7 @@ class TestXPIArchiveEdge(BackendTester):
 
     def test_xpi_stage_needs_top_level_rule(self):
         with self.assertRaisesRegex(
-            Exception, "The copy into dist/xpi-stage/compiled/made.inc reads"
+            Exception, "The copy into dist/xpi-stage/compiled/made.cpp reads"
         ):
             self._consume("xpi-stage-compile-output", RecursiveMakeBackend)
 
