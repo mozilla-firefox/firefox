@@ -10,7 +10,7 @@ add_task(async function test_js_sources_in_profile_additional_info() {
 
   const url = BASE_URL + "simple.html";
   await BrowserTestUtils.withNewTab(url, async contentBrowser => {
-    await ProfilerTestUtils.startProfiler({ features: ["js"] });
+    await ProfilerTestUtils.startProfiler({ features: ["js", "jssources"] });
     // Execute some JavaScript to create sources
     await SpecialPowers.spawn(contentBrowser, [], () => {
       content.window.eval(`
@@ -77,7 +77,7 @@ add_task(async function test_js_sources_different_types() {
 
   const url = BASE_URL + "simple.html";
   await BrowserTestUtils.withNewTab(url, async contentBrowser => {
-    await ProfilerTestUtils.startProfiler({ features: ["js"] });
+    await ProfilerTestUtils.startProfiler({ features: ["js", "jssources"] });
     // Execute different types of JavaScript to test source collection
     await SpecialPowers.spawn(contentBrowser, [], () => {
       // Inline script
@@ -151,7 +151,7 @@ add_task(async function test_js_sources_external_scripts() {
 
   const url = BASE_URL + "page_with_external_js.html";
   await BrowserTestUtils.withNewTab(url, async contentBrowser => {
-    await ProfilerTestUtils.startProfiler({ features: ["js"] });
+    await ProfilerTestUtils.startProfiler({ features: ["js", "jssources"] });
     // Wait for page to load and execute scripts
     await SpecialPowers.spawn(contentBrowser, [], () => {
       return new Promise(resolve => {
@@ -237,7 +237,7 @@ add_task(async function test_js_sources_external_scripts() {
 add_task(async function test_js_sources_utf8_external_script() {
   await ProfilerTestUtils.assertProfilerInactive();
 
-  await ProfilerTestUtils.startProfiler({ features: ["js"] });
+  await ProfilerTestUtils.startProfiler({ features: ["js", "jssources"] });
   const url = BASE_URL + "page_with_utf8_external_js.html";
   await BrowserTestUtils.withNewTab(url, async () => {
     Services.profiler.Pause();
@@ -266,17 +266,17 @@ add_task(async function test_js_sources_utf8_external_script() {
 
 /**
  * Test that unavailable JS sources are omitted from jsSources rather than
- * included with a placeholder value. When the "js" feature is not enabled,
- * all sources have unavailable data and should not appear in jsSources.
+ * included with a placeholder value. When the "jssources" feature is not
+ * enabled, all sources have unavailable data and should not appear in jsSources.
  */
 add_task(async function test_js_sources_unavailable_are_omitted() {
   await ProfilerTestUtils.assertProfilerInactive();
 
   const url = BASE_URL + "simple.html";
   await BrowserTestUtils.withNewTab(url, async contentBrowser => {
-    // Start profiler WITHOUT the js feature. All source data will be
-    // unavailable.
-    await ProfilerTestUtils.startProfiler({ features: [] });
+    // Start profiler with js feature but WITHOUT jssources. All source data
+    // will be unavailable.
+    await ProfilerTestUtils.startProfiler({ features: ["js"] });
 
     await SpecialPowers.spawn(contentBrowser, [], () => {
       content.window.eval(`
@@ -302,12 +302,12 @@ add_task(async function test_js_sources_unavailable_are_omitted() {
     Assert.ok(!!sources, "Additional info should contain jsSources");
     Assert.equal(typeof sources, "object", "jsSources should be an object");
 
-    // Without the js feature, all source data is unavailable and must be
+    // Without the jssources feature, all source data is unavailable and must be
     // omitted entirely.
     Assert.equal(
       Object.keys(sources).length,
       0,
-      "jsSources should be empty when the js feature is not enabled"
+      "jsSources should be empty when the jssources feature is not enabled"
     );
   });
 });

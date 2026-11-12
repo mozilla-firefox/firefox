@@ -132,7 +132,10 @@
                                                                            \
   MACRO(26, "flows", Flows,                                                \
         "Include all flow-related markers. These markers show the program" \
-        "better but can cause more overhead in some places than normal.")
+        "better but can cause more overhead in some places than normal.")  \
+                                                                           \
+  MACRO(27, "jssources", JSSources,                                        \
+        "Collect JavaScript source code information for profiled scripts.")
 
 // *** Synchronize with lists in BaseProfilerState.h and geckoProfiler.json ***
 
