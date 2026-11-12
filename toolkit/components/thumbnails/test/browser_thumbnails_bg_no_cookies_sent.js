@@ -2,6 +2,9 @@
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
 add_task(async function thumbnails_bg_no_cookies_sent() {
+  registerCleanupFunction(() =>
+    Services.cookies.removeCookiesFromExactHost("mochi.test", "{}")
+  );
   // Visit the test page in the browser and tell it to set a cookie.
   let url = bgTestPageURL({ setGreenCookie: true });
 
