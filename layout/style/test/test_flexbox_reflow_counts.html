@@ -19,6 +19,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1142686
 </head>
 <body>
 <a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=1142686">Mozilla Bug 1142686</a>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2086165">Mozilla Bug 2086165</a>
 <div id="display">
   <div id="content">
     <div class="flex" id="outerFlex">
@@ -156,12 +157,12 @@ function getReflowCount()
   return gUtils.framesReflowed;
 }
 
-// This function adds some text inside of gInnerBlock, and returns the number
-// of frames that need to be reflowed as a result.
-function makeTweakAndCountReflows()
+// Make a change (by default, add text inside gInnerBlock), and count the
+// frames that need to be reflowed as a result.
+function makeTweakAndCountReflows(aTweak = () => gInnerBlock.append("hello"))
 {
   let beforeCount = getReflowCount();
-  gInnerBlock.appendChild(document.createTextNode("hello"));
+  aTweak();
   let afterCount = getReflowCount();
 
   let numReflows = afterCount - beforeCount;
@@ -192,6 +193,61 @@ function runOneTest(aTestcase)
 }
 
 gTestcases.forEach(runOneTest);
+
+function testAbsposChanges()
+{
+  gOuterFlex.style = "width: 500px; flex-direction: column";
+  gMidFlex.style.flexDirection = "column";
+  let parent = gMidFlex;
+  for (let i = 0; i < 3; i++) {
+    const column = document.createElement("div");
+    column.style = "display: flex; flex-direction: column";
+    parent.appendChild(column);
+    parent = column;
+  }
+  parent.appendChild(gInnerBlock);
+  gInnerBlock.style = "display: flex; align-items: center";
+  gInnerBlock.innerHTML = `
+    <button style="height: 30px"><svg style="height: 100%" viewBox="0 0 10 10"></svg></button>
+    <div style="display: flex; flex-direction: column; position: relative">
+      <span>More</span>
+      <ul style="display: none; position: absolute; top: 100%"><li>a</li><li>b</li></ul>
+    </div>`;
+  const dropdown = gInnerBlock.lastElementChild;
+  const content = dropdown.querySelector("ul");
+  const sibling = document.createElement("div");
+  sibling.style.width = "10px";
+  sibling.textContent = "x";
+  gOuterFlex.appendChild(sibling);
+
+  function toggleContent() {
+    content.style.display = content.style.display == "none" ? "flex" : "none";
+  }
+  const toggleReflows = makeTweakAndCountReflows(toggleContent) +
+                        makeTweakAndCountReflows(toggleContent);
+  const resizeReflows = makeTweakAndCountReflows(() => {
+    sibling.style.width = "11px";
+  });
+  info(`Abspos toggle: ${toggleReflows}, sibling resize: ${resizeReflows}`);
+
+  const elements = [content, dropdown, gInnerBlock, gMidFlex, gOuterFlex];
+  function rects() {
+    return elements.map(e => JSON.stringify(e.getBoundingClientRect())).join();
+  }
+  for (let i = 0; i < 3; i++) {
+    toggleContent();
+    const incremental = rects();
+    gOuterFlex.style.display = "none";
+    getReflowCount();
+    gOuterFlex.style.display = "";
+    is(incremental, rects(),
+       `Abspos incremental layout matches full layout (step ${i})`);
+  }
+  gMidFlex.appendChild(gInnerBlock);
+  cleanup();
+}
+
+testAbsposChanges();
 
 </script>
 </pre>
