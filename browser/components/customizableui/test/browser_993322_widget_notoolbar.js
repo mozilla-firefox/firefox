@@ -56,4 +56,7 @@ add_task(async function () {
   CustomizableUI.unregisterArea(TOOLBARID, true);
   toolbar.remove();
   gAddedToolbars.clear();
+  // Destroyed widgets stay in gSeenWidgets, which would make adding the
+  // widget to the toolbar fail if the test ran again in the same browser.
+  CustomizableUI.getTestOnlyInternalProp("gSeenWidgets").delete(BUTTONID);
 });
