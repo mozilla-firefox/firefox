@@ -80,3 +80,19 @@ add_task(async function test_logging_make_credential() {
 
   await BrowserTestUtils.removeTab(tab);
 });
+
+add_task(async function test_logging_stops_when_page_closes() {
+  let logged = [];
+  let observer = (_subject, _topic, data) => logged.push(data);
+  Services.obs.addObserver(observer, "webauthn-logging");
+
+  let { tab, doc } = await openAboutWebauthn();
+  doc.getElementById("start-logging-button").click();
+  await BrowserTestUtils.removeTab(tab);
+
+  await registerCredential("AfterClose");
+  await TestUtils.waitForTick();
+  Services.obs.removeObserver(observer, "webauthn-logging");
+
+  is(logged.length, 0, "Nothing was logged after the page was closed");
+});

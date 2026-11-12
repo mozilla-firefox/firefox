@@ -675,6 +675,7 @@ function set_logging_buttons(logging) {
 }
 
 function start_logging() {
+  AboutWebauthnService.startLogging();
   AboutWebauthnLogger.start();
   AboutWebauthnManagerJS._logging = true;
   reset_page();
@@ -684,6 +685,7 @@ function start_logging() {
 }
 
 function stop_logging() {
+  AboutWebauthnService.stopLogging();
   AboutWebauthnLogger.stop();
   AboutWebauthnManagerJS._logging = false;
   set_logging_buttons(false);
@@ -937,6 +939,9 @@ try {
     }
   });
   window.addEventListener("unload", () => {
+    if (AboutWebauthnManagerJS._logging) {
+      AboutWebauthnService.stopLogging();
+    }
     AboutWebauthnLogger.stop();
   });
 } catch (ex) {

@@ -152,4 +152,7 @@ interface nsIWebAuthnService : nsISupports
     // about:webauthn-specific functions
     void listen();
     void runCommand(in ACString aCommand);
+
+    void startLogging();
+    void stopLogging();
 };

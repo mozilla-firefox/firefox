@@ -631,4 +631,16 @@ WebAuthnService::RunCommand(const nsACString& aCmd) {
   return AuthrsService()->RunCommand(aCmd);
 }
 
+NS_IMETHODIMP
+WebAuthnService::StartLogging() {
+  MOZ_ASSERT(NS_IsMainThread());
+  return AuthrsService()->StartLogging();
+}
+
+NS_IMETHODIMP
+WebAuthnService::StopLogging() {
+  MOZ_ASSERT(NS_IsMainThread());
+  return AuthrsService()->StopLogging();
+}
+
 }  // namespace mozilla::dom

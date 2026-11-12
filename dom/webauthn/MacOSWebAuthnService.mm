@@ -1535,6 +1535,18 @@ MacOSWebAuthnService::RunCommand(const nsACString& aCmd) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
+NS_IMETHODIMP
+MacOSWebAuthnService::StartLogging() {
+  MOZ_ASSERT(NS_IsMainThread());
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
+NS_IMETHODIMP
+MacOSWebAuthnService::StopLogging() {
+  MOZ_ASSERT(NS_IsMainThread());
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
 }  // namespace mozilla::dom
 
 NS_ASSUME_NONNULL_END

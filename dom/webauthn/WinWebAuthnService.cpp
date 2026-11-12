@@ -1235,4 +1235,10 @@ WinWebAuthnService::RunCommand(const nsACString& aCmd) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
+NS_IMETHODIMP
+WinWebAuthnService::StartLogging() { return NS_ERROR_NOT_IMPLEMENTED; }
+
+NS_IMETHODIMP
+WinWebAuthnService::StopLogging() { return NS_ERROR_NOT_IMPLEMENTED; }
+
 }  // namespace mozilla::dom

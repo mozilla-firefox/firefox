@@ -463,5 +463,11 @@ AndroidWebAuthnService::RunCommand(const nsACString& aCmd) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
+NS_IMETHODIMP
+AndroidWebAuthnService::StartLogging() { return NS_ERROR_NOT_IMPLEMENTED; }
+
+NS_IMETHODIMP
+AndroidWebAuthnService::StopLogging() { return NS_ERROR_NOT_IMPLEMENTED; }
+
 }  // namespace dom
 }  // namespace mozilla
