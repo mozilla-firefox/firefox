@@ -2659,6 +2659,24 @@ bool js::IsOptimizableRegExpObject(JSContext* cx, unsigned argc, Value* vp) {
   return true;
 }
 
+bool js::CanOptimizeRegExpSpecies(JSContext* cx, unsigned argc, Value* vp) {
+  // This can only be called from self-hosted code.
+  CallArgs args = CallArgsFromVp(argc, vp);
+  MOZ_ASSERT(args.length() == 1);
+  MOZ_ASSERT(args[0].isObject());
+
+  JSObject* obj = &args[0].toObject();
+
+  // The shape check implies the object has no own `constructor` property and
+  // the realm's RegExp.prototype as its prototype. The species fuse then
+  // guarantees SpeciesConstructor(obj) resolves to the builtin RegExp
+  // constructor, so callers can skip the SpeciesConstructor lookup entirely.
+  bool optimizable = IsOptimizableRegExpObject(obj, cx) &&
+                     cx->realm()->realmFuses.optimizeRegExpSpeciesFuse.intact();
+  args.rval().setBoolean(optimizable);
+  return true;
+}
+
 /*
  * Pattern match the script to check if it is is indexing into a particular
  * object, e.g. 'function(a) { return b[a]; }'. Avoid calling the script in

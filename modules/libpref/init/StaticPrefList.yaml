@@ -5119,6 +5119,15 @@
   value: 200
   mirror: always
 
+# When true, hovering a link on a document with no speculation-rules candidates
+# still prefetches the link target after the moderate hover delay, as if a
+# "moderate" document rule matched every same-origin link. Not spec behaviour;
+# a browser-level performance feature ("speed mode").
+- name: dom.speculation_rules.hover_prefetch_all
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 - name: dom.securecontext.allowlist_onions
   type: bool
   value: false

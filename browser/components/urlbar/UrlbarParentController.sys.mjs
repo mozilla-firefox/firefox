@@ -27,6 +27,7 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///browser/components/search/BrowserSearchTelemetry.sys.mjs",
   ContainerCreationPanel:
     "chrome://browser/content/usercontext/ContainerCreationPanel.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   ProvidersManager:
     "moz-src:///browser/components/urlbar/UrlbarProvidersManager.sys.mjs",
   SearchService: "moz-src:///toolkit/components/search/SearchService.sys.mjs",
@@ -245,6 +246,7 @@ export class UrlbarParentController {
     this.manager
       .getProvider(result?.providerName)
       ?.tryMethod("onSelection", result);
+    this.speculativeConnect(result, null, "select");
   }
 
   /**
@@ -967,12 +969,19 @@ export class UrlbarParentController {
    *  - http/https results
    *
    * @param {UrlbarResult} result The result to speculative connect to.
-   * @param {UrlbarQueryContext} context The queryContext
+   * @param {UrlbarQueryContext} context The queryContext, or null for callers
+   *   that don't have one (e.g. "select"); privacy is then derived from the
+   *   browser window.
    * @param {string} reason Reason for the speculative connect request.
    */
   speculativeConnect(result, context, reason) {
     // Never speculative connect in private contexts.
-    if (context.isPrivate || !context.results.length) {
+    if (
+      (context
+        ? context.isPrivate || !context.results.length
+        : lazy.PrivateBrowsingUtils.isWindowPrivate(this.browserWindow)) ||
+      !result
+    ) {
       return;
     }
 
@@ -1011,6 +1020,7 @@ export class UrlbarParentController {
         }
         return;
       }
+      case "select":
       case "mousedown": {
         const { url } = lazy.UrlbarUtils.getUrlFromResult(result);
         if (!url) {

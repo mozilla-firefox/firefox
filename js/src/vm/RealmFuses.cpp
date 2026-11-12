@@ -391,6 +391,11 @@ bool js::OptimizeArraySpeciesFuse::checkInvariant(JSContext* cx) {
                                    cx->names().dollar_ArraySpecies_);
 }
 
+bool js::OptimizeRegExpSpeciesFuse::checkInvariant(JSContext* cx) {
+  return SpeciesFuseCheckInvariant(cx, JSProto_RegExp,
+                                   cx->names().dollar_RegExpSpecies_);
+}
+
 bool js::OptimizeArrayBufferSpeciesFuse::checkInvariant(JSContext* cx) {
   return SpeciesFuseCheckInvariant(cx, JSProto_ArrayBuffer,
                                    cx->names().dollar_ArrayBufferSpecies_);

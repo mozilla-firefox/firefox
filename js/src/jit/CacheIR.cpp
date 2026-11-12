@@ -8085,6 +8085,39 @@ InlinableNativeIRGenerator::tryAttachIsOptimizableRegExpObject() {
   return AttachDecision::Attach;
 }
 
+AttachDecision
+InlinableNativeIRGenerator::tryAttachCanOptimizeRegExpSpecies() {
+  // Self-hosted code calls this with a single object argument.
+  MOZ_ASSERT(argsLength() == 1);
+  MOZ_ASSERT(arg(0).isObject());
+
+  Shape* shape = cx_->global()->maybeRegExpShapeWithDefaultProto();
+  if (!shape) {
+    return AttachDecision::NoAction;
+  }
+
+  // Initialize the input operand.
+  initializeInputOperand();
+
+  // Note: we don't need to call emitNativeCalleeGuard for intrinsics.
+
+  RealmFuses& fuses = cx_->realm()->realmFuses;
+  if (fuses.optimizeRegExpSpeciesFuse.intact() &&
+      fuses.optimizeRegExpPrototypeFuse.intact()) {
+    ValOperandId argId = loadArgumentIntrinsic(ArgumentKind::Arg0);
+    ObjOperandId objId = writer.guardToObject(argId);
+    writer.guardFuse(RealmFuses::FuseIndex::OptimizeRegExpSpeciesFuse);
+    writer.guardFuse(RealmFuses::FuseIndex::OptimizeRegExpPrototypeFuse);
+    writer.hasShapeResult(objId, shape);
+    trackAttached("CanOptimizeRegExpSpecies.Optimized");
+  } else {
+    writer.loadBooleanResult(false);
+    trackAttached("CanOptimizeRegExpSpecies.Deoptimized");
+  }
+
+  return AttachDecision::Attach;
+}
+
 AttachDecision InlinableNativeIRGenerator::tryAttachGetFirstDollarIndex() {
   // Self-hosted code calls this with a single string argument.
   MOZ_ASSERT(argsLength() == 1);
@@ -13521,6 +13554,8 @@ AttachDecision InlinableNativeIRGenerator::tryAttachStub() {
       return tryAttachIsRegExpPrototypeOptimizable();
     case InlinableNative::IsOptimizableRegExpObject:
       return tryAttachIsOptimizableRegExpObject();
+    case InlinableNative::IntrinsicCanOptimizeRegExpSpecies:
+      return tryAttachCanOptimizeRegExpSpecies();
     case InlinableNative::GetFirstDollarIndex:
       return tryAttachGetFirstDollarIndex();
     case InlinableNative::IntrinsicRegExpBuiltinExec:

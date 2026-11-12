@@ -87,6 +87,12 @@ class SpeculationRules final {
   void CancelHoverTimer();
   static void HoverTimerFired(nsITimer* aTimer, void* aClosure);
 
+  // dom.speculation_rules.hover_prefetch_all fallback: when a document has no
+  // speculation-rules candidates, hovering any link with an http(s) href arms
+  // the moderate hover timer, and the timer enacts a synthesized same-origin
+  // prefetch candidate for the link's URL.
+  void HoverPrefetchFallback(nsIContent* aContent);
+
   bool HasRuleSets() const;
 
   RefPtr<Document> mDocument;
@@ -124,6 +130,11 @@ class SpeculationRules final {
   // delay is the shorter one, the timer first fires for "eager" candidates and
   // then re-arms for "moderate" ones.
   Eagerness mHoverTimerLevel{Eagerness::Eager};
+
+  // True while the pending hover timer was armed by the hover-prefetch-all
+  // fallback rather than by rule candidates, so HoverTimerFired enacts a
+  // synthesized candidate instead of calling EnactCandidates.
+  bool mHoverFallback{false};
 };
 
 }  // namespace mozilla::dom

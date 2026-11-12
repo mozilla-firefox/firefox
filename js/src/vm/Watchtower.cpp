@@ -525,6 +525,21 @@ static void MaybePopRegExpPrototypeFuses(JSContext* cx, NativeObject* obj,
     obj->realm()->realmFuses.optimizeRegExpPrototypeFuse.popFuse(
         cx, obj->realm()->realmFuses);
   }
+  if (id.isAtom(cx->names().constructor)) {
+    obj->realm()->realmFuses.optimizeRegExpSpeciesFuse.popFuse(
+        cx, obj->realm()->realmFuses);
+  }
+}
+
+static void MaybePopRegExpConstructorFuses(JSContext* cx, NativeObject* obj,
+                                           jsid id) {
+  if (obj != obj->global().maybeGetConstructor(JSProto_RegExp)) {
+    return;
+  }
+  if (id.isWellKnownSymbol(JS::SymbolCode::species)) {
+    obj->realm()->realmFuses.optimizeRegExpSpeciesFuse.popFuse(
+        cx, obj->realm()->realmFuses);
+  }
 }
 
 static void MaybePopArrayBufferConstructorFuses(JSContext* cx,
@@ -635,6 +650,7 @@ static void MaybePopRealmFuses(JSContext* cx, NativeObject* obj, jsid id) {
 
   // Handle writes to RegExp.prototype fuse properties.
   MaybePopRegExpPrototypeFuses(cx, obj, id);
+  MaybePopRegExpConstructorFuses(cx, obj, id);
 
   // Handle writes to ArrayBuffer constructor fuse properties.
   MaybePopArrayBufferConstructorFuses(cx, obj, id);

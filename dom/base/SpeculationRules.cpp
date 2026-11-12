@@ -427,11 +427,59 @@ Element* SpeculationRules::FindInterestedLink(nsIContent* aContent) const {
   return nullptr;
 }
 
-void SpeculationRules::HoverContentChanged(nsIContent* aContent) {
-  if (mCandidateGroups.IsEmpty()) {
+void SpeculationRules::HoverPrefetchFallback(nsIContent* aContent) {
+  if (!StaticPrefs::dom_speculation_rules_hover_prefetch_all() ||
+      !mDocument->IsFullyActive()) {
     return;
   }
 
+  // mLinks is only populated when the document has rule sets, so find the
+  // innermost inclusive flat-tree ancestor with an http(s) href by walking up.
+  RefPtr<Element> link;
+  for (nsIContent* content = aContent; content;
+       content = content->GetFlattenedTreeParent()) {
+    if (content->IsElement()) {
+      nsCOMPtr<nsIURI> uri = content->AsElement()->GetHrefURI();
+      if (uri && net::SchemeIsHttpOrHttps(uri)) {
+        link = content->AsElement();
+        break;
+      }
+    }
+  }
+
+  if (link == mHoverLink) {
+    return;
+  }
+  CancelHoverTimer();
+  mHoverLink = link;
+  if (!mHoverLink) {
+    return;
+  }
+
+  // Only same-origin targets can ever be activated from a prefetch record
+  // (M1), so cross-origin hovers aren't worth a speculative load.
+  nsCOMPtr<nsIURI> uri = mHoverLink->GetHrefURI();
+  bool sameOrigin = false;
+  if (uri) {
+    (void)mDocument->NodePrincipal()->IsSameOrigin(uri, &sameOrigin);
+  }
+  if (!sameOrigin) {
+    mHoverLink = nullptr;
+    return;
+  }
+
+  mHoverFallback = true;
+  ArmHoverTimer(StaticPrefs::dom_speculation_rules_moderate_hover_delay_ms(),
+                Eagerness::Moderate);
+}
+
+void SpeculationRules::HoverContentChanged(nsIContent* aContent) {
+  if (mCandidateGroups.IsEmpty()) {
+    HoverPrefetchFallback(aContent);
+    return;
+  }
+
+  mHoverFallback = false;
   RefPtr<Element> link = FindInterestedLink(aContent);
   if (link == mHoverLink) {
     // The cursor moved within the same link, so it has been hovered
@@ -491,6 +539,16 @@ void SpeculationRules::HoverTimerFired(nsITimer* aTimer, void* aClosure) {
   }
   Eagerness level = speculationRules->mHoverTimerLevel;
   if (nsCOMPtr<nsIURI> uri = link->GetHrefURI()) {
+    if (speculationRules->mHoverFallback) {
+      PrefetchCandidate candidate;
+      uri->GetSpec(candidate.url);
+      candidate.eagerness = Eagerness::Moderate;
+      candidate.referrer_policy = SpeculationRulesReferrerPolicy::Empty;
+      candidate.no_vary_search_hint.SetIsVoid(true);
+      speculationRules->mDocument->EnsureSpeculationRulesManager()
+          ->StartPrefetch(speculationRules->mDocument, candidate);
+      return;
+    }
     speculationRules->EnactCandidates(uri, level);
 
     if (level == Eagerness::Eager) {

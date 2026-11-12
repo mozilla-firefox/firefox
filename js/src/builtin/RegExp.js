@@ -946,12 +946,17 @@ function RegExpSplit(string, limit) {
 
   // Step 4.
   var builtinCtor = GetBuiltinConstructor("RegExp");
-  var C = SpeciesConstructor(rx, builtinCtor);
-
   var optimizable =
-    IsOptimizableRegExpObject(rx) &&
-    C === builtinCtor &&
+    CanOptimizeRegExpSpecies(rx) &&
     (limit === undefined || typeof limit === "number");
+  var C;
+  if (!optimizable) {
+    C = SpeciesConstructor(rx, builtinCtor);
+    optimizable =
+      IsOptimizableRegExpObject(rx) &&
+      C === builtinCtor &&
+      (limit === undefined || typeof limit === "number");
+  }
 
   var flags, unicodeMatching, splitter;
   if (optimizable) {
@@ -1219,10 +1224,15 @@ function RegExpMatchAll(string) {
 
   // Step 4.
   var builtinCtor = GetBuiltinConstructor("RegExp");
-  var C = SpeciesConstructor(rx, builtinCtor);
+  var optimizable = CanOptimizeRegExpSpecies(rx);
+  var C;
+  if (!optimizable) {
+    C = SpeciesConstructor(rx, builtinCtor);
+    optimizable = IsOptimizableRegExpObject(rx) && C === builtinCtor;
+  }
 
   var source, flags, matcher, lastIndex;
-  if (IsOptimizableRegExpObject(rx) && C === builtinCtor) {
+  if (optimizable) {
     // Step 5, 9-12.
     source = UnsafeGetStringFromReservedSlot(rx, REGEXP_SOURCE_SLOT);
     flags = UnsafeGetInt32FromReservedSlot(rx, REGEXP_FLAGS_SLOT);

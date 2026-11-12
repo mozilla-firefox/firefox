@@ -261,6 +261,18 @@ struct OptimizeRegExpPrototypeFuse final : public InvalidatingRealmFuse {
   virtual bool checkInvariant(JSContext* cx) override;
 };
 
+// Fuse used to optimize @@species lookups for RegExps. If this fuse is intact,
+// the following invariants must hold:
+//
+// - The builtin `RegExp.prototype` object has a `constructor` property that's
+//   the builtin `RegExp` constructor.
+// - This `RegExp` constructor has a `Symbol.species` property that's the
+//   original accessor.
+struct OptimizeRegExpSpeciesFuse final : public InvalidatingRealmFuse {
+  virtual const char* name() override { return "OptimizeRegExpSpeciesFuse"; }
+  virtual bool checkInvariant(JSContext* cx) override;
+};
+
 // Guard used to optimize iterating over Map objects. If this fuse is intact,
 // the following invariants must hold:
 //
@@ -384,6 +396,7 @@ struct StringProtoHasNoIndexedPropsFuse final : public InvalidatingRealmFuse {
   FUSE(OptimizeTypedArraySpeciesFuse, optimizeTypedArraySpeciesFuse)           \
   FUSE(OptimizePromiseLookupFuse, optimizePromiseLookupFuse)                   \
   FUSE(OptimizeRegExpPrototypeFuse, optimizeRegExpPrototypeFuse)               \
+  FUSE(OptimizeRegExpSpeciesFuse, optimizeRegExpSpeciesFuse)                   \
   FUSE(OptimizeMapObjectIteratorFuse, optimizeMapObjectIteratorFuse)           \
   FUSE(OptimizeSetObjectIteratorFuse, optimizeSetObjectIteratorFuse)           \
   FUSE(OptimizeMapPrototypeSetFuse, optimizeMapPrototypeSetFuse)               \

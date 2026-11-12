@@ -3952,3 +3952,15 @@ pref("distribution.mozillaonline.ignore", true);
 #ifdef XP_MACOSX
   pref("browser.macAppMenu.setAsDefaultShown", false);
 #endif
+
+// Speed mode dial: 0 = Performance, 1 = Balanced (default), 2 = Fortress.
+// Governs speculative-network aggressiveness and explicit security/feature
+// trade-offs. See Phase 6 of the performance plan.
+pref("browser.speed.mode", 1);
+
+// Speculative networking defaults — safe in every mode, so on for all:
+// initiate a DNS/TLS speculative connection when hovering a link on an
+// HTTPS page (stock: only on HTTP pages).
+pref("network.predictor.enable-hover-on-ssl", true);
+// DNS-prefetch anchor hostnames on HTTPS documents (stock: HTTP only).
+pref("dom.prefetch_dns_for_anchor_https_document", true);

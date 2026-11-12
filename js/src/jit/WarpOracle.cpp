@@ -883,6 +883,12 @@ bool WarpOracle::addFuseDependency(RealmFuses::FuseIndex fuseIndex) {
                               CompilationDependency::Type::TypedArraySpecies>;
       return addDep(Dependency());
     }
+    case RealmFuses::FuseIndex::OptimizeRegExpSpeciesFuse: {
+      using Dependency =
+          RealmFuseDependency<&RealmFuses::optimizeRegExpSpeciesFuse,
+                              CompilationDependency::Type::RegExpSpecies>;
+      return addDep(Dependency());
+    }
     case RealmFuses::FuseIndex::OptimizeRegExpPrototypeFuse: {
       using Dependency =
           RealmFuseDependency<&RealmFuses::optimizeRegExpPrototypeFuse,

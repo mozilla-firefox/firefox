@@ -117,6 +117,7 @@
   MACRO_(dollar_ArraySpecies_, "$ArraySpecies")                                \
   MACRO_(dollar_ArrayValues_, "$ArrayValues")                                  \
   MACRO_(dollar_RegExpFlagsGetter_, "$RegExpFlagsGetter")                      \
+  MACRO_(dollar_RegExpSpecies_, "$RegExpSpecies")                              \
   MACRO_(dollar_RegExpToString_, "$RegExpToString")                            \
   MACRO_(dollar_SharedArrayBufferSpecies_, "$SharedArrayBufferSpecies")        \
   MACRO_(dollar_TypedArraySpecies_, "$TypedArraySpecies")                      \

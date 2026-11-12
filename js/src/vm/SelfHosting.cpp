@@ -1540,6 +1540,8 @@ static const JSFunctionSpec intrinsic_functions[] = {
     JS_INLINABLE_FN("CanOptimizeArraySpecies",
                     intrinsic_CanOptimizeArraySpecies, 1, 0,
                     IntrinsicCanOptimizeArraySpecies),
+    JS_INLINABLE_FN("CanOptimizeRegExpSpecies", CanOptimizeRegExpSpecies, 1, 0,
+                    IntrinsicCanOptimizeRegExpSpecies),
     JS_FN("ConstructFunction", intrinsic_ConstructFunction, 2, 0),
     JS_FN("ConstructorForTypedArray", intrinsic_ConstructorForTypedArray, 1, 0),
     JS_FN("CopyDataProperties", intrinsic_CopyDataProperties, 3, 0),

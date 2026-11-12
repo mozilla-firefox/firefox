@@ -23,6 +23,7 @@ struct CompilationDependency : public TempObject {
     GetIteratorBytecode,
     ArraySpecies,
     TypedArraySpecies,
+    RegExpSpecies,
     RegExpPrototype,
     ObjectProtoHasNoIndexedProps,
     ArrayProtoHasNoIndexedProps,

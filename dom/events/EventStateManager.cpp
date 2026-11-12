@@ -6997,7 +6997,13 @@ void EventStateManager::NotifySpeculationRulesOfHover(nsIContent* aNewHover) {
   if (!content) {
     return;
   }
-  if (auto* speculationRules = content->OwnerDoc()->GetSpeculationRules()) {
+  Document* doc = content->OwnerDoc();
+  auto* speculationRules = doc->GetSpeculationRules();
+  if (!speculationRules &&
+      StaticPrefs::dom_speculation_rules_hover_prefetch_all()) {
+    speculationRules = &doc->SpeculationRules();
+  }
+  if (speculationRules) {
     speculationRules->HoverContentChanged(aNewHover);
   }
 }

@@ -491,6 +491,7 @@ bool WarpCacheIRTranspiler::emitGuardFuse(RealmFuses::FuseIndex fuseIndex) {
     case RealmFuses::FuseIndex::OptimizeGetIteratorBytecodeFuse:
     case RealmFuses::FuseIndex::OptimizeArraySpeciesFuse:
     case RealmFuses::FuseIndex::OptimizeTypedArraySpeciesFuse:
+    case RealmFuses::FuseIndex::OptimizeRegExpSpeciesFuse:
     case RealmFuses::FuseIndex::OptimizeRegExpPrototypeFuse:
     case RealmFuses::FuseIndex::ObjectProtoHasNoIndexedPropsFuse:
     case RealmFuses::FuseIndex::ArrayProtoHasNoIndexedPropsFuse:
