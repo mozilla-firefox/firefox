@@ -2,9 +2,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { html } from "chrome://global/content/vendor/lit.all.mjs";
+import { html, nothing } from "chrome://global/content/vendor/lit.all.mjs";
 import { SidebarPage } from "chrome://browser/content/sidebar/sidebar-page.mjs";
 import { SUBMIT_ICON } from "chrome://browser/content/widgets/widget-composer.mjs";
+
+const lazy = {};
+ChromeUtils.defineESModuleGetters(lazy, {
+  AuthenticationController:
+    "moz-src:///browser/components/widgets/AuthenticationController.sys.mjs",
+});
 
 /**
  * The widgets sidebar panel.
@@ -25,6 +31,8 @@ export class SidebarWidgetStudio extends SidebarPage {
     composer: "widget-composer",
   };
 
+  authentication = new lazy.AuthenticationController(this);
+
   constructor() {
     super();
     this.composing = true;
@@ -41,7 +49,7 @@ export class SidebarWidgetStudio extends SidebarPage {
   }
 
   handleSidebarFocusedEvent() {
-    (this.composer ?? this.composeButton).focus();
+    (this.composer ?? this.composeButton)?.focus();
   }
 
   #closePanel(e) {
@@ -64,6 +72,9 @@ export class SidebarWidgetStudio extends SidebarPage {
   }
 
   composerTemplate() {
+    if (!this.authentication.authenticated) {
+      return nothing;
+    }
     if (this.composing) {
       return html`<widget-composer
         autofocus
