@@ -3,8 +3,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 browser.jar:
-% resource activity-stream %res/activity-stream/ contentaccessible=yes
-% content activity-stream %content/activity-stream/ contentaccessible=yes
+% resource activity-stream %res/activity-stream/
+% content activity-stream %content/activity-stream/
   content/browser/asrouter/asrouter-admin.html                           (content/asrouter-admin.html)
   content/browser/asrouter/asrouter-admin.bundle.js                      (content/asrouter-admin.bundle.js)
   content/browser/asrouter/components/ASRouterAdmin/ASRouterAdmin.css    (content/components/ASRouterAdmin/ASRouterAdmin.css)
