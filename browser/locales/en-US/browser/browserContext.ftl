@@ -495,14 +495,18 @@ main-context-menu-new-feature-badge = New
 # The label of a badge shown in menu items to call out features that are in beta.
 main-context-menu-beta-feature-badge = Beta
 
-main-context-menu-pdfjs-copy-page =
+main-context-menu-pdfjs-copy-page2 =
     .label = Copy page
+    .accesskey = o
 
-main-context-menu-pdfjs-cut-page =
+main-context-menu-pdfjs-cut-page2 =
     .label = Cut page
+    .accesskey = g
 
-main-context-menu-pdfjs-delete-page =
+main-context-menu-pdfjs-delete-page2 =
     .label = Delete page
+    .accesskey = l
 
-main-context-menu-pdfjs-save-page =
+main-context-menu-pdfjs-save-page2 =
     .label = Save selection as…
+    .accesskey = S
