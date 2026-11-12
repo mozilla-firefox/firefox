@@ -34,12 +34,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlin.math.min
@@ -287,29 +289,25 @@ private fun SportsPagerIndicator(
     val stride = IndicatorDotSize + IndicatorDotSpacing
     val rowWidth = stride * visibleCount - IndicatorDotSpacing
 
-    // Current page plus the in-flight swipe fraction, so the window glides instead of jumping.
-    val position = pagerState.currentPage + pagerState.currentPageOffsetFraction
-    val maxStart = (pageCount - visibleCount).coerceAtLeast(0)
-    // Index (fractional) of the leftmost dot in the window: centre the current page, then pin at
-    // the ends so the window never scrolls past the first or last page.
-    val windowStart = (position - (visibleCount - 1) / 2f).coerceIn(0f, maxStart.toFloat())
-    val hasPagesBefore = windowStart > 0f
-    val hasPagesAfter = windowStart < maxStart.toFloat()
-
     Box(modifier = modifier.width(rowWidth).height(IndicatorDotSize).clipToBounds()) {
         repeat(pageCount) { page ->
-            val slot = page - windowStart
-            var scale = 1f
-            if (hasPagesBefore) scale = min(scale, edgeDotScale(slot))
-            if (hasPagesAfter) scale = min(scale, edgeDotScale((visibleCount - 1) - slot))
-
             Box(
-                modifier = Modifier.offset(x = stride * slot).size(IndicatorDotSize),
+                modifier =
+                    Modifier.offset {
+                            val slot = page - pagerState.indicatorWindowStart(visibleCount)
+                            IntOffset(x = (stride * slot).roundToPx(), y = 0)
+                        }
+                        .size(IndicatorDotSize),
                 contentAlignment = Alignment.Center,
             ) {
                 Box(
                     modifier =
-                        Modifier.size(IndicatorDotSize * scale)
+                        Modifier.size(IndicatorDotSize)
+                            .graphicsLayer {
+                                val scale = pagerState.indicatorDotScale(page, visibleCount)
+                                scaleX = scale
+                                scaleY = scale
+                            }
                             .background(
                                 color = if (page == pagerState.currentPage) activeColor else inactiveColor,
                                 shape = CircleShape,
@@ -318,6 +316,23 @@ private fun SportsPagerIndicator(
             }
         }
     }
+}
+
+// Index (fractional) of the leftmost dot in the window: centre the current page plus the in-flight
+// swipe fraction, so the window glides instead of jumping, then pin at the ends so the window never
+// scrolls past the first or last page.
+private fun PagerState.indicatorWindowStart(visibleCount: Int): Float {
+    val maxStart = (pageCount - visibleCount).coerceAtLeast(0)
+    return (currentPage + currentPageOffsetFraction - (visibleCount - 1) / 2f).coerceIn(0f, maxStart.toFloat())
+}
+
+private fun PagerState.indicatorDotScale(page: Int, visibleCount: Int): Float {
+    val windowStart = indicatorWindowStart(visibleCount)
+    val slot = page - windowStart
+    var scale = 1f
+    if (windowStart > 0f) scale = min(scale, edgeDotScale(slot))
+    if (windowStart < pageCount - visibleCount) scale = min(scale, edgeDotScale((visibleCount - 1) - slot))
+    return scale
 }
 
 // Scale for a dot [distance] slots from a window edge that still hides pages: smallest at the very
