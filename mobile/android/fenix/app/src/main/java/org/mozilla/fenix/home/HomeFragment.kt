@@ -1376,7 +1376,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
     }
 
     private fun registerCollectionStorageObserver() {
-        requireComponents.core.tabCollectionStorage.register(collectionStorageObserver, this)
+        requireComponents.core.tabCollectionStorage.register(collectionStorageObserver, viewLifecycleOwner)
     }
 
     private fun openTabsTray() {
