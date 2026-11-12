@@ -254,23 +254,74 @@ NS_IMETHODIMP MockNetworkLayerController::ClearWouldBlockUDPAddr() {
   return NS_OK;
 }
 
+bool FindResetUDPAddr(const NetAddr& aInput) {
+  RefPtr<MockNetworkLayerController> controller = gController;
+  if (!controller) {
+    return false;
+  }
+
+  nsAutoCString addrPort;
+  aInput.ToAddrPortString(addrPort);
+  AutoReadLock lock(controller->mLock);
+  return controller->mResetUDPAddresses.Contains(addrPort);
+}
+
+NS_IMETHODIMP MockNetworkLayerController::ResetUDPAddrIO(nsINetAddr* aAddr) {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  NetAddr addr;
+  aAddr->GetNetAddr(&addr);
+  nsAutoCString addrPort;
+  addr.ToAddrPortString(addrPort);
+  {
+    AutoWriteLock lock(mLock);
+    mResetUDPAddresses.Insert(addrPort);
+  }
+
+  return NS_OK;
+}
+
+NS_IMETHODIMP MockNetworkLayerController::ClearResetUDPAddr() {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  AutoWriteLock lock(mLock);
+  mResetUDPAddresses.Clear();
+  return NS_OK;
+}
+
 }  // namespace mozilla::net
+
+static bool ToNetAddr(uint16_t aFamily, const uint8_t* aAddr, uint16_t aPort,
+                      mozilla::net::NetAddr& aOut) {
+  if (aFamily == AF_INET) {
+    aOut.inet.family = AF_INET;
+    aOut.inet.port = htons(aPort);
+    memcpy(&aOut.inet.ip, aAddr, 4);
+    return true;
+  }
+  if (aFamily == AF_INET6) {
+    aOut.inet6.family = AF_INET6;
+    aOut.inet6.port = htons(aPort);
+    memcpy(&aOut.inet6.ip.u8, aAddr, 16);
+    return true;
+  }
+  return false;
+}
 
 // Lets neqo_glue apply the mock UDP would-block list when it does its own I/O.
 extern "C" bool moz_mock_network_udp_send_would_block(uint16_t aFamily,
                                                       const uint8_t* aAddr,
                                                       uint16_t aPort) {
   mozilla::net::NetAddr addr;
-  if (aFamily == AF_INET) {
-    addr.inet.family = AF_INET;
-    addr.inet.port = htons(aPort);
-    memcpy(&addr.inet.ip, aAddr, 4);
-  } else if (aFamily == AF_INET6) {
-    addr.inet6.family = AF_INET6;
-    addr.inet6.port = htons(aPort);
-    memcpy(&addr.inet6.ip.u8, aAddr, 16);
-  } else {
-    return false;
-  }
-  return mozilla::net::FindWouldBlockUDPAddr(addr);
+  return ToNetAddr(aFamily, aAddr, aPort, addr) &&
+         mozilla::net::FindWouldBlockUDPAddr(addr);
+}
+
+// Lets neqo_glue apply the mock UDP reset list when it does its own I/O.
+extern "C" bool moz_mock_network_udp_send_reset(uint16_t aFamily,
+                                                const uint8_t* aAddr,
+                                                uint16_t aPort) {
+  mozilla::net::NetAddr addr;
+  return ToNetAddr(aFamily, aAddr, aPort, addr) &&
+         mozilla::net::FindResetUDPAddr(addr);
 }

@@ -126,6 +126,14 @@ static PRInt32 MockNetworkSendTo(PRFileDesc* fd, const void* buf,
     PR_SetError(PR_CONNECT_REFUSED_ERROR, 0);
     return -1;
   }
+  if (FindResetUDPAddr(netAddr)) {
+    nsAutoCString addrPort;
+    netAddr.ToAddrPortString(addrPort);
+    SOCKET_LOG(
+        ("MockNetworkSendTo %p addr [%s] reset", secret, addrPort.get()));
+    PR_SetError(PR_CONNECT_RESET_ERROR, 0);
+    return -1;
+  }
   if (FindWouldBlockUDPAddr(netAddr)) {
     nsAutoCString addrPort;
     netAddr.ToAddrPortString(addrPort);
