@@ -1,0 +1,308 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="timeout" content="long">
+<title>RTCPeerConnection iceCandidatePoolSize - pre-gathering</title>
+<!--
+  https://www.w3.org/TR/webrtc/#set-the-configuration
+  Step 8: If configuration.iceCandidatePoolSize is different from the current
+  configuration, update the ICE Agent's prefetched ICE candidate pool.
+-->
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="RTCPeerConnection-helper.js"></script>
+<script src="third_party/sdp/sdp.js"></script>
+<script>
+"use strict";
+
+// Collect ice candidates until gathering completes, leaving out the empty
+// end-of-candidates indications.
+function gatherCandidatesUntilDone(pc) {
+  return new Promise(resolve => {
+    const candidates = [];
+    pc.onicecandidate = ({candidate}) => {
+      if (!candidate) {
+        resolve(candidates);
+      } else if (candidate.candidate) {
+        candidates.push(candidate);
+      }
+    };
+  });
+}
+
+// Whether the pool supplies the candidates is not observable, so these only
+// check that gathering still works when a pool has been asked for.
+promise_test(async t => {
+  const pc = new RTCPeerConnection({iceCandidatePoolSize: 1});
+  t.add_cleanup(() => pc.close());
+  assert_equals(pc.iceGatheringState, 'new',
+    'iceGatheringState should be new before setLocalDescription');
+
+  pc.addTransceiver('audio');
+  const candidates = await candidatesAfterSetLocalDescription(t, pc);
+  assert_greater_than(candidates.length, 0,
+    'at least one candidate should be gathered');
+}, 'iceCandidatePoolSize=1: candidates are gathered after setLocalDescription');
+
+promise_test(async t => {
+  const pc = new RTCPeerConnection();
+  t.add_cleanup(() => pc.close());
+  pc.setConfiguration({iceCandidatePoolSize: 1});
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1,
+    'iceCandidatePoolSize should be updated');
+
+  pc.addTransceiver('audio');
+  const candidates = await candidatesAfterSetLocalDescription(t, pc);
+  assert_greater_than(candidates.length, 0,
+    'at least one candidate should be gathered');
+}, 'iceCandidatePoolSize=1 via setConfiguration: candidates are gathered ' +
+   'after setLocalDescription');
+
+promise_test(async t => {
+  const pc1 = new RTCPeerConnection();
+  t.add_cleanup(() => pc1.close());
+  const pc2 = new RTCPeerConnection({iceCandidatePoolSize: 1});
+  t.add_cleanup(() => pc2.close());
+
+  pc1.addTransceiver('audio');
+  await pc1.setLocalDescription();
+  await pc2.setRemoteDescription(pc1.localDescription);
+  const candidates = await candidatesAfterSetLocalDescription(t, pc2);
+  assert_greater_than(candidates.length, 0,
+    'the answerer should gather candidates');
+}, 'iceCandidatePoolSize=1: candidates are gathered when acting as answerer');
+
+// Whether the pool actually supplies the candidates is not observable from
+// content, and RFC 9429 section 3.5.4 explicitly permits falling back when "the
+// pool has not had enough time to gather candidates". So rather than timing the
+// first candidate, assert the invariants that must hold either way. These cover
+// the hazards specific to the pool: candidates are pre-gathered under a pool
+// transport and replayed under the real transport id once adopted, while the
+// adopted stream keeps signalling.
+promise_test(async t => {
+  const pc = new RTCPeerConnection({iceCandidatePoolSize: 1});
+  t.add_cleanup(() => pc.close());
+  assert_equals(pc.getConfiguration().iceCandidatePoolSize, 1,
+    'iceCandidatePoolSize should be reflected in the configuration');
+
+  const states = [];
+  pc.addEventListener('icegatheringstatechange',
+                      () => states.push(pc.iceGatheringState));
+
+  pc.addTransceiver('audio');
+  const candidates = await candidatesAfterSetLocalDescription(t, pc);
+  assert_array_equals(states, ['gathering', 'complete'],
+    'iceGatheringState should transition new -> gathering -> complete');
+
+  assert_greater_than(candidates.length, 0,
+    'at least one candidate should be gathered');
+
+  const keys = candidates.map(c => `${c.sdpMid}|${c.candidate}`);
+  assert_equals(new Set(keys).size, keys.length,
+    'no candidate should be surfaced more than once');
+
+  const sdp = pc.localDescription.sdp;
+  const ufrag = SDPUtils.matchPrefixAndTrim(sdp, 'a=ice-ufrag:')[0];
+  const candidateLines = SDPUtils.matchPrefix(sdp, 'a=candidate:');
+  for (const c of candidates) {
+    assert_equals(c.usernameFragment, ufrag,
+      `${c.candidate} should carry the negotiated ice-ufrag`);
+    assert_equals(candidateLines.filter(l => l == `a=${c.candidate}`).length, 1,
+      `${c.candidate} should appear exactly once in the local description`);
+  }
+}, 'iceCandidatePoolSize=1: gathered candidates are consistent and unduplicated');
+
+// Applies a local description to pc and resolves with the candidates it then
+// surfaces, failing with a useful message if gathering does not complete.
+async function candidatesAfterSetLocalDescription(t, pc) {
+  await pc.setLocalDescription();
+  // Bounded so that a stalled gathering state machine fails here with a useful
+  // message, instead of timing out the whole file and taking the other tests
+  // with it.
+  const gathered = await Promise.race([
+    gatherCandidatesUntilDone(pc),
+    new Promise(resolve => t.step_timeout(() => resolve('timeout'), 5000)),
+  ]);
+  assert_not_equals(gathered, 'timeout',
+    'ICE gathering should complete and deliver the null candidate ' +
+    `(iceGatheringState is "${pc.iceGatheringState}")`);
+  return gathered;
+}
+
+// There is no TURN server here, so "relay" allows no candidates at all: none
+// may be surfaced, either as an icecandidate event or in the local description.
+function assertNoCandidatesSurfaced(pc, candidates) {
+  assert_array_equals(candidates.map(c => c.candidate), [],
+    'no candidate should be surfaced');
+  const candidateLines =
+      SDPUtils.matchPrefix(pc.localDescription.sdp, 'a=candidate:');
+  assert_array_equals(candidateLines, [],
+    'the local description should have no candidates');
+}
+
+// RFC 9429 section 4.1.18: a change to the ICE candidate policy has no effect
+// on the candidate pool, so pooled candidates have to be filtered by the new
+// policy when they are used. There is no TURN server here, so nothing may be
+// surfaced at all under "relay".
+promise_test(async t => {
+  // Two, so that the test can fail. An offerer may gather for RTP and RTCP
+  // separately until rtcp-mux is negotiated. With pool size set to one, RTCP
+  // gathers for itself instead, which fails under "relay" without a TURN
+  // server and stops the stream before any pooled candidate is surfaced, so
+  // candidates that should have been filtered out would never show.
+  const pc = new RTCPeerConnection({iceCandidatePoolSize: 2});
+  t.add_cleanup(() => pc.close());
+  // Gives the pool a chance to gather; the test holds whether or not it did.
+  await new Promise(resolve => t.step_timeout(resolve, 500));
+
+  pc.setConfiguration({iceCandidatePoolSize: 2, iceTransportPolicy: 'relay'});
+  pc.addTransceiver('audio');
+  const candidates = await candidatesAfterSetLocalDescription(t, pc);
+
+  assertNoCandidatesSurfaced(pc, candidates);
+}, 'iceCandidatePoolSize=2: candidates pooled before iceTransportPolicy ' +
+   'became "relay" are filtered on the offerer');
+
+promise_test(async t => {
+  const pc1 = new RTCPeerConnection();
+  t.add_cleanup(() => pc1.close());
+  const pc2 = new RTCPeerConnection({iceCandidatePoolSize: 1});
+  t.add_cleanup(() => pc2.close());
+  // Gives the pool a chance to gather; the test holds whether or not it did.
+  await new Promise(resolve => t.step_timeout(resolve, 500));
+
+  pc2.setConfiguration({iceCandidatePoolSize: 1, iceTransportPolicy: 'relay'});
+  pc1.addTransceiver('audio');
+  await pc1.setLocalDescription();
+  await pc2.setRemoteDescription(pc1.localDescription);
+  const candidates = await candidatesAfterSetLocalDescription(t, pc2);
+
+  assertNoCandidatesSurfaced(pc2, candidates);
+}, 'iceCandidatePoolSize=1: candidates pooled before iceTransportPolicy ' +
+   'became "relay" are filtered on the answerer');
+
+// The reverse: a pool gathered under "relay" must not hold back the host
+// candidates that "all" allows.
+promise_test(async t => {
+  const pc = new RTCPeerConnection(
+      {iceCandidatePoolSize: 1, iceTransportPolicy: 'relay'});
+  t.add_cleanup(() => pc.close());
+  // Gives the pool a chance to gather; the test holds whether or not it did.
+  await new Promise(resolve => t.step_timeout(resolve, 500));
+
+  pc.setConfiguration({iceCandidatePoolSize: 1, iceTransportPolicy: 'all'});
+  pc.addTransceiver('audio');
+  const candidates = await candidatesAfterSetLocalDescription(t, pc);
+
+  assert_true(candidates.some(c => c.type == 'host'),
+    'a host candidate should be gathered once iceTransportPolicy is "all"');
+}, 'iceCandidatePoolSize=1: host candidates are gathered after ' +
+   'iceTransportPolicy changes from "relay" to "all"');
+
+// A copy of desc without its BUNDLE group. Giving the answerer this instead of
+// the offer gets an answer that does not bundle, so a max-compat offerer ends
+// up with a transport for each m-section, without munging what the offerer
+// applies itself.
+function withoutBundle(desc) {
+  return {type: desc.type,
+          sdp: desc.sdp.replace(/^a=group:BUNDLE.*\r\n/m, '')};
+}
+
+// The pool only holds enough pre-gathered candidates for a single transport,
+// but negotiation with bundlePolicy "max-compat" needs two. The pooled
+// candidates must be handed to one transport and the second transport must
+// gather from scratch, with both ending up connected.
+promise_test(async t => {
+  const pc1 = new RTCPeerConnection(
+      {iceCandidatePoolSize: 1, bundlePolicy: 'max-compat'});
+  t.add_cleanup(() => pc1.close());
+  const pc2 = new RTCPeerConnection({bundlePolicy: 'max-compat'});
+  t.add_cleanup(() => pc2.close());
+  exchangeIceCandidates(pc1, pc2);
+
+  pc1.addTransceiver('audio', {direction: 'sendrecv'});
+  pc1.addTransceiver('video', {direction: 'sendrecv'});
+
+  const mLineIndices = new Set();
+  pc1.onicecandidate = ({candidate}) => {
+    if (candidate) mLineIndices.add(candidate.sdpMLineIndex);
+  };
+
+  // Without bundling each m-section keeps a transport of its own, forcing a
+  // second transport to gather even though the pool only pre-gathered one.
+  await pc1.setLocalDescription();
+  await pc2.setRemoteDescription(withoutBundle(pc1.localDescription));
+  await pc2.setLocalDescription();
+  await pc1.setRemoteDescription(pc2.localDescription);
+
+  await listenToConnected(pc1);
+
+  assert_equals(mLineIndices.size, 2,
+    'Candidates should be gathered for both m-sections');
+
+  const [audio, video] = pc1.getTransceivers();
+  const audioTransport = audio.sender.transport;
+  const videoTransport = video.sender.transport;
+  assert_not_equals(audioTransport, videoTransport,
+    'max-compat should give each m-section its own transport');
+  for (const [name, transport] of
+       [['audio', audioTransport], ['video', videoTransport]]) {
+    assert_in_array(transport.iceTransport.state, ['connected', 'completed'],
+      `${name} transport should be connected`);
+    assert_not_equals(transport.iceTransport.getSelectedCandidatePair(), null,
+      `${name} transport should have a selected candidate pair`);
+  }
+}, 'iceCandidatePoolSize=1: both transports are used when negotiation needs two');
+
+// A local offer can be applied again before negotiation completes. Here the
+// second offer adds an m-section with a transport of its own, and both
+// transports have to gather candidates and connect, whichever of them the
+// pooled candidates went to.
+promise_test(async t => {
+  const pc1 = new RTCPeerConnection(
+      {iceCandidatePoolSize: 2, bundlePolicy: 'max-compat'});
+  t.add_cleanup(() => pc1.close());
+  const pc2 = new RTCPeerConnection({bundlePolicy: 'max-compat'});
+  t.add_cleanup(() => pc2.close());
+  const exchange = exchangeIceCandidates(pc1, pc2);
+  // pc1 applies two offers back to back, so its candidates can come out before
+  // pc2 has a remote description to add them to. They are held until it has.
+  exchange.from(pc1).hold();
+
+  const candidates = [];
+  pc1.addEventListener('icecandidate', ({candidate}) => {
+    if (candidate && candidate.candidate) {
+      candidates.push(candidate);
+    }
+  });
+
+  pc1.addTransceiver('audio', {direction: 'sendrecv'});
+  await pc1.setLocalDescription();
+
+  // Re-apply in have-local-offer with a second m-section.
+  pc1.addTransceiver('video', {direction: 'sendrecv'});
+  await pc1.setLocalDescription();
+
+  // Without bundling each m-section keeps a transport of its own.
+  await pc2.setRemoteDescription(withoutBundle(pc1.localDescription));
+  await exchange.from(pc1).release();
+  await pc2.setLocalDescription();
+  await pc1.setRemoteDescription(pc2.localDescription);
+
+  await listenToConnected(pc1);
+
+  const [audio, video] = pc1.getTransceivers();
+  for (const [name, transceiver] of [['audio', audio], ['video', video]]) {
+    const transport = transceiver.sender.transport;
+    assert_in_array(transport.iceTransport.state, ['connected', 'completed'],
+      `${name} transport should be connected`);
+    assert_not_equals(transport.iceTransport.getSelectedCandidatePair(), null,
+      `${name} transport should have a selected candidate pair`);
+  }
+
+  const mLineIndices = new Set(candidates.map(c => c.sdpMLineIndex));
+  assert_array_equals([...mLineIndices].sort(), [0, 1],
+    'both m-sections should gather candidates');
+}, 'iceCandidatePoolSize=2: re-applying a local offer with a new m-section ' +
+   'gathers for both transports');
+
+</script>
