@@ -1300,7 +1300,6 @@ bool js::WasmModuleExecute(JSContext* cx, Handle<ModuleObject*> record) {
   }
 
   ModuleObject::initWasmExportBindings(cx, record, exportValues);
-  ModuleObject::onTopLevelEvaluationFinished(record);
 
   return true;
 }
