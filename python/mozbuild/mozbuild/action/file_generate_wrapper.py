@@ -16,14 +16,14 @@ def action(fh, script, target_dir, *args):
     os.unlink(fh.name)
 
     args = list(args)
-    objdir = Path.cwd()
+    topobjdir = Path(buildconfig.topobjdir)
     topsrcdir = Path(buildconfig.topsrcdir)
 
     def make_absolute(base_path, p):
         return Path(base_path) / Path(p.lstrip("/"))
 
     try:
-        abs_target_dir = str(make_absolute(objdir, target_dir))
+        abs_target_dir = str(make_absolute(topobjdir, target_dir))
         abs_script = make_absolute(topsrcdir, script)
         script = [str(abs_script)]
         if abs_script.suffix == ".py":
