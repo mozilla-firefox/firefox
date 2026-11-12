@@ -8561,7 +8561,7 @@
 # skew).
 - name: gfx.webrender.svg-shapes.gradients
   type: RelaxedAtomicBool
-  value: false
+  value: true
   mirror: always
 
 # Shapes and images with mix-blend-mode can be drawn with WebRender; the blend

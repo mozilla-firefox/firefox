@@ -36,15 +36,15 @@ fuzzy(0-187,0-1191) == element-paint-paintserversize-rounding-02.html element-pa
 fuzzy(0-1,0-625) == element-paint-multiple-backgrounds-01a.html element-paint-multiple-backgrounds-01-ref.html
 fuzzy(0-1,0-625) == element-paint-multiple-backgrounds-01b.html element-paint-multiple-backgrounds-01-ref.html
 fuzzy(0-1,0-625) == element-paint-multiple-backgrounds-01c.html element-paint-multiple-backgrounds-01-ref.html
-fuzzy(0-1,0-1200) == gradient-html-01.html gradient-html-01-ref.svg
-fuzzy(0-1,0-1200) == gradient-html-02.html gradient-html-02-ref.svg
-random-if(!cocoaWidget) == gradient-html-03.html gradient-html-03-ref.svg
+fuzzy(0-1,0-1500) == gradient-html-01.html gradient-html-01-ref.svg
+fuzzy(0-1,0-1500) == gradient-html-02.html gradient-html-02-ref.svg
+random-if(!cocoaWidget) fuzzy-if(cocoaWidget,0-1,0-1000) == gradient-html-03.html gradient-html-03-ref.svg
 == gradient-html-04.html gradient-html-04-ref.html
 == gradient-html-05.html gradient-html-05-ref.html
 fuzzy(0-1,0-9674) random-if(!cocoaWidget) fuzzy-if(cocoaWidget&&!swgl,0-1,18000-444200) == gradient-html-06a.html gradient-html-06b.html
 fuzzy(0-1,0-9674) random-if(!cocoaWidget) fuzzy-if(cocoaWidget&&!swgl,0-1,0-444200) == gradient-html-06b.html gradient-html-06c.html
-fuzzy(0-1,0-20000) == gradient-html-06c.html gradient-html-06d.html
-fuzzy(0-1,0-20000) == gradient-html-06d.html gradient-html-06e.html
+fuzzy(0-1,0-21000) == gradient-html-06c.html gradient-html-06d.html
+fuzzy(0-1,0-21000) == gradient-html-06d.html gradient-html-06e.html
 random-if(!cocoaWidget) fuzzy-if(cocoaWidget,0-2,0-42305) == gradient-html-07a.html gradient-html-07b.html
 fuzzy(0-1,0-16900) == gradient-html-07c.html gradient-html-07d.html
 HTTP == invalidate-1.html invalidate-1-ref.html

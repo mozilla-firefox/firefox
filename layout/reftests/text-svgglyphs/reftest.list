@@ -10,7 +10,7 @@ skip-if(!Android&&isDebugBuild) == svg-glyph-direct.svg svg-glyph-direct-ref.svg
 == svg-glyph-invalid.html svg-glyph-invalid-ref.html
 skip-if(!Android&&isDebugBuild) == svg-glyph-objectfill-solid.svg svg-glyph-objectfill-solid-ref.svg
 skip-if(!Android&&isDebugBuild) fuzzy(0-2,0-200) == svg-glyph-objectstroke-solid.svg svg-glyph-objectstroke-solid-ref.svg
-skip-if(!Android&&isDebugBuild) fuzzy(0-1,0-21000) == svg-glyph-objectgradient.svg svg-glyph-objectgradient-ref.svg # see bug 871961#c5
+skip-if(!Android&&isDebugBuild) fuzzy(0-1,0-21500) == svg-glyph-objectgradient.svg svg-glyph-objectgradient-ref.svg # see bug 871961#c5
 skip-if(!Android&&isDebugBuild) fuzzy(0-1,0-5300) == svg-glyph-objectgradient-zoom.svg svg-glyph-objectgradient-zoom-ref.svg
 skip-if(!Android&&isDebugBuild) fuzzy(0-14,0-13000) == svg-glyph-objectpattern.svg svg-glyph-objectpattern-ref.svg
 skip-if(!Android&&isDebugBuild) == clip.html clip-ref.html
@@ -25,7 +25,7 @@ skip-if(!Android&&isDebugBuild) == svg-glyph-objectvalue-75.svg svg-glyph-object
 skip-if(!Android&&isDebugBuild) == svg-glyph-objectvalue-150.svg svg-glyph-objectvalue-150-ref.svg
 skip-if(!Android&&isDebugBuild) fuzzy(0-15,0-152) == svg-glyph-mask.svg svg-glyph-mask-ref.svg
 
-skip-if(!Android&&isDebugBuild) fuzzy(0-1,0-4900) == svg-glyph-paint-server.svg svg-glyph-paint-server-ref.svg
+skip-if(!Android&&isDebugBuild) fuzzy(0-1,0-5000) == svg-glyph-paint-server.svg svg-glyph-paint-server-ref.svg
 skip-if(!Android&&isDebugBuild) == svg-glyph-transform.svg svg-glyph-transform-ref.svg
 skip-if(!Android&&isDebugBuild) == svg-glyph-extents.html svg-glyph-extents-ref.html
 skip-if(!Android&&isDebugBuild) == svg-glyph-compressed.html svg-glyph-compressed-ref.html
