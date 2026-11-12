@@ -46,6 +46,7 @@ platform(linux,mac) == border-shape-3.yaml border-shape-3.png
 platform(linux,mac) == border-shape-4.yaml border-shape-4.png
 platform(linux,mac) == border-shape-inset.yaml border-shape-inset.png
 == border-corner-fractional-radius.yaml border-corner-fractional-radius-ref.yaml
+== border-corner-raster-scale-mismatch.yaml blank.yaml
 
 # The interior split of an over-thick border must land at the same device pixel
 # for both neighbouring segments (bug 2059620).

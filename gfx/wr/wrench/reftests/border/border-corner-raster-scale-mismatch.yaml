@@ -1,0 +1,21 @@
+# A 4096x1001 corner exceeds MAX_BORDER_RESOLUTION, so it is rasterized at half
+# scale: its 500.5 texel radius rounds up to a 501 texel task. The corner
+# geometry must be scaled to fill the task, or the row past the arc's clip
+# centre is filled solid and a line is drawn through the border's empty
+# interior (bug 2090433). The clip keeps only part of that interior, around
+# the row in question, which must stay empty.
+---
+root:
+  items:
+    - type: border
+      bounds: [10, -900, 4200, 1100]
+      clip-rect: [100, 80, 400, 40]
+      width: 3
+      border-type: normal
+      style: solid
+      color: black
+      radius:
+        top-left: [4096, 1001]
+        top-right: 0
+        bottom-left: 0
+        bottom-right: 0
