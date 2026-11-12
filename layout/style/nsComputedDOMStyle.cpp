@@ -2478,13 +2478,10 @@ void nsComputedDOMStyle::RegisterPrefChangeCallbacks() {
     }
   }
 
-  prefs.AppendElement(nullptr);
-
   MOZ_ASSERT(!gCallbackPrefs);
   gCallbackPrefs = new nsTArray<const char*>(std::move(prefs));
 
-  Preferences::RegisterCallbacks(MarkComputedStyleMapDirty,
-                                 gCallbackPrefs->Elements(),
+  Preferences::RegisterCallbacks(MarkComputedStyleMapDirty, *gCallbackPrefs,
                                  GetComputedStyleMap());
 }
 
@@ -2494,8 +2491,7 @@ void nsComputedDOMStyle::UnregisterPrefChangeCallbacks() {
     return;
   }
 
-  Preferences::UnregisterCallbacks(MarkComputedStyleMapDirty,
-                                   gCallbackPrefs->Elements(),
+  Preferences::UnregisterCallbacks(MarkComputedStyleMapDirty, *gCallbackPrefs,
                                    GetComputedStyleMap());
   gCallbackPrefs = nullptr;
 }

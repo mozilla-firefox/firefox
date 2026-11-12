@@ -73,7 +73,7 @@ using namespace mozilla::dom;
 
 static constexpr const char* kObservedPrefs[] = {
     PREF_SHISTORY_SIZE, PREF_SHISTORY_MAX_TOTAL_VIEWERS,
-    PREF_FISSION_BFCACHEINPARENT, nullptr};
+    PREF_FISSION_BFCACHEINPARENT};
 
 static int32_t gHistoryMaxSize = 50;
 

@@ -399,7 +399,7 @@ void CrashStatsLogForwarder::CrashAction(LogReason aReason) {
 #define GFX_PREF_GRAPHITE_SHAPING "gfx.font_rendering.graphite.enabled"
 
 static const char* kObservedPrefs[] = {"gfx.downloadable_fonts.",
-                                       "gfx.font_rendering.", nullptr};
+                                       "gfx.font_rendering."};
 
 static void FontPrefChanged(const char* aPref, void* aData) {
   MOZ_ASSERT(aPref);
