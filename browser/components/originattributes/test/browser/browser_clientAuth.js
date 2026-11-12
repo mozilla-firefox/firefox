@@ -11,6 +11,9 @@ Services.obs.addObserver(onCertDialogLoaded, "cert-dialog-loaded");
 
 registerCleanupFunction(() => {
   Services.obs.removeObserver(onCertDialogLoaded, "cert-dialog-loaded");
+  Cc["@mozilla.org/security/clientAuthRememberService;1"]
+    .getService(Ci.nsIClientAuthRememberService)
+    .clearRememberedDecisions();
 });
 
 async function setup() {
