@@ -3044,9 +3044,6 @@ void Http3Session::CloseConnectionTelemetry(CloseError& aError, bool aClosing) {
   mHttp3Connection->GetStats(&stats);
 
   if (stats.packets_tx > 0) {
-    unsigned long loss = (stats.lost * 10000) / stats.packets_tx;
-    glean::http3::loss_ratio.AccumulateSingleSample(loss);
-
     glean::http3::late_ack.EnumGet(glean::http3::LateAckLabel::eAck)
         .AccumulateSingleSample(stats.late_ack);
     glean::http3::late_ack.EnumGet(glean::http3::LateAckLabel::ePto)

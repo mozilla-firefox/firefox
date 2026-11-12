@@ -2736,23 +2736,6 @@ http3:
       - necko@mozilla.com
     expires: never
 
-  loss_ratio:
-    type: custom_distribution
-    description: >
-      HTTP3: packet loss ratio (multiply by 10000).
-    range_min: 1
-    range_max: 2000
-    bucket_count: 100
-    histogram_type: exponential
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1677951
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2062940
-    data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1677951
-    notification_emails:
-      - necko@mozilla.com
-    expires: never
-
   late_ack_ratio:
     type: labeled_custom_distribution
     description: >
