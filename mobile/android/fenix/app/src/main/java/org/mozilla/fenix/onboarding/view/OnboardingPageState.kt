@@ -15,6 +15,8 @@ import org.mozilla.fenix.nimbus.MarketingCardVariant
  * @property description Description of the page.
  * @property primaryButton [Action] for the primary button.
  * @property secondaryButton Optional [Action] for the secondary button.
+ * @property onSkipClick Optional callback invoked when the skip button above the card is clicked. When null, the skip
+ *   button is hidden.
  * @property termsOfService Optional term of service page data.
  * @property marketingData Optional marketing page data.
  * @property onRecordImpressionEvent Callback for recording impression event.
@@ -26,6 +28,7 @@ data class OnboardingPageState(
     val description: String,
     val primaryButton: Action,
     val secondaryButton: Action? = null,
+    val onSkipClick: (() -> Unit)? = null,
     val termsOfService: OnboardingTermsOfService? = null,
     val marketingData: OnboardingMarketingData? = null,
     val onRecordImpressionEvent: () -> Unit = {},
