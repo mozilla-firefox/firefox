@@ -310,7 +310,7 @@ class TabbedBrowsingTest : BaseTest() {
         on.searchBar
             .mozEnterText(secondWebPage.url.toString(), SearchBarSelectors.TOOLBAR_IN_EDIT_MODE)
             .mozPressEnter(SearchBarSelectors.TOOLBAR_IN_EDIT_MODE)
-        on.browserPage.navigateToPage().verifyPageContentWithReload(secondWebPage.url.toString(), secondWebPage.content)
+        on.browserPage.verifyPageContentWithReload(secondWebPage.url.toString(), secondWebPage.content).navigateToPage()
 
         on.tabDrawer
             .navigateToPage()
