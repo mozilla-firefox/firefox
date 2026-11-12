@@ -30,13 +30,10 @@ use crate::gecko_bindings::bindings::Gecko_ElementHasAnimations;
 use crate::gecko_bindings::bindings::Gecko_ElementHasCSSAnimations;
 use crate::gecko_bindings::bindings::Gecko_ElementHasCSSTransitions;
 use crate::gecko_bindings::bindings::Gecko_ElementState;
-use crate::gecko_bindings::bindings::Gecko_GetActiveLinkAttrDeclarationBlock;
 use crate::gecko_bindings::bindings::Gecko_GetAnimationEffectCount;
 use crate::gecko_bindings::bindings::Gecko_GetAnimationRule;
 use crate::gecko_bindings::bindings::Gecko_GetExtraContentStyleDeclarations;
 use crate::gecko_bindings::bindings::Gecko_GetStyleAttrDeclarationBlock;
-use crate::gecko_bindings::bindings::Gecko_GetUnvisitedLinkAttrDeclarationBlock;
-use crate::gecko_bindings::bindings::Gecko_GetVisitedLinkAttrDeclarationBlock;
 use crate::gecko_bindings::bindings::Gecko_IsSignificantChild;
 use crate::gecko_bindings::bindings::Gecko_MatchLang;
 use crate::gecko_bindings::bindings::Gecko_UpdateAnimations;
@@ -73,7 +70,6 @@ use euclid::default::Size2D;
 use nsstring::nsString;
 use selectors::attr::{AttrSelectorOperation, CaseSensitivity, NamespaceConstraint};
 use selectors::bloom::{BLOOM_HASH_MASK, BloomFilter};
-use selectors::matching::VisitedHandlingMode;
 use selectors::matching::{ElementSelectorFlags, MatchingContext};
 use selectors::sink::Push;
 use selectors::{Element, OpaqueElement};
@@ -1636,11 +1632,8 @@ impl<'le> TElement for GeckoElement<'le> {
         self.has_attr_impl() && unsafe { (*self.0.mAttrs.mImpl.mPtr).mMappedAttributeBits != 0 }
     }
 
-    fn synthesize_presentational_hints_for_legacy_attributes<'a, V>(
-        &self,
-        visited_handling: VisitedHandlingMode,
-        hints: &mut V,
-    ) where
+    fn synthesize_presentational_hints_for_legacy_attributes<'a, V>(&self, hints: &mut V)
+    where
         V: Push<ApplicableDeclarationBlock<'a>>,
         Self: 'a,
     {
@@ -1671,42 +1664,6 @@ impl<'le> TElement for GeckoElement<'le> {
             unsafe { pres_hint_from_raw(Gecko_GetExtraContentStyleDeclarations(self.0)) }
         {
             hints.push(hint);
-        }
-
-        // Support for link, vlink, and alink presentation hints on <body>
-        // FIXME(emilio): It seems we should change color resolution or so instead like we do for
-        // Canvas/CanvasText?
-        if self.is_link() {
-            // Unvisited vs. visited styles are computed up-front based on the
-            // visited mode (not the element's actual state).
-            let declarations = match visited_handling {
-                VisitedHandlingMode::AllLinksVisitedAndUnvisited => {
-                    unreachable!(
-                        "We should never try to selector match with \
-                         AllLinksVisitedAndUnvisited"
-                    );
-                },
-                VisitedHandlingMode::AllLinksUnvisited => unsafe {
-                    Gecko_GetUnvisitedLinkAttrDeclarationBlock(self.0)
-                },
-                VisitedHandlingMode::RelevantLinkVisited => unsafe {
-                    Gecko_GetVisitedLinkAttrDeclarationBlock(self.0)
-                },
-            };
-
-            if let Some(hint) = unsafe { pres_hint_from_raw(declarations) } {
-                hints.push(hint);
-            }
-
-            let active = self
-                .state()
-                .intersects(NonTSPseudoClass::Active.state_flag());
-            if active
-                && let Some(hint) =
-                    unsafe { pres_hint_from_raw(Gecko_GetActiveLinkAttrDeclarationBlock(self.0)) }
-            {
-                hints.push(hint);
-            }
         }
     }
 

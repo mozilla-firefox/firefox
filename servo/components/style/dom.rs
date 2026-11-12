@@ -23,7 +23,7 @@ use crate::values::AtomIdent;
 use crate::values::computed::{Display, TreeCountingResult};
 use crate::{LocalName, Namespace, WeakAtom};
 use dom::ElementState;
-use selectors::matching::{ElementSelectorFlags, QuirksMode, VisitedHandlingMode};
+use selectors::matching::{ElementSelectorFlags, QuirksMode};
 use selectors::sink::Push;
 use selectors::{Element as SelectorsElement, OpaqueElement};
 use servo_arc::{Arc, ArcBorrow};
@@ -886,11 +886,8 @@ pub trait TElement:
 
     /// Generate the proper applicable declarations due to presentational hints,
     /// and insert them into `hints`.
-    fn synthesize_presentational_hints_for_legacy_attributes<'a, V>(
-        &self,
-        visited_handling: VisitedHandlingMode,
-        hints: &mut V,
-    ) where
+    fn synthesize_presentational_hints_for_legacy_attributes<'a, V>(&self, hints: &mut V)
+    where
         V: Push<ApplicableDeclarationBlock<'a>>,
         Self: 'a;
 

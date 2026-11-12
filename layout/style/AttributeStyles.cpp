@@ -9,16 +9,11 @@
 #include "mozilla/DeclarationBlock.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/PresShell.h"
-#include "mozilla/RestyleManager.h"
-#include "mozilla/ServoBindings.h"
-#include "mozilla/ServoStyleSet.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/DocumentInlines.h"
 #include "mozilla/dom/Element.h"
-#include "nsError.h"
 #include "nsHashKeys.h"
-#include "nsPresContext.h"
-#include "nsStyleConsts.h"
+#include "nsLayoutUtils.h"
 
 using namespace mozilla::dom;
 
@@ -35,40 +30,38 @@ void AttributeStyles::SetOwningDocument(Document* aDocument) {
 }
 
 void AttributeStyles::Reset() {
-  mServoUnvisitedLinkDecl = nullptr;
-  mServoVisitedLinkDecl = nullptr;
-  mServoActiveLinkDecl = nullptr;
+  mLinkColor.reset();
+  mVisitedLinkColor.reset();
+  mActiveLinkColor.reset();
 }
 
-nsresult AttributeStyles::ImplLinkColorSetter(
-    RefPtr<StyleLockedDeclarationBlock>& aDecl, nscolor aColor) {
-  if (!mDocument || !mDocument->GetPresShell()) {
-    return NS_OK;
+void AttributeStyles::ImplLinkColorSetter(Maybe<nscolor>& aSlot,
+                                          nscolor aValue) {
+  MOZ_ASSERT(!ServoStyleSet::IsInServoTraversal());
+  if (aSlot && *aSlot == aValue) {
+    return;
   }
 
-  MOZ_ASSERT(!ServoStyleSet::IsInServoTraversal());
-  aDecl = Servo_DeclarationBlock_CreateEmpty().Consume();
-  Servo_DeclarationBlock_SetColorValue(aDecl.get(), eCSSProperty_color, aColor);
+  aSlot = Some(aValue);
 
   // Now make sure we restyle any links that might need it.  This
   // shouldn't happen often, so just rebuilding everything is ok.
   if (Element* root = mDocument->GetRootElement()) {
-    RestyleManager* rm = mDocument->GetPresContext()->RestyleManager();
-    rm->PostRestyleEvent(root, RestyleHint::RestyleSubtree(), nsChangeHint(0));
+    nsLayoutUtils::PostRestyleEvent(root, RestyleHint::RecascadeSubtree(),
+                                    nsChangeHint(0));
   }
-  return NS_OK;
 }
 
-nsresult AttributeStyles::SetLinkColor(nscolor aColor) {
-  return ImplLinkColorSetter(mServoUnvisitedLinkDecl, aColor);
+void AttributeStyles::SetLinkColor(nscolor aColor) {
+  return ImplLinkColorSetter(mLinkColor, aColor);
 }
 
-nsresult AttributeStyles::SetActiveLinkColor(nscolor aColor) {
-  return ImplLinkColorSetter(mServoActiveLinkDecl, aColor);
+void AttributeStyles::SetActiveLinkColor(nscolor aColor) {
+  return ImplLinkColorSetter(mActiveLinkColor, aColor);
 }
 
-nsresult AttributeStyles::SetVisitedLinkColor(nscolor aColor) {
-  return ImplLinkColorSetter(mServoVisitedLinkDecl, aColor);
+void AttributeStyles::SetVisitedLinkColor(nscolor aColor) {
+  return ImplLinkColorSetter(mVisitedLinkColor, aColor);
 }
 
 size_t AttributeStyles::DOMSizeOfIncludingThis(
@@ -76,9 +69,7 @@ size_t AttributeStyles::DOMSizeOfIncludingThis(
   size_t n = aMallocSizeOf(this);
   // Measurement of the following members may be added later if DMD finds it is
   // worthwhile:
-  // - mServoUnvisitedLinkDecl;
-  // - mServoVisitedLinkDecl;
-  // - mServoActiveLinkDecl;
+  // - mCachedStyleAttrs;
   //
   // The following members are not measured:
   // - mDocument, because it's non-owning

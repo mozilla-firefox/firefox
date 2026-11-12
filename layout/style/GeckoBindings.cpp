@@ -405,16 +405,6 @@ const StyleLockedDeclarationBlock* Gecko_GetExtraContentStyleDeclarations(
   return nullptr;
 }
 
-const StyleLockedDeclarationBlock* Gecko_GetUnvisitedLinkAttrDeclarationBlock(
-    const Element* aElement) {
-  AttributeStyles* attrStyles = aElement->OwnerDoc()->GetAttributeStyles();
-  if (!attrStyles) {
-    return nullptr;
-  }
-
-  return attrStyles->GetServoUnvisitedLinkDecl();
-}
-
 StyleSheet* Gecko_StyleSheet_Clone(const StyleSheet* aSheet) {
   MOZ_ASSERT(aSheet);
   MOZ_ASSERT(aSheet->GetParentSheet(), "Should only be used for @import");
@@ -460,24 +450,6 @@ GeckoImplicitScopeRoot Gecko_StyleSheet_ImplicitScopeRoot(
   // defined at the edge of the shadow root.
   return GeckoImplicitScopeRoot{
       .mHost = host, .mRoot = host, .mConstructed = false};
-}
-
-const StyleLockedDeclarationBlock* Gecko_GetVisitedLinkAttrDeclarationBlock(
-    const Element* aElement) {
-  AttributeStyles* attrStyles = aElement->OwnerDoc()->GetAttributeStyles();
-  if (!attrStyles) {
-    return nullptr;
-  }
-  return attrStyles->GetServoVisitedLinkDecl();
-}
-
-const StyleLockedDeclarationBlock* Gecko_GetActiveLinkAttrDeclarationBlock(
-    const Element* aElement) {
-  AttributeStyles* attrStyles = aElement->OwnerDoc()->GetAttributeStyles();
-  if (!attrStyles) {
-    return nullptr;
-  }
-  return attrStyles->GetServoActiveLinkDecl();
 }
 
 bool Gecko_GetAnimationRule(const Element* aElement,
@@ -737,10 +709,25 @@ nscolor Gecko_ComputeSystemColor(StyleSystemColor aColor, const Document* aDoc,
     case StyleSystemColor::Canvas:
       return colors.mDefaultBackground;
     case StyleSystemColor::Linktext:
+      if (auto* styles = aDoc->GetAttributeStyles()) {
+        if (const auto& lc = styles->GetLinkColor()) {
+          return *lc;
+        }
+      }
       return colors.mLink;
     case StyleSystemColor::Activetext:
+      if (auto* styles = aDoc->GetAttributeStyles()) {
+        if (const auto& lc = styles->GetActiveLinkColor()) {
+          return *lc;
+        }
+      }
       return colors.mActiveLink;
     case StyleSystemColor::Visitedtext:
+      if (auto* styles = aDoc->GetAttributeStyles()) {
+        if (const auto& lc = styles->GetVisitedLinkColor()) {
+          return *lc;
+        }
+      }
       return colors.mVisitedLink;
     default:
       break;

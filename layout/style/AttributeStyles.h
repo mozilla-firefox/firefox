@@ -10,10 +10,7 @@
 #ifndef mozilla_AttributeStyles_h_
 #define mozilla_AttributeStyles_h_
 
-#include "PLDHashTable.h"
 #include "mozilla/MemoryReporting.h"
-#include "nsAtom.h"
-#include "nsCOMPtr.h"
 #include "nsColor.h"
 #include "nsString.h"
 #include "nsTHashMap.h"
@@ -35,19 +32,16 @@ class AttributeStyles final {
   size_t DOMSizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const;
 
   void Reset();
-  nsresult SetLinkColor(nscolor aColor);
-  nsresult SetActiveLinkColor(nscolor aColor);
-  nsresult SetVisitedLinkColor(nscolor aColor);
 
-  const StyleLockedDeclarationBlock* GetServoUnvisitedLinkDecl() const {
-    return mServoUnvisitedLinkDecl;
+  const Maybe<nscolor>& GetLinkColor() const { return mLinkColor; }
+  const Maybe<nscolor>& GetActiveLinkColor() const { return mActiveLinkColor; }
+  const Maybe<nscolor>& GetVisitedLinkColor() const {
+    return mVisitedLinkColor;
   }
-  const StyleLockedDeclarationBlock* GetServoVisitedLinkDecl() const {
-    return mServoVisitedLinkDecl;
-  }
-  const StyleLockedDeclarationBlock* GetServoActiveLinkDecl() const {
-    return mServoActiveLinkDecl;
-  }
+
+  void SetLinkColor(nscolor aColor);
+  void SetActiveLinkColor(nscolor aColor);
+  void SetVisitedLinkColor(nscolor aColor);
 
   void CacheStyleAttr(const nsAString& aSerialized, MiscContainer* aValue) {
     mCachedStyleAttrs.InsertOrUpdate(aSerialized, aValue);
@@ -68,13 +62,12 @@ class AttributeStyles final {
   ~AttributeStyles();
 
   // Implementation of SetLink/VisitedLink/ActiveLinkColor
-  nsresult ImplLinkColorSetter(RefPtr<StyleLockedDeclarationBlock>& aDecl,
-                               nscolor aColor);
+  void ImplLinkColorSetter(Maybe<nscolor>& aSlot, nscolor);
 
   dom::Document* mDocument;
-  RefPtr<StyleLockedDeclarationBlock> mServoUnvisitedLinkDecl;
-  RefPtr<StyleLockedDeclarationBlock> mServoVisitedLinkDecl;
-  RefPtr<StyleLockedDeclarationBlock> mServoActiveLinkDecl;
+  Maybe<nscolor> mLinkColor;
+  Maybe<nscolor> mActiveLinkColor;
+  Maybe<nscolor> mVisitedLinkColor;
   nsTHashMap<nsStringHashKey, MiscContainer*> mCachedStyleAttrs;
 };
 

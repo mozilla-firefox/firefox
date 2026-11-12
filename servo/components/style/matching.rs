@@ -90,24 +90,16 @@ trait PrivateMatchMethods: TElement {
             CascadeVisitedMode::Visited => cascade_inputs.primary.visited_rules.as_mut(),
         };
 
-        let primary_rules = match primary_rules {
-            Some(r) => r,
-            None => return false,
+        let Some(primary_rules) = primary_rules else {
+            return false;
         };
 
         let rule_tree = context.shared.stylist.rule_tree();
         let guards = &context.shared.guards;
         let mut result = false;
         if replacements.contains(RestyleHint::RESTYLE_PRES_HINTS) {
-            use selectors::matching::VisitedHandlingMode;
             let mut hints = smallvec::SmallVec::<[_; 3]>::new();
-            self.synthesize_presentational_hints_for_legacy_attributes(
-                match cascade_visited {
-                    CascadeVisitedMode::Unvisited => VisitedHandlingMode::AllLinksUnvisited,
-                    CascadeVisitedMode::Visited => VisitedHandlingMode::RelevantLinkVisited,
-                },
-                &mut hints,
-            );
+            self.synthesize_presentational_hints_for_legacy_attributes(&mut hints);
             rule_tree.replace_pres_hints(&hints, primary_rules);
         }
         if replacements.contains(RestyleHint::RESTYLE_STYLE_ATTRIBUTE) {

@@ -75,7 +75,7 @@ use crate::style_resolver::{PrimaryStyle, ResolvedElementStyles};
 use crate::stylist::Stylist;
 use crate::values::AtomIdent;
 use atomic_refcell::{AtomicRefCell, AtomicRefMut};
-use selectors::matching::{NeedsSelectorFlags, SelectorCaches, VisitedHandlingMode};
+use selectors::matching::{NeedsSelectorFlags, SelectorCaches};
 use smallbitvec::SmallBitVec;
 use smallvec::SmallVec;
 use std::marker::PhantomData;
@@ -210,11 +210,8 @@ impl ValidationData {
     {
         self.pres_hints.get_or_insert_with(|| {
             // This should basically never spill.
-            let mut pres_hints = SmallVec::<[_; 5]>::new();
-            element.synthesize_presentational_hints_for_legacy_attributes(
-                VisitedHandlingMode::AllLinksUnvisited,
-                &mut pres_hints,
-            );
+            let mut pres_hints = SmallVec::<[_; 3]>::new();
+            element.synthesize_presentational_hints_for_legacy_attributes(&mut pres_hints);
             ThinVec::from_iter(pres_hints.drain(..).map(|d| d.source.to_owned()))
         })
     }

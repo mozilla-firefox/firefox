@@ -202,16 +202,6 @@ Gecko_GetMappedAttributeDeclarations(const mozilla::dom::Element* element);
 const mozilla::StyleLockedDeclarationBlock*
 Gecko_GetExtraContentStyleDeclarations(const mozilla::dom::Element* element);
 
-const mozilla::StyleLockedDeclarationBlock*
-Gecko_GetUnvisitedLinkAttrDeclarationBlock(
-    const mozilla::dom::Element* element);
-
-const mozilla::StyleLockedDeclarationBlock*
-Gecko_GetVisitedLinkAttrDeclarationBlock(const mozilla::dom::Element* element);
-
-const mozilla::StyleLockedDeclarationBlock*
-Gecko_GetActiveLinkAttrDeclarationBlock(const mozilla::dom::Element* element);
-
 // Visited handling.
 
 // Returns whether visited styles are enabled for a given document.

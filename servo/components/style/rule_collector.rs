@@ -216,10 +216,7 @@ where
 
         let length_before_preshints = self.rules.len();
         self.element
-            .synthesize_presentational_hints_for_legacy_attributes(
-                self.context.visited_handling(),
-                self.rules,
-            );
+            .synthesize_presentational_hints_for_legacy_attributes(self.rules);
         if cfg!(debug_assertions) && self.rules.len() != length_before_preshints {
             for declaration in &self.rules[length_before_preshints..] {
                 assert_eq!(
