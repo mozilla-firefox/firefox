@@ -267,6 +267,22 @@ This is more content. {testToReplace2}
   );
 });
 
+add_task(function test_renderPrompt_values_not_rescanned() {
+  Assert.equal(
+    renderPrompt("Tab: {title}\nDate: {date}", {
+      title: "Notes for {date} {missing} $&",
+      date: "2026-11-10",
+    }),
+    "Tab: Notes for {date} {missing} $&\nDate: 2026-11-10",
+    "Placeholders inside a value stay literal"
+  );
+  Assert.equal(
+    renderPrompt("{a} {unknown} {b}", { a: 0, b: "{a}" }),
+    "0 {unknown} {a}",
+    "Unknown placeholders are kept and later values are not rescanned"
+  );
+});
+
 add_task(function test_renderPrompt_optional_sections() {
   const prompt = "URL: {url}\n{#slug}Slug: {slug}{/slug}\nTitle: {title}";
 

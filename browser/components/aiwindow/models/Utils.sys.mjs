@@ -716,7 +716,7 @@ export function renderPrompt(rawPromptContent, stringsToReplace = {}) {
     const value = stringsToReplace[key];
     return Boolean(value) || value === 0;
   };
-  let finalPromptContent = rawPromptContent
+  return rawPromptContent
     .replace(
       PROMPT_STANDALONE_SECTION_REGEX,
       (match, indent, key, content, lineEnd) =>
@@ -724,14 +724,12 @@ export function renderPrompt(rawPromptContent, stringsToReplace = {}) {
     )
     .replace(PROMPT_INLINE_SECTION_REGEX, (match, key, content) =>
       hasValue(key) ? content : ""
+    )
+    .replace(/\{(\w+)\}/g, (match, key) =>
+      Object.hasOwn(stringsToReplace, key)
+        ? String(stringsToReplace[key])
+        : match
     );
-
-  for (const [orig, repl] of Object.entries(stringsToReplace)) {
-    const regex = new RegExp(`{${orig}}`, "g");
-    finalPromptContent = finalPromptContent.replace(regex, () => repl);
-  }
-
-  return finalPromptContent;
 }
 
 /**
