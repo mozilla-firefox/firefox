@@ -1,0 +1,2 @@
+Reporting-Endpoints: endpoint="/reporting-endpoint"
+Connection-Allowlist-Report-Only: (response-origin "https://127.0.0.1/" "https://127.0.0.4/some/*" "https://127.0.0.5/*"); report-to=endpoint

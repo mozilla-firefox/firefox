@@ -3,10 +3,16 @@ prefs = ["security.connection_allowlists.enabled=true"]
 support-files = [
   "file_error_page.html",
   "file_error_page.html^headers^",
+  "file_preconnect.html",
+  "file_preconnect.html^headers^",
+  "file_preconnect_report_only.html",
+  "file_preconnect_report_only.html^headers^",
   "file_video.webm",
   "file_video.webm^headers^",
 ]
 
 ["browser_error_page.js"]
+
+["browser_preconnect.js"]
 
 ["browser_video_document.js"]

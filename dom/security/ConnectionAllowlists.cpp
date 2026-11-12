@@ -229,7 +229,14 @@ bool ConnectionAllowlists::ShouldLoad(nsIURI* aURI,
       break;
   }
 
-  return !ShouldBlockURL(uri, aLoadInfo);
+  const bool reportToConsole =
+      !nsContentUtils::IsPreloadType(aLoadInfo->InternalContentPolicyType());
+  return !ShouldBlockURL(uri, aLoadInfo->GetInnerWindowID(), reportToConsole);
+}
+
+bool ConnectionAllowlists::ShouldBlockConnection(
+    nsIURI* aURI, uint64_t aInnerWindowID) const {
+  return ShouldBlockURL(aURI, aInnerWindowID, /* aReportToConsole */ true);
 }
 
 // https://w3c.github.io/connection-allowlists/#abstract-opdef-match-a-url-to-a-connection-allowlist
@@ -271,8 +278,8 @@ bool ConnectionAllowlists::MatchURL(nsIURI* aURI,
 }
 
 // https://w3c.github.io/connection-allowlists/#abstract-opdef-should-url-be-blocked-by-connection-allowlists
-bool ConnectionAllowlists::ShouldBlockURL(nsIURI* aURI,
-                                          nsILoadInfo* aLoadInfo) const {
+bool ConnectionAllowlists::ShouldBlockURL(nsIURI* aURI, uint64_t aInnerWindowID,
+                                          bool aReportToConsole) const {
   // 1. For each connection allowlist in connection allowlists:
   for (const Maybe<Allowlist>& allowlist :
        {std::cref(mEnforcement), std::cref(mReportOnly)}) {
@@ -287,7 +294,8 @@ bool ConnectionAllowlists::ShouldBlockURL(nsIURI* aURI,
 
     // 1.2. Report a violation given url, environment, and connection
     // allowlist.
-    ReportBlockedRequest(aURI, aLoadInfo, *allowlist, /* aIsRedirect */ false);
+    ReportBlockedRequest(aURI, aInnerWindowID, *allowlist, aReportToConsole,
+                         /* aIsRedirect */ false);
 
     // 1.3. If connection allowlist's disposition is enforce, return blocked.
     if (allowlist->mDisposition == Disposition::Enforce) {
@@ -319,7 +327,10 @@ bool ConnectionAllowlists::ShouldBlockRedirect(nsIURI* aOriginalURI,
 
     // 2.1.2. Report a violation given request’s url, request’s client, and
     // allowlist.
-    ReportBlockedRequest(aOriginalURI, aLoadInfo, *allowlist,
+    const bool reportToConsole =
+        !nsContentUtils::IsPreloadType(aLoadInfo->InternalContentPolicyType());
+    ReportBlockedRequest(aOriginalURI, aLoadInfo->GetInnerWindowID(),
+                         *allowlist, reportToConsole,
                          /* aIsRedirect */ true);
 
     // 2.1.3. If allowlist’s disposition is enforce, return blocked.
@@ -370,20 +381,19 @@ bool ConnectionAllowlists::ShouldBlockWebRTC(
 
 /* static */
 void ConnectionAllowlists::ReportBlockedRequest(nsIURI* aURI,
-                                                nsILoadInfo* aLoadInfo,
+                                                uint64_t aInnerWindowID,
                                                 const Allowlist& aAllowlist,
+                                                bool aReportToConsole,
                                                 bool aIsRedirect) {
-  // Report violations to the web console, except for preloads.
   Resource resource{aURI};
-  if (!nsContentUtils::IsPreloadType(aLoadInfo->InternalContentPolicyType())) {
-    ReportToConsole(resource, aLoadInfo->GetInnerWindowID(), aAllowlist,
-                    aIsRedirect);
+  if (aReportToConsole) {
+    ReportToConsole(resource, aInnerWindowID, aAllowlist, aIsRedirect);
   }
 
   // TODO: This will fail when blocking in the parent process for e.g.
   // navigation.
   nsCOMPtr<nsPIDOMWindowInner> window =
-      nsGlobalWindowInner::GetInnerWindowWithId(aLoadInfo->GetInnerWindowID());
+      nsGlobalWindowInner::GetInnerWindowWithId(aInnerWindowID);
   ReportViolation(resource, window, aAllowlist);
 }
 

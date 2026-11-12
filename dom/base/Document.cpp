@@ -13828,6 +13828,19 @@ void Document::MaybePreconnect(nsIURI* aOrigURI, mozilla::CORSMode aCORSMode) {
     return;
   }
 
+  // https://w3c.github.io/connection-allowlists/#html-preconnect
+  if (RefPtr<ConnectionAllowlists> allowlists =
+          PolicyContainer::GetConnectionAllowlists(mPolicyContainer)) {
+    nsAutoCString origin;
+    nsCOMPtr<nsIURI> originURI;
+    if (NS_FAILED(nsContentUtils::GetWebExposedOriginSerialization(aOrigURI,
+                                                                   origin)) ||
+        NS_FAILED(NS_NewURI(getter_AddRefs(originURI), origin)) ||
+        allowlists->ShouldBlockConnection(originURI, InnerWindowID())) {
+      return;
+    }
+  }
+
   NS_MutateURI mutator(aOrigURI);
   if (NS_FAILED(mutator.GetStatus())) {
     return;
