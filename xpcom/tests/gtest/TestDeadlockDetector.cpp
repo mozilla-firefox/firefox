@@ -94,46 +94,40 @@ TEST_F(TESTNAME(DeadlockDetectorTest), TESTNAME(Sanity2DeathTest)) {
   ASSERT_DEATH_IF_SUPPORTED(Sanity2_Child(), regex);
 }
 
-#if 0
-// Temporarily disabled, see bug 1370644.
-int
-Sanity3_Child() MOZ_NO_THREAD_SAFETY_ANALYSIS
-{
-    mozilla::gtest::DisableCrashReporter();
+static int Sanity3_Child() MOZ_NO_THREAD_SAFETY_ANALYSIS {
+  mozilla::gtest::DisableCrashReporter();
 
-    MUTEX m1("dd.sanity3.m1");
-    MUTEX m2("dd.sanity3.m2");
-    MUTEX m3("dd.sanity3.m3");
-    MUTEX m4("dd.sanity3.m4");
+  MUTEX m1("dd.sanity3.m1");
+  MUTEX m2("dd.sanity3.m2");
+  MUTEX m3("dd.sanity3.m3");
+  MUTEX m4("dd.sanity3.m4");
 
-    m1.Lock();
-    m2.Lock();
-    m3.Lock();
-    m4.Lock();
-    m4.Unlock();
-    m3.Unlock();
-    m2.Unlock();
-    m1.Unlock();
+  m1.Lock();
+  m2.Lock();
+  m3.Lock();
+  m4.Lock();
+  m4.Unlock();
+  m3.Unlock();
+  m2.Unlock();
+  m1.Unlock();
 
-    m4.Lock();
-    m1.Lock();
-    return 0;
+  m4.Lock();
+  m1.Lock();
+  MOZ_CRASH();
 }
 
-TEST_F(TESTNAME(DeadlockDetectorTest), TESTNAME(Sanity3DeathTest))
-{
-    const char* const regex =
-        "###!!! ERROR: Potential deadlock detected.*"
-        "=== Cyclical dependency starts at.*--- Mutex : dd.sanity3.m1.*"
-        "--- Next dependency:.*--- Mutex : dd.sanity3.m2.*"
-        "--- Next dependency:.*--- Mutex : dd.sanity3.m3.*"
-        "--- Next dependency:.*--- Mutex : dd.sanity3.m4.*"
-        "=== Cycle completed at.*--- Mutex : dd.sanity3.m1.*"
-        "###!!! ASSERTION: Potential deadlock detected.*";
+TEST_F(TESTNAME(DeadlockDetectorTest), TESTNAME(Sanity3DeathTest)) {
+  const char* const regex =
+      "###!!! ERROR: Potential deadlock detected.*"
+      "=== Cyclical dependency starts at.*--- Mutex : dd.sanity3.m1.*"
+      "--- Next dependency:.*--- Mutex : dd.sanity3.m2.*"
+      "--- Next dependency:.*--- Mutex : dd.sanity3.m3.*"
+      "--- Next dependency:.*--- Mutex : dd.sanity3.m4.*"
+      "=== Cycle completed at.*--- Mutex : dd.sanity3.m1.*"
+      "Deadlock may happen for some other execution.*";
 
-    ASSERT_DEATH_IF_SUPPORTED(Sanity3_Child(), regex);
+  ASSERT_DEATH_IF_SUPPORTED(Sanity3_Child(), regex);
 }
-#endif
 
 static int Sanity4_Child() MOZ_NO_THREAD_SAFETY_ANALYSIS {
   mozilla::gtest::DisableCrashReporter();

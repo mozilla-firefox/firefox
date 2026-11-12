@@ -8,6 +8,7 @@
 #include "gtest/gtest.h"
 #include "mozilla/Mutex.h"
 #include "nsIMemoryReporter.h"
+#include "prthread.h"
 
 //-----------------------------------------------------------------------------
 
@@ -29,6 +30,85 @@ TEST(DeadlockDetectorScalability, LengthNDepChain)
   const int N = 1 << 14;  // 16K
   AllocLockRecurseUnlockFree(N);
   ASSERT_TRUE(true);
+}
+
+//-----------------------------------------------------------------------------
+
+static void LockChainHeadThenNewLock(void* aChain) {
+  auto* chain = static_cast<mozilla::Mutex**>(aChain);
+  mozilla::Mutex other("deadlockDetector.scalability.longchain.other");
+  mozilla::MutexAutoLock head(*chain[0]);
+  mozilla::MutexAutoLock o(other);
+}
+
+// This test creates a live resource dependency chain N elements long, then
+// acquires a new, unordered resource while holding the head of the chain on a
+// thread with a small stack. The deadlock detector has to walk the whole chain
+// to prove the two resources are unordered, which must not overflow the stack.
+TEST(DeadlockDetectorScalability, LongLiveDepChainSmallStack)
+{
+  const int N = 1 << 15;  // 32K
+
+  mozilla::Mutex** locks = new mozilla::Mutex*[N];
+  for (int i = 0; i < N; ++i) {
+    locks[i] = new mozilla::Mutex("deadlockDetector.scalability.longchain");
+  }
+
+  for (int i = 0; i + 1 < N; ++i) {
+    mozilla::MutexAutoLock lo(*locks[i]);
+    mozilla::MutexAutoLock hi(*locks[i + 1]);
+  }
+
+  // Same stack size as e.g. the cache I/O thread.
+  PRThread* thread = PR_CreateThread(
+      PR_USER_THREAD, LockChainHeadThenNewLock, locks, PR_PRIORITY_NORMAL,
+      PR_GLOBAL_THREAD, PR_JOINABLE_THREAD, 256 * 1024);
+  ASSERT_TRUE(thread);
+  PR_JoinThread(thread);
+
+  for (int i = 0; i < N; ++i) {
+    delete locks[i];
+  }
+  delete[] locks;
+}
+
+//-----------------------------------------------------------------------------
+
+// This test creates a ladder of K diamonds, tops[i] < sides[i][0..1] <
+// tops[i + 1], which has 2^K paths from tops[0] to tops[K], then acquires a
+// new, unordered resource while holding tops[0]. The deadlock detector has to
+// visit each resource once rather than each path to finish in reasonable time.
+TEST(DeadlockDetectorScalability, DiamondLadder)
+{
+  const int K = 40;
+
+  mozilla::Mutex* tops[K + 1];
+  mozilla::Mutex* sides[K][2];
+  for (int i = 0; i <= K; ++i) {
+    tops[i] = new mozilla::Mutex("deadlockDetector.scalability.ladder.top");
+  }
+  for (int i = 0; i < K; ++i) {
+    for (auto*& side : sides[i]) {
+      side = new mozilla::Mutex("deadlockDetector.scalability.ladder.side");
+      mozilla::MutexAutoLock lo(*tops[i]);
+      mozilla::MutexAutoLock mid(*side);
+      mozilla::MutexAutoLock hi(*tops[i + 1]);
+    }
+  }
+
+  {
+    mozilla::Mutex other("deadlockDetector.scalability.ladder.other");
+    mozilla::MutexAutoLock top(*tops[0]);
+    mozilla::MutexAutoLock o(other);
+  }
+
+  for (int i = 0; i < K; ++i) {
+    delete sides[i][0];
+    delete sides[i][1];
+  }
+  for (int i = 0; i <= K; ++i) {
+    delete tops[i];
+  }
 }
 
 //-----------------------------------------------------------------------------

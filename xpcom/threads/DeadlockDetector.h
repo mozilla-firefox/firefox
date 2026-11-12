@@ -65,7 +65,6 @@ class DeadlockDetector {
   struct OrderingEntry;
   typedef nsTArray<OrderingEntry*> HashEntryArray;
   typedef typename HashEntryArray::index_type index_type;
-  typedef typename HashEntryArray::size_type size_type;
   static const index_type NoIndex = HashEntryArray::NoIndex;
 
   /**
@@ -93,6 +92,9 @@ class DeadlockDetector {
     HashEntryArray mOrderedLT;     // this <_o Other
     HashEntryArray mExternalRefs;  // hash entries that reference this
     const T* mResource;
+    // The |mSearchGen| of the last search that visited this entry. Only used
+    // by |FindPath|, under |mLock|.
+    mutable uint32_t mVisitGen = 0;
   };
 
   // Throwaway RAII lock to make the following code safer.
@@ -255,6 +257,7 @@ class DeadlockDetector {
     return 0;
   }
 
+ private:
   /**
    * Return true iff |aTarget| is in the transitive closure of |aStart|
    * over the ordering relation `<_this'.
@@ -263,21 +266,7 @@ class DeadlockDetector {
    */
   bool InTransitiveClosure(const OrderingEntry* aStart,
                            const OrderingEntry* aTarget) const {
-    // NB: Using a static comparator rather than default constructing one shows
-    //     a 9% improvement in scalability tests on some systems.
-    static nsDefaultComparator<const OrderingEntry*, const OrderingEntry*> comp;
-    if (aStart->mOrderedLT.BinaryIndexOf(aTarget, comp) != NoIndex) {
-      return true;
-    }
-
-    index_type i = 0;
-    size_type len = aStart->mOrderedLT.Length();
-    for (auto it = aStart->mOrderedLT.Elements(); i < len; ++i, ++it) {
-      if (InTransitiveClosure(*it, aTarget)) {
-        return true;
-      }
-    }
-    return false;
+    return FindPath(aStart, aTarget, nullptr);
   }
 
   /**
@@ -290,10 +279,6 @@ class DeadlockDetector {
    * aTarget|.  This function returns the first ordering found by
    * depth-first search.
    *
-   * Nb: |InTransitiveClosure| could be replaced by this function.
-   * However, this one is more expensive because we record the DFS
-   * search stack on the heap whereas the other doesn't.
-   *
    * @precondition |aStart != aTarget|
    */
   ResourceAcquisitionArray* GetDeductionChain(const OrderingEntry* aStart,
@@ -304,29 +289,64 @@ class DeadlockDetector {
     }
     chain->AppendElement(aStart->mResource);
 
-    NS_ASSERTION(GetDeductionChain_Helper(aStart, aTarget, chain),
+    NS_ASSERTION(FindPath(aStart, aTarget, chain),
                  "GetDeductionChain called when there's no deadlock");
     return chain;
   }
 
+  // Depth-first search for a path |aStart <_this ... <_this aTarget|. If one
+  // is found and |aChain| is non-null, the resources on the path after
+  // |aStart|, up to and including |aTarget|, are appended to |aChain|.
+  //
+  // The search is iterative, since the ordering graph can contain chains long
+  // enough to overflow small thread stacks if walked recursively, and visits
+  // every entry at most once, since there can be many paths to the same entry.
+  //
   // precondition: |aStart != aTarget|
-  // invariant: |aStart| is the last element in |aChain|
-  bool GetDeductionChain_Helper(const OrderingEntry* aStart,
-                                const OrderingEntry* aTarget,
-                                ResourceAcquisitionArray* aChain) {
-    if (aStart->mOrderedLT.BinaryIndexOf(aTarget) != NoIndex) {
-      aChain->AppendElement(aTarget->mResource);
-      return true;
+  bool FindPath(const OrderingEntry* aStart, const OrderingEntry* aTarget,
+                ResourceAcquisitionArray* aChain) const {
+    // |frames| holds the current path from |aStart|, plus the index of the
+    // next child to visit for each entry on it.
+    struct Frame {
+      const OrderingEntry* mEntry;
+      index_type mNextChild;
+    };
+    // An entry has been visited by this search iff its |mVisitGen| equals
+    // |gen|. On wraparound, reset all entries so no stale mark can match.
+    uint32_t gen = ++mSearchGen;
+    if (MOZ_UNLIKELY(gen == 0)) {
+      for (const auto& data : mOrdering.Values()) {
+        data->mVisitGen = 0;
+      }
+      gen = mSearchGen = 1;
     }
+    AutoTArray<Frame, 64> frames;
+    frames.AppendElement(Frame{aStart, 0});
+    aStart->mVisitGen = gen;
 
-    index_type i = 0;
-    size_type len = aStart->mOrderedLT.Length();
-    for (auto it = aStart->mOrderedLT.Elements(); i < len; ++i, ++it) {
-      aChain->AppendElement((*it)->mResource);
-      if (GetDeductionChain_Helper(*it, aTarget, aChain)) {
+    while (!frames.IsEmpty()) {
+      Frame& top = frames.LastElement();
+      const OrderingEntry* entry = top.mEntry;
+      if (top.mNextChild == 0 &&
+          entry->mOrderedLT.BinaryIndexOf(aTarget) != NoIndex) {
+        if (aChain) {
+          for (index_type i = 1; i < frames.Length(); ++i) {
+            aChain->AppendElement(frames[i].mEntry->mResource);
+          }
+          aChain->AppendElement(aTarget->mResource);
+        }
         return true;
       }
-      aChain->RemoveLastElement();
+      if (top.mNextChild >= entry->mOrderedLT.Length()) {
+        frames.RemoveLastElement();
+        continue;
+      }
+      const OrderingEntry* child = entry->mOrderedLT[top.mNextChild++];
+      // NB: |top| may be invalidated by the append below.
+      if (child->mVisitGen != gen) {
+        child->mVisitGen = gen;
+        frames.AppendElement(Frame{child, 0});
+      }
     }
     return false;
   }
@@ -343,6 +363,12 @@ class DeadlockDetector {
    * detector.
    */
   PRLock* mLock;
+
+  /**
+   * Generation counter for |FindPath|, bumped once per search. Protected by
+   * |mLock|.
+   */
+  mutable uint32_t mSearchGen = 0;
 };
 
 template <typename T>
