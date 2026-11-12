@@ -2572,12 +2572,14 @@ void PeerConnectionImpl::InvalidateLastReturnedParameters() {
   }
 }
 
-void PeerConnectionImpl::ParseIceServers(
+nsTArray<IceServerParser::ParsedIceServer> PeerConnectionImpl::ParseIceServers(
     const nsTArray<dom::RTCIceServer>& aIceServers, ErrorResult& aRv) {
   auto result = IceServerParser::Parse(aIceServers);
   if (result.isErr()) {
     aRv = result.unwrapErr();
+    return {};
   }
+  return result.unwrap();
 }
 
 static JsepRtcpMuxPolicy ToJsepRtcpMuxPolicy(dom::RTCRtcpMuxPolicy aPolicy) {
@@ -2609,16 +2611,18 @@ void PeerConnectionImpl::SetConfiguration(
     return;
   }
 
-  ParseIceServers(aConfiguration.mIceServers, aRv);
+  nsTArray<IceServerParser::ParsedIceServer> parsedIceServers =
+      ParseIceServers(aConfiguration.mIceServers, aRv);
   if (aRv.Failed()) {
     return;
   }
 
-  aRv = SetConfiguration(aConfiguration);
+  aRv = SetConfiguration(aConfiguration, std::move(parsedIceServers));
 }
 
 nsresult PeerConnectionImpl::SetConfiguration(
-    const RTCConfiguration& aConfiguration) {
+    const RTCConfiguration& aConfiguration,
+    nsTArray<IceServerParser::ParsedIceServer> aParsedIceServers) {
   // All ICE servers are administratively prohibited, but they should still be
   // visible in getConfiguration().
   nsresult rv =
@@ -2668,6 +2672,63 @@ nsresult PeerConnectionImpl::SetConfiguration(
       aConfiguration.mAlwaysNegotiateDataChannels);
   // Store the configuration for about:webrtc
   StoreConfigurationForAboutWebrtc(aConfiguration);
+
+  const bool iceServersChanged = aParsedIceServers != mParsedIceServers;
+  mParsedIceServers = std::move(aParsedIceServers);
+
+  const uint8_t poolSize = aConfiguration.mIceCandidatePoolSize;
+
+  // RFC 9429 section 4.1.18 only lets either of these reach the pool while no
+  // local description has been applied: the pool size must not change after
+  // that, and by then the pool belongs to the first offer/answer exchange
+  // (section 3.5.4). A change to the ICE transport policy deliberately does
+  // not reach the pool at all, since pooled candidates can still be filtered
+  // when a stream takes them. With every address administratively prohibited
+  // there is nothing to pool, just as there is nothing to gather.
+  if (!mBlockedByConnectionAllowlists &&
+      (poolSize != mIceCandidatePoolSize || iceServersChanged) &&
+      mJsepSession->GetLocalDescription(kJsepDescriptionPendingOrCurrent)
+          .empty()) {
+    if (iceServersChanged || poolSize == 0) {
+      // Whatever the pool holds was gathered from the old servers, so it has
+      // to be replaced rather than resized; and a pool resized to nothing is
+      // just a pool released.
+      EmptyCandidatePool();
+    }
+
+    if (poolSize > 0) {
+      mIceCandidatePoolSize = poolSize;
+      // As in GatherIfReady, ask for the local addresses before queueing, so
+      // that the resize waits for them instead of running without any.
+      if (!mStunAddrs.Length()) {
+        InitLocalAddrs();
+      }
+      nsCOMPtr<nsIRunnable> runnable(NS_NewRunnableFunction(
+          __func__,
+          [this, self = RefPtr<PeerConnectionImpl>(this), size = poolSize,
+           defaultRouteOnly = GetPrefDefaultAddressOnly(),
+           obfuscate = GetPrefObfuscateHostAddresses()]() {
+            // As in EnsureIceGathering: with no addresses from the parent
+            // process, nICEr would enumerate them itself, which the content
+            // process sandbox does not allow. Nothing is pooled then.
+            if (!mStunAddrs.Length() && XRE_IsContentProcess()) {
+              CSFLogInfo(LOGTAG,
+                         "SetConfiguration: No STUN addresses returned from "
+                         "parent process, not gathering a candidate pool");
+              return;
+            }
+            // The pool gathers before EnsureIceGathering has run, so it needs
+            // the default route target set up here; otherwise a pool gathered
+            // with defaultRouteOnly would pick the default route without it.
+            EnsureTargetForDefaultLocalAddressLookup();
+            // Resizes rather than re-gathers, so a pool that grew keeps what
+            // it already gathered and one that shrank only drops the excess.
+            mTransportHandler->SetCandidatePoolSize(size, defaultRouteOnly,
+                                                    obfuscate, mStunAddrs);
+          }));
+      PerformOrEnqueueIceCtxOperation(runnable);
+    }
+  }
 
   return NS_OK;
 }
@@ -3683,6 +3744,29 @@ void PeerConnectionImpl::OnCandidateError(
                                    aErrorInfo.mPort,
                                    ObString(aErrorInfo.mUrl.c_str()), errorCode,
                                    ObString(aErrorInfo.mErrorText.c_str()), rv);
+}
+
+// RFC 9429 section 3.5.4: the candidate pool is only consulted for the first
+// offer/answer exchange, "after which the candidate pool is emptied and no
+// longer used". Only the first gather can take from it, so anything left in it
+// once gathering has started is holding a socket (and any TURN allocation)
+// open for nothing.
+void PeerConnectionImpl::EmptyCandidatePool() {
+  if (!mIceCandidatePoolSize) {
+    return;
+  }
+
+  mIceCandidatePoolSize = 0;
+  // A resize asked for by SetConfiguration may still be waiting in
+  // mQueuedIceCtxOperations for the local addresses, so emptying goes through
+  // the same queue to stay behind it. Otherwise the queued resize would run
+  // afterwards and create a pool that nothing releases. When the queue isn't
+  // waiting, this runs right away, as before.
+  nsCOMPtr<nsIRunnable> runnable(NS_NewRunnableFunction(
+      __func__, [self = RefPtr<PeerConnectionImpl>(this)]() {
+        self->mTransportHandler->EmptyCandidatePool();
+      }));
+  PerformOrEnqueueIceCtxOperation(runnable);
 }
 
 void PeerConnectionImpl::IceGatheringStateChange(
@@ -4801,6 +4885,18 @@ nsresult PeerConnectionImpl::SetTargetForDefaultLocalAddressLookup() {
   return NS_OK;
 }
 
+void PeerConnectionImpl::EnsureTargetForDefaultLocalAddressLookup() {
+  if (mTargetForDefaultLocalAddressLookupIsSet) {
+    return;
+  }
+
+  nsresult rv = SetTargetForDefaultLocalAddressLookup();
+  if (NS_FAILED(rv)) {
+    NS_WARNING("Unable to set target for default local address lookup");
+  }
+  mTargetForDefaultLocalAddressLookupIsSet = true;
+}
+
 void PeerConnectionImpl::EnsureIceGathering(bool aDefaultRouteOnly,
                                             bool aObfuscateHostAddresses) {
   // All local addresses are administratively prohibited.
@@ -4808,13 +4904,7 @@ void PeerConnectionImpl::EnsureIceGathering(bool aDefaultRouteOnly,
     return;
   }
 
-  if (!mTargetForDefaultLocalAddressLookupIsSet) {
-    nsresult rv = SetTargetForDefaultLocalAddressLookup();
-    if (NS_FAILED(rv)) {
-      NS_WARNING("Unable to set target for default local address lookup");
-    }
-    mTargetForDefaultLocalAddressLookupIsSet = true;
-  }
+  EnsureTargetForDefaultLocalAddressLookup();
 
   // Make sure we don't call StartIceGathering if we're in e10s mode
   // and we received no STUN addresses from the parent process.  In the
@@ -4824,11 +4914,15 @@ void PeerConnectionImpl::EnsureIceGathering(bool aDefaultRouteOnly,
   if (!mStunAddrs.Length() && XRE_IsContentProcess()) {
     CSFLogInfo(LOGTAG, "%s: No STUN addresses returned from parent process",
                __FUNCTION__);
+    EmptyCandidatePool();
     return;
   }
 
   mTransportHandler->StartIceGathering(aDefaultRouteOnly,
                                        aObfuscateHostAddresses, mStunAddrs);
+  // The streams take what they need from the pool as they start gathering,
+  // which StartIceGathering does before this reaches the transport.
+  EmptyCandidatePool();
 }
 
 already_AddRefed<dom::RTCRtpTransceiver> PeerConnectionImpl::CreateTransceiver(

@@ -38,6 +38,7 @@
 #include "jsep/JsepSession.h"
 #include "jsep/JsepSessionImpl.h"
 #include "mozilla/ErrorResult.h"
+#include "mozilla/IceServerParser.h"
 #include "mozilla/PeerIdentity.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/dom/PeerConnectionImplBinding.h"  // ChainedOperation
@@ -398,7 +399,9 @@ class PeerConnectionImpl final
   MOZ_CAN_RUN_SCRIPT_BOUNDARY bool PluginCrash(uint32_t aPluginID,
                                                const nsAString& aPluginName);
 
-  NS_IMETHODIMP SetConfiguration(const RTCConfiguration& aConfiguration);
+  NS_IMETHODIMP SetConfiguration(
+      const RTCConfiguration& aConfiguration,
+      nsTArray<IceServerParser::ParsedIceServer> aParsedIceServers);
   void SetConfiguration(const RTCConfiguration& aConfiguration,
                         ErrorResult& rv);
 
@@ -593,8 +596,8 @@ class PeerConnectionImpl final
       nsTHashMap<nsCStringHashKey, RefPtr<dom::RTCDtlsTransport>>;
 
  private:
-  void ParseIceServers(const nsTArray<dom::RTCIceServer>& aIceServers,
-                       ErrorResult& aRv);
+  nsTArray<IceServerParser::ParsedIceServer> ParseIceServers(
+      const nsTArray<dom::RTCIceServer>& aIceServers, ErrorResult& aRv);
 
   virtual ~PeerConnectionImpl();
   PeerConnectionImpl(const PeerConnectionImpl& rhs);
@@ -799,6 +802,9 @@ class PeerConnectionImpl final
   void FlushIceCtxOperationQueueIfReady();
   void PerformOrEnqueueIceCtxOperation(nsIRunnable* runnable);
   nsresult SetTargetForDefaultLocalAddressLookup();
+  // Calls SetTargetForDefaultLocalAddressLookup the first time either the
+  // candidate pool or regular gathering is about to gather.
+  void EnsureTargetForDefaultLocalAddressLookup();
   void EnsureIceGathering(bool aDefaultRouteOnly, bool aObfuscateHostAddresses);
 
   bool GetPrefDefaultAddressOnly() const;
@@ -810,6 +816,10 @@ class PeerConnectionImpl final
 
   // Ensure ICE transports exist that we might need when offer/answer concludes
   void EnsureTransports(const JsepSession& aSession);
+
+  // Releases whatever is left of the candidate pool, once gathering has started
+  // or the pool has to be replaced.
+  void EmptyCandidatePool();
 
   void UpdateRTCDtlsTransports();
   // Creates/updates mSctpTransport based on whether a data section has
@@ -938,6 +948,14 @@ class PeerConnectionImpl final
     std::string mUfrag;
   };
   std::map<std::string, std::list<PendingIceCandidate>> mQueriedMDNSHostnames;
+
+  // The size of the candidate pool last handed to the transport handler, or 0
+  // if there is no pool to release. Which transports end up using it, and how
+  // much of it they use, is decided below this layer.
+  uint8_t mIceCandidatePoolSize = 0;
+  // The ICE servers most recently handed to the transport handler, parsed, so
+  // that setConfiguration can tell whether they actually changed.
+  nsTArray<IceServerParser::ParsedIceServer> mParsedIceServers;
 
   MediaEventListener mGatheringStateChangeListener;
   MediaEventListener mConnectionStateChangeListener;

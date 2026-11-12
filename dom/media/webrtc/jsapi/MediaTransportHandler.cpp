@@ -30,6 +30,7 @@
 #include <string>
 #include <vector>
 
+#include "common/RandomHex.h"
 #include "mozilla/Base64.h"
 #include "mozilla/ProfilerMarkers.h"
 #include "mozilla/PublicSSL.h"  // For psm::InitializeCipherSuite
@@ -114,6 +115,10 @@ class MediaTransportImpl {
   virtual void StartIceGathering(bool aDefaultRouteOnly,
                                  bool aObfuscateHostAddresses,
                                  const nsTArray<NrIceStunAddr>& aStunAddrs) = 0;
+  virtual void SetCandidatePoolSize(
+      uint8_t aSize, bool aDefaultRouteOnly, bool aObfuscateHostAddresses,
+      const nsTArray<NrIceStunAddr>& aStunAddrs) = 0;
+  virtual void EmptyCandidatePool() = 0;
   virtual void ActivateTransport(
       const std::string& aTransportId, const std::string& aLocalUfrag,
       const std::string& aLocalPwd, size_t aComponentCount,
@@ -179,6 +184,12 @@ class MediaTransportImplNicer final : public MediaTransportImpl,
                          // own process, because we won't need to get this
                          // via IPC anymore
                          const nsTArray<NrIceStunAddr>& aStunAddrs) override;
+
+  void SetCandidatePoolSize(uint8_t aSize, bool aDefaultRouteOnly,
+                            bool aObfuscateHostAddresses,
+                            const nsTArray<NrIceStunAddr>& aStunAddrs) override;
+
+  void EmptyCandidatePool() override;
 
   void ActivateTransport(
       const std::string& aTransportId, const std::string& aLocalUfrag,
@@ -447,6 +458,21 @@ class MediaTransportHandlerLocal final : public MediaTransportHandler {
            aImpl.StartIceGathering(aDefaultRouteOnly, aObfuscateHostAddresses,
                                    stunAddrs);
          });
+  }
+
+  void SetCandidatePoolSize(
+      uint8_t aSize, bool aDefaultRouteOnly, bool aObfuscateHostAddresses,
+      const nsTArray<NrIceStunAddr>& aStunAddrs) override {
+    Post(__func__,
+         [=, stunAddrs = aStunAddrs.Clone()](MediaTransportImpl& aImpl) {
+           aImpl.SetCandidatePoolSize(aSize, aDefaultRouteOnly,
+                                      aObfuscateHostAddresses, stunAddrs);
+         });
+  }
+
+  void EmptyCandidatePool() override {
+    Post(__func__,
+         [](MediaTransportImpl& aImpl) { aImpl.EmptyCandidatePool(); });
   }
 
   void ActivateTransport(
@@ -1118,6 +1144,37 @@ void MediaTransportImplNicer::StartIceGathering(
   if (!mIceCtx->GetStreams().empty()) {
     mIceCtx->StartGathering(aDefaultRouteOnly, aObfuscateHostAddresses);
   }
+}
+
+void MediaTransportImplNicer::SetCandidatePoolSize(
+    uint8_t aSize, bool aDefaultRouteOnly, bool aObfuscateHostAddresses,
+    const nsTArray<NrIceStunAddr>& aStunAddrs) {
+  if (!mIceCtx) {
+    return;
+  }
+
+  mHideLocalPrflx = aObfuscateHostAddresses;
+  mIceCtx->SetGatheringFlags(aDefaultRouteOnly, aObfuscateHostAddresses);
+
+  if (aStunAddrs.Length()) {
+    mIceCtx->SetStunAddrs(aStunAddrs);
+  }
+
+  // The pool gathers when it is asked for rather than waiting for the
+  // gather that setting a local description kicks off, which is the
+  // point of asking for it this early.
+  // Nothing knows yet which transport will use what the pool gathers, so it
+  // gathers under placeholder credentials until a component takes it and is
+  // re-keyed. They are random, like the ones JSEP generates, rather than fixed
+  // so that they are not guessable.
+  mIceCtx->ResizeCandidatePool(aSize, GetRandomHex(1), GetRandomHex(4));
+}
+
+void MediaTransportImplNicer::EmptyCandidatePool() {
+  if (!mIceCtx) {
+    return;
+  }
+  mIceCtx->EmptyCandidatePool();
 }
 
 void MediaTransportImplNicer::StartIceChecks(

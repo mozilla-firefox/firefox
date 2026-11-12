@@ -149,6 +149,24 @@ class MediaTransportHandler {
                                  // this up internally.
                                  const nsTArray<NrIceStunAddr>& aStunAddrs) = 0;
 
+  // Make the pool hold aSize pre-gathered sets of candidates. Called when
+  // iceCandidatePoolSize is set on RTCConfiguration before
+  // setLocalDescription. A transport created afterwards takes what it needs
+  // from the pool instead of gathering, and the candidates surface as that
+  // transport's own, so there is nothing to name here: the pool is not
+  // addressable.
+  // Sets already pre-gathered are kept, per RFC 9429 section 4.1.18: growing
+  // gathers only the sets being added, and shrinking releases only the sets
+  // beyond aSize.
+  virtual void SetCandidatePoolSize(
+      uint8_t aSize, bool aDefaultRouteOnly, bool aObfuscateHostAddresses,
+      const nsTArray<NrIceStunAddr>& aStunAddrs) = 0;
+
+  // Release whatever is left in the pool. RFC 9429 section 3.5.4 empties the
+  // candidate pool after the first offer/answer exchange; until then leftovers
+  // keep their sockets (and any TURN allocations) alive.
+  virtual void EmptyCandidatePool() = 0;
+
   virtual void ActivateTransport(
       const std::string& aTransportId, const std::string& aLocalUfrag,
       const std::string& aLocalPwd, size_t aComponentCount,

@@ -50,12 +50,16 @@ class IceServerParser {
       return mScheme == StunTurnScheme::Stuns ||
              mScheme == StunTurnScheme::Turns;
     }
+
+    bool operator==(const StunTurnUri& aOther) const = default;
   };
 
   struct ParsedIceServer {
     StunTurnUri mUri;
     nsCString mUsername;
     nsCString mPassword;
+
+    bool operator==(const ParsedIceServer& aOther) const = default;
   };
 
   // Parse a STUN/TURN URI per webrtc-pc, RFCs 7064/7065

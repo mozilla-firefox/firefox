@@ -4,14 +4,13 @@
 
 #include "jsep/JsepSessionImpl.h"
 
-#include <stdlib.h>
-
 #include <algorithm>
 #include <set>
 #include <string>
 #include <utility>
 
 #include "api/rtp_parameters.h"
+#include "common/RandomHex.h"
 #include "jsep/JsepTrack.h"
 #include "jsep/JsepTransport.h"
 #include "mozilla/Preferences.h"
@@ -37,23 +36,6 @@ MOZ_MTLOG_MODULE("jsep")
     mLastError = os.str();                                    \
     MOZ_MTLOG(ML_ERROR, "[" << mName << "]: " << mLastError); \
   } while (0);
-
-static std::string GetRandomHex(size_t words) {
-  std::ostringstream os;
-
-  for (size_t i = 0; i < words; ++i) {
-    uint32_t rand;
-    SECStatus rv = PK11_GenerateRandom(reinterpret_cast<unsigned char*>(&rand),
-                                       sizeof(rand));
-    if (rv != SECSuccess) {
-      MOZ_CRASH();
-      return "";
-    }
-
-    os << std::hex << std::setfill('0') << std::setw(8) << rand;
-  }
-  return os.str();
-}
 
 JsepSessionImpl::JsepSessionImpl(const JsepSessionImpl& aOrig)
     : JsepSession(aOrig),

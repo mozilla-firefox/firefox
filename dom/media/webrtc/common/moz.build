@@ -9,6 +9,7 @@ EXPORTS.mozilla += ["IceServerParser.h"]
 
 LOCAL_INCLUDES += [
     "!/dist/include/libwebrtc_overrides",
+    "/dom/media/webrtc",
     "/dom/media/webrtc/transport/third_party/nrappkit/src/util/libekr",
     "/third_party/abseil-cpp",
     "/third_party/libwebrtc",
@@ -18,6 +19,7 @@ UNIFIED_SOURCES += [
     "browser_logging/CSFLog.cpp",
     "browser_logging/WebRtcLog.cpp",
     "IceServerParser.cpp",
+    "RandomHex.cpp",
     "RtpHeaderExtensions.cpp",
     "time_profiling/timecard.c",
     "YuvStamper.cpp",
@@ -30,6 +32,7 @@ SOURCE_HEADERS += [
     "csf_common.h",
     "EncodingConstraints.h",
     "NullDeleter.h",
+    "RandomHex.h",
     "RtpHeaderExtensions.h",
     "Wrapper.h",
     "YuvStamper.h",

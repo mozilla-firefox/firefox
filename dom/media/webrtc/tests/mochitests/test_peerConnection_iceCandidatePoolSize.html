@@ -77,6 +77,26 @@
         "pre-gathering for the pool should not change iceGatheringState");
       pc.close();
     },
+
+    async function poolSetToZeroRightAfterConstructorIsReleased() {
+      // The constructor's resize waits for the local addresses, so setting the
+      // pool size back to 0 straight away happens while it is still queued.
+      // Emptying the pool has to wait behind it too, or the queued resize
+      // creates a pool that nothing releases.
+      const allocated = nextIceServerLog("Allocation created", 3000);
+      const pc = new RTCPeerConnection({
+        iceServers: iceServersArray,
+        iceCandidatePoolSize: 1,
+      });
+      pc.setConfiguration({
+        iceServers: iceServersArray,
+        iceCandidatePoolSize: 0,
+      });
+      is(await allocated, "timeout",
+        "a pool set back to 0 before it could gather should not allocate on " +
+        "the TURN server");
+      pc.close();
+    },
   ];
 
   runNetworkTest(async () => {

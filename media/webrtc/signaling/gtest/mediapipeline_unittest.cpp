@@ -235,6 +235,12 @@ class LoopbackTransport : public MediaTransportHandler {
                          // this up internally
                          const nsTArray<NrIceStunAddr>& aStunAddrs) override {}
 
+  void SetCandidatePoolSize(
+      uint8_t aSize, bool aDefaultRouteOnly, bool aObfuscateAddresses,
+      const nsTArray<NrIceStunAddr>& aStunAddrs) override {}
+
+  void EmptyCandidatePool() override {}
+
   void ActivateTransport(
       const std::string& aTransportId, const std::string& aLocalUfrag,
       const std::string& aLocalPwd, size_t aComponentCount,
