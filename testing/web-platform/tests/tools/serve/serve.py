@@ -1650,8 +1650,7 @@ def run(venv=None, config_cls=ConfigBuilder, route_builder=None,
 
         stash_address = None
         if bind_address:
-            stash_address = (config.server_host, get_port(""))
-            logger.debug("Going to use port %d for stash" % stash_address[1])
+            stash_address = (config.server_host, 0)
 
         with stash.StashServer(stash_address, authkey=str(uuid.uuid4())):
             servers = start(logger, config, routes, mp_context, log_handlers, **kwargs)

@@ -6,6 +6,7 @@ import logging
 import os
 import pickle
 import platform
+import socket
 from unittest.mock import MagicMock, patch
 from typing import Generator, Tuple
 
@@ -26,6 +27,32 @@ from .serve import (
 
 
 logger = logging.getLogger()
+
+
+def test_stash_port_race(monkeypatch):
+    builder = ConfigBuilder(logger, browser_host="localhost", check_subdomains=False)
+    builder.inject_script = None
+    monkeypatch.setattr(serve, "build_config", lambda *args, **kwargs: builder)
+    monkeypatch.delenv("WPT_STASH_CONFIG", raising=False)
+
+    def start(*args, **kwargs):
+        address, authkey = serve.stash.load_env_config()
+        assert address[1] != 0
+        manager = serve.stash.StashManager(address, authkey)
+        manager.connect()
+        data = manager.get_dict()
+        data["test"] = "connected"
+        assert data.pop("test") == "connected"
+        return {}
+
+    monkeypatch.setattr(serve, "start", start)
+    with socket.socket() as competitor:
+        competitor.bind(("127.0.0.1", 0))
+        competitor.listen()
+        # Simulate another listener claiming the port after `get_port()` returns.
+        monkeypatch.setattr(serve, "get_port", lambda host: competitor.getsockname()[1])
+        assert serve.run(exit_after_start=True) == 0
+
 
 @pytest.mark.skipif(platform.uname()[0] == "Windows",
                     reason="Expected contents are platform-dependent")
