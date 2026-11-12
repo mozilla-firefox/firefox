@@ -42,7 +42,9 @@ toolbar[overflowable][customizing] > .customization-target {
 
 #customization-header {
   font-weight: var(--font-weight-heading);
-  font-size: 1.2em;
+  font-size: var(--font-size-heading-medium);
+  /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin: 20px 20px 15px;
 }
 
@@ -56,6 +58,8 @@ toolbar[overflowable][customizing] > .customization-target {
   display: flex;
   flex-direction: column;
   flex: none;
+  /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 0 var(--customization-panel-padding) 25px;
 }
 
@@ -69,7 +73,9 @@ toolbar[overflowable][customizing] > .customization-target {
   align-items: center;
   flex-shrink: 0;
   flex-wrap: wrap;
-  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  border-top: var(--border-width) solid var(--border-color-deemphasized);
+  /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 10px;
 
   > .footer-button,
@@ -94,7 +100,10 @@ toolbar[overflowable][customizing] > .customization-target {
   flex: 1 1 auto;
   overflow: auto;
   min-height: 3em;
+  /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-bottom: 20px;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 5px 20px 20px;
   transition: opacity 0.3s ease-in-out;
   opacity: 0;
@@ -106,6 +115,8 @@ toolbar[overflowable][customizing] > .customization-target {
   .toolbarbutton-1 {
     appearance: none;
     flex-direction: column;
+    /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     padding: 12px 0 9px;
     margin: 0;
 
@@ -136,7 +147,7 @@ toolbarpaletteitem {
 
   > toolbarspring {
     outline: 1px solid;
-    opacity: 0.6;
+    opacity: var(--opacity-deemphasized-strong);
 
     &[removable="false"] {
       outline: 1px dashed;
@@ -148,7 +159,7 @@ toolbarpaletteitem {
   }
 
   &[removable="false"] {
-    opacity: 0.5;
+    opacity: var(--opacity-deemphasized-strong);
   }
 
   &[dragover] {
@@ -160,8 +171,12 @@ toolbarpaletteitem {
     width: 7em;
     max-width: 7em;
     /* icon (16) + margin (9 + 12) + 3 lines of text: */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     height: calc(39px + 3em);
+    /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-bottom: 5px;
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-inline-end: 24px;
     overflow: visible;
     display: inline-flex;
@@ -186,13 +201,18 @@ toolbarpaletteitem {
 
     > toolbarspring {
       outline-offset: -8px;
+      /* Match the height of other items in the palette */
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       max-height: 37px;
     }
 
     > #search-container {
       min-width: 7em;
       width: 7em;
+      /* Match the height of other items in the palette */
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       min-height: 37px;
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       max-height: 37px;
     }
   }
@@ -204,6 +224,8 @@ toolbarpaletteitem {
 
     > toolbarspring {
       outline-offset: -2px;
+      /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       margin-block: 5px;
     }
   }
@@ -282,6 +304,7 @@ toolbarpaletteitem {
     > #search-container > #searchbar,
     .urlbar-background {
       outline: 1px solid color-mix(in srgb, currentColor 60%, transparent);
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.13);
     }
   }
@@ -318,6 +341,8 @@ toolbarpaletteitem {
 
 #customization-uidensity-touch-spacer {
   border-top: 1px solid var(--panel-separator-color);
+  /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin: 6px calc(-1 * var(--panel-padding)) 9px;
 }
 
@@ -339,12 +364,17 @@ toolbarpaletteitem {
   border: 1px solid transparent;
   border-radius: var(--border-radius-small);
   padding-block: 0;
+  /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding-inline: 0 5px;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin: 2px 0;
 
   > .menu-icon {
-    width: 32px;
-    height: 32px;
+    width: var(--icon-size-xlarge);
+    height: var(--icon-size-xlarge);
+    /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin: 5px;
 
     &:-moz-locale-dir(rtl) {
@@ -393,6 +423,8 @@ toolbarpaletteitem {
   flex-direction: column;
   display: flex;
   flex-shrink: 1;
+  /* Ensure enough room for the illustration and the text */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   min-height: calc(174px + 9em);
 }
 
@@ -410,6 +442,7 @@ toolbarpaletteitem {
     @media (-moz-platform: macos) {
       /* Native styling adds more 'oompf' to the popup box-shadow, so simulate that
        * as best as we can here: */
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       box-shadow:
         0 0 1px hsla(0, 0%, 0%, 0.3),
         0 4px 10px hsla(0, 0%, 0%, 0.3);
@@ -419,6 +452,7 @@ toolbarpaletteitem {
     @media not (-moz-platform: macos) {
       border: 1px solid var(--panel-border-color);
       margin: 0;
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       box-shadow: 0 0 4px hsla(0, 0%, 0%, 0.2);
     }
   }
@@ -427,13 +461,18 @@ toolbarpaletteitem {
 #customization-panelWrapper > .panel-arrowbox {
   display: block;
   position: relative;
+  /* The triangle shape doesn't need to conform to icon sizes */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   height: 10px;
   margin-bottom: -1px;
 
   > .panel-arrow[side="top"] {
     list-style-image: url("chrome://global/skin/arrow/panelarrow-vertical.svg");
     -moz-context-properties: fill, stroke;
+    /* Borrow panel colors for the arrow */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     fill: var(--panel-background-color);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     stroke: var(--panel-border-color);
     /* JS code sets --panel-arrow-offset to the distance between the middle of the
      * overflow button and the end of the window. We subtract the padding of our
@@ -441,6 +480,7 @@ toolbarpaletteitem {
      * the result at --panel-arrow-min-inline-end so the arrow stays inside its box
      * when the overflow button sits close to the window edge:
      */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-inline-end: max(var(--panel-arrow-min-inline-end), calc(var(--panel-arrow-offset) - var(--customization-panel-padding) - 10px));
     vertical-align: top;
 
@@ -449,25 +489,31 @@ toolbarpaletteitem {
        * Add padding to compensate: */
       padding: 0 1px;
       /* specify width for hidpi image to fit correctly */
-      width: 20px;
+      width: var(--icon-size-medium);
     }
   }
 }
 
 #customization-panelDescription {
-  font-size: 1.1em;
+  font-size: var(--font-size-heading-medium);
+  /* Prefer pixels over space tokens for platform styles */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 2px 12px 10px;
   margin: 0;
 }
 
 #customization-panelHeader {
-  font-size: 1.3em;
+  font-size: var(--font-size-heading-large);
   font-weight: var(--font-weight-heading);
+  /* Prefer pixels over space tokens for platform styles */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 2px 12px;
   margin: 0;
 }
 
 #customization-panelHolder {
+  /* Prefer pixels over space tokens for platform styles */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding-block: 10px;
 
   > #widget-overflow-fixed-list {
@@ -476,6 +522,8 @@ toolbarpaletteitem {
     flex-direction: column;
     overflow-y: auto;
     overflow-x: hidden;
+    /* Prefer pixels over space tokens for platform styles */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     padding-top: 10px;
 
     /**
@@ -484,6 +532,7 @@ toolbarpaletteitem {
      * panel list is empty and unhovered, or not.
      */
     &:not(:empty) {
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       padding-bottom: 50px; /* Make sure there's always space to drop stuff. */
       border-top: 1px solid var(--panel-separator-color);
     }
@@ -500,7 +549,9 @@ toolbarpaletteitem {
       background-repeat: no-repeat;
       opacity: 0;
       transition: opacity 300ms ease-out;
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       padding-bottom: 154px; /* 154 = 134 for the image, 10px space on either side. */
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       margin-bottom: -154px; /* don't affect positioning of the actual contents */
       pointer-events: none;
     }
@@ -523,6 +574,8 @@ toolbarpaletteitem {
   padding: 0;
 }
 
+/* Whimsy is exempt from design system rules */
+/* stylelint-disable stylelint-plugin-mozilla/use-design-tokens */
 #whimsy-button {
   /* Don't need HiDPI versions since the size used will be scaled down to 20x20. */
   list-style-image: url("chrome://browser/skin/customizableui/whimsy.png");
@@ -681,3 +734,4 @@ toolbarpaletteitem {
     color: rgb(195, 17, 206);
   }
 }
+/* stylelint-enable stylelint-plugin-mozilla/use-design-tokens */

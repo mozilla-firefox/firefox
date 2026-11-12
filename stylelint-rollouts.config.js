@@ -151,7 +151,6 @@ module.exports = [
       "browser/themes/shared/aiWindowSidebar.css",
       "browser/themes/shared/autocomplete.css",
       "browser/themes/shared/contextmenu.css",
-      "browser/themes/shared/customizableui/customizeMode.css",
       "browser/themes/shared/formautofill-notification.css",
       "browser/themes/shared/identity-credential-notification.css",
       "browser/themes/shared/migration/migration-dialog-window.css",
