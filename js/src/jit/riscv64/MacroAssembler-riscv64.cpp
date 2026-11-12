@@ -18,6 +18,7 @@
 #include "jit/JitRuntime.h"
 #include "jit/MacroAssembler.h"
 #include "jit/MoveEmitter.h"
+#include "jit/ProcessExecutableMemory.h"
 #include "util/Memory.h"
 #include "util/PortableMath.h"
 #include "vm/JitActivation.h"  // jit::JitActivation
@@ -2724,14 +2725,16 @@ CodeOffset MacroAssemblerRiscv64Compat::toggledJump(Label* label) {
 
 CodeOffset MacroAssemblerRiscv64Compat::toggledCall(JitCode* target,
                                                     bool enabled) {
-  // 6 instruction to materialize the constant.
-  // + 1 instruction for jalr/nop.
-  AutoForbidPoolsAndNops afp(this, 7);
+  // auipc and addi materialize the target, then jalr or nop.
+  AutoForbidPoolsAndNops afp(this, 3);
 
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
 
-  BufferOffset bo = ma_liPatchable(scratch, ImmPtr(target->raw()));
+  BufferOffset bo = nextOffset();
+  auipc(scratch, 0);
+  addi(scratch, scratch, 0);
+  addPcRelativePatch(bo, target->raw());
   addPendingJump(bo, ImmPtr(target->raw()), RelocationKind::JITCODE);
   if (enabled) {
     jalr(scratch);
@@ -3596,15 +3599,10 @@ void MacroAssembler::call(ImmPtr imm) {
 void MacroAssembler::call(ImmWord imm) { call(ImmPtr((void*)imm.value)); }
 
 void MacroAssembler::call(JitCode* c) {
-  // 6 instruction to materialize the constant.
-  // + 1 instructions for the call.
-  AutoForbidPoolsAndNops afp(this, 7);
-
   UseScratchRegisterScope temps(this);
   Register scratch = temps.Acquire();
-  BufferOffset bo = ma_liPatchable(scratch, ImmPtr(c->raw()));
+  BufferOffset bo = ma_call(ra, c->raw(), scratch);
   addPendingJump(bo, ImmPtr(c->raw()), RelocationKind::JITCODE);
-  callJitNoProfiler(scratch);
 }
 
 void MacroAssembler::callWithABIPre(uint32_t* stackAdjust, bool callFromWasm) {
@@ -6107,13 +6105,17 @@ void MacroAssemblerRiscv64::ma_mul64(Register rd, Register rs, Imm64 rt) {
 }
 
 BufferOffset MacroAssemblerRiscv64::ma_jump(ImmPtr dest) {
+  UseScratchRegisterScope temps(this);
+  Register scratch = temps.Acquire();
+  if (AddressIsInExecutableMemory(dest.value)) {
+    return ma_call(zero, dest.value, scratch);
+  }
+
   // The target never changes, so materialize it in as few instructions as
   // possible. Up to 8 instructions to materialize the constant.
   // + 1 instruction for jr.
   AutoForbidPoolsAndNops afp(this, 9);
 
-  UseScratchRegisterScope temps(this);
-  Register scratch = temps.Acquire();
   BufferOffset offset = nextOffset();
   ma_li(scratch, ImmWord(uintptr_t(dest.value)));
   jr(scratch);
@@ -6500,14 +6502,35 @@ void MacroAssemblerRiscv64::ma_push(FloatRegister f) {
   }
 }
 
+// Call |target| in executable memory, which is always within reach of auipc
+// and jalr, linking in |rd|, which is zero for a jump. The offset is written
+// by Assembler::executableCopy.
+BufferOffset MacroAssemblerRiscv64::ma_call(Register rd, void* target,
+                                            Register scratch) {
+  static_assert(
+      MaxCodeBytesPerProcess <= (static_cast<uint64_t>(1) << 31) - 2048,
+      "All JIT code must be within reach of auipc and jalr");
+  MOZ_ASSERT(AddressIsInExecutableMemory(target));
+  AutoForbidPoolsAndNops afp(this, 2);
+
+  BufferOffset offset = nextOffset();
+  auipc(scratch, 0);
+  jalr(rd, scratch, 0);
+  addPcRelativePatch(offset, target);
+  return offset;
+}
+
 BufferOffset MacroAssemblerRiscv64::ma_call(ImmPtr dest) {
+  UseScratchRegisterScope temps(this);
+  temps.Acquire(CallReg);
+  if (AddressIsInExecutableMemory(dest.value)) {
+    return ma_call(ra, dest.value, CallReg);
+  }
+
   // The target never changes, so materialize it in as few instructions as
   // possible. Up to 8 instructions to materialize the constant.
   // + 1 instruction for jalr.
   AutoForbidPoolsAndNops afp(this, 9);
-
-  UseScratchRegisterScope temps(this);
-  temps.Acquire(CallReg);
 
   BufferOffset offset = nextOffset();
   ma_li(CallReg, ImmWord(uintptr_t(dest.value)));

@@ -64,6 +64,7 @@ bool Assembler::swapBuffer(wasm::Bytes& bytes) {
   // Vector, not a linked-list of chunks, there's not much we can do other
   // than copy.
   MOZ_ASSERT(bytes.empty());
+  MOZ_RELEASE_ASSERT(pcRelativePatches_.empty());
   if (!bytes.resize(bytesNeeded())) {
     return false;
   }
@@ -84,9 +85,32 @@ size_t Assembler::bytesNeeded() const {
   return size() + jumpRelocationTableBytes() + dataRelocationTableBytes();
 }
 
+static void PatchPcRelative(uint8_t* code, const void* target) {
+  int64_t offset = static_cast<const uint8_t*>(target) - code;
+  MOZ_RELEASE_ASSERT(is_int32(offset + 0x800));
+
+  auto [high20, low12] = ToHigh20Low12(int32_t(offset));
+  Instruction* auipc = Instruction::At(code);
+  MOZ_ASSERT(auipc->IsAuipc());
+  auipc->SetImm20UValue(high20);
+  Instruction::At(code + kInstrSize)->SetImm12Value(low12);
+}
+
+static uint8_t* PcRelativeTarget(uint8_t* code) {
+  const Instruction* auipc = Instruction::At(code);
+  MOZ_ASSERT(auipc->IsAuipc());
+  int64_t offset = int64_t(auipc->Imm20UValue()) * (1 << kImm20Shift) +
+                   Instruction::At(code + kInstrSize)->Imm12Value();
+  return code + offset;
+}
+
 void Assembler::executableCopy(uint8_t* buffer) {
   MOZ_ASSERT(isFinished);
   m_buffer.executableCopy(buffer);
+
+  for (const RelativePatch& patch : pcRelativePatches_) {
+    PatchPcRelative(buffer + patch.offset.getOffset(), patch.target);
+  }
 }
 
 void Assembler::processCodeLabels(uint8_t* rawCode) {
@@ -1194,16 +1218,14 @@ bool Assembler::reserve(size_t size) {
   return !oom();
 }
 
-static JitCode* CodeFromJump(Instruction* jump) {
-  uint8_t* target = (uint8_t*)Assembler::ExtractLoad64Value(jump);
-  return JitCode::FromExecutable(target);
+static JitCode* CodeFromJump(uint8_t* jump) {
+  return JitCode::FromExecutable(PcRelativeTarget(jump));
 }
 
 void Assembler::TraceJumpRelocations(JSTracer* trc, JitCode* code,
                                      CompactBufferReader& reader) {
   while (reader.more()) {
-    JitCode* child =
-        CodeFromJump(Instruction::At(code->raw() + reader.readUnsigned()));
+    JitCode* child = CodeFromJump(code->raw() + reader.readUnsigned());
     TraceManuallyBarrieredEdge(trc, &child, "rel32");
   }
 }
@@ -1330,17 +1352,18 @@ bool Assembler::appendRawCode(const uint8_t* code, size_t numBytes) {
 }
 
 void Assembler::ToggleCall(CodeLocationLabel inst_, bool enabled) {
-  LiPtr ptr(Instruction::At(inst_.raw()));
-  if (!ptr.isValid()) {
-    ptr.disassemble();
-  }
-  MOZ_RELEASE_ASSERT(ptr.isValid());
+  // The jalr calls through the register that the auipc and addi pair builds.
+  Instruction* auipc = Instruction::At(inst_.raw());
+  Instruction* addi = Instruction::At(inst_.raw() + kInstrSize);
+  MOZ_RELEASE_ASSERT(auipc->IsAuipc());
+  MOZ_RELEASE_ASSERT(addi->IsAddi() && addi->RdValue() == auipc->RdValue() &&
+                     addi->Rs1Value() == auipc->RdValue());
 
-  Instruction* next = Instruction::At(inst_.raw() + LiPtr::Length * kInstrSize);
+  Instruction* next = Instruction::At(inst_.raw() + 2 * kInstrSize);
   MOZ_ASSERT(next->IsJalr() || next->IsNop());
 
   if (enabled) {
-    next->SetIFormat(RO_JALR, ra.code(), ptr.target(), 0);
+    next->SetIFormat(RO_JALR, ra.code(), auipc->RdValue(), 0);
   } else {
     next->SetNop();
   }

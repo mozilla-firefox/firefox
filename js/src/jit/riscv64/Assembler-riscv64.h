@@ -184,6 +184,16 @@ class Assembler : public AssemblerShared,
     }
   }
 
+  // "auipc" instructions, each followed by an I-type instruction, whose
+  // pc-relative offset to |target| is written by executableCopy once the
+  // final code address is known.
+  js::Vector<RelativePatch, 8, SystemAllocPolicy> pcRelativePatches_;
+
+  void addPcRelativePatch(BufferOffset src, void* target) {
+    enoughMemory_ &= pcRelativePatches_.append(
+        RelativePatch(src, target, RelocationKind::HARDCODED));
+  }
+
   void addLongJump(BufferOffset src, BufferOffset dst) {
     CodeLabel cl;
     cl.patchAt()->bind(src.getOffset());
