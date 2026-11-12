@@ -3,8 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /**
- * Test that the sources table is always present in the profile,
- * even when the "jssources" feature is not enabled.
+ * Test that the sources table is present in the profile.
  */
 add_task(async function test_source_table() {
   Assert.ok(
@@ -12,7 +11,7 @@ add_task(async function test_source_table() {
     "The profiler is not currently active"
   );
 
-  info("Start profiler with 'js' feature but without the 'jssources' feature");
+  info("Start profiler with 'js' feature");
   await ProfilerTestUtils.startProfiler({
     entries: 1000000,
     interval: 1,

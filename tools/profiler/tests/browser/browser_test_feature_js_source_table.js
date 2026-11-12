@@ -10,7 +10,7 @@ add_task(async function test_source_table_schema() {
 
   const url = BASE_URL_HTTPS + "simple.html";
   await BrowserTestUtils.withNewTab(url, async contentBrowser => {
-    await ProfilerTestUtils.startProfiler({ features: ["js", "jssources"] });
+    await ProfilerTestUtils.startProfiler({ features: ["js"] });
 
     const contentPid = await SpecialPowers.spawn(
       contentBrowser,
@@ -127,7 +127,7 @@ add_task(async function test_inline_script_start_positions() {
   await ProfilerTestUtils.assertProfilerInactive();
 
   await ProfilerTestUtils.startProfiler({
-    features: ["stackwalk", "js", "jssources"],
+    features: ["stackwalk", "js"],
   });
   const url = BASE_URL_HTTPS + "inline_script_test.html";
   await BrowserTestUtils.withNewTab(url, async contentBrowser => {

@@ -1695,8 +1695,7 @@ class ActivePS {
   // shared between all threads.
   static nsTArray<mozilla::JSSourceEntry> GatherJSSources(PSLockRef aLock) {
     nsTArray<mozilla::JSSourceEntry> jsSourceEntries;
-    bool gatherSourceText =
-        ProfilerFeature::HasJSSources(ActivePS::Features(aLock));
+    bool gatherSourceText = ActivePS::FeatureJS(aLock);
 
     ThreadRegistry::LockedRegistry lockedRegistry;
     ActivePS::ProfiledThreadList threads =
@@ -1716,7 +1715,7 @@ class ActivePS {
     JSContext* jsContext = mainThread->mJSContext;
 
     // Always gather source metadata (filename, sourceMapURL), but only gather
-    // actual source text if the JS sources feature is enabled.
+    // actual source text if the JS feature is enabled.
     js::ProfilerJSSources threadSources = js::GetProfilerScriptSources(
         JS_GetRuntime(jsContext), gatherSourceText);
 
