@@ -483,19 +483,20 @@ class ModuleLoaderBase : public nsISupports {
   bool IsModuleFetching(const ModuleMapKey& key) const;
   void WaitForModuleFetch(ModuleLoadRequest* aRequest);
 
-  void AddToPreloadedResolvedSet(
-      ModuleLoadRequest* aRootRequest,
-      mozilla::UniquePtr<SpecifierResolutionRecord> aRecord);
-
   void AddToGlobalResolvedSet(
       mozilla::UniquePtr<SpecifierResolutionRecord> aRecord);
 
   // https://html.spec.whatwg.org/#add-module-to-resolved-module-set
-  // The aHostDefined argument is for determining if this is resolved during
-  // preloading.
+  //
+  // aReferrerFetchInfo is the ScriptFetchInfo of whichever script performed
+  // this resolution. If it's still part of an active preload, the record is
+  // attributed to it directly, so it can be migrated or discarded alongside
+  // the rest of that module's own preloaded state; otherwise (including a
+  // null aReferrerFetchInfo, e.g. a dynamic import with no referrer) it goes
+  // straight into the global resolved set.
   void AddToResolvedModuleSet(
       mozilla::UniquePtr<SpecifierResolutionRecord> aRecord,
-      Handle<Value> aHostDefined = UndefinedHandleValue);
+      ScriptFetchInfo* aReferrerFetchInfo);
 
   void ResetPreloadFlag(nsIURI* aURI);
   void ResetPreloadedModule(nsIURI* aURI);
