@@ -419,12 +419,7 @@ const CONFIG_PANES = Object.freeze({
     l10nId: "ai-window-personalize-header",
     iconSrc: "chrome://browser/skin/smart-window-mono-32.svg",
     badge: "beta",
-    groupIds: Services.prefs.getBoolPref(
-      "browser.smartwindow.firstrun.singlePageWithAutoModel",
-      false
-    )
-      ? ["assistantDefaultGroup", "memoriesGroup", "assistantModelGroup"]
-      : ["assistantDefaultGroup", "assistantModelGroup", "memoriesGroup"],
+    groupIds: ["assistantDefaultGroup", "assistantModelGroup", "memoriesGroup"],
     module: "chrome://browser/content/preferences/config/aiFeatures.mjs",
   },
   passwordsAutofill: {

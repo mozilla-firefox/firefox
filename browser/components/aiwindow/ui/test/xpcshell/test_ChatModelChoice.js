@@ -195,7 +195,6 @@ add_task(async function test_getAllModelsData_with_remote_settings() {
           shortName: "Mistral Small 4",
           brandName: "Mistral",
         },
-        4: { model: "auto", ownerName: "", labelId: "auto" },
       },
       "Should return all model choices with correct data"
     );
@@ -353,7 +352,6 @@ add_task(async function test_getAllModelsData_with_fallbacks() {
           shortName: "Mistral Small 4",
           brandName: "Mistral",
         },
-        4: { model: "auto", ownerName: "", labelId: "auto" },
       },
       "Should return all model choices with correct data"
     );
