@@ -4193,7 +4193,7 @@
 # Use the new Navigation API history behaviour and load path for iframes.
 - name: dom.navigation.new_frame_load_behavior.enabled
   type: bool
-  value: @IS_NIGHTLY_BUILD@
+  value: true
   mirror: always
 
 # Network Information API
