@@ -65,12 +65,7 @@
        "The sub scroll container should be overscrolled with overscroll-behavior: contain");
   }
 
-  if (getPlatform() == "linux") {
-    ok(true, "Skipping test on Linux because of bug 1889039");
-    subtestDone();
-  } else {
-    waitUntilApzStable()
-    .then(test)
-    .then(subtestDone, subtestFailed);
-  }
+  waitUntilApzStable()
+  .then(test)
+  .then(subtestDone, subtestFailed);
 </script>

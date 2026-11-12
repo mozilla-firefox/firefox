@@ -100,9 +100,11 @@ async function test() {
 
   let scrollendPromise = promiseOneEvent(container, "scrollend");
 
-  // Send two horizontal wheel events quickly.
-  synthesizeNativeWheel(container, 50, 50, NativePanHandler.delta, 0);
-  synthesizeNativeWheel(container, 50, 50, NativePanHandler.delta, 0);
+  // Send two horizontal wheel events quickly. A native horizontal wheel delta
+  // scrolls to the right when positive on Windows, and when negative elsewhere.
+  const delta = getPlatform() == "windows" ? 50 : -50;
+  synthesizeNativeWheel(container, 50, 50, delta, 0);
+  synthesizeNativeWheel(container, 50, 50, delta, 0);
 
   // Wait for the end of the smooth scrolling triggered by above wheel events.
   await scrollendPromise;
@@ -119,9 +121,6 @@ async function test() {
 
 if (getPlatform() == "android") {
   ok(true, "Skipping test because native wheel events are not supported on Android");
-  subtestDone();
-} else if (getPlatform() == "linux") {
-  ok(true, "Skipping test on Linux because of bug 1889039. ");
   subtestDone();
 } else {
   waitUntilApzStable()

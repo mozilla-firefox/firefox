@@ -144,7 +144,6 @@ run-if = [
 ["test_group_overscroll_behavior.html"]
 skip-if = [
   "os == 'android'", # getPanHandler() doesn't support Android
-  "os == 'linux'", # SpecialPowers.isHeadless is broken on Linux (bug 1889039)
 ]
 
 ["test_group_overscroll_handoff.html"]
