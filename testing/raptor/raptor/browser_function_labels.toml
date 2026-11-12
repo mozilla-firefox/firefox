@@ -305,6 +305,7 @@ funcPrefixes = [
   "cppgc::internal::FinalizerTrait<blink::ComputedStyleBase", # https://share.firefox.dev/47xsJlD
   "WebCore::RenderTreeUpdater::tearDownRenderers(WebCore::Element&)",
   "WebCore::RenderTreeUpdater::tearDownRenderers(WebCore::Text&)",
+  "WebCore::destroyRenderTreeIfNeeded(",
 ]
 
 [[labels]]
