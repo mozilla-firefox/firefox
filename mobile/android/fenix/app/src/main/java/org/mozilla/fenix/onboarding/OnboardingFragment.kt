@@ -23,6 +23,9 @@ import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.WebExtensionAction
 import mozilla.components.browser.state.state.extension.WebExtensionPromptRequest
 import mozilla.components.concept.engine.webextension.InstallationMethod
+import mozilla.components.service.fxa.FxaService
+import mozilla.components.service.fxa.manager.SCOPE_PROFILE
+import mozilla.components.service.fxa.manager.SCOPE_SYNC
 import mozilla.components.service.nimbus.evalJexlSafe
 import mozilla.components.service.nimbus.messaging.use
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
@@ -264,8 +267,24 @@ class OnboardingFragment : Fragment() {
                     pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_SIGN_IN),
                 )
             },
-            onSyncPairingScanClick = {},
-            onSyncPairingEmailClick = {},
+            onSyncPairingScanClick = {
+                findNavController()
+                    .nav(
+                        id = R.id.onboardingFragment,
+                        directions =
+                            OnboardingFragmentDirections.actionGlobalPairFragment(
+                                entrypoint = FenixFxAEntryPoint.NewUserOnboarding
+                            ),
+                    )
+            },
+            onSyncPairingEmailClick = {
+                requireComponents.services.accountsAuthFeature.beginAuthentication(
+                    context = requireContext(),
+                    entrypoint = FenixFxAEntryPoint.NewUserOnboarding,
+                    service = FxaService.Sync.identifier,
+                    scopes = setOf(SCOPE_PROFILE, SCOPE_SYNC),
+                )
+            },
             onSyncPairingSkipClick = {},
             onFinish = {
                 onFinish(it)

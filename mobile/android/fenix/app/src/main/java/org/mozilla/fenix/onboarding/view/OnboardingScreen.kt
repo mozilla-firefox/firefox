@@ -326,14 +326,17 @@ private fun shouldLaunchEffectScrollToNextPage(
     return scrollToNextCard
 }
 
-private fun scrollToNextCardFromSignIn(
+@VisibleForTesting
+internal fun scrollToNextCardFromSignIn(
     pagesToDisplay: List<OnboardingPageUiData>,
     currentPageIndex: Int,
     isSignedIn: Boolean,
 ): Boolean {
-    val indexOfSignInPage = pagesToDisplay.indexOfFirst { it.type == OnboardingPageUiData.Type.SYNC_SIGN_IN }
-    val currentPageIsSignInPage = currentPageIndex == indexOfSignInPage
-    return isSignedIn && currentPageIsSignInPage
+    val currentPageType = pagesToDisplay.getOrNull(currentPageIndex)?.type
+    val isSyncPage =
+        currentPageType == OnboardingPageUiData.Type.SYNC_SIGN_IN ||
+            currentPageType == OnboardingPageUiData.Type.SYNC_PAIRING
+    return isSignedIn && isSyncPage
 }
 
 private fun scrollToNextCardFromSetToDefault(
