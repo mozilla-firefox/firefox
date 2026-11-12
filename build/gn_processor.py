@@ -12,7 +12,7 @@ import tempfile
 from collections import defaultdict, deque
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
-from itertools import combinations
+from itertools import chain, combinations
 from pathlib import Path
 from shutil import which
 
@@ -333,9 +333,13 @@ def filter_gn_config(
             if spec_attr == "include_dirs":
                 # Rebase outputs from an absolute path in the temp dir to a path
                 # relative to the target dir.
-                spec[spec_attr] = [
-                    d if gen_path != Path(d) else "!//gen" for d in spec[spec_attr]
-                ]
+                def rebase_include_dir(d):
+                    d_path = Path(d)
+                    if gen_path in chain([d_path], d_path.parents):
+                        return f"!//gen/{d_path.relative_to(gen_path).as_posix()}"
+                    return d
+
+                spec[spec_attr] = [rebase_include_dir(d) for d in spec[spec_attr]]
 
         gn_out["targets"][target_fullname] = spec
 
