@@ -132,7 +132,11 @@ public class GeckoMediaDrmBridge implements GeckoMediaDrm {
     try {
       // ensureMediaCryptoCreated may cause NotProvisionedException for the first time use.
       // Need to start provisioning with a dummy promise id.
-      ensureMediaCryptoCreated();
+      if (!ensureMediaCryptoCreated()) {
+        // For example there are too many open sessions. The bridge is not usable.
+        release();
+        throw new IllegalStateException("Cannot create MediaCrypto");
+      }
     } catch (final android.media.NotProvisionedException e) {
       if (DEBUG) Log.d(LOGTAG, "Device not provisioned:" + e.getMessage());
       startProvisioning(MAX_PROMISE_ID);

@@ -405,7 +405,12 @@ void MediaDrmCDMProxy::md_Init(uint32_t aPromiseId) {
 
   UniquePtr<MediaDrmCDMCallbackProxy> callback(
       new MediaDrmCDMCallbackProxy(this));
-  mCDM->Init(std::move(callback));
+  if (NS_FAILED(mCDM->Init(std::move(callback)))) {
+    RejectPromiseWithStateError(
+        aPromiseId, "Couldn't create the MediaDrm bridge in md_Init"_ns);
+    return;
+  }
+
   nsCOMPtr<nsIRunnable> task(
       NewRunnableMethod<uint32_t>("MediaDrmCDMProxy::OnCDMCreated", this,
                                   &MediaDrmCDMProxy::OnCDMCreated, aPromiseId));

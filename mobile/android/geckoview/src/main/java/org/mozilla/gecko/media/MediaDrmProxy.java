@@ -150,7 +150,8 @@ public final class MediaDrmProxy {
 
   @WrapForJNI(calledFrom = "gecko")
   public static MediaDrmProxy create(final String keySystem, final Callbacks nativeCallbacks) {
-    return new MediaDrmProxy(keySystem, nativeCallbacks);
+    final MediaDrmProxy proxy = new MediaDrmProxy(keySystem, nativeCallbacks);
+    return proxy.mImpl != null ? proxy : null;
   }
 
   MediaDrmProxy(final String keySystem, final Callbacks nativeCallbacks) {
@@ -159,8 +160,12 @@ public final class MediaDrmProxy {
       mDrmStubId = UUID.randomUUID().toString();
       final IMediaDrmBridge remoteBridge =
           RemoteManager.getInstance().createRemoteMediaDrmBridge(keySystem, mDrmStubId);
-      mImpl = new RemoteMediaDrmBridge(remoteBridge);
-      mImpl.setCallbacks(new MediaDrmProxyCallbacks(this, nativeCallbacks));
+      if (remoteBridge == null) {
+        throw new IllegalStateException("No remote MediaDrm bridge");
+      }
+      final RemoteMediaDrmBridge impl = new RemoteMediaDrmBridge(remoteBridge);
+      impl.setCallbacks(new MediaDrmProxyCallbacks(this, nativeCallbacks));
+      mImpl = impl;
     } catch (final Exception e) {
       Log.e(LOGTAG, "Constructing MediaDrmProxy ... error", e);
     }

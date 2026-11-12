@@ -170,7 +170,9 @@ public final class RemoteManager implements IBinder.DeathRecipient {
     }
     try {
       final IMediaDrmBridge remoteBridge = mRemote.createRemoteMediaDrmBridge(keySystem, stubId);
-      mDrmBridges.add(remoteBridge);
+      if (remoteBridge != null) {
+        mDrmBridges.add(remoteBridge);
+      }
       return remoteBridge;
     } catch (final RemoteException e) {
       Log.e(LOGTAG, "Got exception during createRemoteMediaDrmBridge().", e);

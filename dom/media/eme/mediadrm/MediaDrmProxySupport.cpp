@@ -196,7 +196,11 @@ MediaDrmProxySupport::MediaDrmProxySupport(const nsAString& aKeySystem,
 
   mBridgeProxy = java::MediaDrmProxy::Create(mKeySystem, mJavaCallbacks);
 
-  MOZ_ASSERT(mBridgeProxy, "mBridgeProxy should not be null");
+  if (!mBridgeProxy) {
+    MDRMN_LOG("Failed to create the MediaDrm bridge");
+    return;
+  }
+
   mMediaDrmStubId = mBridgeProxy->GetStubId()->ToString();
 
   if (!aOriginID.IsEmpty()) {
@@ -261,12 +265,13 @@ void MediaDrmProxySupport::CloseSession(uint32_t aPromiseId,
 }
 
 void MediaDrmProxySupport::Shutdown() {
-  MOZ_ASSERT(mBridgeProxy);
-
   if (mDestroyed) {
     return;
   }
-  mBridgeProxy->Destroy();
+
+  if (mBridgeProxy) {
+    mBridgeProxy->Destroy();
+  }
   mDestroyed = true;
 }
 
