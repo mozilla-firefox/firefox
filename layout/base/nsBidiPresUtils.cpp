@@ -1559,10 +1559,52 @@ BidiEmbeddingLevel nsBidiPresUtils::GetFrameEmbeddingLevel(nsIFrame* aFrame) {
   return GetFirstLeaf(aFrame)->GetEmbeddingLevel();
 }
 
+// Returns the frame that will be the first child of aFrame once it is reflowed,
+// for the purpose of finding its first bidi leaf.
+//
+// GetFrameBaseLevel is called from line layout before the first frame on the
+// line is reflowed. An inline continuation's child list may not be up to date
+// at that point: children may still be on its prev-in-flow's overflow list, or
+// still in its next-in-flows (if line breaks were removed), or its existing
+// children may be stale. So look in the places nsInlineFrame::Reflow will
+// take children from, in the same order.
+static const nsIFrame* FirstChildForBidiLeafSearch(const nsIFrame* aFrame) {
+  if (const nsIFrame* prevInFlow = aFrame->GetPrevInFlow()) {
+    if (const nsIFrame* kid =
+            prevInFlow->GetChildList(FrameChildListID::Overflow).FirstChild()) {
+      return kid;
+    }
+  }
+  if (const nsIFrame* kid = aFrame->PrincipalChildList().FirstChild()) {
+    return kid;
+  }
+  for (const nsIFrame* next = aFrame->GetNextInFlow(); next;
+       next = next->GetNextInFlow()) {
+    if (const nsIFrame* kid = next->PrincipalChildList().FirstChild()) {
+      return kid;
+    }
+    if (const nsIFrame* kid =
+            next->GetChildList(FrameChildListID::Overflow).FirstChild()) {
+      return kid;
+    }
+  }
+  return nullptr;
+}
+
 BidiEmbeddingLevel nsBidiPresUtils::GetFrameBaseLevel(const nsIFrame* aFrame) {
+  // Same notion of "bidi leaf" as IsBidiLeaf(), but also looking through the
+  // pending overflow children of fresh continuations (see above).
   const nsIFrame* firstLeaf = aFrame;
-  while (!IsBidiLeaf(firstLeaf)) {
-    firstLeaf = firstLeaf->PrincipalChildList().FirstChild();
+  for (;;) {
+    if (!firstLeaf->IsBidiInlineContainer() &&
+        !RubyUtils::IsRubyBox(firstLeaf->Type())) {
+      break;
+    }
+    const nsIFrame* kid = FirstChildForBidiLeafSearch(firstLeaf);
+    if (!kid) {
+      break;
+    }
+    firstLeaf = kid;
   }
   return firstLeaf->GetBaseLevel();
 }
