@@ -206,7 +206,7 @@ nsresult nsRemoteService::SendCommandLine(const nsACString& aProfile,
   return NS_ERROR_NOT_AVAILABLE;
 #endif
 
-  nsresult rv = client ? client->Init() : NS_ERROR_FAILURE;
+  nsresult rv = client->Init();
   NS_ENSURE_SUCCESS(rv, rv);
 
   return client->SendCommandLine(mProgram.get(),
