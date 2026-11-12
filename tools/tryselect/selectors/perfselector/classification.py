@@ -269,7 +269,7 @@ class ClassificationProvider:
             Platforms.WINDOWS.value: {
                 "query": {
                     Suites.PERFTEST.value: "'windows",
-                    "default": "!-32 !10-64 'windows 'shippable",
+                    "default": "!-32 !10-64 ^test-windows 'shippable",
                 },
                 "platform": Platforms.DESKTOP.value,
             },

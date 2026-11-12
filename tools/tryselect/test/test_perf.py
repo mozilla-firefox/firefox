@@ -123,7 +123,7 @@ TEST_PLATFORMS = {
     Platforms.WINDOWS.value: {
         "query": {
             Suites.PERFTEST.value: "'windows",
-            "default": "!-32 !10-64 'windows 'shippable",
+            "default": "!-32 !10-64 ^test-windows 'shippable",
         },
         "platform": Platforms.DESKTOP.value,
     },
@@ -763,7 +763,7 @@ def setup_perfparser():
                 "Benchmarks windows firefox": {
                     "raptor": [
                         "'browsertime 'benchmark",
-                        "!-32 !10-64 'windows 'shippable",
+                        "!-32 !10-64 ^test-windows 'shippable",
                         "!chrom !geckoview !fenix !safari !m-car !safari-tp",
                         "!bytecode",
                         "!live",
@@ -884,7 +884,7 @@ def setup_perfparser():
                 "Responsiveness windows firefox": {
                     "raptor": [
                         "'browsertime 'responsive",
-                        "!-32 !10-64 'windows 'shippable",
+                        "!-32 !10-64 ^test-windows 'shippable",
                         "!chrom !geckoview !fenix !safari !m-car !safari-tp",
                         "!bytecode",
                         "!profil",
@@ -893,7 +893,7 @@ def setup_perfparser():
                 "Pageload windows live-sites": {
                     "raptor": [
                         "'browsertime 'tp6",
-                        "!-32 !10-64 'windows 'shippable",
+                        "!-32 !10-64 ^test-windows 'shippable",
                         "'live",
                         "!bytecode",
                         "!profil",
@@ -906,7 +906,7 @@ def setup_perfparser():
                 "Graphics, & Media Playback windows": {
                     "raptor": [
                         "'browsertime 'youtube-playback",
-                        "!-32 !10-64 'windows 'shippable",
+                        "!-32 !10-64 ^test-windows 'shippable",
                         "!bytecode",
                         "!profil",
                         "!chrom",
@@ -916,7 +916,7 @@ def setup_perfparser():
                     ],
                     "talos": [
                         "'talos 'svgr | 'bcv | 'webgl",
-                        "!-32 !10-64 'windows 'shippable",
+                        "!-32 !10-64 ^test-windows 'shippable",
                         "!profil",
                         "!swr",
                     ],
