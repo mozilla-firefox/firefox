@@ -13,7 +13,7 @@
 #include "mozilla/Latin1.h"
 #include "mozilla/Span.h"
 
-#ifdef MOZ_HAS_JSRUST
+#if MOZ_HAS_JSRUST()
 // Can't include mozilla/Encoding.h here.
 extern "C" {
 // Declared as uint8_t instead of char to match declaration in another header.
