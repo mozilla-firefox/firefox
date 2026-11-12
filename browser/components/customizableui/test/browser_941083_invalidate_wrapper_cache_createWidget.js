@@ -8,6 +8,13 @@
 
 const kWidgetId = "test-invalidate-wrapper-cache";
 
+// getWidget returns null for a destroyed widget that is still in gSeenWidgets.
+// Forget the widget so that the first getWidget call of this test still gets
+// a wrapper when the test runs again in the same browser.
+registerCleanupFunction(() => {
+  CustomizableUI.getTestOnlyInternalProp("gSeenWidgets").delete(kWidgetId);
+});
+
 // Check createWidget invalidates the widget cache
 add_task(function () {
   let groupWrapper = CustomizableUI.getWidget(kWidgetId);
