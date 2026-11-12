@@ -1289,10 +1289,7 @@ fn add_clip_mask_render_task(
         raster_spatial_node_index,
         device_pixel_scale,
         frame_context.spatial_tree,
-        frame_state.rg_builder,
-        &mut frame_state.frame_gpu_data.f32,
-        frame_state.transforms,
-        frame_state.cmd_buffers,
+        frame_state,
     );
 
     clip_task_id

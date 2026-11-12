@@ -2425,10 +2425,7 @@ pub fn prepare_picture_clips(
             info.raster_spatial_node_index,
             info.device_pixel_scale,
             frame_context.spatial_tree,
-            frame_state.rg_builder,
-            &mut frame_state.frame_gpu_data.f32,
-            frame_state.transforms,
-            frame_state.cmd_buffers,
+            frame_state,
         );
     }
 
@@ -2495,10 +2492,7 @@ pub fn prepare_picture_clips(
                 raster_spatial_node_index,
                 device_pixel_scale,
                 frame_context.spatial_tree,
-                frame_state.rg_builder,
-                &mut frame_state.frame_gpu_data.f32,
-                frame_state.transforms,
-                frame_state.cmd_buffers,
+                frame_state,
             );
 
             let clip_task_index = ClipTaskIndex(clip_mask_instances.len() as _);
