@@ -425,6 +425,107 @@ class IceTestPeer : public sigslot::has_slots<> {
     stream.SetIceCredentials(ufrag, pwd);
   }
 
+  void ResizeCandidatePool_s(uint8_t size, nsresult* result) {
+    *result = ice_ctx_->ResizeCandidatePool(size, "poolufrag",
+                                            "poolpwd0123456789012345");
+  }
+
+  nsresult ResizeCandidatePool(uint8_t size) {
+    nsresult result = NS_ERROR_NOT_INITIALIZED;
+    test_utils_->SyncDispatchToSTS(
+        WrapRunnable(this, &IceTestPeer::ResizeCandidatePool_s, size, &result));
+    return result;
+  }
+
+  // Counts what the stream would pair with, signaled or not.
+  void LocalCandidateCount_s(size_t stream, NrIceCandidate::Type type,
+                             size_t* count) {
+    std::vector<NrIceCandidate> candidates;
+    ASSERT_EQ(NS_OK, GetStream_s(stream)->GetLocalCandidates(&candidates));
+    *count = std::count_if(
+        candidates.begin(), candidates.end(),
+        [type](const NrIceCandidate& c) { return c.type == type; });
+  }
+
+  size_t LocalCandidateCount(size_t stream, NrIceCandidate::Type type) {
+    size_t count = 0;
+    test_utils_->SyncDispatchToSTS(WrapRunnable(
+        this, &IceTestPeer::LocalCandidateCount_s, stream, type, &count));
+    return count;
+  }
+
+  void SetIceConfig_s(NrIceCtx::Config config, nsresult* result) {
+    *result = ice_ctx_->SetIceConfig(config);
+  }
+
+  nsresult SetIceConfig(const NrIceCtx::Config& config) {
+    nsresult result = NS_ERROR_NOT_INITIALIZED;
+    test_utils_->SyncDispatchToSTS(
+        WrapRunnable(this, &IceTestPeer::SetIceConfig_s, config, &result));
+    return result;
+  }
+
+  void EmptyCandidatePool_s() { ice_ctx_->EmptyCandidatePool(); }
+
+  void EmptyCandidatePool() {
+    test_utils_->SyncDispatchToSTS(
+        WrapRunnable(this, &IceTestPeer::EmptyCandidatePool_s));
+  }
+
+  void CandidatePoolSize_s(uint8_t* size) {
+    *size = ice_ctx_->CandidatePoolSize();
+  }
+
+  uint8_t CandidatePoolSize() {
+    uint8_t size = 0;
+    test_utils_->SyncDispatchToSTS(
+        WrapRunnable(this, &IceTestPeer::CandidatePoolSize_s, &size));
+    return size;
+  }
+
+  size_t CandidateCount(size_t index) {
+    return candidates_[MakeTransportId(index)].size();
+  }
+
+  // nICEr's counts of the candidates the streams and the pool are still
+  // waiting on.
+  void UninitializedCandidateCounts_s(std::pair<int, int>* counts) {
+    *counts = {ice_ctx_->ctx()->uninitialized_candidates,
+               ice_ctx_->ctx()->uninitialized_pool_candidates};
+  }
+
+  // How many of the candidates still in the pool are not relay candidates.
+  void PooledNonRelayCandidateCount_s(size_t* count) {
+    *count = 0;
+    nr_ice_media_stream* pool = ice_ctx_->ctx()->pool_stream;
+    if (!pool) {
+      return;
+    }
+    nr_ice_component* comp;
+    STAILQ_FOREACH(comp, &pool->components, entry) {
+      nr_ice_candidate* cand;
+      TAILQ_FOREACH(cand, &comp->candidates, entry_comp) {
+        if (cand->type != RELAYED) {
+          ++*count;
+        }
+      }
+    }
+  }
+
+  size_t PooledNonRelayCandidateCount() {
+    size_t count = 0;
+    test_utils_->SyncDispatchToSTS(WrapRunnable(
+        this, &IceTestPeer::PooledNonRelayCandidateCount_s, &count));
+    return count;
+  }
+
+  std::pair<int, int> UninitializedCandidateCounts() {
+    std::pair<int, int> counts;
+    test_utils_->SyncDispatchToSTS(WrapRunnable(
+        this, &IceTestPeer::UninitializedCandidateCounts_s, &counts));
+    return counts;
+  }
+
   void AddStream_s(int components) {
     std::string id = MakeTransportId(stream_counter_++);
 
@@ -435,6 +536,7 @@ class IceTestPeer : public sigslot::has_slots<> {
     SetIceCredentials_s(*stream);
 
     stream->SignalCandidate.connect(this, &IceTestPeer::CandidateInitialized);
+    stream->SignalCandidateError.connect(this, &IceTestPeer::CandidateError);
     stream->SignalReady.connect(this, &IceTestPeer::StreamReady);
     stream->SignalFailed.connect(this, &IceTestPeer::StreamFailed);
     stream->SignalPacketReceived.connect(this, &IceTestPeer::PacketReceived);
@@ -1108,6 +1210,25 @@ class IceTestPeer : public sigslot::has_slots<> {
     std::cerr << std::endl;
   }
 
+  void CandidateError(NrIceMediaStream* stream, const std::string& address,
+                      uint16_t port, const std::string& url,
+                      uint16_t error_code, const std::string& error_text) {
+    candidate_errors_.push_back(address + ":" + std::to_string(port) + " " +
+                                url);
+  }
+
+  void CandidateErrors_s(std::vector<std::string>* errors) {
+    *errors = candidate_errors_;
+  }
+
+  // Each error reported, as "address:port url".
+  std::vector<std::string> CandidateErrors() {
+    std::vector<std::string> errors;
+    test_utils_->SyncDispatchToSTS(
+        WrapRunnable(this, &IceTestPeer::CandidateErrors_s, &errors));
+    return errors;
+  }
+
   void CandidateInitialized(NrIceMediaStream* stream,
                             const std::string& raw_candidate,
                             const std::string& ufrag,
@@ -1522,6 +1643,7 @@ class IceTestPeer : public sigslot::has_slots<> {
   RefPtr<NrIceCtx> ice_ctx_;
   bool offerer_;
   std::map<std::string, std::vector<std::string>> candidates_;
+  std::vector<std::string> candidate_errors_;
   // Maps from stream id to list of remote trickle candidates
   std::map<size_t, std::vector<SchedulableTrickleCandidate*>>
       controlled_trickle_candidates_;
@@ -1675,6 +1797,24 @@ class WebRtcIceGatherTest : public StunTest {
     TestStunServer::GetInstance(AF_INET)->Reset();
     peer_->SetStunServer(TestStunServer::GetInstance(AF_INET)->addr(),
                          TestStunServer::GetInstance(AF_INET)->port());
+  }
+
+  // The component id is the token after the foundation in an a=candidate line.
+  std::set<std::string> ComponentIdsWithCandidates(unsigned int stream) {
+    std::set<std::string> ids;
+    for (const auto& attribute : peer_->GetAttributes(stream)) {
+      if (attribute.find("candidate:") != 0) {
+        continue;
+      }
+      size_t foundation_end = attribute.find(' ');
+      EXPECT_NE(std::string::npos, foundation_end) << attribute;
+      if (foundation_end == std::string::npos) {
+        continue;
+      }
+      size_t start = foundation_end + 1;
+      ids.insert(attribute.substr(start, attribute.find(' ', start) - start));
+    }
+    return ids;
   }
 
   // NB: Only does substring matching, watch out for stuff like "1.2.3.4"
@@ -2541,6 +2681,302 @@ TEST_F(WebRtcIceGatherTest, TestGatherDisableComponent) {
       ASSERT_EQ(0, attribute.compare(sp1 + 1, 1, "1", 1));
     }
   }
+}
+
+// A component with nothing gathered takes a pre-gathered set from the pool
+// rather than making its own sockets, and reports what it took as its own.
+TEST_F(WebRtcIceGatherTest, TestStreamTakesFromCandidatePool) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(2));
+  ASSERT_EQ(2, peer_->CandidatePoolSize());
+
+  peer_->AddStream(1);
+  Gather();
+
+  ASSERT_EQ(1, peer_->CandidatePoolSize());
+  ASSERT_GT(peer_->CandidateCount(0), 0U);
+  ASSERT_TRUE(StreamHasMatchingCandidate(0, "typ host"));
+
+  // The pool gathered under its own placeholder credentials; what the stream
+  // reports has to be the stream's.
+  ASSERT_FALSE(StreamHasMatchingCandidate(0, "ice-ufrag:poolufrag"));
+  ASSERT_TRUE(StreamHasMatchingCandidate(0, "ice-ufrag:P1-"));
+}
+
+// Every candidate the pool counted as still gathering is counted down exactly
+// once, whether it finished before the stream took it (the host candidates
+// here) or after.
+TEST_F(WebRtcIceGatherTest, TestCandidatePoolCountsBalanceAfterTake) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  UseTestStunServer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(2));
+  WAIT(peer_->UninitializedCandidateCounts() == std::make_pair(0, 0),
+       kDefaultTimeout);
+  ASSERT_EQ(std::make_pair(0, 0), peer_->UninitializedCandidateCounts());
+
+  peer_->AddStream(1);
+  Gather();
+
+  WAIT(peer_->UninitializedCandidateCounts() == std::make_pair(0, 0),
+       kDefaultTimeout);
+  ASSERT_EQ(std::make_pair(0, 0), peer_->UninitializedCandidateCounts());
+}
+
+// Both components of a stream that has not negotiated rtcp-mux can be served
+// from the pool.
+TEST_F(WebRtcIceGatherTest, TestBothComponentsTakeFromCandidatePool) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(2));
+
+  peer_->AddStream(2);
+  Gather();
+
+  ASSERT_EQ(0, peer_->CandidatePoolSize());
+  std::set<std::string> components = ComponentIdsWithCandidates(0);
+  ASSERT_EQ(std::set<std::string>({"1", "2"}), components);
+}
+
+// A component that gathers for itself reports its own candidate errors as they
+// happen, so raising the held-back events of the components that took from the
+// pool must not report them a second time. Every server reflexive candidate
+// here fails synchronously, since the STUN server is a hostname and there is
+// no resolver.
+TEST_F(WebRtcIceGatherTest, TestCandidatePoolErrorsReportedOnce) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  peer_->SetStunServer("stun.invalid", kDefaultStunServerPort);
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(1));
+
+  // One component takes the pooled set, the other gathers for itself.
+  peer_->AddStream(2);
+  Gather();
+
+  std::vector<std::string> errors = peer_->CandidateErrors();
+  ASSERT_LT(0U, errors.size());
+  std::set<std::string> unique(errors.begin(), errors.end());
+  ASSERT_EQ(unique.size(), errors.size());
+}
+
+// Growing the pool keeps what it already gathered and adds to it, per RFC 9429
+// section 4.1.18.
+TEST_F(WebRtcIceGatherTest, TestGrowCandidatePool) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(1));
+  ASSERT_EQ(1, peer_->CandidatePoolSize());
+
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(3));
+  ASSERT_EQ(3, peer_->CandidatePoolSize());
+
+  // The sets that were already there are still usable, so a stream added now
+  // is still served by the pool rather than gathering for itself.
+  peer_->AddStream(1);
+  Gather();
+
+  ASSERT_EQ(2, peer_->CandidatePoolSize());
+  ASSERT_TRUE(StreamHasMatchingCandidate(0, "typ host"));
+  ASSERT_FALSE(StreamHasMatchingCandidate(0, "ice-ufrag:poolufrag"));
+}
+
+// Growing the pool after the ICE transport policy became relay-only re-gathers
+// it under that policy, rather than adding sets gathered under the old one and
+// keeping the host and server reflexive candidates it already has.
+TEST_F(WebRtcIceGatherTest, TestGrowCandidatePoolAfterPolicyRelay) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  // The pool only needs a TURN server to start relay candidates; they never
+  // have to finish allocating.
+  peer_->SetTurnServer(TestStunServer::GetInstance(AF_INET)->addr(),
+                       TestStunServer::GetInstance(AF_INET)->port(), "user",
+                       "pass", IceTransport::Udp);
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(1));
+  ASSERT_LT(0U, peer_->PooledNonRelayCandidateCount());
+
+  ASSERT_EQ(NS_OK, peer_->SetIceConfig(NrIceCtx::Config{
+                       .mPolicy = NrIceCtx::ICE_POLICY_RELAY}));
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(2));
+
+  ASSERT_EQ(2, peer_->CandidatePoolSize());
+  ASSERT_EQ(0U, peer_->PooledNonRelayCandidateCount());
+}
+
+// Shrinking the pool releases only the sets beyond the new size.
+TEST_F(WebRtcIceGatherTest, TestShrinkCandidatePool) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(3));
+  ASSERT_EQ(3, peer_->CandidatePoolSize());
+
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(1));
+  ASSERT_EQ(1, peer_->CandidatePoolSize());
+
+  peer_->AddStream(1);
+  Gather();
+
+  ASSERT_EQ(0, peer_->CandidatePoolSize());
+  ASSERT_TRUE(StreamHasMatchingCandidate(0, "typ host"));
+  ASSERT_FALSE(StreamHasMatchingCandidate(0, "ice-ufrag:poolufrag"));
+}
+
+// Resizing to zero is the same as emptying the pool.
+TEST_F(WebRtcIceGatherTest, TestResizeCandidatePoolToZero) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(2));
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(0));
+  ASSERT_EQ(0, peer_->CandidatePoolSize());
+}
+
+// A stream added after the pool is emptied gathers for itself.
+TEST_F(WebRtcIceGatherTest, TestEmptyCandidatePool) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(2));
+  peer_->EmptyCandidatePool();
+  ASSERT_EQ(0, peer_->CandidatePoolSize());
+
+  peer_->AddStream(1);
+  Gather();
+
+  ASSERT_EQ(0, peer_->CandidatePoolSize());
+  ASSERT_TRUE(StreamHasMatchingCandidate(0, "typ host"));
+}
+
+// RFC 9429 section 4.1.18 has the pool gathered regardless of the ICE
+// transport policy, and filtered when it is used. We gather it under the
+// policy in effect instead, so that a "relay" policy never sends binding
+// requests to STUN servers. A pool gathered relay-only lacks the host
+// candidates that a stream would use once the policy allows any type of
+// candidate, so that stream gathers for itself (in the same way a stream would
+// if the pool has been exhausted).
+TEST_F(WebRtcIceGatherTest, TestRelayOnlyCandidatePoolNotTakenAfterPolicyAll) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  peer_ = std::make_unique<IceTestPeer>(
+      "P1", test_utils_, true,
+      NrIceCtx::Config{.mPolicy = NrIceCtx::ICE_POLICY_RELAY});
+  // The pool only needs a TURN server to start a relay candidate; it never has
+  // to finish allocating one.
+  peer_->SetTurnServer(TestStunServer::GetInstance(AF_INET)->addr(),
+                       TestStunServer::GetInstance(AF_INET)->port(), "user",
+                       "pass", IceTransport::Udp);
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(1));
+  ASSERT_EQ(1, peer_->CandidatePoolSize());
+
+  ASSERT_EQ(NS_OK, peer_->SetIceConfig(
+                       NrIceCtx::Config{.mPolicy = NrIceCtx::ICE_POLICY_ALL}));
+  peer_->AddStream(1);
+  Gather(0);
+
+  ASSERT_TRUE_WAIT(StreamHasMatchingCandidate(0, "typ host"), kDefaultTimeout);
+  ASSERT_EQ(1, peer_->CandidatePoolSize());
+}
+
+// Once the ICE transport policy is relay-only, a stream taking from a pool
+// that gathered under "all" must not end up with its host or server reflexive
+// candidates, signaled or not. With nothing else pooled, it gathers for itself.
+TEST_F(WebRtcIceGatherTest, TestCandidatePoolFilteredAfterPolicyRelay) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  // The TURN server is really a STUN server, so make its allocations fail
+  // quickly enough for gathering to complete.
+  config.mStunClientMaxTransmits = 3;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  UseTestStunServer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(1));
+  ASSERT_EQ(1, peer_->CandidatePoolSize());
+
+  // RFC 9429 section 4.1.18 re-gathers the pool when the ICE servers change,
+  // which PeerConnectionImpl::SetConfiguration does by emptying and resizing
+  // it. This deliberately keeps the old pool, so that it is filtered by the
+  // policy alone; the TURN server only gives the stream something to gather.
+  peer_->SetTurnServer(TestStunServer::GetInstance(AF_INET)->addr(),
+                       TestStunServer::GetInstance(AF_INET)->port(), "user",
+                       "pass", IceTransport::Udp);
+  ASSERT_EQ(NS_OK, peer_->SetIceConfig(NrIceCtx::Config{
+                       .mPolicy = NrIceCtx::ICE_POLICY_RELAY}));
+  peer_->AddStream(1);
+  Gather();
+
+  ASSERT_EQ(0, peer_->CandidatePoolSize());
+  ASSERT_EQ(0U, peer_->LocalCandidateCount(0, NrIceCandidate::ICE_HOST));
+  ASSERT_EQ(
+      0U, peer_->LocalCandidateCount(0, NrIceCandidate::ICE_SERVER_REFLEXIVE));
+  ASSERT_FALSE(StreamHasMatchingCandidate(0, "typ host"));
+  ASSERT_FALSE(StreamHasMatchingCandidate(0, "typ srflx"));
+}
+
+// The pooled relay candidate is kept and the rest dropped, including the
+// server reflexive candidate that waits on the same TURN allocation, so it is
+// still gathering when dropped. Gathering has to complete regardless.
+TEST_F(WebRtcIceGatherTest, TestCandidatePoolKeepsRelayAfterPolicyRelay) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  // The TURN server is really a STUN server, so make its allocations fail
+  // quickly enough for gathering to complete.
+  config.mStunClientMaxTransmits = 3;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  peer_->SetTurnServer(TestStunServer::GetInstance(AF_INET)->addr(),
+                       TestStunServer::GetInstance(AF_INET)->port(), "user",
+                       "pass", IceTransport::Udp);
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(1));
+  ASSERT_EQ(1, peer_->CandidatePoolSize());
+
+  ASSERT_EQ(NS_OK, peer_->SetIceConfig(NrIceCtx::Config{
+                       .mPolicy = NrIceCtx::ICE_POLICY_RELAY}));
+  peer_->AddStream(1);
+  Gather();
+
+  ASSERT_EQ(0, peer_->CandidatePoolSize());
+  ASSERT_EQ(0U, peer_->LocalCandidateCount(0, NrIceCandidate::ICE_HOST));
+  ASSERT_EQ(
+      0U, peer_->LocalCandidateCount(0, NrIceCandidate::ICE_SERVER_REFLEXIVE));
+  ASSERT_FALSE(StreamHasMatchingCandidate(0, "typ host"));
+  ASSERT_FALSE(StreamHasMatchingCandidate(0, "typ srflx"));
+}
+
+// Host candidates pooled under "all" are not signaled once host candidates are
+// disabled.
+TEST_F(WebRtcIceGatherTest, TestCandidatePoolHostHiddenAfterPolicyNoHost) {
+  NrIceCtx::GlobalConfig config;
+  config.mTcpEnabled = false;
+  NrIceCtx::InitializeGlobals(config);
+  EnsurePeer();
+  UseTestStunServer();
+  ASSERT_EQ(NS_OK, peer_->ResizeCandidatePool(1));
+  ASSERT_EQ(1, peer_->CandidatePoolSize());
+
+  ASSERT_EQ(NS_OK, peer_->SetIceConfig(NrIceCtx::Config{
+                       .mPolicy = NrIceCtx::ICE_POLICY_NO_HOST}));
+  peer_->AddStream(1);
+  Gather();
+
+  ASSERT_EQ(0, peer_->CandidatePoolSize());
+  ASSERT_FALSE(StreamHasMatchingCandidate(0, " host "));
 }
 
 TEST_F(WebRtcIceGatherTest, TestGatherVerifyNoLoopback) {

@@ -677,7 +677,12 @@ int nr_ice_component_initialize(struct nr_ice_ctx_ *ctx,nr_ice_component *compon
     }
 
     while(cand){
-      ctx->uninitialized_candidates++;
+      if (component->stream->defer_gathering_events) {
+        ctx->uninitialized_pool_candidates++;
+      } else {
+        ctx->uninitialized_candidates++;
+      }
+
       cand=TAILQ_NEXT(cand,entry_comp);
     }
 
@@ -692,6 +697,306 @@ int nr_ice_component_initialize(struct nr_ice_ctx_ *ctx,nr_ice_component *compon
     _status=0;
  abort:
     return(_status);
+  }
+
+// Point the sockets this component has already gathered at this component and
+// its stream's local ICE credentials. Both live in the default client of each
+// socket's STUN server context, which is what answers a connectivity check that
+// arrives before we have heard about the peer: the credentials it checks
+// against, and the component it hands the request to.
+static int nr_ice_component_rekey_stun_servers(nr_ice_component *component)
+  {
+    int r, _status;
+    nr_ice_socket *isock;
+    Data pwd;
+
+    INIT_DATA(pwd, reinterpret_cast<UCHAR*>(component->stream->pwd),
+              strlen(component->stream->pwd));
+
+    STAILQ_FOREACH(isock, &component->sockets, entry) {
+      if (!isock->stun_server) {
+        continue;
+      }
+
+      if ((r = nr_stun_server_ctx_update_component(
+               isock->stun_server, component->stream->ufrag, &pwd,
+               nr_ice_component_stun_server_default_cb, component))) {
+        ABORT(r);
+      }
+    }
+
+    _status = 0;
+ abort:
+    return _status;
+  }
+
+static bool nr_ice_component_has_candidate_on_socket(nr_ice_component *component,
+                                                     nr_ice_socket *isock)
+  {
+    nr_ice_candidate *cand;
+
+    TAILQ_FOREACH(cand, &component->candidates, entry_comp) {
+      if (cand->isock == isock) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+// A candidate's STUN or TURN server (and a relay candidate's TURN server) is an
+// entry in the server lists of the stream it was gathered for, and those lists
+// are freed with that stream. The pool stream can be destroyed while a
+// candidate taken from it is still gathering, so point the candidate at the
+// matching entry in the lists of |stream|, the stream taking it. Returns
+// R_NOT_FOUND if |stream| has no matching server.
+static int nr_ice_candidate_update_ice_servers(nr_ice_media_stream *stream,
+                                               nr_ice_candidate *cand)
+  {
+    if (!cand->stun_server) {
+      return 0;
+    }
+
+    // A STUN and a TURN server can share an address, so the candidate's type
+    // decides which list to look in: a relay candidate, and the server
+    // reflexive candidate that piggybacks on its allocation, came from a TURN
+    // server, and any other server reflexive candidate from a STUN server.
+    const bool from_turn = cand->type == RELAYED ||
+                           (cand->type == SERVER_REFLEXIVE &&
+                            cand->u.srvrflx.relay_candidate);
+
+    if (!from_turn) {
+      for (int i = 0; i < stream->stun_server_ct; i++) {
+        nr_ice_stun_server *server = &stream->stun_servers[i];
+        if (nr_transport_addr_cmp(&server->addr, &cand->stun_server->addr,
+                                  NR_TRANSPORT_ADDR_CMP_MODE_ALL)) {
+          continue;
+        }
+
+        // The id is only assigned when a stream gathers, and the priority uses
+        // it.
+        server->id = cand->stun_server->id;
+        cand->stun_server = server;
+        return 0;
+      }
+
+      return R_NOT_FOUND;
+    }
+
+    for (int i = 0; i < stream->turn_server_ct; i++) {
+      nr_ice_turn_server *server = &stream->turn_servers[i];
+      if (nr_transport_addr_cmp(&server->turn_server.addr,
+                                &cand->stun_server->addr,
+                                NR_TRANSPORT_ADDR_CMP_MODE_ALL)) {
+        continue;
+      }
+
+      server->turn_server.id = cand->stun_server->id;
+      cand->stun_server = &server->turn_server;
+      if (cand->type == RELAYED) {
+        cand->u.relayed.server = server;
+      }
+      return 0;
+    }
+
+    return R_NOT_FOUND;
+  }
+
+static bool nr_ice_component_has_remote_candidates(nr_ice_component *component)
+  {
+    nr_ice_peer_ctx *pctx;
+    nr_ice_media_stream *pstream;
+    nr_ice_component *pcomp;
+
+    STAILQ_FOREACH(pctx, &component->ctx->peers, entry) {
+      STAILQ_FOREACH(pstream, &pctx->peer_streams, entry) {
+        if (pstream->local_stream != component->stream) {
+          continue;
+        }
+
+        STAILQ_FOREACH(pcomp, &pstream->components, entry) {
+          if (pcomp->local_component == component &&
+              !TAILQ_EMPTY(&pcomp->candidates)) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+// Take a pre-gathered component out of the ctx's candidate pool and move what
+// it gathered onto this component, which must not have gathered anything of its
+// own. The candidates keep their sockets, so their addresses and foundations do
+// not change, but they move to this component's id, which is part of the
+// priority, so that has to be recomputed.
+int nr_ice_component_take_from_pool(nr_ice_component *component,
+                                    bool *took_pooled_cand)
+  {
+    int r, _status;
+    nr_ice_socket *isock, *isock_tmp;
+    nr_ice_candidate *cand, *cand_tmp;
+    bool dropped = false;
+
+    *took_pooled_cand = false;
+
+    if (!component->ctx->pool_stream ||
+        STAILQ_EMPTY(&component->ctx->pool_stream->components)) {
+      return 0;
+    }
+
+    assert(!component->candidate_ct);
+    if (component->candidate_ct) {
+      r_log(LOG_ICE, LOG_WARNING, "ICE(%s)/STREAM(%s)/COMP(%d): not taking from the pool, the component already has local candidates",
+            component->ctx->label, component->stream->label,
+            component->component_id);
+      return 0;
+    }
+
+    // The peer component can already have remote candidates when this
+    // component first gathers. When a description that completes an
+    // offer/answer exchange is applied, PeerConnectionImpl::UpdateTransports
+    // calls ActivateTransport, which creates the peer stream, and then
+    // AddIceCandidate for each candidate in the remote description (those in
+    // the SDP and those added with addIceCandidate). These are posted to the
+    // STS thread right away. The gather that EnsureTransports asked for, on
+    // the other hand, goes through PerformOrEnqueueIceCtxOperation, and waits
+    // in mQueuedIceCtxOperations until the STUN addresses have been fetched.
+    // That can still be pending when an answerer applies its answer, since
+    // the answerer only starts gathering then, and also after an ICE restart,
+    // which resets the STUN addresses. So the remote candidates get here
+    // first.
+    //
+    // StartIceChecks is queued behind that gather, so today the peer has not
+    // been paired yet. But a taken candidate that has already initialized is
+    // only trickled by nr_ice_media_stream_flush_gathering_events, never
+    // paired, so it would be left out of the check list if pairing ever came
+    // first. Rather than depend on that ordering, such a component gathers
+    // for itself. Making that ordering consistent is
+    // https://bugzilla.mozilla.org/show_bug.cgi?id=2092239
+    if (nr_ice_component_has_remote_candidates(component)) {
+      r_log(LOG_ICE, LOG_DEBUG, "ICE(%s)/STREAM(%s)/COMP(%d): not taking from the pool, the component already has remote candidates",
+            component->ctx->label, component->stream->label,
+            component->component_id);
+      return 0;
+    }
+
+    // RFC 9429 section 4.1.18 has the pool gathered regardless of the ICE
+    // transport policy, and filtered when it is used. We gather it under the
+    // policy in effect instead, so that a "relay" policy never sends binding
+    // requests to STUN servers. A pool gathered relay-only lacks the candidates
+    // that a stream would use if allowed to gather any type of candidate. In
+    // that case, we'll let the stream gather for itself (in the same way a
+    // stream would if the pool has been exhausted).
+    if (component->ctx->pool_stream &&
+        (component->ctx->pool_stream->flags & NR_ICE_CTX_FLAGS_RELAY_ONLY) &&
+        !(component->stream->flags & NR_ICE_CTX_FLAGS_RELAY_ONLY)) {
+      r_log(LOG_ICE, LOG_DEBUG, "ICE(%s)/STREAM(%s)/COMP(%d): not taking from a pool gathered relay-only",
+            component->ctx->label, component->stream->label,
+            component->component_id);
+      return 0;
+    }
+
+    nr_ice_component *pooled = nr_ice_ctx_take_pool_component(component->ctx);
+    if (!pooled) {
+      return 0;
+    }
+
+    r_log(LOG_ICE, LOG_DEBUG, "ICE(%s)/STREAM(%s)/COMP(%d): taking %d pre-gathered candidates from the pool",
+          component->ctx->label, component->stream->label,
+          component->component_id, pooled->candidate_ct);
+
+    TAILQ_FOREACH_SAFE(cand, &pooled->candidates, entry_comp, cand_tmp) {
+      TAILQ_REMOVE(&pooled->candidates, cand, entry_comp);
+
+      // The ICE transport policy may have become relay-only after the pool
+      // gathered (RFC 9429 section 4.1.18), so drop what this stream would not
+      // have gathered. Hiding them would not do, since a local candidate is
+      // still paired and checked from without being signaled. One that is
+      // still gathering is marked failed on its way out, which the pool
+      // counts as its own because it has not moved yet.
+      if ((component->stream->flags & NR_ICE_CTX_FLAGS_RELAY_ONLY) &&
+          cand->type != RELAYED) {
+        r_log(LOG_ICE, LOG_DEBUG, "ICE(%s)/STREAM(%s)/COMP(%d): dropping pre-gathered candidate %s because the stream is relay-only",
+              component->ctx->label, component->stream->label, component->component_id, cand->label);
+        nr_ice_candidate_destroy(&cand);
+        dropped = true;
+        continue;
+      }
+
+      if (nr_ice_candidate_update_ice_servers(component->stream, cand)) {
+        r_log(LOG_ICE, LOG_WARNING, "ICE(%s)/STREAM(%s)/COMP(%d): dropping pre-gathered candidate %s because the stream does not have its server",
+              component->ctx->label, component->stream->label, component->component_id, cand->label);
+        nr_ice_candidate_destroy(&cand);
+        dropped = true;
+        continue;
+      }
+
+      // The pool counted each candidate in uninitialized_pool_candidates when
+      // it initialized it, and nr_ice_gather_finished_cb decrements that count
+      // when the candidate leaves NR_ICE_CAND_STATE_INITIALIZING. Every
+      // candidate has been through nr_ice_candidate_initialize by now (or, for
+      // a server reflexive candidate that piggybacks on a relay allocation,
+      // was created INITIALIZING), so one that is still INITIALIZING is still
+      // counted, and since the stream is now the one waiting for it, the count
+      // moves to uninitialized_candidates.
+      if (cand->state == NR_ICE_CAND_STATE_INITIALIZING) {
+        component->ctx->uninitialized_pool_candidates--;
+        component->ctx->uninitialized_candidates++;
+      }
+
+      cand->component = component;
+      cand->stream = component->stream;
+      cand->component_id = component->component_id;
+      if ((r = nr_ice_candidate_compute_priority(cand))) {
+        r_log(LOG_ICE, LOG_ERR, "ICE(%s)/CAND(%s): could not recompute priority, error %d",
+              component->ctx->label, cand->label, r);
+      }
+
+      TAILQ_INSERT_TAIL(&component->candidates, cand, entry_comp);
+      component->candidate_ct++;
+    }
+
+    // The sockets go after the candidates, which deregister from them when they
+    // are dropped. We close sockets that were only used by dropped candidates.
+    STAILQ_FOREACH_SAFE(isock, &pooled->sockets, entry, isock_tmp) {
+      STAILQ_REMOVE(&pooled->sockets, isock, nr_ice_socket_, entry);
+
+      if (dropped &&
+          !nr_ice_component_has_candidate_on_socket(component, isock)) {
+        nr_ice_socket_destroy(&isock);
+        continue;
+      }
+
+      isock->component = component;
+      STAILQ_INSERT_TAIL(&component->sockets, isock, entry);
+    }
+
+    // Re-key before destroying the pooled component, so that no socket's STUN
+    // server context is ever left pointing at it. If re-keying fails partway,
+    // the sockets that weren't re-keyed still point at the pooled component,
+    // so it is leaked rather than destroyed. It owns nothing by then, so only
+    // the component itself is leaked.
+    if ((r = nr_ice_component_rekey_stun_servers(component))) {
+      ABORT(r);
+    }
+
+    pooled->candidate_ct = 0;
+    nr_ice_component_destroy(&pooled);
+
+    // With nothing left, the component gathers for itself as if the pool had
+    // been empty.
+    if (!component->candidate_ct) {
+      return 0;
+    }
+
+    component->took_from_pool = true;
+    *took_pooled_cand = true;
+
+    _status = 0;
+ abort:
+    return _status;
   }
 
 void nr_ice_component_stop_gathering(nr_ice_component *component)

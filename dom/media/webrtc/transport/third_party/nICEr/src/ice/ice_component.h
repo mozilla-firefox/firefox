@@ -60,6 +60,10 @@ struct nr_ice_component_ {
   nr_ice_socket_head sockets;
   nr_ice_candidate_head candidates;
   int candidate_ct;
+  // Set when the component takes its candidates from the candidate pool, and
+  // cleared once nr_ice_media_stream_flush_gathering_events has raised their
+  // gathering events.
+  bool took_from_pool;
   nr_ice_pre_answer_request_head pre_answer_reqs;
 
   int valid_pairs;
@@ -82,6 +86,8 @@ typedef STAILQ_HEAD(nr_ice_component_head_,nr_ice_component_) nr_ice_component_h
 int nr_ice_component_create(struct nr_ice_media_stream_ *stream, int component_id, nr_ice_component **componentp);
 int nr_ice_component_destroy(nr_ice_component **componentp);
 int nr_ice_component_initialize(struct nr_ice_ctx_ *ctx,nr_ice_component *component);
+int nr_ice_component_take_from_pool(nr_ice_component *component,
+                                    bool *took_pooled_cand);
 void nr_ice_component_stop_gathering(nr_ice_component *component);
 int nr_ice_component_is_done_gathering(nr_ice_component *comp);
 int nr_ice_component_maybe_prune_candidate(nr_ice_ctx *ctx, nr_ice_component *comp, nr_ice_candidate *c1, int *was_pruned);

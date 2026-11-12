@@ -81,6 +81,7 @@ int nr_ice_media_stream_create(nr_ice_ctx *ctx,const char *label,const char *ufr
     stream->ice_state = NR_ICE_MEDIA_STREAM_UNPAIRED;
     stream->obsolete = 0;
     stream->actually_started_checking = 0;
+    stream->defer_gathering_events = false;
     stream->r2l_user = 0;
     stream->l2r_user = 0;
     stream->flags = ctx->flags;
@@ -168,8 +169,27 @@ int nr_ice_media_stream_initialize(nr_ice_ctx *ctx, nr_ice_media_stream *stream)
   {
     int r,_status;
     nr_ice_component *comp;
+    bool took_from_pool = false;
+    bool took = false;
 
     assert(!stream->obsolete);
+
+    // Skipping the pool_stream, a stream's component that has not
+    // gathered anything yet can use what the pool gathered instead of
+    // making its own sockets.
+    if(stream != ctx->pool_stream){
+      comp = STAILQ_FIRST(&stream->components);
+      while(comp){
+        if(!comp->candidate_ct){
+          if(r = nr_ice_component_take_from_pool(comp, &took))
+            ABORT(r);
+
+          took_from_pool |= took;
+        }
+
+        comp = STAILQ_NEXT(comp, entry);
+      }
+    }
 
     comp=STAILQ_FIRST(&stream->components);
     while(comp){
@@ -178,8 +198,16 @@ int nr_ice_media_stream_initialize(nr_ice_ctx *ctx, nr_ice_media_stream *stream)
       comp=STAILQ_NEXT(comp,entry);
     }
 
-    if (!nr_ice_media_stream_is_done_gathering(stream) && ctx->gather_handler &&
-        ctx->gather_handler->vtbl->stream_gathering) {
+    if (took_from_pool) {
+      // Whatever came from the pool gathered before this stream
+      // existed, so no events have been raised for it. Do that now,
+      // which also covers the gathering event for any component that is
+      // still gathering.
+      nr_ice_media_stream_flush_gathering_events(stream);
+    } else if (!nr_ice_media_stream_is_done_gathering(stream) &&
+               ctx->gather_handler &&
+               ctx->gather_handler->vtbl->stream_gathering &&
+               !stream->defer_gathering_events) {
       ctx->gather_handler->vtbl->stream_gathering(ctx->gather_handler->obj,
                                                   stream);
     }
@@ -187,7 +215,8 @@ int nr_ice_media_stream_initialize(nr_ice_ctx *ctx, nr_ice_media_stream *stream)
     _status=0;
   abort:
     if (_status) {
-      if (ctx->gather_handler && ctx->gather_handler->vtbl->stream_gathered) {
+      if (ctx->gather_handler && ctx->gather_handler->vtbl->stream_gathered &&
+          !stream->defer_gathering_events) {
         ctx->gather_handler->vtbl->stream_gathered(ctx->gather_handler->obj,
                                                    stream);
       }
@@ -195,6 +224,88 @@ int nr_ice_media_stream_initialize(nr_ice_ctx *ctx, nr_ice_media_stream *stream)
     return(_status);
   }
 
+
+void nr_ice_media_stream_defer_gathering_events(nr_ice_media_stream *stream)
+  {
+    stream->defer_gathering_events = true;
+  }
+
+// Raise the gathering events for candidates that this stream has but has not
+// reported, because it took them from the pool, which gathered them before this
+// stream existed. They are raised in the
+// order a stream that gathered them itself would have raised them: gathering,
+// then a trickle callback (or an error) per candidate, then gathered.
+//
+// Only the components that took from the pool are replayed. A component that
+// gathered for itself has already reported its candidates: one that failed
+// synchronously in nr_ice_component_initialize raised its error right away,
+// and a component that gathered on an earlier nr_ice_gather has trickled its
+// candidates already.
+//
+// A candidate that is still gathering is skipped; it reports itself when it
+// finishes, as usual.
+int nr_ice_media_stream_flush_gathering_events(nr_ice_media_stream *stream)
+  {
+    nr_ice_ctx *ctx = stream->ctx;
+    nr_ice_component *comp;
+    nr_ice_candidate *cand;
+    nr_ice_gather_handler *gh = ctx->gather_handler;
+
+    // Only the pool stream defers its events, and it never flushes them.
+    assert(!stream->defer_gathering_events);
+
+    r_log(LOG_ICE, LOG_DEBUG, "ICE(%s)/STREAM(%s): raising held-back gathering events",
+          ctx->label, stream->label);
+
+    if (gh && gh->vtbl->stream_gathering) {
+      gh->vtbl->stream_gathering(gh->obj, stream);
+    }
+
+    STAILQ_FOREACH(comp, &stream->components, entry) {
+      if (!comp->took_from_pool) {
+        continue;
+      }
+      comp->took_from_pool = false;
+
+      TAILQ_FOREACH(cand, &comp->candidates, entry_comp) {
+        if (cand->state == NR_ICE_CAND_STATE_FAILED) {
+          // A server reflexive candidate that piggybacks on a relay candidate
+          // does not report separately; the relay candidate reports for it.
+          if (cand->type == SERVER_REFLEXIVE &&
+              cand->u.srvrflx.relay_candidate) {
+            continue;
+          }
+
+          if (gh && gh->vtbl->candidate_error) {
+            gh->vtbl->candidate_error(gh->obj, stream, cand);
+          }
+
+          continue;
+        }
+
+        if (cand->state != NR_ICE_CAND_STATE_INITIALIZED) {
+          continue;
+        }
+
+        if (ctx->trickle_cb && !nr_ice_ctx_hide_candidate(ctx, cand)) {
+          ctx->trickle_cb(ctx->trickle_cb_arg, ctx, stream, cand->component_id,
+                          cand);
+        }
+      }
+    }
+
+    if (nr_ice_media_stream_is_done_gathering(stream)) {
+      if (gh && gh->vtbl->stream_gathered) {
+        gh->vtbl->stream_gathered(gh->obj, stream);
+      }
+
+      if (ctx->trickle_cb) {
+        ctx->trickle_cb(ctx->trickle_cb_arg, ctx, stream, 1, nullptr);
+      }
+    }
+
+    return 0;
+  }
 
 int nr_ice_media_stream_get_attributes(nr_ice_media_stream *stream, char ***attrsp, int *attrctp)
   {

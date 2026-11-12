@@ -73,6 +73,12 @@ int nr_stun_server_ctx_destroy(nr_stun_server_ctx **ctxp);
 int nr_stun_server_add_client(nr_stun_server_ctx *ctx, char *client_label, char *user, Data *pass, nr_stun_server_cb cb, void *cb_arg);
 int nr_stun_server_remove_client(nr_stun_server_ctx *ctx, void *cb_arg);
 int nr_stun_server_add_default_client(nr_stun_server_ctx *ctx, char *ufrag, Data *pass, nr_stun_server_cb cb, void *cb_arg);
+// Updates the credentials and callback of the default client, which is how an
+// already-gathered socket is pointed at different local ICE credentials, or at
+// a different component.
+int nr_stun_server_ctx_update_component(nr_stun_server_ctx *ctx, char *ufrag,
+                                        Data *pass, nr_stun_server_cb cb,
+                                        void *cb_arg);
 int nr_stun_server_process_request(nr_stun_server_ctx *ctx, nr_socket *sock, char *msg, int len, nr_transport_addr *peer_addr, int auth_rule);
 int nr_stun_get_message_client(nr_stun_server_ctx *ctx, nr_stun_message *req, nr_stun_server_client **clnt);
 

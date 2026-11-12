@@ -71,6 +71,14 @@ struct nr_ice_media_stream_ {
    * flow for a limited time while the new stream gets ready. */
   int obsolete;
   int actually_started_checking;
+  // Hold back the gathering events (per-candidate trickle, candidate
+  // errors, and the gathering/gathered stream events) instead of
+  // raising them as they happen. This is used by the pool stream since
+  // no consumer is listening for events yet;
+  // nr_ice_media_stream_flush_gathering_events replays them once there
+  // is a consumer. Since only the pool stream sets it, it is also how a
+  // candidate is known to be pooled.
+  bool defer_gathering_events;
 
 #define NR_ICE_MEDIA_STREAM_UNPAIRED           1
 #define NR_ICE_MEDIA_STREAM_CHECKS_FROZEN      2
@@ -106,6 +114,8 @@ typedef STAILQ_HEAD(nr_ice_media_stream_head_,nr_ice_media_stream_) nr_ice_media
 int nr_ice_media_stream_create(struct nr_ice_ctx_ *ctx,const char *label,const char *ufrag,const char *pwd,int components, nr_ice_media_stream **streamp);
 int nr_ice_media_stream_destroy(nr_ice_media_stream **streamp);
 int nr_ice_media_stream_initialize(struct nr_ice_ctx_ *ctx, nr_ice_media_stream *stream);
+void nr_ice_media_stream_defer_gathering_events(nr_ice_media_stream *stream);
+int nr_ice_media_stream_flush_gathering_events(nr_ice_media_stream *stream);
 int nr_ice_media_stream_get_attributes(nr_ice_media_stream *stream, char ***attrsp,int *attrctp);
 int nr_ice_media_stream_get_default_candidate(nr_ice_media_stream *stream, int component, nr_ice_candidate **candp);
 int nr_ice_media_stream_pair_candidates(nr_ice_peer_ctx *pctx,nr_ice_media_stream *lstream,nr_ice_media_stream *pstream);

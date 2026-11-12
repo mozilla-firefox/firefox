@@ -52,6 +52,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "util.h"
 #include "addrs.h"
 #include "nr_socket_local.h"
+#include "mozilla/Casting.h"
 
 #define ICE_UFRAG_LEN 8
 #define ICE_PWD_LEN 32
@@ -377,6 +378,8 @@ int nr_ice_fetch_turn_servers(int ct, nr_ice_turn_server **out)
     }
 
     ctx->target_for_default_local_address_lookup=0;
+    ctx->pool_stream = nullptr;
+    ctx->uninitialized_pool_candidates = 0;
 
     STAILQ_INIT(&ctx->streams);
     STAILQ_INIT(&ctx->sockets);
@@ -412,6 +415,8 @@ int nr_ice_fetch_turn_servers(int ct, nr_ice_turn_server **out)
 
     ctx->gather_done_cb = 0;
     ctx->trickle_cb = 0;
+
+    nr_ice_ctx_empty_candidate_pool(ctx);
 
     STAILQ_FOREACH_SAFE(s1, &ctx->streams, entry, s2){
       STAILQ_REMOVE(&ctx->streams,s1,nr_ice_media_stream_,entry);
@@ -462,6 +467,8 @@ void nr_ice_gather_finished_cb(NR_SOCKET s, int h, void *cb_arg)
     nr_ice_ctx *ctx;
     nr_ice_media_stream *stream;
     int component_id;
+    bool is_pooled;
+    int remaining;
 
     assert(cb_arg);
     if (!cb_arg)
@@ -470,14 +477,21 @@ void nr_ice_gather_finished_cb(NR_SOCKET s, int h, void *cb_arg)
     stream = cand->stream;
     component_id = cand->component_id;
 
-    ctx->uninitialized_candidates--;
+    // A pooled candidate is not one of the streams' candidates, so it is
+    // counted apart from them. This checks the stream rather than comparing it
+    // to ctx->pool_stream, which is already cleared while the pool stream is
+    // being destroyed and its candidates are marked failed.
+    is_pooled = stream->defer_gathering_events;
+    remaining = is_pooled ? --ctx->uninitialized_pool_candidates
+                          : --ctx->uninitialized_candidates;
+
     if (cand->state == NR_ICE_CAND_STATE_FAILED) {
       r_log(LOG_ICE, LOG_WARNING,
-            "ICE(%s)/CAND(%s): failed to initialize, %d remaining", ctx->label,
-            cand->label, ctx->uninitialized_candidates);
+            "ICE(%s)/CAND(%s): failed to initialize, %d remaining%s", ctx->label,
+            cand->label, remaining, is_pooled ? " in the pool" : "");
     } else {
-      r_log(LOG_ICE, LOG_DEBUG, "ICE(%s)/CAND(%s): initialized, %d remaining",
-            ctx->label, cand->label, ctx->uninitialized_candidates);
+      r_log(LOG_ICE, LOG_DEBUG, "ICE(%s)/CAND(%s): initialized, %d remaining%s",
+            ctx->label, cand->label, remaining, is_pooled ? " in the pool" : "");
     }
 
     if (cand->state == NR_ICE_CAND_STATE_INITIALIZED) {
@@ -494,7 +508,7 @@ void nr_ice_gather_finished_cb(NR_SOCKET s, int h, void *cb_arg)
 
       /* If we are initialized, the candidate wasn't pruned,
          and we have a trickle ICE callback fire the callback */
-      if (ctx->trickle_cb && cand &&
+      if (ctx->trickle_cb && cand && !stream->defer_gathering_events &&
           !nr_ice_ctx_hide_candidate(ctx, cand)) {
         ctx->trickle_cb(ctx->trickle_cb_arg, ctx, cand->stream, cand->component_id, cand);
 
@@ -505,7 +519,8 @@ void nr_ice_gather_finished_cb(NR_SOCKET s, int h, void *cb_arg)
       }
     }
 
-    if (nr_ice_media_stream_is_done_gathering(stream)) {
+    if (nr_ice_media_stream_is_done_gathering(stream) &&
+        !stream->defer_gathering_events) {
       if (ctx->gather_handler && ctx->gather_handler->vtbl->stream_gathered) {
         ctx->gather_handler->vtbl->stream_gathered(ctx->gather_handler->obj,
                                                    stream);
@@ -515,7 +530,13 @@ void nr_ice_gather_finished_cb(NR_SOCKET s, int h, void *cb_arg)
       }
     }
 
-    if(ctx->uninitialized_candidates==0){
+    if (is_pooled) {
+      // The pool has no consumer to notify; a component that takes one of
+      // these raises it as its own.
+      r_log(LOG_ICE,LOG_DEBUG,"ICE(%s): Waiting for %d pooled candidates to be initialized",
+            ctx->label, remaining);
+    }
+    else if (remaining==0) {
       assert(nr_ice_media_stream_is_done_gathering(stream));
       r_log(LOG_ICE, LOG_INFO, "ICE(%s): All candidates initialized",
             ctx->label);
@@ -528,7 +549,8 @@ void nr_ice_gather_finished_cb(NR_SOCKET s, int h, void *cb_arg)
       }
     }
     else {
-      r_log(LOG_ICE,LOG_DEBUG,"ICE(%s): Waiting for %d candidates to be initialized",ctx->label, ctx->uninitialized_candidates);
+      r_log(LOG_ICE,LOG_DEBUG,"ICE(%s): Waiting for %d candidates to be initialized",
+            ctx->label, remaining);
     }
   }
 
@@ -832,19 +854,31 @@ int nr_ice_set_target_for_default_local_address_lookup(nr_ice_ctx *ctx, const ch
     return(_status);
   }
 
-  int nr_ice_gather(nr_ice_ctx* ctx, NR_async_cb gather_done_cb, void* cb_arg) {
-    int r,_status;
-    nr_ice_media_stream *stream;
+  static int nr_ice_ctx_ensure_local_addrs(nr_ice_ctx *ctx) {
+    int r, _status;
     nr_local_addr stun_addrs[MAXADDRS];
     int stun_addr_ct;
 
     if (!ctx->local_addrs) {
-      if((r=nr_stun_get_addrs(stun_addrs,MAXADDRS,&stun_addr_ct))) {
+      if ((r = nr_stun_get_addrs(stun_addrs, MAXADDRS, &stun_addr_ct))) {
         ABORT(r);
       }
-      if((r=nr_ice_set_local_addresses(ctx,stun_addrs,stun_addr_ct))) {
+      if ((r = nr_ice_set_local_addresses(ctx, stun_addrs, stun_addr_ct))) {
         ABORT(r);
       }
+    }
+
+    _status = 0;
+  abort:
+    return _status;
+  }
+
+  int nr_ice_gather(nr_ice_ctx* ctx, NR_async_cb gather_done_cb, void* cb_arg) {
+    int r,_status;
+    nr_ice_media_stream *stream;
+
+    if ((r = nr_ice_ctx_ensure_local_addrs(ctx))) {
+      ABORT(r);
     }
 
     if(STAILQ_EMPTY(&ctx->streams)) {
@@ -874,6 +908,186 @@ int nr_ice_set_target_for_default_local_address_lookup(nr_ice_ctx *ctx, const ch
     _status=0;
   abort:
     return(_status);
+  }
+
+// Create the stream that holds the pool's single-component candidate sets,
+// which the components of the streams added later will take instead of
+// gathering for themselves. The credentials are placeholders: a pooled
+// component does not know which stream will use it, and is re-keyed when one
+// takes it.
+static int nr_ice_ctx_create_candidate_pool(nr_ice_ctx *ctx, const char *ufrag,
+                                            const char *pwd)
+  {
+    int r, _status;
+
+    assert(!ctx->pool_stream);
+
+    if ((r = nr_ice_media_stream_create(ctx, "candidate pool", ufrag, pwd, 0,
+                                        &ctx->pool_stream))) {
+      ABORT(r);
+    }
+
+    // Nothing is watching for these candidates yet. Whichever component ends
+    // up taking them raises them under its own stream.
+    nr_ice_media_stream_defer_gathering_events(ctx->pool_stream);
+
+    _status = 0;
+  abort:
+    return _status;
+  }
+
+int nr_ice_ctx_resize_candidate_pool(nr_ice_ctx *ctx, uint8_t size,
+                                     const char *ufrag, const char *pwd)
+  {
+    int r, _status;
+    nr_ice_component *comp;
+    int old_ct;
+
+    if (!size) {
+      nr_ice_ctx_empty_candidate_pool(ctx);
+      return 0;
+    }
+
+    if (size > NR_ICE_MAX_CANDIDATE_POOL_SIZE) {
+      r_log(LOG_ICE, LOG_INFO, "ICE(%s): limiting the candidate pool to %d rather than %d",
+            ctx->label, NR_ICE_MAX_CANDIDATE_POOL_SIZE, size);
+      size = NR_ICE_MAX_CANDIDATE_POOL_SIZE;
+    }
+
+    // The pool stream copies ctx->flags when it is created, and its components
+    // gather under the stream's flags. If the ICE transport policy has changed
+    // since, growing would gather the new sets under the old policy: a
+    // "relay" policy would still get host and server reflexive candidates, and
+    // send binding requests to STUN servers. Re-gather the whole pool under
+    // the current policy instead, which keeps every set in it gathered under
+    // pool_stream->flags (nr_ice_component_take_from_pool relies on that).
+    // Shrinking gathers nothing, so it keeps the sets it has; they are
+    // filtered when taken.
+    const UINT4 gathering_flags =
+        NR_ICE_CTX_FLAGS_RELAY_ONLY | NR_ICE_CTX_FLAGS_ONLY_PROXY;
+    if (ctx->pool_stream && size > ctx->pool_stream->component_ct &&
+        (ctx->pool_stream->flags & gathering_flags) !=
+            (ctx->flags & gathering_flags)) {
+      r_log(LOG_ICE, LOG_DEBUG, "ICE(%s): re-gathering the candidate pool because the ICE transport policy changed",
+            ctx->label);
+      nr_ice_ctx_empty_candidate_pool(ctx);
+    }
+
+    if (!ctx->pool_stream) {
+      if ((r = nr_ice_ctx_create_candidate_pool(ctx, ufrag, pwd))) {
+        ABORT(r);
+      }
+    }
+
+    old_ct = ctx->pool_stream->component_ct;
+
+    if (size == old_ct) {
+      return 0;
+    }
+
+    if (size < old_ct) {
+      r_log(LOG_ICE, LOG_DEBUG, "ICE(%s): shrinking the candidate pool from %d to %d",
+            ctx->label, old_ct, size);
+
+      // Walk past the sets that are being kept, and release the rest.
+      comp = STAILQ_FIRST(&ctx->pool_stream->components);
+      for (int i = 0; comp && i<size; i++) {
+        comp = STAILQ_NEXT(comp, entry);
+      }
+
+      while (comp) {
+        nr_ice_component *next = STAILQ_NEXT(comp, entry);
+        STAILQ_REMOVE(&ctx->pool_stream->components, comp, nr_ice_component_,
+                      entry);
+        ctx->pool_stream->component_ct--;
+        nr_ice_component_destroy(&comp);
+        comp = next;
+      }
+
+      return 0;
+    }
+
+    r_log(LOG_ICE, LOG_DEBUG, "ICE(%s): growing the candidate pool from %d to %d",
+          ctx->label, old_ct, size);
+
+    if ((r = nr_ice_ctx_ensure_local_addrs(ctx))) {
+      ABORT(r);
+    }
+
+    // nr_ice_component_create appends, and nr_ice_ctx_take_pool_component
+    // takes from the front, so the sets already in the pool are untouched.
+    for (int i = old_ct; i<size; i++) {
+      if ((r = nr_ice_component_create(ctx->pool_stream, i+1, &comp))) {
+        ABORT(r);
+      }
+
+      ctx->pool_stream->component_ct++;
+    }
+
+    // The pool gathers on its own rather than as part of a nr_ice_gather over
+    // the streams: it is not one of them, it does not report to the caller's
+    // gather_done_cb, and asking for a pool is not the same event as starting
+    // to gather for a stream. The sets that were kept already have
+    // candidates, so nr_ice_component_initialize leaves them alone, and the
+    // pool's gathering events are deferred.
+    if ((r = nr_ice_media_stream_initialize(ctx, ctx->pool_stream))) {
+      ABORT(r);
+    }
+
+    // nr_ice_component_initialize fails when it cannot make any candidates,
+    // so every set in the pool has some.
+    STAILQ_FOREACH(comp, &ctx->pool_stream->components, entry) {
+      if (!comp->candidate_ct) {
+        assert(0);
+        ABORT(R_INTERNAL);
+      }
+    }
+
+    _status = 0;
+  abort:
+    if (_status) {
+      // Rather than leave a pool that only partly gathered, which a component
+      // would take from as if it were whole.
+      nr_ice_ctx_empty_candidate_pool(ctx);
+    }
+    return _status;
+  }
+
+void nr_ice_ctx_empty_candidate_pool(nr_ice_ctx *ctx)
+  {
+    if (!ctx->pool_stream) {
+      return;
+    }
+
+    r_log(LOG_ICE, LOG_DEBUG, "ICE(%s): emptying the candidate pool", ctx->label);
+    nr_ice_media_stream_destroy(&ctx->pool_stream);
+    ctx->pool_stream = nullptr;
+  }
+
+uint8_t nr_ice_ctx_candidate_pool_size(nr_ice_ctx *ctx)
+  {
+    if (!ctx->pool_stream) {
+      return 0;
+    }
+
+    return mozilla::SaturatingCast<uint8_t>(ctx->pool_stream->component_ct);
+  }
+
+// Detach the next pre-gathered component from the pool, or return nullptr when
+// the pool is empty.
+nr_ice_component *nr_ice_ctx_take_pool_component(nr_ice_ctx *ctx)
+  {
+    nr_ice_component *comp;
+
+    if (!ctx->pool_stream ||
+        !(comp = STAILQ_FIRST(&ctx->pool_stream->components))) {
+      return nullptr;
+    }
+
+    STAILQ_REMOVE(&ctx->pool_stream->components, comp, nr_ice_component_,
+                  entry);
+    ctx->pool_stream->component_ct--;
+    return comp;
   }
 
 int nr_ice_add_media_stream(nr_ice_ctx *ctx,const char *label,const char *ufrag,const char *pwd,int components, nr_ice_media_stream **streamp)

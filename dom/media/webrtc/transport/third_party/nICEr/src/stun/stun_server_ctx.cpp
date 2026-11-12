@@ -150,6 +150,47 @@ int nr_stun_server_add_default_client(nr_stun_server_ctx *ctx, char *ufrag, Data
     return(_status);
   }
 
+int nr_stun_server_ctx_update_component(nr_stun_server_ctx *ctx, char *ufrag,
+                                        Data *pass, nr_stun_server_cb cb,
+                                        void *cb_arg)
+  {
+    int r, _status;
+    nr_stun_server_client *clnt = ctx->default_client;
+    char *username = nullptr;
+    Data password = {};
+
+    assert(clnt);
+    if (!clnt) {
+      ABORT(R_INTERNAL);
+    }
+
+    if (!(username = strdup(ufrag))) {
+      ABORT(R_NO_MEMORY);
+    }
+
+    if ((r = r_data_copy(&password, pass))) {
+      ABORT(r);
+    }
+
+    r_log(NR_LOG_STUN, LOG_DEBUG, "STUN-SERVER(%s)/CLIENT(%s): Updating default client from %s to %s",
+          ctx->label, clnt->label, clnt->username, username);
+
+    // Nothing below can fail, so the old credentials can go.
+    free(clnt->username);
+    clnt->username = username;
+    r_data_zfree(&clnt->password);
+    clnt->password = password;
+    clnt->stun_server_cb = cb;
+    clnt->cb_arg = cb_arg;
+
+    return 0;
+
+ abort:
+    free(username);
+    r_data_zfree(&password);
+    return _status;
+  }
+
 int nr_stun_server_remove_client(nr_stun_server_ctx *ctx, void *cb_arg)
   {
     nr_stun_server_client *clnt1,*clnt2;

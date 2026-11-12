@@ -142,6 +142,27 @@ class NrIceCtx {
                                         const std::string& name,
                                         int components);
   void DestroyStream(const std::string& id);
+  // The flags gathering depends on, which are known late because they depend
+  // on what capture permissions the window has been granted.
+  void SetGatheringFlags(bool default_route_only,
+                         bool obfuscate_host_addresses);
+
+  // Make the pool hold aSize pre-gathered single-component candidate sets. The
+  // components of the streams created afterwards take these instead of
+  // gathering for themselves, and raise the candidates as their own. The
+  // credentials are placeholders; a pooled component is re-keyed to the stream
+  // that takes it.
+  // Sets already in the pool are kept: growing gathers only the sets being
+  // added, and shrinking releases only the sets beyond aSize. Callers that
+  // need the pool re-gathered from scratch (because the ICE servers changed,
+  // say) empty it first.
+  nsresult ResizeCandidatePool(uint8_t aSize, const std::string& aUfrag,
+                               const std::string& aPwd);
+  // Release whatever is left of the pool, closing its sockets.
+  void EmptyCandidatePool();
+  // How many pre-gathered candidate sets are still available. Only used by
+  // tests.
+  uint8_t CandidatePoolSize() const;
 
   struct GlobalConfig {
     bool mTcpEnabled = true;

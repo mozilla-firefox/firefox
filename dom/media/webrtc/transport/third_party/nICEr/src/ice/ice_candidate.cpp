@@ -288,7 +288,11 @@ static void nr_ice_candidate_mark_done(nr_ice_candidate *cand, int state)
       /* Skip piggybacking srflx candidates — the relay candidate fires for them. */
       int is_piggybacking_srflx = (cand->type == SERVER_REFLEXIVE &&
                                    cand->u.srvrflx.relay_candidate != NULL);
-      if (!is_piggybacking_srflx) {
+      // Errors for pooled candidates are held back until the candidates are
+      // used, like their icecandidate events. Whether that is what the spec
+      // intends, and whether they should then be filtered by the ICE transport
+      // policy, is https://github.com/w3c/webrtc-pc/issues/3141
+      if (!is_piggybacking_srflx && !cand->stream->defer_gathering_events) {
         nr_ice_gather_handler *gh = cand->stream->ctx->gather_handler;
         if (gh && gh->vtbl->candidate_error) {
           gh->vtbl->candidate_error(gh->obj, cand->stream, cand);
