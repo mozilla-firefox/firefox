@@ -11,6 +11,8 @@ support-files = [
   "preload_linked_stillloading_normal_root.mjs",
   "preload_linked_stillloading_preload_root.mjs",
   "preload_linked_stillloading_slow.mjs",
+  "preload_linked_synthetic.json",
+  "preload_linked_synthetic_root.mjs",
 ]
 
 ["test_bug_2054717.html"]
@@ -22,3 +24,5 @@ support-files = [
 ["test_preload_linked_reset_clears_error.html"]
 
 ["test_preload_linked_root_imported_directly.html"]
+
+["test_preload_linked_synthetic_dependency.html"]

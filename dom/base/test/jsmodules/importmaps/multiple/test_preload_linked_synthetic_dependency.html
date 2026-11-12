@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<title>Test that resetting a preloaded module graph skips its JSON dependency</title>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+<script src="preload_linked_helpers.js"></script>
+<body>
+<script>
+  add_task(async function testSyntheticDependency() {
+    SpecialPowers.ChromeUtils.clearResourceCache({ types: ["script"] });
+
+    // The root's load event does not wait for its dependencies.
+    const jsonLoaded = waitForResponse("preload_linked_synthetic.json");
+    await addPreload("./preload_linked_synthetic_root.mjs");
+    await jsonLoaded;
+
+    addImportMap({ "preload-linked-synthetic-unused": "./preload_linked_bare.mjs" });
+
+    const ns = await import("./preload_linked_synthetic_root.mjs");
+    is(ns.default.synthetic, true, "the JSON module should still be usable");
+  });
+</script>
+</body>
