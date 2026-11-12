@@ -2114,7 +2114,7 @@ class CCGraphBuilder final : public nsCycleCollectionTraversalCallback,
   uint32_t mNoteChildCount;
   const bool& mFreeingSnowWhite;
 
-  struct PtrInfoCache : public MruCache<void*, PtrInfo*, PtrInfoCache, 491> {
+  struct PtrInfoCache : public MruCache<void*, PtrInfo*, PtrInfoCache, 479> {
     static HashNumber Hash(const void* aKey) { return HashGeneric(aKey); }
     static bool Match(const void* aKey, const PtrInfo* aVal) {
       return aVal->mPointer == aKey;
