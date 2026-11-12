@@ -36,7 +36,7 @@ use authenticator::{ctap2, statecallback::StateCallback};
 use authenticator::{
     CtapVersionSupport, FidoDevice, FidoDeviceIO, FidoProtocol, VirtualFidoDevice,
 };
-use authenticator::{RegisterResult, SignResult, StatusUpdate};
+use authenticator::{MessageDirection, RegisterResult, SignResult, StatusUpdate};
 use base64::Engine;
 use moz_task::RunnableBuilder;
 use nserror::{nsresult, NS_ERROR_FAILURE, NS_ERROR_INVALID_ARG, NS_OK};
@@ -303,26 +303,43 @@ impl FidoDeviceIO for TestToken {
         &mut self,
         msg: &Req,
         _keep_alive: &dyn Fn() -> bool,
-        _status: Option<&Sender<StatusUpdate>>,
+        status: Option<&Sender<StatusUpdate>>,
     ) -> Result<Req::Output, HIDError> {
         if !self.supports_ctap2() {
             return Err(HIDError::UnexpectedVersion);
         }
 
-        msg.send_to_virtual_device(self)
+        log_message(status, MessageDirection::Ctap2Request, msg);
+        let response = msg.send_to_virtual_device(self);
+        log_message(status, MessageDirection::Ctap2Response, &response);
+        response
     }
 
     fn send_ctap1_cancellable<Req: RequestCtap1>(
         &mut self,
         msg: &Req,
         _keep_alive: &dyn Fn() -> bool,
-        _status: Option<&Sender<StatusUpdate>>,
+        status: Option<&Sender<StatusUpdate>>,
     ) -> Result<Req::Output, HIDError> {
         if !self.supports_ctap1() {
             return Err(HIDError::UnexpectedVersion);
         }
 
-        msg.send_to_virtual_device(self)
+        log_message(status, MessageDirection::Ctap1Request, msg);
+        let response = msg.send_to_virtual_device(self);
+        log_message(status, MessageDirection::Ctap1Response, &response);
+        response
+    }
+}
+
+// Mirrors the RequestLogging status updates sent by the HID transport.
+fn log_message(
+    status: Option<&Sender<StatusUpdate>>,
+    direction: MessageDirection,
+    msg: &dyn std::fmt::Debug,
+) {
+    if let Some(status) = status {
+        let _ = status.send(StatusUpdate::RequestLogging(direction, format!("{msg:?}")));
     }
 }
 

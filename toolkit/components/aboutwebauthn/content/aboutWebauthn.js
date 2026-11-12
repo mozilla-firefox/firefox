@@ -6,6 +6,33 @@
 
 let AboutWebauthnService = null;
 
+var AboutWebauthnLogger = {
+  _topic: "webauthn-logging",
+  _initialized: false,
+
+  start() {
+    if (this._initialized) {
+      return;
+    }
+    Services.obs.addObserver(this, this._topic);
+    this._initialized = true;
+  },
+
+  stop() {
+    if (!this._initialized) {
+      return;
+    }
+    Services.obs.removeObserver(this, this._topic);
+    this._initialized = false;
+  },
+
+  observe(_aSubject, _aTopic, aData) {
+    let data = JSON.parse(aData);
+    let direction = data.direction == "response" ? "<--" : "-->";
+    let logarea = document.getElementById("webauthn-log");
+    logarea.textContent += `\n${direction} [${data.protocol}] ${data.data}\n`;
+  },
+};
 var AboutWebauthnManagerJS = {
   _topic: "about-webauthn-prompt",
   _initialized: false,
@@ -14,6 +41,7 @@ var AboutWebauthnManagerJS = {
   _curr_data: null,
   _current_tab: "",
   _previous_tab: "",
+  _logging: false,
 
   init() {
     if (this._initialized) {
@@ -102,7 +130,7 @@ var AboutWebauthnManagerJS = {
     if (data.type == "selected-device") {
       this._curr_data = data.auth_info;
       this.show_ui_based_on_authenticator_info(data);
-      fake_click_event_for_id("info-tab-button");
+      fake_click_event_for_id("logging-tab-button");
     } else if (data.type == "select-device") {
       set_info_text("about-webauthn-text-select-device");
     } else if (data.type == "pin-required") {
@@ -178,11 +206,16 @@ var AboutWebauthnManagerJS = {
       }
     } else if (data.type == "listen-success") {
       reset_page();
+      this._reset_in_progress = "";
+
       // Show results
       show_results_banner("success", "about-webauthn-results-success");
-      this._reset_in_progress = "";
       AboutWebauthnService.listen();
     } else if (data.type == "listen-error") {
+      this._reset_in_progress = "";
+      if (this._logging) {
+        return;
+      }
       reset_page();
 
       if (!data.error) {
@@ -522,16 +555,16 @@ function reset_page() {
   AboutWebauthnManagerJS._previous_tab = "";
   AboutWebauthnManagerJS._current_tab = "";
 
-  // Not using `document.getElementById("info-tab-button").click();`
+  // Not using `document.getElementById("logging-tab-button").click();`
   // here, because if we were focused on a category-button that got removed (e.g.
   // when unplugging the device), we have to reset the ARIA-related attributes
   // first, before we can click on the button, otherwise the a11y-tests
   // will complain. So we fake the click again.
   const evt = {
     detail: {},
-    currentTarget: document.getElementById("info-tab-button"),
+    currentTarget: document.getElementById("logging-tab-button"),
   };
-  open_info_tab(evt);
+  open_logging_tab(evt);
 }
 
 function sidebar_set_disabled(disabled) {
@@ -636,6 +669,33 @@ function cancel_confirmation() {
   close_temporary_overlay_tab();
 }
 
+function set_logging_buttons(logging) {
+  document.getElementById("start-logging-button").disabled = logging;
+  document.getElementById("stop-logging-button").disabled = !logging;
+}
+
+function start_logging() {
+  AboutWebauthnLogger.start();
+  AboutWebauthnManagerJS._logging = true;
+  reset_page();
+  sidebar_set_disabled(true);
+  set_logging_buttons(true);
+  AboutWebauthnService.cancel(0);
+}
+
+function stop_logging() {
+  AboutWebauthnLogger.stop();
+  AboutWebauthnManagerJS._logging = false;
+  set_logging_buttons(false);
+  sidebar_set_disabled(false);
+  AboutWebauthnService.listen();
+}
+
+function clear_logging() {
+  let logarea = document.getElementById("webauthn-log");
+  logarea.textContent = "";
+}
+
 async function onLoad() {
   document.getElementById("set-pin-button").addEventListener("click", set_pin);
   document
@@ -662,6 +722,9 @@ async function onLoad() {
   document
     .getElementById("current-pin")
     .addEventListener("input", check_pin_repeat_is_correct);
+  let logging_button = document.getElementById("logging-tab-button");
+  logging_button.addEventListener("click", open_logging_tab);
+  logging_button.addEventListener("keydown", handle_keydowns);
   let info_button = document.getElementById("info-tab-button");
   info_button.addEventListener("click", open_info_tab);
   info_button.addEventListener("keydown", handle_keydowns);
@@ -677,6 +740,9 @@ async function onLoad() {
   bio_enrollments_button.addEventListener("click", open_bio_enrollments_tab);
   bio_enrollments_button.addEventListener("keydown", handle_keydowns);
   document
+    .getElementById("logging-tab-button")
+    .addEventListener("click", open_logging_tab);
+  document
     .getElementById("send-pin-button")
     .addEventListener("click", send_pin);
   document
@@ -691,6 +757,15 @@ async function onLoad() {
   document
     .getElementById("confirm-deletion-button")
     .addEventListener("click", confirm_deletion);
+  document
+    .getElementById("start-logging-button")
+    .addEventListener("click", start_logging);
+  document
+    .getElementById("stop-logging-button")
+    .addEventListener("click", stop_logging);
+  document
+    .getElementById("clear-logging-button")
+    .addEventListener("click", clear_logging);
   AboutWebauthnManagerJS.init();
   try {
     AboutWebauthnService.listen();
@@ -795,6 +870,9 @@ function open_pin_tab(evt) {
 function open_credentials_tab(evt) {
   open_tab(evt, "credential-management-section");
 }
+function open_logging_tab(evt) {
+  open_tab(evt, "logging-section");
+}
 function open_bio_enrollments_tab(evt) {
   // We can only list, if there are any registered already
   if (
@@ -857,6 +935,9 @@ try {
     if (AboutWebauthnService) {
       AboutWebauthnService.cancel(0);
     }
+  });
+  window.addEventListener("unload", () => {
+    AboutWebauthnLogger.stop();
   });
 } catch (ex) {
   // Do nothing if we fail to create a singleton instance,

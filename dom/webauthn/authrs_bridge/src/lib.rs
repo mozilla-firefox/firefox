@@ -22,7 +22,8 @@ use authenticator::{
     errors::AuthenticatorError,
     statecallback::StateCallback,
     AuthenticatorInfo, BioEnrollmentResult, CredentialManagementResult, InteractiveRequest,
-    ManageResult, Pin, RegisterResult, SignResult, StateMachine, StatusPinUv, StatusUpdate,
+    ManageResult, MessageDirection, Pin, RegisterResult, SignResult, StateMachine, StatusPinUv,
+    StatusUpdate,
 };
 use base64::Engine;
 use cstr::cstr;
@@ -115,6 +116,7 @@ enum BrowserPromptType<'a> {
 enum PromptTarget {
     Browser,
     AboutPage,
+    Logging,
 }
 
 #[derive(Serialize)]
@@ -131,6 +133,7 @@ fn notify_observers(prompt_target: PromptTarget, json: nsString) -> Result<(), n
     let target = match prompt_target {
         PromptTarget::Browser => cstr!("webauthn-prompt"),
         PromptTarget::AboutPage => cstr!("about-webauthn-prompt"),
+        PromptTarget::Logging => cstr!("webauthn-logging"),
     };
 
     RunnableBuilder::new("AuthrsService::send_prompt", move || {
@@ -622,8 +625,24 @@ fn status_callback(
                     browsing_context_id,
                 )?;
             }
-            Ok(StatusUpdate::RequestLogging(_, _)) => {
-                // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1868975
+            Ok(StatusUpdate::RequestLogging(dir, msg)) => {
+                let (protocol, direction) = match dir {
+                    MessageDirection::Ctap1Request => ("CTAP1", "request"),
+                    MessageDirection::Ctap1Response => ("CTAP1", "response"),
+                    MessageDirection::Ctap2Request => ("CTAP2", "request"),
+                    MessageDirection::Ctap2Response => ("CTAP2", "response"),
+                };
+
+                let mut json = nsString::new();
+                if write!(
+                    json,
+                    "{}",
+                    json!({"direction": direction, "protocol": protocol, "data": msg})
+                )
+                .is_ok()
+                {
+                    let _ = notify_observers(PromptTarget::Logging, json);
+                }
             }
             Err(RecvError) => {
                 debug!("STATUS: end");

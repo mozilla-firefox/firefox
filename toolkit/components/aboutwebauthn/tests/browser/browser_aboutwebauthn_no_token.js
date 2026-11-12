@@ -22,13 +22,44 @@ registerCleanupFunction(async function () {
 });
 
 add_task(async function verify_page_no_token() {
+  let logging_section = doc.getElementById("logging-section");
+  let logging_tab_button = doc.getElementById("logging-tab-button");
+  is(
+    logging_tab_button.getAttribute("selected"),
+    "true",
+    "token-info-section not selected by default"
+  );
+  ok(
+    BrowserTestUtils.isVisible(logging_section),
+    "logging-section not visible"
+  );
+  ok(
+    BrowserTestUtils.isHidden(doc.getElementById("token-info-section")),
+    "token-info-section visible by default"
+  );
+
+  let info_tab_button = doc.getElementById("info-tab-button");
+  isnot(
+    info_tab_button.getAttribute("selected"),
+    "true",
+    "token-info-section not selected by default"
+  );
+
+  // Switching to info-tab
+  info_tab_button.click();
+
   let info_text = doc.getElementById("info-text-div");
   is(info_text.hidden, false, "info-text-div should be visible");
-  let categories = doc.getElementById("categories");
-  is(categories.hidden, false, "categories-sidebar should be invisible");
-  let dev_info = doc.getElementById("info-tab-button");
+  let info_text_field = doc.getElementById("info-text-field");
   is(
-    dev_info.getAttribute("selected"),
+    info_text_field.getAttribute("data-l10n-id"),
+    "about-webauthn-text-connect-device",
+    "info-text-div has wrong text"
+  );
+  let categories = doc.getElementById("categories");
+  is(categories.hidden, false, "categories-sidebar should be visible");
+  is(
+    info_tab_button.getAttribute("selected"),
     "true",
     "token-info-section not selected by default"
   );

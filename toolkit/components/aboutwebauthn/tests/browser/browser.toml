@@ -1,5 +1,8 @@
 [DEFAULT]
 head = "head.js"
+support-files = [
+  "dummy_page.html",
+]
 prefs = [
   "security.webauth.webauthn=true",
   "security.webauth.webauthn_enable_softtoken=false",
@@ -15,6 +18,10 @@ prefs = [
 ["browser_aboutwebauthn_credentials.js"]
 
 ["browser_aboutwebauthn_info.js"]
+
+["browser_aboutwebauthn_logging.js"]
+
+["browser_aboutwebauthn_logging_e2e.js"]
 
 ["browser_aboutwebauthn_no_token.js"]
 

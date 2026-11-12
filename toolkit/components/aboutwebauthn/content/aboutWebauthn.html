@@ -14,18 +14,32 @@
     <title id="page-title" data-l10n-id="about-webauthn-page-title"></title>
     <link rel="stylesheet" href="chrome://global/content/aboutWebauthn.css" />
     <script src="chrome://global/content/aboutWebauthn.js"></script>
+    <link rel="localization" href="branding/brand.ftl" />
     <link rel="localization" href="toolkit/about/aboutWebauthn.ftl" />
   </head>
 
   <body id="body">
     <div id="categories" role="tablist" aria-labelledby="page-title">
       <div
-        id="info-tab-button"
+        id="logging-tab-button"
         class="category"
         selected="true"
         role="tab"
         tabindex="0"
         aria-selected="true"
+        aria-controls="logging-section"
+      >
+        <span
+          class="tablinks"
+          data-l10n-id="about-webauthn-logging-section-title"
+        ></span>
+      </div>
+      <div
+        id="info-tab-button"
+        class="category"
+        role="tab"
+        tabindex="-1"
+        aria-selected="false"
         aria-controls="token-info-section"
       >
         <span
@@ -80,6 +94,45 @@
       </div>
 
       <div
+        class="tabcontent logging-section"
+        id="logging-section"
+        role="tabpanel"
+        aria-labelledby="logging-tab-button"
+      >
+        <h2
+          id="logging-section-title"
+          class="categoryTitle"
+          data-l10n-id="about-webauthn-logging-section-title"
+        ></h2>
+        <p data-l10n-id="about-webauthn-logging-warning"></p>
+        <p data-l10n-id="about-webauthn-logging-scope-note"></p>
+        <div>
+          <textarea
+            readonly
+            id="webauthn-log"
+            aria-labelledby="logging-section-title"
+          ></textarea>
+        </div>
+        <button
+          id="start-logging-button"
+          class="button-row"
+          data-l10n-id="about-webauthn-start-button"
+        ></button>
+        <button
+          id="stop-logging-button"
+          class="button-row"
+          disabled
+          data-l10n-id="about-webauthn-stop-button"
+        ></button>
+        <button
+          id="clear-logging-button"
+          class="button-row"
+          data-l10n-id="about-webauthn-clear-button"
+        ></button>
+      </div>
+
+      <div
+        hidden
         class="tabcontent token-info-section"
         id="token-info-section"
         role="tabpanel"

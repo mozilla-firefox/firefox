@@ -1,0 +1,32 @@
+<html>
+<head>
+<title>Dummy test page</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8"></meta>
+</head>
+<script>
+async function onLoad() {
+  let gCredentialChallenge = new Uint8Array(16);
+  let rp = {id: document.domain, name: "none"};
+  let name = new URLSearchParams(location.search).get("name") ?? "Fox";
+  let user = {id: new Uint8Array(64), name, displayName: "none"};
+  let param = {type: "public-key", alg: -7};
+  let credm = navigator.credentials;
+
+  let makeCredentialOptions = {
+    rp, user, challenge: gCredentialChallenge, pubKeyCredParams: [param]
+  };
+
+  try {
+    await credm.create({publicKey: makeCredentialOptions});
+    document.title = "success";
+  } catch (e) {
+    document.title = "error";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", onLoad);
+</script>
+<body>
+<p>Dummy test page</p>
+</body>
+</html>

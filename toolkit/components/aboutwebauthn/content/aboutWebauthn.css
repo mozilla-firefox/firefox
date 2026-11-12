@@ -98,3 +98,8 @@ label {
 .delete-button {
   display: inline-flex;
 }
+
+#webauthn-log {
+  width: 90%;
+  height: 70vh;
+}

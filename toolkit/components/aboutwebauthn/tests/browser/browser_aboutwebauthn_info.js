@@ -14,6 +14,8 @@ add_setup(async function () {
   });
 
   doc = tab.linkedBrowser.contentDocument;
+  // Switch to info tab
+  doc.getElementById("info-tab-button").click();
 });
 
 registerCleanupFunction(async function () {
@@ -27,6 +29,8 @@ function send_auth_data_and_check(auth_data) {
     "about-webauthn-prompt",
     JSON.stringify({ type: "selected-device", auth_info: auth_data })
   );
+
+  doc.getElementById("info-tab-button").click();
 
   let info_text = doc.getElementById("info-text-div");
   is(info_text.hidden, true, "Start prompt not hidden");
@@ -55,8 +59,12 @@ add_task(async function multiple_devices() {
 add_task(async function multiple_devices() {
   send_auth_data_and_check(REAL_AUTH_INFO_1);
   reset_about_page(doc);
+  // Switch back to info tab
+  doc.getElementById("info-tab-button").click();
   send_auth_data_and_check(REAL_AUTH_INFO_2);
   reset_about_page(doc);
+  // Switch back to info tab
+  doc.getElementById("info-tab-button").click();
   send_auth_data_and_check(REAL_AUTH_INFO_3);
   reset_about_page(doc);
 });

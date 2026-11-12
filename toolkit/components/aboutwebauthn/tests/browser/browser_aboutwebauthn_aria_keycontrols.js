@@ -28,11 +28,11 @@ registerCleanupFunction(async function () {
 });
 
 add_task(async function moving_up_and_down() {
-  doc.getElementById("info-tab-button").focus();
   [
     ["UP", "DOWN"],
     ["LEFT", "RIGHT"],
   ].forEach(dirs => {
+    doc.getElementById("info-tab-button").focus();
     let up = dirs[0];
     let down = dirs[1];
     EventUtils.sendKey(down);
@@ -86,17 +86,17 @@ add_task(async function moving_up_and_down() {
       doc.getElementById("info-tab-button"),
       "Wrong element active"
     );
+    EventUtils.sendKey(up);
+    is(
+      doc.activeElement,
+      doc.getElementById("logging-tab-button"),
+      "Wrong element active"
+    );
     // Trying to go up further should do nothing
     EventUtils.sendKey(up);
     is(
       doc.activeElement,
-      doc.getElementById("info-tab-button"),
-      "Wrong element active"
-    );
-    EventUtils.sendKey(up);
-    is(
-      doc.activeElement,
-      doc.getElementById("info-tab-button"),
+      doc.getElementById("logging-tab-button"),
       "Wrong element active"
     );
   });
@@ -142,7 +142,7 @@ add_task(async function jumping_sections() {
   EventUtils.sendKey("HOME");
   is(
     doc.activeElement,
-    doc.getElementById("info-tab-button"),
+    doc.getElementById("logging-tab-button"),
     "Wrong element active"
   );
 
@@ -150,7 +150,7 @@ add_task(async function jumping_sections() {
   EventUtils.sendKey("HOME");
   is(
     doc.activeElement,
-    doc.getElementById("info-tab-button"),
+    doc.getElementById("logging-tab-button"),
     "Wrong element active"
   );
 
@@ -164,10 +164,11 @@ add_task(async function jumping_sections() {
   EventUtils.sendKey("HOME");
   is(
     doc.activeElement,
-    doc.getElementById("info-tab-button"),
+    doc.getElementById("logging-tab-button"),
     "Wrong element active"
   );
 
+  EventUtils.sendKey("DOWN"); // Info section
   EventUtils.sendKey("DOWN"); // Pin section
   EventUtils.sendKey("DOWN"); // Credentials section
   is(
