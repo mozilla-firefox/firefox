@@ -162,27 +162,39 @@ quotamanager:
       - jan.varga@gmail.com
       - storage-telemetry@mozilla.com
     expires: never
-  storage_sqlite_corruption_unrecovered:
-    type: labeled_counter
+  storage_init_corruption_error:
+    type: dual_labeled_counter
     description: >
-      Increments when a corruption error (NS_ERROR_FILE_CORRUPTED or
-      NS_ERROR_STORAGE_IOERR) propagates from a storage.sqlite operation
-      during QuotaManager initialization with no recovery path, leaving
-      all storage APIs (localStorage, IndexedDB, Cache API) broken for
-      the session. This covers corruption that passes the initial open
-      check but breaks subsequent operations such as schema upgrades,
-      cache setup, or quota loading. Labeled by the initialization
-      context that failed. See bug 2065480.
+      Increments when a database corruption error (as defined by
+      IsDatabaseCorruptionError) propagates during QuotaManager
+      initialization with no recovery path, leaving all storage APIs
+      (localStorage, IndexedDB, Cache API) broken until the next
+      initialization attempt. This covers corruption that passes the initial
+      storage.sqlite open and integrity checks but breaks subsequent
+      operations such as schema upgrades, cache setup, or quota loading.
       Note in some cases we recover from corruption: this metric is here to
       record missing cases where we didn't recover.
-    labels:
-      - storage
-      - persistent_storage
-      - temporary_storage
+      Labeled by the initialization context that failed and by the name of
+      the propagated error, which tells apart real corruption
+      (NS_ERROR_FILE_CORRUPTED) from I/O errors (NS_ERROR_STORAGE_IOERR),
+      which are often transient. See bug 2090041.
+    dual_labels:
+      key:
+        description: >
+          The initialization context that failed.
+        labels:
+          - storage
+          - persistent_storage
+          - temporary_storage
+      category:
+        description: >
+          The name of the propagated nsresult error (e.g.
+          NS_ERROR_FILE_CORRUPTED, NS_ERROR_STORAGE_IOERR), or "unknown" if
+          the error code has no name.
     bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2065480
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090041
     data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2065480
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090041
     data_sensitivity:
       - technical
     notification_emails:

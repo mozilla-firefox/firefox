@@ -20,6 +20,7 @@
 #include "ResolvableNormalOriginOp.h"
 #include "mozilla/Assertions.h"
 #include "mozilla/Atomics.h"
+#include "mozilla/ErrorNames.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/NotNull.h"
 #include "mozilla/ProfilerLabels.h"
@@ -76,7 +77,9 @@ namespace {
 void RecordCorruptionUnrecovered(const nsresult aRv,
                                  const nsLiteralCString& aContext) {
   if (IsDatabaseCorruptionError(aRv)) {
-    glean::quotamanager::storage_sqlite_corruption_unrecovered.Get(aContext)
+    const char* errorName = GetStaticErrorName(aRv);
+    glean::quotamanager::storage_init_corruption_error
+        .Get(aContext, nsDependentCString(errorName ? errorName : "unknown"))
         .Add();
   }
 }
