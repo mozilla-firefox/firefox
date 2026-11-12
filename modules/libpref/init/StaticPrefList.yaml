@@ -3689,11 +3689,6 @@
   value: true
   mirror: always
 
-- name: dom.intersection_observer.scroll_margin.enabled
-  type: bool
-  value: true
-  mirror: always
-
 # How often to check for reply timeouts (ms).
 - name: dom.ipc.reply.timeout
   type: uint32_t
