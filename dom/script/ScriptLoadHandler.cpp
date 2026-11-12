@@ -523,63 +523,68 @@ nsresult ScriptLoadHandler::DoOnStreamComplete(nsIChannel* aChannel,
       }
     } else {
       MOZ_ASSERT(mRequest->IsRetrievedAsSerializedStencil());
-      JS::TranscodeBuffer& buf = mRequest->SRIAndSerializedStencil();
-      if (!buf.append(aData, aDataLength)) {
-        return NS_ERROR_OUT_OF_MEMORY;
-      }
 
-      LOG(("ScriptLoadRequest (%p): SRIAndSerializedStencil length = %u",
-           mRequest.get(), unsigned(buf.length())));
+      if (NS_SUCCEEDED(aStatus)) {
+        JS::TranscodeBuffer& buf = mRequest->SRIAndSerializedStencil();
+        if (!buf.append(aData, aDataLength)) {
+          return NS_ERROR_OUT_OF_MEMORY;
+        }
 
-      // If we abort while decoding the SRI, we fallback on explicitly
-      // requesting the source. Thus, we should not continue in
-      // ScriptLoader::OnStreamComplete, which removes the request from the
-      // waiting lists.
-      //
-      // We calculate the SRI length below.
-      uint32_t unused;
-      rv = MaybeDecodeSRI(&unused);
-      if (NS_FAILED(rv)) {
-        return aChannel->Cancel(mScriptLoader->RestartLoad(mRequest));
-      }
+        LOG(("ScriptLoadRequest (%p): SRIAndSerializedStencil length = %u",
+             mRequest.get(), unsigned(buf.length())));
 
-      // The serialized stencil always starts with the SRI hash, thus even if
-      // there is no SRI data verifier instance, we still want to skip the hash.
-      uint32_t sriLength;
-      rv = SRICheckDataVerifier::DataSummaryLength(buf.length(), buf.begin(),
-                                                   &sriLength);
-      if (NS_FAILED(rv)) {
-        return aChannel->Cancel(mScriptLoader->RestartLoad(mRequest));
-      }
-
-      uint32_t alignedSRILength = JS::AlignTranscodingBytecodeOffset(sriLength);
-      mRequest->SetAlignedSRILength(alignedSRILength);
-
-      const JS::loader::LoadedScript::EncodingHeader* header =
-          reinterpret_cast<const JS::loader::LoadedScript::EncodingHeader*>(
-              buf.begin() + alignedSRILength);
-      if (!mRequest->getLoadedScript()->ReadFromEncodingHeader(header)) {
-        // Corrupted data.
-        return aChannel->Cancel(mScriptLoader->RestartLoad(mRequest));
-      }
-
-      if (mRequest->IsClassicScript() &&
-          mRequest->getLoadedScript()->DependsOnClassicScriptHintEncoding()) {
-        const Encoding* fallbackEncoding =
-            mScriptLoader->GetClassicScriptFallbackEncoding(mRequest);
-        if (mRequest->getLoadedScript()->ClassicScriptEncoding() !=
-            fallbackEncoding) {
+        // If we abort while decoding the SRI, we fallback on explicitly
+        // requesting the source. Thus, we should not continue in
+        // ScriptLoader::OnStreamComplete, which removes the request from the
+        // waiting lists.
+        //
+        // We calculate the SRI length below.
+        uint32_t unused;
+        rv = MaybeDecodeSRI(&unused);
+        if (NS_FAILED(rv)) {
           return aChannel->Cancel(mScriptLoader->RestartLoad(mRequest));
         }
-      }
 
-      Vector<uint8_t> compressed;
-      // mRequest has the compressed data, but will be filled with the
-      // uncompressed data
-      compressed.swap(buf);
-      if (!JS::loader::ScriptBytecodeDecompress(
-              compressed, mRequest->GetSerializedStencilOffset(), buf)) {
-        return NS_ERROR_UNEXPECTED;
+        // The serialized stencil always starts with the SRI hash, thus even if
+        // there is no SRI data verifier instance, we still want to skip the
+        // hash.
+        uint32_t sriLength;
+        rv = SRICheckDataVerifier::DataSummaryLength(buf.length(), buf.begin(),
+                                                     &sriLength);
+        if (NS_FAILED(rv)) {
+          return aChannel->Cancel(mScriptLoader->RestartLoad(mRequest));
+        }
+
+        uint32_t alignedSRILength =
+            JS::AlignTranscodingBytecodeOffset(sriLength);
+        mRequest->SetAlignedSRILength(alignedSRILength);
+
+        const JS::loader::LoadedScript::EncodingHeader* header =
+            reinterpret_cast<const JS::loader::LoadedScript::EncodingHeader*>(
+                buf.begin() + alignedSRILength);
+        if (!mRequest->getLoadedScript()->ReadFromEncodingHeader(header)) {
+          // Corrupted data.
+          return aChannel->Cancel(mScriptLoader->RestartLoad(mRequest));
+        }
+
+        if (mRequest->IsClassicScript() &&
+            mRequest->getLoadedScript()->DependsOnClassicScriptHintEncoding()) {
+          const Encoding* fallbackEncoding =
+              mScriptLoader->GetClassicScriptFallbackEncoding(mRequest);
+          if (mRequest->getLoadedScript()->ClassicScriptEncoding() !=
+              fallbackEncoding) {
+            return aChannel->Cancel(mScriptLoader->RestartLoad(mRequest));
+          }
+        }
+
+        Vector<uint8_t> compressed;
+        // mRequest has the compressed data, but will be filled with the
+        // uncompressed data
+        compressed.swap(buf);
+        if (!JS::loader::ScriptBytecodeDecompress(
+                compressed, mRequest->GetSerializedStencilOffset(), buf)) {
+          return NS_ERROR_UNEXPECTED;
+        }
       }
     }
   }
