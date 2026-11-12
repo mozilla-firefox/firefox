@@ -16,8 +16,7 @@ const ENGINE_ID =
 ChromeUtils.defineESModuleGetters(lazy, {
   QuickSuggestTestUtils:
     "resource://testing-common/QuickSuggestTestUtils.sys.mjs",
-  TelemetryEvent:
-    "moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs",
+  TelemetryEvent: "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs",
 });
 
 add_setup(async function () {

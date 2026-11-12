@@ -70,7 +70,7 @@ const lazy = XPCOMUtils.declareLazy({
     "resource://gre/modules/ExtensionSearchHandler.sys.mjs",
   ExtensionUtils: "resource://gre/modules/ExtensionUtils.sys.mjs",
   handleBounceEventTrigger:
-    "moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs",
+    "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs",
   PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   ReaderMode: "moz-src:///toolkit/components/reader/ReaderMode.sys.mjs",
   SearchUIUtils: "moz-src:///browser/components/search/SearchUIUtils.sys.mjs",

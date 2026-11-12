@@ -7,7 +7,7 @@ import { UrlbarResult } from "chrome://browser/content/urlbar/UrlbarResult.mjs";
 
 /**
  * @import {UrlbarActorPort} from "moz-src:///browser/components/urlbar/actors/UrlbarChild.sys.mjs"
- * @import {BuiltBounce} from "moz-src:///browser/components/urlbar/UrlbarParentController.sys.mjs"
+ * @import {BuiltBounce} from "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs"
  */
 
 /**

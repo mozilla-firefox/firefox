@@ -59,6 +59,7 @@ MOZ_SRC_FILES += [
     "UrlbarSearchOneOffs.sys.mjs",
     "UrlbarSearchTermsPersistence.sys.mjs",
     "UrlbarSearchUtils.sys.mjs",
+    "UrlbarSession.sys.mjs",
     "UrlbarTokenizer.sys.mjs",
     "UrlbarUtils.sys.mjs",
     "UrlbarValueFormatter.sys.mjs",

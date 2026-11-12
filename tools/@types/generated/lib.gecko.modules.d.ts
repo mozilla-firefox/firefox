@@ -555,6 +555,7 @@ export interface Modules {
   "moz-src:///browser/components/urlbar/UrlbarSearchOneOffs.sys.mjs": typeof import("moz-src:///browser/components/urlbar/UrlbarSearchOneOffs.sys.mjs"),
   "moz-src:///browser/components/urlbar/UrlbarSearchTermsPersistence.sys.mjs": typeof import("moz-src:///browser/components/urlbar/UrlbarSearchTermsPersistence.sys.mjs"),
   "moz-src:///browser/components/urlbar/UrlbarSearchUtils.sys.mjs": typeof import("moz-src:///browser/components/urlbar/UrlbarSearchUtils.sys.mjs"),
+  "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs": typeof import("moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs"),
   "moz-src:///browser/components/urlbar/UrlbarTokenizer.sys.mjs": typeof import("moz-src:///browser/components/urlbar/UrlbarTokenizer.sys.mjs"),
   "moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs": typeof import("moz-src:///browser/components/urlbar/UrlbarUtils.sys.mjs"),
   "moz-src:///browser/components/urlbar/UrlbarValueFormatter.sys.mjs": typeof import("moz-src:///browser/components/urlbar/UrlbarValueFormatter.sys.mjs"),
