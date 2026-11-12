@@ -1353,6 +1353,16 @@ features:
         description: The "utm_content" value used to identify installs from the pairing campaign.
         type: String
         default: "DTM_SYNC_PAIR_V2"
+    defaults:
+      - channel: developer
+        value:
+          enabled: true
+      - channel: nightly
+        value:
+          enabled: true
+      - channel: beta
+        value:
+          enabled: true
 
   pdf-viewer:
     description: Feature for the PDF viewer tools for users on Firefox for Android.
