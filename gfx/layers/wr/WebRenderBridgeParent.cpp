@@ -767,8 +767,9 @@ bool WebRenderBridgeParent::UpdateResources(
 
         wr::Vec<uint8_t> bytes;
         if (reader.Read(op.bytes(), bytes)) {
-          aUpdates.AddBlobImage(op.key(), op.descriptor(), mBlobTileSize, bytes,
-                                wr::ToDeviceIntRect(op.visibleRect()));
+          aUpdates.AddBlobImage(op.key(), op.descriptor(),
+                                op.tiling() ? op.tiling() : mBlobTileSize,
+                                bytes, wr::ToDeviceIntRect(op.visibleRect()));
         } else {
           gfxCriticalNote << "TOpAddBlobImage failed";
           success = false;

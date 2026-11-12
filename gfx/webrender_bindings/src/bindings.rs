@@ -2474,7 +2474,7 @@ pub extern "C" fn wr_resource_updates_add_blob_image(
         descriptor.into(),
         Arc::new(bytes.flush_into_vec()),
         visible_rect,
-        if descriptor.format == ImageFormat::BGRA8 || adjusted > tile_size {
+        if descriptor.format == ImageFormat::BGRA8 || adjusted > tile_size || tile_size > DEFAULT_TILE_SIZE {
             Some(adjusted)
         } else {
             None
