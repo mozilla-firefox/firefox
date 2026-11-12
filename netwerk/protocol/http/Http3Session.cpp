@@ -178,6 +178,9 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
                          ? StaticPrefs::network_trr_fast_pto_for_http3_conn()
                          : 0;
 
+  // The outer connection of a connect-udp tunnel already paces its traffic.
+  bool pacingEnabled = !aIsTunnel;
+
   nsresult rv;
   if (mUseNSPRForIO) {
     rv = NeqoHttp3Conn::InitUseNSPRForIO(
@@ -188,7 +191,7 @@ nsresult Http3Session::Init(nsHttpConnectionInfo* aConnInfo,
         StaticPrefs::network_http_http3_max_stream_data(),
         StaticPrefs::network_http_http3_version_negotiation_enabled(),
         mConnInfo->GetWebTransport(), gHttpHandler->Http3QlogDir(), idleTimeout,
-        fastPto, getter_AddRefs(mHttp3Connection));
+        fastPto, pacingEnabled, getter_AddRefs(mHttp3Connection));
   } else {
     rv = NeqoHttp3Conn::Init(
         mSocketControl->GetHostName(), alpn, selfAddr, peerAddr,

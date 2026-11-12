@@ -21,11 +21,11 @@ class NeqoHttp3Conn final {
       uint32_t aMaxTableSize, uint16_t aMaxBlockedStreams, uint64_t aMaxData,
       uint64_t aMaxStreamData, bool aVersionNegotiation, bool aWebTransport,
       const nsACString& aQlogDir, uint32_t aIdleTimeout, uint32_t aFastPto,
-      NeqoHttp3Conn** aConn) {
+      bool aPacingEnabled, NeqoHttp3Conn** aConn) {
     return neqo_http3conn_new_use_nspr_for_io(
         &aOrigin, &aAlpn, &aLocalAddr, &aRemoteAddr, aMaxTableSize,
         aMaxBlockedStreams, aMaxData, aMaxStreamData, aVersionNegotiation,
-        aWebTransport, &aQlogDir, aIdleTimeout, aFastPto,
+        aWebTransport, &aQlogDir, aIdleTimeout, aFastPto, aPacingEnabled,
         (const mozilla::net::NeqoHttp3Conn**)aConn);
   }
 
