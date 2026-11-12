@@ -1,6 +1,6 @@
 -c requirements-common.txt
 
-certifi==2026.10.19
+certifi==2026.10.23
 hpack==4.0.0
 hyperframe==6.0.0
 psutil==7.0.0; sys_platform != 'darwin'
