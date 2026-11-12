@@ -139,6 +139,8 @@ RenderedFrameId RenderCompositorEGL::EndFrame(
     sync = egl->fCreateSyncKHR(LOCAL_EGL_SYNC_NATIVE_FENCE_ANDROID, nullptr);
   }
   if (sync) {
+    // Materialize the native fence before exporting its file descriptor.
+    gl()->fFlush();
     int fenceFd = egl->fDupNativeFenceFDANDROID(sync);
     if (fenceFd >= 0) {
       mReleaseFence = new layers::FenceFileHandle(UniqueFileHandle(fenceFd));
