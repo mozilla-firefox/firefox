@@ -13,8 +13,8 @@ add_setup(async () => {
 });
 
 /**
- * Registers a widget, runs aTask, then tears the widget back down. Auto-add
- * only ever runs once per id, so every task below has to use an id of its own.
+ * Registers a widget, runs aTask, then tears the widget back down and forgets
+ * its id, since auto-add only ever runs once per id.
  *
  * @param {object} aProperties
  *   Properties to pass through to CustomizableUI.createWidget.
@@ -29,6 +29,7 @@ async function withWidget(aProperties, aTask) {
   } finally {
     CustomizableUI.destroyWidget(id);
     CustomizableUI.removeWidgetFromArea(id);
+    CustomizableUI.getTestOnlyInternalProp("gSeenWidgets").delete(id);
   }
 }
 
