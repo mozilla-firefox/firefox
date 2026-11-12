@@ -213,6 +213,9 @@ skip pref(webgl.disable-angle,true) == webgl-color-test.html?native-gl wrapper.h
 # ----------------------------------------------------------------------
 # Non-WebGL Reftests!
 
+# Reset the WebGL section's defaults.
+defaults
+
 
 # Do we correctly handle multiple clip paths?
 != clip-multiple-paths.html clip-multiple-paths-badref.html
