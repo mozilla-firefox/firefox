@@ -7,6 +7,8 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <ios>
 #include <iterator>
 #include <set>
 #include <sstream>
@@ -425,12 +427,25 @@ nsTArray<RefPtr<dom::RTCStatsPromise>> RTCRtpSender::GetStatsInternal(
               mozalloc_handle_oom(0);
             }
 
-            // TODO(bug 1804678): Use RTCAudioSourceStats
-            if (audioStats) {
-              RTCMediaSourceStats mediaSourceStats;
-              constructCommonMediaSourceStats(mediaSourceStats);
-              if (!report->mMediaSourceStats.AppendElement(
-                      std::move(mediaSourceStats), fallible)) {
+            if (audioStats && !trackName.IsEmpty()) {
+              RTCAudioSourceStats audioSourceStats;
+              constructCommonMediaSourceStats(audioSourceStats);
+              constexpr auto kMaxRawAudio =
+                  std::numeric_limits<decltype(audioStats->audio_level)>::max();
+              static_assert(
+                  std::is_same_v<decltype(audioStats->audio_level), int16_t>,
+                  "audio_level must be int16_t");
+              audioSourceStats.mAudioLevel.Construct(
+                  std::clamp(audioStats->audio_level, static_cast<int16_t>(0),
+                             kMaxRawAudio) /
+                  static_cast<double>(kMaxRawAudio));
+
+              audioSourceStats.mTotalAudioEnergy.Construct(
+                  audioStats->total_input_energy);
+              audioSourceStats.mTotalSamplesDuration.Construct(
+                  audioStats->total_input_duration);
+              if (!report->mAudioSourceStats.AppendElement(
+                      std::move(audioSourceStats), fallible)) {
                 mozalloc_handle_oom(0);
               }
             }

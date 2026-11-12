@@ -33,7 +33,7 @@ static auto ForAllPublicRTCStatsCollectionMembers(Collection& aStats,
   return aFunction(
       aStats.mInboundRtpStreamStats, aStats.mOutboundRtpStreamStats,
       aStats.mRemoteInboundRtpStreamStats, aStats.mRemoteOutboundRtpStreamStats,
-      aStats.mMediaSourceStats, aStats.mVideoSourceStats,
+      aStats.mAudioSourceStats, aStats.mVideoSourceStats,
       aStats.mPeerConnectionStats, aStats.mRtpContributingSourceStats,
       aStats.mIceCandidatePairStats, aStats.mIceCandidateStats,
       aStats.mTrickledIceCandidateStats, aStats.mDataChannelStats,
@@ -187,6 +187,10 @@ DEFINE_IPC_SERIALIZER_WITH_SUPER_CLASS_AND_FIELDS(
 
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::dom::RTCMediaSourceStats, mId,
                                   mTimestamp, mType, mTrackIdentifier, mKind);
+
+DEFINE_IPC_SERIALIZER_WITH_SUPER_CLASS_AND_FIELDS(
+    mozilla::dom::RTCAudioSourceStats, mozilla::dom::RTCMediaSourceStats,
+    mAudioLevel, mTotalAudioEnergy, mTotalSamplesDuration);
 
 DEFINE_IPC_SERIALIZER_WITH_SUPER_CLASS_AND_FIELDS(
     mozilla::dom::RTCVideoSourceStats, mozilla::dom::RTCMediaSourceStats,
