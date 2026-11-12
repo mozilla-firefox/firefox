@@ -34,8 +34,8 @@
   background-color: var(--background-color-box);
   border: 1px solid var(--border-color, ThreeDDarkShadow);
   border-radius: var(--border-radius-small);
-  padding: 16px;
-  margin-block: 6px;
+  padding: var(--space-large);
+  margin-block: var(--space-small);
 }
 
 #sanitizeEverythingWarningIcon {
@@ -50,13 +50,13 @@
 }
 
 #sanitizeEverythingWarningDescBox {
-  padding: 0 16px;
+  padding: 0 var(--space-large);
   margin: 0;
 }
 
 #titleText {
   margin-block-start: 0;
-  margin-inline: 4px;
+  margin-inline: var(--space-xsmall);
 }
 
 dialog[inbrowserwindow]:not([inClearOnShutdown]) #titleRow {
@@ -105,6 +105,8 @@ dialog:not([inClearOnShutdown]) {
 }
 
 .sanitizeCheckboxDescription {
+  /* Use pixels to align the description with the checkbox label */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 0 24px;
   line-height: normal;
 }
@@ -130,14 +132,13 @@ dialog:not([inbrowserwindow]) #titleText {
 }
 
 dialog[inbrowserwindow] {
-  --grid-padding: 16px;
-  padding: var(--grid-padding) calc(var(--grid-padding) - 4px);
+  padding: var(--space-large) var(--space-medium);
 }
 
 dialog[inbrowserwindow] groupbox,
 dialog[inbrowserwindow] #sanitizeEverythingWarningBox,
 dialog[inbrowserwindow] #SanitizeDurationBox {
-  margin-inline: 4px;
+  margin-inline: var(--space-xsmall);
 }
 
 dialog[inbrowserwindow] #sanitizeDurationLabel {
@@ -154,8 +155,8 @@ dialog[inbrowserwindow] groupbox:last-child {
 
 /* Loading indicator for data size calculation */
 .data-size-loading {
-  margin-inline-start: 8px;
-  gap: 4px;
+  margin-inline-start: var(--space-small);
+  gap: var(--space-xsmall);
 }
 
 .data-size-spinner {
@@ -163,13 +164,13 @@ dialog[inbrowserwindow] groupbox:last-child {
   height: var(--icon-size);
   -moz-context-properties: fill;
   fill: currentColor;
-  opacity: 0.6;
+  opacity: var(--opacity-deemphasized-strong);
   animation: spin 1s linear infinite;
 }
 
 .data-size-label {
   font-size: var(--font-size-small);
-  opacity: 0.7;
+  opacity: var(--opacity-deemphasized);
 }
 
 @keyframes spin {
