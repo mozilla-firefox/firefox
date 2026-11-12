@@ -721,7 +721,7 @@ engagement event in the child and sends it to the parent in a
 Glean call.
 
 A pick that loads a page in the same tab still records its engagement, because
-`UrlbarChildTelemetry.record()` sends `RecordEngagement` before the input sends
+`UrlbarChildSession.record()` sends `RecordEngagement` before the input sends
 its `LoadURL` query. Both messages travel in order over the window global's
 actor channel, so the parent has the engagement data before it starts the load.
 A session that ends without a pick is recorded as an abandonment on the `blur`

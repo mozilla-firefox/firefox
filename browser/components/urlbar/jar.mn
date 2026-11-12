@@ -11,7 +11,7 @@ browser.jar:
         content/browser/urlbar/SmartbarInputUtils.mjs      (content/SmartbarInputUtils.mjs)
         content/browser/urlbar/SmartbarMentionUtils.mjs    (content/SmartbarMentionUtils.mjs)
         content/browser/urlbar/UrlbarChildController.mjs   (content/UrlbarChildController.mjs)
-        content/browser/urlbar/UrlbarChildTelemetry.mjs    (content/UrlbarChildTelemetry.mjs)
+        content/browser/urlbar/UrlbarChildSession.mjs      (content/UrlbarChildSession.mjs)
         content/browser/urlbar/UrlbarContentUtils.mjs      (content/UrlbarContentUtils.mjs)
         content/browser/urlbar/UrlbarContentPrefs.mjs      (content/UrlbarContentPrefs.mjs)
         content/browser/urlbar/UrlbarParentControllerProxy.mjs (content/UrlbarParentControllerProxy.mjs)

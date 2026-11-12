@@ -5,7 +5,7 @@
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import {
   claimBounceForLoad,
-  TelemetryEvent,
+  UrlbarSession,
 } from "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs";
 
 /**
@@ -161,7 +161,7 @@ export class UrlbarParentController {
     this.manager =
       manager || lazy.ProvidersManager.getInstanceForSap(this.sapName);
 
-    this.engagementEvent = new TelemetryEvent(this);
+    this.engagementEvent = new UrlbarSession(this);
     lazy.UrlbarProviderTopSites.addTopSitesListener(this.#topSitesListener);
     Services.obs.addObserver(this, "intl:app-locales-changed", true);
   }

@@ -16,7 +16,7 @@ const ENGINE_ID =
 ChromeUtils.defineESModuleGetters(lazy, {
   QuickSuggestTestUtils:
     "resource://testing-common/QuickSuggestTestUtils.sys.mjs",
-  TelemetryEvent: "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs",
+  UrlbarSession: "moz-src:///browser/components/urlbar/UrlbarSession.sys.mjs",
 });
 
 add_setup(async function () {
@@ -56,7 +56,7 @@ add_setup(async function () {
   // The disable-suggest threshold clock lives on the parent recorder; stub the
   // class so it's controllable whether the recorder is reached in-process or
   // over the actor.
-  sinon.stub(lazy.TelemetryEvent.prototype, "getCurrentTime").callsFake(() => {
+  sinon.stub(lazy.UrlbarSession.prototype, "getCurrentTime").callsFake(() => {
     return currentTime;
   });
 

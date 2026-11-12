@@ -502,8 +502,8 @@
       "chrome://browser/content/urlbar/UrlbarChildController.mjs": [
         "../../../browser/components/urlbar/content/UrlbarChildController.mjs"
       ],
-      "chrome://browser/content/urlbar/UrlbarChildTelemetry.mjs": [
-        "../../../browser/components/urlbar/content/UrlbarChildTelemetry.mjs"
+      "chrome://browser/content/urlbar/UrlbarChildSession.mjs": [
+        "../../../browser/components/urlbar/content/UrlbarChildSession.mjs"
       ],
       "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs": [
         "../../../browser/components/urlbar/content/UrlbarContentPrefs.mjs"

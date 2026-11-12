@@ -9,7 +9,7 @@ add_setup(async function () {
   await Services.fog.testFlushAllChildren();
   Services.fog.testResetFOG();
 
-  // Create a new window in order to initialize TelemetryEvent of
+  // Create a new window in order to initialize UrlbarSession of
   // UrlbarParentController.
   const win = await BrowserTestUtils.openNewBrowserWindow();
   registerCleanupFunction(async function () {
@@ -105,7 +105,7 @@ add_task(async function boolNimbusVariable() {
     );
 
     // Open a new window and make sure the metric is still correct. These pref
-    // metrics are currently recorded by `TelemetryEvent`, an instance of which
+    // metrics are currently recorded by `UrlbarSession`, an instance of which
     // is created per browser window.
     let win = await BrowserTestUtils.openNewBrowserWindow();
     await TestUtils.waitForTick();

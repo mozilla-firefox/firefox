@@ -150,16 +150,12 @@ async function recordBounceIfShortVisit(browser, tracking) {
 }
 
 /**
- * Tracks and records telemetry events for the given category, if provided,
- * otherwise it's a no-op.
- * It is currently designed around the "urlbar" category, even if it can
- * potentially be extended to other categories.
- * To record an event, invoke start() with a starting event, then either
- * invoke record() with a final event, or discard() to drop the recording.
- *
- * @see Events.yaml
+ * Tracks an address bar search session: it records engagement, abandonment,
+ * exposure and bounce telemetry, and notifies providers when a session ends.
+ * To track a session, invoke start() with a starting event, then either
+ * invoke record() with a final event, or discard() to drop the session.
  */
-export class TelemetryEvent {
+export class UrlbarSession {
   /**
    * @param {UrlbarParentController} controller
    *  The associated UrlbarParentController.

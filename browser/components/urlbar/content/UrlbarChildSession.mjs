@@ -9,19 +9,19 @@ import { UrlbarTelemetryUtils } from "chrome://browser/content/urlbar/UrlbarTele
  */
 
 /**
- * Content-side engagement-telemetry collector for the urlbar actor's message
- * path. It owns the synchronous session state (`start()` info)
- * and, on `record()`, assembles the engagement snapshot plus the input/view
- * content the recording needs and ships it to the parent recorder as a
- * `RecordEngagement` message. The parent does the actual `Glean`/`Interactions`
- * recording, so this collector pulls in neither.
+ * Content-side search session collector for the urlbar actor's message path.
+ * It owns the synchronous session state (`start()` info) and, on `record()`,
+ * assembles the engagement snapshot plus the input/view content the recording
+ * needs and ships it to the parent recorder as a `RecordEngagement` message.
+ * The parent does the actual `Glean`/`Interactions` recording, so this
+ * collector pulls in neither.
  *
  * On the direct path this collector isn't used: `UrlbarChildController` hands
- * back the real parent-side `TelemetryEvent` and recording happens in-process.
+ * back the real parent-side `UrlbarSession` and recording happens in-process.
  * It mirrors that class's `start()`/`record()`/`discard()` surface, sharing the
  * pure parts through `UrlbarTelemetryUtils`.
  */
-export class UrlbarChildTelemetry {
+export class UrlbarChildSession {
   /** @type {UrlbarChildController} */
   #controller;
 
