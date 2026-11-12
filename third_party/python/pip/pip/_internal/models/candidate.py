@@ -6,20 +6,22 @@ from pip._vendor.packaging.version import parse as parse_version
 from pip._internal.models.link import Link
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class InstallationCandidate:
     """Represents a potential "candidate" for installation."""
-
-    __slots__ = ["name", "version", "link"]
 
     name: str
     version: Version
     link: Link
+    locked: bool
 
-    def __init__(self, name: str, version: str, link: Link) -> None:
+    def __init__(
+        self, name: str, version: str, link: Link, locked: bool = False
+    ) -> None:
         object.__setattr__(self, "name", name)
         object.__setattr__(self, "version", parse_version(version))
         object.__setattr__(self, "link", link)
+        object.__setattr__(self, "locked", locked)
 
     def __str__(self) -> str:
         return f"{self.name!r} candidate (version {self.version} at {self.link})"

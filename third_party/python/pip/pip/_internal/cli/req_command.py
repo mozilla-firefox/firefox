@@ -8,16 +8,31 @@ PackageFinder machinery and all its vendored dependencies, etc.
 from __future__ import annotations
 
 import logging
+import os
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from functools import partial
+from itertools import chain
 from optparse import Values
-from typing import Any
+from pathlib import Path
+from typing import Any, TypeVar
 
-from pip._internal.build_env import SubprocessBuildEnvironmentInstaller
+from pip._internal.build_env import (
+    BuildEnvironmentInstaller,
+    BuildIsolationMode,
+    InprocessBuildEnvironmentInstaller,
+    SubprocessBuildEnvironmentInstaller,
+)
 from pip._internal.cache import WheelCache
 from pip._internal.cli import cmdoptions
+from pip._internal.cli.cmdoptions import make_target_python
 from pip._internal.cli.index_command import IndexGroupCommand
 from pip._internal.cli.index_command import SessionCommandMixin as SessionCommandMixin
-from pip._internal.exceptions import CommandError, PreviousBuildDirError
+from pip._internal.exceptions import (
+    CommandError,
+    PreviousBuildDirError,
+    UnsupportedPythonVersion,
+)
 from pip._internal.index.collector import LinkCollector
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.selection_prefs import SelectionPreferences
@@ -29,29 +44,107 @@ from pip._internal.req.constructors import (
     install_req_from_editable,
     install_req_from_line,
     install_req_from_parsed_requirement,
+    install_req_from_pylock_package,
     install_req_from_req_string,
 )
+from pip._internal.req.pep723 import PEP723Exception, pep723_metadata
 from pip._internal.req.req_dependency_group import parse_dependency_groups
-from pip._internal.req.req_file import parse_requirements
+from pip._internal.req.req_file import get_file_content, parse_requirements
 from pip._internal.req.req_install import InstallRequirement
 from pip._internal.resolution.base import BaseResolver
+from pip._internal.utils.packaging import check_requires_python
+from pip._internal.utils.pylock import (
+    is_valid_pylock_filename,
+    select_from_pylock_path_or_url,
+)
 from pip._internal.utils.temp_dir import (
     TempDirectory,
+    TempDirectoryKind,
     TempDirectoryTypeRegistry,
-    tempdir_kinds,
 )
+from pip._internal.utils.urls import strip_extras
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class _PylockRequest:
+    """Accumulate one lock's selectors before evaluating its package markers."""
+
+    filename: str
+    extras: set[str] = field(default_factory=set)
+    dependency_groups: set[str] = field(default_factory=set)
+    include_default_groups: bool = False
+
+
+def _pylock_source_key(filename: str) -> tuple[str, str, str]:
+    """Identify a source together with the base used for its relative artifacts."""
+    if filename.lower().startswith(("http:", "https:", "file:")):
+        return "url", filename, ""
+    # Preserve case and parent components because either can change which file opens.
+    source = str(Path(filename).absolute())
+    artifact_base = str(Path(os.path.dirname(filename)).absolute())
+    return "path", source, artifact_base
+
+
+def _collect_requirement_sources(
+    requirements: list[str], groups: list[tuple[str, str]]
+) -> tuple[list[str | _PylockRequest], list[tuple[str, str]]]:
+    """Combine selectors for each lock while retaining separate project inputs."""
+    pylocks: dict[tuple[str, str, str], _PylockRequest] = {}
+    requirement_files: list[str | _PylockRequest] = []
+    project_groups: list[tuple[str, str]] = []
+
+    sources = chain(((filename, None) for filename in requirements), groups)
+    for source, group in sources:
+        filename, extras = strip_extras(source)
+        if not is_valid_pylock_filename(filename):
+            if group is None:
+                requirement_files.append(source)
+            else:
+                project_groups.append((source, group))
+            continue
+
+        key = _pylock_source_key(filename)
+        if key not in pylocks:
+            pylocks[key] = _PylockRequest(filename)
+            requirement_files.append(pylocks[key])
+        request = pylocks[key]
+        request.extras.update(extras)
+        if group is None:
+            request.include_default_groups = True
+        else:
+            request.dependency_groups.add(group)
+
+    return requirement_files, project_groups
+
+
+def should_ignore_regular_constraints() -> bool:
+    """
+    Whether this process should ignore the regular constraints it inherits.
+
+    The parent pip sets ``_PIP_IN_BUILD_IGNORE_CONSTRAINTS`` whenever it starts
+    an isolated build in a subprocess, so that regular constraints the build
+    inherits (such as via ``PIP_CONSTRAINT`` or config files) do not affect it.
+    Only build constraints apply there.
+    """
+
+    return os.environ.get("_PIP_IN_BUILD_IGNORE_CONSTRAINTS") == "1"
+
+
 KEEPABLE_TEMPDIR_TYPES = [
-    tempdir_kinds.BUILD_ENV,
-    tempdir_kinds.EPHEM_WHEEL_CACHE,
-    tempdir_kinds.REQ_BUILD,
+    TempDirectoryKind.BUILD_ENV,
+    TempDirectoryKind.EPHEM_WHEEL_CACHE,
+    TempDirectoryKind.REQ_BUILD,
 ]
 
 
-def with_cleanup(func: Any) -> Any:
+_CommandT = TypeVar("_CommandT", bound="RequirementCommand")
+
+
+def with_cleanup(
+    func: Callable[[_CommandT, Values, list[str]], int],
+) -> Callable[[_CommandT, Values, list[str]], int]:
     """Decorator for common logic related to managing temporary
     directories.
     """
@@ -60,9 +153,7 @@ def with_cleanup(func: Any) -> Any:
         for t in KEEPABLE_TEMPDIR_TYPES:
             registry.set_delete(t, False)
 
-    def wrapper(
-        self: RequirementCommand, options: Values, args: list[Any]
-    ) -> int | None:
+    def wrapper(self: _CommandT, options: Values, args: list[str]) -> int:
         assert self.tempdir_registry is not None
         if options.no_clean:
             configure_tempdir_registry(self.tempdir_registry)
@@ -79,12 +170,51 @@ def with_cleanup(func: Any) -> Any:
     return wrapper
 
 
+def parse_constraint_files(
+    constraint_files: list[str],
+    finder: PackageFinder,
+    options: Values,
+    session: PipSession,
+) -> list[InstallRequirement]:
+    requirements = []
+    for filename in constraint_files:
+        for parsed_req in parse_requirements(
+            filename,
+            constraint=True,
+            finder=finder,
+            options=options,
+            session=session,
+        ):
+            req_to_add = install_req_from_parsed_requirement(
+                parsed_req,
+                isolated=options.isolated_mode,
+                user_supplied=False,
+            )
+            requirements.append(req_to_add)
+
+    return requirements
+
+
 class RequirementCommand(IndexGroupCommand):
     def __init__(self, *args: Any, **kw: Any) -> None:
         super().__init__(*args, **kw)
 
         self.cmd_opts.add_option(cmdoptions.dependency_groups())
         self.cmd_opts.add_option(cmdoptions.no_clean())
+
+    def check_build_constraints(self, options: Values) -> None:
+        """Check build constraints with the command's network session."""
+        if not options.build_constraints:
+            return
+
+        if not options.build_isolation:
+            raise CommandError(
+                "--build-constraint cannot be used with --no-build-isolation."
+            )
+
+        session = self.get_default_session(options)
+        for constraint_file in options.build_constraints:
+            get_file_content(constraint_file, session)
 
     @staticmethod
     def determine_resolver_variant(options: Values) -> str:
@@ -102,6 +232,8 @@ class RequirementCommand(IndexGroupCommand):
         build_tracker: BuildTracker,
         session: PipSession,
         finder: PackageFinder,
+        *,
+        allow_editables: bool,
         use_user_site: bool,
         download_dir: str | None = None,
         verbosity: int = 0,
@@ -132,12 +264,46 @@ class RequirementCommand(IndexGroupCommand):
                     "fast-deps has no effect when used with the legacy resolver."
                 )
 
+        # Handle build constraints
+        build_constraints = getattr(options, "build_constraints", [])
+
+        env_installer: BuildEnvironmentInstaller
+        if "inprocess-build-deps" in options.features_enabled:
+            build_constraint_reqs = parse_constraint_files(
+                build_constraints, finder, options, session
+            )
+            env_installer = InprocessBuildEnvironmentInstaller(
+                finder=finder,
+                build_tracker=build_tracker,
+                build_constraints=build_constraint_reqs,
+                verbosity=verbosity,
+                wheel_cache=WheelCache(options.cache_dir),
+            )
+        else:
+            env_installer = SubprocessBuildEnvironmentInstaller(
+                finder,
+                build_constraints=build_constraints,
+            )
+
+        if not options.build_isolation:
+            build_isolation: BuildIsolationMode = "off"
+        elif "venv-isolation" in options.features_enabled:
+            build_isolation = "venv"
+            if "inprocess-build-deps" in options.features_enabled:
+                logger.warning(
+                    "Using --use-feature 'inprocess-build-deps' and 'venv-isolation'"
+                    " together is currently partially supported. If you encounter"
+                    " broken behaviour, use only one feature."
+                )
+        else:
+            build_isolation = "virtual"
+
         return RequirementPreparer(
             build_dir=temp_build_dir_path,
             src_dir=options.src_dir,
             download_dir=download_dir,
-            build_isolation=options.build_isolation,
-            build_isolation_installer=SubprocessBuildEnvironmentInstaller(finder),
+            build_isolation=build_isolation,
+            build_isolation_installer=env_installer,
             check_build_deps=options.check_build_deps,
             build_tracker=build_tracker,
             session=session,
@@ -148,7 +314,7 @@ class RequirementCommand(IndexGroupCommand):
             lazy_wheel=lazy_wheel,
             verbosity=verbosity,
             legacy_resolver=legacy_resolver,
-            resume_retries=options.resume_retries,
+            allow_editables=allow_editables,
         )
 
     @classmethod
@@ -163,7 +329,6 @@ class RequirementCommand(IndexGroupCommand):
         ignore_requires_python: bool = False,
         force_reinstall: bool = False,
         upgrade_strategy: str = "to-satisfy-only",
-        use_pep517: bool | None = None,
         py_version_info: tuple[int, ...] | None = None,
     ) -> BaseResolver:
         """
@@ -172,7 +337,6 @@ class RequirementCommand(IndexGroupCommand):
         make_install_req = partial(
             install_req_from_req_string,
             isolated=options.isolated_mode,
-            use_pep517=use_pep517,
         )
         resolver_variant = cls.determine_resolver_variant(options)
         # The long import name and duplicated invocation is needed to convince
@@ -188,6 +352,7 @@ class RequirementCommand(IndexGroupCommand):
                 make_install_req=make_install_req,
                 use_user_site=use_user_site,
                 ignore_dependencies=options.ignore_dependencies,
+                only_dependencies=options.only_dependencies,
                 ignore_installed=ignore_installed,
                 ignore_requires_python=ignore_requires_python,
                 force_reinstall=force_reinstall,
@@ -203,6 +368,7 @@ class RequirementCommand(IndexGroupCommand):
             make_install_req=make_install_req,
             use_user_site=use_user_site,
             ignore_dependencies=options.ignore_dependencies,
+            only_dependencies=options.only_dependencies,
             ignore_installed=ignore_installed,
             ignore_requires_python=ignore_requires_python,
             force_reinstall=force_reinstall,
@@ -221,38 +387,37 @@ class RequirementCommand(IndexGroupCommand):
         Parse command-line arguments into the corresponding requirements.
         """
         requirements: list[InstallRequirement] = []
-        for filename in options.constraints:
-            for parsed_req in parse_requirements(
-                filename,
-                constraint=True,
-                finder=finder,
-                options=options,
-                session=session,
-            ):
-                req_to_add = install_req_from_parsed_requirement(
-                    parsed_req,
-                    isolated=options.isolated_mode,
-                    user_supplied=False,
-                )
-                requirements.append(req_to_add)
+        requirement_sources, project_groups = _collect_requirement_sources(
+            options.requirements, options.dependency_groups
+        )
+
+        if should_ignore_regular_constraints():
+            # Inside an isolated build subprocess: apply the build constraints
+            # (forwarded via --build-constraint) instead of the inherited ones.
+            constraint_files = getattr(options, "build_constraints", [])
+        else:
+            constraint_files = options.constraints
+
+        constraints = parse_constraint_files(constraint_files, finder, options, session)
+        requirements.extend(constraints)
 
         for req in args:
+            if not req.strip():
+                continue
             req_to_add = install_req_from_line(
                 req,
                 comes_from=None,
                 isolated=options.isolated_mode,
-                use_pep517=options.use_pep517,
                 user_supplied=True,
                 config_settings=getattr(options, "config_settings", None),
             )
             requirements.append(req_to_add)
 
-        if options.dependency_groups:
-            for req in parse_dependency_groups(options.dependency_groups):
+        if project_groups:
+            for req in parse_dependency_groups(project_groups):
                 req_to_add = install_req_from_req_string(
                     req,
                     isolated=options.isolated_mode,
-                    use_pep517=options.use_pep517,
                     user_supplied=True,
                 )
                 requirements.append(req_to_add)
@@ -262,20 +427,43 @@ class RequirementCommand(IndexGroupCommand):
                 req,
                 user_supplied=True,
                 isolated=options.isolated_mode,
-                use_pep517=options.use_pep517,
                 config_settings=getattr(options, "config_settings", None),
             )
             requirements.append(req_to_add)
 
         # NOTE: options.require_hashes may be set if --require-hashes is True
-        for filename in options.requirements:
+        for source in requirement_sources:
+            if isinstance(source, _PylockRequest):
+                logger.warning(
+                    "Using pylock.toml as a requirements source "
+                    "is an experimental feature. "
+                    "It may be removed/changed in a future release "
+                    "without prior warning."
+                )
+                for package, package_dist in select_from_pylock_path_or_url(
+                    source.filename,
+                    session=session,
+                    format_control=options.format_control,
+                    extras=source.extras,
+                    dependency_groups=source.dependency_groups,
+                    include_default_groups=source.include_default_groups,
+                ):
+                    req_to_add, locked_link = install_req_from_pylock_package(
+                        package,
+                        package_dist,
+                        source.filename,
+                        user_supplied=True,
+                    )
+                    requirements.append(req_to_add)
+                    if locked_link:
+                        finder.add_locked_link(package.name, locked_link)
+                continue
             for parsed_req in parse_requirements(
-                filename, finder=finder, options=options, session=session
+                source, finder=finder, options=options, session=session
             ):
                 req_to_add = install_req_from_parsed_requirement(
                     parsed_req,
                     isolated=options.isolated_mode,
-                    use_pep517=options.use_pep517,
                     user_supplied=True,
                     config_settings=(
                         parsed_req.options.get("config_settings")
@@ -285,8 +473,49 @@ class RequirementCommand(IndexGroupCommand):
                 )
                 requirements.append(req_to_add)
 
-        # If any requirement has hash options, enable hash checking.
-        if any(req.has_hash_options for req in requirements):
+        if options.requirements_from_scripts:
+            if len(options.requirements_from_scripts) > 1:
+                raise CommandError("--requirements-from-script can only be given once")
+
+            script = options.requirements_from_scripts[0]
+            try:
+                script_metadata = pep723_metadata(script)
+            except PEP723Exception as exc:
+                raise CommandError(exc.msg)
+
+            script_requires_python = script_metadata.get("requires-python", "")
+
+            if script_requires_python and not options.ignore_requires_python:
+                target_python = make_target_python(options)
+
+                if not check_requires_python(
+                    requires_python=script_requires_python,
+                    version_info=target_python.py_version_info,
+                ):
+                    raise UnsupportedPythonVersion(
+                        f"Script {script!r} requires a different Python: "
+                        f"{target_python.py_version} not in {script_requires_python!r}"
+                    )
+
+            for req in script_metadata.get("dependencies", []):
+                req_to_add = install_req_from_req_string(
+                    req,
+                    isolated=options.isolated_mode,
+                    user_supplied=True,
+                )
+                requirements.append(req_to_add)
+
+        if options.require_hashes and options.no_require_hashes:
+            raise CommandError(
+                "--require-hashes and --no-require-hashes are mutually exclusive"
+            )
+
+        # If any requirement has hash options, enable hash checking for all
+        # requirements, unless this mechanism has been explicitly disabled
+        # with --no-require-hashes.
+        if not options.no_require_hashes and any(
+            req.has_hash_options for req in requirements
+        ):
             options.require_hashes = True
 
         if not (
@@ -294,6 +523,7 @@ class RequirementCommand(IndexGroupCommand):
             or options.editables
             or options.requirements
             or options.dependency_groups
+            or options.requirements_from_scripts
         ):
             opts = {"name": self.name}
             if options.find_links:
@@ -327,7 +557,7 @@ class RequirementCommand(IndexGroupCommand):
         options: Values,
         session: PipSession,
         target_python: TargetPython | None = None,
-        ignore_requires_python: bool | None = None,
+        ignore_requires_python: bool = False,
     ) -> PackageFinder:
         """
         Create a package finder appropriate to this requirement command.
@@ -339,7 +569,7 @@ class RequirementCommand(IndexGroupCommand):
         selection_prefs = SelectionPreferences(
             allow_yanked=True,
             format_control=options.format_control,
-            allow_all_prereleases=options.pre,
+            release_control=options.release_control,
             prefer_binary=options.prefer_binary,
             ignore_requires_python=ignore_requires_python,
         )
@@ -348,4 +578,5 @@ class RequirementCommand(IndexGroupCommand):
             link_collector=link_collector,
             selection_prefs=selection_prefs,
             target_python=target_python,
+            uploaded_prior_to=options.uploaded_prior_to,
         )

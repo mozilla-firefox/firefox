@@ -11,7 +11,7 @@ from tempfile import NamedTemporaryFile
 from typing import Any
 from zipfile import BadZipFile, ZipFile
 
-from pip._vendor.packaging.utils import canonicalize_name
+from pip._vendor.packaging.utils import NormalizedName
 from pip._vendor.requests.models import CONTENT_CHUNK_SIZE, Response
 
 from pip._internal.metadata import BaseDistribution, MemoryWheel, get_wheel_distribution
@@ -23,7 +23,9 @@ class HTTPRangeRequestUnsupported(Exception):
     pass
 
 
-def dist_from_wheel_url(name: str, url: str, session: PipSession) -> BaseDistribution:
+def dist_from_wheel_url(
+    name: NormalizedName, url: str, session: PipSession
+) -> BaseDistribution:
     """Return a distribution object from the given wheel URL.
 
     This uses HTTP range requests to only fetch the portion of the wheel
@@ -37,7 +39,7 @@ def dist_from_wheel_url(name: str, url: str, session: PipSession) -> BaseDistrib
         wheel = MemoryWheel(zf.name, zf)  # type: ignore
         # After context manager exit, wheel.name
         # is an invalid file by intention.
-        return get_wheel_distribution(wheel, canonicalize_name(name))
+        return get_wheel_distribution(wheel, name)
 
 
 class LazyZipOverHTTP:

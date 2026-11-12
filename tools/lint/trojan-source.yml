@@ -9,6 +9,7 @@ trojan-source:
         - third_party/abseil-cpp/absl/log/log_format_test.cc
         - third_party/abseil-cpp/absl/strings/internal/utf8_test.cc
         - third_party/aom/test/dr_prediction_test.cc
+        - third_party/python/pip/pip/_internal/utils/unpacking.py
         # TODO: Remove this when https://github.com/jaraco/zipp/pull/125 lands
         # to setuptools
         - third_party/python/setuptools/setuptools/_vendor/zipp/__init__.py

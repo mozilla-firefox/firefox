@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import collections
 import logging
-from collections.abc import Generator, Sequence
+from collections.abc import Generator
 from dataclasses import dataclass
 
 from pip._internal.cli.progress_bars import BarType, get_install_progress_renderer
@@ -37,7 +37,6 @@ def _validate_requirements(
 
 def install_given_reqs(
     requirements: list[InstallRequirement],
-    global_options: Sequence[str],
     root: str | None,
     home: str | None,
     prefix: str | None,
@@ -45,6 +44,7 @@ def install_given_reqs(
     use_user_site: bool,
     pycompile: bool,
     progress_bar: BarType,
+    script_executable: str | None = None,
 ) -> list[InstallationResult]:
     """
     Install everything in the given list.
@@ -74,6 +74,7 @@ def install_given_reqs(
         for requirement in items:
             req_name = requirement.name
             assert req_name is not None
+
             if requirement.should_reinstall:
                 logger.info("Attempting uninstall: %s", req_name)
                 with indent_log():
@@ -83,13 +84,16 @@ def install_given_reqs(
 
             try:
                 requirement.install(
-                    global_options,
                     root=root,
                     home=home,
                     prefix=prefix,
                     warn_script_location=warn_script_location,
                     use_user_site=use_user_site,
                     pycompile=pycompile,
+                    script_executable=script_executable,
+                    rollback_on_error=bool(
+                        uninstalled_pathset and uninstalled_pathset.can_rollback
+                    ),
                 )
             except Exception:
                 # if install did not succeed, rollback previous uninstall

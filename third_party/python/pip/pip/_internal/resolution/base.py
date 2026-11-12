@@ -1,10 +1,10 @@
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from pip._internal.req.req_install import InstallRequirement
 from pip._internal.req.req_set import RequirementSet
 
 InstallRequirementProvider = Callable[
-    [str, Optional[InstallRequirement]], InstallRequirement
+    [str, InstallRequirement | None], InstallRequirement
 ]
 
 

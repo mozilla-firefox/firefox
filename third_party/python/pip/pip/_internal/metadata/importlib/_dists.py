@@ -15,7 +15,7 @@ from pip._vendor.packaging.utils import NormalizedName, canonicalize_name
 from pip._vendor.packaging.version import Version
 from pip._vendor.packaging.version import parse as parse_version
 
-from pip._internal.exceptions import InvalidWheel, UnsupportedWheel
+from pip._internal.exceptions import InstallationError, InvalidWheel, UnsupportedWheel
 from pip._internal.metadata.base import (
     BaseDistribution,
     BaseEntryPoint,
@@ -28,6 +28,7 @@ from pip._internal.utils.temp_dir import TempDirectory
 from pip._internal.utils.wheel import parse_wheel, read_wheel_metadata_file
 
 from ._compat import (
+    BadMetadata,
     BasePath,
     get_dist_canonical_name,
     parse_name_and_version_from_info_directory,
@@ -165,13 +166,18 @@ class Distribution(BaseDistribution):
 
     @property
     def version(self) -> Version:
-        if version := parse_name_and_version_from_info_directory(self._dist)[1]:
+        try:
+            version = (
+                parse_name_and_version_from_info_directory(self._dist)[1]
+                or self._dist.version
+            )
             return parse_version(version)
-        return parse_version(self._dist.version)
+        except TypeError:
+            raise BadMetadata(self._dist, reason="invalid metadata entry `version`")
 
     @property
     def raw_version(self) -> str:
-        return self._dist.version
+        return self.metadata["Version"]
 
     def is_file(self, path: InfoPath) -> bool:
         return self._dist.read_text(str(path)) is not None
@@ -193,7 +199,13 @@ class Distribution(BaseDistribution):
 
     def iter_entry_points(self) -> Iterable[BaseEntryPoint]:
         # importlib.metadata's EntryPoint structure satisfies BaseEntryPoint.
-        return self._dist.entry_points
+        try:
+            return self._dist.entry_points
+        except ValueError as e:
+            # Python 3.15+ validates entry points while parsing.
+            raise InstallationError(
+                f"Error parsing entry points for {self.raw_name}: {e}"
+            ) from e
 
     def _metadata_impl(self) -> email.message.Message:
         # From Python 3.10+, importlib.metadata declares PackageMetadata as the
@@ -201,7 +213,13 @@ class Distribution(BaseDistribution):
         # a ton of fields that we need, including get() and get_payload(). We
         # rely on the implementation that the object is actually a Message now,
         # until upstream can improve the protocol. (python/cpython#94952)
-        return cast(email.message.Message, self._dist.metadata)
+        metadata = self._dist.metadata
+        # From Python 3.15+, importlib.metadata may return None when no
+        # metadata file (METADATA or PKG-INFO) exists in the distribution
+        # directory. (python/cpython#132947)
+        if metadata is None:
+            return email.message.Message()
+        return cast(email.message.Message, metadata)
 
     def iter_provided_extras(self) -> Iterable[NormalizedName]:
         return [

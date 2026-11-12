@@ -7,7 +7,6 @@ from pip._internal.cli.cmdoptions import make_target_python
 from pip._internal.cli.req_command import RequirementCommand, with_cleanup
 from pip._internal.cli.status_codes import SUCCESS
 from pip._internal.operations.build.build_tracker import get_build_tracker
-from pip._internal.req.req_install import check_legacy_setup_py_options
 from pip._internal.utils.misc import ensure_dir, normalize_path, write_output
 from pip._internal.utils.temp_dir import TempDirectory
 
@@ -36,19 +35,17 @@ class DownloadCommand(RequirementCommand):
 
     def add_options(self) -> None:
         self.cmd_opts.add_option(cmdoptions.constraints())
+        self.cmd_opts.add_option(cmdoptions.build_constraints())
         self.cmd_opts.add_option(cmdoptions.requirements())
+        self.cmd_opts.add_option(cmdoptions.requirements_from_scripts())
         self.cmd_opts.add_option(cmdoptions.no_deps())
-        self.cmd_opts.add_option(cmdoptions.global_options())
-        self.cmd_opts.add_option(cmdoptions.no_binary())
-        self.cmd_opts.add_option(cmdoptions.only_binary())
-        self.cmd_opts.add_option(cmdoptions.prefer_binary())
+        self.cmd_opts.add_option(cmdoptions.only_deps())
         self.cmd_opts.add_option(cmdoptions.src())
-        self.cmd_opts.add_option(cmdoptions.pre())
         self.cmd_opts.add_option(cmdoptions.require_hashes())
+        self.cmd_opts.add_option(cmdoptions.no_require_hashes())
         self.cmd_opts.add_option(cmdoptions.progress_bar())
         self.cmd_opts.add_option(cmdoptions.no_build_isolation())
         self.cmd_opts.add_option(cmdoptions.use_pep517())
-        self.cmd_opts.add_option(cmdoptions.no_use_pep517())
         self.cmd_opts.add_option(cmdoptions.check_build_deps())
         self.cmd_opts.add_option(cmdoptions.ignore_requires_python())
 
@@ -70,7 +67,13 @@ class DownloadCommand(RequirementCommand):
             self.parser,
         )
 
+        selection_opts = cmdoptions.make_option_group(
+            cmdoptions.package_selection_group,
+            self.parser,
+        )
+
         self.parser.insert_option_group(0, index_opts)
+        self.parser.insert_option_group(0, selection_opts)
         self.parser.insert_option_group(0, self.cmd_opts)
 
     @with_cleanup
@@ -81,6 +84,9 @@ class DownloadCommand(RequirementCommand):
         options.editables = []
 
         cmdoptions.check_dist_restriction(options)
+        self.check_build_constraints(options)
+        cmdoptions.check_release_control_exclusive(options)
+        cmdoptions.check_only_deps_option_does_not_conflict(options)
 
         options.download_dir = normalize_path(options.download_dir)
         ensure_dir(options.download_dir)
@@ -104,7 +110,6 @@ class DownloadCommand(RequirementCommand):
         )
 
         reqs = self.get_requirements(args, options, finder, session)
-        check_legacy_setup_py_options(options, reqs)
 
         preparer = self.make_requirement_preparer(
             temp_build_dir=directory,
@@ -115,6 +120,7 @@ class DownloadCommand(RequirementCommand):
             download_dir=options.download_dir,
             use_user_site=False,
             verbosity=self.verbosity,
+            allow_editables=False,
         )
 
         resolver = self.make_resolver(
@@ -122,7 +128,6 @@ class DownloadCommand(RequirementCommand):
             finder=finder,
             options=options,
             ignore_requires_python=options.ignore_requires_python,
-            use_pep517=options.use_pep517,
             py_version_info=options.python_version,
         )
 
@@ -130,14 +135,14 @@ class DownloadCommand(RequirementCommand):
 
         requirement_set = resolver.resolve(reqs, check_supported_wheels=True)
 
+        preparer.prepare_linked_requirements_more(requirement_set.requirements.values())
+
         downloaded: list[str] = []
         for req in requirement_set.requirements.values():
             if req.satisfied_by is None:
                 assert req.name is not None
                 preparer.save_linked_requirement(req)
                 downloaded.append(req.name)
-
-        preparer.prepare_linked_requirements_more(requirement_set.requirements.values())
 
         if downloaded:
             write_output("Successfully downloaded %s", " ".join(downloaded))

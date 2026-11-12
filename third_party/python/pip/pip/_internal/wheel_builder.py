@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 import os.path
 import re
-import shutil
 from collections.abc import Iterable
+from tempfile import TemporaryDirectory
 
 from pip._vendor.packaging.utils import canonicalize_name, canonicalize_version
 from pip._vendor.packaging.version import InvalidVersion, Version
@@ -18,13 +18,9 @@ from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.operations.build.wheel import build_wheel_pep517
 from pip._internal.operations.build.wheel_editable import build_wheel_editable
-from pip._internal.operations.build.wheel_legacy import build_wheel_legacy
 from pip._internal.req.req_install import InstallRequirement
 from pip._internal.utils.logging import indent_log
 from pip._internal.utils.misc import ensure_dir, hash_file
-from pip._internal.utils.setuptools_build import make_setuptools_clean_args
-from pip._internal.utils.subprocess import call_subprocess
-from pip._internal.utils.temp_dir import TempDirectory
 from pip._internal.utils.urls import path_to_url
 from pip._internal.vcs import vcs
 
@@ -43,40 +39,18 @@ def _contains_egg_info(s: str) -> bool:
     return bool(_egg_info_re.search(s))
 
 
-def _should_build(
-    req: InstallRequirement,
-) -> bool:
-    """Return whether an InstallRequirement should be built into a wheel."""
-    assert not req.constraint
-
-    if req.is_wheel:
-        return False
-
-    assert req.source_dir
-
-    if req.editable:
-        # we only build PEP 660 editable requirements
-        return req.supports_pyproject_editable
-
-    return True
-
-
-def should_build_for_install_command(
-    req: InstallRequirement,
-) -> bool:
-    return _should_build(req)
-
-
 def _should_cache(
     req: InstallRequirement,
 ) -> bool | None:
     """
     Return whether a built InstallRequirement can be stored in the persistent
-    wheel cache, assuming the wheel cache is available, and _should_build()
-    has determined a wheel needs to be built.
+    wheel cache, assuming the wheel cache is available.
     """
     if req.editable or not req.source_dir:
         # never cache editable requirements
+        return False
+    if req.link and req.link.is_existing_dir():
+        # never cache local directory requirements
         return False
 
     if req.link and req.link.is_vcs:
@@ -118,7 +92,7 @@ def _get_cache_dir(
 def _verify_one(req: InstallRequirement, wheel_path: str) -> None:
     canonical_name = canonicalize_name(req.name or "")
     w = Wheel(os.path.basename(wheel_path))
-    if canonicalize_name(w.name) != canonical_name:
+    if w.name != canonical_name:
         raise InvalidWheelFilename(
             f"Wheel has unexpected file name: expected {canonical_name!r}, "
             f"got {w.name!r}",
@@ -148,8 +122,6 @@ def _build_one(
     req: InstallRequirement,
     output_dir: str,
     verify: bool,
-    build_options: list[str],
-    global_options: list[str],
     editable: bool,
 ) -> str | None:
     """Build one wheel.
@@ -170,9 +142,7 @@ def _build_one(
 
     # Install build deps into temporary directory (PEP 518)
     with req.build_env:
-        wheel_path = _build_one_inside_env(
-            req, output_dir, build_options, global_options, editable
-        )
+        wheel_path = _build_one_inside_env(req, output_dir, editable)
     if wheel_path and verify:
         try:
             _verify_one(req, wheel_path)
@@ -185,45 +155,25 @@ def _build_one(
 def _build_one_inside_env(
     req: InstallRequirement,
     output_dir: str,
-    build_options: list[str],
-    global_options: list[str],
     editable: bool,
 ) -> str | None:
-    with TempDirectory(kind="wheel") as temp_dir:
+    with TemporaryDirectory(dir=output_dir) as wheel_directory:
         assert req.name
-        if req.use_pep517:
-            assert req.metadata_directory
-            assert req.pep517_backend
-            if global_options:
-                logger.warning(
-                    "Ignoring --global-option when building %s using PEP 517", req.name
-                )
-            if build_options:
-                logger.warning(
-                    "Ignoring --build-option when building %s using PEP 517", req.name
-                )
-            if editable:
-                wheel_path = build_wheel_editable(
-                    name=req.name,
-                    backend=req.pep517_backend,
-                    metadata_directory=req.metadata_directory,
-                    tempd=temp_dir.path,
-                )
-            else:
-                wheel_path = build_wheel_pep517(
-                    name=req.name,
-                    backend=req.pep517_backend,
-                    metadata_directory=req.metadata_directory,
-                    tempd=temp_dir.path,
-                )
-        else:
-            wheel_path = build_wheel_legacy(
+        assert req.metadata_directory
+        assert req.pep517_backend
+        if editable:
+            wheel_path = build_wheel_editable(
                 name=req.name,
-                setup_py_path=req.setup_py_path,
-                source_dir=req.unpacked_source_directory,
-                global_options=global_options,
-                build_options=build_options,
-                tempd=temp_dir.path,
+                backend=req.pep517_backend,
+                metadata_directory=req.metadata_directory,
+                wheel_directory=wheel_directory,
+            )
+        else:
+            wheel_path = build_wheel_pep517(
+                name=req.name,
+                backend=req.pep517_backend,
+                metadata_directory=req.metadata_directory,
+                wheel_directory=wheel_directory,
             )
 
         if wheel_path is not None:
@@ -231,7 +181,11 @@ def _build_one_inside_env(
             dest_path = os.path.join(output_dir, wheel_name)
             try:
                 wheel_hash, length = hash_file(wheel_path)
-                shutil.move(wheel_path, dest_path)
+                # We can do a replace here because wheel_path is guaranteed to
+                # be in the same filesystem as output_dir. This will perform an
+                # atomic rename, which is necessary to avoid concurrency issues
+                # when populating the cache.
+                os.replace(wheel_path, dest_path)
                 logger.info(
                     "Created wheel for %s: filename=%s size=%d sha256=%s",
                     req.name,
@@ -247,35 +201,14 @@ def _build_one_inside_env(
                     req.name,
                     e,
                 )
-        # Ignore return, we can't do anything else useful.
-        if not req.use_pep517:
-            _clean_one_legacy(req, global_options)
         return None
-
-
-def _clean_one_legacy(req: InstallRequirement, global_options: list[str]) -> bool:
-    clean_args = make_setuptools_clean_args(
-        req.setup_py_path,
-        global_options=global_options,
-    )
-
-    logger.info("Running setup.py clean for %s", req.name)
-    try:
-        call_subprocess(
-            clean_args, command_desc="python setup.py clean", cwd=req.source_dir
-        )
-        return True
-    except Exception:
-        logger.error("Failed cleaning build dir for %s", req.name)
-        return False
 
 
 def build(
     requirements: Iterable[InstallRequirement],
     wheel_cache: WheelCache,
     verify: bool,
-    build_options: list[str],
-    global_options: list[str],
+    allow_editables: bool,
 ) -> BuildResult:
     """Build wheels.
 
@@ -300,9 +233,7 @@ def build(
                 req,
                 cache_dir,
                 verify,
-                build_options,
-                global_options,
-                req.editable and req.permit_editable_wheels,
+                req.editable and allow_editables,
             )
             if wheel_file:
                 # Record the download origin in the cache

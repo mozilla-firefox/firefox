@@ -8,12 +8,6 @@ import os
 import sys
 import warnings
 
-from pip._internal.cli.autocompletion import autocomplete
-from pip._internal.cli.main_parser import parse_command
-from pip._internal.commands import create_command
-from pip._internal.exceptions import PipError
-from pip._internal.utils import deprecation
-
 logger = logging.getLogger(__name__)
 
 
@@ -44,7 +38,27 @@ logger = logging.getLogger(__name__)
 # main, this should not be an issue in practice.
 
 
+def cli(args: list[str] | None = None) -> int:
+    """Run the CLI with imports blocked until process exit after installation."""
+    return _main(args, cli=True)
+
+
 def main(args: list[str] | None = None) -> int:
+    return _main(args, cli=False)
+
+
+def _main(args: list[str] | None, *, cli: bool) -> int:
+    # NOTE: Lazy imports to speed up import of this module,
+    # which is imported from the pip console script. This doesn't
+    # speed up normal pip execution, but might be important in the future
+    # if we use ``multiprocessing`` module,
+    # which imports __main__ for each spawned subprocess.
+    from pip._internal.cli.autocompletion import autocomplete
+    from pip._internal.cli.main_parser import parse_command
+    from pip._internal.commands import create_command
+    from pip._internal.exceptions import PipError
+    from pip._internal.utils import deprecation
+
     if args is None:
         args = sys.argv[1:]
 
@@ -68,13 +82,16 @@ def main(args: list[str] | None = None) -> int:
         sys.stderr.write(os.linesep)
         sys.exit(1)
 
-    # Needed for locale.getpreferredencoding(False) to work
+    # Needed for locale encoding detection to work
     # in pip._internal.utils.encoding.auto_decode
+    # TODO: Re-evaluate whether this is still needed once pip drops Python 3.10.
     try:
         locale.setlocale(locale.LC_ALL, "")
     except locale.Error as e:
         # setlocale can apparently crash if locale are uninitialized
         logger.debug("Ignoring error %s when setting locale", e)
+
     command = create_command(cmd_name, isolated=("--isolated" in cmd_args))
+    command._cli = cli
 
     return command.main(cmd_args)

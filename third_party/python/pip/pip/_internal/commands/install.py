@@ -1,17 +1,29 @@
 from __future__ import annotations
 
+import contextlib
 import errno
+import functools
+import inspect
 import json
 import operator
 import os
 import shutil
 import site
+import sys
+import traceback
+import types
+from collections.abc import Iterable, Iterator, Sequence
 from optparse import SUPPRESS_HELP, Values
 from pathlib import Path
+from typing import Any
 
+from pip._vendor import pygments, rich
+from pip._vendor.packaging.requirements import InvalidRequirement, Requirement
 from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.requests.exceptions import InvalidProxyURL
-from pip._vendor.rich import print_json
+from pip._vendor.rich.text import Text
+
+import pip
 
 # Eagerly import self_outdated_check to avoid crashes. Otherwise,
 # this module would be imported *after* pip was replaced, resulting
@@ -19,7 +31,7 @@ from pip._vendor.rich import print_json
 # with the rest of pip that's already imported, or allowing a
 # wheel to execute arbitrary code on install by replacing
 # self_outdated_check.
-import pip._internal.self_outdated_check  # noqa: F401
+import pip._internal.self_outdated_check
 from pip._internal.cache import WheelCache
 from pip._internal.cli import cmdoptions
 from pip._internal.cli.cmdoptions import make_target_python
@@ -29,19 +41,19 @@ from pip._internal.cli.req_command import (
 )
 from pip._internal.cli.status_codes import ERROR, SUCCESS
 from pip._internal.exceptions import (
+    BlockedImportError,
     CommandError,
     InstallationError,
     InstallWheelBuildError,
 )
 from pip._internal.locations import get_scheme
-from pip._internal.metadata import get_environment
+from pip._internal.metadata import BaseEnvironment, get_environment
 from pip._internal.models.installation_report import InstallationReport
 from pip._internal.operations.build.build_tracker import get_build_tracker
 from pip._internal.operations.check import ConflictDetails, check_install_conflicts
-from pip._internal.req import install_given_reqs
+from pip._internal.req import InstallationResult, install_given_reqs
 from pip._internal.req.req_install import (
     InstallRequirement,
-    check_legacy_setup_py_options,
 )
 from pip._internal.utils.compat import WINDOWS
 from pip._internal.utils.filesystem import test_writable_dir
@@ -59,9 +71,245 @@ from pip._internal.utils.virtualenv import (
     running_under_virtualenv,
     virtualenv_no_global,
 )
-from pip._internal.wheel_builder import build, should_build_for_install_command
+from pip._internal.wheel_builder import build
 
 logger = getLogger(__name__)
+
+
+_IMPORT_AUDIT_HOOK_INSTALLED = False
+_ACTIVE_INSTALLATIONS: set[object] = set()
+_WARNED_IMPORTS: set[str] = set()
+_IMPORT_ERRORS: dict[str, ImportError] = {}
+
+# Import dependencies directly where possible; otherwise list them here.
+_INTERNAL_EAGER_IMPORTS: tuple[str, ...] = (
+    "pip._internal.operations.install.wheel",
+    # Rich loads the Python lexer when rendering debug tracebacks.
+    f"{pygments.__name__}.lexers.python",
+    # Preload Python 3.13+ traceback helpers to preserve the original error.
+    "traceback",
+    "_colorize",
+    "_suggestions",
+    "ast",
+    "difflib",
+    "unicodedata",
+    # Preserve cmd's fallback when readline is unavailable.
+    "readline",
+    # weakref.finalize imports gc when running shutdown callbacks.
+    "gc",
+    # Requests imports netrc lazily when looking up credentials.
+    "netrc",
+    # Use Rich's actual namespace when pip has been de-vendored.
+    # The renderer is used for output to a legacy Windows console.
+    f"{rich.__name__}._windows_renderer",
+    # zipfile may import these backends when reading compressed wheel contents.
+    "_bz2",
+    "_lzma",
+    "_zstd",
+)
+
+
+def _warn_unsafe_import(module: str) -> None:
+    """Warn once per module without letting logging block the import."""
+    if module in _WARNED_IMPORTS:
+        return
+
+    # Mark before logging: a handler may itself import this module.
+    _WARNED_IMPORTS.add(module)
+    try:
+        logger.warning(
+            "Unsafe import of %r after pip install completed: packages may have "
+            "changed. Callers should import all required modules before running "
+            "pip install, or run pip in a subprocess. "
+            "See https://pip.pypa.io/en/stable/user_guide/"
+            "#using-pip-from-your-program",
+            module,
+        )
+    except Exception:
+        # The caller's logging handlers must not turn warnings into import errors.
+        pass
+
+
+def _prevent_import_hook(name: str, args: tuple[Any, ...]) -> None:
+    if name == "import":
+        _check_import(args[0])
+
+
+def _check_import(module: str) -> None:
+    """Apply the installation import policy to audit events and module lookups."""
+    if not _ACTIVE_INSTALLATIONS:
+        _warn_unsafe_import(module)
+        return
+
+    if module in _IMPORT_ERRORS:
+        raise _IMPORT_ERRORS[module].with_traceback(None)
+
+    raise BlockedImportError(
+        f"Blocked import of {module!r} after pip install started. Hook authors"
+        " must import required modules before installation starts."
+    )
+
+
+class _ImportBlocker:
+    """Cover module lookups, including reloads, without import audit events."""
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: Sequence[str] | None = None,
+        target: types.ModuleType | None = None,
+    ) -> None:
+        _check_import(fullname)
+
+
+_IMPORT_BLOCKER = _ImportBlocker()
+
+
+def _eagerly_import_modules(module_names: Iterable[str]) -> None:
+    """Import selected dependencies before installation starts."""
+    # Load Rich's lazy emoji and width data before installation starts.
+    _ = Text.from_markup(":package:").cell_len
+
+    _IMPORT_ERRORS.clear()
+    for module in dict.fromkeys(module_names):
+        try:
+            __import__(module)
+        except ImportError as error:
+            _IMPORT_ERRORS[module] = error.with_traceback(None)
+
+
+def _referenced_modules(module: types.ModuleType) -> Iterator[types.ModuleType]:
+    """Find dependencies referenced by modules and callables."""
+    for value in tuple(vars(module).values()):
+        if isinstance(value, types.ModuleType):
+            yield value
+            continue
+
+        # Standard callable adapters keep dependency globals on their function.
+        while True:
+            if type(value) is functools.partial:
+                value = value.func
+            elif type(value) is types.MethodType:
+                value = value.__func__
+            else:
+                break
+
+        names: tuple[object, ...]
+        if type(value) is types.FunctionType:
+            # Decorators can preserve the original module while changing globals.
+            names = (value.__globals__.get("__name__"), value.__module__)
+        elif callable(value):
+            # Read callable metadata without invoking descriptors.
+            names = (inspect.getattr_static(value, "__module__", None),)
+        else:
+            continue
+
+        for name in names:
+            dependency = sys.modules.get(name) if isinstance(name, str) else None
+            if isinstance(dependency, types.ModuleType):
+                yield dependency
+
+
+def _cache_lazy_import_error(error: ImportError) -> None:
+    """Preserve failures for both a missing dependency and its failed importers."""
+    # Import machinery removes failed modules before propagating their error.
+    for frame, _ in traceback.walk_tb(error.__traceback__):
+        module_name = frame.f_globals.get("__name__")
+        if isinstance(module_name, str) and module_name not in sys.modules:
+            _IMPORT_ERRORS[module_name] = error
+
+    if error.name is not None:
+        _IMPORT_ERRORS[error.name] = error
+
+    # Avoid retaining the import traceback in the cache.
+    error.with_traceback(None)
+
+
+def _reify_lazy_imports(module_names: Iterable[str]) -> None:
+    """Resolve lazy bindings in installation dependencies before imports are blocked."""
+    if sys.version_info < (3, 15):
+        return
+
+    modules = {
+        name: module
+        for name in module_names
+        if isinstance(module := sys.modules.get(name), types.ModuleType)
+    }
+    attempted: set[object] = set()
+
+    while True:
+        # A from-import can already hold an object from a lazy dependency.
+        dependencies = {
+            dependency.__name__: dependency
+            for module in modules.values()
+            for dependency in _referenced_modules(module)
+            if dependency.__name__ not in modules
+        }
+        modules.update(dependencies)
+
+        # Resolving a binding can add lazy imports to modules already scanned.
+        pending = [
+            (module, name, value)
+            for module in modules.values()
+            for name, value in tuple(vars(module).items())
+            if type(value) is types.LazyImportType and value not in attempted
+        ]
+        if not pending and not dependencies:
+            break
+
+        for module, name, value in pending:
+            attempted.add(value)
+            before = set(sys.modules)
+
+            try:
+                resolved = getattr(module, name)
+
+                # The binding may resolve to an already-loaded module.
+                if isinstance(resolved, types.ModuleType):
+                    modules[resolved.__name__] = resolved
+            except ImportError as error:
+                _cache_lazy_import_error(error)
+            except Exception:
+                # Optional lazy imports need not succeed for installation to proceed.
+                pass
+
+            # Include dependencies loaded indirectly, even by a failed import.
+            for dependency in sys.modules.keys() - before:
+                imported = sys.modules[dependency]
+                if isinstance(imported, types.ModuleType):
+                    modules[dependency] = imported
+
+
+@contextlib.contextmanager
+def _prevent_further_imports(*, until_process_exit: bool = False) -> Iterator[None]:
+    """Block late imports until process exit or control returns to a caller."""
+    global _IMPORT_AUDIT_HOOK_INSTALLED
+    if not _IMPORT_AUDIT_HOOK_INSTALLED:
+        sys.addaudithook(_prevent_import_hook)
+        _IMPORT_AUDIT_HOOK_INSTALLED = True
+
+    # Callers may add finders between installations; reloads bypass audit events.
+    sys.meta_path[:] = [
+        _IMPORT_BLOCKER,
+        *(finder for finder in sys.meta_path if finder is not _IMPORT_BLOCKER),
+    ]
+
+    token = object()
+    _ACTIVE_INSTALLATIONS.add(token)
+    try:
+        yield
+    finally:
+        # CLI exception hooks and exit callbacks run after command cleanup.
+        if not until_process_exit:
+            _ACTIVE_INSTALLATIONS.discard(token)
+
+
+def _arg_refers_to_pip(arg: str) -> bool:
+    try:
+        req = Requirement(arg)
+    except InvalidRequirement:
+        return False
+    return canonicalize_name(req.name) == "pip"
 
 
 class InstallCommand(RequirementCommand):
@@ -84,11 +332,18 @@ class InstallCommand(RequirementCommand):
       %prog [options] [-e] <local project path> ...
       %prog [options] <archive url/path> ..."""
 
+    def main(self, args: list[str]) -> int:
+        # Keep imports blocked through command cleanup and logging shutdown.
+        with contextlib.ExitStack() as self._import_guard:
+            return super().main(args)
+
     def add_options(self) -> None:
         self.cmd_opts.add_option(cmdoptions.requirements())
         self.cmd_opts.add_option(cmdoptions.constraints())
+        self.cmd_opts.add_option(cmdoptions.build_constraints())
+        self.cmd_opts.add_option(cmdoptions.requirements_from_scripts())
         self.cmd_opts.add_option(cmdoptions.no_deps())
-        self.cmd_opts.add_option(cmdoptions.pre())
+        self.cmd_opts.add_option(cmdoptions.only_deps())
 
         self.cmd_opts.add_option(cmdoptions.editable())
         self.cmd_opts.add_option(
@@ -210,12 +465,10 @@ class InstallCommand(RequirementCommand):
         self.cmd_opts.add_option(cmdoptions.ignore_requires_python())
         self.cmd_opts.add_option(cmdoptions.no_build_isolation())
         self.cmd_opts.add_option(cmdoptions.use_pep517())
-        self.cmd_opts.add_option(cmdoptions.no_use_pep517())
         self.cmd_opts.add_option(cmdoptions.check_build_deps())
         self.cmd_opts.add_option(cmdoptions.override_externally_managed())
 
         self.cmd_opts.add_option(cmdoptions.config_settings())
-        self.cmd_opts.add_option(cmdoptions.global_options())
 
         self.cmd_opts.add_option(
             "--compile",
@@ -246,10 +499,8 @@ class InstallCommand(RequirementCommand):
             default=True,
             help="Do not warn about broken dependencies",
         )
-        self.cmd_opts.add_option(cmdoptions.no_binary())
-        self.cmd_opts.add_option(cmdoptions.only_binary())
-        self.cmd_opts.add_option(cmdoptions.prefer_binary())
         self.cmd_opts.add_option(cmdoptions.require_hashes())
+        self.cmd_opts.add_option(cmdoptions.no_require_hashes())
         self.cmd_opts.add_option(cmdoptions.progress_bar())
         self.cmd_opts.add_option(cmdoptions.root_user_action())
 
@@ -258,7 +509,13 @@ class InstallCommand(RequirementCommand):
             self.parser,
         )
 
+        selection_opts = cmdoptions.make_option_group(
+            cmdoptions.package_selection_group,
+            self.parser,
+        )
+
         self.parser.insert_option_group(0, index_opts)
+        self.parser.insert_option_group(0, selection_opts)
         self.parser.insert_option_group(0, self.cmd_opts)
 
         self.cmd_opts.add_option(
@@ -276,6 +533,17 @@ class InstallCommand(RequirementCommand):
                 "to avoid mixing pip logging output with JSON output."
             ),
         )
+
+    @contextlib.contextmanager
+    def pip_version_check(self, options: Values, args: list[str]) -> Iterator[None]:
+        # Skip the self-version check when pip itself is a requirement. The
+        # running pip may be replaced mid-command, and the upgrade prompt
+        # is redundant.
+        if any(_arg_refers_to_pip(arg) for arg in args):
+            yield
+            return
+        with super().pip_version_check(options, args):
+            yield
 
     @with_cleanup
     def run(self, options: Values, args: list[str]) -> int:
@@ -303,7 +571,10 @@ class InstallCommand(RequirementCommand):
         if options.upgrade:
             upgrade_strategy = options.upgrade_strategy
 
+        cmdoptions.check_only_deps_option_does_not_conflict(options)
+        self.check_build_constraints(options)
         cmdoptions.check_dist_restriction(options, check_target=True)
+        cmdoptions.check_release_control_exclusive(options)
 
         logger.verbose("Using %s", get_pip_version())
         options.use_user_site = decide_user_install(
@@ -334,8 +605,6 @@ class InstallCommand(RequirementCommand):
             target_temp_dir_path = target_temp_dir.path
             self.enter_context(target_temp_dir)
 
-        global_options = options.global_options or []
-
         session = self.get_default_session(options)
 
         target_python = make_target_python(options)
@@ -355,15 +624,8 @@ class InstallCommand(RequirementCommand):
 
         try:
             reqs = self.get_requirements(args, options, finder, session)
-            check_legacy_setup_py_options(options, reqs)
 
             wheel_cache = WheelCache(options.cache_dir)
-
-            # Only when installing is it permitted to use PEP 660.
-            # In other circumstances (pip wheel, pip download) we generate
-            # regular (i.e. non editable) metadata and wheels.
-            for req in reqs:
-                req.permit_editable_wheels = True
 
             preparer = self.make_requirement_preparer(
                 temp_build_dir=directory,
@@ -373,6 +635,7 @@ class InstallCommand(RequirementCommand):
                 finder=finder,
                 use_user_site=options.use_user_site,
                 verbosity=self.verbosity,
+                allow_editables=True,
             )
             resolver = self.make_resolver(
                 preparer=preparer,
@@ -384,7 +647,6 @@ class InstallCommand(RequirementCommand):
                 ignore_requires_python=options.ignore_requires_python,
                 force_reinstall=options.force_reinstall,
                 upgrade_strategy=upgrade_strategy,
-                use_pep517=options.use_pep517,
                 py_version_info=options.python_version,
             )
 
@@ -397,7 +659,7 @@ class InstallCommand(RequirementCommand):
             if options.json_report_file:
                 report = InstallationReport(requirement_set.requirements_to_install)
                 if options.json_report_file == "-":
-                    print_json(data=report.to_dict())
+                    rich.print_json(data=report.to_dict())
                 else:
                     with open(options.json_report_file, "w", encoding="utf-8") as f:
                         json.dump(report.to_dict(), f, indent=2, ensure_ascii=False)
@@ -414,6 +676,13 @@ class InstallCommand(RequirementCommand):
                     )
                 return SUCCESS
 
+            # If there is any more preparation to do for the actual installation, do
+            # so now. This includes actually downloading the files in the case that
+            # we have been using PEP-658 metadata so far.
+            preparer.prepare_linked_requirements_more(
+                requirement_set.requirements.values()
+            )
+
             try:
                 pip_req = requirement_set.get_requirement("pip")
             except KeyError:
@@ -425,17 +694,14 @@ class InstallCommand(RequirementCommand):
             protect_pip_from_modification_on_windows(modifying_pip=modifying_pip)
 
             reqs_to_build = [
-                r
-                for r in requirement_set.requirements_to_install
-                if should_build_for_install_command(r)
+                r for r in requirement_set.requirements_to_install if not r.is_wheel
             ]
 
             _, build_failures = build(
                 reqs_to_build,
                 wheel_cache=wheel_cache,
                 verify=True,
-                build_options=[],
-                global_options=global_options,
+                allow_editables=True,
             )
 
             if build_failures:
@@ -457,9 +723,17 @@ class InstallCommand(RequirementCommand):
             if options.target_dir or options.prefix_path:
                 warn_script_location = False
 
+            # Block late imports so we don't silently pick up a module
+            # from a distribution pip is about to install.
+            module_names = (*_INTERNAL_EAGER_IMPORTS, *pip._EAGER_IMPORTS)
+            _eagerly_import_modules(module_names)
+            _reify_lazy_imports(module_names)
+            self._import_guard.enter_context(
+                _prevent_further_imports(until_process_exit=self._cli)
+            )
+
             installed = install_given_reqs(
                 to_install,
-                global_options,
                 root=options.root_path,
                 home=target_temp_dir_path,
                 prefix=options.prefix_path,
@@ -478,34 +752,13 @@ class InstallCommand(RequirementCommand):
             )
             env = get_environment(lib_locations)
 
-            # Display a summary of installed packages, with extra care to
-            # display a package name as it was requested by the user.
-            installed.sort(key=operator.attrgetter("name"))
-            summary = []
-            installed_versions = {}
-            for distribution in env.iter_all_distributions():
-                installed_versions[distribution.canonical_name] = distribution.version
-            for package in installed:
-                display_name = package.name
-                version = installed_versions.get(canonicalize_name(display_name), None)
-                if version:
-                    text = f"{display_name}-{version}"
-                else:
-                    text = display_name
-                summary.append(text)
-
             if conflicts is not None:
                 self._warn_about_conflicts(
                     conflicts,
                     resolver_variant=self.determine_resolver_variant(options),
                 )
-
-            installed_desc = " ".join(summary)
-            if installed_desc:
-                write_output(
-                    "Successfully installed %s",
-                    installed_desc,
-                )
+            if summary := installed_packages_summary(installed, env):
+                write_output(summary)
         except OSError as error:
             show_traceback = self.verbosity >= 1
 
@@ -523,8 +776,10 @@ class InstallCommand(RequirementCommand):
             self._handle_target_dir(
                 options.target_dir, target_temp_dir, options.upgrade
             )
+
         if options.root_user_action == "warn":
             warn_if_run_as_root()
+
         return SUCCESS
 
     def _handle_target_dir(
@@ -532,8 +787,6 @@ class InstallCommand(RequirementCommand):
     ) -> None:
         ensure_dir(target_dir)
 
-        # Checking both purelib and platlib directories for installed
-        # packages to be moved to target directory
         lib_dir_list = []
 
         # Checking both purelib and platlib directories for installed
@@ -552,12 +805,16 @@ class InstallCommand(RequirementCommand):
 
         for lib_dir in lib_dir_list:
             for item in os.listdir(lib_dir):
+                # Do not move library directories a second time as data.
                 if lib_dir == data_dir:
                     ddir = os.path.join(data_dir, item)
                     if any(s.startswith(ddir) for s in lib_dir_list[:-1]):
                         continue
+
                 target_item_dir = os.path.join(target_dir, item)
-                if os.path.exists(target_item_dir):
+
+                # Keep dangling links subject to the same replacement policy.
+                if os.path.lexists(target_item_dir):
                     if not upgrade:
                         logger.warning(
                             "Target directory %s already exists. Specify "
@@ -565,6 +822,7 @@ class InstallCommand(RequirementCommand):
                             target_item_dir,
                         )
                         continue
+
                     if os.path.islink(target_item_dir):
                         logger.warning(
                             "Target directory %s already exists and is "
@@ -574,6 +832,7 @@ class InstallCommand(RequirementCommand):
                             target_item_dir,
                         )
                         continue
+
                     if os.path.isdir(target_item_dir):
                         shutil.rmtree(target_item_dir)
                     else:
@@ -644,6 +903,30 @@ class InstallCommand(RequirementCommand):
         logger.critical("\n".join(parts))
 
 
+def installed_packages_summary(
+    installed: list[InstallationResult], env: BaseEnvironment
+) -> str:
+    # Format a summary of installed packages, with extra care to
+    # display a package name as it was requested by the user.
+    installed.sort(key=operator.attrgetter("name"))
+    summary = []
+    installed_versions = {}
+    for distribution in env.iter_all_distributions():
+        installed_versions[distribution.canonical_name] = distribution.version
+    for package in installed:
+        display_name = package.name
+        version = installed_versions.get(canonicalize_name(display_name), None)
+        if version:
+            text = f"{display_name}-{version}"
+        else:
+            text = display_name
+        summary.append(text)
+
+    if not summary:
+        return ""
+    return f"Successfully installed {' '.join(summary)}"
+
+
 def get_lib_location_guesses(
     user: bool = False,
     home: str | None = None,
@@ -690,6 +973,7 @@ def decide_user_install(
         logger.debug("Non-user install by explicit request")
         return False
 
+    # If we have been asked for a user install explicitly, check compatibility.
     if use_user_site:
         if prefix_path:
             raise CommandError(
@@ -700,6 +984,13 @@ def decide_user_install(
             raise InstallationError(
                 "Can not perform a '--user' install. User site-packages "
                 "are not visible in this virtualenv."
+            )
+        # Catch all remaining cases which honour the site.ENABLE_USER_SITE
+        # value, such as a plain Python installation (e.g. no virtualenv).
+        if not site.ENABLE_USER_SITE:
+            raise InstallationError(
+                "Can not perform a '--user' install. User site-packages "
+                "are disabled for this Python."
             )
         logger.debug("User install by explicit request")
         return True
