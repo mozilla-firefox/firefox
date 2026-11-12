@@ -2437,6 +2437,9 @@ pref("browser.ml.pageAssist.enabled", false);
 
 // Smart Window Feature
 pref("browser.smartwindow.enabled", false);
+pref("browser.smartwindow.actionsToolbar.actionCount", 3);
+pref("browser.smartwindow.actionsToolbar.enabled", false);
+pref("browser.smartwindow.actionsToolbar.refreshDelayMs", 400);
 // Default endpoint for preset models
 pref("browser.smartwindow.endpoint", "https://mlpa-prod-prod-mozilla.freetls.fastly.net/v1");
 pref("browser.smartwindow.auth.impl", "fxa");

@@ -67,6 +67,7 @@ browser.jar:
   content/browser/aiwindow/firstrun.html                            (content/firstrun.html)
   content/browser/aiwindow/firstrun.css                             (content/firstrun.css)
   content/browser/aiwindow/firstrun.js                              (content/firstrun.js)
+  content/browser/aiwindow/smart-actions-toolbar.css                (content/smart-actions-toolbar.css)
   content/browser/aiwindow/smartwindow-init.mjs                     (content/smartwindow-init.mjs)
   content/browser/aiwindow/smartformfill-tab-select.html            (content/smartformfill-tab-select.html)
   content/browser/aiwindow/smartformfill-tab-select.mjs             (content/smartformfill-tab-select.mjs)

@@ -632,3 +632,10 @@ ai-clarifying-question-send =
     .label = Send
 ai-clarifying-question-close =
     .title = Close questions
+
+## Smart actions toolbar
+## Suggestions for the current page, shown under the navigation toolbar.
+
+smart-actions-toolbar =
+    .aria-label = Smart actions
+smart-actions-loading = Looking at this page…

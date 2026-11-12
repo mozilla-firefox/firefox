@@ -84,6 +84,8 @@ skip-if = [
 
 ["browser_security_tab_group_mentions.js"]
 
+["browser_smart_actions_toolbar.js"]
+
 ["browser_smartformfill_form_review_editing.js"]
 
 ["browser_smartformfill_form_review_filling.js"]

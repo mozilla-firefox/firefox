@@ -756,6 +756,17 @@ export const AIWindowUI = {
   },
 
   /**
+   * Opens the sidebar on a new chat and submits a message to it.
+   *
+   * @param {Window} win
+   * @param {object} message - Options for the ai-window submitChatMessage.
+   */
+  async submitToNewSidebarChat(win, message) {
+    await this.openSidebar(win);
+    this._getSidebarAiWindow(win)?.submitChatMessage(message);
+  },
+
+  /**
    * Resolves the ai-window instance relevant to a dispatched event,
    * routed by mode. Sidebar and fullpage are mutually exclusive for
    * a given tab — an AIWINDOW_URL tab always closes the sidebar.
