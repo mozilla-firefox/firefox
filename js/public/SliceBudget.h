@@ -10,7 +10,6 @@
 #include "mozilla/TimeStamp.h"
 #include "mozilla/Variant.h"
 
-#include <algorithm>
 #include <stdint.h>
 
 #include "jstypes.h"
@@ -28,14 +27,10 @@ struct JS_PUBLIC_API TimeBudget {
   const mozilla::TimeDuration budget;
   mozilla::TimeStamp deadline;  // Calculated when SliceBudget is constructed.
 
-  explicit TimeBudget(mozilla::TimeDuration duration)
-      : budget(std::max(duration, mozilla::TimeDuration::FromMilliseconds(1))) {
-    MOZ_ASSERT(duration >= mozilla::TimeDuration());
-  }
+  explicit TimeBudget(mozilla::TimeDuration duration) : budget(duration) {}
 
   void setDeadlineFromNow();
   double progress(mozilla::TimeStamp t) const {
-    MOZ_ASSERT(budget > mozilla::TimeDuration());
     return (t - (deadline - budget)) / budget;
   }
 };
