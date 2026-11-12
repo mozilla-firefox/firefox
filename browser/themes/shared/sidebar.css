@@ -641,6 +641,17 @@ menuseparator + #sidebar-extensions-separator {
     position: relative;
     inset: 0;
     inset-inline-end: unset;
+    --sidebar-launcher-border: 0.01px solid var(--sidebar-border-color);
+
+    /* Match the border on the content area's edge, which the expanded launcher
+     * covers. */
+    @media -moz-pref("browser.nova.enabled") {
+      --sidebar-launcher-border: var(--border-width) solid var(--chrome-content-separator-color);
+
+      :root[lwtheme] & {
+        --sidebar-launcher-border: var(--border-width) solid var(--sidebar-border-color);
+      }
+    }
 
     &[sidebar-positionend] {
       inset-inline-start: unset;
@@ -672,11 +683,11 @@ menuseparator + #sidebar-extensions-separator {
       }
 
       &:not([sidebar-positionend]) {
-        border-inline-end: 0.01px solid var(--sidebar-border-color);
+        border-inline-end: var(--sidebar-launcher-border);
       }
 
       &[sidebar-positionend] {
-        border-inline-start: 0.01px solid var(--sidebar-border-color);
+        border-inline-start: var(--sidebar-launcher-border);
       }
     }
 
