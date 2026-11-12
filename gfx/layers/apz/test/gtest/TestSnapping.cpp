@@ -292,4 +292,80 @@ TEST_F(APZCSnappingTesterMock, SnapOnPanEndWithPositiveVelocity) {
                 .y,
             100);
 }
+
+// Test that a fling whose snap destination is the current scroll position does
+// not fall back to an unsnapped fling.
+TEST_F(APZCSnappingTesterMock, FlingSnapToCurrentPosition) {
+  // Use pref values for desktop everywhere.
+  SCOPED_GFX_PREF_FLOAT("apz.fling_friction", 0.002);
+  SCOPED_GFX_PREF_FLOAT("apz.fling_stopped_threshold", 0.01);
+  SCOPED_GFX_PREF_FLOAT("apz.fling_curve_function_x1", 0.0);
+  SCOPED_GFX_PREF_FLOAT("apz.fling_curve_function_x2", 1.0);
+  SCOPED_GFX_PREF_FLOAT("apz.fling_curve_function_y1", 0.0);
+  SCOPED_GFX_PREF_FLOAT("apz.fling_curve_function_y2", 1.0);
+  SCOPED_GFX_PREF_INT("apz.velocity_relevance_time_ms", 100);
+  SCOPED_GFX_PREF_BOOL("apz.overscroll.enabled", false);
+
+  const char* treeShape = "x";
+  LayerIntRect layerVisibleRect[] = {
+      LayerIntRect(0, 0, 100, 100),
+  };
+  CreateScrollData(treeShape, layerVisibleRect);
+  SetScrollableFrameMetrics(root, START_SCROLL_ID, CSSRect(0, 0, 100, 400));
+
+  // Set up a single snap point, at 0.
+  ScrollSnapInfo snap;
+  snap.mScrollSnapStrictnessY = StyleScrollSnapStrictness::Mandatory;
+  snap.mSnapportSize =
+      CSSSize::ToAppUnits(layerVisibleRect[0].Size() * LayerToCSSScale(1.0));
+  snap.mSnapTargets.AppendElement(ScrollSnapInfo::SnapTarget(
+      Nothing(), Some(0), CSSRect::ToAppUnits(CSSRect(0, 0, 10, 10)),
+      StyleScrollSnapStop::Normal, ScrollSnapTargetId{1}));
+
+  ModifyFrameMetrics(root, [&](ScrollMetadata& aSm, FrameMetrics& aMetrics) {
+    aSm.SetSnapInfo(ScrollSnapInfo(snap));
+  });
+
+  auto registration =
+      std::make_unique<ScopedLayerTreeRegistration>(LayersId{0}, mcc);
+  UpdateHitTestingTree();
+
+  RefPtr<TestAsyncPanZoomController> apzc = ApzcOf(root);
+
+  // Pan down quickly, then pan back up more slowly and by more than we
+  // scrolled down, so that we end up back at 0 but with a downward velocity.
+  const ScreenIntPoint position = ScreenIntPoint(50, 30);
+  QueueMockHitResult(START_SCROLL_ID);
+  PanGesture(PanGestureInput::PANGESTURE_START, manager, position,
+             ScreenPoint(0, 0), mcc->Time());
+  mcc->AdvanceByMillis(6);
+  QueueMockHitResult(START_SCROLL_ID);
+  PanGesture(PanGestureInput::PANGESTURE_PAN, manager, position,
+             ScreenPoint(0, 40), mcc->Time());
+  mcc->AdvanceByMillis(30);
+  QueueMockHitResult(START_SCROLL_ID);
+  PanGesture(PanGestureInput::PANGESTURE_PAN, manager, position,
+             ScreenPoint(0, -80), mcc->Time());
+  mcc->AdvanceByMillis(5);
+
+  EXPECT_EQ(apzc->GetCurrentAsyncScrollOffset(
+                    AsyncPanZoomController::eForEventHandling)
+                .y,
+            0);
+
+  // End the pan with simulated momentum, as on GTK, so that the pan-end
+  // triggers a fling.
+  QueueMockHitResult(START_SCROLL_ID);
+  PanGesture(PanGestureInput::PANGESTURE_END, manager, position,
+             ScreenPoint(0, 0), mcc->Time(), MODIFIER_NONE,
+             /*aSimulateMomentum=*/true);
+
+  apzc->AssertStateIsReset();
+  EXPECT_EQ(apzc->GetVelocityVector(), ParentLayerPoint());
+  apzc->AdvanceAnimationsUntilEnd();
+  EXPECT_EQ(apzc->GetCurrentAsyncScrollOffset(
+                    AsyncPanZoomController::eForEventHandling)
+                .y,
+            0);
+}
 #endif

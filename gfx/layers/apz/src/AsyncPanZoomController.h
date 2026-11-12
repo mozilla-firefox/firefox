@@ -2064,8 +2064,10 @@ class AsyncPanZoomController {
   void ScrollSnap(ScrollSnapFlags aSnapFlags);
 
   // Snap to a snap position nearby the destination predicted based on the
-  // current velocity, if appropriate.
-  void ScrollSnapToDestination();
+  // current velocity, if appropriate. Returns whether a snap destination was
+  // found; if so, the velocity has been consumed (by the snap animation, or
+  // dropped if the destination is the current position).
+  bool ScrollSnapToDestination();
 
   // Snap to a snap position nearby the provided destination, if appropriate.
   void ScrollSnapNear(const CSSPoint& aDestination, ScrollSnapFlags aSnapFlags);

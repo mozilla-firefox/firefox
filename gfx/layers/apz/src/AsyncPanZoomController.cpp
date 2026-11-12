@@ -4148,8 +4148,7 @@ ParentLayerPoint AsyncPanZoomController::AttemptFling(
   // If there's a scroll snap point near the predicted fling destination,
   // scroll there using a smooth scroll animation. Otherwise, start a
   // fling animation.
-  ScrollSnapToDestination();
-  if (!InScrollAnimation(ScrollAnimationKind::SmoothMsd)) {
+  if (!ScrollSnapToDestination()) {
     SetState(FLING);
     RefPtr<AsyncPanZoomAnimation> fling =
         GetPlatformSpecificState()->CreateFlingAnimation(*this, aHandoffState,
@@ -7151,7 +7150,7 @@ void AsyncPanZoomController::ScrollSnap(ScrollSnapFlags aSnapFlags) {
   ScrollSnapNear(Metrics().GetVisualScrollOffset(), aSnapFlags);
 }
 
-void AsyncPanZoomController::ScrollSnapToDestination() {
+bool AsyncPanZoomController::ScrollSnapToDestination() {
   RecursiveMutexAutoLock lock(mRecursiveMutex);
 
   float friction = StaticPrefs::apz_fling_friction();
@@ -7172,7 +7171,7 @@ void AsyncPanZoomController::ScrollSnapToDestination() {
       IsOverscrolled() && ((velocity.x.value * mX.GetOverscroll() >= 0) ||
                            (velocity.y.value * mY.GetOverscroll() >= 0));
   if (flingWillOverscroll) {
-    return;
+    return false;
   }
 
   CSSPoint startPosition = Metrics().GetVisualScrollOffset();
@@ -7203,7 +7202,16 @@ void AsyncPanZoomController::ScrollSnapToDestination() {
     SmoothScrollTo(std::move(*snapDestination), ScrollTriggeredByScript::No,
                    ScrollAnimationKind::SmoothMsd, ViewportType::Visual,
                    ScrollOrigin::NotSpecified, GetFrameTime().Time());
+    if (!InScrollAnimation(ScrollAnimationKind::SmoothMsd)) {
+      // The snap destination is the current position, so SmoothScrollTo()
+      // did not start an animation (which would have consumed the velocity).
+      // Drop the velocity so it doesn't affect e.g. displayport margins or
+      // a later smooth scroll.
+      SetVelocityVector(ParentLayerPoint(0, 0));
+    }
+    return true;
   }
+  return false;
 }
 
 Maybe<CSSSnapDestination>
