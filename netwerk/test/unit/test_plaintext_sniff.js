@@ -37,7 +37,7 @@ var BOMList = [
   "\xFF\xFE", // UTF-16LE
   "\xEF\xBB\xBF", // UTF-8
   "\x00\x00\xFE\xFF", // UCS-4BE
-  "\x00\x00\xFF\xFE", // UCS-4LE
+  "\xFF\xFE\x00\x00", // UCS-4LE
 ];
 
 // Build up bodyList.  The things we treat as binary are ASCII codes 0-8,
@@ -56,16 +56,26 @@ for (i = 0; i <= 127; ++i) {
   bodyList.push([String.fromCharCode(i), isBinaryChar(i)]);
 }
 
+// Text chars sniff as text with or without a BOM, so only one of them is
+// needed to cover the BOM cases.
+var bomTestChars = [];
+for (i = 0; i <= 127; ++i) {
+  if (isBinaryChar(i)) {
+    bomTestChars.push(i);
+  }
+}
+bomTestChars.push("A".charCodeAt(0));
+
 // Test that having a BOM prevents plaintext sniffing
 var j;
-for (i = 0; i <= 127; ++i) {
+for (i of bomTestChars) {
   for (j = 0; j < BOMList.length; ++j) {
     bodyList.push([BOMList[j] + String.fromCharCode(i, i), false]);
   }
 }
 
 // Test that having a BOM requires at least 4 chars to kick in
-for (i = 0; i <= 127; ++i) {
+for (i of bomTestChars) {
   for (j = 0; j < BOMList.length; ++j) {
     bodyList.push([
       BOMList[j] + String.fromCharCode(i),
@@ -130,7 +140,7 @@ function makeListener(headerIdx, bodyIdx) {
         do_throw("Unexpected exception: " + e);
       }
 
-      throw Components.Exception("", Cr.NS_ERROR_ABORT);
+      request.cancel(Cr.NS_BINDING_ABORTED);
     },
 
     onDataAvailable: function test_ODA() {
@@ -138,18 +148,12 @@ function makeListener(headerIdx, bodyIdx) {
     },
 
     onStopRequest: function test_onStopR() {
-      // Advance to next test
-      ++headerIdx;
-      if (headerIdx == contentTypeHeaderList.length) {
-        headerIdx = 0;
-        ++bodyIdx;
-      }
-
-      if (bodyIdx == bodyList.length) {
+      ++caseIdx;
+      if (caseIdx == testCases.length) {
         do_test_pending();
         httpserv.stop(do_test_finished);
       } else {
-        doTest(headerIdx, bodyIdx);
+        doTest(...testCases[caseIdx]);
       }
 
       do_test_finished();
@@ -188,6 +192,39 @@ function makeHandler(headerIdx, bodyIdx) {
   return f;
 }
 
+// The expected result only depends on whether the header and the body each
+// allow sniffing, so rather than testing every header with every body, test
+// every body with one sniffable and one non-sniffable header, and every
+// header with a few representative bodies.
+var testCases = [];
+var caseIdx = 0;
+function buildTestCases() {
+  const sniffableHeaderIdx = 0;
+  const nonSniffableHeaderIdx = 4;
+  for (let b = 0; b < bodyList.length; ++b) {
+    testCases.push([sniffableHeaderIdx, b], [nonSniffableHeaderIdx, b]);
+  }
+  const representativeBodies = [
+    "Plaintext",
+    "\x00",
+    "A",
+    "\xFF\xFE\x00\x00",
+    "\xFF\xFE\x00",
+  ].map(body => {
+    const idx = bodyList.findIndex(([b]) => b == body);
+    Assert.notEqual(idx, -1, `${JSON.stringify(body)} should be in bodyList`);
+    return idx;
+  });
+  for (let h = 0; h < contentTypeHeaderList.length; ++h) {
+    if (h == sniffableHeaderIdx || h == nonSniffableHeaderIdx) {
+      continue;
+    }
+    for (let b of representativeBodies) {
+      testCases.push([h, b]);
+    }
+  }
+}
+
 var httpserv;
 function run_test() {
   // disable on Windows for now, because it seems to leak sockets and die.
@@ -199,13 +236,12 @@ function run_test() {
 
   httpserv = new HttpServer();
 
-  for (i = 0; i < contentTypeHeaderList.length; ++i) {
-    for (j = 0; j < bodyList.length; ++j) {
-      httpserv.registerPathHandler("/" + i + "/" + j, makeHandler(i, j));
-    }
+  buildTestCases();
+  for (let [h, b] of testCases) {
+    httpserv.registerPathHandler("/" + h + "/" + b, makeHandler(h, b));
   }
 
   httpserv.start(-1);
 
-  doTest(0, 0);
+  doTest(...testCases[0]);
 }

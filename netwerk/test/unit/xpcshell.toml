@@ -1559,9 +1559,6 @@ prefs = ["network.auth.force-generic-ntlm=true"]
 ["test_ping_aboutnetworking.js"]
 
 ["test_plaintext_sniff.js"]
-skip-if = [
-  "true", # Causes sporatic oranges
-]
 
 ["test_port_remapping.js"]
 
