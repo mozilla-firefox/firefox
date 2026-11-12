@@ -23,9 +23,6 @@ add_task(async function test_csp_upgrade() {
       ["blocking"]
     );
 
-    // Ensure that listener is registered (workaround for bug 1300234).
-    await browser.runtime.getPlatformInfo();
-
     await browser.test.assertRejects(
       fetch("http://example.com/"),
       "NetworkError when attempting to fetch resource.",

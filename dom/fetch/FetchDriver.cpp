@@ -731,26 +731,11 @@ nsresult FetchDriver::HttpFetch(
 #endif
   chan->SetNotificationCallbacks(this);
 
-  const RequestDestination destination =
-      mRequest->GetInterceptionTriggeringPrincipalInfo()
-          ? mRequest->InterceptionDestination()
-          : mRequest->Destination();
-
   nsCOMPtr<nsIClassOfService> cos(do_QueryInterface(chan));
-  if (cos) {
-    // Like XHR, never let fetch be blocked by head CSS/JS loads, to avoid a
-    // deadlock where the server generates the CSS/JS only after a fetch.
-    // Other destinations, for example an image that a service worker fetches
-    // for an intercepted request, keep their class of service.
-    if (destination == RequestDestination::_empty) {
-      cos->AddClassFlags(nsIClassOfService::Unblocked);
-    }
-
-    // Mark channel as urgent-start if the Fetch is triggered by user input
-    // events.
-    if (UserActivation::IsHandlingUserInput()) {
-      cos->AddClassFlags(nsIClassOfService::UrgentStart);
-    }
+  // Mark channel as urgent-start if the Fetch is triggered by user input
+  // events.
+  if (cos && UserActivation::IsHandlingUserInput()) {
+    cos->AddClassFlags(nsIClassOfService::UrgentStart);
   }
 
   // Step 3.5 begins "HTTP network or cache fetch".
@@ -893,10 +878,8 @@ nsresult FetchDriver::HttpFetch(
   }
 
   if (mIsTrackingFetch && StaticPrefs::network_http_tailing_enabled() && cos) {
-    // TailAllowed overrules Unblocked, like for XHR.
     cos->AddClassFlags(nsIClassOfService::Throttleable |
-                       nsIClassOfService::Tail |
-                       nsIClassOfService::TailAllowed);
+                       nsIClassOfService::Tail);
   }
 
   const auto fetchPriority = ToFetchPriority(mRequest->GetPriorityMode());
@@ -913,7 +896,10 @@ nsresult FetchDriver::HttpFetch(
       // request’s priority, initiator, destination, and render-blocking are
       // used in an implementation-defined manner to set the internal priority.
       // See corresponding preferences in StaticPrefList.yaml for more context.
-      const int32_t supportsPriorityDelta = [&destination, &fetchPriority]() {
+      const int32_t supportsPriorityDelta = [this, &fetchPriority]() {
+        auto destination = mRequest->GetInterceptionTriggeringPrincipalInfo()
+                               ? mRequest->InterceptionDestination()
+                               : mRequest->Destination();
         switch (destination) {
           case RequestDestination::Font:
             return FETCH_PRIORITY_ADJUSTMENT_FOR(link_preload_font,
