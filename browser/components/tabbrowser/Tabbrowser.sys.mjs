@@ -2354,15 +2354,18 @@ export class Tabbrowser {
       // such as a video in fullscreen mode. Opening a new tab will cancel
       // fullscreen mode, so we need to wait for that to happen and then
       // select the url field.
-      if (this.document.documentElement.hasAttribute("inDOMFullscreen")) {
-        this.documentGlobal.addEventListener(
-          "MozDOMFullscreen:Exited",
-          selectURL,
-          {
-            once: true,
-            wantsUntrusted: false,
+      let { documentElement } = this.document;
+      if (documentElement.hasAttribute("inDOMFullscreen")) {
+        let observer = new this.documentGlobal.MutationObserver(() => {
+          if (!documentElement.hasAttribute("inDOMFullscreen")) {
+            observer.disconnect();
+            selectURL();
           }
-        );
+        });
+        observer.observe(documentElement, {
+          attributes: true,
+          attributeFilter: ["inDOMFullscreen"],
+        });
         return;
       }
 
