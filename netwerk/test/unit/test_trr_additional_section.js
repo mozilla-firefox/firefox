@@ -73,6 +73,9 @@ add_task(async function test_parse_additional_section() {
   await new TRRDNSListener("else.foo", { expectedAnswer: "2.3.4.5" });
 
   await trrServer.registerDoHAnswers("a.foo", "A", {
+    // Make sure the request for b.foo is made before the response for a.foo
+    // comes back.
+    delay: 100,
     answers: [
       {
         name: "a.foo",
@@ -109,8 +112,6 @@ add_task(async function test_parse_additional_section() {
   // A request for b.foo will be in progress by the time we parse the additional
   // record. To keep things simple we don't end up saving the record, instead
   // we wait for the in-progress request to complete.
-  // This check is also racy - if the response for a.foo completes before we make
-  // this request, we'll put the other IP in the cache. But that is very unlikely.
   let req2 = new TRRDNSListener("b.foo", { expectedAnswer: "3.4.5.6" });
 
   await Promise.all([req1, req2]);
@@ -310,6 +311,12 @@ add_task(async function test_additional_cached_record_override() {
     "network.trr.uri",
     `https://foo.example.com:${trrServer.port()}/dns-query`
   );
+  // After a native lookup, a second one is made to get the TTL. If it
+  // completes after the additional record is saved, it overwrites it.
+  Services.prefs.setBoolPref("network.dns.get-ttl", false);
+  registerCleanupFunction(() => {
+    Services.prefs.clearUserPref("network.dns.get-ttl");
+  });
 
   await new TRRDNSListener("else.foo", { expectedAnswer: "127.0.0.1" });
 
