@@ -23,7 +23,7 @@ async function assertPlaceholder(browser, expected) {
   let l10n;
   await TestUtils.waitForCondition(async () => {
     l10n = await NewtabSearchbarTestUtils.getPlaceholderL10n(browser);
-    return l10n.id == expected.id;
+    return l10n.id == expected.id && l10n.args?.name == expected.args?.name;
   }, `waiting for the placeholder to come from ${expected.id}`);
   Assert.deepEqual(l10n, expected, "Expected placeholder");
 }
@@ -83,4 +83,21 @@ add_task(async function nonConfigEngine() {
   });
 
   BrowserTestUtils.removeTab(tab);
+});
+
+add_task(async function stalePreSavedName() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.placeholderName", "engine2"]],
+  });
+  // The preloaded page may have read the pref before it changed.
+  NewTabPagePreloading.removePreloadedBrowser(window);
+  let tab = await NewtabSearchbarTestUtils.openNewTabPage();
+
+  await assertPlaceholder(tab.linkedBrowser, {
+    id: "urlbar-placeholder-with-name",
+    args: { name: "engine1" },
+  });
+
+  BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.popPrefEnv();
 });

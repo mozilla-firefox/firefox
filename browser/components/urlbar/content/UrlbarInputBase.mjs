@@ -535,7 +535,10 @@ ${
       // flicker but it should be less often because of newtab preloading
       // and it allows us to never show the magnifying glass placeholder.
       this.controller.engineStore.init().then(
-        () => this.searchModeSwitcher.updateSearchIcon(),
+        () => {
+          this.searchModeSwitcher.updateSearchIcon();
+          this.updatePlaceholder();
+        },
         () => {} // Do nothing if search service failed.
       );
     }
