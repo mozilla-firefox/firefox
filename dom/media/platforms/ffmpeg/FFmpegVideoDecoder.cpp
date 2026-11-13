@@ -1831,6 +1831,10 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::DoDecode(
       mDecodeStats.UpdateDecodeTimes(duration);
     }
 
+    if (MaybeDropFrame(pts, duration)) {
+      continue;
+    }
+
     MediaResult rv =
         CreateImageForFrame(fpos, pts, duration, timecode, aResults);
     if (NS_FAILED(rv)) {
@@ -1880,6 +1884,14 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::DoDecode(
 
   InputInfo info(aSample);
   TakeInputInfo(mFrame, info);
+
+  if (MaybeDropFrame(pts, info.mDuration)) {
+    // Report the frame so that a drain continues.
+    if (aGotFrame) {
+      *aGotFrame = true;
+    }
+    return NS_OK;
+  }
 
   MediaResult rv = CreateImage(aSample->mOffset, pts, info.mDuration, aResults);
   if (NS_FAILED(rv)) {
@@ -2562,8 +2574,37 @@ FFmpegVideoDecoder<LIBAV_VER>::ProcessFlush() {
 #ifdef MOZ_WIDGET_ANDROID
   ReleaseFramesMediaCodec();
 #endif
+  mSeekTarget.reset();
   mPerformanceRecorder.Record(std::numeric_limits<int64_t>::max());
   return FFmpegDataDecoder::ProcessFlush();
+}
+
+void FFmpegVideoDecoder<LIBAV_VER>::SetSeekThreshold(const TimeUnit& aTime) {
+  (void)mTaskQueue->Dispatch(NS_NewRunnableFunction(
+      "FFmpegVideoDecoder::SetSeekThreshold", [self = RefPtr{this}, aTime] {
+        if (aTime.IsValid()) {
+          self->mSeekTarget = Some(aTime);
+        } else {
+          self->mSeekTarget.reset();
+        }
+      }));
+}
+
+bool FFmpegVideoDecoder<LIBAV_VER>::MaybeDropFrame(int64_t aPts,
+                                                   int64_t aDuration) {
+  MOZ_ASSERT(mTaskQueue->IsOnCurrentThread());
+  if (!mSeekTarget) {
+    return false;
+  }
+  const TimeUnit endTime =
+      TimeUnit::FromMicroseconds(aPts) + TimeUnit::FromMicroseconds(aDuration);
+  if (!endTime.IsValid() || endTime >= *mSeekTarget) {
+    mSeekTarget.reset();
+    return false;
+  }
+  FFMPEG_LOGV("  Dropping frame ending at {} before seek target {}",
+              endTime.ToMicroseconds(), mSeekTarget->ToMicroseconds());
+  return true;
 }
 
 #if LIBAVCODEC_VERSION_MAJOR >= 58
