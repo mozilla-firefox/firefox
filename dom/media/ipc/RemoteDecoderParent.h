@@ -48,6 +48,8 @@ class RemoteDecoderParent : public ShmemRecycleAllocator<RemoteDecoderParent>,
 
   bool OnManagerThread();
 
+  bool IsMediaEngineIdAllowed() const;
+
   // Rejects any in-flight IPC resolvers with NS_ERROR_DOM_MEDIA_CANCELED and
   // disconnects the matching MozPromiseRequestHolders so that their ThenValues
   // cannot trip AssertIsDead if the underlying decoder's promise chain is torn

@@ -7,6 +7,10 @@
 #include "RemoteMediaManagerParent.h"
 #include "mozilla/EnumeratedRange.h"
 
+#ifdef MOZ_WMF_MEDIA_ENGINE
+#  include "MFMediaEngineParent.h"
+#endif
+
 namespace mozilla {
 
 namespace {
@@ -315,6 +319,15 @@ void RemoteDecoderParent::AbortPendingRequests() {
 
 bool RemoteDecoderParent::OnManagerThread() {
   return mParent->OnManagerThread();
+}
+
+bool RemoteDecoderParent::IsMediaEngineIdAllowed() const {
+#ifdef MOZ_WMF_MEDIA_ENGINE
+  return !mMediaEngineId ||
+         MFMediaEngineParent::IsMediaEngineIdAllowed(*mMediaEngineId, mParent);
+#else
+  return true;
+#endif
 }
 
 }  // namespace mozilla

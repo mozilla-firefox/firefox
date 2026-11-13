@@ -177,6 +177,11 @@ IPCResult RemoteVideoDecoderParent::RecvConstruct(
     return IPC_OK();
   }
 
+  if (!IsMediaEngineIdAllowed()) {
+    aResolver(MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR, __func__));
+    return IPC_OK();
+  }
+
   auto imageContainer = MakeRefPtr<layers::ImageContainer>(
       layers::ImageUsageType::RemoteVideoDecoder,
       layers::ImageContainer::SYNCHRONOUS);
