@@ -1332,6 +1332,13 @@ features:
         description: If true, the OLED theme option is shown.
         type: Boolean
         default: false
+    defaults:
+      - channel: developer
+        value:
+          enabled: true
+      - channel: nightly
+        value:
+          enabled: true
 
   pairing-signin-prompt:
     description: >

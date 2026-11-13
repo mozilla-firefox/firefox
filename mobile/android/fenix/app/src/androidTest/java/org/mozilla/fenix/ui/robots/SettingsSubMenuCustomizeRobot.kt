@@ -15,11 +15,15 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.preference.R as preferenceR
+import androidx.recyclerview.widget.RecyclerView
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.ViewInteraction
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.contrib.RecyclerViewActions
 import androidx.test.espresso.matcher.ViewMatchers
+import androidx.test.espresso.matcher.ViewMatchers.hasDescendant
 import androidx.test.espresso.matcher.ViewMatchers.hasSibling
 import androidx.test.espresso.matcher.ViewMatchers.isChecked
 import androidx.test.espresso.matcher.ViewMatchers.isNotChecked
@@ -324,7 +328,10 @@ class SettingsSubMenuCustomizeRobot {
     }
 
     fun scrollToExpandedToolbarOption() {
-        scrollToElementByText("Expanded")
+        Log.i(TAG, "scrollToExpandedToolbarOption: Trying to scroll the \"Expanded\" toolbar layout option into view")
+        onView(withId(preferenceR.id.recycler_view))
+            .perform(RecyclerViewActions.scrollTo<RecyclerView.ViewHolder>(hasDescendant(withText("Expanded"))))
+        Log.i(TAG, "scrollToExpandedToolbarOption: Scrolled the \"Expanded\" toolbar layout option into view")
     }
 
     fun scrollToTheScrollToHideToolbarOption() {

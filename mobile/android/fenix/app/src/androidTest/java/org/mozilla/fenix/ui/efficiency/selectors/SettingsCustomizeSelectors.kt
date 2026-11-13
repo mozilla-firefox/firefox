@@ -64,7 +64,7 @@ object SettingsCustomizeSelectors : SelectorContainer {
             value = getStringResource(R.string.preference_simple_toolbar),
             description = "Simple toolbar layout option",
             groups = setOf(Group.TOOLBAR_LAYOUT),
-            scrollDirection = SwipeDirection.DOWN,
+            scrollDirection = SwipeDirection.UP,
         )
 
     val TOOLBAR_LAYOUT_EXPANDED =
