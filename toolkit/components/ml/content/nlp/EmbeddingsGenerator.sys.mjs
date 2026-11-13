@@ -130,6 +130,7 @@ const ENGINE_OPTIONS = new Map([
     "static-embeddings",
     {
       featureId: "simple-text-embedder",
+      engineId: "simple-text-embedder-static-engine",
       modelId: "mozilla/static-embeddings",
       modelRevision: "v1.0.0",
       taskName: "static-embeddings",

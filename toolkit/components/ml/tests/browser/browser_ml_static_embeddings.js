@@ -11,6 +11,9 @@
 const { parseNpy } = ChromeUtils.importESModule(
   "chrome://global/content/ml/Utils.sys.mjs"
 );
+const { EMBEDDING_TYPE, EmbeddingsGenerator } = ChromeUtils.importESModule(
+  "chrome://global/content/ml/EmbeddingsGenerator.sys.mjs"
+);
 
 const vocabSize = 9;
 const dimensions = 8;
@@ -153,4 +156,52 @@ add_task(async function test_static_embeddings() {
     emojiText.length,
     "inputChars should equal text.length (UTF-16 code units) for non-BMP input"
   );
+});
+
+/**
+ * Creating the contextual embeddings engine leaves a live static embeddings
+ * engine running. Like test_static_embeddings, it mocks only the model download.
+ */
+add_task(async function test_static_engine_survives_contextual_engine() {
+  const staticGenerator = EmbeddingsGenerator.forTest({
+    type: EMBEDDING_TYPE.STATIC,
+  });
+  staticGenerator.options.staticEmbeddingsOptions = {
+    ...staticGenerator.options.staticEmbeddingsOptions,
+    dimensions,
+    mockedValues: getMockedValues(),
+    compression: false,
+  };
+  const staticEngine = await staticGenerator.ensureEngine();
+
+  let contextualSlotEngine;
+  try {
+    // The contextual model can't run in tests, so the static model runs under
+    // the contextual engineId. A shared engineId would then replace the static
+    // engine, since numThreads differs.
+    const contextualOptions = new PipelineOptions(
+      EmbeddingsGenerator.forTest({ type: EMBEDDING_TYPE.CONTEXTUAL }).options
+    );
+    contextualSlotEngine = await createEngine(
+      new PipelineOptions({
+        ...staticGenerator.options,
+        engineId: contextualOptions.engineId,
+        numThreads: contextualOptions.numThreads,
+      })
+    );
+
+    is(
+      staticEngine.engineStatus,
+      "ready",
+      "The static engine stays ready after the contextual engine starts"
+    );
+    const { output } = await staticEngine.run({
+      args: ["the quick brown fox"],
+      options: { pooling: "mean", normalize: true },
+    });
+    is(output[0].length, dimensions, "The static engine still runs its model");
+  } finally {
+    await contextualSlotEngine?.terminate();
+    await staticEngine.terminate();
+  }
 });
