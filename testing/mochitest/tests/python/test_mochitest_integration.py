@@ -125,6 +125,18 @@ def test_output_pass(flavor, runFailures, runtests, test_name):
     assert lines[0]["status"] == results["line_status"]
 
 
+@pytest.mark.parametrize("flavor", ["plain", "browser-chrome"])
+def test_output_repeat_order(flavor, runtests, test_name, monkeypatch):
+    monkeypatch.delenv("MOZ_AUTOMATION", raising=False)
+
+    tests = sorted(test_name(n) for n in ("pass", "fail"))
+    status, lines = runtests(tests, repeat=1, headless=True)
+
+    started = [os.path.basename(l["test"]) for l in filter_action("test_start", lines)]
+    assert started == [tests[0], tests[0], tests[1], tests[1]]
+    assert len(filter_action("test_end", lines)) == 4
+
+
 @pytest.mark.parametrize("runFailures", ["selftest", ""])
 @pytest.mark.parametrize("flavor", ["plain", "browser-chrome"])
 def test_output_fail(flavor, runFailures, runtests, test_name):
