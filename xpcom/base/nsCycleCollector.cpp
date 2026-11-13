@@ -558,10 +558,15 @@ class PtrInfo final {
   uint32_t mInternalRefs : 30;
   uint32_t mRefCount;
 
+  // The largest refcount we support for a refcounted object.
+  static const uint32_t kMaxRefCount = UINT32_MAX - 2;
+
  private:
   EdgePool::Iterator mFirstChild;
 
   static const uint32_t kInitialRefCount = UINT32_MAX - 1;
+  static_assert(kMaxRefCount < kInitialRefCount,
+                "kInitialRefCount must not be a valid refcount");
 
  public:
   PtrInfo(void* aPointer, nsCycleCollectionParticipant* aParticipant)
@@ -1078,14 +1083,23 @@ struct SelectPointersVisitor {
 
   bool Visit(nsPurpleBuffer& aBuffer, nsPurpleBufferEntry* aEntry) {
     MOZ_ASSERT(aEntry->mObject, "Null object in purple buffer");
-    MOZ_ASSERT(!aEntry->HasRefCount0(),
-               "SelectPointersVisitor: snow-white object in the purple buffer");
+    // Objects with refcount 0 can't be part of a cycle, so skip them.
+    if (aEntry->HasRefCount0()) {
+#ifdef DEBUG
+      ++mSkippedCount;
+#endif
+      return true;
+    }
     if (!aEntry->mRefCnt->IsPurple() ||
         AddPurpleRoot(mBuilder, aEntry->mObject, aEntry->mParticipant)) {
       aBuffer.Remove(aEntry);
     }
     return true;
   }
+
+#ifdef DEBUG
+  uint32_t mSkippedCount = 0;
+#endif
 
  private:
   CCGraphBuilder& mBuilder;
@@ -1095,7 +1109,8 @@ void nsPurpleBuffer::SelectPointers(CCGraphBuilder& aBuilder) {
   SelectPointersVisitor visitor(aBuilder);
   VisitEntries(visitor);
 
-  MOZ_ASSERT(mCount == 0, "AddPurpleRoot failed");
+  MOZ_ASSERT(mCount == visitor.mSkippedCount, "AddPurpleRoot failed");
+
   if (mCount == 0) {
     FreeBlocks();
   }
@@ -1865,8 +1880,9 @@ class CCGraphBuilder final : public nsCycleCollectionTraversalCallback,
   bool mMergeZones;
   UniquePtr<NodePool::Enumerator> mCurrNode;
   uint32_t mNoteChildCount;
+  const bool& mFreeingSnowWhite;
 
-  struct PtrInfoCache : public MruCache<void*, PtrInfo*, PtrInfoCache, 491> {
+  struct PtrInfoCache : public MruCache<void*, PtrInfo*, PtrInfoCache, 479> {
     static HashNumber Hash(const void* aKey) { return HashGeneric(aKey); }
     static bool Match(const void* aKey, const PtrInfo* aVal) {
       return aVal->mPointer == aKey;
@@ -1878,7 +1894,8 @@ class CCGraphBuilder final : public nsCycleCollectionTraversalCallback,
  public:
   CCGraphBuilder(CCGraph& aGraph, CycleCollectorResults& aResults,
                  CycleCollectedJSRuntime* aCCRuntime,
-                 nsCycleCollectorLogger* aLogger, bool aMergeZones);
+                 nsCycleCollectorLogger* aLogger, bool aMergeZones,
+                 const bool& aFreeingSnowWhite);
   virtual ~CCGraphBuilder();
 
   bool WantAllTraces() const {
@@ -1980,7 +1997,7 @@ class CCGraphBuilder final : public nsCycleCollectionTraversalCallback,
 CCGraphBuilder::CCGraphBuilder(CCGraph& aGraph, CycleCollectorResults& aResults,
                                CycleCollectedJSRuntime* aCCRuntime,
                                nsCycleCollectorLogger* aLogger,
-                               bool aMergeZones)
+                               bool aMergeZones, const bool& aFreeingSnowWhite)
     : mGraph(aGraph),
       mResults(aResults),
       mNodeBuilder(aGraph.mNodes),
@@ -1989,7 +2006,8 @@ CCGraphBuilder::CCGraphBuilder(CCGraph& aGraph, CycleCollectorResults& aResults,
       mJSZoneParticipant(nullptr),
       mLogger(aLogger),
       mMergeZones(aMergeZones),
-      mNoteChildCount(0) {
+      mNoteChildCount(0),
+      mFreeingSnowWhite(aFreeingSnowWhite) {
   // 4096 is an allocation bucket size.
   static_assert(sizeof(CCGraphBuilder) <= 4096,
                 "Don't create too large CCGraphBuilder objects");
@@ -2163,20 +2181,32 @@ CCGraphBuilder::NoteNativeRoot(void* aRoot,
 NS_IMETHODIMP_(void)
 CCGraphBuilder::DescribeRefCountedNode(nsrefcnt aRefCount,
                                        const char* aObjName) {
-  mCurrPi->AnnotatedReleaseAssert(aRefCount != 0,
+  mCurrPi->AnnotatedReleaseAssert(aRefCount != 0 || mFreeingSnowWhite,
                                   "CCed refcounted object has zero refcount");
   mCurrPi->AnnotatedReleaseAssert(
-      aRefCount != UINT32_MAX,
+      aRefCount <= PtrInfo::kMaxRefCount,
       "CCed refcounted object has overflowing refcount");
 
   mResults.mVisitedRefCounted++;
 
-  if (mLogger) {
-    mLogger->NoteRefCountedObject((uint64_t)mCurrPi->mPointer, aRefCount,
-                                  aObjName);
+  if (aRefCount == 0) {
+    // We can't give this node a refcount of 0 because we're using that to
+    // represent gray JS objects, but we need to set it to something to ensure
+    // that WasTraversed() is true. The CC won't unlink this object because
+    // either it will still be in the purple buffer from when it was released
+    // after the start of the CC, or the SnowWhiteKiller will remove it from the
+    // graph. As a hardening measure, use the largest possible valid ref count.
+    mCurrPi->mRefCount = PtrInfo::kMaxRefCount;
+  } else {
+    mCurrPi->mRefCount = aRefCount;
   }
 
-  mCurrPi->mRefCount = aRefCount;
+  if (mLogger) {
+    // Log the refcount the CC will actually use, which will differ from
+    // aRefCount if aRefCount is 0.
+    mLogger->NoteRefCountedObject((uint64_t)mCurrPi->mPointer,
+                                  mCurrPi->mRefCount, aObjName);
+  }
 }
 
 NS_IMETHODIMP_(void)
@@ -2828,8 +2858,12 @@ class PurpleScanBlackVisitor {
   bool Visit(nsPurpleBuffer& aBuffer, nsPurpleBufferEntry* aEntry) {
     MOZ_ASSERT(aEntry->mObject,
                "Entries with null mObject shouldn't be in the purple buffer.");
-    MOZ_ASSERT(!aEntry->HasRefCount0(),
-               "Snow-white objects shouldn't be in the purple buffer.");
+
+    // Objects with a refcount of 0 can still be in the purple buffer if we
+    // didn't manage to finish running the SnowWhiteKiller. We err on the side
+    // of caution and treat any such objects as being alive. There's no danger
+    // of a leak because they can't be a part of a cycle and will be cleaned up
+    // by the SnowWhiteKiller.
 
     void* obj = aEntry->mObject;
 
@@ -3718,7 +3752,7 @@ void nsCycleCollector::BeginCollection(
 
   MOZ_ASSERT(!mBuilder, "Forgot to clear mBuilder");
   mBuilder = MakeUnique<CCGraphBuilder>(mGraph, mResults, mCCJSRuntime, mLogger,
-                                        mergeZones);
+                                        mergeZones, mFreeingSnowWhite);
   timeLog.Checkpoint("BeginCollection prepare graph builder");
 
   if (mCCJSRuntime) {
