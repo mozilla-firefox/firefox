@@ -47,6 +47,10 @@ inline bool TemplateObject::isBlockLexicalEnvironmentObject() const {
   return obj_->is<BlockLexicalEnvironmentObject>();
 }
 
+inline bool TemplateObject::isClassBodyLexicalEnvironmentObject() const {
+  return obj_->is<ClassBodyLexicalEnvironmentObject>();
+}
+
 inline bool TemplateObject::isPlainObject() const {
   return obj_->is<PlainObject>();
 }

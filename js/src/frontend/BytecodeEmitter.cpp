@@ -9986,7 +9986,7 @@ bool BytecodeEmitter::emitPropertyList(ListNode* obj, PropertyEmitter& pe,
         return false;
       }
       NameOpEmitter noe(this, privateName->atom(),
-                        NameOpEmitter::Kind::SimpleAssignment);
+                        NameOpEmitter::Kind::Initialize);
 
       // Ensure the NameOp emitter doesn't push an environment onto the stack,
       // because that would change the stack location of the home object.

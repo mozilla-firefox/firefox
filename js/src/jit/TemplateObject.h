@@ -34,6 +34,7 @@ class TemplateObject {
   inline bool isRegExpObject() const;
   inline bool isCallObject() const;
   inline bool isBlockLexicalEnvironmentObject() const;
+  inline bool isClassBodyLexicalEnvironmentObject() const;
   inline bool isPlainObject() const;
 
   // The shape should not change. This is true for template objects because

@@ -1255,6 +1255,16 @@ ClassBodyLexicalEnvironmentObject* ClassBodyLexicalEnvironmentObject::create(
     return nullptr;
   }
 
+  // Initialize all bindings as uninitialized. Private methods are initialized
+  // while defining the class, after code can capture this environment object.
+  // The private brand check prevents JS code from reading these slots before
+  // they're initialized, but the magic value ensures Warp doesn't bake in the
+  // initial value.
+  uint32_t lastSlot = env->getLastProperty().slot();
+  for (uint32_t slot = JSSLOT_FREE(&class_); slot <= lastSlot; slot++) {
+    env->initSlot(slot, MagicValue(JS_UNINITIALIZED_LEXICAL));
+  }
+
   env->initScope(scope);
   return env;
 }
