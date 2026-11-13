@@ -93,9 +93,14 @@
   display: flex;
   flex-direction: column;
   font-size: var(--font-size-small);
-  // Default (incl. medium no-tip): bottom-left, matching large.
+  // Default: bottom-left, matching large.
   align-items: flex-start;
   justify-content: flex-end;
+
+  .medium-widget & {
+    gap: var(--space-medium);
+    justify-content: center;
+  }
 
   .privacy-count-text {
     display: flex;
@@ -118,16 +123,6 @@
     .large-widget.is-count-only & {
       font-size: var(--font-size-root);
     }
-
-    .has-streak.medium-widget &,
-    .has-tip-msg.medium-widget & {
-      margin-block-end: 0;
-    }
-  }
-
-  .has-streak.medium-widget &,
-  .has-tip-msg.medium-widget & {
-    justify-content: flex-start;
   }
 
   .large-widget & {
@@ -263,7 +258,7 @@
     max-height: var(--icon-size-xlarge);
   }
 
-  .medium-widget.is-count-only & {
+  .medium-widget .privacy-count & {
     margin-block-start: 0;
     height: var(--size-image-xsmall);
     max-height: none;
@@ -294,16 +289,10 @@
     color: var(--link-color);
   }
 
-  .medium-widget.is-count-only & {
+  .medium-widget & {
     flex-direction: row;
     align-items: last baseline;
     gap: var(--space-medium);
-  }
-
-  .medium-widget:not(.is-count-only) & {
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-small);
   }
 
   .small-widget & {
@@ -319,7 +308,7 @@
     position: relative;
     width: fit-content;
 
-    .medium-widget.is-count-only & {
+    .medium-widget & {
       gap: var(--space-xsmall);
     }
 
@@ -338,7 +327,7 @@
   .privacy-count-number {
     font-size: calc(var(--font-size-root) * 2.5); // ~36px
 
-    .medium-widget.is-count-only & {
+    .medium-widget & {
       font-size: calc(var(--font-size-root) * 3.2); // 48px
     }
 
@@ -347,8 +336,10 @@
       line-height: 1;
     }
 
-    .large-widget & {
+    .large-widget:not(.is-count-only) & {
       font-size: calc(var(--font-size-root) * 4.5); // ~67px
+      line-height: 1.1;
+      margin-block-start: calc(-1 * var(--space-medium));
     }
 
     // The count-only card has the row to itself, so the number goes bigger.
@@ -388,7 +379,7 @@
   block-size: var(--border-width);
 
   .medium-widget & {
-    margin-block-end: var(--space-small);
+    display: none;
   }
 }
 
@@ -398,7 +389,6 @@
   .medium-widget & {
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
   }
 
   .large-widget & {
@@ -411,6 +401,11 @@
 .privacy-tip-message {
   align-self: flex-start;
   margin: 0;
+
+  // Every message has a CTA, so medium keeps just the button.
+  .medium-widget & {
+    display: none;
+  }
 }
 
 // Message text stacked above its CTA button (icon, when present, sits beside
@@ -423,7 +418,7 @@
   align-items: flex-end;
 
   .medium-widget & {
-    flex-grow: 1;
+    align-items: flex-start;
   }
 }
 
@@ -432,6 +427,8 @@
 
   .large-widget & {
     gap: var(--space-small);
+    // A CTA wider than the column overflows on the start side, not the end.
+    min-width: 0;
   }
 }
 
@@ -441,8 +438,7 @@
 
 // The CTA is the widget's bottom-most element
 .privacy-cta {
-  .has-tip-msg.medium-widget &,
-  .has-streak.medium-widget & {
-    margin-block-start: auto;
+  .large-widget & {
+    white-space: nowrap;
   }
 }
