@@ -16,7 +16,7 @@
 class DMABufSurfaceRGBA;
 
 namespace mozilla::wr {
-class RenderDMABUFTextureHost;
+class RenderLinuxTextureHost;
 }  // namespace mozilla::wr
 
 namespace mozilla::widget {
@@ -418,7 +418,8 @@ class NativeLayerWaylandExternal final : public NativeLayerWayland {
   // Last surface provided by AttachExternalImage(), skip redundant attach.
   uintptr_t mLastSurface = 0;
 
-  // Keep reference to texture host to make SHM textures live
+  // Keep reference to RenderTextureHost as long as we use the
+  // underlying surface.
   RefPtr<wr::RenderTextureHost> mTextureHost;
 
   // Final buffer which we attach to WaylandSurface
