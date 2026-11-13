@@ -245,8 +245,6 @@ void PermissionsPolicy::SetDeclaredAttributePolicy(
 void PermissionsPolicy::SetDeclaredHeaderPolicy(Document* aDocument,
                                                 const nsAString& aPolicyString,
                                                 nsIPrincipal* aSelfOrigin) {
-  ResetDeclaredPolicy();
-
   mDeclaredString = aPolicyString;
   mSelfOrigin = aSelfOrigin;
 
