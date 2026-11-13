@@ -257,12 +257,13 @@ tasks:
                         default: 20
                 default:
                     by-test-platform:
-                        android.*/debug: 10
-                        linux.*/debug: 16
-                        linux.*64-tsan/opt: 20
+                        android.*/debug: 11
+                        linux.*/debug: 12
+                        linux.*64-tsan/opt: 18
                         .*-ccov.*: 10
-                        .*-asan.*: 10
-                        linux.*/opt: 8
+                        .*-asan.*: 15
+                        android.*/opt: 8
+                        linux.*/opt: 6
                         windows.*/debug: 8
                         default: 5
         tier:
@@ -479,15 +480,16 @@ tasks:
                         default: 40
                 default:
                     by-test-platform:
-                        linux.*/debug: 16
-                        linux.*64-asan/opt: 20
-                        linux.*64-tsan/opt: 32
-                        windows.*-asan.*/opt: 20
-                        windows.*-ccov.*/.*: 14
-                        macosx.*64.*/opt: 10
-                        windows11.*/opt: 10
-                        .*/debug: 12
-                        default: 8
+                        linux.*/debug: 40
+                        linux.*64-asan/opt: 45
+                        linux.*64-tsan/opt: 70
+                        windows.*-asan.*/opt: 50
+                        windows.*-ccov.*/.*: 25
+                        macosx.*64.*/opt: 15
+                        windows11.*/opt: 15
+                        macosx.*/debug: 20
+                        .*/debug: 28
+                        default: 18
         max-run-time:
             by-variant:
                 msix: 5400
@@ -746,6 +748,7 @@ tasks:
                 default:
                     by-test-platform:
                         .*-tsan.*/opt: 6
+                        windows.*-asan/opt: 5
                         default: 3
         max-run-time:
             by-variant:
@@ -812,13 +815,14 @@ tasks:
                         default: 16
                 default:
                     by-test-platform:
-                        .*-ccov.*: 12
+                        .*-ccov.*: 10
                         linux.*-wayland.*/debug: 14
-                        linux.*64/debug: 14
+                        linux.*/debug: 15
                         macosx.*64(-qr)?/debug: 8
-                        win.*/debug: 8
-                        .*-asan/opt: 8
-                        .*-tsan/opt: 16
+                        win.*/debug: 10
+                        .*-asan/opt: 17
+                        .*-tsan/opt: 26
+                        linux.*/opt: 7
                         default: 5
         mozharness:
             mochitest-flavor: chrome
@@ -1135,7 +1139,7 @@ tasks:
                     by-test-platform:
                         android.*/opt: 1
                         macosx.*/opt: 1
-                        windows11-64-24h2-asan/opt: 2
+                        windows11-64-25h2-asan/opt: 2
                         windows11-.*/opt: 1
                         linux.*/debug: 3
                         linux.*64-tsan/opt: 5
