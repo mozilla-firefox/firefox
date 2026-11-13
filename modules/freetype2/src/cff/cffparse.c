@@ -182,33 +182,22 @@
   static FT_Fixed
   cff_parse_real( FT_Byte*  start,
                   FT_Byte*  limit,
-                  FT_Long   power_ten,
-                  FT_Long*  scaling )
+                  FT_Int    exponent_add,
+                  FT_Int*   scaling )
   {
     FT_Byte*  p = start;
     FT_Int    nib;
-    FT_UInt   phase;
+    FT_UInt   phase = 4;
 
-    FT_Long   result, number, exponent;
-    FT_Int    sign = 0, exponent_sign = 0, have_overflow = 0;
-    FT_Long   exponent_add, integer_length, fraction_length;
+    FT_Long   result = 0, number = 0, sign = 1;
+    FT_Int    exponent = 0, exponent_sign = 1;
+    FT_Int    integer_length = 0, fraction_length = 0;
 
 
     if ( scaling )
       *scaling = 0;
 
-    result = 0;
-
-    number   = 0;
-    exponent = 0;
-
-    exponent_add    = 0;
-    integer_length  = 0;
-    fraction_length = 0;
-
     /* First of all, read the integer part. */
-    phase = 4;
-
     for (;;)
     {
       /* If we entered this iteration with phase == 4, we need to */
@@ -223,11 +212,11 @@
       }
 
       /* Get the nibble. */
-      nib   = (FT_Int)( p[0] >> phase ) & 0xF;
-      phase = 4 - phase;
+      nib    = (FT_Int)( p[0] >> phase ) & 0xF;
+      phase ^= 4;
 
       if ( nib == 0xE )
-        sign = 1;
+        sign = -1;
       else if ( nib > 9 )
         break;
       else
@@ -260,8 +249,8 @@
         }
 
         /* Get the nibble. */
-        nib   = ( p[0] >> phase ) & 0xF;
-        phase = 4 - phase;
+        nib    = ( p[0] >> phase ) & 0xF;
+        phase ^= 4;
         if ( nib >= 10 )
           break;
 
@@ -279,7 +268,7 @@
     /* Read exponent, if any. */
     if ( nib == 12 )
     {
-      exponent_sign = 1;
+      exponent_sign = -1;
       nib           = 11;
     }
 
@@ -299,35 +288,29 @@
         }
 
         /* Get the nibble. */
-        nib   = ( p[0] >> phase ) & 0xF;
-        phase = 4 - phase;
+        nib    = ( p[0] >> phase ) & 0xF;
+        phase ^= 4;
         if ( nib >= 10 )
           break;
 
         /* Arbitrarily limit exponent. */
-        if ( exponent > 1000 )
-          have_overflow = 1;
-        else
+        if ( exponent < 204 )
           exponent = exponent * 10 + nib;
       }
 
-      if ( exponent_sign )
-        exponent = -exponent;
+      exponent *= exponent_sign;
     }
 
     if ( !number )
       goto Exit;
 
-    if ( have_overflow )
-    {
-      if ( exponent_sign )
-        goto Underflow;
-      else
-        goto Overflow;
-    }
+    if ( exponent < -204 )
+      goto Underflow;
+    else if ( exponent > 204 )
+      goto Overflow;
 
     /* We don't check `power_ten' and `exponent_add'. */
-    exponent += power_ten + exponent_add;
+    exponent += exponent_add;
 
     if ( scaling )
     {
@@ -375,7 +358,7 @@
       }
       else
       {
-        if ( ( number / power_tens[fraction_length - 5] ) > 0x7FFFL )
+        if ( ( number >> 15 ) >= power_tens[fraction_length - 5] )
         {
           result   = FT_DivFix( number, power_tens[fraction_length - 4] );
           *scaling = exponent - 4;
@@ -414,7 +397,7 @@
       /* Convert into 16.16 format. */
       if ( fraction_length > 0 )
       {
-        if ( ( number / power_tens[fraction_length] ) > 0x7FFFL )
+        if ( ( number >> 15 ) >= power_tens[fraction_length] )
           goto Exit;
 
         result = FT_DivFix( number, power_tens[fraction_length] );
@@ -431,8 +414,7 @@
     }
 
   Exit:
-    if ( sign )
-      result = -result;
+    result *= sign;
 
     return result;
 
@@ -495,7 +477,7 @@
   static FT_Fixed
   do_fixed( CFF_Parser  parser,
             FT_Byte**   d,
-            FT_Long     scaling )
+            FT_Int      scaling )
   {
     if ( **d == 30 )
       return cff_parse_real( *d, parser->limit, scaling, NULL );
@@ -567,7 +549,7 @@
   static FT_Fixed
   cff_parse_fixed_scaled( CFF_Parser  parser,
                           FT_Byte**   d,
-                          FT_Long     scaling )
+                          FT_Int      scaling )
   {
     return do_fixed( parser, d, scaling );
   }
@@ -579,7 +561,7 @@
   static FT_Fixed
   cff_parse_fixed_dynamic( CFF_Parser  parser,
                            FT_Byte**   d,
-                           FT_Long*    scaling )
+                           FT_Int*     scaling )
   {
     FT_ASSERT( scaling );
 
@@ -632,9 +614,9 @@
     if ( parser->top >= parser->stack + 6 )
     {
       FT_Fixed  values[6];
-      FT_Long   scalings[6];
+      FT_Int    scalings[6];
 
-      FT_Long  min_scaling, max_scaling;
+      FT_Int   min_scaling = FT_INT_MAX, max_scaling = FT_INT_MIN;
       int      i;
 
 
@@ -645,9 +627,6 @@
       /* loss of precision, we use the magnitude of the largest matrix     */
       /* element to scale all other elements.  The scaling factor is then  */
       /* contained in the `units_per_em' value.                            */
-
-      max_scaling = FT_LONG_MIN;
-      min_scaling = FT_LONG_MAX;
 
       for ( i = 0; i < 6; i++ )
       {
@@ -667,7 +646,7 @@
            ( max_scaling - min_scaling ) > 9 )
       {
         FT_TRACE1(( "cff_parse_font_matrix:"
-                    " strange scaling values (minimum %ld, maximum %ld),\n",
+                    " strange scaling values (minimum %d, maximum %d),\n",
                     min_scaling, max_scaling ));
         FT_TRACE1(( "                      "
                     " using default matrix\n" ));

@@ -1533,8 +1533,10 @@
     /* read ALL deltas from the flat tuple */
     /* (region_count * num_deltas values)  */
 
-    /* a wrapped product would under-size `all_deltas` below */
-    if ( num_deltas != 0 && region_count > FT_UINT_MAX / num_deltas )
+    /* a wrapped product would under-size `all_deltas` below, */
+    /* check ***16-bit*** region_count                        */
+    if ( num_deltas   > 0x10001U                 &&
+         region_count > FT_UINT_MAX / num_deltas )
     {
       if ( accumulators != stack_accumulators )
         FT_FREE( accumulators );
