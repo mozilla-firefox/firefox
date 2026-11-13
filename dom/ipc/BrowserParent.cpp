@@ -1439,6 +1439,11 @@ void BrowserParent::MouseEnterIntoWidget() {
   mIsMouseEnterIntoWidgetEventSuppressed = true;
 }
 
+struct BrowserParent::SentMouseEventData {
+  nsID mUUID;
+  WidgetMouseEventCommand mCommand;
+};
+
 void BrowserParent::SendRealMouseEvent(WidgetMouseEvent& aMouseOrPointerEvent) {
   if (mIsDestroyed) {
     return;
@@ -1595,17 +1600,31 @@ void BrowserParent::SendRealMouseEvent(WidgetMouseEvent& aMouseOrPointerEvent) {
     return;
   }
 
+  nsID uuid = {};
+  if (aMouseOrPointerEvent.mCommand &&
+      StaticPrefs::dom_event_mouse_xbuttons_enabled()) {
+    MOZ_ASSERT(aMouseOrPointerEvent.mMessage == eMouseUp,
+               "mCommand should only be set for eMouseUp.");
+    MOZ_ASSERT(aMouseOrPointerEvent.mButton == MouseButton::eX1 ||
+                   aMouseOrPointerEvent.mButton == MouseButton::eX2,
+               "mCommand should only be set for X1/X2 button presses.");
+    uuid = nsID::GenerateUUID();
+    SentMouseEventData data{uuid, aMouseOrPointerEvent.mCommand};
+    mWaitingReplyMouseEvents.AppendElement(data);
+  }
+
   DebugOnly<bool> ret =
       isInputPriorityEventEnabled
           ? aMouseOrPointerEvent.mClass == ePointerEventClass
                 ? SendRealPointerButtonEvent(
                       *aMouseOrPointerEvent.AsPointerEvent(), guid, blockId)
-                : SendRealMouseButtonEvent(aMouseOrPointerEvent, guid, blockId)
+                : SendRealMouseButtonEvent(aMouseOrPointerEvent, guid, blockId,
+                                           uuid)
       : aMouseOrPointerEvent.mClass == ePointerEventClass
           ? SendNormalPriorityRealPointerButtonEvent(
                 *aMouseOrPointerEvent.AsPointerEvent(), guid, blockId)
           : SendNormalPriorityRealMouseButtonEvent(aMouseOrPointerEvent, guid,
-                                                   blockId);
+                                                   blockId, uuid);
   NS_WARNING_ASSERTION(ret, "SendRealMouseButtonEvent() failed");
   MOZ_ASSERT(!ret || aMouseOrPointerEvent.HasBeenPostedToRemoteProcess());
 }
@@ -2880,6 +2899,35 @@ mozilla::ipc::IPCResult BrowserParent::RecvReplyKeyEvent(
     }
   }
 
+  return IPC_OK();
+}
+
+mozilla::ipc::IPCResult BrowserParent::RecvReplyMouseEvent(bool aPreventDefault,
+                                                           const nsID& aUUID) {
+  MOZ_ASSERT(aUUID != nsID{}, "This should not be sent with zeroed UUID.");
+  // First, check that we are expecting a reply with the UUID
+  // and find the command we should execute as the default action.
+  WidgetMouseEventCommand command;
+  for (const size_t i : IntegerRange(mWaitingReplyMouseEvents.Length())) {
+    const SentMouseEventData& data = mWaitingReplyMouseEvents[i];
+    if (data.mUUID.Equals(aUUID)) {
+      command = data.mCommand;
+      mWaitingReplyMouseEvents.RemoveElementAt(i);
+      break;
+    }
+  }
+  if (NS_WARN_IF(!command)) {
+    return IPC_FAIL(this, "Didn't find mouse event.");
+  }
+  if (aPreventDefault) {
+    // Don't perform default action.
+    return IPC_OK();
+  }
+  RefPtr<nsIWidget> widget = GetWidget();
+  if (NS_WARN_IF(!widget)) {
+    return IPC_OK();
+  }
+  command.Run(widget);
   return IPC_OK();
 }
 

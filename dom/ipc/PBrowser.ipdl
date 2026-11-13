@@ -440,6 +440,18 @@ parent:
     async ReplyKeyEvent(WidgetKeyboardEvent aEvent, nsID aUUID);
 
     /**
+     * Send a reply of mouse event to the parent.  This is used for X1/X2
+     * button clicks which may navigate forward/backward if the default
+     * action is not prevented.
+     *
+     * @param aDefaultPrevented  Whether the default action of the event
+     *                           should be prevented.
+     * @param aUUID              The UUID which was generated when aEvent
+     *                           was sent to the remote process.
+     */
+    async ReplyMouseEvent(bool aDefaultPrevented, nsID aUUID);
+
+    /**
      * Retrieves edit commands for the key combination represented by aEvent.
      *
      * @param aType       One of NativeKeyBindingsType.
@@ -751,10 +763,12 @@ child:
     [Priority=input]
     async RealMouseButtonEvent(WidgetMouseEvent event,
                                ScrollableLayerGuid aGuid,
-                               uint64_t aInputBlockId);
+                               uint64_t aInputBlockId,
+                               nsID aUUID);
     async NormalPriorityRealMouseButtonEvent(WidgetMouseEvent event,
                                              ScrollableLayerGuid aGuid,
-                                             uint64_t aInputBlockId);
+                                             uint64_t aInputBlockId,
+                                             nsID aUUID);
 
     [Priority=input]
     async RealPointerButtonEvent(WidgetPointerEvent event,

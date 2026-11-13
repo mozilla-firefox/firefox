@@ -98,6 +98,7 @@
 #include "mozilla/ManualNAC.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/MediaFeatureChange.h"
+#include "mozilla/MiscEvents.h"
 #include "mozilla/MouseEvents.h"
 #include "mozilla/NullPrincipal.h"
 #include "mozilla/OriginAttributes.h"
@@ -10446,6 +10447,37 @@ NS_IMPL_ISUPPORTS(SynthesizedEventCallback, nsISynthesizedEventCallback)
 
 }  // namespace
 
+EventMessage nsContentUtils::ContentCommandFromString(const nsAString& aType) {
+  if (aType.EqualsLiteral("cut")) {
+    return eContentCommandCut;
+  }
+  if (aType.EqualsLiteral("copy")) {
+    return eContentCommandCopy;
+  }
+  if (aType.EqualsLiteral("paste")) {
+    return eContentCommandPaste;
+  }
+  if (aType.EqualsLiteral("delete")) {
+    return eContentCommandDelete;
+  }
+  if (aType.EqualsLiteral("undo")) {
+    return eContentCommandUndo;
+  }
+  if (aType.EqualsLiteral("redo")) {
+    return eContentCommandRedo;
+  }
+  if (aType.EqualsLiteral("insertText")) {
+    return eContentCommandInsertText;
+  }
+  if (aType.EqualsLiteral("replaceText")) {
+    return eContentCommandReplaceText;
+  }
+  if (aType.EqualsLiteral("pasteTransferable")) {
+    return eContentCommandPasteTransferable;
+  }
+  return eVoidEvent;
+}
+
 Result<bool, nsresult> nsContentUtils::SynthesizeMouseEvent(
     mozilla::PresShell* aPresShell, nsIWidget* aWidget, const nsAString& aType,
     LayoutDeviceIntPoint& aRefPoint,
@@ -10571,6 +10603,20 @@ Result<bool, nsresult> nsContentUtils::SynthesizeMouseEvent(
       aOptions.mIsDOMEventSynthesized;
   mouseOrPointerEvent.mExitFrom = std::move(exitFrom);
   mouseOrPointerEvent.mCallbackId = notifier.SaveCallback();
+  if (!aMouseEventData.mCommand.IsEmpty()) {
+    MOZ_ASSERT(XRE_IsParentProcess(),
+               "Command can only be specified from parent process.");
+    if (EventMessage contentCommand =
+            ContentCommandFromString(aMouseEventData.mCommand)) {
+      mouseOrPointerEvent.mCommand = contentCommand;
+    } else if (nsStaticAtom* atom =
+                   NS_GetStaticAtom(aMouseEventData.mCommand)) {
+      mouseOrPointerEvent.mCommand = atom;
+    } else {
+      MOZ_ASSERT_UNREACHABLE(
+          "Command should be a static atom or a valid content command.");
+    }
+  }
 
   nsPresContext* presContext = aPresShell->GetPresContext();
   if (!presContext) {

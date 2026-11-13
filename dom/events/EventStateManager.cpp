@@ -6537,6 +6537,20 @@ nsresult EventStateManager::PostHandleMouseUp(
     return NS_OK;
   }
 
+  // If the mouse up event goes to the content process, we will do the default
+  // X1/X2 mouse button action in BrowserParent::RecvReplyMouseEvent. However,
+  // if the event stays in the parent process, we need to do it now.
+  if (aMouseUpEvent->mCommand && XRE_IsParentProcess() &&
+      !aMouseUpEvent->HasBeenPostedToRemoteProcess() &&
+      !aMouseUpEvent->DefaultPrevented()) {
+    if (!mPresContext || NS_WARN_IF(!mPresContext->GetRootWidget())) {
+      return NS_OK;
+    }
+    nsCOMPtr widget = mPresContext->GetRootWidget();
+    aMouseUpEvent->mCommand.Run(widget);
+    return NS_OK;
+  }
+
   // Handle middle click paste if it's enabled and the mouse button is middle.
   if (aMouseUpEvent->mButton != MouseButton::eMiddle ||
       !WidgetMouseEvent::IsMiddleClickPasteEnabled()) {

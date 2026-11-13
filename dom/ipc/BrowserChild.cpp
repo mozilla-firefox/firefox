@@ -1531,7 +1531,7 @@ void BrowserChild::ProcessPendingCoalescedMouseDataAndDispatchEvents() {
       // other than mousemove.
       HandleRealMouseButtonEvent(*mouseOrPointerEvent,
                                  data->GetScrollableLayerGuid(),
-                                 data->GetInputBlockId());
+                                 data->GetInputBlockId(), data->GetUUID());
     }
   }
   // mCoalescedMouseEventFlusher may be destroyed when reentrying the event
@@ -1598,7 +1598,7 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEvent(
       // be moved again if there is no coalesced data yet when coalescing.
       pendingMouseMoveEvent.mCallbackId = aMouseEvent.mCallbackId;
       pendingMouseMoveEvent.convertToPointerRawUpdate = false;
-      data->Coalesce(pendingMouseMoveEvent, aGuid, aInputBlockId);
+      data->Coalesce(pendingMouseMoveEvent, aGuid, aInputBlockId, nsID{});
       mCoalescedMouseEventFlusher->StartObserver();
       HandleMouseRawUpdateEvent(pendingMouseMoveEvent, aGuid, aInputBlockId);
       return IPC_OK();
@@ -1628,7 +1628,7 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEvent(
     // coalescing.
     pendingMouseMoveEvent.mCallbackId = std::move(aMouseEvent.mCallbackId);
     pendingMouseMoveEvent.convertToPointerRawUpdate = false;
-    newData->Coalesce(pendingMouseMoveEvent, aGuid, aInputBlockId);
+    newData->Coalesce(pendingMouseMoveEvent, aGuid, aInputBlockId, nsID{});
 
     // Dispatch all pending mouse events which does NOT include aEvent.
     ProcessPendingCoalescedMouseDataAndDispatchEvents();
@@ -1639,7 +1639,7 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEvent(
     return IPC_OK();
   }
 
-  if (!RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId)) {
+  if (!RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId, nsID{})) {
     return IPC_FAIL_NO_REASON(this);
   }
   return IPC_OK();
@@ -1670,7 +1670,7 @@ void BrowserChild::HandleMouseRawUpdateEvent(
   // For avoiding to make the developers who watch the value with the debugger
   // confused, here sets it to `true`.
   mouseRawUpdateEvent.convertToPointerRawUpdate = true;
-  HandleRealMouseButtonEvent(mouseRawUpdateEvent, aGuid, aInputBlockId);
+  HandleRealMouseButtonEvent(mouseRawUpdateEvent, aGuid, aInputBlockId, nsID{});
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealMouseMoveEventNoCompress(
@@ -1695,7 +1695,7 @@ BrowserChild::RecvNormalPriorityRealMouseMoveEventNoCompress(
 mozilla::ipc::IPCResult BrowserChild::RecvSynthMouseMoveEvent(
     const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  if (!RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId)) {
+  if (!RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId, nsID{})) {
     return IPC_FAIL_NO_REASON(this);
   }
   return IPC_OK();
@@ -1709,7 +1709,8 @@ mozilla::ipc::IPCResult BrowserChild::RecvNormalPrioritySynthMouseMoveEvent(
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealMouseButtonEvent(
     const WidgetMouseEvent& aMouseOrPointerEvent,
-    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId) {
+    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId,
+    const nsID& aUUID) {
   MOZ_ASSERT(!aMouseOrPointerEvent.AsDragEvent());
   if (mCoalesceMouseMoveEvents && mCoalescedMouseEventFlusher &&
       aMouseOrPointerEvent.mMessage != eMouseMove) {
@@ -1731,25 +1732,26 @@ mozilla::ipc::IPCResult BrowserChild::RecvRealMouseButtonEvent(
     // listener.  Therefore, let's assert the allowing flag to convert it to
     // eMouseRawUpdate here.
     MOZ_ASSERT(aMouseOrPointerEvent.convertToPointerRawUpdate);
-    dispatchData->Coalesce(aMouseOrPointerEvent, aGuid, aInputBlockId);
+    dispatchData->Coalesce(aMouseOrPointerEvent, aGuid, aInputBlockId, aUUID);
 
     mToBeDispatchedMouseData.Push(dispatchData.release());
     ProcessPendingCoalescedMouseDataAndDispatchEvents();
     return IPC_OK();
   }
-  HandleRealMouseButtonEvent(aMouseOrPointerEvent, aGuid, aInputBlockId);
+  HandleRealMouseButtonEvent(aMouseOrPointerEvent, aGuid, aInputBlockId, aUUID);
   return IPC_OK();
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealPointerButtonEvent(
     const WidgetPointerEvent& aPointerEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseButtonEvent(aPointerEvent, aGuid, aInputBlockId);
+  return RecvRealMouseButtonEvent(aPointerEvent, aGuid, aInputBlockId, nsID{});
 }
 
 void BrowserChild::HandleRealMouseButtonEvent(
     const WidgetMouseEvent& aMouseOrPointerEvent,
-    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId) {
+    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId,
+    const nsID& aUUID) {
   MOZ_ASSERT(!aMouseOrPointerEvent.AsDragEvent());
 
   AutoSynthesizedEventResponder<WidgetMouseEvent> responder(
@@ -1792,7 +1794,7 @@ void BrowserChild::HandleRealMouseButtonEvent(
   InputAPZContext context2(aGuid, aInputBlockId, nsEventStatus_eSentinel,
                            postLayerization != nullptr);
 
-  DispatchWidgetEventViaAPZ(localEvent);
+  const nsEventStatus status = DispatchWidgetEventViaAPZ(localEvent);
 
   if (aInputBlockId && localEvent.mFlags.mHandledByAPZ && mAPZEventState) {
     mAPZEventState->ProcessMouseEvent(localEvent, aInputBlockId);
@@ -1806,32 +1808,39 @@ void BrowserChild::HandleRealMouseButtonEvent(
   if (postLayerization) {
     postLayerization->Register();
   }
+
+  if (aUUID != nsID{}) {
+    // Inform parent process that this event was handled.
+    SendReplyMouseEvent(status == nsEventStatus_eConsumeNoDefault, aUUID);
+  }
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvNormalPriorityRealMouseButtonEvent(
     const WidgetMouseEvent& aMouseOrPointerEvent,
-    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId) {
-  return RecvRealMouseButtonEvent(aMouseOrPointerEvent, aGuid, aInputBlockId);
+    const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId,
+    const nsID& aUUID) {
+  return RecvRealMouseButtonEvent(aMouseOrPointerEvent, aGuid, aInputBlockId,
+                                  aUUID);
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvNormalPriorityRealPointerButtonEvent(
     const WidgetPointerEvent& aPointerEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
   return RecvNormalPriorityRealMouseButtonEvent(aPointerEvent, aGuid,
-                                                aInputBlockId);
+                                                aInputBlockId, nsID{});
 }
 
 mozilla::ipc::IPCResult BrowserChild::RecvRealMouseEnterExitWidgetEvent(
     const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId);
+  return RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId, nsID{});
 }
 
 mozilla::ipc::IPCResult
 BrowserChild::RecvNormalPriorityRealMouseEnterExitWidgetEvent(
     const WidgetMouseEvent& aMouseEvent, const ScrollableLayerGuid& aGuid,
     const uint64_t& aInputBlockId) {
-  return RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId);
+  return RecvRealMouseButtonEvent(aMouseEvent, aGuid, aInputBlockId, nsID{});
 }
 
 nsEventStatus BrowserChild::DispatchWidgetEventViaAPZ(WidgetGUIEvent& aEvent) {

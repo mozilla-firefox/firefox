@@ -314,10 +314,12 @@ class BrowserChild final : public nsMessageManagerScriptExecutor,
   MOZ_CAN_RUN_SCRIPT_BOUNDARY
   mozilla::ipc::IPCResult RecvRealMouseButtonEvent(
       const mozilla::WidgetMouseEvent& aMouseOrPointerEvent,
-      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId,
+      const nsID& aUUID);
   mozilla::ipc::IPCResult RecvNormalPriorityRealMouseButtonEvent(
       const mozilla::WidgetMouseEvent& aMouseOrPointerEvent,
-      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId);
+      const ScrollableLayerGuid& aGuid, const uint64_t& aInputBlockId,
+      const nsID& aUUID);
 
   mozilla::ipc::IPCResult RecvRealPointerButtonEvent(
       const mozilla::WidgetPointerEvent& aPointerEvent,
@@ -666,7 +668,8 @@ class BrowserChild final : public nsMessageManagerScriptExecutor,
   MOZ_CAN_RUN_SCRIPT
   void HandleRealMouseButtonEvent(const WidgetMouseEvent& aMouseOrPointerEvent,
                                   const ScrollableLayerGuid& aGuid,
-                                  const uint64_t& aInputBlockId);
+                                  const uint64_t& aInputBlockId,
+                                  const nsID& aUUID);
 
   MOZ_CAN_RUN_SCRIPT
   void HandleRealTouchEvent(const WidgetTouchEvent& aEvent,

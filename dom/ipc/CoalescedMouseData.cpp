@@ -14,7 +14,8 @@ using namespace mozilla::dom;
 
 void CoalescedMouseData::Coalesce(const WidgetMouseEvent& aMouseOrPointerEvent,
                                   const ScrollableLayerGuid& aGuid,
-                                  const uint64_t& aInputBlockId) {
+                                  const uint64_t& aInputBlockId,
+                                  const nsID& aUUID) {
   MOZ_ASSERT_IF(aMouseOrPointerEvent.AsPointerEvent(),
                 aMouseOrPointerEvent.mMessage == eContextMenu);
   MOZ_ASSERT(!aMouseOrPointerEvent.AsDragEvent());
@@ -74,6 +75,11 @@ void CoalescedMouseData::Coalesce(const WidgetMouseEvent& aMouseOrPointerEvent,
     event->mPressure = aMouseOrPointerEvent.ComputeMouseButtonPressure();
     event->mFlags.mBubbles = false;
     event->mFlags.mCancelable = false;
+  }
+
+  if (aUUID != nsID{}) {
+    MOZ_ASSERT(mUUID == nsID{}, "Should only coalesce one event with a UUID.");
+    mUUID = aUUID;
   }
 }
 
