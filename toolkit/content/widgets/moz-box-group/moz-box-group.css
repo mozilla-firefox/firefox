@@ -33,12 +33,12 @@ position 0 won't have the .first class */
 }
 
 ::slotted(.first) {
-  --box-border-radius-start: var(--box-border-radius-inner);
+  --box-border-radius-start: var(--box-border-radius);
   --box-border-block-start: none;
 }
 
 ::slotted(.last) {
-  --box-border-radius-end: var(--box-border-radius-inner);
+  --box-border-radius-end: var(--box-border-radius);
   --box-border-block-end: none;
 }
 
