@@ -386,6 +386,63 @@ TEST_F(APZCPanningTester, StrayPanEndPreservesSmoothMsdScroll_Bug2033958) {
   EXPECT_EQ(apzc->GetFrameMetrics().GetVisualScrollOffset().y, 0);
 }
 
+// When content preventDefaults every event of a pan gesture, the zero-delta
+// pan-end that ends the gesture arrives after the gesture's block has been
+// interrupted, and gets a synthesized block of its own. Content lets that
+// block through, since a zero-delta event does not result in a DOM wheel event
+// that could be prevented. The momentum events that follow belong to the
+// prevented gesture, so they must not scroll.
+TEST_F(APZCPanningTester, StrayPanEndBlockDoesNotTakeMomentum_Bug2086786) {
+  MakeApzcWaitForMainThread();
+
+  FrameMetrics metrics = apzc->GetFrameMetrics();
+  metrics.SetCompositionBounds(ParentLayerRect(0, 0, 100, 100));
+  metrics.SetScrollableRect(CSSRect(0, 0, 100, 1000));
+  metrics.SetVisualScrollOffset(CSSPoint(0, 200));
+  metrics.SetIsRootContent(true);
+  apzc->SetFrameMetrics(metrics);
+
+  // Content prevents the pan-start, which interrupts its block.
+  APZEventResult result =
+      PanGesture(PanGestureInput::PANGESTURE_START, apzc,
+                 ScreenIntPoint(50, 50), ScreenPoint(0, 20), mcc->Time());
+  apzc->ConfirmTarget(result.mInputBlockId);
+  apzc->ContentReceivedInputBlock(result.mInputBlockId, true);
+
+  // The pan-update gets a new block, which content prevents as well.
+  mcc->AdvanceByMillis(10);
+  result = PanGesture(PanGestureInput::PANGESTURE_PAN, apzc,
+                      ScreenIntPoint(50, 50), ScreenPoint(0, 20), mcc->Time());
+  apzc->ConfirmTarget(result.mInputBlockId);
+  apzc->ContentReceivedInputBlock(result.mInputBlockId, true);
+  EXPECT_EQ(apzc->GetFrameMetrics().GetVisualScrollOffset().y, 200);
+
+  // The zero-delta pan-end gets a synthesized block, which content lets
+  // through.
+  mcc->AdvanceByMillis(10);
+  result = PanGesture(PanGestureInput::PANGESTURE_END, apzc,
+                      ScreenIntPoint(50, 50), ScreenPoint(0, 0), mcc->Time());
+  apzc->ConfirmTarget(result.mInputBlockId);
+  apzc->ContentReceivedInputBlock(result.mInputBlockId, false);
+  EXPECT_EQ(apzc->GetFrameMetrics().GetVisualScrollOffset().y, 200);
+
+  // The momentum which follows should not scroll, even before content has had
+  // a chance to prevent it.
+  mcc->AdvanceByMillis(10);
+  result = PanGesture(PanGestureInput::PANGESTURE_MOMENTUMSTART, apzc,
+                      ScreenIntPoint(50, 50), ScreenPoint(0, 20), mcc->Time());
+  EXPECT_EQ(apzc->GetFrameMetrics().GetVisualScrollOffset().y, 200);
+  apzc->ContentReceivedInputBlock(result.mInputBlockId, true);
+
+  mcc->AdvanceByMillis(10);
+  PanGesture(PanGestureInput::PANGESTURE_MOMENTUMPAN, apzc,
+             ScreenIntPoint(50, 50), ScreenPoint(0, 20), mcc->Time());
+  mcc->AdvanceByMillis(10);
+  PanGesture(PanGestureInput::PANGESTURE_MOMENTUMEND, apzc,
+             ScreenIntPoint(50, 50), ScreenPoint(0, 0), mcc->Time());
+  EXPECT_EQ(apzc->GetFrameMetrics().GetVisualScrollOffset().y, 200);
+}
+
 class APZCPanningTesterMock : public APZCTreeManagerTester {
  public:
   APZCPanningTesterMock() { CreateMockHitTester(); }
