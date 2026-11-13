@@ -3221,8 +3221,10 @@ class HTMLEditor final : public EditorBase,
   };
 
   /**
-   * GetTableCellElementAt() returns a <td> or <th> element of aTableElement
-   * if there is a cell at the indexes.
+   * Return a <td> or <th> element of aTableElement if there is a cell at the
+   * indexes.
+   *
+   * Be aware, this may return a generated table cell like tr::before.
    *
    * @param aTableElement       Must be a <table> element.
    * @param aCellIndexes        Indexes of cell which you want.
@@ -3233,11 +3235,26 @@ class HTMLEditor final : public EditorBase,
    *                            Returns nullptr without error if the indexes
    *                            are out of bounds.
    */
-  [[nodiscard]] inline Element* GetTableCellElementAt(
+  [[nodiscard]] inline Element* GetMaybeGeneratedTableCellElementAt(
       Element& aTableElement, const CellIndexes& aCellIndexes) const;
-  [[nodiscard]] Element* GetTableCellElementAt(Element& aTableElement,
-                                               int32_t aRowIndex,
-                                               int32_t aColumnIndex) const;
+
+  /**
+   * Return a <td> or <th> element of aTableElement if there is a cell at the
+   * indexes.
+   *
+   * Be aware, this may return a generated table cell like tr::before.
+   *
+   * @param aTableElement       Must be a <table> element.
+   * @param aCellIndexes        Indexes of cell which you want.
+   *                            If rowspan and/or colspan is specified 2 or
+   *                            larger, any indexes are allowed to retrieve
+   *                            the cell in the area.
+   * @return                    The cell element if there is in the <table>.
+   *                            Returns nullptr without error if the indexes
+   *                            are out of bounds.
+   */
+  [[nodiscard]] Element* GetMaybeGeneratedTableCellElementAt(
+      Element& aTableElement, int32_t aRowIndex, int32_t aColumnIndex) const;
 
   /**
    * GetSelectedOrParentTableElement() returns <td>, <th>, <tr> or <table>
