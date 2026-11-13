@@ -4,6 +4,8 @@
 
 /* global gSubDialog, gotoPref, confirmRestartPrompt, CONFIRM_RESTART_PROMPT_RESTART_NOW */
 
+import { ADDITIONAL_LOCATIONS_AVAILABLE } from "chrome://browser/content/ipprotection/ipprotection-constants.mjs";
+import { DefaultBrowserHelper } from "chrome://browser/content/preferences/DefaultBrowserHelper.mjs";
 import { SettingGroupManager } from "chrome://browser/content/preferences/config/SettingGroupManager.mjs";
 import { Preferences } from "chrome://global/content/preferences/Preferences.mjs";
 
@@ -1366,12 +1368,49 @@ SettingGroupManager.registerGroups({
         items: [{ id: "ipProtectionBandwidth", control: "bandwidth-usage" }],
       },
       {
-        id: "ipProtectionLinks",
-        control: "moz-box-link",
-        l10nId: "ip-protection-vpn-upgrade-link",
+        id: "ipProtectionMozVPNPromo",
+        control: "moz-promo",
+        l10nId: "ipprotection-locations-subview-promo",
         controlAttrs: {
-          href: "https://www.mozilla.org/products/vpn/?utm_medium=fx-desktop&utm_campaign=fx-vpn&utm_source=settings",
+          imagealignment: "end",
+          imagesrc:
+            "chrome://browser/content/ipprotection/assets/mozilla-vpn-promo.svg",
+          type: "vibrant",
         },
+        items: [
+          {
+            id: "mozVPNPromoButton",
+            l10nId: "ipprotection-locations-subview-promo-button",
+            control: "moz-button",
+            slot: "actions",
+            controlAttrs: {
+              type: "primary",
+            },
+          },
+        ],
+      },
+      {
+        id: "ipProtectionSetToDefaultPromo",
+        control: "moz-promo",
+        l10nId: "ipprotection-locations-subview-set-default-promo",
+        l10nArgs: { count: ADDITIONAL_LOCATIONS_AVAILABLE },
+        controlAttrs: {
+          imagealignment: "end",
+          imagesrc:
+            "chrome://browser/content/ipprotection/assets/location-pin.svg",
+          type: "vibrant",
+        },
+        items: [
+          {
+            id: "setToDefaultPromoButton",
+            l10nId: "ipprotection-locations-subview-set-default-promo-button",
+            control: "moz-button",
+            slot: "actions",
+            controlAttrs: {
+              type: "primary",
+            },
+          },
+        ],
       },
     ],
   },
@@ -1932,6 +1971,79 @@ Preferences.addSetting({
   deps: IPP_NOT_OPTED_IN_DEPS,
   visible: ipProtectionNotOptedInVisible(true),
   onUserClick: enrollFromIPProtectionSettings,
+});
+Preferences.addSetting({
+  id: "ipProtectionIsDefaultBrowser",
+  setup: emitChange => {
+    if (!DefaultBrowserHelper.canCheck) {
+      return undefined;
+    }
+    return DefaultBrowserHelper.pollForDefaultChanges(emitChange);
+  },
+  get: () =>
+    DefaultBrowserHelper.canCheck && DefaultBrowserHelper.isBrowserDefault,
+});
+Preferences.addSetting({
+  id: "ipProtectionMozVPNPromo",
+  deps: [
+    "ipProtectionVisible",
+    "ipProtectionNotOptedIn",
+    "ipProtectionSubscribedToVpn",
+    "ipProtectionUpgradeNotAvailable",
+    "ipProtectionIsDefaultBrowser",
+  ],
+  visible: ({
+    ipProtectionVisible,
+    ipProtectionNotOptedIn,
+    ipProtectionSubscribedToVpn,
+    ipProtectionUpgradeNotAvailable,
+    ipProtectionIsDefaultBrowser,
+  }) =>
+    ipProtectionVisible.value &&
+    !ipProtectionNotOptedIn.value &&
+    !ipProtectionSubscribedToVpn.value &&
+    !ipProtectionUpgradeNotAvailable.value &&
+    (!DefaultBrowserHelper.canCheck || ipProtectionIsDefaultBrowser.value),
+});
+Preferences.addSetting({
+  id: "ipProtectionSetToDefaultPromo",
+  deps: [
+    "ipProtectionVisible",
+    "ipProtectionNotOptedIn",
+    "ipProtectionSubscribedToVpn",
+    "ipProtectionIsDefaultBrowser",
+  ],
+  visible: ({
+    ipProtectionVisible,
+    ipProtectionNotOptedIn,
+    ipProtectionSubscribedToVpn,
+    ipProtectionIsDefaultBrowser,
+  }) =>
+    ipProtectionVisible.value &&
+    !ipProtectionNotOptedIn.value &&
+    !ipProtectionSubscribedToVpn.value &&
+    DefaultBrowserHelper.canCheck &&
+    !ipProtectionIsDefaultBrowser.value &&
+    Services.policies.isAllowed("setDefaultBrowser") &&
+    !Services.prefs.prefIsLocked("pref.general.disable_button.default_browser"),
+});
+Preferences.addSetting({
+  id: "mozVPNPromoButton",
+  onUserClick() {
+    window.browsingContext.topChromeWindow.openTrustedLinkIn(
+      "https://www.mozilla.org/products/vpn/?utm_medium=fx-desktop&utm_campaign=fx-vpn&utm_source=settings",
+      "tab"
+    );
+  },
+});
+Preferences.addSetting({
+  id: "setToDefaultPromoButton",
+  deps: ["ipProtectionIsDefaultBrowser"],
+  onUserClick(_, { ipProtectionIsDefaultBrowser }) {
+    DefaultBrowserHelper.setDefaultBrowser().then(
+      ipProtectionIsDefaultBrowser.onChange
+    );
+  },
 });
 
 Preferences.addSetting({
