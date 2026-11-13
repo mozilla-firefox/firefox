@@ -83,7 +83,7 @@ pub trait DomTraversal<E: TElement>: Sync {
     ///
     /// The only communication between siblings is that they both
     /// fetch-and-subtract the parent's children count. This makes it safe to
-    /// call durign the parallel traversal.
+    /// call during the parallel traversal.
     fn handle_postorder_traversal(
         &self,
         context: &mut StyleContext<E>,
