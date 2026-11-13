@@ -364,6 +364,23 @@ void ChromeProcessController::NotifyScaleGestureComplete(
   }
 }
 
+void ChromeProcessController::NotifyTouchSwipableDirections(
+    uint64_t aInputBlockId, SideBits aSwipableDirections) {
+  // mWidget is cleared on mUIThread in Destroy(), so it must only be read on
+  // mUIThread.
+  if (!mUIThread->IsOnCurrentThread()) {
+    mUIThread->Dispatch(NewRunnableMethod<uint64_t, SideBits>(
+        "layers::ChromeProcessController::NotifyTouchSwipableDirections", this,
+        &ChromeProcessController::NotifyTouchSwipableDirections, aInputBlockId,
+        aSwipableDirections));
+    return;
+  }
+
+  if (mWidget) {
+    // TODO: Pass the swipable directions to the widget.
+  }
+}
+
 nsIFrame* ChromeProcessController::GetWidgetFrame() const {
   return mWidget ? mWidget->GetFrame() : nullptr;
 }

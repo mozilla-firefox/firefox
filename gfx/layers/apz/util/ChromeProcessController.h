@@ -81,6 +81,8 @@ class ChromeProcessController : public mozilla::layers::GeckoContentController {
   void CancelAutoscroll(const ScrollableLayerGuid& aGuid) override;
   void NotifyScaleGestureComplete(const ScrollableLayerGuid& aGuid,
                                   float aScale) override;
+  void NotifyTouchSwipableDirections(uint64_t aInputBlockId,
+                                     SideBits aSwipableDirections) override;
 
   PresShell* GetTopLevelPresShell() const override { return GetPresShell(); }
 

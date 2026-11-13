@@ -28,7 +28,10 @@ static mozilla::LazyLogModule sApzInpLog("apz.inputqueue");
 namespace mozilla {
 namespace layers {
 
-InputQueue::InputQueue() = default;
+InputQueue::InputQueue(
+    TouchSwipableDirectionsCallback&& aTouchSwipableDirectionsCallback)
+    : mTouchSwipableDirectionsCallback(
+          std::move(aTouchSwipableDirectionsCallback)) {}
 
 InputQueue::~InputQueue() { mQueuedInputs.Clear(); }
 

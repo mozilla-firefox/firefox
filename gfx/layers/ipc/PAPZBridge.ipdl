@@ -15,6 +15,7 @@ using mozilla::layers::ScrollableLayerGuid::ViewID from "mozilla/layers/Scrollab
 using struct mozilla::layers::APZEventResult from "mozilla/layers/APZBridge.h";
 using struct mozilla::layers::APZHandledResult from "mozilla/layers/APZBridge.h";
 using mozilla::layers::BrowserGestureResponse from "mozilla/layers/APZBridge.h";
+using mozilla::SideBits from "mozilla/gfx/Types.h";
 
 using mozilla::EventMessage from "mozilla/EventForwards.h";
 using mozilla::Modifiers from "mozilla/EventForwards.h";
@@ -129,6 +130,9 @@ child:
   async UpdateOverscrollOffset(ScrollableLayerGuid aGuid, float aX, float aY, bool aIsRootContent);
 
   async HideDynamicToolbar();
+
+  async NotifyTouchSwipableDirections(uint64_t aInputBlockId,
+                               SideBits aSwipableDirections);
 };
 
 } // namespace gfx

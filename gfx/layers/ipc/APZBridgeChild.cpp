@@ -585,5 +585,29 @@ mozilla::ipc::IPCResult APZBridgeChild::RecvHideDynamicToolbar() {
   return IPC_OK();
 }
 
+void APZBridgeChild::NotifyTouchSwipableDirectionsOnMainThread(
+    uint64_t aInputBlockId, SideBits aSwipableDirections) {
+  MOZ_RELEASE_ASSERT(NS_IsMainThread());
+
+  if (RefPtr<GeckoContentController> controller = GetContentController()) {
+    controller->NotifyTouchSwipableDirections(aInputBlockId,
+                                              aSwipableDirections);
+  }
+}
+
+mozilla::ipc::IPCResult APZBridgeChild::RecvNotifyTouchSwipableDirections(
+    const uint64_t& aInputBlockId, const SideBits& aSwipableDirections) {
+  if (NS_IsMainThread()) {
+    NotifyTouchSwipableDirectionsOnMainThread(aInputBlockId,
+                                              aSwipableDirections);
+  } else {
+    NS_DispatchToMainThread(NewRunnableMethod<uint64_t, SideBits>(
+        "layers::APZBridgeChild::NotifyTouchSwipableDirectionsOnMainThread",
+        this, &APZBridgeChild::NotifyTouchSwipableDirectionsOnMainThread,
+        aInputBlockId, aSwipableDirections));
+  }
+  return IPC_OK();
+}
+
 }  // namespace layers
 }  // namespace mozilla

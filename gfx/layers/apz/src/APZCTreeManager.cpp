@@ -278,7 +278,14 @@ APZCTreeManager::APZCTreeManager(LayersId aRootLayersId,
                                  CSSToLayoutDeviceScale aWidgetScale,
                                  UniquePtr<IAPZHitTester> aHitTester)
     : mTestSampleTime(Nothing(), "APZCTreeManager::mTestSampleTime"),
-      mInputQueue(new InputQueue()),
+      mInputQueue(new InputQueue([aRootLayersId](uint64_t aInputBlockId,
+                                                 SideBits aSwipableDirections) {
+        if (RefPtr<GeckoContentController> controller =
+                GetContentController(aRootLayersId)) {
+          controller->NotifyTouchSwipableDirections(aInputBlockId,
+                                                    aSwipableDirections);
+        }
+      })),
       mMapLock("APZCMapLock"),
       mRootLayersId(aRootLayersId),
       mSampler(nullptr),

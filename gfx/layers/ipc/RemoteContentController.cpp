@@ -364,6 +364,29 @@ void RemoteContentController::HideDynamicToolbar(
   }
 }
 
+void RemoteContentController::NotifyTouchSwipableDirections(
+    uint64_t aInputBlockId, SideBits aSwipableDirections) {
+  // This is only called on the controller for the root layers id, which is a
+  // RemoteContentController only in the GPU process. In the parent process,
+  // the root controller is a ChromeProcessController.
+  MOZ_ASSERT(XRE_IsGPUProcess());
+
+  // Note APZBridgeParent is bound to the main thread (See PAPZBridge.ipdl).
+  if (!NS_IsMainThread()) {
+    NS_DispatchToMainThread(NewRunnableMethod<uint64_t, SideBits>(
+        "layers::RemoteContentController::NotifyTouchSwipableDirections", this,
+        &RemoteContentController::NotifyTouchSwipableDirections, aInputBlockId,
+        aSwipableDirections));
+    return;
+  }
+
+  auto bridge = CompositorBridgeParent::GetApzBridgeParentForRoot(mLayersId);
+  if (bridge) {
+    (void)bridge->SendNotifyTouchSwipableDirections(aInputBlockId,
+                                                    aSwipableDirections);
+  }
+}
+
 void RemoteContentController::NotifyMozMouseScrollEvent(
     const ScrollableLayerGuid::ViewID& aScrollId, const nsString& aEvent) {
   if (!mCompositorThread->IsOnCurrentThread()) {

@@ -5,6 +5,8 @@
 #ifndef mozilla_layers_InputBlockState_h
 #define mozilla_layers_InputBlockState_h
 
+#include <functional>
+
 #include "InputData.h"  // for MultiTouchInput
 #include "Units.h"
 #include "apz/src/OverscrollHandoffState.h"
@@ -34,6 +36,9 @@ class PinchGestureBlockState;
 class KeyboardBlockState;
 class InputQueueIterator;
 enum class BrowserGestureResponse : bool;
+
+using TouchSwipableDirectionsCallback =
+    std::function<void(uint64_t aInputBlockId, SideBits aSwipableDirections)>;
 
 /**
  * A base class that stores state common to various input blocks.

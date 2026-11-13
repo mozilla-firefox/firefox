@@ -68,6 +68,9 @@ class RemoteContentController final : public GeckoContentController,
 
   void HideDynamicToolbar(const ScrollableLayerGuid& aGuid) override;
 
+  void NotifyTouchSwipableDirections(uint64_t aInputBlockId,
+                                     SideBits aSwipableDirections) override;
+
   void NotifyMozMouseScrollEvent(const ScrollableLayerGuid::ViewID& aScrollId,
                                  const nsString& aEvent) override;
 

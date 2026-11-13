@@ -169,6 +169,17 @@ class GeckoContentController {
   }
   virtual void HideDynamicToolbar(const ScrollableLayerGuid& aGuid) {}
 
+  /**
+   * Notify the widget of the directions in which a touch swipe-to-navigate
+   * gesture is allowed for the input block |aInputBlockId|, once the
+   * information needed to decide it is available. Only called on the
+   * controller for the root layers id. Handled in the parent process by
+   * ChromeProcessController. In the GPU process, RemoteContentController
+   * forwards it to the parent process.
+   */
+  virtual void NotifyTouchSwipableDirections(uint64_t aInputBlockId,
+                                             SideBits aSwipableDirections) {}
+
   GeckoContentController() = default;
 
   /**

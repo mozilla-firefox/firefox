@@ -78,6 +78,9 @@ class APZBridgeChild : public PAPZBridgeChild, public APZBridge {
 
   mozilla::ipc::IPCResult RecvHideDynamicToolbar();
 
+  mozilla::ipc::IPCResult RecvNotifyTouchSwipableDirections(
+      const uint64_t& aInputBlockId, const SideBits& aSwipableDirections);
+
  protected:
   void ProcessUnhandledEvent(LayoutDeviceIntPoint* aRefPoint,
                              ScrollableLayerGuid* aOutTargetGuid,
@@ -121,6 +124,9 @@ class APZBridgeChild : public PAPZBridgeChild, public APZBridge {
                                           bool aIsRootContent);
 
   void HideDynamicToolbarOnMainThread();
+
+  void NotifyTouchSwipableDirectionsOnMainThread(uint64_t aInputBlockId,
+                                                 SideBits aSwipableDirections);
 
   // Returns null if the compositor session has already been torn down.
   GeckoContentController* GetContentController();
