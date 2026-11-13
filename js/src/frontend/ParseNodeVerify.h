@@ -16,9 +16,8 @@ namespace frontend {
 
 class ParseNode;
 
-// In most builds, examine the given ParseNode and crash if it's not
-// well-formed. (In late beta and shipping builds of Firefox, this does
-// nothing.)
+// In debug builds, examine the given ParseNode and crash if it's not
+// well-formed.
 //
 // This returns true on success, and false only if we hit the recursion limit.
 // If the ParseNode is actually bad, we crash.

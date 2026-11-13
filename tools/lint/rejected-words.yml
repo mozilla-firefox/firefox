@@ -356,3 +356,22 @@ forbid-moduleloaderbase-include:
         - dom/worklet/loader/WorkletModuleLoader.h
         - js/xpconnect/loader/SyncModuleLoader.h
         - js/xpconnect/loader/NonSharedGlobalSyncModuleLoaderScope.h
+
+avoid-early-beta-or-earlier:
+    description: >-
+        EARLY_BETA_OR_EARLIER no longer exists. Use NIGHTLY_BUILD, or
+        NIGHTLY_BUILD || MOZ_DEV_EDITION for features that also need Developer
+        Edition testing.
+    level: error
+    include: ['.']
+    type: external
+    payload: mozcheck:lint
+    setup: mozcheck:setup
+    check: rejected-words
+    check-config:
+        regex-pattern: early_?beta_?or_?earlier
+        ignore-case: true
+    support-files:
+        - 'tools/lint/mozcheck/**'
+    exclude:
+        - tools/lint/rejected-words.yml

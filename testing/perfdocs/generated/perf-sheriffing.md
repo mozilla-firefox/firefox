@@ -404,7 +404,7 @@ For **improvements**, the general approach is to leave needinfos for the authors
 
 #### 2.13.2 Release Flag Changes and Version Bumps on mozilla-beta
 
-Alerts caused by modifying release flags (`EARLY_BETA_OR_EARLIER`) or bumping the Firefox version are generated on mozilla-beta and have no bugs associated with the revisions:
+Alerts caused by modifying release flags or bumping the Firefox version are generated on mozilla-beta and have no bugs associated with the revisions:
 
 1. Check the milestone version in the changeset details.
 2. Check if a bug was already created for this milestone version.

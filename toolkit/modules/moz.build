@@ -325,7 +325,6 @@ for var in (
 for var in (
     "NIGHTLY_BUILD",
     "RELEASE_OR_BETA",
-    "EARLY_BETA_OR_EARLIER",
     "MOZ_ESR",
     "ACCESSIBILITY",
     "MOZILLA_OFFICIAL",

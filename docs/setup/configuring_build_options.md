@@ -296,11 +296,6 @@ with Debug Symbols](building_with_debug_symbols.md).
 - `beta`
 - `release`
 
-`early-beta` and `late-beta` are deprecated aliases of `beta`, accepted only
-transitionally so that existing mozconfigs keep working. The distinct early and
-late beta periods are being phased out, so both do exactly what `beta` does.
-Update your mozconfig to `--as-milestone=beta`; the aliases will be removed.
-
 ### Tests
 
 `ac_add_options --disable-tests`

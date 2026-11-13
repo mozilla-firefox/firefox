@@ -31,7 +31,7 @@ work directly top-down)
 -  ☐ Ship the feature:
     -  ☐ Default the preference to true.
     -  ☐ Double check for any code that is currently `NIGHTLY_BUILD` that should now be built unconditionally, e.g. in `js/src/vm/JSObject.cpp`.
-         You may want to run a [central as beta simulation](https://wiki.mozilla.org/Sheriffing/How_To/Beta_simulations#TRUNK_AS_EARLY_BETA)
+         You may want to run a [central as beta simulation](https://wiki.mozilla.org/Sheriffing/How_To/Beta_simulations#TRUNK_AS_BETA)
          to make sure you've caught any lingering `NIGHTLY_BUILD` parts.
     -  ☐ Update `js/xpconnect/tests/chrome/test_xrayToJS.xhtml` for any changes to existing global objects. This is a mochitest, you need to run `mach test js/xpconnect/tests/chrome/test_xrayToJS.xhtml`.
     -  ☐ For new globals, the following tests also need updates:

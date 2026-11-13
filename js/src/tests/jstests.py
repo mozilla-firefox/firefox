@@ -593,8 +593,6 @@ def load_wpt_tests(xul_tester, requested_paths, excluded_paths, update_manifest=
     release_or_beta = xul_tester.test("getBuildConfiguration('release_or_beta')")
     run_info["release_or_beta"] = release_or_beta
     run_info["nightly_build"] = not release_or_beta
-    # Still referenced by WPT metadata (wasm/jsapi/memory/constructor.any.js.ini).
-    run_info["early_beta_or_earlier"] = not release_or_beta
 
     path_filter = testloader.TestFilter(
         test_manifests, include=requested_paths, exclude=excluded_paths

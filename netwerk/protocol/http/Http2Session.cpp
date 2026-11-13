@@ -1291,7 +1291,6 @@ bool Http2Session::VerifyStream(Http2StreamBase* aStream,
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
 
 #ifndef MOZ_DIAGNOSTIC_ASSERT_ENABLED
-  // Only do the real verification in early beta builds
   return true;
 #else   // MOZ_DIAGNOSTIC_ASSERT_ENABLED
 

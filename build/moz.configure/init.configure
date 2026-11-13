@@ -1038,12 +1038,10 @@ def version_path(path):
 # This is useful for performance profiling, as there are things that we don't
 # enable in release (like the background hang monitor) that can affect
 # performance.
-# "early-beta" and "late-beta" are deprecated aliases of "beta" (bug 2051729)
-# and will be removed.
 option(
     "--as-milestone",
     help="Build with another milestone configuration (e.g., as release)",
-    choices=("beta", "early-beta", "late-beta", "release"),
+    choices=("beta", "release"),
     default=None,
 )
 
@@ -1093,14 +1091,7 @@ def milestone(build_env, build_project, version_path, as_milestone, _):
         if "a1" not in versions[0]:
             # We could make this work with some effort
             die("--as-milestone only works on nightly builds")
-        as_milestone = as_milestone[0]
-        if as_milestone in ("early-beta", "late-beta"):
-            log.warning(
-                "--as-milestone=%s is deprecated now that the distinct early and "
-                "late beta periods are being phased out. Use --as-milestone=beta.",
-                as_milestone,
-            )
-        as_milestone_flag = "" if as_milestone == "release" else "b1"
+        as_milestone_flag = "" if as_milestone[0] == "release" else "b1"
         versions = [v.replace("a1", as_milestone_flag) for v in versions]
 
     milestone, firefox_version, firefox_version_display = versions[:3]
@@ -1135,9 +1126,6 @@ def milestone(build_env, build_project, version_path, as_milestone, _):
         symbolversion="%s%s" % (major_version, ab_patch),
         is_nightly=is_nightly,
         is_release_or_beta=is_release_or_beta,
-        # EARLY_BETA_OR_EARLIER is an alias for NIGHTLY_BUILD, pending its
-        # removal in bug 2052054.
-        is_early_beta_or_earlier=is_nightly,
         is_esr=app_version_display.endswith("esr") or None,
         app_version=app_version,
         app_version_display=app_version_display,
@@ -1168,8 +1156,6 @@ set_config("RELEASE_OR_BETA", milestone.is_release_or_beta)
 set_define("RELEASE_OR_BETA", milestone.is_release_or_beta)
 set_config("MOZ_ESR", milestone.is_esr)
 set_define("MOZ_ESR", milestone.is_esr)
-set_config("EARLY_BETA_OR_EARLIER", milestone.is_early_beta_or_earlier)
-set_define("EARLY_BETA_OR_EARLIER", milestone.is_early_beta_or_earlier)
 set_define("MOZILLA_VERSION", depends(milestone)(lambda m: '"%s"' % m.version))
 set_config("MOZILLA_VERSION", milestone.version)
 set_define("MOZILLA_UAVERSION", depends(milestone)(lambda m: '"%s"' % m.uaversion))

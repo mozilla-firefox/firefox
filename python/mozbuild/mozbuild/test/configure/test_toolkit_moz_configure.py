@@ -99,29 +99,18 @@ class TestToolkitMozConfigure(BaseConfigureTest):
     def test_developer_options_release(self):
         self.test_developer_options("42.0")
 
-    def get_milestone(self, args=[]):
-        sandbox = self.get_sandbox({}, {}, args, {})
-        return sandbox._value_for(sandbox["milestone"])
-
-    def test_early_beta_or_earlier(self, milestone="42.0a1"):
-        milestone_path = os.path.join(topsrcdir, "config", "milestone.txt")
-        with MockedOpen({milestone_path: milestone}):
-            m = self.get_milestone()
-            self.assertIn(m.is_early_beta_or_earlier, (True, None))
-            self.assertEqual(m.is_early_beta_or_earlier, m.is_nightly)
-
-    def test_early_beta_or_earlier_beta(self):
-        self.test_early_beta_or_earlier("42.0b1")
-
-    def test_early_beta_or_earlier_release(self):
-        self.test_early_beta_or_earlier("42.0")
-
-    def test_as_milestone_never_enables_early_beta_or_earlier(self):
+    def test_as_milestone(self):
         milestone_path = os.path.join(topsrcdir, "config", "milestone.txt")
         with MockedOpen({milestone_path: "42.0a1"}):
-            for as_milestone in ("beta", "early-beta", "late-beta", "release"):
-                m = self.get_milestone([f"--as-milestone={as_milestone}"])
-                self.assertIsNone(m.is_early_beta_or_earlier, as_milestone)
+            for as_milestone in ("beta", "release"):
+                sandbox = self.get_sandbox(
+                    {}, {}, [f"--as-milestone={as_milestone}"], {}
+                )
+                m = sandbox._value_for(sandbox["milestone"])
+                self.assertIsNone(m.is_nightly)
+                self.assertTrue(m.is_release_or_beta)
+            with self.assertRaises(InvalidOptionError):
+                self.get_sandbox({}, {}, ["--as-milestone=bogus"], {})
 
     def test_wasm_flags(self):
         def get_values(environ={}):

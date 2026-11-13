@@ -169,20 +169,6 @@
 #define IS_NOT_MOZILLA_OFFICIAL true
 #endif
 
-#ifdef EARLY_BETA_OR_EARLIER
-#define IS_EARLY_BETA_OR_EARLIER true
-#define IS_NOT_EARLY_BETA_OR_EARLIER false
-#else
-#define IS_EARLY_BETA_OR_EARLIER false
-#define IS_NOT_EARLY_BETA_OR_EARLIER true
-#endif
-
-#if defined(MOZ_DEV_EDITION) || defined(EARLY_BETA_OR_EARLIER)
-#define IS_DEV_EDITION_OR_EARLY_BETA_OR_EARLIER true
-#else
-#define IS_DEV_EDITION_OR_EARLY_BETA_OR_EARLIER false
-#endif
-
 #ifdef ANDROID
 #define IS_ANDROID true
 #define IS_NOT_ANDROID false
