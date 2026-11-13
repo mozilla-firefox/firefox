@@ -652,21 +652,11 @@ add_task(async function test_history_context_menu() {
   );
 
   info("Open link in new tab.");
-  const newTabPromise = BrowserTestUtils.waitForNewTab(
-    window.gBrowser,
-    url,
-    true
+  await assertOpenInNewTabRespectsLoadInBackground(
+    rows[0].mainEl,
+    "sidebar-history-context-open-in-tab",
+    url
   );
-  await openAndWaitForContextMenu(contextMenu, rows[0].mainEl, () =>
-    contextMenu.activateItem(getItem("open-in-tab"))
-  );
-  const newTab = await newTabPromise;
-  is(
-    window.gBrowser.tabs[window.gBrowser.tabs.length - 1],
-    newTab,
-    "New tab opened in background"
-  );
-  BrowserTestUtils.removeTab(newTab);
 
   info("Clear all data from website");
   let dialogOpened = BrowserTestUtils.promiseAlertDialogOpen(

@@ -376,7 +376,20 @@ add_task(async function test_bookmarks_context_menu_bookmark() {
     "Show in Folder is hidden when not searching."
   );
 
+  const promiseHidden = BrowserTestUtils.waitForPopupEvent(
+    contextMenu,
+    "hidden"
+  );
   contextMenu.hidePopup();
+  await promiseHidden;
+
+  info("Open bookmark in new tab.");
+  await assertOpenInNewTabRespectsLoadInBackground(
+    row.mainEl,
+    "sidebar-bookmarks-context-open-in-tab",
+    row.url
+  );
+
   await PlacesUtils.bookmarks.remove(bm);
   SidebarTestUtils.closePanel(window);
 });

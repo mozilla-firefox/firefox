@@ -654,7 +654,11 @@ export class SidebarBookmarks extends SidebarPage {
         label = "sort_bookmarks_by_name";
         break;
       case "sidebar-bookmarks-context-open-in-tab":
-        this.topWindow.openTrustedLinkIn(this.triggerNode.url, "tab");
+        this.topWindow.openTrustedLinkIn(this.triggerNode.url, "tab", {
+          inBackground: Services.prefs.getBoolPref(
+            "browser.tabs.loadInBackground"
+          ),
+        });
         label = "open_in_new_tab";
         break;
       case "sidebar-bookmarks-context-open-in-window":

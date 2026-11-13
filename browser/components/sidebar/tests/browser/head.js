@@ -195,6 +195,46 @@ async function activateContextMenuItem(triggerEl, menuItemId, callback) {
   await promiseHidden;
 }
 
+/**
+ * Activate an "Open in New Tab" context menu item with
+ * browser.tabs.loadInBackground set to true and then false, checking that the
+ * new tab opens in the background and foreground respectively.
+ *
+ * @param {Element} triggerEl
+ *   The element to right-click.
+ * @param {string} menuItemId
+ *   The id of the "Open in New Tab" `<menuitem>`.
+ * @param {string} url
+ *   The URL expected to load in the new tab.
+ */
+async function assertOpenInNewTabRespectsLoadInBackground(
+  triggerEl,
+  menuItemId,
+  url
+) {
+  const selectedTabAtStart = gBrowser.selectedTab;
+  for (const loadInBackground of [true, false]) {
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.tabs.loadInBackground", loadInBackground]],
+    });
+    const promiseNewTab = BrowserTestUtils.waitForNewTab(gBrowser, url, true);
+    await activateContextMenuItem(triggerEl, menuItemId);
+    const newTab = await promiseNewTab;
+    Assert.equal(
+      gBrowser.selectedTab,
+      loadInBackground ? selectedTabAtStart : newTab,
+      `With loadInBackground=${loadInBackground}, the new tab opens in the ${
+        loadInBackground ? "background" : "foreground"
+      }.`
+    );
+    if (gBrowser.selectedTab != selectedTabAtStart) {
+      await BrowserTestUtils.switchTab(gBrowser, selectedTabAtStart);
+    }
+    BrowserTestUtils.removeTab(newTab);
+    await SpecialPowers.popPrefEnv();
+  }
+}
+
 function isActiveElement(el) {
   return el.getRootNode().activeElement == el;
 }
