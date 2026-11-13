@@ -1262,7 +1262,11 @@ class MOZ_RAII LineClampLineIterator {
         mEnteredLastFrameToExit(aFrame == aLastFrameToExit),
         mRootMaxBSize(aRootMaxBSize),
         mCurrentFrameOffset{aFrame->LinesBegin() == mEnd ? nullptr : aFrame,
-                            aFrame->LinesBegin(), 0, 0, CollapsingMargin()} {
+                            aFrame->LinesBegin(),
+                            0,
+                            0,
+                            0,
+                            CollapsingMargin()} {
     if (mCurrentFrameOffset.mCurrentLine != mEnd &&
         !mCurrentFrameOffset.mCurrentLine->IsInline()) {
       Advance();
@@ -1276,8 +1280,19 @@ class MOZ_RAII LineClampLineIterator {
                                       : nullptr;
   }
   nsBlockFrame* GetCurrentFrame() { return mCurrentFrameOffset.mFrame; }
-  nscoord GetCurrentFrameBOffset() const {
-    return mCurrentFrameOffset.mConsumedBSize;
+  // Returns all values taking up BSize starting from mFrame to the current
+  // frame, meaning current frame's block start, block end border and padding,
+  // and block end margins. Block start border, padding, and margins are
+  // included in the current line's block end, so are not included here.
+  nscoord GetUsedBSize() const {
+    return mCurrentFrameOffset.mCurrentBlockBStart +
+           mCurrentFrameOffset.mAccumulatedBEndBP;
+  }
+  nscoord GetCurrentFrameBStart() const {
+    return mCurrentFrameOffset.mCurrentBlockBStart;
+  }
+  nscoord GetAccumulatedBEndBP() const {
+    return mCurrentFrameOffset.mAccumulatedBEndBP;
   }
   nscoord GetBEndMargins() const {
     return mCurrentFrameOffset.mCollapsedMargins +
@@ -1316,9 +1331,9 @@ class MOZ_RAII LineClampLineIterator {
         "Don't call Next() when the iterator is at the end");
     nsLineBox* line = GetCurrentLine();
     if (!mRootMaxBSize || !line->IsEmpty() || line->BSize() != 0) {
-      mPreviousBoundary = Boundary{GetCurrentFrame(), line,
-                                   line->BEnd() + GetCurrentFrameBOffset(),
-                                   GetDescendantBEndMargins()};
+      mPreviousBoundary =
+          Boundary{GetCurrentFrame(), line, line->BEnd() + GetUsedBSize(),
+                   GetDescendantBEndMargins()};
       mLastPassedBlock = nullptr;
     }
     ++mCurrentFrameOffset.mCurrentLine;
@@ -1350,8 +1365,7 @@ class MOZ_RAII LineClampLineIterator {
     // Ancestors' end border/padding remains included for the root's fit check.
     // Collapsed margins are added separately.
     const nscoord bOffsetWithoutFrameBEndBP =
-        GetCurrentFrameBOffset() -
-        aFrame->GetLogicalUsedBorderAndPadding(mWm).BEnd(mWm);
+        GetUsedBSize() - aFrame->GetLogicalUsedBorderAndPadding(mWm).BEnd(mWm);
     const nscoord frameBEnd =
         NSCoordSaturatingAdd(bOffsetWithoutFrameBEndBP, aFrame->BSize());
     if (!mRootMaxBSize) {
@@ -1398,11 +1412,12 @@ class MOZ_RAII LineClampLineIterator {
     // The current line within the current block.
     nsBlockFrame::LineIterator mCurrentLine;
 
-    // Offset to this block's border-box start from the starting block, plus
-    // this block's and its ancestors' end border/padding. Does not include the
-    // current line's BEnd or this block's BSize. Margins are tracked
-    // separately.
-    nscoord mConsumedBSize;
+    // Block Start of the current frame, relative to the starting block
+    nscoord mCurrentBlockBStart;
+
+    // Current sum of all border and padding of lastFrameToExit and its
+    // ancestors.
+    nscoord mAccumulatedBEndBP;
 
     // All margins from root to the last margin root. Margins after the last
     // margin root are still being collapsed with the current frame's margins.
@@ -1453,8 +1468,9 @@ class MOZ_RAII LineClampLineIterator {
 
           // Both BStart, and BEnd border and padding contribute to this block's
           // BSize. BStart border and padding are included in a line's BEnd.
-          mCurrentFrameOffset.mConsumedBSize +=
-              child->BStart(mCurrentFrameOffset.mFrame->GetSize()) +
+          mCurrentFrameOffset.mCurrentBlockBStart +=
+              child->BStart(mCurrentFrameOffset.mFrame->GetSize());
+          mCurrentFrameOffset.mAccumulatedBEndBP +=
               child->GetLogicalUsedBorderAndPadding(mWm).BEnd(mWm);
 
           mCurrentFrameOffset.mCurrentCollapsingMargin.Include(
@@ -2654,7 +2670,7 @@ Maybe<nsBlockFrame::LineClampTarget> nsBlockFrame::FindLineClampAutoTarget(
     }
 
     // Find bottom edge of the current line.
-    const nscoord edge = line->BEnd() + iter.GetCurrentFrameBOffset();
+    const nscoord edge = line->BEnd() + iter.GetUsedBSize();
     if (edge + iter.GetBEndMargins() > rootMaxBSize) {
       return previousTarget();
     }
