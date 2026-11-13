@@ -38,6 +38,11 @@
 #  include "mozilla/webrender/RenderCompositorNative.h"
 #endif
 
+#ifdef MOZ_X11
+#  include "mozilla/WidgetUtilsGtk.h"
+#  include "mozilla/X11Util.h"
+#endif
+
 #ifdef XP_DARWIN
 #  include "mozilla/webrender/RenderCompositorNative.h"
 #endif
@@ -293,7 +298,18 @@ RenderCompositor::RenderCompositor(
     const RefPtr<widget::CompositorWidget>& aWidget)
     : mWidget(aWidget) {}
 
-RenderCompositor::~RenderCompositor() = default;
+RenderCompositor::~RenderCompositor() {
+#ifdef MOZ_X11
+  // The subclass has issued its last requests that name the window, such as a
+  // PresentPixmap or a blit of the software frame. The parent process may
+  // destroy the window right after this, on its own X connection, and the X
+  // server does not order requests across connections, so wait until it has
+  // processed ours, or they fail with BadWindow or BadDrawable.
+  if (widget::GdkIsX11Display()) {
+    XSync(DefaultXDisplay(), X11False);
+  }
+#endif
+}
 
 bool RenderCompositor::MakeCurrent() { return gl()->MakeCurrent(); }
 
