@@ -509,6 +509,8 @@ skip-if = [
 
 ["test_invalidation_basic.html"]
 
+["test_invalidation_container_query_unparsed_attr.html"]
+
 ["test_keyframes_rules.html"]
 
 ["test_keyframes_vendor_prefix.html"]

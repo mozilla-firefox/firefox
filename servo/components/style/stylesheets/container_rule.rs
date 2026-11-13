@@ -131,7 +131,8 @@ impl ContainerAttributeDependencyKind {
     ) -> Self {
         let mut name_kind = ContainerAttributeDependencyKind::None;
         stylist.any_applicable_rule_data(element, |data| {
-            let value = data.might_have_attribute_dependency_in_container(local_name);
+            let value =
+                data.might_have_attribute_dependency_in_container(stylist, element, local_name);
             name_kind = std::cmp::max(name_kind, value);
             name_kind == ContainerAttributeDependencyKind::NamedContainer
         });
@@ -335,14 +336,11 @@ impl ContainerCondition {
         E: TElement,
     {
         let result = self.find_container(element, originating_element_style);
-        let condition = match self.condition {
-            Some(ref c) => c,
-            None => {
-                // Condition-less container query (name only): matches if a
-                // named container was found.
-                return KleeneValue::from(result.is_some());
-            },
-        };
+        if self.condition.is_none() {
+            // Condition-less container query (name only): matches if a
+            // named container was found.
+            return KleeneValue::from(result.is_some());
+        }
         // We have to tag the invalidation flags here because style container
         // query matching may return early if we cannot find a suitable
         // container element right now. However, we must also consider the case
@@ -351,54 +349,110 @@ impl ContainerCondition {
         if self.flags.contains(FeatureFlags::STYLE) {
             invalidation_flags.insert(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
         }
-        let (container, info) = match result {
-            Some(r) => (r.element, (r.info, r.style)),
-            None => {
-                // If we did not find the named (or any) container,
-                // the query must fail to match.
-                return KleeneValue::False;
-            },
+        let Some(result) = result else {
+            // If we did not find the named (or any) container,
+            // the query must fail to match.
+            return KleeneValue::False;
         };
+        let container = result.element;
+        let mut attribute_tracker = AttributeTracker::new(&container);
+        let (matches, evaluated_flags) =
+            self.evaluate_on_container(stylist, result, &mut attribute_tracker);
+        if evaluated_flags.contains(ComputedValueFlags::USES_VIEWPORT_UNITS) {
+            // TODO(emilio): Might need something similar to improve
+            // invalidation of font relative container-query lengths.
+            invalidation_flags.insert(ComputedValueFlags::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES);
+        }
+        if evaluated_flags.contains(ComputedValueFlags::USES_FONT_OR_WM_RELATIVE_UNITS) {
+            invalidation_flags
+                .insert(ComputedValueFlags::USES_FONT_OR_WM_RELATIVE_UNITS_ON_CONTAINER_QUERIES);
+        }
+        if evaluated_flags.intersects(ComputedValueFlags::tree_counting_function_flags()) {
+            // Container query usage of sibling-index() and sibling-count() requires
+            // redoing selector matches on sibling changes. Although this is not itself
+            // a selector, the HAS_SLOW_SELECTOR flag is reused here because it has the
+            // required invalidation behavior.
+            container.apply_selector_flags(ElementSelectorFlags::HAS_SLOW_SELECTOR);
+        }
+        if self.has_unparsed_attr_references() {
+            container
+                .apply_selector_flags(ElementSelectorFlags::CONTAINER_QUERY_WITH_UNPARSED_ATTR);
+        }
+        matches
+    }
+
+    fn evaluate_on_container<E>(
+        &self,
+        stylist: &Stylist,
+        container: ContainerLookupResult<E>,
+        attribute_tracker: &mut AttributeTracker,
+    ) -> (KleeneValue, ComputedValueFlags)
+    where
+        E: TElement,
+    {
+        let Some(ref condition) = self.condition else {
+            debug_assert!(false, "Should only be called if a condition exists");
+            return (KleeneValue::False, ComputedValueFlags::empty());
+        };
+
         // Set up the lookup for the container in question, as the condition may be using container
         // query lengths.
         let size_query_container_lookup = ContainerSizeQuery::for_element(
-            container, /* known_parent_style = */ None, /* is_pseudo = */ false,
+            container.element,
+            /* known_parent_style = */ None,
+            /* is_pseudo = */ false,
         );
-        let mut attribute_tracker = AttributeTracker::new(&container);
         Context::for_container_query_evaluation(
             stylist.device(),
             Some(stylist),
-            Some(info),
+            Some((container.info, container.style)),
             size_query_container_lookup,
-            &container,
+            &container.element,
             |context| {
                 let matches = condition.matches(
                     context,
                     &mut CustomMediaEvaluator::none(),
-                    &mut attribute_tracker,
+                    attribute_tracker,
                 );
-                let flags = context.style().flags();
-                if flags.contains(ComputedValueFlags::USES_VIEWPORT_UNITS) {
-                    // TODO(emilio): Might need something similar to improve
-                    // invalidation of font relative container-query lengths.
-                    invalidation_flags
-                        .insert(ComputedValueFlags::USES_VIEWPORT_UNITS_ON_CONTAINER_QUERIES);
-                }
-                if flags.contains(ComputedValueFlags::USES_FONT_OR_WM_RELATIVE_UNITS) {
-                    invalidation_flags.insert(
-                        ComputedValueFlags::USES_FONT_OR_WM_RELATIVE_UNITS_ON_CONTAINER_QUERIES,
-                    );
-                }
-                if flags.intersects(ComputedValueFlags::tree_counting_function_flags()) {
-                    // Container query usage of sibling-index() and sibling-count() requires
-                    // redoing selector matches on sibling changes. Although this is not itself
-                    // a selector, the HAS_SLOW_SELECTOR flag is reused here because it has the
-                    // required invalidation behavior.
-                    container.apply_selector_flags(ElementSelectorFlags::HAS_SLOW_SELECTOR);
-                }
-                matches
+                (matches, context.style().flags())
             },
         )
+    }
+
+    /// Returns the dependency kind of this condition on `local_name` through
+    /// unparsed `attr()` functions, by evaluating the condition and looking
+    /// for which attributes were referenced.
+    pub fn evaluate_unparsed_attr_dependency<E>(
+        &self,
+        stylist: &Stylist,
+        container: E,
+        local_name: &LocalName,
+    ) -> ContainerAttributeDependencyKind
+    where
+        E: TElement,
+    {
+        if self.condition.is_none() || !self.has_unparsed_attr_references() {
+            return ContainerAttributeDependencyKind::None;
+        }
+        let TraversalResult::Done(result) = self.valid_container_info(container, None) else {
+            return ContainerAttributeDependencyKind::None;
+        };
+        let mut attribute_tracker = AttributeTracker::new(&container);
+        self.evaluate_on_container(stylist, result, &mut attribute_tracker);
+        let references_attribute = attribute_tracker.finalize().is_some_and(|references| {
+            references
+                .keys()
+                .any(|name| name.eq_ignore_ascii_case(local_name))
+        });
+        if references_attribute {
+            if self.name.is_none() {
+                ContainerAttributeDependencyKind::UnnamedContainer
+            } else {
+                ContainerAttributeDependencyKind::NamedContainer
+            }
+        } else {
+            ContainerAttributeDependencyKind::None
+        }
     }
 
     /// Get the attribute functions referenced by this condition, if any.
@@ -408,13 +462,11 @@ impl ContainerCondition {
 
     /// Insert the attribute dependencies and attribute dependency kind into the
     /// attribute_dependencies set and the container_attr_function_dependencies map.
-    /// Returns whether there are dependencies on attributes whose names could not
-    /// be known at parse time.
     pub fn insert_attribute_references_in_dependency_map(
         &self,
         kind_map: &mut PrecomputedHashMap<LocalName, ContainerAttributeDependencyKind>,
         attribute_dependencies: &mut PrecomputedHashSet<LocalName>,
-    ) -> ContainerAttributeDependencyKind {
+    ) {
         let name_kind = if self.name.is_none() {
             ContainerAttributeDependencyKind::UnnamedContainer
         } else {
@@ -431,11 +483,13 @@ impl ContainerCondition {
                 .or_insert(name_kind);
             attribute_dependencies.get_or_insert_with(attr, Clone::clone);
         }
-        if self.attributes_referenced.is_fully_parsed {
-            ContainerAttributeDependencyKind::None
-        } else {
-            name_kind
-        }
+    }
+
+    /// Whether this condition has `attr()` functions whose attribute names
+    /// can't be known at parse time (due to nested substitution functions).
+    #[inline]
+    pub fn has_unparsed_attr_references(&self) -> bool {
+        !self.attributes_referenced.is_fully_parsed
     }
 }
 
