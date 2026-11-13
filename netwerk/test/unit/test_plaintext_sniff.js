@@ -2,8 +2,8 @@
 
 "use strict";
 
-const { HttpServer } = ChromeUtils.importESModule(
-  "resource://testing-common/httpd.sys.mjs"
+const { NodeHTTPServer } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
 );
 
 // List of Content-Type headers to test.  For each header we have an array.
@@ -84,15 +84,9 @@ for (i of bomTestChars) {
   }
 }
 
-function makeChan(headerIdx, bodyIdx) {
+function makeChan(server, headerIdx, bodyIdx) {
   var chan = NetUtil.newChannel({
-    uri:
-      "http://localhost:" +
-      httpserv.identity.primaryPort +
-      "/" +
-      headerIdx +
-      "/" +
-      bodyIdx,
+    uri: `${server.origin()}/sniff?h=${headerIdx}&b=${bodyIdx}`,
     loadUsingSystemPrincipal: true,
   }).QueryInterface(Ci.nsIHttpChannel);
 
@@ -101,7 +95,7 @@ function makeChan(headerIdx, bodyIdx) {
   return chan;
 }
 
-function makeListener(headerIdx, bodyIdx) {
+function makeListener(headerIdx, bodyIdx, resolve) {
   var listener = {
     onStartRequest: function test_onStartR(request) {
       try {
@@ -139,57 +133,20 @@ function makeListener(headerIdx, bodyIdx) {
       } catch (e) {
         do_throw("Unexpected exception: " + e);
       }
-
-      request.cancel(Cr.NS_BINDING_ABORTED);
     },
 
-    onDataAvailable: function test_ODA() {
-      do_throw("Should not get any data!");
+    // Read the whole response rather than cancelling the request, so that the
+    // connection can be reused for the next request.
+    onDataAvailable: function test_ODA(request, stream, offset, count) {
+      read_stream(stream, count);
     },
 
     onStopRequest: function test_onStopR() {
-      ++caseIdx;
-      if (caseIdx == testCases.length) {
-        do_test_pending();
-        httpserv.stop(do_test_finished);
-      } else {
-        doTest(...testCases[caseIdx]);
-      }
-
-      do_test_finished();
+      resolve();
     },
   };
 
   return listener;
-}
-
-function doTest(headerIdx, bodyIdx) {
-  var chan = makeChan(headerIdx, bodyIdx);
-
-  var listener = makeListener(headerIdx, bodyIdx);
-
-  chan.asyncOpen(listener);
-
-  do_test_pending();
-}
-
-function createResponse(headerIdx, bodyIdx, metadata, response) {
-  response.setHeader(
-    "Content-Type",
-    contentTypeHeaderList[headerIdx][0],
-    false
-  );
-  response.bodyOutputStream.write(
-    bodyList[bodyIdx][0],
-    bodyList[bodyIdx][0].length
-  );
-}
-
-function makeHandler(headerIdx, bodyIdx) {
-  var f = function handlerClosure(metadata, response) {
-    return createResponse(headerIdx, bodyIdx, metadata, response);
-  };
-  return f;
 }
 
 // The expected result only depends on whether the header and the body each
@@ -197,7 +154,6 @@ function makeHandler(headerIdx, bodyIdx) {
 // every body with one sniffable and one non-sniffable header, and every
 // header with a few representative bodies.
 var testCases = [];
-var caseIdx = 0;
 function buildTestCases() {
   const sniffableHeaderIdx = 0;
   const nonSniffableHeaderIdx = 4;
@@ -225,23 +181,36 @@ function buildTestCases() {
   }
 }
 
-var httpserv;
-function run_test() {
-  // disable on Windows for now, because it seems to leak sockets and die.
-  // Silly operating system!
-  // This is a really nasty way to detect Windows.  I wish we could do better.
-  if (mozinfo.os == "win") {
-    //failing eslint no-empty test
-  }
+// httpd.js closes the connection after every response, so each request used to
+// leave a client port in TIME_WAIT, and running this test repeatedly ran out of
+// ports on Windows. The node server keeps connections alive instead.
+add_task(async function test_plaintext_sniff() {
+  let server = new NodeHTTPServer();
+  await server.start();
+  registerCleanupFunction(async () => {
+    await server.stop();
+  });
 
-  httpserv = new HttpServer();
+  await server.execute(
+    `global.sniffHeaders = ${JSON.stringify(
+      contentTypeHeaderList.map(([header]) => header)
+    )};
+     global.sniffBodies = ${JSON.stringify(bodyList.map(([body]) => btoa(body)))};`
+  );
+  await server.registerPathHandler("/sniff", (req, resp) => {
+    let params = new URL(req.url, "http://localhost").searchParams;
+    let body = Buffer.from(global.sniffBodies[params.get("b")], "base64");
+    resp.writeHead(200, {
+      "Content-Type": global.sniffHeaders[params.get("h")],
+      "Content-Length": body.length,
+    });
+    resp.end(body);
+  });
 
   buildTestCases();
   for (let [h, b] of testCases) {
-    httpserv.registerPathHandler("/" + h + "/" + b, makeHandler(h, b));
+    await new Promise(resolve => {
+      makeChan(server, h, b).asyncOpen(makeListener(h, b, resolve));
+    });
   }
-
-  httpserv.start(-1);
-
-  doTest(...testCases[0]);
-}
+});
