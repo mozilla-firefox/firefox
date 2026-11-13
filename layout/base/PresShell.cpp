@@ -6647,6 +6647,10 @@ void PresShell::RemoveFrameFromApproximatelyVisibleList(nsIFrame* aFrame) {
   }
 #endif
 
+  if (mApproximatelyVisibleFrames.IsEmpty()) {
+    return;
+  }
+
   if (AssumeAllFramesVisible()) {
     MOZ_ASSERT(mApproximatelyVisibleFrames.Count() == 0,
                "Shouldn't have any frames in the table");

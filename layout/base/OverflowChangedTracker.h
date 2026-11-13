@@ -79,6 +79,9 @@ class OverflowChangedTracker {
    * Remove a frame.
    */
   void RemoveFrame(nsIFrame* aFrame) {
+    if (mEntries.IsEmpty()) {
+      return;
+    }
     uint32_t depth = aFrame->GetDepthInFrameTree();
     if (depth >= mEntries.Length()) {
       return;
