@@ -13,6 +13,7 @@
 
 #include "js/AllocPolicy.h"  // SystemAllocPolicy, AllocFunction
 #include "js/ErrorReport.h"  // JSErrorCallback, JSErrorFormatString
+#include "js/experimental/CompileScript.h"  // JS::FrontendContextCreationOptions
 #include "js/Stack.h"  // JS::NativeStackSize, JS::NativeStackLimit, JS::NativeStackLimitMax
 #include "js/Vector.h"          // Vector
 #include "vm/ErrorReporting.h"  // CompileError
@@ -113,6 +114,21 @@ class FrontendContext {
         nameCollectionPool_(nullptr),
         ownNameCollectionPool_(false),
         scriptDataTableHolder_(&js::globalSharedScriptDataTableHolder) {}
+
+  explicit FrontendContext(const JS::FrontendContextCreationOptions* options)
+      : alloc_(this),
+        nameCollectionPool_(nullptr),
+        ownNameCollectionPool_(false),
+        scriptDataTableHolder_(!options || options->shareScriptData
+                                   ? &js::globalSharedScriptDataTableHolder
+                                   : nullptr) {
+#ifdef DEBUG
+    if (options && options->allowCancellingCompilation) {
+      setAllowCancellingCompilation();
+    }
+#endif
+  }
+
   ~FrontendContext();
 
   void setStackQuota(JS::NativeStackSize stackSize);
@@ -126,6 +142,8 @@ class FrontendContext {
         "Either allocateOwnedPool or setCurrentJSContext must be called");
     return *nameCollectionPool_;
   }
+
+  bool hasScriptDataTableHolder() const { return !!scriptDataTableHolder_; }
 
   js::SharedScriptDataTableHolder* scriptDataTableHolder() {
     MOZ_ASSERT(scriptDataTableHolder_);
@@ -285,7 +303,8 @@ class ManualReportFrontendContext : public FrontendContext {
 
 // Create function for FrontendContext, which is manually allocated and
 // exclusively owned.
-extern FrontendContext* NewFrontendContext();
+extern FrontendContext* NewFrontendContext(
+    const JS::FrontendContextCreationOptions* options = nullptr);
 
 // Destroy function for FrontendContext, which was allocated with
 // NewFrontendContext.
