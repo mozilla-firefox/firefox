@@ -693,6 +693,7 @@ bool TouchBlockState::SetAllowedTouchBehaviors(
           aBehaviors.Length());
   mAllowedTouchBehaviors.AppendElements(aBehaviors);
   mAllowedTouchBehaviorSet = true;
+  MaybeNotifyTouchSwipableDirections();
   return true;
 }
 
@@ -930,14 +931,16 @@ bool TouchBlockState::NeedsContentResponseAfterLongTap(
 SideBits TouchBlockState::GetSwipableDirections(
     const AsyncPanZoomController* aTarget) const {
   MOZ_ASSERT(aTarget, "A confirmed target should be non-null here");
-  // TODO: Handle the case in which touch action is not confirmed.
-  if (HasAllowedTouchBehaviors() && TouchActionAllowsPanningX()) {
+  MOZ_ASSERT(HasAllowedTouchBehaviors(), "touch action should be confirmed");
+  if (TouchActionAllowsPanningX()) {
     return GetOverscrollHandoffChain()->GetSwipableDirections(*aTarget);
   }
   return SideBits::eNone;
 }
 
-bool TouchBlockState::HasTouchSwipeInfo() const { return IsTargetConfirmed(); }
+bool TouchBlockState::HasTouchSwipeInfo() const {
+  return IsTargetConfirmed() && HasAllowedTouchBehaviors();
+}
 
 bool TouchBlockState::SetConfirmedTargetApzc(
     const RefPtr<AsyncPanZoomController>& aTargetApzc,

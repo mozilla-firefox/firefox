@@ -188,6 +188,7 @@ skip-if = [
 
 ["browser_test_touchscreen_swipe_gesture_with_irregular_area.js"]
 support-files = [
+  "helper_touchscreen_swipe_irregular_area.html",
   "helper_touchscreen_swipe_irregular_scrollers.html",
   "!/gfx/layers/apz/test/mochitest/apz_test_native_event_utils.js",
   "!/gfx/layers/apz/test/mochitest/apz_test_utils.js",

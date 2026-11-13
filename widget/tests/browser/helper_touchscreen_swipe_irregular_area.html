@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Touchscreen swipe over nonrectangular touch-action regions</title>
+<script src="/tests/SimpleTest/paint_listener.js"></script>
+<script src="/browser/gfx/layers/apz/test/mochitest/apz_test_utils.js"></script>
+<style>
+  /* The displayed item is determined by the url fragment value. */
+  .region { display: none; }
+  .region:target { display: block; }
+
+  .clipped {
+    width: 400px;
+    height: 300px;
+    background: green;
+    clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
+  }
+
+  #pan-y { touch-action: pan-y; }
+  #pan-x { touch-action: pan-x; }
+</style>
+</head>
+<body>
+<div id="pan-y" class="region clipped"></div>
+<div id="pan-x" class="region clipped"></div>
+</body>
+</html>

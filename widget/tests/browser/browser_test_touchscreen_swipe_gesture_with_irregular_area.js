@@ -204,3 +204,111 @@ add_task(
     }
   }
 );
+
+add_task(async function test_touch_action_in_irregular_area() {
+  for (const touchAction of ["pan-y", "pan-x"]) {
+    info(`Swipe inside the clipped element with touch-action: ${touchAction}`);
+    const firstPage = "about:about";
+    const URL_ROOT = getRootDirectory(gTestPath).replace(
+      "chrome://mochitests/content/",
+      "http://mochi.test:8888/"
+    );
+    const secondPage =
+      URL_ROOT + `helper_touchscreen_swipe_irregular_area.html#${touchAction}`;
+    const tab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      firstPage
+    );
+
+    let onSwipeStart;
+    try {
+      BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, secondPage);
+      await BrowserTestUtils.browserLoaded(
+        tab.linkedBrowser,
+        false,
+        secondPage
+      );
+      ok(
+        tab.linkedBrowser.webNavigation.canGoBack,
+        "Back navigation is available"
+      );
+
+      await SpecialPowers.spawn(
+        tab.linkedBrowser,
+        [touchAction],
+        async action => {
+          const target = content.document.getElementById(action);
+          await content.wrappedJSObject.promiseApzFlushedRepaints();
+          is(
+            content.document.elementFromPoint(100, 200),
+            target,
+            "The touch starts inside the nonrectangular region"
+          );
+
+          // hitTest() in apz_test_utils.js needs SimpleTest in the page, so
+          // do the hit test directly.
+          const utils = SpecialPowers.getDOMWindowUtils(content);
+          utils.sendMozMouseHitTestEvent(100, 200);
+          const hit = utils.getCompositorAPZTestData().hitResults.at(-1);
+          ok(
+            !!(hit.hitResult & content.APZHitResultFlags.IRREGULAR_AREA),
+            "APZ must use the main-thread touch-action fallback"
+          );
+        }
+      );
+
+      const allowsSwipe = touchAction == "pan-x";
+
+      const finished = allowsSwipe
+        ? Promise.all([
+            BrowserTestUtils.browserStarted(tab.linkedBrowser, firstPage),
+            BrowserTestUtils.browserStopped(tab.linkedBrowser, firstPage),
+          ])
+        : BrowserTestUtils.waitForContentEvent(
+            tab.linkedBrowser,
+            "touchend",
+            true
+          );
+
+      let swipeStarted = false;
+      onSwipeStart = () => (swipeStarted = true);
+      window.addEventListener("MozSwipeGestureStart", onSwipeStart, true);
+
+      const { TOUCH_CONTACT, TOUCH_REMOVE } = SpecialPowers.DOMWindowUtils;
+      await synthesizeNativeTouch(tab.linkedBrowser, 100, 200, TOUCH_CONTACT);
+      await synthesizeNativeTouch(tab.linkedBrowser, 200, 200, TOUCH_CONTACT);
+      await synthesizeNativeTouch(tab.linkedBrowser, 300, 200, TOUCH_CONTACT);
+      await synthesizeNativeTouch(tab.linkedBrowser, 300, 200, TOUCH_REMOVE);
+
+      await finished;
+
+      if (allowsSwipe) {
+        ok(swipeStarted, `touch-action: ${touchAction} allows swipe tracking`);
+
+        is(
+          tab.linkedBrowser.currentURI.spec,
+          firstPage,
+          `touch-action: ${touchAction} allows back navigation after fallback`
+        );
+      } else {
+        await waitForWhile();
+
+        ok(
+          !swipeStarted,
+          `touch-action: ${touchAction} prevents swipe tracking`
+        );
+
+        is(
+          tab.linkedBrowser.currentURI.spec,
+          secondPage,
+          `touch-action: ${touchAction} prevents back navigation after fallback`
+        );
+      }
+    } finally {
+      if (onSwipeStart) {
+        window.removeEventListener("MozSwipeGestureStart", onSwipeStart, true);
+      }
+      BrowserTestUtils.removeTab(tab);
+    }
+  }
+});
