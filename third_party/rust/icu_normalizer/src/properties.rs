@@ -572,7 +572,12 @@ impl CanonicalCombiningClassMapBorrowed<'_> {
     /// `CanonicalCombiningClass`.
     #[inline(always)]
     pub fn get_u8(&self, c: char) -> u8 {
-        self.get32_u8(u32::from(c))
+        let trie_value = self.decompositions.trie.get(c);
+        if trie_value_has_ccc(trie_value) {
+            trie_value as u8
+        } else {
+            ccc!(NotReordered, 0).to_icu4c_value()
+        }
     }
 
     /// Look up the canonical combining class for a scalar value

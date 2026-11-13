@@ -14,6 +14,9 @@
 //! from ICU4C. Detailed information about the design of the data structure can be found in the documentation
 //! for the [`CodePointTrie`] struct.
 //!
+//! In particular for the [`FastCodePointTrie`] variant, the data layout is designed for it to be efficient to
+//! fuse trie querying with UTF-8 or UTF-16 decoding. See the [`iter`] module for iterators that do this.
+//!
 //! # Examples
 //!
 //! ## Querying a `CodePointTrie`
@@ -32,7 +35,7 @@
 mod cptrie;
 mod error;
 mod impl_const;
-mod iter;
+pub mod iter;
 pub mod planes;
 
 #[cfg(feature = "serde")]
@@ -53,14 +56,3 @@ pub use cptrie::TrieValue;
 pub use cptrie::Typed;
 pub use cptrie::TypedCodePointTrie;
 pub use error::Error as CodePointTrieError;
-pub use iter::CharIndicesWithTrie;
-pub use iter::CharIndicesWithTrieDefaultForAscii;
-pub use iter::CharIterWithTrie;
-pub use iter::CharsWithTrie;
-pub use iter::CharsWithTrieDefaultForAscii;
-pub use iter::CharsWithTrieDefaultForAsciiEx;
-pub use iter::CharsWithTrieEx;
-pub use iter::Latin1CharIndicesWithTrie;
-pub use iter::Latin1CharsWithTrie;
-pub use iter::Latin1CharsWithTrieEx;
-pub use iter::WithTrie;

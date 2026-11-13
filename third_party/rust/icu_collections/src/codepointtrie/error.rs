@@ -28,6 +28,9 @@ pub enum Error {
     /// [`CodePointTrie`](super::CodePointTrie) must be constructed from data vector long enough to accommodate direct ASCII access
     #[displaydoc("CodePointTrie must be constructed from data vector long enough to accommodate direct ASCII access")]
     DataTooShortForAsciiAccess,
+    /// [`CodePointTrie`](super::CodePointTrie) must be constructed from index vector whose first two items are consistent with direct ASCII access
+    #[displaydoc("CodePointTrie must be constructed from index vector whose first two items are consistent with direct ASCII access")]
+    IndexInconsistentWithAsciiAccess,
 }
 
 impl core::error::Error for Error {}

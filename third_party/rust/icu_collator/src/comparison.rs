@@ -49,17 +49,20 @@ use crate::provider::CollationSpecialPrimariesValidated;
 use crate::provider::CollationTailoringV1;
 use core::cmp::Ordering;
 use core::convert::{Infallible, TryFrom};
+use icu_collections::codepointtrie::iter::CharsWithTrieDefaultForAsciiEx;
+use icu_collections::codepointtrie::iter::CharsWithTrieEx;
+#[cfg(feature = "latin1")]
+use icu_collections::codepointtrie::iter::Latin1CharsWithTrieEx;
+use icu_collections::codepointtrie::iter::Utf16CharsWithTrieEx;
+use icu_collections::codepointtrie::iter::Utf8CharsWithTrieDefaultForAsciiEx;
+use icu_collections::codepointtrie::iter::Utf8CharsWithTrieEx;
+use icu_collections::codepointtrie::iter::WithTrie;
 use icu_collections::codepointtrie::AbstractCodePointTrie;
-use icu_collections::codepointtrie::CharsWithTrieDefaultForAsciiEx;
-use icu_collections::codepointtrie::CharsWithTrieEx;
 #[cfg(feature = "serde")]
 use icu_collections::codepointtrie::CodePointTrie;
 #[cfg(not(feature = "serde"))]
 use icu_collections::codepointtrie::FastCodePointTrie;
-#[cfg(feature = "latin1")]
-use icu_collections::codepointtrie::Latin1CharsWithTrieEx;
 use icu_collections::codepointtrie::TypedCodePointTrie;
-use icu_collections::codepointtrie::WithTrie;
 use icu_normalizer::provider::DecompositionData;
 use icu_normalizer::provider::DecompositionTables;
 use icu_normalizer::provider::NormalizerNfdDataV1;
@@ -67,9 +70,8 @@ use icu_normalizer::provider::NormalizerNfdTablesV1;
 use icu_provider::marker::ErasedMarker;
 use icu_provider::prelude::*;
 use smallvec::SmallVec;
-use utf16_iter::Utf16CharsWithTrieEx;
-use utf8_iter::Utf8CharsWithTrieDefaultForAsciiEx;
-use utf8_iter::Utf8CharsWithTrieEx;
+#[cfg(feature = "latin1")]
+use utf_types::utf8::Ascii;
 use zerovec::ule::AsULE;
 
 #[cfg(feature = "serde")]
@@ -1145,15 +1147,11 @@ impl<'data> CollatorBorrowed<'data> {
                     // the Latin1 part above ASCII is so high that let's
                     // only consider ASCII on the left for this fast path.
 
-                    // SAFETY: Checking the invariant of `get7` here.
-                    if left_u8 < 0x80 {
-                        // SAFETY: Invariant of `get7` checked above.
-                        let left_u32 = unsafe { tailoring_trie.get7(left_u8) };
+                    if let Ok(left_ascii) = Ascii::try_new(left_u8) {
+                        let left_u32 = tailoring_trie.ascii(left_ascii);
                         let left_ce32 = CollationElement32::new(left_u32);
-                        // SAFETY: Checking the invariant of `get7` here for right.
-                        if right_u8 < 0x80 {
-                            // SAFETY: Invariant of `get7` checked above.
-                            let right_u32 = unsafe { tailoring_trie.get7(right_u8) };
+                        if let Ok(right_ascii) = Ascii::try_new(right_u8) {
+                            let right_u32 = tailoring_trie.ascii(right_ascii);
                             let right_ce32 = CollationElement32::new(right_u32);
                             // Should we use script reordering to cater to reordering
                             // digits or punctuation relative to letters?
@@ -1211,10 +1209,9 @@ impl<'data> CollatorBorrowed<'data> {
                     // the Latin1 part above ASCII is so high that let's
                     // only consider ASCII on the left for this fast path.
 
-                    // SAFETY: Checking the invariant of `get7` here.
-                    if left_u8 < 0x80 {
+                    if let Ok(left_ascii) = Ascii::try_new(left_u8) {
                         // SAFETY: Invariant of `get7` checked above.
-                        let left_u32 = unsafe { tailoring_trie.get7(left_u8) };
+                        let left_u32 = tailoring_trie.ascii(left_ascii);
                         let left_ce32 = CollationElement32::new(left_u32);
                         let right_u16 = *right_u;
                         let right_u32 = tailoring_trie.get16(right_u16);

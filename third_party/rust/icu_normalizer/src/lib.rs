@@ -107,12 +107,16 @@ use icu_collections::char16trie::Char16Trie;
 use icu_collections::char16trie::Char16TrieIterator;
 #[cfg(feature = "serde")]
 use icu_collections::char16trie::TrieResult;
+use icu_collections::codepointtrie::iter::CharIterWithTrie;
+use icu_collections::codepointtrie::iter::CharsWithTrieDefaultForAsciiEx;
+#[cfg(feature = "utf16_iter")]
+use icu_collections::codepointtrie::iter::Utf16CharsWithTrieEx;
+#[cfg(feature = "utf8_iter")]
+use icu_collections::codepointtrie::iter::Utf8CharsWithTrieDefaultForAsciiEx;
+use icu_collections::codepointtrie::iter::WithTrie;
 use icu_collections::codepointtrie::AbstractCodePointTrie;
-use icu_collections::codepointtrie::CharIterWithTrie;
-use icu_collections::codepointtrie::CharsWithTrieDefaultForAsciiEx;
 use icu_collections::codepointtrie::CodePointTrie;
 use icu_collections::codepointtrie::FastCodePointTrie;
-use icu_collections::codepointtrie::WithTrie;
 #[cfg(feature = "icu_properties")]
 use icu_properties::props::CanonicalCombiningClass;
 use icu_provider::prelude::*;
@@ -123,12 +127,9 @@ use provider::NormalizerNfcV2;
 use provider::NormalizerNfdTablesV1;
 use provider::NormalizerNfkdTablesV1;
 use smallvec::SmallVec;
-#[cfg(feature = "utf16_iter")]
-use utf16_iter::Utf16CharsWithTrieEx;
 #[cfg(feature = "utf8_iter")]
 use utf8_iter::Utf8CharsEx;
-#[cfg(feature = "utf8_iter")]
-use utf8_iter::Utf8CharsWithTrieDefaultForAsciiEx;
+use utf_types::utf8::LeadForMultiByte;
 use zerovec::{zeroslice, ZeroSlice};
 
 // The optimizations in the area where `likely` is used
@@ -204,6 +205,15 @@ impl CanonicalCombiningClass {
 const CCC_NOT_REORDERED: CanonicalCombiningClass = ccc!(NotReordered, 0);
 const CCC_ABOVE: CanonicalCombiningClass = ccc!(Above, 230);
 
+const LEAD_FOR_NFC_PASSTHROUGH_BOUND: LeadForMultiByte = const {
+    // 0x300 is 0xCC 0x80 in UTF-8, i.e. the lowest character with 0xCC lead.
+    if let Ok(lead) = LeadForMultiByte::try_new(0xCC) {
+        lead
+    } else {
+        panic!()
+    }
+};
+
 /// Treatment of the ignorable marker (0xFFFFFFFF) in data.
 #[derive(Debug, PartialEq, Eq)]
 enum IgnorableBehavior {
@@ -260,6 +270,7 @@ const LOW_ZEROS_MASK: u32 = 0xFFE0;
 /// combining class.
 ///
 /// See trie-value-format.md
+#[inline]
 fn trie_value_has_ccc(trie_value: u32) -> bool {
     (trie_value & 0x3FFFFE00) == 0xD800
 }
@@ -3316,87 +3327,17 @@ impl<'data> ComposingNormalizerBorrowed<'data> {
         as_str,
         {
             let composition_passthrough_byte_bound = if self.decomposing_normalizer.composition_passthrough_bound == 0x300 {
-                0xCCu8
+                LEAD_FOR_NFC_PASSTHROUGH_BOUND
             } else {
                 // We can make this fancy if a normalization other than NFC where looking at
                 // non-ASCII lead bytes is worthwhile is ever introduced.
-                self.decomposing_normalizer.composition_passthrough_bound.min(0x80) as u8
+                LeadForMultiByte::MIN
             };
-            // Attributes have to be on blocks, so hoisting all the way here.
-            let mut code_unit_iter = composition.decomposition.delegate.as_str().as_bytes().iter();
             'fast: loop {
-                if let Some(b) = code_unit_iter.next() {
-                    let upcoming_byte = *b;
-                    if upcoming_byte < composition_passthrough_byte_bound {
-                        // Fast-track succeeded!
-                        continue 'fast;
-                    }
-                    // Begin manual inlining from `CharsWithTrie`
-
-                    // SAFETY: Since `code_unit_iter` came from `str` and we always advance by a full UTF-8 sequence, we may assume that we
-                    // have a valid lead byte. We can assume that the lead byte won't be ASCII, because `composition_passthrough_byte_bound`
-                    // is never less than 0x80. Not need to check for other cases.
-                    let (upcoming, trie_val) = if upcoming_byte < 0xE0 {
-                        // Two-byte sequence.
-                        // SAFETY, since `code_unit_iter` came from `str` and we always advance by a full UTF-8 sequence, we may assume the
-                        // presence of a trail byte.
-                        let trail = *unsafe { code_unit_iter.next().unwrap_unchecked() };
-                        let high_five = u32::from(upcoming_byte & 0b11_111);
-                        let low_six = u32::from(trail & 0b111_111);
-                        // SAFETY: By construction, `high_five` and `low_six` conform
-                        // to the invariant of `utf8_two_byte`.
-                        let v = unsafe { composition.decomposition.delegate.trie().utf8_two_byte(high_five, low_six) };
-                        // SAFETY: Since `code_unit_iter` came from `str` and we always advance by a full UTF-8 sequence, `lead` must be a
-                        // valid (not overlong) two-byte lead and `trail` must be a valid
-                        // trail. Therefore, the following shift and OR stays in the
-                        // scalar value range.
-                        let c = unsafe { char::from_u32_unchecked((high_five << 6) | low_six) };
-                        (c, v)
-                    } else if upcoming_byte < 0xF0 {
-                        // Three-byte sequence.
-                        // SAFETY, since `code_unit_iter` came from `str` and we always advance by a full UTF-8 sequence, we may assume the
-                        // presence of two trail bytes.
-                        let second = *unsafe { code_unit_iter.next().unwrap_unchecked() };
-                        let third = *unsafe { code_unit_iter.next().unwrap_unchecked() };
-                        let high_ten = (u32::from(upcoming_byte & 0b1111) << 6) | u32::from(second & 0b111_111);
-                        let low_six = u32::from(third & 0b111_111);
-                        // SAFETY: By construction, `high_ten` and `low_six` conform
-                        // to the invariant of `utf8_three_byte`.
-                        let v = unsafe { composition.decomposition.delegate.trie().utf8_three_byte(high_ten, low_six) };
-                        // SAFETY: Since `code_unit_iter` came from `str` and we always advance by a full UTF-8 sequence, `lead` must be a
-                        // valid (not overlong) three-byte lead and `second` and `third`
-                        // must be valid trails. Therefore, the following shift and OR
-                        // stays in the scalar value range.
-                        let c = unsafe { char::from_u32_unchecked((high_ten << 6) | low_six) };
-                        (c, v)
-                    } else {
-                        // Four-byte sequence
-                        // SAFETY, since `code_unit_iter` came from `str` and we always advance by a full UTF-8 sequence, we may assume the
-                        // presence of three trail bytes.
-                        let second = *unsafe { code_unit_iter.next().unwrap_unchecked() };
-                        let third = *unsafe { code_unit_iter.next().unwrap_unchecked() };
-                        let fourth = *unsafe { code_unit_iter.next().unwrap_unchecked() };
-                        // SAFETY: Since `code_unit_iter` came from `str` and we always advance by a full UTF-8 sequence, `lead` must be a
-                        // valid (not overlong or out-of-range) four-byte lead and `second`,
-                        // `third`, and `fourth` must be valid trails. Therefore, the
-                        // following shift and OR stays in the scalar value range.
-                        let c = unsafe {
-                            char::from_u32_unchecked(
-                                (u32::from(upcoming_byte & 0b111) << 18)
-                                    | (u32::from(second & 0b111_111) << 12)
-                                    | (u32::from(third & 0b111_111) << 6)
-                                    | u32::from(fourth & 0b111_111),
-                            )
-                        };
-                        (c, composition.decomposition.delegate.trie().supplementary(c as u32))
-                    };
-
-                    // End manual inlining from `CharsWithTrie`
+                if let Some((upcoming, trie_val)) = composition.decomposition.delegate.next_with_minimum_lead(composition_passthrough_byte_bound) {
                     if potential_passthrough_and_cannot_combine_backwards(trie_val) {
                         continue 'fast;
                     }
-                    // SAFETY: We've advanced `code_unit_iter` to a UTF-8 boundary.
-                    composition.decomposition.delegate = unsafe { core::str::from_utf8_unchecked(code_unit_iter.as_slice())}.chars_with_trie_default_for_ascii(composition.decomposition.delegate.trie());
                     let upcoming_with_trie_value = CharacterAndTrieValue::new(upcoming, trie_val);
                     // We need to fall off the fast path.
                     composition.decomposition.pending = Some(upcoming_with_trie_value);

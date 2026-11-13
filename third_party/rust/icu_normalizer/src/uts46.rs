@@ -16,7 +16,7 @@ use crate::NormalizerNfcV2;
 use crate::NormalizerNfdTablesV1;
 use crate::NormalizerNfkdTablesV1;
 use crate::NormalizerUts46DataV1;
-use icu_collections::codepointtrie::CharIterWithTrie;
+use icu_collections::codepointtrie::iter::CharIterWithTrie;
 use icu_collections::codepointtrie::CodePointTrie;
 use icu_provider::DataError;
 use icu_provider::DataProvider;
@@ -82,6 +82,25 @@ impl Uts46MapperBorrowed<'static> {
 }
 
 impl Uts46MapperBorrowed<'_> {
+    /// Returns `true` iff the canonical combining class of `c` is 9 (Virama).
+    ///
+    /// This method uses the UTS 46 data and does not add a dependency on NFD
+    /// data like `CanonicalCombiningClassMapBorrowed` does.
+    #[inline]
+    pub fn is_virama(&self, c: char) -> bool {
+        let trie_val = self
+            .normalizer
+            .decomposing_normalizer
+            .decompositions
+            .trie
+            .get(c);
+        if crate::trie_value_has_ccc(trie_val) {
+            (trie_val as u8) == 9
+        } else {
+            false
+        }
+    }
+
     /// Returns an iterator adaptor that turns an `Iterator` over `char`
     /// into an iterator yielding a `char` sequence that gets the following
     /// operations from the "Map" and "Normalize" steps of the "Processing"

@@ -38,13 +38,7 @@ impl<T: TrieValue + Serialize> Serialize for SmallCodePointTrie<'_, T> {
     where
         S: Serializer,
     {
-        let untyped = self.as_untyped_ref();
-        let ser = CodePointTrieSerde {
-            header: untyped.header,
-            index: ZeroFrom::zero_from(&untyped.index),
-            data: ZeroFrom::zero_from(&untyped.data),
-        };
-        ser.serialize(serializer)
+        self.as_untyped_ref().serialize(serializer)
     }
 }
 
@@ -53,13 +47,7 @@ impl<T: TrieValue + Serialize> Serialize for FastCodePointTrie<'_, T> {
     where
         S: Serializer,
     {
-        let untyped = self.as_untyped_ref();
-        let ser = CodePointTrieSerde {
-            header: untyped.header,
-            index: ZeroFrom::zero_from(&untyped.index),
-            data: ZeroFrom::zero_from(&untyped.data),
-        };
-        ser.serialize(serializer)
+        self.as_untyped_ref().serialize(serializer)
     }
 }
 
@@ -95,6 +83,9 @@ where
                     }
                     super::CodePointTrieError::DataTooShortForAsciiAccess => {
                         return Err(D::Error::custom("CodePointTrie must be constructed from data vector long enough to accommodate direct ASCII access"));
+                    }
+                    super::CodePointTrieError::IndexInconsistentWithAsciiAccess => {
+                        return Err(D::Error::custom("CodePointTrie must be constructed from index vector whose first two items are consistent with direct ASCII access"));
                     }
                 }
             }
