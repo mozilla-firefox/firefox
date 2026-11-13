@@ -1476,6 +1476,78 @@ TEST(MP4Demuxer, SeekPastLastSample)
   }
 }
 
+// The demuxer parses the moofs in the cached ranges. It parses the other moofs
+// only when it must read them. Each moof of frag_bframes.mp4 starts with a
+// video keyframe. The keyframes are at PTS 1024, 13312, 25600 and 37888.
+TEST(MP4Demuxer, FragSeekToUnparsedFragment)
+{
+  // Both files use this video timescale.
+  static constexpr int64_t kTimescale = 12800;
+  struct SeekCase {
+    const char* mFileName;
+    // The cached bytes are [0, end). 0 means that no bytes are cached.
+    int64_t mCachedEnd;
+    TimeUnit mTarget;
+    TimeUnit mExpected;
+    // Every read ends at or before this offset. After the seek, the demuxer
+    // also parses the next moof to find the next keyframe.
+    int64_t mMaxReadEnd;
+  };
+  static constexpr SeekCase cases[] = {
+      // No moof is parsed. Moof 3 starts at byte 46871.
+      {"frag_bframes.mp4", 0, TimeUnit(19200, kTimescale),
+       TimeUnit(13312, kTimescale), 46871},
+      // Bytes [0, 31787) hold moofs 0 and 1. Moof 1 ends at the target. The
+      // mfra box after moof 3 starts at byte 51575.
+      {"frag_bframes.mp4", 31787, TimeUnit(25600, kTimescale),
+       TimeUnit(25600, kTimescale), 51575},
+      // The target is in moof 3. The file is 51799 bytes.
+      {"frag_bframes.mp4", 31787, TimeUnit(38400, kTimescale),
+       TimeUnit(37888, kTimescale), 51799},
+      // The target is after the end of the stream.
+      {"frag_bframes.mp4", 0, TimeUnit(128000, kTimescale),
+       TimeUnit(37888, kTimescale), 51799},
+      {"frag_bframes.mp4", 31787, TimeUnit(128000, kTimescale),
+       TimeUnit(37888, kTimescale), 51799},
+      // In frag_multi_gop.mp4, samples 0, 10, 20 and so on are keyframes, at
+      // PTS 1024, 6144, ..., 36864. The target is between two keyframes inside
+      // a moof. Moof 1 starts at byte 42180 and moof 2 at byte 72291.
+      {"frag_multi_gop.mp4", 0, TimeUnit(12800, kTimescale),
+       TimeUnit(11264, kTimescale), 42180},
+      {"frag_multi_gop.mp4", 0, TimeUnit(34560, kTimescale),
+       TimeUnit(31744, kTimescale), 72291},
+  };
+
+  for (const SeekCase& test : cases) {
+    SCOPED_TRACE(test.mTarget.ToString().get());
+    RefPtr<RecordReadsMediaResource> resource =
+        new RecordReadsMediaResource(test.mFileName);
+    ASSERT_NS_SUCCEEDED(resource->Open());
+    if (test.mCachedEnd) {
+      resource->MockAddBufferedRange(0, test.mCachedEnd);
+    }
+    RefPtr<MP4DemuxerBinding> binding = new MP4DemuxerBinding(resource);
+    binding->RunTestAndWait([binding, test, resource]() {
+      binding->mVideoTrack =
+          binding->mDemuxer->GetTrackDemuxer(TrackInfo::kVideoTrack, 0);
+      ASSERT_NE(binding->mVideoTrack, nullptr);
+      binding->mVideoTrack->Seek(test.mTarget)
+          ->Then(
+              binding->mTaskQueue, __func__,
+              [binding, test, resource](const TimeUnit& aTime) {
+                EXPECT_EQ(aTime, test.mExpected)
+                    << "Seek resolved at " << aTime.ToString();
+                EXPECT_LE(resource->mMaxReadOffset, test.mMaxReadEnd);
+                binding->mTaskQueue->BeginShutdown();
+              },
+              [binding](const MediaResult&) {
+                EXPECT_TRUE(false) << "Seek failed";
+                binding->mTaskQueue->BeginShutdown();
+              });
+    });
+  }
+}
+
 struct SkipToRAPTestCase {
   const char* testName;
   const char* fileName;
@@ -1542,6 +1614,19 @@ static constexpr SkipToRAPTestCase skipRAPTestCases[] = {
     {"FragBFramesOk3", "frag_bframes.mp4", true, 28, TimeUnit(13824, 12800),
      TimeUnit(100, 1000), TimeUnit(25600, 12800), 21},
 
+    // Moofs 0 and 1 of frag_multi_gop.mp4 have 50 and 25 video samples.
+    // Samples 0, 10, 20 and so on are keyframes. This command made the file:
+    //   ffmpeg -f lavfi -i sine=frequency=262:sample_rate=48000:duration=4
+    //   -c:a aac -f lavfi -i testsrc=r=25:s=320x240:duration=3 -g 10
+    //   -movflags +empty_moov -frag_duration 2000000 -c:v libx264
+    //   frag_multi_gop.mp4
+    // The skip stays in moof 0.
+    {"FragMultiGopOk1", "frag_multi_gop.mp4", true, 1, TimeUnit(1024, 12800),
+     TimeUnit(1600, 1000), TimeUnit(21504, 12800), 40},
+    // The skip goes from moof 0 to moof 1.
+    {"FragMultiGopOk2", "frag_multi_gop.mp4", true, 10, TimeUnit(5632, 12800),
+     TimeUnit(2600, 1000), TimeUnit(36864, 12800), 61},
+
     {"Stss1stWrongH264Fail1", "stss-1st-wrong-h264.mp4", false, 1,
      TimeUnit(960, 12800), TimeUnit(2500, 1000), TimeUnit(0, 12800), 99},
 
@@ -1553,6 +1638,13 @@ static constexpr SkipToRAPTestCase skipRAPTestCases[] = {
 
     {"FragBFramesFail", "frag_bframes.mp4", false, 25, TimeUnit(13312, 12800),
      TimeUnit(3000, 1000), TimeUnit(0, 12800), 50},
+    // No sample is at or after the threshold, so the skip reads to the end of
+    // the stream.
+    {"FragBFramesFailPastEnd", "frag_bframes.mp4", false, 25,
+     TimeUnit(13312, 12800), TimeUnit(3500, 1000), TimeUnit(0, 12800), 50},
+    // The skip starts at the end of the stream.
+    {"FragMultiGopFailAtEnd", "frag_multi_gop.mp4", false, 75,
+     TimeUnit(38400, 12800), TimeUnit(100, 1000), TimeUnit(0, 12800), 0},
 };
 
 class SkipToNextRAPTest : public testing::TestWithParam<SkipToRAPTestCase> {};
@@ -1671,8 +1763,7 @@ INSTANTIATE_TEST_SUITE_P(MP4Demuxer, SkipToNextRAPTest,
 //   -f lavfi -i testsrc=r=25:s=320x240:duration=3 -g 24
 //   -movflags empty_moov+frag_keyframe -c:v libx264
 //   -x264-params b-pyramid=normal -preset veryslow -bf 10 frag_bframes.mp4
-TEST(MP4SampleIndex, FragBFramesMarkKeyframes)
-{
+static void CreateFragBFramesVideoIndex(RefPtr<MP4SampleIndex>* aIndex) {
   RefPtr<MockMediaResource> resource =
       new MockMediaResource("frag_bframes.mp4");
   ASSERT_NS_SUCCEEDED(resource->Open());
@@ -1701,6 +1792,13 @@ TEST(MP4SampleIndex, FragBFramesMarkKeyframes)
   MediaByteRangeSet ranges;
   ASSERT_NS_SUCCEEDED(resource->GetCachedRanges(ranges));
   index->UpdateMoofIndex(ranges);
+  *aIndex = index;
+}
+
+TEST(MP4SampleIndex, FragBFramesMarkKeyframes)
+{
+  RefPtr<MP4SampleIndex> index;
+  ASSERT_NO_FATAL_FAILURE(CreateFragBFramesVideoIndex(&index));
 
   SampleIterator iterator(index);
   std::vector<TimeUnit> keyframeTimes;
@@ -1720,4 +1818,18 @@ TEST(MP4SampleIndex, FragBFramesMarkKeyframes)
     ASSERT_NE(next, nullptr);
     EXPECT_EQ(next->mTime, time);
   }
+}
+
+// frag_bframes.mp4 has 24, 24, 24 and 3 video samples in its 4 moofs.
+// {4, 0} is the position after the last sample.
+TEST(MP4SampleIndex, FragNumSamplesBetween)
+{
+  RefPtr<MP4SampleIndex> index;
+  ASSERT_NO_FATAL_FAILURE(CreateFragBFramesVideoIndex(&index));
+
+  EXPECT_EQ(index->NumSamplesBetween({0, 3}, {0, 8}), 5u);
+  EXPECT_EQ(index->NumSamplesBetween({0, 24}, {1, 1}), 1u);
+  EXPECT_EQ(index->NumSamplesBetween({1, 1}, {4, 0}), 50u);
+  EXPECT_EQ(index->NumSamplesBetween({0, 0}, {4, 0}), 75u);
+  EXPECT_EQ(index->NumSamplesBetween({4, 0}, {4, 0}), 0u);
 }
