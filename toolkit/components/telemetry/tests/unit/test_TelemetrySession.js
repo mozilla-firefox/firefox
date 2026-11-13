@@ -518,18 +518,14 @@ add_task(async function sessionTimeExcludingAndIncludingSuspend() {
     // We don't support this new probe on android at the moment.
     return;
   }
-  Services.prefs.setBoolPref(
-    "toolkit.telemetry.testing.overrideProductsCheck",
-    true
-  );
   await TelemetryController.testReset();
-  let subsession = TelemetrySession.getPayload("environment-change", true);
-  let parentScalars = subsession.processes.parent.scalars;
+  Services.fog.testResetFOG();
+  TelemetrySession.getPayload("environment-change", true);
 
   let withSuspend =
-    parentScalars["browser.engagement.session_time_including_suspend"];
+    Glean.browserEngagement.sessionTimeIncludingSuspend.testGetValue();
   let withoutSuspend =
-    parentScalars["browser.engagement.session_time_excluding_suspend"];
+    Glean.browserEngagement.sessionTimeExcludingSuspend.testGetValue();
 
   Assert.greater(
     withSuspend,
@@ -565,11 +561,6 @@ add_task(async function sessionTimeExcludingAndIncludingSuspend() {
     withoutSuspend,
     `The uptime with suspend must always been greater or equal to the uptime
      without suspend`
-  );
-
-  Services.prefs.setBoolPref(
-    "toolkit.telemetry.testing.overrideProductsCheck",
-    false
   );
 });
 

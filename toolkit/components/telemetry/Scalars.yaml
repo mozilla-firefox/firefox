@@ -715,38 +715,6 @@ browser.engagement:
     record_in_processes:
       - 'main'
 
-  session_time_including_suspend:
-    bug_numbers:
-      - 1205985
-    description: >
-      The duration of the session in milliseconds, including the time the device
-      was suspended.
-    expires: never
-    kind: uint
-    notification_emails:
-      - padenot@mozilla.com
-    release_channel_collection: opt-out
-    products:
-      - 'firefox'
-    record_in_processes:
-      - 'main'
-
-  session_time_excluding_suspend:
-    bug_numbers:
-      - 1205985
-    description: >
-      The duration of the session in milliseconds, excluding the time the device
-      was suspended.
-    expires: never
-    kind: uint
-    notification_emails:
-      - padenot@mozilla.com
-    release_channel_collection: opt-out
-    products:
-      - 'firefox'
-    record_in_processes:
-      - 'main'
-
 
 # The following section contains the browser engagement scalars.
 browser.engagement.navigation:
