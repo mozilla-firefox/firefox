@@ -1110,9 +1110,16 @@ bool WebGLProgram::ValidateAfterTentativeLink(
         componentsPerVert.push_back(0);
       }
 
-      size_t varyingComponents = ElemTypeComponents(cur.elemType);
-      MOZ_ASSERT(varyingComponents);
-      varyingComponents *= cur.elemCount;
+      const size_t varyingComponents =
+          ElemTypeComponents(cur.elemType) * cur.elemCount;
+      if (!varyingComponents) {
+        *out_linkLog = nsPrintfCString(
+                           "Transform feedback varying \"%s\" has an"
+                           " unsupported type.",
+                           cur.name.c_str())
+                           .get();
+        return false;
+      }
 
       auto& totalComponentsForIndex = *(componentsPerVert.rbegin());
       totalComponentsForIndex += varyingComponents;
