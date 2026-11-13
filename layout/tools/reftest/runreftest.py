@@ -870,7 +870,8 @@ class RefTest:
             debug_args = [debuggerInfo.path] + debuggerInfo.args
 
         def record_last_test(message):
-            """Records the last test seen by this harness for the benefit of crash logging."""
+            """Records the last test seen by this harness for crash logging and
+            sanitizer reports."""
 
             def testid(test):
                 if " " in test:
@@ -884,6 +885,7 @@ class RefTest:
                     self.lastTestSeen = self.currentManifest
                 else:
                     self.lastTestSeen = "{} (finished)".format(testid(message["test"]))
+            self.outputHandler.lastTestSeen = self.lastTestSeen
 
         self.log.add_handler(record_last_test)
 
@@ -963,6 +965,7 @@ class RefTest:
         status = runner.wait()
         runner.process_handler = None
         self.outputHandler.proc_name = None
+        self.outputHandler.finish()
 
         crashed = mozcrash.log_crashes(
             self.log,
@@ -1126,6 +1129,8 @@ class RefTest:
             self.currentManifest = manifest
             self.currentManifestID = manifest_id
             self.lastTestSeen = manifest
+            self.outputHandler.lastTestSeen = self.lastTestSeen
+            self.outputHandler.scope = manifest_id
             status = run(tests=tests, leakScope=manifest_id)
             overall = overall or status
             self.log.group_end(name=manifest_id)

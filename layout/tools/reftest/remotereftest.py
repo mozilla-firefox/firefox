@@ -455,6 +455,7 @@ class RemoteReftest(RefTest):
             "remotereftest.py | Application ran for: %s"
             % str(datetime.datetime.now() - startTime)
         )
+        self.outputHandler.finish()
         crashed = self.check_for_crashes(symbolsPath, rpm.last_test_seen)
         if crashed:
             status = 1

@@ -97,6 +97,7 @@ from manifestparser import TestManifest
 from manifestparser.expression import parse
 from manifestparser.filters import failures, pathprefix, tags
 from manifestparser.util import normsep, split_manifest_list
+from mozleak.asan import ASanErrorParser
 from mozlog import commandline
 from mozprofile import Profile
 from mozprofile.cli import parse_key_value, parse_preferences
@@ -208,6 +209,7 @@ class XPCShellTestThread(Thread):
         self.log = kwargs.get("log")
         self.assertion_parser = AssertionFailureParser(self.log)
         self.ubsan_parser = UBSanErrorParser(self.log)
+        self.asan_parser = ASanErrorParser(self.log)
         self.app_dir_key = kwargs.get("app_dir_key")
         self.interactive = kwargs.get("interactive")
         self.rootPrefsFile = kwargs.get("rootPrefsFile")
@@ -835,6 +837,7 @@ class XPCShellTestThread(Thread):
             self.process_line(line_string)
         self.assertion_parser.flush()
         self.ubsan_parser.flush()
+        self.asan_parser.flush()
 
         if self.saw_proc_start and not self.saw_proc_end:
             self.has_failure_output = True
@@ -861,6 +864,13 @@ class XPCShellTestThread(Thread):
             )
             self.ubsan_parser.log(
                 line, pid=self.proc_ident, test=self.test_object["id"], time=time
+            )
+            self.asan_parser.log(
+                line,
+                pid=self.proc_ident,
+                test=self.test_object["id"],
+                time=time,
+                quiet=bool(self.crashAsPass or self.retry),
             )
             self.log.process_output(self.proc_ident, line, **kwargs)
         else:
@@ -923,6 +933,7 @@ class XPCShellTestThread(Thread):
         self.log.group_end("replaying " + log_message)
         self.assertion_parser.flush()
         self.ubsan_parser.flush()
+        self.asan_parser.flush()
         self.output_lines = []
 
     def report_message(self, message):

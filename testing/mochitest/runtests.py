@@ -3057,6 +3057,7 @@ toolbar#nav-bar {
 
             assertionFailures = AssertionFailureParser(self.log)
             ubsanErrors = UBSanErrorParser(self.log)
+            asanErrors = mozleak.ASanErrorParser(self.log)
 
             # create an instance to process the output
             outputHandler = self.OutputHandler(
@@ -3070,6 +3071,8 @@ toolbar#nav-bar {
                 tsanErrors=tsanErrors,
                 assertionFailures=assertionFailures,
                 ubsanErrors=ubsanErrors,
+                asanErrors=asanErrors,
+                crashAsPass=crashAsPass,
                 bisectChunk=bisectChunk,
                 restartAfterFailure=restartAfterFailure,
             )
@@ -4459,6 +4462,8 @@ toolbar#nav-bar {
             tsanErrors=None,
             assertionFailures=None,
             ubsanErrors=None,
+            asanErrors=None,
+            crashAsPass=False,
             bisectChunk=None,
             restartAfterFailure=None,
         ):
@@ -4476,6 +4481,8 @@ toolbar#nav-bar {
             self.tsanErrors = tsanErrors
             self.assertionFailures = assertionFailures
             self.ubsanErrors = ubsanErrors
+            self.asanErrors = asanErrors
+            self.crashAsPass = crashAsPass
             self.bisectChunk = bisectChunk
             self.restartAfterFailure = restartAfterFailure
             self.browserProcessId = None
@@ -4513,6 +4520,7 @@ toolbar#nav-bar {
                 self.trackLSANLeaks,
                 self.trackTSanErrors,
                 self.trackAssertionFailures,
+                self.trackASanErrors,
                 self.trackUBSanErrors,
                 self.count_structured,
             ]
@@ -4563,6 +4571,9 @@ toolbar#nav-bar {
 
             if self.ubsanErrors:
                 self.ubsanErrors.flush()
+
+            if self.asanErrors:
+                self.asanErrors.flush()
 
         # output message handlers:
         # these take a message and return a message
@@ -4674,6 +4685,18 @@ toolbar#nav-bar {
                     self.lsanLeaks.log(line, self.harness.lastTestSeen)
             return message
 
+        def currentScopeAndTest(self):
+            """The manifest or test a sanitizer report belongs to, and the
+            test that was running when it was printed."""
+            if self.harness.lastTestFinished:
+                scope = self.harness.lastManifest
+            else:
+                scope = self.harness.lastTestSeen
+            test = self.harness.lastTestSeen
+            if test.endswith(" (finished)"):
+                test = test[: -len(" (finished)")]
+            return scope, test
+
         def trackTSanErrors(self, message):
             if self.tsanErrors and message["action"] in ("log", "process_output"):
                 line = (
@@ -4682,18 +4705,13 @@ toolbar#nav-bar {
                     else message["data"]
                 )
                 pid = message.get("process")
-                if self.harness.lastTestFinished:
-                    scope = self.harness.lastManifest
-                else:
-                    scope = self.harness.lastTestSeen
+                scope, _ = self.currentScopeAndTest()
                 self.tsanErrors.log(line, pid=pid, scope=scope)
             return message
 
         def trackAssertionFailures(self, message):
             if self.assertionFailures and message["action"] == "process_output":
-                test = self.harness.lastTestSeen
-                if test.endswith(" (finished)"):
-                    test = test[: -len(" (finished)")]
+                _, test = self.currentScopeAndTest()
                 self.assertionFailures.log(
                     message["data"], pid=message.get("process"), test=test
                 )
@@ -4701,18 +4719,24 @@ toolbar#nav-bar {
 
         def trackUBSanErrors(self, message):
             if self.ubsanErrors and message["action"] == "process_output":
-                if self.harness.lastTestFinished:
-                    scope = self.harness.lastManifest
-                else:
-                    scope = self.harness.lastTestSeen
-                test = self.harness.lastTestSeen
-                if test.endswith(" (finished)"):
-                    test = test[: -len(" (finished)")]
+                scope, test = self.currentScopeAndTest()
                 self.ubsanErrors.log(
                     message["data"],
                     pid=message.get("process"),
                     scope=scope,
                     test=test,
+                )
+            return message
+
+        def trackASanErrors(self, message):
+            if self.asanErrors and message["action"] == "process_output":
+                scope, test = self.currentScopeAndTest()
+                self.asanErrors.log(
+                    message["data"],
+                    pid=message.get("process"),
+                    scope=scope,
+                    test=test,
+                    quiet=self.crashAsPass,
                 )
             return message
 
