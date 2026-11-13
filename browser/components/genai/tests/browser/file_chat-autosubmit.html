@@ -7,44 +7,32 @@
   <button id="send" data-testid="send-button" type="submit">Send</button>
 </form>
 <script>
-  const url = new URL(location.href);
-  const prompt = url.searchParams.get("q") || "";
+  const prompt = new URL(location.href).searchParams.get("q") || "";
   const form = document.getElementById("f");
 
   window.submitCount = 0;
 
-  // Simulate ChatGPT's behavior - replace editable div mulitiple time
-  function simulateChatGPTReplacement() {
-    let editable = document.querySelector('[contenteditable="true"]');
-    editable.textContent = prompt;
+  document.getElementById("ta").textContent = prompt;
 
-    editable.dispatchEvent(new InputEvent("input"), { bubbles: true });
-
-    setTimeout(() => {
-      const newDiv = document.createElement("div");
-      newDiv.setAttribute("contenteditable", "true");
-      newDiv.textContent = prompt;
-      editable.replaceWith(newDiv);
-
-      newDiv.dispatchEvent(new InputEvent("input", { bubbles: true }));
-
-      setTimeout(() => {
-        const finalDiv = document.createElement("div");
-        finalDiv.setAttribute("contenteditable", "true");
-        finalDiv.textContent = prompt;
-        newDiv.replaceWith(finalDiv);
-
-        finalDiv.dispatchEvent(new InputEvent("input", { bubbles: true }));
-      }, 50);
-    }, 50);
+  // Simulate ChatGPT's behavior - after sending, replace the editable div
+  // multiple times with the prompt restored
+  function replaceEditable() {
+    const editable = document.querySelector('[contenteditable="true"]');
+    const newDiv = document.createElement("div");
+    newDiv.setAttribute("contenteditable", "true");
+    newDiv.textContent = prompt;
+    editable.replaceWith(newDiv);
+    newDiv.dispatchEvent(new InputEvent("input", { bubbles: true }));
   }
-
-  setTimeout(simulateChatGPTReplacement, 50);
 
   form.addEventListener("submit", e => {
     e.preventDefault();
     window.submitCount++;
-  })
+    setTimeout(() => {
+      replaceEditable();
+      replaceEditable();
+    });
+  });
 </script>
 </body>
 </html>
