@@ -405,7 +405,7 @@ Maybe<double> WebGLContext::GetParameter(const GLenum pname) {
       return Some(mStencilWriteMaskFront);
 
     case LOCAL_GL_COLOR_WRITEMASK:
-      return Some(mColorWriteMask0);
+      return Some(mColorWriteMasks[0]);
 
     // float
     case LOCAL_GL_LINE_WIDTH:
