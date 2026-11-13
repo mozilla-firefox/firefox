@@ -12,6 +12,7 @@ import android.util.Log.INFO
 import androidx.annotation.OpenForTesting
 import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.UserManagerCompat
 import androidx.emoji2.text.DefaultEmojiCompatConfig
 import androidx.emoji2.text.EmojiCompat
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -345,5 +346,13 @@ open class FocusApplication : Application(), Provider {
     }
 
     override val workManagerConfiguration
-        get() = Builder().setMinimumLoggingLevel(INFO).build()
+        get() =
+            Builder()
+                .setMinimumLoggingLevel(INFO)
+                .setInitializationExceptionHandler { throwable ->
+                    if (UserManagerCompat.isUserUnlocked(this)) {
+                        throw throwable
+                    }
+                }
+                .build()
 }
