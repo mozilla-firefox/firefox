@@ -72,7 +72,6 @@ vendored:third_party/python/appdirs
 vendored:third_party/python/async_timeout
 vendored:third_party/python/attrs
 vendored:third_party/python/blessed
-vendored:third_party/python/build
 vendored:third_party/python/cbor2
 vendored:third_party/python/certifi
 vendored:third_party/python/charset_normalizer
@@ -91,9 +90,7 @@ vendored:third_party/python/markupsafe/src
 vendored:third_party/python/mozilla_version
 vendored:third_party/python/packaging
 vendored:third_party/python/pip
-vendored:third_party/python/pip_tools
 vendored:third_party/python/platformdirs
-vendored:third_party/python/pyproject_hooks
 vendored:third_party/python/pyrsistent
 vendored:third_party/python/python-hglib
 vendored:third_party/python/redo

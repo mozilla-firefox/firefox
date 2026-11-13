@@ -39,7 +39,6 @@ dependencies = [
     "multidict~=6.7",
     "packaging~=25.0",
     "pathspec~=0.9",
-    "pip-tools==7.4.1",
     "pip==26.3",
     "ply==3.10",
     "pyasn1-modules~=0.2",
