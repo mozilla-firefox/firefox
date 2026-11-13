@@ -37,6 +37,8 @@ AddonUtilsInternal.prototype = {
     // of sourceURI rewriting, we can avoid having to reconstruct the
     // AddonInstall.
     return lazy.AddonManager.getInstallForURL(addon.sourceURI.spec, {
+      id: addon.id,
+      type: addon.type,
       name: addon.name,
       icons: addon.iconURL,
       version: addon.version,

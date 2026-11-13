@@ -110,6 +110,7 @@ add_setup(async function setup() {
       name: data.manifest.name,
       version: data.manifest.version,
       sourceURI: Services.io.newURI(`http://example.com/addons/${name}.xpi`),
+      type: "extension",
       icons: {},
     };
   }
@@ -444,6 +445,73 @@ add_task(async function test_stage_installs_with_download_aborted() {
 
   // Let's cancel the pending installs.
   await cancelInstalls(importedAddonIDs);
+});
+
+add_task(async function test_stage_installs_validate_addon_details() {
+  const testCases = [
+    [
+      { sourceURI: ADDON_SEARCH_RESULTS.ext2.sourceURI },
+      AddonManager.ERROR_INCORRECT_ID,
+      "Importing extension with incorrect ID",
+    ],
+    [
+      { type: "theme" },
+      AddonManager.ERROR_UNEXPECTED_ADDON_TYPE,
+      "Importing extension with incorrect type",
+    ],
+    [
+      { version: "999.0" },
+      AddonManager.ERROR_UNEXPECTED_ADDON_VERSION,
+      "Importing extension with incorrect version",
+    ],
+    [{}, 0, "Importing valid extension"],
+  ];
+
+  for (const [wrongAddonDetails, expectedError, description] of testCases) {
+    const descriptionPrefix = `[${description}]: `;
+    AMBrowserExtensionsImport._addonRepository = mockAddonRepository({
+      addons: [
+        {
+          ...ADDON_SEARCH_RESULTS.ext1,
+          ...wrongAddonDetails,
+        },
+      ],
+    });
+
+    const newInstall = AddonTestUtils.promiseInstallEvent("onNewInstall");
+    const installEnded = AddonTestUtils.promiseInstallEvent("onInstallEnded");
+    const result = await AMBrowserExtensionsImport.stageInstalls(
+      "some-browser-id",
+      ["ext-1"]
+    );
+    const [install] = await newInstall;
+
+    if (!expectedError) {
+      await Promise.all([
+        installEnded,
+        AMBrowserExtensionsImport.completeInstalls(),
+      ]);
+    }
+
+    Assert.equal(
+      install.error,
+      expectedError,
+      descriptionPrefix + "Expected error (if any) given"
+    );
+    Assert.deepEqual(
+      result,
+      { importedAddonIDs: expectedError ? [] : ["ff@ext-1"] },
+      descriptionPrefix + "Correct add-on IDs imported"
+    );
+
+    const addon = await AddonManager.getAddonByID("ff@ext-1");
+    Assert.equal(
+      !!addon?.isActive,
+      !expectedError,
+      descriptionPrefix + "Extension is/isn't installed and enabled"
+    );
+    await addon?.uninstall();
+  }
 });
 
 add_task(async function test_stageInstalls_then_restart_addonManager() {

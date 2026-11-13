@@ -6104,7 +6104,7 @@ AMBrowserExtensionsImport = {
       importedAddons
         // Do not import add-ons already installed.
         .filter(({ id }) => !alreadyInstalledIDs.includes(id))
-        .map(async ({ id, sourceURI, name, version, icons }) => {
+        .map(async ({ id, sourceURI, name, version, icons, type }) => {
           let addonInstall;
 
           try {
@@ -6114,6 +6114,8 @@ AMBrowserExtensionsImport = {
               icons,
               telemetryInfo: { source: this.TELEMETRY_SOURCE },
               promptHandler: this._installPromptHandler,
+              id,
+              type,
             });
           } catch (err) {
             return Promise.reject(err);
