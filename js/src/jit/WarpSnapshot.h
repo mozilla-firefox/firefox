@@ -39,6 +39,7 @@ class WarpScriptSnapshot;
   _(WarpGetIntrinsic)                   \
   _(WarpGetImport)                      \
   _(WarpConstantBinding)                \
+  _(WarpKnownEnvironment)               \
   _(WarpRest)                           \
   _(WarpBindUnqualifiedGName)           \
   _(WarpVarEnvironment)                 \
@@ -223,6 +224,34 @@ class WarpConstantBinding : public WarpOpSnapshot {
   bool isNurseryObject() const { return value_.is<uint32_t>(); }
   uint32_t nurseryIndex() const { return value_.as<uint32_t>(); }
   Value value() const { return value_.as<OffthreadGCPtr<Value>>(); }
+
+  void traceData(JSTracer* trc);
+
+#ifdef JS_JITSPEW
+  void dumpData(GenericPrinter& out) const;
+#endif
+};
+
+// The environment object or nursery object index for JSOp::GetAliasedVar,
+// JSOp::SetAliasedVar or JSOp::InitAliasedLexical, if the environment is known
+// at compile time.
+class WarpKnownEnvironment : public WarpOpSnapshot {
+  mozilla::Variant<OffthreadGCPtr<EnvironmentObject*>, uint32_t> env_;
+
+ public:
+  static constexpr Kind ThisKind = Kind::WarpKnownEnvironment;
+
+  WarpKnownEnvironment(uint32_t offset, EnvironmentObject* env)
+      : WarpOpSnapshot(ThisKind, offset),
+        env_(OffthreadGCPtr<EnvironmentObject*>(env)) {}
+  WarpKnownEnvironment(uint32_t offset, uint32_t nurseryIndex)
+      : WarpOpSnapshot(ThisKind, offset), env_(nurseryIndex) {}
+
+  bool isNurseryEnvironment() const { return env_.is<uint32_t>(); }
+  uint32_t nurseryIndex() const { return env_.as<uint32_t>(); }
+  EnvironmentObject* env() const {
+    return env_.as<OffthreadGCPtr<EnvironmentObject*>>();
+  }
 
   void traceData(JSTracer* trc);
 

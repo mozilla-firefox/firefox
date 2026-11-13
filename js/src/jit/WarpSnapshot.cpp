@@ -166,6 +166,14 @@ void WarpConstantBinding::dumpData(GenericPrinter& out) const {
   }
 }
 
+void WarpKnownEnvironment::dumpData(GenericPrinter& out) const {
+  if (isNurseryEnvironment()) {
+    out.printf("    nurseryIndex: %u\n", nurseryIndex());
+  } else {
+    out.printf("    env: 0x%p\n", env());
+  }
+}
+
 void WarpGetImport::dumpData(GenericPrinter& out) const {
   out.printf("    targetEnv: 0x%p\n", targetEnv());
   out.printf("    numFixedSlots: %u\n", numFixedSlots());
@@ -341,6 +349,13 @@ void WarpConstantBinding::traceData(JSTracer* trc) {
   if (!isNurseryObject()) {
     TraceOffthreadGCPtr(trc, value_.as<OffthreadGCPtr<Value>>(),
                         "warp-constant-binding");
+  }
+}
+
+void WarpKnownEnvironment::traceData(JSTracer* trc) {
+  if (!isNurseryEnvironment()) {
+    TraceOffthreadGCPtr(trc, env_.as<OffthreadGCPtr<EnvironmentObject*>>(),
+                        "warp-known-env");
   }
 }
 

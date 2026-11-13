@@ -90,7 +90,13 @@ class MOZ_STACK_CLASS WarpScriptOracle {
     EnvironmentObject* env;
   };
   AliasedVarTarget findAliasedVarTarget(BytecodeLocation loc);
+  bool canSpecializeEnvironments() const;
+  AbortReasonOr<Ok> addKnownEnvironment(WarpOpSnapshotList& snapshots,
+                                        BytecodeLocation loc,
+                                        EnvironmentObject* env);
   AbortReasonOr<Ok> maybeSnapshotGetAliasedVar(WarpOpSnapshotList& snapshots,
+                                               BytecodeLocation loc);
+  AbortReasonOr<Ok> maybeSnapshotSetAliasedVar(WarpOpSnapshotList& snapshots,
                                                BytecodeLocation loc);
   AbortReasonOr<Ok> snapshotGetImport(WarpOpSnapshotList& snapshots,
                                       BytecodeLocation loc);
@@ -417,15 +423,41 @@ WarpScriptOracle::AliasedVarTarget WarpScriptOracle::findAliasedVarTarget(
   MOZ_CRASH("Invalid environment coordinate");
 }
 
-AbortReasonOr<Ok> WarpScriptOracle::maybeSnapshotGetAliasedVar(
-    WarpOpSnapshotList& snapshots, BytecodeLocation loc) {
+bool WarpScriptOracle::canSpecializeEnvironments() const {
   if (!JS::Prefs::ion_environment_specialization()) {
-    return Ok();
+    return false;
   }
 
   // Environments are known at compile time only if we're inlining a specific
   // JSFunction or if we're in a module script.
-  if (!maybeFunction_ && !isInModule_) {
+  return maybeFunction_ || isInModule_;
+}
+
+AbortReasonOr<Ok> WarpScriptOracle::addKnownEnvironment(
+    WarpOpSnapshotList& snapshots, BytecodeLocation loc,
+    EnvironmentObject* env) {
+  uint32_t offset = loc.bytecodeToOffset(script_);
+  if (IsInsideNursery(env)) {
+    uint32_t nurseryIndex;
+    if (!oracle_->registerNurseryObject(env, &nurseryIndex)) {
+      return abort(AbortReason::Alloc);
+    }
+    if (!AddOpSnapshot<WarpKnownEnvironment>(alloc_, snapshots, offset,
+                                             nurseryIndex)) {
+      return abort(AbortReason::Alloc);
+    }
+    return Ok();
+  }
+
+  if (!AddOpSnapshot<WarpKnownEnvironment>(alloc_, snapshots, offset, env)) {
+    return abort(AbortReason::Alloc);
+  }
+  return Ok();
+}
+
+AbortReasonOr<Ok> WarpScriptOracle::maybeSnapshotGetAliasedVar(
+    WarpOpSnapshotList& snapshots, BytecodeLocation loc) {
+  if (!canSpecializeEnvironments()) {
     return Ok();
   }
 
@@ -435,11 +467,28 @@ AbortReasonOr<Ok> WarpScriptOracle::maybeSnapshotGetAliasedVar(
   }
 
   uint32_t slot = loc.getEnvironmentCoordinate().slot();
-  if (!oracle_->isImmutableEnvironmentSlot(target.scope, slot)) {
+  if (oracle_->isImmutableEnvironmentSlot(target.scope, slot)) {
+    bool addedConstant =
+        MOZ_TRY(maybeAddConstantBinding(snapshots, loc, target.env, slot));
+    if (addedConstant) {
+      return Ok();
+    }
+  }
+
+  return addKnownEnvironment(snapshots, loc, target.env);
+}
+
+AbortReasonOr<Ok> WarpScriptOracle::maybeSnapshotSetAliasedVar(
+    WarpOpSnapshotList& snapshots, BytecodeLocation loc) {
+  if (!canSpecializeEnvironments()) {
     return Ok();
   }
-  MOZ_TRY(maybeAddConstantBinding(snapshots, loc, target.env, slot));
-  return Ok();
+
+  AliasedVarTarget target = findAliasedVarTarget(loc);
+  if (!target.env) {
+    return Ok();
+  }
+  return addKnownEnvironment(snapshots, loc, target.env);
 }
 
 ICEntry& WarpScriptOracle::getICEntryAndFallback(BytecodeLocation loc,
@@ -607,6 +656,11 @@ AbortReasonOr<WarpScriptSnapshot*> WarpScriptOracle::createScriptSnapshot() {
 
       case JSOp::GetAliasedVar:
         MOZ_TRY(maybeSnapshotGetAliasedVar(opSnapshots, loc));
+        break;
+
+      case JSOp::SetAliasedVar:
+      case JSOp::InitAliasedLexical:
+        MOZ_TRY(maybeSnapshotSetAliasedVar(opSnapshots, loc));
         break;
 
       case JSOp::GetImport:
@@ -859,8 +913,6 @@ AbortReasonOr<WarpScriptSnapshot*> WarpScriptOracle::createScriptSnapshot() {
       case JSOp::Callee:
       case JSOp::ToAsyncIter:
       case JSOp::ObjWithProto:
-      case JSOp::SetAliasedVar:
-      case JSOp::InitAliasedLexical:
       case JSOp::EnvCallee:
       case JSOp::MoreIter:
       case JSOp::EndIter:
