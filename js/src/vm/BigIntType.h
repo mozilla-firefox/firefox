@@ -9,6 +9,7 @@
 #include "mozilla/Maybe.h"
 #include "mozilla/Range.h"
 #include "mozilla/Span.h"
+#include "mozilla/Vector.h"
 
 #include "jstypes.h"
 
@@ -236,6 +237,10 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
                                  js::gc::Heap heap = js::gc::Heap::Default);
   static BigInt* createFromNonZeroRawUint64(JSContext* cx, uint64_t n,
                                             bool isNegative);
+  template <size_t N, class AllocPolicy>
+  static BigInt* createFromDigitVector(
+      JSContext* cx, const mozilla::Vector<Digit, N, AllocPolicy>& digits,
+      bool isNegative);
   // FIXME: Cache these values.
   static BigInt* zero(JSContext* cx, js::gc::Heap heap = js::gc::Heap::Default);
   static BigInt* one(JSContext* cx);
@@ -444,6 +449,14 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   static Digit inplaceSubDigits(Digits x, ConstDigits y);
   // Add `y` to the low `y.size()` digits of `x`, returning the carry.
   static Digit inplaceAddDigits(Digits x, ConstDigits y);
+  // Copy `src` into `dest`, which has the same number of digits.
+  static void copyDigits(ConstDigits src, Digits dest);
+  // Store `src << shift` into `dest`. Return the bits shifted out of the top.
+  static Digit leftShiftDigits(ConstDigits src, unsigned shift, Digits dest);
+  // Store `src >> shift` into `dest`. Shift the low bits of `high` into the
+  // top. Return the low bits of `src` that are shifted out.
+  static Digit rightShiftDigits(ConstDigits src, unsigned shift, Digit high,
+                                Digits dest);
   // Knuth's Algorithm D (schoolbook division): compute `<q,u> = <u/v,u%v>`,
   // using `qhatv` for scratch space. `q` may be empty, if the caller only needs
   // the remainder. See the definition for full preconditions.
@@ -453,10 +466,6 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   static void modDigitsInPlaceByCrandallReduction(Digits r, uint32_t k,
                                                   Digit c);
 
-  enum class LeftShiftMode { SameSizeResult, AlwaysAddOneDigit };
-
-  static BigInt* absoluteLeftShiftAlwaysCopy(JSContext* cx, Handle<BigInt*> x,
-                                             unsigned shift, LeftShiftMode);
   static bool productGreaterThan(Digit factor1, Digit factor2, Digit high,
                                  Digit low);
   static BigInt* lshByAbsolute(JSContext* cx, HandleBigInt x, HandleBigInt y);
@@ -466,7 +475,6 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
                                               uint64_t bits,
                                               bool resultNegative);
 
-  void inplaceRightShiftLowZeroBits(unsigned shift);
   void inplaceMultiplyAdd(Digit multiplier, Digit part);
 
   // The result of an SymmetricTrim bitwise op has as many digits as the
