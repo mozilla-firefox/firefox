@@ -275,16 +275,7 @@ nsresult HTMLEditor::SetInlinePropertiesAsSubAction(
     return NS_ERROR_EDITOR_UNEXPECTED_DOM_TREE;
   }
 
-  // Due to a bug of a selection modifier, some ranges may be in native
-  // anonymous nodes. In that case, the range boundary is not editable. So, we
-  // can ban the bogus ranges with calling EnsureOnlyEditableRanges().
-  // TODO: We should adjust the range boundary container to the closest editable
-  // container. Then, we can apply style with ignoring non-editable nodes.
-  AutoClonedSelectionRangeArray selectionRanges(SelectionRef());
-  selectionRanges.EnsureOnlyEditableRanges(aEditingHost);
-  selectionRanges.RemoveCollapsedRanges(
-      AutoClonedRangeArray::PreservePrimaryRangeIfAllRangesCollapsed::No);
-  if (selectionRanges.IsCollapsed()) {
+  if (SelectionRef().IsCollapsed()) {
     // Manipulating text attributes on a collapsed selection only sets state
     // for the next text insertion
     mPendingStylesToApplyToNewContent->PreserveStyles(aStylesToSet);
@@ -319,6 +310,7 @@ nsresult HTMLEditor::SetInlinePropertiesAsSubAction(
   //       mutation event listeners.  We should try to delete this in a bug.
   AutoTransactionsConserveSelection dontChangeMySelection(*this);
 
+  AutoClonedSelectionRangeArray selectionRanges(SelectionRef());
   nsresult rv = SetInlinePropertiesAroundRanges(selectionRanges, aStylesToSet,
                                                 aEditingHost);
   if (NS_FAILED(rv)) {
@@ -3428,16 +3420,7 @@ nsresult HTMLEditor::RemoveInlinePropertiesAsSubAction(
   NS_WARNING_ASSERTION(NS_SUCCEEDED(rvIgnored),
                        "EditorBase::CommitComposition() failed, but ignored");
 
-  // Due to a bug of a selection modifier, some ranges may be in native
-  // anonymous nodes. In that case, the range boundary is not editable. So, we
-  // can ban the bogus ranges with calling EnsureOnlyEditableRanges().
-  // TODO: We should adjust the range boundary container to the closest editable
-  // container. Then, we can remove style with ignoring non-editable nodes.
-  AutoClonedSelectionRangeArray selectionRanges(SelectionRef());
-  selectionRanges.EnsureOnlyEditableRanges(aEditingHost);
-  selectionRanges.RemoveCollapsedRanges(
-      AutoClonedRangeArray::PreservePrimaryRangeIfAllRangesCollapsed::No);
-  if (selectionRanges.IsCollapsed()) {
+  if (SelectionRef().IsCollapsed()) {
     // Manipulating text attributes on a collapsed selection only sets state
     // for the next text insertion
     mPendingStylesToApplyToNewContent->ClearStyles(aStylesToRemove);
@@ -3473,6 +3456,7 @@ nsresult HTMLEditor::RemoveInlinePropertiesAsSubAction(
   //       mutation event listeners.  We should try to delete this in a bug.
   AutoTransactionsConserveSelection dontChangeMySelection(*this);
 
+  AutoClonedSelectionRangeArray selectionRanges(SelectionRef());
   for (const EditorInlineStyle& styleToRemove : aStylesToRemove) {
     // The ranges may be updated by changing the DOM tree.  In strictly
     // speaking, we should save and restore the ranges at every range loop,
