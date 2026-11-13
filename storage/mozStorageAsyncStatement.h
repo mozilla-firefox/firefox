@@ -58,6 +58,12 @@ class AsyncStatement final : public mozIStorageAsyncStatement,
   ~AsyncStatement();
 
   /**
+   * Called when the refcount drops to zero. Deletes the object, on the main
+   * thread if it has JS helpers.
+   */
+  void Destroy();
+
+  /**
    * @return a pointer to the BindingParams object to use with our Bind*
    *         method.
    */
