@@ -549,6 +549,7 @@ void ScrollbarsForWheel::OwnWheelTransaction(bool aOwn) {
 /* static */
 void ScrollbarsForWheel::TemporarilyActivateAllPossibleScrollTargets(
     EventStateManager* aESM, nsIFrame* aTargetFrame, WidgetWheelEvent* aEvent) {
+  AutoWeakFrame weakTargetFrame(aTargetFrame);
   for (size_t i = 0; i < kNumberOfTargets; i++) {
     const DeltaValues* dir = &directions[i];
     AutoWeakFrame* scrollTarget = &sActivatedScrollTargets[i];
@@ -559,6 +560,9 @@ void ScrollbarsForWheel::TemporarilyActivateAllPossibleScrollTargets(
     if (target) {
       *scrollTarget = target;
       target->ScrollbarActivityStarted();
+      if (!weakTargetFrame.IsAlive()) {
+        return;
+      }
     }
   }
 }
