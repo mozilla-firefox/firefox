@@ -145,6 +145,27 @@ async function openTestTab() {
   return tab;
 }
 
+// Probe the blocking engines for an image request to `url` loaded by
+// `sourceUrl`, and return whether the trackers feature matched it without an
+// exception.
+async function probeHits(url, sourceUrl = TEST_DOMAIN) {
+  let service = Cc["@mozilla.org/content-classifier-service;1"].getService(
+    Ci.nsIContentClassifierService
+  );
+  let report = await service.probeBlocking({
+    url,
+    sourceUrl,
+    topWindowUrl: sourceUrl,
+    requestType: "image",
+    privateBrowsing: false,
+    forceThirdPartyToTop: false,
+    isNonRecommendedAddon: false,
+  });
+  return Array.from(report.results).some(
+    r => r.featureName == "trackers" && r.matched && !r.exception
+  );
+}
+
 async function openPrivateTab() {
   let win = await BrowserTestUtils.openNewBrowserWindow({ private: true });
   let tab = await BrowserTestUtils.openNewForegroundTab(

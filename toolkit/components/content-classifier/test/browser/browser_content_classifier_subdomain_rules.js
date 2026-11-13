@@ -256,24 +256,6 @@ add_task(async function test_probe_matches_subdomain_rule() {
   let tab = await openTestTab();
   await syncAndWaitForLists(client, records);
 
-  let service = Cc["@mozilla.org/content-classifier-service;1"].getService(
-    Ci.nsIContentClassifierService
-  );
-  async function probeHits(url) {
-    let report = await service.probeBlocking({
-      url,
-      sourceUrl: TEST_DOMAIN,
-      topWindowUrl: TEST_DOMAIN,
-      requestType: "image",
-      privateBrowsing: false,
-      forceThirdPartyToTop: false,
-      isNonRecommendedAddon: false,
-    });
-    return Array.from(report.results).some(
-      r => r.featureName == "trackers" && r.matched && !r.exception
-    );
-  }
-
   ok(
     await probeHits(SUBDOMAIN_TRACKER + "image.jpg"),
     "probe: ||tracking.example.com^ matches tracking.example.com"

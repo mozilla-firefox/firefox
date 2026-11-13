@@ -26,6 +26,8 @@ support-files = [
 
 ["browser_content_classifier_memory_reporter.js"]
 
+["browser_content_classifier_normalization.js"]
+
 ["browser_content_classifier_partitioned_cookies.js"]
 support-files = ["!/toolkit/components/antitracking/test/browser/cookies.sjs"]
 
