@@ -2,7 +2,7 @@ import pytest
 
 URL = "https://www.shazam.com/song/1678276312/a-feeling"
 
-CONTAINER_CSS = "[class*=MedialistInner-module_container]"
+CONTAINER_CSS = "[class*=MedialistInner_overflowable]"
 
 
 async def is_scrollbar_visible(client):

@@ -7,7 +7,7 @@
     }
   },
   "css": {
-    "hide_extra_scrollbars": "[class*=MedialistInner-module_overflowable] { scrollbar-width: none; }"
+    "hide_extra_scrollbars": "[class*=MedialistInner_overflowable] { scrollbar-width: none; }"
   },
   "interventions": [
     {
