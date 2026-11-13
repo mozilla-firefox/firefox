@@ -5,6 +5,7 @@ GENERATED_FILES += ["bar.c", "foo.h", "quux.c"]
 
 bar = GENERATED_FILES["bar.c"]
 bar.script = "generate-bar.py:baz"
+bar.flags = ["--plain", "--spaces=a b c", "--commas=a,b,c"]
 
 foo = GENERATED_FILES["foo.h"]
 foo.script = "generate-foo.py"
