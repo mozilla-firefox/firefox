@@ -1,0 +1,24 @@
+# iOS builds, cross-compiled on macOS with `build.sh --target-os=ios`, which
+# needs Xcode and its iOS SDKs. These are build-only: nothing here can run the
+# binaries, so no certs or tests depend on them (see the target_os filters in
+# taskcluster/kinds/test).
+task-defaults:
+    worker-type: b-osx
+    worker:
+        artifacts:
+          - type: directory
+            path: artifacts
+            name: public
+    attributes:
+        target_os: ios
+        static: true
+        certs: false
+
+ios-aarch64/opt-static:
+    description: "iOS AArch64 (opt, static)"
+
+ios-sim-aarch64/opt-static:
+    description: "iOS Simulator AArch64 (opt, static)"
+
+ios-sim-x64/opt-static:
+    description: "iOS Simulator x64 (opt, static)"

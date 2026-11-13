@@ -14,6 +14,8 @@ tasks-from:
     - linux.yml
     - windows.yml
     - macosx.yml
+    - android.yml
+    - ios.yml
 
 task-defaults:
     run:

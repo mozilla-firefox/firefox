@@ -1,0 +1,29 @@
+# Android builds, cross-compiled on Linux with `build.sh --target-os=android`
+# in the `android` docker image, which carries the NDK. These are build-only:
+# nothing here can run the binaries, so no certs or tests depend on them (see
+# the target_os filters in taskcluster/kinds/test).
+task-defaults:
+    run:
+        cwd: /builds/worker/workspace
+    worker-type: b-linux
+    worker:
+        artifacts:
+            - type: directory
+              path: /builds/worker/artifacts
+              name: public
+    attributes:
+        target_os: android
+        static: true
+        certs: false
+
+android-aarch64/opt-static:
+    description: "Android AArch64 (opt, static)"
+
+android-arm/opt-static:
+    description: "Android ARM (opt, static)"
+
+android-x64/opt-static:
+    description: "Android x64 (opt, static)"
+
+android-x86/opt-static:
+    description: "Android x86 (opt, static)"

@@ -18,7 +18,7 @@
 # s_mpv_mul_set_vec64(uint64_t *r, uint64_t *a, int len, uint64_t digit)
 #
 
-.text; .align 16; .globl s_mpv_mul_set_vec64;
+.text; .balign 16; .globl s_mpv_mul_set_vec64;
 
 #ifdef DARWIN
 #define s_mpv_mul_set_vec64		_s_mpv_mul_set_vec64
@@ -196,7 +196,7 @@ s_mpv_mul_set_vec64:
 # s_mpv_mul_add_vec64(uint64_t *r, uint64_t *a, int len, uint64_t digit)
 #
 
-.text; .align 16; .globl s_mpv_mul_add_vec64;
+.text; .balign 16; .globl s_mpv_mul_add_vec64;
 
 #ifdef DARWIN
 #define s_mpv_mul_add_vec64      _s_mpv_mul_add_vec64

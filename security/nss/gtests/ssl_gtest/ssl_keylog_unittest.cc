@@ -114,9 +114,13 @@ TEST_P(KeyLogFileTest, KeyLogFile) {
   if (PK11_IsFIPS()) {
     GTEST_SKIP() << "FIPS tokens don't allow secrets to be logged";
   }
+#if GTEST_HAS_DEATH_TEST
   testing::GTEST_FLAG(death_test_style) = "threadsafe";
 
   ASSERT_EXIT(ConnectAndCheck(), ::testing::ExitedWithCode(0), "");
+#else
+  GTEST_SKIP() << "needs death tests, which gtest lacks on this platform";
+#endif
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -147,9 +151,13 @@ class KeyLogFileUnsetTest : public KeyLogFileTestBase {
 };
 
 TEST_P(KeyLogFileUnsetTest, KeyLogFile) {
+#if GTEST_HAS_DEATH_TEST
   testing::GTEST_FLAG(death_test_style) = "threadsafe";
 
   ASSERT_EXIT(ConnectAndCheck(), ::testing::ExitedWithCode(0), "");
+#else
+  GTEST_SKIP() << "needs death tests, which gtest lacks on this platform";
+#endif
 }
 
 INSTANTIATE_TEST_SUITE_P(

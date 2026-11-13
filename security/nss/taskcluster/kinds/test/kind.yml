@@ -23,6 +23,10 @@ task-defaults:
     from-deps:
         copy-attributes: true
         set-name: false
+        # Nothing here can run a cross-compiled (android, ios) build. This
+        # merges into every task's with-attributes, including tasks-from files.
+        with-attributes:
+            target_os: [false]
     worker:
         env:
             NSS_MAX_MP_PBE_ITERATION_COUNT: "100"

@@ -1,5 +1,8 @@
 Usage: build.sh [-h] [-c|-cc] [-v] [-j <n>] [--gyp|-g] [--opt|-o]
                 [-t <x64|ia32|...>|--target=<x64|ia32|...>]
+                [--target-os=<android|ios>] [--android-ndk=<dir>]
+                [--android-api=<level>] [--ios-sdk=<iphoneos|iphonesimulator>]
+                [--ios-version-min=<version>]
                 [--clang|--gcc|--msvc|--clang-cl] [--scan-build[=dir]]
                 [--disable-tests]
                 [--pprof] [--asan] [--msan] [--ubsan[=bool,shift,...]
@@ -23,6 +26,20 @@ NSS build tool options:
     --gyp|-g         force a rerun of gyp
     --opt|-o         do an opt build
     --target|-t      specify target architecture (e.g., ia32, x64, aarch64)
+    --target-os      cross-compile for another OS, with that OS's toolchain:
+                     --target-os=android builds with an Android NDK
+                     (r19 or later) on Linux or macOS, for arm, arm64,
+                     x64 or ia32 (default arm64)
+                     --target-os=ios builds with Xcode on macOS, for arm64
+                     or x64 (default arm64)
+                     use a separate --dist for each target
+    --android-ndk    the NDK to build with, defaults to $ANDROID_NDK_ROOT,
+                     $ANDROID_NDK_HOME or $ANDROID_NDK
+    --android-api    the minimum Android API level to build for, defaults
+                     to the oldest that the NDK supports
+    --ios-sdk        iphoneos (the default) for devices, or iphonesimulator
+                     for the simulator, which is the only choice for x64
+    --ios-version-min the minimum iOS version to build for, defaults to 12.0
     --clang          build with clang and clang++
     --gcc            build with gcc and g++
     --msvc           build with MSVC

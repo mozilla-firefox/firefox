@@ -34,6 +34,7 @@ argsfile="$dist_dir/build_args"
 source "$cwd/coreconf/nspr.sh"
 source "$cwd/coreconf/sanitizers.sh"
 GYP=${GYP:-gyp}
+gyp_format=ninja
 
 # Usage info
 show_help()
@@ -114,6 +115,11 @@ while [ $# -gt 0 ]; do
         -t|--target) target_arch="$2"; shift ;;
         --target=*) target_arch="${1#*=}" ;;
         --build-tools-cc=*) build_tools_cc="${1#*=}" ;;
+        --target-os=*) target_os="${1#*=}" ;;
+        --android-ndk=*) android_ndk="${1#*=}" ;;
+        --android-api=*) android_api="${1#*=}" ;;
+        --ios-sdk=*) ios_sdk="${1#*=}" ;;
+        --ios-version-min=*) ios_version_min="${1#*=}" ;;
         --clang) export CC=clang; export CCC=clang++; export CXX=clang++; msvc=0 ;;
         --gcc) export CC=gcc; export CCC=g++; export CXX=g++; msvc=0 ;;
         --msvc) msvc=1 ;;
@@ -177,6 +183,18 @@ fi
 if [ -n "$python" ]; then
     gyp_params+=(-Dpython="$python")
 fi
+
+# Cross-compiling for another OS sets up the toolchain, and picks a default
+# target architecture for that OS.
+case "$target_os" in
+    "") ;;
+    android) source "$cwd/coreconf/android.sh" ;;
+    ios) source "$cwd/coreconf/ios.sh" ;;
+    *)
+        echo "Unknown --target-os: $target_os; use android or ios." 1>&2
+        exit 2
+        ;;
+esac
 
 if [ -z "$target_arch" ]; then
     # Assume that the target architecture is the same as the host by default.
@@ -248,7 +266,7 @@ if [ "$clean" = 1 -o "$clean_only" = 1 ]; then
 fi
 
 # Setup build paths.
-target_dir="$cwd/out/$target"
+target_dir="$cwd/out/$target$out_dir_suffix"
 mkdir -p "$target_dir"
 dist_dir=$(mkdir -p "$dist_dir"; cd "$dist_dir"; pwd -P)
 gyp_params+=(-Dnss_dist_dir="$dist_dir")
@@ -294,7 +312,7 @@ if check_config "$nspr_config" \
     rebuild_nspr=1
 fi
 
-if check_config "$gyp_config" "$(Q "${gyp_params[@]}")"; then
+if check_config "$gyp_config" "$(Q "${gyp_params[@]}")" gyp_format="$gyp_format"; then
     rebuild_gyp=1
 fi
 
@@ -333,7 +351,7 @@ if [ "$rebuild_gyp" = 1 ]; then
         set_nspr_path "$obj_dir/include/nspr:$obj_dir/lib"
     fi
 
-    run_verbose run_scanbuild ${GYP} -f ninja "${gyp_params[@]}" "$cwd/nss.gyp"
+    run_verbose run_scanbuild ${GYP} -f "$gyp_format" "${gyp_params[@]}" "$cwd/nss.gyp"
 
     mv -f "$gyp_config.new" "$gyp_config"
 fi

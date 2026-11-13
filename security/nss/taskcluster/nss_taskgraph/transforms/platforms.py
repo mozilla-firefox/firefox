@@ -60,7 +60,7 @@ def select_arch_docker_image(config, tasks):
 
     Docker images are architecture specific, and `base` is now neutral:
 
-    * aarch64 tasks rewrite `{in-tree: <image>}` to `{in-tree: <image>-aarch64}`
+    * Linux aarch64 tasks rewrite `{in-tree: <image>}` to `{in-tree: <image>-aarch64}`
       so they pick up the natively-built arm64 image.
     * 32-bit x86 (linux-x86) tasks rewrite `{in-tree: base}` to
       `{in-tree: base-i386}`, the i386 layer needed to build and run ia32
@@ -76,7 +76,7 @@ def select_arch_docker_image(config, tasks):
             yield task
             continue
         name = image["in-tree"]
-        if "aarch64" in platform:
+        if "linux" in platform and "aarch64" in platform:
             if not name.endswith("-aarch64"):
                 image["in-tree"] = f"{name}-aarch64"
         elif "linux" in platform and "64" not in platform and name == "base":

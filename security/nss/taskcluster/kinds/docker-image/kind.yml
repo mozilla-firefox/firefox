@@ -22,6 +22,9 @@ tasks:
         parent: base-i386
     builds-legacy:
         symbol: I(builds-legacy)
+    android:
+        symbol: I(android)
+        parent: base
     acvp:
         symbol: I(acvp)
     clang-format:

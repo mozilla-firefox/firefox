@@ -134,8 +134,8 @@ TEST_F(NameConstraintsTest, PermittedEmptyRdnFails) {
   EXPECT_EQ(SECFailure,
             Check(constraint, false,
                   Name({Rdn({kUS}), kEmptyRdn, Rdn({kEvil}), Rdn({kCN})})));
-  EXPECT_EQ(SECFailure, Check(constraint, false,
-                              Name({kEmptyRdn, kEmptyRdn, Rdn({kCN})})));
+  EXPECT_EQ(SECFailure,
+            Check(constraint, false, Name({kEmptyRdn, kEmptyRdn, Rdn({kCN})})));
 }
 
 // A name shorter than the constraint is not inside the subtree.
@@ -149,8 +149,9 @@ TEST_F(NameConstraintsTest, PermittedShorterNameFails) {
 TEST_F(NameConstraintsTest, PermittedMultiValuedRdnFails) {
   Bytes constraint = Name({Rdn({kUS}), Rdn({kGood})});
   Bytes ou = Ava(kOrgUnit, "Unit");
-  EXPECT_EQ(SECFailure, Check(constraint, false,
-                              Name({Rdn({kUS}), Rdn({kGood, ou}), Rdn({kCN})})));
+  EXPECT_EQ(SECFailure,
+            Check(constraint, false,
+                  Name({Rdn({kUS}), Rdn({kGood, ou}), Rdn({kCN})})));
 }
 
 // RFC 5280 4.2.1.10: an empty subject is not subject to directoryName
@@ -181,8 +182,9 @@ TEST_F(NameConstraintsTest, Excluded) {
 TEST_F(NameConstraintsTest, ExcludedKeepsBroaderMatch) {
   Bytes constraint = Name({Rdn({kUS}), Rdn({kEvil})});
   Bytes ou = Ava(kOrgUnit, "Unit");
-  EXPECT_EQ(SECFailure, Check(constraint, true,
-                              Name({Rdn({kUS}), Rdn({kEvil, ou}), Rdn({kCN})})));
+  EXPECT_EQ(SECFailure,
+            Check(constraint, true,
+                  Name({Rdn({kUS}), Rdn({kEvil, ou}), Rdn({kCN})})));
   EXPECT_EQ(SECFailure, Check(constraint, true, Name({Rdn({kUS})})));
 }
 

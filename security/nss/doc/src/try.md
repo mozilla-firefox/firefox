@@ -80,6 +80,10 @@ every tool, `-t none` for none. Default: `none`.
 Specify `all` or `none` to enable or disable extra builds. The number and type of extra
 builds varies per platform. Default: `none`.
 
+The cross-compiled Android (`android-aarch64`, `android-arm`, `android-x64`, `android-x86`)
+and iOS (`ios-aarch64`, `ios-sim-aarch64`, `ios-sim-x64`) platforms only have extra builds,
+so they need `-e all`. They are opt, static and build-only: no tests run on them.
+
 ### NSPR changes (`--nspr-patch`)
 
 Mozilla does not maintain separate try infrastructure for NSPR, but you can test NSPR changes
