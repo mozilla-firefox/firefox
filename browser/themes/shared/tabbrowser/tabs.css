@@ -2884,8 +2884,12 @@ tab-group {
    */
   --tab-padding-block-start: 3px;
   --tab-padding-block-end: 2px;
+  /* How far the collapsed close button, including its outline, extends above .tab-content. */
+  --tab-close-button-overhang: calc(3px + var(--border-width));
 
   @media -moz-pref("browser.nova.enabled") {
+    --tab-close-button-overhang: calc(2px + var(--border-width));
+
     :root[uidensity="compact"] & {
       --tab-padding-block-start: 0px;
       --tab-padding-block-end: 0px;
@@ -2925,7 +2929,7 @@ tab-group {
 
     /* prevent the shadow of the close button from being cutoff by the toolbar on the first tab */
     &:nth-child(1 of :not([hidden], [pinned])) {
-      padding-block-start: var(--space-xsmall);
+      padding-block-start: max(var(--space-xsmall), var(--tab-close-button-overhang));
     }
   }
 
@@ -2945,6 +2949,10 @@ tab-group {
     --tab-close-button-border-color: var(--button-border-color);
     --tab-close-button-border-color-hover: var(--button-border-color-hover);
     --tab-close-button-border-color-active: var(--button-border-color-active);
+
+    .tabbrowser-tab:not([dragtarget]) {
+      overflow-clip-margin: max(var(--tab-margin-overflow-clip), calc(var(--tab-close-button-overhang) - var(--tab-padding-block-start)));
+    }
 
     .tabbrowser-tab[pinned] {
       width: var(--tab-collapsed-width);
@@ -2986,7 +2994,7 @@ tab-group {
       display: block;
       position: absolute;
       inset: auto;
-      top: -3px;
+      top: calc(var(--border-width) - var(--tab-close-button-overhang));
       inset-inline-start: 2px;
 
       /* In forced-colors, --close-button-extra-background will be opaque, and
@@ -3000,7 +3008,6 @@ tab-group {
         width: var(--icon-size);
         height: var(--icon-size);
         padding: 2px;
-        top: -2px;
         box-shadow: var(--box-shadow-level-1);
       }
 
