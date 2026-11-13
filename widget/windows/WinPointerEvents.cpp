@@ -144,11 +144,13 @@ WinPointerInfo* WinPointerEvents::GetCachedPointerInfo(UINT aMsg,
     case WM_LBUTTONDOWN:
     case WM_MBUTTONDOWN:
     case WM_RBUTTONDOWN:
+    case WM_XBUTTONDOWN:
       return &mPenPointerDownInfo;
     case WM_LBUTTONUP:
     case WM_MBUTTONUP:
     case WM_RBUTTONUP:
-      return &mPenPointerDownInfo;
+    case WM_XBUTTONUP:
+      return &mPenPointerUpInfo;
     case WM_MOUSEMOVE:
       return &mPenPointerUpdateInfo;
     default:

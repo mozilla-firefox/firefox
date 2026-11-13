@@ -4205,7 +4205,13 @@ bool nsWindow::DispatchMouseEvent(EventMessage aEventMessage, WPARAM wParam,
                                   int16_t aButton, uint16_t aInputSource,
                                   WinPointerInfo* aPointerInfo,
                                   IsNonclient aIsNonclient,
-                                  Maybe<LayoutDeviceIntPoint> aMovement) {
+                                  Maybe<LayoutDeviceIntPoint> aMovement,
+                                  const WidgetMouseEventCommand& aCommand) {
+  // Dispatch pending X1/X2 event if any before dealing with this one.
+  DispatchPendingMouseUpEvent({});
+  if (mInDtor || mOnDestroyCalled) {
+    return false;
+  }
   ContextMenuPreventer contextMenuPreventer(this);
   bool result = false;
 
@@ -4287,6 +4293,7 @@ bool nsWindow::DispatchMouseEvent(EventMessage aEventMessage, WPARAM wParam,
     mouseEvent.emplace(true, aEventMessage, this, WidgetMouseEvent::eReal,
                        aIsContextMenuKey ? WidgetMouseEvent::eContextMenuKey
                                          : WidgetMouseEvent::eNormal);
+    mouseEvent->mCommand = aCommand;
   }
   WidgetMouseEvent& mouseOrPointerEvent =
       pointerEvent.isSome() ? pointerEvent.ref() : mouseEvent.ref();
@@ -4358,6 +4365,12 @@ bool nsWindow::DispatchMouseEvent(EventMessage aEventMessage, WPARAM wParam,
       break;
     case MouseButton::eSecondary:
       eventButton = VK_RBUTTON;
+      break;
+    case MouseButton::eX1:
+      eventButton = VK_XBUTTON1;
+      break;
+    case MouseButton::eX2:
+      eventButton = VK_XBUTTON2;
       break;
     default:
       eventButton = 0;
@@ -4582,6 +4595,21 @@ bool nsWindow::IsAsyncResponseEvent(UINT aMsg, LRESULT& aResult) {
 #endif
 
   return false;
+}
+
+bool nsWindow::DispatchPendingMouseUpEvent(
+    const WidgetMouseEventCommand& aCommand) {
+  Maybe<PendingMouseUpEventData> data = mPendingMouseUpEvent.take();
+  if (!data) {
+    return false;
+  }
+  DispatchMouseEvent(
+      eMouseUp, data->mWParam, data->mLParam, false, data->mButton,
+      data->mInputSource,
+      mPointerEvents.GetCachedPointerInfo(WM_XBUTTONUP, data->mWParam),
+      IsNonclient::No, mozilla::Nothing(), aCommand);
+  DispatchPendingEvents();
+  return true;
 }
 
 void nsWindow::IPCWindowProcHandler(UINT& msg, WPARAM& wParam, LPARAM& lParam) {
@@ -5538,19 +5566,60 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
     case WM_XBUTTONDOWN:
     case WM_XBUTTONUP:
     case WM_NCXBUTTONDOWN:
-    case WM_NCXBUTTONUP:
+    case WM_NCXBUTTONUP: {
       *aRetValue = TRUE;
+      int16_t button = 0;
+      bool prefValue = false;
       switch (GET_XBUTTON_WPARAM(wParam)) {
         case XBUTTON1:
-          result = !Preferences::GetBool("mousebutton.4th.enabled", true);
+          prefValue = Preferences::GetBool("mousebutton.4th.enabled", true);
+          button = MouseButton::eX1;
           break;
         case XBUTTON2:
-          result = !Preferences::GetBool("mousebutton.5th.enabled", true);
+          prefValue = Preferences::GetBool("mousebutton.5th.enabled", true);
+          button = MouseButton::eX2;
           break;
         default:
           break;
       }
+      if (!prefValue) {
+        result = true;
+        break;
+      }
+      if (StaticPrefs::dom_event_mouse_xbuttons_enabled()) {
+        if (msg == WM_XBUTTONUP) {
+          DispatchPendingMouseUpEvent({});
+          if (mInDtor || mOnDestroyCalled) {
+            break;
+          }
+          // We need to determine the default action of the X1/X2 button
+          // press without actually doing it, since the content may call
+          // preventDefault(). So we store the information about the button
+          // press, then on receiving WM_APPCOMMAND, we set the default
+          // action and fire the event.
+          mPendingMouseUpEvent = Some(PendingMouseUpEventData{
+              button, MOUSE_INPUT_SOURCE(), wParam, lParam});
+          // However, we may never receive WM_APPCOMMAND if there is no action
+          // for the button. So we also post MOZ_WM_AFTER_XBUTTONUP to flush
+          // the pending event if it's still there.
+          ::PostMessage(mWnd, MOZ_WM_AFTER_XBUTTONUP, 0, 0);
+        } else if (msg == WM_XBUTTONDOWN) {
+          DispatchMouseEvent(eMouseDown, wParam, lParam, false, button,
+                             MOUSE_INPUT_SOURCE(),
+                             mPointerEvents.GetCachedPointerInfo(msg, wParam),
+                             IsNonclient::No, mozilla::Nothing(), nullptr);
+          DispatchPendingEvents();
+        }
+      }
       break;
+    }
+
+    case MOZ_WM_AFTER_XBUTTONUP: {
+      // If the button press didn't have a default action,
+      // we fire the event now.
+      DispatchPendingMouseUpEvent({});
+      break;
+    }
 
     case WM_SIZING: {
       if (mAspectRatio > 0) {

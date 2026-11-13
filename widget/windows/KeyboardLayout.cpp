@@ -16,7 +16,6 @@
 #include "mozilla/Logging.h"
 #include "mozilla/MiscEvents.h"
 #include "mozilla/MouseEvents.h"
-#include "mozilla/RefPtr.h"
 #include "mozilla/StaticPrefs_ui.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/TextEvents.h"
@@ -2142,7 +2141,7 @@ nsEventStatus NativeKey::InitKeyEvent(
 }
 
 bool NativeKey::DispatchCommandEvent(uint32_t aEventCommand) const {
-  RefPtr<nsAtom> command;
+  nsStaticAtom* command = nullptr;
   switch (aEventCommand) {
     case APPCOMMAND_BROWSER_BACKWARD:
       command = nsGkAtoms::Back;
@@ -2214,6 +2213,12 @@ bool NativeKey::DispatchCommandEvent(uint32_t aEventCommand) const {
            "event",
            this));
       return false;
+  }
+  // If this command is the result of an X1/X2 button press,
+  // we need to wait to see if the content calls preventDefault()
+  // on the event before doing the command.
+  if (IsMouseButton() && mWidget->DispatchPendingMouseUpEvent(command)) {
+    return true;
   }
   WidgetCommandEvent appCommandEvent(true, command, mWidget);
 
@@ -2371,6 +2376,14 @@ bool NativeKey::HandleAppCommandMessage() const {
     }
 
     if (contentCommandMessage) {
+      // If this command is the result of an X1/X2 button press,
+      // we need to wait to see if the content calls preventDefault()
+      // on the event before doing the command.
+      if (IsMouseButton() &&
+          mWidget->DispatchPendingMouseUpEvent(contentCommandMessage)) {
+        return true;
+      }
+
       MOZ_ASSERT(!mWidget->Destroyed());
       MOZ_LOG(
           gKeyLog, LogLevel::Info,
