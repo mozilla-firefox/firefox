@@ -56,13 +56,15 @@ function hasCookie(userContextId) {
 
 // Correpted file should delete all.
 add_task(async function corruptedFile() {
-  const thumbnailPrivateId = ContextualIdentityService.getPrivateIdentity(
-    "userContextIdInternal.thumbnail"
-  ).userContextId;
+  const thumbnailPrivateId = ContextualIdentityService._defaultIdentities
+    .filter(identity => identity.name === "userContextIdInternal.thumbnail")
+    .pop().userContextId;
 
-  const webextStoragePrivateId = ContextualIdentityService.getPrivateIdentity(
-    "userContextIdInternal.webextStorageLocal"
-  ).userContextId;
+  const webextStoragePrivateId = ContextualIdentityService._defaultIdentities
+    .filter(
+      identity => identity.name === "userContextIdInternal.webextStorageLocal"
+    )
+    .pop().userContextId;
 
   // Create a cookie in the default Firefox identity (userContextId 0).
   createCookie(0);
@@ -108,6 +110,14 @@ add_task(async function corruptedFile() {
     "getPublicUserContextIds has matching user context IDs"
   );
 
+  // Verify that when the containers.json file is being rebuilt, the computed lastUserContextId
+  // is the expected one.
+  equal(
+    cis._lastUserContextId,
+    thumbnailPrivateId,
+    "Expect cis._lastUserContextId to be equal to the thumbnails userContextId"
+  );
+
   const privThumbnailIdentity = cis.getPrivateIdentity(
     "userContextIdInternal.thumbnail"
   );
@@ -150,7 +160,7 @@ add_task(async function corruptedFile() {
   );
 
   // Verify the version of the newly created containers.json file.
-  await cis.save();
+  cis.save();
   const stateFileText = await IOUtils.readUTF8(TEST_STORE_FILE_PATH);
   equal(
     JSON.parse(stateFileText).version,

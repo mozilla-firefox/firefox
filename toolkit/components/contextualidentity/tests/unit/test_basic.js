@@ -69,11 +69,11 @@ add_task(function () {
 add_task(function () {
   equal(cis.getPublicIdentities().length, 4, "By default, 4 containers.");
 
-  let identity = cis.create("New Container", "briefcase", "blue");
+  let identity = cis.create("New Container", "Icon", "Color");
   ok(!!identity, "New container created");
   equal(identity.name, "New Container", "Name matches");
-  equal(identity.icon, "briefcase", "Icon matches");
-  equal(identity.color, "blue", "Color matches");
+  equal(identity.icon, "Icon", "Icon matches");
+  equal(identity.color, "Color", "Color matches");
 
   equal(cis.getPublicIdentities().length, 5, "Expected 5 containers.");
 
@@ -85,12 +85,12 @@ add_task(function () {
   );
   equal(
     cis.getPublicIdentityFromId(identity.userContextId).icon,
-    "briefcase",
+    "Icon",
     "Identity icon is OK"
   );
   equal(
     cis.getPublicIdentityFromId(identity.userContextId).color,
-    "blue",
+    "Color",
     "Identity color is OK"
   );
   equal(
@@ -233,13 +233,13 @@ add_task(function () {
   ok(!!cis.getPublicIdentityFromId(2), "Identity 2 exists");
 
   equal(
-    cis.update(-1, "Container", "dollar", "green"),
+    cis.update(-1, "Container", "Icon", "Color"),
     false,
     "Update returns false if the identity doesn't exist"
   );
 
   equal(
-    cis.update(2, "Container", "dollar", "green"),
+    cis.update(2, "Container", "Icon", "Color"),
     true,
     "Update returns true if everything is OK"
   );
@@ -250,7 +250,7 @@ add_task(function () {
     "Container",
     "Identity name is OK"
   );
-  equal(cis.getPublicIdentityFromId(2).icon, "dollar", "Identity icon is OK");
-  equal(cis.getPublicIdentityFromId(2).color, "green", "Identity color is OK");
+  equal(cis.getPublicIdentityFromId(2).icon, "Icon", "Identity icon is OK");
+  equal(cis.getPublicIdentityFromId(2).color, "Color", "Identity color is OK");
   equal(cis.getUserContextLabel(2), "Container", "Identity label is OK");
 });
