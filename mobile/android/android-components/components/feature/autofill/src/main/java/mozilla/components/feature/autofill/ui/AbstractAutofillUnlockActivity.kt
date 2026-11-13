@@ -59,6 +59,11 @@ abstract class AbstractAutofillUnlockActivity : FragmentActivity() {
                 result
             }
 
+        val callback = PromptCallback()
+        if (authenticate(callback::onAuthenticationSucceeded, callback::onAuthenticationError)) {
+            return
+        }
+
         if (authenticator == null) {
             // If no authenticator is available then we just bail here. Instead we should ask the user to
             // enroll, or show an error message instead.
@@ -66,9 +71,19 @@ abstract class AbstractAutofillUnlockActivity : FragmentActivity() {
             setResult(RESULT_CANCELED)
             finish()
         } else {
-            authenticator!!.prompt(this, PromptCallback())
+            authenticator!!.prompt(this, callback)
         }
     }
+
+    /**
+     * Allows replacing the default authentication prompt.
+     *
+     * @param onSuccess Invoked when the user authenticated and the autofill service can be unlocked.
+     * @param onFailure Invoked when the user could not be authenticated. Nothing is filled.
+     * @return `true` if authentication is handled here and exactly one of the callbacks will be invoked, or `false` to
+     *   use the default authentication prompt.
+     */
+    protected open fun authenticate(onSuccess: () -> Unit, onFailure: () -> Unit): Boolean = false
 
     @Suppress("OVERRIDE_DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

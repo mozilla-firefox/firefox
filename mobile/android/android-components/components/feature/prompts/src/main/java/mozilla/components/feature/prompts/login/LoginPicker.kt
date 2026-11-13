@@ -25,12 +25,17 @@ import mozilla.components.support.base.log.logger.Logger
  * @property loginSelectBar The [AutocompletePrompt] view into which the select login "prompt" will be inflated.
  * @property manageLoginsCallback A callback invoked when a user selects "manage logins" from the select login prompt.
  * @property sessionId This is the id of the session which requested the prompt.
+ * @property selectLoginCallback A callback invoked when a user selects a login, before it is filled. See
+ *   [LoginDelegate.onSelectLogin].
  */
 internal class LoginPicker(
     private val store: BrowserStore,
     private val loginSelectBar: AutocompletePrompt<Login>,
     private val manageLoginsCallback: () -> Unit = {},
     private var sessionId: String? = null,
+    private val selectLoginCallback: (onConfirm: () -> Unit, onDismiss: () -> Unit) -> Unit = { onConfirm, _ ->
+        onConfirm()
+    },
 ) : SelectablePromptView.Listener<Login> {
 
     init {
@@ -44,11 +49,16 @@ internal class LoginPicker(
     }
 
     override fun onOptionSelect(option: Login) {
-        store.consumePromptFrom<PromptRequest.SelectLoginPrompt>(sessionId) {
-            it.onConfirm(option)
-        }
-        emitLoginAutofillPerformedFact()
         loginSelectBar.hidePrompt()
+        selectLoginCallback(
+            {
+                store.consumePromptFrom<PromptRequest.SelectLoginPrompt>(sessionId) {
+                    it.onConfirm(option)
+                }
+                emitLoginAutofillPerformedFact()
+            },
+            { dismissCurrentLoginSelect() },
+        )
     }
 
     override fun onManageOptions() {

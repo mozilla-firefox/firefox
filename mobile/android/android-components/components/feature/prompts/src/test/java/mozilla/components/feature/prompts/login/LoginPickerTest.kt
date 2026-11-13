@@ -17,6 +17,8 @@ import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -92,6 +94,44 @@ class LoginPickerTest {
 
         assertEquals(confirmedLogin, login)
         verify(loginSelectBar).hidePrompt()
+    }
+
+    @Test
+    fun `WHEN a login is selected THEN it is only filled once the select login callback confirms it`() {
+        val selectedSession = prepareSelectedSession(request)
+        var onConfirm: () -> Unit = {}
+        loginPicker =
+            LoginPicker(store, loginSelectBar, onManageLogins, selectedSession.id) { confirm, _ -> onConfirm = confirm }
+
+        loginPicker.handleSelectLoginRequest(request)
+        loginPicker.onOptionSelect(login)
+
+        verify(loginSelectBar).hidePrompt()
+        assertNull(confirmedLogin)
+        assertFalse(onDismissWasCalled)
+
+        onConfirm()
+
+        assertEquals(login, confirmedLogin)
+        assertFalse(onDismissWasCalled)
+    }
+
+    @Test
+    fun `WHEN a login is selected and the select login callback dismisses it THEN nothing is filled`() {
+        val selectedSession = prepareSelectedSession(request)
+        var onDismiss: () -> Unit = {}
+        loginPicker =
+            LoginPicker(store, loginSelectBar, onManageLogins, selectedSession.id) { _, dismiss -> onDismiss = dismiss }
+
+        loginPicker.handleSelectLoginRequest(request)
+        loginPicker.onOptionSelect(login)
+        onDismiss()
+
+        assertNull(confirmedLogin)
+        assertTrue(onDismissWasCalled)
+        captureMiddleware.assertFirstAction(ContentAction.ConsumePromptRequestAction::class) { action ->
+            assertEquals(request, action.promptRequest)
+        }
     }
 
     @Test
