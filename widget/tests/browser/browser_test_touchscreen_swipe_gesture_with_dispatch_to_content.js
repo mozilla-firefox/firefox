@@ -357,6 +357,134 @@ add_task(async function test_non_passive_touchmove_allows_swipe() {
   BrowserTestUtils.removeTab(tab);
 });
 
+add_task(async function test_touchmove_listener_added_on_passive_touchstart() {
+  await SpecialPowers.pushPrefEnv({
+    // This test awaits between touches. On Windows, InjectTouchInput() sometimes
+    // fails with ERROR_TIMEOUT, so dispatch the touches directly through
+    // nsIWidget::DispatchTouchInput() instead.
+    set: [
+      ["apz.test.fails_with_native_injection", AppConstants.platform == "win"],
+    ],
+  });
+
+  for (const preventDefault of [true, false]) {
+    info(`Test with preventDefault: ${preventDefault}`);
+
+    const firstPage = "about:about";
+    const URL_ROOT = getRootDirectory(gTestPath).replace(
+      "chrome://mochitests/content/",
+      "http://mochi.test:8888/"
+    );
+    const secondPage = URL_ROOT + "helper_swipe_gesture.html";
+    const tab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      firstPage
+    );
+
+    BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, secondPage);
+    await BrowserTestUtils.browserLoaded(tab.linkedBrowser, false, secondPage);
+    ok(
+      tab.linkedBrowser.webNavigation.canGoBack,
+      "Back navigation is available"
+    );
+
+    await SpecialPowers.spawn(
+      tab.linkedBrowser,
+      [preventDefault],
+      async aPreventDefault => {
+        content.wrappedJSObject.touchMoved = new content.Promise(resolve => {
+          const onTouchMove = event => {
+            if (aPreventDefault) {
+              event.preventDefault();
+            }
+            content.wrappedJSObject.touchMovePrevented = event.defaultPrevented;
+            resolve();
+          };
+          content.wrappedJSObject.touchStarted = new content.Promise(
+            resolveStart => {
+              content.document.addEventListener(
+                "touchstart",
+                () => {
+                  content.document.addEventListener("touchmove", onTouchMove, {
+                    passive: false,
+                    once: true,
+                  });
+                  resolveStart();
+                },
+                { passive: true, once: true } // Note passive is true here.
+              );
+            }
+          );
+        });
+        await content.wrappedJSObject.promiseApzFlushedRepaints();
+        is(content.document.documentElement.scrollLeft, 0, "At the left edge");
+      }
+    );
+
+    let swipeStarted = false;
+    const onSwipeStart = () => (swipeStarted = true);
+    window.addEventListener("MozSwipeGestureStart", onSwipeStart, true);
+
+    const navigated = preventDefault
+      ? null
+      : Promise.all([
+          BrowserTestUtils.browserStarted(tab.linkedBrowser, firstPage),
+          BrowserTestUtils.browserStopped(tab.linkedBrowser, firstPage),
+        ]);
+
+    const { TOUCH_CONTACT, TOUCH_REMOVE } = SpecialPowers.DOMWindowUtils;
+    await synthesizeNativeTouch(tab.linkedBrowser, 100, 100, TOUCH_CONTACT);
+    await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+      await content.wrappedJSObject.touchStarted;
+      // Make sure APZ knows about the listener added on touchstart before the
+      // first touchmove arrives.
+      await content.wrappedJSObject.promiseApzFlushedRepaints();
+    });
+    await synthesizeNativeTouch(tab.linkedBrowser, 200, 100, TOUCH_CONTACT);
+    await SpecialPowers.spawn(
+      tab.linkedBrowser,
+      [preventDefault],
+      async aPreventDefault => {
+        await content.wrappedJSObject.touchMoved;
+        is(
+          content.wrappedJSObject.touchMovePrevented,
+          aPreventDefault,
+          aPreventDefault
+            ? "The first touchmove was canceled"
+            : "The first touchmove was not canceled"
+        );
+      }
+    );
+    await synthesizeNativeTouch(tab.linkedBrowser, 300, 100, TOUCH_CONTACT);
+    await synthesizeNativeTouch(tab.linkedBrowser, 300, 100, TOUCH_REMOVE);
+
+    if (preventDefault) {
+      await waitForWhile();
+    } else {
+      await navigated;
+    }
+    window.removeEventListener("MozSwipeGestureStart", onSwipeStart, true);
+
+    is(
+      swipeStarted,
+      !preventDefault,
+      preventDefault
+        ? "Preventing the first touchmove prevents swipe tracking"
+        : "An uncanceled touchmove starts swipe tracking after waiting again"
+    );
+    is(
+      tab.linkedBrowser.currentURI.spec,
+      preventDefault ? secondPage : firstPage,
+      preventDefault
+        ? "Preventing the first touchmove prevents back navigation"
+        : "An uncanceled touchmove allows back navigation after waiting again"
+    );
+
+    BrowserTestUtils.removeTab(tab);
+  }
+  await SpecialPowers.popPrefEnv();
+});
+
 ///// delayed response /////
 
 // Unlike test_prevent_default_on_touchstart_prevents_swipe, the inputs are

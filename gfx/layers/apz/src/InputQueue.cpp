@@ -267,13 +267,35 @@ APZEventResult InputQueue::ReceiveTouchInput(
             Some(block->GetSwipableDirections(target));
         break;
       case MultiTouchInput::MULTITOUCH_MOVE:
-        // Wait before ProcessQueue() so that APZ cannot pan before widget
-        // decides if it triggers swipe. Moves whose status is set as
-        // eConsumeNoDefault never reach the widget and they get no response, so
-        // they must not wait. Note that the widget clears mMayTriggerSwipe
-        // after the first swipe decision, so later moves, which don't set
-        // browser gesture response, do not wait.
+        // Wait for a browser gesture response before ProcessQueue() so that
+        // APZ cannot pan before widget decides if it triggers swipe. Moves
+        // whose status is set as eConsumeNoDefault never reach the widget
+        // and they get no response, so they must not wait. Note that the
+        // widget clears mMayTriggerSwipe after the first swipe decision, so
+        // later moves, which don't set browser gesture response, do not
+        // wait. (This is separate from the widget waiting below.)
         if (result.GetStatus() != nsEventStatus_eConsumeNoDefault) {
+          // If APZ is waiting for a content response but no notification is
+          // pending for the widget, APZ has started a new wait on this
+          // touchmove (e.g. the first touchmove out of slop with a fast-path
+          // APZ-aware listener). Content may prevent this touchmove, so APZ and
+          // the widget have to wait for that.
+          // If a notification is pending, i.e. an earlier wait such as the one
+          // started on touchstart has not finished, we do not need to start
+          // another wait, because content sends only one response whether it
+          // prevents the touchstart or the first touchmove (it holds its
+          // response until the first touchmove when a touchstart is not
+          // prevented). So starting another wait would make the widget wait
+          // for a second notification that never comes.
+          const bool isAPZWaitingForContentResponse =
+              !block->HasContentResponded() &&
+              !block->IsContentResponseTimerExpired();
+          if (isAPZWaitingForContentResponse &&
+              !block->HasTouchSwipableDirectionsCallback()) {
+            result.mSwipableDirectionsForTouch = Nothing();
+            block->SetTouchSwipableDirectionsCallback(
+                mTouchSwipableDirectionsCallback);
+          }
           block->SetNeedsToWaitForBrowserGestureResponse(true);
         }
         break;

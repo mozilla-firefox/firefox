@@ -652,6 +652,9 @@ class TouchBlockState : public BrowserGesturableBlockState {
       const TouchSwipableDirectionsCallback& aCallback) {
     mTouchSwipableDirectionsCallback = aCallback;
   }
+  bool HasTouchSwipableDirectionsCallback() const {
+    return !!mTouchSwipableDirectionsCallback;
+  }
 
   bool SetContentResponse(bool aPreventDefault) override;
 

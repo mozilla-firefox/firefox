@@ -22,6 +22,10 @@ struct TouchSwipeInfoQueue;
 // - Idle -> WaitingForAPZ:
 //                         APZ cannot tell the swipable directions on
 //                         MULTITOUCH_START yet. Subsequent inputs are queued.
+// - Pending -> WaitingForAPZ:
+//                         APZ starts waiting for a content response on the
+//                         first MULTITOUCH_MOVE out of slop. Subsequent
+//                         inputs are queued.
 // - WaitingForAPZ -> Pending:
 //                         APZ notifies the swipable directions. The queued
 //                         inputs are replayed from Pending.

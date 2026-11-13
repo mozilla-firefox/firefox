@@ -1349,6 +1349,21 @@ void nsIWidget::MayStartSwipeForTouchInput(const MultiTouchInput& aInput,
     return;
   }
 
+  if (!aResult.mSwipableDirectionsForTouch) {
+    // We don't know whether this event can start a swipe, so we need
+    // to queue up events and wait for a response from APZ.
+    mTouchSwipeState.Wait(aResult.mInputBlockId,
+                          *mTouchSwipeState.previousTouchPoint);
+    auto info = TouchSwipeInfo{.input = aInput, .result = aResult};
+    // Set some value, otherwise we would arrive here again when picking this
+    // info up from the queue and consuming it. The value itself is not used
+    // for MULTITOUCH_MOVE, because the swipable directions APZ notifies are
+    // used instead.
+    info.result.mSwipableDirectionsForTouch = Some(SideBits::eNone);
+    mTouchSwipeState.QueueInfo(std::move(info));
+    return;
+  }
+
   const auto touchDelta =
       mTouchSwipeState.GetDelta(aInput.mTouches[0].mScreenPoint);
 

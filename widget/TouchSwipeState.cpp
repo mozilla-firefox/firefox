@@ -23,10 +23,13 @@ void TouchSwipeState::AssertCountConsistency() const {
 
 void TouchSwipeState::Start(SideBits aSwipableDirections,
                             const ScreenIntPoint& aTouchPoint) {
-  MOZ_ASSERT((phase == Phase::Idle || phase == Phase::WaitingForAPZ) &&
-                 swipableDirections == SideBits::eLeftRight,
-             "This is the start point of touch swipe-to-nav. "
-             "TouchSwipeState should have an initial state or waiting state");
+  // swipableDirections may already have been narrowed if this block waited
+  // again on its first touchmove.
+  MOZ_ASSERT(
+      (phase == Phase::Idle && swipableDirections == SideBits::eLeftRight) ||
+          phase == Phase::WaitingForAPZ,
+      "This is the start point of touch swipe-to-nav. "
+      "TouchSwipeState should have an initial state or waiting state");
   swipableDirections &= aSwipableDirections;
   phase = Phase::Pending;
   previousTouchPoint = Some(aTouchPoint);
@@ -34,9 +37,11 @@ void TouchSwipeState::Start(SideBits aSwipableDirections,
 
 void TouchSwipeState::Wait(uint64_t aInputBlockId,
                            const ScreenIntPoint& aTouchPoint) {
-  MOZ_ASSERT(phase == Phase::Idle && swipableDirections == SideBits::eLeftRight,
-             "This is the start point of touch swipe-to-nav. "
-             "TouchSwipeState should have an initial state");
+  MOZ_ASSERT(
+      (phase == Phase::Idle && swipableDirections == SideBits::eLeftRight) ||
+          phase == Phase::Pending,
+      "This is the start point of touch swipe-to-nav. "
+      "TouchSwipeState should have an initial state or pending state");
   phase = Phase::WaitingForAPZ;
   touchSwipeInfoQueue = std::make_unique<TouchSwipeInfoQueue>(aInputBlockId);
   previousTouchPoint = Some(aTouchPoint);
