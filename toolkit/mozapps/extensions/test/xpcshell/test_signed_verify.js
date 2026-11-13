@@ -176,7 +176,9 @@ async function testWeakSignatureXPIUpdate({
   const { messages } = await AddonTestUtils.promiseConsoleOutput(async () => {
     const fileURL = Services.io.newFileURI(newAddonXPI).spec;
     let install = await AddonManager.getInstallForURL(fileURL, {
+      id: addonId,
       existingAddon: addonFirstInstall,
+      type: "extension",
       version: newAddonVersion,
     });
 

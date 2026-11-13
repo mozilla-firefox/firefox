@@ -866,6 +866,12 @@ export var AboutNewTabResourceMapping = {
       let newInstall = await lazy.AddonManager.getInstallForURL(
         xpiDownloadURL,
         {
+          id: BUILTIN_ADDON_ID,
+          type: "extension",
+          version: trainhopAddonVersion,
+          // Categorizes the install as coming from the Nimbus newtab train-hop
+          // mechanism. This source id is kept stable for historical continuity
+          // (it predates the co-enrollment newtabTrainhopAddonDeployment feature).
           telemetryInfo: { source: "nimbus-newtabTrainhopAddon" },
         }
       );

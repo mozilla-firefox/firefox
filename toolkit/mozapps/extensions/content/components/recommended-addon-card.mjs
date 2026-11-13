@@ -240,11 +240,13 @@ class RecommendedAddonCard extends HTMLElement {
     let addon = this.discoAddon;
     let url = addon.sourceURI.spec;
     let install = await AddonManager.getInstallForURL(url, {
+      id: addon.id,
       name: addon.name,
       telemetryInfo: {
         source: "disco",
         taarRecommended: addon.taarRecommended,
       },
+      type: addon.type,
     });
     // We are hosted in a <browser> in about:addons, but we can just use the
     // main tab's browser since all of it is using the system principal.

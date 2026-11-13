@@ -64,8 +64,7 @@ class ADBAddon extends EventEmitter {
     return this._status;
   }
 
-  async _getAddon() {
-    const addonId = Services.prefs.getCharPref(PREF_ADB_EXTENSION_ID);
+  async _getAddon(addonId = Services.prefs.getCharPref(PREF_ADB_EXTENSION_ID)) {
     return AddonManager.getAddonByID(addonId);
   }
 
@@ -120,7 +119,8 @@ class ADBAddon extends EventEmitter {
       );
     }
 
-    const addon = await this._getAddon();
+    const addonId = Services.prefs.getCharPref(PREF_ADB_EXTENSION_ID);
+    const addon = await this._getAddon(addonId);
     if (addon && !addon.userDisabled) {
       this.status = ADB_ADDON_STATES.INSTALLED;
       return;
@@ -130,7 +130,9 @@ class ADBAddon extends EventEmitter {
       await addon.enable();
     } else {
       const install = await AddonManager.getInstallForURL(this._getXpiLink(), {
+        id: addonId,
         telemetryInfo: { source },
+        type: "extension",
       });
       install.addListener(this);
       install.install();

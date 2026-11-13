@@ -82,7 +82,10 @@ async function promiseInstallProfileExtension(id, version, update_url) {
 async function promiseInstallSystemProfileAddon(id, version) {
   let xpi = createWebExtensionFile(id, version);
   const install = await AddonManager.getInstallForURL(`file://${xpi.path}`, {
+    id,
+    type: "extension",
     useSystemLocation: true, // KEY_APP_SYSTEM_PROFILE
+    version,
   });
 
   return install.install();

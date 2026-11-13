@@ -400,7 +400,11 @@ add_task(async function testCardRefreshedOnBlocklistStateChanges() {
   const id = "amosigned-xpi@tests.mozilla.org";
   const version = "2.2";
   const XPI_URL = `${TESTROOT}../xpinstall/amosigned.xpi`;
-  let install = await AddonManager.getInstallForURL(XPI_URL);
+  let install = await AddonManager.getInstallForURL(XPI_URL, {
+    id,
+    type: "extension",
+    version,
+  });
   await install.install();
   const addon = await AddonManager.getAddonByID(id);
 
