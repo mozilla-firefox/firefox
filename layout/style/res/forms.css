@@ -163,13 +163,11 @@ button,
   margin-inline-start: -100%;
 }
 
-input::placeholder,
-input::-moz-text-control-preview {
-  overflow-inline: clip;
-}
-
 ::-moz-text-control-preview {
   font-family: system-ui;
+  /* Prevent the preview from causing overflow in either axis */
+  white-space: nowrap;
+  overflow-inline: clip;
 }
 
 ::placeholder {
@@ -180,6 +178,11 @@ input::-moz-text-control-preview {
 :placeholder-shown:not(:-moz-autofill-preview)::placeholder,
 :-moz-autofill-preview::-moz-text-control-preview {
   display: inline-block;
+}
+
+input::placeholder {
+  /* Prevent the placeholder from being scrollable on text inputs */
+  overflow-inline: clip;
 }
 
 input::placeholder,

@@ -1,0 +1,10 @@
+<!doctype html>
+<style>textarea { resize: none; font-family: system-ui; font-size: 13px; }</style>
+<textarea></textarea>
+<script>
+  let textarea = SpecialPowers.wrap(document.querySelector("textarea"));
+  SpecialPowers.Cc["@mozilla.org/satchel/form-fill-controller;1"].getService(SpecialPowers.Ci.nsIFormFillController).markAsAutoCompletableField(textarea);
+  textarea.getBoundingClientRect(); // previewValue setter depends on the reframe posted by markAsAutoCompletableField() having being processed...
+  textarea.previewValue = "Autofill autofill autofill autofill autofill autofill autofill\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6";
+  textarea.autofillState = "preview";
+</script>

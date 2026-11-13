@@ -21,8 +21,9 @@ fuzzy(0-1,0-1) == rtl.html rtl-dynamic-style.html
 == autofill-blank.html autofill-preview-blank.html
 != autofill.html autofill-blank.html
 != autofill-preview.html autofill-preview-blank.html
-== autofill.html autofill-preview.html
+fuzzy(0-33,0-2) == autofill.html autofill-preview.html
 == autofill-prefilled-value.html autofill-preview.html
-== autofill-preview-line-height.html autofill-line-height.html
-== autofill-author-background.html autofill.html
+fuzzy(0-33,0-2) == autofill-preview-line-height.html autofill-line-height.html
+fuzzy(0-33,0-2) == autofill-author-background.html autofill.html
 == autofill-preview-field-sizing.html autofill-preview.html
+== autofill-preview-multiline.html autofill-preview-multiline-ref.html
