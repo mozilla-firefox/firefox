@@ -428,7 +428,7 @@ size_t js::WasmStructObject::sizeOfExcludingThis() const {
 bool WasmStructObject::getField(JSContext* cx, uint32_t index,
                                 MutableHandle<Value> val) {
   const StructType& resultType = typeDef().structType();
-  MOZ_ASSERT(index <= resultType.fields_.length());
+  MOZ_ASSERT(index < resultType.fields_.length());
   const FieldType& field = resultType.fields_[index];
   StorageType ty = field.type.storageType();
   return ToJSValue(cx, fieldIndexToAddress(index), ty, val);
