@@ -70,10 +70,16 @@ class ClientInfo {
       return extra_data_;
   }
 
+  // Owned by ClientEvent, don't assume its validity after the callback returns.
+  // -1 if the crashed process is dumped directly.
+  void set_remote_executor_fd(int fd) { remote_executor_fd_ = fd; }
+  int remote_executor_fd() const { return remote_executor_fd_; }
+
  private:
   CrashGenerationServer* crash_server_;
   pid_t pid_;
   ExtraCrashData* extra_data_ = nullptr; // Possible extra crash data, notably for error reporting.
+  int remote_executor_fd_ = -1;
 };
 
 }

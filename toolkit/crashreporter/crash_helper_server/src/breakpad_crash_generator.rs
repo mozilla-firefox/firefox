@@ -51,6 +51,10 @@ pub struct BreakpadProcessId {
     pub task: u32,
     #[cfg(target_os = "windows")]
     pub handle: windows_sys::Win32::Foundation::HANDLE,
+    /// Socket to the remote executor, or -1.
+    /// Not owned by us!
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    pub remote_executor_fd: std::os::fd::RawFd,
 }
 
 impl BreakpadProcessId {

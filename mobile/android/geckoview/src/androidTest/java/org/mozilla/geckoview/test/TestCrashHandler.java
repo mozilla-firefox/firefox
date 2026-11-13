@@ -274,20 +274,15 @@ public class TestCrashHandler extends Service {
 
     final File extrasFile = new File(intent.getStringExtra(GeckoRuntime.EXTRA_EXTRAS_PATH));
     final boolean extrasFileExists = extrasFile.exists();
-    final boolean expectAnnotations;
     try {
       final JSONObject annotations = readExtraFile(extrasFile.getPath());
 
-      // TODO: remove this when bug 2082922 is fixed
-      expectAnnotations = !annotations.optString("MinidumpRemoteExecutorForTesting").equals("1");
-
-      if (expectAnnotations && !annotations.getString("MozCrashReason").startsWith("MOZ_CRASH(")) {
+      if (!annotations.getString("MozCrashReason").startsWith("MOZ_CRASH(")) {
         return new EvalResult(false, "Missing or invalid child crash annotations");
       }
 
       final String dumperError = annotations.optString("DumperError");
-      if (!dumperError.isEmpty()
-          && (expectAnnotations || !dumperError.equals("MissingChildProcessAnnotations"))) {
+      if (!dumperError.isEmpty()) {
         return new EvalResult(false, "Minidump writer error: " + dumperError);
       }
 
@@ -335,7 +330,7 @@ public class TestCrashHandler extends Service {
 
     final String expectedRemoteType = mMsgHandler.getExpectedRemoteType();
     final String remoteType = intent.getStringExtra(GeckoRuntime.EXTRA_CRASH_REMOTE_TYPE);
-    if ((remoteType == null && expectedRemoteType != null && expectAnnotations)
+    if ((remoteType == null && expectedRemoteType != null)
         || (remoteType != null && !remoteType.equals(expectedRemoteType))) {
       return new EvalResult(
           false, "Expected remote type " + expectedRemoteType + ", found " + remoteType);

@@ -68,6 +68,8 @@ struct BreakpadProcessId {
   task_t task;
 #elif defined(XP_WIN)
   HANDLE handle;
+#elif defined(XP_LINUX)
+  int remote_executor_fd;
 #endif
 };
 
@@ -96,6 +98,8 @@ void onClientDumpRequestCallback(void* context, const ClientInfo& client_info,
       .task = client_info.task(),
 #elif defined(XP_WIN)
       .handle = client_info.process_handle(),
+#elif defined(XP_LINUX)
+      .remote_executor_fd = client_info.remote_executor_fd(),
 #endif
   };
 #if defined(XP_LINUX)

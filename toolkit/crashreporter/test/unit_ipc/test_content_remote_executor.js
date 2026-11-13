@@ -14,16 +14,14 @@ add_task(async function run_test() {
   await do_content_crash(
     function () {
       crashType = CrashTestUtils.CRASH_MOZ_CRASH;
+      crashReporter.annotateCrashReport("TestKey", "TestValue");
     },
     function (mdump, extra) {
       Assert.equal(extra.MinidumpRemoteExecutorForTesting, "1");
       Assert.greater(mdump.fileSize, 0);
-      // TODO: see bug 2082922 for annotation support
-      Assert.ok(
-        !("DumperError" in extra) ||
-          extra.DumperError == "MissingChildProcessAnnotations",
-        extra.DumperError
-      );
+      Assert.ok(!("DumperError" in extra), extra.DumperError);
+      Assert.equal(extra.TestKey, "TestValue");
+      Assert.ok("ProcessType" in extra);
       Assert.ok(
         CrashTestUtils.dumpHasStream(
           mdump.path,

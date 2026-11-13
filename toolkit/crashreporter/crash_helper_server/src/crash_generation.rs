@@ -396,6 +396,13 @@ pub(crate) unsafe extern "C" fn finalize_breakpad_minidump(
     let generator = generator as *const Mutex<CrashGenerator>;
     let minidump_path = PathBuf::from(<OsString as BreakpadString>::from_ptr(minidump_path_ptr));
 
+    #[cfg(any(target_os = "android", target_os = "linux"))]
+    let annotations = if process_id.remote_executor_fd >= 0 {
+        linux::retrieve_annotations_remote(process_id.remote_executor_fd)
+    } else {
+        retrieve_annotations(process_id.get_native(), ProcessType::Child)
+    };
+    #[cfg(not(any(target_os = "android", target_os = "linux")))]
     let annotations = retrieve_annotations(process_id.get_native(), ProcessType::Child);
 
     let mut generator = generator.as_ref().unwrap().lock().unwrap();
