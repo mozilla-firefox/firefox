@@ -460,3 +460,52 @@ add_task(async function test_smartbar_selected_row_overrides_locked_action() {
 
   await BrowserTestUtils.closeWindow(win);
 });
+
+add_task(async function test_compact_cta_icon_forced_colors() {
+  // A dark palette, so a black icon fill differs from the button text color.
+  await SpecialPowers.pushPrefEnv({ set: [["ui.systemUsesDarkTheme", 1]] });
+  const { win, sidebarBrowser } = await openAIWindowWithSidebar();
+  await typeInSmartbar(sidebarBrowser, "tell me a joke");
+  await waitForSmartbarAction(sidebarBrowser, "chat");
+
+  const inputCta = BrowserTestUtils.querySelectorDeep(
+    sidebarBrowser.contentDocument,
+    "input-cta"
+  );
+  const mozButton = inputCta.shadowRoot.querySelector("moz-button");
+  await mozButton.updateComplete;
+  const mainButton = mozButton.shadowRoot.querySelector("#main-button");
+  const buttonStyle = sidebarBrowser.contentWindow.getComputedStyle(
+    mainButton.querySelector(".button-background")
+  );
+  Assert.stringContains(
+    buttonStyle.backgroundImage,
+    "ask-icon.svg",
+    "Sanity check: the sidebar shows the compact Ask icon"
+  );
+
+  sidebarBrowser.browsingContext.forcedColorsOverride = "active";
+  try {
+    Assert.ok(
+      sidebarBrowser.contentWindow.matchMedia("(forced-colors)").matches,
+      "Sanity check: forced colors are active"
+    );
+    Assert.equal(
+      buttonStyle.fill,
+      buttonStyle.color,
+      "The Ask icon uses the button text color"
+    );
+
+    InspectorUtils.addPseudoClassLock(mainButton, ":hover");
+    Assert.equal(
+      buttonStyle.fill,
+      buttonStyle.color,
+      "The Ask icon uses the button text color on hover"
+    );
+  } finally {
+    InspectorUtils.removePseudoClassLock(mainButton, ":hover");
+    sidebarBrowser.browsingContext.forcedColorsOverride = "none";
+    await BrowserTestUtils.closeWindow(win);
+    await SpecialPowers.popPrefEnv();
+  }
+});
