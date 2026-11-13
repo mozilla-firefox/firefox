@@ -223,7 +223,7 @@ export const ReportContent = spocs => {
               name="report"
               ref={radioGroupRef}
               id="report-group"
-              data-l10n-id="newtab-report-ads-why-reporting"
+              data-l10n-id="newtab-report-content-why-reporting-this"
               className="report-ads-options"
               headingLevel="3"
             >

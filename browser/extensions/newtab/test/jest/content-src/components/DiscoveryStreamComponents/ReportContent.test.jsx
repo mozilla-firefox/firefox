@@ -163,6 +163,15 @@ describe("Discovery Stream <ReportContent>", () => {
     adsNewReportReasonsSupported: true,
   };
 
+  it("should use the shared why-reporting heading for ad reporting reasons", () => {
+    renderAdReport();
+    expect(
+      wrapper.container
+        .querySelector(".report-ads-options")
+        .getAttribute("data-l10n-id")
+    ).toBe("newtab-report-content-why-reporting-this");
+  });
+
   it("should render legacy ad reporting reasons when new reasons pref is off", () => {
     renderAdReport();
     expect(adReasonValues()).toEqual(LEGACY_AD_REASON_VALUES);
