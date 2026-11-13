@@ -1280,7 +1280,7 @@ add_task(async function test_stale_startup_timestamp() {
   Assert.equal(Services.prefs.getStringPref(PREF_LAST_ETAG), "42");
   assertTelemetryEvents([
     {
-      value: UptakeTelemetry.STATUS.STALE_EXPECTED,
+      value: UptakeTelemetry.STATUS.STALE_TIMESTAMP_ERROR,
     },
   ]);
 });

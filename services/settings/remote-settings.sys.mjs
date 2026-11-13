@@ -447,7 +447,7 @@ function remoteSettingsFunction() {
     ) {
       // startup trigger event can fire with a stale timestamp when clients reconnect to push
       await lazy.UptakeTelemetry.report(
-        lazy.UptakeTelemetry.STATUS.STALE_EXPECTED,
+        lazy.UptakeTelemetry.STATUS.STALE_TIMESTAMP_ERROR,
         pollTelemetryArgs
       );
       return;

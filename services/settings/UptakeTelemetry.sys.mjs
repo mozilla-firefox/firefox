@@ -39,7 +39,7 @@ export class UptakeTelemetry {
       CLEANUP_ERROR: "cleanup_error",
       SYNC_BROKEN_ERROR: "sync_broken_error",
       CUSTOM_1_ERROR: "custom_1_error",
-      STALE_EXPECTED: "stale_expected",
+      STALE_TIMESTAMP_ERROR: "stale_timestamp_error",
     };
   }
 
