@@ -32,7 +32,13 @@ import mozilla.components.concept.engine.EngineSessionStateStorage
 import mozilla.components.concept.storage.HistoryMetadataKey
 import mozilla.components.feature.session.SessionUseCases.LoadUrlUseCase
 
-/** Contains use cases related to the tabs feature. */
+/**
+ * Contains use cases related to the tabs feature.
+ *
+ * Note: Please instead route tab data side effects through
+ * [mozilla.components.feature.tabdata.coordinator.TabDataCoordinator] for applications which implement tab groups via
+ * [mozilla.components.feature.tabgroups.storage.repository.TabGroupRepository].
+ */
 class TabsUseCases(
     store: BrowserStore,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
