@@ -56,6 +56,12 @@ That is the `firefox-probe.py -e` shape; `desktop-theme-probing` §1 has the
 others. Read every field: css_guidelines "High contrast mode" says why the two
 forced-colors queries and the contrast grades can disagree.
 
+Where no build can run (e.g. a report from a platform you can't probe on), name
+the regime from the report's preconditions and the rule's own conditions
+instead. `./mach theme resolve-token --effective` reads the token
+sheets without a launch and prints each candidate regime's values; say the
+regime is inferred, not probed.
+
 **Reproduce in the regime the report names.** A report's preconditions (e.g. a
 theme, a pref) and its platforms set the regime, and the default on the machine
 you probe on is often a different one. Linux defaults to the native theme
@@ -213,12 +219,14 @@ paints, against 7:1, where `Gecko_MediaFeatures_PrefersContrast` grades `more`.
 In the default regime, a theme's colors included, judge a text pair against WCAG
 AA: 4.5:1, or 3:1 for large text, and a focus ring or separator against its
 surface at 3:1 (`--non-text`). Measure with `./mach theme contrast`, never by
-hand, and name the palette it was measured on. `--help` has the flags, the state
-locks, and the cases it reports not judged, which need a pixel sample. Where a
-sibling paints a state (e.g. a tab's `.tab-background` behind its label), a
-state entry without `--surface` reads the unchanged background and passes; the
-only sign is a warning on stderr, so treat that entry as not judged until you
-rerun it with `--surface`.
+hand, and name the palette it was measured on; without a build, or where the
+chain ends at a transparent root over a backdrop the OS paints (e.g. Windows
+Mica), its `--colors` mode takes resolved values. `--help` has the flags, the
+state locks, how to get the backdrop values for `--colors`, and the cases it reports
+not judged, which need a pixel sample. Where a sibling paints a state (e.g. a
+tab's `.tab-background` behind its label), a state entry without `--surface`
+reads the unchanged background and passes; the only sign is a warning on
+stderr, so treat that entry as not judged until you rerun it with `--surface`.
 
 ## 5. Traps when reading a value back
 
@@ -248,6 +256,11 @@ rerun it with `--surface`.
 ## 6. Judge the fix in every regime, then restore the prefs
 
 Check that each cell moves the way it should (`desktop-theme-probing` §5).
+Measure each cell's ratio with `./mach theme contrast` (§4), never by hand: one
+run per row, light or dark side and variant, each with its own `--setup-file`
+that sets the row's live state (e.g. §2's override, the scheme prefs). To judge
+a revision you have not applied, set its changed declarations inline on the
+subject in that setup file, so the before and after runs differ by those lines.
 `document_color_use` is `browser.display.document_color_use`:
 
 | regime | how to reach it |
@@ -267,6 +280,7 @@ Check that each cell moves the way it should (`desktop-theme-probing` §5).
 | system accent color | `ui.accentcolor=#rrggbb` and `ui.accentcolortext=#rrggbb`; without them the accent depends on the host and the display (the host's platform file in `desktop-theme-probing`, section HEADLESS) |
 | in-app light/dark pair on Linux | `browser.theme.native-theme=false` |
 | native theme on Windows or macOS | `browser.theme.native-theme=true`, with the default theme: a built-in in-app theme takes the in-app layer whatever the pref says |
+| a backdrop the OS paints (e.g. Windows Mica) | `ui.windowsMica=1` makes `(-moz-windows-mica)` match on any platform, but the Windows-only sheets are absent elsewhere and nothing paints the backdrop; inject the rule as `desktop-theme-probing`'s `references/probe-recipes.md` §4 "Test another platform's rule" says, and measure over the backdrop's light and dark values with this skill's §4 `./mach theme contrast --colors` |
 
 When the fix is in a shared sheet, run every row in both realms, the healthy one
 included; for a token change, a realm where no sheet reads a changed token is

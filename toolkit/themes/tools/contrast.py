@@ -91,6 +91,16 @@ does a state whose lock changed no background behind the subject while no
 
 --print-js prints the probe as an `async () => {...}` function for the devtools
 MCP's evaluate_privileged_script and exits.
+
+--colors FG BG [BG...] measures colors you already resolved, with no build and
+no launch: each a #hex or rgb()/rgba() value, the backgrounds listed top first
+down to an opaque one, each composited over the next and the foreground over
+the result. It takes --min and --non-text for the minimum (large text needs
+--min 3) and prints the composited pair, ratio and verdict as JSON. Where the
+OS paints the backdrop (e.g. Windows Mica, a macOS vibrant surface), CSS cannot
+read it: give the backdrop as the last background in both its light and its
+dark extreme, sampled from a screenshot of that platform or taken from the
+platform's design guidance, and say which.
 """
 
 import argparse
@@ -353,6 +363,84 @@ BODY_TEMPLATE = r"""
 FUNCTION_TEMPLATE = "async () => {%s}"
 
 
+def parse_color(text):
+    """Parse #rgb, #rgba, #rrggbb, #rrggbbaa, rgb() or rgba() to (r, g, b, a)."""
+    s = text.strip().lower()
+    if s.startswith("#"):
+        h = s[1:]
+        if len(h) in (3, 4):
+            h = "".join(c * 2 for c in h)
+        if len(h) in (6, 8) and all(c in "0123456789abcdef" for c in h):
+            vals = [int(h[i : i + 2], 16) for i in range(0, len(h), 2)]
+            return (*vals[:3], vals[3] / 255 if len(vals) == 4 else 1.0)
+    elif s.startswith(("rgb(", "rgba(")) and s.endswith(")"):
+        parts = s[s.index("(") + 1 : -1].replace(",", " ").replace("/", " ").split()
+        if len(parts) in (3, 4):
+            try:
+                rgb = [
+                    float(p[:-1]) * 2.55 if p.endswith("%") else float(p)
+                    for p in parts[:3]
+                ]
+                a = 1.0
+                if len(parts) == 4:
+                    p = parts[3]
+                    a = float(p[:-1]) / 100 if p.endswith("%") else float(p)
+            except ValueError:
+                pass
+            else:
+                if all(0 <= v <= 255 for v in rgb) and 0 <= a <= 1:
+                    return (*rgb, a)
+                raise ValueError(
+                    f"color {text!r} is out of range: channels take 0-255 or "
+                    "0%-100%, alpha 0-1 or 0%-100%"
+                )
+    raise ValueError(
+        f"cannot parse color {text!r}: give a resolved #hex or rgb() value, "
+        "not a keyword or system color name"
+    )
+
+
+def over(top, bottom):
+    a = top[3] + bottom[3] * (1 - top[3])
+    if a == 0:
+        return (0.0, 0.0, 0.0, 0.0)
+    rgb = [
+        (top[i] * top[3] + bottom[i] * bottom[3] * (1 - top[3])) / a for i in range(3)
+    ]
+    return (*rgb, a)
+
+
+def luminance(c):
+    def lin(v):
+        v /= 255
+        return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+
+    return 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2])
+
+
+def offline_ratio(fg_text, bg_texts, minimum):
+    """Contrast of fg over backgrounds listed top first; the last one must be opaque."""
+    bgs = [parse_color(t) for t in bg_texts]
+    if bgs[-1][3] < 1:
+        raise ValueError(
+            f"the last background, {bg_texts[-1]!r}, is translucent: name what "
+            "paints below it, down to an opaque color"
+        )
+    bg = bgs[-1]
+    for layer in reversed(bgs[:-1]):
+        bg = over(layer, bg)
+    fg = over(parse_color(fg_text), bg)
+    hi, lo = sorted((luminance(fg), luminance(bg)), reverse=True)
+    ratio = (hi + 0.05) / (lo + 0.05)
+    return {
+        "foreground": f"rgb({', '.join(str(round(v)) for v in fg[:3])})",
+        "background": f"rgb({', '.join(str(round(v)) for v in bg[:3])})",
+        "ratio": round(ratio, 2),
+        "min": minimum,
+        "pass": ratio >= minimum,
+    }
+
+
 def print_table(result):
     rows = []
     for s in result.get("subjects", []):
@@ -442,10 +530,39 @@ def get_parser(prog=None):
         action="store_true",
         help="print an async function for the devtools MCP and exit",
     )
+    ap.add_argument(
+        "--colors",
+        nargs="+",
+        metavar="COLOR",
+        default=None,
+        help="FG BG [BG...]: measure resolved colors without launching; backgrounds top first",
+    )
     return ap
 
 
 def run(ap, args):
+    if args.colors:
+        if len(args.colors) < 2:
+            ap.error("--colors needs a foreground and at least one background")
+        probe_flags = [
+            "--" + dest.replace("_", "-")
+            for dest, value in vars(args).items()
+            if dest not in ("colors", "min", "non_text", "quiet")
+            and value != ap.get_default(dest)
+        ]
+        if probe_flags:
+            ap.error(f"--colors does not take {', '.join(probe_flags)}")
+        if args.min is not None:
+            minimum = args.min
+        else:
+            minimum = 3.0 if args.non_text else 4.5
+        try:
+            result = offline_ratio(args.colors[0], args.colors[1:], minimum)
+        except ValueError as e:
+            print(f"{PROG}: error: {e}", file=sys.stderr)
+            return 1
+        print(json.dumps(result, indent=2))
+        return 0
     setup = Path(args.setup_file).read_text(encoding="utf-8") if args.setup_file else ""
     core = CORE % {
         "selector": json.dumps(args.element),
@@ -459,7 +576,7 @@ def run(ap, args):
         print(FUNCTION_TEMPLATE % body_js)
         return 0
     if not args.binary:
-        ap.error("--binary is required unless --print-js")
+        ap.error("--binary is required unless --print-js or --colors")
     probelib.check_page_arguments(ap, args)
     sandbox = "system" if args.realm == "content" else "default"
 
