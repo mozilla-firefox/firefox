@@ -546,6 +546,10 @@ def get_decision_parameters(graph_config, options):
     if parameters["repository_type"] == "git" and "files_changed" not in parameters:
         parameters["files_changed"] = get_git_files_changed(repo, parameters)
 
+    parameters["files_changed"] = [
+        path for path in parameters["files_changed"] if path != "try_task_config.json"
+    ]
+
     result = Parameters(**parameters)
     result.check()
     return result
