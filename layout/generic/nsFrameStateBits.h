@@ -146,6 +146,12 @@ FRAME_STATE_BIT(Generic, 12, NS_FRAME_HAS_DIRTY_CHILDREN)
 // 'position-visibility' values.
 FRAME_STATE_BIT(Generic, 13, NS_FRAME_POSITION_VISIBILITY_HIDDEN)
 
+// If this bit is set, the frame has a continuation that has a first-letter
+// frame, or its placeholder, as a child. The frame is then an nsContainerFrame
+// with a blockframe ancestor that has the first-letter frame hanging off it in
+// the nsContainerFrame::FirstLetterProperty() property.
+FRAME_STATE_BIT(Generic, 14, NS_FRAME_HAS_FIRST_LETTER_CHILD)
+
 // If this bit is set, the frame is part of the mangled frame hierarchy
 // that results when an inline has been split because of a nested block.
 // See the comments in nsCSSFrameConstructor::ConstructInline for
@@ -163,7 +169,12 @@ FRAME_STATE_BIT(Generic, 16, NS_FRAME_MAY_BE_TRANSFORMED)
 // or is incomplete (its next sibling is a bidi continuation)
 FRAME_STATE_BIT(Generic, 17, NS_FRAME_IS_BIDI)
 
-// Free bit here.
+// If this bit is set, the frame has a descendant (possibly via a continuation)
+// whose positioning may depend on its static position, so we need to recompute
+// that position if the frame moves. Set on first continuations and following
+// ones as an optimization; see AbsoluteContainingBlock.cpp.
+FRAME_STATE_BIT(Generic, 18,
+                NS_FRAME_DESCENDANT_MAY_DEPEND_ON_ITS_STATIC_POSITION)
 
 // If this bit is set, then reflow may be dispatched from the current
 // frame instead of the root frame.
@@ -189,6 +200,18 @@ FRAME_STATE_BIT(Generic, 33, NS_FRAME_DRAWING_AS_PAINTSERVER)
 // situation (possibly the frame itself).
 FRAME_STATE_BIT(Generic, 34,
                 NS_FRAME_DESCENDANT_INTRINSIC_ISIZE_DEPENDS_ON_BSIZE)
+
+// Suppose a frame was split into multiple parts to separate parts containing
+// column-spans from parts not containing column-spans. This bit is set on all
+// continuations *not* containing column-spans except for the those after the
+// last column-span/non-column-span boundary (i.e., the bit really means it
+// has a *later* sibling across a split). Note that the last part is always
+// created to containing no columns-spans even if it has no children. See
+// nsCSSFrameConstructor::CreateColumnSpanSiblings() for the implementation.
+//
+// If the frame having this bit set is removed, we need to reframe the
+// multi-column container.
+FRAME_STATE_BIT(Generic, 35, NS_FRAME_HAS_COLUMN_SPAN_SIBLINGS)
 
 // Frame is a display root and the retained layer tree needs to be updated
 // at the next paint via display list construction.

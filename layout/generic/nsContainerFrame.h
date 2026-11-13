@@ -500,9 +500,13 @@ class nsContainerFrame : public nsSplittableFrame {
   // have arbitrary nsContainerFrames.
   NS_DECLARE_FRAME_PROPERTY_WITHOUT_DTOR(FirstLetterProperty, nsIFrame)
 
-  void SetHasFirstLetterChild() { mHasFirstLetterChild = true; }
+  void SetHasFirstLetterChild() {
+    AddStateBits(NS_FRAME_HAS_FIRST_LETTER_CHILD);
+  }
 
-  void ClearHasFirstLetterChild() { mHasFirstLetterChild = false; }
+  void ClearHasFirstLetterChild() {
+    RemoveStateBits(NS_FRAME_HAS_FIRST_LETTER_CHILD);
+  }
 
 #ifdef DEBUG
   // Use this to suppress the ABSURD_SIZE assertions.

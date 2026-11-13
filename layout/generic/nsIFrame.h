@@ -752,10 +752,8 @@ class nsIFrame : public nsQueryFrame {
         mClass(aID),
         mMayHaveRoundedCorners(false),
         mHasImageRequest(false),
-        mHasFirstLetterChild(false),
         mParentIsWrapperAnonBox(false),
         mIsWrapperBoxNeedingRestyle(false),
-        mReflowRequestedForCharDataChange(false),
         mForceDescendIntoIfVisible(false),
         mBuiltDisplayList(false),
         mFrameIsModified(false),
@@ -770,9 +768,7 @@ class nsIFrame : public nsQueryFrame {
         mAllDescendantsAreInvisible(false),
         mHasBSizeChange(false),
         mHasPaddingChange(false),
-        mInScrollAnchorChain(false),
-        mHasColumnSpanSiblings(false),
-        mDescendantMayDependOnItsStaticPosition(false) {
+        mInScrollAnchorChain(false) {
     MOZ_ASSERT(mComputedStyle);
     MOZ_ASSERT(mPresContext);
     mozilla::PodZero(&mOverflow);
@@ -5109,7 +5105,9 @@ class nsIFrame : public nsQueryFrame {
    * continuation's nsContainerFrame::FirstLetterProperty() property.  This will
    * only return true for the first continuation of the first-letter's parent.
    */
-  bool HasFirstLetterChild() const { return mHasFirstLetterChild; }
+  bool HasFirstLetterChild() const {
+    return HasAnyStateBits(NS_FRAME_HAS_FIRST_LETTER_CHILD);
+  }
 
   /**
    * Whether this frame's parent is a wrapper anonymous box.  See documentation
@@ -5374,16 +5372,26 @@ class nsIFrame : public nsQueryFrame {
     mHasPaddingChange = aHasPaddingChange;
   }
 
-  bool HasColumnSpanSiblings() const { return mHasColumnSpanSiblings; }
+  bool HasColumnSpanSiblings() const {
+    return HasAnyStateBits(NS_FRAME_HAS_COLUMN_SPAN_SIBLINGS);
+  }
   void SetHasColumnSpanSiblings(bool aHasColumnSpanSiblings) {
-    mHasColumnSpanSiblings = aHasColumnSpanSiblings;
+    AddOrRemoveStateBits(NS_FRAME_HAS_COLUMN_SPAN_SIBLINGS,
+                         aHasColumnSpanSiblings);
   }
 
+  /**
+   * True if we may have any descendant whose positioning may depend on its
+   * static position (and thus which we need to recompute the position for if we
+   * move).
+   */
   bool DescendantMayDependOnItsStaticPosition() const {
-    return mDescendantMayDependOnItsStaticPosition;
+    return HasAnyStateBits(
+        NS_FRAME_DESCENDANT_MAY_DEPEND_ON_ITS_STATIC_POSITION);
   }
   void SetDescendantMayDependOnItsStaticPosition(bool aValue) {
-    mDescendantMayDependOnItsStaticPosition = aValue;
+    AddOrRemoveStateBits(NS_FRAME_DESCENDANT_MAY_DEPEND_ON_ITS_STATIC_POSITION,
+                         aValue);
   }
 
   /**
@@ -5507,14 +5515,6 @@ class nsIFrame : public nsQueryFrame {
   bool mHasImageRequest : 1;
 
   /**
-   * True if this frame has a continuation that has a first-letter frame, or its
-   * placeholder, as a child.  In that case this frame has a blockframe ancestor
-   * that has the first-letter frame hanging off it in the
-   * nsContainerFrame::FirstLetterProperty() property.
-   */
-  bool mHasFirstLetterChild : 1;
-
-  /**
    * True if this frame's parent is a wrapper anonymous box (e.g. a table
    * anonymous box as specified at
    * <https://www.w3.org/TR/CSS21/tables.html#anonymous-boxes>).
@@ -5533,23 +5533,6 @@ class nsIFrame : public nsQueryFrame {
    * style of this anonymous box, if we end up seeing it twice.
    */
   bool mIsWrapperBoxNeedingRestyle : 1;
-
-  /**
-   * This bit is used in nsTextFrame::CharacterDataChanged() as an optimization
-   * to skip redundant reflow-requests when the character data changes multiple
-   * times between reflows. If this flag is set, then it implies that the
-   * NS_FRAME_IS_DIRTY state bit is also set (and that intrinsic sizes have
-   * been marked as dirty on our ancestor chain).
-   *
-   * XXXdholbert This bit is *only* used on nsTextFrame, but it lives here on
-   * nsIFrame simply because this is where we've got unused state bits
-   * available in a gap. If bits become more scarce, we should perhaps consider
-   * expanding the range of frame-specific state bits in nsFrameStateBits.h and
-   * moving this to be one of those (e.g. by swapping one of the adjacent
-   * general-purpose bits to take the place of this bool:1 here, so we can grow
-   * that range of frame-specific bits by 1).
-   */
-  bool mReflowRequestedForCharDataChange : 1;
 
   /**
    * This bit is used during BuildDisplayList to mark frames that need to
@@ -5634,27 +5617,6 @@ class nsIFrame : public nsQueryFrame {
    * True if we are or contain the scroll anchor for a scrollable frame.
    */
   bool mInScrollAnchorChain : 1;
-
-  /**
-   * Suppose a frame was split into multiple parts to separate parts containing
-   * column-spans from parts not containing column-spans. This bit is set on all
-   * continuations *not* containing column-spans except for the those after the
-   * last column-span/non-column-span boundary (i.e., the bit really means it
-   * has a *later* sibling across a split). Note that the last part is always
-   * created to containing no columns-spans even if it has no children. See
-   * nsCSSFrameConstructor::CreateColumnSpanSiblings() for the implementation.
-   *
-   * If the frame having this bit set is removed, we need to reframe the
-   * multi-column container.
-   */
-  bool mHasColumnSpanSiblings : 1;
-
-  /**
-   * True if we may have any descendant whose positioning may depend on its
-   * static position (and thus which we need to recompute the position for if we
-   * move).
-   */
-  bool mDescendantMayDependOnItsStaticPosition : 1;
 
  protected:
   // Helpers

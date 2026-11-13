@@ -926,6 +926,11 @@ class nsTextFrame : public nsIFrame {
  protected:
   PropertyFlags mPropertyFlags = PropertyFlags(0);
 
+  // Set in CharacterDataChanged() to skip redundant reflow requests when the
+  // character data changes multiple times between reflows. Implies that
+  // NS_FRAME_IS_DIRTY is also set.
+  bool mReflowRequestedForCharDataChange = false;
+
   /**
    * Return true if the frame is part of a Selection.
    * Helper method to implement the public IsSelected() API.
