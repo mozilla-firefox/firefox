@@ -572,6 +572,11 @@ support-files = [
   "seek_support.js",
   "seekLies.sjs",
   "seek_with_sound.ogg^headers^",
+  "seig-key-rotation-cbcs.mp4",
+  "seig-key-rotation-cbcs.mp4^headers^",
+  "seig-key-rotation-cenc.mp4",
+  "seig-key-rotation-cenc.mp4^headers^",
+  "seig_key_rotation.js",
   "short-cenc.mp4",
   "sine.webm",
   "sine.webm^headers^",
@@ -743,6 +748,9 @@ skip-if = [
 scheme = "https"
 
 ["test_eme_sample_groups_playback.html"]
+scheme = "https"
+
+["test_eme_seig_key_rotation.html"]
 scheme = "https"
 
 ["test_eme_special_key_system.html"]

@@ -1,0 +1,57 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test key rotation through seig sample groups</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+  <script type="text/javascript" src="manifest.js"></script>
+  <script type="text/javascript" src="eme.js"></script>
+  <script type="text/javascript" src="seig_key_rotation.js"></script>
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+/* import-globals-from seig_key_rotation.js */
+
+for (const fixture of kSeigFixtures) {
+  add_task(async function playWithBothKeys() {
+    info(`${fixture.scheme}: both keys are provisioned`);
+    const { video, firstEvent } = await startSeigRotationPlayback(
+      fixture, kSeigKeys, ["ended", "error"]);
+
+    is(await firstEvent, "ended", "Playback reaches the end");
+    removeSeigVideo(video);
+  });
+
+  add_task(async function waitForRotatedKey() {
+    info(`${fixture.scheme}: key B is provisioned only after the stall`);
+    const { video, session, firstEvent } = await startSeigRotationPlayback(
+      fixture, { [kSeigKeyIdA]: kSeigKeys[kSeigKeyIdA] },
+      ["waitingforkey", "ended", "error"]);
+
+    // Samples after the rotation need KID B, so playback must wait for it
+    // after playing the samples of KID A.
+    const event = await firstEvent;
+    is(event, "waitingforkey", "Playback waits for the rotated key");
+    ok(video.currentTime > 0 && video.currentTime < kSeigRotationTime,
+       `Stalled between the start and the rotation point ` +
+       `(currentTime=${video.currentTime})`);
+    if (event != "waitingforkey") {
+      // The failure is reported above. Key B cannot resume a playback that
+      // already ended or failed, so waiting for "ended" would time out.
+      removeSeigVideo(video);
+      return;
+    }
+
+    // Once key B is provided, playback resumes until the end.
+    const resumed = firstEventOf(video, ["ended", "error"]);
+    await addKeyToSession(session, kSeigKeyIdB);
+    is(await resumed, "ended",
+       "Playback reaches the end after the rotated key is provided");
+    removeSeigVideo(video);
+  });
+}
+</script>
+</pre>
+</body>
+</html>
