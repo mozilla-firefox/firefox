@@ -573,6 +573,32 @@ nsCSPNonceSrc* nsCSPParser::nonceSource() {
   return new nsCSPNonceSrc(Substring(expr, dashIndex + 1));
 }
 
+static bool ExtractAlgorithmAndHash(const nsAString& aExpr,
+                                    nsAString& aOutAlgorithm,
+                                    nsAString& aOutHash) {
+  int32_t dashIndex = aExpr.FindChar(DASH);
+  if (dashIndex < 0) {
+    return false;
+  }
+
+  const nsAString& algorithm = Substring(aExpr, 0, dashIndex);
+  const nsAString& hash = Substring(aExpr, dashIndex + 1);
+
+  if (!nsCSPParser::isValidBase64Value(hash)) {
+    return false;
+  }
+
+  for (auto hashSourceValidFn : kHashSourceValidFns) {
+    if (algorithm.LowerCaseEqualsASCII(hashSourceValidFn)) {
+      aOutAlgorithm = algorithm;
+      aOutHash = hash;
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // hash-source = "'" hash-algo "-" base64-value "'"
 nsCSPHashSrc* nsCSPParser::hashSource() {
   CSPPARSERLOG(("nsCSPParser::hashSource, mCurToken: %s, mCurValue: %s",
@@ -587,26 +613,16 @@ nsCSPHashSrc* nsCSPParser::hashSource() {
   // Trim surrounding single quotes
   const nsAString& expr = Substring(mCurToken, 1, mCurToken.Length() - 2);
 
-  int32_t dashIndex = expr.FindChar(DASH);
-  if (dashIndex < 0) {
+  nsAutoString algorithm;
+  nsAutoString hash;
+  if (!ExtractAlgorithmAndHash(expr, algorithm, hash)) {
     return nullptr;
   }
 
-  if (!isValidBase64Value(Substring(expr, dashIndex + 1))) {
-    return nullptr;
-  }
+  // Cache if encountering hash or nonce to invalidate unsafe-inline
+  mHasHashOrNonce = true;
 
-  nsAutoString algo(Substring(expr, 0, dashIndex));
-  nsAutoString hash(Substring(expr, dashIndex + 1));
-
-  for (auto hashSourceValidFn : kHashSourceValidFns) {
-    if (algo.LowerCaseEqualsASCII(hashSourceValidFn)) {
-      // cache if encountering hash or nonce to invalidate unsafe-inline
-      mHasHashOrNonce = true;
-      return new nsCSPHashSrc(algo, hash);
-    }
-  }
-  return nullptr;
+  return new nsCSPHashSrc(algorithm, hash);
 }
 
 // source-expression = scheme-source / host-source / keyword-source
