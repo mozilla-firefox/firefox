@@ -56,6 +56,9 @@ skip-if = [
 
 ["test_backgroundtask_shouldprocessupdates.js"]
 run-sequentially = ["true"] # perma-fail in parallel
+skip-if = [
+  "os == 'win'", # Bug 2092048: leaked xpcshell holds the update lock
+]
 
 ["test_backgroundtask_simultaneous_instances.js"]
 
