@@ -144,8 +144,6 @@ skip-if = [
   "tsan", # Bug 2088258 - front-end coverage only
 ]
 
-["test_shutdown_flush_tab_crash.py"]
-
 ["test_shutdown_flush_timeout.py"]
 
 ["test_splitview_hidden.py"]
