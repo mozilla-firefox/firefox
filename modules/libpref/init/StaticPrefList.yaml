@@ -3105,6 +3105,12 @@
   value: false
   mirror: always
 
+# Whether to fire mousedown/mouseup/auxclick for X1/X2 mouse buttons.
+- name: dom.event.mouse.xbuttons.enabled
+  type: bool
+  value: true
+  mirror: always
+
 # Whether pointer boundary events should be dispatched after the element is
 # changed by a layout change or something without pointer move.
 - name: dom.event.pointer.boundary.dispatch_when_layout_change
