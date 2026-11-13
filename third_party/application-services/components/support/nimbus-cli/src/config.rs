@@ -4,12 +4,11 @@
 
 use std::path::PathBuf;
 
-use crate::{
-    cli::Cli,
-    version_utils::{is_before, pad_major, pad_major_minor, pad_major_minor_patch},
-    LaunchableApp, NimbusApp,
-};
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
+
+use crate::cli::Cli;
+use crate::version_utils::{is_before, pad_major, pad_major_minor, pad_major_minor_patch};
+use crate::{LaunchableApp, NimbusApp};
 
 impl TryFrom<&Cli> for LaunchableApp {
     type Error = anyhow::Error;
@@ -29,9 +28,15 @@ impl LaunchableApp {
         device_id: Option<&str>,
     ) -> Result<Self> {
         match (&app, &channel) {
-            (None, None) => anyhow::bail!("A value for --app and --channel must be specified. Supported apps are: fenix, focus_android, firefox_ios and focus_ios"),
-            (None, _) => anyhow::bail!("A value for --app must be specified. One of: fenix, focus_android, firefox_ios and focus_ios are currently supported"),
-            (_, None) => anyhow::bail!("A value for --channel must be specified. Supported channels are: developer, nightly, beta and release"),
+            (None, None) => anyhow::bail!(
+                "A value for --app and --channel must be specified. Supported apps are: fenix, focus_android, firefox_ios and focus_ios"
+            ),
+            (None, _) => anyhow::bail!(
+                "A value for --app must be specified. One of: fenix, focus_android, firefox_ios and focus_ios are currently supported"
+            ),
+            (_, None) => anyhow::bail!(
+                "A value for --channel must be specified. Supported channels are: developer, nightly, beta and release"
+            ),
             _ => (),
         }
 
@@ -43,7 +48,9 @@ impl LaunchableApp {
             "focus_android" => Some("org.mozilla"),
             "firefox_ios" => Some("org.mozilla.ios"),
             "focus_ios" => Some("org.mozilla.ios"),
-            _ => anyhow::bail!("Only --app values of fenix, focus_android, firefox_ios and focus_ios are currently supported"),
+            _ => anyhow::bail!(
+                "Only --app values of fenix, focus_android, firefox_ios and focus_ios are currently supported"
+            ),
         };
 
         let suffix = match app {
@@ -52,26 +59,38 @@ impl LaunchableApp {
                 "nightly" => "fenix",
                 "beta" => "firefox_beta",
                 "release" => "firefox",
-                _ => bail!(format!("Application {} has no channel '{}'. Try one of developer, nightly, beta or release", app, channel)),
+                _ => bail!(format!(
+                    "Application {} has no channel '{}'. Try one of developer, nightly, beta or release",
+                    app, channel
+                )),
             }),
             "focus_android" => Some(match channel {
                 "developer" => "focus.debug",
                 "nightly" => "focus.nightly",
                 "beta" => "focus.beta",
                 "release" => "focus",
-                _ => bail!(format!("Application {} has no channel '{}'. Try one of developer, nightly, beta or release", app, channel)),
+                _ => bail!(format!(
+                    "Application {} has no channel '{}'. Try one of developer, nightly, beta or release",
+                    app, channel
+                )),
             }),
             "firefox_ios" => Some(match channel {
                 "developer" => "Fennec",
                 "beta" => "FirefoxBeta",
                 "release" => "Firefox",
-                _ => bail!(format!("Application {} has no channel '{}'. Try one of developer, beta or release", app, channel)),
+                _ => bail!(format!(
+                    "Application {} has no channel '{}'. Try one of developer, beta or release",
+                    app, channel
+                )),
             }),
             "focus_ios" => Some(match channel {
                 "developer" => "Focus",
                 "beta" => "Focus",
                 "release" => "Focus",
-                _ => bail!(format!("Application {} has no channel '{}'. Try one of developer, beta or release", app, channel)),
+                _ => bail!(format!(
+                    "Application {} has no channel '{}'. Try one of developer, beta or release",
+                    app, channel
+                )),
             }),
             _ => None,
         };

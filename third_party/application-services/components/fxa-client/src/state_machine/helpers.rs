@@ -9,8 +9,8 @@
 //! structurally impossible to call into the network without retry.
 
 use crate::{
-    internal::FirefoxAccount, DeviceCapability, DeviceType, Error, FxaError, FxaRustAuthState,
-    FxaState, LocalDevice, Result,
+    internal::FirefoxAccount, DeviceCapability, DeviceType, Error, FxaError, FxaState, LocalDevice,
+    Result,
 };
 use error_support::GetErrorHandling;
 
@@ -51,7 +51,7 @@ impl StateMachineErr {
 ///
 /// ```ignore
 /// account.complete_oauth_flow(&code, &state)
-///     .to_state_machine_err(|| initial_state.into())?;
+///     .to_state_machine_err(|| initial_state)?;
 /// ```
 pub trait ResultExt<T> {
     fn to_state_machine_err(
@@ -171,8 +171,8 @@ impl<'a> RetryingAccount<'a> {
         })
     }
 
-    pub fn get_auth_state(&mut self) -> FxaRustAuthState {
-        self.inner.get_auth_state()
+    pub fn get_initial_state(&mut self) -> FxaState {
+        self.inner.get_initial_state()
     }
 
     pub fn disconnect(&mut self) {

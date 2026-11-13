@@ -1,6 +1,6 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use serde_json::Value;
 
@@ -58,28 +58,28 @@ impl ErrorPath {
 
     pub(crate) fn example(&self, name: &str) -> Self {
         Self::new(
-            format!("{}#examples[\"{name}\"]", &self.path),
+            format!("{}#examples[\"{name}\"]", self.path),
             self.literals.clone(),
         )
     }
 
     pub(crate) fn property(&self, prop_key: &str) -> Self {
         Self::new(
-            format!("{}.{prop_key}", &self.path),
+            format!("{}.{prop_key}", self.path),
             append_quoted(&self.literals, prop_key),
         )
     }
 
     pub(crate) fn enum_map_key(&self, enum_: &str, key: &str) -> Self {
         Self::new(
-            format!("{}[{enum_}#{key}]", &self.path),
+            format!("{}[{enum_}#{key}]", self.path),
             append(&self.literals, &["{".to_string(), format!("\"{key}\"")]),
         )
     }
 
     pub(crate) fn map_key(&self, key: &str) -> Self {
         Self::new(
-            format!("{}['{key}']", &self.path),
+            format!("{}['{key}']", self.path),
             append(&self.literals, &["{".to_string(), format!("\"{key}\"")]),
         )
     }
@@ -89,12 +89,12 @@ impl ErrorPath {
         if index > 0 {
             literals.extend_from_slice(&[",".repeat(index)]);
         }
-        Self::new(format!("{}[{index}]", &self.path), literals)
+        Self::new(format!("{}[{index}]", self.path), literals)
     }
 
     pub(crate) fn object_value(&self, name: &str) -> Self {
         Self::new(
-            format!("{}#{name}", &self.path),
+            format!("{}#{name}", self.path),
             append1(&self.literals, "{"),
         )
     }

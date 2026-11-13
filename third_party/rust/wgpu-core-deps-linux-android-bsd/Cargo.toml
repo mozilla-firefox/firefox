@@ -39,7 +39,7 @@ path = "src/lib.rs"
 
 [target.'cfg(any(target_os = "linux", target_os = "android", target_os = "freebsd", target_os = "netbsd"))'.dependencies.wgpu-hal]
 version = "30.0.0"
-path = "../../../wgpu-hal"
+path = '..\..\..\wgpu-hal'
 default-features = true
 
 [lints.clippy]

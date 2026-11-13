@@ -2,11 +2,9 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::{
-    ffi::{OsStr, OsString},
-    path::Path,
-    vec,
-};
+use std::ffi::{OsStr, OsString};
+use std::path::Path;
+use std::vec;
 
 use anyhow::Result;
 use nimbus_fml::command_line::do_main;

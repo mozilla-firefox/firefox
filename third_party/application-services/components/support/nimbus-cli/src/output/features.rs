@@ -8,10 +8,8 @@ use anyhow::Result;
 use nimbus_fml::intermediate_representation::FeatureManifest;
 use serde_json::Value;
 
-use crate::{
-    sources::{ExperimentSource, ManifestSource},
-    value_utils::{self, CliUtils},
-};
+use crate::sources::{ExperimentSource, ManifestSource};
+use crate::value_utils::{self, CliUtils};
 
 impl ManifestSource {
     pub(crate) fn print_defaults<P>(

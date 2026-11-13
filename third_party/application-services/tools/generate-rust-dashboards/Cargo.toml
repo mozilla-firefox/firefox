@@ -6,6 +6,6 @@ edition = "2021"
 [dependencies]
 anyhow = "1"
 camino = "1"
-clap = {version = "4.2", default-features = false, features = ["std", "derive"]}
+clap = {version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"]}
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

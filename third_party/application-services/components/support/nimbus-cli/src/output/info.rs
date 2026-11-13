@@ -10,10 +10,8 @@ use anyhow::Result;
 use serde_json::Value;
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-use crate::{
-    sources::{ExperimentListSource, ExperimentSource},
-    value_utils::{self, CliUtils},
-};
+use crate::sources::{ExperimentListSource, ExperimentSource};
+use crate::value_utils::{self, CliUtils};
 
 #[derive(serde::Serialize, Debug, Default)]
 pub(crate) struct ExperimentInfo<'a> {

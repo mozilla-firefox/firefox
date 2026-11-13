@@ -11,7 +11,7 @@ use self::{
     state_persistence::PersistedState,
     telemetry::FxaTelemetry,
 };
-use crate::{DeviceConfig, Error, FxaConfig, FxaRustAuthState, FxaServer, FxaState, Result};
+use crate::{DeviceConfig, Error, FxaConfig, FxaServer, FxaState, Result};
 use serde_derive::*;
 use std::{
     collections::{HashMap, HashSet},
@@ -210,8 +210,8 @@ impl FirefoxAccount {
         }
     }
 
-    pub fn get_auth_state(&self) -> FxaRustAuthState {
-        self.state.get_auth_state()
+    pub fn get_initial_state(&self) -> FxaState {
+        self.state.get_initial_state()
     }
 
     /// Disconnect from the account and optionally destroy our device record. This will
@@ -255,7 +255,7 @@ impl FirefoxAccount {
     /// **💾 This method alters the persisted account state.**
     ///
     /// Call this if you know there's an authentication / authorization issue that requires the
-    /// user to re-authenticated.  It transitions the user to the [FxaRustAuthState.AuthIssues] state.
+    /// user to re-authenticated.  It transitions the user to the [FxaState.AuthIssues] state.
     pub fn on_auth_issues(&mut self) {
         self.state.on_auth_issues();
         self.clear_devices_and_attached_clients_cache();
@@ -575,10 +575,10 @@ mod tests {
             scopes: HashSet::new(),
         });
         fxa.state.force_current_device_id("original-device-id");
-        assert_eq!(fxa.get_auth_state(), FxaRustAuthState::Connected);
+        assert_eq!(fxa.get_initial_state(), FxaState::Connected);
 
         fxa.on_auth_issues();
-        assert_eq!(fxa.get_auth_state(), FxaRustAuthState::AuthIssues);
+        assert_eq!(fxa.get_initial_state(), FxaState::AuthIssues);
 
         fxa.state.complete_oauth_flow(
             vec![],
@@ -588,41 +588,12 @@ mod tests {
             },
             None,
         );
-        assert_eq!(fxa.get_auth_state(), FxaRustAuthState::Connected);
+        assert_eq!(fxa.get_initial_state(), FxaState::Connected);
 
         // The device ID should be the same as before `on_auth_issues` was called.  This
         // way, methods like `ensure_capabilities` and `set_device_name`, can re-use it and we
         // won't try to create a new device record.
         assert_eq!(fxa.state.current_device_id(), Some("original-device-id"));
-    }
-
-    #[test]
-    fn test_get_auth_state() {
-        let config = Config::new("https://stable.dev.lcip.org", "12345678", "https://foo.bar");
-        let mut fxa = FirefoxAccount::with_config(config);
-
-        fn assert_auth_state(fxa: &FirefoxAccount, correct_state: FxaRustAuthState) {
-            assert_eq!(fxa.get_auth_state(), correct_state);
-
-            let persisted = FirefoxAccount::from_json(&fxa.to_json().unwrap()).unwrap();
-            assert_eq!(persisted.get_auth_state(), correct_state);
-        }
-
-        // The state starts as disconnected
-        assert_auth_state(&fxa, FxaRustAuthState::Disconnected);
-
-        // When we get the refresh tokens the state changes to connected
-        fxa.state.force_refresh_token(RefreshToken {
-            token: "refresh_token".to_owned(),
-            scopes: HashSet::new(),
-        });
-        assert_auth_state(&fxa, FxaRustAuthState::Connected);
-
-        fxa.disconnect();
-        assert_auth_state(&fxa, FxaRustAuthState::Disconnected);
-
-        fxa.disconnect();
-        assert_auth_state(&fxa, FxaRustAuthState::Disconnected);
     }
 
     #[test]

@@ -22,7 +22,7 @@ anyhow = "1.0"
 text-table = { path = "../../components/support/text-table" }
 fxa-client = { path = "../../components/fxa-client" }
 chrono = "0.4"
-clap = {version = "4.2", default-features = false, features = ["std", "derive"]}
+clap = {version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"]}
 cli-support = { path = "../cli-support" }
 tempfile = "3"
 serde_json = "1.0"

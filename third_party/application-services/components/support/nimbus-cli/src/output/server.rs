@@ -2,30 +2,25 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use anyhow::Result;
-use axum::http::StatusCode;
-use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::net::{IpAddr, SocketAddr};
+use std::sync::Arc;
 use std::sync::RwLock;
-use std::{
-    collections::HashMap,
-    net::{IpAddr, SocketAddr},
-    sync::Arc,
-};
 
-use crate::config;
-
+use anyhow::Result;
 use anyhow::anyhow;
-use axum::{
-    extract::{Path, State},
-    http,
-    response::{Html, IntoResponse},
-    routing::{get, post},
-    Json, Router,
-};
+use axum::extract::{Path, State};
+use axum::http::StatusCode;
+use axum::response::{Html, IntoResponse};
+use axum::routing::{get, post};
+use axum::{Json, Router, http};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tokio::net::TcpListener;
 use tower_http::set_header::SetResponseHeaderLayer;
 use tower_livereload::{LiveReloadLayer, Reloader};
+
+use crate::config;
 
 fn create_app(livereload: LiveReloadLayer, state: Db) -> Router {
     Router::new()

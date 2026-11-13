@@ -40,7 +40,7 @@ path = "src/lib.rs"
 
 [target."cfg(windows)".dependencies.wgpu-hal]
 version = "30.0.0"
-path = "../../../wgpu-hal"
+path = '..\..\..\wgpu-hal'
 default-features = true
 
 [lints.clippy]

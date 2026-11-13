@@ -2,22 +2,20 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use anyhow::{bail, Result};
+use std::collections::BTreeMap;
+use std::fmt::Display;
+use std::path::{Path, PathBuf};
+
+use anyhow::{Result, bail};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::BTreeMap;
-use std::{
-    fmt::Display,
-    path::{Path, PathBuf},
-};
 
-use crate::value_utils::{read_from_file, try_find_mut_features_from_branch, CliUtils, Patch};
-use crate::{
-    cli::{Cli, CliCommand, ExperimentArgs},
-    config, feature_utils,
-    sources::ExperimentListSource,
-    value_utils, NimbusApp, USER_AGENT,
-};
+use crate::cli::{Cli, CliCommand, ExperimentArgs};
+use crate::sources::ExperimentListSource;
+use crate::value_utils;
+use crate::value_utils::{CliUtils, Patch, read_from_file, try_find_mut_features_from_branch};
+use crate::{NimbusApp, USER_AGENT};
+use crate::{config, feature_utils};
 
 use super::experiment_list::decode_list_slug;
 

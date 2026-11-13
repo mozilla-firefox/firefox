@@ -20,12 +20,10 @@ pub use crate::curated_recommendations::models::locale::CuratedRecommendationLoc
 use crate::curated_recommendations::models::request::CuratedRecommendationsConfig;
 use crate::curated_recommendations::models::request::CuratedRecommendationsRequest;
 use crate::curated_recommendations::models::response::CuratedRecommendationsResponse;
+use crate::DEFAULT_BASE_HOST;
 pub use error::{ApiResult, CuratedRecommendationsApiError, Error, Result};
 use error_support::handle_error;
 use url::Url;
-
-/// Default base host for the Merino curated recommendations API.
-const DEFAULT_BASE_HOST: &str = "https://merino.services.mozilla.com";
 
 /// Client for fetching curated recommendations from the Merino service.
 ///

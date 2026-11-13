@@ -33,11 +33,11 @@ path = "src/lib.rs"
 
 [dependencies.naga]
 version = "30.0.0"
-path = "../naga"
+path = '..\naga'
 
 [dependencies.wgpu-types]
 version = "30.0.0"
-path = "../wgpu-types"
+path = '..\wgpu-types'
 default-features = false
 
 [lints.clippy]

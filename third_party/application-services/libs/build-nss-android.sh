@@ -86,6 +86,8 @@ cp -p -L "${BUILD_DIR}/lib/libcertdb.a" "${DIST_DIR}/lib"
 cp -p -L "${BUILD_DIR}/lib/libcerthi.a" "${DIST_DIR}/lib"
 cp -p -L "${BUILD_DIR}/lib/libcryptohi.a" "${DIST_DIR}/lib"
 cp -p -L "${BUILD_DIR}/lib/libfreebl_static.a" "${DIST_DIR}/lib"
+cp -p -L "${BUILD_DIR}/lib/libpqcwrap_static.a" "${DIST_DIR}/lib"
+cp -p -L "${BUILD_DIR}/lib/libcrux.a" "${DIST_DIR}/lib"
 cp -p -L "${BUILD_DIR}/lib/libgcm.a" "${DIST_DIR}/lib"
 cp -p -L "${BUILD_DIR}/lib/libmozpkix.a" "${DIST_DIR}/lib"
 cp -p -L "${BUILD_DIR}/lib/libnss_static.a" "${DIST_DIR}/lib"
@@ -112,6 +114,8 @@ if [[ "${TOOLCHAIN}" == "aarch64-linux-android" ]] || [[ "${TOOLCHAIN}" == "arm-
 fi
 if [[ "${TOOLCHAIN}" == "aarch64-linux-android" ]]; then
   cp -p -L "${BUILD_DIR}/lib/libghash-aes-aarch64_c_lib.a" "${DIST_DIR}/lib"
+  cp -p -L "${BUILD_DIR}/lib/libaarch64-gcm-wrap_c_lib.a" "${DIST_DIR}/lib"
+  cp -p -L "${BUILD_DIR}/lib/libhw-acc-crypto-avx.a" "${DIST_DIR}/lib"
 fi
 if [[ "${TOOLCHAIN}" == "arm-linux-androideabi" ]]; then
   cp -p -L "${BUILD_DIR}/lib/libghash-aes-arm32-neon_c_lib.a" "${DIST_DIR}/lib"
@@ -122,3 +126,5 @@ cp -p -L "${NSPR_BUILD_DIR}/dist/lib/libnspr4.a" "${DIST_DIR}/lib"
 
 cp -p -L -R "${BUILD_DIR}/public/nss/"* "${DIST_DIR}/include/nss"
 cp -p -L -R "${NSPR_BUILD_DIR}/dist/include/nspr/"* "${DIST_DIR}/include/nss"
+
+./check-nss-libs.sh "${BUILD_DIR}/lib" "${DIST_DIR}/lib"

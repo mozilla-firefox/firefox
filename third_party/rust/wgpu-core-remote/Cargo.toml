@@ -58,21 +58,21 @@ version = "1.1"
 
 [dependencies.wgpu-core]
 version = "30.0.0"
-path = "../wgpu-core"
+path = '..\wgpu-core'
 default-features = false
 
 [dependencies.wgpu-core-remote-types]
 version = "30.0.0"
-path = "../wgpu-core-remote-types"
+path = '..\wgpu-core-remote-types'
 
 [dependencies.wgpu-hal]
 version = "30.0.0"
-path = "../wgpu-hal"
+path = '..\wgpu-hal'
 default-features = false
 
 [dependencies.wgpu-types]
 version = "30.0.0"
-path = "../wgpu-types"
+path = '..\wgpu-types'
 default-features = false
 
 [lints.clippy]

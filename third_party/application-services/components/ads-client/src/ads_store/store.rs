@@ -3,14 +3,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use crate::ads::Ad;
+use crate::ads::PlacementId;
 use crate::ads_store::connection_initializer::AdsStoreConnectionInitializer;
 use crate::bytesize::ByteSize;
 use crate::clock::Clock;
 use crate::mars::error::FetchAdsError;
-use crate::{ads::PlacementId, clock::CacheClock};
 use rusqlite::{params, OptionalExtension};
 use sql_support::{open_database, LazyDb};
-use std::sync::Arc;
 
 #[cfg(test)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -22,7 +21,7 @@ pub enum FaultKind {
 }
 
 pub struct AdsStoreHolder {
-    clock: Arc<dyn Clock>,
+    clock: Clock,
     db: LazyDb<AdsStoreConnectionInitializer>,
     #[cfg(test)]
     fault: parking_lot::Mutex<FaultKind>,
@@ -31,19 +30,7 @@ pub struct AdsStoreHolder {
 impl AdsStoreHolder {
     pub fn new(db: LazyDb<AdsStoreConnectionInitializer>) -> Self {
         Self {
-            clock: Arc::new(CacheClock),
-            db,
-            #[cfg(test)]
-            fault: parking_lot::Mutex::new(FaultKind::None),
-        }
-    }
-
-    #[cfg(test)]
-    pub fn new_with_test_clock(db: LazyDb<AdsStoreConnectionInitializer>) -> Self {
-        use crate::clock::TestClock;
-
-        Self {
-            clock: Arc::new(TestClock::new(chrono::Utc::now().timestamp())),
+            clock: Clock::default(),
             db,
             #[cfg(test)]
             fault: parking_lot::Mutex::new(FaultKind::None),
@@ -77,11 +64,6 @@ impl AdsStoreHolder {
                 row.get(0)
             })?;
         Ok(ByteSize::b(size_bytes_ads))
-    }
-
-    #[cfg(test)]
-    pub fn get_clock(&self) -> &dyn Clock {
-        &*self.clock
     }
 
     pub fn invalidate_ad_by_id(
@@ -134,8 +116,8 @@ impl AdsStoreHolder {
         }
         let placement_id_str: &str = placement_id.as_ref();
         let ad_body = serde_json::to_vec(&ads)?;
-        let size_bytes = ad_body.len() as i64;
-        let now = self.clock.now_epoch_seconds();
+        let size_bytes = ad_body.len();
+        let now = self.clock.now();
 
         let (conn, _) = self.db.lock()?;
         conn.execute(
@@ -150,7 +132,7 @@ impl AdsStoreHolder {
                 stored_at=excluded.stored_at,
                 ad_body=excluded.ad_body,
                 size_bytes=excluded.size_bytes",
-            params![now, placement_id_str, ad_body, size_bytes,],
+            params![now.timestamp(), placement_id_str, ad_body, size_bytes,],
         )
         .map_err(open_database::Error::from)?;
         Ok(())
@@ -211,7 +193,7 @@ mod tests {
             OpenFlags::default(),
             initializer,
         );
-        AdsStoreHolder::new_with_test_clock(db)
+        AdsStoreHolder::new(db)
     }
 
     #[test]

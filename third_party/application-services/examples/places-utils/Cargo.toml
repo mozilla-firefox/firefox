@@ -27,7 +27,7 @@ serde_json = "1"
 log = "0.4"
 url = "2"
 cli-support = { path = "../cli-support" }
-clap = { version = "4.2", default-features = false, features = ["std", "derive"] }
+clap = { version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"] }
 fxa-client = { path = "../../components/fxa-client" }
 tempfile = "3"
 anyhow = "1.0"

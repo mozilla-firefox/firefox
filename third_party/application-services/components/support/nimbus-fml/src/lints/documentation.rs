@@ -1,60 +1,62 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-//! Lints about descriptions, which are what an experiment owner reads in
-//! Experimenter when deciding what to put in a branch.
+//! Lints about feature documentation.
 
-use super::{
-    enum_path, enum_variant_path, feature_path, object_field_path, object_path, variable_path,
-    LintInfo, Linter, Location, RawFinding,
-};
 use crate::intermediate_representation::{EnumDef, FeatureDef, FeatureManifest, ObjectDef};
+use crate::lints::{
+    LintInfo, Linter, Location, UnreportedIssue, define_lints, enum_path, enum_variant_path,
+    feature_path, object_field_path, object_path, variable_path,
+};
 
 define_lints! {
-    MISSING_DESCRIPTION: Documentation, Warning =
+    MISSING_DESCRIPTION: Documentation =
         "Everything in a manifest should have a description.",
         "Descriptions are shown to experiment owners in Experimenter: say what the thing is for, and what changes when it changes.";
-    TERSE_DESCRIPTION: Documentation, Warning =
+    TERSE_DESCRIPTION: Documentation =
         "Descriptions should say more than the name already does.",
         "The name is already visible next to the description; use the description to say what changes when the value changes.";
-    TODO_IN_DESCRIPTION: Documentation, Warning =
+    TODO_IN_DESCRIPTION: Documentation =
         "Descriptions shouldn't be left as placeholders.",
         "Placeholder descriptions ship to Experimenter as-is.";
 }
 
-/// Shorter than this is almost certainly a restatement of the name.
-const MINIMUM_WORDS: usize = 3;
+/// The minimum amount of words allowed for a description.
+///
+/// Encourage descriptions to be descriptive.
+const DESCRIPTION_MINIMUM_WORDS: usize = 3;
 
 const PLACEHOLDERS: &[&str] = &["todo", "fixme", "tbd", "xxx", "wip"];
 
-pub(crate) struct Documentation;
+/// Lints for feature documentation.
+pub(crate) struct DocumentationLints;
 
-impl Linter for Documentation {
+impl Linter for DocumentationLints {
     fn lints(&self) -> &'static [&'static LintInfo] {
         LINTS
     }
 
-    fn check_feature(
+    fn lint_feature(
         &self,
         feature: &FeatureDef,
         _manifest: &FeatureManifest,
-        out: &mut Vec<RawFinding>,
+        out: &mut Vec<UnreportedIssue>,
     ) {
-        check_feature(feature, out);
+        lint_feature(feature, out);
     }
 
-    fn check_object(&self, object: &ObjectDef, out: &mut Vec<RawFinding>) {
-        check_object(object, out);
+    fn lint_object(&self, object: &ObjectDef, out: &mut Vec<UnreportedIssue>) {
+        lint_object(object, out);
     }
 
-    fn check_enum(&self, enum_def: &EnumDef, out: &mut Vec<RawFinding>) {
-        check_enum(enum_def, out);
+    fn lint_enum(&self, enum_def: &EnumDef, out: &mut Vec<UnreportedIssue>) {
+        lint_enum(enum_def, out);
     }
 }
 
-fn check_feature(feature: &FeatureDef, out: &mut Vec<RawFinding>) {
-    check_description(
+fn lint_feature(feature: &FeatureDef, out: &mut Vec<UnreportedIssue>) {
+    lint_description(
         "feature",
         &feature.name,
         &feature.metadata.description,
@@ -62,7 +64,7 @@ fn check_feature(feature: &FeatureDef, out: &mut Vec<RawFinding>) {
         out,
     );
     for prop in &feature.props {
-        check_description(
+        lint_description(
             "variable",
             &prop.name,
             &prop.doc,
@@ -72,8 +74,8 @@ fn check_feature(feature: &FeatureDef, out: &mut Vec<RawFinding>) {
     }
 }
 
-fn check_object(object: &ObjectDef, out: &mut Vec<RawFinding>) {
-    check_description(
+fn lint_object(object: &ObjectDef, out: &mut Vec<UnreportedIssue>) {
+    lint_description(
         "object",
         &object.name,
         &object.doc,
@@ -81,7 +83,7 @@ fn check_object(object: &ObjectDef, out: &mut Vec<RawFinding>) {
         out,
     );
     for prop in &object.props {
-        check_description(
+        lint_description(
             "field",
             &prop.name,
             &prop.doc,
@@ -91,8 +93,8 @@ fn check_object(object: &ObjectDef, out: &mut Vec<RawFinding>) {
     }
 }
 
-fn check_enum(enum_def: &EnumDef, out: &mut Vec<RawFinding>) {
-    check_description(
+fn lint_enum(enum_def: &EnumDef, out: &mut Vec<UnreportedIssue>) {
+    lint_description(
         "enum",
         &enum_def.name,
         &enum_def.doc,
@@ -100,7 +102,7 @@ fn check_enum(enum_def: &EnumDef, out: &mut Vec<RawFinding>) {
         out,
     );
     for variant in &enum_def.variants {
-        check_description(
+        lint_description(
             "variant",
             &variant.name,
             &variant.doc,
@@ -110,17 +112,16 @@ fn check_enum(enum_def: &EnumDef, out: &mut Vec<RawFinding>) {
     }
 }
 
-fn check_description(
+fn lint_description(
     what: &str,
     name: &str,
     description: &str,
     path: Location,
-    out: &mut Vec<RawFinding>,
+    out: &mut Vec<UnreportedIssue>,
 ) {
     let description = description.trim();
 
-    // Findings are grouped under their feature, object or enum, so only members
-    // have to name themselves.
+    // Issues are grouped by path.
     let subject = if path.is_member() {
         format!("`{name}`")
     } else {
@@ -128,7 +129,7 @@ fn check_description(
     };
 
     if description.is_empty() {
-        out.push(RawFinding::new(
+        out.push(UnreportedIssue::new(
             &MISSING_DESCRIPTION,
             path,
             format!("{subject} has no description"),
@@ -136,8 +137,8 @@ fn check_description(
         return;
     }
 
-    if let Some(placeholder) = placeholder_in(description) {
-        out.push(RawFinding::new(
+    if let Some(placeholder) = contains_placeholder(description) {
+        out.push(UnreportedIssue::new(
             &TODO_IN_DESCRIPTION,
             path.clone(),
             format!("The description of {subject} is still marked `{placeholder}`"),
@@ -145,8 +146,8 @@ fn check_description(
     }
 
     let words = description.split_whitespace().count();
-    if words < MINIMUM_WORDS {
-        out.push(RawFinding::new(
+    if words < DESCRIPTION_MINIMUM_WORDS {
+        out.push(UnreportedIssue::new(
             &TERSE_DESCRIPTION,
             path,
             format!(
@@ -154,8 +155,8 @@ fn check_description(
                 if words == 1 { "" } else { "s" }
             ),
         ));
-    } else if restates_name(name, description) {
-        out.push(RawFinding::new(
+    } else if does_restate_name(name, description) {
+        out.push(UnreportedIssue::new(
             &TERSE_DESCRIPTION,
             path,
             format!("The description of {subject} just restates its name"),
@@ -163,7 +164,7 @@ fn check_description(
     }
 }
 
-fn placeholder_in(description: &str) -> Option<&'static str> {
+fn contains_placeholder(description: &str) -> Option<&'static str> {
     let words: Vec<String> = description
         .split(|c: char| !c.is_alphanumeric())
         .map(str::to_ascii_lowercase)
@@ -174,7 +175,7 @@ fn placeholder_in(description: &str) -> Option<&'static str> {
         .copied()
 }
 
-fn restates_name(name: &str, description: &str) -> bool {
+fn does_restate_name(name: &str, description: &str) -> bool {
     normalize(name) == normalize(description)
 }
 
@@ -205,7 +206,7 @@ mod unit_tests {
 
     fn lints(name: &str, description: &str) -> Vec<&'static str> {
         let mut out = Vec::new();
-        check_description("variable", name, description, test_location(), &mut out);
+        lint_description("variable", name, description, test_location(), &mut out);
         out.iter().map(|f| f.lint.name).collect()
     }
 
@@ -217,11 +218,13 @@ mod unit_tests {
 
     #[test]
     fn test_good_description() {
-        assert!(lints(
-            "max-rows",
-            "The largest number of rows the widget can grow to."
-        )
-        .is_empty());
+        assert!(
+            lints(
+                "max-rows",
+                "The largest number of rows the widget can grow to."
+            )
+            .is_empty()
+        );
     }
 
     #[test]
@@ -264,10 +267,9 @@ mod unit_tests {
         enum_def.variants[0].doc = String::new();
 
         let mut out = Vec::new();
-        check_object(&object, &mut out);
-        check_enum(&enum_def, &mut out);
+        lint_object(&object, &mut out);
+        lint_enum(&enum_def, &mut out);
 
-        // Members name themselves; the object or enum they're under doesn't have to.
         let messages: Vec<_> = out.iter().map(|f| f.message.as_str()).collect();
         assert_eq!(
             messages,

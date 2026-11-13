@@ -91,7 +91,7 @@ impl RemoteSettingsService {
                 client: Client::new(ClientSettings::default()),
                 remote_state: RemoteState::default(),
             }),
-            telemetry: Mutex::new(RemoteSettingsTelemetryWrapper::noop()),
+            telemetry: Mutex::new(RemoteSettingsTelemetryWrapper::default()),
         }
     }
 

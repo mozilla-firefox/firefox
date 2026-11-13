@@ -5,11 +5,12 @@
 # This file defines the metrics that will be gathered for the Remote Settings
 # component.  Changes to these metrics require data review.
 #
-# We can't record metrics from Rust directly.  To work around that we:
-#   - Define the metrics in application-services
-#   - Define API calls in application-services that return the metrics
-#     alongside the normal results.
-#   - Record the metrics with Glean in the consumer code
+# Metrics are recorded in one of two ways:
+#   - With the `glean-sym` feature, they are recorded directly from Rust.
+#     `build.rs` generates the Rust bindings from this file, and `glean-sym`
+#     does the magic at runtime.
+#   - Otherwise, the consuming application (Kotlin, Swift) implements the `RemoteSettingsTelemetry`
+#     trait with its own Glean-generated bindings, and wires it with `set_telemetry()`.
 
 ---
 $schema: moz://mozilla.org/schemas/glean/metrics/2-0-0

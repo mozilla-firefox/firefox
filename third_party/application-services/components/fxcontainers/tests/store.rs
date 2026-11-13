@@ -8,8 +8,8 @@ use std::sync::{Arc, Mutex};
 use serde_json::json;
 
 use fxcontainers::{
-    max_user_context_id, ContainerColor, ContainerIcon, ContainerLabel, ContainersCallback,
-    ContainersStore, DefaultIdentity, StoreError,
+    latest_version, max_user_context_id, ContainerColor, ContainerIcon, ContainerLabel,
+    ContainersCallback, ContainersStore, DefaultIdentity, SiteAssociation, StoreError,
 };
 
 #[derive(Default)]
@@ -42,7 +42,7 @@ fn seeded() -> (ContainersStore, Recorder) {
 
 fn current_document() -> Vec<u8> {
     serde_json::to_vec(&json!({
-        "version": 8,
+        "version": 9,
         "lastUserContextId": 5,
         "identities": [
             { "userContextId": 1, "public": true, "icon": "fingerprint", "color": "blue" },
@@ -177,7 +177,7 @@ fn the_shipped_labels_are_not_stored() {
     );
 
     let persisted: serde_json::Value = serde_json::from_slice(&store.serialize()).unwrap();
-    assert_eq!(persisted["version"], json!(8));
+    assert_eq!(persisted["version"], json!(latest_version()));
     for identity in persisted["identities"].as_array().unwrap().iter().take(4) {
         assert!(identity.get("l10nId").is_none());
         assert!(identity.get("name").is_none());
@@ -202,8 +202,8 @@ fn update_ignores_unknown_and_private_containers() {
 #[test]
 fn remove_drops_the_container_and_its_associations() {
     let (store, _) = seeded();
-    store.set_site_association("example.org", 1).unwrap();
-    store.set_site_association("example.com", 2).unwrap();
+    store.set_site_association("example.org", 1, None).unwrap();
+    store.set_site_association("example.com", 2, None).unwrap();
 
     let removed = store.remove(1).expect("container 1 should be removed");
 
@@ -269,7 +269,7 @@ fn move_is_a_no_op_without_matching_containers() {
 fn site_associations_round_trip() {
     let (store, _) = seeded();
 
-    store.set_site_association("Example.ORG", 2).unwrap();
+    store.set_site_association("Example.ORG", 2, None).unwrap();
 
     assert_eq!(store.get_site_association("example.org"), 2);
     assert_eq!(store.get_site_association("other.example"), 0);
@@ -281,10 +281,10 @@ fn site_associations_round_trip() {
 #[test]
 fn setting_the_same_association_twice_does_not_persist() {
     let (store, recorder) = seeded();
-    store.set_site_association("example.org", 2).unwrap();
+    store.set_site_association("example.org", 2, None).unwrap();
     let after_first = recorder.persist_count();
 
-    store.set_site_association("example.org", 2).unwrap();
+    store.set_site_association("example.org", 2, None).unwrap();
 
     assert_eq!(recorder.persist_count(), after_first);
 }
@@ -294,14 +294,14 @@ fn associations_require_a_known_public_container() {
     let (store, _) = seeded();
 
     assert_eq!(
-        store.set_site_association("example.org", 999),
+        store.set_site_association("example.org", 999, None),
         Err(StoreError::NoSuchContainer {
             user_context_id: 999
         })
     );
     // The thumbnail identity is private.
     assert_eq!(
-        store.set_site_association("example.org", 5),
+        store.set_site_association("example.org", 5, None),
         Err(StoreError::NoSuchContainer { user_context_id: 5 })
     );
 }
@@ -311,16 +311,110 @@ fn wildcards_are_not_valid_sites() {
     let (store, _) = seeded();
 
     assert_eq!(
-        store.set_site_association("*.example.org", 1),
+        store.set_site_association("*.example.org", 1, None),
         Err(StoreError::InvalidSite)
+    );
+}
+
+#[test]
+fn an_association_including_subdomains_covers_every_host_below_it() {
+    let (store, _) = seeded();
+    store
+        .set_site_association("example.com", 1, Some(true))
+        .unwrap();
+
+    assert_eq!(store.lookup_site_association("example.com"), 1);
+    assert_eq!(store.lookup_site_association("www.example.com"), 1);
+    assert_eq!(store.lookup_site_association("A.B.Example.COM"), 1);
+    assert_eq!(store.lookup_site_association("notexample.com"), 0);
+    assert_eq!(store.lookup_site_association("example.com.evil"), 0);
+    assert_eq!(store.lookup_site_association("*.example.com"), 0);
+
+    // Only the host's own association.
+    assert_eq!(store.get_site_association("www.example.com"), 0);
+}
+
+#[test]
+fn a_host_only_association_does_not_cover_its_subdomains() {
+    let (store, _) = seeded();
+    store.set_site_association("example.com", 1, None).unwrap();
+
+    assert_eq!(store.lookup_site_association("example.com"), 1);
+    assert_eq!(store.lookup_site_association("www.example.com"), 0);
+}
+
+#[test]
+fn the_most_specific_association_wins() {
+    let (store, _) = seeded();
+    store
+        .set_site_association("example.com", 1, Some(true))
+        .unwrap();
+    store
+        .set_site_association("exact.example.com", 2, Some(false))
+        .unwrap();
+    store
+        .set_site_association("deep.example.com", 3, Some(true))
+        .unwrap();
+
+    assert_eq!(store.lookup_site_association("exact.example.com"), 2);
+    // A host-only association is skipped on the way up.
+    assert_eq!(store.lookup_site_association("www.exact.example.com"), 1);
+    assert_eq!(store.lookup_site_association("www.deep.example.com"), 3);
+}
+
+#[test]
+fn rebinding_keeps_whether_the_subdomains_are_included() {
+    let (store, recorder) = seeded();
+    store
+        .set_site_association("example.com", 1, Some(true))
+        .unwrap();
+
+    store.set_site_association("example.com", 2, None).unwrap();
+    assert_eq!(store.lookup_site_association("www.example.com"), 2);
+
+    let before = recorder.persist_count();
+    store
+        .set_site_association("example.com", 2, Some(true))
+        .unwrap();
+    assert_eq!(recorder.persist_count(), before, "nothing changed");
+
+    store
+        .set_site_association("example.com", 2, Some(false))
+        .unwrap();
+    assert_eq!(recorder.persist_count(), before + 1);
+    assert_eq!(store.lookup_site_association("www.example.com"), 0);
+}
+
+#[test]
+fn get_site_associations_reports_the_subdomains() {
+    let (store, _) = seeded();
+    store
+        .set_site_association("one.example", 1, Some(true))
+        .unwrap();
+    store.set_site_association("two.example", 2, None).unwrap();
+
+    assert_eq!(
+        store.get_site_associations(None),
+        vec![
+            SiteAssociation {
+                site: "one.example".into(),
+                user_context_id: 1,
+                include_subdomains: true,
+            },
+            SiteAssociation {
+                site: "two.example".into(),
+                user_context_id: 2,
+                include_subdomains: false,
+            },
+        ]
     );
 }
 
 #[test]
 fn get_site_associations_filters_by_container() {
     let (store, _) = seeded();
-    store.set_site_association("one.example", 1).unwrap();
-    store.set_site_association("two.example", 2).unwrap();
+    store.set_site_association("one.example", 1, None).unwrap();
+    store.set_site_association("two.example", 2, None).unwrap();
 
     assert_eq!(store.get_site_associations(None).len(), 2);
     assert_eq!(store.get_site_associations(Some(1)).len(), 1);
@@ -417,7 +511,7 @@ fn an_unknown_container_is_reported_before_an_unusable_site() {
     let (store, _) = seeded();
 
     assert_eq!(
-        store.set_site_association("*.example.org", 999),
+        store.set_site_association("*.example.org", 999, None),
         Err(StoreError::NoSuchContainer {
             user_context_id: 999
         })
@@ -448,7 +542,7 @@ fn every_mutation_leaves_a_document_that_reloads_identically() {
         store.public_identities()
     );
 
-    store.set_site_association("example.org", 2).unwrap();
+    store.set_site_association("example.org", 2, None).unwrap();
     assert_eq!(
         reloaded(&store).get_site_associations(None),
         store.get_site_associations(None)
@@ -616,7 +710,7 @@ fn a_version_6_document_takes_the_labels_from_the_defaults() {
     // The migration is written back, without the Fluent ids.
     assert_eq!(recorder.persist_count(), 1);
     let persisted: serde_json::Value = serde_json::from_slice(&store.serialize()).unwrap();
-    assert_eq!(persisted["version"], json!(8));
+    assert_eq!(persisted["version"], json!(latest_version()));
     assert!(persisted["identities"]
         .as_array()
         .unwrap()
@@ -776,7 +870,7 @@ fn a_policy_container_is_out_of_reach_of_the_public_api() {
     assert!(store.remove(id).is_none());
     assert!(!store.move_containers(vec![id], 0));
     assert_eq!(
-        store.set_site_association("example.org", id),
+        store.set_site_association("example.org", id, None),
         Err(StoreError::NoSuchContainer {
             user_context_id: id
         })

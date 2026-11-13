@@ -1,6 +1,6 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 mod config;
 mod descriptor;
@@ -8,26 +8,27 @@ mod inspector;
 #[cfg(test)]
 mod test_helper;
 
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use serde_json::Value;
+
 pub use config::FmlLoaderConfig;
 cfg_if::cfg_if! {
     if #[cfg(feature = "uniffi-bindings")] {
-    use crate::{editing::{CorrectionCandidate, CursorPosition, CursorSpan}, frontend::DocumentationLink};
-    use url::Url;
-    use descriptor::FmlFeatureDescriptor;
-    use inspector::{FmlEditorError, FmlFeatureExample, FmlFeatureInspector};
+        use url::Url;
+
+        use crate::{editing::{CorrectionCandidate, CursorPosition, CursorSpan}};
+        use crate::frontend::DocumentationLink;
+        use crate::client::descriptor::FmlFeatureDescriptor;
+        use crate::client::inspector::{FmlEditorError, FmlFeatureExample, FmlFeatureInspector};
     }
 }
-use serde_json::Value;
 
-use crate::{
-    error::{ClientError::JsonMergeError, FMLError, Result},
-    intermediate_representation::FeatureManifest,
-    parser::Parser,
-    util::loaders::{FileLoader, LoaderConfig},
-};
-use std::collections::HashMap;
-
-use std::sync::Arc;
+use crate::error::{ClientError::JsonMergeError, FMLError, Result};
+use crate::intermediate_representation::FeatureManifest;
+use crate::parser::Parser;
+use crate::util::loaders::{FileLoader, LoaderConfig};
 
 pub struct MergedJsonWithErrors {
     pub json: String,
@@ -156,7 +157,7 @@ mod unit_tests {
         fixtures::intermediate_representation::get_feature_manifest,
         intermediate_representation::{FeatureDef, ModuleId, PropDef, TypeRef},
     };
-    use serde_json::{json, Value};
+    use serde_json::{Value, json};
     use std::collections::{BTreeMap, HashMap};
 
     fn create_manifest() -> FeatureManifest {

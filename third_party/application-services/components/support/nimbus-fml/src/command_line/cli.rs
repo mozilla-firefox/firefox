@@ -1,6 +1,8 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 
@@ -131,25 +133,9 @@ pub struct Lint {
     #[command(flatten)]
     pub loader_info: LoaderInfo,
 
-    /// Switch a lint off for this run. May be repeated.
-    #[arg(long, value_name = "LINT")]
-    pub allow: Vec<String>,
-
-    /// Turn a lint into an error for this run. May be repeated.
-    #[arg(long, value_name = "LINT")]
-    pub deny: Vec<String>,
-
-    /// Exit with an error if there are any warnings.
-    #[arg(long)]
-    pub error_on_warning: bool,
-
-    /// Also lint the features of imported manifests.
-    #[arg(long)]
-    pub include_imports: bool,
-
-    /// If present, then print the findings as JSON.
-    #[arg(long)]
-    pub json: bool,
+    /// If present, then print the issues as JSON.
+    #[arg(long, value_name = "PATH")]
+    pub code_review_json: Option<PathBuf>,
 
     /// Print the available lints and exit.
     #[arg(long)]

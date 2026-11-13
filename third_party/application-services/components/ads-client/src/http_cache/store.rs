@@ -2,14 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use std::{collections::HashMap, sync::Arc, time::Duration};
+use std::{collections::HashMap, time::Duration};
 
-use crate::{
-    clock::{CacheClock, Clock},
-    http_cache::{
-        connection_initializer::HttpCacheConnectionInitializer, request_hash::RequestHash, ByteSize,
-    },
+use crate::http_cache::{
+    connection_initializer::HttpCacheConnectionInitializer, request_hash::RequestHash, ByteSize,
 };
+use chrono::{DateTime, Utc};
 use error_support::warn;
 use rusqlite::{params, OptionalExtension};
 use sql_support::{open_database, LazyDb};
@@ -26,7 +24,6 @@ pub enum FaultKind {
 }
 
 pub(super) struct HttpCacheStore {
-    clock: Arc<dyn Clock>,
     db: LazyDb<HttpCacheConnectionInitializer>,
     #[cfg(test)]
     fault: parking_lot::Mutex<FaultKind>,
@@ -35,19 +32,6 @@ pub(super) struct HttpCacheStore {
 impl HttpCacheStore {
     pub(super) fn new(db: LazyDb<HttpCacheConnectionInitializer>) -> Self {
         Self {
-            clock: Arc::new(CacheClock),
-            db,
-            #[cfg(test)]
-            fault: parking_lot::Mutex::new(FaultKind::None),
-        }
-    }
-
-    #[cfg(test)]
-    pub fn new_with_test_clock(db: LazyDb<HttpCacheConnectionInitializer>) -> Self {
-        use crate::clock::TestClock;
-
-        Self {
-            clock: Arc::new(TestClock::new(chrono::Utc::now().timestamp())),
             db,
             #[cfg(test)]
             fault: parking_lot::Mutex::new(FaultKind::None),
@@ -83,8 +67,11 @@ impl HttpCacheStore {
         Ok(ByteSize::b(size_bytes))
     }
 
-    /// Removes all entries from the store whose expires_at is at or before the current time.
-    pub(super) fn delete_expired_entries(&self) -> Result<usize, open_database::Error> {
+    /// Removes all entries from the store whose expires_at is at or before `now`.
+    pub(super) fn delete_expired_entries(
+        &self,
+        now: DateTime<Utc>,
+    ) -> Result<usize, open_database::Error> {
         #[cfg(test)]
         if *self.fault.lock() == FaultKind::Cleanup {
             return Err(Self::forced_fault_error("forced cleanup failure"))?;
@@ -92,13 +79,8 @@ impl HttpCacheStore {
         let (conn, _) = self.db.lock()?;
         Ok(conn.execute(
             "DELETE FROM http_cache WHERE expires_at <= ?1",
-            params![self.clock.now_epoch_seconds()],
+            params![now.timestamp()],
         )?)
-    }
-
-    #[cfg(test)]
-    pub fn get_clock(&self) -> &dyn Clock {
-        &*self.clock
     }
 
     pub(super) fn invalidate_by_hash(
@@ -194,14 +176,15 @@ impl HttpCacheStore {
         *self.fault.lock() = kind;
     }
 
-    /// Upsert an object into the store with an expires_at defined by the given ttl_seconds.
+    /// Upsert an object into the store, cached at `now` and expiring `ttl` later.
     /// Calling this method will always store an object regardless of headers or policy.
     /// Logic to determine the correct ttl or cache/no-cache should happen before calling this.
     pub(super) fn store_with_ttl(
         &self,
         request_hash: &RequestHash,
         response: &Response,
-        ttl: &Duration,
+        ttl: Duration,
+        now: DateTime<Utc>,
     ) -> Result<(), open_database::Error> {
         #[cfg(test)]
         if *self.fault.lock() == FaultKind::Store {
@@ -209,10 +192,8 @@ impl HttpCacheStore {
         }
         let headers_map: HashMap<String, String> = response.headers.clone().into();
         let response_headers = serde_json::to_vec(&headers_map).unwrap_or_default();
-        let size_bytes = (response_headers.len() + response.body.len()) as i64;
-        let now = self.clock.now_epoch_seconds();
-        let ttl_seconds = ttl.as_secs();
-        let expires_at = now + ttl_seconds as i64;
+        let size_bytes = response_headers.len() + response.body.len();
+        let expires_at = now + ttl;
 
         let (conn, _) = self.db.lock()?;
         conn.execute(
@@ -240,8 +221,8 @@ impl HttpCacheStore {
                 size_bytes=excluded.size_bytes,
                 ttl_seconds=excluded.ttl_seconds",
             params![
-                now,
-                expires_at,
+                now.timestamp(),
+                expires_at.timestamp(),
                 request_hash.to_string(),
                 response.request_method.as_str(),
                 response.url.as_str(),
@@ -249,7 +230,7 @@ impl HttpCacheStore {
                 response_headers,
                 response.status,
                 size_bytes,
-                ttl_seconds as i64,
+                ttl.as_secs(),
             ],
         )?;
         Ok(())
@@ -305,23 +286,30 @@ mod tests {
         RequestHash::new(&(req.method.as_str(), req.url.as_str()))
     }
 
-    fn fetch_timestamps(store: &HttpCacheStore, hash: &RequestHash) -> (i64, i64, i64) {
+    fn fixed_now() -> DateTime<Utc> {
+        "2025-11-06T08:49:37Z".parse().unwrap()
+    }
+
+    /// The entry's `cached_at`, `expires_at` and TTL, read back from SQL.
+    fn fetch_timestamps(
+        store: &HttpCacheStore,
+        hash: &RequestHash,
+    ) -> (DateTime<Utc>, DateTime<Utc>, Duration) {
         let (conn, _) = store.db.lock().unwrap();
-        conn.query_row(
-            "SELECT
-                    cached_at,
-                    expires_at,
-                    COALESCE(ttl_seconds, -1)
-            FROM http_cache WHERE request_hash = ?1",
-            rusqlite::params![hash.to_string()],
-            |row| {
-                let cached_at: i64 = row.get(0)?;
-                let expires_at: i64 = row.get(1)?;
-                let ttl: i64 = row.get(2)?;
-                Ok((cached_at, expires_at, ttl))
-            },
+        let (cached_at, expires_at, ttl_seconds) = conn
+            .query_row(
+                "SELECT cached_at, expires_at, ttl_seconds
+                 FROM http_cache
+                 WHERE request_hash = ?1",
+                rusqlite::params![hash.to_string()],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .expect("row should exist");
+        (
+            DateTime::from_timestamp(cached_at, 0).unwrap(),
+            DateTime::from_timestamp(expires_at, 0).unwrap(),
+            Duration::from_secs(ttl_seconds),
         )
-        .expect("row should exist")
     }
 
     fn create_test_request(url: &str, body: &[u8]) -> Request {
@@ -355,7 +343,7 @@ mod tests {
             OpenFlags::default(),
             initializer,
         );
-        HttpCacheStore::new_with_test_clock(db)
+        HttpCacheStore::new(db)
     }
 
     #[test]
@@ -384,7 +372,7 @@ mod tests {
         let hash = hash_for_request(&create_test_request("https://example.com/api", b"body"));
 
         let err = store
-            .store_with_ttl(&hash, &resp, &Duration::from_secs(300))
+            .store_with_ttl(&hash, &resp, Duration::from_secs(300), fixed_now())
             .unwrap_err();
         match err {
             open_database::Error::SqlError(rusqlite::Error::SqliteFailure(_, Some(msg))) => {
@@ -403,7 +391,7 @@ mod tests {
         let hash = hash_for_request(&req);
         let resp = create_test_response(200, b"resp");
         store
-            .store_with_ttl(&hash, &resp, &Duration::from_secs(300))
+            .store_with_ttl(&hash, &resp, Duration::from_secs(300), fixed_now())
             .unwrap();
 
         let err = store.trim_to_max_size(ByteSize::b(1)).unwrap_err();
@@ -420,7 +408,7 @@ mod tests {
         let store = create_test_store();
         store.set_fault(FaultKind::Cleanup);
 
-        let err = store.delete_expired_entries().unwrap_err();
+        let err = store.delete_expired_entries(fixed_now()).unwrap_err();
         match err {
             open_database::Error::SqlError(rusqlite::Error::SqliteFailure(_, Some(msg))) => {
                 assert!(msg.contains("forced cleanup failure"));
@@ -436,19 +424,11 @@ mod tests {
         let hash = hash_for_request(&req);
         let resp = create_test_response(200, b"X");
 
+        let now = fixed_now();
         let ttl = Duration::from_secs(5);
-        store.store_with_ttl(&hash, &resp, &ttl).unwrap();
+        store.store_with_ttl(&hash, &resp, ttl, now).unwrap();
 
-        let (cached_at, expires_at, ttl_seconds) = fetch_timestamps(&store, &hash);
-        assert_eq!(ttl_seconds, ttl.as_secs() as i64);
-        let diff = expires_at - cached_at;
-        let ttl_seconds = ttl.as_secs();
-        assert!(
-            (diff == ttl_seconds as i64)
-                || (diff == ttl_seconds as i64 - 1)
-                || (diff == ttl_seconds as i64 + 1),
-            "unexpected expires_at diff: got {diff}, want ~{ttl_seconds}"
-        );
+        assert_eq!(fetch_timestamps(&store, &hash), (now, now + ttl, ttl));
     }
 
     #[test]
@@ -458,19 +438,23 @@ mod tests {
         let hash = hash_for_request(&req);
         let resp = create_test_response(200, b"Y");
 
+        let now = fixed_now();
         store
-            .store_with_ttl(&hash, &resp, &Duration::from_secs(300))
+            .store_with_ttl(&hash, &resp, Duration::from_secs(300), now)
             .unwrap();
         let (c1, e1, t1) = fetch_timestamps(&store, &hash);
-        assert_eq!(t1, 300);
-
-        store.get_clock().advance(3);
+        assert_eq!(t1, Duration::from_secs(300));
 
         store
-            .store_with_ttl(&hash, &resp, &Duration::from_secs(1))
+            .store_with_ttl(
+                &hash,
+                &resp,
+                Duration::from_secs(1),
+                now + Duration::from_secs(3),
+            )
             .unwrap();
         let (c2, e2, t2) = fetch_timestamps(&store, &hash);
-        assert_eq!(t2, 1);
+        assert_eq!(t2, Duration::from_secs(1));
         assert!(c2 > c1);
         assert!(e2 < e1, "expires_at should move earlier when TTL shrinks");
     }
@@ -484,18 +468,20 @@ mod tests {
         let hash_fresh = hash_for_request(&req_fresh);
         let resp = create_test_response(200, b"Z");
 
+        let now = fixed_now();
         store
-            .store_with_ttl(&hash_exp, &resp, &Duration::from_secs(1))
+            .store_with_ttl(&hash_exp, &resp, Duration::from_secs(1), now)
             .unwrap();
         store
-            .store_with_ttl(&hash_fresh, &resp, &Duration::from_secs(10))
+            .store_with_ttl(&hash_fresh, &resp, Duration::from_secs(10), now)
             .unwrap();
 
         assert!(store.lookup(&hash_exp).unwrap().is_some());
         assert!(store.lookup(&hash_fresh).unwrap().is_some());
 
-        store.clock.advance(2);
-        let removed = store.delete_expired_entries().unwrap();
+        let removed = store
+            .delete_expired_entries(now + Duration::from_secs(2))
+            .unwrap();
         assert!(
             removed >= 1,
             "expected at least one expired row to be deleted"
@@ -512,13 +498,15 @@ mod tests {
         let hash = hash_for_request(&req);
         let resp = create_test_response(200, b"W");
 
+        let now = fixed_now();
         store
-            .store_with_ttl(&hash, &resp, &Duration::from_secs(1))
+            .store_with_ttl(&hash, &resp, Duration::from_secs(1), now)
             .unwrap();
-        store.clock.advance(2);
         assert!(store.lookup(&hash).unwrap().is_some());
 
-        store.delete_expired_entries().unwrap();
+        store
+            .delete_expired_entries(now + Duration::from_secs(2))
+            .unwrap();
         assert!(store.lookup(&hash).unwrap().is_none());
     }
 
@@ -529,13 +517,15 @@ mod tests {
         let hash = hash_for_request(&req);
         let resp = create_test_response(200, b"0");
 
+        let now = fixed_now();
         store
-            .store_with_ttl(&hash, &resp, &Duration::from_secs(0))
+            .store_with_ttl(&hash, &resp, Duration::from_secs(0), now)
             .unwrap();
         assert!(store.lookup(&hash).unwrap().is_some());
 
-        store.clock.advance(2);
-        let removed = store.delete_expired_entries().unwrap();
+        let removed = store
+            .delete_expired_entries(now + Duration::from_secs(2))
+            .unwrap();
         assert!(removed >= 1);
         assert!(store.lookup(&hash).unwrap().is_none());
     }
@@ -549,33 +539,12 @@ mod tests {
         let response = create_test_response(200, b"test response");
 
         store
-            .store_with_ttl(&hash, &response, &Duration::from_secs(300))
+            .store_with_ttl(&hash, &response, Duration::from_secs(300), fixed_now())
             .unwrap();
 
         let retrieved = store.lookup(&hash).unwrap().unwrap();
         assert_eq!(retrieved.status, 200);
         assert_eq!(retrieved.body, b"test response");
-    }
-
-    #[test]
-    fn test_ttl_expiration() {
-        let store = create_test_store();
-
-        let request = create_test_request("https://example.com/api", b"test body");
-        let hash = hash_for_request(&request);
-        let response = create_test_response(200, b"test response");
-
-        store
-            .store_with_ttl(&hash, &response, &Duration::from_secs(300))
-            .unwrap();
-
-        let retrieved = store.lookup(&hash).unwrap().unwrap();
-        assert_eq!(retrieved.body, b"test response");
-
-        store.clock.advance(2);
-
-        let retrieved_after_expiry = store.lookup(&hash).unwrap();
-        assert!(retrieved_after_expiry.is_some());
     }
 
     #[test]
@@ -588,7 +557,7 @@ mod tests {
             let large_body = vec![0u8; 300];
             let response = create_test_response(200, &large_body);
             store
-                .store_with_ttl(&hash, &response, &Duration::from_secs(300))
+                .store_with_ttl(&hash, &response, Duration::from_secs(300), fixed_now())
                 .unwrap();
         }
 
@@ -620,7 +589,7 @@ mod tests {
             .unwrap();
 
         store
-            .store_with_ttl(&hash, &response, &Duration::from_secs(300))
+            .store_with_ttl(&hash, &response, Duration::from_secs(300), fixed_now())
             .unwrap();
         let retrieved = store.lookup(&hash).unwrap();
         assert!(retrieved.is_some());
@@ -634,14 +603,14 @@ mod tests {
         let hash1 = hash_for_request(&request1);
         let response1 = create_test_response(200, b"test response 1");
         store
-            .store_with_ttl(&hash1, &response1, &Duration::from_secs(300))
+            .store_with_ttl(&hash1, &response1, Duration::from_secs(300), fixed_now())
             .unwrap();
 
         let request2 = create_test_request("https://example.com/api2", b"test body 2");
         let hash2 = hash_for_request(&request2);
         let response2 = create_test_response(200, b"test response 2");
         store
-            .store_with_ttl(&hash2, &response2, &Duration::from_secs(300))
+            .store_with_ttl(&hash2, &response2, Duration::from_secs(300), fixed_now())
             .unwrap();
 
         assert!(store.lookup(&hash1).unwrap().is_some());
@@ -665,10 +634,10 @@ mod tests {
         let resp = create_test_response(200, b"resp");
 
         store
-            .store_with_ttl(&hash1, &resp, &Duration::from_secs(300))
+            .store_with_ttl(&hash1, &resp, Duration::from_secs(300), fixed_now())
             .unwrap();
         store
-            .store_with_ttl(&hash2, &resp, &Duration::from_secs(300))
+            .store_with_ttl(&hash2, &resp, Duration::from_secs(300), fixed_now())
             .unwrap();
 
         assert!(store.lookup(&hash1).unwrap().is_some());

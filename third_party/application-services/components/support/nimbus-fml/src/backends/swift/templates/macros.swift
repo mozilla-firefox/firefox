@@ -13,15 +13,13 @@
 {% let class_name = inner.name()|class_name -%}
 
 {{ inner.doc()|comment("") }}
-public class {{class_name}}: FMLObjectInterface {
+public class {{class_name}}: FMLFeatureInterface {
     private let _variables: Variables
     private let _defaults: Defaults
-    private let _prefs: UserDefaults?
 
-    private init(variables: Variables = NilVariables.instance, prefs: UserDefaults? = nil, defaults: Defaults) {
+    private init(variables: Variables = NilVariables.instance, defaults: Defaults) {
         self._variables = variables
         self._defaults = defaults
-        self._prefs = prefs
     }
     {# The struct holds the default values that come from the manifest. They should completely
     specify all values needed for the  feature #}
@@ -36,13 +34,12 @@ public class {{class_name}}: FMLObjectInterface {
 
     public convenience init(
         _ _variables: Variables = NilVariables.instance,
-        _ _prefs: UserDefaults? = nil,
         {%- for p in inner.props() %}
         {%- let t = p.typ() %}
         {{p.name()|var_name}}: {{ t|defaults_type_label }} = {{ t|literal(self, p.default(), "") }}{% if !loop.last %},{% endif %}
     {%- endfor %}
     ) {
-        self.init(variables: _variables, prefs: _prefs, defaults: Defaults({% for p in inner.props() %}
+        self.init(variables: _variables, defaults: Defaults({% for p in inner.props() %}
             {{p.name()|var_name}}: {{p.name()|var_name}}{% if !loop.last %},{% endif %}
         {%- endfor %}))
     }
@@ -70,33 +67,10 @@ public class {{class_name}}: FMLObjectInterface {
     {%- let defaults = format!("_defaults.{}", prop_swift) %}
     {%- let getter = p.typ()|property(p.name(), "self._variables", defaults) %}
     {{ p.doc()|comment("    ") }}
-    {%- if !p.has_prefs() %}
     public lazy var {{ prop_swift }}: {{ type_swift }} = {
         {{ getter }}
     }()
-    {%- else %}
-    public var {{ prop_swift }}: {{ type_swift }} {
-        {%- let prefs = "prefs" %}
-        {%- let key = p.pref_key().unwrap() %}
-        {#- Using `object(forKey:)` here as it returns an optional that just needs to be cast.
-            `integer(forKey:)` returns zero, `bool(forKey:)` returns `false` if the key is not
-            present.
-
-            Now we only need to use the type label as part of the cast, we don't need to implement
-            separate type specific preference getters.
-
-            `has_prefs()` checks if the type can be got from UserDefaults.
-            #}
-        if let {{ prefs }} = {{ prefs() }},
-            let {{ prop_swift }} = {{ prefs }}.object(forKey: {{ key|quoted }}) as? {{ type_swift }} {
-            return {{ prop_swift }}
-        }
-        return {{ getter }}
-    }
-    {%- endif %}
     {% endfor %}
 }
 
 {%- endmacro %}}
-
-{% macro prefs() %}self._prefs{% endmacro %}

@@ -4,7 +4,7 @@
 
 use std::path::{Path, PathBuf};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use remote_settings::{RemoteSettingsConfig, RemoteSettingsServer, RemoteSettingsService};
 use serde_json::Value;
 use tempfile::TempDir;
@@ -12,7 +12,7 @@ use tempfile::TempDir;
 use crate::cli::{Cli, CliCommand, ExperimentArgs, ExperimentListArgs, ExperimentListSourceArgs};
 use crate::sources::{ExperimentListFilter, ExperimentSource};
 use crate::value_utils::{self, CliUtils};
-use crate::{config, USER_AGENT};
+use crate::{USER_AGENT, config};
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) enum ExperimentListSource {

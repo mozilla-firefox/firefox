@@ -6,7 +6,7 @@ license = "MPL-2.0"
 
 [dependencies]
 base64 = "0.22.1"
-clap = { version = "4.5", default-features = false, features = ["std", "derive"], optional = true }
+clap = { version = "4.5", default-features = false, features = ["std", "derive", "help", "usage", "error-context"], optional = true }
 error-support = { path = "../support/error" }
 md-5 = "0.10"
 regex = "1"

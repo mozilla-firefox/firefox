@@ -1,17 +1,15 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::fmt::Display;
 
 use askama::Template;
 
-use super::filters;
-use super::object::object_literal;
-use crate::{
-    backends::{CodeDeclaration, CodeOracle, LiteralRenderer, TypeIdentifier},
-    intermediate_representation::{FeatureDef, FeatureManifest, Literal},
-};
+use crate::backends::swift::gen_structs::filters;
+use crate::backends::swift::gen_structs::object::object_literal;
+use crate::backends::{CodeDeclaration, CodeOracle, LiteralRenderer, TypeIdentifier};
+use crate::intermediate_representation::{FeatureDef, FeatureManifest, Literal};
 
 #[derive(Template)]
 #[template(syntax = "swift", escape = "none", path = "FeatureTemplate.swift")]

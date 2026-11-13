@@ -23,7 +23,7 @@ autotests = false
 autobenches = false
 description = "Oblivious HTTP"
 homepage = "https://github.com/martinthomson/ohttp"
-readme = "../README.md"
+readme = '..\README.md'
 keywords = [
     "ohttp",
     "http",
