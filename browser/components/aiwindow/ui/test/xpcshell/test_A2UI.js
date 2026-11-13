@@ -357,6 +357,7 @@ describe("A2UI", () => {
           null,
           {
             eyebrow: "Verdict",
+            title: "Dual-fuel is the safe pick.",
             body: "Eight of nine sources back dual-fuel.",
             sources: { items: { path: "/sources" } },
           },
@@ -366,7 +367,7 @@ describe("A2UI", () => {
         Assert.deepEqual(a2ui.toUI().children[1], {
           id: "ans",
           component: "TextBlock",
-          lead: "Highlights Title",
+          lead: "Dual-fuel is the safe pick.",
           paragraphs: ["Eight of nine sources back dual-fuel."],
           references: [
             { title: "site1 name", href: "https://www.site1.com" },
@@ -403,6 +404,135 @@ describe("A2UI", () => {
         });
       });
 
+      it("turns statements without bodies into a list", () => {
+        for (const item of a2uiData.components[2].items) {
+          delete item.body;
+        }
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1], {
+          id: "ans",
+          component: "List",
+          title: "Highlights Title",
+          groups: [
+            {
+              items: [
+                {
+                  text: "A cold-climate heat pump works here — paired with the furnace for the coldest nights.",
+                },
+                { text: "Air sealing matters more than which model you pick." },
+              ],
+            },
+          ],
+          layout: "row",
+        });
+      });
+
+      it("turns untitled statements without bodies into one text block", () => {
+        delete a2uiData.components[2].title;
+        for (const item of a2uiData.components[2].items) {
+          delete item.body;
+        }
+        a2ui = new A2UI(a2uiData);
+
+        const block = a2ui.toUI().children[1];
+        Assert.equal(block.component, "TextBlock");
+        Assert.deepEqual(block.paragraphs, [
+          "A cold-climate heat pump works here — paired with the furnace for the coldest nights.",
+          "Air sealing matters more than which model you pick.",
+        ]);
+      });
+
+      it("turns statements without titles into a list", () => {
+        for (const item of a2uiData.components[2].items) {
+          delete item.title;
+        }
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1], {
+          id: "ans",
+          component: "List",
+          title: "Highlights Title",
+          groups: [
+            {
+              items: a2uiData.components[2].items.map(item => ({
+                text: item.body,
+              })),
+            },
+          ],
+          layout: "row",
+        });
+      });
+
+      it("lists statements missing a title or a body after the others", () => {
+        const { items } = a2uiData.components[2];
+        delete items[0].body;
+        items.push(
+          { eyebrow: "Rebates", body: "Federal and utility rebates stack." },
+          { eyebrow: "Sources only" }
+        );
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1], {
+          id: "ans",
+          component: "List",
+          title: "Highlights Title",
+          groups: [
+            {
+              heading: "Air sealing matters more than which model you pick.",
+              items: [
+                {
+                  text: "Envelope work moves the payback further than the equipment on the invoice.",
+                },
+              ],
+            },
+            {
+              items: [
+                {
+                  text: "A cold-climate heat pump works here — paired with the furnace for the coldest nights.",
+                },
+                { text: "Federal and utility rebates stack." },
+              ],
+            },
+          ],
+          layout: "row",
+        });
+      });
+
+      it("turns a single statement without a title into a list", () => {
+        a2uiData.components[2].items = [
+          {
+            eyebrow: "Verdict",
+            body: "Eight of nine sources back dual-fuel.",
+            sources: { items: { path: "/sources" } },
+          },
+        ];
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1], {
+          id: "ans",
+          component: "List",
+          title: "Highlights Title",
+          groups: [
+            { items: [{ text: "Eight of nine sources back dual-fuel." }] },
+          ],
+          layout: "row",
+        });
+      });
+
+      it("drops a highlights block whose statements have no text", () => {
+        a2uiData.components[2].items = [
+          { eyebrow: "Verdict" },
+          { sources: { items: { path: "/sources" } } },
+        ];
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(
+          a2ui.toUI().children.map(child => child.id),
+          ["hdr"]
+        );
+      });
+
       it("takes the text block lead from the first title it finds", () => {
         const leadOf = (highlights, item) => {
           a2uiData.components[2] = {
@@ -415,14 +545,12 @@ describe("A2UI", () => {
         };
 
         Assert.equal(
-          leadOf({ title: "Group" }, { eyebrow: "Monday", title: "Showers" }),
+          leadOf(
+            { title: "Group" },
+            { eyebrow: "Monday", title: "Showers", body: "Rain." }
+          ),
           "Showers",
           "The statement title comes first"
-        );
-        Assert.equal(
-          leadOf({ title: "Group" }, { eyebrow: "Monday", body: "Rain." }),
-          "Group",
-          "Then the highlights title"
         );
         Assert.equal(
           leadOf({}, { eyebrow: "Monday", body: "Rain." }),

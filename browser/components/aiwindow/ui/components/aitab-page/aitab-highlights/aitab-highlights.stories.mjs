@@ -99,31 +99,6 @@ SingleStatement.args = {
   ],
 };
 
-export const MixedOptionalParts = Template.bind({});
-MixedOptionalParts.args = {
-  title: "What the sources agree on",
-  items: [
-    {
-      eyebrow: "Sizing",
-      title: "A 1940s house usually needs a 3 to 4 ton unit",
-      body: "Every calculator the sources link to lands in this range once the attic is insulated.",
-      sources: { items: [EXPEDIA, TRIPADVISOR, YUNOHAMA] },
-    },
-    {
-      title: "Cold-climate models hold their output to around -25 C",
-      body: "Manufacturer spec sheets list the rated capacity at -25 C, and the two owner forums report the same in practice.",
-    },
-    {
-      eyebrow: "Rebates",
-      body: "Federal and utility rebates stack, but only one of the three installers quoted them up front.",
-      sources: { items: [YUNOHAMA] },
-    },
-    {
-      title: "Ductwork is the hidden cost",
-    },
-  ],
-};
-
 export const LongText = Template.bind({});
 LongText.args = {
   title:

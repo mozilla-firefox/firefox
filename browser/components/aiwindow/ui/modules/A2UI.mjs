@@ -270,10 +270,16 @@ export class A2UI {
   }
 
   /**
-   * Drops a Highlights block with no statements and turns one with a single
-   * statement, or without a title, into a TextBlock. The stored surface is not
-   * changed, so the block keeps its id.
+   * Drops a Highlights block with no statements. A titled block where any
+   * statement lacks a title or a body becomes a List, and a block with a
+   * single statement, or without a title, becomes a TextBlock. The stored
+   * surface is not changed, so the block keeps its id.
    *
+   * The List sits beside its title. Each statement with a title and a body
+   * becomes a group headed by its title, and the rest follow as one group
+   * without a heading. A List renders only plain text, so the statements'
+   * eyebrows and sources are dropped, and a block left with no text is
+   * dropped.
    * Link-click telemetry reports the converted block as a TextBlock.
    * Bug 2088273 decides how Glean reports these conversions.
    *
@@ -287,6 +293,9 @@ export class A2UI {
     const items = (component.items ?? []).filter(Boolean);
     if (!items.length) {
       return null;
+    }
+    if (component.title && !items.every(item => item.title && item.body)) {
+      return this.#highlightsToList(component, items);
     }
     if (items.length > 1 && component.title) {
       return component;
@@ -314,9 +323,34 @@ export class A2UI {
     return {
       id: component.id,
       component: "TextBlock",
-      lead: item.title || component.title || item.eyebrow || "",
+      lead: item.title || item.eyebrow || "",
       paragraphs: item.body ? [item.body] : [],
       references,
+    };
+  }
+
+  #highlightsToList(component, items) {
+    const groups = [];
+    const rest = [];
+    for (const item of items) {
+      if (item.title && item.body) {
+        groups.push({ heading: item.title, items: [{ text: item.body }] });
+      } else if (item.title || item.body) {
+        rest.push({ text: item.title || item.body });
+      }
+    }
+    if (rest.length) {
+      groups.push({ items: rest });
+    }
+    if (!groups.length) {
+      return null;
+    }
+    return {
+      id: component.id,
+      component: "List",
+      title: component.title,
+      groups,
+      layout: "row",
     };
   }
 
