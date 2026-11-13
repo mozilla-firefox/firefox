@@ -269,6 +269,28 @@ add_task(async function test_invalid_characters() {
 });
 
 /**
+ * Tests lone surrogates, which can come from web form fields, in nsILoginInfo
+ * properties.
+ */
+add_task(async function test_lone_surrogates() {
+  let loginList = [
+    TestData.authLogin({ origin: "http://lone\uD83D.example.com" }),
+    TestData.authLogin({ httpRealm: "realm\uDE00" }),
+    TestData.formLogin({ formActionOrigin: "http://lone\uD83D.example.com" }),
+    TestData.formLogin({ usernameField: "field\uD83D" }),
+    TestData.formLogin({ passwordField: "\uDE00field" }),
+    TestData.formLogin({ username: "Foobar\uD83D" }),
+    TestData.formLogin({ password: "\uDE00MyVeryCoolPassword" }),
+  ];
+  for (let loginInfo of loginList) {
+    await checkLoginInvalid(
+      loginInfo,
+      /login values can't contain lone surrogates/
+    );
+  }
+});
+
+/**
  * Tests removing a login that does not exists.
  */
 add_task(async function test_removeLogin_nonexisting() {

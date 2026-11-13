@@ -624,6 +624,22 @@ export const LoginHelper = {
       throw new Error("login values can't contain nulls");
     }
 
+    // Lone surrogates can't be encoded as UTF-8 and would be replaced with
+    // U+FFFD by the storage, so the stored login wouldn't match the caller's.
+    if (
+      [
+        aLogin.origin,
+        aLogin.formActionOrigin,
+        aLogin.httpRealm,
+        aLogin.username,
+        aLogin.password,
+        aLogin.usernameField,
+        aLogin.passwordField,
+      ].some(value => typeof value == "string" && !value.isWellFormed())
+    ) {
+      throw new Error("login values can't contain lone surrogates");
+    }
+
     // Newlines are invalid for any field stored as plaintext.
     if (
       badCharacterPresent(aLogin, "\r") ||
