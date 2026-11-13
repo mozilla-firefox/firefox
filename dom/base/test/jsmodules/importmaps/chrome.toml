@@ -15,22 +15,34 @@ support-files = [
 ]
 
 ["test_dynamic_import_reject_importMap.html"]
+skip-if = [
+  "nightly_build", # dom.multiple_import_maps.enabled is on in Nightly
+]
 
 ["test_externalImportMap.html"]
 
 ["test_import_meta_resolve_importMap.html"]
 
 ["test_inline_module_reject_importMap.html"]
+skip-if = [
+  "nightly_build", # dom.multiple_import_maps.enabled is on in Nightly
+]
 
 ["test_load_importMap_with_base.html"]
 
 ["test_load_importMap_with_base2.html"]
 
 ["test_module_script_reject_importMap.html"]
+skip-if = [
+  "nightly_build", # dom.multiple_import_maps.enabled is on in Nightly
+]
 
 ["test_parse_importMap_failed.html"]
 
 ["test_reject_multiple_importMaps.html"]
+skip-if = [
+  "nightly_build", # dom.multiple_import_maps.enabled is on in Nightly
+]
 
 ["test_simpleImportMap.html"]
 
