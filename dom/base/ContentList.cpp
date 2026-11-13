@@ -692,7 +692,8 @@ void ContentList::ContentInserted(nsIContent* aChild,
 
 void ContentList::ContentWillBeRemoved(nsIContent* aChild,
                                        const ContentRemoveInfo&) {
-  if (mState != State::Dirty &&
+  MOZ_ASSERT_IF(mState == State::Dirty, mElements.IsEmpty());
+  if (!mElements.IsEmpty() &&
       MayContainRelevantNodes(aChild->GetParentNode()) &&
       nsContentUtils::IsInSameAnonymousTree(mRootNode, aChild) &&
       MatchSelf<MatchSelfMode::Removal>(aChild)) {
