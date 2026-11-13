@@ -10,8 +10,6 @@
     <issue id="MissingQuantity" severity="ignore" />
     <issue id="ImpliedQuantity" severity="ignore" />
     <issue id="Untranslatable" severity="ignore" />
-    <issue id="AssertTrueInsteadOfAssertIs" severity="warning" />
-    <issue id="JUnitAssertNotNull" severity="warning" />
     <issue id="BrandUsage" severity="error">
         <ignore path="**/values-*/strings.xml" />
     </issue>
@@ -31,5 +29,4 @@
     <issue id="Typos" severity="error">
         <ignore path="**/values-*/strings.xml" />
     </issue>
-    <issue id="NoSystemCurrentTimeMillis" severity="warning" />
 </lint>
