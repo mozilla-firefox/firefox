@@ -778,8 +778,15 @@ items from that key's value."
 
         return False
 
-    def _load_build_resources(self):
-        p = self.config.get("profile_build_resources_path") % self.query_abs_dirs()
+    def _load_build_times(self):
+        dirs = self.query_abs_dirs()
+        p = os.path.join(dirs["abs_obj_dir"], ".mozbuild", "build_times.json")
+        if os.path.exists(p):
+            with open(p) as fh:
+                build_times = json.load(fh)
+            return build_times["duration"], build_times["phases"]
+
+        p = self.config.get("profile_build_resources_path") % dirs
         if not os.path.exists(p):
             self.info("%s does not exist; not loading build profile data" % p)
             return None
@@ -787,19 +794,26 @@ items from that key's value."
         with open(p) as fh:
             profile = json.load(fh)
 
+        thread = profile.get("threads", [])[0]
+        duration = profile["meta"]["profilingEndTime"] / 1000
+        markers = thread["markers"]
+        phases = {}
+        for n, marker in enumerate(markers["data"]):
+            if marker.get("type") == "Phase":
+                phases[marker["phase"]] = (
+                    markers["endTime"][n] - markers["startTime"][n]
+                ) / 1000
+        return duration, phases
+
+    def _load_build_resources(self):
         try:
-            thread = profile.get("threads", [])[0]
-            duration = profile["meta"]["profilingEndTime"] / 1000
-            markers = thread["markers"]
-            phases = {}
-            for n, marker in enumerate(markers["data"]):
-                if marker.get("type") == "Phase":
-                    phases[marker["phase"]] = (
-                        markers["endTime"][n] - markers["startTime"][n]
-                    ) / 1000
+            build_times = self._load_build_times()
         except Exception:
             self.info("build profile lacks data; ignoring")
             return None
+        if build_times is None:
+            return None
+        duration, phases = build_times
 
         # We want to always collect metrics. But alerts with sccache enabled
         # we should disable automatic alerting

@@ -91,6 +91,8 @@ subsuite = "mozbuild"
 
 ["controller/test_build_output.py"]
 
+["controller/test_build_times.py"]
+
 ["controller/test_buildid.py"]
 
 ["controller/test_ccachestats.py"]

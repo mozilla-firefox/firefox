@@ -408,8 +408,36 @@ class BuildMonitor(MozbuildObject):
         self.warnings_database.prune()
         self.warnings_database.save_to_file(self._warnings_path)
 
+    @property
+    def build_times_path(self):
+        return mozpath.join(self.topobjdir, ".mozbuild", "build_times.json")
+
+    def _write_build_times(self):
+        resources = self.resources
+        if "MOZ_AUTOMATION" not in os.environ or resources.end_time is None:
+            return
+        try:
+            now = time.monotonic()
+            phases = {
+                name: end - start for name, (start, end) in resources.phases.items()
+            }
+            phases["teardown"] = now - resources.stop_time
+            os.makedirs(os.path.dirname(self.build_times_path), exist_ok=True)
+            with open(self.build_times_path, "w", encoding="utf-8", newline="\n") as fh:
+                json.dump(
+                    {"duration": now - resources.start_time, "phases": phases}, fh
+                )
+        except Exception as e:
+            self.log(
+                logging.WARNING,
+                "build_times_error",
+                {"msg": str(e)},
+                "Exception when writing build times: {msg}",
+            )
+
     def record_usage(self):
         if self.resources.forwarding:
+            self._write_build_times()
             return
         try:
             with open(
