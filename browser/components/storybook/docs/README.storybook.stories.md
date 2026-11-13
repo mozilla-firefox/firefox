@@ -24,6 +24,9 @@ Installing the npm dependencies and running the `storybook` npm script should be
 enough to get Storybook running. This can be done via `./mach storybook`
 commands, or with your personal npm/node that happens to be compatible.
 
+Production exports hash stylesheet module identifiers to avoid oversized generated
+filenames in Windows checkouts.
+
 ### Running with mach commands
 
 This is the recommended approach for installing dependencies and running

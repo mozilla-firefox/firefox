@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { normalizePath } from "vite";
@@ -203,7 +204,10 @@ export function createMozillaResourcePlugin({ projectRoot }) {
         );
         const { file, suffix } = splitId(resolvedId);
         const token = Buffer.from(resolvedId).toString("base64url");
-        const id = `${VIRTUAL_PREFIX}${stylesheet.kind}:${token}.mjs`;
+        const moduleToken = production
+          ? createHash("sha256").update(resolvedId).digest("hex")
+          : token;
+        const id = `${VIRTUAL_PREFIX}${stylesheet.kind}:${moduleToken}.mjs`;
         virtualModules.set(id, { kind: stylesheet.kind, file, suffix });
         if (!stylesheetModules.has(file)) {
           stylesheetModules.set(file, new Set());
