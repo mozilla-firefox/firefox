@@ -1,5 +1,5 @@
 [DEFAULT]
-head =""
+head = ""
 support-files = [
   "data/intl_on_workers.worker.js",
   "data/chrome.manifest",
@@ -13,6 +13,11 @@ skip-if = [
 ]
 
 ["test_langPackMatcher.js"]
+
+["test_langPackMatcher_install.js"]
+run-if = [
+  "os != 'android'", # Non-extension add-ons are not supported on Android.
+]
 
 ["test_localeService.js"]
 

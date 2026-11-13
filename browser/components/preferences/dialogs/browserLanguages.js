@@ -27,12 +27,12 @@ ChromeUtils.defineESModuleGetters(this, {
  * the user has opted to search for more languages.
  */
 
-async function installFromUrl(url, hash, callback) {
+async function installFromUrl(url, options, callback) {
   let telemetryInfo = {
     source: "about:preferences",
   };
   let install = await AddonManager.getInstallForURL(url, {
-    hash,
+    ...options,
     telemetryInfo,
   });
   if (callback) {
@@ -532,8 +532,8 @@ var gBrowserLanguagesDialog = {
 
     // Store the available langpack info for later use.
     this.availableLangpacks = new Map();
-    for (let { target_locale, url, hash } of availableLangpacks) {
-      this.availableLangpacks.set(target_locale, { url, hash });
+    for (let { target_locale, url, hash, id, version } of availableLangpacks) {
+      this.availableLangpacks.set(target_locale, { url, hash, id, version });
     }
 
     // Remove the installed locales from the available ones.
@@ -626,12 +626,19 @@ var gBrowserLanguagesDialog = {
       "browser-languages-downloading"
     );
 
-    let { url, hash } = this.availableLangpacks.get(item.value);
+    let { url, hash, id, version } = this.availableLangpacks.get(item.value);
     let addon;
 
     try {
-      addon = await installFromUrl(url, hash, installId =>
-        this.recordTelemetry("add", { installId })
+      addon = await installFromUrl(
+        url,
+        {
+          id,
+          type: "locale",
+          hash,
+          version,
+        },
+        installId => this.recordTelemetry("add", { installId })
       );
     } catch (e) {
       this.showError();
@@ -663,7 +670,13 @@ var gBrowserLanguagesDialog = {
       let ids = await dictionaryIdsForLocale(locale);
       let addonInfos = await AddonRepository.getAddonsByIDs(ids);
       await Promise.all(
-        addonInfos.map(info => installFromUrl(info.sourceURI.spec))
+        addonInfos.map(info =>
+          installFromUrl(info.sourceURI.spec, {
+            id: info.id,
+            type: "dictionary",
+            version: info.version,
+          })
+        )
       );
     } catch (e) {
       console.error(e);

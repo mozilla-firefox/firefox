@@ -28,6 +28,7 @@ function createLocaleResult(target_locale, url) {
     type: "language",
     target_locale,
     current_compatible_version: {
+      version: "2.0",
       files: [
         {
           platform: "all",

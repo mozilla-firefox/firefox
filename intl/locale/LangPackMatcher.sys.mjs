@@ -100,13 +100,15 @@ let installingLangpack = new Map();
 
 /**
  * @typedef {object} LangPack
+ * @property {string} id
+ * @property {string} hash
  * @property {string} target_locale
  * @property {string} url
- * @property {string} hash
+ * @property {string} version
  */
 
 /**
- * Ensure that a given lanpack is installed.
+ * Ensure that a given langpack is installed.
  *
  * @param {LangPack} langPack
  * @param {string} source Where the install is happening for telemetry.
@@ -167,19 +169,35 @@ const mockable = {
   },
 
   /**
-   * Install an add-on from URL, generally AMO.
+   * Install locale/dictionary add-on from URL, generally AMO.
    *
    * @param {string} url The URL.
    * @param {object} options
    * @param {string} options.source
    *  Where the download was triggered e.g. about:welcome or about:preferences
+   * @param {string} options.id Verify the download against this ID.
    * @param {string} [options.hash] Verify the download against this hash.
+   * @param {string} options.type Verify the download against this type.
+   * @param {string} options.version Verify the download against this version.
    */
-  async _installAddon(url, { hash, source }) {
+  async _installAddon(url, { source, id, hash, type, version }) {
+    if (!(id && type && version)) {
+      console.error("Missing addon details, locale/dictionary not installed");
+      return false;
+    }
+
+    if (!(type === "locale" || type === "dictionary")) {
+      console.error("Invalid type provided, locale/dictionary not installed");
+      return false;
+    }
+
     let install;
     try {
       install = await lazy.AddonManager.getInstallForURL(url, {
+        id,
         hash,
+        type,
+        version,
         telemetryInfo: { source },
       });
     } catch (error) {
@@ -204,8 +222,11 @@ const mockable = {
    */
   async installLangPack(langPack, source = "about:welcome") {
     const langPackInstalled = await this._installAddon(langPack.url, {
+      source,
+      id: langPack.id,
       hash: langPack.hash,
-      telemetryInfo: { source },
+      type: "locale",
+      version: langPack.version,
     });
     if (langPackInstalled) {
       // Install the dictionaries in the background without waiting.
@@ -230,7 +251,12 @@ const mockable = {
       let addonInfos = await lazy.AddonRepository.getAddonsByIDs(ids);
       await Promise.all(
         addonInfos.map(info =>
-          this._installAddon(info.sourceURI.spec, { source })
+          this._installAddon(info.sourceURI.spec, {
+            source,
+            id: info.id,
+            type: "dictionary",
+            version: info.version,
+          })
         )
       );
     } catch (e) {
