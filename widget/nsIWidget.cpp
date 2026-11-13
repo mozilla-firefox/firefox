@@ -1488,7 +1488,19 @@ void nsIWidget::ReceiveTouchSwipableDirections(uint64_t aInputBlockId,
   mTouchSwipeState.Start(aSwipableDirections,
                          *mTouchSwipeState.previousTouchPoint);
 
-  for (const auto& info : queue->queuedInfo) {
+  for (auto& info : queue->queuedInfo) {
+    // A queued touchmove of the same block started another content response
+    // wait. Transfer the remaining inputs to the new queue instead of
+    // processing them. This happens when that touchmove reached APZ after APZ
+    // had sent the swipable directions that this function is now handling,
+    // but before they arrived here. Since APZ had no pending notification for
+    // this block at that point, that touchmove started a new wait while this
+    // widget was still waiting.
+    if (mTouchSwipeState.phase == TouchSwipeState::Phase::WaitingForAPZ) {
+      mTouchSwipeState.QueueInfo(std::move(info));
+      continue;
+    }
+
     mTouchSwipeState.touchCounter.Update(info.input);
     HandleTouchInputForSwipe(info.input, info.result);
   }
