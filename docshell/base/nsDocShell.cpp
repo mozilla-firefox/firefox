@@ -7550,7 +7550,7 @@ nsresult nsDocShell::SetupNewViewer(nsIDocumentViewer* aNewViewer,
   bool isUnderHiddenEmbedderElement = false;
   // Ensure that the content viewer is destroyed *after* the GC - bug 71515
   nsCOMPtr<nsIDocumentViewer> viewer = mDocumentViewer;
-  if (viewer) {
+  if (viewer && viewer->GetDocument()) {
     // Stop any activity that may be happening in the old document before
     // releasing it...
     viewer->Stop();
@@ -7564,6 +7564,13 @@ nsresult nsDocShell::SetupNewViewer(nsIDocumentViewer* aNewViewer,
 
     viewer->Close();
     aNewViewer->SetPreviousViewer(viewer);
+
+    // A load that completed in the meantime takes precedence over this one.
+    if (mDocumentViewer != viewer) {
+      aNewViewer->Close();
+      aNewViewer->Destroy();
+      return NS_ERROR_ABORT;
+    }
   }
 
   mDocumentViewer = nullptr;
