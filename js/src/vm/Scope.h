@@ -570,10 +570,9 @@ inline bool Scope::is<LexicalScope>() const {
          kind_ == ScopeKind::FunctionLexical;
 }
 
-// The body scope of a JS class, containing only synthetic bindings for private
-// class members. (The binding for the class name, `C` in the example below, is
-// in another scope, a `LexicalScope`, that encloses the `ClassBodyScope`.)
-// Example:
+// The body scope of a JS class, containing bindings for private class members.
+// (The binding for the class name, `C` in the example below, is in another
+// scope, a `LexicalScope`, that encloses the `ClassBodyScope`.) Example:
 //
 //     class C {
 //       #f = 0;
@@ -582,11 +581,12 @@ inline bool Scope::is<LexicalScope>() const {
 //       }
 //     }
 //
-// This class has a ClassBodyScope with four synthetic bindings:
-// - `#f` (private name)
-// - `#m` (private name)
-// - `#m.method` (function object)
-// - `.privateBrand` (the class's private brand)
+// This class has a ClassBodyScope with three bindings:
+// - `.privateBrand` (synthetic: the class's private brand, always first)
+// - `#f` (synthetic: private name)
+// - `#m` (private method: the function object)
+//
+// All of these bindings are only written when they're initialized.
 class ClassBodyScope : public Scope {
   friend class Scope;
   friend class AbstractBindingIter<JSAtom>;

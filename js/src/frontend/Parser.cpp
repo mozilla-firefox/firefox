@@ -8195,6 +8195,7 @@ GeneralParser<ParseHandler, Unit>::classDefinition(
       return errorResult();
     }
 
+    ClassInitializedMembers classInitializedMembers{};
     {
       ParseContext::Statement bodyScopeStmt(pc_, StatementKind::Block);
       ParseContext::Scope bodyScope(this);
@@ -8205,7 +8206,6 @@ GeneralParser<ParseHandler, Unit>::classDefinition(
       ListNodeType classMembers =
           MOZ_TRY(handler_.newClassMemberList(pos().begin));
 
-      ClassInitializedMembers classInitializedMembers{};
       for (;;) {
         bool done;
         if (!classMember(yieldHandling, classStmt, className, classStartOffset,
@@ -8247,22 +8247,6 @@ GeneralParser<ParseHandler, Unit>::classDefinition(
         }
       }
 
-      if (classInitializedMembers.staticFields > 0) {
-        if (!noteDeclaredName(
-                TaggedParserAtomIndex::WellKnown::dot_staticInitializers_(),
-                DeclarationKind::Synthetic, namePos)) {
-          return errorResult();
-        }
-      }
-
-      if (classInitializedMembers.staticFieldKeys > 0) {
-        if (!noteDeclaredName(
-                TaggedParserAtomIndex::WellKnown::dot_staticFieldKeys_(),
-                DeclarationKind::Synthetic, namePos)) {
-          return errorResult();
-        }
-      }
-
       classEndOffset = pos().end;
       if (!finishClassConstructor(classStmt, className, hasHeritage,
                                   classStartOffset, classEndOffset,
@@ -8273,6 +8257,25 @@ GeneralParser<ParseHandler, Unit>::classDefinition(
       classBodyBlock = MOZ_TRY(finishClassBodyScope(bodyScope, classMembers));
 
       // Pop the class body scope
+    }
+
+    // Note: `.staticInitializers` and `.staticFieldKeys` are cleared after the
+    // static fields have been initialized, so we declare these as Let bindings
+    // in the class's lexical scope instead of Synthetic class body scope
+    // bindings.
+    if (classInitializedMembers.staticFields > 0) {
+      if (!noteDeclaredName(
+              TaggedParserAtomIndex::WellKnown::dot_staticInitializers_(),
+              DeclarationKind::Let, namePos)) {
+        return errorResult();
+      }
+    }
+    if (classInitializedMembers.staticFieldKeys > 0) {
+      if (!noteDeclaredName(
+              TaggedParserAtomIndex::WellKnown::dot_staticFieldKeys_(),
+              DeclarationKind::Let, namePos)) {
+        return errorResult();
+      }
     }
 
     if (className) {

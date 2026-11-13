@@ -401,6 +401,11 @@ bool NameOpEmitter::emitAssignment() {
       break;
     case NameLocation::Kind::FrameSlot: {
       JSOp op = JSOp::SetLocal;
+
+      // Class body bindings must not be mutated after initialization.
+      MOZ_ASSERT_IF(loc_.isSynthetic() || loc_.isPrivateMethod(),
+                    isInitialize());
+
       // Lexicals, Synthetics and Private Methods have very similar handling
       // around a variety of areas, including initialization.
       if (loc_.isLexical() || loc_.isPrivateMethod() || loc_.isSynthetic()) {
@@ -434,6 +439,11 @@ bool NameOpEmitter::emitAssignment() {
     }
     case NameLocation::Kind::EnvironmentCoordinate: {
       JSOp op = JSOp::SetAliasedVar;
+
+      // Class body bindings must not be mutated after initialization.
+      MOZ_ASSERT_IF(loc_.isSynthetic() || loc_.isPrivateMethod(),
+                    isInitialize());
+
       // Lexicals, Synthetics and Private Methods have very similar handling
       // around a variety of areas, including initialization.
       if (loc_.isLexical() || loc_.isPrivateMethod() || loc_.isSynthetic()) {
