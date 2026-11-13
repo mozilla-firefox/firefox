@@ -427,7 +427,7 @@ class Http3Session final : public Http3SessionBase,
 
   nsRefPtrDeque<Http3StreamBase> mReadyForWrite;
 
-  nsTArray<RefPtr<Http3StreamBase>> mSlowConsumersReadyForRead;
+  nsRefPtrDeque<Http3StreamBase> mSlowConsumersReadyForRead;
   nsRefPtrDeque<Http3StreamBase> mQueuedStreams;
 
   enum State {

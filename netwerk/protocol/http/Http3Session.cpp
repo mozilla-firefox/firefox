@@ -347,6 +347,7 @@ nsresult Http3Session::SendPriorityUpdateFrame(uint64_t aStreamId,
 static void ForgetStreamQueueMembership(Http3StreamBase* aStream) {
   aStream->SetInTxQueue(false);
   aStream->SetQueued(false);
+  aStream->SetInRxQueue(false);
 }
 
 // Shutdown the http3session and close all transactions.
@@ -489,7 +490,9 @@ void Http3Session::Shutdown() {
   while ((stream = mReadyForWrite.PopFront())) {
     stream->SetInTxQueue(false);
   }
-  mSlowConsumersReadyForRead.Clear();
+  while ((stream = mSlowConsumersReadyForRead.PopFront())) {
+    stream->SetInRxQueue(false);
+  }
   mWebTransportStreams.Clear();
 }
 
@@ -1680,8 +1683,10 @@ void Http3Session::RemoveStreamFromQueues(Http3StreamBase* aStream) {
   if (aStream->Queued()) {
     RemoveStreamFromQueue(aStream, mQueuedStreams);
   }
+  if (aStream->IsInRxQueue()) {
+    RemoveStreamFromQueue(aStream, mSlowConsumersReadyForRead);
+  }
   ForgetStreamQueueMembership(aStream);
-  mSlowConsumersReadyForRead.RemoveElement(aStream);
 }
 
 // This is called by Http3Stream::OnReadSegment.
@@ -2212,13 +2217,12 @@ void Http3Session::MaybeResumeSend() {
 }
 
 nsresult Http3Session::ProcessSlowConsumers() {
-  if (mSlowConsumersReadyForRead.IsEmpty()) {
+  RefPtr<Http3StreamBase> slowConsumer = mSlowConsumersReadyForRead.PopFront();
+  if (!slowConsumer) {
     return NS_OK;
   }
-
-  RefPtr<Http3StreamBase> slowConsumer =
-      mSlowConsumersReadyForRead.ElementAt(0);
-  mSlowConsumersReadyForRead.RemoveElementAt(0);
+  MOZ_ASSERT(slowConsumer->IsInRxQueue());
+  slowConsumer->SetInRxQueue(false);
 
   nsresult rv = ProcessTransactionRead(slowConsumer);
 
@@ -2714,7 +2718,10 @@ void Http3Session::TransactionHasDataToRecv(nsAHttpTransaction* caller) {
 void Http3Session::ConnectSlowConsumer(Http3StreamBase* stream) {
   LOG3(("Http3Session::ConnectSlowConsumer %p 0x%" PRIx64 "\n", this,
         stream->StreamId()));
-  mSlowConsumersReadyForRead.AppendElement(stream);
+  if (!stream->IsInRxQueue()) {
+    mSlowConsumersReadyForRead.Push(stream);
+    stream->SetInRxQueue(true);
+  }
   (void)ForceRecv();
 }
 

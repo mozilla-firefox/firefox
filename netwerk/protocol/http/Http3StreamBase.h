@@ -63,6 +63,9 @@ class Http3StreamBase : public SupportsWeakPtr, public ARefBase {
   void SetInTxQueue(bool aValue) { mInTxQueue = aValue; }
   bool IsInTxQueue() const { return mInTxQueue; }
 
+  void SetInRxQueue(bool aValue) { mInRxQueue = aValue; }
+  bool IsInRxQueue() const { return mInRxQueue; }
+
   void SetBlockedByFlowControl(bool aValue) { mBlockedByFlowControl = aValue; }
   bool BlockedByFlowControl() const { return mBlockedByFlowControl; }
 
@@ -80,6 +83,7 @@ class Http3StreamBase : public SupportsWeakPtr, public ARefBase {
   bool mFin{false};
   bool mResetRecv{false};
   bool mInTxQueue{false};
+  bool mInRxQueue{false};
   bool mBlockedByFlowControl{false};
   bool mClosed{false};
 };
