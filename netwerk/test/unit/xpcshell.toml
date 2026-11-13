@@ -1417,6 +1417,9 @@ usesNPM = true
 ["test_ntlm_proxy_auth.js"]
 
 ["test_ntlm_web_auth.js"]
+skip-if = [
+  "os == 'win'", # Bug 2092666 - NTLM changes in Windows 11 updated November 2026 (KB 5135557)
+]
 
 ["test_oblivious_http.js"]
 
