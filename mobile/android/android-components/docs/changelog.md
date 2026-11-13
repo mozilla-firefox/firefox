@@ -10,6 +10,7 @@ permalink: /changelog/
   * 🆕 Added `EngineSession.requestPictureInPicture` and `EngineSession.exitPictureInPicture` to ask the engine for a picture-in-picture window for the video a session is playing, and to tell it the window has been closed so it can release the state it holds. [Bug 2075323](https://bugzilla.mozilla.org/show_bug.cgi?id=2075323)
 * **support-utils**
   * 🆕 Added `String.validateCreditCardNumber()`, which checks that a credit card number has only digits, matches a known card network and passes the Luhn check. It moved here from Fenix. [Bug 2090313](https://bugzilla.mozilla.org/show_bug.cgi?id=2090313)
+  * 🆕 Added `SwitchTabIntent`, holding the action and extra of the intent asking the app to bring the browser back on a tab. [Bug 2090245](https://bugzilla.mozilla.org/show_bug.cgi?id=2090245)
 * **support-locale**
   * Added a new API `LocaleManager#onAttachBaseContext` that applies only the configuration changes for the locale without cached values. Should only be used in `attachBaseContext` overrides for `Application` and `Activity` classes.
     *  The API, similar to the others in `LocaleManager` assumes `enableSplit` is disabled for App Bundle splits; languages will be in the base package.
@@ -48,6 +49,8 @@ permalink: /changelog/
     * 🆕 New component showing the video a tab is playing in a picture-in-picture window. [Bug 2075323](https://bugzilla.mozilla.org/show_bug.cgi?id=2075323)
 * **browser-state**
     * 🆕 Added `PictureInPictureAction` and `BrowserState.pictureInPictureWindow`, which track the picture-in-picture window and the session it shows. [Bug 2075323](https://bugzilla.mozilla.org/show_bug.cgi?id=2075323)
+* **feature-media**
+    * ⚠️ **Breaking change**: Removed `AbstractMediaSessionService.ACTION_SWITCH_TAB` and `AbstractMediaSessionService.EXTRA_TAB_ID`. Use `SwitchTabIntent` from `support-utils` instead. [Bug 2090245](https://bugzilla.mozilla.org/show_bug.cgi?id=2090245)
 
 # 161.0
 * **browser-state**

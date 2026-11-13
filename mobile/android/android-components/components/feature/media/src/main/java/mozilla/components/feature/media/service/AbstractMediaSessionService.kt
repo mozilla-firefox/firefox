@@ -89,8 +89,6 @@ abstract class AbstractMediaSessionService : Service() {
 
         const val NOTIFICATION_TAG = "mozac.feature.mediasession.foreground-service"
         const val PENDING_INTENT_TAG = "mozac.feature.mediasession.pendingintent"
-        const val ACTION_SWITCH_TAB = "mozac.feature.mediasession.SWITCH_TAB"
-        const val EXTRA_TAB_ID = "mozac.feature.mediasession.TAB_ID"
 
         internal fun playIntent(context: Context, cls: Class<*>): Intent =
             Intent(ACTION_PLAY).apply {

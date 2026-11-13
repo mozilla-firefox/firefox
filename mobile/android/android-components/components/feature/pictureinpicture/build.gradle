@@ -16,6 +16,7 @@ dependencies {
     implementation project(':components:concept-engine')
     implementation project(':components:lib-state')
     implementation project(':components:support-base')
+    implementation project(':components:support-utils')
 
     implementation libs.androidx.appcompat
     implementation libs.androidx.lifecycle.common

@@ -113,5 +113,7 @@ class PictureInPictureWindowFeatureTest {
         override val store: BrowserStore = mock()
         override val engine: Engine = mock()
         override val pictureInPictureUseCases = PictureInPictureUseCases(store)
+
+        override fun onReturnToTab(tabId: String) = Unit
     }
 }

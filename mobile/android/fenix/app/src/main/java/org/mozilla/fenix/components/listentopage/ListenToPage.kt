@@ -23,10 +23,10 @@ import mozilla.components.feature.listentopage.playback.DirectoryAudioFileCache
 import mozilla.components.feature.listentopage.playback.ListenPlaybackController
 import mozilla.components.feature.listentopage.settings.ListenSettings
 import mozilla.components.feature.listentopage.synthesis.SpeechSynthesizer
-import mozilla.components.feature.media.service.AbstractMediaSessionService
 import mozilla.components.support.base.facts.register
 import mozilla.components.support.base.ids.SharedIdsHelper
 import mozilla.components.support.locale.LocaleManager
+import mozilla.components.support.utils.SwitchTabIntent
 import org.mozilla.fenix.listentopage.ListenToPageBinding
 
 private const val OPEN_TAB_PENDING_INTENT_TAG = "org.mozilla.fenix.listentopage.OPEN_TAB"
@@ -34,8 +34,8 @@ private const val OPEN_TAB_PENDING_INTENT_TAG = "org.mozilla.fenix.listentopage.
 internal fun Context.openTabPendingIntent(tabId: String): PendingIntent? {
     val intent =
         packageManager.getLaunchIntentForPackage(packageName)?.apply {
-            action = AbstractMediaSessionService.ACTION_SWITCH_TAB
-            putExtra(AbstractMediaSessionService.EXTRA_TAB_ID, tabId)
+            action = SwitchTabIntent.ACTION_SWITCH_TAB
+            putExtra(SwitchTabIntent.EXTRA_TAB_ID, tabId)
         } ?: return null
 
     return PendingIntent.getActivity(

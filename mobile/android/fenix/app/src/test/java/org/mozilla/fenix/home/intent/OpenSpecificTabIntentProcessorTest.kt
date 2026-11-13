@@ -14,8 +14,8 @@ import io.mockk.verifyOrder
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
-import mozilla.components.feature.media.service.AbstractMediaSessionService
 import mozilla.components.feature.tabs.TabsUseCases
+import mozilla.components.support.utils.SwitchTabIntent
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -70,7 +70,7 @@ class OpenSpecificTabIntentProcessorTest {
     fun `GIVEN an intent with null extra string WHEN it is processed THEN openToBrowser should not be called`() {
         val intent =
             Intent().apply {
-                action = AbstractMediaSessionService.Companion.ACTION_SWITCH_TAB
+                action = SwitchTabIntent.ACTION_SWITCH_TAB
             }
 
         val store =
@@ -90,8 +90,8 @@ class OpenSpecificTabIntentProcessorTest {
     fun `GIVEN an intent with correct action and extra string WHEN it is processed THEN session should be selected and openToBrowser should be called`() {
         val intent =
             Intent().apply {
-                action = AbstractMediaSessionService.Companion.ACTION_SWITCH_TAB
-                putExtra(AbstractMediaSessionService.Companion.EXTRA_TAB_ID, TEST_SESSION_ID)
+                action = SwitchTabIntent.ACTION_SWITCH_TAB
+                putExtra(SwitchTabIntent.EXTRA_TAB_ID, TEST_SESSION_ID)
             }
         val store =
             BrowserStore(BrowserState(tabs = listOf(createTab(id = TEST_SESSION_ID, url = "https:mozilla.org"))))

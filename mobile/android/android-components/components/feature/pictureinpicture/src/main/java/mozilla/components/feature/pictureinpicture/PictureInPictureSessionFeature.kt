@@ -29,6 +29,7 @@ import mozilla.components.support.base.feature.LifecycleAwareFeature
  * @param pictureInPictureUseCases Closes the window on [stop].
  * @param mainDispatcher Dispatcher the browser state is observed on.
  * @param onVideoGone Invoked once the engine says the video being shown is gone.
+ * @param onReturnToTab Invoked with the ID of the tab the video comes from when the user expands the window.
  */
 class PictureInPictureSessionFeature(
     private val store: BrowserStore,
@@ -36,7 +37,8 @@ class PictureInPictureSessionFeature(
     private val pictureInPictureUseCases: PictureInPictureUseCases,
     private val mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
     private val onVideoGone: () -> Unit,
-): LifecycleAwareFeature {
+    private val onReturnToTab: (tabId: String) -> Unit = {},
+) : LifecycleAwareFeature {
     private var scope: CoroutineScope? = null
     private var renderedSession: PictureInPictureSession? = null
     private var isInPictureInPictureMode = false
@@ -62,7 +64,11 @@ class PictureInPictureSessionFeature(
      */
     fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
         this.isInPictureInPictureMode = isInPictureInPictureMode
-        renderedSession?.engineSession?.onPipModeChanged(isInPictureInPictureMode)
+        val session = renderedSession ?: return
+        session.engineSession.onPipModeChanged(isInPictureInPictureMode)
+        if (!isInPictureInPictureMode) {
+            onReturnToTab(session.tabId)
+        }
     }
 
     /** Takes the window down, closing its session. */

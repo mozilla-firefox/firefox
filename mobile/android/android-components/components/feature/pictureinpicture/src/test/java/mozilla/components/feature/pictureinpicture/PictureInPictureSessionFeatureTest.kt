@@ -41,12 +41,14 @@ class PictureInPictureSessionFeatureTest {
             middleware = listOf(captureActionsMiddleware),
         )
     private var videoGoneCount = 0
+    private val returnedTabIds = mutableListOf<String>()
     private val feature =
         PictureInPictureSessionFeature(
             store = store,
             engineView = engineView,
             mainDispatcher = testDispatcher,
             onVideoGone = { videoGoneCount++ },
+            onReturnToTab = { returnedTabIds.add(it) },
             pictureInPictureUseCases = PictureInPictureUseCases(store),
         )
 
@@ -186,6 +188,30 @@ class PictureInPictureSessionFeatureTest {
         feature.onPictureInPictureModeChanged(true)
 
         verify(engineSession).onPipModeChanged(true)
+        assertEquals(emptyList<String>(), returnedTabIds)
+    }
+
+    @Test
+    fun `GIVEN a session is rendered WHEN the activity leaves picture-in-picture mode THEN the window is expanded`() {
+        request("tab")
+        enter("tab", mock())
+        feature.onPictureInPictureModeChanged(true)
+
+        feature.onPictureInPictureModeChanged(false)
+
+        assertEquals(listOf("tab"), returnedTabIds)
+    }
+
+    @Test
+    fun `GIVEN the feature stopped WHEN the activity leaves picture-in-picture mode THEN the window is not expanded`() {
+        request("tab")
+        enter("tab", mock())
+        feature.onPictureInPictureModeChanged(true)
+
+        feature.stop()
+        feature.onPictureInPictureModeChanged(false)
+
+        assertEquals(emptyList<String>(), returnedTabIds)
     }
 
     private fun request(tabId: String) {

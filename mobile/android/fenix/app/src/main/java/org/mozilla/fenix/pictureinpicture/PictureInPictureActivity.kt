@@ -10,7 +10,7 @@ import mozilla.components.feature.pictureinpicture.AbstractPictureInPictureActiv
 import mozilla.components.feature.pictureinpicture.PictureInPictureUseCases
 import org.mozilla.fenix.ext.components
 
-/** Shows a video in a picture-in-picture window of its own. */
+/** Shows a video in a picture-in-picture window of its own, and on expanding returns to the tab it came from. */
 class PictureInPictureActivity : AbstractPictureInPictureActivity() {
     override val store: BrowserStore by lazy { components.core.store }
     override val engine: Engine by lazy { components.core.engine }

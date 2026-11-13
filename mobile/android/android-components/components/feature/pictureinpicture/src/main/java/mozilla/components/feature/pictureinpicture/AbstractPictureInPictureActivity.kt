@@ -10,10 +10,12 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import mozilla.components.browser.state.selector.findCustomTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.Engine
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import mozilla.components.support.base.log.logger.Logger
+import mozilla.components.support.utils.SwitchTabIntent
 
 /**
  * Shows the video in a native picture-in-picture window of its own, once its session has arrived. Started by
@@ -27,6 +29,25 @@ abstract class AbstractPictureInPictureActivity : AppCompatActivity() {
     private val logger = Logger("PictureInPictureActivity")
 
     private val pictureInPictureSessionFeature = ViewBoundFeatureWrapper<PictureInPictureSessionFeature>()
+
+    /**
+     * Invoked when the user expands the window, to bring the browser back on the tab the video came from. Unless the
+     * video came from a custom tab, defaults to launching the app with a [SwitchTabIntent], which the app has to
+     * handle.
+     *
+     * @param tabId The ID of the tab the video came from.
+     */
+    protected open fun onReturnToTab(tabId: String) {
+        if (store.state.findCustomTab(tabId) != null) {
+            return
+        }
+        val intent =
+            packageManager.getLaunchIntentForPackage(packageName)?.apply {
+                action = SwitchTabIntent.ACTION_SWITCH_TAB
+                putExtra(SwitchTabIntent.EXTRA_TAB_ID, tabId)
+            } ?: return
+        startActivity(intent)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,6 +64,7 @@ abstract class AbstractPictureInPictureActivity : AppCompatActivity() {
                 store = store,
                 engineView = engineView,
                 onVideoGone = ::finish,
+                onReturnToTab = ::onReturnToTab,
                 pictureInPictureUseCases = pictureInPictureUseCases,
             ),
             owner = this,
