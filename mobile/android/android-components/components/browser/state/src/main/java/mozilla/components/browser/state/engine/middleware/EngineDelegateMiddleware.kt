@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import mozilla.components.browser.state.action.ActionWithTab
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.EngineAction
+import mozilla.components.browser.state.action.PictureInPictureAction
 import mozilla.components.browser.state.action.TranslationsAction
 import mozilla.components.browser.state.action.lookupTabIn
 import mozilla.components.browser.state.action.toBrowserAction
@@ -51,6 +52,10 @@ internal class EngineDelegateMiddleware(private val scope: CoroutineScope) : Mid
             is TranslationsAction.TranslateRestoreAction -> {
                 next(action)
                 translateRestoreOriginal(store, action)
+            }
+            is PictureInPictureAction.RequestAction -> {
+                next(action)
+                requestPictureInPicture(store, action)
             }
             else -> next(action)
         }
@@ -165,6 +170,13 @@ internal class EngineDelegateMiddleware(private val scope: CoroutineScope) : Mid
         action: TranslationsAction.TranslateRestoreAction,
     ) = scope.launch {
         getEngineSessionOrDispatch(store, action)?.requestTranslationRestore()
+    }
+
+    private fun requestPictureInPicture(
+        store: Store<BrowserState, BrowserAction>,
+        action: PictureInPictureAction.RequestAction,
+    ) = scope.launch {
+        getEngineSessionOrDispatch(store, action)?.requestPictureInPicture()
     }
 
     private fun clearData(

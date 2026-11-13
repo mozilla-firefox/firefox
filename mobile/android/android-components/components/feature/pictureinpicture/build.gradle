@@ -1,0 +1,30 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace = 'mozilla.components.feature.pictureinpicture'
+}
+
+dependencies {
+    implementation project(':components:browser-state')
+    implementation project(':components:concept-engine')
+    implementation project(':components:lib-state')
+
+    implementation libs.kotlinx.coroutines
+
+    testImplementation project(':components:support-test')
+    testImplementation project(':components:support-test-libstate')
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit4
+    testImplementation libs.kotlinx.coroutines.test
+}
+
+apply from: '../../../common-config.gradle'
+apply from: '../../../publish.gradle'
+ext.configurePublish(config.componentsGroupId, project.name, project.ext.description)

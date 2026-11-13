@@ -6,6 +6,7 @@ package mozilla.components.browser.state.engine.middleware
 
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.EngineAction
+import mozilla.components.browser.state.action.PictureInPictureAction
 import mozilla.components.browser.state.action.TranslationsAction
 import mozilla.components.browser.state.engine.EngineMiddleware
 import mozilla.components.browser.state.selector.findTab
@@ -827,6 +828,22 @@ class EngineDelegateMiddlewareTest {
 
         verify(engineSession).requestTranslationRestore()
         assertTrue(store.state.findTab(tab.id)?.translationsState?.isRestoreProcessing!!)
+    }
+
+    @Test
+    fun `RequestAction for picture-in-picture asks the engine session`() = runTest {
+        val engineSession: EngineSession = mock()
+        val tab = createTab("https://www.mozilla.org", engineSession = engineSession)
+        val store =
+            BrowserStore(
+                middleware = EngineMiddleware.create(engine = mock(), scope = this),
+                initialState = BrowserState(tabs = listOf(tab)),
+            )
+
+        store.dispatch(PictureInPictureAction.RequestAction(tabId = tab.id))
+        testScheduler.advanceUntilIdle()
+
+        verify(engineSession).requestPictureInPicture()
     }
 
     @Test

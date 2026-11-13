@@ -1263,6 +1263,27 @@ projects:
     - components:support-utils
     - components:tooling-lint
     - components:ui-icons
+  components:feature-pictureinpicture:
+    description: Feature showing the video a tab is playing in a picture-in-picture
+      window of its own.
+    path: components/feature/pictureinpicture
+    publish: true
+    upstream_dependencies:
+    - components:browser-state
+    - components:concept-awesomebar
+    - components:concept-base
+    - components:concept-engine
+    - components:concept-fetch
+    - components:concept-storage
+    - components:concept-storage-bookmarks
+    - components:lib-publicsuffixlist
+    - components:lib-state
+    - components:support-base
+    - components:support-ktx
+    - components:support-test
+    - components:support-test-libstate
+    - components:support-utils
+    - components:tooling-lint
   components:feature-privatemode:
     description: Features used to enhance private browsing mode.
     path: components/feature/privatemode

@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.CrashAction
+import mozilla.components.browser.state.action.PictureInPictureAction
 import mozilla.components.browser.state.action.ReaderAction
 import mozilla.components.browser.state.action.TabListAction
 import mozilla.components.browser.state.action.TrackingProtectionAction
@@ -2368,6 +2369,50 @@ class EngineObserverTest {
         captureActionsMiddleware.assertFirstAction(ReaderAction.UpdateReaderScrollYAction::class) { action ->
             assertEquals("tab-id", action.tabId)
             assertEquals(1234, action.scrollY)
+        }
+    }
+
+    @Test
+    fun `onEnterPictureInPicture dispatches EnterAction`() = runTest {
+        val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
+        val store = BrowserStore(middleware = listOf(captureActionsMiddleware))
+        val observer = createEngineObserver(tabId = "tab-id", store = store, scope = this)
+        val session: EngineSession = mock()
+
+        observer.onEnterPictureInPicture(session)
+        testScheduler.advanceUntilIdle()
+
+        captureActionsMiddleware.assertFirstAction(PictureInPictureAction.EnterAction::class) { action ->
+            assertEquals("tab-id", action.tabId)
+            assertEquals(session, action.engineSession)
+        }
+    }
+
+    @Test
+    fun `onPictureInPictureRequestFinished dispatches ConsumeRequestAction`() = runTest {
+        val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
+        val store = BrowserStore(middleware = listOf(captureActionsMiddleware))
+        val observer = createEngineObserver(tabId = "tab-id", store = store, scope = this)
+
+        observer.onPictureInPictureRequestFinished()
+        testScheduler.advanceUntilIdle()
+
+        captureActionsMiddleware.assertFirstAction(PictureInPictureAction.ConsumeRequestAction::class) { action ->
+            assertEquals("tab-id", action.tabId)
+        }
+    }
+
+    @Test
+    fun `onExitPictureInPicture dispatches ExitAction`() = runTest {
+        val captureActionsMiddleware = CaptureActionsMiddleware<BrowserState, BrowserAction>()
+        val store = BrowserStore(middleware = listOf(captureActionsMiddleware))
+        val observer = createEngineObserver(tabId = "tab-id", store = store, scope = this)
+
+        observer.onExitPictureInPicture()
+        testScheduler.advanceUntilIdle()
+
+        captureActionsMiddleware.assertFirstAction(PictureInPictureAction.ExitAction::class) { action ->
+            assertEquals("tab-id", action.tabId)
         }
     }
 

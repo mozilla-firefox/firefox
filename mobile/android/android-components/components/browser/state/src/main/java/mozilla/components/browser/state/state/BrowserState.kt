@@ -41,6 +41,7 @@ import mozilla.components.lib.state.State
  * @property recentlyKilledTabs The list of recently killed tabs (limited to 50).
  * @property translationsInitialized Whether or not the translations flow is initialized
  * @property systemPermissionRequestInProgress Whether a system permission request is in progress.
+ * @property pictureInPictureWindow Holds state for the window showing a video in picture-in-picture.
  */
 data class BrowserState(
     val tabs: List<TabSessionState> = emptyList(),
@@ -67,4 +68,5 @@ data class BrowserState(
     val recentlyKilledTabs: LinkedHashSet<String> = LinkedHashSet(),
     val translationsInitialized: Boolean = false,
     val systemPermissionRequestInProgress: Boolean = false,
+    val pictureInPictureWindow: PictureInPictureWindowState = PictureInPictureWindowState(),
 ) : State

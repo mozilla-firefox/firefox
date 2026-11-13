@@ -322,6 +322,7 @@ treeherder:
         'feature-ipprotection': 'feature-ipprotection'
         'feature-logins': 'feature-logins'
         'feature-media': 'feature-media'
+        'feature-pictureinpicture': 'feature-pictureinpicture'
         'feature-privatemode': 'feature-privatemode'
         'feature-prompts': 'feature-prompts'
         'feature-push': 'feature-push'

@@ -13,6 +13,7 @@ import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.CrashAction
 import mozilla.components.browser.state.action.EngineAction
 import mozilla.components.browser.state.action.MediaSessionAction
+import mozilla.components.browser.state.action.PictureInPictureAction
 import mozilla.components.browser.state.action.ReaderAction
 import mozilla.components.browser.state.action.TrackingProtectionAction
 import mozilla.components.browser.state.action.TranslationsAction
@@ -257,6 +258,18 @@ internal class EngineObserver(
                 enabled,
             )
         )
+    }
+
+    override fun onEnterPictureInPicture(session: EngineSession) {
+        dispatchAsync(PictureInPictureAction.EnterAction(tabId, session))
+    }
+
+    override fun onPictureInPictureRequestFinished() {
+        dispatchAsync(PictureInPictureAction.ConsumeRequestAction(tabId))
+    }
+
+    override fun onExitPictureInPicture() {
+        dispatchAsync(PictureInPictureAction.ExitAction(tabId))
     }
 
     override fun onFullScreenChange(enabled: Boolean) {

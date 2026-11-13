@@ -44,6 +44,10 @@ permalink: /changelog/
     * The areas at the start and at the end of a list in which a dragged item scrolls it by default are no longer sized from the dragged item when this is the first visible item. [Bug 2086552](https://bugzilla.mozilla.org/show_bug.cgi?id=2086552)
     * Added `ItemInteractionHandler.onDragEnd`, called instead of `onDragCancel` when the user lets go of a dragged item without dropping it onto another item. By default it calls `onDragCancel`. [Bug 2086550](https://bugzilla.mozilla.org/show_bug.cgi?id=2086550)
     * Added `interceptInteractionMode` to `createListInteractionState`, to retarget or reject the interaction the list finds for a dragged item. The interaction it returns is optionally shown via a Rect parameter and acted upon when the user lets go. [Bug 2090877](https://bugzilla.mozilla.org/show_bug.cgi?id=2090877)
+* **feature-pictureinpicture**
+    * 🆕 New component showing the video a tab is playing in a picture-in-picture window. [Bug 2075323](https://bugzilla.mozilla.org/show_bug.cgi?id=2075323)
+* **browser-state**
+    * 🆕 Added `PictureInPictureAction` and `BrowserState.pictureInPictureWindow`, which track the picture-in-picture window and the session it shows. [Bug 2075323](https://bugzilla.mozilla.org/show_bug.cgi?id=2075323)
 
 # 161.0
 * **browser-state**
