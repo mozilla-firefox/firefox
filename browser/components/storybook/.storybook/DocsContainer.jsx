@@ -18,16 +18,16 @@ import lightTheme from "./theme-light.mjs";
 /* -------- helpers -------- */
 function getSelectedFromUrl() {
   const g = new URLSearchParams(location.search).get("globals");
-  return g?.match(/(?:^|,)theme:([^,]+)/)?.[1] ?? "system"; // 'light' | 'dark' | 'system'
+  return g?.match(/(?:^|;)theme:([^;]+)/)?.[1] ?? "system"; // 'light' | 'dark' | 'system'
 }
 function getOsDark() {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 function mergeGlobalsParam(existing, key, value) {
-  const parts = (existing || "").split(",").filter(Boolean);
+  const parts = (existing || "").split(";").filter(Boolean);
   const map = new Map(parts.map(s => s.split(":")));
   map.set(key, value);
-  return [...map.entries()].map(([k, v]) => `${k}:${v}`).join(",");
+  return [...map.entries()].map(([k, v]) => `${k}:${v}`).join(";");
 }
 function syncGlobalsUrl(key, value) {
   // update this iframe URL

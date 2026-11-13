@@ -21,7 +21,7 @@ const mql = window.matchMedia("(prefers-color-scheme: dark)");
 const getToolbarTheme = () => {
   // read ‘theme’ from globals in URL if present (initial load)
   const g = new URLSearchParams(location.search).get("globals");
-  return g?.match(/(?:^|,)theme:([^,]+)/)?.[1] ?? null; // 'light' | 'dark' | 'system' | null
+  return g?.match(/(?:^|;)theme:([^;]+)/)?.[1] ?? null; // 'light' | 'dark' | 'system' | null
 };
 
 let selected = getToolbarTheme() || "system";
