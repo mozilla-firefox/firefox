@@ -1083,8 +1083,7 @@ class BrowsingContext : public nsILoadContext,
                                     SessionHistoryInfo* aInfo,
                                     SessionHistoryInfo* aPreviousActiveEntry,
                                     uint32_t aLoadType,
-                                    uint32_t aUpdatedCacheKey,
-                                    bool aUpdateLength = true);
+                                    uint32_t aUpdatedCacheKey);
 
   // Replace the active entry for this browsing context. This is used for
   // implementing history.replaceState and same document navigations.

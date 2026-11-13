@@ -4486,7 +4486,7 @@ void BrowsingContext::SessionHistoryCommit(
 void BrowsingContext::SetActiveSessionHistoryEntry(
     const Maybe<nsPoint>& aPreviousScrollPos, SessionHistoryInfo* aInfo,
     SessionHistoryInfo* aPreviousActiveEntry, uint32_t aLoadType,
-    uint32_t aUpdatedCacheKey, bool aUpdateLength) {
+    uint32_t aUpdatedCacheKey) {
   if (XRE_IsContentProcess()) {
     // XXX Why we update cache key only in content process case?
     if (aUpdatedCacheKey != 0) {
@@ -4494,14 +4494,12 @@ void BrowsingContext::SetActiveSessionHistoryEntry(
     }
 
     nsID changeID = {};
-    if (aUpdateLength) {
-      RefPtr<ChildSHistory> shistory = Top()->GetChildSessionHistory();
-      if (shistory) {
-        // We try to mimic what will happen in
-        // CanonicalBrowsingContext::SendSetActiveSessionHistoryEntry
-        if (AddSHEntryWouldIncreaseLength(aPreviousActiveEntry)) {
-          changeID = shistory->AddPendingHistoryChange();
-        }
+    RefPtr<ChildSHistory> shistory = Top()->GetChildSessionHistory();
+    if (shistory) {
+      // We try to mimic what will happen in
+      // CanonicalBrowsingContext::SendSetActiveSessionHistoryEntry
+      if (AddSHEntryWouldIncreaseLength(aPreviousActiveEntry)) {
+        changeID = shistory->AddPendingHistoryChange();
       }
     }
     ContentChild::GetSingleton()->SendSetActiveSessionHistoryEntry(

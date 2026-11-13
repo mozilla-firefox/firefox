@@ -13402,12 +13402,7 @@ void nsDocShell::MoveLoadingToActiveEntry(bool aExpired, uint32_t aCacheKey,
         // Needed to pass various history length WPTs.
         mBrowsingContext->SetActiveSessionHistoryEntry(
             mozilla::Nothing(), mActiveEntry.get(), previousActiveEntry.get(),
-            mLoadType,
-            /* aUpdatedCacheKey = */ 0,
-            // Of the loads getting here, only initial about:blank is transient.
-            // Keep it from updating the length as before, though it probably
-            // should, see bug 2091545.
-            /* aUpdateLength = */ !mActiveEntry->IsTransient());
+            mLoadType, /* aUpdatedCacheKey = */ 0);
       }
       if (loadingEntry->mReplacesActiveEntry) {
         MOZ_ASSERT(previousActiveEntry);
