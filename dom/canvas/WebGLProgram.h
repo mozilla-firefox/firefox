@@ -152,6 +152,12 @@ struct LinkedProgramInfo final : public RefCounted<LinkedProgramInfo>,
 
 }  // namespace webgl
 
+// query how many attribute locations an attribute takes
+uint8_t NumUsedLocationsByElemType(GLenum elemType);
+
+// returns the last index offset for a given type
+uint8_t MaxLocationIndexOffsetByElemType(GLenum elemType);
+
 class WebGLProgram final : public WebGLContextBoundObject {
   friend class WebGLTransformFeedback;
   friend struct webgl::LinkedProgramInfo;

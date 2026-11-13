@@ -2480,9 +2480,11 @@ static std::vector<std::string> ExplodeName(const std::string& str) {
 // #define DUMP_MakeLinkResult
 
 webgl::LinkActiveInfo GetLinkActiveInfo(
-    gl::GLContext& gl, const GLuint prog, const bool webgl2,
+    mozilla::WebGLContext& webgl, const GLuint prog, const bool webgl2,
     const std::unordered_map<std::string, std::string>& nameUnmap) {
   webgl::LinkActiveInfo ret;
+  gl::GLContext& gl = *webgl.gl;
+
   [&]() {
     const auto fnGetProgramui = [&](const GLenum pname) {
       GLint ret = 0;
@@ -2544,11 +2546,41 @@ webgl::LinkActiveInfo GetLinkActiveInfo(
             std::string(stringBuffer.data(), lengthWithoutNull);
         const auto userName = fnUnmapName(mappedName);
 
-        auto loc = gl.fGetAttribLocation(prog, mappedName.c_str());
+        auto locationIndex = gl.fGetAttribLocation(prog, mappedName.c_str());
         if (mappedName.starts_with("gl_")) {
           // Bug 1328559: Appears problematic on ANGLE and OSX, but not Linux or
           // Win+GL.
-          loc = -1;
+          locationIndex = -1;
+        }
+
+        // when location is valid, check that it is not larger than max vertex
+        // attributes
+        if (locationIndex >= 0) {
+          GLuint maxVertexAttribs = webgl.Limits().maxVertexAttribs;
+          // An example:
+          // Base location is 3
+          // locations used is 2
+          // maxVertexAttribs is 5
+          // The attrib occupies these indices:
+          //         [3, 4]
+          // The available slots:
+          // 0, 1, 2, 3, 4
+          // The outcome is: OK
+          const size_t maxLocationOffset =
+              MaxLocationIndexOffsetByElemType(elemType);
+          const size_t locationBaseIndex = static_cast<size_t>(locationIndex);
+          const size_t lastLocationIndex =
+              locationBaseIndex + maxLocationOffset;
+
+          // last location index must be in the range of [0..maxVertexAttribs-1]
+          const bool lastLocationIndexValid =
+              lastLocationIndex < maxVertexAttribs;
+          if (!lastLocationIndexValid) {
+            gfxCriticalNote
+                << "Driver assigned attribute last location index "
+                << lastLocationIndex
+                << " is larger than maxVertexAttribs: " << maxVertexAttribs;
+          }
         }
 
 #ifdef DUMP_MakeLinkResult
@@ -2559,7 +2591,7 @@ webgl::LinkActiveInfo GetLinkActiveInfo(
         info.elemType = elemType;
         info.elemCount = elemCount;
         info.name = userName;
-        info.location = loc;
+        info.location = locationIndex;
         info.baseType = webgl::ToAttribBaseType(info.elemType);
         ret.activeAttribs.push_back(std::move(info));
       }

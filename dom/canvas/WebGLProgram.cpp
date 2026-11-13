@@ -13,6 +13,7 @@
 #include "WebGLTransformFeedback.h"
 #include "WebGLValidateStrings.h"
 #include "WebGLVertexArray.h"
+#include "fmt/format.h"
 #include "mozilla/CheckedInt.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/dom/WebGL2RenderingContextBinding.h"
@@ -435,7 +436,7 @@ RefPtr<const webgl::LinkedProgramInfo> QueryProgramInfo(WebGLProgram* prog,
   }
 
   info->active =
-      GetLinkActiveInfo(*gl, prog->mGLName, webgl->IsWebGL2(), nameUnmap);
+      GetLinkActiveInfo(*webgl, prog->mGLName, webgl->IsWebGL2(), nameUnmap);
 
   // -
 
@@ -609,8 +610,6 @@ const char* webgl::ToString(const webgl::UniformBaseType x) {
   MOZ_CRASH("pacify gcc6 warning");
 }
 
-static uint8_t NumUsedLocationsByElemType(GLenum elemType);
-
 const webgl::CachedDrawFetchLimits*
 webgl::LinkedProgramInfo::GetDrawFetchLimits() const {
   const auto& webgl = prog->mContext;
@@ -675,6 +674,15 @@ webgl::LinkedProgramInfo::GetDrawFetchLimits() const {
           fetchLimits.maxVerts = std::min(fetchLimits.maxVerts, availElems);
         }
       } else {
+        bool locationValid = usedLoc < webgl->mGenericVertexAttribTypes.size();
+        if (!locationValid) {
+          webgl->ErrorInvalidOperation(
+              "Vertex Shader Attribute location %zu is not valid. Greater than "
+              "allowed %u",
+              usedLoc, webgl->mGenericVertexAttribTypes.size());
+          return nullptr;
+        }
+
         attribDataBaseType = webgl->mGenericVertexAttribTypes[usedLoc];
       }
 
@@ -854,17 +862,21 @@ bool WebGLProgram::ValidateForLink() {
     return false;
   }
 
-  const auto& gl = mContext->gl;
-
-  if (gl->WorkAroundDriverBugs() && mContext->mIsMesa) {
-    // Bug 1203135: Mesa crashes internally if we exceed the reported maximum
-    // attribute count.
-    if (mVertShader->NumAttributes() > mContext->MaxVertexAttribs()) {
-      mLinkLog =
-          "Number of attributes exceeds Mesa's reported max"
-          " attribute count.";
-      return false;
-    }
+  // validate that the number of attributes don't exceed what the context
+  // supports
+  size_t maxLocationIndex = mVertShader->CalculateAttributeMaxLocationIndex();
+  bool maxLocationIndexValid = maxLocationIndex < mContext->MaxVertexAttribs();
+  if (!maxLocationIndexValid) {
+    mLinkLog = fmt::format(
+        "The maximum attribute index requested is: {}. "
+        "This exceeds the reported max attribute count supported by the "
+        "context: {}. "
+        "Keep in mind that matrices use more than one index slot, so while "
+        "your base location might be inside the allowed range, when summint up "
+        "the indices needed, "
+        "it will exceed the limit.",
+        maxLocationIndex, mContext->MaxVertexAttribs());
+    return false;
   }
 
   return true;
@@ -954,7 +966,7 @@ void WebGLProgram::LinkProgram() {
   }
 }
 
-static uint8_t NumUsedLocationsByElemType(GLenum elemType) {
+uint8_t NumUsedLocationsByElemType(GLenum elemType) {
   // GLES 3.0.4 p55
 
   switch (elemType) {
@@ -976,6 +988,10 @@ static uint8_t NumUsedLocationsByElemType(GLenum elemType) {
     default:
       return 1;
   }
+}
+
+uint8_t MaxLocationIndexOffsetByElemType(GLenum elemType) {
+  return NumUsedLocationsByElemType(elemType) - 1;
 }
 
 uint8_t ElemTypeComponents(const GLenum elemType) {
