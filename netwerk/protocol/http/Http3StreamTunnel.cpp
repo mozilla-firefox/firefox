@@ -774,6 +774,7 @@ already_AddRefed<nsHttpConnection> Http3StreamTunnel::CreateHttpConnection(
     bool aIsExtendedCONNECT) {
   mTransport = new Http3TransportLayer(this);
   RefPtr<nsHttpConnection> conn = new nsHttpConnection();
+  conn->SetTunnelOverHttp3();
 
   conn->SetTransactionCaps(mTransaction->Caps());
   nsresult rv =

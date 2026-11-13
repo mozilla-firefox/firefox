@@ -537,6 +537,9 @@ nsLiteralCString HttpVersionToTelemetryLabel(HttpVersion version);
 nsIHttpChannelInternal::ProxyDNSStrategy GetProxyDNSStrategyHelper(
     const char* aType, uint32_t aFlag);
 
+// A null aProxyInfo means the channel is not proxied.
+nsIHttpChannelInternal::ProxyType GetProxyTypeHelper(nsIProxyInfo* aProxyInfo);
+
 }  // namespace net
 }  // namespace mozilla
 

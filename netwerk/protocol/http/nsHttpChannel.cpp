@@ -8841,48 +8841,34 @@ nsHttpChannel::OnProxyAvailable(nsICancelable* request, nsIChannel* channel,
     mProxyInfo = pi;
 
     if (mProxyInfo) {
-      nsAutoCStringN<8> type;
-      mProxyInfo->GetType(type);
-      uint32_t flags = 0;
-      mProxyInfo->GetFlags(&flags);
-
-      if (type.EqualsLiteral("socks")) {
-        if (flags & nsIProxyInfo::TRANSPARENT_PROXY_RESOLVES_HOST) {
-          glean::networking::proxy_info_type
-              .EnumGet(glean::networking::ProxyInfoTypeLabel::eSocks5h)
-              .Add(1);
-        } else {
-          glean::networking::proxy_info_type
-              .EnumGet(glean::networking::ProxyInfoTypeLabel::eSocks5)
-              .Add(1);
-        }
-      } else if (type.EqualsLiteral("socks4")) {
-        if (flags & nsIProxyInfo::TRANSPARENT_PROXY_RESOLVES_HOST) {
-          glean::networking::proxy_info_type
-              .EnumGet(glean::networking::ProxyInfoTypeLabel::eSocks4a)
-              .Add(1);
-        } else {
-          glean::networking::proxy_info_type
-              .EnumGet(glean::networking::ProxyInfoTypeLabel::eSocks4)
-              .Add(1);
-        }
-      } else if (type.EqualsLiteral("http")) {
-        glean::networking::proxy_info_type
-            .EnumGet(glean::networking::ProxyInfoTypeLabel::eHttp)
-            .Add(1);
-      } else if (type.EqualsLiteral("https")) {
-        glean::networking::proxy_info_type
-            .EnumGet(glean::networking::ProxyInfoTypeLabel::eHttps)
-            .Add(1);
-      } else if (type.EqualsLiteral("direct")) {
-        glean::networking::proxy_info_type
-            .EnumGet(glean::networking::ProxyInfoTypeLabel::eDirect)
-            .Add(1);
-      } else {
-        glean::networking::proxy_info_type
-            .EnumGet(glean::networking::ProxyInfoTypeLabel::eUnknown)
-            .Add(1);
+      glean::networking::ProxyInfoTypeLabel label;
+      switch (GetProxyTypeHelper(mProxyInfo)) {
+        case nsIHttpChannelInternal::PROXY_TYPE_DIRECT:
+          label = glean::networking::ProxyInfoTypeLabel::eDirect;
+          break;
+        case nsIHttpChannelInternal::PROXY_TYPE_HTTP:
+          label = glean::networking::ProxyInfoTypeLabel::eHttp;
+          break;
+        case nsIHttpChannelInternal::PROXY_TYPE_HTTPS:
+          label = glean::networking::ProxyInfoTypeLabel::eHttps;
+          break;
+        case nsIHttpChannelInternal::PROXY_TYPE_SOCKS4:
+          label = glean::networking::ProxyInfoTypeLabel::eSocks4;
+          break;
+        case nsIHttpChannelInternal::PROXY_TYPE_SOCKS4A:
+          label = glean::networking::ProxyInfoTypeLabel::eSocks4a;
+          break;
+        case nsIHttpChannelInternal::PROXY_TYPE_SOCKS5:
+          label = glean::networking::ProxyInfoTypeLabel::eSocks5;
+          break;
+        case nsIHttpChannelInternal::PROXY_TYPE_SOCKS5H:
+          label = glean::networking::ProxyInfoTypeLabel::eSocks5h;
+          break;
+        default:
+          label = glean::networking::ProxyInfoTypeLabel::eUnknown;
+          break;
       }
+      glean::networking::proxy_info_type.EnumGet(label).Add(1);
     }
   }
 
@@ -9505,6 +9491,17 @@ nsHttpChannel::OnStartRequest(nsIRequest* request) {
     mResponseHead =
         mTransaction->TakeResponseHeadAndConnInfo(getter_AddRefs(connInfo));
     mSupportsHTTP3 = mTransaction->GetSupportsHTTP3();
+    if (connInfo) {
+      nsIHttpChannelInternal::ProxyType proxyType =
+          GetProxyTypeHelper(connInfo->ProxyInfo());
+      // A MASQUE proxy can also be reached over TCP, when the HTTP/3
+      // connection to it fails or loses the Happy Eyeballs race.
+      if (proxyType == nsIHttpChannelInternal::PROXY_TYPE_MASQUE &&
+          !mTransaction->IsTunnelOverHttp3()) {
+        proxyType = nsIHttpChannelInternal::PROXY_TYPE_HTTPS;
+      }
+      mProxyType = Some(proxyType);
+    }
     // the response head may be null if the transaction was cancelled.  in
     // which case we just need to call OnStartRequest/OnStopRequest.
     if (mResponseHead) {

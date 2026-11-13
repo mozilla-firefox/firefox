@@ -1181,5 +1181,39 @@ nsIHttpChannelInternal::ProxyDNSStrategy GetProxyDNSStrategyHelper(
   return nsIHttpChannelInternal::PROXY_DNS_STRATEGY_PROXY;
 }
 
+nsIHttpChannelInternal::ProxyType GetProxyTypeHelper(nsIProxyInfo* aProxyInfo) {
+  if (!aProxyInfo) {
+    return nsIHttpChannelInternal::PROXY_TYPE_DIRECT;
+  }
+
+  nsAutoCString type;
+  uint32_t flags = 0;
+  aProxyInfo->GetType(type);
+  aProxyInfo->GetFlags(&flags);
+  bool proxyResolvesHost =
+      flags & nsIProxyInfo::TRANSPARENT_PROXY_RESOLVES_HOST;
+  if (type.EqualsLiteral("direct")) {
+    return nsIHttpChannelInternal::PROXY_TYPE_DIRECT;
+  }
+  if (type.EqualsLiteral("http")) {
+    return nsIHttpChannelInternal::PROXY_TYPE_HTTP;
+  }
+  if (type.EqualsLiteral("https")) {
+    return nsIHttpChannelInternal::PROXY_TYPE_HTTPS;
+  }
+  if (type.EqualsLiteral("socks4")) {
+    return proxyResolvesHost ? nsIHttpChannelInternal::PROXY_TYPE_SOCKS4A
+                             : nsIHttpChannelInternal::PROXY_TYPE_SOCKS4;
+  }
+  if (type.EqualsLiteral("socks") || type.EqualsLiteral("socks5")) {
+    return proxyResolvesHost ? nsIHttpChannelInternal::PROXY_TYPE_SOCKS5H
+                             : nsIHttpChannelInternal::PROXY_TYPE_SOCKS5;
+  }
+  if (type.EqualsLiteral("masque")) {
+    return nsIHttpChannelInternal::PROXY_TYPE_MASQUE;
+  }
+  return nsIHttpChannelInternal::PROXY_TYPE_UNKNOWN;
+}
+
 }  // namespace net
 }  // namespace mozilla

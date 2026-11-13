@@ -2460,6 +2460,11 @@ void Document::AccumulatePageLoadTelemetry() {
       mPageloadEventData.set_trrDomain(dnsKey);
     }
 
+    nsIHttpChannelInternal::ProxyType proxyType;
+    if (NS_SUCCEEDED(httpChannel->GetProxyType(&proxyType))) {
+      mPageloadEventData.set_proxyType(proxyType);
+    }
+
     uint32_t major;
     uint32_t minor;
     if (NS_SUCCEEDED(httpChannel->GetResponseVersion(&major, &minor))) {

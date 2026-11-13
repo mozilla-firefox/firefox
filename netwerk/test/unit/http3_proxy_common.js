@@ -90,6 +90,14 @@ async function setup_http3_proxy() {
  * Tests HTTP connect through H3 proxy to HTTP, HTTPS and H2 servers
  * Makes multiple requests. Expects success.
  */
+function checkProxyType(req, expected) {
+  Assert.equal(
+    req.QueryInterface(Ci.nsIHttpChannelInternal).proxyType,
+    expected,
+    "The proxy type of the connection the response came from"
+  );
+}
+
 async function test_http_connect() {
   info("Running test_http_connect");
   await with_node_servers(
@@ -117,6 +125,7 @@ async function test_http_connect() {
       );
       Assert.equal(req.status, Cr.NS_OK);
       Assert.equal(buf, "first");
+      checkProxyType(req, Ci.nsIHttpChannelInternal.PROXY_TYPE_MASQUE);
       chan = makeChan(
         `${server.protocol()}://alt1.example.com:${server.port()}/second`
       );
@@ -345,6 +354,7 @@ async function test_connect_udp() {
     Assert.equal(req.protocolVersion, "h3");
     Assert.equal(req.status, Cr.NS_OK);
     Assert.equal(req.responseStatus, 200);
+    checkProxyType(req, Ci.nsIHttpChannelInternal.PROXY_TYPE_MASQUE);
   }
 }
 
@@ -408,6 +418,8 @@ async function test_http_connect_fallback() {
     const [req, buf] = results[i];
     Assert.equal(req.status, Cr.NS_OK);
     Assert.equal(buf, `response${i + 1}`);
+    // The proxy is reached over HTTP/2 instead of HTTP/3.
+    checkProxyType(req, Ci.nsIHttpChannelInternal.PROXY_TYPE_HTTPS);
   }
 
   let h3Port = server.port();

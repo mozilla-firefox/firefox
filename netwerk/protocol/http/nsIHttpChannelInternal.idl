@@ -487,6 +487,24 @@ interface nsIHttpChannelInternal : nsISupports
     [must_use] readonly attribute boolean isProxyUsed;
 
     /**
+     * The type of proxy the channel was loaded through.
+     */
+    cenum ProxyType : 8 {
+      PROXY_TYPE_DIRECT = 0,
+      PROXY_TYPE_HTTP = 1,
+      PROXY_TYPE_HTTPS = 2,
+      PROXY_TYPE_SOCKS4 = 3,
+      PROXY_TYPE_SOCKS4A = 4,
+      PROXY_TYPE_SOCKS5 = 5,
+      PROXY_TYPE_SOCKS5H = 6,
+      // A MASQUE proxy reached over HTTP/3. When the connection to the proxy
+      // falls back to HTTP/2 or HTTP/1.1, the type is PROXY_TYPE_HTTPS.
+      PROXY_TYPE_MASQUE = 7,
+      PROXY_TYPE_UNKNOWN = 8,
+    };
+    [must_use] readonly attribute nsIHttpChannelInternal_ProxyType proxyType;
+
+    /**
      * Set mWebTransportSessionEventListener.
      */
     [must_use] void setWebTransportSessionEventListener(

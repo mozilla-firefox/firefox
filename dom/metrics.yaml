@@ -60,6 +60,7 @@ perf:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2064064
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2064072
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085940
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2091707
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1759744#c5
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1799727#c4
@@ -164,6 +165,21 @@ perf:
         description: |
           TRR domain used.
         type: string
+      proxy_type:
+        description: |
+          Type of proxy the top level document was loaded through. Values as:
+            - 0 direct
+            - 1 http
+            - 2 https
+            - 3 socks4
+            - 4 socks4a
+            - 5 socks5
+            - 6 socks5h
+            - 7 masque, reached over HTTP/3 (a MASQUE proxy that falls back
+              to HTTP/2 or HTTP/1.1 is reported as https)
+            - 8 unknown
+        type: quantity
+        unit: integer
       document_features:
         description: >
           Bitfield of web features in use within this document:

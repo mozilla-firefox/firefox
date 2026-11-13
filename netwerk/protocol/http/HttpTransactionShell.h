@@ -143,6 +143,9 @@ class HttpTransactionShell : public nsISupports {
   virtual int64_t GetTransferSize() = 0;
   virtual int64_t GetRequestSize() = 0;
   virtual bool IsHttp3Used() = 0;
+  // Whether the transaction's connection runs in a stream of an HTTP/3
+  // connection to a proxy.
+  virtual bool IsTunnelOverHttp3() = 0;
 
   // Called to notify that a requested DNS cache entry was refreshed.
   virtual void SetDNSWasRefreshed() = 0;
@@ -220,6 +223,7 @@ class HttpTransactionShell : public nsISupports {
   virtual int64_t GetTransferSize() override;                                  \
   virtual int64_t GetRequestSize() override;                                   \
   virtual bool IsHttp3Used() override;                                         \
+  virtual bool IsTunnelOverHttp3() override;                                   \
   virtual void SetDNSWasRefreshed() override;                                  \
   virtual void DontReuseConnection() override;                                 \
   virtual bool HasStickyConnection() const override;                           \

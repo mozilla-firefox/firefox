@@ -213,6 +213,11 @@ class HttpConnectionBase : public nsSupportsWeakReference {
 
   void SetIsRacing(bool aValue) { mIsRacing = aValue; }
   bool IsRacing() const { return mIsRacing; }
+
+  // Whether this connection runs in a stream of an HTTP/3 connection to a
+  // proxy.
+  void SetTunnelOverHttp3() { mTunnelOverHttp3 = true; }
+  bool TunnelOverHttp3() const { return mTunnelOverHttp3; }
   virtual void SetDontExclude() {}
 
  protected:
@@ -253,6 +258,8 @@ class HttpConnectionBase : public nsSupportsWeakReference {
   bool mAddressTypeReported{false};
 
   bool mIsRacing{false};
+
+  bool mTunnelOverHttp3{false};
 
   // Tunnel related functions:
   enum HttpConnectionState {

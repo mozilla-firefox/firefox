@@ -6893,12 +6893,15 @@ void HttpBaseChannel::SetConnectionInfo(nsHttpConnectionInfo* aCI) {
 
 NS_IMETHODIMP
 HttpBaseChannel::GetIsProxyUsed(bool* aIsProxyUsed) {
-  if (mProxyInfo) {
-    if (!static_cast<nsProxyInfo*>(mProxyInfo.get())->IsDirect()) {
-      StoreIsProxyUsed(true);
-    }
-  }
-  *aIsProxyUsed = LoadIsProxyUsed();
+  nsIHttpChannelInternal::ProxyType type;
+  (void)GetProxyType(&type);
+  *aIsProxyUsed = type != nsIHttpChannelInternal::PROXY_TYPE_DIRECT;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+HttpBaseChannel::GetProxyType(nsIHttpChannelInternal::ProxyType* aProxyType) {
+  *aProxyType = mProxyType.valueOr(nsIHttpChannelInternal::PROXY_TYPE_DIRECT);
   return NS_OK;
 }
 

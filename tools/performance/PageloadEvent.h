@@ -50,6 +50,7 @@ struct PageLoadDomainExtra;
   _(timeToConnectStart, uint32_t)              \
   _(tlsHandshakeTime, uint32_t)                \
   _(trrDomain, nsCString)                      \
+  _(proxyType, uint32_t)                       \
   _(userFeatures, uint32_t)                    \
   _(cacheDisposition, uint32_t)                \
   _(scriptFromNeckoText, uint32_t)             \

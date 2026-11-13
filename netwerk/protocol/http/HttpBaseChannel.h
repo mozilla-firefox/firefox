@@ -242,6 +242,8 @@ class HttpBaseChannel : public nsHashPropertyBag,
   NS_IMETHOD GetBrowserId(uint64_t* aId) override;
   NS_IMETHOD SetBrowserId(uint64_t aId) override;
   NS_IMETHOD GetIsProxyUsed(bool* aIsProxyUsed) override;
+  NS_IMETHOD GetProxyType(
+      nsIHttpChannelInternal::ProxyType* aProxyType) override;
 
   using nsIClassifiedChannel::IsThirdPartyTrackingResource;
 
@@ -799,6 +801,10 @@ class HttpBaseChannel : public nsHashPropertyBag,
   nsCString mUserSetCookieHeader;
   // HTTP Upgrade Data
   nsCString mUpgradeProtocol;
+  // The proxy type of the connection the response came from. Set by the
+  // parent process in a child process. Nothing when the response didn't come
+  // from the network, e.g. a cache hit.
+  Maybe<nsIHttpChannelInternal::ProxyType> mProxyType;
   // Resumable channel specific data
   nsCString mEntityID;
   // The initiator type (for this resource) - how was the resource referenced in
@@ -990,9 +996,7 @@ class HttpBaseChannel : public nsHashPropertyBag,
 
     // If true, we prefer the LOAD_FROM_CACHE flag over LOAD_BYPASS_CACHE or
     // LOAD_BYPASS_LOCAL_CACHE.
-    (uint32_t, PreferCacheLoadOverBypass, 1),
-
-    (uint32_t, IsProxyUsed, 1)
+    (uint32_t, PreferCacheLoadOverBypass, 1)
   ))
 
   // Broken up into two bitfields to avoid alignment requirements of uint64_t.

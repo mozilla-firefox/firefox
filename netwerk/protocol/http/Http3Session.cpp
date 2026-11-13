@@ -3435,6 +3435,9 @@ already_AddRefed<HttpConnectionUDP> Http3Session::CreateTunnelStream(
 
   RefPtr<HttpConnectionUDP> conn =
       stream->GetHttp3ConnectUDPStream()->CreateUDPConnection(aCallbacks);
+  if (conn) {
+    conn->SetTunnelOverHttp3();
+  }
   return conn.forget();
 }
 

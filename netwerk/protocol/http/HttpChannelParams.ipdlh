@@ -18,6 +18,7 @@ using nsILoadInfo::CrossOriginOpenerPolicy from "nsILoadInfo.h";
 using nsIRequest::TRRMode from "nsIRequest.h";
 using mozilla::net::TRRSkippedReason from "nsITRRSkipReason.h";
 using nsICacheInfoChannel::CacheDisposition from "nsICacheInfoChannel.h";
+using nsIHttpChannelInternal::ProxyType from "nsIHttpChannelInternal.h";
 
 namespace mozilla {
 namespace net {
@@ -53,7 +54,7 @@ struct HttpChannelOnStartRequestArgs
   CrossOriginOpenerPolicy openerPolicy;
   bool shouldWaitForOnStartRequestSent;
   bool hasHTTPSRR;
-  bool isProxyUsed;
+  ProxyType proxyType;
   uint8_t redirectCount;
   nsCString protocolVersion;
   CacheDisposition cacheDisposition;

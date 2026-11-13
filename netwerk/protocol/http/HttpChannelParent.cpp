@@ -1293,7 +1293,7 @@ HttpChannelParent::OnStartRequest(nsIRequest* aRequest) {
   chan->GetRedirectCount(&args.redirectCount());
   chan->GetHasHTTPSRR(&args.hasHTTPSRR());
 
-  chan->GetIsProxyUsed(&args.isProxyUsed());
+  (void)chan->GetProxyType(&args.proxyType());
 
   nsCOMPtr<nsILoadInfo> loadInfo = chan->LoadInfo();
   mozilla::ipc::LoadInfoToParentLoadInfoForwarder(loadInfo,
