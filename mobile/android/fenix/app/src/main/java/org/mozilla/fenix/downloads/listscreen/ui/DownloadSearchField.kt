@@ -31,6 +31,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -39,6 +42,7 @@ import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
+import org.mozilla.fenix.downloads.listscreen.DownloadsListTestTag
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
@@ -91,7 +95,11 @@ fun DownloadSearchField(
                     textStyle = FirefoxTheme.typography.body2.copy(color = LocalContentColor.current),
                     lineLimits = TextFieldLineLimits.SingleLine,
                     cursorBrush = SolidColor(LocalContentColor.current),
-                    modifier = modifier.fillMaxWidth().focusRequester(focusRequester),
+                    modifier =
+                        modifier.fillMaxWidth().focusRequester(focusRequester).semantics {
+                            testTagsAsResourceId = true
+                            testTag = DownloadsListTestTag.SEARCH_FIELD
+                        },
                 )
             }
 

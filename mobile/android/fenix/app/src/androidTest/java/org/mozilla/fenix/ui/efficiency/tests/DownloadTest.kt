@@ -13,6 +13,7 @@ import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.Constants
 import org.mozilla.fenix.helpers.TestAssetHelper.downloadPageAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.loremIpsumAsset
+import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.ui.efficiency.helpers.BaseTest
 import org.mozilla.fenix.ui.efficiency.selectors.DownloadsSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.NotificationSelectors
@@ -224,5 +225,40 @@ class DownloadTest : BaseTest() {
             .verifyDownloadPrompt()
             .mozClick(DownloadsSelectors.DOWNLOAD_DIALOG_CANCEL_BUTTON)
         on.downloads.navigateToPage().mozVerifyElementsByGroup(DownloadsSelectors.Group.EMPTY_DOWNLOADS)
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3016011
+    @Critical
+    @Test
+    fun verifyTheSearchDownloadsOptionTest() {
+        val downloadTestPage = mockWebServer.downloadPageAsset.url.toString()
+        val firstDownloadedFile = "zip_small.zip"
+        val secondDownloadedFile = "png_image.png"
+
+        on.browserPage
+            .navigateToPage(downloadTestPage)
+            .clickDownloadLink(firstDownloadedFile, downloadTestPage)
+            .verifyDownloadPrompt()
+            .clickDownloadPromptConfirmButton()
+            .clickDownloadLink(secondDownloadedFile, downloadTestPage)
+            .verifyDownloadPrompt()
+            .clickDownloadPromptConfirmButton()
+        on.downloads.navigateToPage().mozVerify(DownloadsSelectors.TODAY_DOWNLOAD_HEADER)
+        on.downloads
+            .verifyDownloadedFileExistsInDownloadsList(firstDownloadedFile)
+            .verifyDownloadedFileExistsInDownloadsList(secondDownloadedFile)
+            .mozClick(DownloadsSelectors.SEARCH_DOWNLOADS_BUTTON)
+            .mozVerifyElementsByGroup(DownloadsSelectors.Group.SEARCH_DOWNLOADS_SEARCH_BAR)
+            .mozEnterText("zip", DownloadsSelectors.SEARCH_DOWNLOADS_TEXT_FIELD)
+            .mozVerify(DownloadsSelectors.DOWNLOADED_FILE_LIST_ITEM(firstDownloadedFile), timeout = waitingTime)
+            .mozVerifyElementAbsent(DownloadsSelectors.DOWNLOADED_FILE_LIST_ITEM(secondDownloadedFile))
+            .mozClick(DownloadsSelectors.CLEAR_SEARCH_BUTTON)
+            .mozVerify(DownloadsSelectors.SEARCH_DOWNLOADS_PLACEHOLDER)
+            .mozVerifyKeyboardVisible()
+            .mozEnterText("android", DownloadsSelectors.SEARCH_DOWNLOADS_TEXT_FIELD)
+            .mozVerifyElementAbsent(DownloadsSelectors.DOWNLOADED_FILE_LIST_ITEM(firstDownloadedFile))
+            .mozVerifyElementAbsent(DownloadsSelectors.DOWNLOADED_FILE_LIST_ITEM(secondDownloadedFile))
+            .mozClick(DownloadsSelectors.BACK_AND_SEARCH_BUTTON)
+            .mozVerify(DownloadsSelectors.DOWNLOADS_TOOLBAR_TITLE)
     }
 }

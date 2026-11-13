@@ -9,6 +9,7 @@ internal object DownloadsListTestTag {
     private const val DOWNLOADS_LIST = "downloadsList"
     internal const val DOWNLOADS_LIST_ITEM = "$DOWNLOADS_LIST.item"
     internal const val DOWNLOADS_LIST_ITEM_MENU = "$DOWNLOADS_LIST_ITEM.menu"
+    internal const val SEARCH_FIELD = "$DOWNLOADS_LIST.search.field"
     internal const val RENAME_DIALOG_TEXT_FIELD = "$DOWNLOADS_LIST.rename.textField"
     internal const val RENAME_DIALOG_CONFIRM_BUTTON = "$DOWNLOADS_LIST.rename.confirm"
     internal const val RENAME_DIALOG_CANCEL_BUTTON = "$DOWNLOADS_LIST.rename.cancel"

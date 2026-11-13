@@ -26,6 +26,7 @@ object DownloadsSelectors : SelectorContainer {
         DOWNLOAD_LINKS,
         DOWNLOADS_LIST,
         DELETE_DOWNLOADED_ITEM_DIALOG,
+        SEARCH_DOWNLOADS_SEARCH_BAR,
     }
 
     val DOWNLOADS_TOOLBAR_TITLE =
@@ -275,5 +276,50 @@ object DownloadsSelectors : SelectorContainer {
             value = getStringResource(R.string.download_delete_dialog_confirm),
             description = "Delete file dialog confirm button",
             groups = setOf(Group.DELETE_DOWNLOADED_ITEM_DIALOG),
+        )
+
+    val TODAY_DOWNLOAD_HEADER =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.download_time_period_today),
+            description = "Today download header",
+        )
+
+    val SEARCH_DOWNLOADS_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            value = getStringResource(R.string.download_search_placeholder),
+            description = "Search downloads button",
+        )
+
+    val SEARCH_DOWNLOADS_TEXT_FIELD =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TAG,
+            value = DownloadsListTestTag.SEARCH_FIELD,
+            description = "Search downloads text field",
+            groups = setOf(Group.SEARCH_DOWNLOADS_SEARCH_BAR),
+        )
+
+    val SEARCH_DOWNLOADS_PLACEHOLDER =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.download_search_placeholder),
+            description = "Search downloads placeholder",
+            groups = setOf(Group.SEARCH_DOWNLOADS_SEARCH_BAR),
+        )
+
+    val BACK_AND_SEARCH_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            value = getStringResource(R.string.download_close_search_description),
+            description = "Back and close search button",
+            groups = setOf(Group.SEARCH_DOWNLOADS_SEARCH_BAR),
+        )
+
+    val CLEAR_SEARCH_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            value = getStringResource(R.string.download_clear_search_description),
+            description = "Clear search button",
         )
 }
