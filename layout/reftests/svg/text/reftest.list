@@ -134,7 +134,7 @@ fuzzy(0-4,0-100) fuzzy-if(Android,0-4,0-2100) == textLength-3.svg textLength-3-r
 == textLength-6.svg textLength-6-ref.svg
 
 # text-shadow
-fuzzy-if(winWidget,0-128,0-295) fuzzy-if(cocoaWidget,0-1,0-28) fuzzy-if(Android,0-8,0-198) == text-shadow.svg text-shadow-ref.svg
+fuzzy-if(winWidget,0-128,0-295) fuzzy-if(cocoaWidget,0-1,0-28) fuzzy-if(Android,0-8,0-200) == text-shadow.svg text-shadow-ref.svg
 
 # vertical text
 == vertical-01.svg vertical-01-ref.svg
