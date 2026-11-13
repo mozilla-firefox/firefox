@@ -51,6 +51,10 @@ git apply /setup/arcanist_log_invalid_json.patch
 # Send Conduit requests uncompressed: Phabricator's PHP parses a gzipped form
 # body before decompressing it, and large ones fail on max_input_vars.
 git apply /setup/arcanist_no_gzip.patch
+# arc diff asks whether to mark files that aren't valid UTF-8 as binary, and fails
+# because there is no TTY to answer on; take its default and mark them binary.
+# Also stop marking an added file as binary from failing on PHP 8.
+git apply /setup/arcanist_non_utf8_binary.patch
 ln -s /builds/worker/.mozbuild/arcanist/bin/arc /usr/local/bin/arc
 popd
 
