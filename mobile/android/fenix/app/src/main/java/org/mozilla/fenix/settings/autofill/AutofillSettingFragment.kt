@@ -211,6 +211,7 @@ class AutofillSettingFragment : BiometricPromptPreferenceFragment(), SystemInset
         super.onViewCreated(view, savedInstanceState)
 
         if (requireComponents.settings.enableComposeAutofillSettings) {
+            setBiometricPrompt(view, emptyList())
             return
         }
 
@@ -442,7 +443,8 @@ class AutofillSettingFragment : BiometricPromptPreferenceFragment(), SystemInset
         startForResult.launch(intent)
     }
 
-    private fun goToFragment(destination: String) {
+    @VisibleForTesting
+    internal fun goToFragment(destination: String) {
         with(AutofillScreenDestination) {
             when (destination) {
                 ADD_ADDRESS -> {
@@ -456,7 +458,7 @@ class AutofillSettingFragment : BiometricPromptPreferenceFragment(), SystemInset
                 }
 
                 MANAGE_CREDIT_CARDS -> {
-                    navigateToCreditCardManagementFragment()
+                    verifyCredentialsOrShowSetupWarning(requireContext(), emptyList())
                 }
                 SYNC_SIGN_IN -> {
                     syncSignIn()
