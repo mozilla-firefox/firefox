@@ -1182,15 +1182,15 @@ void MacroAssembler::lookupMFBT(Register hashTable, Register hashCode,
   match();
   bind(&primaryCollision);
 
-  // Otherwise, we've had a collision. Double-hash.
-  Register hash2 = scratch4;
+  // Otherwise, we've had a collision. Probe.
+  Register stride = scratch4;
   Register sizeMask = scratch3;
-  computeHash2MFBT<Table>(hashTable, hashCode, hash2, sizeMask, scratch);
+  initProbeSequenceMFBT<Table>(hashTable, stride, sizeMask);
 
   Label loop;
   bind(&loop);
 
-  applyDoubleHashMFBT(hash1, hash2, sizeMask);
+  nextProbeMFBT(hash1, stride, sizeMask);
   checkForMatchMFBT<Table>(hashTable, hash1, hashCode, scratch, scratch2,
                            missing, &loop);
   match();

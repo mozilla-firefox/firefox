@@ -5727,9 +5727,9 @@ class MacroAssembler : public MacroAssemblerSpecific {
   void computeHash1MFBT(Register hashTable, Register hashCode, Register hash1,
                         Register scratch);
   template <typename Table>
-  void computeHash2MFBT(Register hashTable, Register hashCode, Register hash2,
-                        Register sizeMask, Register scratch);
-  void applyDoubleHashMFBT(Register hash1, Register hash2, Register sizeMask);
+  void initProbeSequenceMFBT(Register hashTable, Register stride,
+                             Register sizeMask);
+  void nextProbeMFBT(Register hashIndex, Register stride, Register sizeMask);
   template <typename Table>
   void checkForMatchMFBT(Register hashTable, Register hashIndex,
                          Register hashCode, Register scratch, Register scratch2,

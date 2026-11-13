@@ -1831,6 +1831,8 @@ class MOZ_STANDALONE_DEBUG HashTable : private AllocPolicy {
 
   // Warning: in order for readonlyThreadsafeLookup() to be safe this
   // function must not modify the table in any way when Reason==ForNonAdd.
+  // js::jit::MacroAssembler::lookupMFBT has an inline copy of this code,
+  // and should be kept in sync.
   template <LookupReason Reason>
   MOZ_ALWAYS_INLINE Slot lookup(const Lookup& aLookup,
                                 HashNumber aKeyHash) const {
