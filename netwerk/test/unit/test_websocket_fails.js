@@ -145,30 +145,22 @@ async function test_non_responsive_ws_server_open_port() {
 
 // proxy does not respond
 async function test_proxy_doesnt_respond() {
-  Services.prefs.setIntPref("network.websocket.timeout.open", 1);
   Services.prefs.setBoolPref("network.http.http2.websockets", false);
   // ws cert added in previous test, add proxy cert
   addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
   addCertFromFile(certdb, "proxy-ca.pem", "CTu,u,u");
 
-  info("spinning up proxy");
-  let proxy = new NodeHTTPSProxyServer();
-  await proxy.start();
+  // Bind and immediately close a socket to get a port that is not listening.
+  let closedSocket = ServerSocket(-1, true, -1);
+  let closedPort = closedSocket.port;
+  closedSocket.close();
 
   // route traffic through non-existant proxy
   const pps = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService();
-  let randomPort = proxy.port() + 1;
-  var filter = new NodeProxyFilter(
-    proxy.protocol(),
-    "localhost",
-    randomPort,
-    0
-  );
+  let filter = new NodeProxyFilter("https", "localhost", closedPort, 0);
   pps.registerFilter(filter, 10);
-
-  registerCleanupFunction(async () => {
-    await proxy.stop();
-    Services.prefs.clearUserPref("network.websocket.timeout.open");
+  registerCleanupFunction(() => {
+    pps.unregisterFilter(filter);
   });
 
   // setup the websocket server
