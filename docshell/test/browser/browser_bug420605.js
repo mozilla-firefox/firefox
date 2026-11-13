@@ -7,6 +7,7 @@ const { PlacesTestUtils } = ChromeUtils.importESModule(
 );
 
 add_task(async function test() {
+  registerCleanupFunction(() => PlacesUtils.history.clear());
   var pageurl =
     "http://mochi.test:8888/browser/docshell/test/browser/file_bug420605.html";
   var fragmenturl =

@@ -171,9 +171,6 @@ https_first_disabled = true
 ["browser_bug388121-2.js"]
 
 ["browser_bug420605.js"]
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_bug422543.js"]
 https_first_disabled = true
@@ -181,9 +178,6 @@ https_first_disabled = true
 ["browser_bug441169.js"]
 
 ["browser_bug503832.js"]
-skip-if = [
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && debug && msix && verify-standalone",
-]
 
 ["browser_bug554155.js"]
 
