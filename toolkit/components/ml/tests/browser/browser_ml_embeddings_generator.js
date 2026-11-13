@@ -754,3 +754,38 @@ add_task(async function test_ensureEngine_allows_retry_after_failure() {
 
   sinon.restore();
 });
+
+/**
+ * The contextual engine shuts down after browser.ml.modelCacheTimeout of idle,
+ * and the generator still embeds afterwards. The test swaps only the model, for
+ * test-echo.
+ */
+add_task(async function test_contextual_engine_shuts_down_when_idle() {
+  const { cleanup } = await setup();
+  const embeddingsGenerator = EmbeddingsGenerator.forTest({
+    type: EMBEDDING_TYPE.CONTEXTUAL,
+  });
+  embeddingsGenerator.options = {
+    ...embeddingsGenerator.options,
+    modelId: "test-echo",
+  };
+
+  Assert.deepEqual(
+    (await embeddingsGenerator.embed("before going idle")).output,
+    ["before going idle"],
+    "The contextual engine embeds text"
+  );
+  await TestUtils.waitForCondition(
+    () => EngineProcess.areAllEnginesTerminated(),
+    "The contextual engine shuts down after browser.ml.modelCacheTimeout of idle"
+  );
+  Assert.deepEqual(
+    (await embeddingsGenerator.embed("after going idle")).output,
+    ["after going idle"],
+    "The generator still embeds text after its engine shut down for being idle"
+  );
+
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+  await SpecialPowers.popPrefEnv();
+});
