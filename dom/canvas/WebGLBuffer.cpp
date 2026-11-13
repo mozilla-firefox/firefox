@@ -195,11 +195,11 @@ void WebGLBuffer::BufferSubData(GLenum target, uint64_t rawDstByteOffset,
 
   void* mapping = nullptr;
   // Repeated calls to glMapBufferRange are slow on D3D ANGLE (bug 1827047).
-  // Unsynchronized mapping causes rendering glitches with Metal ANGLE on Radeon
-  // GFX10 GPUs (bug 2074540), Fall back to glBufferSubData for both.
+  // Unsynchronized mapping causes rendering glitches with Metal ANGLE on AMD
+  // GPUs (bug 2074540 and bug 2091596). Fall back to glBufferSubData for both.
   if (unsynchronized && gl->IsSupported(gl::GLFeature::map_buffer_range) &&
       !gl->IsD3DANGLE() &&
-      !(gl->IsMetalANGLE() && gl->Renderer() == gl::GLRenderer::RadeonGFX10)) {
+      !(gl->IsMetalANGLE() && gl->Vendor() == gl::GLVendor::AMD)) {
     GLbitfield access = LOCAL_GL_MAP_WRITE_BIT |
                         LOCAL_GL_MAP_UNSYNCHRONIZED_BIT |
                         LOCAL_GL_MAP_INVALIDATE_RANGE_BIT;
