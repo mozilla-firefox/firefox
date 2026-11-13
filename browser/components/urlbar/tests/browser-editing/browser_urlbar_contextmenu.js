@@ -658,7 +658,9 @@ add_task(async function other_result_not_clickable() {
         win.gURLBar.view.resultMenu,
         "hidden"
       );
+      AccessibilityUtils.setEnv({ labelRule: false });
       EventUtils.synthesizeMouseAtCenter(otherRow, {});
+      AccessibilityUtils.resetEnv();
       await onHidden;
       Assert.ok(true, "The context menu is closed");
       Assert.equal(
@@ -753,9 +755,11 @@ async function openContextMenu(row) {
   let menu = gURLBar.view.resultMenu;
 
   let onShown = BrowserTestUtils.waitForEvent(menu, "shown");
+  AccessibilityUtils.setEnv({ labelRule: false });
   for (let type of ["mousedown", "contextmenu", "mouseup"]) {
     EventUtils.synthesizeMouseAtCenter(row, { button: 2, type });
   }
+  AccessibilityUtils.resetEnv();
   await onShown;
 
   return menu;
