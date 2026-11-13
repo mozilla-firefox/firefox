@@ -7,11 +7,25 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import { useSizeSubmenu } from "../../../lib/utils";
-import { WIDGET_REGISTRY, resolveWidgetSize } from "common/WidgetsRegistry.mjs";
+import {
+  WIDGET_REGISTRY,
+  resolveWidgetSize,
+  WIDGET_USER_ACTIONS,
+} from "common/WidgetsRegistry.mjs";
 import { MoveSubmenu } from "../MoveSubmenu";
 import { WidgetHideMenuItem } from "../WidgetPlacement";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import { WidgetMenuButton } from "../WidgetMenuButton";
+
+const USER_ACTION_TYPES = {
+  ...WIDGET_USER_ACTIONS,
+  HIDE_PHOTO: "hide_photo",
+  MANAGE_WALLPAPER: "manage_wallpaper",
+  OPEN_LICENSE: "open_license",
+  OPEN_SOURCE: "open_source",
+  SET_WALLPAPER: "set_wallpaper",
+  SHOW_PICTURE: "show_picture",
+};
 
 const PICTURE_OF_THE_DAY_ENTRY = WIDGET_REGISTRY.find(
   w => w.id === "pictureOfTheDay"
@@ -187,7 +201,7 @@ const PictureOfTheDay = ({
           data: { name: PICTURE_OF_THE_DAY_ENTRY.sizePref, value: size },
         })
       );
-      recordUserAction("change_size", {
+      recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
         source: "context_menu",
         value: size,
         size,
@@ -209,7 +223,7 @@ const PictureOfTheDay = ({
         },
       })
     );
-    recordUserAction("learn_more", { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, { source: "context_menu" });
     handleInteraction();
   };
 
@@ -218,7 +232,9 @@ const PictureOfTheDay = ({
       type: at.SHOW_PERSONALIZE,
       data: { source: PICTURE_OF_THE_DAY_ENTRY.telemetryName },
     });
-    recordUserAction("manage_wallpaper", { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.MANAGE_WALLPAPER, {
+      source: "context_menu",
+    });
     handleInteraction();
   };
 
@@ -232,13 +248,13 @@ const PictureOfTheDay = ({
 
   const handleHidePhoto = () => {
     setDismissedDate(pictureDate);
-    recordUserAction("hide_photo", { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.HIDE_PHOTO, { source: "context_menu" });
     handleInteraction();
   };
 
   const handleShow = (source = "widget") => {
     setDismissedDate("");
-    recordUserAction("show_picture", { source });
+    recordUserAction(USER_ACTION_TYPES.SHOW_PICTURE, { source });
     handleInteraction();
   };
 
@@ -258,7 +274,7 @@ const PictureOfTheDay = ({
         data: { publishedDate: pictureData.publishedDate },
       })
     );
-    recordUserAction("set_wallpaper", { source: "widget" });
+    recordUserAction(USER_ACTION_TYPES.SET_WALLPAPER, { source: "widget" });
     handleInteraction();
     setJustSet(true);
     setSuppressExpand(true);
@@ -269,7 +285,7 @@ const PictureOfTheDay = ({
   // navigation; the handler only records telemetry (mirrors the Weather widget).
   const canOpenSource = Boolean(pictureData.sourceUrl);
   const handleOpenSource = () => {
-    recordUserAction("open_source", { source: "widget" });
+    recordUserAction(USER_ACTION_TYPES.OPEN_SOURCE, { source: "widget" });
     handleInteraction();
   };
 
@@ -277,7 +293,7 @@ const PictureOfTheDay = ({
   // Commons) in the current tab, separate from the source page link above.
   const canOpenLicense = Boolean(pictureData.licenseUrl);
   const handleOpenLicense = () => {
-    recordUserAction("open_license", { source: "widget" });
+    recordUserAction(USER_ACTION_TYPES.OPEN_LICENSE, { source: "widget" });
     handleInteraction();
   };
 

@@ -252,6 +252,13 @@ const TRAVEL_BACKGROUNDS = [
 ];
 const TRAVEL_SEARCH_TABS = ["hotels", "flights", "cars"];
 
+// `user_action` values shared across widgets. Actions only one widget records
+// stay in that widget's own USER_ACTION_TYPES.
+export const WIDGET_USER_ACTIONS = {
+  CHANGE_SIZE: "change_size",
+  LEARN_MORE: "learn_more",
+};
+
 // If you add a widget market pref to firefox.js that older hosts don't have,
 // also add it to MARKET_PREF_FALLBACKS in ActivityStream.sys.mjs as a
 // @backward-compat stub, or train-hops to those hosts will ignore it.

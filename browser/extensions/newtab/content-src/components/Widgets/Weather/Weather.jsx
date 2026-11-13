@@ -5,7 +5,11 @@
 import React, { useCallback, useContext, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
-import { PREF_WEATHER_SIZE, WIDGET_REGISTRY } from "common/WidgetsRegistry.mjs";
+import {
+  PREF_WEATHER_SIZE,
+  WIDGET_REGISTRY,
+  WIDGET_USER_ACTIONS,
+} from "common/WidgetsRegistry.mjs";
 import { LocationSearch } from "content-src/components/Weather/LocationSearch";
 import { SizeSubmenu } from "../SizeSubmenu";
 import { WidgetMenuButton } from "../WidgetMenuButton";
@@ -14,11 +18,10 @@ import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import { SpaceActiveContext } from "content-src/lib/SpaceActiveContext";
 
 const USER_ACTION_TYPES = {
+  ...WIDGET_USER_ACTIONS,
   CHANGE_LOCATION: "change_location",
   DETECT_LOCATION: "detect_location",
   CHANGE_TEMP_UNIT: "change_temperature_units",
-  CHANGE_SIZE: "change_size",
-  LEARN_MORE: "learn_more",
   OPT_IN_ACCEPTED: "opt_in_accepted",
   PROVIDER_LINK_CLICK: "provider_link_click",
 };

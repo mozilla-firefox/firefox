@@ -18,6 +18,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetSize,
   resolvePrivacyDisplayCount,
+  WIDGET_USER_ACTIONS,
 } from "common/WidgetsRegistry.mjs";
 import { MoveSubmenu } from "../MoveSubmenu";
 import { WidgetHideMenuItem } from "../WidgetPlacement";
@@ -30,8 +31,7 @@ import { SpaceActiveContext } from "content-src/lib/SpaceActiveContext";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 
 const USER_ACTION_TYPES = {
-  CHANGE_SIZE: "change_size",
-  LEARN_MORE: "learn_more",
+  ...WIDGET_USER_ACTIONS,
   MESSAGE_CTA_CLICK: "message_cta_click",
   TRACKING_MESSAGE_CLICK: "tracking_message_click",
 };

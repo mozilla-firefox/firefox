@@ -18,6 +18,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetFrame,
   resolveWidgetSize,
+  WIDGET_USER_ACTIONS,
 } from "common/WidgetsRegistry.mjs";
 import { MoveSubmenu } from "../MoveSubmenu";
 import { WidgetHideMenuItem } from "../WidgetPlacement";
@@ -26,8 +27,13 @@ import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 
 const USER_ACTION_TYPES = {
-  CHANGE_SIZE: "change_size",
+  ...WIDGET_USER_ACTIONS,
   POWERED_BY_PARTICLE: "powered_by_particle",
+  PUZZLE_COMPLETED: "puzzle_completed",
+  // Also sent to the Particle bundle as menu_action commands, so changing
+  // either value breaks that menu item.
+  REVEAL_GRID: "reveal_grid",
+  SHOW_ALL_CLUES: "show_all_clues",
 };
 
 const PARTICLE_URL = "https://particle.news";
@@ -97,14 +103,14 @@ const MENU_ACTION_ITEMS = [
   {
     key: "show-all-clues",
     label: "Show clues",
-    action: "show_all_clues",
+    action: USER_ACTION_TYPES.SHOW_ALL_CLUES,
   },
   {
     // "Solve puzzle" only shows when the crossword is in the intro state or
     // in-progress, so it is hidden once the puzzle is completed.
     key: "solve-puzzle",
     label: "Solve puzzle",
-    action: "reveal_grid",
+    action: USER_ACTION_TYPES.REVEAL_GRID,
     hideWhenCompleted: true,
   },
 ];
@@ -241,7 +247,7 @@ function Crossword({
           break;
         case EVENT_TYPES.PUZZLE_COMPLETED:
           setPuzzleCompleted(true);
-          recordUserAction("puzzle_completed", {
+          recordUserAction(USER_ACTION_TYPES.PUZZLE_COMPLETED, {
             source: "iframe",
             value: payload.hintsTaken,
             alsoToMain: true,
@@ -351,7 +357,7 @@ function Crossword({
         },
       })
     );
-    recordUserAction("learn_more", { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, { source: "context_menu" });
   }
 
   if (frameState === "hidden") {

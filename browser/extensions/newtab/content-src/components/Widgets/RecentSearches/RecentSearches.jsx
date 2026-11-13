@@ -6,7 +6,11 @@
 import React, { useCallback } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
-import { WIDGET_REGISTRY, resolveWidgetSize } from "common/WidgetsRegistry.mjs";
+import {
+  WIDGET_REGISTRY,
+  resolveWidgetSize,
+  WIDGET_USER_ACTIONS,
+} from "common/WidgetsRegistry.mjs";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuFooter } from "../WidgetMenuFooter";
 import { SizeSubmenu } from "../SizeSubmenu";
@@ -14,9 +18,8 @@ import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import { formatRelativeTime } from "content-src/lib/utils";
 
 const USER_ACTION_TYPES = {
-  CHANGE_SIZE: "change_size",
+  ...WIDGET_USER_ACTIONS,
   CHANGE_TAB: "change_tab",
-  LEARN_MORE: "learn_more",
   OPEN_LINK: "open_link",
   REMOVE_SEARCH: "remove_search",
 };

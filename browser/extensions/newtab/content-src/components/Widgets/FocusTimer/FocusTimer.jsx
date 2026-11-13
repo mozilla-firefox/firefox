@@ -5,7 +5,11 @@
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
-import { WIDGET_REGISTRY, resolveWidgetSize } from "common/WidgetsRegistry.mjs";
+import {
+  WIDGET_REGISTRY,
+  resolveWidgetSize,
+  WIDGET_USER_ACTIONS,
+} from "common/WidgetsRegistry.mjs";
 import { WidgetCelebration } from "../WidgetCelebration";
 import { useWidgetCelebration } from "../useWidgetCelebration";
 import { SizeSubmenu } from "../SizeSubmenu";
@@ -19,7 +23,7 @@ const FOCUS_TIMER_CELEBRATION_GRADIENT_STOPS = [
 ];
 
 const USER_ACTION_TYPES = {
-  CHANGE_SIZE: "change_size",
+  ...WIDGET_USER_ACTIONS,
   TIMER_SET: "timer_set",
   TIMER_PLAY: "timer_play",
   TIMER_PAUSE: "timer_pause",

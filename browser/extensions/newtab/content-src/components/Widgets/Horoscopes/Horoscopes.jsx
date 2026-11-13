@@ -11,6 +11,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetFrame,
   resolveWidgetSize,
+  WIDGET_USER_ACTIONS,
 } from "common/WidgetsRegistry.mjs";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuFooter } from "../WidgetMenuFooter";
@@ -19,8 +20,7 @@ import { SizeSubmenu } from "../SizeSubmenu";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 
 const USER_ACTION_TYPES = {
-  CHANGE_SIZE: "change_size",
-  LEARN_MORE: "learn_more",
+  ...WIDGET_USER_ACTIONS,
   POWERED_BY_YAHOO: "powered_by_yahoo",
 };
 

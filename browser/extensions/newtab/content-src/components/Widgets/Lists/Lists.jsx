@@ -11,7 +11,11 @@ import React, {
 } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
-import { WIDGET_REGISTRY, resolveWidgetSize } from "common/WidgetsRegistry.mjs";
+import {
+  WIDGET_REGISTRY,
+  resolveWidgetSize,
+  WIDGET_USER_ACTIONS,
+} from "common/WidgetsRegistry.mjs";
 import { WidgetCelebration } from "../WidgetCelebration";
 import { useWidgetCelebration } from "../useWidgetCelebration";
 import { SizeSubmenu } from "../SizeSubmenu";
@@ -26,7 +30,7 @@ const TASK_TYPE = {
 };
 
 const USER_ACTION_TYPES = {
-  CHANGE_SIZE: "change_size",
+  ...WIDGET_USER_ACTIONS,
   LIST_COPY: "list_copy",
   LIST_CREATE: "list_create",
   LIST_EDIT: "list_edit",

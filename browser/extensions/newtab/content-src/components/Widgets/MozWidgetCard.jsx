@@ -4,14 +4,14 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
+import { WIDGET_USER_ACTIONS } from "common/WidgetsRegistry.mjs";
 import { WidgetMenuFooter } from "./WidgetMenuFooter";
 import { SizeSubmenu } from "./SizeSubmenu";
 import { WidgetError } from "./WidgetError";
 import { useWidgetTelemetry } from "./useWidgetTelemetry";
 
 const USER_ACTION_TYPES = {
-  CHANGE_SIZE: "change_size",
-  LEARN_MORE: "learn_more",
+  ...WIDGET_USER_ACTIONS,
 };
 
 /**
