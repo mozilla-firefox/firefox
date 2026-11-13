@@ -13,6 +13,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.os.SystemClock
 import android.provider.Browser.EXTRA_APPLICATION_ID
+import android.util.AndroidRuntimeException
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URISyntaxException
@@ -283,7 +284,8 @@ class AppLinksUseCases(
                     when (e) {
                         is ActivityNotFoundException,
                         is SecurityException,
-                        is NullPointerException -> {
+                        is NullPointerException,
+                        is AndroidRuntimeException -> {
                             failedToLaunchAction(it.getStringExtra(EXTRA_BROWSER_FALLBACK_URL))
                             Logger.error("failed to start third party app activity", e)
                         }
