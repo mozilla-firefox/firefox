@@ -1,5 +1,3 @@
-import time
-
 import pytest
 from webdriver import NoSuchElementException, WebDriverException
 
@@ -24,7 +22,7 @@ async def are_filter_options_onscreen(client):
     for i in range(5):
         try:
             btn.click()
-            time.sleep(1)
+            await client.stall(1)
         except WebDriverException:
             break
 

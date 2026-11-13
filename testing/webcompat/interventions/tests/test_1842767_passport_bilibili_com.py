@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://passport.bilibili.com"
@@ -21,6 +19,6 @@ async def test_enabled(client):
 @pytest.mark.without_interventions
 async def test_disabled(client):
     await client.navigate(URL)
-    await asyncio.sleep(3)
+    await client.stall(3)
     assert client.await_css(DESKTOP_CSS)
     assert not client.find_css(MOBILE_CSS)

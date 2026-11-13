@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://mylabmastering.pearson.com"
@@ -14,9 +12,9 @@ async def dismiss_cookie_banners(client):
     for _ in range(5):
         try:
             btn = client.await_text(COOKIE_DISMISS, is_displayed=True, timeout=5)
-            await asyncio.sleep(2)
+            await client.stall(2)
             btn.click()
-            await asyncio.sleep(2)
+            await client.stall(2)
         except Exception:
             break
 
@@ -27,11 +25,11 @@ async def maybe_dismiss_popup_notice(client):
     # Dismiss it so the login page is fully visible for the assertion.
     try:
         client.await_text(POPUP_TEXT, is_displayed=True, timeout=10)
-        await asyncio.sleep(2)
+        await client.stall(2)
         btn = client.find_css("button.close", is_displayed=True)
         if btn:
             btn.click()
-        await asyncio.sleep(2)
+        await client.stall(2)
     except Exception:
         pass
 
@@ -43,7 +41,7 @@ async def test_enabled(client):
     await client.navigate(URL, wait="none")
     await dismiss_cookie_banners(client)
     await maybe_dismiss_popup_notice(client)
-    await asyncio.sleep(3)
+    await client.stall(3)
     assert not client.find_css(MODAL_CSS, is_displayed=True)
 
 
@@ -55,5 +53,5 @@ async def test_disabled(client):
     await dismiss_cookie_banners(client)
     # The unsupported-browser modal is triggered with a delay after the
     # cookie banner is dismissed.
-    await asyncio.sleep(3)
+    await client.stall(3)
     assert client.await_css(MODAL_CSS, is_displayed=True)

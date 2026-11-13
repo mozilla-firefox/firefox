@@ -1,4 +1,4 @@
-import asyncio
+from asyncio.exceptions import TimeoutError
 
 import pytest
 
@@ -9,11 +9,11 @@ async def is_reload_cycle_detected(client):
     await client.navigate(URL)
     client.await_css("#alwaysFetch")
     client.execute_script("location.reload()")
-    await asyncio.sleep(1)
+    await client.stall(1)
     try:
         await (await client.promise_navigation_begins(URL, timeout=3))
         return True
-    except asyncio.exceptions.TimeoutError:
+    except TimeoutError:
         return False
 
 

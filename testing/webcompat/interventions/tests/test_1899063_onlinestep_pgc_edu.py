@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://onlinestep.pgc.edu/"
@@ -11,7 +9,7 @@ UNSUPPORTED_CSS = "a[href*='google.com/chrome']"
 @pytest.mark.with_interventions
 async def test_enabled(client):
     await client.navigate(URL)
-    await asyncio.sleep(3)
+    await client.stall(3)
     assert not client.find_css(UNSUPPORTED_CSS, is_displayed=True)
 
 

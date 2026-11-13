@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 from webdriver.error import (
     ElementClickInterceptedException,
@@ -19,7 +17,7 @@ async def are_filters_onscreen(client):
     client.hide_elements("#usercentrics-cmp-ui")
     for _ in range(20):
         try:
-            await asyncio.sleep(0.25)
+            await client.stall(0.25)
             client.await_css(FILTERS_CSS, is_displayed=True).click()
         except (WebDriverException, ElementClickInterceptedException):
             continue
@@ -30,8 +28,8 @@ async def are_filters_onscreen(client):
             client.await_css(BRANDS_CSS, is_displayed=True).click()
             break
         except (WebDriverException, ElementClickInterceptedException):
-            await asyncio.sleep(0.1)
-    await asyncio.sleep(0.5)
+            await client.stall(0.1)
+    await client.stall(0.5)
     return client.execute_script(
         "return arguments[0].getBoundingClientRect().top >= 0",
         client.await_css(BRANDS_CSS, is_displayed=True),

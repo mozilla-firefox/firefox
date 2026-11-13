@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://my.murj.com/"
@@ -11,7 +9,7 @@ FAILURE_TEXT = "download Chrome"
 @pytest.mark.with_interventions
 async def test_enabled(client):
     await client.navigate(URL)
-    await asyncio.sleep(3)
+    await client.stall(3)
     assert not client.find_text(FAILURE_TEXT, is_displayed=True)
 
 

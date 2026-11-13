@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://www.dell.com/nl-nl/shop/dell-laptops/scr/laptops"
@@ -19,7 +17,7 @@ async def are_images_fullsize(client):
     client.apz_scroll(client.await_css("body"), dy=1000)
     second_product = client.await_css(PRODUCTS_CSS, all=True, is_displayed=True)[1]
     client.scroll_into_view(second_product)
-    await asyncio.sleep(2)
+    await client.stall(2)
     return client.execute_script(
         """
         const img = arguments[0].querySelector(".hero-dell-media figure")

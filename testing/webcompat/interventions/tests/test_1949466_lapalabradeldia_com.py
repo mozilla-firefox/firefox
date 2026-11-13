@@ -1,4 +1,3 @@
-import asyncio
 from random import randint
 
 import pytest
@@ -42,32 +41,32 @@ async def letters_sometimes_vanish(client):
             coords = client.get_element_screen_position(letter)
             coords = [coords[0] + 20, coords[1] + 20]
             await client.apz_down(coords=coords)
-            await asyncio.sleep(0.025)
+            await client.stall(0.025)
             coords = [coords[0] + 20, coords[1] + 20]
             await client.send_apz_mouse_event("move", coords=coords)
             await client.apz_up(coords=coords)
 
-            await asyncio.sleep(0.025)
+            await client.stall(0.025)
             await client.send_apz_mouse_event(
                 "move", coords=[coords[0] + 50, coords[1] + 50]
             )
-            await asyncio.sleep(0.025)
+            await client.stall(0.025)
             await client.send_apz_mouse_event(
                 "move", coords=[coords[0] + 100, coords[1] + 100]
             )
-            await asyncio.sleep(0.025)
+            await client.stall(0.025)
             await client.send_apz_mouse_event(
                 "move", coords=[coords[0] + 150, coords[1] + 150]
             )
-            await asyncio.sleep(0.025)
+            await client.stall(0.025)
             await client.send_apz_mouse_event(
                 "move", coords=[coords[0] + 200, coords[1] + 200]
             )
-            await asyncio.sleep(0.025)
+            await client.stall(0.025)
 
         # wait a moment to let the animations settle down to increase the
         # likelihood that we'll see the problem.
-        await asyncio.sleep(0.5)
+        await client.stall(0.5)
 
         if (
             client.is_one_solid_color(client.find_css(CARD1_CSS))

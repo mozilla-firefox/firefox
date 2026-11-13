@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://www.port8.fi/bokning/"
@@ -10,7 +8,7 @@ async def check_if_scrolling_works(client):
     body = client.await_css("body")
     expected_pos = client.execute_script("return window.scrollY")
     client.apz_scroll(body, dy=100000)
-    await asyncio.sleep(0.2)
+    await client.stall(0.2)
     final_pos = client.execute_script("return window.scrollY")
     return expected_pos != final_pos
 

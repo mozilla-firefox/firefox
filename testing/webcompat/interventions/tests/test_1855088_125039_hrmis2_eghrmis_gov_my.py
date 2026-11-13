@@ -1,5 +1,3 @@
-import time
-
 import pytest
 
 URL = "https://hrmis2.eghrmis.gov.my/HRMISNET/Common/Main/Login.aspx"
@@ -8,7 +6,7 @@ DIALOG_CSS = "#dialog4"
 
 async def is_dialog_shown(client):
     await client.navigate(URL)
-    time.sleep(2)
+    await client.stall(2)
     dialog = client.await_css(DIALOG_CSS)
     return client.is_displayed(dialog)
 

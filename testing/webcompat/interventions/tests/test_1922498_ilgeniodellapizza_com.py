@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "http://www.ilgeniodellapizza.com/le-nostre-pizze.html"
@@ -14,7 +12,7 @@ async def can_scroll_filters(client):
 
     top = get_top()
     for i in range(20):
-        await asyncio.sleep(0.1)
+        await client.stall(0.1)
         client.apz_scroll(body, dy=100)
         new_top = get_top()
         if new_top < top:

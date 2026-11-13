@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://www.mymsc.com/mymsc"
@@ -11,7 +9,7 @@ UNSUPPORTED_TEXT = "Browser not supported"
 @pytest.mark.with_interventions
 async def test_enabled(client):
     await client.navigate(URL)
-    await asyncio.sleep(3)
+    await client.stall(3)
     assert not client.find_text(UNSUPPORTED_TEXT, is_displayed=True)
 
 

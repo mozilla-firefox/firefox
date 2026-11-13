@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://m.youtube.com/results?search_query=trailer"
@@ -47,16 +45,16 @@ async def pip_activates_properly(client, also_test_fullscreen_button=False):
         nonlocal last_known_dims, video
 
         for _ in range(5):
-            await asyncio.sleep(0.5)
+            await client.stall(0.5)
 
             if client.find_css(FULLSCREEN_ICON_CSS, is_displayed=True):
                 await client.apz_click(element=fs, offset=[5, 5])
             else:
                 await client.apz_click(element=video, offset=[50, 50])
-                await asyncio.sleep(0.25)
+                await client.stall(0.25)
                 await client.apz_click(element=fs, offset=[5, 5])
 
-            await asyncio.sleep(0.5)
+            await client.stall(0.5)
 
             # confirm that the video went into fullscreen mode
             dims = get_video_dims(video)
@@ -72,12 +70,12 @@ async def pip_activates_properly(client, also_test_fullscreen_button=False):
         # test that we can toggle back out of fullscreen
         assert await toggle_fullscreen()
 
-        await asyncio.sleep(0.5)
+        await client.stall(0.5)
 
         # go back into fullscreen mode for the rest of the test
         assert await toggle_fullscreen()
 
-    await asyncio.sleep(1)
+    await client.stall(1)
 
     with client.using_context("chrome"):
         client.execute_script(
@@ -86,7 +84,7 @@ async def pip_activates_properly(client, also_test_fullscreen_button=False):
         """
         )
 
-    await asyncio.sleep(1)
+    await client.stall(1)
     return client.execute_script(
         """
             return !(arguments[0]?.paused);

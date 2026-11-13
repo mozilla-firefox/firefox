@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://www.bithumb.com/"
@@ -12,7 +10,7 @@ FAILURE_TEXT = "크롬 브라우저를"
 @pytest.mark.with_interventions
 async def test_enabled(client):
     await client.navigate(URL)
-    await asyncio.sleep(3)
+    await client.stall(3)
     assert not client.find_text(FAILURE_TEXT, is_displayed=True)
 
 

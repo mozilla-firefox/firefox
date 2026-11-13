@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 
 URL = "https://e.seb.ee/"
@@ -11,7 +9,7 @@ UNSUPPORTED_TEXT = "Google Chrome"
 @pytest.mark.with_interventions
 async def test_enabled(client):
     await client.navigate(URL)
-    await asyncio.sleep(1)
+    await client.stall(1)
     assert not client.find_text(UNSUPPORTED_TEXT)
 
 

@@ -1,5 +1,3 @@
-import asyncio
-
 import pytest
 from webdriver.error import NoSuchElementException
 
@@ -19,7 +17,7 @@ async def does_radiobutton_work(client):
         pass
 
     radio = client.await_css(RADIO_CSS, is_displayed=True)
-    await asyncio.sleep(0.5)
+    await client.stall(0.5)
     radio.click()
     try:
         client.await_css(RADIO_SELECTED_CSS, is_displayed=True, timeout=3)
