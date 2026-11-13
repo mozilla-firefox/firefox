@@ -941,9 +941,13 @@ bool IonCacheIRCompiler::emitLoadFixedSlotResult(ObjOperandId objId,
   return true;
 }
 
-bool IonCacheIRCompiler::emitLoadFixedSlotTypedResult(ObjOperandId objId,
-                                                      uint32_t offsetOffset,
-                                                      ValueType) {
+bool IonCacheIRCompiler::emitLoadReservedFixedSlotResult(
+    ObjOperandId objId, uint32_t offsetOffset) {
+  return emitLoadFixedSlotResult(objId, offsetOffset);
+}
+
+bool IonCacheIRCompiler::emitLoadReservedFixedSlotTypedResult(
+    ObjOperandId objId, uint32_t offsetOffset, ValueType) {
   // The type is only used by Warp.
   return emitLoadFixedSlotResult(objId, offsetOffset);
 }

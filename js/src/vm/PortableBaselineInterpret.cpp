@@ -710,7 +710,8 @@ uint64_t ICInterpretOps(uint64_t arg0, uint64_t arg1, ICStub* stub,
     DECLARE_CACHEOP_CASE(AssertPropertyLookup);
     DECLARE_CACHEOP_CASE(GuardIsNonResizableTypedArray);
     DECLARE_CACHEOP_CASE(GuardIndexIsNotDenseElement);
-    DECLARE_CACHEOP_CASE(LoadFixedSlotTypedResult);
+    DECLARE_CACHEOP_CASE(LoadReservedFixedSlotResult);
+    DECLARE_CACHEOP_CASE(LoadReservedFixedSlotTypedResult);
     DECLARE_CACHEOP_CASE(LoadDenseElementHoleResult);
     DECLARE_CACHEOP_CASE(LoadDenseElementExistsResult);
     DECLARE_CACHEOP_CASE(LoadTypedArrayElementExistsResult);
@@ -2625,10 +2626,11 @@ uint64_t ICInterpretOps(uint64_t arg0, uint64_t arg1, ICStub* stub,
       }
 
       CACHEOP_CASE(LoadFixedSlotResult)
-      CACHEOP_CASE_FALLTHROUGH(LoadFixedSlotTypedResult) {
+      CACHEOP_CASE_FALLTHROUGH(LoadReservedFixedSlotResult)
+      CACHEOP_CASE_FALLTHROUGH(LoadReservedFixedSlotTypedResult) {
         ObjOperandId objId = cacheIRReader.objOperandId();
         uint32_t offsetOffset = cacheIRReader.stubOffset();
-        if (cacheop == CacheOp::LoadFixedSlotTypedResult) {
+        if (cacheop == CacheOp::LoadReservedFixedSlotTypedResult) {
           // Type is unused here.
           (void)cacheIRReader.valueType();
         }

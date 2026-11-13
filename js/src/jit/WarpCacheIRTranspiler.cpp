@@ -2014,9 +2014,23 @@ bool WarpCacheIRTranspiler::emitLoadFixedSlotResult(ObjOperandId objId,
   return true;
 }
 
-bool WarpCacheIRTranspiler::emitLoadFixedSlotTypedResult(ObjOperandId objId,
-                                                         uint32_t offsetOffset,
-                                                         ValueType type) {
+bool WarpCacheIRTranspiler::emitLoadReservedFixedSlotResult(
+    ObjOperandId objId, uint32_t offsetOffset) {
+  int32_t offset = int32StubField(offsetOffset);
+
+  MDefinition* obj = getOperand(objId);
+  uint32_t slotIndex = NativeObject::getFixedSlotIndexFromOffset(offset);
+
+  auto* load = MLoadFixedSlot::New(alloc(), obj, slotIndex);
+  load->setNotMovable();
+  add(load);
+
+  pushResult(load);
+  return true;
+}
+
+bool WarpCacheIRTranspiler::emitLoadReservedFixedSlotTypedResult(
+    ObjOperandId objId, uint32_t offsetOffset, ValueType type) {
   int32_t offset = int32StubField(offsetOffset);
 
   MDefinition* obj = getOperand(objId);
