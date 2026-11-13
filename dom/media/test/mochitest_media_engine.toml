@@ -12,6 +12,11 @@ support-files = [
   "bipbop-clearkey-video-av1.mp4^headers^",
   "opus-sample-cenc.mp4",
   "opus-sample-cenc.mp4^headers^",
+  "seig-key-rotation-cbcs.mp4",
+  "seig-key-rotation-cbcs.mp4^headers^",
+  "seig-key-rotation-cenc.mp4",
+  "seig-key-rotation-cenc.mp4^headers^",
+  "seig_key_rotation.js",
   "flac-sample-cenc.mp4",
   "flac-sample-cenc.mp4^headers^",
   "!/dom/media/mediasource/test/flac/IS.mp4",
@@ -36,6 +41,8 @@ scheme = "https"
 ["test_eme_wideinve_l1_installation.html"]
 
 ["test_eme_wmfclearkey_playback.html"]
+
+["test_eme_wmfclearkey_seig_key_rotation.html"]
 
 ["test_mediacapabilities_drm_hardware_encryption.html"]
 scheme = "https"
