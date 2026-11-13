@@ -237,9 +237,6 @@ support-files = [
   "damonbowling.jpg^headers^",
   "file_favicon.html",
 ]
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_test_file_channel_observer.js"]
 

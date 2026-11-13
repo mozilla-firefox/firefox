@@ -22,6 +22,9 @@ add_task(async function () {
   let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, pageUrl);
   registerCleanupFunction(async function () {
     BrowserTestUtils.removeTab(tab);
+    // FaviconLoader loads with LOAD_FROM_CACHE | VALIDATE_NEVER, so a later
+    // run would get the icon from the cache and never process its Set-Cookie.
+    Services.cache2.clear();
   });
 
   await promise;
