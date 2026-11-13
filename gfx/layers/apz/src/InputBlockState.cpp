@@ -939,8 +939,9 @@ SideBits TouchBlockState::GetSwipableDirections(
 }
 
 bool TouchBlockState::HasTouchSwipeInfo() const {
-  return IsTargetConfirmed() && HasAllowedTouchBehaviors() &&
-         HasContentResponded();
+  return (IsTargetConfirmed() && HasAllowedTouchBehaviors() &&
+          HasContentResponded()) ||
+         IsContentResponseTimerExpired();
 }
 
 bool TouchBlockState::SetConfirmedTargetApzc(
@@ -953,6 +954,14 @@ bool TouchBlockState::SetConfirmedTargetApzc(
     MaybeNotifyTouchSwipableDirections();
   }
   return confirmed;
+}
+
+bool TouchBlockState::TimeoutContentResponse() {
+  const bool timeout = CancelableBlockState::TimeoutContentResponse();
+  if (timeout) {
+    MaybeNotifyTouchSwipableDirections();
+  }
+  return timeout;
 }
 
 bool TouchBlockState::SetContentResponse(bool aPreventDefault) {
@@ -969,10 +978,14 @@ void TouchBlockState::MaybeNotifyTouchSwipableDirections() {
     return;
   }
 
+  // If the main thread did not respond in time, reject swipe rather than
+  // navigate based on APZ's guess, because navigation discards the current
+  // page.
   const RefPtr<AsyncPanZoomController>& target = GetTargetApzc();
-  const SideBits swipableDirections = target && !IsDefaultPrevented()
-                                          ? GetSwipableDirections(target)
-                                          : SideBits::eNone;
+  const SideBits swipableDirections =
+      target && !IsContentResponseTimerExpired() && !IsDefaultPrevented()
+          ? GetSwipableDirections(target)
+          : SideBits::eNone;
 
   TouchSwipableDirectionsCallback callback =
       std::move(mTouchSwipableDirectionsCallback);

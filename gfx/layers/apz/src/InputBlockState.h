@@ -639,7 +639,8 @@ class TouchBlockState : public BrowserGesturableBlockState {
 
   /**
    * Whether the information from the main thread needed to compute the
-   * swipable directions for touch swipe-to-navigate is available.
+   * swipable directions for touch swipe-to-navigate is available, or APZ
+   * has stopped waiting for it because of the content response timeout.
    */
   bool HasTouchSwipeInfo() const;
 
@@ -653,6 +654,8 @@ class TouchBlockState : public BrowserGesturableBlockState {
   }
 
   bool SetContentResponse(bool aPreventDefault) override;
+
+  bool TimeoutContentResponse() override;
 
  private:
   void MaybeNotifyTouchSwipableDirections();
