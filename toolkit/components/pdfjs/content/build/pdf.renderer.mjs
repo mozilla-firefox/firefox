@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.84
- * pdfjsBuild = 94a48f3c8
+ * pdfjsVersion = 7.0.119
+ * pdfjsBuild = 5430213a1
  */
 
 ;// ./src/shared/util.js
@@ -786,6 +786,12 @@ function _isValidExplicitDest(validRef, validName, dest) {
     return false;
   }
   return true;
+}
+function noopFn() {}
+function createPromiseCapability() {
+  const pc = Promise.withResolvers();
+  pc.promise.catch(noopFn);
+  return pc;
 }
 const makeArr = () => [];
 const makeMap = () => new Map();
@@ -5848,7 +5854,6 @@ const StreamKind = {
   PULL_COMPLETE: 7,
   START_COMPLETE: 8
 };
-function onFn() {}
 function wrapReason(ex) {
   if (ex instanceof AbortException || ex instanceof InvalidPDFException || ex instanceof PasswordException || ex instanceof ResponseException || ex instanceof UnknownErrorException) {
     return ex;
@@ -5968,7 +5973,7 @@ class MessageHandler {
   }
   sendWithPromise(actionName, data, transfers) {
     const callbackId = this.#callbackId++,
-      capability = Promise.withResolvers();
+      capability = createPromiseCapability();
     this.#callbackCapabilities.set(callbackId, capability);
     try {
       this.#comObj.postMessage({
@@ -5990,7 +5995,7 @@ class MessageHandler {
       comObj = this.#comObj;
     return new ReadableStream({
       start: controller => {
-        const startCapability = Promise.withResolvers();
+        const startCapability = createPromiseCapability();
         this.#streamControllers.set(streamId, {
           controller,
           startCall: startCapability,
@@ -6009,7 +6014,7 @@ class MessageHandler {
         return startCapability.promise;
       },
       pull: controller => {
-        const pullCapability = Promise.withResolvers();
+        const pullCapability = createPromiseCapability();
         this.#streamControllers.get(streamId).pullCall = pullCapability;
         comObj.postMessage({
           sourceName,
@@ -6022,7 +6027,7 @@ class MessageHandler {
       },
       cancel: reason => {
         assert(reason instanceof Error, "cancel must have a valid reason");
-        const cancelCapability = Promise.withResolvers();
+        const cancelCapability = createPromiseCapability();
         this.#streamControllers.get(streamId).cancelCall = cancelCapability;
         this.#streamControllers.get(streamId).isClosed = true;
         comObj.postMessage({
@@ -6051,7 +6056,7 @@ class MessageHandler {
         const lastDesiredSize = this.desiredSize;
         this.desiredSize -= size;
         if (lastDesiredSize > 0 && this.desiredSize <= 0) {
-          this.sinkCapability = Promise.withResolvers();
+          this.sinkCapability = createPromiseCapability();
           this.ready = this.sinkCapability.promise;
         }
         comObj.postMessage({
@@ -6088,7 +6093,7 @@ class MessageHandler {
           reason: wrapReason(reason)
         });
       },
-      sinkCapability: Promise.withResolvers(),
+      sinkCapability: createPromiseCapability(),
       onPull: null,
       onCancel: null,
       isCancelled: false,
@@ -6153,7 +6158,7 @@ class MessageHandler {
           streamSink.sinkCapability.resolve();
         }
         streamSink.desiredSize = data.desiredSize;
-        Promise.try(streamSink.onPull || onFn).then(() => {
+        Promise.try(streamSink.onPull || noopFn).then(() => {
           comObj.postMessage({
             sourceName,
             targetName,
@@ -6205,7 +6210,7 @@ class MessageHandler {
           break;
         }
         const dataReason = wrapReason(data.reason);
-        Promise.try(streamSink.onCancel || onFn, dataReason).then(() => {
+        Promise.try(streamSink.onCancel || noopFn, dataReason).then(() => {
           comObj.postMessage({
             sourceName,
             targetName,
@@ -6547,9 +6552,10 @@ class FontPathInfo {
 }
 
 ;// ./src/display/pdf_objects.js
+
 const INITIAL_DATA = Symbol("INITIAL_DATA");
 const dataObj = () => ({
-  ...Promise.withResolvers(),
+  ...createPromiseCapability(),
   data: INITIAL_DATA
 });
 class PDFObjects {
@@ -6591,7 +6597,6 @@ class PDFObjects {
     if (obj.data !== INITIAL_DATA) {
       return;
     }
-    obj.promise.catch(() => {});
     obj.reject(reason);
   }
   clear() {
@@ -7328,7 +7333,7 @@ class RendererMessageHandler {
         promise,
         resolve,
         reject
-      } = Promise.withResolvers();
+      } = createPromiseCapability();
       renderTaskState.continueResolve = resolve;
       renderTaskState.operatorListIdx = gfx.executeOperatorList(operatorList, renderTaskState.operatorListIdx, resolve, reject, undefined, operationsFilter);
       if (renderTaskState.operatorListIdx === operatorList.argsArray.length) {
@@ -7353,7 +7358,7 @@ class RendererMessageHandler {
     const {
       promise,
       resolve
-    } = Promise.withResolvers();
+    } = createPromiseCapability();
     this.#yieldResolvers.push(resolve);
     this.#yieldChannel.port2.postMessage(null);
     return promise;
@@ -7606,7 +7611,7 @@ class RendererMessageHandler {
     this.#connection = null;
   }
   static #sendReady(handler) {
-    const workerVersion = "7.0.84";
+    const workerVersion = "7.0.119";
     const testObj = new Uint8Array();
     handler.send("ready", {
       testObj,
