@@ -310,9 +310,23 @@ nsresult nsHttpTransaction::Init(
   // socket thread. Parent-process upload streams are normalized to be cloneable
   // (see HttpBaseChannel's NormalizeUploadStream).
   nsCOMPtr<nsIInputStream> requestBodyClone;
-  if (mHasRequestBody && NS_SUCCEEDED(NS_CloneInputStream(
-                             requestBody, getter_AddRefs(requestBodyClone)))) {
-    requestBody = requestBodyClone;
+  if (mHasRequestBody) {
+    rv = NS_CloneInputStream(requestBody, getter_AddRefs(requestBodyClone));
+    if (NS_SUCCEEDED(rv)) {
+      requestBody = requestBodyClone;
+    } else if (XRE_IsParentProcess()) {
+      nsCOMPtr<nsISeekableStream> seekable = do_QueryInterface(requestBody);
+      if (seekable) {
+        // The channel can rewind this stream on the main thread, so reading it
+        // here would mean two threads sharing it.  InternalSetUploadStream
+        // refuses a stream that can't be cloned, so this shouldn't happen.
+        // The socket process gets its own deserialized copy, which may not be
+        // cloneable (e.g. a file stream sent as a descriptor), and nothing
+        // else touches it there, so sharing is fine.
+        MOZ_DIAGNOSTIC_ASSERT(false, "Upload stream should be cloneable");
+        return rv;
+      }
+    }
   }
 
   // Bug 2059211: cap the body stream at the declared Content-Length.  A body
