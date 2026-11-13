@@ -4,7 +4,7 @@ It expects:
 - Command line args: hook_name, control_dir
 - Environment variables:
       _PYPROJECT_HOOKS_BUILD_BACKEND=entry.point:spec
-      _PYPROJECT_HOOKS_BACKEND_PATH_JSON=paths (JSON encoded)
+      _PYPROJECT_HOOKS_BACKEND_PATH=paths (separated with os.pathsep)
 - control_dir/input.json:
   - {"kwargs": {...}}
 
@@ -23,7 +23,6 @@ from glob import glob
 from importlib import import_module
 from importlib.machinery import PathFinder
 from os.path import join as pjoin
-import warnings
 
 # This file is run as a script, and `import wrappers` is not zip-safe, so we
 # include write_json() and read_json() from wrappers.py.
@@ -58,17 +57,13 @@ class HookMissing(Exception):
 
 def _build_backend():
     """Find and load the build backend"""
-    backend_path_json = os.environ.get("_PYPROJECT_HOOKS_BACKEND_PATH_JSON")
+    backend_path = os.environ.get("_PYPROJECT_HOOKS_BACKEND_PATH")
     ep = os.environ["_PYPROJECT_HOOKS_BUILD_BACKEND"]
     mod_path, _, obj_path = ep.partition(":")
 
-    if backend_path_json:
-        extra_pathitems = json.loads(backend_path_json)
-    else:
-        extra_pathitems = []
-
-    if extra_pathitems:
+    if backend_path:
         # Ensure in-tree backend directories have the highest priority when importing.
+        extra_pathitems = backend_path.split(os.pathsep)
         sys.meta_path.insert(0, _BackendPathFinder(extra_pathitems, mod_path))
 
     try:
@@ -117,8 +112,7 @@ class _BackendPathFinder:
             # Delayed import: Python 3.7 does not contain importlib.metadata
             from importlib.metadata import DistributionFinder, MetadataPathFinder
 
-            name = context.name if context else None
-            context = DistributionFinder.Context(name=name, path=self.backend_path)
+            context = DistributionFinder.Context(path=self.backend_path)
             return MetadataPathFinder.find_distributions(context=context)
 
 
@@ -366,39 +360,28 @@ def main():
 
     # Remove the parent directory from sys.path to avoid polluting the backend
     # import namespace with this directory.
-    here = os.path.normcase(os.path.realpath(os.path.dirname(__file__)))
-    sys.path[:] = [
-        path for path in sys.path if os.path.normcase(os.path.realpath(path)) != here
-    ]
+    here = os.path.dirname(__file__)
+    if here in sys.path:
+        sys.path.remove(here)
 
     hook = globals()[hook_name]
 
     hook_input = read_json(pjoin(control_dir, "input.json"))
 
-    with warnings.catch_warnings(record=True) as captured_warnings:
-        json_out = {"unsupported": False, "return_val": None}
-        try:
-            json_out["return_val"] = hook(**hook_input["kwargs"])
-        except BackendUnavailable as e:
-            json_out["no_backend"] = True
-            json_out["traceback"] = e.traceback
-            json_out["backend_error"] = e.message
-        except GotUnsupportedOperation as e:
-            json_out["unsupported"] = True
-            json_out["traceback"] = e.traceback
-        except HookMissing as e:
-            json_out["hook_missing"] = True
-            json_out["missing_hook_name"] = e.hook_name or hook_name
+    json_out = {"unsupported": False, "return_val": None}
+    try:
+        json_out["return_val"] = hook(**hook_input["kwargs"])
+    except BackendUnavailable as e:
+        json_out["no_backend"] = True
+        json_out["traceback"] = e.traceback
+        json_out["backend_error"] = e.message
+    except GotUnsupportedOperation as e:
+        json_out["unsupported"] = True
+        json_out["traceback"] = e.traceback
+    except HookMissing as e:
+        json_out["hook_missing"] = True
+        json_out["missing_hook_name"] = e.hook_name or hook_name
 
-    json_out["warnings"] = [
-        {
-            "message": str(w.message),
-            "filename": w.filename,
-            "lineno": w.lineno,
-        }
-        for w in captured_warnings
-        if isinstance(w.category, type) and issubclass(w.category, UserWarning)
-    ]
     write_json(json_out, pjoin(control_dir, "output.json"), indent=2)
 
 

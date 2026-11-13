@@ -7,7 +7,7 @@ from pip._internal.metadata.base import BaseDistribution
 from pip._internal.req import InstallRequirement
 
 if TYPE_CHECKING:
-    from pip._internal.build_env import BuildEnvironmentInstaller, BuildIsolationMode
+    from pip._internal.build_env import BuildEnvironmentInstaller
 
 
 class AbstractDistribution(metaclass=abc.ABCMeta):
@@ -33,8 +33,7 @@ class AbstractDistribution(metaclass=abc.ABCMeta):
         super().__init__()
         self.req = req
 
-    @property
-    @abc.abstractmethod
+    @abc.abstractproperty
     def build_tracker_id(self) -> str | None:
         """A string that uniquely identifies this requirement to the build tracker.
 
@@ -50,8 +49,7 @@ class AbstractDistribution(metaclass=abc.ABCMeta):
     def prepare_distribution_metadata(
         self,
         build_env_installer: BuildEnvironmentInstaller,
-        build_isolation: BuildIsolationMode,
+        build_isolation: bool,
         check_build_deps: bool,
-        allow_editables: bool,
     ) -> None:
         raise NotImplementedError()

@@ -14,7 +14,7 @@ def build_wheel_pep517(
     name: str,
     backend: BuildBackendHookCaller,
     metadata_directory: str,
-    wheel_directory: str,
+    tempd: str,
 ) -> str | None:
     """Build one InstallRequirement using the PEP 517 build process.
 
@@ -22,17 +22,17 @@ def build_wheel_pep517(
     """
     assert metadata_directory is not None
     try:
-        logger.debug("Destination directory: %s", wheel_directory)
+        logger.debug("Destination directory: %s", tempd)
 
         runner = runner_with_spinner_message(
             f"Building wheel for {name} (pyproject.toml)"
         )
         with backend.subprocess_runner(runner):
             wheel_name = backend.build_wheel(
-                wheel_directory=wheel_directory,
+                tempd,
                 metadata_directory=metadata_directory,
             )
     except Exception:
         logger.error("Failed building wheel for %s", name)
         return None
-    return os.path.join(wheel_directory, wheel_name)
+    return os.path.join(tempd, wheel_name)

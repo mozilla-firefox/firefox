@@ -4,20 +4,16 @@ from __future__ import annotations
 
 import os
 import shutil
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, Callable
 
 from pip._vendor.cachecontrol.cache import SeparateBodyBaseCache
 from pip._vendor.cachecontrol.caches import SeparateBodyFileCache
 from pip._vendor.requests.models import Response
 
-from pip._internal.utils.filesystem import (
-    adjacent_tmp_file,
-    copy_directory_permissions,
-    replace,
-)
+from pip._internal.utils.filesystem import adjacent_tmp_file, replace
 from pip._internal.utils.misc import ensure_dir
 
 
@@ -86,7 +82,16 @@ class SafeFileCache(SeparateBodyBaseCache):
                 writer_func(f)
                 # Inherit the read/write permissions of the cache directory
                 # to enable multi-user cache use-cases.
-                copy_directory_permissions(self.directory, f)
+                mode = (
+                    os.stat(self.directory).st_mode
+                    & 0o666  # select read/write permissions of cache directory
+                    | 0o600  # set owner read/write permissions
+                )
+                # Change permissions only if there is no risk of following a symlink.
+                if os.chmod in os.supports_fd:
+                    os.chmod(f.fileno(), mode)
+                elif os.chmod in os.supports_follow_symlinks:
+                    os.chmod(f.name, mode, follow_symlinks=False)
 
             replace(f.name, path)
 

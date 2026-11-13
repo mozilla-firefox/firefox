@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import collections
-from typing import TYPE_CHECKING, Any, Generic, Iterable, NamedTuple
+from typing import TYPE_CHECKING, Any, Generic, Iterable, Mapping, NamedTuple
 
 from ..structs import CT, KT, RT, DirectedGraph
 
@@ -11,9 +11,9 @@ if TYPE_CHECKING:
     from .criterion import Criterion
 
     class Result(NamedTuple, Generic[RT, CT, KT]):
-        mapping: dict[KT, CT]
+        mapping: Mapping[KT, CT]
         graph: DirectedGraph[KT | None]
-        criteria: dict[KT, Criterion[RT, CT]]
+        criteria: Mapping[KT, Criterion[RT, CT]]
 
 else:
     Result = collections.namedtuple("Result", ["mapping", "graph", "criteria"])

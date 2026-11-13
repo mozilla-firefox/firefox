@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
-from collections.abc import Generator, Iterator, Sequence
+from collections.abc import Generator, Sequence
 from email.parser import Parser
 from optparse import Values
 from typing import TYPE_CHECKING, cast
@@ -16,8 +15,8 @@ from pip._internal.cli.index_command import IndexGroupCommand
 from pip._internal.cli.status_codes import SUCCESS
 from pip._internal.exceptions import CommandError
 from pip._internal.metadata import BaseDistribution, get_environment
-from pip._internal.metadata.base import stdlib_pkgs
 from pip._internal.models.selection_prefs import SelectionPreferences
+from pip._internal.utils.compat import stdlib_pkgs
 from pip._internal.utils.misc import tabulate, write_output
 
 if TYPE_CHECKING:
@@ -91,6 +90,15 @@ class ListCommand(IndexGroupCommand):
             help="Only output packages installed in user-site.",
         )
         self.cmd_opts.add_option(cmdoptions.list_path())
+        self.cmd_opts.add_option(
+            "--pre",
+            action="store_true",
+            default=False,
+            help=(
+                "Include pre-release and development versions. By default, "
+                "pip only finds stable versions."
+            ),
+        )
 
         self.cmd_opts.add_option(
             "--format",
@@ -127,22 +135,12 @@ class ListCommand(IndexGroupCommand):
         self.cmd_opts.add_option(cmdoptions.list_exclude())
         index_opts = cmdoptions.make_option_group(cmdoptions.index_group, self.parser)
 
-        selection_opts = cmdoptions.make_option_group(
-            cmdoptions.package_selection_group,
-            self.parser,
-        )
-
         self.parser.insert_option_group(0, index_opts)
-        self.parser.insert_option_group(0, selection_opts)
         self.parser.insert_option_group(0, self.cmd_opts)
 
-    @contextlib.contextmanager
-    def pip_version_check(self, options: Values, args: list[str]) -> Iterator[None]:
-        if not (options.outdated or options.uptodate):
-            yield
-            return
-        with super().pip_version_check(options, args):
-            yield
+    def handle_pip_version_check(self, options: Values) -> None:
+        if options.outdated or options.uptodate:
+            super().handle_pip_version_check(options)
 
     def _build_package_finder(
         self, options: Values, session: PipSession
@@ -159,20 +157,15 @@ class ListCommand(IndexGroupCommand):
         # Pass allow_yanked=False to ignore yanked versions.
         selection_prefs = SelectionPreferences(
             allow_yanked=False,
-            release_control=options.release_control,
-            format_control=options.format_control,
-            prefer_binary=options.prefer_binary,
+            allow_all_prereleases=options.pre,
         )
 
         return PackageFinder.create(
             link_collector=link_collector,
             selection_prefs=selection_prefs,
-            uploaded_prior_to=options.uploaded_prior_to,
         )
 
     def run(self, options: Values, args: list[str]) -> int:
-        cmdoptions.check_release_control_exclusive(options)
-
         if options.outdated and options.uptodate:
             raise CommandError("Options --outdated and --uptodate cannot be combined.")
 
@@ -183,6 +176,10 @@ class ListCommand(IndexGroupCommand):
 
         cmdoptions.check_list_path_option(options)
 
+        skip = set(stdlib_pkgs)
+        if options.excludes:
+            skip.update(canonicalize_name(n) for n in options.excludes)
+
         packages: _ProcessedDists = [
             cast("_DistWithLatestInfo", d)
             for d in get_environment(options.path).iter_installed_distributions(
@@ -190,7 +187,7 @@ class ListCommand(IndexGroupCommand):
                 user_only=options.user,
                 editables_only=options.editable,
                 include_editables=options.include_editable,
-                skip=set(stdlib_pkgs),
+                skip=skip,
             )
         ]
 
@@ -200,12 +197,6 @@ class ListCommand(IndexGroupCommand):
         # could be filtered out before.
         if options.not_required:
             packages = self.get_not_required(packages, options)
-
-        if options.excludes:
-            excluded_names = {canonicalize_name(n) for n in options.excludes}
-            packages = [
-                dist for dist in packages if dist.canonical_name not in excluded_names
-            ]
 
         if options.outdated:
             packages = self.get_outdated(packages, options)
@@ -257,7 +248,8 @@ class ListCommand(IndexGroupCommand):
                 dist: _DistWithLatestInfo,
             ) -> _DistWithLatestInfo | None:
                 all_candidates = finder.find_all_candidates(dist.canonical_name)
-                if self.should_exclude_prerelease(options, dist.canonical_name):
+                if not options.pre:
+                    # Remove prereleases
                     all_candidates = [
                         candidate
                         for candidate in all_candidates
@@ -349,14 +341,14 @@ def format_for_columns(
     if has_build_tags:
         header.append("Build")
 
-    has_editables = any(x.editable for x in pkgs)
-    if has_editables:
-        header.append("Editable project location")
-
     if options.verbose >= 1:
         header.append("Location")
     if options.verbose >= 1:
         header.append("Installer")
+
+    has_editables = any(x.editable for x in pkgs)
+    if has_editables:
+        header.append("Editable project location")
 
     data = []
     for i, proj in enumerate(pkgs):

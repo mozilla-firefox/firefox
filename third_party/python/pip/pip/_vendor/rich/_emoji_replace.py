@@ -1,5 +1,8 @@
-import re
 from typing import Callable, Match, Optional
+import re
+
+from ._emoji_codes import EMOJI
+
 
 _ReStringMatch = Match[str]  # regex match object
 _ReSubCallable = Callable[[_ReStringMatch], str]  # Callable invoked by re.sub
@@ -12,10 +15,8 @@ def _emoji_replace(
     _emoji_sub: _EmojiSubMethod = re.compile(r"(:(\S*?)(?:(?:\-)(emoji|text))?:)").sub,
 ) -> str:
     """Replace emoji code in text."""
-    from ._emoji_codes import EMOJI
-
     get_emoji = EMOJI.__getitem__
-    variants = {"text": "\ufe0e", "emoji": "\ufe0f"}
+    variants = {"text": "\uFE0E", "emoji": "\uFE0F"}
     get_variant = variants.get
     default_variant_code = variants.get(default_variant, "") if default_variant else ""
 

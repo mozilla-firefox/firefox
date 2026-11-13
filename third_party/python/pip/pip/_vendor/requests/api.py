@@ -8,22 +8,10 @@ This module implements the Requests API.
 :license: Apache2, see LICENSE for more details.
 """
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
 from . import sessions
-from .models import Response
-
-if TYPE_CHECKING:
-    from typing_extensions import Unpack
-
-    from . import _types as _t
 
 
-def request(
-    method: str, url: _t.UriType, **kwargs: Unpack[_t.RequestKwargs]
-) -> Response:
+def request(method, url, **kwargs):
     """Constructs and sends a :class:`Request <Request>`.
 
     :param method: method for the new :class:`Request` object: ``GET``, ``OPTIONS``, ``HEAD``, ``POST``, ``PUT``, ``PATCH``, or ``DELETE``.
@@ -71,9 +59,7 @@ def request(
         return session.request(method=method, url=url, **kwargs)
 
 
-def get(
-    url: _t.UriType, params: _t.ParamsType = None, **kwargs: Unpack[_t.GetKwargs]
-) -> Response:
+def get(url, params=None, **kwargs):
     r"""Sends a GET request.
 
     :param url: URL for the new :class:`Request` object.
@@ -87,7 +73,7 @@ def get(
     return request("get", url, params=params, **kwargs)
 
 
-def options(url: _t.UriType, **kwargs: Unpack[_t.RequestKwargs]) -> Response:
+def options(url, **kwargs):
     r"""Sends an OPTIONS request.
 
     :param url: URL for the new :class:`Request` object.
@@ -99,7 +85,7 @@ def options(url: _t.UriType, **kwargs: Unpack[_t.RequestKwargs]) -> Response:
     return request("options", url, **kwargs)
 
 
-def head(url: _t.UriType, **kwargs: Unpack[_t.RequestKwargs]) -> Response:
+def head(url, **kwargs):
     r"""Sends a HEAD request.
 
     :param url: URL for the new :class:`Request` object.
@@ -114,12 +100,7 @@ def head(url: _t.UriType, **kwargs: Unpack[_t.RequestKwargs]) -> Response:
     return request("head", url, **kwargs)
 
 
-def post(
-    url: _t.UriType,
-    data: _t.DataType = None,
-    json: _t.JsonType = None,
-    **kwargs: Unpack[_t.PostKwargs],
-) -> Response:
+def post(url, data=None, json=None, **kwargs):
     r"""Sends a POST request.
 
     :param url: URL for the new :class:`Request` object.
@@ -134,9 +115,7 @@ def post(
     return request("post", url, data=data, json=json, **kwargs)
 
 
-def put(
-    url: _t.UriType, data: _t.DataType = None, **kwargs: Unpack[_t.DataKwargs]
-) -> Response:
+def put(url, data=None, **kwargs):
     r"""Sends a PUT request.
 
     :param url: URL for the new :class:`Request` object.
@@ -151,9 +130,7 @@ def put(
     return request("put", url, data=data, **kwargs)
 
 
-def patch(
-    url: _t.UriType, data: _t.DataType = None, **kwargs: Unpack[_t.DataKwargs]
-) -> Response:
+def patch(url, data=None, **kwargs):
     r"""Sends a PATCH request.
 
     :param url: URL for the new :class:`Request` object.
@@ -168,7 +145,7 @@ def patch(
     return request("patch", url, data=data, **kwargs)
 
 
-def delete(url: _t.UriType, **kwargs: Unpack[_t.RequestKwargs]) -> Response:
+def delete(url, **kwargs):
     r"""Sends a DELETE request.
 
     :param url: URL for the new :class:`Request` object.

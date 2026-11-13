@@ -2,9 +2,6 @@ import sys
 from optparse import Values
 from pathlib import Path
 
-from pip._vendor import tomli_w
-from pip._vendor.packaging.pylock import is_valid_pylock_path
-
 from pip._internal.cache import WheelCache
 from pip._internal.cli import cmdoptions
 from pip._internal.cli.req_command import (
@@ -12,12 +9,15 @@ from pip._internal.cli.req_command import (
     with_cleanup,
 )
 from pip._internal.cli.status_codes import SUCCESS
+from pip._internal.models.pylock import Pylock, is_valid_pylock_file_name
 from pip._internal.operations.build.build_tracker import get_build_tracker
+from pip._internal.req.req_install import (
+    check_legacy_setup_py_options,
+)
 from pip._internal.utils.logging import getLogger
 from pip._internal.utils.misc import (
     get_pip_version,
 )
-from pip._internal.utils.pylock import pylock_from_install_requirements
 from pip._internal.utils.temp_dir import TempDirectory
 
 logger = getLogger(__name__)
@@ -58,11 +58,9 @@ class LockCommand(RequirementCommand):
             )
         )
         self.cmd_opts.add_option(cmdoptions.requirements())
-        self.cmd_opts.add_option(cmdoptions.requirements_from_scripts())
         self.cmd_opts.add_option(cmdoptions.constraints())
-        self.cmd_opts.add_option(cmdoptions.build_constraints())
         self.cmd_opts.add_option(cmdoptions.no_deps())
-        self.cmd_opts.add_option(cmdoptions.only_deps())
+        self.cmd_opts.add_option(cmdoptions.pre())
 
         self.cmd_opts.add_option(cmdoptions.editable())
 
@@ -71,12 +69,15 @@ class LockCommand(RequirementCommand):
         self.cmd_opts.add_option(cmdoptions.ignore_requires_python())
         self.cmd_opts.add_option(cmdoptions.no_build_isolation())
         self.cmd_opts.add_option(cmdoptions.use_pep517())
+        self.cmd_opts.add_option(cmdoptions.no_use_pep517())
         self.cmd_opts.add_option(cmdoptions.check_build_deps())
 
         self.cmd_opts.add_option(cmdoptions.config_settings())
 
+        self.cmd_opts.add_option(cmdoptions.no_binary())
+        self.cmd_opts.add_option(cmdoptions.only_binary())
+        self.cmd_opts.add_option(cmdoptions.prefer_binary())
         self.cmd_opts.add_option(cmdoptions.require_hashes())
-        self.cmd_opts.add_option(cmdoptions.no_require_hashes())
         self.cmd_opts.add_option(cmdoptions.progress_bar())
 
         index_opts = cmdoptions.make_option_group(
@@ -84,13 +85,7 @@ class LockCommand(RequirementCommand):
             self.parser,
         )
 
-        selection_opts = cmdoptions.make_option_group(
-            cmdoptions.package_selection_group,
-            self.parser,
-        )
-
         self.parser.insert_option_group(0, index_opts)
-        self.parser.insert_option_group(0, selection_opts)
         self.parser.insert_option_group(0, self.cmd_opts)
 
     @with_cleanup
@@ -102,10 +97,6 @@ class LockCommand(RequirementCommand):
             "It may be removed/changed in a future release "
             "without prior warning."
         )
-
-        self.check_build_constraints(options)
-        cmdoptions.check_release_control_exclusive(options)
-        cmdoptions.check_only_deps_option_does_not_conflict(options)
 
         session = self.get_default_session(options)
 
@@ -123,8 +114,15 @@ class LockCommand(RequirementCommand):
         )
 
         reqs = self.get_requirements(args, options, finder, session)
+        check_legacy_setup_py_options(options, reqs)
 
         wheel_cache = WheelCache(options.cache_dir)
+
+        # Only when installing is it permitted to use PEP 660.
+        # In other circumstances (pip wheel, pip download) we generate
+        # regular (i.e. non editable) metadata and wheels.
+        for req in reqs:
+            req.permit_editable_wheels = True
 
         preparer = self.make_requirement_preparer(
             temp_build_dir=directory,
@@ -134,7 +132,6 @@ class LockCommand(RequirementCommand):
             finder=finder,
             use_user_site=False,
             verbosity=self.verbosity,
-            allow_editables=True,
         )
         resolver = self.make_resolver(
             preparer=preparer,
@@ -145,6 +142,7 @@ class LockCommand(RequirementCommand):
             ignore_installed=True,
             ignore_requires_python=options.ignore_requires_python,
             upgrade_strategy="to-satisfy-only",
+            use_pep517=options.use_pep517,
         )
 
         self.trace_basic_info(finder)
@@ -155,16 +153,15 @@ class LockCommand(RequirementCommand):
             base_dir = Path.cwd()
         else:
             output_file_path = Path(options.output_file)
-            if not is_valid_pylock_path(output_file_path):
+            if not is_valid_pylock_file_name(output_file_path):
                 logger.warning(
                     "%s is not a valid lock file name.",
                     output_file_path,
                 )
             base_dir = output_file_path.parent
-        pylock = pylock_from_install_requirements(
+        pylock_toml = Pylock.from_install_requirements(
             requirement_set.requirements.values(), base_dir=base_dir
-        )
-        pylock_toml = tomli_w.dumps(pylock.to_dict())
+        ).as_toml()
         if options.output_file == "-":
             sys.stdout.write(pylock_toml)
         else:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import importlib
+import locale
 import logging
 import os
 import sys
@@ -18,7 +18,7 @@ from pip._internal.cli.cmdoptions import make_target_python
 from pip._internal.cli.status_codes import SUCCESS
 from pip._internal.configuration import Configuration
 from pip._internal.metadata import get_environment
-from pip._internal.utils.compat import get_locale_encoding, open_text_resource
+from pip._internal.utils.compat import open_text_resource
 from pip._internal.utils.logging import indent_log
 from pip._internal.utils.misc import get_pip_version
 
@@ -48,21 +48,29 @@ def create_vendor_txt_map() -> dict[str, str]:
     return dict(line.split("==", 1) for line in lines)
 
 
-def get_module_from_module_name(module_name: str) -> ModuleType:
+def get_module_from_module_name(module_name: str) -> ModuleType | None:
     # Module name can be uppercase in vendor.txt for some reason...
     module_name = module_name.lower().replace("-", "_")
     # PATCH: setuptools is actually only pkg_resources.
     if module_name == "setuptools":
         module_name = "pkg_resources"
 
-    return importlib.import_module(f"pip._vendor.{module_name}")
+    try:
+        __import__(f"pip._vendor.{module_name}", globals(), locals(), level=0)
+        return getattr(pip._vendor, module_name)
+    except ImportError:
+        # We allow 'truststore' to fail to import due
+        # to being unavailable on Python 3.9 and earlier.
+        if module_name == "truststore" and sys.version_info < (3, 10):
+            return None
+        raise
 
 
 def get_vendor_version_from_module(module_name: str) -> str | None:
     module = get_module_from_module_name(module_name)
     version = getattr(module, "__version__", None)
 
-    if not version:
+    if module and not version:
         # Try to find version in debundled module info.
         assert module.__file__ is not None
         env = get_environment([os.path.dirname(module.__file__)])
@@ -133,7 +141,7 @@ def show_tags(options: Values) -> None:
 
 
 def ca_bundle_info(config: Configuration) -> str:
-    levels = {key.split(".", 1)[0] for _, options in config.items() for key in options}
+    levels = {key.split(".", 1)[0] for key, _ in config.items()}
     if not levels:
         return "Not specified"
 
@@ -176,8 +184,8 @@ class DebugCommand(Command):
         show_value("sys.getdefaultencoding", sys.getdefaultencoding())
         show_value("sys.getfilesystemencoding", sys.getfilesystemencoding())
         show_value(
-            "locale.getencoding",
-            get_locale_encoding(),
+            "locale.getpreferredencoding",
+            locale.getpreferredencoding(),
         )
         show_value("sys.platform", sys.platform)
         show_sys_implementation()

@@ -384,11 +384,6 @@ class Resolution(Generic[RT, CT, KT]):
                 if not broken_state.mapping:
                     break
 
-                # Guard: We need at least two state to remain to both
-                # backtrack and push a new state
-                if len(self._states) <= 1:
-                    raise ResolutionImpossible(causes)
-
             incompatibilities_from_broken = [
                 (k, list(v.incompatibilities)) for k, v in broken_state.criteria.items()
             ]

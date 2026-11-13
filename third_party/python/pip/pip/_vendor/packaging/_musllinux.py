@@ -10,12 +10,9 @@ import functools
 import re
 import subprocess
 import sys
-from typing import TYPE_CHECKING, NamedTuple
+from typing import Iterator, NamedTuple, Sequence
 
 from ._elffile import ELFFile
-
-if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
 
 
 class _MuslVersion(NamedTuple):
@@ -52,7 +49,7 @@ def _get_musl_version(executable: str) -> _MuslVersion | None:
         return None
     if ld is None or "musl" not in ld:
         return None
-    proc = subprocess.run([ld], check=False, stderr=subprocess.PIPE, text=True)
+    proc = subprocess.run([ld], stderr=subprocess.PIPE, text=True)
     return _parse_musl_version(proc.stderr)
 
 
@@ -84,5 +81,5 @@ if __name__ == "__main__":  # pragma: no cover
     print("plat:", plat)
     print("musl:", _get_musl_version(sys.executable))
     print("tags:", end=" ")
-    for t in platform_tags([re.sub(r"[.-]", "_", plat.split("-", 1)[-1])]):
+    for t in platform_tags(re.sub(r"[.-]", "_", plat.split("-", 1)[-1])):
         print(t, end="\n      ")

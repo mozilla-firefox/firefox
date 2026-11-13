@@ -10,7 +10,6 @@ from pip._vendor.packaging.utils import NormalizedName, canonicalize_name
 from pip._vendor.packaging.version import Version
 
 from pip._internal.exceptions import (
-    FailedToPrepareCandidate,
     HashError,
     InstallationSubprocessError,
     InvalidInstalledPackage,
@@ -58,19 +57,10 @@ def as_base_candidate(candidate: Candidate) -> BaseCandidate | None:
 
 
 def make_install_req_from_link(
-    link: Link,
-    template: InstallRequirement,
-    version: Version | None = None,
-    *,
-    source_link: Link,
+    link: Link, template: InstallRequirement
 ) -> InstallRequirement:
     assert not template.editable, "template is editable"
-    if version is not None and template.req and template.hash_options:
-        # When hashes are provided via constraints for an unpinned requirement,
-        # the resulting install requirement must appear pinned so that the
-        # hash-checking logic does not reject it as HashUnpinned.
-        line = f"{template.req.name}=={version}"
-    elif template.req:
+    if template.req:
         line = str(template.req)
     else:
         line = link.url
@@ -78,14 +68,15 @@ def make_install_req_from_link(
         line,
         user_supplied=template.user_supplied,
         comes_from=template.comes_from,
+        use_pep517=template.use_pep517,
         isolated=template.isolated,
         constraint=template.constraint,
+        global_options=template.global_options,
         hash_options=template.hash_options,
         config_settings=template.config_settings,
     )
     ireq.original_link = template.original_link
     ireq.link = link
-    ireq.set_source_link(source_link)
     ireq.extras = template.extras
     return ireq
 
@@ -94,16 +85,15 @@ def make_install_req_from_editable(
     link: Link, template: InstallRequirement
 ) -> InstallRequirement:
     assert template.editable, "template not editable"
-    if template.name:
-        req_string = f"{template.name} @ {link.url}"
-    else:
-        req_string = link.url
     ireq = install_req_from_editable(
-        req_string,
+        link.url,
         user_supplied=template.user_supplied,
         comes_from=template.comes_from,
+        use_pep517=template.use_pep517,
         isolated=template.isolated,
         constraint=template.constraint,
+        permit_editable_wheels=template.permit_editable_wheels,
+        global_options=template.global_options,
         hash_options=template.hash_options,
         config_settings=template.config_settings,
     )
@@ -124,8 +114,10 @@ def _make_install_req_from_dist(
         line,
         user_supplied=template.user_supplied,
         comes_from=template.comes_from,
+        use_pep517=template.use_pep517,
         isolated=template.isolated,
         constraint=template.constraint,
+        global_options=template.global_options,
         hash_options=template.hash_options,
         config_settings=template.config_settings,
     )
@@ -143,6 +135,10 @@ class _InstallRequirementBackedCandidate(Candidate):
 
     :param link: The link passed to the ``InstallRequirement``. The backing
         ``InstallRequirement`` will use this link to fetch the distribution.
+    :param source_link: The link this candidate "originates" from. This is
+        different from ``link`` when the link is found in the wheel cache.
+        ``link`` would point to the wheel cache, while this points to the
+        found remote link (e.g. from pypi.org).
     """
 
     dist: BaseDistribution
@@ -151,12 +147,14 @@ class _InstallRequirementBackedCandidate(Candidate):
     def __init__(
         self,
         link: Link,
+        source_link: Link,
         ireq: InstallRequirement,
         factory: Factory,
         name: NormalizedName | None = None,
         version: Version | None = None,
     ) -> None:
         self._link = link
+        self._source_link = source_link
         self._factory = factory
         self._ireq = ireq
         self._name = name
@@ -184,7 +182,7 @@ class _InstallRequirementBackedCandidate(Candidate):
 
     @property
     def source_link(self) -> Link | None:
-        return self._ireq.source_link
+        return self._source_link
 
     @property
     def project_name(self) -> NormalizedName:
@@ -206,8 +204,7 @@ class _InstallRequirementBackedCandidate(Candidate):
     def format_for_error(self) -> str:
         return (
             f"{self.name} {self.version} "
-            f"(from {'editable ' if self.is_editable else ''}"
-            f"{self._link.file_path if self._link.is_file else self._link})"
+            f"(from {self._link.file_path if self._link.is_file else self._link})"
         )
 
     def _prepare_distribution(self) -> BaseDistribution:
@@ -247,19 +244,9 @@ class _InstallRequirementBackedCandidate(Candidate):
             e.req = self._ireq
             raise
         except InstallationSubprocessError as exc:
-            if isinstance(self._ireq.comes_from, InstallRequirement):
-                request_chain = self._ireq.comes_from.from_path()
-            else:
-                request_chain = self._ireq.comes_from
-
-            if request_chain is None:
-                request_chain = "directly requested"
-
-            raise FailedToPrepareCandidate(
-                package_name=self._ireq.name or str(self._link),
-                requirement_chain=request_chain,
-                failed_step=exc.command_description,
-            )
+            # The output has been presented already, so don't duplicate it.
+            exc.context = "See above for output."
+            raise
 
         self._check_metadata_consistency(dist)
         return dist
@@ -292,16 +279,11 @@ class LinkCandidate(_InstallRequirementBackedCandidate):
         if cache_entry is not None:
             logger.debug("Using cached wheel link: %s", cache_entry.link)
             link = cache_entry.link
-        ireq = make_install_req_from_link(
-            link,
-            template,
-            version=version,
-            source_link=source_link,
-        )
+        ireq = make_install_req_from_link(link, template)
         assert ireq.link == link
         if ireq.link.is_wheel and not ireq.link.is_file:
             wheel = Wheel(ireq.link.filename)
-            wheel_name = wheel.name
+            wheel_name = canonicalize_name(wheel.name)
             assert name == wheel_name, f"{name!r} != {wheel_name!r} for wheel"
             # Version may not be present for PEP 508 direct URLs
             if version is not None:
@@ -326,6 +308,7 @@ class LinkCandidate(_InstallRequirementBackedCandidate):
 
         super().__init__(
             link=link,
+            source_link=source_link,
             ireq=ireq,
             factory=factory,
             name=name,
@@ -350,6 +333,7 @@ class EditableCandidate(_InstallRequirementBackedCandidate):
     ) -> None:
         super().__init__(
             link=link,
+            source_link=link,
             ireq=make_install_req_from_editable(link, template),
             factory=factory,
             name=name,
@@ -373,7 +357,7 @@ class AlreadyInstalledCandidate(Candidate):
         self.dist = dist
         self._ireq = _make_install_req_from_dist(dist, template)
         self._factory = factory
-        self._version: Version | None = None
+        self._version = None
 
         # This is just logging some messages, so we can do it eagerly.
         # The returned dist would be exactly the same as self.dist because we

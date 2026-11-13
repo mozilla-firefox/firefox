@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2012-2026 The Python Software Foundation.
+# Copyright (C) 2012-2023 The Python Software Foundation.
 # See LICENSE.txt and CONTRIBUTORS.txt.
 #
 import codecs
@@ -589,11 +589,7 @@ class FileOperator(object):
                 self.dirs_created.add(path)
 
     def byte_compile(self, path, optimize=False, force=False, prefix=None, hashed_invalidation=False):
-        if not optimize:
-            optimization = ''
-        else:
-            optimization = '1'
-        dpath = cache_from_source(path, optimization=optimization)
+        dpath = cache_from_source(path, not optimize)
         logger.info('Byte-compiling %s to %s', path, dpath)
         if not self.dry_run:
             if force or self.newer(path, dpath):
@@ -707,8 +703,8 @@ class ExportEntry(object):
         if not isinstance(other, ExportEntry):
             result = False
         else:
-            result = (self.name == other.name and self.prefix == other.prefix and self.suffix == other.suffix
-                      and self.flags == other.flags)
+            result = (self.name == other.name and self.prefix == other.prefix and self.suffix == other.suffix and
+                      self.flags == other.flags)
         return result
 
     __hash__ = object.__hash__
@@ -720,35 +716,9 @@ ENTRY_RE = re.compile(
                       \s*(\[\s*(?P<flags>[\w-]+(=\w+)?(,\s*\w+(=\w+)?)*)\s*\])?
                       ''', re.VERBOSE)
 
-# ENTRY_RE, but only starting at the first or last character of a whitespace
-# run. See _search_export_entry.
-_ENTRY_RE_AT_SPACE = re.compile(r'(?:(?<!\s)(?=\s)|(?=\s\S))' +
-                                ENTRY_RE.pattern, re.VERBOSE)
-
-
-def _search_export_entry(specification):
-    """
-    Return ENTRY_RE.search(specification), in linear rather than quadratic
-    time.
-
-    search() tries every start position, and each attempt can rescan the rest
-    of a long name. Most positions cannot hold the leftmost match: a match that
-    starts inside a run of non-space characters implies one starting earlier in
-    the run (or at the whitespace just before it, since a name may start with
-    whitespace), and a match starting inside a whitespace run, other than at
-    its last character, implies one at its first. So the leftmost match starts
-    at the first character that is not '[' (a name cannot start with '['), or
-    at the first or last character of a whitespace run.
-    """
-    start = len(specification) - len(specification.lstrip('['))
-    m = ENTRY_RE.match(specification, start)
-    if not m:
-        m = _ENTRY_RE_AT_SPACE.search(specification, start)
-    return m
-
 
 def get_export_entry(specification):
-    m = _search_export_entry(specification)
+    m = ENTRY_RE.search(specification)
     if not m:
         result = None
         if '[' in specification or ']' in specification:
@@ -1253,52 +1223,15 @@ ARCHIVE_EXTENSIONS = ('.tar.gz', '.tar.bz2', '.tar', '.zip', '.tgz', '.tbz', '.w
 
 def unarchive(archive_filename, dest_dir, format=None, check=True):
 
-    # Symlinks seen so far in the archive, mapping the link's resolved path
-    # to its resolved target. Earlier members don't exist on disk while we
-    # check, so later member paths are resolved through this map lexically.
-    links = {}
-
-    def resolve(path):
-        cur = dest_dir
-        if not (path == dest_dir or path.startswith(dest_dir + os.sep)):
-            return os.path.realpath(path)
-        for part in path[len(dest_dir):].split(os.sep):
-            if part in ('', '.'):
-                continue
-            if part == '..':
-                cur = os.path.dirname(cur)
-            else:
-                cur = links.get(os.path.join(cur, part), os.path.join(cur, part))
-        return os.path.realpath(cur)
-
-    def check_path(path, base=None):
+    def check_path(path):
         if not isinstance(path, text_type):
             path = path.decode('utf-8')
-        if base is None:
-            base = dest_dir
-        p = resolve(os.path.join(base, path))
-        if not (p == dest_dir or p.startswith(dest_dir + os.sep)):
+        p = os.path.abspath(os.path.join(dest_dir, path))
+        if not p.startswith(dest_dir) or p[plen] != os.sep:
             raise ValueError('path outside destination: %r' % p)
-        return p
 
-    def check_link(member):
-        # A symlink/hardlink member's name is validated like any other
-        # member, but its target (linkname) is not covered by extractall's
-        # name-based handling. An unchecked target lets a later member be
-        # written through the link to a location outside dest_dir. Validate
-        # the resolved target stays within dest_dir. Symlink targets are
-        # relative to the member's own directory; hardlink targets are
-        # relative to the archive root (i.e. dest_dir).
-        if not (member.issym() or member.islnk()):
-            return
-        if member.islnk():
-            check_path(member.linkname)
-            return
-        name = member.name.rstrip('/')
-        parent = check_path(os.path.dirname(name) or '.')
-        links[os.path.join(parent, os.path.basename(name))] = check_path(member.linkname, base=parent)
-
-    dest_dir = os.path.realpath(dest_dir)
+    dest_dir = os.path.abspath(dest_dir)
+    plen = len(dest_dir)
     archive = None
     if format is None:
         if archive_filename.endswith(('.zip', '.whl')):
@@ -1324,9 +1257,9 @@ def unarchive(archive_filename, dest_dir, format=None, check=True):
         else:
             archive = tarfile.open(archive_filename, mode)
             if check:
-                for member in archive.getmembers():
-                    check_path(member.name)
-                    check_link(member)
+                names = archive.getnames()
+                for name in names:
+                    check_path(name)
         if format != 'zip' and sys.version_info[0] < 3:
             # See Python issue 17153. If the dest path contains Unicode,
             # tarfile extraction fails on Python 2.x if a member path name
@@ -1339,13 +1272,11 @@ def unarchive(archive_filename, dest_dir, format=None, check=True):
         # Limit extraction of dangerous items, if this Python
         # allows it easily. If not, just trust the input.
         # See: https://docs.python.org/3/library/tarfile.html#extraction-filters
-        # data_filter is the stdlib default from Python 3.14 onwards; using the
-        # laxer tar_filter here would downgrade that secure default.
         def extraction_filter(member, path):
-            """Run tarfile.data_filter, but raise the expected ValueError"""
+            """Run tarfile.tar_filter, but raise the expected ValueError"""
             # This is only called if the current Python has tarfile filters
             try:
-                return tarfile.data_filter(member, path)
+                return tarfile.tar_filter(member, path)
             except tarfile.FilterError as exc:
                 raise ValueError(str(exc))
 
@@ -1523,7 +1454,6 @@ if ssl:
     #
     # HTTPSConnection which verifies certificates/matches domains
     #
-
 
     class HTTPSConnection(httplib.HTTPSConnection):
         ca_certs = None  # set this to the path to the certs file (.pem)
@@ -1846,13 +1776,8 @@ class SubprocessMixin(object):
 
 def normalize_name(name):
     """Normalize a python package name a la PEP 503"""
-    # https://peps.python.org/pep-0503/#normalized-names
-    # Emulates re.sub(r"[-_.]+", "-", name).lower()
-    # Much faster than re, and even faster than str.translate
-    value = name.lower().replace("_", "-").replace(".", "-")
-    while "--" in value:
-        value = value.replace("--", "-")
-    return value
+    # https://www.python.org/dev/peps/pep-0503/#normalized-names
+    return re.sub('[-_.]+', '-', name).lower()
 
 
 # def _get_pypirc_command():
@@ -2057,12 +1982,3 @@ def get_platform():
     if cross_compilation_target not in _TARGET_TO_PLAT:
         return get_host_platform()
     return _TARGET_TO_PLAT[cross_compilation_target]
-
-
-def is_in_directory(path, target):
-    """
-    Check if a path is inside a target directory. This doesn't check case (might be an issue on Windows)
-    """
-    path = os.path.abspath(path)
-    target = os.path.abspath(target)
-    return path == target or path.startswith(target + os.sep)

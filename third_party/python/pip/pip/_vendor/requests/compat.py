@@ -7,18 +7,12 @@ between Python 2 and Python 3. It remains for backwards
 compatibility until the next major version.
 """
 
-# pyright: reportUnusedImport=false
-
-from __future__ import annotations
-
 import sys
 
 # -------
 # urllib3
 # -------
-from pip._vendor.urllib3 import (
-    __version__ as urllib3_version,  # type: ignore[reportPrivateImportUsage]
-)
+from pip._vendor.urllib3 import __version__ as urllib3_version
 
 # Detect which major version of urllib3 is being used.
 try:
@@ -32,7 +26,7 @@ except (TypeError, AttributeError):
 # -------------------
 
 
-def _resolve_char_detection() -> None:
+def _resolve_char_detection():
     """Find supported character detection libraries."""
     chardet = None
     return chardet
@@ -85,7 +79,7 @@ from urllib.request import (
     getproxies_environment,
     parse_http_list,
     proxy_bypass,
-    proxy_bypass_environment,  # type: ignore[attr-defined]  # https://github.com/python/cpython/issues/145331
+    proxy_bypass_environment,
 )
 
 builtin_str = str

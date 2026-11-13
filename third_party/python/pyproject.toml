@@ -11,7 +11,7 @@ dependencies = [
     "attrs~=25.3",
     "blessed~=1.19",
     "cbor2~=5.8",
-    "certifi==2026.10.23",
+    "certifi==2026.10.19",
     "click==8.1.7",
     "colorama==0.4.6",
     "compare-locales~=9.0",
@@ -39,7 +39,10 @@ dependencies = [
     "multidict~=6.7",
     "packaging~=25.0",
     "pathspec~=0.9",
-    "pip==26.3",
+    "pip-tools==7.4.1",
+    # 25.2 is the last version of pip that accepts `--no-use-pep517`, which
+    # Mozharness passes when `uv` is unavailable. See bug 1857470.
+    "pip==25.2",
     "ply==3.10",
     "pyasn1-modules~=0.2",
     "pyasn1~=0.4",

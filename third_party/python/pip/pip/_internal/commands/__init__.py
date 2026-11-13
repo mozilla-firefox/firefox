@@ -5,17 +5,12 @@ Package containing all pip commands
 from __future__ import annotations
 
 import importlib
-from typing import TYPE_CHECKING, Any, NamedTuple
+from collections import namedtuple
+from typing import Any
 
-if TYPE_CHECKING:
-    from pip._internal.cli.base_command import Command
+from pip._internal.cli.base_command import Command
 
-
-class CommandInfo(NamedTuple):
-    module_path: str
-    class_name: str
-    summary: str
-
+CommandInfo = namedtuple("CommandInfo", "module_path, class_name, summary")
 
 # This dictionary does a bunch of heavy lifting for help output:
 # - Enables avoiding additional (costly) imports for presenting `--help`.
@@ -124,9 +119,7 @@ def create_command(name: str, **kwargs: Any) -> Command:
     """
     module_path, class_name, summary = commands_dict[name]
     module = importlib.import_module(module_path)
-
-    # Registry entries identify Command subclasses by module and class name.
-    command_class: type[Command] = getattr(module, class_name)
+    command_class = getattr(module, class_name)
     command = command_class(name=name, summary=summary, **kwargs)
 
     return command

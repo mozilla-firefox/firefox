@@ -1,32 +1,28 @@
-from __future__ import annotations
+from __future__ import absolute_import
 
 import binascii
 import codecs
 import os
-import typing
 from io import BytesIO
 
-from .fields import _TYPE_FIELD_VALUE_TUPLE, RequestField
+from .fields import RequestField
+from .packages import six
+from .packages.six import b
 
 writer = codecs.lookup("utf-8")[3]
 
-_TYPE_FIELDS_SEQUENCE = typing.Sequence[
-    typing.Union[tuple[str, _TYPE_FIELD_VALUE_TUPLE], RequestField]
-]
-_TYPE_FIELDS = typing.Union[
-    _TYPE_FIELDS_SEQUENCE,
-    typing.Mapping[str, _TYPE_FIELD_VALUE_TUPLE],
-]
 
-
-def choose_boundary() -> str:
+def choose_boundary():
     """
     Our embarrassingly-simple replacement for mimetools.choose_boundary.
     """
-    return binascii.hexlify(os.urandom(16)).decode()
+    boundary = binascii.hexlify(os.urandom(16))
+    if not six.PY2:
+        boundary = boundary.decode("ascii")
+    return boundary
 
 
-def iter_field_objects(fields: _TYPE_FIELDS) -> typing.Iterable[RequestField]:
+def iter_field_objects(fields):
     """
     Iterate over fields.
 
@@ -34,29 +30,42 @@ def iter_field_objects(fields: _TYPE_FIELDS) -> typing.Iterable[RequestField]:
     :class:`~urllib3.fields.RequestField`.
 
     """
-    iterable: typing.Iterable[RequestField | tuple[str, _TYPE_FIELD_VALUE_TUPLE]]
-
-    if isinstance(fields, typing.Mapping):
-        iterable = fields.items()
+    if isinstance(fields, dict):
+        i = six.iteritems(fields)
     else:
-        iterable = fields
+        i = iter(fields)
 
-    for field in iterable:
+    for field in i:
         if isinstance(field, RequestField):
             yield field
         else:
             yield RequestField.from_tuples(*field)
 
 
-def encode_multipart_formdata(
-    fields: _TYPE_FIELDS, boundary: str | None = None
-) -> tuple[bytes, str]:
+def iter_fields(fields):
+    """
+    .. deprecated:: 1.6
+
+    Iterate over fields.
+
+    The addition of :class:`~urllib3.fields.RequestField` makes this function
+    obsolete. Instead, use :func:`iter_field_objects`, which returns
+    :class:`~urllib3.fields.RequestField` objects.
+
+    Supports list of (k, v) tuples and dicts.
+    """
+    if isinstance(fields, dict):
+        return ((k, v) for k, v in six.iteritems(fields))
+
+    return ((k, v) for k, v in fields)
+
+
+def encode_multipart_formdata(fields, boundary=None):
     """
     Encode a dictionary of ``fields`` using the multipart/form-data MIME format.
 
     :param fields:
         Dictionary of fields or list of (key, :class:`~urllib3.fields.RequestField`).
-        Values are processed by :func:`urllib3.fields.RequestField.from_tuples`.
 
     :param boundary:
         If not specified, then a random boundary will be generated using
@@ -67,7 +76,7 @@ def encode_multipart_formdata(
         boundary = choose_boundary()
 
     for field in iter_field_objects(fields):
-        body.write(f"--{boundary}\r\n".encode("latin-1"))
+        body.write(b("--%s\r\n" % (boundary)))
 
         writer(body).write(field.render_headers())
         data = field.data
@@ -75,15 +84,15 @@ def encode_multipart_formdata(
         if isinstance(data, int):
             data = str(data)  # Backwards compatibility
 
-        if isinstance(data, str):
+        if isinstance(data, six.text_type):
             writer(body).write(data)
         else:
             body.write(data)
 
         body.write(b"\r\n")
 
-    body.write(f"--{boundary}--\r\n".encode("latin-1"))
+    body.write(b("--%s--\r\n" % (boundary)))
 
-    content_type = f"multipart/form-data; boundary={boundary}"
+    content_type = str("multipart/form-data; boundary=%s" % boundary)
 
     return body.getvalue(), content_type

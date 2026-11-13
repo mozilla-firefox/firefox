@@ -37,17 +37,6 @@ else:
         return []
 
 
-# frozendict is a builtin type added in Python 3.15 (PEP 814).
-if sys.version_info >= (3, 15):
-    import builtins
-
-    frozendict = builtins.frozendict
-else:
-
-    class frozendict:
-        pass
-
-
 from .exceptions import BufferFull, ExtraData, FormatError, OutOfData, StackError
 from .ext import ExtType, Timestamp
 
@@ -63,7 +52,7 @@ TYPE_RAW = 3
 TYPE_BIN = 4
 TYPE_EXT = 5
 
-DEFAULT_RECURSE_LIMIT = 1024
+DEFAULT_RECURSE_LIMIT = 511
 
 
 def _check_type_strict(obj, t, type=type, tuple=tuple):
@@ -148,7 +137,7 @@ class Unpacker:
         If specified, unpacker reads serialized data from it and `.feed()` is not usable.
 
     :param int read_size:
-        Used as `file_like.read(read_size)`. Must be equal to or smaller than *max_buffer_size*.
+        Used as `file_like.read(read_size)`. (default: `min(16*1024, max_buffer_size)`)
 
     :param bool use_list:
         If true, unpack msgpack array to Python list.
@@ -339,7 +328,7 @@ class Unpacker:
             self._buf_checkpoint = 0
 
         # Use extend here: INPLACE_ADD += doesn't reliably typecast memoryview in jython
-        self._buffer.extend(view if view.contiguous else view.tobytes())
+        self._buffer.extend(view)
         view.release()
 
     def _consume(self):
@@ -356,8 +345,7 @@ class Unpacker:
     def read_bytes(self, n):
         ret = self._read(n, raise_outofdata=False)
         self._consume()
-        # The C extension returns bytes. A bytearray slice cannot be a dict key.
-        return bytes(ret)
+        return ret
 
     def _read(self, n, raise_outofdata=True):
         # (int) -> bytearray
@@ -502,13 +490,10 @@ class Unpacker:
 
         if execute == EX_READ_ARRAY_HEADER:
             if typ != TYPE_ARRAY:
-                # Leave the object unread, as the C extension does.
-                self._buff_i = self._buf_checkpoint
                 raise ValueError("Expected array")
             return n
         if execute == EX_READ_MAP_HEADER:
             if typ != TYPE_MAP:
-                self._buff_i = self._buf_checkpoint
                 raise ValueError("Expected map")
             return n
         # TODO should we eliminate the recursion?
@@ -518,7 +503,7 @@ class Unpacker:
                     # TODO check whether we need to call `list_hook`
                     self._unpack(EX_SKIP)
                 return
-            ret = newlist_hint(min(n, 10000))
+            ret = newlist_hint(n)
             for i in range(n):
                 ret.append(self._unpack(EX_CONSTRUCT))
             if self._list_hook is not None:
@@ -533,15 +518,9 @@ class Unpacker:
                     self._unpack(EX_SKIP)
                 return
             if self._object_pairs_hook is not None:
-                # Pass a list, as the C extension does, so the whole map is
-                # consumed even if the hook does not iterate it.
-                pairs = []
-                for _ in range(n):
-                    key = self._unpack(EX_CONSTRUCT)
-                    if self._strict_map_key and type(key) not in (str, bytes):
-                        raise ValueError("%s is not allowed for map key" % str(type(key)))
-                    pairs.append((key, self._unpack(EX_CONSTRUCT)))
-                ret = self._object_pairs_hook(pairs)
+                ret = self._object_pairs_hook(
+                    (self._unpack(EX_CONSTRUCT), self._unpack(EX_CONSTRUCT)) for _ in range(n)
+                )
             else:
                 ret = {}
                 for _ in range(n):
@@ -597,10 +576,7 @@ class Unpacker:
     next = __next__
 
     def skip(self):
-        try:
-            self._unpack(EX_SKIP)
-        except RecursionError:
-            raise StackError
+        self._unpack(EX_SKIP)
         self._consume()
 
     def unpack(self):
@@ -710,7 +686,6 @@ class Packer:
             list_types = list
         else:
             list_types = (list, tuple)
-        dict_types = (dict, frozendict)
         while True:
             if nest_limit < 0:
                 raise ValueError("recursion limit exceeded")
@@ -804,7 +779,7 @@ class Packer:
                 for i in range(n):
                     self._pack(obj[i], nest_limit - 1)
                 return
-            if check(obj, dict_types):
+            if check(obj, dict):
                 return self._pack_map_pairs(len(obj), obj.items(), nest_limit - 1)
 
             if self._datetime and check(obj, _DateTime) and obj.tzinfo is not None:
@@ -841,8 +816,6 @@ class Packer:
             return ret
 
     def pack_array_header(self, n):
-        if n < 0:
-            raise ValueError("array size must be non-negative")
         if n >= 2**32:
             raise ValueError
         self._pack_array_header(n)
@@ -852,8 +825,6 @@ class Packer:
             return ret
 
     def pack_map_header(self, n):
-        if n < 0:
-            raise ValueError("map size must be non-negative")
         if n >= 2**32:
             raise ValueError
         self._pack_map_header(n)
@@ -890,10 +861,6 @@ class Packer:
             self._buffer.write(b"\xc9" + struct.pack(">I", L))
         self._buffer.write(struct.pack("B", typecode))
         self._buffer.write(data)
-        if self._autoreset:
-            ret = self._buffer.getvalue()
-            self._buffer = BytesIO()
-            return ret
 
     def _pack_array_header(self, n):
         if n <= 0x0F:

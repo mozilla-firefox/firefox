@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-__version__ = "26.3"
-
-# External tools should import dependencies themselves. If technically unable,
-# add names here, not to pip's internal list.
-_EAGER_IMPORTS: set[str] = set()
+__version__ = "25.2"
 
 
 def main(args: list[str] | None = None) -> int:

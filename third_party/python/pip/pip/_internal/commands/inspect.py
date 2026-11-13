@@ -10,7 +10,7 @@ from pip._internal.cli import cmdoptions
 from pip._internal.cli.base_command import Command
 from pip._internal.cli.status_codes import SUCCESS
 from pip._internal.metadata import BaseDistribution, get_environment
-from pip._internal.metadata.base import stdlib_pkgs
+from pip._internal.utils.compat import stdlib_pkgs
 from pip._internal.utils.urls import path_to_url
 
 logger = logging.getLogger(__name__)
@@ -71,7 +71,7 @@ class InspectCommand(Command):
         # report) since it is not recorded in installed metadata.
         direct_url = dist.direct_url
         if direct_url is not None:
-            res["direct_url"] = direct_url.to_dict_compat()
+            res["direct_url"] = direct_url.to_dict()
         else:
             # Emulate direct_url for legacy editable installs.
             editable_project_location = dist.editable_project_location

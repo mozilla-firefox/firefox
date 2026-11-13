@@ -17,6 +17,7 @@ import sys
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import chain
+from typing import Optional
 
 from pip._vendor.packaging import specifiers
 from pip._vendor.packaging.requirements import Requirement
@@ -51,7 +52,7 @@ from pip._internal.utils.packaging import check_requires_python
 
 logger = logging.getLogger(__name__)
 
-DiscoveredDependencies = defaultdict[str | None, list[InstallRequirement]]
+DiscoveredDependencies = defaultdict[Optional[str], list[InstallRequirement]]
 
 
 def _check_dist_requires_python(
@@ -123,7 +124,6 @@ class Resolver(BaseResolver):
         make_install_req: InstallRequirementProvider,
         use_user_site: bool,
         ignore_dependencies: bool,
-        only_dependencies: bool,  # unused, for compatibility with new resolver
         ignore_installed: bool,
         ignore_requires_python: bool,
         force_reinstall: bool,
@@ -410,13 +410,11 @@ class Resolver(BaseResolver):
         If preparer.require_hashes is True, don't use the wheel cache, because
         cached wheels, always built locally, have different hashes than the
         files downloaded from the index server and thus throw false hash
-        mismatches. Furthermore, cached wheels at present have nondeterministic
+        mismatches. Furthermore, cached wheels at present have undeterministic
         contents due to file modification times.
         """
         if req.link is None:
             req.link = self._find_requirement_link(req)
-            if req.link is not None:
-                req.set_source_link(req.link)
 
         if self.wheel_cache is None or self.preparer.require_hashes:
             return

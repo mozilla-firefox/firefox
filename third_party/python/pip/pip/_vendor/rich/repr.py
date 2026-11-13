@@ -1,3 +1,4 @@
+import inspect
 from functools import partial
 from typing import (
     Any,
@@ -67,8 +68,6 @@ def auto(
         def auto_rich_repr(self: Type[T]) -> Result:
             """Auto generate __rich_rep__ from signature of __init__"""
             try:
-                import inspect
-
                 signature = inspect.signature(self.__init__)
                 for name, param in signature.parameters.items():
                     if param.kind == param.POSITIONAL_ONLY:

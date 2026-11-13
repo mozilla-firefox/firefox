@@ -166,11 +166,7 @@ class Live(JupyterMixin, RenderHook):
                 finally:
                     self._disable_redirect_io()
                     self.console.pop_render_hook()
-                    if (
-                        not self._alt_screen
-                        and self.console.is_terminal
-                        and self._live_render.last_render_height
-                    ):
+                    if not self._alt_screen and self.console.is_terminal:
                         self.console.line()
                     self.console.show_cursor(True)
                     if self._alt_screen:

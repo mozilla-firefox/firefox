@@ -1,23 +1,33 @@
-from __future__ import annotations
+from __future__ import absolute_import
 
 import socket
-import typing
 
+from ..contrib import _appengine_environ
 from ..exceptions import LocationParseError
-from .timeout import _DEFAULT_TIMEOUT, _TYPE_TIMEOUT
-
-_TYPE_SOCKET_OPTIONS = list[tuple[int, int, typing.Union[int, bytes]]]
-
-if typing.TYPE_CHECKING:
-    from .._base_connection import BaseHTTPConnection
+from ..packages import six
+from .wait import NoWayToWaitForSocketError, wait_for_read
 
 
-def is_connection_dropped(conn: BaseHTTPConnection) -> bool:  # Platform-specific
+def is_connection_dropped(conn):  # Platform-specific
     """
     Returns True if the connection is dropped and should be closed.
-    :param conn: :class:`urllib3.connection.HTTPConnection` object.
+
+    :param conn:
+        :class:`http.client.HTTPConnection` object.
+
+    Note: For platforms like AppEngine, this will always return ``False`` to
+    let the platform handle connection recycling transparently for us.
     """
-    return not conn.is_connected
+    sock = getattr(conn, "sock", False)
+    if sock is False:  # Platform-specific: AppEngine
+        return False
+    if sock is None:  # Connection already closed (such as by httplib).
+        return True
+    try:
+        # Returns True if readable, which here means it's been dropped
+        return wait_for_read(sock, timeout=0.0)
+    except NoWayToWaitForSocketError:  # Platform-specific: AppEngine
+        return False
 
 
 # This function is copied from socket.py in the Python 2.7 standard
@@ -25,11 +35,11 @@ def is_connection_dropped(conn: BaseHTTPConnection) -> bool:  # Platform-specifi
 # One additional modification is that we avoid binding to IPv6 servers
 # discovered in DNS if the system doesn't have IPv6 functionality.
 def create_connection(
-    address: tuple[str, int],
-    timeout: _TYPE_TIMEOUT = _DEFAULT_TIMEOUT,
-    source_address: tuple[str, int] | None = None,
-    socket_options: _TYPE_SOCKET_OPTIONS | None = None,
-) -> socket.socket:
+    address,
+    timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+    source_address=None,
+    socket_options=None,
+):
     """Connect to *address* and return the socket object.
 
     Convenience function.  Connect to *address* (a 2-tuple ``(host,
@@ -55,7 +65,9 @@ def create_connection(
     try:
         host.encode("idna")
     except UnicodeError:
-        raise LocationParseError(f"'{host}', label empty or too long") from None
+        return six.raise_from(
+            LocationParseError(u"'%s', label empty or too long" % host), None
+        )
 
     for res in socket.getaddrinfo(host, port, family, socket.SOCK_STREAM):
         af, socktype, proto, canonname, sa = res
@@ -66,33 +78,26 @@ def create_connection(
             # If provided, set socket level options before connecting.
             _set_socket_options(sock, socket_options)
 
-            if timeout is not _DEFAULT_TIMEOUT:
+            if timeout is not socket._GLOBAL_DEFAULT_TIMEOUT:
                 sock.settimeout(timeout)
             if source_address:
                 sock.bind(source_address)
             sock.connect(sa)
-            # Break explicitly a reference cycle
-            err = None
             return sock
 
-        except OSError as _:
-            err = _
+        except socket.error as e:
+            err = e
             if sock is not None:
                 sock.close()
+                sock = None
 
     if err is not None:
-        try:
-            raise err
-        finally:
-            # Break explicitly a reference cycle
-            err = None
-    else:
-        raise OSError("getaddrinfo returns an empty list")
+        raise err
+
+    raise socket.error("getaddrinfo returns an empty list")
 
 
-def _set_socket_options(
-    sock: socket.socket, options: _TYPE_SOCKET_OPTIONS | None
-) -> None:
+def _set_socket_options(sock, options):
     if options is None:
         return
 
@@ -100,7 +105,7 @@ def _set_socket_options(
         sock.setsockopt(*opt)
 
 
-def allowed_gai_family() -> socket.AddressFamily:
+def allowed_gai_family():
     """This function is designed to work in the context of
     getaddrinfo, where family=socket.AF_UNSPEC is the default and
     will perform a DNS search for both IPv6 and IPv4 records."""
@@ -111,10 +116,17 @@ def allowed_gai_family() -> socket.AddressFamily:
     return family
 
 
-def _has_ipv6(host: str) -> bool:
+def _has_ipv6(host):
     """Returns True if the system can bind an IPv6 address."""
     sock = None
     has_ipv6 = False
+
+    # App Engine doesn't support IPV6 sockets and actually has a quota on the
+    # number of sockets that can be used, so just early out here instead of
+    # creating a socket needlessly.
+    # See https://github.com/urllib3/urllib3/issues/1446
+    if _appengine_environ.is_appengine_sandbox():
+        return False
 
     if socket.has_ipv6:
         # has_ipv6 returns true if cPython was compiled with IPv6 support.

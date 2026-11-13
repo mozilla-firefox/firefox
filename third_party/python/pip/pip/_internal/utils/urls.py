@@ -1,10 +1,9 @@
 import os
-import re
 import string
-import urllib.parse  # noqa: F401
+import urllib.parse
+import urllib.request
 
 from .compat import WINDOWS
-from .packaging import get_requirement
 
 
 def path_to_url(path: str) -> str:
@@ -12,8 +11,6 @@ def path_to_url(path: str) -> str:
     Convert a path to a file: URL.  The path will be made absolute and have
     quoted path parts.
     """
-    import urllib.request
-
     path = os.path.normpath(os.path.abspath(path))
     url = urllib.parse.urljoin("file://", urllib.request.pathname2url(path))
     return url
@@ -23,8 +20,6 @@ def url_to_path(url: str) -> str:
     """
     Convert a file: URL to a path.
     """
-    import urllib.request
-
     assert url.startswith(
         "file:"
     ), f"You can only turn file: urls into filenames (not {url!r})"
@@ -58,21 +53,3 @@ def url_to_path(url: str) -> str:
         path = path[1:]
 
     return path
-
-
-def _convert_extras(extras: str | None) -> set[str]:
-    if not extras:
-        return set()
-    return get_requirement("placeholder" + extras.lower()).extras
-
-
-def strip_extras(path: str) -> tuple[str, set[str]]:
-    m = re.match(r"^(.+)(\[[^\]]+\])$", path)
-    extras = None
-    if m:
-        path_no_extras = m.group(1).rstrip()
-        extras = m.group(2)
-    else:
-        path_no_extras = path
-
-    return path_no_extras, _convert_extras(extras)

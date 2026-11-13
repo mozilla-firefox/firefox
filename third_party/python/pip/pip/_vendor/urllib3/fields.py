@@ -1,20 +1,13 @@
-from __future__ import annotations
+from __future__ import absolute_import
 
 import email.utils
 import mimetypes
-import typing
+import re
 
-_TYPE_FIELD_VALUE = typing.Union[str, bytes]
-_TYPE_FIELD_VALUE_TUPLE = typing.Union[
-    _TYPE_FIELD_VALUE,
-    tuple[str, _TYPE_FIELD_VALUE],
-    tuple[str, _TYPE_FIELD_VALUE, str],
-]
+from .packages import six
 
 
-def guess_content_type(
-    filename: str | None, default: str = "application/octet-stream"
-) -> str:
+def guess_content_type(filename, default="application/octet-stream"):
     """
     Guess the "Content-Type" of a file.
 
@@ -28,7 +21,7 @@ def guess_content_type(
     return default
 
 
-def format_header_param_rfc2231(name: str, value: _TYPE_FIELD_VALUE) -> str:
+def format_header_param_rfc2231(name, value):
     """
     Helper function to format and quote a single header parameter using the
     strategy defined in RFC 2231.
@@ -41,28 +34,14 @@ def format_header_param_rfc2231(name: str, value: _TYPE_FIELD_VALUE) -> str:
         The name of the parameter, a string expected to be ASCII only.
     :param value:
         The value of the parameter, provided as ``bytes`` or `str``.
-    :returns:
+    :ret:
         An RFC-2231-formatted unicode string.
-
-    .. deprecated:: 2.0.0
-        Will be removed in urllib3 v3.0. This is not valid for
-        ``multipart/form-data`` header parameters.
     """
-    import warnings
-
-    warnings.warn(
-        "'format_header_param_rfc2231' is insecure, deprecated and will be "
-        "removed in urllib3 v3.0. This is not valid for "
-        "multipart/form-data header parameters.",
-        FutureWarning,
-        stacklevel=2,
-    )
-
-    if isinstance(value, bytes):
+    if isinstance(value, six.binary_type):
         value = value.decode("utf-8")
 
     if not any(ch in value for ch in '"\\\r\n'):
-        result = f'{name}="{value}"'
+        result = u'%s="%s"' % (name, value)
         try:
             result.encode("ascii")
         except (UnicodeEncodeError, UnicodeDecodeError):
@@ -70,87 +49,81 @@ def format_header_param_rfc2231(name: str, value: _TYPE_FIELD_VALUE) -> str:
         else:
             return result
 
+    if six.PY2:  # Python 2:
+        value = value.encode("utf-8")
+
+    # encode_rfc2231 accepts an encoded string and returns an ascii-encoded
+    # string in Python 2 but accepts and returns unicode strings in Python 3
     value = email.utils.encode_rfc2231(value, "utf-8")
-    value = f"{name}*={value}"
+    value = "%s*=%s" % (name, value)
+
+    if six.PY2:  # Python 2:
+        value = value.decode("utf-8")
 
     return value
 
 
-def format_multipart_header_param(name: str, value: _TYPE_FIELD_VALUE) -> str:
+_HTML5_REPLACEMENTS = {
+    u"\u0022": u"%22",
+    # Replace "\" with "\\".
+    u"\u005C": u"\u005C\u005C",
+}
+
+# All control characters from 0x00 to 0x1F *except* 0x1B.
+_HTML5_REPLACEMENTS.update(
+    {
+        six.unichr(cc): u"%{:02X}".format(cc)
+        for cc in range(0x00, 0x1F + 1)
+        if cc not in (0x1B,)
+    }
+)
+
+
+def _replace_multiple(value, needles_and_replacements):
+    def replacer(match):
+        return needles_and_replacements[match.group(0)]
+
+    pattern = re.compile(
+        r"|".join([re.escape(needle) for needle in needles_and_replacements.keys()])
+    )
+
+    result = pattern.sub(replacer, value)
+
+    return result
+
+
+def format_header_param_html5(name, value):
     """
-    Format and quote a single multipart header parameter.
+    Helper function to format and quote a single header parameter using the
+    HTML5 strategy.
 
-    This follows the `WHATWG HTML Standard`_ as of 2021/06/10, matching
-    the behavior of current browser and curl versions. Values are
-    assumed to be UTF-8. The ``\\n``, ``\\r``, and ``"`` characters are
-    percent encoded.
+    Particularly useful for header parameters which might contain
+    non-ASCII values, like file names. This follows the `HTML5 Working Draft
+    Section 4.10.22.7`_ and matches the behavior of curl and modern browsers.
 
-    .. _WHATWG HTML Standard:
-        https://html.spec.whatwg.org/multipage/
-        form-control-infrastructure.html#multipart-form-data
+    .. _HTML5 Working Draft Section 4.10.22.7:
+        https://w3c.github.io/html/sec-forms.html#multipart-form-data
 
     :param name:
-        The name of the parameter, an ASCII-only ``str``.
+        The name of the parameter, a string expected to be ASCII only.
     :param value:
-        The value of the parameter, a ``str`` or UTF-8 encoded
-        ``bytes``.
-    :returns:
-        A string ``name="value"`` with the escaped value.
-
-    .. versionchanged:: 2.0.0
-        Matches the WHATWG HTML Standard as of 2021/06/10. Control
-        characters are no longer percent encoded.
-
-    .. versionchanged:: 2.0.0
-        Renamed from ``format_header_param_html5`` and
-        ``format_header_param``. The old names will be removed in
-        urllib3 v3.0.
+        The value of the parameter, provided as ``bytes`` or `str``.
+    :ret:
+        A unicode string, stripped of troublesome characters.
     """
-    if isinstance(value, bytes):
+    if isinstance(value, six.binary_type):
         value = value.decode("utf-8")
 
-    # percent encode \n \r "
-    value = value.translate({10: "%0A", 13: "%0D", 34: "%22"})
-    return f'{name}="{value}"'
+    value = _replace_multiple(value, _HTML5_REPLACEMENTS)
+
+    return u'%s="%s"' % (name, value)
 
 
-def format_header_param_html5(name: str, value: _TYPE_FIELD_VALUE) -> str:
-    """
-    .. deprecated:: 2.0.0
-        Renamed to :func:`format_multipart_header_param`. Will be
-        removed in urllib3 v3.0.
-    """
-    import warnings
-
-    warnings.warn(
-        "'format_header_param_html5' has been renamed to "
-        "'format_multipart_header_param'. The old name will be "
-        "removed in urllib3 v3.0.",
-        FutureWarning,
-        stacklevel=2,
-    )
-    return format_multipart_header_param(name, value)
+# For backwards-compatibility.
+format_header_param = format_header_param_html5
 
 
-def format_header_param(name: str, value: _TYPE_FIELD_VALUE) -> str:
-    """
-    .. deprecated:: 2.0.0
-        Renamed to :func:`format_multipart_header_param`. Will be
-        removed in urllib3 v3.0.
-    """
-    import warnings
-
-    warnings.warn(
-        "'format_header_param' has been renamed to "
-        "'format_multipart_header_param'. The old name will be "
-        "removed in urllib3 v3.0.",
-        FutureWarning,
-        stacklevel=2,
-    )
-    return format_multipart_header_param(name, value)
-
-
-class RequestField:
+class RequestField(object):
     """
     A data container for request body parameters.
 
@@ -162,47 +135,29 @@ class RequestField:
         An optional filename of the request field. Must be unicode.
     :param headers:
         An optional dict-like object of headers to initially use for the field.
-
-    .. versionchanged:: 2.0.0
-        The ``header_formatter`` parameter is deprecated and will
-        be removed in urllib3 v3.0.
+    :param header_formatter:
+        An optional callable that is used to encode and format the headers. By
+        default, this is :func:`format_header_param_html5`.
     """
 
     def __init__(
         self,
-        name: str,
-        data: _TYPE_FIELD_VALUE,
-        filename: str | None = None,
-        headers: typing.Mapping[str, str] | None = None,
-        header_formatter: typing.Callable[[str, _TYPE_FIELD_VALUE], str] | None = None,
+        name,
+        data,
+        filename=None,
+        headers=None,
+        header_formatter=format_header_param_html5,
     ):
         self._name = name
         self._filename = filename
         self.data = data
-        self.headers: dict[str, str | None] = {}
+        self.headers = {}
         if headers:
             self.headers = dict(headers)
-
-        if header_formatter is not None:
-            import warnings
-
-            warnings.warn(
-                "The 'header_formatter' parameter is deprecated and "
-                "will be removed in urllib3 v3.0.",
-                FutureWarning,
-                stacklevel=2,
-            )
-            self.header_formatter = header_formatter
-        else:
-            self.header_formatter = format_multipart_header_param
+        self.header_formatter = header_formatter
 
     @classmethod
-    def from_tuples(
-        cls,
-        fieldname: str,
-        value: _TYPE_FIELD_VALUE_TUPLE,
-        header_formatter: typing.Callable[[str, _TYPE_FIELD_VALUE], str] | None = None,
-    ) -> RequestField:
+    def from_tuples(cls, fieldname, value, header_formatter=format_header_param_html5):
         """
         A :class:`~urllib3.fields.RequestField` factory from old-style tuple parameters.
 
@@ -219,10 +174,6 @@ class RequestField:
 
         Field names and filenames must be unicode.
         """
-        filename: str | None
-        content_type: str | None
-        data: _TYPE_FIELD_VALUE
-
         if isinstance(value, tuple):
             if len(value) == 3:
                 filename, data, content_type = value
@@ -241,29 +192,20 @@ class RequestField:
 
         return request_param
 
-    def _render_part(self, name: str, value: _TYPE_FIELD_VALUE) -> str:
+    def _render_part(self, name, value):
         """
-        Override this method to change how each multipart header
-        parameter is formatted. By default, this calls
-        :func:`format_multipart_header_param`.
+        Overridable helper function to format a single header parameter. By
+        default, this calls ``self.header_formatter``.
 
         :param name:
-            The name of the parameter, an ASCII-only ``str``.
+            The name of the parameter, a string expected to be ASCII only.
         :param value:
-            The value of the parameter, a ``str`` or UTF-8 encoded
-            ``bytes``.
-
-        :meta public:
+            The value of the parameter, provided as a unicode string.
         """
+
         return self.header_formatter(name, value)
 
-    def _render_parts(
-        self,
-        header_parts: (
-            dict[str, _TYPE_FIELD_VALUE | None]
-            | typing.Sequence[tuple[str, _TYPE_FIELD_VALUE | None]]
-        ),
-    ) -> str:
+    def _render_parts(self, header_parts):
         """
         Helper function to format and quote a single header.
 
@@ -274,21 +216,18 @@ class RequestField:
             A sequence of (k, v) tuples or a :class:`dict` of (k, v) to format
             as `k1="v1"; k2="v2"; ...`.
         """
-        iterable: typing.Iterable[tuple[str, _TYPE_FIELD_VALUE | None]]
-
         parts = []
+        iterable = header_parts
         if isinstance(header_parts, dict):
             iterable = header_parts.items()
-        else:
-            iterable = header_parts
 
         for name, value in iterable:
             if value is not None:
                 parts.append(self._render_part(name, value))
 
-        return "; ".join(parts)
+        return u"; ".join(parts)
 
-    def render_headers(self) -> str:
+    def render_headers(self):
         """
         Renders the headers for this request field.
         """
@@ -297,45 +236,39 @@ class RequestField:
         sort_keys = ["Content-Disposition", "Content-Type", "Content-Location"]
         for sort_key in sort_keys:
             if self.headers.get(sort_key, False):
-                lines.append(f"{sort_key}: {self.headers[sort_key]}")
+                lines.append(u"%s: %s" % (sort_key, self.headers[sort_key]))
 
         for header_name, header_value in self.headers.items():
             if header_name not in sort_keys:
                 if header_value:
-                    lines.append(f"{header_name}: {header_value}")
+                    lines.append(u"%s: %s" % (header_name, header_value))
 
-        lines.append("\r\n")
-        return "\r\n".join(lines)
+        lines.append(u"\r\n")
+        return u"\r\n".join(lines)
 
     def make_multipart(
-        self,
-        content_disposition: str | None = None,
-        content_type: str | None = None,
-        content_location: str | None = None,
-    ) -> None:
+        self, content_disposition=None, content_type=None, content_location=None
+    ):
         """
         Makes this request field into a multipart request field.
 
         This method overrides "Content-Disposition", "Content-Type" and
         "Content-Location" headers to the request parameter.
 
-        :param content_disposition:
-            The 'Content-Disposition' of the request body. Defaults to 'form-data'
         :param content_type:
             The 'Content-Type' of the request body.
         :param content_location:
             The 'Content-Location' of the request body.
 
         """
-        content_disposition = (content_disposition or "form-data") + "; ".join(
+        self.headers["Content-Disposition"] = content_disposition or u"form-data"
+        self.headers["Content-Disposition"] += u"; ".join(
             [
-                "",
+                u"",
                 self._render_parts(
-                    (("name", self._name), ("filename", self._filename))
+                    ((u"name", self._name), (u"filename", self._filename))
                 ),
             ]
         )
-
-        self.headers["Content-Disposition"] = content_disposition
         self.headers["Content-Type"] = content_type
         self.headers["Content-Location"] = content_location

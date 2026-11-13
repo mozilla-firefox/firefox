@@ -4,17 +4,9 @@ requests.exceptions
 
 This module contains the set of Requests' exceptions.
 """
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, Any
-
 from pip._vendor.urllib3.exceptions import HTTPError as BaseHTTPError
 
 from .compat import JSONDecodeError as CompatJSONDecodeError
-
-if TYPE_CHECKING:
-    from .models import PreparedRequest, Request, Response
 
 
 class RequestException(IOError):
@@ -22,16 +14,13 @@ class RequestException(IOError):
     request.
     """
 
-    response: Response | None
-    request: Request | PreparedRequest | None
-
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs):
         """Initialize RequestException with `request` and `response` objects."""
-        response: Response | None = kwargs.pop("response", None)
+        response = kwargs.pop("response", None)
         self.response = response
         self.request = kwargs.pop("request", None)
         if response is not None and not self.request and hasattr(response, "request"):
-            self.request = response.request
+            self.request = self.response.request
         super().__init__(*args, **kwargs)
 
 
@@ -42,7 +31,7 @@ class InvalidJSONError(RequestException):
 class JSONDecodeError(InvalidJSONError, CompatJSONDecodeError):
     """Couldn't decode the text into json"""
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, *args, **kwargs):
         """
         Construct the JSONDecodeError instance first with all
         args. Then use it's args to construct the IOError so that
@@ -52,7 +41,7 @@ class JSONDecodeError(InvalidJSONError, CompatJSONDecodeError):
         CompatJSONDecodeError.__init__(self, *args)
         InvalidJSONError.__init__(self, *self.args, **kwargs)
 
-    def __reduce__(self) -> tuple[Any, ...] | str:
+    def __reduce__(self):
         """
         The __reduce__ method called when pickling the object must
         be the one from the JSONDecodeError (be it json/simplejson)

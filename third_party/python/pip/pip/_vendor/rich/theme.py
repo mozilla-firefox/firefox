@@ -1,3 +1,4 @@
+import configparser
 from typing import IO, Dict, List, Mapping, Optional
 
 from .default_styles import DEFAULT_STYLES
@@ -48,8 +49,6 @@ class Theme:
         Returns:
             Theme: A New theme instance.
         """
-        import configparser
-
         config = configparser.ConfigParser()
         config.read_file(config_file, source=source)
         styles = {name: Style.parse(value) for name, value in config.items("styles")}

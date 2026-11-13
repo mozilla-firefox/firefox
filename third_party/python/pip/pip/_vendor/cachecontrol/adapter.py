@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import functools
+import types
 import weakref
 import zlib
 from typing import TYPE_CHECKING, Any, Collection, Mapping
