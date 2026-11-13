@@ -75,6 +75,22 @@ cmd_bar = cmd_bar --baz
         )
         self.assertEqual(result, 0)
 
+    def assert_help_keeps_raw_description(self, argv):
+        _, stdout, _ = self._run_mach(argv, provider_files=Path("custom_parser.py"))
+        self.assertIn(
+            "Raw description.\n\n  first   column\n  second  column\n", stdout
+        )
+
+    def test_custom_parser_help_raw_description(self):
+        self.assert_help_keeps_raw_description(["help", "cmd_raw_description"])
+
+    def test_custom_parser_subcommand_help_raw_description(self):
+        self.assert_help_keeps_raw_description([
+            "help",
+            "cmd_raw_description_main",
+            "sub",
+        ])
+
 
 if __name__ == "__main__":
     main()

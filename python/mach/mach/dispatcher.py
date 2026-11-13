@@ -360,7 +360,7 @@ class CommandAction(argparse.Action):
         if handler.parser:
             c_parser = handler.parser
             c_parser.context = self._context
-            c_parser.formatter_class = NoUsageFormatter
+            c_parser.usage = argparse.SUPPRESS
             # Accessing _action_groups is a bit shady. We are highly dependent
             # on the argparse implementation not changing. We fail fast to
             # detect upstream changes so we can intelligently react to them.
@@ -455,7 +455,7 @@ class CommandAction(argparse.Action):
         subhandler.parser
 
         c_parser = subhandler.parser or argparse.ArgumentParser(add_help=False)
-        c_parser.formatter_class = CommandFormatter
+        c_parser.usage = argparse.SUPPRESS
 
         group = c_parser.add_argument_group("Sub Command Arguments")
         self._populate_command_group(c_parser, subhandler, group)
@@ -475,11 +475,6 @@ class CommandAction(argparse.Action):
         parser.print_help()
         print("")
         c_parser.print_help()
-
-
-class NoUsageFormatter(argparse.HelpFormatter):
-    def _format_usage(self, *args, **kwargs):
-        return ""
 
 
 def format_docstring(docstring):
