@@ -4,9 +4,9 @@
 
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect, useState } from "react";
-import { addons, useGlobals, useStorybookApi } from "@storybook/manager-api";
+import { addons, useGlobals, useStorybookApi } from "storybook/manager-api";
 // eslint-disable-next-line no-unused-vars
-import { AddonPanel, Table, Form } from "@storybook/components";
+import { AddonPanel, Table, Form } from "storybook/internal/components";
 import { FLUENT_CHANGED, FLUENT_SET_STRINGS } from "./constants.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "./fluent-panel.css";

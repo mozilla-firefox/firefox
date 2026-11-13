@@ -12,6 +12,7 @@ browser/components/asrouter/content-src/schemas/MessagingExperiment.schema.json
 browser/components/asrouter/tests/InflightAssetsMessageProvider.sys.mjs
 browser/components/asrouter/tests/NimbusRolloutMessageProvider.sys.mjs
 browser/components/backup/tests/marionette/compat-files/backups
+browser/components/storybook/.storybook/chrome-map.js
 browser/components/storybook/storybook-static/
 browser/extensions/newtab/data/content/activity-stream.bundle.js
 browser/extensions/newtab/data/content/bundled-renderer-index.js

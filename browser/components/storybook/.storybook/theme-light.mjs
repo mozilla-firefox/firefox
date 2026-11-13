@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { create } from "@storybook/theming/create";
+import { create } from "storybook/theming/create";
 
 // CSS variables are not accepted values in the object passed into the
 // create() method. The values used here are hard-coded and based on

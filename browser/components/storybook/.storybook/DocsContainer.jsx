@@ -5,13 +5,13 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect, useLayoutEffect, useState } from "react";
 // eslint-disable-next-line no-unused-vars
-import { DocsContainer as BaseContainer } from "@storybook/addon-docs";
-import { addons } from "@storybook/preview-api";
+import { DocsContainer as BaseContainer } from "@storybook/addon-docs/blocks";
+import { addons } from "storybook/preview-api";
 import {
   GLOBALS_UPDATED,
   UPDATE_GLOBALS,
   SET_GLOBALS,
-} from "@storybook/core-events";
+} from "storybook/internal/core-events";
 import darkTheme from "./theme-dark.mjs";
 import lightTheme from "./theme-light.mjs";
 
@@ -116,9 +116,3 @@ export default function DocsContainer(props) {
 
   return <BaseContainer key={themeKey} {...props} theme={themeObj} />;
 }
-
-/*
- * If your Storybook doesn't export DocsContainer from '@storybook/addon-docs',
- * replace the import with:
- *   import { DocsContainer as BaseContainer } from "@storybook/blocks";
- */

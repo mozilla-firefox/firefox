@@ -4,7 +4,7 @@
 
 /** This file handles registering the Storybook addon */
 
-import { addons, types } from "@storybook/manager-api";
+import { addons, types } from "storybook/manager-api";
 import { ADDON_ID, PANEL_ID, TOOL_ID } from "../constants.mjs";
 import { PseudoLocalizationButton } from "../PseudoLocalizationButton.jsx";
 import { FluentPanel } from "../FluentPanel.jsx";

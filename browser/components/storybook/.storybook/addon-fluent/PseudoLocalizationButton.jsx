@@ -4,17 +4,17 @@
 
 // eslint-disable-next-line no-unused-vars
 import React from "react";
-import { useGlobals } from "@storybook/manager-api";
+import { useGlobals } from "storybook/manager-api";
 import {
-  // eslint-disable-next-line no-unused-vars
-  Icons,
   // eslint-disable-next-line no-unused-vars
   IconButton,
   // eslint-disable-next-line no-unused-vars
   WithTooltip,
   // eslint-disable-next-line no-unused-vars
   TooltipLinkList,
-} from "@storybook/components";
+} from "storybook/internal/components";
+// eslint-disable-next-line no-unused-vars
+import { TransferIcon } from "@storybook/icons";
 import { TOOL_ID, STRATEGY_DEFAULT, PSEUDO_STRATEGIES } from "./constants.mjs";
 
 // React component for a button + tooltip that gets added to the Storybook toolbar.
@@ -48,7 +48,7 @@ export const PseudoLocalizationButton = () => {
         active={pseudoStrategy && pseudoStrategy !== STRATEGY_DEFAULT}
         title="Apply pseudo localization"
       >
-        <Icons icon="transfer" />
+        <TransferIcon />
       </IconButton>
     </WithTooltip>
   );
