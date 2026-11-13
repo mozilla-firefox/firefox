@@ -142,16 +142,15 @@ impl CrashGenerator {
         );
 
         if let Some(path) = path {
-            let error = self.finalize_crash_report(
-                AsRawProcessHandle::as_raw_handle(target_process),
-                /* extra_data */ None,
-                &path,
-                if id == 0 {
-                    ProcessType::Parent
-                } else {
-                    ProcessType::Child
-                },
-            );
+            let process_type = if id == 0 {
+                ProcessType::Parent
+            } else {
+                ProcessType::Child
+            };
+            let process = AsRawProcessHandle::as_raw_handle(target_process);
+            let annotations = retrieve_annotations(process, process_type);
+            let error =
+                self.finalize_crash_report(process, annotations, /* extra_data */ None, &path);
             Some(CrashReport::new(path.as_os_str(), &error))
         } else {
             None
@@ -166,20 +165,19 @@ impl CrashGenerator {
     fn finalize_crash_report(
         &self,
         process: RawProcessHandle,
+        child_annotations: Result<Vec<CAnnotation>>,
         extra_data: Option<&ExtraCrashData>,
         minidump_path: &Path,
-        process_type: ProcessType,
     ) -> Option<CString> {
         let (error, extra_annotations) = extra_data
             .map(|d| (d.error.clone(), d.annotations.clone()))
             .unwrap_or_default();
         let crash_time_annotations = self.crash_time_annotations(process);
         let global_annotations = self.retrieve_main_process_annotations();
-        let annotations = retrieve_annotations(process, process_type);
         let annotations = [
             Ok(crash_time_annotations),
             global_annotations.context("MissingMainProcessAnnotations"),
-            annotations.context("MissingChildProcessAnnotations"),
+            child_annotations.context("MissingChildProcessAnnotations"),
             Ok(extra_annotations),
             get_static_annotations().context("MissingStaticAnnotations"),
         ]
@@ -398,12 +396,14 @@ pub(crate) unsafe extern "C" fn finalize_breakpad_minidump(
     let generator = generator as *const Mutex<CrashGenerator>;
     let minidump_path = PathBuf::from(<OsString as BreakpadString>::from_ptr(minidump_path_ptr));
 
+    let annotations = retrieve_annotations(process_id.get_native(), ProcessType::Child);
+
     let mut generator = generator.as_ref().unwrap().lock().unwrap();
     let error = generator.finalize_crash_report(
         process_id.get_native(),
+        annotations,
         extra_data,
         &minidump_path,
-        ProcessType::Child,
     );
     generator.insert_crash_report(&process_id, &minidump_path, error);
 }

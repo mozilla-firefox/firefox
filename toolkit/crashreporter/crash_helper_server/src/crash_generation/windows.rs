@@ -89,12 +89,8 @@ impl CrashGenerator {
                 }],
             };
 
-            let error = self.finalize_crash_report(
-                handle,
-                Some(&extra_data),
-                &path,
-                super::ProcessType::Child,
-            );
+            let annotations = super::retrieve_annotations(handle, super::ProcessType::Child);
+            let error = self.finalize_crash_report(handle, annotations, Some(&extra_data), &path);
             self.insert_crash_report(&process_id, &path, error);
         }
 
