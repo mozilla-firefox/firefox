@@ -36,6 +36,11 @@ the display the host's platform file, section GRABS, allows; that section also
 says how the grab's coordinates and scale map to the screen's. Read it with
 `./mach theme pixel-diff --rect --offset --dpr` (`desktop-theme-screenshots` §5).
 
+A popup paints into its own native widget, separate from the browser window's,
+so its box in the browser document's coordinates does not locate it in a grab.
+Read `popup.getOuterScreenRect()` in the same run, in CSS pixels of screen
+coordinates; at a device pixel ratio of 1 that is the popup's rect in the grab.
+
 Before writing the `grab` step, read §1 "Flags
 and output" in [`probe-runner.md`](probe-runner.md); before picking the display,
 read §1 "Pick the display rung by what the measurement needs" in

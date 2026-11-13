@@ -76,6 +76,11 @@ wpt` from the checkout:
   # chrome's regime under that pref: the host's platform file, section CONTRAST
 ```
 
+The first call in a tree, and sometimes the first after a checkout, a clobber
+or `./mach artifact install`, builds the virtualenv, and its output can land in
+stdout after the result. Build it with a call of its own before the first
+probe: `./mach python --virtualenv wpt -c pass`.
+
 The help of either bundled script (`firefox-probe.py`, `marker-probe.py`) needs
 `--` before the script path (`./mach python --virtualenv wpt --
 …/firefox-probe.py --help`), since mach takes a bare `--help` for itself.
@@ -84,11 +89,13 @@ The help of either bundled script (`firefox-probe.py`, `marker-probe.py`) needs
 Read [`references/probe-runner.md`](references/probe-runner.md) before writing
 or running a snippet through it: it has what the help leaves out, such as the
 pref read-back, parsing the output, teardown, the chrome sandbox, `--async` and
-`--no-headless`. Before any non-headless run (`--no-headless`, `xvfb-run`, a
-headless compositor or the live desktop), read §1 "Pick the display rung by what
-the measurement needs" in
-[`references/running-a-probe.md`](references/running-a-probe.md). On Linux, take
-each rung's commands from the host's platform file, section DISPLAYS.
+`--no-headless`. A headless read through it needs only these before the first
+launch: the host's platform file, the target's where it differs, and
+`probe-runner.md`; the others in this section apply when their own condition
+does. Before any non-headless run (`--no-headless`, on a virtual display or the
+live desktop), read §1 "Pick the display rung by what the measurement needs" in
+[`references/running-a-probe.md`](references/running-a-probe.md), then the host's
+platform file, section DISPLAYS, for the rungs that host has and their commands.
 
 `<objdir>` is `obj-*/` in the checkout, or the path that
 `./mach environment | rg -A1 '^object directory:'` prints under its label.

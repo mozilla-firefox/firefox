@@ -338,7 +338,8 @@ def add_launch_arguments(parser, gecko_log_help=None, binary_required=True):
         default=[],
         help="name=value pref, repeatable, typed as mochitest "
         "types it: true/false and integers by shape, so single-quote a string "
-        "value that looks like one (layout.css.devPixelsPerPx='2')",
+        "value that looks like one (layout.css.devPixelsPerPx='2'); a pref "
+        "given twice takes its last value",
     )
     parser.add_argument(
         "--allow-dropped-pref",

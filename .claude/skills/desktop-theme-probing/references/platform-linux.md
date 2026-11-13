@@ -19,9 +19,9 @@ back. `--setpref ui.accentcolor=#rrggbb` with `ui.accentcolortext` sets
 the scheme, which a theme's colors follow too; read `(prefers-color-scheme:
 dark)` back. Pin `ui.useOverlayScrollbars` as well, since the default differs
 between profiles (SCROLLBARS below). Headless GTK reports no compositing
-(COMPOSITING below), so `popup.css` forces a popup's border radius and shadow
-margin to 0px; a popup radius or shadow reading needs `--setpref
-ui.GtkCSDTransparencyAvailable=1`. Headless Linux also lacks the
+(COMPOSITING below), so `popup.css` can force a popup's border radius and
+shadow margin to 0px; read both back, and for a popup radius or shadow reading
+set `--setpref ui.GtkCSDTransparencyAvailable=1`. Headless Linux also lacks the
 `customtitlebar` root attribute; to test a rule under it, read §4 "Test another
 platform's rule" in [`probe-recipes.md`](probe-recipes.md). Primary-selection
 assertions fail only headless.

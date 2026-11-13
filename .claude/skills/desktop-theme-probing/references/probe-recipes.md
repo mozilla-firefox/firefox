@@ -10,10 +10,30 @@ helpers they import (e.g. the directory's `head.js`, a `*TestUtils.sys.mjs`
 module): they show how the product's own tests open the surface, fill it and
 wait for it to settle, and a probe can do the same once it undoes what a probe
 launch changes (`SKILL.md` §2 "A probe launch is not a user's profile"). The
-helpers themselves do not load in a probe: `resource://testing-common/` exists
-only under a test harness, so copy the steps a helper takes into the probe (e.g.
-`PlacesUtils.history.insert` or `insertMany` in place of
-`PlacesTestUtils.addVisits`).
+helpers load in a chrome probe once `resource://testing-common/`, which only a
+test harness registers, points at the objdir's `_tests/modules`:
+
+```js
+const dir = new FileUtils.File("<absolute objdir path>/_tests/modules");
+Services.io.getProtocolHandler("resource")
+  .QueryInterface(Ci.nsIResProtocolHandler)
+  .setSubstitution("testing-common", Services.io.newFileURI(dir));
+```
+
+Then import a helper with `ChromeUtils.importESModule` and call it as the tests
+do. A helper with an `init(scope)` method takes a stub holding the members it
+calls (e.g. `Assert`, `info`, `registerCleanupFunction`), and an argument that a
+harness global fills in a test (e.g. `waitForFocus`) needs a stand-in. Where a
+helper needs more of the harness than a stub gives, write the probe as a
+scratch browser-chrome test instead (`SKILL.md` §3).
+
+A second browser window takes `BrowserWindowTracker.promiseOpenWindow()` (from
+`resource:///modules/BrowserWindowTracker.sys.mjs`) in place of
+`BrowserTestUtils.openNewBrowserWindow()`, which does not settle in a probe; it
+resolves once the window has finished delayed startup. `OpenBrowserWindow()`
+returns while the new window is still `about:blank` and has no
+`delayedStartupPromise` yet, so awaiting that property right after the call
+waits for nothing, and the window's globals read `undefined`.
 
 Reach a panel view with `PanelMultiView.getViewNode(document, id)` (from
 `moz-src:///browser/components/customizableui/PanelMultiView.sys.mjs`), not

@@ -16,12 +16,12 @@ say.
   its own file (`>probe.json 2>probe.err`) and parse stdout whole. A result can
   be a scalar (e.g. `42`, `"text"`, `true`, `null`) printed on one line, so a
   filter that starts at the first line beginning with `{` or `[` prints nothing
-  for it. A call that builds the virtualenv (the first in a tree, and sometimes
-  the first after a checkout or `./mach artifact install`) prints "Creating the
-  'wpt' site" and a harmless PyGObject install failure to stdout, after the
-  result. Build it with a call of its own before the first probe, `timeout 300
-  ./mach python --virtualenv wpt -c pass`, and the probes after it print the
-  result alone.
+  for it. A call that builds the virtualenv (`SKILL.md` §1 says when) prints
+  "Creating the 'wpt' site", and on a Linux host without `pkg-config` and the
+  cairo and GObject introspection headers, a harmless failure to build the
+  optional PyGObject (bug 2090261), which can land in stdout after the result.
+  Build it with a call of its own before the first probe, as that section says,
+  and the probes after it print the result alone.
 - **Return plain values**: a cyclic object prints nothing and exits 1 with
   `Cyclic object value`.
 - **`--window-size WIDTHxHEIGHT` sets the outer window**, so the content
