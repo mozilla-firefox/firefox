@@ -43,7 +43,7 @@ fetch_path = "Speedometer"
 repository = "https://github.com/mozilla/Speedometer"
 # Keep this revision in sync with the fetch used in benchmarks.yml by updating:
 # taskcluster/kinds/fetch/benchmarks.yml
-repository_revision = "11aa6278897ad5fe33c28df9099604dc07a90352"
+repository_revision = "0599c30930cba09c3203948008564bfb0a05a2bd"
 # Media-Streaming starts muted playback from a synthetic click without user
 # activation. Raptor's default Firefox autoplay policy rejects play(), which
 # leaves the workload waiting indefinitely. Chromium permits muted autoplay.

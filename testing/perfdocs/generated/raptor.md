@@ -2841,7 +2841,7 @@ Standard benchmarks are third-party tests (i.e. Speedometer) that we have integr
 * **page timeout**: 600000
 * **preferences**: media.autoplay.default=0 media.autoplay.blocking_policy=0 media.allowed-to-play.enabled=true media.block-autoplay-until-in-foreground=false
 * **repository**: https://github.com/mozilla/Speedometer
-* **repository revision**: 11aa6278897ad5fe33c28df9099604dc07a90352
+* **repository revision**: 0599c30930cba09c3203948008564bfb0a05a2bd
 * **subtest lower is better**: true
 * **subtest unit**: ms
 * **support class**: speedometer3.py
