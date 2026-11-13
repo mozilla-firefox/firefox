@@ -13,6 +13,8 @@ export const AppConstants: Readonly<{
 
   RELEASE_OR_BETA: boolean;
 
+  EARLY_BETA_OR_EARLIER: boolean;
+
   IS_ESR: boolean;
 
   ACCESSIBILITY: boolean;

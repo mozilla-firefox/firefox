@@ -89,9 +89,6 @@ rejected-words:
             - '**/*.java'
             - '**/*.kt'
             - '**/*.rs'
-            - '**/*.yaml'
-            - '**/*.toml'
-            - '**/*.ini'
             - 'tools/lint/rejected-words.yml'
 
 
