@@ -35,33 +35,40 @@ class BaseHost:
         self.session.mount("https://", adapter)
 
     def upstream_tag(self, revision):
-        """Temporarily clone the repo to get the latest tag and timestamp"""
-        clone_config = ["-c", "core.autocrlf=input"]
+        """Temporarily fetch the repo's tags to get the latest tag and timestamp"""
+        fetch_config = []
         if self.manifest["vendoring"].get("tolerate-git-fsck-errors", False):
-            clone_config += [
+            fetch_config += [
                 "-c",
                 "fetch.fsckObjects=false",
                 "-c",
                 "transfer.fsckObjects=false",
             ]
 
-        with tempfile.TemporaryDirectory() as temp_repo_clone:
+        with tempfile.TemporaryDirectory() as repo_clone:
             # Run git with cwd= rather than moving the process with os.chdir():
             # this directory is deleted when the block exits, so a caller that
             # handles the exceptions raised below would be left sitting in a
             # directory that no longer exists.
-            repo_clone = "/".join([temp_repo_clone, self.manifest["origin"]["name"]])
-            subprocess.run(
-                ["git", "clone"]
-                + clone_config
+            subprocess.check_call(["git", "init", "--quiet"], cwd=repo_clone)
+            # Sorting tags by creatordate and reading a tag's date only needs the
+            # tag objects and the commits they point at, so fetch just those: no
+            # history, trees or file contents. HEAD is fetched too because git
+            # fails a fetch whose only refspec matches nothing, and a repo without
+            # tags should raise TagNotFound below.
+            subprocess.check_call(
+                ["git"]
+                + fetch_config
                 + [
+                    "fetch",
+                    "--quiet",
+                    "--depth=1",
+                    "--filter=tree:0",
                     self.manifest["vendoring"]["url"],
-                    self.manifest["origin"]["name"],
+                    "HEAD",
+                    "refs/tags/*:refs/tags/*",
                 ],
-                cwd=temp_repo_clone,
-                capture_output=True,
-                text=True,
-                check=True,
+                cwd=repo_clone,
             )
             revision_arg = []
             if revision and revision != "HEAD":

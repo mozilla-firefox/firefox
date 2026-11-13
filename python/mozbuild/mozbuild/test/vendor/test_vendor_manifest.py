@@ -376,5 +376,74 @@ def test_update_yaml_asserts_when_a_field_is_missing(tmp_path):
         vm.update_yaml("v9.9.9", "2026-01-01T00:00:00Z")
 
 
+def _git(cwd, *args, date=None):
+    env = dict(
+        os.environ,
+        GIT_AUTHOR_NAME="Test",
+        GIT_AUTHOR_EMAIL="test@example.com",
+        GIT_COMMITTER_NAME="Test",
+        GIT_COMMITTER_EMAIL="test@example.com",
+    )
+    if date:
+        env["GIT_AUTHOR_DATE"] = env["GIT_COMMITTER_DATE"] = date
+    subprocess.run(
+        ["git", "-c", "commit.gpgSign=false", "-c", "tag.gpgSign=false", *args],
+        cwd=cwd,
+        env=env,
+        check=True,
+        capture_output=True,
+    )
+
+
+@pytest.fixture
+def tag_upstream(tmp_path):
+    upstream = tmp_path / "upstream"
+    upstream.mkdir()
+    _git(upstream, "init", "--quiet")
+    # Fetching with --filter from a local repo needs the server side to allow it.
+    _git(upstream, "config", "uploadpack.allowFilter", "true")
+    (upstream / "file.txt").write_text("one\n")
+    _git(upstream, "add", "file.txt")
+    _git(upstream, "commit", "--quiet", "-m", "one", date="2020-01-01T00:00:00+0100")
+    return upstream
+
+
+def _host(upstream, **vendoring):
+    from mozbuild.vendor.host_base import BaseHost
+
+    return BaseHost({
+        "origin": {"name": "testlib"},
+        "vendoring": {"url": upstream.as_uri(), **vendoring},
+    })
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="requires git")
+def test_upstream_tag_latest_by_creation_date(tag_upstream):
+    # Highest version number, but created first.
+    _git(tag_upstream, "tag", "v10.0")
+    (tag_upstream / "file.txt").write_text("two\n")
+    _git(
+        tag_upstream, "commit", "--quiet", "-am", "two", date="2021-01-01T00:00:00+0100"
+    )
+    _git(
+        tag_upstream, "tag", "-a", "v2.0", "-m", "v2.0", date="2022-01-01T00:00:00+0100"
+    )
+
+    host = _host(tag_upstream)
+    assert host.upstream_tag(None) == ("v2.0", "2021-01-01T00:00:00+01:00")
+    assert host.upstream_tag("HEAD") == ("v2.0", "2021-01-01T00:00:00+01:00")
+    assert host.upstream_tag("v10.0") == ("v10.0", "2020-01-01T00:00:00+01:00")
+    with pytest.raises(TagNotFound, match="Requested tag v3.0 not found"):
+        host.upstream_tag("v3.0")
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="requires git")
+@pytest.mark.parametrize("tolerate_fsck_errors", [False, True])
+def test_upstream_tag_without_tags(tag_upstream, tolerate_fsck_errors):
+    host = _host(tag_upstream, **{"tolerate-git-fsck-errors": tolerate_fsck_errors})
+    with pytest.raises(TagNotFound, match="No tags found"):
+        host.upstream_tag(None)
+
+
 if __name__ == "__main__":
     main()
