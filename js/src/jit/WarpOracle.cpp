@@ -87,6 +87,8 @@ class MOZ_STACK_CLASS WarpScriptOracle {
   AliasedVarTarget findAliasedVarTarget(BytecodeLocation loc);
   AbortReasonOr<Ok> maybeSnapshotGetAliasedVar(WarpOpSnapshotList& snapshots,
                                                BytecodeLocation loc);
+  AbortReasonOr<Ok> snapshotGetImport(WarpOpSnapshotList& snapshots,
+                                      BytecodeLocation loc);
   AbortReasonOr<Ok> maybeInlineIC(WarpOpSnapshotList& snapshots,
                                   BytecodeLocation loc);
   AbortReasonOr<Ok> ensureMonomorphicInlineHints();
@@ -256,12 +258,12 @@ template <typename T, typename... Args>
   return true;
 }
 
-[[nodiscard]] static bool AddWarpGetImport(TempAllocator& alloc,
-                                           WarpOpSnapshotList& snapshots,
-                                           uint32_t offset, JSScript* script,
-                                           PropertyName* name) {
-  ModuleEnvironmentObject* env = GetModuleEnvironmentForScript(script);
+AbortReasonOr<Ok> WarpScriptOracle::snapshotGetImport(
+    WarpOpSnapshotList& snapshots, BytecodeLocation loc) {
+  ModuleEnvironmentObject* env = GetModuleEnvironmentForScript(script_);
   MOZ_ASSERT(env);
+
+  PropertyName* name = loc.getPropertyName(script_);
 
   mozilla::Maybe<PropertyInfo> prop;
   ModuleEnvironmentObject* targetEnv;
@@ -269,15 +271,27 @@ template <typename T, typename... Args>
 
   uint32_t numFixedSlots = targetEnv->numFixedSlots();
   uint32_t slot = prop->slot();
+  Value value = targetEnv->getSlot(slot);
+
+  if (!prop->writable() && JS::Prefs::ion_environment_specialization()) {
+    bool addedConstant =
+        MOZ_TRY(maybeAddConstantBinding(snapshots, loc, targetEnv, slot));
+    if (addedConstant) {
+      return Ok();
+    }
+  }
 
   // In the rare case where this import hasn't been initialized already (we have
   // an import cycle where modules reference each other's imports), we need a
   // check.
-  bool needsLexicalCheck =
-      targetEnv->getSlot(slot).isMagic(JS_UNINITIALIZED_LEXICAL);
+  bool needsLexicalCheck = value.isMagic(JS_UNINITIALIZED_LEXICAL);
 
-  return AddOpSnapshot<WarpGetImport>(alloc, snapshots, offset, targetEnv,
-                                      numFixedSlots, slot, needsLexicalCheck);
+  if (!AddOpSnapshot<WarpGetImport>(alloc_, snapshots,
+                                    loc.bytecodeToOffset(script_), targetEnv,
+                                    numFixedSlots, slot, needsLexicalCheck)) {
+    return abort(AbortReason::Alloc);
+  }
+  return Ok();
 }
 
 bool WarpOracle::isImmutableEnvironmentSlot(Scope* scope, uint32_t slot) {
@@ -570,13 +584,9 @@ AbortReasonOr<WarpScriptSnapshot*> WarpScriptOracle::createScriptSnapshot() {
         MOZ_TRY(maybeSnapshotGetAliasedVar(opSnapshots, loc));
         break;
 
-      case JSOp::GetImport: {
-        PropertyName* name = loc.getPropertyName(script_);
-        if (!AddWarpGetImport(alloc_, opSnapshots, offset, script_, name)) {
-          return abort(AbortReason::Alloc);
-        }
+      case JSOp::GetImport:
+        MOZ_TRY(snapshotGetImport(opSnapshots, loc));
         break;
-      }
 
       case JSOp::GetElemSuper: {
 #if defined(JS_CODEGEN_X86)

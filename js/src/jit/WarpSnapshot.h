@@ -206,7 +206,8 @@ class WarpGetImport : public WarpOpSnapshot {
 #endif
 };
 
-// The constant Value or nursery object index for JSOp::GetAliasedVar.
+// The constant Value or nursery object index for JSOp::GetAliasedVar or
+// JSOp::GetImport.
 class WarpConstantBinding : public WarpOpSnapshot {
   mozilla::Variant<OffthreadGCPtr<Value>, uint32_t> value_;
 

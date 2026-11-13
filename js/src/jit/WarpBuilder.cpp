@@ -3307,6 +3307,11 @@ MInstruction* WarpBuilder::buildLoadSlot(MDefinition* obj,
 }
 
 bool WarpBuilder::build_GetImport(BytecodeLocation loc) {
+  if (auto* constant = getOpSnapshot<WarpConstantBinding>(loc)) {
+    pushConstantBinding(constant);
+    return true;
+  }
+
   auto* snapshot = getOpSnapshot<WarpGetImport>(loc);
 
   ModuleEnvironmentObject* targetEnv = snapshot->targetEnv();
