@@ -7,9 +7,9 @@
  * Smart Window feature callout is gated on:
  *
  * - "product-detail": a retailer product page (Amazon, Walmart, Best Buy and
- *   Sephora, US (.com) only).
- * - "shopping-home": the home page of a US or Canadian retailer.
- * - "news-home": the home page of a US or Canadian news site.
+ *   Sephora in US and some UK).
+ * - "shopping-home": the home page of a US, Canada, and UK retailer.
+ * - "news-home": the home page of a US, Canada, and UK news site.
  *
  */
 
@@ -33,7 +33,7 @@ const ProductConfig = {
   amazon: {
     // A 10-char ASIN bounded by a path delimiter; covers /dp/, /gp/product/, etc.
     productIdRegex: /(?:[/]|$|%2F)(?<productId>[A-Z0-9]{10})(?:[/]|$|%2F)/,
-    validTLDs: ["com"],
+    validTLDs: ["com", "co.uk"],
   },
   walmart: {
     // /ip/<slug>/<id>
@@ -51,72 +51,120 @@ const ProductConfig = {
     productIdRegex: /^\/product\/[^/]*-(?<productId>P\d{4,12})(?:\.html)?\/?$/,
     validTLDs: ["com"],
   },
+  argos: {
+    // /product/<catalogue number>
+    productIdRegex: /^\/product\/(?<productId>\d{6,10})(?:\/|$)/,
+    validTLDs: ["co.uk"],
+  },
+  currys: {
+    // /products/<slug>-<id>.html
+    productIdRegex: /^\/products\/[^/]*-(?<productId>\d{6,12})\.html$/,
+    validTLDs: ["co.uk"],
+  },
+  boots: {
+    // /<slug>-<id>
+    productIdRegex: /^\/[^/]*-(?<productId>\d{6,12})\/?$/,
+    validTLDs: ["com"],
+  },
 };
 
 const DEFAULT_HOME_PATHS = ["/"];
 
 /**
- * Hosts whose home page is a shopping home page.
- * Listed once even when a site is in both the US and the Canadian list.
+ * Hosts whose home page is a shopping home page by the market they serve.
+ *
+ * @type {Record<string, string[]>}
  */
-const ShoppingHomeHosts = [
-  // US.
-  "amazon.com",
-  "ebay.com",
-  "walmart.com",
-  "homedepot.com",
-  "etsy.com",
-  "target.com",
-  "cvs.com",
-  "lowes.com",
-  "samsung.com",
-  "walgreens.com",
-  "costco.com",
-  "bestbuy.com",
-  "wayfair.com",
-  "us.shein.com",
-  "ca.shein.com",
-  "macys.com",
-  "gap.com",
-  "aliexpress.com",
-  "samsclub.com",
-  // Canada.
-  "amazon.ca",
-  "walmart.ca",
-  "temu.com",
-  "costco.ca",
-  "canadiantire.ca",
-  "bestbuy.ca",
-  "homedepot.ca",
-  "ebay.ca",
-  "ikea.com",
-];
+const ShoppingHomeHostsByRegion = {
+  US: [
+    "amazon.com",
+    "ebay.com",
+    "walmart.com",
+    "homedepot.com",
+    "etsy.com",
+    "target.com",
+    "cvs.com",
+    "lowes.com",
+    "samsung.com",
+    "walgreens.com",
+    "costco.com",
+    "bestbuy.com",
+    "wayfair.com",
+    "us.shein.com",
+    "ca.shein.com",
+    "macys.com",
+    "gap.com",
+    "aliexpress.com",
+    "samsclub.com",
+  ],
+  CA: [
+    "amazon.ca",
+    "walmart.ca",
+    "temu.com",
+    "costco.ca",
+    "canadiantire.ca",
+    "bestbuy.ca",
+    "homedepot.ca",
+    "ebay.ca",
+    "ikea.com",
+  ],
+  GB: [
+    "amazon.co.uk",
+    "ebay.co.uk",
+    "temu.com",
+    "argos.co.uk",
+    "tesco.com",
+    "currys.co.uk",
+    "johnlewis.com",
+    "diy.com",
+    "etsy.com",
+    "ikea.com",
+  ],
+};
 
-/** Hosts whose home page is a news home page. */
-const NewsHomeHosts = [
-  // US.
-  "nytimes.com",
-  "cnn.com",
-  "foxnews.com",
-  "nypost.com",
-  "dailymail.com",
-  "usatoday.com",
-  "washingtonpost.com",
-  "people.com",
-  "bbc.com",
-  "newsweek.com",
-  // Canada.
-  "yahoo.com",
-  "ca.yahoo.com",
-  "ca.news.yahoo.com",
-  "news.yahoo.com",
-  "cbc.ca",
-  "globalnews.ca",
-  "ctvnews.ca",
-  "theglobeandmail.com",
-  "thestar.com",
-  "nationalpost.com",
-];
+/**
+ * Hosts whose home page is a news home page, by the market they serve.
+ *
+ * @type {Record<string, string[]>}
+ */
+const NewsHomeHostsByRegion = {
+  US: [
+    "nytimes.com",
+    "cnn.com",
+    "foxnews.com",
+    "nypost.com",
+    "dailymail.com",
+    "usatoday.com",
+    "washingtonpost.com",
+    "people.com",
+    "bbc.com",
+    "newsweek.com",
+  ],
+  CA: [
+    "yahoo.com",
+    "ca.yahoo.com",
+    "ca.news.yahoo.com",
+    "news.yahoo.com",
+    "cbc.ca",
+    "globalnews.ca",
+    "ctvnews.ca",
+    "theglobeandmail.com",
+    "thestar.com",
+    "nationalpost.com",
+  ],
+  GB: [
+    "bbc.co.uk",
+    "theguardian.com",
+    "dailymail.co.uk",
+    "thesun.co.uk",
+    "independent.co.uk",
+    "news.sky.com",
+    "telegraph.co.uk",
+    "mirror.co.uk",
+    "express.co.uk",
+    "metro.co.uk",
+  ],
+};
 
 /**
  * Paths that count as the home page for sites that don't serve it from "/",
@@ -125,8 +173,8 @@ const NewsHomeHosts = [
  * @type {Map<string, string[]>}
  */
 const HomePaths = new Map([
-  // Only the Canadian storefront is in scope and "/" is a country picker.
-  ["ikea.com", ["/ca", "/ca/en", "/ca/fr"]],
+  // Only the CA and UK storefronts are in scope and "/" is a country picker.
+  ["ikea.com", ["/ca", "/ca/en", "/ca/fr", "/gb", "/gb/en"]],
   ["samsung.com", ["/us", "/ca", "/ca/en", "/ca/fr"]],
   ["walmart.ca", ["/", "/en", "/fr"]],
   ["canadiantire.ca", ["/", "/en", "/fr", "/en.html", "/fr.html"]],
@@ -137,12 +185,33 @@ const HomePaths = new Map([
   ["dailymail.com", ["/", "/ushome/index.html", "/home/index.html"]],
   ["yahoo.com", ["/", "/news"]],
   ["ca.yahoo.com", ["/", "/news"]],
+  ["bbc.co.uk", ["/", "/news"]],
+  ["theguardian.com", ["/", "/uk"]],
+  ["dailymail.co.uk", ["/", "/home/index.html"]],
+  // Tesco's online shop lives at /groceries/en-GB/, while tesco.com/ is a corporate portal page
+  ["tesco.com", ["/groceries", "/groceries/en-gb"]],
 ]);
+
+/**
+ * Every host across all markets
+ *
+ * @param {Record<string, string[]>} byRegion
+ * @returns {string[]}
+ */
+function hostsOf(byRegion) {
+  return [...new Set(Object.values(byRegion).flat())];
+}
 
 /** @type {Map<string, string>} Host to home page category. */
 const HomeCategoryByHost = new Map([
-  ...ShoppingHomeHosts.map(host => [host, AgentPageCategory.SHOPPING_HOME]),
-  ...NewsHomeHosts.map(host => [host, AgentPageCategory.NEWS_HOME]),
+  ...hostsOf(ShoppingHomeHostsByRegion).map(host => [
+    host,
+    AgentPageCategory.SHOPPING_HOME,
+  ]),
+  ...hostsOf(NewsHomeHostsByRegion).map(host => [
+    host,
+    AgentPageCategory.NEWS_HOME,
+  ]),
 ]);
 
 /**
