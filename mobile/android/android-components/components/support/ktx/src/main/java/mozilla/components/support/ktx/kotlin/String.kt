@@ -215,8 +215,8 @@ fun String.sha1(): String {
  *   be returned.
  */
 fun String.toDate(
-    vararg possibleFormats: String =
-        arrayOf(
+    possibleFormats: List<String> =
+        listOf(
             "yyyy-MM-dd'T'HH:mm",
             "yyyy-MM-dd",
             "yyyy-'W'ww",

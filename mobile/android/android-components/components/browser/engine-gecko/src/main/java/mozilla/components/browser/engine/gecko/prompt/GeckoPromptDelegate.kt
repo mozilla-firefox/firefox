@@ -26,6 +26,7 @@ import mozilla.components.concept.engine.prompt.PromptRequest.File.Companion.DEF
 import mozilla.components.concept.engine.prompt.PromptRequest.MenuChoice
 import mozilla.components.concept.engine.prompt.PromptRequest.MultipleChoice
 import mozilla.components.concept.engine.prompt.PromptRequest.SingleChoice
+import mozilla.components.concept.engine.prompt.PromptRequest.TimeSelection.Type
 import mozilla.components.concept.engine.prompt.ShareData
 import mozilla.components.concept.identitycredential.Account
 import mozilla.components.concept.identitycredential.Provider
@@ -638,44 +639,22 @@ internal class GeckoPromptDelegate(private val geckoEngineSession: GeckoEngineSe
         val onClear: () -> Unit = {
             onConfirm("")
         }
-        val initialDateString = prompt.defaultValue ?: ""
-        val stepValue =
-            with(prompt.stepValue) {
-                if (this?.toDoubleOrNull() == null) {
-                    null
-                } else {
-                    this
-                }
-            }
 
-        val format =
-            when (prompt.type) {
-                DATE -> "yyyy-MM-dd"
-                MONTH -> "yyyy-MM"
-                WEEK -> "yyyy-'W'ww"
-                TIME -> {
-                    if (shouldShowMillisecondsPicker(stepValue?.toFloat())) {
-                        "HH:mm:ss.SSS"
-                    } else if (shouldShowSecondsPicker(stepValue?.toFloat())) {
-                        "HH:mm:ss"
-                    } else {
-                        "HH:mm"
-                    }
-                }
-                DATETIME_LOCAL -> "yyyy-MM-dd'T'HH:mm"
-                else -> {
-                    throw InvalidParameterException("${prompt.type} is not a valid DatetimeType")
-                }
+        val stepValue = prompt.validStepValue()
+        val (initialDate, format, selectionType) =
+            context(stepValue) {
+                prompt.toDateAndSelectionType()
             }
 
         notifyDatePromptRequest(
             prompt.title ?: "",
-            initialDateString,
+            initialDate,
             prompt.minValue,
             prompt.maxValue,
-            stepValue,
+            stepValue.safeValue,
             onClear,
             format,
+            selectionType,
             onConfirm,
             onDismiss,
         )
@@ -1020,32 +999,22 @@ internal class GeckoPromptDelegate(private val geckoEngineSession: GeckoEngineSe
     @Suppress("LongParameterList")
     private fun notifyDatePromptRequest(
         title: String,
-        initialDateString: String,
+        initialDate: Date,
         minDateString: String?,
         maxDateString: String?,
         stepValue: String?,
         onClear: () -> Unit,
         format: String,
+        selectionType: Type,
         onConfirm: (String) -> Unit,
         onDismiss: () -> Unit,
     ) {
-        val initialDate = initialDateString.toDate(format)
         val minDate = if (minDateString.isNullOrEmpty()) null else minDateString.toDate()
         val maxDate = if (maxDateString.isNullOrEmpty()) null else maxDateString.toDate()
         val onSelect: (Date) -> Unit = {
             val stringDate = it.toString(format)
             onConfirm(stringDate)
         }
-
-        val selectionType =
-            when (format) {
-                "HH:mm",
-                "HH:mm:ss",
-                "HH:mm:ss.SSS" -> PromptRequest.TimeSelection.Type.TIME
-                "yyyy-MM" -> PromptRequest.TimeSelection.Type.MONTH
-                "yyyy-MM-dd'T'HH:mm" -> PromptRequest.TimeSelection.Type.DATE_AND_TIME
-                else -> PromptRequest.TimeSelection.Type.DATE
-            }
 
         geckoEngineSession.notifyObservers {
             onPromptRequest(
@@ -1117,4 +1086,58 @@ internal fun GECKO_PROMPT_ACCOUNT_SELECTOR.toAccount(): Account {
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal fun GECKO_PROMPT_ACCOUNT_SELECTOR_PROVIDER.toProvider(): Provider {
     return Provider(0, icon, name, domain)
+}
+
+/**
+ * A type safe way to access the [PromptDelegate.DateTimePrompt.stepValue] using existing logic. See [validStepValue].
+ */
+@JvmInline internal value class StepValue(val safeValue: String?)
+
+/**
+ * Check if the [stepValue] is a valid double, else null.
+ *
+ * N.B: This was existing logic that was refactored out of [GeckoPromptDelegate.onDateTimePrompt]. It would be better to
+ * refactor this logic out in the future to actually return and use the double instead of leaving it as a nullable
+ * String.
+ */
+internal fun PromptDelegate.DateTimePrompt.validStepValue(): StepValue {
+    return if (stepValue?.toDoubleOrNull() == null) {
+        StepValue(null)
+    } else {
+        StepValue(stepValue)
+    }
+}
+
+/** Returns a [Date], date format, and [PromptRequest.TimeSelection.Type] based the Gecko prompt type. */
+context(step: StepValue)
+internal fun PromptDelegate.DateTimePrompt.toDateAndSelectionType(): Triple<Date, String, Type> {
+    val (possibleFormats, type) = formatsAndSelection(step)
+    val date = defaultValue.orEmpty().toDate(possibleFormats) ?: Date()
+
+    // Always pick the first element because it has the most accuracy for returning back to Gecko, even when the
+    // defaultValue is empty.
+    return Triple(date, possibleFormats.first(), type)
+}
+
+private fun PromptDelegate.DateTimePrompt.formatsAndSelection(step: StepValue): Pair<List<String>, Type> {
+    return when (type) {
+        DATE -> listOf("yyyy-MM-dd") to Type.DATE
+        WEEK -> listOf("yyyy-'W'ww") to Type.DATE
+        MONTH -> listOf("yyyy-MM") to Type.MONTH
+        TIME -> {
+            val stepAsFloat = step.safeValue?.toFloat()
+            if (shouldShowMillisecondsPicker(stepAsFloat)) {
+                listOf("HH:mm:ss.SSS", "HH:mm:ss", "HH:mm") to Type.TIME
+            } else if (shouldShowSecondsPicker(stepAsFloat)) {
+                listOf("HH:mm:ss", "HH:mm") to Type.TIME
+            } else {
+                listOf("HH:mm") to Type.TIME
+            }
+        }
+
+        DATETIME_LOCAL -> listOf("yyyy-MM-dd'T'HH:mm") to Type.DATE_AND_TIME
+        else -> {
+            throw InvalidParameterException("$type is not a valid DatetimeType")
+        }
+    }
 }

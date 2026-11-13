@@ -626,6 +626,39 @@ class GeckoPromptDelegateTest {
     }
 
     @Test
+    fun `WHEN DateTimePrompt TIME has a seconds stepValue and a defaultValue without seconds THEN a TimeSelection PromptRequest is provided`() {
+        val mockSession = GeckoEngineSession(runtime)
+        var timeSelectionRequest: PromptRequest.TimeSelection? = null
+        val promptDelegate = GeckoPromptDelegate(mockSession)
+        mockSession.register(
+            object : EngineSession.Observer {
+                override fun onPromptRequest(promptRequest: PromptRequest) {
+                    timeSelectionRequest = promptRequest as PromptRequest.TimeSelection
+                }
+            }
+        )
+        val geckoPrompt =
+            geckoDateTimePrompt(
+                type = TIME,
+                defaultValue = "12:00",
+                stepValue = "1",
+            )
+
+        promptDelegate.onDateTimePrompt(mock(), geckoPrompt)
+
+        assertNotNull(timeSelectionRequest).let {
+            assertEquals(PromptRequest.TimeSelection.Type.TIME, it.type)
+            assertEquals("12:00".toDate("HH:mm"), it.initialDate)
+            assertEquals("1", it.stepValue)
+
+            val confirmCaptor = argumentCaptor<String>()
+            it.onConfirm("12:00:45".toDate("HH:mm:ss"))
+            verify(geckoPrompt).confirm(confirmCaptor.capture())
+            assertEquals("12:00:45", confirmCaptor.value)
+        }
+    }
+
+    @Test
     fun `onDateTimePrompt called with DATETIME_TYPE_DATETIME_LOCAL must provide a TimeSelection PromptRequest`() {
         val mockSession = GeckoEngineSession(runtime)
         var dateRequest: PromptRequest? = null
