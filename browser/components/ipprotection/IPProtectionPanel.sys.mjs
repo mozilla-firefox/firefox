@@ -1315,8 +1315,86 @@ export class IPProtectionPanel {
       this.setState({ error: this.#getProxyErrorType() });
     }
   }
-  // TODO: Reduce complexity by refactoring bandwidth warning logic, removing from handleEvent - Bug 2091150
-  // eslint-disable-next-line complexity
+
+  #countUserEnableEvents() {
+    let userEnableCount = Services.prefs.getIntPref(
+      "browser.ipProtection.userEnableCount",
+      0
+    );
+    if (userEnableCount < 3) {
+      Services.prefs.setIntPref(
+        "browser.ipProtection.userEnableCount",
+        userEnableCount + 1
+      );
+    }
+  }
+
+  #handleDismissBandwidthWarnings() {
+    const state = lazy.IPPUsageHelper.state;
+    let threshold = 0;
+    if (state === "warning-75-percent") {
+      threshold = 75;
+    } else if (state === "warning-90-percent") {
+      threshold = 90;
+    }
+    if (threshold > 0) {
+      const current = lazy.IPPUsageHelper.getDismissedThresholds();
+      if (threshold > current.panel) {
+        lazy.IPPUsageHelper.setDismissedThresholds({
+          ...current,
+          panel: threshold,
+        });
+      }
+    }
+  }
+
+  #handleBandwidthThreshold(usage) {
+    const remainingPercent = Number(usage.remaining) / Number(usage.max);
+    const upsellThreshold = (1 - BANDWIDTH.FIRST_THRESHOLD) * 100;
+    const firstWarning = (1 - BANDWIDTH.SECOND_THRESHOLD) * 100;
+    const secondWarning = (1 - BANDWIDTH.THIRD_THRESHOLD) * 100;
+    let threshold = 0;
+    if (
+      remainingPercent <= BANDWIDTH.FIRST_THRESHOLD &&
+      remainingPercent > BANDWIDTH.SECOND_THRESHOLD
+    ) {
+      threshold = upsellThreshold;
+    } else if (
+      remainingPercent <= BANDWIDTH.SECOND_THRESHOLD &&
+      remainingPercent > BANDWIDTH.THIRD_THRESHOLD
+    ) {
+      threshold = firstWarning;
+    } else if (
+      remainingPercent > 0 &&
+      remainingPercent <= BANDWIDTH.THIRD_THRESHOLD
+    ) {
+      threshold = secondWarning;
+    } else if (remainingPercent === 0) {
+      threshold = 100;
+    }
+
+    const lastRecordedThreshold = Services.prefs.getIntPref(
+      BANDWIDTH_THRESHOLD_PREF,
+      threshold
+    );
+    Services.prefs.setIntPref(BANDWIDTH_THRESHOLD_PREF, threshold);
+
+    if (lastRecordedThreshold !== threshold) {
+      this.#measureBandwidthThreshold(threshold, lastRecordedThreshold);
+    }
+
+    const resetDate = usage.reset.toString();
+    const lastResetDate = Services.prefs.getStringPref(
+      BANDWIDTH_RESET_DATE_PREF,
+      ""
+    );
+    Services.prefs.setStringPref(BANDWIDTH_RESET_DATE_PREF, resetDate);
+
+    if (threshold === 0 && lastResetDate && resetDate !== lastResetDate) {
+      this.#sendBandwidthResetTrigger();
+    }
+  }
+
   #handleEvent(event) {
     if (event.type == "IPProtection:Init") {
       this.updateComponentState(event.target);
@@ -1325,16 +1403,7 @@ export class IPProtectionPanel {
     } else if (event.type == "IPProtection:UserEnable") {
       this.#startProxy();
       Services.prefs.setBoolPref("browser.ipProtection.userEnabled", true);
-      let userEnableCount = Services.prefs.getIntPref(
-        "browser.ipProtection.userEnableCount",
-        0
-      );
-      if (userEnableCount < 3) {
-        Services.prefs.setIntPref(
-          "browser.ipProtection.userEnableCount",
-          userEnableCount + 1
-        );
-      }
+      this.#countUserEnableEvents();
       if (this.#shouldShowSiteInclusionPrompt()) {
         Services.prefs.setBoolPref(SITE_INCLUSION_PROMPT_SHOWN_PREF, true);
         this.setState({ showSiteInclusionPrompt: true });
@@ -1409,22 +1478,7 @@ export class IPProtectionPanel {
       );
       Glean.ipprotection.exclusionToggled.record({ excluded: true });
     } else if (event.type == "IPProtection:DismissBandwidthWarning") {
-      const state = lazy.IPPUsageHelper.state;
-      let threshold = 0;
-      if (state === "warning-75-percent") {
-        threshold = 75;
-      } else if (state === "warning-90-percent") {
-        threshold = 90;
-      }
-      if (threshold > 0) {
-        const current = lazy.IPPUsageHelper.getDismissedThresholds();
-        if (threshold > current.panel) {
-          lazy.IPPUsageHelper.setDismissedThresholds({
-            ...current,
-            panel: threshold,
-          });
-        }
-      }
+      this.#handleDismissBandwidthWarnings();
       this.setState({ bandwidthWarning: false });
     } else if (event.type == "IPPProxyManager:UsageChanged") {
       const usage = event.detail.usage;
@@ -1443,51 +1497,7 @@ export class IPProtectionPanel {
         return;
       }
 
-      const remainingPercent = Number(usage.remaining) / Number(usage.max);
-      const upsellThreshold = (1 - BANDWIDTH.FIRST_THRESHOLD) * 100;
-      const firstWarning = (1 - BANDWIDTH.SECOND_THRESHOLD) * 100;
-      const secondWarning = (1 - BANDWIDTH.THIRD_THRESHOLD) * 100;
-
-      let threshold = 0;
-      if (
-        remainingPercent <= BANDWIDTH.FIRST_THRESHOLD &&
-        remainingPercent > BANDWIDTH.SECOND_THRESHOLD
-      ) {
-        threshold = upsellThreshold;
-      } else if (
-        remainingPercent <= BANDWIDTH.SECOND_THRESHOLD &&
-        remainingPercent > BANDWIDTH.THIRD_THRESHOLD
-      ) {
-        threshold = firstWarning;
-      } else if (
-        remainingPercent > 0 &&
-        remainingPercent <= BANDWIDTH.THIRD_THRESHOLD
-      ) {
-        threshold = secondWarning;
-      } else if (remainingPercent === 0) {
-        threshold = 100;
-      }
-
-      const lastRecordedThreshold = Services.prefs.getIntPref(
-        BANDWIDTH_THRESHOLD_PREF,
-        threshold
-      );
-      Services.prefs.setIntPref(BANDWIDTH_THRESHOLD_PREF, threshold);
-
-      if (lastRecordedThreshold !== threshold) {
-        this.#measureBandwidthThreshold(threshold, lastRecordedThreshold);
-      }
-
-      const resetDate = usage.reset.toString();
-      const lastResetDate = Services.prefs.getStringPref(
-        BANDWIDTH_RESET_DATE_PREF,
-        ""
-      );
-      Services.prefs.setStringPref(BANDWIDTH_RESET_DATE_PREF, resetDate);
-
-      if (threshold === 0 && lastResetDate && resetDate !== lastResetDate) {
-        this.#sendBandwidthResetTrigger();
-      }
+      this.#handleBandwidthThreshold(usage);
 
       this.setState({
         bandwidthUsage: {
