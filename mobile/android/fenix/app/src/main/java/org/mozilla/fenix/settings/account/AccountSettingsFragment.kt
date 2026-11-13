@@ -316,7 +316,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
                 if (checked) {
                     getString(R.string.preferences_enable_sync_summary_sync_enabled)
                 } else {
-                    getString(R.string.preferences_enable_sync_summary_sync_disabled, getString(R.string.firefox))
+                    getString(R.string.preferences_enable_sync_summary_sync_disabled_2)
                 }
         }
     }

@@ -1103,8 +1103,8 @@
     <string name="preferences_enable_sync_title">Sync this device</string>
     <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
     <string name="preferences_enable_sync_summary_sync_enabled">Your data is backed up and available on synced devices.</string>
-    <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name.  -->
-    <string name="preferences_enable_sync_summary_sync_disabled">Using saved data in your %1$s account.</string>
+    <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from.  -->
+    <string name="preferences_enable_sync_summary_sync_disabled_2">Using saved data in your account.</string>
     <!-- Summary for the sync preference category. -->
     <string name="preferences_sync_category_summary">Manage what syncs on all your connected devices</string>
     <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
