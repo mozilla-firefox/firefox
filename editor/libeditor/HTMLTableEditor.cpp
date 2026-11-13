@@ -2110,10 +2110,11 @@ nsresult HTMLEditor::DeleteSelectedTableRowsWithTransaction(
             "next...");
         startRowIndex++;
       }
-      // Check if there's a cell in the "next" row.
-      cell = GetTableCellElementAt(*table, startRowIndex, startColIndex);
-      if (!cell) {
-        return NS_OK;
+      // Check if there's a cell in the "next" row. We can treat generated cell
+      // is also a cell at the column index.
+      if (!GetMaybeGeneratedTableCellElementAt(*table, startRowIndex,
+                                               startColIndex)) {
+        break;
       }
     }
     return NS_OK;
@@ -4055,15 +4056,17 @@ NS_IMETHODIMP HTMLEditor::GetCellAt(Element* aTableElement, int32_t aRowIndex,
     }
   }
 
-  RefPtr<Element> cellElement =
-      GetTableCellElementAt(*tableElement, aRowIndex, aColumnIndex);
-  cellElement.forget(aCellElement);
+  RefPtr<Element> cellElement = GetMaybeGeneratedTableCellElementAt(
+      *tableElement, aRowIndex, aColumnIndex);
+  // Don't expose the cell element if it's a generated content.
+  if (cellElement && !cellElement->IsInNativeAnonymousSubtree()) {
+    cellElement.forget(aCellElement);
+  }
   return NS_OK;
 }
 
-Element* HTMLEditor::GetTableCellElementAt(Element& aTableElement,
-                                           int32_t aRowIndex,
-                                           int32_t aColumnIndex) const {
+Element* HTMLEditor::GetMaybeGeneratedTableCellElementAt(
+    Element& aTableElement, int32_t aRowIndex, int32_t aColumnIndex) const {
   // Let's grab the <table> element while we're retrieving layout API since
   // editor developers do not watch all layout API changes.  So, it may
   // become unsafe.
@@ -4073,8 +4076,8 @@ Element* HTMLEditor::GetTableCellElementAt(Element& aTableElement,
     NS_WARNING("There was no table layout information");
     return nullptr;
   }
-  nsIContent* cell = tableFrame->GetCellAt(aRowIndex, aColumnIndex);
-  return Element::FromNodeOrNull(cell);
+  return Element::FromNodeOrNull(
+      tableFrame->GetCellAt(aRowIndex, aColumnIndex));
 }
 
 // When all you want are the rowspan and colspan (not exposed in nsITableEditor)
@@ -4283,8 +4286,9 @@ void HTMLEditor::SetSelectionAfterTableEdit(Element* aTable, int32_t aRow,
   RefPtr<Element> cell;
   bool done = false;
   do {
-    cell = GetTableCellElementAt(*aTable, aRow, aCol);
-    if (cell) {
+    cell = GetMaybeGeneratedTableCellElementAt(*aTable, aRow, aCol);
+    if (cell && HTMLEditUtils::IsSimplyEditableNode(*cell)) {
+      MOZ_ASSERT(!cell->IsInNativeAnonymousSubtree());
       if (aSelected) {
         // Reselect the cell
         DebugOnly<nsresult> rv = SelectContentInternal(*cell);
