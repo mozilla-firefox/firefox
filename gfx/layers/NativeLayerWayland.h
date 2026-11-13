@@ -41,7 +41,7 @@ struct LayerState {
   bool mMutatedStackingOrder : 1;
   // Layer placement (size/position/scale etc.) was changed
   bool mMutatedPlacement : 1;
-  // mFrontBuffer was changed and we need to commit it to Wayland compositor
+  // front buffer was changed and we need to commit it to Wayland compositor
   // to show new content.
   bool mMutatedFrontBuffer : 1;
 
@@ -276,7 +276,7 @@ class NativeLayerWayland : public NativeLayer {
   virtual bool CommitFrontBufferToScreenLocked(
       const widget::WaylandSurfaceLock& aProofOfLock) = 0;
   virtual bool IsFrontBufferChanged() = 0;
-  virtual bool HasFrontBuffer() { return !!mFrontBuffer; }
+  virtual bool HasFrontBuffer() = 0;
 
  protected:
   ~NativeLayerWayland();
@@ -300,10 +300,6 @@ class NativeLayerWayland : public NativeLayer {
   RefPtr<NativeLayerRootWayland> mRootLayer;
 
   RefPtr<widget::WaylandSurface> mSurface;
-
-  // Final buffer which we attach to WaylandSurface
-  RefPtr<widget::WaylandBuffer> mFrontBuffer;
-  bool mFrontBufferBorrowed = false;
 
   const bool mIsOpaque = false;
 
@@ -417,9 +413,19 @@ class NativeLayerWaylandExternal final : public NativeLayerWayland {
       widget::BufferTransaction* aTransaction);
   void PurgeBorrowedBuffers(const widget::WaylandSurfaceLock& aSurfaceLock,
                             bool aForce);
+  bool HasFrontBuffer() override { return !!mFrontBufferSurface; }
 
+  // Last surface provided by AttachExternalImage(), skip redundant attach.
   uintptr_t mLastSurface = 0;
+
+  // Keep reference to texture host to make SHM textures live
   RefPtr<wr::RenderTextureHost> mTextureHost;
+
+  // Final buffer which we attach to WaylandSurface
+  RefPtr<widget::WaylandBuffer> mFrontBuffer;
+
+  // Surface we build mFrontBuffer from at commit time
+  RefPtr<BufferSurface> mFrontBufferSurface;
 
   // External buffers (DMABuf) used by this layer.
   // We want to cache and reuse wl_buffer of external images.
