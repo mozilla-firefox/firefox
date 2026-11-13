@@ -195,6 +195,8 @@ TEST_HARNESS_FILES.gtest += [
     "../test/output_hevc_aac.mkv",
     "../test/output_mp3.mkv",
     "../test/reftest/color_quads/720p.png.bt2020.pq.tv.yuv420p10.hevc.mp4",
+    "../test/seig-key-rotation-cbcs.mp4",
+    "../test/seig-key-rotation-cenc.mp4",
     "../test/vp9cake.webm",
     "av1-color-metadata.mp4",
     "dash_dashinit.mp4",

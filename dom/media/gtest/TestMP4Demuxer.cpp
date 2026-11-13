@@ -603,6 +603,70 @@ TEST(MP4Demuxer, CENCFragAudio)
   });
 }
 
+static nsTArray<RefPtr<MediaRawData>> DemuxAllVideoSamples(
+    const char* aFileName) {
+  RefPtr<MP4DemuxerBinding> binding = new MP4DemuxerBinding(aFileName);
+  binding->RunTestAndWait([binding]() {
+    binding->mVideoTrack =
+        binding->mDemuxer->GetTrackDemuxer(TrackInfo::kVideoTrack, 0);
+    binding->CheckTrackSamples(binding->mVideoTrack)
+        ->Then(
+            binding->mTaskQueue, __func__,
+            [binding]() { binding->mTaskQueue->BeginShutdown(); }, DO_FAIL);
+  });
+  return std::move(binding->mSamples);
+}
+
+static nsCString ToHex(const nsTArray<uint8_t>& aBytes) {
+  nsCString res;
+  for (uint8_t byte : aBytes) {
+    res.AppendPrintf("%02x", byte);
+  }
+  return res;
+}
+
+TEST(MP4Demuxer, SeigKeyRotation)
+{
+  // Each fixture has four 1 s fragments of 30 samples. Fragments 1-2 use the
+  // tenc defaults with KID A. Fragments 3-4 map every sample to a traf-level
+  // seig entry with KID B; for cbcs that entry also carries its own constant
+  // IV.
+  struct Fixture {
+    const char* mFileName;
+    int32_t mIVSize;
+    const char* mConstantIVBeforeRotation;
+    const char* mConstantIVAfterRotation;
+  };
+  const Fixture fixtures[] = {
+      {"seig-key-rotation-cenc.mp4", 8, "", ""},
+      {"seig-key-rotation-cbcs.mp4", 0, "c041ba3cadb81c74560d9110fb6abaf4",
+       "39e2b9a00e28cd1cbffe79796be7bca9"},
+  };
+  const char* kKeyIdA = "aaaaaaaa111111110000000000000001";
+  const char* kKeyIdB = "bbbbbbbb222222220000000000000002";
+  const size_t kSamplesBeforeRotation = 60;
+
+  for (const Fixture& fixture : fixtures) {
+    SCOPED_TRACE(fixture.mFileName);
+    nsTArray<RefPtr<MediaRawData>> samples =
+        DemuxAllVideoSamples(fixture.mFileName);
+    ASSERT_EQ(samples.Length(), 120u);
+
+    // Samples before the rotation take KID A and the IV from tenc; samples
+    // after it must take KID B and the IV from the seig entry.
+    for (size_t i = 0; i < samples.Length(); i++) {
+      SCOPED_TRACE(i);
+      const CryptoSample& crypto = samples[i]->mCrypto;
+      const bool rotated = i >= kSamplesBeforeRotation;
+      EXPECT_STREQ(ToHex(crypto.mKeyId).get(), rotated ? kKeyIdB : kKeyIdA);
+      EXPECT_EQ(crypto.mIVSize, fixture.mIVSize);
+      EXPECT_STREQ(ToHex(crypto.mConstantIV).get(),
+                   rotated ? fixture.mConstantIVAfterRotation
+                           : fixture.mConstantIVBeforeRotation);
+    }
+  }
+}
+
 TEST(MP4Demuxer, GetNextKeyframe)
 {
   RefPtr<MP4DemuxerBinding> binding = new MP4DemuxerBinding("gizmo-frag.mp4");
