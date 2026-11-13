@@ -523,6 +523,17 @@ void SampleIterator::Seek(const TimeUnit& aTime) {
   mCurrentSample = 0;
   mCurrentMoof = 0;
   if (!mIndex->mIsAudio) {
+    if (mIndex->mMoofParser) {
+      // The keyframe map holds only the parsed moofs. Parse moofs until one
+      // ends after the target. Then the map holds the keyframe at or before the
+      // target.
+      const nsTArray<Moof>& moofs = mIndex->mMoofParser->Moofs();
+      while (moofs.IsEmpty() || moofs.LastElement().mTimeRange.end <= aTime) {
+        if (NS_FAILED(mIndex->BlockingReadNextMoof())) {
+          break;
+        }
+      }
+    }
     auto entry = mIndex->mKeyframeMap.GetNearestUpTo(aTime);
     if (!entry && mIndex->HaveCheckedSurroundingKeyframes(aTime)) {
       LOG("No keyframe before target {}, seek to next one after",
