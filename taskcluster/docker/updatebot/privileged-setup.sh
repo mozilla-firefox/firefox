@@ -86,6 +86,11 @@ npm ci --legacy-peer-deps
 cd /builds/worker/
 git clone https://github.com/v8/v8.git
 
+# Updatebot's clones of these repositories borrow objects from them (see
+# pre-existing-repos.json), so git must never prune objects from them.
+git -C /builds/worker/pdf.js config gc.auto 0
+git -C /builds/worker/v8 config gc.auto 0
+
 # Check out source code
 cd /builds/worker/
 git clone https://github.com/mozilla-services/updatebot.git

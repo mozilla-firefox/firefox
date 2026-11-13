@@ -192,6 +192,9 @@ localconfig = {
         "url_treeherder": "https://treeherder.mozilla.org/",
         "url_taskcluster": "http://taskcluster/",
     },
+    "SCM": {
+        "pre-existing-repos": os.path.join(HOME_PATH, "pre-existing-repos.json"),
+    },
 }
 
 log("Writing local config file")
