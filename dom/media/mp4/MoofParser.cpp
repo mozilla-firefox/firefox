@@ -1418,11 +1418,7 @@ Result<Ok, nsresult> CencSampleEncryptionInfoEntry::Init(BoxReader& aReader) {
     mKeyId.ElementAt(i) = MOZ_TRY(aReader->ReadU8());
   }
 
-  if (mIsEncrypted) {
-    if (mIVSize != 8 && mIVSize != 16) {
-      return Err(NS_ERROR_FAILURE);
-    }
-  } else if (mIVSize != 0) {
+  if (mIsEncrypted && mIVSize == 0) {
     // Protected content with 0 sized IV indicates a constant IV is present.
     // This is used for the cbcs scheme.
     uint8_t constantIVSize = MOZ_TRY(aReader->ReadU8());
@@ -1438,7 +1434,14 @@ Result<Ok, nsresult> CencSampleEncryptionInfoEntry::Init(BoxReader& aReader) {
     for (uint32_t i = 0; i < constantIVSize; ++i) {
       mConsantIV.ElementAt(i) = MOZ_TRY(aReader->ReadU8());
     }
+  } else if (mIsEncrypted ? (mIVSize != 8 && mIVSize != 16) : mIVSize != 0) {
+    LOG_WARN(CencSampleEncryptionInfoEntry,
+             "Unexpected IVSize: {}, isEncrypted={}", mIVSize, mIsEncrypted);
+    return Err(NS_ERROR_FAILURE);
   }
+  LOG_DEBUG(CencSampleEncryptionInfoEntry,
+            "isEncrypted={}, IVSize={}, constantIVSize={}", mIsEncrypted,
+            mIVSize, mConsantIV.Length());
 
   return Ok();
 }
