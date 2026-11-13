@@ -112,6 +112,8 @@ static bool AddToEnvironmentMap(JSContext* cx, const JSClass* clasp,
     case BindingKind::Const:
     case BindingKind::Using:
     case BindingKind::NamedLambdaCallee:
+    case BindingKind::Synthetic:
+    case BindingKind::PrivateMethod:
       // Non-writable.
       break;
     default:
