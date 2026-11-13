@@ -122,6 +122,17 @@ bool SHMBufSurface::CreateTexture(mozilla::gl::GLContext* aGLContext,
   return true;
 }
 
+RefPtr<SHMBufSurface> SHMBufSurface::Create(
+    uint8_t* aBuffer, const mozilla::layers::BufferDescriptor& aDescriptor) {
+  RefPtr<SHMBufSurface> surface;
+  if (aDescriptor.type() == layers::BufferDescriptor::TYCbCrDescriptor) {
+    surface = SHMBufSurfaceYUV::Create(aBuffer, aDescriptor);
+  } else {
+    surface = SHMBufSurfaceRGBA::Create(aBuffer, aDescriptor);
+  }
+  return surface;
+}
+
 /* static */
 RefPtr<SHMBufSurfaceRGBA> SHMBufSurfaceRGBA::Create(const IntSize& aSize,
                                                     int32_t aFOURCCFormat) {
@@ -213,10 +224,23 @@ bool SHMBufSurfaceRGBA::CreateImpl(
   mTransferFunction = rgb.transferFunction();
   mWidth[0] = rgb.size().width;
   mHeight[0] = rgb.size().height;
+  mStrides[0] = 0;
+  mOffsets[0] = 0;
   SetFormat(rgb.format());
   mStrides[0] = GetWidth() * GetFormatBPP();
 
   return true;
+}
+
+uint8_t* SHMBufSurfaceRGBA::MapPlane(uint8_t aPlane, int32_t& aStride,
+                                     gfx::IntSize& aSize) {
+  // We expect SW decoded RGBA plane
+  if (GetTextureCount() != 1 || aPlane != 0) {
+    return nullptr;
+  }
+  aStride = mStrides[0];
+  aSize = GetSize();
+  return mBuffer;
 }
 
 already_AddRefed<DMABufSurface> SHMBufSurfaceRGBA::UploadToDMABufSurface(
@@ -332,60 +356,67 @@ bool SHMBufSurfaceYUV::CreateImpl(uint8_t* aBuffer,
                                   const layers::BufferDescriptor& aDescriptor) {
   LOGDMABUF("SHMBufSurfaceYUV::CreateImpl() buffer [%p]", aBuffer);
 
-  mDescriptor = aDescriptor.get_YCbCrDescriptor();
+  auto descriptor = aDescriptor.get_YCbCrDescriptor();
   mBuffer = aBuffer;
-  mColorSpace = mDescriptor.yUVColorSpace();
-  mColorPrimaries = ToColorSpace2(mDescriptor.yUVColorSpace());
-  mColorRange = mDescriptor.colorRange();
-  mTransferFunction = mDescriptor.transferFunction();
-  if (mDescriptor.hdrMetadata()) {
-    mHDRMetadata = mDescriptor.hdrMetadata().value();
+  mColorSpace = descriptor.yUVColorSpace();
+  mColorPrimaries = ToColorSpace2(descriptor.yUVColorSpace());
+  mColorRange = descriptor.colorRange();
+  mTransferFunction = descriptor.transferFunction();
+  if (descriptor.hdrMetadata()) {
+    mHDRMetadata = descriptor.hdrMetadata().value();
   }
-  mColorDepth = Some(mDescriptor.colorDepth());
+  mColorDepth = Some(descriptor.colorDepth());
   mFOURCCFormat = VA_FOURCC_I420;
   // Right now we support YUV with separated planes only produced by
   // SW decoders.
   mBufferPlaneCount = 3;
 
-  const IntSize ySize = mDescriptor.display().Size();
-  const IntSize cbCrSize = ImageDataSerializer::GetCroppedCbCrSize(mDescriptor);
+  const IntSize ySize = descriptor.display().Size();
+  const IntSize cbCrSize = ImageDataSerializer::GetCroppedCbCrSize(descriptor);
   mWidth[0] = ySize.width;
   mHeight[0] = ySize.height;
   mWidth[1] = mWidth[2] = cbCrSize.width;
   mHeight[1] = mHeight[2] = cbCrSize.height;
-
+  mStrides[0] = descriptor.yStride();
+  mStrides[1] = mStrides[2] = descriptor.cbCrStride();
+  mOffsets[0] = static_cast<uint8_t*>(
+                    ImageDataSerializer::GetYChannel(aBuffer, descriptor)) -
+                aBuffer;
+  mOffsets[1] = static_cast<uint8_t*>(
+                    ImageDataSerializer::GetCbChannel(aBuffer, descriptor)) -
+                aBuffer;
+  mOffsets[2] = static_cast<uint8_t*>(
+                    ImageDataSerializer::GetCrChannel(aBuffer, descriptor)) -
+                aBuffer;
   return true;
+}
+
+uint8_t* SHMBufSurfaceYUV::MapPlane(uint8_t aPlane, int32_t& aStride,
+                                    gfx::IntSize& aSize) {
+  // We expect 3 SW decoded YUV planes
+  if (GetTextureCount() != 3 || aPlane > 2) {
+    return nullptr;
+  }
+  aStride = mStrides[aPlane];
+  aSize = GetSize(aPlane);
+  uint8_t* buffer = static_cast<uint8_t*>(GetImageData());
+  return buffer + mOffsets[aPlane];
 }
 
 bool SHMBufSurfaceYUV::UploadTexture(int aPlane, bool aNeedInit) {
   LOGDMABUF("SHMBufSurfaceYUV::UploadTexture() plane %d", aPlane);
 
-  auto* buffer = static_cast<uint8_t*>(GetImageData());
-  uint8_t* data = nullptr;
-  int32_t stride = 0;
-  switch (aPlane) {
-    case 0:
-      data = ImageDataSerializer::GetYChannel(buffer, mDescriptor);
-      stride = mDescriptor.yStride();
-      break;
-    case 1:
-      data = ImageDataSerializer::GetCbChannel(buffer, mDescriptor);
-      stride = mDescriptor.cbCrStride();
-      break;
-    case 2:
-      data = ImageDataSerializer::GetCrChannel(buffer, mDescriptor);
-      stride = mDescriptor.cbCrStride();
-      break;
-    default:
-      MOZ_CRASH("Wrong plane");
-      break;
+  int32_t stride;
+  gfx::IntSize size;
+  auto* data = MapPlane(aPlane, stride, size);
+  if (!data) {
+    return false;
   }
 
   // Every plane holds a single color channel, 8 or 16 bits per pixel.
   const auto format = GetColorDepth() == gfx::ColorDepth::COLOR_8
                           ? SurfaceFormat::A8
                           : SurfaceFormat::A16;
-  const IntSize size = GetSize(aPlane);
 
   const nsIntRegion region(IntRect(IntPoint(), size));
   return gl::UploadImageDataToTexture(mGL, data, size, IntPoint(), stride,
