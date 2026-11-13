@@ -207,5 +207,5 @@ async function do_x64CFITest(how, expectedStack) {
     assertStack(crashingFrames, expectedStack);
   };
 
-  do_crash(setupFn, callbackFn, true, true);
+  await do_crash(setupFn, callbackFn, true, true);
 }

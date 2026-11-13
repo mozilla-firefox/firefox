@@ -46,7 +46,7 @@ add_task(async function run_test() {
     true
   );
 
-  do_crash(
+  await do_crash(
     function () {
       crashType = CrashTestUtils.CRASH_PHC_BOUNDS_VIOLATION;
     },
