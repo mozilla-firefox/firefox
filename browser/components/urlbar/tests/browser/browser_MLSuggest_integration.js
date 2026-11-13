@@ -394,6 +394,48 @@ add_task(async function test_MLSuggest() {
   sinon.restore();
 });
 
+add_task(async function test_MLSuggest_recreates_engines_after_idle() {
+  sinon.restore();
+  const { cleanup } = await setup();
+
+  const originalIntentOptions = MLSuggest.INTENT_OPTIONS;
+  const originalNerOptions = MLSuggest.NER_OPTIONS;
+  sinon
+    .stub(MLSuggest, "INTENT_OPTIONS")
+    .get(() => ({ ...originalIntentOptions, modelId: "test-echo" }));
+  sinon
+    .stub(MLSuggest, "NER_OPTIONS")
+    .get(() => ({ ...originalNerOptions, modelId: "test-echo" }));
+
+  await MLSuggest.initialize();
+  Assert.ok(
+    !EngineProcess.areAllEnginesTerminated(),
+    "The engines are running after initialization"
+  );
+  await TestUtils.waitForCondition(
+    () => EngineProcess.areAllEnginesTerminated(),
+    "The engines shut down after browser.ml.modelCacheTimeout of idle"
+  );
+
+  const intent = await MLSuggest._findIntent("restaurants in seattle");
+  Assert.deepEqual(
+    intent?.output,
+    ["restaurants in seattle"],
+    "The intent engine still answers after shutting down for being idle"
+  );
+  const ner = await MLSuggest._findNER("restaurants in seattle");
+  Assert.deepEqual(
+    ner?.output,
+    ["restaurants in seattle"],
+    "The NER engine still answers after shutting down for being idle"
+  );
+
+  await MLSuggest.shutdown();
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+  sinon.restore();
+});
+
 /**
  *
  */
