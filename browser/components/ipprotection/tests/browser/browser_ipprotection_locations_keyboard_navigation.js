@@ -160,14 +160,25 @@ add_task(async function test_locations_tab_nav_upgrade_not_available() {
     set: [[UPGRADE_NOT_AVAILABLE_PREF, true]],
   });
 
+  let isDefaultStub = sinon
+    .stub(IPProtection.getPanel(window), "isDefaultBrowser")
+    .resolves(true);
+
   let { locationsView } = await openLocationsSubview({ hasUpgraded: false });
+
+  Assert.ok(
+    !locationsView.querySelector("#locations-subview-set-default-promo"),
+    "set default promo should not be present when Firefox is the default"
+  );
 
   await assertPromoSkipped(locationsView, "when the pref is set on startup");
 
   // Clearing the pref at runtime should bring the promo back.
   await setUpgradeNotAvailable(locationsView, false);
 
-  let promoButton = locationsView.querySelector("moz-promo moz-button");
+  let promoButton = locationsView.querySelector(
+    "moz-promo#locations-subview-promo moz-button"
+  );
   Assert.ok(
     promoButton,
     "promo button should be present after the pref is cleared at runtime"
@@ -188,6 +199,7 @@ add_task(async function test_locations_tab_nav_upgrade_not_available() {
   await assertPromoSkipped(locationsView, "after the pref is set at runtime");
 
   await closePanel();
+  isDefaultStub.restore();
   cleanupService();
   await SpecialPowers.popPrefEnv();
 });

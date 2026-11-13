@@ -157,6 +157,12 @@ export class IPProtectionPanel {
    * @property {boolean} isPremium
    * True if the current device has Firefox set as the default browser or the user has a Mozilla VPN subscription
    * Initially false; recomputed asynchronously before the panel is shown.
+   * @property {boolean} isDefaultBrowser
+   * True if Firefox is set as the default browser.
+   * Initially false; recomputed when the panel is shown.
+   * @property {boolean} canSetDefaultBrowser
+   * True if the user is allowed to set Firefox as the default browser.
+   * Initially false; recomputed when the panel is shown.
    * @property {boolean} showSiteInclusionPrompt
    * True if the prompt offering to always turn on VPN for the current site
    * should be shown, else false.
@@ -386,21 +392,53 @@ export class IPProtectionPanel {
     );
   }
 
+  static async isDefaultBrowser() {
+    return lazy.ShellService.isDefaultBrowserAsync();
+  }
+
+  async isDefaultBrowser() {
+    return IPProtectionPanel.isDefaultBrowser();
+  }
+
+  canSetDefaultBrowser() {
+    return (
+      Services.policies.isAllowed("setDefaultBrowser") &&
+      !Services.prefs.prefIsLocked(
+        "pref.general.disable_button.default_browser"
+      )
+    );
+  }
+
   /**
    * Whether the user may use locked egress locations. Doesn't depend on any
    * window, so it is shared with IPPAutoActivation.
    *
+   * @param {boolean|null} [isDefaultBrowser]
+   *   Whether Firefox is the default browser, if already known.
    * @returns {Promise<boolean>}
    */
-  static async isPremium() {
+  static async isPremium(isDefaultBrowser = null) {
     let isPremium =
       lazy.IPProtectionService.authProvider.hasUpgraded ||
-      (await lazy.ShellService.isDefaultBrowserAsync());
+      (isDefaultBrowser ?? (await IPProtectionPanel.isDefaultBrowser()));
     return isPremium;
   }
 
-  async isPremium() {
-    return IPProtectionPanel.isPremium();
+  /**
+   * @param {boolean|null} [isDefaultBrowser]
+   *   Whether Firefox is the default browser, if already known.
+   */
+  async isPremium(isDefaultBrowser = null) {
+    return IPProtectionPanel.isPremium(isDefaultBrowser);
+  }
+
+  async #setDefaultBrowser(win) {
+    await lazy.SpecialMessageActions.setDefaultBrowser(win);
+    const isDefaultBrowser = await this.isDefaultBrowser();
+    this.setState({
+      isDefaultBrowser,
+      isPremium: await this.isPremium(isDefaultBrowser),
+    });
   }
 
   /**
@@ -439,6 +477,8 @@ export class IPProtectionPanel {
       isActive: lazy.IPPProxyManager.state === lazy.IPPProxyStates.ACTIVE,
       isEnrolling: lazy.IPProtectionService.authProvider.isEnrolling,
       isPremium: false,
+      isDefaultBrowser: false,
+      canSetDefaultBrowser: false,
       showSiteInclusionPrompt: false,
     };
 
@@ -626,7 +666,8 @@ export class IPProtectionPanel {
   async showing(panelView) {
     const token = (this.#showToken = {});
 
-    const isPremium = await this.isPremium();
+    const isDefaultBrowser = await this.isDefaultBrowser();
+    const isPremium = await this.isPremium(isDefaultBrowser);
 
     if (this.#showToken !== token) {
       return;
@@ -647,6 +688,8 @@ export class IPProtectionPanel {
 
     this.setState({
       isPremium,
+      isDefaultBrowser,
+      canSetDefaultBrowser: this.canSetDefaultBrowser(),
       isSiteExceptionsEnabled: this.isExceptionsFeatureEnabled,
       isSiteInclusionsEnabled: this.isInclusionsFeatureEnabled,
       bandwidthWarning: this.#shouldShowBandwidthWarning(),
@@ -968,6 +1011,7 @@ export class IPProtectionPanel {
     );
     doc.addEventListener("IPProtection:UserShowLocations", this.handleEvent);
     doc.addEventListener("IPProtection:UserSelectLocation", this.handleEvent);
+    doc.addEventListener("IPProtection:SetDefaultBrowser", this.handleEvent);
     doc.addEventListener(
       "IPProtection:DismissSiteInclusionPrompt",
       this.handleEvent
@@ -998,6 +1042,7 @@ export class IPProtectionPanel {
       "IPProtection:UserSelectLocation",
       this.handleEvent
     );
+    doc.removeEventListener("IPProtection:SetDefaultBrowser", this.handleEvent);
     doc.removeEventListener(
       "IPProtection:DismissSiteInclusionPrompt",
       this.handleEvent
@@ -1270,7 +1315,8 @@ export class IPProtectionPanel {
       this.setState({ error: this.#getProxyErrorType() });
     }
   }
-
+  // TODO: Reduce complexity by refactoring bandwidth warning logic, removing from handleEvent - Bug 2091150
+  // eslint-disable-next-line complexity
   #handleEvent(event) {
     if (event.type == "IPProtection:Init") {
       this.updateComponentState(event.target);
@@ -1466,6 +1512,8 @@ export class IPProtectionPanel {
         lazy.IPPProxyManager.switch(code === "REC" ? undefined : code);
       }
       this.panelMultiView?.goBack();
+    } else if (event.type == "IPProtection:SetDefaultBrowser") {
+      this.#setDefaultBrowser(event.target.documentGlobal);
     }
   }
 
