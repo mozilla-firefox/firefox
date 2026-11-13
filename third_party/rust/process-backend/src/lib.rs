@@ -101,4 +101,6 @@ pub enum Error {
     Transport(#[source] remote::transport::BackendError),
     #[error("buffer was too small to contain the result")]
     BufferTooSmall,
+    #[error("the remote executor is unusable after a previous error")]
+    TransportPoisoned,
 }

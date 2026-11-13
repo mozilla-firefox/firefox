@@ -97,3 +97,22 @@ fn basic() {
 
     executor_thread.join().unwrap().unwrap();
 }
+
+#[test]
+fn poisoned_transport_returns_error() {
+    let (backend_io, executor_io) = UnixStream::pair().unwrap();
+    // Forcefully break the connection
+    drop(executor_io);
+
+    let output_buf = vec![0u8; MAX_OUTPUT_LEN];
+    let backend = Backend::new(transport::postcard::Backend::new(backend_io, output_buf));
+
+    assert!(matches!(
+        backend.stat_file(c"/"),
+        Err(process_backend::Error::Transport(_))
+    ));
+    assert!(matches!(
+        backend.stat_file(c"/"),
+        Err(process_backend::Error::TransportPoisoned)
+    ));
+}

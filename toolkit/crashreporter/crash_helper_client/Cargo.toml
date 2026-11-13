@@ -18,7 +18,7 @@ nix = { version = "0.30", features = ["process"] }
 mach2 = { version = "0.6" }
 
 [target."cfg(any(target_os = \"android\", target_os = \"linux\"))".dependencies]
-minidump-writer = { git = "https://github.com/rust-minidump/minidump-writer.git", rev = "3ab1604f91db05ec3f3a84d779a2871df7d9afd7" }
+minidump-writer = { git = "https://github.com/rust-minidump/minidump-writer.git", rev = "d5ec275ce1276947f09f205a581fe2b3cf90178f" }
 rust_minidump_writer_linux = { path = "../rust_minidump_writer_linux" }
 
 [target."cfg(target_os = \"windows\")".dependencies]

@@ -20,10 +20,10 @@ enum TransportState<T> {
 }
 
 impl<T> TransportState<T> {
-    fn expect_ready(&mut self) -> &mut T {
+    fn ready(&mut self) -> Result<&mut T> {
         match self {
-            TransportState::Ready(transport) => transport,
-            TransportState::Poisoned => panic!("attempted to use poisoned transport"),
+            TransportState::Ready(transport) => Ok(transport),
+            TransportState::Poisoned => Err(Error::TransportPoisoned),
         }
     }
 }
@@ -60,7 +60,7 @@ impl<T: transport::Backend> Backend<T> {
         F: for<'output> FnOnce(Op::Output<'output>) -> Result<U>,
     {
         let mut transport_state = self.transport_state.borrow_mut();
-        let transport = transport_state.expect_ready();
+        let transport = transport_state.ready()?;
 
         let e = match Op::request(transport, args) {
             Ok(response) => {

@@ -8,8 +8,8 @@ license = "MPL-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-crash-context = { git = "https://github.com/rust-minidump/minidump-writer.git", rev = "3ab1604f91db05ec3f3a84d779a2871df7d9afd7" }
-minidump-writer = { git = "https://github.com/rust-minidump/minidump-writer.git", rev = "3ab1604f91db05ec3f3a84d779a2871df7d9afd7" }
+crash-context = { git = "https://github.com/rust-minidump/minidump-writer.git", rev = "d5ec275ce1276947f09f205a581fe2b3cf90178f" }
+minidump-writer = { git = "https://github.com/rust-minidump/minidump-writer.git", rev = "d5ec275ce1276947f09f205a581fe2b3cf90178f" }
 crash_helper_common = { path = "../crash_helper_common/" }
 mozannotation_server = { path = "../mozannotation_server/" }
 libc = "0.2.74"

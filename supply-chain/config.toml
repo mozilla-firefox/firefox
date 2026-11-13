@@ -71,7 +71,7 @@ notes = "Backwards-compatible patching crate for core-graphics-types 0.1."
 audit-as-crates-io = true
 notes = "This is upstream plus a warning fix from bug 1823866."
 
-[policy."crash-context:0.8.0@git:3ab1604f91db05ec3f3a84d779a2871df7d9afd7"]
+[policy."crash-context:0.8.0@git:d5ec275ce1276947f09f205a581fe2b3cf90178f"]
 audit-as-crates-io = true
 
 [policy.cssparser]
@@ -322,7 +322,7 @@ audit-as-crates-io = false
 [policy.peek-poke-derive]
 audit-as-crates-io = false
 
-[policy."process-backend:0.1.0@git:3ab1604f91db05ec3f3a84d779a2871df7d9afd7"]
+[policy."process-backend:0.1.0@git:d5ec275ce1276947f09f205a581fe2b3cf90178f"]
 audit-as-crates-io = false
 notes = """
 This was originally intended to be a minidump-writer internal crate (and thus
@@ -330,7 +330,7 @@ audited as part of minidump-writer), however an author accidentally published
 it publicly (so it is on crates.io now).
 """
 
-[policy."process-reader:0.1.0@git:3ab1604f91db05ec3f3a84d779a2871df7d9afd7"]
+[policy."process-reader:0.1.0@git:d5ec275ce1276947f09f205a581fe2b3cf90178f"]
 audit-as-crates-io = false
 
 [policy."procfs-core:0.17.999"]

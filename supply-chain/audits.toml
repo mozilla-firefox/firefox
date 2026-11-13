@@ -1787,10 +1787,11 @@ criteria = "safe-to-deploy"
 delta = "0.6.1 -> 0.8.0"
 
 [[audits.crash-context]]
-who = "Simon Chopin <chopin.simon@gmail.com>"
+who = "Simon Chopin <schopin@mozilla.com>"
 criteria = "safe-to-deploy"
-delta = "0.8.0 -> 0.8.0@git:3ab1604f91db05ec3f3a84d779a2871df7d9afd7"
+delta = "0.8.0 -> 0.8.0@git:d5ec275ce1276947f09f205a581fe2b3cf90178f"
 importable = false
+notes = "All changes done by Mozilla staff."
 
 [[audits.crc32fast]]
 who = "Alex Franchuk <afranchuk@mozilla.com>"
@@ -4792,11 +4793,11 @@ delta = "0.12.0 -> 0.13.0"
 notes = "This crate is mostly maintained by Mozilla staff"
 
 [[audits.minidump-writer]]
-who = "Simon Chopin <chopin.simon@gmail.com>"
+who = "Simon Chopin <schopin@mozilla.com>"
 criteria = "safe-to-deploy"
-delta = "0.13.0 -> 0.13.0@git:3ab1604f91db05ec3f3a84d779a2871df7d9afd7"
+delta = "0.13.0 -> 0.13.0@git:d5ec275ce1276947f09f205a581fe2b3cf90178f"
 importable = false
-notes = "All the diff was written and reviewed by Mozilla staff."
+notes = "Crate maintained by Mozilla staff."
 
 [[audits.miniz_oxide]]
 who = "Mike Hommey <mh+mozilla@glandium.org>"
