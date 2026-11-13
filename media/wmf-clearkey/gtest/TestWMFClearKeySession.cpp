@@ -7,41 +7,9 @@
 #include <windows.h>
 #include <wrl.h>
 
-#include <string>
-
-#include "RefCounted.h"
-#include "content_decryption_module.h"
-
-// Define the include guard of WMFClearKeyCDM.h before including
-// WMFClearKeySession.cpp so the preprocessor skips the real header when
-// WMFClearKeySession.cpp includes it from its own directory. This allows the
-// session source to compile without pulling in the full CDM stack.
-#define DOM_MEDIA_PLATFORM_WMF_CLEARKEY_WMFCLEARKEYCDM_H
-
-namespace mozilla {
-
-class WMFClearKeySession;
-
-class SessionManagerWrapper : public RefCounted {
- public:
-  HRESULT GenerateRequest(cdm::InitDataType, const BYTE*, DWORD,
-                          cdm::SessionType, WMFClearKeySession*, std::string&) {
-    return E_NOTIMPL;
-  }
-  HRESULT UpdateSession(const std::string&, const BYTE*, DWORD) {
-    return E_NOTIMPL;
-  }
-  HRESULT CloseSession(const std::string&) { return E_NOTIMPL; }
-  HRESULT RemoveSession(const std::string&) { return E_NOTIMPL; }
-  void Shutdown() {}
-  bool IsShutdown() { return false; }
-
- private:
-  ~SessionManagerWrapper() override = default;
-};
-
-}  // namespace mozilla
-
+#include "MockSessionManagerWrapper.h"
+// The mock must come first: it replaces the CDM header that the source
+// includes.
 #include "../WMFClearKeySession.cpp"
 
 using namespace Microsoft::WRL;
