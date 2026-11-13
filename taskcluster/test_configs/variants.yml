@@ -184,6 +184,28 @@ standalone:
             extra-options:
                 - "--restart-between-tests"
 
+repeat:
+    description: "{description} with each test repeated to identify tests that don't clean up properly"
+    component: "Testing::General"
+    expiration: "never"
+    suffix: "repeat"
+    treeherder-suffix: "rp"
+    mozinfo: "repeat"
+    when:
+        $eval: '!(
+                    "android" in task["test-platform"]
+                    || "asan" in task["test-platform"]
+                    || "tsan" in task["test-platform"]
+                    || "ccov" in task["test-platform"]
+                )'
+    replace:
+        optimization:
+            skip-unless-backstop: null
+    merge:
+        mozharness:
+            extra-options:
+                - "--repeat=1"
+
 geckoview-fission-isolate-high-value:
     description: "{description} with fission enabled and isolation strategy isolateHighValue"
     component: "GeckoView::General"
