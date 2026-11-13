@@ -512,7 +512,7 @@ class WebExecutorTest {
 
         val stream = response.body!!
         stream.close()
-        stream.readBytes()
+        stream.read(ByteArray(1))
     }
 
     @Test(expected = IOException::class)
@@ -528,7 +528,8 @@ class WebExecutorTest {
         response.setReadTimeoutMillis(1)
 
         val stream = response.body!!
-        stream.readBytes()
+        val buffer = ByteArray(expectedCount)
+        while (stream.read(buffer) != -1) {}
     }
 
     @Test

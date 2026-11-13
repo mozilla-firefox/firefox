@@ -4765,7 +4765,9 @@ class WebExtensionTest : BaseSessionTest() {
             sessionRule.waitForResult(runtime.quit())
         } finally {
             if (runtime.isConnected) {
-                runCatching { sessionRule.waitForResult(runtime.quit()) }
+                try {
+                    sessionRule.waitForResult(runtime.quit())
+                } catch (_: Throwable) {}
             }
         }
     }
