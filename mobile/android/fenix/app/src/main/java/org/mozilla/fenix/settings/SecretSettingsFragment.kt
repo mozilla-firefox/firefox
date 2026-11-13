@@ -345,7 +345,7 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
         }
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_listen_to_page).apply {
-            isVisible = Config.channel.isNightlyOrDebug
+            isVisible = Config.channel.isNightlyOrDebug || Config.channel.isBeta
             isChecked = settings.listenToPageFeatureFlagEnabled
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
