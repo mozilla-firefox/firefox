@@ -10,6 +10,7 @@
 #include "mozilla/GUniquePtr.h"
 #include <cmath>
 #include <gio/gio.h>
+#include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/widget/AsyncDBus.h"
 #include "nsAppShell.h"
 
@@ -108,6 +109,9 @@ class UPowerClient {
  */
 
 void EnableBatteryNotifications() {
+  if (!StaticPrefs::dom_battery_enabled()) {
+    return;
+  }
   UPowerClient::GetInstance()->BeginListening();
 }
 
