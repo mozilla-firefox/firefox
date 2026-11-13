@@ -18,11 +18,24 @@ pub type ProcessHandle = libc::pid_t;
 #[cfg(target_os = "macos")]
 pub type ProcessHandle = mach2::mach_types::task_t;
 
-pub struct ProcessReader {
-    process: ProcessHandle,
+pub enum ProcessReader {
+    Local(ProcessHandle),
+    /// Reads go through a remote executor, for processes we cannot ptrace().
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    Remote {
+        backend: platform::RemoteBackend,
+        /// Size of the transport's output buffer, which caps the size of each response.
+        buffer_len: usize,
+    },
 }
 
 impl ProcessReader {
+    #[cfg(not(any(target_os = "linux", target_os = "android")))]
+    fn process(&self) -> ProcessHandle {
+        let ProcessReader::Local(process) = self;
+        *process
+    }
+
     pub fn copy_null_terminated_string(&self, address: usize) -> Result<CString, ReadError> {
         // Try copying the string word-by-word first, this is considerably
         // faster than one byte at a time.

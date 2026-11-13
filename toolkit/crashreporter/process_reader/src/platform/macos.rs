@@ -56,7 +56,7 @@ const DATA_SEGMENT: &[u8; 16] = b"__DATA\0\0\0\0\0\0\0\0\0\0";
 
 impl ProcessReader {
     pub fn new(process: ProcessHandle) -> Result<ProcessReader, ProcessReaderError> {
-        Ok(ProcessReader { process })
+        Ok(ProcessReader::Local(process))
     }
 
     pub fn find_module(&self, module_name: &str) -> Result<usize, ProcessReaderError> {
@@ -156,7 +156,7 @@ impl ProcessReader {
 
         let res = unsafe {
             task_info(
-                self.process,
+                self.process(),
                 TASK_DYLD_INFO,
                 info.as_mut_ptr().cast(),
                 &mut count,
@@ -176,7 +176,7 @@ impl ProcessReader {
         let mut size: u64 = 0;
         let res = unsafe {
             mach_vm_read_overwrite(
-                self.process,
+                self.process(),
                 src as u64,
                 size_of::<T>() as u64,
                 object.as_mut_ptr() as _,
@@ -204,7 +204,7 @@ impl ProcessReader {
         let mut size: u64 = 0;
         let res = unsafe {
             mach_vm_read_overwrite(
-                self.process,
+                self.process(),
                 src as u64,
                 (num * size_of::<T>()) as u64,
                 array.as_mut_ptr() as _,

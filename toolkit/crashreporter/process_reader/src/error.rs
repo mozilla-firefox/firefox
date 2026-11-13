@@ -63,6 +63,12 @@ pub enum ReadError {
     ReadProcessMemoryError,
     #[error("The requested read is too large")]
     TooLarge,
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[error("The remote executor failed")]
+    RemoteError(#[from] process_backend::Error),
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    #[error("The remote executor returned a short read")]
+    RemoteShortRead,
 }
 
 #[cfg(any(target_os = "linux", target_os = "android"))]

@@ -27,7 +27,7 @@ use crate::{
 
 impl ProcessReader {
     pub fn new(process: ProcessHandle) -> Result<ProcessReader, ProcessReaderError> {
-        Ok(ProcessReader { process })
+        Ok(ProcessReader::Local(process))
     }
 
     pub fn find_module(&self, module_name: &str) -> Result<usize, ProcessReaderError> {
@@ -89,7 +89,7 @@ impl ProcessReader {
             let buffer_size: u32 = (module_num * size_of::<HMODULE>()).try_into()?;
             let res = unsafe {
                 K32EnumProcessModules(
-                    self.process,
+                    self.process(),
                     module_array.as_mut_ptr() as *mut _,
                     buffer_size,
                     &mut required_buffer_size as *mut _,
@@ -118,7 +118,7 @@ impl ProcessReader {
     fn get_module_name(&self, module: HMODULE) -> Option<String> {
         let mut path: [u16; MAX_PATH as usize] = [0; MAX_PATH as usize];
         let res =
-            unsafe { K32GetModuleBaseNameW(self.process, module, path.as_mut_ptr(), MAX_PATH) };
+            unsafe { K32GetModuleBaseNameW(self.process(), module, path.as_mut_ptr(), MAX_PATH) };
 
         if res == 0 {
             None
@@ -133,7 +133,7 @@ impl ProcessReader {
         let mut info: MaybeUninit<MODULEINFO> = MaybeUninit::uninit();
         let res = unsafe {
             K32GetModuleInformation(
-                self.process,
+                self.process(),
                 module,
                 info.as_mut_ptr(),
                 size_of::<MODULEINFO>() as u32,
@@ -152,7 +152,7 @@ impl ProcessReader {
         let mut object = MaybeUninit::<T>::uninit();
         let res = unsafe {
             ReadProcessMemory(
-                self.process,
+                self.process(),
                 src as _,
                 object.as_mut_ptr() as _,
                 size_of::<T>(),
@@ -180,7 +180,7 @@ impl ProcessReader {
         let num_of_bytes = num * size_of::<T>();
         let res = unsafe {
             ReadProcessMemory(
-                self.process,
+                self.process(),
                 src as _,
                 array.as_mut_ptr() as _,
                 num_of_bytes,

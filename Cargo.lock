@@ -6626,6 +6626,7 @@ dependencies = [
  "log",
  "mach2 0.6.0",
  "mozilla-central-workspace-hack",
+ "process-backend",
  "scroll",
  "thiserror 2.0.12",
  "windows-sys",

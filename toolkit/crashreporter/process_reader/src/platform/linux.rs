@@ -4,9 +4,11 @@
 
 use std::{
     cmp::min,
-    fs::File,
-    io::{BufRead, BufReader, Error},
+    ffi::CString,
+    fs,
+    io::Error,
     mem::{size_of, MaybeUninit},
+    os::fd::{IntoRawFd, OwnedFd},
     ptr::null_mut,
     slice,
 };
@@ -29,6 +31,13 @@ use libc::{
     c_int, c_long, c_void, pid_t, ptrace, waitpid, __WALL, EINTR, PTRACE_ATTACH, PTRACE_DETACH,
     PTRACE_PEEKDATA,
 };
+
+use process_backend::{
+    remote::{backend::Backend, io::UnixStream, transport::postcard},
+    Backend as _, FileReader as _, ProcessReader as _,
+};
+
+pub type RemoteBackend = Backend<postcard::Backend<UnixStream, Vec<u8>>>;
 
 impl ProcessReader {
     pub fn new(process: ProcessHandle) -> Result<ProcessReader, ProcessReaderError> {
@@ -53,16 +62,64 @@ impl ProcessReader {
             }
         }
 
-        Ok(ProcessReader { process: pid })
+        Ok(Self::Local(pid))
+    }
+
+    /// Read a process through a remote executor reachable via `socket`.
+    /// `buffer_len` should match the size of the executor's output buffer for optimal performance
+    pub fn new_remote(socket: OwnedFd, buffer_len: usize) -> Self {
+        // SAFETY: by construction, `socket` is a valid file descriptor.
+        let io = unsafe { UnixStream::from_raw_fd(socket.into_raw_fd()) };
+        let transport = postcard::Backend::new(io, vec![0u8; buffer_len]);
+
+        Self::Remote {
+            backend: Backend::new(transport),
+            buffer_len,
+        }
+    }
+
+    fn read_maps(&self) -> Result<String, ProcessReaderError> {
+        let (remote, buffer_len) = match self {
+            Self::Local(pid) => return Ok(fs::read_to_string(format!("/proc/{pid}/maps"))?),
+            Self::Remote {
+                backend,
+                buffer_len,
+            } => (backend, *buffer_len),
+        };
+
+        let pid = remote.pid().map_err(ReadError::from)?;
+        let path = CString::new(format!("/proc/{pid}/maps")).unwrap();
+        let mut reader = remote.read_file(&path).map_err(ReadError::from)?;
+        let mut contents = Vec::new();
+        let mut buffer = vec![0u8; buffer_len];
+        loop {
+            match reader.read(&mut buffer).map_err(ReadError::from)? {
+                0 => break,
+                len => contents.extend_from_slice(&buffer[..len]),
+            }
+        }
+
+        Ok(String::from_utf8_lossy(&contents).into_owned())
+    }
+
+    fn remote_read(remote: &RemoteBackend, src: usize, dst: &mut [u8]) -> Result<(), ReadError> {
+        let reader = remote.process_reader();
+        let mut offset = 0;
+        while offset < dst.len() {
+            let len = reader.read_at(src + offset, &mut dst[offset..])?;
+            if len == 0 {
+                return Err(ReadError::RemoteShortRead);
+            }
+            offset += len;
+        }
+
+        Ok(())
     }
 
     pub fn find_module(&self, module_name: &str) -> Result<usize, ProcessReaderError> {
-        let maps_file = File::open(format!("/proc/{}/maps", self.process))?;
-
-        BufReader::new(maps_file)
+        self.read_maps()?
             .lines()
-            .map_while(Result::ok)
-            .map(|line| parse_proc_maps_line(&line))
+            .map(parse_proc_maps_line)
             .filter_map(Result::ok)
             .find_map(|(name, address)| {
                 let name = name?;
@@ -229,20 +286,32 @@ impl ProcessReader {
             .map_err(|_| ReadError::TooLarge)?;
         let num_bytes = num * size_of::<T>();
         let mut array_buffer = array.as_mut_ptr() as *mut u8;
-        let mut index = 0;
 
-        while index < num_bytes {
-            let word = ptrace_read(self.process, src + index)?;
-            let len = min(size_of::<c_long>(), num_bytes - index);
-            let word_as_bytes = word.to_ne_bytes();
-            for &byte in word_as_bytes.iter().take(len) {
-                unsafe {
-                    array_buffer.write(byte);
-                    array_buffer = array_buffer.add(1);
+        match self {
+            Self::Local(pid) => {
+                let mut index = 0;
+                while index < num_bytes {
+                    let word = ptrace_read(*pid, src + index)?;
+                    let len = min(size_of::<c_long>(), num_bytes - index);
+                    let word_as_bytes = word.to_ne_bytes();
+                    for &byte in word_as_bytes.iter().take(len) {
+                        unsafe {
+                            array_buffer.write(byte);
+                            array_buffer = array_buffer.add(1);
+                        }
+                    }
+
+                    index += size_of::<c_long>();
                 }
             }
-
-            index += size_of::<c_long>();
+            Self::Remote { backend, .. } => {
+                // SAFETY: We reserved `num_bytes` bytes, which we zero before use.
+                let bytes = unsafe {
+                    array_buffer.write_bytes(0, num_bytes);
+                    slice::from_raw_parts_mut(array_buffer, num_bytes)
+                };
+                Self::remote_read(backend, src, bytes)?;
+            }
         }
 
         unsafe {
@@ -257,7 +326,9 @@ impl ProcessReader {
 
 impl Drop for ProcessReader {
     fn drop(&mut self) {
-        let _ignored = ptrace_detach(self.process);
+        if let Self::Local(pid) = *self {
+            let _ignored = ptrace_detach(pid);
+        }
     }
 }
 

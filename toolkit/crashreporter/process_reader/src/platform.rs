@@ -7,6 +7,8 @@ mod windows;
 
 #[cfg(any(target_os = "android", target_os = "linux"))]
 mod linux;
+#[cfg(any(target_os = "android", target_os = "linux"))]
+pub use linux::RemoteBackend;
 
 #[cfg(target_os = "macos")]
 mod macos;
