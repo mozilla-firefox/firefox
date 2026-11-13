@@ -45,4 +45,24 @@ class FakeTabManagerUiStateRepository(initialPersistedUIState: PersistedUIState?
         uiStateFlow.emit(currentSnapshot.copy(skipUngroupConfirmation = true))
         return true
     }
+
+    override suspend fun incrementTabGroupMenuImpressionCount(): Boolean {
+        val currentSnapshot = uiStateFlow.value ?: PersistedUIState()
+        val impressionCount = currentSnapshot.tabGroupMenuImpressionCount
+        uiStateFlow.emit(currentSnapshot.copy(tabGroupMenuImpressionCount = impressionCount + 1))
+        return true
+    }
+
+    override suspend fun recordTabGroupMenuItemUsed(): Boolean {
+        val currentSnapshot = uiStateFlow.value ?: PersistedUIState()
+        uiStateFlow.emit(currentSnapshot.copy(hasUserEverUsedTabGroupMenuItem = true))
+        return true
+    }
+
+    override suspend fun incrementTabGroupToolbarMenuHighlightImpressionCount(): Boolean {
+        val currentSnapshot = uiStateFlow.value ?: PersistedUIState()
+        val impressionCount = currentSnapshot.tabGroupToolbarMenuHighlightImpressionCount
+        uiStateFlow.emit(currentSnapshot.copy(tabGroupToolbarMenuHighlightImpressionCount = impressionCount + 1))
+        return true
+    }
 }

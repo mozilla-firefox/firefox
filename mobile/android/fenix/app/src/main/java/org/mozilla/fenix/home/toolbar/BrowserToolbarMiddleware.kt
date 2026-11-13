@@ -618,7 +618,7 @@ class BrowserToolbarMiddleware(
 
     private fun updateMenuHighlight(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
         appStore.observeWhileActive {
-            distinctUntilChangedBy { it.supportedMenuNotifications.isNotEmpty() }
+            distinctUntilChangedBy { it.supportedMenuNotifications.shouldHighlightHomeMenuButton() }
                 .collect {
                     updateEndBrowserActions(store)
                     updateNavigationActions(store)
@@ -737,10 +737,7 @@ class BrowserToolbarMiddleware(
             }
 
             HomeToolbarAction.Menu -> {
-                val highlighted =
-                    appStore.state.supportedMenuNotifications
-                        .filterNot { it is SupportedMenuNotifications.Summarize }
-                        .any { it != SupportedMenuNotifications.OpenInApp }
+                val highlighted = appStore.state.supportedMenuNotifications.shouldHighlightHomeMenuButton()
                 ActionButtonRes(
                     drawableResId = iconsR.drawable.mozac_ic_more_vertical_round_24,
                     contentDescription = R.string.content_description_menu,
@@ -854,4 +851,10 @@ class BrowserToolbarMiddleware(
             ShortcutType.SUMMARIZE -> HomeToolbarAction.FakeSummarize
             ShortcutType.NONE -> null
         }
+
+    private fun Set<SupportedMenuNotifications>.shouldHighlightHomeMenuButton() = any {
+        it !is SupportedMenuNotifications.Summarize &&
+            it !is SupportedMenuNotifications.TabGroups &&
+            it != SupportedMenuNotifications.OpenInApp
+    }
 }

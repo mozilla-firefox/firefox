@@ -114,6 +114,7 @@ import org.mozilla.fenix.components.appstate.AppAction.SearchAction.SearchEnded
 import org.mozilla.fenix.components.appstate.AppAction.SearchAction.SearchStarted
 import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction.SnackbarDismissed
 import org.mozilla.fenix.components.appstate.AppAction.URLCopiedToClipboard
+import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications.NotDefaultBrowser
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
 import org.mozilla.fenix.components.menu.MenuAccessPoint
@@ -991,7 +992,7 @@ class BrowserToolbarMiddleware(
 
     private fun observeMenuHighlightChanges(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
         appStore.observeWhileActive {
-            distinctUntilChangedBy { it.supportedMenuNotifications.isNotEmpty() }
+            distinctUntilChangedBy { it.supportedMenuNotifications.shouldHighlightBrowserMenuButton() }
                 .collect {
                     updateEndBrowserActions(store)
                     updateNavigationActions(store)
@@ -1306,8 +1307,7 @@ class BrowserToolbarMiddleware(
                 ActionButtonRes(
                     drawableResId = iconsR.drawable.mozac_ic_more_vertical_round_24,
                     contentDescription = R.string.content_description_menu,
-                    highlighted =
-                        appStore.state.supportedMenuNotifications.filterNot { it == NotDefaultBrowser }.isNotEmpty(),
+                    highlighted = appStore.state.supportedMenuNotifications.shouldHighlightBrowserMenuButton(),
                     onClick = MenuClicked(source),
                 )
 
@@ -1606,4 +1606,6 @@ class BrowserToolbarMiddleware(
             FxNimbus.features.translations.value().mainFlowToolbarEnabled &&
             translationsFeatureSettings.isEnabled.first()
     }
+
+    private fun Set<SupportedMenuNotifications>.shouldHighlightBrowserMenuButton() = any { it != NotDefaultBrowser }
 }

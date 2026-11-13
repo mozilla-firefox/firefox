@@ -16,6 +16,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -62,7 +63,6 @@ import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.utils.ClipboardHandler
 import mozilla.components.ui.icons.R as iconsR
 import mozilla.components.ui.tabcounter.R as tabcounterR
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -1580,6 +1580,56 @@ class BrowserToolbarMiddlewareTest {
 
             val primaryButton = toolbarStore.state.displayState.navigationActions.first() as ActionButtonRes
             assertEquals(expectedBookmarkButton, primaryButton)
+        }
+
+    @Test
+    fun `GIVEN a tab groups notification WHEN a downloads notification is added THEN the menu button is highlighted`() =
+        runTest {
+            val appStore =
+                AppStore(
+                    initialState = AppState(supportedMenuNotifications = setOf(SupportedMenuNotifications.TabGroups))
+                )
+            val (_, toolbarStore) = buildMiddlewareAndAddToStore(appStore = appStore)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(
+                expected = expectedMenuButton(false),
+                actual = toolbarStore.state.displayState.browserActionsEnd[1] as ActionButtonRes,
+            )
+
+            appStore.dispatch(AppAction.MenuNotification.AddMenuNotification(SupportedMenuNotifications.Downloads))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(
+                expected = expectedMenuButton(true),
+                actual = toolbarStore.state.displayState.browserActionsEnd[1] as ActionButtonRes,
+            )
+        }
+
+    @Test
+    fun `GIVEN tab groups and downloads notifications WHEN the downloads notification is removed THEN the menu button is not highlighted`() =
+        runTest {
+            val appStore =
+                AppStore(
+                    initialState =
+                        AppState(
+                            supportedMenuNotifications =
+                                setOf(SupportedMenuNotifications.TabGroups, SupportedMenuNotifications.Downloads)
+                        )
+                )
+            val (_, toolbarStore) = buildMiddlewareAndAddToStore(appStore = appStore)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertEquals(
+                expected = expectedMenuButton(true),
+                actual = toolbarStore.state.displayState.browserActionsEnd[1] as ActionButtonRes,
+            )
+
+            appStore.dispatch(AppAction.MenuNotification.RemoveMenuNotification(SupportedMenuNotifications.Downloads))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(
+                expected = expectedMenuButton(false),
+                actual = toolbarStore.state.displayState.browserActionsEnd[1] as ActionButtonRes,
+            )
         }
 
     private fun navControllerShowingHome(): NavController =

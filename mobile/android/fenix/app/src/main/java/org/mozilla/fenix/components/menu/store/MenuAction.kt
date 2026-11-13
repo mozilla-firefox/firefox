@@ -145,6 +145,9 @@ sealed class MenuAction : MenuEvent {
     /** [MenuAction] dispatched to record that the summarize page menu has been exposed to the user */
     data object OnSummarizationMenuExposed : MenuAction()
 
+    /** [MenuAction] dispatched to record that the tab group menu item has been exposed to the user */
+    data object OnTabGroupMenuItemExposed : MenuAction()
+
     /**
      * [MenuAction] dispatched to initialize the state of the summarize page menu.
      *

@@ -55,6 +55,7 @@ private fun reducer(state: MenuState, action: MenuAction): MenuState {
         is MenuAction.SaveAsPdfRequested,
         is MenuAction.PrintRequested,
         is MenuAction.OnExtensionsMenuClicked,
+        is MenuAction.OnTabGroupMenuItemExposed,
         is MenuAction.WebExtensionActionClicked -> state
 
         is MenuAction.OnMoreMenuClicked -> state.copy(isMoreMenuExpanded = !state.isMoreMenuExpanded)

@@ -152,6 +152,7 @@ class CustomizeMenuFragment : Fragment(), UserInteractionHandler, SystemInsetsPa
             menuViewScope = viewLifecycleOwner.lifecycle.coroutineScope,
             applicationScope = components.applicationScope,
             browsingModeManager = (activity as HomeActivity).browsingModeManager,
+            tabGroupFeatureConfiguration = components.core.tabGroupDiscoveryFeatureConfiguration,
         )
     }
 }

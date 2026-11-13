@@ -18,23 +18,29 @@ import mozilla.components.lib.state.helpers.AbstractBinding
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
-import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryConfiguration
 import org.mozilla.fenix.tabstray.ext.isNormalTab
 
 /**
- * Binding between [AppStore] and [BrowserStore] that determines if and when to add a toolbar notification for the
- * "Summarize" feature
+ * Binding between [AppStore] and [BrowserStore] that adds [notification] to the toolbar menu while [highlight] emits
+ * true and a normal tab is selected, and removes it otherwise.
+ *
+ * @param appStore [AppStore] to add and remove the notification in.
+ * @param notification The [SupportedMenuNotifications] this binding is responsible for.
+ * @param highlight Emits whether the feature currently wants the toolbar menu button highlighted.
+ * @param browserStore [BrowserStore] to observe the selected tab in.
+ * @param mainDispatcher [CoroutineDispatcher] the store is observed on.
  */
-class SummarizeToolbarHighlightBinding(
+class NormalTabToolbarMenuHighlightBinding(
     private val appStore: AppStore,
-    private val featureDiscoverySettings: SummarizationFeatureDiscoveryConfiguration,
+    private val notification: SupportedMenuNotifications,
+    private val highlight: Flow<Boolean>,
     browserStore: BrowserStore,
     mainDispatcher: CoroutineDispatcher = Dispatchers.Main,
 ) : AbstractBinding<BrowserState>(browserStore, mainDispatcher) {
 
     override suspend fun onState(flow: Flow<BrowserState>) {
         combine(
-                featureDiscoverySettings.toolbarMenuButtonHighlight,
+                highlight,
                 flow.filter { it.selectedTab?.content?.url != null }.map { it.selectedTab?.isNormalTab() == true },
             ) { highlightToolbar, isNormalTab ->
                 // we only want to highlight the toolbar for normal tabs
@@ -44,9 +50,9 @@ class SummarizeToolbarHighlightBinding(
             .collect { highlight ->
                 val action =
                     if (highlight) {
-                        AppAction.MenuNotification.AddMenuNotification(SupportedMenuNotifications.Summarize)
+                        AppAction.MenuNotification.AddMenuNotification(notification)
                     } else {
-                        AppAction.MenuNotification.RemoveMenuNotification(SupportedMenuNotifications.Summarize)
+                        AppAction.MenuNotification.RemoveMenuNotification(notification)
                     }
                 appStore.dispatch(action = action)
             }

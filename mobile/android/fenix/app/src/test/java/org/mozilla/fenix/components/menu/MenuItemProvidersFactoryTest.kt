@@ -60,6 +60,7 @@ import org.mozilla.fenix.settings.logins.PasswordsMenuItemProvider
 import org.mozilla.fenix.shortcut.AddToHomeScreenMenuItemProvider
 import org.mozilla.fenix.summarization.SummarizePageMenuItemProvider
 import org.mozilla.fenix.tabgroups.TabGroupMenuItemProvider
+import org.mozilla.fenix.tabgroups.fake.FakeTabGroupsFeatureDiscoveryConfiguration
 import org.mozilla.fenix.translations.TranslationsMenuItemProvider
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.webcompat.ReportBrokenSiteMenuItemProvider
@@ -171,6 +172,7 @@ class MenuItemProvidersFactoryTest {
             applicationScope = scope,
             browsingModeManager = mockk(relaxed = true),
             tabDataCoordinator = FakeTabDataCoordinator(),
+            tabGroupFeatureConfiguration = FakeTabGroupsFeatureDiscoveryConfiguration(),
         )
 
     private val expectedProviders: Map<KClass<out FenixMenuItem>, KClass<out MenuItemProvider>> =

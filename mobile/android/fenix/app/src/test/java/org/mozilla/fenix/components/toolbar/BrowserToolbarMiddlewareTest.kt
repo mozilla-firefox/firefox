@@ -3497,6 +3497,52 @@ class BrowserToolbarMiddlewareTest {
         }
 
     @Test
+    fun `GIVEN a default browser notification WHEN a downloads notification is added THEN the menu button is highlighted`() =
+        runTest(testDispatcher) {
+            val appStore =
+                AppStore(
+                    initialState =
+                        AppState(supportedMenuNotifications = setOf(SupportedMenuNotifications.NotDefaultBrowser))
+                )
+            val middleware = buildMiddleware(appStore = appStore)
+            val toolbarStore = buildStore(middleware)
+
+            val initialMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
+            assertEquals(expectedMenuButton(), initialMenuButton)
+
+            appStore.dispatch(AppAction.MenuNotification.AddMenuNotification(SupportedMenuNotifications.Downloads))
+            testDispatcher.scheduler.advanceUntilIdle()
+            val updatedMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
+            assertEquals(expectedMenuButton(true), updatedMenuButton)
+        }
+
+    @Test
+    fun `GIVEN default browser and downloads notifications WHEN the downloads notification is removed THEN the menu button is not highlighted`() =
+        runTest(testDispatcher) {
+            val appStore =
+                AppStore(
+                    initialState =
+                        AppState(
+                            supportedMenuNotifications =
+                                setOf(
+                                    SupportedMenuNotifications.NotDefaultBrowser,
+                                    SupportedMenuNotifications.Downloads,
+                                )
+                        )
+                )
+            val middleware = buildMiddleware(appStore = appStore)
+            val toolbarStore = buildStore(middleware)
+
+            val initialMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
+            assertEquals(expectedMenuButton(true), initialMenuButton)
+
+            appStore.dispatch(AppAction.MenuNotification.RemoveMenuNotification(SupportedMenuNotifications.Downloads))
+            testDispatcher.scheduler.advanceUntilIdle()
+            val updatedMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
+            assertEquals(expectedMenuButton(), updatedMenuButton)
+        }
+
+    @Test
     fun `GIVEN site permissions different than default WHEN observing THEN SiteInfo button is highlighted`() =
         runTest(testDispatcher) {
             val currentTab =

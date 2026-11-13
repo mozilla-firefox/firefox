@@ -145,6 +145,52 @@ class DefaultTabManagerUiStateRepositoryTest {
         assertTrue { repository.uiState.first()!!.skipUngroupConfirmation }
     }
 
+    @Test
+    fun `GIVEN the tab groups menu item was previously shown and used WHEN the repository has initialized THEN the first emission contains this state`() =
+        runTest {
+            val expectedInitialState =
+                PersistedUIState(tabGroupMenuImpressionCount = 2, hasUserEverUsedTabGroupMenuItem = true)
+            val repository = createRepository(initialPersistedUIState = expectedInitialState)
+
+            assertEquals(expectedInitialState, repository.uiState.first())
+        }
+
+    @Test
+    fun `WHEN the tab groups menu item is shown THEN increment the menu impression counter`() = runTest {
+        val repository = createRepository()
+        repository.incrementTabGroupMenuImpressionCount()
+        repository.incrementTabGroupMenuImpressionCount()
+
+        assertEquals(2, repository.uiState.first()!!.tabGroupMenuImpressionCount)
+    }
+
+    @Test
+    fun `WHEN the tab groups menu item is used THEN the update is saved to disk`() = runTest {
+        val repository = createRepository()
+        repository.recordTabGroupMenuItemUsed()
+
+        assertTrue { repository.uiState.first()!!.hasUserEverUsedTabGroupMenuItem }
+    }
+
+    @Test
+    fun `GIVEN the menu was previously opened while the toolbar was highlighted WHEN the repository has initialized THEN the first emission contains this state`() =
+        runTest {
+            val expectedInitialState = PersistedUIState(tabGroupToolbarMenuHighlightImpressionCount = 1)
+            val repository = createRepository(initialPersistedUIState = expectedInitialState)
+
+            assertEquals(expectedInitialState, repository.uiState.first())
+        }
+
+    @Test
+    fun `WHEN the menu is opened while the toolbar is highlighted THEN increment the toolbar highlight impression counter`() =
+        runTest {
+            val repository = createRepository()
+            repository.incrementTabGroupToolbarMenuHighlightImpressionCount()
+            repository.incrementTabGroupToolbarMenuHighlightImpressionCount()
+
+            assertEquals(2, repository.uiState.first()!!.tabGroupToolbarMenuHighlightImpressionCount)
+        }
+
     private suspend fun TestScope.createRepository(
         initialPersistedUIState: PersistedUIState =
             PersistedUIState(

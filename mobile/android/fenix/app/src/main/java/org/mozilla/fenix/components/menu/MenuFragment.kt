@@ -86,6 +86,7 @@ import org.mozilla.fenix.components.menu.configuration.CustomTabMenuConfiguratio
 import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
 import org.mozilla.fenix.components.menu.middleware.MenuMiddleware
 import org.mozilla.fenix.components.menu.middleware.MenuTelemetryMiddleware
+import org.mozilla.fenix.components.menu.middleware.ToolbarMenuHighlightMiddleware
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.isToolbarAtBottom
 import org.mozilla.fenix.ext.nav
@@ -198,7 +199,7 @@ class MenuFragment : BottomSheetDialogFragment() {
                         },
                 )
             ) {
-                buildMenuStore(it)
+                buildMenuStore(initialState = it, isRestored = savedInstanceState != null)
             }
 
         MenuFragmentContent(menuStore = menuStore)
@@ -380,10 +381,11 @@ class MenuFragment : BottomSheetDialogFragment() {
             tabDataCoordinator = components.tabDataCoordinator,
             applicationScope = components.applicationScope,
             browsingModeManager = (activity as HomeActivity).browsingModeManager,
+            tabGroupFeatureConfiguration = components.core.tabGroupDiscoveryFeatureConfiguration,
         )
     }
 
-    private fun buildMenuStore(initialState: MenuState) =
+    private fun buildMenuStore(initialState: MenuState, isRestored: Boolean) =
         MenuStore(
             initialState = initialState,
             middleware =
@@ -394,6 +396,13 @@ class MenuFragment : BottomSheetDialogFragment() {
                         scope = viewLifecycleOwner.lifecycle.coroutineScope,
                     ),
                     MenuTelemetryMiddleware(accessPoint = args.accessPoint),
+                    ToolbarMenuHighlightMiddleware(
+                        accessPoint = args.accessPoint,
+                        isRestored = isRestored,
+                        appStore = requireComponents.appStore,
+                        tabGroupsDiscovery = requireComponents.core.tabGroupDiscoveryFeatureConfiguration,
+                        summarizeDiscovery = requireComponents.core.summarizeFeatureSettings,
+                    ),
                 ),
         )
 

@@ -108,8 +108,8 @@ import org.mozilla.fenix.addons.ExtensionsProcessDisabledForegroundController
 import org.mozilla.fenix.automation.AutomatedLaunch
 import org.mozilla.fenix.bindings.ExternalAppLinkStatusBinding
 import org.mozilla.fenix.bindings.HomepageTabBinding
+import org.mozilla.fenix.bindings.NormalTabToolbarMenuHighlightBinding
 import org.mozilla.fenix.bindings.PendingExtensionUpdateBinding
-import org.mozilla.fenix.bindings.SummarizeToolbarHighlightBinding
 import org.mozilla.fenix.bookmarks.DesktopFolders
 import org.mozilla.fenix.browser.BrowserFragment
 import org.mozilla.fenix.browser.BrowserFragmentDirections
@@ -122,6 +122,7 @@ import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.ShareAction
 import org.mozilla.fenix.components.appstate.OrientationMode
+import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.share.QRCodeDialogFragment
 import org.mozilla.fenix.components.metrics.BreadcrumbsRecorder
@@ -353,9 +354,20 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
     }
 
     private val summarizeToolbarHighlightBinding by lazy {
-        SummarizeToolbarHighlightBinding(
+        NormalTabToolbarMenuHighlightBinding(
             appStore = components.appStore,
-            featureDiscoverySettings = components.core.summarizeFeatureSettings,
+            notification = SupportedMenuNotifications.Summarize,
+            highlight = components.core.summarizeFeatureSettings.toolbarMenuButtonHighlight,
+            browserStore = components.core.store,
+            mainDispatcher = Main,
+        )
+    }
+
+    private val tabGroupsToolbarHighlightBinding by lazy {
+        NormalTabToolbarMenuHighlightBinding(
+            appStore = components.appStore,
+            notification = SupportedMenuNotifications.TabGroups,
+            highlight = components.core.tabGroupDiscoveryFeatureConfiguration.toolbarMenuButtonHighlight,
             browserStore = components.core.store,
             mainDispatcher = Main,
         )
@@ -669,6 +681,7 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
             externalAppLinkStatusBinding,
             pendingExtensionUpdateBinding,
             summarizeToolbarHighlightBinding,
+            tabGroupsToolbarHighlightBinding,
             components.core.summarizationSettingsBinding,
             translationsAIControllableFeatureRegistrar,
             ipProtectionPrompter,

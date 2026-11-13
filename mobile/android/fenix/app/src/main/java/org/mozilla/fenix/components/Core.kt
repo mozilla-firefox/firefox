@@ -145,7 +145,9 @@ import org.mozilla.fenix.summarization.eligibility.DefaultSummarizationEligibili
 import org.mozilla.fenix.summarization.eligibility.SummarizationEligibilityChecker
 import org.mozilla.fenix.summarization.onboarding.FenixSummarizationFeatureConfiguration
 import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryConfiguration
+import org.mozilla.fenix.tabgroups.FenixTabGroupsFeatureDiscoveryConfiguration
 import org.mozilla.fenix.tabgroups.middleware.TabGroupMiddleware
+import org.mozilla.fenix.tabstray.repository.uistate.DefaultTabManagerUiStateRepository
 import org.mozilla.fenix.telemetry.TelemetryMiddleware
 import org.mozilla.fenix.translations.TranslationsEnabledSettings
 import org.mozilla.fenix.utils.Settings.DeleteDownloadBehavior
@@ -695,6 +697,18 @@ class Core(
         FenixSummarizationFeatureConfiguration(
             settings = context.components.settings,
             summarizationSettingsBinding = summarizationSettingsBinding,
+        )
+    }
+
+    val tabManagerUiStateRepository by lazy {
+        DefaultTabManagerUiStateRepository(context = context, stateFlowScope = applicationScope)
+    }
+
+    val tabGroupDiscoveryFeatureConfiguration by lazy {
+        FenixTabGroupsFeatureDiscoveryConfiguration(
+            settings = context.components.settings,
+            tabGroupUiStateRepository = tabManagerUiStateRepository,
+            scope = applicationScope,
         )
     }
 

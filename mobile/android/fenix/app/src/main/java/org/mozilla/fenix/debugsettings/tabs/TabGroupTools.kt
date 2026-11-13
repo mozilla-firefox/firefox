@@ -126,6 +126,9 @@ fun TabGroupTools(
                                 tabGroupOnboardingImpressionCount = 0,
                                 hasUserEverHadOneTabGroup = false,
                                 hasViewedTabGroupsPage = false,
+                                hasUserEverUsedTabGroupMenuItem = false,
+                                tabGroupMenuImpressionCount = 0,
+                                tabGroupToolbarMenuHighlightImpressionCount = 0,
                             )
                     )
                 }
