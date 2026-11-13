@@ -2740,9 +2740,10 @@ pub extern "C" fn neqo_http3conn_webtransport_send_datagram(
         SendGroupId::new(send_group_id),
         send_order,
     ) {
+        Ok(DatagramQueueOutcome::Rejected) => NS_BASE_STREAM_WOULD_BLOCK,
         Ok(outcome) => {
-            // A queue that had to evict to make room is full, so apply
-            // backpressure regardless of where the high water mark sits.
+            // Only logged: Http3Session settles the write either way.  A queue
+            // that had to evict to make room counts as above the mark.
             *below_high_water_mark = matches!(outcome, DatagramQueueOutcome::Ok);
             NS_OK
         }
