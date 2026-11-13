@@ -104,6 +104,12 @@ const STREAM_TESTS = [
     body: () => makeAsyncStream("a".repeat(4096), "b".repeat(4096)),
     expected: "a".repeat(4096) + "b".repeat(4096),
   },
+  {
+    // Uploads the Blob's own seekable stream rather than a pipe.
+    name: "Blob stream",
+    body: () => new Blob(["blob", "-", "body"]).stream(),
+    expected: "blob-body",
+  },
 ];
 
 async function fetchStream(url, body) {
