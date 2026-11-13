@@ -570,14 +570,18 @@ class SettingsSearchTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/888673
+    @Converted(
+        replacedBy = ["org.mozilla.fenix.ui.efficiency.tests.SettingsSearchTest#verifyShowVoiceSearchToggleTest"],
+        bug = 2092511,
+        since = "2026-11",
+    )
+    @Critical
     @SdkSuppress(minSdkVersion = 34)
     @Test
     fun verifyShowVoiceSearchToggleTest() {
         homeScreen(composeTestRule) {}
             .openSearch {
                 verifyVoiceSearchButton(isDisplayed = true)
-                startVoiceSearch()
-                closeVoiceSearchDialog()
             }
             .dismissSearchBar {}
             .openThreeDotMenu {}
