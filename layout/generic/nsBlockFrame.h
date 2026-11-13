@@ -607,8 +607,8 @@ class nsBlockFrame : public nsContainerFrame {
     bool mUsedOverflowWrap = false;
     // Settings for the current trial.
     bool mBalancing = false;
-    // Set when we are auto line clamping, driven by
-    // ReflowInput::mFlags::mDimensionsReadyForLineClampAuto
+    // Set when we are line clamping, driven by
+    // ReflowInput::mFlags::mDimensionsReadyForLineClamp
     bool mLineClamping = false;
     bool mShouldTrimInheritedBEndMargins = false;
     nscoord mInset = 0;
@@ -774,7 +774,7 @@ class nsBlockFrame : public nsContainerFrame {
   Maybe<LineClampTarget> FindLineClampAutoTarget(
       const ReflowInput& aReflowInput, nsBlockFrame* aLineClampRoot);
   Maybe<LineClampTarget> FindLineClampNumberedTarget(
-      nscoord aCollapsingBEndMargin, nsBlockFrame* aLineClampRoot) const;
+      nsBlockFrame* aLineClampRoot) const;
   void ApplyLineClamp(LineClampTarget aLineClampTarget,
                       nsBlockFrame* aLineClampRoot);
   // Helper for calling ApplyLineClamp with automatic and line-based sizing.
