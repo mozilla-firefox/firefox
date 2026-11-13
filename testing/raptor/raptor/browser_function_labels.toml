@@ -555,6 +555,7 @@ funcPrefixes = [
 name = "Microtask / async await overhead"
 funcPrefixes = [
   "mozilla::CycleCollectedJSContext::PerformMicroTaskCheckPoint", # https://share.firefox.dev/3yptoKf
+  "blink::scheduler::MainThreadSchedulerImpl::PerformMicrotaskCheckpoint", # https://share.firefox.dev/4Cj3J2f
   "v8::internal::MicrotaskQueue::PerformCheckpoint(", # https://share.firefox.dev/3YtNeyy
 ]
 
