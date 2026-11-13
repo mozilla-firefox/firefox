@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { INITIAL_STATE } from "common/Reducers.sys.mjs";
 import { actionTypes as at } from "common/Actions.mjs";
 import { Solitaire } from "content-src/components/Widgets/Solitaire/Solitaire";
@@ -45,6 +45,19 @@ const renderWidget = (dispatch = jest.fn(), props = {}, state = mockState) => {
 };
 
 describe("Solitaire widget", () => {
+  let showModal;
+
+  beforeEach(() => {
+    showModal = jest.fn();
+    HTMLDialogElement.prototype.showModal = showModal;
+    HTMLDialogElement.prototype.close = jest.fn();
+  });
+
+  afterEach(() => {
+    delete HTMLDialogElement.prototype.showModal;
+    delete HTMLDialogElement.prototype.close;
+  });
+
   it("loads the manifest url in a sandboxed iframe labelled by the title", () => {
     const { container } = renderWidget();
     const frame = container.querySelector("iframe.solitaire-frame");
@@ -273,6 +286,104 @@ describe("Solitaire widget", () => {
         widget_name: "solitaire",
         widget_size: "medium",
       });
+    });
+  });
+  describe("expanded view", () => {
+    function postAction(container, message) {
+      const frame = container.querySelector("iframe.solitaire-frame");
+      const event = new MessageEvent("message", {
+        data: {
+          channel: "solitaire_widget",
+          type: "action",
+          message,
+          payload: { game: "solitaire" },
+          sentAt: "",
+        },
+        origin: new URL(mockState.FramedWidgets.solitaire.url).origin,
+      });
+      Object.defineProperty(event, "source", { value: frame.contentWindow });
+      act(() => {
+        window.dispatchEvent(event);
+      });
+    }
+
+    it("exposes dialog semantics only while playing", () => {
+      const { container } = renderWidget();
+      const dialog = container.querySelector("dialog.solitaire-dialog");
+      expect(dialog).toHaveAttribute("role", "none");
+      expect(dialog).not.toHaveAttribute("aria-labelledby");
+      postAction(container, "start_game");
+      expect(dialog).not.toHaveAttribute("role");
+      expect(dialog).toHaveAttribute(
+        "aria-labelledby",
+        "solitaire-widget-label"
+      );
+    });
+
+    it("opens the modal on start_game and hides the header", () => {
+      const { container, handleUserInteraction } = renderWidget();
+      postAction(container, "start_game");
+      expect(showModal).toHaveBeenCalled();
+      expect(container.querySelector(".solitaire-dialog-close")).toBeTruthy();
+      expect(container.querySelector(".solitaire-title-wrapper").hidden).toBe(
+        true
+      );
+      expect(handleUserInteraction).toHaveBeenCalledWith("solitaire");
+    });
+
+    it("returns to the card on close_game without reloading the frame", () => {
+      const { container } = renderWidget();
+      const frame = container.querySelector("iframe.solitaire-frame");
+      postAction(container, "start_game");
+      postAction(container, "close_game");
+      const dialog = container.querySelector("dialog.solitaire-dialog");
+      act(() => {
+        fireEvent(dialog, new Event("close"));
+      });
+      expect(container.querySelector(".solitaire-title-wrapper").hidden).toBe(
+        false
+      );
+      expect(container.querySelector("iframe.solitaire-frame")).toBe(frame);
+    });
+
+    it("reloads the frame when the host closes the modal", () => {
+      const { container } = renderWidget();
+      const frame = container.querySelector("iframe.solitaire-frame");
+      postAction(container, "start_game");
+      fireEvent.click(container.querySelector(".solitaire-dialog-close"));
+      expect(container.querySelector(".solitaire-title-wrapper").hidden).toBe(
+        false
+      );
+      expect(container.querySelector("iframe.solitaire-frame")).not.toBe(frame);
+    });
+
+    it("reloads the frame when Esc or a backdrop click closes the modal", () => {
+      const { container } = renderWidget();
+      const frame = container.querySelector("iframe.solitaire-frame");
+      postAction(container, "start_game");
+      const dialog = container.querySelector("dialog.solitaire-dialog");
+      expect(dialog).toHaveAttribute("closedby", "any");
+      act(() => {
+        fireEvent(dialog, new Event("close"));
+      });
+      expect(container.querySelector("iframe.solitaire-frame")).not.toBe(frame);
+    });
+
+    it("ignores actions from other windows", () => {
+      renderWidget();
+      const event = new MessageEvent("message", {
+        data: {
+          channel: "solitaire_widget",
+          type: "action",
+          message: "start_game",
+          payload: {},
+        },
+        origin: new URL(mockState.FramedWidgets.solitaire.url).origin,
+      });
+      act(() => {
+        window.dispatchEvent(event);
+      });
+      expect(showModal).not.toHaveBeenCalled();
     });
   });
 });

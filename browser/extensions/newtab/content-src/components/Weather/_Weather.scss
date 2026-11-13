@@ -285,6 +285,28 @@
       width: var(--icon-size-xlarge);
     }
 
+    // Arrow pointed upwards from the right side of the dialog
+    &::after {
+      content: '';
+      position: absolute;
+      inset-block-start: -9%;
+      inset-inline-end: 5%;
+      transform: translateX(-50%) rotate(225deg);
+      height: 16px;
+      width: 16px;
+      background: var(--newtab-background-color-secondary);
+      box-shadow: 4px 4px 6px -2px var(--card-box-shadow);
+      border-inline-end: 1px solid var(--card-border-color);
+      border-block-end: 1px solid var(--card-border-color);
+    }
+
+    &:dir(rtl)::after {
+      border-inline-start: 1px solid var(--card-border-color);
+      border-block-end: 1px solid var(--card-border-color);
+      border-inline-end: none;
+      inset-inline-end: 10%;
+    }
+
     &:focus-visible {
       outline: var(--focus-outline);
 
@@ -319,31 +341,6 @@
     inset-block-end: calc(var(--space-medium) * -1);
     inset-inline-start: calc(var(--space-xxlarge) * -5.5);
   }
-}
-
-// Arrow pointed upwards from the right side of the dialog
-dialog {
-  &::after {
-    content: '';
-    position: absolute;
-    inset-block-start: -9%;
-    inset-inline-end: 5%;
-    transform: translateX(-50%) rotate(225deg);
-    height: 16px;
-    width: 16px;
-    background: var(--newtab-background-color-secondary);
-    box-shadow: 4px 4px 6px -2px var(--card-box-shadow);
-    border-inline-end: 1px solid var(--card-border-color);
-    border-block-end: 1px solid var(--card-border-color);
-  }
-
-  &:dir(rtl)::after {
-    border-inline-start: 1px solid var(--card-border-color);
-    border-block-end: 1px solid var(--card-border-color);
-    border-inline-end: none;
-    inset-inline-end: 10%;
-  }
-
 }
 
 .weatherInfoLink, .weatherButtonContextMenuWrapper {
