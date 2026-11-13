@@ -119,7 +119,8 @@ class nsHttpHandler final : public nsIHttpProtocolHandler,
 
   [[nodiscard]] nsresult AddAcceptAndDictionaryHeaders(
       nsIURI* aURI, ExtContentPolicyType aType, nsHttpRequestHead* aRequest,
-      bool aSecure, nsHttpChannel* aChan, void (*aSuspend)(nsHttpChannel*),
+      bool aAllowDictionaries, nsHttpChannel* aChan,
+      void (*aSuspend)(nsHttpChannel*),
       const std::function<bool(bool, DictionaryCacheEntry*)>& aCallback);
   [[nodiscard]] nsresult AddStandardRequestHeaders(
       nsHttpRequestHead*, nsIURI* aURI, bool aIsHTTPS,

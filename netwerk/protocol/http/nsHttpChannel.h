@@ -456,6 +456,10 @@ class nsHttpChannel final : public HttpBaseChannel,
   void UpdateInhibitPersistentCachingFlag();
   bool ParseDictionary(nsICacheEntry* aEntry, nsHttpResponseHead* aResponseHead,
                        bool aModified);
+  // RFC 9842 section 9.3: dictionaries may only be registered from, and used
+  // for, responses that are readable by the requesting context.
+  // aCheckResponse also runs the CORS check on the received response.
+  bool IsReadableForDictionaries(bool aCheckResponse);
   [[nodiscard]] nsresult AddCacheEntryHeaders(nsICacheEntry* entry,
                                               bool aModified);
   [[nodiscard]] nsresult UpdateCacheEntryHeaders(nsICacheEntry* entry,
