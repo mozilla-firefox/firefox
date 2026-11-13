@@ -918,7 +918,10 @@ class nsCycleCollector;
 
 struct nsPurpleBuffer {
  private:
-  uint32_t mCount;
+  uint32_t mCount = 0;
+  // If we're in the middle of iterating over entries, it is only safe to add
+  // new entries, not to modify or remove existing entries.
+  bool mVisiting = false;
 
   // Try to match the size of a jemalloc bucket, to minimize slop bytes.
   // - On 32-bit platforms sizeof(nsPurpleBufferEntry) is 12, so mEntries'
@@ -934,7 +937,7 @@ struct nsPurpleBuffer {
   PurpleBufferVector mEntries;
 
  public:
-  nsPurpleBuffer() : mCount(0) {
+  nsPurpleBuffer() {
     static_assert(
         sizeof(PurpleBufferVector::Segment) == 16372 ||      // 32-bit
             sizeof(PurpleBufferVector::Segment) == 32760 ||  // 64-bit
@@ -967,6 +970,10 @@ struct nsPurpleBuffer {
   template <class PurpleVisitor>
   void VisitEntries(PurpleVisitor& aVisitor) {
     AutoFlushAndDisableNurseryPurpleBuffer arNursery;
+
+    MOZ_RELEASE_ASSERT(!mVisiting);
+    AutoRestore<bool> arVisiting(mVisiting);
+    mVisiting = true;
 
     if (mEntries.IsEmpty()) {
       return;
@@ -1053,6 +1060,9 @@ struct nsPurpleBuffer {
   void VisitEntriesReentrant(PurpleVisitor& aVisitor) {
     AutoFlushAndDisableNurseryPurpleBuffer arNursery;
 
+    AutoRestore<bool> arVisiting(mVisiting);
+    mVisiting = true;
+
     if (mEntries.IsEmpty()) {
       return;
     }
@@ -1070,6 +1080,7 @@ struct nsPurpleBuffer {
   }
 
   void FreeBlocks() {
+    MOZ_RELEASE_ASSERT(!mVisiting);
     mCount = 0;
     mEntries.Clear();
   }
