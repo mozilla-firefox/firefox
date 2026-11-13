@@ -3942,6 +3942,15 @@ add_task(async function test_selection_callout_click_reaches_action() {
     Assert.equal(clicks[0].extra.action, "copy", "The copy action was clicked");
 
     await panelHidden;
+
+    // The native click left the real cursor where the copy button appears, so
+    // the OS would hover it each time a later selection menu opens.
+    await EventUtils.promiseNativeMouseEvent({
+      type: "mousemove",
+      target: gURLBar.inputField,
+      offsetX: 0,
+      offsetY: 0,
+    });
   });
 
   await SpecialPowers.popPrefEnv();
