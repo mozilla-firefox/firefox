@@ -416,12 +416,31 @@ class _SessionSaver {
     if (result?.valid) {
       return;
     }
-    let details = result
-      ? result.errors
-          .filter(e => !WRAPPER_KEYWORDS.has(e.keyword))
-          .map(e => `${e.instanceLocation}: ${e.error}`)
-          .join("; ")
-      : "the validator threw";
+    let details = "the validator threw";
+    if (result) {
+      let errors = result.errors.filter(e => !WRAPPER_KEYWORDS.has(e.keyword));
+      // A failure inside an object leaves all of the object's properties
+      // unevaluated, so its unevaluatedProperties rejects each of them with a
+      // false schema error. Drop those, keeping undeclared properties, which
+      // are false schema errors with no other failure in their object.
+      let parentOf = location => location.slice(0, location.lastIndexOf("/"));
+      details = errors
+        .filter(e => {
+          if (e.keyword != "false") {
+            return true;
+          }
+          let parent = parentOf(e.instanceLocation);
+          return !errors.some(
+            other =>
+              other != e &&
+              other.instanceLocation.startsWith(parent + "/") &&
+              (other.keyword != "false" ||
+                parentOf(other.instanceLocation) != parent)
+          );
+        })
+        .map(e => `${e.instanceLocation}: ${e.error}`)
+        .join("; ");
+    }
     let message = `SessionStateValidationError: ${details}`;
     lazy.sessionStoreLogger.error(message);
     let scriptError = Cc["@mozilla.org/scripterror;1"].createInstance(
