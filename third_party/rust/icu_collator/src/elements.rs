@@ -1074,12 +1074,8 @@ where
             iter: delegate,
             pending: SmallVec::new(),
             pending_pos: 0,
-<<<<<<< HEAD
-            prefix: ['\u{FFFF}'; 2],
-=======
             // Deliberately not `['\u{FFFF}'; 2]`; see https://bugzilla.mozilla.org/show_bug.cgi?id=2062662
             prefix: ['\u{FFFF}', '\u{FFFF}'],
->>>>>>> 605b0ba99c99 (Bug 2087402 - Unfork the utf8_iter and utf16_iter crates. r=supply-chain-reviewers,m_kato)
             upcoming: SmallVec::new(),
             root,
             tailoring,
