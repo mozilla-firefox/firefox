@@ -1742,7 +1742,7 @@ impl RenderTask {
                 .round()
                 .inflate(node_inflate as f32, node_inflate as f32)
                 .cast_unit();
-            let node_task_size = node_task_rect.to_i32().size();
+            let node_task_size = node_task_rect.size().to_i32();
             let node_task_size =
                 if node_task_size.width < 1 || node_task_size.height < 1 {
                     DeviceIntSize::new(1, 1)
