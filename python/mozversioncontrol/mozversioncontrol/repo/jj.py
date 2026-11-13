@@ -55,10 +55,9 @@ class JjVersionError(Exception):
 class JujutsuRepository(Repository):
     """An implementation of `Repository` for JJ repositories using the git backend."""
 
-    # Revset for a "HEAD-like" change. Use @ (the working copy commit) unless it
-    # would be discarded when switching away (because it's empty and has no
-    # description.)
-    HEAD_REVSET = 'coalesce(@ ~ (empty() & description(exact:"")) ~ bookmarks(), @-)'
+    # Use @ unless it would be discarded when switching away: empty, without
+    # a description, and without bookmarks.
+    HEAD_REVSET = 'coalesce(@ ~ (empty() & description(exact:"") ~ bookmarks()), @-)'
 
     def __init__(self, path: Path, jj="jj", git="git"):
         super().__init__(path, tool=jj)

@@ -66,9 +66,6 @@ def test_jj_branch_diverged_bookmark(repo):
     # remote target makes jj decorate it as diverged.
     vcs._run("describe", "--message", "local work")
     vcs._run("bookmark", "set", "master", "--revision", "@")
-    # `branch` resolves to @- when @ carries a bookmark, so sit on an empty
-    # child -- the same shape as `jj new <bookmark>`.
-    vcs._run("new")
 
     assert vcs.branch == "master"
     # The returned name must round-trip as a revset; this is what used to fail.
