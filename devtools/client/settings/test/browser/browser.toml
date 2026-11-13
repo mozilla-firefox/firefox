@@ -20,6 +20,8 @@ support-files = [
 
 ["browser_settings_inspector_reload.js"]
 
+["browser_settings_netmonitor_body_limit.js"]
+
 ["browser_settings_preference_bindings.js"]
 
 ["browser_settings_rulers.js"]

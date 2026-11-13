@@ -1,0 +1,38 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host,
+label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-small);
+}
+
+label,
+#text {
+  flex-basis: 100%;
+}
+
+#input {
+  box-sizing: border-box;
+  min-height: var(--input-min-height);
+  padding-inline: var(--space-medium);
+  border: var(--input-border);
+  border-radius: var(--input-border-radius);
+  background-color: var(--input-background-color);
+  color: var(--input-text-color);
+
+  &:focus-visible {
+    /* Only show the outline on focus. */
+    border-color: transparent;
+    outline: var(--focus-outline);
+  }
+
+  &:invalid {
+    border-color: var(--border-color-error);
+    background-color: var(--background-color-critical);
+    color: var(--text-color-error);
+  }
+}

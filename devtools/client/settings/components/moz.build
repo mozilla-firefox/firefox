@@ -3,6 +3,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 DevToolsModules(
+    "devtools-settings-body-limit.css",
+    "devtools-settings-body-limit.mjs",
     "devtools-settings-disable-javascript.mjs",
     "devtools-settings-pref.mjs",
     "devtools-settings-theme.mjs",

@@ -175,6 +175,24 @@ devtools-settings-inspector-color-unit-hwb =
 devtools-settings-inspector-color-unit-name =
     .label = Color Names
 
+## Network Monitor section.
+
+devtools-settings-netmonitor =
+    .label = Network Monitor
+
+devtools-settings-netmonitor-body-limit-label = Maximum request and response body size (set to 0 for unlimited):
+devtools-settings-netmonitor-body-limit-tooltip =
+    .title = Request or response bodies which exceed the specified size will be truncated when displayed or downloaded in the Network Monitor. Set to 0 to have no limitation.
+# Shown in place of the body size limit when it's set to 0.
+devtools-settings-netmonitor-body-limit-unlimited = Unlimited
+
+devtools-settings-netmonitor-body-limit-edit =
+    .title = Edit the maximum request/response body size.
+devtools-settings-netmonitor-body-limit-reset =
+    .title = Restore the default value for maximum request/response body size.
+devtools-settings-netmonitor-body-limit-save =
+    .title = Set the current input value as maximum request/response body size.
+
 ## Style Editor section, configuring the CSS Style Editor.
 
 devtools-settings-styleeditor =

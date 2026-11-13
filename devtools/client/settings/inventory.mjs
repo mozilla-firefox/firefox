@@ -304,6 +304,17 @@ export const inventory = [
     ],
   },
   {
+    id: "settings-netmonitor",
+    l10nId: "devtools-settings-netmonitor",
+    settings: [
+      {
+        id: "settings-netmonitor-body-limit",
+        type: "custom-element",
+        element: "devtools-settings-body-limit",
+      },
+    ],
+  },
+  {
     id: "settings-styleeditor",
     l10nId: "devtools-settings-styleeditor",
     settings: [

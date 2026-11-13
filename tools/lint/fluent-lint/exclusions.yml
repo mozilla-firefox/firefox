@@ -159,6 +159,9 @@ CO01:
         # browser/unifiedExtensions.ftl
         - unified-extensions-mb-blocklist-error-multiple
         - unified-extensions-mb-blocklist-error-single
+        # devtools/client/locales-preview/settings.ftl
+        - devtools-settings-netmonitor
+        - devtools-settings-netmonitor-body-limit-tooltip
         # devtools/client/locales/en-US/aboutdebugging.ftl
         - about-debugging-setup-usb-step-enable-debug-firefox2
         - about-debugging-browser-version-too-old-fennec
