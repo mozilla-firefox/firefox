@@ -15,12 +15,16 @@ import {
 } from "common/WidgetsRegistry.mjs";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuFooter } from "../WidgetMenuFooter";
+import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 import { SizeSubmenu } from "../SizeSubmenu";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
+  POWERED_BY_YAHOO: "powered_by_yahoo",
 };
+
+const YAHOO_URL = "https://www.yahoo.com/";
 
 const SOLITAIRE_ENTRY = WIDGET_REGISTRY.find(w => w.id === "solitaire");
 
@@ -126,8 +130,14 @@ function Solitaire({
             className="panel-list-no-icons"
             id="solitaire-context-menu"
           >
-            {/* No items above the footer yet, so its leading divider is off.
-                Add widget items here and set showDivider back to true. */}
+            <WidgetMenuPoweredBy
+              dispatch={dispatch}
+              url={YAHOO_URL}
+              l10nId="newtab-solitaire-menu-powered-by-yahoo"
+              recordUserAction={recordUserAction}
+              userAction={USER_ACTION_TYPES.POWERED_BY_YAHOO}
+              onClick={handleInteraction}
+            />
             <WidgetMenuFooter
               dispatch={dispatch}
               widgetId={SOLITAIRE_ENTRY.id}
@@ -137,7 +147,6 @@ function Solitaire({
               widgetSize={widgetSize}
               learnMoreL10nId="newtab-solitaire-menu-learn-more"
               onLearnMore={handleLearnMore}
-              showDivider={false}
               sizeSubmenu={
                 widgetsMayBeMaximized ? (
                   <SizeSubmenu

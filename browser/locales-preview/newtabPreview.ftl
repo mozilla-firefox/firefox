@@ -9,3 +9,8 @@
 # Shown in a widget card in place of the widget, until there is a widget to
 # show.
 newtab-widget-placeholder = Watch this space
+
+## Solitaire widget
+
+# Context menu item linking to the Yahoo website, the provider of the solitaire game.
+newtab-solitaire-menu-powered-by-yahoo = Powered by Yahoo

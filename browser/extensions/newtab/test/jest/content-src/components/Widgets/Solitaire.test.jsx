@@ -130,13 +130,17 @@ describe("Solitaire widget", () => {
     ).toBeNull();
   });
 
-  it("renders the shared menu footer without a leading divider", () => {
+  it("puts Powered by Yahoo first, above the shared footer divider", () => {
     const { container } = renderWidget();
     const menu = container.querySelector(
       "panel-list[id='solitaire-context-menu']"
     );
     expect(menu).toBeTruthy();
-    expect(menu.querySelector("hr")).toBeNull();
+    const [first, second] = menu.children;
+    expect(first.getAttribute("data-l10n-id")).toBe(
+      "newtab-solitaire-menu-powered-by-yahoo"
+    );
+    expect(second.tagName).toBe("HR");
     expect(
       menu.querySelector("panel-item[data-l10n-id='newtab-widget-menu-hide']")
     ).toBeTruthy();
@@ -174,6 +178,34 @@ describe("Solitaire widget", () => {
         widget_source: "context_menu",
         action_value: "large",
         widget_size: "large",
+      });
+      expect(handleUserInteraction).toHaveBeenCalledWith("solitaire");
+    });
+
+    it("Powered by Yahoo opens yahoo.com in a new tab and records the click", () => {
+      const { container, dispatch, handleUserInteraction } = renderWidget();
+      fireEvent.click(
+        container.querySelector(
+          "panel-item[data-l10n-id='newtab-solitaire-menu-powered-by-yahoo']"
+        )
+      );
+
+      const openLink = dispatch.mock.calls.find(
+        ([action]) => action?.type === at.OPEN_LINK
+      );
+      expect(openLink[0].data).toEqual({
+        url: "https://www.yahoo.com/",
+        where: "tab",
+      });
+
+      const userEvent = dispatch.mock.calls.find(
+        ([action]) =>
+          action?.type === at.WIDGETS_USER_EVENT &&
+          action.data?.user_action === "powered_by_yahoo"
+      );
+      expect(userEvent[0].data).toMatchObject({
+        widget_name: "solitaire",
+        widget_source: "context_menu",
       });
       expect(handleUserInteraction).toHaveBeenCalledWith("solitaire");
     });
