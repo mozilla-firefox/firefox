@@ -47,7 +47,13 @@ export var TelemetryUntrustedModulesPing = Object.freeze({
 
   notify() {
     try {
-      Services.telemetry.submitAndGetUntrustedModulePayload();
+      Services.telemetry.submitAndGetUntrustedModulePayload().catch(ex => {
+        // NS_ERROR_NOT_AVAILABLE means no untrusted module load event was
+        // collected since the last ping.
+        if (ex.result != Cr.NS_ERROR_NOT_AVAILABLE) {
+          this._log.error("submitAndGetUntrustedModulePayload failed", ex);
+        }
+      });
     } catch (ex) {
       this._log.error("notify() caught an exception", ex);
     }
