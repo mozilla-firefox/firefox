@@ -350,7 +350,7 @@ private fun scrollToNextCardFromSetToDefault(
 }
 
 @Composable
-@Suppress("LongParameterList", "LongMethod")
+@Suppress("LongParameterList", "LongMethod", "CognitiveComplexMethod")
 private fun OnboardingContent(
     pagesToDisplay: List<OnboardingPageUiData>,
     pagerState: PagerState,
