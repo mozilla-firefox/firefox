@@ -11,6 +11,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetOrder,
   resolveWidgetSize,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import {
   WIDGET_PLACEMENTS,
@@ -116,7 +117,14 @@ export function WidgetHideMenuItem({ widgetId, onHide }) {
   const dispatch = useDispatch();
   const onClick =
     placement === WIDGET_PLACEMENTS.HOME
-      ? () => setWidgetOnHome(dispatch, prefs, widgetId, false, "context_menu")
+      ? () =>
+          setWidgetOnHome(
+            dispatch,
+            prefs,
+            widgetId,
+            false,
+            WIDGET_SOURCES.CONTEXT_MENU
+          )
       : onHide;
   return (
     <panel-item data-l10n-id="newtab-widget-menu-hide" onClick={onClick} />

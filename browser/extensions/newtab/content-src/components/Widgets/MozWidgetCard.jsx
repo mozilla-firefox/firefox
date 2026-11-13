@@ -4,7 +4,10 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
-import { WIDGET_USER_ACTIONS } from "common/WidgetsRegistry.mjs";
+import {
+  WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
+} from "common/WidgetsRegistry.mjs";
 import { WidgetMenuFooter } from "./WidgetMenuFooter";
 import { SizeSubmenu } from "./SizeSubmenu";
 import { WidgetError } from "./WidgetError";
@@ -132,7 +135,7 @@ export function MozWidgetCard({
       );
       onChangeSize?.(newSize);
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: newSize,
         size: newSize,
       });
@@ -141,7 +144,9 @@ export function MozWidgetCard({
   );
 
   const handleLearnMore = () => {
-    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, {
+      source: WIDGET_SOURCES.CONTEXT_MENU,
+    });
   };
 
   return (

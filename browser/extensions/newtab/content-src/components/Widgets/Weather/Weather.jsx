@@ -9,6 +9,7 @@ import {
   PREF_WEATHER_SIZE,
   WIDGET_REGISTRY,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { LocationSearch } from "content-src/components/Weather/LocationSearch";
 import { SizeSubmenu } from "../SizeSubmenu";
@@ -79,7 +80,7 @@ function Weather({ dispatch, size, widgetEnabledMap }) {
         })
       );
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: newSize,
         size: newSize,
       });
@@ -158,7 +159,7 @@ function Weather({ dispatch, size, widgetEnabledMap }) {
       })
     );
     recordUserAction(USER_ACTION_TYPES.CHANGE_LOCATION, {
-      source: "context_menu",
+      source: WIDGET_SOURCES.CONTEXT_MENU,
     });
   }
 
@@ -169,7 +170,7 @@ function Weather({ dispatch, size, widgetEnabledMap }) {
       })
     );
     recordUserAction(USER_ACTION_TYPES.DETECT_LOCATION, {
-      source: "context_menu",
+      source: WIDGET_SOURCES.CONTEXT_MENU,
     });
   }
 
@@ -184,18 +185,20 @@ function Weather({ dispatch, size, widgetEnabledMap }) {
       })
     );
     recordUserAction(USER_ACTION_TYPES.CHANGE_TEMP_UNIT, {
-      source: "context_menu",
+      source: WIDGET_SOURCES.CONTEXT_MENU,
       value: unit,
     });
   }
 
   function handleLearnMore() {
-    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, {
+      source: WIDGET_SOURCES.CONTEXT_MENU,
+    });
   }
 
   function handleProviderLinkClick() {
     recordUserAction(USER_ACTION_TYPES.PROVIDER_LINK_CLICK, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
     });
   }
 
@@ -213,7 +216,7 @@ function Weather({ dispatch, size, widgetEnabledMap }) {
       })
     );
     recordUserAction(USER_ACTION_TYPES.OPT_IN_ACCEPTED, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
       value: "choose_location",
     });
   }
@@ -231,7 +234,7 @@ function Weather({ dispatch, size, widgetEnabledMap }) {
       })
     );
     recordUserAction(USER_ACTION_TYPES.OPT_IN_ACCEPTED, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
       value: "use_location",
     });
   }

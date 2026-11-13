@@ -259,6 +259,14 @@ export const WIDGET_USER_ACTIONS = {
   LEARN_MORE: "learn_more",
 };
 
+// `source` values shared across widgets. Sources only one widget records stay
+// in that widget.
+export const WIDGET_SOURCES = {
+  CONTEXT_MENU: "context_menu",
+  IFRAME: "iframe",
+  WIDGET: "widget",
+};
+
 // If you add a widget market pref to firefox.js that older hosts don't have,
 // also add it to MARKET_PREF_FALLBACKS in ActivityStream.sys.mjs as a
 // @backward-compat stub, or train-hops to those hosts will ignore it.
@@ -703,10 +711,10 @@ export function isAllowedFrameUrl(value, prefs) {
  * "iframe" for a framed widget, whose document sends them, "widget" otherwise.
  *
  * @param {object} widget - a WIDGET_REGISTRY entry
- * @returns {"iframe" | "widget"}
+ * @returns {string}
  */
 export function resolveWidgetEventSource(widget) {
-  return widget?.framed ? "iframe" : "widget";
+  return widget?.framed ? WIDGET_SOURCES.IFRAME : WIDGET_SOURCES.WIDGET;
 }
 
 /**

@@ -9,6 +9,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { WidgetCelebration } from "../WidgetCelebration";
 import { useWidgetCelebration } from "../useWidgetCelebration";
@@ -252,7 +253,10 @@ export const FocusTimer = ({
       })
     );
 
-    recordUserAction(userAction, { source: "widget", legacy: true });
+    recordUserAction(userAction, {
+      source: WIDGET_SOURCES.WIDGET,
+      legacy: true,
+    });
 
     completeCelebration();
   }, [completeCelebration, dispatch, resetProgressCircle, recordUserAction]);
@@ -277,7 +281,7 @@ export const FocusTimer = ({
     );
 
     recordUserAction(USER_ACTION_TYPES.TIMER_END, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
       legacy: true,
     });
 
@@ -379,7 +383,7 @@ export const FocusTimer = ({
       );
 
       recordUserAction(USER_ACTION_TYPES.TIMER_SET, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
     }
@@ -402,7 +406,7 @@ export const FocusTimer = ({
       );
 
       recordUserAction(USER_ACTION_TYPES.TIMER_PLAY, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
     } else if (isRunning) {
@@ -419,7 +423,7 @@ export const FocusTimer = ({
       );
 
       recordUserAction(USER_ACTION_TYPES.TIMER_PAUSE, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
     }
@@ -445,7 +449,7 @@ export const FocusTimer = ({
     );
 
     recordUserAction(USER_ACTION_TYPES.TIMER_RESET, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
       legacy: true,
     });
 
@@ -472,7 +476,7 @@ export const FocusTimer = ({
       );
 
       recordUserAction(USER_ACTION_TYPES.TIMER_PAUSE, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
 
@@ -492,7 +496,7 @@ export const FocusTimer = ({
           : USER_ACTION_TYPES.TIMER_TOGGLE_BREAK;
 
       recordUserAction(toggleUserAction, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
       handleTimerInteraction();
@@ -571,7 +575,7 @@ export const FocusTimer = ({
       );
 
       recordUserAction(USER_ACTION_TYPES.TIMER_PAUSE, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
     }
@@ -610,7 +614,7 @@ export const FocusTimer = ({
         })
       );
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: size,
         size,
       });
@@ -635,7 +639,7 @@ export const FocusTimer = ({
       );
 
       recordUserAction(USER_ACTION_TYPES.TIMER_SET, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
       handleTimerInteraction();
@@ -675,7 +679,7 @@ export const FocusTimer = ({
     );
 
     recordUserAction(USER_ACTION_TYPES.TIMER_SET, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
       legacy: true,
     });
     handleTimerInteraction();

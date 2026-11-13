@@ -12,6 +12,7 @@ import {
   resolveWidgetFrame,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuFooter } from "../WidgetMenuFooter";
@@ -81,7 +82,7 @@ function Solitaire({
       // `value` is action_value; `size` overrides the reported widget_size,
       // which would otherwise still be the pre-change size.
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: size,
         size,
       });
@@ -92,7 +93,9 @@ function Solitaire({
 
   // The shared footer opens the support link; here we only record the click.
   const handleLearnMore = () => {
-    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, {
+      source: WIDGET_SOURCES.CONTEXT_MENU,
+    });
     handleInteraction();
   };
 

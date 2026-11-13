@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
-import { getChosenOption } from "common/WidgetsRegistry.mjs";
+import { getChosenOption, WIDGET_SOURCES } from "common/WidgetsRegistry.mjs";
 import { MozWidgetCard } from "./MozWidgetCard";
 import { useWidgetTelemetry } from "./useWidgetTelemetry";
 import { useSizeSubmenu } from "../../lib/utils";
@@ -164,14 +164,14 @@ export function FramedWidgetCard(props) {
   const handleChoose = (item, value) => {
     setPref(item.pref, value);
     recordUserAction(`change_${item.id}`, {
-      source: "context_menu",
+      source: WIDGET_SOURCES.CONTEXT_MENU,
       value,
     });
   };
 
   const handleAction = item => {
     MENU_ACTIONS[item.action]?.(dispatch, entry);
-    recordUserAction(item.id, { source: "context_menu" });
+    recordUserAction(item.id, { source: WIDGET_SOURCES.CONTEXT_MENU });
   };
 
   // A choice whose option needs more room than the new size switches to the

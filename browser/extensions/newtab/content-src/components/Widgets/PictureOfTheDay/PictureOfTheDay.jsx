@@ -11,6 +11,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { MoveSubmenu } from "../MoveSubmenu";
 import { WidgetHideMenuItem } from "../WidgetPlacement";
@@ -190,7 +191,7 @@ const PictureOfTheDay = ({
     );
     // Disabling the widget is not an interaction, so it does not flip the
     // interaction pref.
-    recordEnabled(false, { source: "context_menu" });
+    recordEnabled(false, { source: WIDGET_SOURCES.CONTEXT_MENU });
   };
 
   const handleChangeSize = useCallback(
@@ -202,7 +203,7 @@ const PictureOfTheDay = ({
         })
       );
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: size,
         size,
       });
@@ -223,7 +224,9 @@ const PictureOfTheDay = ({
         },
       })
     );
-    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, {
+      source: WIDGET_SOURCES.CONTEXT_MENU,
+    });
     handleInteraction();
   };
 
@@ -233,7 +236,7 @@ const PictureOfTheDay = ({
       data: { source: PICTURE_OF_THE_DAY_ENTRY.telemetryName },
     });
     recordUserAction(USER_ACTION_TYPES.MANAGE_WALLPAPER, {
-      source: "context_menu",
+      source: WIDGET_SOURCES.CONTEXT_MENU,
     });
     handleInteraction();
   };
@@ -248,11 +251,13 @@ const PictureOfTheDay = ({
 
   const handleHidePhoto = () => {
     setDismissedDate(pictureDate);
-    recordUserAction(USER_ACTION_TYPES.HIDE_PHOTO, { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.HIDE_PHOTO, {
+      source: WIDGET_SOURCES.CONTEXT_MENU,
+    });
     handleInteraction();
   };
 
-  const handleShow = (source = "widget") => {
+  const handleShow = (source = WIDGET_SOURCES.WIDGET) => {
     setDismissedDate("");
     recordUserAction(USER_ACTION_TYPES.SHOW_PICTURE, { source });
     handleInteraction();
@@ -274,7 +279,9 @@ const PictureOfTheDay = ({
         data: { publishedDate: pictureData.publishedDate },
       })
     );
-    recordUserAction(USER_ACTION_TYPES.SET_WALLPAPER, { source: "widget" });
+    recordUserAction(USER_ACTION_TYPES.SET_WALLPAPER, {
+      source: WIDGET_SOURCES.WIDGET,
+    });
     handleInteraction();
     setJustSet(true);
     setSuppressExpand(true);
@@ -285,7 +292,9 @@ const PictureOfTheDay = ({
   // navigation; the handler only records telemetry (mirrors the Weather widget).
   const canOpenSource = Boolean(pictureData.sourceUrl);
   const handleOpenSource = () => {
-    recordUserAction(USER_ACTION_TYPES.OPEN_SOURCE, { source: "widget" });
+    recordUserAction(USER_ACTION_TYPES.OPEN_SOURCE, {
+      source: WIDGET_SOURCES.WIDGET,
+    });
     handleInteraction();
   };
 
@@ -293,7 +302,9 @@ const PictureOfTheDay = ({
   // Commons) in the current tab, separate from the source page link above.
   const canOpenLicense = Boolean(pictureData.licenseUrl);
   const handleOpenLicense = () => {
-    recordUserAction(USER_ACTION_TYPES.OPEN_LICENSE, { source: "widget" });
+    recordUserAction(USER_ACTION_TYPES.OPEN_LICENSE, {
+      source: WIDGET_SOURCES.WIDGET,
+    });
     handleInteraction();
   };
 
@@ -440,7 +451,7 @@ const PictureOfTheDay = ({
             {dismissed ? (
               <panel-item
                 data-l10n-id="newtab-picture-menu-show-photo2"
-                onClick={() => handleShow("context_menu")}
+                onClick={() => handleShow(WIDGET_SOURCES.CONTEXT_MENU)}
               />
             ) : (
               <panel-item
@@ -528,7 +539,7 @@ const PictureOfTheDay = ({
           <button
             type="button"
             className="picture-of-the-day-show-button"
-            onClick={() => handleShow("widget")}
+            onClick={() => handleShow(WIDGET_SOURCES.WIDGET)}
             data-l10n-id="newtab-picture-show-button2"
           ></button>
           <p

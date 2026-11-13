@@ -15,6 +15,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { WidgetCelebration } from "../WidgetCelebration";
 import { useWidgetCelebration } from "../useWidgetCelebration";
@@ -400,7 +401,7 @@ function Lists({
         })
       );
       recordUserAction(USER_ACTION_TYPES.TASK_CREATE, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
       setNewTask("");
@@ -469,7 +470,7 @@ function Lists({
     );
     if (userAction) {
       recordUserAction(userAction, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
         alsoToMain: true,
       });
@@ -495,7 +496,7 @@ function Lists({
       })
     );
     recordUserAction(USER_ACTION_TYPES.TASK_DELETE, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
       legacy: true,
     });
     handleListInteraction();
@@ -556,7 +557,7 @@ function Lists({
         })
       );
       recordUserAction(USER_ACTION_TYPES.LIST_CREATE, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
       handleListInteraction();
@@ -578,7 +579,7 @@ function Lists({
         })
       );
       recordUserAction(USER_ACTION_TYPES.LIST_EDIT, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
       setIsEditing(false);
@@ -635,7 +636,7 @@ function Lists({
         })
       );
       recordUserAction(USER_ACTION_TYPES.LIST_DELETE, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         legacy: true,
       });
     }
@@ -670,7 +671,7 @@ function Lists({
     }
 
     recordUserAction(USER_ACTION_TYPES.LIST_COPY, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
       legacy: true,
     });
     handleListInteraction();
@@ -685,7 +686,7 @@ function Lists({
         })
       );
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: size,
         size,
       });

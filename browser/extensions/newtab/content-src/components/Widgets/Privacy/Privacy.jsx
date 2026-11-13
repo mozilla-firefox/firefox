@@ -19,6 +19,7 @@ import {
   resolveWidgetSize,
   resolvePrivacyDisplayCount,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { MoveSubmenu } from "../MoveSubmenu";
 import { WidgetHideMenuItem } from "../WidgetPlacement";
@@ -495,7 +496,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
         data: { name: PRIVACY_ENTRY.enabledPref, value: false },
       })
     );
-    recordEnabled(false, { source: "context_menu" });
+    recordEnabled(false, { source: WIDGET_SOURCES.CONTEXT_MENU });
   }
 
   const handleChangeSize = useCallback(
@@ -507,7 +508,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
         })
       );
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: size,
         size,
       });
@@ -527,7 +528,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
       })
     );
     recordUserAction(USER_ACTION_TYPES.LEARN_MORE, {
-      source: "context_menu",
+      source: WIDGET_SOURCES.CONTEXT_MENU,
     });
   }
 
@@ -563,7 +564,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
       })
     );
     recordUserAction(USER_ACTION_TYPES.TRACKING_MESSAGE_CLICK, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
     });
   }
 
@@ -582,7 +583,7 @@ function Privacy({ dispatch, widgetsMayBeMaximized, widgetEnabledMap }) {
       })
     );
     recordUserAction(USER_ACTION_TYPES.TRACKING_MESSAGE_CLICK, {
-      source: "widget",
+      source: WIDGET_SOURCES.WIDGET,
       value: ETP_SETTINGS_URL,
     });
   }

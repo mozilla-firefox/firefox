@@ -10,6 +10,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuFooter } from "../WidgetMenuFooter";
@@ -120,7 +121,7 @@ function RecentSearches({
       // `value` is action_value; `size` overrides the reported widget_size,
       // which would otherwise still be the pre-change size.
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: size,
         size,
       });
@@ -131,7 +132,9 @@ function RecentSearches({
 
   // The shared footer opens the support link; here we only record the click.
   function handleLearnMore() {
-    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, {
+      source: WIDGET_SOURCES.CONTEXT_MENU,
+    });
     handleInteraction();
   }
 
@@ -147,7 +150,7 @@ function RecentSearches({
         })
       );
       recordUserAction(USER_ACTION_TYPES.CHANGE_TAB, {
-        source: "widget",
+        source: WIDGET_SOURCES.WIDGET,
         value: tab,
       });
       handleInteraction();
@@ -163,7 +166,9 @@ function RecentSearches({
           data: { search },
         })
       );
-      recordUserAction(USER_ACTION_TYPES.REMOVE_SEARCH, { source: "widget" });
+      recordUserAction(USER_ACTION_TYPES.REMOVE_SEARCH, {
+        source: WIDGET_SOURCES.WIDGET,
+      });
       handleInteraction();
     },
     [dispatch, recordUserAction, handleInteraction]
@@ -187,7 +192,9 @@ function RecentSearches({
           },
         })
       );
-      recordUserAction(USER_ACTION_TYPES.OPEN_LINK, { source: "widget" });
+      recordUserAction(USER_ACTION_TYPES.OPEN_LINK, {
+        source: WIDGET_SOURCES.WIDGET,
+      });
       handleInteraction();
     },
     [dispatch, recordUserAction, handleInteraction]

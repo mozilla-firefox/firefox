@@ -25,7 +25,9 @@ const IMPRESSION_THRESHOLD = 0.3;
  *   } = useWidgetTelemetry({ dispatch, widget, widgetSize });
  *
  *   <article ref={impressionRef}>...</article>
- *   recordUserAction("learn_more", { source: "context_menu" });
+ *   recordUserAction(WIDGET_USER_ACTIONS.LEARN_MORE, {
+ *     source: WIDGET_SOURCES.CONTEXT_MENU,
+ *   });
  *
  * Optional `widgetVariant` is sent as `widget_variant` on all five events, and
  * left off while it's undefined.

@@ -8,6 +8,7 @@ import { actionCreators as ac } from "common/Actions.mjs";
 import {
   PREF_WIDGETS_ORDER,
   resolveWidgetOrder,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { WIDGET_PLACEMENTS } from "common/PageLayoutVariants.mjs";
 import { WidgetPlacementContext, setWidgetOnHome } from "./WidgetPlacement";
@@ -56,7 +57,13 @@ export function MoveSubmenu({ widgetId, widgetEnabledMap }) {
   const toHome = placement === WIDGET_PLACEMENTS.LIBRARY;
   const spaceMove = placement && { dir: toHome ? "home" : "widgets" };
   moveProps.onMoveSpace = () =>
-    setWidgetOnHome(dispatch, prefs, widgetId, toHome, "context_menu");
+    setWidgetOnHome(
+      dispatch,
+      prefs,
+      widgetId,
+      toHome,
+      WIDGET_SOURCES.CONTEXT_MENU
+    );
 
   // Read the latest moveProps via a ref so the ref callback stays stable and
   // doesn't re-attach the listener every render.

@@ -17,6 +17,7 @@ import {
   WIDGET_REGISTRY,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import { AddClockForm } from "./AddClockForm";
@@ -55,7 +56,7 @@ const CLOCKS_PANEL = {
   EDIT: "edit",
 };
 const CLOCK_WIDGET_SOURCE = {
-  CONTEXT_MENU: "context_menu",
+  ...WIDGET_SOURCES,
   MANAGE: "manage",
   ROW: "row",
   TOOLBAR: "toolbar",

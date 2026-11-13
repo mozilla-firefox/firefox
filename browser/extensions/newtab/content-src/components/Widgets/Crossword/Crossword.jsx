@@ -19,6 +19,7 @@ import {
   resolveWidgetFrame,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import { MoveSubmenu } from "../MoveSubmenu";
 import { WidgetHideMenuItem } from "../WidgetPlacement";
@@ -248,7 +249,7 @@ function Crossword({
         case EVENT_TYPES.PUZZLE_COMPLETED:
           setPuzzleCompleted(true);
           recordUserAction(USER_ACTION_TYPES.PUZZLE_COMPLETED, {
-            source: "iframe",
+            source: WIDGET_SOURCES.IFRAME,
             value: payload.hintsTaken,
             alsoToMain: true,
           });
@@ -264,7 +265,7 @@ function Crossword({
           handleInteraction();
           if (INTERACTION_TELEMETRY_ALLOWLIST.has(payload.action)) {
             recordUserAction(payload.action, {
-              source: "iframe",
+              source: WIDGET_SOURCES.IFRAME,
               alsoToMain: true,
             });
           }
@@ -312,7 +313,7 @@ function Crossword({
     action => {
       handleInteraction();
       postMenuAction(action);
-      recordUserAction(action, { source: "context_menu" });
+      recordUserAction(action, { source: WIDGET_SOURCES.CONTEXT_MENU });
     },
     [handleInteraction, postMenuAction, recordUserAction]
   );
@@ -324,7 +325,7 @@ function Crossword({
         data: { name: CROSSWORD_ENTRY.enabledPref, value: false },
       })
     );
-    recordEnabled(false, { source: "context_menu" });
+    recordEnabled(false, { source: WIDGET_SOURCES.CONTEXT_MENU });
   }
 
   const handleChangeSize = useCallback(
@@ -337,7 +338,7 @@ function Crossword({
         })
       );
       recordUserAction(USER_ACTION_TYPES.CHANGE_SIZE, {
-        source: "context_menu",
+        source: WIDGET_SOURCES.CONTEXT_MENU,
         value: size,
         size,
       });
@@ -357,7 +358,9 @@ function Crossword({
         },
       })
     );
-    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, { source: "context_menu" });
+    recordUserAction(USER_ACTION_TYPES.LEARN_MORE, {
+      source: WIDGET_SOURCES.CONTEXT_MENU,
+    });
   }
 
   if (frameState === "hidden") {

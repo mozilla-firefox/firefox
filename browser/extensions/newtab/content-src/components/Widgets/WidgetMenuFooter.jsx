@@ -4,6 +4,7 @@
 
 import React from "react";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
+import { WIDGET_SOURCES } from "common/WidgetsRegistry.mjs";
 import { MoveSubmenu } from "./MoveSubmenu";
 import { WidgetHideMenuItem } from "./WidgetPlacement";
 
@@ -40,7 +41,7 @@ export const WidgetMenuFooter = ({
         type: at.WIDGETS_ENABLED,
         data: {
           widget_name: widgetName,
-          widget_source: "context_menu",
+          widget_source: WIDGET_SOURCES.CONTEXT_MENU,
           enabled: false,
           widget_size: widgetSize,
         },

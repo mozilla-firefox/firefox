@@ -38,6 +38,7 @@ import {
   resolveSidebarWidget,
   getHideAllTargets,
   PREF_HOME_WIDGETS,
+  WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
 import {
   isAutoMinimizeWidgetsAssigned,
@@ -500,7 +501,7 @@ function Widgets({ widgetIds, placement }) {
           type: at.WIDGETS_ENABLED,
           data: {
             widget_name: "weather",
-            widget_source: "widget",
+            widget_source: WIDGET_SOURCES.WIDGET,
             enabled: false,
             widget_size: widgetSize,
           },
