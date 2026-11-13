@@ -582,7 +582,7 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
         }
 
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_show_tab_groups_in_menu).apply {
-            isVisible = Config.channel.isDebug
+            isVisible = Config.channel.isNightlyOrDebug
             isChecked = settings.showTabGroupsInMenu
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
