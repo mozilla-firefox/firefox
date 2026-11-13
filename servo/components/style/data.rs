@@ -54,11 +54,6 @@ bitflags! {
         /// current traversal. If so, the before-change style of this element needs to be computed
         /// if it's restyled for other reasons, see StyleResolverForElement::before_change_style.
         const ANCESTOR_ANIMATIONS_CHANGED = 1 << 3;
-
-        /// Whether the recascade hints of this element come only from a parent that was restyled
-        /// only due to animations, so that recascading for them doesn't need to update animations
-        /// or transitions.
-        const RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS = 1 << 4;
     }
 }
 
@@ -330,8 +325,8 @@ pub struct ElementData {
     pub flags: ElementDataFlags,
 
     /// The before-change style of this element for transitions, if the element was restyled during
-    /// the current traversal, isn't restyled only due to animations, and its children are going to
-    /// be traversed too. See StyleResolverForElement::before_change_style.
+    /// the current traversal, its before-change style is not its current style, and its children
+    /// are going to be traversed too. See StyleResolverForElement::before_change_style.
     pub before_change_style: Option<Arc<ComputedValues>>,
 }
 
@@ -583,32 +578,11 @@ impl ElementData {
     /// Returns the kind of restyling that we're going to need to do on this
     /// element, based of the stored restyle hint.
     pub fn restyle_kind(&self) -> Option<RestyleKind> {
-        self.restyle_kind_for_hint(self.hint)
-    }
-
-    /// Returns whether the element needs to be restyled only due to animation changes, either on
-    /// itself or on an ancestor, and thus doesn't need to update animations or transitions.
-    pub fn is_animation_only_restyle(&self) -> bool {
-        let mut animation_hints = RestyleHint::for_animations();
-        if self
-            .flags
-            .contains(ElementDataFlags::RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS)
-        {
-            animation_hints |= RestyleHint::recascade_self();
-        }
-        self.has_styles()
-            && self.hint.intersects(animation_hints)
-            && self
-                .restyle_kind_for_hint(self.hint - animation_hints)
-                .is_none()
-    }
-
-    fn restyle_kind_for_hint(&self, hint: RestyleHint) -> Option<RestyleKind> {
-        let style = match self.styles.primary {
-            Some(ref s) => s,
-            None => return Some(RestyleKind::MatchAndCascade),
+        let Some(ref style) = self.styles.primary else {
+            return Some(RestyleKind::MatchAndCascade);
         };
 
+        let hint = self.hint;
         if hint.is_empty() {
             return None;
         }
@@ -644,7 +618,8 @@ impl ElementData {
     #[inline]
     pub fn clear_restyle_flags_and_damage(&mut self) {
         self.damage = RestyleDamage::empty();
-        self.flags.remove(ElementDataFlags::WAS_RESTYLED);
+        self.flags
+            .remove(ElementDataFlags::WAS_RESTYLED | ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED);
         self.before_change_style = None;
     }
 

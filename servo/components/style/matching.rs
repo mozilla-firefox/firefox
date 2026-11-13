@@ -348,11 +348,7 @@ trait PrivateMatchMethods: TElement {
     }
 
     /// Handle CSS Transitions. Returns None if we don't need to update transitions. And it returns
-    /// the before-change style per CSS Transitions spec.
-    ///
-    /// Note: The before-change style could be the computed values of all properties on the element
-    /// as of the previous style change event, or the starting style if we don't have the valid
-    /// before-change style there.
+    /// the before-change style or the @starting-style.
     #[cfg(feature = "gecko")]
     fn process_transitions(
         &self,
@@ -360,6 +356,11 @@ trait PrivateMatchMethods: TElement {
         before_change_style: Option<&Arc<ComputedValues>>,
         new_styles: &mut ResolvedElementStyles,
     ) -> Option<Arc<ComputedValues>> {
+        // If the before-change style is the new style, the style changed only due to animations or
+        // transitions of this element or its ancestors, which shouldn't trigger/update transitions.
+        if before_change_style.is_some_and(|s| Arc::ptr_eq(s, &new_styles.primary.style.0)) {
+            return None;
+        }
         let starting_values =
             self.maybe_resolve_starting_style(context, before_change_style, new_styles);
         let before_change_or_starting = starting_values.as_ref().or(before_change_style);
@@ -944,18 +945,25 @@ pub trait MatchMethods: TElement {
         mut new_styles: ResolvedElementStyles,
         important_rules_changed: bool,
         before_change_style: Option<Arc<ComputedValues>>,
-        animation_only: bool,
     ) -> RestyleHint {
-        // Nothing needs to be updated if the element was restyled only because of animations.
+        // If the element was restyled only due to its own animations, nothing about them can have
+        // changed.
+        //
+        // FIXME(emilio): This is not quite true. E.g. a font-size animation with other property
+        // animating `em`s would still want animation updates, I think. But this matches more
+        // closely the previous behavior and avoids useless `SequentialTask`s in the common cases.
+        // We probably want to handle more of the animation updates in the style thread....
+        let animation_only = !data.hint.has_non_animation_invalidations()
+            && before_change_style
+                .as_ref()
+                .is_some_and(|s| Arc::ptr_eq(s, &new_styles.primary.style.0));
         if !animation_only {
             #[cfg(feature = "gecko")]
             self.process_animations(
                 context,
                 &mut new_styles,
                 important_rules_changed,
-                before_change_style
-                    .as_ref()
-                    .or(data.styles.primary.as_ref()),
+                before_change_style.as_ref(),
             );
             #[cfg(feature = "servo")]
             self.process_animations(
@@ -967,17 +975,13 @@ pub trait MatchMethods: TElement {
         }
 
         // First of all, update the styles, and keep the before-change style around for the
-        // children, see StyleResolverForElement::before_change_style.
-        let mut old_styles = data.set_styles(new_styles);
-        if !animation_only {
-            data.before_change_style = before_change_style.or_else(|| old_styles.primary.take());
-        }
-        let old_primary_style = old_styles
-            .primary
-            .as_ref()
-            .or(data.before_change_style.as_ref());
-
+        // children if it's different from the new style, see
+        // StyleResolverForElement::before_change_style.
+        let old_styles = data.set_styles(new_styles);
         let new_primary_style = data.styles.primary.as_ref().unwrap();
+        data.before_change_style =
+            before_change_style.filter(|s| !Arc::ptr_eq(s, new_primary_style));
+        let old_primary_style = old_styles.primary.as_ref();
 
         let mut child_restyle_hint = RestyleHint::empty();
         let is_root = new_primary_style
