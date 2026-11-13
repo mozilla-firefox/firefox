@@ -178,7 +178,6 @@ export const AIWindow = {
   init(win) {
     if (!this._windowStates.has(win)) {
       this._windowStates.set(win, {});
-      this._updateHamburgerMenuPosition(win);
       this._initializeAskButtonOnToolbox(win);
       this._updateMonitorButtonForWindow(win);
       lazy.SmartActionsToolbar.init(win);
@@ -225,7 +224,6 @@ export const AIWindow = {
       "AuthProvider:Logout",
       this.onAuthProviderLogout
     );
-    Services.obs.addObserver(this, "tabstrip-orientation-change");
     Services.obs.addObserver(this, "browser-region-updated");
     Services.obs.addObserver(this, "intl:app-locales-changed");
     Services.prefs.addObserver(PREF_AGENT_SUPPORTED_REGIONS, this);
@@ -274,7 +272,6 @@ export const AIWindow = {
       "AuthProvider:Logout",
       this.onAuthProviderLogout
     );
-    Services.obs.removeObserver(this, "tabstrip-orientation-change");
     Services.obs.removeObserver(this, "browser-region-updated");
     Services.obs.removeObserver(this, "intl:app-locales-changed");
     Services.prefs.removeObserver(PREF_AGENT_SUPPORTED_REGIONS, this);
@@ -302,12 +299,7 @@ export const AIWindow = {
   },
 
   observe(_subject, topic, data) {
-    if (topic === "tabstrip-orientation-change") {
-      this._onTabstripOrientationChange();
-    } else if (
-      topic === "nsPref:changed" &&
-      data === PREF_AUTO_TAB_GROUPING_LOCALES
-    ) {
+    if (topic === "nsPref:changed" && data === PREF_AUTO_TAB_GROUPING_LOCALES) {
       // Nimbus applies this pref after session restore, so windows that built
       // the button before then have to catch up.
       this._updateGroupTabsButtons();
@@ -429,40 +421,6 @@ export const AIWindow = {
   _updateButtonVisibility(node) {
     if (node) {
       node.hidden = !this.isAIWindowEnabled();
-    }
-  },
-
-  _onTabstripOrientationChange() {
-    this._forEachWindow(win => this._updateHamburgerMenuPosition(win));
-  },
-
-  /**
-   * Move the hamburger menu next to the window controls on Smart Window and Vertical
-   * tabs, and restores it to its default nav-bar position for Classic.
-   * The mode switcher button itself is a customizable widget, so its
-   * placement is owned by CustomizableUI and not touched here.
-   *
-   * @param {Window} win The window to update.
-   * @param {object} [options]
-   * @param {boolean} [options.isToggling]
-   */
-  _updateHamburgerMenuPosition(win, { isToggling = false } = {}) {
-    const hamburgerMenu = win.document.getElementById("PanelUI-button");
-    const targetToolbar = win.document.getElementById(
-      this.verticalTabsEnabled ? "nav-bar" : "TabsToolbar"
-    );
-    const titlebarContainer = targetToolbar.querySelector(
-      ".titlebar-buttonbox-container"
-    );
-
-    if (this.isAIWindowActive(win) || this.verticalTabsEnabled) {
-      titlebarContainer.after(hamburgerMenu);
-    } else if (isToggling) {
-      // Restore hamburger menu to its original position in nav-bar.
-      const postTabsSpacer = win.document
-        .getElementById("nav-bar")
-        .querySelector('.titlebar-spacer[type="post-tabs"]');
-      postTabsSpacer.before(hamburgerMenu);
     }
   },
 
@@ -1216,7 +1174,6 @@ export const AIWindow = {
       win.document.documentElement.toggleAttribute("ai-window");
 
       this._reconcileNewTabPages(win, newTabPref, homePagePref);
-      this._updateHamburgerMenuPosition(win, { isToggling: true });
       this._initializeAskButtonOnToolbox(win);
       this._updateMonitorButtonForWindow(win);
       lazy.SmartActionsToolbar.update(win);
@@ -1776,11 +1733,4 @@ XPCOMUtils.defineLazyPreferenceGetter(
   PREF_AI_CONTROL_DEFAULT,
   "available",
   AIWindow._onAIWindowEnabledPrefChange.bind(AIWindow)
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  AIWindow,
-  "verticalTabsEnabled",
-  "sidebar.verticalTabs",
-  false
 );

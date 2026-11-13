@@ -607,21 +607,19 @@ body {
 
 /* Add space to the end of the tab strip and make that space click its last
  * visible item: the last item of the customization target, or the private
- * browsing and content analysis indicators that follow it. In Smart Window, the
- * app menu button follows all of them. Edges next to the window controls keep
- * their existing spacing, so these conditions mirror the window controls'
- * placement and visibility (see .titlebar-buttonbox-container). */
+ * browsing and content analysis indicators that follow it. Edges next to the
+ * window controls keep their existing spacing, so these conditions mirror the
+ * window controls' placement and visibility (see .titlebar-buttonbox-container). */
 /* stylelint-disable stylelint-plugin-mozilla/use-design-tokens -- edge padding isn't a design token, see --toolbar-edge-padding. */
-:root:not([ai-window], [privatebrowsingmode="temporary"], [contentanalysisactive])
+:root:not([privatebrowsingmode="temporary"], [contentanalysisactive])
   #TabsToolbar-customization-target
   > :is(toolbarbutton, toolbaritem):nth-last-child(1 of :not([hidden])),
-:root:not([ai-window], [privatebrowsingmode="temporary"], [contentanalysisactive])
+:root:not([privatebrowsingmode="temporary"], [contentanalysisactive])
   #TabsToolbar-customization-target
   > toolbarpaletteitem:nth-last-child(1 of :not([hidden]))
   > :is(toolbarbutton, toolbaritem),
-:root[privatebrowsingmode="temporary"]:not([ai-window], [contentanalysisactive]) #TabsToolbar > .private-browsing-indicator-button,
-:root[contentanalysisactive]:not([ai-window]) #TabsToolbar > .content-analysis-indicator,
-:root[ai-window] #TabsToolbar > #PanelUI-button > #PanelUI-menu-button {
+:root[privatebrowsingmode="temporary"]:not([contentanalysisactive]) #TabsToolbar > .private-browsing-indicator-button,
+:root[contentanalysisactive] #TabsToolbar > .content-analysis-indicator {
   :root:not([customtitlebar], [inFullscreen]) & {
     padding-inline-end: var(--toolbar-edge-padding);
   }
@@ -1723,14 +1721,6 @@ popupnotificationcontent {
 
 #appMenu-new-ai-window-button > moz-badge {
   margin-inline-start: auto;
-}
-
-/* Smart Window Toolbar styling. With vertical tabs, the app menu button
- * follows the ask button and provides the end padding instead. */
-@media not -moz-pref("sidebar.verticalTabs") {
-  :root[ai-window] #nav-bar {
-    padding-inline-end: var(--toolbar-end-edge-padding);
-  }
 }
 
 /* AI window: hide nav bar on firstrun only; the address bar is shown at all
