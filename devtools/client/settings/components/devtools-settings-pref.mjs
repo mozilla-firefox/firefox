@@ -8,6 +8,7 @@ import { html } from "chrome://global/content/vendor/lit.all.mjs";
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 import { MozCheckbox } from "chrome://global/content/elements/moz-checkbox.mjs";
 import { MozSelect } from "chrome://global/content/elements/moz-select.mjs";
+import { MozSegmentedControl } from "chrome://global/content/elements/moz-segmented-control.mjs";
 
 import { SettingChangedEvent } from "../events.mjs";
 
@@ -36,10 +37,13 @@ export class DevToolsSettingsPref extends MozLitElement {
       return;
     }
     try {
-      const control = this.querySelector("moz-checkbox, moz-select");
+      const control = this.#getControl();
       if (control instanceof MozCheckbox) {
         control.checked = Services.prefs.getBoolPref(this.pref);
-      } else if (control instanceof MozSelect) {
+      } else if (
+        control instanceof MozSelect ||
+        control instanceof MozSegmentedControl
+      ) {
         if (this.#isIntPref()) {
           control.value = String(Services.prefs.getIntPref(this.pref));
         } else {
@@ -55,12 +59,20 @@ export class DevToolsSettingsPref extends MozLitElement {
     }
   }
 
-  /** @param {Event} event */
-  #controlChange = event => {
-    const control = event.target;
+  #getControl() {
+    return this.querySelector(
+      "moz-checkbox, moz-select, moz-segmented-control"
+    );
+  }
+
+  #controlChange = () => {
+    const control = this.#getControl();
     if (control instanceof MozCheckbox) {
       Services.prefs.setBoolPref(this.pref, control.checked);
-    } else if (control instanceof MozSelect) {
+    } else if (
+      control instanceof MozSelect ||
+      control instanceof MozSegmentedControl
+    ) {
       if (this.#isIntPref()) {
         Services.prefs.setIntPref(this.pref, Number(control.value));
       } else {

@@ -99,6 +99,20 @@ devtools-settings-webconsole-split-console =
     .label = Enable Split Console
     .title = Open Split Console with the Escape Key
 
+## Themes section.
+
+devtools-settings-themes =
+    .label = Themes
+
+# Accessible name for the group of buttons choosing the color theme used by
+# DevTools.
+devtools-settings-theme =
+    .aria-label = Theme
+
+# Follows the operating system's light or dark preference.
+devtools-settings-theme-auto =
+    .label = Auto
+
 ## Inspector section, configuring the page inspector.
 
 devtools-settings-inspector =

@@ -49,6 +49,7 @@ export class SettingsPanel {
   destroy() {
     this.#abortController.abort();
     this.element?.setToolbox(null);
+    this.element?.remove();
     this.element = null;
     this.toolbox = null;
   }

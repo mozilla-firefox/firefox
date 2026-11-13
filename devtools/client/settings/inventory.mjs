@@ -210,6 +210,18 @@ export const inventory = [
     ],
   },
   {
+    id: "settings-themes",
+    l10nId: "devtools-settings-themes",
+    settings: [
+      {
+        id: "settings-theme",
+        l10nId: "devtools-settings-theme",
+        type: "custom-element",
+        element: "devtools-settings-theme",
+      },
+    ],
+  },
+  {
     id: "settings-inspector",
     l10nId: "devtools-settings-inspector",
     settings: [
