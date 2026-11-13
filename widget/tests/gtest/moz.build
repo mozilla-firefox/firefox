@@ -68,6 +68,10 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
 
     CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]
     CXXFLAGS += CONFIG["MOZ_GBM_CFLAGS"]
+    if CONFIG["MOZ_X11"]:
+        SOURCES += [
+            "TestX11UserTime.cpp",
+        ]
     if not CONFIG["MOZ_SYSTEM_GBM"]:
         LOCAL_INCLUDES += [
             "/third_party/gbm/gbm/",

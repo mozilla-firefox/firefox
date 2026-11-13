@@ -650,35 +650,61 @@ static uint32_t GetWindowUserTime(GdkDisplay* aDisplay, uintptr_t aWindow) {
 }
 
 void FindLatestUserTime(GdkDisplay* aDisplay, uintptr_t aWindow,
-                        uint32_t* aLatestTime) {
+                        uint32_t aCurrentTime, uint32_t* aLatestTime) {
   Window rootReturn;
   Window parentReturn;
   Window* children;
   unsigned int numberOfChildren;
-  uint32_t userTime;
 
   Display* xDisplay = GDK_DISPLAY_XDISPLAY(aDisplay);
 
   if (XQueryTree(xDisplay, aWindow, &rootReturn, &parentReturn, &children,
                  &numberOfChildren)) {
     for (unsigned int i = 0; i < numberOfChildren; i++) {
-      userTime = GetWindowUserTime(aDisplay, children[i]);
-      if (userTime > *aLatestTime) {
-        *aLatestTime = userTime;
+      uint32_t userTime = GetWindowUserTime(aDisplay, children[i]);
+      if (userTime != 0) {
+        // X11 timestamps wrap every 2^32 milliseconds. Interpret times within
+        // half a period of the server time, and normalize future times to now.
+        if (aCurrentTime - userTime > G_MAXUINT32 / 2) {
+          userTime = aCurrentTime;
+        }
+        if (*aLatestTime == 0 ||
+            aCurrentTime - userTime < aCurrentTime - *aLatestTime) {
+          *aLatestTime = userTime;
+        }
       }
-      FindLatestUserTime(aDisplay, children[i], aLatestTime);
+      FindLatestUserTime(aDisplay, children[i], aCurrentTime, aLatestTime);
     }
 
     XFree(children);
   }
 }
 
+uint32_t GetX11StartupUserTime(GdkDisplay* aDisplay, uintptr_t aWindow) {
+  GdkWindow* clockWindow = gdk_display_get_default_group(aDisplay);
+  if (!clockWindow) {
+    return 0;
+  }
+
+  // Preserve GDK's event mask on its shared group leader.
+  GdkEventMask eventMask = gdk_window_get_events(clockWindow);
+  gdk_window_set_events(clockWindow,
+                        GdkEventMask(eventMask | GDK_PROPERTY_CHANGE_MASK));
+  uint32_t currentTime = gdk_x11_get_server_time(clockWindow);
+  gdk_window_set_events(clockWindow, eventMask);
+  if (currentTime == 0) {
+    return 0;
+  }
+
+  uint32_t latestUserTime = 0;
+  FindLatestUserTime(aDisplay, aWindow, currentTime, &latestUserTime);
+  return latestUserTime;
+}
+
 // Assume we're started from user interaction and infer user time if its missing
 nsCString SynthesizeStartupToken() {
-  uint32_t latestUserTime = 0;
-  FindLatestUserTime(gdk_display_get_default(),
-                     GDK_WINDOW_XID(gdk_get_default_root_window()),
-                     &latestUserTime);
+  uint32_t latestUserTime = GetX11StartupUserTime(
+      gdk_display_get_default(), GDK_WINDOW_XID(gdk_get_default_root_window()));
 
   if (latestUserTime == 0) {
     return nsCString();

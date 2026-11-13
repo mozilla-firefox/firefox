@@ -90,8 +90,9 @@ bool IsCancelledGError(GError* aGError);
 #if defined(MOZ_X11)
 // Used by startup notifications
 nsCString SynthesizeStartupToken();
+uint32_t GetX11StartupUserTime(GdkDisplay* aDisplay, uintptr_t aWindow);
 void FindLatestUserTime(GdkDisplay* aDisplay, uintptr_t aWindow,
-                        uint32_t* aLatestTime);
+                        uint32_t aCurrentTime, uint32_t* aLatestTime);
 #endif
 
 }  // namespace mozilla::widget
