@@ -2538,7 +2538,7 @@ bool Instance::init(JSContext* cx, const JSObjectVector& funcImports,
 
   // Capture this thread's MXCSR once, so the wasm stubs can restore it with
   // a single ldmxcsr each.
-  uint32_t mxcsr = ReadMxcsr();
+  uint32_t mxcsr = mozilla::supports_sse() ? ReadMxcsr() : 0;
   ieeeMxcsr_ = mxcsr;
   if (CanDisableDenormals() && cx->options().wasmDisablesDenormals()) {
     wasmMxcsr_ = mxcsr | MxcsrDenormalsDisabled;
