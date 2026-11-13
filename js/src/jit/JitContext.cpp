@@ -144,10 +144,8 @@ bool jit::InitializeJit() {
   JitOptions.supportsUnalignedAccesses = supportsUnaligned;
   JitOptions.enable_regexp_unaligned_accesses = supportsUnaligned;
 
-#ifdef NIGHTLY_BUILD
   JitOptions.js_regexp_buffer_boundaries =
       JS::Prefs::experimental_regexp_buffer_boundaries();
-#endif
 
   if (HasJitBackend()) {
     if (!InitProcessExecutableMemory()) {

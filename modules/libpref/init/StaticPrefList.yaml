@@ -10153,13 +10153,6 @@
   mirror: always
   set_spidermonkey_pref: always
 
-  # Experimental support for RegExp Buffer Boundaries in JavaScript.
-- name: javascript.options.experimental.regexp_buffer_boundaries
-  type: bool
-  value: false
-  mirror: always
-  set_spidermonkey_pref: startup
-
   # Experimental support for deferred import evaluation in JavaScript.
 - name: javascript.options.experimental.defer_import_eval
   type: bool
@@ -10168,6 +10161,13 @@
   set_spidermonkey_pref: startup
   fuzzing_safe: false
 #endif  // NIGHTLY_BUILD
+
+  # Experimental support for RegExp Buffer Boundaries in JavaScript.
+- name: javascript.options.experimental.regexp_buffer_boundaries
+  type: bool
+  value: true
+  mirror: always
+  set_spidermonkey_pref: startup
 
   # Capture stack traces for OOM
 - name: javascript.options.experimental.capture_oom_stack_trace

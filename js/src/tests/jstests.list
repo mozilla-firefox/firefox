@@ -744,6 +744,9 @@ skip script test262/staging/sm/TypedArray/getter-name.js
 skip script test262/language/statements/class/decorator/syntax/class-valid/decorator-member-expr-private-identifier.js
 skip script test262/language/expressions/class/decorator/syntax/class-valid/decorator-member-expr-private-identifier.js
 
+# This will be fixed in https://github.com/tc39/test262/pull/4975
+skip script test262/staging/sm/RegExp/unicode-disallow-extended.js
+skip script test262/built-ins/RegExp/unicode_restricted_identity_escape_alpha.js
 
 ##############################################
 # Enable Iterator Helpers tests in the shell #
