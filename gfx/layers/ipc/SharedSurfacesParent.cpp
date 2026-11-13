@@ -290,7 +290,7 @@ void SharedSurfacesParent::AddTrackingLocked(
     SourceSurfaceSharedDataWrapper* aSurface,
     const StaticMutexAutoLock& aAutoLock) {
   MOZ_ASSERT(!aSurface->GetExpirationState()->IsTracked());
-  MOZ_ASSERT(aSurface->GetConsumers() > 0);
+  MOZ_RELEASE_ASSERT(aSurface->GetConsumers() > 0);
   sInstance->mTracker.AddObjectLocked(aSurface, aAutoLock);
 }
 
