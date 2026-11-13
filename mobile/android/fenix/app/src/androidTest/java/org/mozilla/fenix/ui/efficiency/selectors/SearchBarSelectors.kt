@@ -6,6 +6,7 @@ package org.mozilla.fenix.ui.efficiency.selectors
 
 import mozilla.components.browser.toolbar.R as toolbarR
 import mozilla.components.compose.browser.awesomebar.AwesomeBarTestTags
+import mozilla.components.compose.browser.awesomebar.R as awesomebarR
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.ADDRESSBAR_SEARCH_BOX
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.SEARCH_SELECTOR
 import mozilla.components.feature.qr.R as qrR
@@ -133,6 +134,13 @@ object SearchBarSelectors : SelectorContainer {
             value = "mozac.awesomebar.suggestion",
             secondaryValue = suggestionText,
             description = "Search suggestion '$suggestionText'",
+        )
+
+    val AWESOMEBAR_SUGGESTION_REMOVE_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_CONTENT_DESCRIPTION,
+            value = getStringResource(awesomebarR.string.mozac_browser_awesomebar_remove_suggestion),
+            description = "Awesomebar suggestion remove (X) button",
         )
 
     val SCAN_BUTTON =
