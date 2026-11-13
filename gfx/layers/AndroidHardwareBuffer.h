@@ -36,8 +36,15 @@ class AndroidHardwareBuffer
   static UniqueFileHandle MergeFences(UniqueFileHandle&& aFence1,
                                       UniqueFileHandle&& aFence2);
 
+  static constexpr uint64_t kDefaultUsage =
+      AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
+      AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
+      AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE |
+      AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT;
+
   static already_AddRefed<AndroidHardwareBuffer> Create(
-      gfx::IntSize aSize, gfx::SurfaceFormat aFormat);
+      gfx::IntSize aSize, gfx::SurfaceFormat aFormat,
+      uint64_t aUsage = kDefaultUsage);
 
   virtual ~AndroidHardwareBuffer();
 

@@ -59,7 +59,7 @@ uint64_t AndroidHardwareBuffer::GetNextId() {
 
 /* static */
 already_AddRefed<AndroidHardwareBuffer> AndroidHardwareBuffer::Create(
-    gfx::IntSize aSize, gfx::SurfaceFormat aFormat) {
+    gfx::IntSize aSize, gfx::SurfaceFormat aFormat, uint64_t aUsage) {
   if (aFormat != gfx::SurfaceFormat::R8G8B8A8 &&
       aFormat != gfx::SurfaceFormat::R8G8B8X8 &&
       aFormat != gfx::SurfaceFormat::B8G8R8A8 &&
@@ -72,10 +72,7 @@ already_AddRefed<AndroidHardwareBuffer> AndroidHardwareBuffer::Create(
   desc.width = aSize.width;
   desc.height = aSize.height;
   desc.layers = 1;  // number of images
-  desc.usage = AHARDWAREBUFFER_USAGE_CPU_READ_OFTEN |
-               AHARDWAREBUFFER_USAGE_CPU_WRITE_OFTEN |
-               AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE |
-               AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT;
+  desc.usage = aUsage;
   desc.format = ToAHardwareBuffer_Format(aFormat);
 
   AHardwareBuffer* nativeBuffer = nullptr;

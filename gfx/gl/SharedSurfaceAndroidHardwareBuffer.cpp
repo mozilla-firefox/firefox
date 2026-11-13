@@ -24,9 +24,13 @@ SharedSurface_AndroidHardwareBuffer::Create(const SharedSurfaceDesc& desc) {
   const auto& gle = GLContextEGL::Cast(desc.gl);
   const auto& egl = gle->mEgl;
 
+  // WebGL surfaces are accessed through GL, including readback, so they do not
+  // need CPU access usage flags.
   RefPtr<layers::AndroidHardwareBuffer> buffer =
-      layers::AndroidHardwareBuffer::Create(desc.size,
-                                            gfx::SurfaceFormat::R8G8B8A8);
+      layers::AndroidHardwareBuffer::Create(
+          desc.size, gfx::SurfaceFormat::R8G8B8A8,
+          AHARDWAREBUFFER_USAGE_GPU_SAMPLED_IMAGE |
+              AHARDWAREBUFFER_USAGE_GPU_COLOR_OUTPUT);
   if (!buffer) {
     return nullptr;
   }
