@@ -182,7 +182,6 @@ enum class GLRenderer {
   GalliumLlvmpipe,
   MicrosoftBasicRenderDriver,
   SamsungXclipse,
-  RadeonGFX10,
   Other
 };
 
