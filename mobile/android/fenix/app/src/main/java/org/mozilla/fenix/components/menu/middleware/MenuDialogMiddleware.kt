@@ -145,7 +145,7 @@ class MenuDialogMiddleware(
                 visible = showMenuItem,
                 highlighted = summarizeMenuSettings.shouldHighlightMenuItem && isNormalTab,
                 overflowMenuHighlighted = summarizeMenuSettings.shouldHighlightOverflowMenuItem && isNormalTab,
-                showNewFeatureBadge = true,
+                showNewFeatureBadge = false,
                 enabled = showMenuItem && isNormalTab && isSummarizationEligible,
             )
         store.dispatch(MenuAction.InitializeSummarizationMenuState(summarizationState))

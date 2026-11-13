@@ -287,7 +287,7 @@ class SummarizePageMenuItemProviderTest {
             icon = MenuItemIconRes(iconsR.drawable.mozac_ic_lightning_24, isHighlighted = isHighlighted),
             onClickEvent = MenuAction.Navigate.Summarizer,
             onShownEvent = MenuAction.OnSummarizationMenuExposed,
-            showNewIndicator = true,
+            showNewIndicator = false,
             state =
                 when (isEnabled) {
                     true -> MenuItemState.DEFAULT
