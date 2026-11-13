@@ -109,6 +109,7 @@ object BrowserToolbarStoreBuilder {
                                     summarizationFeatureSettings = components.core.summarizeFeatureSettings,
                                     translationsFeatureSettings = TranslationsEnabledSettings.dataStore(activity),
                                     listenSettings = components.listenToPage.settings,
+                                    pictureInPictureUseCases = components.useCases.pictureInPictureUseCases,
                                     shareUseCases = components.useCases.shareUseCases,
                                     navController = navController,
                                     summarizationNavigator =

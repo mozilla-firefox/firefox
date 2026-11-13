@@ -9,6 +9,7 @@ import android.appwidget.AppWidgetManager
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.os.Environment
 import android.view.accessibility.AccessibilityManager
@@ -2722,6 +2723,12 @@ class Settings(
             key = appContext.getPreferenceKey(R.string.pref_key_enable_picture_in_picture_window),
             default = { FxNimbus.features.pictureInPictureWindow.value().enabled },
         )
+
+    /** Indicates if videos can be shown in a picture-in-picture window of their own on this device. */
+    val isPictureInPictureWindowAvailable: Boolean
+        get() =
+            enablePictureInPictureWindow &&
+                appContext.packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
 
     /** Indicates if the Homepage Weather Widget is enabled. */
     var enableHomepageWeatherWidget by
