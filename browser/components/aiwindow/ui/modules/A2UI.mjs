@@ -97,6 +97,14 @@ export class A2UI {
 
     component.groups = this.#resolveArray(component.groups, [], dataModel);
 
+    // A single list sits beside its title rather than below it.
+    // Creation telemetry still reports the model's layout.
+    // Bug 2088273 decides how Glean reports these conversions.
+    const groups = component.groups.filter(group => group?.items?.length);
+    if (groups.length == 1 && !component.description) {
+      component.layout = "row";
+    }
+
     return component;
   }
 
@@ -263,8 +271,8 @@ export class A2UI {
 
   /**
    * Drops a Highlights block with no statements and turns one with a single
-   * statement into a TextBlock. The stored surface is not changed, so the
-   * block keeps its id.
+   * statement, or without a title, into a TextBlock. The stored surface is not
+   * changed, so the block keeps its id.
    *
    * Link-click telemetry reports the converted block as a TextBlock.
    * Bug 2088273 decides how Glean reports these conversions.
@@ -280,8 +288,27 @@ export class A2UI {
     if (!items.length) {
       return null;
     }
-    if (items.length > 1) {
+    if (items.length > 1 && component.title) {
       return component;
+    }
+    const references = items
+      .flatMap(item => item.sources?.items ?? [])
+      .filter(
+        (source, index, all) =>
+          httpUrl(source?.href) &&
+          all.findIndex(other => other?.href == source.href) == index
+      );
+    if (items.length > 1) {
+      // A TextBlock has one lead, so every statement becomes plain text.
+      return {
+        id: component.id,
+        component: "TextBlock",
+        lead: "",
+        paragraphs: items
+          .flatMap(item => [item.title, item.body])
+          .filter(Boolean),
+        references,
+      };
     }
     const [item] = items;
     return {
@@ -289,9 +316,7 @@ export class A2UI {
       component: "TextBlock",
       lead: item.title || component.title || item.eyebrow || "",
       paragraphs: item.body ? [item.body] : [],
-      references: (item.sources?.items ?? []).filter(source =>
-        httpUrl(source?.href)
-      ),
+      references,
     };
   }
 

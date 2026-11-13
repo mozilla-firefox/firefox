@@ -43,7 +43,6 @@
        forced colors resolves to ButtonText, so the surface uses its
        guaranteed-contrasting partner ButtonFace. The text colour itself comes
        from the shared base styles rather than being set here. */
-    border-inline: var(--border-width) solid var(--button-border-color);
     border-block-end: var(--border-width) solid var(--button-border-color);
     /* stylelint-disable-next-line stylelint-plugin-mozilla/use-paired-color-tokens */
     background-color: var(--button-background-color);

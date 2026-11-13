@@ -376,6 +376,33 @@ describe("A2UI", () => {
         });
       });
 
+      it("turns untitled statements into one text block", () => {
+        delete a2uiData.components[2].title;
+        a2uiData.components[2].items[1].sources = {
+          items: [
+            { title: "site1 again", href: "https://www.site1.com" },
+            { title: "site4 name", href: "https://www.site4.com" },
+          ],
+        };
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1], {
+          id: "ans",
+          component: "TextBlock",
+          lead: "",
+          paragraphs: [
+            "A cold-climate heat pump works here — paired with the furnace for the coldest nights.",
+            "Eight of nine sources back dual-fuel for 1940s retrofits.",
+            "Air sealing matters more than which model you pick.",
+            "Envelope work moves the payback further than the equipment on the invoice.",
+          ],
+          references: [
+            ...a2uiData.dataModel.sources,
+            { title: "site4 name", href: "https://www.site4.com" },
+          ],
+        });
+      });
+
       it("takes the text block lead from the first title it finds", () => {
         const leadOf = (highlights, item) => {
           a2uiData.components[2] = {
@@ -1053,6 +1080,47 @@ describe("A2UI", () => {
         });
 
         a2ui = new A2UI(a2uiData);
+      });
+
+      it("lays out a single group without a description as a row", () => {
+        const layoutOf = list => {
+          a2uiData.components[2] = {
+            ...a2uiData.components[2],
+            ...list,
+          };
+          return new A2UI(a2uiData).toUI().children[1].layout;
+        };
+        const { groups } = a2uiData.components[2];
+        const [group] = groups;
+
+        Assert.equal(
+          layoutOf({ description: undefined, groups: [group] }),
+          "row",
+          "A single group without a description is laid out as a row"
+        );
+        Assert.equal(
+          layoutOf({
+            description: undefined,
+            groups: [group, { heading: "Empty", items: [] }],
+            layout: "column",
+          }),
+          "row",
+          "Empty groups are not counted"
+        );
+        Assert.equal(
+          layoutOf({ description: "A description", layout: "column" }),
+          "column",
+          "A description keeps the model's layout"
+        );
+        Assert.equal(
+          layoutOf({
+            description: undefined,
+            groups,
+            layout: "column",
+          }),
+          "column",
+          "Several groups keep the model's layout"
+        );
       });
 
       it("resolves the List title, description and groups as is", () => {
