@@ -2,12 +2,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import tempfile
 import unittest
-from unittest.mock import MagicMock, call
+from pathlib import Path
+from unittest.mock import MagicMock, call, patch
 
 from mozunit import main
 
-from mozboot.bootstrap import CONFIGURE_SCCACHE, Bootstrapper
+from mozboot.bootstrap import CONFIGURE_SCCACHE, CONTRIBUTING_CODE, Bootstrapper
 from mozboot.mozconfig import MozconfigBuilder
 
 
@@ -171,6 +173,29 @@ class TestAgenticTools(unittest.TestCase):
         bootstrapper.check_agentic_tools()
 
         bootstrapper.instance.ensure_cargo_tools.assert_not_called()
+
+
+class TestContributingCode(unittest.TestCase):
+    def _shown(self, state_dir, is_employee):
+        bootstrapper = Bootstrapper.__new__(Bootstrapper)
+        with patch.dict("os.environ", clear=True):
+            with patch(
+                "mozboot.bootstrap.resolve_is_employee", return_value=is_employee
+            ):
+                with patch("builtins.print") as m_print:
+                    bootstrapper.maybe_show_contributing_code(
+                        Path("/src"), state_dir, MagicMock()
+                    )
+        return call(CONTRIBUTING_CODE) in m_print.call_args_list
+
+    def test_shown_once_to_contributors(self):
+        with tempfile.TemporaryDirectory() as state_dir:
+            self.assertTrue(self._shown(Path(state_dir), is_employee=False))
+            self.assertFalse(self._shown(Path(state_dir), is_employee=False))
+
+    def test_hidden_from_staff(self):
+        with tempfile.TemporaryDirectory() as state_dir:
+            self.assertFalse(self._shown(Path(state_dir), is_employee=True))
 
 
 if __name__ == "__main__":
