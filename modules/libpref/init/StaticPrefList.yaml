@@ -2982,12 +2982,6 @@
   value: false
   mirror: always
 
-# Eanbles the popover=hint attribute
-- name: dom.element.popoverhint.enabled
-  type: bool
-  value: true
-  mirror: always
-
 - name: dom.mouse_capture.enabled
   type: bool
   value: true

@@ -733,9 +733,6 @@ constexpr PopoverAttributeState ToPopoverAttributeState(
     case PopoverAttributeKeyword::Auto:
       return PopoverAttributeState::Auto;
     case PopoverAttributeKeyword::Hint:
-      if (!StaticPrefs::dom_element_popoverhint_enabled()) {
-        return PopoverAttributeState::Manual;
-      }
       return PopoverAttributeState::Hint;
     case PopoverAttributeKeyword::EmptyString:
       return PopoverAttributeState::Auto;
@@ -765,11 +762,6 @@ void nsGenericHTMLElement::AfterSetPopoverAttr() {
 
   PopoverAttributeState newState =
       mapPopoverState(GetParsedAttr(nsGkAtoms::popover));
-
-  if (!StaticPrefs::dom_element_popoverhint_enabled() &&
-      newState == PopoverAttributeState::Hint) {
-    newState = PopoverAttributeState::Manual;
-  }
 
   const PopoverAttributeState oldState = GetPopoverAttributeState();
 

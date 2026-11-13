@@ -13,8 +13,6 @@ prefs = [
   "security.allow_eval_with_system_principal=true",
   # Required for CSS positioning
   "accessibility.anchorPositionedAsDetails.enabled=true",
-  # Required for hint popovers
-  "dom.element.popoverhint.enabled=true",
 ]
 
 ["browser_anchor_positioning.js"]
