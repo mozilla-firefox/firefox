@@ -92,6 +92,65 @@ add_task(async function test_launcher_hidden_and_panel_shown() {
   await SidebarController.waitUntilStable();
 });
 
+add_task(async function test_panel_scrolls_from_window_edge() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["general.smoothScroll", false]],
+  });
+  await PlacesUtils.history.clear();
+  await PlacesUtils.history.insertMany(
+    Array.from({ length: 50 }, (_, i) => ({
+      url: `https://example.com/${i}`,
+      title: `Example ${i}`,
+      visits: [{ date: new Date() }],
+    }))
+  );
+  registerCleanupFunction(() => PlacesUtils.history.clear());
+
+  for (const positionStart of [true, false]) {
+    info(`Sidebar at the ${positionStart ? "start" : "end"}`);
+    await SpecialPowers.pushPrefEnv({
+      set: [[POSITION_SETTING_PREF, positionStart]],
+    });
+    await SidebarController.waitUntilStable();
+
+    const { component } = await showHistorySidebar();
+    const scroller = component.shadowRoot.querySelector(
+      ".sidebar-panel-scrollable-content"
+    );
+    await TestUtils.waitForCondition(
+      () => scroller.scrollHeight > scroller.clientHeight,
+      "History panel overflows"
+    );
+    scroller.scrollTop = 0;
+
+    const boxRect = document
+      .getElementById("sidebar-box")
+      .getBoundingClientRect();
+    const browserRect = SidebarController.browser.getBoundingClientRect();
+    const scrollerRect = scroller.getBoundingClientRect();
+    const x = positionStart ? boxRect.left + 1 : boxRect.right - 1;
+    const y = browserRect.top + scrollerRect.top + scrollerRect.height / 2;
+
+    info(`Wheel at the panel's window-edge pixel (${x}, ${y})`);
+    EventUtils.synthesizeWheelAtPoint(
+      x,
+      y,
+      { deltaMode: WheelEvent.DOM_DELTA_LINE, deltaY: 3 },
+      window
+    );
+    await TestUtils.waitForCondition(
+      () => scroller.scrollTop > 0,
+      "History panel scrolls from its window edge"
+    );
+
+    SidebarController.hide();
+    await SidebarController.waitUntilStable();
+    await SpecialPowers.popPrefEnv();
+  }
+
+  await SpecialPowers.popPrefEnv();
+});
+
 add_task(async function test_toolbar_button_toggles_panel() {
   const { sidebarContainer, toolbarButton } = SidebarController;
 

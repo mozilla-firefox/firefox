@@ -33,6 +33,10 @@
   &[sidebarcommand="viewCPMSidebar"] {
     min-width: 260px;
   }
+
+  #sidebar-container[hidden] ~ & {
+    padding-inline-start: var(--space-small);
+  }
 }
 
 #sidebar-container,
@@ -835,11 +839,13 @@ menuseparator + #sidebar-extensions-separator {
     /* Only the edge facing the content area survives once the launcher is
      * gone: the other one then meets the window. Fullscreen collapses the
      * launcher along with the rest of the chrome, so it counts as gone there
-     * too. */
+     * too. No padding on that edge either, so the panel's scroller reaches
+     * the window edge and still takes the wheel there. */
     #sidebar-container[hidden] ~ &:not([sidebar-positionend]),
     :root[fullscreenNavToolboxHidden] &:not([sidebar-positionend]) {
       --sidebar-box-start-start-radius: 0;
       border-inline-start: none;
+      padding-inline-start: 0;
     }
 
     #sidebar-container[hidden] ~ &[sidebar-positionend],

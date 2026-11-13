@@ -195,15 +195,6 @@ export class SidebarState {
   }
 
   /**
-   * Get the sidebar panel element.
-   *
-   * @returns {XULElement}
-   */
-  get #sidebarBoxEl() {
-    return this.#controller._box;
-  }
-
-  /**
    * Get the sidebar panel.
    *
    * @returns {XULElement}
@@ -394,9 +385,7 @@ export class SidebarState {
     }
     this.#props.panelOpen = !!open;
     // Opening a panel never changes whether the launcher is showing: in the
-    // modes where it can be hidden, that is the user's choice to make. The
-    // box's padding does depend on both, though.
-    this.#updatePanelPadding();
+    // modes where it can be hidden, that is the user's choice to make.
     if (open) {
       Services.prefs.setBoolPref(
         this.revampEnabled ? REVAMP_USED_PREF : LEGACY_USED_PREF,
@@ -581,15 +570,6 @@ export class SidebarState {
       this.#launcherEl?.requestUpdate();
     }
     this.#updateTabbrowser(visible);
-    this.#updatePanelPadding();
-  }
-
-  /**
-   * A panel shown without a launcher beside it needs padding of its own.
-   */
-  #updatePanelPadding() {
-    this.#sidebarBoxEl.style.paddingInlineStart =
-      this.panelOpen && !this.launcherVisible ? "var(--space-small)" : "unset";
   }
 
   get launcherExpanded() {

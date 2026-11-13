@@ -21,18 +21,11 @@
   --sidebar-panel-list-item-height: var(--size-item-large);
   --sidebar-panel-subheading-min-height: auto;
   --sidebar-panel-subheading-padding-block: var(--space-medium);
-  --sidebar-panel-scrollable-margin-inline-end: 0;
-  --sidebar-panel-scrollable-padding-inline-end: var(--space-xsmall);
 
   &[uidensity="compact"] {
     --sidebar-panel-list-item-height: 28px;
     --sidebar-panel-subheading-min-height: 36px;
     --sidebar-panel-subheading-padding-block: 0;
-
-    @media -moz-pref("sidebar.verticalTabs") {
-      --sidebar-panel-scrollable-margin-inline-end: calc(-1 * var(--space-large) + 1px);
-      --sidebar-panel-scrollable-padding-inline-end: calc(var(--space-large) + var(--space-xsmall) - 1px);
-    }
   }
 
   &[lwt-sidebar="light"] {
@@ -91,9 +84,10 @@ moz-card {
 }
 
 .sidebar-panel {
+  --sidebar-panel-padding-inline: var(--space-large);
   display: flex;
   flex-direction: column;
-  padding: var(--space-large);
+  padding-block: var(--space-large);
   @media -moz-pref("browser.nova.enabled") {
     padding-block-start: var(--space-small);
   }
@@ -101,6 +95,13 @@ moz-card {
   border-radius: var(--border-radius-medium);
   width: 100%;
   height: 100%;
+
+  /* The inline padding lives on the children rather than the panel, so the
+   * scroller reaches both inline edges, either of which can meet the window
+   * edge. */
+  > * {
+    padding-inline: var(--sidebar-panel-padding-inline);
+  }
 
   moz-input-search {
     display: block;
@@ -110,9 +111,8 @@ moz-card {
     overflow: hidden auto;
     flex: 1;
     min-height: 0;
-    padding: var(--space-xsmall);
-    margin-inline-end: var(--sidebar-panel-scrollable-margin-inline-end);
-    padding-inline-end: var(--sidebar-panel-scrollable-padding-inline-end);
+    padding-block: var(--space-xsmall);
+    padding-inline: calc(var(--sidebar-panel-padding-inline) + var(--space-xsmall));
   }
 }
 
@@ -153,7 +153,6 @@ fxview-empty-state {
 
 .options-container {
   display: flex;
-  width: 100%;
   align-items: center;
   margin-block-end: var(--space-large);
 }

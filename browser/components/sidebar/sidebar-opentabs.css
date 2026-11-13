@@ -46,7 +46,8 @@
 }
 
 .sidebar-panel .sidebar-panel-scrollable-content {
-  padding-inline: 0;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  padding-inline: var(--sidebar-panel-padding-inline);
 }
 
 moz-input-search {

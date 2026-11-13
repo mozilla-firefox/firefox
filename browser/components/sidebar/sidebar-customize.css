@@ -107,7 +107,7 @@ moz-checkbox {
   display: flex;
   align-items: center;
   gap: var(--space-small);
-  padding-inline-start: var(--space-medium);
+  margin-inline-start: var(--space-medium);
 }
 
 .customize-group:not(.no-end-margin) {
