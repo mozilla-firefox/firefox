@@ -1056,6 +1056,11 @@ FFmpegVideoDecoder<LIBAV_VER>::InitHWDecoderIfAllowed() {
 
 FFmpegVideoDecoder<LIBAV_VER>::~FFmpegVideoDecoder() {
 #ifdef MOZ_WIDGET_ANDROID
+  if (mAndroidImageReader) {
+    // Release the reader's cached image to break its reference cycle. Images
+    // still held by the compositor keep the reader and their AImages alive.
+    mAndroidImageReader->Shutdown();
+  }
   // We must wait to release mSurfaceTextureHandle because there may be
   // outstanding frames that reference us. Those frames take a strong reference
   // to FFmpegVideoDecoder in their CompositorListener, so it keeps it alive
@@ -2681,6 +2686,10 @@ void FFmpegVideoDecoder<LIBAV_VER>::ProcessShutdown() {
 #ifdef MOZ_WIDGET_ANDROID
   mShouldResumeDrain = false;
   ReleaseFramesMediaCodec();
+  if (mAndroidImageReader) {
+    mAndroidImageReader->Shutdown();
+    mAndroidImageReader = nullptr;
+  }
   if (mMediaCodecDeviceContext) {
     mLib->av_buffer_unref(&mMediaCodecDeviceContext);
   }

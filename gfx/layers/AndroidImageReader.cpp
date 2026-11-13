@@ -264,6 +264,21 @@ AndroidImageReader::~AndroidImageReader() {
   ReleaseResources();
 }
 
+void AndroidImageReader::Shutdown() {
+  RefPtr<AndroidImageWrapper> image;
+  {
+    MonitorAutoLock lock(mMonitor);
+    mShuttingDown = true;
+    // AndroidImageWrapper holds a strong reference to this reader. Break the
+    // cycle while the decoder still owns the reader; consumers may retain
+    // images.
+    image.swap(mCurrentImage);
+    mMonitor.NotifyAll();
+  }
+  // Release the cached image outside the monitor, since its destructor may
+  // call AImage_delete() or AImage_deleteAsync().
+}
+
 bool AndroidImageReader::Init() {
   MonitorAutoLock lock(mMonitor);
 
@@ -513,18 +528,21 @@ bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
                                           AndroidMediaCodecFrameId aFrameId) {
   MOZ_ASSERT(static_cast<int32_t>(mAcquiredImageCount) <= mMaxImageCount);
 
-  if (mCurrentFrameId == aFrameId) {
+  if (mShuttingDown || mCurrentFrameId == aFrameId) {
     return false;
   }
 
   // Limit as only one thread could do DoUpdateTexImage()
   const TimeDuration pendingTimeout = TimeDuration::FromMilliseconds(20);
-  while (mIsPendingNextImage) {
+  while (mIsPendingNextImage && !mShuttingDown) {
     CVStatus status = mMonitor.Wait(pendingTimeout);
     if (status == CVStatus::Timeout) {
       gfxCriticalNoteOnce << "Pending next image wait timeout";
       return false;
     }
+  }
+  if (mShuttingDown) {
+    return false;
   }
   MOZ_ASSERT(!mIsPendingNextImage);
 
@@ -554,7 +572,7 @@ bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
       }
     }
 
-    while (mWaitingFrameAvailable) {
+    while (mWaitingFrameAvailable && !mShuttingDown) {
       const TimeDuration remaining = deadline - TimeStamp::Now();
       if (remaining <= TimeDuration()) {
         gfxCriticalNoteOnce << "UpdateTexImage wait timeout";
@@ -563,6 +581,10 @@ bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
         break;
       }
       mMonitor.Wait(remaining);
+    }
+
+    if (mShuttingDown) {
+      return false;
     }
 
     // OnFrameAvailable does not carry a frame ID. Consume the outstanding
