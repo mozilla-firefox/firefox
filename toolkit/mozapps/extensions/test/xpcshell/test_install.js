@@ -117,7 +117,7 @@ function checkInstall(install, expected) {
   }
 }
 
-add_task(async function setup() {
+add_setup(async function setup() {
   createAppInfo("xpcshell@tests.mozilla.org", "XPCShell", "1", "1.9.2");
 
   for (let [name, data] of Object.entries(ADDONS)) {
@@ -249,10 +249,10 @@ add_task(async function test_install_url() {
   let url = "http://example.com/addons/test_install2_1.xpi";
   let install = await AddonManager.getInstallForURL(url, {
     name: "Test 2",
-    version: "1.0",
+    version: "2.0",
   });
   checkInstall(install, {
-    version: "1.0",
+    version: "2.0",
     name: "Test 2",
     state: AddonManager.STATE_AVAILABLE,
     sourceURI: Services.io.newURI(url),

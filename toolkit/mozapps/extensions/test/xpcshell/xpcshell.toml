@@ -179,6 +179,8 @@ skip-if = [
 
 ["test_install_cancel.js"]
 
+["test_install_expected_addon_details.js"]
+
 ["test_install_file_change.js"]
 
 ["test_install_icons.js"]

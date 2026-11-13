@@ -1766,7 +1766,7 @@ var AddonManagerInternal = {
    * Asynchronously gets an AddonInstall for a URL.
    *
    * @param  aUrl
-   *         The string represenation of the URL where the add-on is located
+   *         The string representation of the URL where the add-on is located
    * @param  {object} [aOptions = {}]
    *         Additional options for this install
    * @param  {string} [aOptions.hash]
@@ -1775,8 +1775,15 @@ var AddonManagerInternal = {
    *         An optional placeholder name while the add-on is being downloaded
    * @param  {string | object} [aOptions.icons]
    *         Optional placeholder icons while the add-on is being downloaded
+   * @param  {string} [aOptions.id]
+   *         An optional expected add-on ID, the installation fails if the
+   *         add-on being installed has a different ID.
+   * @param  {string} [aOptions.type]
+   *         An optional expected add-on type, the installation fails if the
+   *         add-on being installed has a different type.
    * @param  {string} [aOptions.version]
-   *         An optional placeholder version while the add-on is being downloaded
+   *         An optional expected add-on version, the installation fails if the
+   *         add-on being installed has a different version.
    * @param  {XULElement} [aOptions.browser]
    *         An optional <browser> element for download permissions prompts.
    * @param  {nsIPrincipal} [aOptions.triggeringPrincipal]
@@ -1827,6 +1834,20 @@ var AddonManagerInternal = {
       }
     } else {
       aOptions.icons = {};
+    }
+
+    if (aOptions.id && typeof aOptions.id != "string") {
+      throw Components.Exception(
+        "expected addon ID must be a string or null",
+        Cr.NS_ERROR_INVALID_ARG
+      );
+    }
+
+    if (aOptions.type && typeof aOptions.type != "string") {
+      throw Components.Exception(
+        "expected addon type must be a string or null",
+        Cr.NS_ERROR_INVALID_ARG
+      );
     }
 
     if (aOptions.version && typeof aOptions.version != "string") {

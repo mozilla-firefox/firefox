@@ -1274,13 +1274,19 @@ class AddonInstall {
    *        The add-on this install will update if known
    * @param {string} [options.name]
    *        An optional name for the add-on
+   * @param {string} [options.id]
+   *        An optional expected add-on ID, the installation fails if the
+   *        add-on being installed has a different ID.
    * @param {string} [options.type]
-   *        An optional type for the add-on
+   *        An optional expected add-on type, the installation fails if the
+   *        add-on being installed has a different type.
+   * @param {string} [options.version]
+   *        The expected version for the add-on, the installation fails if the
+   *        add-on being installed has a different version.
+   *        Required for updates, i.e. when `existingAddon` is set, optional
+   *        otherwise.
    * @param {object} [options.icons]
    *        Optional icons for the add-on
-   * @param {string} [options.version]
-   *        The expected version for the add-on.
-   *        Required for updates, i.e. when existingAddon is set.
    * @param {object?} [options.telemetryInfo]
    *        An optional object which provides details about the installation source
    *        included in the addon manager telemetry events.
@@ -1329,8 +1335,10 @@ class AddonInstall {
     this.logger = logger;
 
     this.name = options.name || null;
+    this.id = options.id || null;
     this.type = options.type || null;
     this.version = options.version || null;
+
     this.isUserRequestedUpdate = options.isUserRequestedUpdate;
     this.installTelemetryInfo = null;
 
@@ -1631,8 +1639,8 @@ class AddonInstall {
         ]);
       }
 
+      // Check various conditions related to upgrades.
       if (this.existingAddon) {
-        // Check various conditions related to upgrades
         if (this.addon.id != this.existingAddon.id) {
           return Promise.reject([
             AddonManager.ERROR_INCORRECT_ID,
@@ -1654,13 +1662,30 @@ class AddonInstall {
             `Refusing to change addon type from ${this.existingAddon.type} to ${this.addon.type}`,
           ]);
         }
+      }
 
-        if (this.version !== this.addon.version) {
-          return Promise.reject([
-            AddonManager.ERROR_UNEXPECTED_ADDON_VERSION,
-            `Expected addon version ${this.version} instead of ${this.addon.version}`,
-          ]);
-        }
+      if (
+        (this.existingAddon || this.version) &&
+        this.version !== this.addon.version
+      ) {
+        return Promise.reject([
+          AddonManager.ERROR_UNEXPECTED_ADDON_VERSION,
+          `Expected addon version ${this.version} instead of ${this.addon.version}`,
+        ]);
+      }
+
+      if (this.id && this.id !== this.addon.id) {
+        return Promise.reject([
+          AddonManager.ERROR_INCORRECT_ID,
+          `Expected addon ID ${this.id} instead of ${this.addon.id}`,
+        ]);
+      }
+
+      if (this.type && this.type !== this.addon.type) {
+        return Promise.reject([
+          AddonManager.ERROR_UNEXPECTED_ADDON_TYPE,
+          `Expected addon type ${this.type} instead of ${this.addon.type}`,
+        ]);
       }
 
       if (XPIExports.XPIDatabase.mustSign(this.addon.type)) {
@@ -2442,13 +2467,19 @@ var DownloadAddonInstall = class extends AddonInstall {
    *        The principal to use. If not present, will default to browser.contentPrincipal.
    * @param {string} [options.name]
    *        An optional name for the add-on
-   * @param {string} [options.type]
-   *        An optional type for the add-on
    * @param {object} [options.icons]
    *        Optional icons for the add-on
+   * @param  {string} [options.id]
+   *         An optional expected add-on ID, the installation fails if the
+   *         add-on being installed has a different ID.
+   * @param  {string} [options.type]
+   *         An optional expected add-on type, the installation fails if the
+   *         add-on being installed has a different type.
    * @param {string} [options.version]
-   *        The expected version for the add-on.
-   *        Required for updates, i.e. when existingAddon is set.
+   *        The expected version for the add-on, the installation fails if the
+   *        add-on being installed has a different version.
+   *        Required for updates, i.e. when `existingAddon` is set, optional
+   *        otherwise.
    * @param {function(string) : Promise<void>} [options.promptHandler]
    *        A callback to prompt the user before installing.
    * @param {boolean} [options.sendCookies]
@@ -4725,8 +4756,15 @@ export var XPIInstall = {
    *        A name for the install
    * @param {object} [aOptions.icons]
    *        Icon URLs for the install
+   * @param  {string} [aOptions.id]
+   *         An optional expected add-on ID, the installation fails if the
+   *         add-on being installed has a different ID.
+   * @param  {string} [aOptions.type]
+   *         An optional expected add-on type, the installation fails if the
+   *         add-on being installed has a different type.
    * @param {string} [aOptions.version]
-   *        A version for the install
+   *        An optional expected add-on version, the installation fails if the
+   *        add-on being installed has a different version.
    * @param {XULElement} [aOptions.browser]
    *        The browser performing the install
    * @param {object} [aOptions.telemetryInfo]
