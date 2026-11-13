@@ -688,6 +688,21 @@ class GeckoEngineSession(
                 {},
                 { throwable -> logger.warn("Picture-in-picture exit failed", throwable) },
             )
+        stopKeepingActiveForPictureInPicture()
+    }
+
+    /** Keeps this session active while a picture-in-picture window shows one of its videos. */
+    @OptIn(ExperimentalGeckoViewApi::class)
+    private fun keepActiveForPictureInPicture() {
+        geckoSession.sessionPictureInPicture.setKeepActive(true)
+    }
+
+    /** Stops keeping this session active once its picture-in-picture window is gone. */
+    @OptIn(ExperimentalGeckoViewApi::class)
+    private fun stopKeepingActiveForPictureInPicture() {
+        if (geckoSession.sessionPictureInPicture.setKeepActive(false)) {
+            geckoSession.setActive(false)
+        }
     }
 
     /** See [EngineSession.checkForFormData]. */
@@ -1833,11 +1848,13 @@ class GeckoEngineSession(
                     logger.warn("Ignoring picture-in-picture request without a placement token")
                     return
                 }
+                keepActiveForPictureInPicture()
                 val pictureInPictureSession = createPictureInPictureSession(placementToken)
                 notifyObservers { onEnterPictureInPicture(pictureInPictureSession) }
             }
 
             override fun onExitPictureInPicture(session: GeckoSession) {
+                stopKeepingActiveForPictureInPicture()
                 notifyObservers { onExitPictureInPicture() }
             }
         }

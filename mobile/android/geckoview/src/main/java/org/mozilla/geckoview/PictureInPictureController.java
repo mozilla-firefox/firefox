@@ -32,8 +32,14 @@ public class PictureInPictureController {
     private final GeckoSession mSession;
     private final Handler mHandler;
 
+    private enum KeepActiveState {
+      NOT_KEEPING_ACTIVE,
+      KEEPING_ACTIVE,
+      KEEPING_ACTIVE_WITH_DEACTIVATION_DEFERRED,
+    }
+
     /** UI thread only. */
-    private boolean mKeepActive;
+    private KeepActiveState mKeepActiveState = KeepActiveState.NOT_KEEPING_ACTIVE;
 
     /* package */ SessionPictureInPicture(final @NonNull GeckoSession session) {
       mSession = session;
@@ -76,19 +82,38 @@ public class PictureInPictureController {
      * showing it. An inactive page is hidden, and pages commonly pause their video when hidden, so
      * set this while a picture-in-picture window is showing one of this session's videos.
      *
-     * <p>Once the window is gone, clear it and call {@link GeckoSession#setActive} with {@code
-     * false} if the session is no longer showing anywhere, since the view will not do it.
+     * <p>Once the window is gone, clear it. If this returns {@code true}, the view skipped
+     * deactivating the session and will not do it later, so call {@link GeckoSession#setActive}
+     * with {@code false}.
      *
      * @param keepActive Whether to keep this session active.
+     * @return When clearing, whether a {@link GeckoView} stopped showing this session while it was
+     *     kept active and none has shown it since. Only meaningful when clearing.
      */
     @UiThread
-    public void setKeepActive(final boolean keepActive) {
+    public boolean setKeepActive(final boolean keepActive) {
       ThreadUtils.assertOnUiThread();
-      mKeepActive = keepActive;
+      final boolean wasDeactivationDeferred =
+          mKeepActiveState == KeepActiveState.KEEPING_ACTIVE_WITH_DEACTIVATION_DEFERRED;
+      if (!keepActive) {
+        mKeepActiveState = KeepActiveState.NOT_KEEPING_ACTIVE;
+      } else if (mKeepActiveState == KeepActiveState.NOT_KEEPING_ACTIVE) {
+        mKeepActiveState = KeepActiveState.KEEPING_ACTIVE;
+      }
+      return wasDeactivationDeferred;
     }
 
     /* package */ boolean keepsActive() {
-      return mKeepActive;
+      return mKeepActiveState != KeepActiveState.NOT_KEEPING_ACTIVE;
+    }
+
+    /* package */ void setDeactivationDeferred(final boolean deferred) {
+      if (mKeepActiveState != KeepActiveState.NOT_KEEPING_ACTIVE) {
+        mKeepActiveState =
+            deferred
+                ? KeepActiveState.KEEPING_ACTIVE_WITH_DEACTIVATION_DEFERRED
+                : KeepActiveState.KEEPING_ACTIVE;
+      }
     }
 
     /** Delegate for opening and closing picture-in-picture windows on Gecko's behalf. */

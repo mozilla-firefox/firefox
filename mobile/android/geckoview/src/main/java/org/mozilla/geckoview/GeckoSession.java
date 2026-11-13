@@ -2929,9 +2929,9 @@ public class GeckoSession {
   /**
    * Set this GeckoSession as active or inactive, same as {@link #setActive}, except that going
    * inactive is skipped while {@link
-   * PictureInPictureController.SessionPictureInPicture#setKeepActive} is set. Once the embedder
-   * clears the flag, it must call {@link #setActive} with {@code false} if the session is no longer
-   * showing anywhere.
+   * PictureInPictureController.SessionPictureInPicture#setKeepActive} is set. A skipped
+   * deactivation is reported by {@link
+   * PictureInPictureController.SessionPictureInPicture#setKeepActive}.
    *
    * @param active A boolean determining whether the GeckoSession is active.
    */
@@ -2939,8 +2939,10 @@ public class GeckoSession {
   @OptIn(markerClass = ExperimentalGeckoViewApi.class)
   /* package */ void maybeSetActive(final boolean active) {
     if (!active && mPictureInPicture.keepsActive()) {
+      mPictureInPicture.setDeactivationDeferred(true);
       return;
     }
+    mPictureInPicture.setDeactivationDeferred(false);
     setActive(active);
   }
 
