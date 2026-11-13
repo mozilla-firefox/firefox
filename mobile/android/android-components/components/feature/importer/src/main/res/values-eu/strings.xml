@@ -9,8 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Laster-markak inportatzen</string>
-  <!-- Description for the bookmarks import loading dialog. -->
+  <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">Mantendu pantaila hau irekita. Segundo gutxi batzuk beharko lituzke soilik.</string>
-  <!-- Label for the cancel action on the bookmarks import loading dialog. -->
+  <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">Utzi</string>
 </resources>

@@ -8,7 +8,7 @@
 
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
-  <string name="mozac_menu_item_new_indicator_label">Yeni</string>
+  <string name="mozac_menu_item_new_indicator_label">YENİ</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Tanıtımı kapat</string>
   <!-- Instruction text telling the user they can reorder menu sections by dragging them -->

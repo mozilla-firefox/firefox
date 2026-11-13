@@ -9,8 +9,10 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Бетбелгілерді импорттау</string>
-  <!-- Description for the bookmarks import loading dialog. -->
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">Парольдерді импорттау</string>
+  <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">Бұл экранды ашық ұстаңыз. Бұл бірнеше секундқа созылуы керек.</string>
-  <!-- Label for the cancel action on the bookmarks import loading dialog. -->
+  <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">Бас тарту</string>
 </resources>

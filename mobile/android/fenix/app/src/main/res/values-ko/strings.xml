@@ -1276,6 +1276,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">계정 삭제</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">로그인</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">탭, 북마크, 비밀번호 등을 동기화하세요.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -3899,6 +3907,8 @@
   <string name="protection_panel_permissions_title">권한</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">안전한 연결</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">인증서 발급 대상:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">EU 신뢰 마크</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4554,6 +4564,8 @@
   <string name="collections_migration_homepage_card_message">탭을 정리할 수 있는 더 간단한 방법이 있습니다</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">내 탭 그룹 보기</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">닫기</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Google 렌즈 통합 사용함</string>
   <!-- Lens image search button content description -->

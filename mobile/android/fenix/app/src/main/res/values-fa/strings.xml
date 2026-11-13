@@ -1277,6 +1277,12 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">حذف حساب</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">ورود</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -4569,6 +4575,8 @@
   <string name="collections_migration_homepage_card_message">راه ساده‌تری برای سازمان‌دهی زبانه‌هایتان وجود دارد</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">دیدن گروه‌های زبانهٔ من</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">بستن</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">فعال‌سازی یکپارچه‌سازی با Google Lens</string>
   <!-- Lens image search button content description -->

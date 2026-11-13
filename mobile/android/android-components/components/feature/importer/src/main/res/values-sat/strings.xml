@@ -9,8 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">ᱯᱩᱛᱷᱤᱪᱤᱱᱦᱟᱹᱠᱚ ᱟᱹᱜᱩᱜ ᱠᱟᱱᱟ</string>
-  <!-- Description for the bookmarks import loading dialog. -->
+  <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">ᱱᱚᱣᱟ ᱥᱠᱨᱤᱱ ᱡᱷᱤᱡ ᱫᱚᱦᱚ ᱠᱟᱜ ᱢᱮ ᱾ ᱱᱚᱣᱟ ᱫᱚ ᱠᱷᱟᱹᱞᱤ ᱛᱤᱱᱟᱹᱜ ᱜᱟᱱ ᱴᱤᱯᱤᱡ ᱞᱟᱜᱟᱣ ᱞᱟᱹᱠᱛᱤᱭᱟ ᱾</string>
-  <!-- Label for the cancel action on the bookmarks import loading dialog. -->
+  <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">ᱵᱟᱹᱰᱨᱟᱹ</string>
 </resources>

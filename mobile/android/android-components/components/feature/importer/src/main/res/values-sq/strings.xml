@@ -9,8 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Importim faqerojtësish</string>
-  <!-- Description for the bookmarks import loading dialog. -->
+  <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">Mbajeni hapur këtë skenë. Duhet të zërë vetëm pak sekonda.</string>
-  <!-- Label for the cancel action on the bookmarks import loading dialog. -->
+  <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">Anuloje</string>
 </resources>

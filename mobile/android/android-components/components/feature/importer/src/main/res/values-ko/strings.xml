@@ -9,8 +9,10 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">북마크 가져오는 중</string>
-  <!-- Description for the bookmarks import loading dialog. -->
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">비밀번호 가져오는 중</string>
+  <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">이 화면을 열어 두세요. 몇 초밖에 걸리지 않습니다.</string>
-  <!-- Label for the cancel action on the bookmarks import loading dialog. -->
+  <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">취소</string>
 </resources>

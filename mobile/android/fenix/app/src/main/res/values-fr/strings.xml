@@ -1277,6 +1277,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Supprimer le compte</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Connectez-vous</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Commencez à synchroniser vos onglets, marque-pages, mots de passe et bien plus encore.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -2142,7 +2150,7 @@
   <!-- Label for button to import bookmarks from file. -->
   <string name="bookmark_import_menu_button">Importer depuis un fichier</string>
   <!-- Snackbar message shown when a bookmark import attempt fails. -->
-  <string name="bookmark_import_failure_snackbar">Impossible d’importer les marque-pages. Veuillez réessayez.</string>
+  <string name="bookmark_import_failure_snackbar">Impossible d’importer les marque-pages. Veuillez réessayer.</string>
   <!-- Default name for the folder created when importing bookmarks from a file. -->
   <string name="bookmark_import_destination_default_name">Marque-pages importés</string>
   <!--
@@ -3907,6 +3915,8 @@
   <string name="protection_panel_permissions_title">Autorisations</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Connexion sécurisée</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Certificat émis pour\u00a0:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Marque de confiance de l’Union européenne</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4163,7 +4173,7 @@
   -->
   <string name="debug_drawer_addresses_title">Adresses</string>
   <!-- The title of the section header for the list of debug locales that can be enabled and disabled. -->
-  <string name="debug_drawer_addresses_debug_locales_header">Déboguer les locales à activer</string>
+  <string name="debug_drawer_addresses_debug_locales_header">Locales de débogage à activer</string>
   <!-- The title of the header for the section for managing addresses. -->
   <string name="debug_drawer_addresses_management_header">Gérer les adresses</string>
   <!-- The title of the button in the debug drawer for adding a new address. -->
@@ -4569,6 +4579,8 @@
   <string name="collections_migration_homepage_card_message">Il existe un moyen plus simple d’organiser vos onglets</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Afficher mes groupes d’onglets</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Fermer</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Activer l’intégration de Google Lens</string>
   <!-- Lens image search button content description -->

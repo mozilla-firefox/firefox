@@ -1253,6 +1253,12 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">پاک کردن هساو</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">و من ٱووڌن</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -3883,6 +3889,8 @@
   <string name="protection_panel_permissions_title">موجوزا</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">منپیز ٱمن</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">گوواهی سادر وابیڌه سی:</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4466,6 +4474,12 @@
   <string name="wrex_widget_results">نتیجه یل</string>
   <!-- Sports widget menu item to browse the team's wallpapers. -->
   <string name="wrex_widget_wallpapers">کاقز دیواری یل</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">دیندا</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">منجقا دو نیمه</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">مجال ازافه</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
   <string name="wrex_widget_match_penalties">جریمه یل</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
@@ -4525,6 +4539,8 @@
   <string name="collections_migration_homepage_card_message">ی ره ساڌه تر سی مورتب واڌاشتن بلگه یل هڌه</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">نیشتن بونکۊ یل بلگه مو</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">بستن</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">فعال کردن ادغام Google Lens</string>
   <!-- Lens image search button content description -->

@@ -1277,6 +1277,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Rimuovi account</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Accedi</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Inizia a sincronizzare schede, segnalibri, password e altro ancora.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -3907,6 +3915,8 @@
   <string name="protection_panel_permissions_title">Permessi</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Connessione sicura</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Certificato rilasciato a:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Marchio di fiducia UE</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4569,6 +4579,8 @@
   <string name="collections_migration_homepage_card_message">Organizzare le tue schede è ancora più semplice</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Visualizza i miei gruppi di schede</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Chiudi</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Attiva integrazione con Google Lens</string>
   <!-- Lens image search button content description -->

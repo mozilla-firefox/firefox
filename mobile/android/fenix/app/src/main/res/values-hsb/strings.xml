@@ -1279,6 +1279,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Konto wotstronić</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Přizjewić</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Synchronizujće rajtarki, zapołožki, hesła a wjace.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -3923,6 +3931,8 @@
   <string name="protection_panel_permissions_title">Prawa</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Wěsty zwisk</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Certifikat wupisany na:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Znamjo dowěry EU</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4599,6 +4609,8 @@
   <string name="collections_migration_homepage_card_message">Je jednoriše wašnje, waše rajtarki zorganizowane wobchować</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Moje skupiny rajtarkow pokazać</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Začinić</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Integraciju Google Lens zmóžnić</string>
   <!-- Lens image search button content description -->

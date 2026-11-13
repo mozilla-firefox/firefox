@@ -35,4 +35,8 @@
   <string name="mozac_feature_summarize_feedback_bad_click_label">novērtēt kopsavilkumu kā sliktu</string>
   <!-- Accessibility state of the thumbs up or thumbs down button the user picked, announced when the rating is submitted and whenever that button is focused afterwards. Buttons the user did not pick have no state. -->
   <string name="mozac_feature_summarize_feedback_state_submitted">Novērtējums iesniegts</string>
+  <!-- Title for the Mozilla account sign-in screen, shown when summarization results in a connection failure. -->
+  <string name="mozac_summarize_fxa_sign_in_title">Jāpiesakās, lai apkopotu</string>
+  <!-- Label for the button that starts the sign-in flow -->
+  <string name="mozac_summarize_fxa_sign_in_button_positive">Pieteikties</string>
 </resources>

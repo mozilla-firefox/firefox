@@ -23,6 +23,10 @@
   <string name="tab_search_hint">Meklēt cilnes</string>
   <!-- Label of button in create collection dialog for creating a new collection -->
   <string name="tab_tray_add_new_collection">Pievienot jaunu krājumu</string>
+  <!-- The supplementary text displayed on the synced tabs page when the user is not logged into an account. -->
+  <string name="tab_manager_empty_synced_tabs_page_description">Jāpiesakās, lai pārvaldītu vienādotās cilnes no visām savām ierīcēm.</string>
+  <!-- The action text displayed on the synced tabs page when the user is not logged into an account, prompting the user to sign into their account. When clicked, it takes the user to the account sign-in flow. -->
+  <string name="tab_manager_empty_synced_tabs_page_sign_in_cta">Pieteikties</string>
   <!--
     Recent Tabs
 
@@ -50,6 +54,10 @@
   <string name="browser_menu_add_app_to_homescreen">Pievienot lietotni sākuma ekrānam</string>
   <!-- Browser menu button that goes to the homepage screen -->
   <string name="browser_menu_homepage">Sākumlapa</string>
+  <!-- Browser menu label to sign in to sync on the device using Mozilla accounts -->
+  <string name="browser_menu_sign_in">Pieteikties</string>
+  <!-- Browser menu label to sign back in to sync on the device when the user's account needs to be reauthenticated -->
+  <string name="browser_menu_sign_back_in_to_sync">Pieteikties atkārtoti, lai vienādotu</string>
   <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
   <string name="browser_toolbar_cached_page_indicator">No kešatmiņas</string>
   <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
@@ -225,6 +233,22 @@
   <string name="preferences_sync_change_device_name">Mainīt ierīces nosaukumu</string>
   <!-- Text displayed when there are no exceptions, with learn more link that brings users to a tracking protection SUMO page -->
   <string name="exceptions_empty_message_learn_more_link">Uzzināt vairāk</string>
+  <!--
+    Turn On Sync Preferences
+
+    Header of the Sign in preference view
+  -->
+  <string name="preferences_sign_in">Pieteikties</string>
+  <!-- Preference for reconnecting to FxA sync -->
+  <string name="preferences_sync_sign_in_to_reconnect">Pieteikties, lai atkal savienotos</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Pieteikties</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Sāc vienādot cilnes, grāmatzīmes, paroles un citus datus!</string>
   <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
   <string name="preferences_homepage_search_location">Meklēšanas novietojums sākumlapā</string>
   <!-- Preference for showing the homepage search bar in the middle of the homepage -->
@@ -337,6 +361,8 @@
   <string name="download_item_source_data">(dati)</string>
   <!-- The button text for navigating to the SUMO link to learn more about reporting a broken site. -->
   <string name="webcompat_reporter_learn_more">Uzzināt vairāk</string>
+  <!-- Broken site reason text for can’t sign in or register -->
+  <string name="webcompat_reporter_reason_account2">Nevaru pieteikties vai reģistrēties</string>
   <string name="unsubmitted_crash_dialog_learn_more">Uzzināt vairāk</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Uzzināt vairāk</string>
@@ -354,6 +380,8 @@
   <string name="bookmark_search_button_content_description">Meklēt grāmatzīmes</string>
   <!-- Content description for select folder screen search action button ("search" is a verb) -->
   <string name="select_bookmark_search_button_content_description">Meklēt mapes</string>
+  <!-- Text for the button to navigate to sync authentication -->
+  <string name="bookmark_empty_list_guest_cta">Pieteikties, lai vienādotu</string>
   <!-- Label that indicates that video and audio autoplay is only allowed over Wi-Fi -->
   <string name="preference_option_autoplay_allowed_wifi_only2">Liegt video un skaņu tikai tad, kad tiek izmantoti mobilie dati</string>
   <!-- Label for global setting that indicates that video autoplay is allowed, but audio autoplay is blocked -->
@@ -370,12 +398,16 @@
   <string name="create_collection_add_new_collection">Pievienot jaunu krājumu</string>
   <!-- Toast shown when the QR code is successfully saved to Downloads -->
   <string name="qr_code_download_success">Kvadrātkods saglabāts lejupielāžu mapē</string>
+  <!-- An option from the share dialog to sign into sync -->
+  <string name="sync_sign_in">Pieteikties Sync</string>
   <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
   <string name="sync_send_to_selected_devices">Nosūtīt</string>
   <!-- Content description announced when a device is selected in the share dialog -->
   <string name="send_to_devices_device_selected_content_description">Atlasīta</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">Bezsaistē</string>
+  <!-- The dialog text shown when additional devices are not available -->
+  <string name="sync_connect_device_dialog" tools:ignore="BrandUsage">Lai nosūtītu cilni, jāpiesakās Firefox vismaz vienā citā ierīcē.</string>
   <!-- Confirmation dialog button -->
   <string name="sync_confirmation_button">Sapratu</string>
   <!-- Send tab to synced devices: Authentication error title - Message asking the user to re-authenticate -->
@@ -417,6 +449,8 @@
   <string name="preference_accessibility_auto_size_summary">Fonta izmērs atbildīs Taviem Android iestatījumiem. Atspējot, lai šeit pārvaldītu fonta lielumu.</string>
   <!-- Title for the downloads item in Delete browsing data -->
   <string name="preferences_delete_browsing_data_downloads">Lejupielādes</string>
+  <!-- Text shown for settings option for sign with pairing -->
+  <string name="sign_in_with_camera">Pieteikties ar kameru</string>
   <!-- Title of the confirmation dialog shown when the user signs out of their account -->
   <string name="sign_out_dialog_title">Izrakstīties no sava konta?</string>
   <!-- Body of the confirmation dialog shown when the user signs out of their account -->
@@ -519,6 +553,8 @@
   <string name="add_login_2">Pievienot paroli</string>
   <!-- Text displayed when user has disabled tab syncing in Firefox Sync Account -->
   <string name="synced_tabs_enable_tab_syncing">Lūgums iespējot ciļņu vienādošanu.</string>
+  <!-- Text displayed on a button in the synced tabs screen to link users to sign in when a user is not signed in to Firefox Sync -->
+  <string name="synced_tabs_sign_in_button">Pieteikties, lai vienādotu</string>
   <!--
     Label for the button in the shortcuts home screen section that expands the section to show
     every shortcut.
@@ -589,6 +625,8 @@
   <string name="protection_panel_banner_not_secure_title">Šajā vietnē jāuzmanās</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Drošs savienojums</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Sertifikāts izsniegts:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">ES uzticības zīme</string>
   <!-- The button text to add tabs to the active tab group in the tab creation tool. -->
@@ -611,6 +649,8 @@
     The title of the default browser task for the setup checklist
   -->
   <string name="setup_checklist_task_default_browser">Iestatīt kā noklusējuma pārlūku</string>
+  <!-- The title of the sign-in task for the setup checklist -->
+  <string name="setup_checklist_task_account_sync">Pieteikties savā kontā</string>
   <!--
     Settings Search Strings
 
@@ -706,6 +746,8 @@
   <string name="collections_migration_homepage_card_message">Ir vienkāršāks veids, ka turēt savas cilnes kārtībā</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Apskatīt manas ciļņu kopas</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Aizvērt</string>
   <!-- Lens image search button content description -->
   <string name="lens_search_content_description">Meklēt ar attēlu</string>
   <!-- Image context menu entry that sends the long-pressed image to Google Lens -->

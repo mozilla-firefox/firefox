@@ -298,7 +298,7 @@
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">YENİ</string>
   <!-- Browser menu badge text for new, highlighted feature -->
-  <string name="browser_menu_page_badge_text">Yeni</string>
+  <string name="browser_menu_page_badge_text">YENİ</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter_2">Bozuk siteyi rapor et</string>
   <!-- Browser menu label for adding a tab to a tab group -->
@@ -1276,6 +1276,14 @@
   <string name="preferences_sync_sign_in_to_reconnect">Yeniden bağlanmak için giriş yapın</string>
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Hesabı kaldır</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Giriş yap</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Sekmeleri, yer imlerini, parolaları ve diğer verilerinizi eşitlemeye başlayın.</string>
   <!--
     Pairing Feature strings
 
@@ -3907,6 +3915,8 @@
   <string name="protection_panel_permissions_title">İzinler</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Güvenli bağlantı</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Sertifika sahibi:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">AB güven işareti</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4565,6 +4575,8 @@
   <string name="collections_migration_homepage_card_message">Sekmelerinizi düzenli tutmanın daha basit bir yolu var</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Sekme gruplarımı göster</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Kapat</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Google Lens entegrasyonunu etkinleştir</string>
   <!-- Lens image search button content description -->
