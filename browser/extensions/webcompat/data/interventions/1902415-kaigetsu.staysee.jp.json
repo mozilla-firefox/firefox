@@ -11,7 +11,7 @@
       "platforms": ["all"],
       "hide_messages": [
         {
-          "container": ".flashMessage",
+          "container": ".loginFooter__desc__browser",
           "message": "Google Chrome"
         }
       ]
