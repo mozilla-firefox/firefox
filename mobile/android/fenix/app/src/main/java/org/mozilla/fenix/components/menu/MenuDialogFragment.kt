@@ -69,7 +69,6 @@ import mozilla.components.feature.ipprotection.store.state.isEligible
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import mozilla.components.service.fxa.manager.AccountState.NotAuthenticated
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
-import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.ktx.android.util.dpToPx
 import mozilla.components.support.utils.ext.getWindowInsets
 import mozilla.components.support.utils.ext.isLandscape
@@ -118,7 +117,6 @@ import org.mozilla.fenix.settings.deletebrowsingdata.DefaultDeleteBrowsingDataCo
 import org.mozilla.fenix.settings.deletebrowsingdata.DefaultDeleteBrowsingDataController.Stores
 import org.mozilla.fenix.settings.deletebrowsingdata.DeleteBrowsingDataController
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
-import org.mozilla.fenix.tabgroups.flow.TabGroupFlowEntryPoint
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.translations.TranslationsEnabledSettings
 import org.mozilla.fenix.utils.DELAY_MS_MAIN_MENU
@@ -721,19 +719,6 @@ class MenuDialogFragment : BottomSheetDialogFragment() {
                                         },
                                         onMoveToNonPrivateTabMenuClick = {
                                             menuStore.dispatch(MenuAction.MoveToNonPrivateTab)
-                                        },
-                                        showTabGroupsInMenu = settings.showTabGroupsInMenu,
-                                        onAddToTabGroupClick = {
-                                            if (selectedTab != null) {
-                                                menuStore.dispatch(
-                                                    MenuAction.Navigate.OpenTabGroupFlow(
-                                                        entryPoint =
-                                                            TabGroupFlowEntryPoint.AddTabToGroup(tabId = selectedTab.id)
-                                                    )
-                                                )
-                                            } else {
-                                                Logger.warn("No active selected tab - cannot add tab to groups.")
-                                            }
                                         },
                                     )
                                 },

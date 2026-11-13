@@ -27,11 +27,13 @@ import androidx.navigation3.ui.NavDisplay
 import mozilla.components.compose.base.theme.layout.AcornWindowSize
 import mozilla.components.compose.draggable.NoOpItemInteractionHandler
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.storeProvider
+import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.navigation.BottomSheetSceneStrategy
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.tabgroups.AddToTabGroup
 import org.mozilla.fenix.tabgroups.EditTabGroup
+import org.mozilla.fenix.tabgroups.EnrichedTabGroupBinding
 import org.mozilla.fenix.tabgroups.ExpandedTabGroup
 import org.mozilla.fenix.tabgroups.expandedTabGroupActions
 import org.mozilla.fenix.tabgroups.shareTabGroup
@@ -45,6 +47,7 @@ import org.mozilla.fenix.utils.Settings
 class TabGroupFlowFragment : DialogFragment() {
 
     @VisibleForTesting internal lateinit var store: TabGroupFlowStore
+    private val enrichedTabGroupBinding = ViewBoundFeatureWrapper<EnrichedTabGroupBinding>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,6 +84,20 @@ class TabGroupFlowFragment : DialogFragment() {
                 )
             }
         }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        enrichedTabGroupBinding.set(
+            feature =
+                EnrichedTabGroupBinding(
+                    tabDataCoordinator = requireComponents.tabDataCoordinator,
+                    store = store,
+                ),
+            owner = this,
+            view = view,
+        )
     }
 
     @VisibleForTesting
@@ -221,6 +238,9 @@ class TabGroupFlowFragment : DialogFragment() {
         val destination =
             when (tabGroupFlowEntryPoint) {
                 is TabGroupFlowEntryPoint.AddTabToGroup -> {
+                    TabGroupFlowDestination.AddToTabGroup(tabId = tabGroupFlowEntryPoint.tabId)
+                }
+                is TabGroupFlowEntryPoint.MoveTabToGroup -> {
                     TabGroupFlowDestination.AddToTabGroup(tabId = tabGroupFlowEntryPoint.tabId)
                 }
                 is TabGroupFlowEntryPoint.EditGroup -> {

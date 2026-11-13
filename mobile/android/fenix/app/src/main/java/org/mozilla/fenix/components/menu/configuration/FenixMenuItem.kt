@@ -118,4 +118,7 @@ sealed interface FenixMenuItem {
 
     /** A menu item allowing to open a new tab in private mode. */
     data object NewPrivateTab : FenixMenuItem
+
+    /** A menu item allowing users to add the current tab to a tab group, or move it to another one. */
+    data object TabGroup : FenixMenuItem
 }

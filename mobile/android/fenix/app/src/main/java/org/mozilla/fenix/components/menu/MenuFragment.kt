@@ -377,6 +377,7 @@ class MenuFragment : BottomSheetDialogFragment() {
             quitApplicationDelegate = activity::finishAndRemoveTask,
             setAsDefaultBrowserDelegate = activity::openSetDefaultBrowserOption,
             menuViewScope = viewLifecycleOwner.lifecycle.coroutineScope,
+            tabDataCoordinator = components.tabDataCoordinator,
             applicationScope = components.applicationScope,
             browsingModeManager = (activity as HomeActivity).browsingModeManager,
         )

@@ -271,12 +271,12 @@
     <string name="browser_menu_summarize_page">Summarize page</string>
     <!-- Browser menu badge text for summarization feature -->
     <string name="browser_menu_summarize_page_badge">New</string>
-    <!-- Browser menu badge text for new, highlighted feature -->
-    <string name="browser_menu_page_badge_text">New</string>
     <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
     <string name="browser_menu_webcompat_reporter_2">Report broken site</string>
     <!-- Browser menu label for adding a tab to a tab group -->
     <string name="browser_menu_add_to_tab_group">Add to group</string>
+    <!-- Browser menu label for moving a tab to a tab group -->
+    <string name="browser_menu_move_to_tab_group">Move to group</string>
     <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
     <string name="browser_menu_translated">Translated</string>
     <!-- Browser menu label for the print feature -->

@@ -6,6 +6,7 @@ package org.mozilla.fenix.tabgroups.flow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import org.mozilla.fenix.tabstray.data.createTabGroup
 import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 
 class TabGroupFlowReducerTest {
@@ -139,6 +140,21 @@ class TabGroupFlowReducerTest {
         assertEquals(
             expected = listOf(TabGroupFlowDestination.Root),
             actual = resultState.backStack,
+        )
+    }
+
+    @Test
+    fun `WHEN TabGroupsUpdated invoked THEN groups are replaced`() {
+        val initialState = TabGroupFlowState(groups = listOf(createTabGroup(id = "old")))
+        val updatedGroups = listOf(createTabGroup(id = "a"), createTabGroup(id = "b"))
+        val resultState =
+            TabGroupFlowReducer.reduce(
+                state = initialState,
+                action = TabGroupAction.TabGroupsUpdated(updatedGroups),
+            )
+        assertEquals(
+            expected = initialState.copy(groups = updatedGroups),
+            actual = resultState,
         )
     }
 }

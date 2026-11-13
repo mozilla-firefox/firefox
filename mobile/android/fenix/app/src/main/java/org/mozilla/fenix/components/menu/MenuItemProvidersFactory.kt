@@ -14,6 +14,7 @@ import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.storage.BookmarksStorage
 import mozilla.components.feature.addons.AddonManager
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
+import mozilla.components.feature.tabdata.coordinator.TabDataCoordinator
 import mozilla.components.feature.top.sites.PinnedSiteStorage
 import mozilla.components.service.fxa.store.SyncStore
 import org.mozilla.fenix.R
@@ -62,6 +63,7 @@ import org.mozilla.fenix.shortcut.AddToHomeScreenMenuItemProvider
 import org.mozilla.fenix.summarization.SummarizePageMenuItemProvider
 import org.mozilla.fenix.summarization.eligibility.SummarizationEligibilityChecker
 import org.mozilla.fenix.summarization.onboarding.FenixSummarizationFeatureConfiguration
+import org.mozilla.fenix.tabgroups.TabGroupMenuItemProvider
 import org.mozilla.fenix.translations.TranslationsEnabledSettings
 import org.mozilla.fenix.translations.TranslationsMenuItemProvider
 import org.mozilla.fenix.utils.Settings
@@ -95,6 +97,7 @@ class MenuItemProvidersFactory(
     private val isAndroidAutomotiveAvailable: Boolean,
     private val quitApplicationDelegate: () -> Unit,
     private val setAsDefaultBrowserDelegate: () -> Unit,
+    private val tabDataCoordinator: TabDataCoordinator,
     private val menuViewScope: CoroutineScope,
     private val applicationScope: CoroutineScope,
     private val browsingModeManager: BrowsingModeManager,
@@ -281,6 +284,14 @@ class MenuItemProvidersFactory(
                     tabCollectionStorage = tabCollectionStorage,
                     browserStore = browserStore,
                     target = target,
+                )
+
+            FenixMenuItem.TabGroup ->
+                TabGroupMenuItemProvider(
+                    tabDataCoordinator = tabDataCoordinator,
+                    target = target,
+                    isVisible = settings.showTabGroupsInMenu,
+                    scope = menuViewScope,
                 )
 
             FenixMenuItem.OpenInApp ->

@@ -18,6 +18,13 @@ sealed interface TabGroupFlowEntryPoint : Parcelable {
             get() = "add_to_group"
     }
 
+    /** Tab group flow entry point for moving a tab to a tab group. */
+    @Parcelize
+    data class MoveTabToGroup(val tabId: String) : TabGroupFlowEntryPoint {
+        override val telemetryName: String
+            get() = "move_to_group"
+    }
+
     /** Tab group flow entry point for viewing a tab group. */
     @Parcelize
     data class ViewGroup(val groupId: String) : TabGroupFlowEntryPoint {

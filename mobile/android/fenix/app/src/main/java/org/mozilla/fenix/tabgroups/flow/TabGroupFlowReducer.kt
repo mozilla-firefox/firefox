@@ -27,6 +27,9 @@ object TabGroupFlowReducer {
                 // Resets to root after a save
                 state.copy(backStack = listOf(TabGroupFlowDestination.Root))
             }
+            is TabGroupAction.TabGroupsUpdated -> {
+                state.copy(groups = action.tabGroups)
+            }
 
             // no op actions
             is TabGroupAction.CloseTabAndDeleteGroupConfirmed,

@@ -71,6 +71,7 @@ class TabGroupFlowTelemetryMiddleware : Middleware<TabGroupFlowState, TabGroupAc
             is TabGroupAction.UngroupConfirmed,
             is TabGroupAction.UngroupConfirmationRequested,
             is TabGroupAction.NameChanged,
+            is TabGroupAction.TabGroupsUpdated,
             is TabGroupAction.CollectionsMigrationCardDismissed -> {}
         }
     }

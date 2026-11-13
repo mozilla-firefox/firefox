@@ -190,4 +190,7 @@ sealed interface TabGroupAction : TabsTrayAction {
 
     /** Invoked when back navigation is requested. */
     data object NavigateBackInvoked : TabGroupAction
+
+    /** Pushes enriched [TabsTrayItem.TabGroup] objects from a subscription to the store */
+    data class TabGroupsUpdated(val tabGroups: List<TabsTrayItem.TabGroup>) : TabGroupAction
 }

@@ -35,6 +35,7 @@ import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Settings
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Share
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Shortcut
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.SummarizePage
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.TabGroup
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Translate
 import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Grid
 import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
@@ -174,6 +175,7 @@ object BrowserMenuConfiguration {
                                     ReportBrokenSite,
                                     Shortcut,
                                     AddToHomeScreen,
+                                    TabGroup,
                                     SaveToCollection,
                                     OpenInApp,
                                     SaveAsPdf,

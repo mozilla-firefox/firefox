@@ -1929,6 +1929,10 @@
         app:destination="@id/savedLogins" />
 
       <action
+        android:id ="@+id/action_menuFragment_to_tabGroupFlowFragment"
+        app:destination="@id/tabGroupFlowFragment"/>
+
+      <action
         android:id="@+id/action_menuFragment_to_storiesFragment"
         app:destination="@id/storiesFragment"
         app:popUpTo="@id/storiesFragment"

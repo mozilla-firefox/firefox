@@ -17,6 +17,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.ipprotection.store.IPProtectionStore
 import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
+import mozilla.components.feature.tabdata.coordinator.fakes.FakeTabDataCoordinator
 import mozilla.components.service.fxa.store.SyncStore
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.After
@@ -58,6 +59,7 @@ import org.mozilla.fenix.settings.deletebrowsingdata.QuitMenuItemProvider
 import org.mozilla.fenix.settings.logins.PasswordsMenuItemProvider
 import org.mozilla.fenix.shortcut.AddToHomeScreenMenuItemProvider
 import org.mozilla.fenix.summarization.SummarizePageMenuItemProvider
+import org.mozilla.fenix.tabgroups.TabGroupMenuItemProvider
 import org.mozilla.fenix.translations.TranslationsMenuItemProvider
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.webcompat.ReportBrokenSiteMenuItemProvider
@@ -168,6 +170,7 @@ class MenuItemProvidersFactoryTest {
             menuViewScope = scope,
             applicationScope = scope,
             browsingModeManager = mockk(relaxed = true),
+            tabDataCoordinator = FakeTabDataCoordinator(),
         )
 
     private val expectedProviders: Map<KClass<out FenixMenuItem>, KClass<out MenuItemProvider>> =
@@ -206,5 +209,6 @@ class MenuItemProvidersFactoryTest {
             FenixMenuItem.Forward::class to ForwardMenuItemProvider::class,
             FenixMenuItem.Share::class to ShareMenuItemProvider::class,
             FenixMenuItem.Refresh::class to RefreshMenuItemProvider::class,
+            FenixMenuItem.TabGroup::class to TabGroupMenuItemProvider::class,
         )
 }
