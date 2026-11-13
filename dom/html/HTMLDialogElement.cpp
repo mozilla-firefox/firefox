@@ -89,7 +89,6 @@ NS_IMPL_ISUPPORTS(DialogCloseWatcherListener, nsIDOMEventListener)
 // https://html.spec.whatwg.org/#computed-closed-by-state
 void HTMLDialogElement::GetClosedBy(nsAString& aResult) const {
   aResult.Truncate();
-  MOZ_ASSERT(StaticPrefs::dom_dialog_light_dismiss_enabled());
   const nsAttrValue* val = mAttrs.GetAttr(nsGkAtoms::closedby);
   // 1. If the state of dialog's closedby attribute is Auto:
   if (!val || val->GetEnumValue() == kClosedbyAuto->value) {
@@ -106,10 +105,6 @@ void HTMLDialogElement::GetClosedBy(nsAString& aResult) const {
 
 // https://html.spec.whatwg.org/#computed-closed-by-state
 HTMLDialogElement::ClosedBy HTMLDialogElement::GetClosedBy() const {
-  if (!StaticPrefs::dom_dialog_light_dismiss_enabled()) {
-    return static_cast<ClosedBy>(IsInTopLayer() ? kClosedbyModalDefault->value
-                                                : kClosedbyDefault->value);
-  }
   const nsAttrValue* val = mAttrs.GetAttr(nsGkAtoms::closedby);
   // 1. If the state of dialog's closedby attribute is Auto:
   if (!val || val->GetEnumValue() == kClosedbyAuto->value) {
@@ -133,8 +128,7 @@ bool HTMLDialogElement::ParseAttribute(int32_t aNamespaceID, nsAtom* aAttribute,
                                        nsIPrincipal* aMaybeScriptedPrincipal,
                                        nsAttrValue& aResult) {
   if (aNamespaceID == kNameSpaceID_None) {
-    if (StaticPrefs::dom_dialog_light_dismiss_enabled() &&
-        aAttribute == nsGkAtoms::closedby) {
+    if (aAttribute == nsGkAtoms::closedby) {
       return ParseClosedByAttribute(aValue, aResult);
     }
   }
@@ -601,13 +595,6 @@ void HTMLDialogElement::FocusDialog() {
 }
 
 int32_t HTMLDialogElement::TabIndexDefault() { return 0; }
-
-void HTMLDialogElement::QueueCancelDialog() {
-  // queues an element task on the user interaction task source
-  OwnerDoc()->Dispatch(
-      NewRunnableMethod("HTMLDialogElement::RunCancelDialogSteps", this,
-                        &HTMLDialogElement::RunCancelDialogSteps));
-}
 
 void HTMLDialogElement::RunCancelDialogSteps() {
   // 1) Let close be the result of firing an event named cancel at dialog,

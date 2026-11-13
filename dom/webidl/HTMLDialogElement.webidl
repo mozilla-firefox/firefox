@@ -14,7 +14,7 @@
 interface HTMLDialogElement : HTMLElement {
   [HTMLConstructor] constructor();
 
-  [CEReactions, SetterThrows, Pref="dom.dialog.light-dismiss.enabled"]
+  [CEReactions, SetterThrows]
   attribute DOMString closedBy;
 
   [CEReactions, SetterThrows]

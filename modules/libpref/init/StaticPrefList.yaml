@@ -2775,12 +2775,6 @@
   value: true
   mirror: always
 
-# https://github.com/whatwg/html/pull/10737
-- name: dom.dialog.light-dismiss.enabled
-  type: bool
-  value: true
-  mirror: always
-
 # Allow control characters appear in composition string.
 # When this is false, control characters except
 # CHARACTER TABULATION (horizontal tab) are removed from

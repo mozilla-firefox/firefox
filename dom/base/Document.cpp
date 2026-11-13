@@ -16174,13 +16174,9 @@ void Document::HandleEscKey() {
       }
     }
     if (RefPtr dialogElement = HTMLDialogElement::FromNodeOrNull(element)) {
-      if (StaticPrefs::dom_dialog_light_dismiss_enabled()) {
-        if (dialogElement->GetClosedBy() != HTMLDialogElement::ClosedBy::None) {
-          const mozilla::dom::Optional<nsAString> returnValue;
-          dialogElement->RequestClose(returnValue);
-        }
-      } else {
-        dialogElement->QueueCancelDialog();
+      if (dialogElement->GetClosedBy() != HTMLDialogElement::ClosedBy::None) {
+        const mozilla::dom::Optional<nsAString> returnValue;
+        dialogElement->RequestClose(returnValue);
       }
       // If the dialog element's `closedby` attribute is "none", then this
       // means the dialog is effectively blocking the Esc key from
@@ -16196,9 +16192,6 @@ void Document::HandleEscKey() {
   if (RefPtr<HTMLDialogElement> dialog =
           mOpenDialogs.SafeLastElement(nullptr)) {
     if (dialog->GetClosedBy() != HTMLDialogElement::ClosedBy::None) {
-      MOZ_ASSERT(StaticPrefs::dom_dialog_light_dismiss_enabled(),
-                 "Light Dismiss must have been enabled for GetClosedBy() "
-                 "returns != ClosedBy::None");
       const mozilla::dom::Optional<nsAString> returnValue;
       dialog->RequestClose(returnValue);
     }
