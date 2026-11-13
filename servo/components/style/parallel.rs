@@ -179,14 +179,10 @@ pub fn style_trees<'a, 'scope, E, D>(
         // If we have enough children at the next depth in the DOM, spawn them to a different job
         // relatively soon, while keeping always at least `local_queue_size` worth of work for
         // ourselves.
-        let discovered_children = discovered.len() - nodes_remaining_at_current_depth;
-        if discovered_children >= work_unit_max
-            && discovered.len() >= local_queue_size + work_unit_max
-            && scope.is_some()
-        {
-            let kept_work = std::cmp::max(nodes_remaining_at_current_depth, local_queue_size);
+        let keep_work = std::cmp::max(nodes_remaining_at_current_depth, local_queue_size);
+        if discovered.len() >= keep_work + work_unit_max && scope.is_some() {
             distribute_work(
-                discovered.range(kept_work..).cloned(),
+                discovered.range(keep_work..).cloned(),
                 traversal_root,
                 work_unit_max,
                 context.thread_local.current_dom_depth + 1,
@@ -194,7 +190,7 @@ pub fn style_trees<'a, 'scope, E, D>(
                 traversal,
                 tls,
             );
-            discovered.truncate(kept_work);
+            discovered.truncate(keep_work);
         }
 
         if nodes_remaining_at_current_depth == 0 {
