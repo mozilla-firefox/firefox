@@ -3,9 +3,9 @@
 
 XPI_NAME = "compiled"
 
-GENERATED_FILES += ["made.inc"]
-GENERATED_FILES["made.inc"].script = "make-it.py"
+GENERATED_FILES += ["made.cpp"]
+GENERATED_FILES["made.cpp"].script = "make-it.py"
 
 FINAL_TARGET_FILES += [
-    "!made.inc",
+    "!made.cpp",
 ]
