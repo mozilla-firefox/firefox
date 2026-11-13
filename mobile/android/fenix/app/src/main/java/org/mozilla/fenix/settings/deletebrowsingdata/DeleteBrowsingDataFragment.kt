@@ -181,7 +181,7 @@ class DeleteBrowsingDataFragment : Fragment(R.layout.fragment_delete_browsing_da
         runIfFragmentIsAttached {
             startDeletion()
             lifecycleScope.launch(IO) {
-                getCheckboxes().mapIndexed { i, v ->
+                getCheckboxes().forEachIndexed { i, v ->
                     if (v.isChecked) {
                         when (i) {
                             OPEN_TABS_INDEX -> controller.deleteTabs()

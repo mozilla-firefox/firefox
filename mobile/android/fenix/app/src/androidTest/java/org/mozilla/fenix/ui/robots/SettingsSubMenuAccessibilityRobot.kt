@@ -192,7 +192,7 @@ private fun toggleFontSizingSwitch() {
 private fun adjustTextSizeSlider(seekBarPercentage: Int, composeTestRule: ComposeTestRule) {
     Log.i(TAG, "adjustTextSizeSlider: Trying to set the seek bar value to: $seekBarPercentage")
     composeTestRule.onNodeWithTag("fontSizeSlider").performSemanticsAction(SemanticsActions.SetProgress) {
-        it(seekBarPercentage.toFloat())
+        it(seekBarPercentage.toFloat()).let {}
     }
     Log.i(TAG, "adjustTextSizeSlider: Seek bar value was set to: $seekBarPercentage")
 }

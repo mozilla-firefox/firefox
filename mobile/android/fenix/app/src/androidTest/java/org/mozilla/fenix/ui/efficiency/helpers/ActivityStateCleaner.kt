@@ -27,7 +27,7 @@ object ActivityStateCleaner {
         val taskPresentAfter = taskPresent(taskId)
 
         val taskRemovalRequested = activity.isFinishing || activity.isDestroyed
-        runCatching {
+        try {
             TestLogging.installed()
                 .record(
                     "activityCleanup",
@@ -42,7 +42,7 @@ object ActivityStateCleaner {
                         "elapsedMs" to SystemClock.elapsedRealtime() - startedAt,
                     ),
                 )
-        }
+        } catch (_: Throwable) {}
         check(verified) {
             "HomeActivity cleanup did not complete after $testId: " +
                 "taskId=$taskId, requested=$taskRemovalRequested, " +

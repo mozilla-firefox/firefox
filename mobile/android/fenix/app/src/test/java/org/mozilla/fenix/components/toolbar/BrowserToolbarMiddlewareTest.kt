@@ -4487,34 +4487,21 @@ class BrowserToolbarMiddlewareTest {
                                 onClick = CloseCurrentTab,
                             ),
                         )
-                        .apply {
-                            if (shouldUseBottomToolbar) {
-                                asReversed()
-                            }
-                        }
+                        .let { if (shouldUseBottomToolbar) it.asReversed() else it }
                 },
         )
 
     fun expectedBottomTabCounterButton(
         tabCount: Int = 0,
         isPrivate: Boolean = false,
-        shouldUseBottomToolbar: Boolean = false,
         source: Source = Source.AddressBar.BrowserEnd,
     ) =
         expectedTabCounterButton(
-                tabCount = tabCount,
-                isPrivate = isPrivate,
-                shouldUseBottomToolbar = shouldUseBottomToolbar,
-                source = source,
-            )
-            .run {
-                copy(
-                    onLongClick =
-                        (onLongClick as CombinedEventAndMenu).copy(
-                            menu = BrowserToolbarMenu { (onLongClick as CombinedEventAndMenu).menu.items().reversed() }
-                        )
-                )
-            }
+            tabCount = tabCount,
+            isPrivate = isPrivate,
+            shouldUseBottomToolbar = true,
+            source = source,
+        )
 
     private fun expectedNewTabButton(source: Source = Source.AddressBar.BrowserEnd) =
         ActionButtonRes(

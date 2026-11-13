@@ -19,7 +19,7 @@ object RuntimeStateCleaner {
         appStore.dispatch(VoiceInputRequestCleared)
 
         val after = appStore.state
-        runCatching {
+        try {
             TestLogging.installed()
                 .record(
                     "runtimeCleanup",
@@ -34,7 +34,7 @@ object RuntimeStateCleaner {
                         "voiceInputResultAfter" to (after.voiceSearchState.voiceInputResult != null),
                     ),
                 )
-        }
+        } catch (_: Throwable) {}
         check(!after.searchState.isSearchActive) {
             "Search remained active after $phase runtime cleanup for $testId"
         }

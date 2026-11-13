@@ -260,11 +260,7 @@ class TabManagerFloatingToolbarTest {
     private fun hasTextColor(color: androidx.compose.ui.graphics.Color) =
         SemanticsMatcher("Has text color matching $color") { node ->
             val textLayoutResults = mutableListOf<TextLayoutResult>()
-            node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(textLayoutResults)
-            return@SemanticsMatcher if (textLayoutResults.isEmpty()) {
-                false
-            } else {
+            node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(textLayoutResults) == true &&
                 textLayoutResults.first().layoutInput.style.color == color
-            }
         }
 }

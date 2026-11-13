@@ -428,13 +428,9 @@ abstract class BaseBrowserFragment :
         binding.engineView.setActivityContext(originalContext)
 
         startForResult = registerForActivityResult { result ->
-            listOf(
-                    promptsFeature,
-                    webAuthnFeature,
-                )
-                .any {
-                    it.onActivityResult(PIN_REQUEST, result.data, result.resultCode)
-                }
+            for (feature in listOf(promptsFeature, webAuthnFeature)) {
+                if (feature.onActivityResult(PIN_REQUEST, result.data, result.resultCode)) break
+            }
         }
 
         // DO NOT MOVE ANYTHING BELOW THIS addMarker CALL!

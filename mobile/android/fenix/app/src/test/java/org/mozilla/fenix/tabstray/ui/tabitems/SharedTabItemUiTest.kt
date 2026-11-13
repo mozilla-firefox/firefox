@@ -16,7 +16,7 @@ class SharedTabItemUiTest {
 
     @Test
     fun `WHEN offset increases THEN tab item fade increases`() {
-        (0..10).map { swipeFadeAlpha(it * 100f, 1000f) }.zipWithNext { a, b -> assertTrue(b <= a) }
+        (0..10).map { swipeFadeAlpha(it * 100f, 1000f) }.zipWithNext().forEach { (a, b) -> assertTrue(b <= a) }
     }
 
     @Test

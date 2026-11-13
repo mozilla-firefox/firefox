@@ -90,11 +90,7 @@ class WallpaperDownloader(
                 }
                 .getOrElse {
                     // This should clean up any partial downloads
-                    Result.runCatching {
-                        if (localFile.exists()) {
-                            localFile.delete()
-                        }
-                    }
+                    localFile.delete()
                     Wallpaper.ImageFileState.Error
                 }
         }

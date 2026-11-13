@@ -399,7 +399,9 @@ private fun OnboardingContent(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.systemBarsPadding(),
         ) {
-            Spacer(Modifier.weight(1f)).takeIf { !layout.isSmall }
+            if (!layout.isSmall) {
+                Spacer(Modifier.weight(1f))
+            }
 
             if (pageStates.any { it.onSkipClick != null }) {
                 OnboardingSkipButton(
@@ -434,7 +436,9 @@ private fun OnboardingContent(
                 )
             }
 
-            Spacer(Modifier.weight(1f)).takeIf { !layout.isSmall }
+            if (!layout.isSmall) {
+                Spacer(Modifier.weight(1f))
+            }
 
             if (!layout.isSmall) {
                 PagerIndicator(

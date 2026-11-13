@@ -52,7 +52,7 @@ class ActivityLifecycleTrace private constructor(private val testId: String) :
     }
 
     private fun record(event: String, activity: Activity? = null, state: Bundle? = null) {
-        runCatching {
+        try {
             val appState = appContext.components.appStore.state
             logcat.event(
                 mapOf(
@@ -79,7 +79,7 @@ class ActivityLifecycleTrace private constructor(private val testId: String) :
                     "voiceInputRequested" to appState.voiceSearchState.isRequestingVoiceInput,
                 )
             )
-        }
+        } catch (_: Throwable) {}
     }
 
     private fun Intent.hasFlag(flag: Int) = flags and flag != 0

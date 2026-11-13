@@ -36,7 +36,7 @@ class ShadowBoundsReportingBitmapFactory {
             outPadding: Rect?,
             opts: BitmapFactory.Options?,
         ): Bitmap? {
-            stream?.readBytes()
+            stream?.readBytes()?.let {}
 
             if (opts?.inJustDecodeBounds == true) {
                 opts.outWidth = SHADOW_WIDTH

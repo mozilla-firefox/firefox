@@ -23,9 +23,6 @@ class LocaleViewHolder(
     private val binding = LocaleSettingsItemBinding.bind(view)
 
     override fun bind(locale: Locale) {
-        if (locale.toString().equals("vec", ignoreCase = true)) {
-            locale.toString()
-        }
         if (locale.language == "zh") {
             bindChineseLocale(locale)
         } else {

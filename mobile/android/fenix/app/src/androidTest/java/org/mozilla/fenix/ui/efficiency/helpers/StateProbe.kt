@@ -417,7 +417,7 @@ object StateProbe {
                 .flatMap { contributor -> contributor.boundaryBaseline.entries }
                 .filter { (field, expected) -> state[field] != expected }
                 .map { (field, _) -> "$field=${state[field]}" }
-        runCatching {
+        try {
             TestLogging.installed()
                 .record(
                     "isolation",
@@ -428,7 +428,7 @@ object StateProbe {
                         "violations" to violations.joinToString(","),
                     ),
                 )
-        }
+        } catch (_: Throwable) {}
         check(violations.isEmpty()) {
             "Harness state was not isolated at $phase for $testId: ${violations.joinToString()}"
         }

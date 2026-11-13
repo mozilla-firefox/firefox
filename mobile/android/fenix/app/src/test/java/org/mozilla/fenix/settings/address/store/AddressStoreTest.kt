@@ -238,7 +238,6 @@ class AddressStoreTest {
                         navigateBack = { navigateBackCalled = true },
                         createAddress = {
                             createdAddress = it
-                            "new-address-guid"
                         },
                     )
                 }

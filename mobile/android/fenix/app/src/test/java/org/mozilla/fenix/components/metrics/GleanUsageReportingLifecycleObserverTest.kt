@@ -70,7 +70,7 @@ class GleanUsageReportingLifecycleObserverTest {
         val lifecycleObserver = createGleanUsageReportingLifecycleObserver()
         lifecycleObserver.onStateChanged(FakeLifecycleOwner(), Lifecycle.Event.ON_START)
         assertEquals(1, fakeCurrentTime)
-        fakeCurrentTimeProvider()
+        fakeCurrentTime++
         lifecycleObserver.onStateChanged(FakeLifecycleOwner(), Lifecycle.Event.ON_STOP)
         assertEquals(3, fakeCurrentTime)
         assertEquals(2L, fakeGleanUsageReporting.lastDurationMillis)
@@ -81,7 +81,7 @@ class GleanUsageReportingLifecycleObserverTest {
         val lifecycleObserver = createGleanUsageReportingLifecycleObserver()
         lifecycleObserver.onStateChanged(FakeLifecycleOwner(), Lifecycle.Event.ON_START)
         assertEquals(1, fakeCurrentTime)
-        fakeCurrentTimeProvider()
+        fakeCurrentTime++
         lifecycleObserver.onStateChanged(FakeLifecycleOwner(), Lifecycle.Event.ON_PAUSE)
         assertEquals(2, fakeCurrentTime)
         assertNull(fakeGleanUsageReporting.lastDurationMillis)
@@ -92,7 +92,7 @@ class GleanUsageReportingLifecycleObserverTest {
         val lifecycleObserver = createGleanUsageReportingLifecycleObserver()
         lifecycleObserver.onStateChanged(FakeLifecycleOwner(), Lifecycle.Event.ON_START)
         assertEquals(1, fakeCurrentTime)
-        fakeCurrentTimeProvider()
+        fakeCurrentTime++
         lifecycleObserver.onStateChanged(FakeLifecycleOwner(), Lifecycle.Event.ON_DESTROY)
         assertEquals(2, fakeCurrentTime)
         assertNull(fakeGleanUsageReporting.lastDurationMillis)

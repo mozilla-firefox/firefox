@@ -53,7 +53,7 @@ class AddressEditorFragment : SecureFragment(), SystemInsetsPaddedFragment {
                 val environment =
                     AddressEnvironment(
                         navigateBack = { findNavController().popBackStack() },
-                        createAddress = { fields -> storage.addAddress(fields).guid },
+                        createAddress = { fields -> storage.addAddress(fields) },
                         updateAddress = { guid, fields -> storage.updateAddress(guid, fields) },
                         deleteAddress = { guid -> storage.deleteAddress(guid) },
                         getAddressStructure = engine::getAddressStructure,

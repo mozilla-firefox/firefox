@@ -80,7 +80,7 @@ class ShortcutMenuItemProvider(
 
     private suspend fun resolveShortcut() {
         val url = target.browserSessionFrom(browserStore.state)?.getTabUrl() ?: return
-        pinnedSiteStorage.getPinnedSites().firstOrNull { it.url == url } ?: return
+        if (pinnedSiteStorage.getPinnedSites().none { it.url == url }) return
 
         mutableItems.value = listOf(REMOVE_SHORTCUT_ITEM)
     }

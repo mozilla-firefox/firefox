@@ -719,7 +719,9 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
         // focused, covering the page and suppressing the autofill prompt. Disable it for the run so
         // the tap behaves like the legacy environment; the dismiss below is a belt-and-suspenders
         // fallback in case the setting doesn't take effect before the first focus.
-        runCatching { mDevice.executeShellCommand("settings put secure stylus_handwriting_enabled 0") }
+        try {
+            mDevice.executeShellCommand("settings put secure stylus_handwriting_enabled 0")
+        } catch (_: Throwable) {}
         mozClick(BrowserPageSelectors.ADDRESS_STREET_WEB_FIELD)
         dismissKnownOverlaysIfPresent()
         return this
@@ -770,7 +772,9 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
     fun clickCreditCardNumberField(): BrowserPage {
         // Same stylus-handwriting overlay as the address form: focusing a web text field pops a
         // "Try out your stylus" dialog that covers the page and suppresses the autofill prompt.
-        runCatching { mDevice.executeShellCommand("settings put secure stylus_handwriting_enabled 0") }
+        try {
+            mDevice.executeShellCommand("settings put secure stylus_handwriting_enabled 0")
+        } catch (_: Throwable) {}
         mozClick(BrowserPageSelectors.CREDIT_CARD_NUMBER_WEB_FIELD)
         dismissKnownOverlaysIfPresent()
         return this

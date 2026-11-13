@@ -89,7 +89,9 @@ class SettingsAutofillPage(composeRule: AndroidComposeTestRule<HomeActivityInten
         waitForKeyboardDismiss()
 
         val saveButton = composeRule.onNodeWithTag(EditAddressTestTag.SAVE_BUTTON)
-        runCatching { saveButton.performScrollTo() }
+        try {
+            saveButton.performScrollTo()
+        } catch (_: Throwable) {}
         saveButton.performClick()
 
         mozVerify(SettingsAutofillSelectors.MANAGE_ADDRESSES_BUTTON)
@@ -118,7 +120,9 @@ class SettingsAutofillPage(composeRule: AndroidComposeTestRule<HomeActivityInten
         waitForKeyboardDismiss()
 
         val saveButton = composeRule.onNodeWithTag(CreditCardEditorTestTags.SAVE_BUTTON)
-        runCatching { saveButton.performScrollTo() }
+        try {
+            saveButton.performScrollTo()
+        } catch (_: Throwable) {}
         saveButton.performClick()
 
         mozVerify(SettingsAutofillSelectors.MANAGE_SAVED_CREDIT_CARDS_BUTTON)
@@ -191,14 +195,18 @@ class SettingsAutofillPage(composeRule: AndroidComposeTestRule<HomeActivityInten
      */
     private fun selectDropdownOption(dropdownTag: String, optionText: String, substring: Boolean = false) {
         waitForKeyboardDismiss()
-        runCatching { waitForPopupToDismiss() }
+        try {
+            waitForPopupToDismiss()
+        } catch (_: Throwable) {}
         composeRule.waitForIdle()
 
         for (attempt in 1..3) {
             if (attempt > 1) {
                 // A failed attempt can leave the popup open; clicking the trigger again would toggle
                 // it shut instead of re-opening it. Best-effort dismiss before retrying.
-                runCatching { waitForPopupToDismiss(2_000L) }
+                try {
+                    waitForPopupToDismiss(2_000L)
+                } catch (_: Throwable) {}
             }
             composeRule.onNodeWithTag(dropdownTag).performTouchInput { click() }
 
@@ -208,10 +216,10 @@ class SettingsAutofillPage(composeRule: AndroidComposeTestRule<HomeActivityInten
                     composeRule.onAllNodes(option).fetchSemanticsNodes().isNotEmpty()
                 }
                 val nodeCount = composeRule.onAllNodes(option).fetchSemanticsNodes().size
-                runCatching {
+                try {
                     composeRule.onAllNodes(option)[nodeCount - 1].performScrollTo()
                     composeRule.waitForIdle()
-                }
+                } catch (_: Throwable) {}
                 composeRule.onAllNodes(option)[nodeCount - 1].performClick()
                 // Throwable, not Exception: Compose's waitUntil raises ComposeTimeoutException, which extends
                 // Throwable directly, so catching Exception here let a timeout escape instead of retrying.

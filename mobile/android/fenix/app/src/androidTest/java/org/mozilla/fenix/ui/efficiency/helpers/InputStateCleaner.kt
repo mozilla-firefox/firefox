@@ -39,7 +39,7 @@ object InputStateCleaner {
         }
 
         val visibleAfter = keyboardVisible()
-        runCatching {
+        try {
             TestLogging.installed()
                 .record(
                     "inputCleanup",
@@ -51,7 +51,7 @@ object InputStateCleaner {
                         "visibleAfter" to visibleAfter,
                     ),
                 )
-        }
+        } catch (_: Throwable) {}
         check(!visibleAfter) {
             "Soft keyboard remained visible after $phase cleanup for $testId"
         }

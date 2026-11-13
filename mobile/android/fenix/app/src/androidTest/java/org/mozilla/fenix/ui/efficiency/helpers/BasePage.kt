@@ -851,7 +851,7 @@ abstract class BasePage(protected val composeRule: AndroidComposeTestRule<HomeAc
         reportAround("set_slider", "Setting '${selector.description}' to $value", dumpOnFailure = true) {
             composeRule.onNodeWithTag(selector.value).run {
                 assertExists()
-                performSemanticsAction(SemanticsActions.SetProgress) { it(value) }
+                performSemanticsAction(SemanticsActions.SetProgress) { it(value).let {} }
             }
         }
 

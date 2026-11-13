@@ -119,7 +119,7 @@ object AppDataCleaner {
                     }
             }
         }
-        runCatching {
+        try {
             TestLogging.installed()
                 .record(
                     "cleanup",
@@ -130,7 +130,7 @@ object AppDataCleaner {
                         "failureDetails" to failureDetails,
                     ),
                 )
-        }
+        } catch (_: Throwable) {}
         return failed
     }
 

@@ -20,7 +20,7 @@ import mozilla.components.concept.storage.UpdatableAddressFields
  */
 data class AddressEnvironment(
     val navigateBack: () -> Unit,
-    val createAddress: suspend (address: UpdatableAddressFields) -> String,
+    val createAddress: suspend (address: UpdatableAddressFields) -> Unit,
     val updateAddress: suspend (guid: String, address: UpdatableAddressFields) -> Unit,
     val deleteAddress: suspend (guid: String) -> Unit,
     val getAddressStructure: suspend (countryCode: String) -> AddressStructure,
@@ -31,7 +31,7 @@ data class AddressEnvironment(
             get() =
                 AddressEnvironment(
                     navigateBack = {},
-                    createAddress = { "empty-guid" },
+                    createAddress = {},
                     updateAddress = { _, _ -> },
                     deleteAddress = {},
                     getAddressStructure = { AddressStructure(listOf()) },

@@ -20,13 +20,12 @@ import org.mozilla.fenix.utils.toHexColor
 import org.mozilla.fenix.wallpapers.LegacyWallpaperMigration.Companion.TURNING_RED_MEI_WALLPAPER_NAME
 import org.mozilla.fenix.wallpapers.LegacyWallpaperMigration.Companion.TURNING_RED_PANDA_WALLPAPER_NAME
 import org.mozilla.fenix.wallpapers.LegacyWallpaperMigration.Companion.TURNING_RED_WALLPAPER_TEXT_COLOR
-import org.mozilla.fenix.wallpapers.Wallpaper.ImageFileState
 
 class LegacyWallpaperMigrationTest {
     @Rule @JvmField val tempFolder = TemporaryFolder()
     private lateinit var settings: Settings
     private lateinit var wallpapersFolder: File
-    private lateinit var downloadWallpaper: (Wallpaper) -> Wallpaper.ImageFileState
+    private lateinit var downloadWallpaper: (Wallpaper) -> Unit
     private lateinit var downloadedWallpapers: MutableList<Wallpaper>
     private lateinit var migrationHelper: LegacyWallpaperMigration
     private lateinit var portraitLightFolder: File
@@ -40,8 +39,7 @@ class LegacyWallpaperMigrationTest {
         settings = mockk(relaxed = true)
         downloadedWallpapers = mutableListOf()
         downloadWallpaper = { wallpaper ->
-            downloadedWallpapers.add(wallpaper)
-            ImageFileState.Downloaded
+            downloadedWallpapers += wallpaper
         }
         migrationHelper =
             LegacyWallpaperMigration(
