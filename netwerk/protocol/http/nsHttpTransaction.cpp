@@ -2570,6 +2570,11 @@ bool nsHttpTransaction::HandleWebTransportResponse(uint16_t aStatus) {
   if (!wtSession) {
     return false;
   }
+  if (!wtSession->GetHttp3WebTransportSession() &&
+      !StaticPrefs::network_webtransport_http2_enabled()) {
+    LOG(("HandleWebTransportResponse: WebTransport over HTTP/2 is disabled"));
+    return false;
+  }
 
   nsCOMPtr<WebTransportSessionEventListener> webTransportListener;
   {

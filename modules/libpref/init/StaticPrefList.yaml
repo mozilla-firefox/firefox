@@ -17769,6 +17769,13 @@
   value: false
   mirror: always
 
+# WebTransport over HTTP/2. Not fully implemented yet, so a WebTransport session
+# is only accepted over HTTP/3 unless this is enabled.
+- name: network.webtransport.http2.enabled
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 # Wifi-scan polling period, in ms, when on a mobile network.
 # A value of 0 indicates that no polling should be done.
 - name: network.wifi.scanning_period

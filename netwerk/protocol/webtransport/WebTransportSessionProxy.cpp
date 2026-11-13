@@ -165,6 +165,12 @@ nsresult WebTransportSessionProxy::AsyncConnectWithClient(
     ChangeState(WebTransportSessionProxyState::NEGOTIATING);
   }
 
+  if (aVersion == nsIWebTransport::HTTPVersion::h2 &&
+      !StaticPrefs::network_webtransport_http2_enabled()) {
+    LOG(("WebTransport over HTTP/2 is disabled"));
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+
   // https://www.ietf.org/archive/id/draft-ietf-webtrans-http3-04.html#section-6
   rv = httpChannel->SetRequestHeader("Sec-Webtransport-Http3-Draft02"_ns,
                                      "1"_ns, false);

@@ -1273,9 +1273,10 @@ nsresult nsHttpChannel::ContinueOnBeforeConnect(bool aShouldUpgrade,
           .SetTRRMode(nsIRequest::GetTRRMode())
           .SetIPv4Disabled(mCaps & NS_HTTP_DISABLE_IPV4)
           .SetIPv6Disabled(mCaps & NS_HTTP_DISABLE_IPV6)
-          .SetHttp3Policy((mCaps & NS_HTTP_DISALLOW_HTTP3)
-                              ? Http3Policy::Disabled
-                              : Http3Policy::Allowed)
+          .SetHttp3Policy(
+              (mCaps & NS_HTTP_DISALLOW_HTTP3)  ? Http3Policy::Disabled
+              : mConnectionInfo->GetHttp3Only() ? Http3Policy::Only
+                                                : Http3Policy::Allowed)
           .SetAnonymousAllowClientCert(
               (mLoadFlags & LOAD_ANONYMOUS_ALLOW_CLIENT_CERT) != 0)
           .Finalize();
@@ -8213,6 +8214,12 @@ nsresult nsHttpChannel::BeginConnect() {
         connInfo =
             new nsHttpConnectionInfo(host, port, "h3"_ns, mUsername, proxyInfo,
                                      originAttributes, isHttps, true, true);
+        // WebTransport over HTTP/2 is not fully implemented, so don't let the
+        // session fall back to a TCP connection.
+        if (!StaticPrefs::network_webtransport_http2_enabled()) {
+          connInfo =
+              connInfo->Mutate().SetHttp3Policy(Http3Policy::Only).Finalize();
+        }
       }
       wtconSettings->GetDedicated(&dedicated);
       if (dedicated) {

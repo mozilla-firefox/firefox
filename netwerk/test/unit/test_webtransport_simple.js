@@ -463,3 +463,33 @@ add_task(async function test_multple_webtransport_connnection() {
     webTransports[i].closeSession(0, "");
   }
 });
+
+// WebTransport over HTTP/2 is not fully implemented, so it is refused unless
+// network.webtransport.http2.enabled is set.
+add_task(async function test_wt_over_http2_disabled() {
+  let webTransport = NetUtil.newWebTransport();
+  let listener = new WebTransportListener().QueryInterface(
+    Ci.WebTransportSessionEventListener
+  );
+  let closed = new Promise(resolve => {
+    listener.closed = resolve;
+  });
+  listener.ready = () => {
+    Assert.ok(false, "The session must not be established");
+  };
+
+  Assert.throws(
+    () =>
+      webTransport.asyncConnect(
+        NetUtil.newURI(`https://${host}/success`),
+        true,
+        [],
+        Services.scriptSecurityManager.getSystemPrincipal(),
+        Ci.nsILoadInfo.SEC_ALLOW_CROSS_ORIGIN_SEC_CONTEXT_IS_NULL,
+        listener,
+        Ci.nsIWebTransport.h2
+      ),
+    /NS_ERROR_NOT_AVAILABLE/
+  );
+  await closed;
+});
