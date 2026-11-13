@@ -178,8 +178,6 @@ void FrontendContext::addPendingOutOfMemory() { errors_.outOfMemory = true; }
 
 void FrontendContext::setCurrentJSContext(JSContext* cx) {
   MOZ_ASSERT(!nameCollectionPool_);
-  MOZ_ASSERT(scriptDataTableHolder_,
-             "shareScriptData=false option cannot be used for this context");
 
   maybeCx_ = cx;
   nameCollectionPool_ = &cx->frontendCollectionPool();
@@ -293,9 +291,8 @@ JS_PUBLIC_API bool js::CheckWasiRecursionLimit(FrontendContext* fc) {
 }
 #endif  // __wasi__
 
-FrontendContext* js::NewFrontendContext(
-    const JS::FrontendContextCreationOptions* options /* = nullptr */) {
-  UniquePtr<FrontendContext> fc = MakeUnique<FrontendContext>(options);
+FrontendContext* js::NewFrontendContext() {
+  UniquePtr<FrontendContext> fc = MakeUnique<FrontendContext>();
   if (!fc) {
     return nullptr;
   }
@@ -307,12 +304,11 @@ FrontendContext* js::NewFrontendContext(
   return fc.release();
 }
 
-JS_PUBLIC_API FrontendContext* JS::NewFrontendContext(
-    const FrontendContextCreationOptions* options /* = nullptr */) {
+JS_PUBLIC_API FrontendContext* JS::NewFrontendContext() {
   MOZ_ASSERT(JS::detail::libraryInitState == JS::detail::InitState::Running,
              "must call JS_Init prior to creating any FrontendContexts");
 
-  return js::NewFrontendContext(options);
+  return js::NewFrontendContext();
 }
 
 void js::DestroyFrontendContext(FrontendContext* fc) { js_delete_poison(fc); }
