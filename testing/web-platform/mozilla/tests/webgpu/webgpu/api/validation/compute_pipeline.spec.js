@@ -170,7 +170,7 @@ fn((t) => {
         code: `
           var<workgroup> data: array<${type}, ${count}>;
           @compute @workgroup_size(64) fn main () {
-            _ = data;
+            data[0] = data[${count - 1}];
           }
           `
       }),
