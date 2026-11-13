@@ -136,6 +136,16 @@ class nsMIMEInfoBase : public nsIMIMEInfo {
                                      const char16_t** aArgv);
 
   /**
+   * Launch an application with the path of a file as its only argument.
+   * With GTK, the application is launched through GIO, as applications from
+   * desktop entries are, and otherwise with LaunchWithIProcess.
+   *
+   * @param aApp The application to launch (may not be null)
+   * @param aFile The file whose path to pass on the command line
+   */
+  static nsresult LaunchAppWithFile(nsIFile* aApp, nsIFile* aFile);
+
+  /**
    * Given a file: nsIURI, return the associated nsIFile
    *
    * @param  aURI      the file: URI in question

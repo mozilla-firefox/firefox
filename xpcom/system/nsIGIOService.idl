@@ -82,6 +82,16 @@ interface nsIGIOService : nsISupports
   /* Find the application info by given command */
   nsIGIOMimeApp      findAppFromCommand(in AUTF8String cmd);
 
+  /* Create application info which runs the given executable with one
+     argument: the URI the application is launched with, unchanged, when
+     passURI is true, or else the path of the local file which the URI names.
+     Throws NS_ERROR_FILE_NOT_FOUND when the executable is not an executable
+     file, and when its path contains %, which GLib does not accept, and
+     NS_ERROR_NOT_IMPLEMENTED on OpenBSD. */
+  nsIGIOMimeApp      createAppFromExecutable(in nsIFile executable,
+                                             in AUTF8String appName,
+                                             in boolean passURI);
+
   /* Obtain a description for the given MIME type */
   AUTF8String        getDescriptionForMimeType(in AUTF8String mimeType);
 

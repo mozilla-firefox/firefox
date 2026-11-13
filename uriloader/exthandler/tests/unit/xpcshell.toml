@@ -66,6 +66,9 @@ support-files = ["handlers.json"]
 # ContentDispatchChooser is not built on Android (see toolkit/moz.build).
 skip-if = ["os == 'android'"]
 
+["test_launch_local_handler.js"]
+run-if = ["os == 'linux'"]
+
 ["test_punycodeURIs.js"]
 skip-if = [
   "os == 'win' && msix", # https://bugzilla.mozilla.org/show_bug.cgi?id=1809485

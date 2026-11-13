@@ -78,6 +78,12 @@ struct RefPtrTraits<GDBusNodeInfo> {
   }
 };
 
+template <>
+struct RefPtrTraits<GKeyFile> {
+  static void AddRef(GKeyFile* aObject) { g_key_file_ref(aObject); }
+  static void Release(GKeyFile* aObject) { g_key_file_unref(aObject); }
+};
+
 }  // namespace mozilla
 
 #endif

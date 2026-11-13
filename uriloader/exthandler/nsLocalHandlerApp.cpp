@@ -8,6 +8,10 @@
 #include "nsComponentManagerUtils.h"
 #include "mozilla/dom/Promise.h"
 #include "nsProxyRelease.h"
+#ifdef MOZ_WIDGET_GTK
+#  include "nsIGIOService.h"
+#  include "nsServiceManagerUtils.h"
+#endif
 
 // XXX why does nsMIMEInfoImpl have a threadsafe nsISupports?  do we need one
 // here too?
@@ -188,6 +192,23 @@ nsLocalHandlerApp::Equals(nsIHandlerApp* aHandlerApp, bool* _retval) {
 NS_IMETHODIMP
 nsLocalHandlerApp::LaunchWithURI(
     nsIURI* aURI, mozilla::dom::BrowsingContext* aBrowsingContext) {
+#ifdef MOZ_WIDGET_GTK
+  // Launch through GIO, as handler applications from desktop entries are, so
+  // that the handler receives an activation token on Wayland. When GIO cannot
+  // run the executable, nsIProcess reports the error.
+  nsCOMPtr<nsIGIOService> gio = do_GetService(NS_GIOSERVICE_CONTRACTID);
+  if (gio && mExecutable) {
+    nsAutoString name;
+    GetName(name);
+    nsCOMPtr<nsIGIOMimeApp> app;
+    if (NS_SUCCEEDED(gio->CreateAppFromExecutable(mExecutable,
+                                                  NS_ConvertUTF16toUTF8(name),
+                                                  true, getter_AddRefs(app)))) {
+      return app->LaunchWithURI(aURI, aBrowsingContext);
+    }
+  }
+#endif
+
   // pass the entire URI to the handler.
   nsAutoCString spec;
   aURI->GetAsciiSpec(spec);

@@ -1308,3 +1308,75 @@ nsGIOService::CreateAppFromCommand(nsACString const& cmd,
   mozApp.forget(appInfo);
   return NS_OK;
 }
+
+/**
+ * Create application info which runs an executable with one argument, the URI
+ * the application is launched with, or the path of the local file it names.
+ * @param aExecutable executable to run
+ * @param aAppName application name
+ * @param aPassURI true to pass the URI unchanged, false to pass the path
+ * @param aAppInfo location where created GAppInfo is stored
+ * @return NS_OK when object is created, NS_ERROR_FILE_NOT_FOUND when
+ * aExecutable is not an executable file or its path contains %, which GLib
+ * does not accept, NS_ERROR_NOT_IMPLEMENTED on OpenBSD, or NS_ERROR_FAILURE
+ * otherwise.
+ */
+NS_IMETHODIMP
+nsGIOService::CreateAppFromExecutable(nsIFile* aExecutable,
+                                      nsACString const& aAppName, bool aPassURI,
+                                      nsIGIOMimeApp** aAppInfo) {
+  NS_ENSURE_ARG(aExecutable);
+  *aAppInfo = nullptr;
+
+#ifdef __OpenBSD__
+  // g_app_info_launch_uris_openbsd() runs g_app_info_get_executable(), the Exec
+  // key up to its first space, with the path of a file URI only.
+  return NS_ERROR_NOT_IMPLEMENTED;
+#else
+  nsAutoCString path;
+  nsresult rv = aExecutable->GetNativePath(path);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  LOG("nsGIOService::CreateAppFromExecutable() %s : %s",
+      PromiseFlatCString(aAppName).get(), path.get());
+
+  GUniquePtr<gchar> quoted(g_shell_quote(path.get()));
+  nsAutoCString exec(quoted.get());
+  // In the Exec key, % starts a field code. GLib checks that the Exec key names
+  // an executable file before it expands field codes, so it refuses a path
+  // with % (https://gitlab.gnome.org/GNOME/glib/-/work_items/4111).
+  exec.ReplaceSubstring("%"_ns, "%%"_ns);
+  // %u passes the URI as it is, as X-GIO-NoFuse below keeps GLib from passing
+  // the path of a file URI instead, and %f passes the path of the local file.
+  exec.Append(aPassURI ? " %u" : " %f");
+
+  RefPtr<GKeyFile> keyFile = dont_AddRef(g_key_file_new());
+  g_key_file_set_string(keyFile, G_KEY_FILE_DESKTOP_GROUP,
+                        G_KEY_FILE_DESKTOP_KEY_TYPE,
+                        G_KEY_FILE_DESKTOP_TYPE_APPLICATION);
+  g_key_file_set_string(keyFile, G_KEY_FILE_DESKTOP_GROUP,
+                        G_KEY_FILE_DESKTOP_KEY_NAME,
+                        PromiseFlatCString(aAppName).get());
+  g_key_file_set_string(keyFile, G_KEY_FILE_DESKTOP_GROUP,
+                        G_KEY_FILE_DESKTOP_KEY_EXEC, exec.get());
+  g_key_file_set_boolean(keyFile, G_KEY_FILE_DESKTOP_GROUP,
+                         G_KEY_FILE_DESKTOP_KEY_NO_DISPLAY, TRUE);
+  // The activation token, which nsGIOMimeApp::LaunchWithURI() requests on
+  // Wayland, is passed only to an application with startup notification.
+  g_key_file_set_boolean(keyFile, G_KEY_FILE_DESKTOP_GROUP,
+                         G_KEY_FILE_DESKTOP_KEY_STARTUP_NOTIFY, TRUE);
+  g_key_file_set_boolean(keyFile, G_KEY_FILE_DESKTOP_GROUP, "X-GIO-NoFuse",
+                         TRUE);
+
+  // GLib refuses an Exec key which does not name an executable file.
+  RefPtr<GAppInfo> app_info =
+      dont_AddRef(G_APP_INFO(g_desktop_app_info_new_from_keyfile(keyFile)));
+  if (!app_info) {
+    LOG("  quit, not an executable file");
+    return NS_ERROR_FILE_NOT_FOUND;
+  }
+  RefPtr<nsGIOMimeApp> mozApp = new nsGIOMimeApp(app_info.forget());
+  mozApp.forget(aAppInfo);
+  return NS_OK;
+#endif
+}

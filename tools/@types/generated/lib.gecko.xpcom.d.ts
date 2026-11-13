@@ -25310,6 +25310,8 @@ interface nsIGIOService extends nsISupports {
   createAppFromCommand(cmd: string, appName: string): nsIGIOMimeApp;
   /** <!-- binding_to(idl, method, XPIDL_nsIGIOService_findAppFromCommand) --> */
   findAppFromCommand(cmd: string): nsIGIOMimeApp;
+  /** <!-- binding_to(idl, method, XPIDL_nsIGIOService_createAppFromExecutable) --> */
+  createAppFromExecutable(executable: nsIFile, appName: string, passURI: boolean): nsIGIOMimeApp;
   /** <!-- binding_to(idl, method, XPIDL_nsIGIOService_getDescriptionForMimeType) --> */
   getDescriptionForMimeType(mimeType: string): string;
   /** <!-- binding_to(idl, attribute, XPIDL_nsIGIOService_isRunningUnderFlatpak) --> */
