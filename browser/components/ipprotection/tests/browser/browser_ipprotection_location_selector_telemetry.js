@@ -20,9 +20,6 @@ const MOCK_LOCATIONS_LIST = [
  * button records location_upgrade_promo_clicked.
  */
 add_task(async function test_location_selector_button_and_promo_clicked() {
-  let isDefaultStub = sinon
-    .stub(IPProtection.getPanel(window), "isDefaultBrowser")
-    .resolves(true);
   let content = await openPanel({
     isEnrolledAndEntitled: true,
     hasUpgraded: false,
@@ -98,7 +95,6 @@ add_task(async function test_location_selector_button_and_promo_clicked() {
   Assert.equal(promoClickedEvents[0].category, "ipprotection");
   Assert.equal(promoClickedEvents[0].name, "location_upgrade_promo_clicked");
 
-  isDefaultStub.restore();
   Services.fog.testResetFOG();
   cleanupService();
 });

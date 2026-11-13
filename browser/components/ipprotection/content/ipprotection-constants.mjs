@@ -71,5 +71,3 @@ export const BANDWIDTH = Object.freeze({
   SECOND_THRESHOLD: 0.25,
   THIRD_THRESHOLD: 0.1,
 });
-
-export const ADDITIONAL_LOCATIONS_AVAILABLE = 20;

@@ -96,7 +96,6 @@
   font-size: var(--font-size-small);
 }
 
-#locations-subview-promo,
-#locations-subview-set-default-promo {
+#locations-subview-promo {
   margin-inline: var(--space-medium);
 }
