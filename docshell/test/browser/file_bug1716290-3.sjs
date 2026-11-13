@@ -1,5 +1,7 @@
 function handleRequest(request, response) {
   if (getState("reloaded") == "reloaded") {
+    setState("loaded", "");
+    setState("reloaded", "");
     response.setHeader("Content-Type", "text/html; charset=iso-2022-kr", false);
     response.write("\u00E4");
   } else {

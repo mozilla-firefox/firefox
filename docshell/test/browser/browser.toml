@@ -249,9 +249,6 @@ https_first_disabled = true
 ["browser_bug1705872.js"]
 
 ["browser_bug1716290-1.js"]
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_bug1716290-2.js"]
 

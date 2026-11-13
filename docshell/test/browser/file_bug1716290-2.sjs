@@ -1,5 +1,7 @@
 function handleRequest(request, response) {
   if (getState("reloaded") == "reloaded") {
+    setState("loaded", "");
+    setState("reloaded", "");
     response.setHeader("Content-Type", "text/html", false);
     response.write("<meta charset=iso-2022-kr>\u00E4");
   } else {

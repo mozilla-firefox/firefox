@@ -1,5 +1,7 @@
 function handleRequest(request, response) {
   if (getState("reloaded") == "reloaded") {
+    setState("loaded", "");
+    setState("reloaded", "");
     response.setHeader(
       "Content-Type",
       "text/html; charset=windows-1254",
