@@ -1,0 +1,62 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test pushsubscriptionchange firing when one origin is a prefix of another.</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script src="/tests/dom/push/test/test_utils.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script>
+add_task(async () => {
+  await setupPrefsAndMockSocket(new MockWebSocket());
+
+  let subscribed = 0;
+  let cleanedUp = 0;
+  const {promise: waitForSubscribe, resolve: resolveSubscribed} = Promise.withResolvers();
+  const {promise: waitForSubscriptionChange, resolve: resolveSubscriptionChange} = Promise.withResolvers();
+  const {promise: waitForCleanUp, resolve: resolveCleanUp} = Promise.withResolvers();
+  const subscriptionChanges = [];
+  addEventListener("message", e => {
+    if (e.data.type === "subscribed") {
+      if (++subscribed === 2) {
+        // both domains subscribed successfully
+        resolveSubscribed();
+      }
+    } else if (e.data.type === "cleaned-up") {
+      if (++cleanedUp === 2) {
+        // both domains have cleaned up
+        resolveCleanUp();
+      }
+    } else if (e.data.type === "changed") {
+      subscriptionChanges.push(e.data.hostname);
+      resolveSubscriptionChange();
+    }
+  });
+
+  const {pathname} = new URL("file_pushsubscriptionchange_origin_prefix.html", location);
+  const window1 = open("https://example.com.test" + pathname);
+  const window2 = open("https://example.com" + pathname);
+  info("Waiting for both domains to subscribe...");
+  await waitForSubscribe;
+
+  window2.postMessage("revokeAndGrantPermission", "*");
+  info("Waiting for pushsubscriptionchange event...");
+  await waitForSubscriptionChange;
+
+  SimpleTest.requestFlakyTimeout("Making sure that only example.com gets the pushsubscriptionchange event.");
+  await new Promise(r => setTimeout(r, 100));
+  is(subscriptionChanges.join(), "example.com",
+     "Only example.com should get the pushsubscriptionchange event.");
+
+  window1.postMessage("cleanup", "*");
+  window2.postMessage("cleanup", "*");
+  info("Wait for both domains to finish cleaning up...");
+  await waitForCleanUp;
+  window1.close();
+  window2.close();
+});
+</script>
+</body>
+</html>

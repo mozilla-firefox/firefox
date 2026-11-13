@@ -13,6 +13,9 @@
 this.onpush = handlePush;
 this.onmessage = handleMessage;
 this.onpushsubscriptionchange = handlePushSubscriptionChange;
+this.onactivate = event => {
+  event.waitUntil(self.clients.claim());
+};
 
 function getJSON(data) {
   var result = {
