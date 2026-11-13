@@ -241,7 +241,8 @@ class alignas(uintptr_t) ICScript final : public TrailingArray<ICScript> {
   // ICScripts that have been inlined into this ICScript.
   js::UniquePtr<Vector<CallSite>> inlinedChildren_;
 
-  // List of allocation sites referred to by ICs in this script.
+  // List of allocation sites referred to by ICs in this script, sorted by
+  // pcOffset.
   static constexpr size_t AllocSiteChunkSize = 256;
   LifoAlloc allocSitesSpace_{AllocSiteChunkSize, js::BackgroundMallocArena};
   Vector<gc::AllocSite*, 0, SystemAllocPolicy> allocSites_;

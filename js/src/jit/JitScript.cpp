@@ -900,13 +900,19 @@ gc::AllocSite* ICScript::getOrCreateAllocSite(JSScript* outerScript,
   MOZ_ASSERT_IF(pcOffset != gc::AllocSite::EnvSitePCOffset,
                 pcOffset < bytecodeSize());
 
-  for (gc::AllocSite* site : allocSites_) {
-    if (site->pcOffset() == pcOffset) {
-      MOZ_ASSERT(site->isNormal());
-      MOZ_ASSERT(site->script() == outerScript);
-      MOZ_ASSERT(site->traceKind() == JS::TraceKind::Object);
-      return site;
-    }
+  size_t index;
+  if (mozilla::BinarySearchIf(
+          allocSites_, 0, allocSites_.length(),
+          [pcOffset](gc::AllocSite* site) {
+            uint32_t offset = site->pcOffset();
+            return pcOffset == offset ? 0 : (pcOffset < offset ? -1 : 1);
+          },
+          &index)) {
+    gc::AllocSite* site = allocSites_[index];
+    MOZ_ASSERT(site->isNormal());
+    MOZ_ASSERT(site->script() == outerScript);
+    MOZ_ASSERT(site->traceKind() == JS::TraceKind::Object);
+    return site;
   }
 
   Zone* zone = outerScript->zone();
@@ -927,7 +933,20 @@ gc::AllocSite* ICScript::getOrCreateAllocSite(JSScript* outerScript,
     return nullptr;
   }
 
-  allocSites_.infallibleAppend(site);
+  MOZ_ALWAYS_TRUE(allocSites_.insert(allocSites_.begin() + index, site));
+
+#ifdef DEBUG
+  static constexpr size_t MaxSitesToCheck = 16;
+  size_t begin = 0;
+  size_t end = allocSites_.length();
+  if (end > MaxSitesToCheck) {
+    begin = index > 0 ? index - 1 : 0;
+    end = std::min(index + 2, end);
+  }
+  for (size_t i = begin + 1; i < end; i++) {
+    MOZ_ASSERT(allocSites_[i - 1]->pcOffset() < allocSites_[i]->pcOffset());
+  }
+#endif
 
   nursery.noteAllocSiteCreated();
 
