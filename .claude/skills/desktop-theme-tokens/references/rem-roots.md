@@ -7,7 +7,7 @@ root:
 
 ```sh
 ./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
-  --binary <objdir>/dist/bin/firefox --context chrome -e '
+  --binary <objdir>/dist/bin/firefox --realm chrome -e '
 let root = document.documentElement, p = document.createElement("div");
 root.appendChild(p);
 let out = {};

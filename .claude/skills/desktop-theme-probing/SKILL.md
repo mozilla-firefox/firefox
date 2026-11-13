@@ -64,14 +64,14 @@ configured one, a
 sweep outlives the command timeout, and `press_key` performs no default action.
 
 **A one-shot chrome read without the MCP: the bundled probe runner.**
-`.claude/skills/desktop-theme-probing/scripts/firefox-probe.py --context
+`.claude/skills/desktop-theme-probing/scripts/firefox-probe.py --realm
 chrome` launches a build, evaluates chrome-context JS and prints the result. It
 needs the checkout's Marionette, so run it through `./mach python --virtualenv
 wpt` from the checkout:
 
 ```sh
 ./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
-  --binary <objdir>/dist/bin/firefox --context chrome \
+  --binary <objdir>/dist/bin/firefox --realm chrome \
   --setpref ui.useAccessibilityTheme=1 -e 'return { ... };'
   # chrome's regime under that pref: the host's platform file, section CONTRAST
 ```
@@ -264,7 +264,7 @@ el.style.maxHeight = "";
 ```
 
 Set markers whenever the tokens that could paint the property resolve to the
-same value in the regime under test (`token-resolve.py --effective` shows
+same value in the regime under test (`./mach theme resolve-token --effective` shows
 whether they differ), since a real read then cannot tell which rule painted.
 Probe in the regime the task is about (`desktop-theme-colors` §1). Set a
 distinct marker per token on the root (`root.style.setProperty("--x-hover",

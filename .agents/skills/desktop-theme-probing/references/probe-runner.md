@@ -1,6 +1,6 @@
 # Running a snippet through firefox-probe.py
 
-Read `--help` for every flag, step kind and output shape, and `probelib.py`'s
+Read `--help` for every flag, step kind and output shape, and `toolkit/themes/tools/probelib.py`'s
 docstring for the launch flags and exit codes; this file holds what they do not
 say.
 
@@ -29,7 +29,7 @@ say.
   content's `innerHeight` back rather than computing it.
 - **`--chrome-setup-async` takes the same body as `--async`** (§2). Whatever
   the chrome setup returns prints to stderr as `chrome setup returned: …`.
-- **Steps act in the `--context` the probe runs in**, so under `chrome` they
+- **Steps act in the `--realm` the probe runs in**, so under `chrome` they
   click and type into browser UI. A `grab` refuses to overwrite a PNG an
   earlier run left, so give each run its own output directory; a grab writes
   into the directory that holds the `--steps` file.

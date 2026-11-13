@@ -58,7 +58,7 @@ Measured on headless Linux, chrome context:
 - The page in the tab keeps `(forced-colors)` false; set `document_color_use=2`
   for it.
 
-`pair-walk.py` takes the override through a `--setup-file` holding those lines;
+`./mach theme check-hcm-colors` takes the override through a `--setup-file` holding those lines;
 under the root's `none` its transparent-border check finds nothing, which is
 right for Windows chrome. Under the override alone it judges the content-style
 filter.

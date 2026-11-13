@@ -3,7 +3,7 @@
 The sweep is one script that walks UI density, device pixel ratio and root font
 size as nested loops and prints one tab-separated row per cell. Run it through
 the devtools MCP's `evaluate_privileged_script` as `async () => { … }`, or as a
-`firefox-probe.py --context chrome --async` snippet in the shape
+`firefox-probe.py --realm chrome --async` snippet in the shape
 `desktop-theme-probing` §1 gives.
 
 ## 1. The loop

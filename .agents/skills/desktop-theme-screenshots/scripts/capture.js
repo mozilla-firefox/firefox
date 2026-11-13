@@ -4,7 +4,7 @@
 
 /**
  * Paste this at the head of a scratch browser-chrome test or a
- * `firefox-probe.py --context chrome --async` body, then call
+ * `firefox-probe.py --realm chrome --async` body, then call
  * `capture(name, element)` once per shot. Do not load it at runtime: the
  * scratch test must not carry a path to this file.
  *

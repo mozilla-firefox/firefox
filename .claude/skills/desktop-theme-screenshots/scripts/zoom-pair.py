@@ -10,7 +10,7 @@ Run under `./mach python --virtualenv wpt`, the mach virtualenv with Pillow:
     ./mach python --virtualenv wpt zoom-pair.py before.png after.png zoom.png \
         --rect X,Y,W,H [--dpr 2] [--offset X,Y] [--scale 8] [--gap 8]
 
---rect, --dpr and --offset mean what they mean for pixel-diff.py: CSS px from
+--rect, --dpr and --offset mean what they mean for ./mach theme pixel-diff: CSS px from
 the PNG's own top-left corner, scaled to device pixels, shifted by the page's
 mozInnerScreenX/Y for a screen grab. The rect is clipped to the smaller of the
 two images, with a note on stderr. --scale multiplies each device pixel

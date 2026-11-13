@@ -24,7 +24,7 @@ some modes or states (e.g. a label, a badge). A row that mixes pairs is a
 finding, and so is a state that recolors the text but not the icon fill, or the
 reverse.
 
-## 3. Per descendant, with pair-walk.py
+## 3. Per descendant, with ./mach theme check-hcm-colors
 
 Walk every descendant a state repaints. A patch that moves a state's
 background onto a new pair leaves each descendant with its own `color` or
@@ -37,10 +37,10 @@ the walk still judges a surface whose resolved color equals a system color, and
 exits 1 for an entry that judged nothing (`checked: 0`), so read
 `regime.forcedColorsActive` before taking a clean walk as a forced-colors check.
 
-`scripts/pair-walk.py` locks the state, maps each
+`./mach theme check-hcm-colors` locks the state, maps each
 visible descendant's surface to its system colors and lists every foreground
 outside that pair; its `--help` has what it checks and its flags. It locks a
-pseudo-class state only in chrome, so a `--context content` run takes
+pseudo-class state only in chrome, so a `--realm content` run takes
 `--state default` and exits 1 on any other state. The walk matches surfaces to
 pairs by this platform's values, so two pairs that share a value here pass a
 mix of them, and a clean walk is a verdict on this palette only.

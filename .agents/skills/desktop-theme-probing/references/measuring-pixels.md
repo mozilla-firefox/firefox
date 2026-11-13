@@ -34,7 +34,7 @@ paint or a flash in chrome. For the compositor's output, take a screen grab with
 `firefox-probe.py --no-headless --steps` and a `grab` step after the gesture, on
 the display the host's platform file, section GRABS, allows; that section also
 says how the grab's coordinates and scale map to the screen's. Read it with
-`pixel-diff.py --rect --offset --dpr` (`desktop-theme-screenshots` §5).
+`./mach theme pixel-diff --rect --offset --dpr` (`desktop-theme-screenshots` §5).
 
 Before writing the `grab` step, read §1 "Flags
 and output" in [`probe-runner.md`](probe-runner.md); before picking the display,

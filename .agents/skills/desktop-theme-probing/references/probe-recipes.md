@@ -27,7 +27,7 @@ A `part` attribute is a list of names: select it with
 `shadowRoot.querySelector('[part~="name"]')`, since `[part=name]` misses a
 part that lists a second name. A climb by
 `parentElement` from a slotted child skips the shadow tree; climb through
-`assignedSlot`, as `pair-walk.py` and `contrast.py` do.
+`assignedSlot`, as `./mach theme check-hcm-colors` and `./mach theme contrast` do.
 
 ## 3. Install a theme in the probe profile
 
@@ -82,7 +82,7 @@ does). Where it is reachable:
 
 - the Marionette chrome sandbox, as `window.InspectorUtils`;
 - a privileged content page such as about:preferences
-  (`firefox-probe.py --context content`);
+  (`firefox-probe.py --realm content`);
 - any page, a web page included, under `firefox-probe.py --sandbox system`;
 - a `SpecialPowers.spawn` task.
 

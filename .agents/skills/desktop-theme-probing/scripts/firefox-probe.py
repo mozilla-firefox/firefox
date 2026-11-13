@@ -2,7 +2,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-r"""Run JS in a real Firefox build, in the chrome or the content context, and print the result as JSON.
+r"""Run JS in a real Firefox build, in the chrome or the content realm, and print the result as JSON.
 
 Run it with the checkout's mach so the in-tree marionette_driver resolves:
 
@@ -12,7 +12,7 @@ Run it with the checkout's mach so the in-tree marionette_driver resolves:
 
     ./mach python --virtualenv wpt <skill>/scripts/firefox-probe.py \
         --binary <objdir>/dist/bin/firefox \
-        --context chrome -e 'return {state: window.windowState, hidden: document.hidden}'
+        --realm chrome -e 'return {state: window.windowState, hidden: document.hidden}'
 
 On macOS the binary is <objdir>/dist/<App>.app/Contents/MacOS/firefox.
 
@@ -41,7 +41,7 @@ Modes:
                   table; its first `pre` row gives the baseline from before
                   --setup ran
 
---setup runs once in the selected context right before the snippet, after any
+--setup runs once in the selected realm right before the snippet, after any
 --steps (window.minimize()), and needs a snippet;
 --chrome-setup (or --chrome-setup-file) runs in chrome context before the load,
 for what content cannot do (seeding Places or form history, resizing the window,
@@ -71,7 +71,7 @@ a user's scroll takes (window.scrollTo() in a script step takes another):
 (positive scrolls down/right), duration in ms (optional); "at" takes move's
 target forms, but a selector target off screen is scrolled into view first, so a
 sequence of scrolls takes coordinates. "grab" shoots the screen with
-scripts/screen-grab.py (Pillow, under this interpreter) into <name>.png beside
+toolkit/themes/tools/screen-grab.py (Pillow, under this interpreter) into <name>.png beside
 the steps file; a headless run refuses it. On Linux it grabs the X root window
 of a private Xvfb display (references/platform-linux.md, section DISPLAYS) and
 refuses any other X server unless --grab-any-display is given; a grab takes
@@ -79,7 +79,7 @@ about 150 ms, so a one-frame flash is below its floor. On macOS and Windows it
 grabs the logged-in desktop; read screen-grab.py's docstring for their
 coordinate limits. It records mozInnerScreenX/Y, the content origin on that
 screen in CSS pixels, with "dpr" and the PNG's "size": pass the origin unscaled
-as the --offset of desktop-theme-screenshots' pixel-diff.py together with --dpr,
+as the --offset of ./mach theme pixel-diff together with --dpr,
 which scales both. "script" evaluates JS and keeps its return value; the step is
 a JSON string, so a newline inside a JS string literal is written `\\n`, or the
 step fails with "string literal contains an unescaped line break". "chrome"
@@ -100,7 +100,7 @@ echoes the step's source. The output is then {"steps": [...], "result":
 the output is {"steps": [...]} followed by the table.
 
 The launch flags (--setpref, --port, --gecko-log, --no-headless, --timeout-ms)
-and the exit codes are probelib.py's; a failed step stops the steps, prints the
+and the exit codes are toolkit/themes/tools/probelib.py's; a failed step stops the steps, prints the
 output and exits 1.
 
 mach eats a bare --help, so put the -- before the script path:
@@ -130,14 +130,14 @@ def print_table(rows):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Run JS in a real Firefox build, in the chrome or the content context.",
+        description="Run JS in a real Firefox build, in the chrome or the content realm.",
         epilog=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     probelib.add_launch_arguments(parser)
     probelib.add_page_arguments(parser)
     parser.add_argument(
-        "--context",
+        "--realm",
         choices=("chrome", "content"),
         default="content",
         help="where the snippet runs (default content)",
@@ -169,7 +169,7 @@ def main():
     setup = parser.add_mutually_exclusive_group()
     setup.add_argument(
         "--setup",
-        help="JS run once in the selected context right before the snippet, after "
+        help="JS run once in the selected realm right before the snippet, after "
         "any --steps; needs a snippet (e.g. window.minimize())",
     )
     setup.add_argument("--setup-file", help="file containing the setup JS")
@@ -233,7 +233,7 @@ def main():
 
     def body(client):
         probelib.open_page(
-            client, args, args.context, args.sandbox, not args.keep_sandbox
+            client, args, args.realm, args.sandbox, not args.keep_sandbox
         )
 
         steps_out = None

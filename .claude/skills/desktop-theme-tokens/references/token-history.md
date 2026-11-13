@@ -5,7 +5,7 @@ authored JSON changing shape, so one sheet's history shows a clean absence that
 reads as the realm never having had a value.
 
 ```sh
-./mach python .claude/skills/desktop-theme-tokens/scripts/token-resolve.py \
+./mach theme resolve-token \
   --history --<token> [<range>]
 ```
 

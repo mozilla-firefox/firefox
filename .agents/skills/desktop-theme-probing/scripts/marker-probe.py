@@ -9,7 +9,7 @@ chrome document's root, locks each --state's pseudo-classes on the element (or
 on its --lock-on ancestor), finishes the transitions the lock starts, reads
 --property off each --element, maps the value back to the token, and restores
 the root's style attribute and the cue. Runs in the chrome context through
-probelib.py, headless, on a throwaway profile:
+toolkit/themes/tools/probelib.py, headless, on a throwaway profile:
 
   ./mach python --virtualenv wpt -- marker-probe.py --binary <objdir>/dist/bin/firefox \\
     --property fill --token x-fill --token x-fill-hover \\
@@ -21,7 +21,7 @@ A --token is the custom property's name with or without its leading dashes
 "default" or a run of element-state pseudo-classes (":hover:active"); without
 any, the run reads default, :hover and :hover:active. :hover and :active lock
 on every flat-tree ancestor of the locked element too, as a real pointer sets
-them (contrast.py and pair-walk.py lock the same way); any other pseudo-class
+them (./mach theme contrast and ./mach theme check-hcm-colors lock the same way); any other pseudo-class
 locks on that element only. --lock-on names the ancestor to lock when
 --element is the thing read, which matters for the pseudo-classes that do not
 climb; --read names the descendant to read when the state is locked on

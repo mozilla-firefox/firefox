@@ -9,7 +9,7 @@
 #
 # <test>      the scratch browser-chrome test that pastes capture.js
 # --probe <script>  instead of a test, a chrome-context script for
-#             desktop-theme-probing's firefox-probe.py --context chrome --async
+#             desktop-theme-probing's firefox-probe.py --realm chrome --async
 #             that pastes capture.js and resolves with globalThis.__shots; runs
 #             against the objdir's dist/bin/firefox, dist/*.app/Contents/MacOS/firefox
 #             on macOS or dist/bin/firefox.exe on Windows (FIREFOX overrides), no
@@ -243,7 +243,7 @@ run() {
     [ -n "$window_size" ] && extra+=(--window-size "$window_size")
     extra+=("${probe_extra[@]+"${probe_extra[@]}"}")
     if ! "$mach" python --virtualenv wpt -- "$runner" --binary "$binary" \
-        --context chrome --async --script-file "$test_file" \
+        --realm chrome --async --script-file "$test_file" \
         --setpref "shots.label=$label" --setpref "shots.dir=$ff_shots_dir" \
         "${extra[@]+"${extra[@]}"}" \
         > "$shots_dir/$label.log" 2>&1; then

@@ -2,14 +2,8 @@
 name: desktop-theme-colors
 description: "CSS issues, changes and reviews involving color - high contrast, forced colors, prefers-contrast, dark mode, system colors; a border, shadow, focus ring or icon that vanishes; states like hover/selected/focus that don't look distinct; a color right in chrome but wrong in an about: page or vice versa; a Firefox::Theme or Toolkit::Themes bug, even when the report already names the rule or token."
 allowed-tools:
-  - Bash(./mach python --virtualenv wpt .agents/skills/desktop-theme-colors/scripts/pair-walk.py:*)
-  - Bash(./mach python --virtualenv wpt .claude/skills/desktop-theme-colors/scripts/pair-walk.py:*)
-  - Bash(./mach python --virtualenv wpt -- .agents/skills/desktop-theme-colors/scripts/pair-walk.py:*)
-  - Bash(./mach python --virtualenv wpt -- .claude/skills/desktop-theme-colors/scripts/pair-walk.py:*)
-  - Bash(./mach python --virtualenv wpt .agents/skills/desktop-theme-colors/scripts/contrast.py:*)
-  - Bash(./mach python --virtualenv wpt .claude/skills/desktop-theme-colors/scripts/contrast.py:*)
-  - Bash(./mach python --virtualenv wpt -- .agents/skills/desktop-theme-colors/scripts/contrast.py:*)
-  - Bash(./mach python --virtualenv wpt -- .claude/skills/desktop-theme-colors/scripts/contrast.py:*)
+  - Bash(./mach theme check-hcm-colors:*)
+  - Bash(./mach theme contrast:*)
 ---
 
 # Settle what a color paints
@@ -18,7 +12,7 @@ Each of the four regimes in css_guidelines "High contrast mode" resolves
 differently in a chrome window than in an `about:` page, and two differ by
 platform. Name which regime each side is in before calling chrome and the page
 inconsistent. Load `desktop-theme-probing` before the first live launch (a
-`token-resolve.py` run is not one); it defines the platform files (the probing
+`./mach theme resolve-token` run is not one); it defines the platform files (the probing
 machine's and the target's) that this skill cites by section.
 
 **Read the used value off the live element** with the instruments in
@@ -69,7 +63,7 @@ you probe on is often a different one. Linux defaults to the native theme
 built-in theme never uses the native theme. The README's "Chrome native OS
 theme" table gives the layer each case paints. A Linux report may come from
 either branch, so reproduce both where the changed rule differs between them:
-run `desktop-theme-tokens`' `token-resolve.py --effective` on the tokens the
+run `./mach theme resolve-token --effective` on the tokens the
 rule reads and compare the `default` and `-moz-native-theme` rows, and check the
 rule itself for a `(-moz-native-theme)` condition. For a report from another
 platform than the one you probe on, read that platform's file
@@ -103,7 +97,7 @@ Reach either realm's regime on any platform:
   `(forced-colors: requested)` and the bare `(forced-colors)`, so check which
   form a rule uses before trusting a simulated pass. The override covers one
   window: set it on each window's own `browsingContext` and reset each to
-  `"none"` afterward. Before passing a window to `pair-walk.py`, read §2
+  `"none"` afterward. Before passing a window to `./mach theme check-hcm-colors`, read §2
   "Putting chrome under forced colors" in `references/forced-color-filter.md`.
 
 All three take effect live. Set `ui.useAccessibilityTheme` at startup to load
@@ -170,7 +164,7 @@ system color as §1 "Two names can be one pair" in
 
 Pairing applies wherever system colors paint, filtered or not: content under
 forced colors, Windows chrome under `requested`, and `prefers-contrast`. The
-pairs, as `PAIRS` in `scripts/pair-walk.py` lists them:
+pairs, as `PAIRS` in `toolkit/themes/tools/pair_walk.py` lists them:
 
 | background | text | border |
 |---|---|---|
@@ -190,8 +184,8 @@ colors.** Forced colors leave `opacity` alone, so a disabled control faded over
 `ButtonText` paints a color outside the user's palette. First establish what the
 state means by reading the code that sets its class or attribute: a token named
 for one state, consumed for another, is itself the finding. Then look for a
-token for that state that already varies by regime (`desktop-theme-tokens`'
-`token-resolve.py --effective` prints its value in each). A derived token keeps
+token for that state that already varies by regime
+(`./mach theme resolve-token --effective` prints its value in each). A derived token keeps
 the root's value under an element that redefines its base: check per the
 derived-token rule in `desktop-theme-tokens` §4 "Where a token's value belongs"
 before consuming one outside the rule that already reads it, or judging whether
@@ -200,8 +194,8 @@ consumers need no `@media (forced-colors)`. Only where no token covers the state
 does the consumer sheet give it, under forced colors, its pair at full opacity:
 `GrayText` for disabled content, its icon's `fill` included.
 
-Before running `scripts/pair-walk.py`, read §3 "Per descendant, with
-pair-walk.py" in `references/system-color-pairs.md` for its setup; in chrome on
+Before running `./mach theme check-hcm-colors`, read §3 "Per descendant, with
+./mach theme check-hcm-colors" in `references/system-color-pairs.md` for its setup; in chrome on
 Linux and macOS that setup includes the override from §2 above, and the walk
 exits 1 when an entry judged nothing. Before judging a state, read its §2 "Per
 state" and §4 "Per selector": a diff-only read misses the state the patch left
@@ -218,7 +212,7 @@ with tokens that resolve to literals; measure the ratio wherever a literal
 paints, against 7:1, where `Gecko_MediaFeatures_PrefersContrast` grades `more`.
 In the default regime, a theme's colors included, judge a text pair against WCAG
 AA: 4.5:1, or 3:1 for large text, and a focus ring or separator against its
-surface at 3:1 (`--non-text`). Measure with `scripts/contrast.py`, never by
+surface at 3:1 (`--non-text`). Measure with `./mach theme contrast`, never by
 hand, and name the palette it was measured on. `--help` has the flags, the state
 locks, and the cases it reports not judged, which need a pixel sample. Where a
 sibling paints a state (e.g. a tab's `.tab-background` behind its label), a

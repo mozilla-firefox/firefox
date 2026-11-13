@@ -46,7 +46,7 @@ token.
 tree: delete the key, run `./mach buildtokens`, and read what the generator
 writes into the component's `*.nova.tokens.json` and into the Nova layer of
 `dist/tokens-shared.css`; that is what the key suppresses.
-`token-resolve.py <dist> --before HEAD` shows the same as resolved values
+`./mach theme resolve-token <dist> --before HEAD` shows the same as resolved values
 against the committed tree. Repeat every side you do not mean to change inside
 the `nova` value beside the key you do, then restore everything the generator
 rewrote, not only `dist/`. It writes under every root of `COMPONENT_TOKEN_PATHS`

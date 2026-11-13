@@ -2,10 +2,7 @@
 name: desktop-theme-tokens
 description: Design tokens and CSS variables - picking one for a hard-coded value, *.tokens.json edits, Nova/Figma overrides, buildtokens, value-neutral diffs; one undefined or ineffective on a surface; finding the revision that changed a token's value; a Firefox::Theme or Toolkit::Themes bug, even when the report already names the rule or token.
 allowed-tools:
-  - Bash(./mach python .agents/skills/desktop-theme-tokens/scripts/token-resolve.py:*)
-  - Bash(./mach python .claude/skills/desktop-theme-tokens/scripts/token-resolve.py:*)
-  - Bash(./mach python -- .agents/skills/desktop-theme-tokens/scripts/token-resolve.py:*)
-  - Bash(./mach python -- .claude/skills/desktop-theme-tokens/scripts/token-resolve.py:*)
+  - Bash(./mach theme resolve-token:*)
   - Bash(./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
   - Bash(./mach python --virtualenv wpt .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
 ---
@@ -13,7 +10,7 @@ allowed-tools:
 # Verify a design-token change
 
 **Resolve, don't read.** Instruments and displays: load `desktop-theme-probing`
-before the first live launch (a `token-resolve.py` run is not one); it defines
+before the first live launch (a `./mach theme resolve-token` run is not one); it defines
 the host's and the target's platform file that this skill's references cite by
 section.
 
@@ -51,7 +48,7 @@ The file's own name supplies the leading segment of a token's path (README
 `jq '.box.text.color.active' urlbar.tokens.json`, while `.urlbar.box…` reads
 `null` with no error. Never grep for a leaf key: `hover`, `active` and `@base`
 occur under every variant, so a hit can show a sibling variant's value. The
-JSON is only the input; quote the value `token-resolve.py` prints (§2). A
+JSON is only the input; quote the value `./mach theme resolve-token` prints (§2). A
 variant usually mirrors its sibling,
 `{"value": "{urlbar.box.text.color.@base}"}`; match the sibling's shape, except
 a sibling `nova` block that omits a side (§1 in
@@ -67,15 +64,15 @@ before and after, then diff the two maps.
 **A realm is two sheets.** Chrome reads `tokens-shared.css` plus
 `tokens-platform.css`, in-content reads `tokens-shared.css` plus
 `tokens-brand.css`; the brand or platform sheet overrides shared values, and a
-shared value may reference a name only that sheet defines. The bundled
-`scripts/token-resolve.py` pairs them and reports
+shared value may reference a name only that sheet defines.
+`./mach theme resolve-token` pairs them and reports
 each realm separately.
 
 The generated sheets are checked in, so reading one token's current value needs
 no build:
 
 ```sh
-./mach python .claude/skills/desktop-theme-tokens/scripts/token-resolve.py \
+./mach theme resolve-token \
   toolkit/themes/shared/design-system/dist --effective --<token>
 ```
 
@@ -110,12 +107,11 @@ the tree:
 
 ```sh
 ./mach buildtokens
-./mach python .claude/skills/desktop-theme-tokens/scripts/token-resolve.py \
+./mach theme resolve-token \
   toolkit/themes/shared/design-system/dist --before HEAD~1   # the change under test is the tip commit; HEAD for uncommitted edits
 ```
 
-`./mach python -- <script> --help` describes the output (without the `--`, mach
-takes `--help` for itself); in the `--before` diff, an `EFFECTIVE` line is a
+`./mach theme resolve-token --help` describes the output; in the `--before` diff, an `EFFECTIVE` line is a
 value change, and a removal or layer move with none is value-neutral. To read
 values at an earlier commit of a stack, add `--at REV` to `--name` or
 `--effective`; like `--before`, it leaves the tree alone. A `glean.dispatcher`
@@ -198,7 +194,7 @@ Nova on a surface that loads one.
 
 **Before adding a `@layer` name to a generated sheet, read the README's
 "Overriding tokens":** a name `getLayerString` does not list outranks the
-forced-colors and prefers-contrast layers. `token-resolve.py` already treats
+forced-colors and prefers-contrast layers. `./mach theme resolve-token` already treats
 every `-moz-pref()` context as an override.
 
 **Pairing is a real change wherever a layer replaces the pair with fixed
@@ -225,7 +221,7 @@ layer fixes nothing. When a surface misbehaves under one condition only (e.g.
 forced colors, prefers-contrast, Nova, the in-app theme) or a token change has
 no effect there, grep the surface's sheets for a redefinition before suspecting
 the token, and for every name in its `var()` chain in that layer
-(`token-resolve.py --name`): a redefinition of a base token on the root reaches
+(`./mach theme resolve-token --name`): a redefinition of a base token on the root reaches
 every token that references it there, including a reference only one layer
 makes. Prove it at the live document by finding the rule, not by toggling a
 class on the root, which can switch a whole layered token set: remove the
@@ -397,7 +393,7 @@ what now paints; compare them with the removed value. `--before REV` needs
 the revision that removed the override: §8 `--history` finds it.
 
 ```sh
-./mach python .claude/skills/desktop-theme-tokens/scripts/token-resolve.py \
+./mach theme resolve-token \
   --declared --<token> toolkit/themes/shared/design-system/dist/tokens-shared.css <the sheet>
 ```
 
@@ -442,6 +438,6 @@ how to find and clear one.
 
 For a live pre-patch baseline, revert the paths by hand as
 `desktop-theme-probing` §6 "Leave the tree clean" describes, to the commit §2
-"Diff resolved values, not diff lines" names; `token-resolve.py --before` needs
+"Diff resolved values, not diff lines" names; `./mach theme resolve-token --before` needs
 no baseline in the tree. Never `git stash` in a shared checkout. If you must
 detach, verify the branch ref and a clean tree afterwards.
