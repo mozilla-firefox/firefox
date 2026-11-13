@@ -2256,6 +2256,14 @@ tab-group {
     text-overflow: ellipsis;
     white-space: nowrap;
     line-height: calc(var(--tab-group-counter-size) - 2 * var(--space-xsmall));
+
+    #tabbrowser-tabs[orient="vertical"] & {
+      width: fit-content;
+    }
+
+    #tabbrowser-tabs[orient="vertical"]:not([expanded]) & {
+      padding-inline: 0;
+    }
   }
 }
 
