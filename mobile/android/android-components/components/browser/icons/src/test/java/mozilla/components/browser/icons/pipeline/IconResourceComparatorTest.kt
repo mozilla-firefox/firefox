@@ -4,9 +4,11 @@
 
 package mozilla.components.browser.icons.pipeline
 
+import kotlin.random.Random
 import mozilla.components.browser.icons.IconRequest
 import mozilla.components.concept.engine.manifest.Size
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class IconResourceComparatorTest {
@@ -366,5 +368,42 @@ class IconResourceComparatorTest {
             ),
             urls,
         )
+    }
+
+    @Test
+    fun `comparator is transitive when the same URL is listed with different attributes`() {
+        val a = IconRequest.Resource(url = "https://example.org/a.png", type = IconRequest.Resource.Type.FAVICON)
+        val b =
+            IconRequest.Resource(url = "https://example.org/b.png", type = IconRequest.Resource.Type.APPLE_TOUCH_ICON)
+        val c = IconRequest.Resource(url = "https://example.org/a.png", type = IconRequest.Resource.Type.MANIFEST_ICON)
+
+        // c is better than b, and b is better than a, so c must be better than a.
+        assertTrue(IconResourceComparator.compare(c, b) < 0)
+        assertTrue(IconResourceComparator.compare(b, a) < 0)
+        assertTrue(IconResourceComparator.compare(c, a) < 0)
+    }
+
+    @Test
+    fun `sorting many resources with repeated URLs does not violate the comparator contract`() {
+        val types = IconRequest.Resource.Type.values()
+        val random = Random(42)
+        repeat(50) {
+            val resources =
+                List(200) {
+                    IconRequest.Resource(
+                        url = "https://example.org/icon-${random.nextInt(10)}.png",
+                        type = types[random.nextInt(types.size)],
+                        sizes = listOf(Size(random.nextInt(4) * 16, random.nextInt(4) * 16)),
+                        mimeType = if (random.nextBoolean()) "image/x-icon" else "image/png",
+                        maskable = random.nextBoolean(),
+                    )
+                }
+
+            val sorted = resources.sortedWith(IconResourceComparator)
+
+            for (i in 0 until sorted.size - 1) {
+                assertTrue(IconResourceComparator.compare(sorted[i], sorted[i + 1]) <= 0)
+            }
+        }
     }
 }

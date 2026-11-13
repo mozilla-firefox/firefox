@@ -19,8 +19,6 @@ internal object IconResourceComparator : Comparator<IconRequest.Resource> {
      */
     override fun compare(resource: IconRequest.Resource, other: IconRequest.Resource) =
         when {
-            // Two resources pointing to the same URL are always referencing the same icon. So treat them as equal.
-            resource.url == other.url -> 0
             resource.maskable != other.maskable -> -resource.maskable.compareTo(other.maskable)
             resource.type != other.type -> -resource.type.rank().compareTo(other.type.rank())
             resource.maxSize != other.maxSize -> -resource.maxSize.compareTo(other.maxSize)
