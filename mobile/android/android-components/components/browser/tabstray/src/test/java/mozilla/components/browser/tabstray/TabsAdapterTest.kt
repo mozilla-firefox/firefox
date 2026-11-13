@@ -18,9 +18,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers
+import org.mockito.Mockito.mockingDetails
 import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 
 private class TestTabViewHolder(view: View) : TabViewHolder(view) {
     override var tab: TabSessionState? = null
@@ -133,15 +135,11 @@ class TabsAdapterTest {
         val payloads = spy(arrayListOf(PAYLOAD_DONT_HIGHLIGHT_SELECTED_ITEM))
 
         adapter.onBindViewHolder(holder, 0, payloads)
-        // verify that calls we expect further down are not happening after the null check
-        verify(payloads, never()).isEmpty()
-        verify(payloads, never()).contains(ArgumentMatchers.anyInt())
+        verifyNoInteractions(payloads)
 
         adapter.updateTabs(emptyList(), selectedTabId = null)
         adapter.onBindViewHolder(holder, 0, payloads)
-        // verify that calls we expect further down are not happening after the null check
-        verify(payloads, never()).isEmpty()
-        verify(payloads, never()).contains(ArgumentMatchers.anyInt())
+        verifyNoInteractions(payloads)
     }
 
     @Test
@@ -154,8 +152,6 @@ class TabsAdapterTest {
 
         adapter.onBindViewHolder(holder, 0, emptyPayloads)
 
-        verify(emptyPayloads).isEmpty()
-        // verify that calls we expect further down are not happening after the isEmpty check
-        verify(emptyPayloads, never()).contains(ArgumentMatchers.anyString())
+        assertEquals(listOf("isEmpty"), mockingDetails(emptyPayloads).invocations.map { it.method.name })
     }
 }

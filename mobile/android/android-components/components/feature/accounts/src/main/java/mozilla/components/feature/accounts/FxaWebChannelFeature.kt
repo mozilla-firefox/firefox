@@ -24,7 +24,6 @@ import mozilla.components.concept.engine.webextension.Port
 import mozilla.components.concept.engine.webextension.WebExtensionRuntime
 import mozilla.components.concept.sync.AuthType
 import mozilla.components.concept.sync.FxAEntryPoint
-import mozilla.components.concept.sync.SyncEngine
 import mozilla.components.feature.accounts.FxaWebChannelFeature.Companion.COMMAND_CAN_LINK_ACCOUNT
 import mozilla.components.feature.accounts.FxaWebChannelFeature.Companion.COMMAND_CHANGE_PASSWORD
 import mozilla.components.feature.accounts.FxaWebChannelFeature.Companion.COMMAND_DELETE_ACCOUNT
@@ -414,7 +413,7 @@ class FxaWebChannelFeature(
                                         JSONArray().also { engines ->
                                             accountManager.supportedSyncEngines()?.forEach { engine ->
                                                 engines.put(engine.nativeName)
-                                            } ?: emptyArray<SyncEngine>()
+                                            }
                                         },
                                     )
 

@@ -79,10 +79,7 @@ class SearchEngineWriterTest {
         assertTrue(searchXML!!.contains(searchEngine.name))
         assertTrue(searchXML.contains(IMAGE_URI_PREFIX))
         assertTrue(searchXML.contains(URL_TYPE_SEARCH_HTML))
-        searchEngine.resultUrls.forEach {
-            val url = it.replace("%s", "{searchTerms}")
-            searchXML.contains(url)
-        }
+        searchEngine.resultUrls.forEach { assertTrue(searchXML.contains(it)) }
         assertFalse(searchXML.contains(URL_TYPE_SUGGEST_JSON))
     }
 

@@ -79,19 +79,23 @@ class MarsSpocsEndpointRawTest {
                 assertEquals(Request.Method.POST, request.method)
                 assertTrue(request.conservative)
 
-                request.headers!!
-                    .first {
-                        it.name.equals(CONTENT_TYPE, true)
-                    }
-                    .value
-                    .contains(CONTENT_TYPE_APPLICATION_JSON, true)
+                assertTrue(
+                    request.headers!!
+                        .first {
+                            it.name.equals(CONTENT_TYPE, true)
+                        }
+                        .value
+                        .contains(CONTENT_TYPE_APPLICATION_JSON, true)
+                )
 
-                request.headers!!
-                    .last {
-                        it.name.equals(USER_AGENT, true)
-                    }
-                    .value
-                    .contains(config.userAgent!!, true)
+                assertTrue(
+                    request.headers!!
+                        .last {
+                            it.name.equals(USER_AGENT, true)
+                        }
+                        .value
+                        .contains(config.userAgent!!, true)
+                )
 
                 val requestBody =
                     JSONObject(
@@ -131,12 +135,14 @@ class MarsSpocsEndpointRawTest {
                 assertEquals(Request.Method.DELETE, request.method)
                 assertTrue(request.conservative)
 
-                request.headers!!
-                    .first {
-                        it.name.equals(CONTENT_TYPE, true)
-                    }
-                    .value
-                    .contains(CONTENT_TYPE_APPLICATION_JSON, true)
+                assertTrue(
+                    request.headers!!
+                        .first {
+                            it.name.equals(CONTENT_TYPE, true)
+                        }
+                        .value
+                        .contains(CONTENT_TYPE_APPLICATION_JSON, true)
+                )
 
                 val requestBody =
                     JSONObject(

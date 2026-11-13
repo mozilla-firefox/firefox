@@ -40,8 +40,7 @@ class BundleTest {
 
     @Test
     fun `safeCastToArrayOfT with expected and unexpected elements returns array with only expected`() {
-        val testArray = Array<Parcelable>(4) { Expected() }
-        testArray.plus(Unexpected())
+        val testArray = Array<Parcelable>(4) { Expected() } + Unexpected()
 
         val result = testArray.safeCastToArrayOfT<Expected>()
 
@@ -81,9 +80,7 @@ class BundleTest {
     fun `getParcelableArrayCompat with both expected unexpected type returns array with only expected on SDK 32 and below`() {
         val bundle = Bundle()
 
-        val testArray = Array<Parcelable>(4) { Expected() }
-
-        testArray.plus(Unexpected())
+        val testArray = Array<Parcelable>(4) { Expected() } + Unexpected()
 
         bundle.putParcelableArray(KEY, testArray)
 

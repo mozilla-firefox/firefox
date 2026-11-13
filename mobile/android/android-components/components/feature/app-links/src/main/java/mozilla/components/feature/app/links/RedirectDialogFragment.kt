@@ -27,7 +27,7 @@ abstract class RedirectDialogFragment : BottomSheetDialogFragment() {
      * A callback to trigger when user dismisses the dialog. For instance, a valid use case can be in confirmation
      * dialog, after the negative button is clicked, this callback must be called.
      */
-    var onCancelRedirect: () -> Unit? = {}
+    var onCancelRedirect: () -> Unit = {}
 
     /**
      * A callback to trigger when the user dismisses the dialog without taking an explicit action, for example by

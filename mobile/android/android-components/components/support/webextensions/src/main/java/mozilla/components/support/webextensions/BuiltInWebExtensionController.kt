@@ -29,8 +29,8 @@ class BuiltInWebExtensionController(
     private val defaultPort: String,
 ) {
     private val logger = Logger("mozac-webextensions")
-    private var registerContentMessageHandler: (WebExtension) -> Unit? = {}
-    private var registerBackgroundMessageHandler: (WebExtension) -> Unit? = {}
+    private var registerContentMessageHandler: (WebExtension) -> Unit = {}
+    private var registerBackgroundMessageHandler: (WebExtension) -> Unit = {}
 
     /**
      * Makes sure the web extension is installed in the provided runtime. If a content message handler was registered

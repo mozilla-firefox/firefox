@@ -368,7 +368,7 @@ class ListenSheetTest {
             .onNodeWithTag(AUDIO_PROGRESS_BAR_TEST_TAG_EXPANDED)
             .assert(hasStateDescription(spokenState))
             .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.SetProgress))
-            .performSemanticsAction(SemanticsActions.SetProgress) { it(0.5f) }
+            .performSemanticsAction(SemanticsActions.SetProgress) { assertTrue(it(0.5f)) }
 
         assertEquals(listOf(ListenAction.Playback.SeekRequested(0.5f)), actions)
     }

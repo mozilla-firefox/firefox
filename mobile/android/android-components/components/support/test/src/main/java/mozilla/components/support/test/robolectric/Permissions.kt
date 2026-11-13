@@ -14,8 +14,5 @@ import org.robolectric.Shadows.shadowOf
  * @param permissions list of permissions that you need to be granted.
  */
 fun grantPermission(vararg permissions: String) {
-    val application = shadowOf(getApplicationContext<Application>())
-    permissions.map {
-        application.grantPermissions(it)
-    }
+    shadowOf(getApplicationContext<Application>()).grantPermissions(*permissions)
 }

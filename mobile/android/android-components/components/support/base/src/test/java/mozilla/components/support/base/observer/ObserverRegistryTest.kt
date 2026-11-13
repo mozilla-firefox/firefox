@@ -482,7 +482,7 @@ class ObserverRegistryTest {
         assertFalse(observer3.notified)
 
         val valueToConsume = 23
-        consumers.forEach { it.invoke(valueToConsume) }
+        assertEquals(listOf(false, true, false), consumers.map { it(valueToConsume) })
 
         assertTrue(observer1.notified)
         assertTrue(observer2.notified)

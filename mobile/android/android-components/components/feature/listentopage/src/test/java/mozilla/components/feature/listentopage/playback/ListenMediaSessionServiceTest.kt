@@ -50,7 +50,11 @@ class ListenMediaSessionServiceTest {
 
     @After
     fun tearDown() {
-        services.forEach { runCatching { it.destroy() } }
+        services.forEach {
+            try {
+                it.destroy()
+            } catch (_: Throwable) {}
+        }
         shadowOf(Looper.getMainLooper()).idle()
     }
 

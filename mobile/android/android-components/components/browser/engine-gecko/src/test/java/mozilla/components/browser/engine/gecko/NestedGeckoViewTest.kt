@@ -504,7 +504,6 @@ class NestedGeckoViewTest {
         // Down action enables requestDisallowInterceptTouchEvent (and starts a gesture).
         viewParent.dispatchTouchEvent(mockMotionEvent(ACTION_DOWN, y = 2f))
 
-        inputResultMock.hashCode()
         geckoResults[resultCurrentIndex++].complete(inputResultMock)
 
         // `onInterceptTouchEvent` will be triggered the first time because it's the first pass.

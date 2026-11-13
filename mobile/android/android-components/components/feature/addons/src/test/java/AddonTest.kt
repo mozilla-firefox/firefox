@@ -683,7 +683,7 @@ class AddonTest {
     fun `localizeDataCollectionPermissions - should return a localized string for each data collection permission`() {
         // The "none" permission is special and it doesn't get localized strings like the other data permissions.
         GeckoWebExtension.DATA_COLLECTION_PERMISSIONS.filter { permission -> permission != "none" }
-            .map { permission ->
+            .forEach { permission ->
                 val list = Addon.localizeDataCollectionPermissions(listOf(permission), testContext)
                 assertTrue("expected a localized string for $permission", list.size == 1)
             }
@@ -720,7 +720,7 @@ class AddonTest {
     fun `localizeOptionalDataCollectionPermissions - should return a LocalizedPermission for each data collection permission`() {
         // The "none" permission is special and it doesn't get localized strings like the other data permissions.
         GeckoWebExtension.DATA_COLLECTION_PERMISSIONS.filter { permission -> permission != "none" }
-            .map { permission ->
+            .forEach { permission ->
                 val list =
                     Addon.localizeOptionalDataCollectionPermissions(
                         listOf(Addon.Permission(permission, false)),

@@ -332,8 +332,6 @@ internal constructor(
             field = value
 
             val layout = rootView as ConstraintLayout
-            layout.hashCode()
-
             val constraintSet = ConstraintSet()
             constraintSet.clone(layout)
             constraintSet.clear(views.progress.id, ConstraintSet.TOP)

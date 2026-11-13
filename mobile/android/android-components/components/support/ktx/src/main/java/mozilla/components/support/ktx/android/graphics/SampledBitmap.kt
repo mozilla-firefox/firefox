@@ -125,7 +125,7 @@ private fun decodeSampled(
 ): Bitmap? {
     return try {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        decode(bounds)
+        decode(bounds)?.recycle()
 
         // A bounds pass always returns a null bitmap, so the decoded dimensions are what tell
         // us whether the image could be read.

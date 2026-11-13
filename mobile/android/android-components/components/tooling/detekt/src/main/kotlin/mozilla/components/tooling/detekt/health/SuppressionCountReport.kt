@@ -20,8 +20,8 @@ class SuppressionCountReport : OutputReport() {
     override fun render(detektion: Detektion): String? {
         val sb = StringBuilder("Suppression metrics:").appendLine().appendLine()
 
-        detektion.getData(SuppressionCountProcessor.suppressionKey)?.entries?.fold(sb) { acc, (suppression, count) ->
-            acc.appendLine("$suppression: $count")
+        detektion.getData(SuppressionCountProcessor.suppressionKey)?.entries?.forEach { (suppression, count) ->
+            sb.appendLine("$suppression: $count")
         }
 
         return sb.toString()

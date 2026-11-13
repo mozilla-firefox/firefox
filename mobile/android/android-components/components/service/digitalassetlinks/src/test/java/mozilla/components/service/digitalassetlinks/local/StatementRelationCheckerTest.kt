@@ -48,7 +48,7 @@ class StatementRelationCheckerTest {
 
         // Sanity check that the mock can yield twice
         numYields = 0
-        listFetcher.listStatements(mock()).toList()
+        assertEquals(2, listFetcher.listStatements(mock()).count())
         assertEquals(2, numYields)
     }
 

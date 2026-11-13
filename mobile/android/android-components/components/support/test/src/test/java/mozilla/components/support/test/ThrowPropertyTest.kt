@@ -5,6 +5,7 @@
 package mozilla.components.support.test.robolectric.mozilla.components.support.test
 
 import mozilla.components.support.test.ThrowProperty
+import org.junit.Assert.fail
 import org.junit.Test
 
 class ThrowPropertyTest {
@@ -13,7 +14,7 @@ class ThrowPropertyTest {
     @Test(expected = UnsupportedOperationException::class)
     fun `exception thrown when get value is called`() {
         val throwProperty = ThrowProperty<String>()
-        throwProperty.getValue(testProperty, ::testProperty)
+        fail("getValue returned ${throwProperty.getValue(testProperty, ::testProperty)}")
     }
 
     @Test(expected = UnsupportedOperationException::class)

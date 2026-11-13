@@ -8,13 +8,13 @@ import android.util.JsonWriter
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.ByteArrayOutputStream
 import mozilla.components.support.test.mock
+import mozilla.components.support.test.whenever
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito.doReturn
 import org.mozilla.geckoview.GeckoSession
 
 @RunWith(AndroidJUnit4::class)
@@ -23,7 +23,7 @@ class GeckoEngineSessionStateTest {
     @Test
     fun writeTo() {
         val geckoState: GeckoSession.SessionState = mock()
-        doReturn("<state>").`when`(geckoState).toString()
+        whenever(geckoState.toString()).thenReturn("<state>")
 
         val state = GeckoEngineSessionState(geckoState)
 

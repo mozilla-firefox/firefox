@@ -331,7 +331,7 @@ class CustomTabsToolbarFeature(
                 drawableIcon,
                 context.getString(R.string.mozac_feature_customtabs_share_link),
             ) {
-                val listener =
+                val listener: () -> Unit =
                     customTabsToolbarListeners.shareListener
                         ?: {
                             session?.let {

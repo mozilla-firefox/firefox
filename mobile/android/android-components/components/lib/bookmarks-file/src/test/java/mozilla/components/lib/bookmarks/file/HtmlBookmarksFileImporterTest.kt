@@ -60,7 +60,7 @@ class HtmlBookmarksFileImporterTest {
         var insertedTree: InsertableBookmarkTreeRoot? = null
         val importer = createImporter(inserter = fakeInserter { insertedTree = it })
 
-        importer.importFromUri(testUri).getOrThrow()
+        assertEquals("guid", importer.importFromUri(testUri).getOrThrow().guid)
 
         assertEquals("parentGuid", insertedTree!!.parentGuid)
     }

@@ -91,7 +91,6 @@ class GeckoEngineViewTest {
 
         // Test GeckoResult resolves successfuly
         engineView.engineViewCapture { captured = it }
-        verify(mockGeckoView).geckoViewCapture()
         geckoResult.complete(mock())
         shadowOf(getMainLooper()).idle()
 

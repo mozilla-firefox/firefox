@@ -48,5 +48,5 @@ class SettingsUseCases(
 }
 
 private fun BrowserState.forEachEngineSession(block: (EngineSession) -> Unit) {
-    (tabs + customTabs).mapNotNull { it.engineState.engineSession }.map { block(it) }
+    (tabs + customTabs).mapNotNull { it.engineState.engineSession }.forEach(block)
 }
