@@ -167,6 +167,8 @@ class StructuredOutputParser(OutputParser):
             SystemResourceMonitor.assertion_failure(data)
         elif action == "ubsan_error":
             SystemResourceMonitor.ubsan_error(data)
+        elif action == "asan_error":
+            SystemResourceMonitor.asan_error(data)
         elif action == "mozleak_object":
             SystemResourceMonitor.mozleak_object(data)
         elif action == "mozleak_total":

@@ -534,6 +534,23 @@ class _UBSanFallbackLogger:
         self._monitor._record_line_ubsan(data)
 
 
+def _asan_key(data):
+    """Identity of an ASan report, shared by the asan_error action and the
+    line-based fallback so the two can be matched."""
+    return (data.get("pid"), data["message"])
+
+
+class _ASanFallbackLogger:
+    """Logger-like sink for the line-based ASanErrorParser: the actions it
+    would emit become markers instead."""
+
+    def __init__(self, monitor):
+        self._monitor = monitor
+
+    def asan_error(self, **data):
+        self._monitor._record_line_asan(data)
+
+
 class SystemResourceMonitor:
     """Measures system resources.
 
@@ -671,6 +688,20 @@ class SystemResourceMonitor:
         # Keys of ubsan_error actions that found no pending line-based
         # report, so that one completing later is dropped.
         self._recent_ubsan_actions = deque(maxlen=32)
+        # Line-based fallback for harnesses that do not emit asan_error
+        # actions: assembles AddressSanitizer reports out of process_output
+        # lines. An asan_error action for the same report supersedes the
+        # pending line-based one.
+        self._asan_parser = None
+        try:
+            from mozleak.asan import ASanErrorParser
+        except ImportError:
+            pass
+        else:
+            self._asan_parser = ASanErrorParser(_ASanFallbackLogger(self))
+        # Keys of asan_error actions that found no pending line-based
+        # report, so that one completing later is dropped.
+        self._recent_asan_actions = deque(maxlen=32)
         # Multi-line console.<method>: body (Message:/Stack:/frames) waiting
         # to be assembled into a single marker. Tuple of
         # (name, timestamp, marker_data, phase, prefix_body) where phase
@@ -875,6 +906,8 @@ class SystemResourceMonitor:
             self._assertion_parser.flush()
         if self._ubsan_parser is not None:
             self._ubsan_parser.flush()
+        if self._asan_parser is not None:
+            self._asan_parser.flush()
         self._read_forwarded()
 
         if self._stream_file:
@@ -1422,6 +1455,11 @@ class SystemResourceMonitor:
             if test_name:
                 marker_data["test"] = test_name
             self._add_event("C++ warning", timestamp, marker_data)
+            return True
+
+        if self._asan_parser is not None and self._asan_parser.log(
+            line, pid=process, test=test_name, time=timestamp
+        ):
             return True
 
         if self._ubsan_parser is not None and self._ubsan_parser.log(
@@ -2092,6 +2130,15 @@ class SystemResourceMonitor:
             return
         self._emit_assertion_marker(data.pop("time", time.monotonic()), data)
 
+    def _rewrite_stack_files(self, stack):
+        """Point the frames' files at the source view."""
+        return [
+            {**frame, "file": self._clean_frame_file(frame["file"])[1]}
+            if "file" in frame
+            else frame
+            for frame in stack
+        ]
+
     def _emit_assertion_marker(self, timestamp, data):
         fatal = bool(data.get("fatal"))
         marker_data = {
@@ -2117,16 +2164,7 @@ class SystemResourceMonitor:
             if value := data.get(source):
                 marker_data[target] = value
         if stack := data.get("stack"):
-            rewritten = []
-            for frame in stack:
-                if "file" in frame:
-                    rewritten.append({
-                        **frame,
-                        "file": self._clean_frame_file(frame["file"])[1],
-                    })
-                else:
-                    rewritten.append(frame)
-            marker_data["stack"] = rewritten
+            marker_data["stack"] = self._rewrite_stack_files(stack)
         elif frame_file and lineno is not None:
             marker_data["stack"] = [{"file": frame_file, "line": lineno}]
         self._add_event(data["kind"], timestamp, marker_data)
@@ -2184,19 +2222,96 @@ class SystemResourceMonitor:
             if data.get(key) is not None:
                 marker_data[key] = data[key]
         if stack := data.get("stack"):
-            rewritten = []
-            for frame in stack:
-                if "file" in frame:
-                    rewritten.append({
-                        **frame,
-                        "file": self._clean_frame_file(frame["file"])[1],
-                    })
-                else:
-                    rewritten.append(frame)
-            marker_data["stack"] = rewritten
+            marker_data["stack"] = self._rewrite_stack_files(stack)
         elif frame_file and lineno is not None:
             marker_data["stack"] = [{"file": frame_file, "line": lineno}]
         self._add_event("UBSan Error", timestamp, marker_data)
+
+    @staticmethod
+    def asan_error(data):
+        """Record an AddressSanitizer report.
+
+        Args:
+            data: Dictionary containing asan_error data including:
+                  - "kind": error kind (e.g. "SEGV", "heap-use-after-free")
+                  - "message": the header text after "AddressSanitizer: "
+                  - "pid": pid of the process the report is about (optional)
+                  - "file", "lineno", "column", "function": SUMMARY location
+                    (optional)
+                  - "stack": list of profiler-format frame dicts (optional)
+                  - "stacks": list of {"label", "stack"} dicts, one per
+                              labeled stack of the report such as "freed by
+                              thread T0 here" (optional)
+                  - "scope": identifier for the browser session, e.g. a
+                             directory name (optional)
+                  - "test": test name (optional)
+                  - "quiet": whether the test run will be retried (optional)
+                  - "time": timestamp in milliseconds
+
+        The same report may be pending in the line-based fallback fed by
+        process_output lines; the structured action wins.
+        """
+        if not SystemResourceMonitor.instance:
+            return
+
+        monitor = SystemResourceMonitor.instance
+        timestamp = monitor.get_monotonic_time_from_data(data)
+
+        key = _asan_key(data)
+        if not (monitor._asan_parser and monitor._asan_parser.discard(key)):
+            monitor._recent_asan_actions.append(key)
+        monitor._emit_asan_marker(timestamp, data)
+
+    def _record_line_asan(self, data):
+        key = _asan_key(data)
+        if key in self._recent_asan_actions:
+            self._recent_asan_actions.remove(key)
+            return
+        self._emit_asan_marker(data.pop("time", time.monotonic()), data)
+
+    def _emit_asan_marker(self, timestamp, data):
+        marker_data = {
+            "type": "ASanError",
+            "kind": data["kind"],
+            "message": data["message"],
+            "color": "orange" if data.get("quiet") else "red",
+        }
+        frame_file = None
+        if file_ := data.get("file"):
+            marker_data["file"], frame_file = self._clean_frame_file(file_)
+        lineno = data.get("lineno")
+        if lineno is not None:
+            marker_data["line"] = lineno
+        for key in ("column", "function", "pid", "scope", "test"):
+            if data.get(key) is not None:
+                marker_data[key] = data[key]
+        stack = data.get("stack") or []
+        # For the marker table: JIT code, system libraries and truncated
+        # reports have no SUMMARY location.
+        if "file" in marker_data:
+            location = marker_data["file"]
+            if lineno is not None:
+                location += f":{lineno}"
+        else:
+            location = (
+                data.get("function")
+                or next((f["function"] for f in stack if f.get("function")), None)
+                or data["message"]
+            )
+        marker_data["location"] = location
+        if stack:
+            marker_data["stack"] = self._rewrite_stack_files(stack)
+        elif frame_file and lineno is not None:
+            marker_data["stack"] = [{"file": frame_file, "line": lineno}]
+        if stacks := data.get("stacks"):
+            marker_data["stacks"] = [
+                {
+                    "label": s.get("label", ""),
+                    "stack": self._rewrite_stack_files(s.get("stack", [])),
+                }
+                for s in stacks
+            ]
+        self._add_event("ASan Error", timestamp, marker_data)
 
     @staticmethod
     def mozleak_object(data):
@@ -2941,6 +3056,27 @@ class SystemResourceMonitor:
                         {"key": "file", "format": "string", "hidden": True},
                         {"key": "line", "format": "integer", "hidden": True},
                         {"key": "column", "format": "integer", "hidden": True},
+                        {"key": "scope", "label": "Scope", "format": "string"},
+                        {"key": "test", "label": "Test", "format": "string"},
+                        {"key": "color", "hidden": True},
+                    ],
+                },
+                {
+                    "name": "ASanError",
+                    "tooltipLabel": "{marker.data.message}",
+                    "tableLabel": "{marker.data.kind} — {marker.data.location}",
+                    "chartLabel": "{marker.data.kind}",
+                    "display": ["marker-chart", "marker-table"],
+                    "colorField": "color",
+                    "data": [
+                        {"key": "kind", "label": "Kind", "format": "string"},
+                        {"key": "message", "label": "Message", "format": "string"},
+                        {"key": "file", "format": "string", "hidden": True},
+                        {"key": "line", "format": "integer", "hidden": True},
+                        {"key": "column", "format": "integer", "hidden": True},
+                        {"key": "location", "format": "string", "hidden": True},
+                        {"key": "function", "label": "Function", "format": "string"},
+                        {"key": "pid", "label": "Process ID", "format": "integer"},
                         {"key": "scope", "label": "Scope", "format": "string"},
                         {"key": "test", "label": "Test", "format": "string"},
                         {"key": "color", "hidden": True},
