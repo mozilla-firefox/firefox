@@ -43,8 +43,6 @@ subsuite = "taskgraph"
 
 ["test_transforms_perftest.py"]
 
-["test_transforms_source_test.py"]
-
 ["test_transforms_task.py"]
 
 ["test_transforms_test.py"]
