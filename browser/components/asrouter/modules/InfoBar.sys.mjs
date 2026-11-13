@@ -738,10 +738,6 @@ export const InfoBar = {
       );
     };
 
-    if (win.document?.readyState === "complete") {
-      onWindowReady();
-    } else {
-      win.addEventListener("load", onWindowReady, { once: true });
-    }
+    win.addEventListener("load", onWindowReady, { once: true });
   },
 };
