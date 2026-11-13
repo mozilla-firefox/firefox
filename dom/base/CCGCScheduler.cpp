@@ -31,6 +31,8 @@ MOZ_RUNINIT const TimeDuration kICCSliceBudget =
 MOZ_RUNINIT const TimeDuration kIdleICCSliceBudget =
     TimeDuration::FromMilliseconds(2);
 MOZ_RUNINIT const TimeDuration kMaxICCDuration = TimeDuration::FromSeconds(2);
+MOZ_RUNINIT const TimeDuration kMinSliceBudget =
+    TimeDuration::FromMilliseconds(2);
 
 MOZ_RUNINIT const TimeDuration kCCForced = kOneMinute * 2;
 MOZ_RUNINIT const TimeDuration kMaxCCLockedoutTime =
@@ -694,8 +696,9 @@ JS::SliceBudget CCGCScheduler::ComputeCCSliceBudget(
   *aPreferShorterSlices =
       aDeadline.IsNull() || (aDeadline - aNow) < kICCSliceBudget;
 
-  TimeDuration baseBudget =
-      aDeadline.IsNull() ? kICCSliceBudget : aDeadline - aNow;
+  TimeDuration baseBudget = aDeadline.IsNull()
+                                ? kICCSliceBudget
+                                : std::max(aDeadline - aNow, kMinSliceBudget);
 
   if (aPrevSliceEndTime.IsNull()) {
     // The first slice gets the standard slice time.
@@ -726,7 +729,7 @@ JS::SliceBudget CCGCScheduler::ComputeCCSliceBudget(
   TimeDuration laterSliceBudget = maxSlice.MultDouble(percentToHalfDone);
 
   // Note: We may have already overshot the deadline, in which case
-  // baseBudget will be negative and we will end up returning
+  // baseBudget is kMinSliceBudget and we will usually end up returning
   // laterSliceBudget.
   return JS::SliceBudget(
       std::max({delaySliceBudget, laterSliceBudget, baseBudget}));
@@ -738,8 +741,9 @@ JS::SliceBudget CCGCScheduler::ComputeInterSliceGCBudget(TimeStamp aDeadline,
   // tried to run since that means we may have a significant amount of
   // garbage to collect and it's better to GC in several longer slices than
   // in a very long one.
-  TimeDuration budget =
-      aDeadline.IsNull() ? mActiveIntersliceGCBudget * 2 : aDeadline - aNow;
+  TimeDuration budget = aDeadline.IsNull()
+                            ? mActiveIntersliceGCBudget * 2
+                            : std::max(aDeadline - aNow, kMinSliceBudget);
   if (!mCCBlockStart) {
     return CreateGCSliceBudget(budget, !aDeadline.IsNull(), false);
   }
@@ -1033,7 +1037,8 @@ JS::SliceBudget CCGCScheduler::ComputeForgetSkippableBudget(
   ++mForgetSkippableCounter;
 
   TimeDuration budgetTime =
-      aDeadline ? (aDeadline - aStartTimeStamp) : kForgetSkippableSliceDuration;
+      aDeadline ? std::max(aDeadline - aStartTimeStamp, kMinSliceBudget)
+                : kForgetSkippableSliceDuration;
   return JS::SliceBudget(budgetTime);
 }
 

@@ -4,6 +4,8 @@
 
 #include "jsapi-tests/tests.h"
 
+#include <cmath>
+
 #include "js/SliceBudget.h"
 
 using namespace js;
@@ -13,6 +15,7 @@ using JS::UnlimitedBudget;
 using JS::WorkBudget;
 
 using mozilla::TimeDuration;
+using mozilla::TimeStamp;
 
 BEGIN_TEST(testSliceBudgetUnlimited) {
   SliceBudget budget = SliceBudget::unlimited();
@@ -74,6 +77,13 @@ END_TEST(testSliceBudgetTime)
 
 BEGIN_TEST(testSliceBudgetTimeZero) {
   SliceBudget budget = SliceBudget(TimeDuration::FromMilliseconds(0));
+  CHECK(budget.timeBudget() == TimeDuration::FromMilliseconds(1));
+  CHECK(std::isfinite(budget.progress()));
+
+  TimeStamp end = TimeStamp::Now() + budget.timeBudget();
+  while (TimeStamp::Now() < end) {
+  }
+
   budget.step(1000);
   CHECK(budget.isOverBudget());
 
