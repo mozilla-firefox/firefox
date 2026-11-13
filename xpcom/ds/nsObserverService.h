@@ -37,7 +37,6 @@ class nsObserverService final : public nsIObserverService,
   void RegisterReporter();
   nsresult EnsureValidCall() const;
   nsresult FilterHttpOnTopics(const char* aTopic);
-
   static const size_t kSuspectReferentCount = 100;
   nsTHashtable<nsObserverList> mObserverTopicTable;
   bool mShuttingDown = false;

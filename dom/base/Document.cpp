@@ -13240,11 +13240,11 @@ void Document::OnPageHide(bool aPersisted, EventTarget* aDispatchStartTarget,
     nsCOMPtr<nsIObserverService> os = mozilla::services::GetObserverService();
     if (os) {
       nsIPrincipal* principal = NodePrincipal();
-      os->NotifyObservers(ToSupports(this),
-                          principal->IsSystemPrincipal()
-                              ? "chrome-page-hidden"
-                              : "content-page-hidden",
-                          nullptr);
+      os->NotifyWhenScriptSafe(ToSupports(this),
+                               principal->IsSystemPrincipal()
+                                   ? "chrome-page-hidden"
+                                   : "content-page-hidden",
+                               nullptr);
     }
 
     // Now send out a PageHide event.

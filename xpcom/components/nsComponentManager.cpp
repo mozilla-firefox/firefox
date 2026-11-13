@@ -435,7 +435,7 @@ void nsComponentManagerImpl::RereadChromeManifests(bool aChromeOnly) {
 
   nsCOMPtr<nsIObserverService> obs = services::GetObserverService();
   if (obs) {
-    obs->NotifyObservers(nullptr, "chrome-manifests-loaded", nullptr);
+    obs->NotifyWhenScriptSafe(nullptr, "chrome-manifests-loaded", nullptr);
   }
 }
 
