@@ -27,3 +27,16 @@ preferences-ai-controls-custom-widgets-control =
 # Item in the list of features the "Block AI enhancements?" confirmation
 # dialog will block.
 preferences-ai-controls-block-confirmation-custom-widgets = Custom widgets
+
+# Opens the text field for describing a widget to make.
+widget-studio-compose-button =
+  .title = New widget
+
+# Text field describing the widget to make.
+widget-composer-input =
+  .placeholder = Describe a widget
+  .aria-label = Describe a widget
+
+# Makes the widget the prompt describes.
+widget-composer-submit-button =
+  .title = Create widget

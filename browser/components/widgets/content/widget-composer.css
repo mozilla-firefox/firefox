@@ -1,0 +1,135 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  --widget-composer-background-color: var(--input-background-color);
+  --widget-composer-inactive-background-color: var(--input-background-color);
+  --widget-composer-border-color: var(--input-border-color);
+  --widget-composer-border-gradient: none;
+  --widget-composer-glow-color: transparent;
+  --widget-composer-outline-color: var(--focus-outline-color);
+  --widget-composer-outline-offset: var(--focus-outline-offset);
+
+  @media not (prefers-contrast) {
+    --widget-composer-border-color: transparent;
+    --widget-composer-border-gradient: linear-gradient(95deg, var(--color-violet-50) 1.22%, var(--color-pink-40) 49.98%, var(--color-yellow-30) 99.68%);
+    --widget-composer-outline-color: light-dark(var(--color-violet-60), var(--color-violet-30));
+    --widget-composer-outline-offset: var(--focus-outline-inset);
+  }
+
+  @media not (forced-colors) {
+    --widget-composer-background-color: light-dark(white, var(--color-violet-110));
+    --widget-composer-inactive-background-color: color-mix(in srgb, var(--widget-composer-background-color) 95%, var(--color-white));
+    --widget-composer-glow-color: color-mix(in srgb, var(--color-violet-40) 50%, transparent);
+    --widget-composer-selection-color: light-dark(var(--color-violet-0), var(--color-violet-60));
+  }
+
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-root);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  border-radius: var(--border-radius-large);
+}
+
+@media -moz-pref("browser.nova.enabled") {
+  .field {
+    border-radius: var(--border-radius-xlarge);
+  }
+}
+
+.background {
+  position: absolute;
+  inset: 0;
+  border: var(--border-width) solid var(--widget-composer-border-color);
+  border-radius: inherit;
+  background-color: var(--widget-composer-inactive-background-color);
+  transition: background-color 0.2s ease-in;
+
+  &::after {
+    content: "";
+    position: absolute;
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    inset: calc(-1 * var(--border-width));
+    border-radius: inherit;
+    background: var(--widget-composer-border-gradient);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    padding: var(--border-width);
+    pointer-events: none;
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    filter: blur(10px);
+    background-color: var(--widget-composer-glow-color);
+  }
+}
+
+.field:is(:hover, :focus-within) > .background {
+  background-color: var(--widget-composer-background-color);
+  transition: background-color 0.2s ease-out;
+}
+
+.field[focused] > .background {
+  outline: var(--focus-outline-width) solid var(--widget-composer-outline-color);
+  outline-offset: var(--widget-composer-outline-offset);
+
+  &::after {
+    display: none;
+  }
+}
+
+textarea,
+.actions {
+  position: relative;
+}
+
+textarea {
+  resize: none;
+  field-sizing: content;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  min-block-size: 2lh;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  max-block-size: 8lh;
+  margin: var(--space-medium) var(--space-large) 0;
+  padding: var(--space-xsmall);
+  border: none;
+  background: none;
+  color: var(--input-text-color);
+  font: inherit;
+  outline: none;
+
+  &::placeholder {
+    color: var(--text-color-deemphasized);
+  }
+
+  @media not (forced-colors) {
+    &::selection {
+      background-color: var(--widget-composer-selection-color);
+    }
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  padding: var(--space-xsmall) var(--space-large) var(--space-large);
+}
+
+.submit {
+  margin-inline-start: auto;
+}

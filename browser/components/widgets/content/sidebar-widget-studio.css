@@ -10,13 +10,9 @@
   block-size: 100%;
 }
 
-#close-button {
+#close-button,
+#compose-button {
   --button-border-radius: var(--border-radius-circle);
-
-  position: absolute;
-  inset-block-start: var(--space-large);
-  inset-inline-end: var(--space-large);
-  z-index: 1;
 
   @media not (forced-colors) {
     --button-background-color-ghost: var(--background-color-box);
@@ -27,9 +23,27 @@
       box-shadow: var(--box-shadow-level-1);
     }
   }
+}
+
+#close-button {
+  position: absolute;
+  inset-block-start: var(--space-large);
+  inset-inline-end: var(--space-large);
+  z-index: 1;
 
   /* The shared panel header provides the close button in this mode. */
   @media -moz-pref("sidebar.visibility", "hide-launcher") {
     display: none;
   }
+}
+
+#compose-button {
+  align-self: end;
+  margin-block: auto var(--space-large);
+  margin-inline-end: var(--space-large);
+}
+
+widget-composer {
+  margin-block-start: auto;
+  padding: var(--space-large);
 }
