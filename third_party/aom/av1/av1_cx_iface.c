@@ -3208,7 +3208,9 @@ static aom_codec_err_t encoder_destroy(aom_codec_alg_priv_t *ctx) {
 
   if (ctx->ppi) {
     AV1_PRIMARY *ppi = ctx->ppi;
-    av1_extrc_delete(&ppi->cpi->ext_ratectrl);
+    if (ppi->cpi) {
+      av1_extrc_delete(&ppi->cpi->ext_ratectrl);
+    }
     for (int i = 0; i < MAX_PARALLEL_FRAMES - 1; i++) {
       if (ppi->parallel_frames_data[i].cx_data) {
         free(ppi->parallel_frames_data[i].cx_data);

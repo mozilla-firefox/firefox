@@ -57,3 +57,4 @@ vendoring:
 
   patches:
     - mmloadusi64.patch
+    - bug2080101.patch
