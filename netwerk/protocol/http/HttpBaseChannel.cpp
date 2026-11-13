@@ -990,6 +990,19 @@ static nsresult NormalizeUploadStream(nsIInputStream* aUploadStream,
   *aReplacementStream = nullptr;
   *aReadyPromise = nullptr;
 
+  // If the stream is cloneable, seekable and non-async, we can allow it.  It
+  // must be cloneable, as nsHttpTransaction reads a clone of it rather than the
+  // channel's own stream, and seekable, so that the channel can rewind it for a
+  // 307/308 redirect or an auth retry.  Async input streams can cause issues,
+  // as various consumers of input streams expect the payload to be synchronous
+  // and `Available()` to be the length of the stream, which is not true for
+  // asynchronous streams.
+  nsCOMPtr<nsIAsyncInputStream> async = do_QueryInterface(aUploadStream);
+  nsCOMPtr<nsISeekableStream> seekable = do_QueryInterface(aUploadStream);
+  if (NS_InputStreamIsCloneable(aUploadStream) && seekable && !async) {
+    return NS_OK;
+  }
+
   // Unwrap RemoteLazyInputStream and normalize the contents as we're in the
   // parent process.
   if (nsCOMPtr<mozIRemoteLazyInputStream> lazyStream =
@@ -1050,12 +1063,16 @@ static nsresult NormalizeUploadStream(nsIInputStream* aUploadStream,
       nsresult rv = NormalizeUploadStream(data, getter_AddRefs(replacement),
                                           aReadyPromise);
       NS_ENSURE_SUCCESS(rv, rv);
-      if (replacement) {
-        // This buffer size should be kept in sync with HTMLFormSubmission.
-        rv = NS_NewBufferedInputStream(aReplacementStream, replacement.forget(),
-                                       8192);
-        NS_ENSURE_SUCCESS(rv, rv);
+      // The wrapped stream is usable as-is, so this one only refuses to clone
+      // because it has been read from, and rebuilding it would lose the data
+      // it has buffered.
+      if (!replacement) {
+        return NS_ERROR_INVALID_ARG;
       }
+      // This buffer size should be kept in sync with HTMLFormSubmission.
+      rv = NS_NewBufferedInputStream(aReplacementStream, replacement.forget(),
+                                     8192);
+      NS_ENSURE_SUCCESS(rv, rv);
       return NS_OK;
     }
   }
@@ -1089,20 +1106,24 @@ static nsresult NormalizeUploadStream(nsIInputStream* aUploadStream,
       }
     }
 
-    // If any of the inner streams needed to be replaced, replace the entire
-    // nsIMultiplexInputStream.
-    if (replace) {
-      nsresult rv;
-      nsCOMPtr<nsIMultiplexInputStream> replacement =
-          do_CreateInstance("@mozilla.org/io/multiplex-input-stream;1", &rv);
-      NS_ENSURE_SUCCESS(rv, rv);
-      for (auto& stream : streams) {
-        rv = replacement->AppendStream(stream);
-        NS_ENSURE_SUCCESS(rv, rv);
-      }
-
-      MOZ_ALWAYS_SUCCEEDS(CallQueryInterface(replacement, aReplacementStream));
+    // Every inner stream is usable as-is, so the multiplex stream only refuses
+    // to clone because it has been read from.
+    if (!replace) {
+      return NS_ERROR_INVALID_ARG;
     }
+
+    // An inner stream needed to be replaced, so replace the entire
+    // nsIMultiplexInputStream.
+    nsresult rv;
+    nsCOMPtr<nsIMultiplexInputStream> replacement =
+        do_CreateInstance("@mozilla.org/io/multiplex-input-stream;1", &rv);
+    NS_ENSURE_SUCCESS(rv, rv);
+    for (auto& stream : streams) {
+      rv = replacement->AppendStream(stream);
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+
+    MOZ_ALWAYS_SUCCEEDS(CallQueryInterface(replacement, aReplacementStream));
 
     // Wait for all inner promises to settle before resolving the final promise.
     if (!promises.IsEmpty()) {
@@ -1124,16 +1145,6 @@ static nsresult NormalizeUploadStream(nsIInputStream* aUploadStream,
                      });
       ready.forget(aReadyPromise);
     }
-    return NS_OK;
-  }
-
-  // If the stream is cloneable, seekable and non-async, we can allow it.  Async
-  // input streams can cause issues, as various consumers of input streams
-  // expect the payload to be synchronous and `Available()` to be the length of
-  // the stream, which is not true for asynchronous streams.
-  nsCOMPtr<nsIAsyncInputStream> async = do_QueryInterface(aUploadStream);
-  nsCOMPtr<nsISeekableStream> seekable = do_QueryInterface(aUploadStream);
-  if (NS_InputStreamIsCloneable(aUploadStream) && seekable && !async) {
     return NS_OK;
   }
 
