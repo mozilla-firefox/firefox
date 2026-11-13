@@ -48,8 +48,28 @@ pub fn retrieve_annotations(
     process: ProcessHandle,
     max_annotations: usize,
 ) -> Result<Vec<CAnnotation>, AnnotationsRetrievalError> {
-    let reader = ProcessReader::new(process)?;
-    let address = find_annotations(&reader)?;
+    read_annotations(&ProcessReader::new(process)?, max_annotations)
+}
+
+/// Retrieve the annotations of a process through a remote executor reachable
+/// via `socket`. For best performance, `buffer_len` should match the executor's output buffer.
+#[cfg(any(target_os = "linux", target_os = "android"))]
+pub fn retrieve_annotations_remote(
+    socket: std::os::fd::OwnedFd,
+    buffer_len: usize,
+    max_annotations: usize,
+) -> Result<Vec<CAnnotation>, AnnotationsRetrievalError> {
+    read_annotations(
+        &ProcessReader::new_remote(socket, buffer_len),
+        max_annotations,
+    )
+}
+
+fn read_annotations(
+    reader: &ProcessReader,
+    max_annotations: usize,
+) -> Result<Vec<CAnnotation>, AnnotationsRetrievalError> {
+    let address = find_annotations(reader)?;
 
     let mut mutex = reader
         .copy_object_shallow::<AnnotationMutex>(address)
@@ -72,7 +92,7 @@ pub fn retrieve_annotations(
 
     for i in 0..length {
         let annotation_address = unsafe { vec_pointer.add(i) };
-        if let Ok(annotation) = read_annotation(&reader, annotation_address as usize) {
+        if let Ok(annotation) = read_annotation(reader, annotation_address as usize) {
             annotations.push(annotation);
         }
     }
