@@ -20,6 +20,7 @@ support-files = [
   "sdpUtils.js",
   "addTurnsSelfsignedCert.js",
   "parser_rtp.js",
+  "cors_mode_stall.sjs",
   "peerconnection_audio_forced_sample_rate.js",
   "iceTestUtils.js",
   "simulcast.js",
@@ -150,6 +151,8 @@ run-if = [
 ["test_getUserMedia_spinEventLoop.html"]
 
 ["test_getUserMedia_srcObjectCorsTaint.html"]
+
+["test_getUserMedia_srcObjectCorsTaintDirectSelection.html"]
 
 ["test_getUserMedia_trackCloneCleanup.html"]
 

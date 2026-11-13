@@ -1,0 +1,93 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <script type="application/javascript" src="mediaStreamPlayback.js"></script>
+  <script type="application/javascript" src="srcObjectCorsTaint.js"></script>
+</head>
+<body>
+<pre id="test">
+<script type="application/javascript">
+createHTML({
+  title: "A peerIdentity stream must remain unreadable after an interrupted CORS media load",
+  bug: "2054640",
+});
+
+function once(target, name) {
+  return new Promise(resolve => {
+    target.addEventListener(name, resolve, { once: true });
+  });
+}
+
+runTest(async () => {
+  await pushPrefs(["dom.media.webcodecs.enabled", true]);
+
+  // 1. Create a peerIdentity-isolated stream whose frames must stay unreadable.
+  const isolated = await getUserMedia({
+    video: true,
+    peerIdentity: "user@example.com",
+  });
+  // Background thumbnail pages disallow media in their docshell
+  // (allowMedia = false). Confine that setting to an iframe that cleanup removes.
+  const frame = document.createElement("iframe");
+  document.body.appendChild(frame);
+  const frameWindow = frame.contentWindow;
+  const frameDocument = frame.contentDocument;
+  SpecialPowers.allowMedia(frameWindow, false);
+
+  const key = crypto.randomUUID();
+  const stallUrl = `cors_mode_stall.sjs?key=${key}`;
+  const finishUrl = `cors_mode_stall.sjs?finish&key=${key}`;
+  const video = frameDocument.createElement("video");
+  video.muted = true;
+
+  // 2. Start a CORS-enabled load by adding a source. Inserting a source runs
+  // resource selection even though the iframe disallows media.
+  video.crossOrigin = "anonymous";
+  video.preload = "metadata";
+  const primingSource = frameDocument.createElement("source");
+  primingSource.src = stallUrl;
+  video.appendChild(primingSource);
+
+  SimpleTest.registerCleanupFunction(async () => {
+    isolated.getTracks().forEach(track => track.stop());
+    frame.remove();
+    await fetch(finishUrl, { cache: "no-store" });
+  });
+
+  // The first progress event fires once the media decoder has opened the CORS
+  // channel, so cancelling the document load goes through its abort path.
+  await Promise.all([once(video, "loadstart"), once(video, "progress")]);
+  is(video.readyState, HTMLMediaElement.HAVE_NOTHING,
+     "the stalled CORS load has not produced metadata");
+
+  // 3. Cancel the document load and wait until the element is empty.
+  const aborted = once(video, "abort");
+  const emptied = once(video, "emptied");
+  frameWindow.stop();
+  await Promise.all([aborted, emptied]);
+  is(video.networkState, HTMLMediaElement.NETWORK_EMPTY,
+     "cancelling the CORS load leaves the element empty");
+
+  // 4. Assign the isolated stream. The iframe disallows media, so the srcObject
+  // setter returns before starting a load.
+  video.srcObject = isolated;
+  is(video.networkState, HTMLMediaElement.NETWORK_EMPTY,
+     "assigning srcObject while the iframe disallows media does not start a load");
+
+  // 5. Appending a source restarts resource selection, which picks the assigned
+  // srcObject over the new source.
+  const selected = once(video, "loadstart");
+  const triggerSource = frameDocument.createElement("source");
+  triggerSource.src = "/tests/dom/media/test/gizmo.mp4";
+  video.appendChild(triggerSource);
+  await selected;
+
+  // 6. The earlier CORS-enabled load must not make the isolated stream readable.
+  await video.play();
+  await assertBlocked(video, "direct selection path");
+  isolated.getTracks().forEach(track => track.stop());
+});
+</script>
+</pre>
+</body>
+</html>
