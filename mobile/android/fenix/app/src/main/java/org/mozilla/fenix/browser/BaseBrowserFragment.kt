@@ -179,6 +179,7 @@ import org.mozilla.fenix.bindings.SummarizeToolbarCFRBinding
 import org.mozilla.fenix.biometricauthentication.AuthenticationStatus
 import org.mozilla.fenix.biometricauthentication.BiometricAuthenticationManager
 import org.mozilla.fenix.browser.applinks.AppLinksPromptFragment
+import org.mozilla.fenix.browser.applinks.BrowserFirstHosts
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.browser.browsingmode.BrowsingModeObserver
 import org.mozilla.fenix.browser.permissions.FenixSitePermissionLearnMoreUrlProvider
@@ -325,6 +326,7 @@ abstract class BaseBrowserFragment :
     private val contextMenuFeature = ViewBoundFeatureWrapper<ContextMenuFeature>()
     private val downloadsFeature = ViewBoundFeatureWrapper<DownloadsFeature>()
     private val appLinksFeature = ViewBoundFeatureWrapper<AppLinksFeature>()
+    private val browserFirstHosts by lazy { BrowserFirstHosts(requireComponents.settings) }
     private val shareResourceFeature = ViewBoundFeatureWrapper<ShareResourceFeature>()
     private val copyDownloadsFeature = ViewBoundFeatureWrapper<CopyDownloadFeature>()
     private val promptsFeature = ViewBoundFeatureWrapper<PromptFeature>()
@@ -456,13 +458,10 @@ abstract class BaseBrowserFragment :
                     fragmentManager = parentFragmentManager,
                     sessionId = customTabSessionId,
                     dialog = appLinksPromptDialog(),
-                    launchInApp = { _ -> requireComponents.settings.shouldOpenLinksInApp(customTabSessionId != null) },
+                    launchInApp = ::shouldLaunchAppLinkInApp,
                     loadUrlUseCase = requireComponents.useCases.sessionUseCases.loadUrl,
-                    shouldPrompt = { _ -> requireComponents.settings.shouldPromptOpenLinksInApp() },
-                    alwaysOpenCheckboxAction = {
-                        requireComponents.settings.openLinksInExternalApp =
-                            requireContext().getString(R.string.pref_key_open_links_in_apps_always)
-                    },
+                    shouldPrompt = ::shouldPromptAppLink,
+                    alwaysOpenCheckboxAction = ::setAlwaysOpenInAppPreferences,
                     failedToLaunchAction = { fallbackUrl ->
                         fallbackUrl?.let {
                             val appLinksUseCases = requireComponents.useCases.appLinksUseCases
@@ -2770,6 +2769,22 @@ abstract class BaseBrowserFragment :
 
         return downloadDialog == null && !isRenameFragmentShowing && isAdded
     }
+
+    /** Sets every open-links-in-app preference to "always" when the user ticks the always-open checkbox. */
+    @VisibleForTesting
+    internal fun setAlwaysOpenInAppPreferences() {
+        requireComponents.settings.openLinksInExternalApp =
+            requireContext().getString(R.string.pref_key_open_links_in_apps_always)
+        requireComponents.settings.openLinksInYoutube =
+            requireContext().getString(R.string.pref_key_open_links_in_youtube_always)
+    }
+
+    private fun shouldLaunchAppLinkInApp(url: String): Boolean =
+        browserFirstHosts.launchInApp(url)
+            ?: requireComponents.settings.shouldOpenLinksInApp(isCustomTab = customTabSessionId != null)
+
+    private fun shouldPromptAppLink(url: String): Boolean =
+        browserFirstHosts.shouldPrompt(url) ?: requireComponents.settings.shouldPromptOpenLinksInApp()
 
     private fun appLinksPromptDialog(): ((RedirectDialogData) -> AppLinksPromptFragment)? {
         if (!FxNimbus.features.appLinks.value().showNewPrompt) {

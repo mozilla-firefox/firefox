@@ -915,7 +915,7 @@ features:
           enabled: false
       - channel: developer
         value:
-          enabled: true
+          enabled: false
 
   tab-management-enhancements:
     description: Control the visibility of the tab management enhancements.

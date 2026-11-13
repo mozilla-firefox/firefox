@@ -2133,6 +2133,20 @@ class Settings(
             default = appContext.getString(R.string.pref_key_open_links_in_youtube_never),
         )
 
+    /** Check to see if we should open a YouTube link in the YouTube app */
+    fun shouldOpenYoutubeInApp(): Boolean {
+        return when (openLinksInYoutube) {
+            appContext.getString(R.string.pref_key_open_links_in_youtube_always) -> true
+            appContext.getString(R.string.pref_key_open_links_in_youtube_ask) -> true
+            else -> false
+        }
+    }
+
+    /** Check to see if we need to prompt the user before opening a YouTube link in the YouTube app */
+    fun shouldPromptOpenYoutubeInApp(): Boolean {
+        return openLinksInYoutube == appContext.getString(R.string.pref_key_open_links_in_youtube_ask)
+    }
+
     /** Whether the in-development open links in YouTube app preference is revealed via secret settings. */
     var openLinksInYoutubeFeatureEnabled by
         booleanPreference(

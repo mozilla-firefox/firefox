@@ -836,6 +836,17 @@ class BaseBrowserFragmentTest {
         verify { container.removeView(any()) }
         assertNull(fragment.blackScreenOverlay)
     }
+
+    @Test
+    fun `setAlwaysOpenInAppPreferences sets both app links and YouTube preferences to always`() {
+        every { testContext.getString(R.string.pref_key_open_links_in_apps_always) } returns "apps_always"
+        every { testContext.getString(R.string.pref_key_open_links_in_youtube_always) } returns "youtube_always"
+
+        fragment.setAlwaysOpenInAppPreferences()
+
+        verify { settings.openLinksInExternalApp = "apps_always" }
+        verify { settings.openLinksInYoutube = "youtube_always" }
+    }
 }
 
 private class TestBaseBrowserFragment : BaseBrowserFragment() {

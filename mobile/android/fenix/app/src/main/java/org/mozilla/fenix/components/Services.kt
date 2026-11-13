@@ -13,6 +13,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.accounts.FirefoxAccountsAuthFeature
 import mozilla.components.feature.app.links.AppLinksInterceptor
 import mozilla.components.service.fxa.manager.FxaAccountManager
+import org.mozilla.fenix.browser.applinks.BrowserFirstHosts
 import org.mozilla.fenix.components.accounts.EntrypointTrackingAuthFeature
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.settings.SupportUtils
@@ -49,10 +50,14 @@ class Services(
         )
     }
 
+    private val browserFirstHosts by lazy { BrowserFirstHosts(context.components.settings) }
+
     val appLinksInterceptor by lazy {
         AppLinksInterceptor(
             context = context,
-            launchInApp = { _ -> context.components.settings.shouldOpenLinksInApp() },
+            launchInApp = { url ->
+                browserFirstHosts.launchInApp(url) ?: context.components.settings.shouldOpenLinksInApp()
+            },
             launchFromInterceptor = false,
             store = store,
         )

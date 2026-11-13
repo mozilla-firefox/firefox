@@ -55,13 +55,13 @@ class OpenLinksInAppsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     }
 
     private fun setupPreferences() {
+        uncheckAllRadioButtons()
+
         when (requireComponents.settings.openLinksInExternalApp) {
             getString(R.string.pref_key_open_links_in_apps_always) ->
                 if (requireComponents.settings.lastKnownMode == BrowsingMode.Normal) {
                     radioAlways.setCheckedWithoutClickListener(true)
-                    radioAskBeforeOpening.setCheckedWithoutClickListener(false)
                 } else {
-                    radioAlways.setCheckedWithoutClickListener(false)
                     radioAskBeforeOpening.setCheckedWithoutClickListener(true)
                 }
             getString(R.string.pref_key_open_links_in_apps_ask) ->
@@ -89,6 +89,18 @@ class OpenLinksInAppsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
         setupRadioGroups()
     }
 
+    private fun uncheckAllRadioButtons() {
+        listOf(
+                radioAlways,
+                radioAskBeforeOpening,
+                radioNever,
+                radioYoutubeAlways,
+                radioYoutubeAsk,
+                radioYoutubeNever,
+            )
+            .forEach { it.setCheckedWithoutClickListener(false) }
+    }
+
     private fun setupRadioGroups() {
         addToRadioGroup(
             radioAlways,
@@ -104,6 +116,8 @@ class OpenLinksInAppsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
 
     private fun onClickAlwaysOption() {
         requireComponents.settings.openLinksInExternalApp = getString(R.string.pref_key_open_links_in_apps_always)
+        requireComponents.settings.openLinksInYoutube = getString(R.string.pref_key_open_links_in_youtube_always)
+        radioYoutubeAlways.setCheckedWithoutClickListener(true)
     }
 
     private fun onClickAskOption() {
