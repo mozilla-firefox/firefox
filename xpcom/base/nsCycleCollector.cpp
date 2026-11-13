@@ -1248,6 +1248,9 @@ class nsCycleCollector : public nsIMemoryReporter {
 
   // This method assumes its argument is already canonicalized.
   void RemoveObjectFromGraph(void* aPtr);
+#ifdef DEBUG
+  bool IsObjectInGraph(void* aPtr) { return !!mGraph.FindNode(aPtr); }
+#endif
 
   void PrepareForGarbageCollection();
   void FinishAnyCurrentCollection();
@@ -2567,8 +2570,8 @@ class SnowWhiteKiller : public TraceCallbacks {
  private:
   void KillObject(SnowWhiteObject& aObject) {
     MOZ_ASSERT(aObject.OkayToKill());
+    MOZ_ASSERT(!mCollector->IsObjectInGraph(aObject.mPointer));
 
-    mCollector->RemoveObjectFromGraph(aObject.mPointer);
     aObject.mRefCnt->stabilizeForDeletion();
     {
       JS::AutoEnterCycleCollection autocc(mCollector->Runtime()->Runtime());
@@ -2596,6 +2599,17 @@ class SnowWhiteKiller : public TraceCallbacks {
     ToParticipant(o, &cp);
     SnowWhiteObject swo = {o, cp, aEntry->mRefCnt};
     aBuffer.Remove(aEntry);
+    // For mBudget, we need to remove o from the graph because it is about to be
+    // destroyed. For !mBudget, we need to eagerly remove this object from the
+    // graph because in ~SnowWhiteKiller() the destructor for an object earlier
+    // in mObjects might run the CC, and we need to ensure that this object is
+    // treated as an incremental root despite no longer being in the purple
+    // buffer. If it was traversed, it will be treated as an incremental root by
+    // the !pi->mParticipant case in ScanIncrementalRoots(). If it wasn't
+    // traversed, it won't have children, and will be skipped by
+    // ScanWhiteNodes().
+    mCollector->RemoveObjectFromGraph(o);
+
     if (mBudget) {
       KillObject(swo);
     } else {
@@ -3000,16 +3014,19 @@ void nsCycleCollector::ScanIncrementalRoots() {
         MOZ_ASSERT(false, "Non-JS thing with 0 refcount? Treating as live.");
       }
     } else if (!pi->mParticipant && pi->WasTraversed()) {
-      // Dead traversed refcounted objects:
-      // If the object was traversed, it must have been alive at the start of
-      // the CC, and thus had a positive refcount. It is dead now, so its
-      // refcount must have decreased at some point during the CC. Therefore,
-      // it would be in the purple buffer if it wasn't dead, so treat it as an
-      // incremental root.
+      // The object was traversed so it must have been alive with a positive
+      // refcount when it was added to the graph.
+      // The object has a null participant so RemoveObjectFromGraph must have
+      // been called on it by the SnowWhiteKiller, so it must have had a
+      // refcount of 0 at some point after it was added to the graph.
+      // Therefore, the refcount has changed during the CC so we should treat it
+      // as an incremental root, because we can't be sure that our traversal
+      // information is accurate.
       //
-      // This should not cause leaks because as the object died it should have
-      // released anything it held onto, which will add them to the purple
-      // buffer, which will cause them to be considered in the next CC.
+      // This should not cause leaks. Either the object was destroyed (and
+      // everything it held onto was released and added to the purple buffer),
+      // or it is in SnowWhiteKiller::mObjects and will be destroyed later, or
+      // it has been added back to the purple buffer.
     } else {
       continue;
     }
@@ -3543,6 +3560,11 @@ void nsCycleCollector::CleanupAfterCollection() {
     mCCJSRuntime->FinalizeDeferredThings(
         mResults.mAnyManual ? CycleCollectedJSRuntime::FinalizeNow
                             : CycleCollectedJSRuntime::FinalizeIncrementally);
+
+    // If FinalizeDeferredThings runs a GC, it could free the GC things
+    // accounted for by mResults.mFreedGCed, which could result in scheduling an
+    // extra GC, but that seems better than never including the time
+    // FinalizeDeferredThings takes.
     mCCJSRuntime->EndCycleCollectionCallback(mResults);
     timeLog.Checkpoint("CleanupAfterCollection::EndCycleCollectionCallback()");
   }
@@ -3584,21 +3606,38 @@ bool nsCycleCollector::Collect(CCReason aReason, ccIsManual aIsManual,
 
   CheckThreadSafety();
 
-  // This can legitimately happen in a few cases. See bug 383651.
-  if (mActivelyCollecting || mFreeingSnowWhite) {
+  // If we're in the middle of freeing snow white objects, return early unless
+  // we need to finish a CC because we're about to GC.
+  if (mFreeingSnowWhite && (aReason != CCReason::GC_WAITING_NOW || IsIdle())) {
     return false;
   }
-  mActivelyCollecting = true;
 
-  MOZ_ASSERT(!IsIncrementalGCInProgress());
+  if (mActivelyCollecting) {
+    // This can happen during FixGrayBits, unlinking, deferred finalization, and
+    // the FreeSnowWhite call in CleanupAfterCollection. In all of those cases,
+    // we are in a phase of the CC where the graph is empty.
+    MOZ_ASSERT(mIncrementalPhase != GraphBuildingPhase);
+    MOZ_RELEASE_ASSERT(mGraph.IsEmpty(),
+                       "Reentered Collect with a non-empty graph");
+    return false;
+  }
 
   mozilla::Maybe<mozilla::AutoGlobalTimelineMarker> marker;
   if (NS_IsMainThread()) {
     marker.emplace("nsCycleCollector::Collect", MarkerStackRequest::NO_STACK);
   }
 
+  // Record information about the current CC before anything that could GC and
+  // thus finish the current CC.
   bool startedIdle = IsIdle();
-  bool collectedAny = false;
+  MOZ_ASSERT(!mFreeingSnowWhite || !startedIdle);
+  if (aIsManual) {
+    mResults.mAnyManual = true;
+  }
+  ++mResults.mNumSlices;
+
+  MOZ_ASSERT_IF(IsIncrementalGCInProgress(),
+                IsIdle() || mIncrementalPhase == CleanupPhase);
 
   // If the CC started idle, it will call BeginCollection, which will do
   // FreeSnowWhite, so it doesn't need to be done here. If we're in
@@ -3607,14 +3646,28 @@ bool nsCycleCollector::Collect(CCReason aReason, ccIsManual aIsManual,
     TimeLog timeLog;
     FreeSnowWhite(true);
     timeLog.Checkpoint("Collect::FreeSnowWhite");
+    // If we weren't idle, but we are now, then the current CC was finished
+    // during FreeSnowWhite. mResults hasn't been reset yet, so it still
+    // describes that CC.
+    if (IsIdle()) {
+      bool collectedAny = mResults.mFreedRefCounted > 0 ||
+                          mResults.mFreedGCed > 0 || mResults.mFreedJSZones > 0;
+      if (aIsManual) {
+        // Somebody has forced a CC, so run a new one, like we do below when we
+        // finish an incremental CC in a manual Collect().
+        if (Collect(aReason, ccIsManual::CCIsManual, aBudget,
+                    aManualListener)) {
+          collectedAny = true;
+        }
+      }
+      return collectedAny;
+    }
   }
 
-  if (aIsManual == ccIsManual::CCIsManual) {
-    mResults.mAnyManual = true;
-  }
+  MOZ_RELEASE_ASSERT(!mActivelyCollecting);
+  mActivelyCollecting = true;
 
-  ++mResults.mNumSlices;
-
+  bool collectedAny = false;
   bool continueSlice = aBudget.isUnlimited() || !aPreferShorterSlices;
   do {
     switch (mIncrementalPhase) {
