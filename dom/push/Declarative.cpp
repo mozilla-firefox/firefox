@@ -24,7 +24,8 @@ class DWPNotificationCallbacks final : public NotificationCallbacksCommon {
 
   DWPNotificationCallbacks(const nsAString& aScope, nsIPrincipal* aPrincipal,
                            IPCNotification aNotification)
-      : NotificationCallbacksCommon(aScope, aPrincipal, aNotification) {}
+      : NotificationCallbacksCommon(aScope, aPrincipal,
+                                    std::move(aNotification)) {}
 
   RefPtr<DeclarativePushPromise> Promise() { return mPromise.Ensure(__func__); }
 
