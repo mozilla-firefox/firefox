@@ -16,12 +16,21 @@
 const INDEX_URL = `${EXAMPLE_URL}ember/quickstart/dist/assets/ember-application/index.js`;
 
 add_task(async function () {
+  await testReloading(true);
+  await testReloading(false);
+});
+
+async function testReloading(styleSheetInDebuggerEnabled) {
   // Without the script navigation cache, reloading the bundle can hand the
   // debugger a source-map mapping to an original source the sources reducer
   // has not been told about yet, which throws and permanently loses the
   // reloaded sources. The pref is Nightly-only, so the test only hits this on
   // beta and release builds.
   await pushPref("dom.script_loader.experimental.navigation_cache", true);
+  await pushPref(
+    "devtools.debugger.features.stylesheets-in-debugger",
+    styleSheetInDebuggerEnabled
+  );
 
   const dbg = await initDebugger("ember/quickstart/dist/", INDEX_URL);
 
@@ -38,11 +47,19 @@ add_task(async function () {
 
   info("2. Wait for sources to appear and then reload");
   // Wait for the script and style soources to be added
-  await waitForDispatch(dbg.store, "ADD_SOURCES", 2);
+  await waitForDispatch(
+    dbg.store,
+    "ADD_SOURCES",
+    styleSheetInDebuggerEnabled ? 2 : 1
+  );
   reloads.push(reload(dbg));
 
   info("3. Wait for sources to appear and then reload mid source-maps");
-  await waitForDispatch(dbg.store, "ADD_SOURCES", 2);
+  await waitForDispatch(
+    dbg.store,
+    "ADD_SOURCES",
+    styleSheetInDebuggerEnabled ? 2 : 1
+  );
   reloads.push(reload(dbg));
 
   info(
@@ -57,4 +74,4 @@ add_task(async function () {
   await removeBreakpoint(dbg, source.id, 4);
   await resume(dbg);
   await Promise.all(reloads);
-});
+}
