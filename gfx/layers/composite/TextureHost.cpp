@@ -51,7 +51,8 @@
 
 #ifdef MOZ_WAYLAND
 #  include "mozilla/WidgetUtilsGtk.h"
-#  include "mozilla/webrender/RenderWaylandTextureHost.h"
+#  include "mozilla/webrender/RenderLinuxTextureHost.h"
+#  include "mozilla/widget/SHMBufSurface.h"
 #endif
 
 #if 0
@@ -499,11 +500,12 @@ BufferTextureHost::BufferTextureHost(const BufferDescriptor& aDesc,
       MOZ_CRASH("GFX: Bad descriptor");
   }
 
-#ifdef MOZ_WAYLAND
-  mUseExternalTextures =
-      widget::GdkIsWaylandDisplay() && gfx::gfxVars::UseWebRenderCompositor();
-#else
   mUseExternalTextures = false;
+#ifdef MOZ_WAYLAND
+  if (widget::GdkIsWaylandDisplay() && gfx::gfxVars::UseWebRenderCompositor()) {
+    RefPtr<SHMBufSurface> surface = SHMBufSurface::Create(nullptr, aDesc);
+    mUseExternalTextures = surface->SupportsDirectComposition();
+  }
 #endif
 }
 
@@ -522,8 +524,8 @@ void BufferTextureHost::CreateRenderTexture(
   RefPtr<wr::RenderTextureHost> texture;
 #ifdef MOZ_WAYLAND
   if (UseExternalTextures()) {
-    texture = MakeRefPtr<wr::RenderWaylandTextureHost>(GetBuffer(),
-                                                       GetBufferDescriptor());
+    texture = MakeRefPtr<wr::RenderLinuxTextureHost>(GetBuffer(),
+                                                     GetBufferDescriptor());
   } else
 #endif
   {
@@ -560,10 +562,12 @@ void BufferTextureHost::PushResourceUpdates(
       aResources.GetCapabilities().mBackendType, GetSize());
   bool useNativeTexture =
       (policy == REQUIRE) || (policy != FORBID && UseExternalTextures());
-  auto imageType = useNativeTexture ? wr::ExternalImageType::TextureHandle(
-                                          wr::ImageBufferKind::TextureRect)
-                                    : wr::ExternalImageType::Buffer();
-
+  // External textures are used on Wayland where texture 2D is used.
+  auto textureType = UseExternalTextures() ? wr::ImageBufferKind::Texture2D
+                                           : wr::ImageBufferKind::TextureRect;
+  auto imageType = useNativeTexture
+                       ? wr::ExternalImageType::TextureHandle(textureType)
+                       : wr::ExternalImageType::Buffer();
   if (!IsYCbCr()) {
     if (aImageKeys.length() != 1) {
       MOZ_ASSERT_UNREACHABLE("unexpected keys lenght");
