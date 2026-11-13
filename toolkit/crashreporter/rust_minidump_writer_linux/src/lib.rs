@@ -11,8 +11,9 @@ use {
     minidump_writer::{
         minidump_writer::{DirectAuxvDumpInfo as InternalDumpInfo, MinidumpWriterConfig},
         remote_process_inspection::{
-            executor, io::UnixStream, transport, ExecutorResources, ARGS_BUFFER_LEN,
-            OUTPUT_BUFFER_LEN,
+            executor,
+            io::{Error as IoError, Io, UnixStream},
+            transport, ExecutorResources, ARGS_BUFFER_LEN, OUTPUT_BUFFER_LEN,
         },
         CrashContextExt,
     },
@@ -295,7 +296,24 @@ pub unsafe extern "C" fn free_minidump_extra_data(extra_data: *mut ExtraCrashDat
     }
 }
 
-/// Set the remote executor up and running, exits when it is done.
+/// Small wrapper in order to keep the underlying stream alive when dropped.
+#[derive(Debug)]
+struct BorrowedUnixStream<'a>(&'a mut UnixStream);
+
+impl Io for BorrowedUnixStream<'_> {
+    fn read_exact(&mut self, buf: &mut [u8]) -> Result<(), IoError> {
+        self.0.read_exact(buf)
+    }
+
+    fn write_all(&mut self, buf: &[u8]) -> Result<(), IoError> {
+        self.0.write_all(buf)
+    }
+}
+
+/// Set the remote executor up and running, exit when its connection is closed.
+///
+/// It can serve multiple, successive sessions (typically, one for the minidump, one for the
+/// annotations).
 ///
 /// # Safety
 ///
@@ -307,12 +325,9 @@ pub unsafe extern "C" fn minidump_writer_run_remote_executor(
     error_msg: Option<&mut *mut c_char>,
 ) -> bool {
     // SAFETY: per the function's safety invariant, unix_stream_socket_fd is assumed valid.
-    let io = unsafe { UnixStream::from_raw_fd(unix_stream_socket_fd) };
-    let transport = transport::postcard::Executor::new(io, [0u8; ARGS_BUFFER_LEN]);
+    let mut io = unsafe { UnixStream::from_raw_fd(unix_stream_socket_fd) };
 
-    let mut resources = ExecutorResources::const_new();
-
-    match executor::run(target_pid, transport, resources.as_mut()) {
+    match serve_sessions(target_pid, &mut io) {
         Ok(()) => true,
         Err(e) => {
             if let Some(error_msg_ptr) = error_msg {
@@ -320,6 +335,41 @@ pub unsafe extern "C" fn minidump_writer_run_remote_executor(
             }
             false
         }
+    }
+}
+
+/// Run multiple server sessions until one errors out or the connection closes.
+fn serve_sessions(target_pid: pid_t, io: &mut UnixStream) -> anyhow::Result<()> {
+    let mut resources = ExecutorResources::const_new();
+
+    loop {
+        if peer_closed(io).context("failed to wait for a new session")? {
+            return Ok(());
+        }
+
+        let transport =
+            transport::postcard::Executor::new(BorrowedUnixStream(io), [0u8; ARGS_BUFFER_LEN]);
+        executor::run(target_pid, transport, resources.as_mut())?;
+    }
+}
+
+/// Wait until there is data or the connection closes. Returns true if the latter.
+fn peer_closed(io: &UnixStream) -> std::io::Result<bool> {
+    let mut byte = 0u8;
+    let mut iov = libc::iovec {
+        iov_base: std::ptr::addr_of_mut!(byte).cast(),
+        iov_len: 1,
+    };
+    // SAFETY: a zeroed msghdr is valid, it has no name nor control data.
+    let mut msg: libc::msghdr = unsafe { std::mem::zeroed() };
+    msg.msg_iov = std::ptr::addr_of_mut!(iov);
+    msg.msg_iovlen = 1;
+    // SAFETY: `io` holds a valid socket and `msg` describes a valid 1-byte buffer.
+    let rv = unsafe { libc::recvmsg(io.as_raw_fd(), std::ptr::addr_of_mut!(msg), libc::MSG_PEEK) };
+    match rv {
+        -1 => Err(std::io::Error::last_os_error()),
+        0 => Ok(true),
+        _ => Ok(false),
     }
 }
 
