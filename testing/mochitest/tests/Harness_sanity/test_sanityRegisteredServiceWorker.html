@@ -13,7 +13,11 @@ SpecialPowers.pushPrefEnv({"set": [
   ["dom.serviceWorkers.enabled", true],
   ["dom.serviceWorkers.testing.enabled", true]
 ]}, function() {
-  navigator.serviceWorker.register("empty.js", {scope: "scope"})
+  // Registering over an existing registration doesn't count as registering
+  // a worker for the harness's end-of-test check.
+  navigator.serviceWorker.getRegistration("scope")
+    .then(existing => existing?.unregister())
+    .then(() => navigator.serviceWorker.register("empty.js", {scope: "scope"}))
     .then(function(registration) {
       ok(registration, "Registration succeeded");
       SimpleTest.finish();
