@@ -31,9 +31,9 @@ TextEncoderStream::TextEncoderStream(nsISupports* aGlobal,
 // XXX: We have to consciously choose 16LE/BE because we ultimately have to read
 // char16_t* as uint8_t*. See the same comment.
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-  mDecoder = UTF_16LE_ENCODING->NewDecoder();
+  mDecoder = UTF_16LE_ENCODING->NewDecoderWithoutBOMHandling();
 #else
-  mDecoder = UTF_16BE_ENCODING->NewDecoder();
+  mDecoder = UTF_16BE_ENCODING->NewDecoderWithoutBOMHandling();
 #endif
 }
 
