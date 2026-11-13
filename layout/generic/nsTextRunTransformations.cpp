@@ -154,6 +154,10 @@ void MergeCharactersInTextRun(gfxTextRun* aDest, gfxTextRun* aSrc,
   for (gfxTextRun::GlyphRunIterator iter(aSrc, gfxTextRun::Range(aSrc));
        !iter.AtEnd(); iter.NextRun()) {
     const gfxTextRun::GlyphRun* run = iter.GlyphRun();
+    if (offset >= aDest->GetLength()) {
+      MOZ_ASSERT_UNREACHABLE("bad offset in transformed textrun");
+      break;
+    }
     aDest->AddGlyphRun(run->mFont, run->mMatchType, offset, false,
                        run->mOrientation, run->mIsCJK);
 
@@ -163,6 +167,10 @@ void MergeCharactersInTextRun(gfxTextRun* aDest, gfxTextRun* aSrc,
     gfxTextRun::CompressedGlyph mergedGlyph = srcGlyphs[mergeRunStart];
     uint32_t stringEnd = iter.StringEnd();
     for (uint32_t k = iter.StringStart(); k < stringEnd; ++k) {
+      if (offset >= aDest->GetLength()) {
+        MOZ_ASSERT_UNREACHABLE("bad offset in transformed textrun");
+        break;
+      }
       const gfxTextRun::CompressedGlyph g = srcGlyphs[k];
       if (g.IsSimpleGlyph()) {
         if (!anyMissing) {
@@ -228,7 +236,8 @@ void MergeCharactersInTextRun(gfxTextRun* aDest, gfxTextRun* aSrc,
                  "Leftover glyphs, don't request merging of the last character "
                  "with its next!");
   }
-  NS_ASSERTION(offset == aDest->GetLength(), "Bad offset calculations");
+  MOZ_DIAGNOSTIC_ASSERT(offset == aDest->GetLength(),
+                        "Bad offset calculation in MergeCharactersInTextRun");
 }
 
 gfxTextRunFactory::Parameters GetParametersForInner(
