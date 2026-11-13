@@ -89,7 +89,6 @@
 #include "mozilla/OperatorNewExtensions.h"
 #include "mozilla/ReentrancyGuard.h"
 #include "mozilla/UniquePtr.h"
-#include "mozilla/WrappingOperations.h"
 
 namespace mozilla {
 
@@ -1787,21 +1786,35 @@ class MOZ_STANDALONE_DEBUG HashTable : private AllocPolicy {
  private:
   HashNumber hash1(HashNumber aHash0) const { return aHash0 >> hashShift(); }
 
-  struct DoubleHash {
-    HashNumber mHash2;
+  // Collisions are resolved via triangular quadratic probing.
+  // After testing the primary slot h1, we test h1+1, h1+3, h1+6, ...
+  // This keeps short chains close together in cache. It also has
+  // the valuable mathematical property that the triangular numbers
+  // will visit every slot of a power-of-two-sized table exactly once
+  // before repeating.
+  // See https://fgiesen.wordpress.com/2015/02/22/triangular-numbers-mod-2n/
+  struct ProbeSequence {
+    HashNumber mIndex;
     HashNumber mSizeMask;
+    HashNumber mStride = 0;
+
+    ProbeSequence(HashNumber aHash1, HashNumber aSizeMask)
+        : mIndex(aHash1), mSizeMask(aSizeMask) {}
+
+    HashNumber next() {
+      mStride++;
+      // mStride is the number of slots we've probed (not counting the
+      // initial slot). If it exceeds the capacity, then we've probed
+      // every slot without finding an empty slot, which can't happen
+      // because we rehash when 3/4 of slots are full.
+      MOZ_ASSERT(mStride <= mSizeMask);
+      mIndex = (mIndex + mStride) & mSizeMask;
+      return mIndex;
+    }
   };
 
-  DoubleHash hash2(HashNumber aCurKeyHash) const {
-    uint32_t sizeLog2 = kHashNumberBits - hashShift();
-    DoubleHash dh = {((aCurKeyHash << sizeLog2) >> hashShift()) | 1,
-                     (HashNumber(1) << sizeLog2) - 1};
-    return dh;
-  }
-
-  static HashNumber applyDoubleHash(HashNumber aHash1,
-                                    const DoubleHash& aDoubleHash) {
-    return WrappingSubtract(aHash1, aDoubleHash.mHash2) & aDoubleHash.mSizeMask;
+  ProbeSequence probeSequence(HashNumber aHash1) const {
+    return ProbeSequence(aHash1, rawCapacity() - 1);
   }
 
   static MOZ_ALWAYS_INLINE bool match(T& aEntry, const Lookup& aLookup) {
@@ -1839,8 +1852,8 @@ class MOZ_STANDALONE_DEBUG HashTable : private AllocPolicy {
       return slot;
     }
 
-    // Collision: double hash.
-    DoubleHash dh = hash2(aKeyHash);
+    // Collision: probe
+    ProbeSequence probe = probeSequence(h1);
 
     // Save the first removed entry pointer so we can recycle later.
     Maybe<Slot> firstRemoved;
@@ -1854,9 +1867,7 @@ class MOZ_STANDALONE_DEBUG HashTable : private AllocPolicy {
         }
       }
 
-      h1 = applyDoubleHash(h1, dh);
-
-      slot = slotForIndex(h1);
+      slot = slotForIndex(probe.next());
       if (slot.isFree()) {
         return firstRemoved.refOr(slot);
       }
@@ -1885,15 +1896,13 @@ class MOZ_STANDALONE_DEBUG HashTable : private AllocPolicy {
       return slot;
     }
 
-    // Collision: double hash.
-    DoubleHash dh = hash2(aKeyHash);
+    // Collision: probe.
+    ProbeSequence probe = probeSequence(h1);
 
     while (true) {
       slot.setCollision();
 
-      h1 = applyDoubleHash(h1, dh);
-
-      slot = slotForIndex(h1);
+      slot = slotForIndex(probe.next());
       if (!slot.isLive()) {
         return slot;
       }
@@ -2021,7 +2030,7 @@ class MOZ_STANDALONE_DEBUG HashTable : private AllocPolicy {
 
       HashNumber keyHash = src.getKeyHash();
       HashNumber h1 = hash1(keyHash);
-      DoubleHash dh = hash2(keyHash);
+      ProbeSequence probe = probeSequence(h1);
       Slot tgt = slotForIndex(h1);
       while (true) {
         if (!tgt.hasCollision()) {
@@ -2030,8 +2039,7 @@ class MOZ_STANDALONE_DEBUG HashTable : private AllocPolicy {
           break;
         }
 
-        h1 = applyDoubleHash(h1, dh);
-        tgt = slotForIndex(h1);
+        tgt = slotForIndex(probe.next());
       }
     }
 
