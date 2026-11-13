@@ -3047,15 +3047,23 @@ void nsWindow::OnButtonPressEvent(GdkEventButton* aEvent) {
       if (!Preferences::GetBool("mousebutton.4th.enabled", true)) {
         return;
       }
-      DispatchCommandEvent(nsGkAtoms::Back);
-      return;
+      if (!StaticPrefs::dom_event_mouse_xbuttons_enabled()) {
+        DispatchCommandEvent(nsGkAtoms::Back);
+        return;
+      }
+      domButton = MouseButton::eX1;
+      break;
     case 9:
     case 10:
       if (!Preferences::GetBool("mousebutton.5th.enabled", true)) {
         return;
       }
-      DispatchCommandEvent(nsGkAtoms::Forward);
-      return;
+      if (!StaticPrefs::dom_event_mouse_xbuttons_enabled()) {
+        DispatchCommandEvent(nsGkAtoms::Forward);
+        return;
+      }
+      domButton = MouseButton::eX2;
+      break;
     default:
       return;
   }
@@ -3111,6 +3119,7 @@ void nsWindow::OnButtonReleaseEvent(GdkEventButton* aEvent) {
   bool isPenEvent = IsPenEvent((GdkEvent*)aEvent, &isEraser);
 
   uint16_t domButton;
+  nsStaticAtom* command = nullptr;
   switch (aEvent->button) {
     case 1:
       if (isEraser) {
@@ -3124,6 +3133,24 @@ void nsWindow::OnButtonReleaseEvent(GdkEventButton* aEvent) {
       break;
     case 3:
       domButton = MouseButton::eSecondary;
+      break;
+    // Buttons 8-9(10) are X1 and X2
+    case 8:
+      if (!StaticPrefs::dom_event_mouse_xbuttons_enabled() ||
+          !Preferences::GetBool("mousebutton.4th.enabled", true)) {
+        return;
+      }
+      domButton = MouseButton::eX1;
+      command = nsGkAtoms::Back;
+      break;
+    case 9:
+    case 10:
+      if (!StaticPrefs::dom_event_mouse_xbuttons_enabled() ||
+          !Preferences::GetBool("mousebutton.5th.enabled", true)) {
+        return;
+      }
+      domButton = MouseButton::eX2;
+      command = nsGkAtoms::Forward;
       break;
     default:
       return;
@@ -3139,6 +3166,7 @@ void nsWindow::OnButtonReleaseEvent(GdkEventButton* aEvent) {
   gdouble pressure = 0;
   gdk_event_get_axis((GdkEvent*)aEvent, GDK_AXIS_PRESSURE, &pressure);
   event.mPressure = pressure ? (float)pressure : (float)mLastMotionPressure;
+  event.mCommand = command;
 
   // The mRefPoint is manipulated in DispatchInputEvent, we're saving it
   // to use it for the doubleclick position check.
