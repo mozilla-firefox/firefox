@@ -88,6 +88,7 @@ export async function insertFTLIfNeeded(fileName) {
   }
 
   let [root, ...rest] = fileName.split("/");
+  let path = rest.join("/");
   let loadResource;
   if (root == "toolkit") {
     loadResource =
@@ -96,14 +97,14 @@ export async function insertFTLIfNeeded(fileName) {
     loadResource = browserResources[`../../../locales/en-US/${fileName}`];
   } else if (root == "locales-preview") {
     loadResource =
-      localesPreviewResources[`../../../../toolkit/locales-preview/${rest}`];
+      localesPreviewResources[`../../../../toolkit/locales-preview/${path}`];
   } else if (root == "branding") {
     loadResource =
-      brandingResources[`../../../branding/nightly/locales/en-US/${rest}`];
+      brandingResources[`../../../branding/nightly/locales/en-US/${path}`];
   } else if (root == "preview") {
     loadResource =
       megalistResources[
-        `../../../../toolkit/components/satchel/megalist/content/${rest}`
+        `../../../../toolkit/components/satchel/megalist/content/${path}`
       ];
   }
   let ftlContents = await loadResource();
