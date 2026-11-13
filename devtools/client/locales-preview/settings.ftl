@@ -40,6 +40,12 @@ devtools-settings-tool-antitracking =
 # what the toolbox is currently debugging.
 devtools-settings-tool-not-supported = Not supported for current toolbox target
 
+## Additional Tools section. Each checkbox enables or disables a tool
+## provided by an add-on.
+
+devtools-settings-additional-tools =
+    .label = Developer Tools installed by add-ons
+
 ## Toolbox Buttons section. Each checkbox shows or hides a button in the
 ## DevTools toolbox toolbar.
 

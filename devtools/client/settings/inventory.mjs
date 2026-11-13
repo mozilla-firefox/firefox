@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/** @import { SettingSection, SettingChangeHandler, SettingCondition } from "./types/inventory.d.ts" */
+/** @import { Setting, SettingSection, SettingChangeHandler, SettingCondition, SettingGenerator } from "./types/inventory.d.ts" */
 
 // eslint-disable-next-line no-shadow
 const { require } = ChromeUtils.importESModule(
@@ -104,6 +104,11 @@ export const inventory = [
         changeAction: "updateToolRegistration",
       },
     ],
+  },
+  {
+    id: "settings-additional-tools",
+    l10nId: "devtools-settings-additional-tools",
+    generator: "additionalTools",
   },
   {
     id: "settings-toolbox-buttons",
@@ -516,14 +521,47 @@ export const conditions = {
 
 /** @param {string} pref */
 function getToolForPref(pref) {
-  const tool = gDevTools
-    .getDefaultTools()
-    .find(
-      definition =>
-        "visibilityswitch" in definition && definition.visibilityswitch === pref
-    );
+  /** @type {IteratorObject<any>} */
+  // @ts-expect-error TypeScript doesn't declare Iterator.concat yet. Remove the
+  // cast above along with this once it does.
+  const tools = Iterator.concat(
+    gDevTools.getDefaultTools(),
+    gDevTools.getAdditionalTools()
+  );
+  const tool = tools.find(
+    definition =>
+      "visibilityswitch" in definition && definition.visibilityswitch === pref
+  );
   if (!tool) {
     throw new Error(`No tool uses the ${pref} pref.`);
   }
   return tool;
 }
+
+/** @satisfies {Record<string, SettingGenerator>} */
+export const generators = {
+  additionalTools: ({ toolbox }) => {
+    /** @type {Setting[]} */
+    const settings = [];
+    for (const tool of gDevTools.getAdditionalTools()) {
+      settings.push({
+        id: `settings-tool-${tool.id}`,
+        label: tool.label,
+        type: "boolean",
+        pref: tool.visibilityswitch,
+        disabled: "unsupportedTool",
+        disabledL10nId: "devtools-settings-tool-not-supported",
+        changeAction: "updateToolRegistration",
+      });
+    }
+    for (const extension of toolbox.listWebExtensions()) {
+      settings.push({
+        id: `settings-webext-${extension.uuid}`,
+        label: extension.name,
+        type: "boolean",
+        pref: extension.pref,
+      });
+    }
+    return settings;
+  },
+};

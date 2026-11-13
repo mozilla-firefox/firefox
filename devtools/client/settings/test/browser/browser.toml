@@ -6,6 +6,8 @@ support-files = [
   "!/devtools/client/shared/test/shared-head.js",
 ]
 
+["browser_settings_additional_tools.js"]
+
 ["browser_settings_anti_tracking_hidden.js"]
 
 ["browser_settings_debugger_stylesheets.js"]

@@ -4,7 +4,7 @@
 
 import type { Toolbox } from "./toolbox.d.ts";
 import { SettingChangedEvent } from "../events.mjs";
-import { callbacks, conditions } from "../inventory.mjs";
+import { callbacks, conditions, generators } from "../inventory.mjs";
 
 export type SettingChangeHandler = (context: {
   toolbox: Toolbox;
@@ -16,6 +16,8 @@ export type SettingCondition = (context: {
   setting: Setting;
 }) => boolean;
 
+export type SettingGenerator = (context: { toolbox: Toolbox }) => Setting[];
+
 export interface BaseSetting {
   id: string;
   hidden?: keyof typeof conditions;
@@ -23,7 +25,8 @@ export interface BaseSetting {
 
 export interface PrefBaseSetting extends BaseSetting {
   pref: string;
-  l10nId: string;
+  l10nId?: string;
+  label?: string;
   disabled?: keyof typeof conditions;
   disabledL10nId?: string;
   changeAction?: keyof typeof callbacks;
@@ -51,8 +54,17 @@ export interface CustomElementSetting extends BaseSetting {
 
 export type Setting = BooleanSetting | SelectSetting | CustomElementSetting;
 
-export interface SettingSection {
+interface BaseSettingSection {
   id: string;
   l10nId: string;
+}
+
+export interface StaticSettingSection extends BaseSettingSection {
   settings: ReadonlyArray<Setting>;
 }
+
+export interface GeneratedSettingSection extends BaseSettingSection {
+  generator: keyof typeof generators;
+}
+
+export type SettingSection = StaticSettingSection | GeneratedSettingSection;

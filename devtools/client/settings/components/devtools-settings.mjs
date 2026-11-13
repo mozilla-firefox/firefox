@@ -7,12 +7,13 @@
 import {
   html,
   nothing,
+  repeat,
   staticHtml,
   unsafeStatic,
 } from "chrome://global/content/vendor/lit.all.mjs";
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 
-import { conditions, inventory } from "../inventory.mjs";
+import { conditions, generators, inventory } from "../inventory.mjs";
 
 /**
  * @import { Setting, SettingSection } from "../types/inventory.d.ts"
@@ -64,7 +65,8 @@ export class DevToolsSettings extends MozLitElement {
         return html`
           <moz-checkbox
             id=${setting.id}
-            data-l10n-id=${setting.l10nId}
+            data-l10n-id=${setting.l10nId ?? nothing}
+            label=${setting.label ?? nothing}
             .disabled=${disabled}
           >
             ${disabled && setting.disabledL10nId
@@ -79,7 +81,8 @@ export class DevToolsSettings extends MozLitElement {
         return html`
           <moz-select
             id=${setting.id}
-            data-l10n-id=${setting.l10nId}
+            data-l10n-id=${setting.l10nId ?? nothing}
+            label=${setting.label ?? nothing}
             .disabled=${disabled}
           >
             ${setting.options.map(
@@ -112,16 +115,27 @@ export class DevToolsSettings extends MozLitElement {
     if (!toolbox) {
       return nothing;
     }
+    const sectionSettings =
+      "generator" in section
+        ? generators[section.generator]({ toolbox })
+        : section.settings;
     const settings = [];
-    for (const setting of section.settings) {
+    for (const setting of sectionSettings) {
       if (setting.hidden && conditions[setting.hidden]({ toolbox, setting })) {
         continue;
       }
-      settings.push(this.#renderSetting(setting));
+      settings.push(setting);
+    }
+    if (!settings.length) {
+      return nothing;
     }
     return html`
       <moz-fieldset id=${section.id} data-l10n-id=${section.l10nId}>
-        ${settings}
+        ${repeat(
+          settings,
+          setting => setting.id,
+          setting => this.#renderSetting(setting)
+        )}
       </moz-fieldset>
     `;
   }

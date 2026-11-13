@@ -9,6 +9,15 @@ import { callbacks } from "./inventory.mjs";
  * @import { Toolbox } from "./types/toolbox.d.ts"
  */
 
+// eslint-disable-next-line no-shadow
+const { require } = ChromeUtils.importESModule(
+  "resource://devtools/shared/loader/Loader.sys.mjs"
+);
+/** @type {typeof import("../framework/devtools.js")} */
+const {
+  gDevTools,
+} = require("resource://devtools/client/framework/devtools.js");
+
 /** The redesigned devtools settings panel. */
 export class SettingsPanel {
   #abortController = new AbortController();
@@ -26,13 +35,22 @@ export class SettingsPanel {
   /** @returns {this} */
   open() {
     this.element?.setToolbox(this.toolbox);
+    const { signal } = this.#abortController;
     this.element?.addEventListener(
       SettingChangedEvent.eventName,
       this.#onSettingChanged,
-      { signal: this.#abortController.signal }
+      { signal }
     );
+    gDevTools.on("tool-registered", this.#refresh, { signal });
+    gDevTools.on("tool-unregistered", this.#refresh, { signal });
+    this.toolbox?.on("webextension-registered", this.#refresh, { signal });
+    this.toolbox?.on("webextension-unregistered", this.#refresh, { signal });
     return this;
   }
+
+  #refresh = () => {
+    this.element?.requestUpdate();
+  };
 
   /** @param {SettingChangedEvent} event */
   #onSettingChanged = event => {
