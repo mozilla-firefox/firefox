@@ -4234,20 +4234,22 @@ nsresult EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
         //
         // TODO: Probably this should be moved to Element::PostHandleEvent.
         for (; newFocus; newFocus = newFocus->GetFlattenedTreeParentElement()) {
+          // A display: contents shadow host has no frame, but can still
+          // delegate focus.
           nsIFrame* frame = nsLayoutUtils::GetPrimaryOrAreaImageFrame(newFocus);
-          if (!frame) {
+          if (!frame && !newFocus->IsDisplayContents()) {
             continue;
           }
 
           // If the mousedown happened inside a popup, don't try to set focus on
           // one of its containing elements
-          if (frame->IsMenuPopupFrame()) {
+          if (frame && frame->IsMenuPopupFrame()) {
             newFocus = nullptr;
             break;
           }
 
           auto flags = IsFocusableFlags::WithMouse;
-          if (frame->IsFocusable(flags)) {
+          if (frame && frame->IsFocusable(flags)) {
             break;
           }
 
