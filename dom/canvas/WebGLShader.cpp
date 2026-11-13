@@ -8,7 +8,6 @@
 #include "GLSLANG/ShaderLang.h"
 #include "WebGLContext.h"
 #include "WebGLObjectModel.h"
-#include "WebGLProgram.h"
 #include "WebGLShaderValidator.h"
 #include "WebGLValidateStrings.h"
 #include "mozilla/MemoryReporting.h"
@@ -134,48 +133,6 @@ size_t WebGLShader::CalcNumSamplerUniforms() const {
 
 size_t WebGLShader::NumAttributes() const {
   return mCompileResults->mAttributes.size();
-}
-
-size_t WebGLShader::CalculateAttributeMaxLocationIndex() const {
-  size_t maxLocationIndexFound = 0;
-  size_t accumulatedLocationSpace = 0;
-  for (const auto& attribute : mCompileResults->mAttributes) {
-    // ignore builtin attributes
-    if (attribute.isBuiltIn() && !attribute.isEmulatedBuiltIn()) {
-      continue;
-    }
-
-    // add number of location slots, minimum is 1
-    accumulatedLocationSpace += NumUsedLocationsByElemType(attribute.type);
-
-    // the shader does *NOT* specify `layout(location=[n])`
-    if (attribute.location < 0)  // probably location is -1
-    {
-      continue;
-    }
-
-    // the shader specifies `layout(location=[n])`:
-    // fetch how many indices the farthest index lies
-    size_t maxLocationOffset = MaxLocationIndexOffsetByElemType(attribute.type);
-    size_t locationBaseIndex = static_cast<size_t>(attribute.location);
-
-    // the farthest end of the indices used by the type
-    auto currentMaxLocationIndex = locationBaseIndex + maxLocationOffset;
-
-    if (currentMaxLocationIndex > maxLocationIndexFound) {
-      maxLocationIndexFound = currentMaxLocationIndex;
-    }
-  }
-
-  if (accumulatedLocationSpace >
-      0)  // it should be if there were any attributes
-  {
-    if (accumulatedLocationSpace - 1 > maxLocationIndexFound) {
-      return accumulatedLocationSpace - 1;
-    }
-  }
-
-  return maxLocationIndexFound;
 }
 
 void WebGLShader::BindAttribLocation(GLuint prog, const std::string& userName,

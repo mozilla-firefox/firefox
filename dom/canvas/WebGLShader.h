@@ -40,10 +40,6 @@ class WebGLShader final : public WebGLContextBoundObject {
   size_t CalcNumSamplerUniforms() const;
   size_t NumAttributes() const;
 
-  // returns the maximum location index needed for the attributes
-  // this can be more than the base location if the attribute is a mat4
-  size_t CalculateAttributeMaxLocationIndex() const;
-
   const auto& CompileResults() const { return mCompileResults; }
   const auto& CompileLog() const { return mCompilationLog; }
   bool IsCompiled() const { return mCompilationSuccessful; }

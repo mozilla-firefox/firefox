@@ -1418,7 +1418,7 @@ Maybe<IndexedName> ParseIndexed(const std::string& str);
 }  // namespace webgl
 
 webgl::LinkActiveInfo GetLinkActiveInfo(
-    WebGLContext& webgl, const GLuint prog, const bool webgl2,
+    gl::GLContext& gl, const GLuint prog, const bool webgl2,
     const std::unordered_map<std::string, std::string>& nameUnmap);
 
 }  // namespace mozilla
