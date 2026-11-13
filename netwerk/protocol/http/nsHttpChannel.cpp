@@ -5139,12 +5139,18 @@ nsHttpChannel::OnCacheEntryCheck(nsICacheEntry* entry, uint32_t* aResult) {
        entry));
 
   // Held for the whole check: this may run on the cache I/O thread while the
-  // backstop timeout runs on the main thread, and the timeout must not slip in
-  // between the test below and the state we arm from here on.
+  // backstop timeout or a cancel runs on the main thread, and neither may slip
+  // in between the tests below and the state we arm from here on.
   MutexAutoLock lock(mCacheWaitLock);
 
   if (mCacheWaitTimedOut) {
     LOG(("  cache entry check arrived after backstop timeout, declining"));
+    *aResult = ENTRY_NOT_WANTED;
+    return NS_OK;
+  }
+
+  if (mCanceled) {
+    LOG(("  cache entry check arrived after cancel, declining"));
     *aResult = ENTRY_NOT_WANTED;
     return NS_OK;
   }
@@ -7307,7 +7313,12 @@ nsresult nsHttpChannel::CancelInternal(nsresult status) {
 
   mEarlyHintObserver = nullptr;
   mWebTransportSessionEventListener = nullptr;
-  mCanceled = true;
+  {
+    // Waits for an OnCacheEntryCheck in flight on the cache I/O thread; once
+    // we're canceled, the abort path reads the state it would write.
+    MutexAutoLock lock(mCacheWaitLock);
+    mCanceled = true;
+  }
   mStatus = NS_FAILED(status) ? status : NS_ERROR_ABORT;
 
   // If we're waiting for LNA permission result and the channel is being
