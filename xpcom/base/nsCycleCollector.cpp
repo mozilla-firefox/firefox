@@ -2806,7 +2806,14 @@ void nsCycleCollector::ForgetSkippable(js::SliceBudget& aBudget,
 
   if (mCCJSRuntime) {
     mCCJSRuntime->PrepareForForgetSkippable();
+    if (!IsIdle()) {
+      return;
+    }
   }
+
+  AutoRestore<bool> ar(mFreeingSnowWhite);
+  mFreeingSnowWhite = true;
+
   MOZ_ASSERT(
       !mScanInProgress,
       "Don't forget skippable or free snow-white while scan is in progress.");
