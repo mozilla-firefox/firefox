@@ -206,6 +206,11 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
+        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_picture_in_picture_window).apply {
+            isChecked = settings.enablePictureInPictureWindow
+            onPreferenceChangeListener = SharedPreferenceUpdater()
+        }
+
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_homepage_weather_widget).apply {
             isChecked = settings.enableHomepageWeatherWidget
             onPreferenceChangeListener = SharedPreferenceUpdater()

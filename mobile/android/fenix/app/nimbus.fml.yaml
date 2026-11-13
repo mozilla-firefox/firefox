@@ -1426,6 +1426,16 @@ features:
         type: Boolean
         default: false
 
+  picture-in-picture-window:
+    description: >
+      Feature that shows a video in picture-in-picture by cloning it.
+    variables:
+      enabled:
+        description: >
+          If true, videos requested for picture-in-picture are cloned into a picture-in-picture window.
+        type: Boolean
+        default: false
+
 types:
   objects:
     GleanServerKnobsConfiguration:

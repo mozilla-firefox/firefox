@@ -2716,6 +2716,13 @@ class Settings(
     val enableRegionalDefaultShortcuts: Boolean
         get() = FxNimbus.features.regionalDefaultShortcuts.value().enabled
 
+    /** Indicates if videos are shown in picture-in-picture by cloning them into a window of their own. */
+    var enablePictureInPictureWindow by
+        booleanPreference(
+            key = appContext.getPreferenceKey(R.string.pref_key_enable_picture_in_picture_window),
+            default = { FxNimbus.features.pictureInPictureWindow.value().enabled },
+        )
+
     /** Indicates if the Homepage Weather Widget is enabled. */
     var enableHomepageWeatherWidget by
         booleanPreference(
