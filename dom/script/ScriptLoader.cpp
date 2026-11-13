@@ -3069,6 +3069,14 @@ void ScriptLoader::FireScriptAvailable(nsresult aResult,
                          aRequest->GetScriptLoadContext()->mLineNo);
   }
 
+  // https://html.spec.whatwg.org/#execute-the-script-element
+  // Step 3. Unblock rendering on el. A load that a navigation aborted never
+  // completes, so rendering stays blocked.
+  if (!aRequest->GetScriptLoadContext()->mWasAbortedByNavigation) {
+    nsCOMPtr<Element> element = do_QueryInterface(scriptElement);
+    element->OwnerDoc()->UnblockRendering(*element);
+  }
+
   const bool isInlineClassicScript =
       aRequest->GetScriptLoadContext()->mIsInline &&
       !aRequest->IsModuleRequest();
@@ -4982,6 +4990,16 @@ nsresult ScriptLoader::OnStreamComplete(
 
   if (aRequest->IsCanceled()) {
     return NS_BINDING_ABORTED;
+  }
+
+  // A navigation aborts the document's fetches, see
+  // https://html.spec.whatwg.org/#abort-a-document
+  if (aChannelStatus == NS_BINDING_ABORTED && aChannel) {
+    nsAutoCString reason;
+    aChannel->GetCanceledReason(reason);
+    if (reason.EqualsLiteral("navigation")) {
+      aRequest->GetScriptLoadContext()->mWasAbortedByNavigation = true;
+    }
   }
 
   nsresult rv = VerifySRI(aRequest, aChannel, aSRIStatus, aSRIDataVerifier);

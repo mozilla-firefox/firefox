@@ -425,6 +425,9 @@ class ScriptLoadContext : public JS::loader::LoadContextBase,
   // because the element that coalesced onto it is still waiting for its event.
   bool mIsCoalescedModulePreload;
 
+  // Set when a navigation away from the document cancelled the load.
+  bool mWasAbortedByNavigation;
+
   // For preload requests, we defer reporting errors to the console until the
   // request is used.
   nsresult mUnreportedPreloadError;

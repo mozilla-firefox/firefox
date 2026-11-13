@@ -60,6 +60,7 @@ ScriptLoadContext::ScriptLoadContext(
       mWasCompiledOMT(false),
       mIsPreload(false),
       mIsCoalescedModulePreload(false),
+      mWasAbortedByNavigation(false),
       mUnreportedPreloadError(NS_OK),
       mLineNo(1),
       mColumnNo(0),

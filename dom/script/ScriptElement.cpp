@@ -29,12 +29,6 @@ NS_IMETHODIMP
 ScriptElement::ScriptAvailable(nsresult aResult, nsIScriptElement* aElement,
                                bool aIsInlineClassicScript, nsIURI* aURI,
                                uint32_t aLineNo) {
-  // https://html.spec.whatwg.org/#execute-the-script-element
-  // Step 3. Unblock rendering on el. ScriptLoader calls this right before it
-  // executes the script, and also for a failed load.
-  Element* element = GetAsContent()->AsElement();
-  element->OwnerDoc()->UnblockRendering(*element);
-
   if (!aIsInlineClassicScript && NS_FAILED(aResult)) {
     nsCOMPtr<nsIParser> parser = do_QueryReferent(mCreatorParser);
     if (parser) {
