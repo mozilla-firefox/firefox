@@ -37,6 +37,8 @@ dependencies {
     implementation project(':components:support-ktx')
     implementation project(':components:ui-icons')
 
+    testImplementation project(':components:concept-engine')
+    testImplementation project(':components:concept-storage')
     testImplementation project(':components:support-test')
     testImplementation project(':components:support-test-fakes')
 

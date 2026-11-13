@@ -47,6 +47,7 @@ dependencies {
     implementation project(':components:support-appservices')
     implementation project(':components:support-base')
     implementation project(':components:support-ktx')
+    implementation project(':components:support-utils')
     implementation project(':components:ui-widgets')
     implementation project(":components:service-firefox-relay")
 
