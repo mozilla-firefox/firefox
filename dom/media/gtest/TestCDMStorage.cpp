@@ -1146,7 +1146,12 @@ class CDMStorageTest {
       mCDM->Shutdown();
       mCDM = nullptr;
     }
+    NS_DispatchToMainThread(NS_NewRunnableFunction(
+        "CDMStorageTest::Terminated",
+        [self = RefPtr{this}] { self->mTerminated = true; }));
   }
+
+  bool mTerminated = false;
 
  private:
   ~CDMStorageTest() = default;
@@ -1420,8 +1425,9 @@ TEST(GeckoMediaPlugins, CDMCrashMinidump)
   nsCOMPtr<nsIThread> thread(GetGMPThread());
   thread->Dispatch(NewRunnableMethod("CDMStorageTest::TestCrash", runner,
                                      &CDMStorageTest::TestCrash));
-  SpinEventLoopUntil("CDMCrashMinidump"_ns,
-                     [&]() -> bool { return observer->mCrashed; });
+  SpinEventLoopUntil("CDMCrashMinidump"_ns, [&]() -> bool {
+    return observer->mCrashed && runner->mTerminated;
+  });
   obs->RemoveObserver(observer, "gmp-plugin-crash");
 
   ASSERT_FALSE(observer->mDumpID.IsEmpty())
