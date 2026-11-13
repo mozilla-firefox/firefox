@@ -4,6 +4,8 @@
 
 package mozilla.components.feature.pictureinpicture
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.PictureInPictureAction
 import mozilla.components.browser.state.selector.findTabOrCustomTab
@@ -15,18 +17,19 @@ import mozilla.components.lib.state.Store
 /**
  * This middleware is for use with managing any states or resources required for picture in picture.
  *
- * @param releaseUseCase Provides the use case releasing the resources held for picture-in-picture. Only called when an
- *   action is processed, so it can depend on the store this middleware is part of.
+ * @param scope Scope the engine is called in when releasing picture-in-picture resources.
  */
-class PictureInPictureMiddleware(private val releaseUseCase: () -> PictureInPictureUseCases.ReleaseUseCase) :
+class PictureInPictureMiddleware(private val scope: CoroutineScope = MainScope()) :
     Middleware<BrowserState, BrowserAction> {
-    private val release by lazy { releaseUseCase() }
+    private var releaseUseCase: PictureInPictureUseCases.ReleaseUseCase? = null
 
     override fun invoke(
         store: Store<BrowserState, BrowserAction>,
         next: (BrowserAction) -> Unit,
         action: BrowserAction,
     ) {
+        val release =
+            releaseUseCase ?: PictureInPictureUseCases.ReleaseUseCase(store, scope).also { releaseUseCase = it }
         when (action) {
             is PictureInPictureAction.EnterAction ->
                 if (store.state.canShowPictureInPicture(action.tabId)) {

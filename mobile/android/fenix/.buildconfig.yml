@@ -55,6 +55,7 @@ projects:
     - components:feature-listentopage
     - components:feature-logins
     - components:feature-media
+    - components:feature-pictureinpicture
     - components:feature-privatemode
     - components:feature-prompts
     - components:feature-protection-dashboard

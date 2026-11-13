@@ -4,6 +4,7 @@
 
 plugins {
     id 'com.android.library'
+    alias(libs.plugins.dependency.analysis)
 }
 
 android {
@@ -14,15 +15,21 @@ dependencies {
     implementation project(':components:browser-state')
     implementation project(':components:concept-engine')
     implementation project(':components:lib-state')
+    implementation project(':components:support-base')
 
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.lifecycle.common
     implementation libs.kotlinx.coroutines
 
     testImplementation project(':components:support-test')
     testImplementation project(':components:support-test-libstate')
 
+    testImplementation libs.androidx.test.core
+    testImplementation libs.androidx.test.junit
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit4
     testImplementation libs.kotlinx.coroutines.test
+    testImplementation libs.robolectric
 }
 
 apply from: '../../../common-config.gradle'

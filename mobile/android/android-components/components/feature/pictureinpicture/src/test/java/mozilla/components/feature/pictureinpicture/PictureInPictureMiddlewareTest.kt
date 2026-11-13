@@ -178,19 +178,11 @@ class PictureInPictureMiddlewareTest {
     private fun createStore(
         tabs: List<TabSessionState>,
         window: PictureInPictureWindowState = PictureInPictureWindowState(),
-    ): BrowserStore {
-        lateinit var store: BrowserStore
-        store =
-            BrowserStore(
-                initialState = BrowserState(tabs = tabs, pictureInPictureWindow = window),
-                middleware =
-                    listOf(
-                        PictureInPictureMiddleware { PictureInPictureUseCases(store, scope).release },
-                        captureActionsMiddleware,
-                    ),
-            )
-        return store
-    }
+    ) =
+        BrowserStore(
+            initialState = BrowserState(tabs = tabs, pictureInPictureWindow = window),
+            middleware = listOf(PictureInPictureMiddleware(scope), captureActionsMiddleware),
+        )
 
     private fun tab(id: String, engineSession: EngineSession) =
         TabSessionState(
