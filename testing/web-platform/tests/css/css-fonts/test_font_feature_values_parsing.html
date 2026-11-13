@@ -152,8 +152,8 @@ var testrules = [
   { rule: makeRule("--bongo", "@styleset { blah: 1; }"), invalid: true },
 
   /* ident tests */
-  { rule: _("@styleset { blah: 1; blah: 1; }"), serializationSame: true },
-  { rule: _("@styleset { blah: 1; de-blah: 1; blah: 2; }"), serializationSame: true },
+  { rule: _("@styleset { blah: 1; blah: 1; }"), serialization: _("@styleset { blah: 1; }") },
+  { rule: _("@styleset { blah: 1; de-blah: 1; blah: 2; }"), serialization: _("@styleset { blah: 2; de-blah: 1; }") },
   { rule: _("@styleset { \\tra-la: 1; }"), serialization: _("@styleset { tra-la: 1; }") },
   { rule: _("@styleset { b\\lah: 1; }"), serialization: _("@styleset { blah: 1; }") },
   { rule: _("@styleset { \\62 lah: 1; }"), serialization: _("@styleset { blah: 1; }") },
