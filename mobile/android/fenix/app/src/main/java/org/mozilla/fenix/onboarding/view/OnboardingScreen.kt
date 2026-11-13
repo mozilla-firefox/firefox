@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -350,7 +351,7 @@ private fun scrollToNextCardFromSetToDefault(
 }
 
 @Composable
-@Suppress("LongParameterList", "LongMethod", "CognitiveComplexMethod")
+@Suppress("LongParameterList", "LongMethod")
 private fun OnboardingContent(
     pagesToDisplay: List<OnboardingPageUiData>,
     pagerState: PagerState,
@@ -399,9 +400,7 @@ private fun OnboardingContent(
             verticalArrangement = Arrangement.Center,
             modifier = Modifier.systemBarsPadding(),
         ) {
-            if (!layout.isSmall) {
-                Spacer(Modifier.weight(1f))
-            }
+            FlexibleSpacer(isVisible = !layout.isSmall)
 
             if (pageStates.any { it.onSkipClick != null }) {
                 OnboardingSkipButton(
@@ -436,9 +435,7 @@ private fun OnboardingContent(
                 )
             }
 
-            if (!layout.isSmall) {
-                Spacer(Modifier.weight(1f))
-            }
+            FlexibleSpacer(isVisible = !layout.isSmall)
 
             if (!layout.isSmall) {
                 PagerIndicator(
@@ -450,6 +447,13 @@ private fun OnboardingContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun ColumnScope.FlexibleSpacer(isVisible: Boolean) {
+    if (isVisible) {
+        Spacer(Modifier.weight(1f))
     }
 }
 
