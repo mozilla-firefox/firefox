@@ -253,6 +253,9 @@ APZEventResult InputQueue::ReceiveTouchInput(
         // would therefore leave a tap or stationary press queued indefinitely.
         // APZ must also process touchstart to begin tap/long-press recognition.
 
+        // MaybeRequestContentResponse() above has already set the content
+        // response if the target is confirmed, so on touchstart
+        // HasContentResponded() matches IsTargetConfirmed().
         if (!block->HasTouchSwipeInfo()) {
           result.mSwipableDirectionsForTouch = Nothing();
           block->SetTouchSwipableDirectionsCallback(

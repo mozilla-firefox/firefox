@@ -652,6 +652,8 @@ class TouchBlockState : public BrowserGesturableBlockState {
     mTouchSwipableDirectionsCallback = aCallback;
   }
 
+  bool SetContentResponse(bool aPreventDefault) override;
+
  private:
   void MaybeNotifyTouchSwipableDirections();
 

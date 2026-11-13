@@ -939,7 +939,8 @@ SideBits TouchBlockState::GetSwipableDirections(
 }
 
 bool TouchBlockState::HasTouchSwipeInfo() const {
-  return IsTargetConfirmed() && HasAllowedTouchBehaviors();
+  return IsTargetConfirmed() && HasAllowedTouchBehaviors() &&
+         HasContentResponded();
 }
 
 bool TouchBlockState::SetConfirmedTargetApzc(
@@ -954,14 +955,24 @@ bool TouchBlockState::SetConfirmedTargetApzc(
   return confirmed;
 }
 
+bool TouchBlockState::SetContentResponse(bool aPreventDefault) {
+  const auto contentResponded =
+      CancelableBlockState::SetContentResponse(aPreventDefault);
+  if (contentResponded) {
+    MaybeNotifyTouchSwipableDirections();
+  }
+  return contentResponded;
+}
+
 void TouchBlockState::MaybeNotifyTouchSwipableDirections() {
   if (!mTouchSwipableDirectionsCallback || !HasTouchSwipeInfo()) {
     return;
   }
 
   const RefPtr<AsyncPanZoomController>& target = GetTargetApzc();
-  const SideBits swipableDirections =
-      target ? GetSwipableDirections(target) : SideBits::eNone;
+  const SideBits swipableDirections = target && !IsDefaultPrevented()
+                                          ? GetSwipableDirections(target)
+                                          : SideBits::eNone;
 
   TouchSwipableDirectionsCallback callback =
       std::move(mTouchSwipableDirectionsCallback);
