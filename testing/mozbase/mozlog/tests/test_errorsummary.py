@@ -592,6 +592,178 @@ def test_errorsummary_crash_group_overrides_test_mapping(get_logger):
     assert group_results == {"manifestA": "OK", "manifestB": "ERROR"}
 
 
+def _errorsummary_lines(logger):
+    return [
+        json.loads(line) for line in logger.handlers[0].stream.getvalue().splitlines()
+    ]
+
+
+def _group_results(lines):
+    return {
+        line["group"]: line["status"]
+        for line in lines
+        if line["action"] == "group_result"
+    }
+
+
+SEGV_MESSAGE = "SEGV on unknown address 0x00000000030b (pc 0x7b03e9dd40af T0)"
+
+
+def test_errorsummary_asan_error_attributed_to_running_test(get_logger):
+    logger = get_logger("errorsummary")
+    logger.suite_start({
+        "/css/selectors": ["/css/selectors/a.html"],
+        "/dom": ["/dom/b.html"],
+    })
+    logger.test_start("/css/selectors/a.html")
+    logger.test_end("/css/selectors/a.html", "OK")
+    logger.test_start("/dom/b.html")
+    logger.asan_error("SEGV", SEGV_MESSAGE, pid=28130, function="GetInnerWindow")
+    logger.test_end("/dom/b.html", "OK")
+    logger.suite_end()
+
+    lines = _errorsummary_lines(logger)
+    crashes = [line for line in lines if line["action"] == "crash"]
+    assert crashes == [
+        {
+            "action": "crash",
+            "line": 4,
+            "test": "/dom/b.html",
+            "signature": "AddressSanitizer: SEGV [@ GetInnerWindow]",
+            "group": "/dom",
+            "stackwalk_stdout": None,
+            "stackwalk_stderr": None,
+        }
+    ]
+    assert _group_results(lines) == {"/css/selectors": "OK", "/dom": "ERROR"}
+
+
+def test_errorsummary_asan_error_with_test_and_finished_suffix(get_logger):
+    logger = get_logger("errorsummary")
+    logger.suite_start({"manifestA": ["test_a"], "manifestB": ["test_b"]})
+    logger.test_start("test_a")
+    logger.test_end("test_a", "OK")
+    logger.test_start("test_b")
+    stack = [{"module": "libxul.so", "module_offset": 1}, {"function": "f"}]
+    logger.asan_error(
+        "heap-use-after-free", "use after free", test="test_a (finished)", stack=stack
+    )
+    logger.test_end("test_b", "OK")
+    logger.suite_end()
+
+    lines = _errorsummary_lines(logger)
+    crashes = [line for line in lines if line["action"] == "crash"]
+    assert [(c["test"], c["group"], c["signature"]) for c in crashes] == [
+        ("test_a", "manifestA", "AddressSanitizer: heap-use-after-free [@ f]")
+    ]
+    assert _group_results(lines) == {"manifestA": "ERROR", "manifestB": "OK"}
+
+
+@pytest.mark.parametrize(
+    ("scope", "group"),
+    [
+        pytest.param("/dom", "/dom", id="group_name"),
+        pytest.param("/dom/b.html", "/dom", id="test_name"),
+        pytest.param("/css", "subsuite:/css", id="subsuite_prefixed_group"),
+        pytest.param("/unknown", None, id="unknown_scope"),
+    ],
+)
+def test_errorsummary_asan_error_scope_fallback(get_logger, scope, group):
+    logger = get_logger("errorsummary")
+    logger.suite_start({"/dom": ["/dom/b.html"], "subsuite:/css": ["/css/c.html"]})
+    logger.test_start("/dom/b.html")
+    logger.test_end("/dom/b.html", "OK")
+    logger.asan_error("SEGV", SEGV_MESSAGE, scope=scope)
+    logger.suite_end()
+
+    lines = _errorsummary_lines(logger)
+    crashes = [line for line in lines if line["action"] == "crash"]
+    assert len(crashes) == 1
+    assert crashes[0]["test"] is None
+    assert crashes[0]["signature"] == "AddressSanitizer: SEGV"
+    assert crashes[0].get("group") == group
+    # A group nothing touched gets no group_result line.
+    expected = {"/dom": "OK"}
+    if group:
+        expected[group] = "ERROR"
+    assert _group_results(lines) == expected
+
+
+def test_errorsummary_asan_error_quiet_keeps_group_status(get_logger):
+    logger = get_logger("errorsummary")
+    logger.suite_start({"manifestA": ["test_a"]})
+    logger.test_start("test_a")
+    logger.asan_error("SEGV", SEGV_MESSAGE, test="test_a", quiet=True)
+    logger.test_end("test_a", "CRASH", expected="CRASH")
+    logger.test_start("test_a")
+    logger.test_end("test_a", "OK")
+    logger.suite_end()
+
+    lines = _errorsummary_lines(logger)
+    crashes = [line for line in lines if line["action"] == "crash"]
+    assert [(c["test"], c["group"]) for c in crashes] == [("test_a", "manifestA")]
+    assert _group_results(lines) == {"manifestA": "OK"}
+
+
+@pytest.mark.parametrize(
+    ("end_kwargs", "status"),
+    [
+        pytest.param(
+            {"status": "CRASH", "expected": "CRASH"}, "OK", id="expected_crash"
+        ),
+        pytest.param(
+            {"status": "CRASH", "expected": "OK", "known_intermittent": ["CRASH"]},
+            "OK",
+            id="known_intermittent_crash",
+        ),
+        pytest.param(
+            {"status": "CRASH", "expected": "OK"}, "ERROR", id="unexpected_crash"
+        ),
+        pytest.param({"status": "OK"}, "ERROR", id="test_passes"),
+    ],
+)
+def test_errorsummary_asan_error_decided_when_the_test_ends(
+    get_logger, end_kwargs, status
+):
+    logger = get_logger("errorsummary")
+    logger.suite_start({"manifestA": ["test_a"]})
+    logger.test_start("test_a")
+    logger.asan_error("SEGV", SEGV_MESSAGE, test="test_a")
+    logger.test_end("test_a", **end_kwargs)
+    logger.suite_end()
+
+    lines = _errorsummary_lines(logger)
+    crashes = [line for line in lines if line["action"] == "crash"]
+    assert [(c["test"], c["group"]) for c in crashes] == [("test_a", "manifestA")]
+    assert _group_results(lines) == {"manifestA": status}
+
+
+def test_errorsummary_asan_error_pending_until_suite_end(get_logger):
+    logger = get_logger("errorsummary")
+    logger.suite_start({"manifestA": ["test_a"]})
+    logger.test_start("test_a")
+    logger.asan_error("SEGV", SEGV_MESSAGE)
+    logger.suite_end()
+
+    assert _group_results(_errorsummary_lines(logger)) == {"manifestA": "ERROR"}
+
+
+def test_errorsummary_asan_error_scope_wins_over_running_test(get_logger):
+    logger = get_logger("errorsummary")
+    logger.suite_start({"/css": ["/css/a.html"], "/dom": ["/dom/b.html"]})
+    logger.test_start("/css/a.html")
+    logger.test_start("/dom/b.html")
+    logger.asan_error("SEGV", SEGV_MESSAGE, scope="/css")
+    logger.test_end("/css/a.html", "OK")
+    logger.test_end("/dom/b.html", "OK")
+    logger.suite_end()
+
+    lines = _errorsummary_lines(logger)
+    crashes = [line for line in lines if line["action"] == "crash"]
+    assert [(c["test"], c["group"]) for c in crashes] == [("/css/a.html", "/css")]
+    assert _group_results(lines) == {"/css": "ERROR", "/dom": "OK"}
+
+
 if __name__ == "__main__":
     import mozunit
 

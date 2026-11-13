@@ -119,6 +119,11 @@ from mozlog.formatters import TestSummaryFormatter
             id="ubsan_error_kept",
         ),
         pytest.param(
+            {"action": "asan_error", "kind": "SEGV", "message": "m", "quiet": True},
+            True,
+            id="asan_error_kept",
+        ),
+        pytest.param(
             {"action": "group_start", "name": "manifestA"}, True, id="group_start_kept"
         ),
         pytest.param(
@@ -547,6 +552,43 @@ def test_testsummary_tsan_error_keeps_pid_and_stacks():
         "description": None,
         "stacks": stacks,
         "scope": scope,
+    }
+
+
+def test_testsummary_asan_error_keeps_stacks_and_pid():
+    fmt = TestSummaryFormatter()
+    stack = [{"function": "GetInnerWindow", "file": "Document.h", "line": 1942}]
+    stacks = [{"label": "freed by thread T0 here", "stack": stack}]
+    record = {
+        "action": "asan_error",
+        "time": 1792157632661,
+        "thread": "MainThread",
+        "pid": 28130,
+        "source": "web-platform-tests",
+        "kind": "SEGV",
+        "message": "SEGV on unknown address 0x00000000030b (pc 0x7b03e9dd40af T0)",
+        "file": "Document.h",
+        "lineno": 1942,
+        "column": 12,
+        "function": "GetInnerWindow",
+        "stack": stack,
+        "stacks": stacks,
+        "scope": "/css/selectors",
+    }
+    result = json.loads(fmt(record))
+    assert result == {
+        "action": "asan_error",
+        "time": 1792157632661,
+        "pid": 28130,
+        "kind": "SEGV",
+        "message": "SEGV on unknown address 0x00000000030b (pc 0x7b03e9dd40af T0)",
+        "file": "Document.h",
+        "lineno": 1942,
+        "column": 12,
+        "function": "GetInnerWindow",
+        "stack": stack,
+        "stacks": stacks,
+        "scope": "/css/selectors",
     }
 
 
