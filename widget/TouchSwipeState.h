@@ -7,14 +7,31 @@
 
 #include "Units.h"
 #include "mozilla/Maybe.h"
+#include "mozilla/UniquePtr.h"
 #include "mozilla/layers/TouchCounter.h"
 
 namespace mozilla {
+
+struct TouchSwipeInfo;
+struct TouchSwipeInfoQueue;
 
 // TouchSwipeState phase transition:
 // - Initially Idle:       wait for a MULTITOUCH_START.
 // - Idle -> Pending:      a MULTITOUCH_START records APZ's swipable
 //                         directions.
+// - Idle -> WaitingForAPZ:
+//                         APZ cannot tell the swipable directions on
+//                         MULTITOUCH_START yet. Subsequent inputs are queued.
+// - WaitingForAPZ -> Pending:
+//                         APZ notifies the swipable directions. The queued
+//                         inputs are replayed from Pending.
+// - WaitingForAPZ -> Idle:
+//                         a MULTITOUCH_START of a new gesture arrives while
+//                         waiting. The queue is reset, and the new touch is
+//                         handled from Idle.
+// - WaitingForAPZ -> Rejected:
+//                         a finger is added while waiting. The queue is
+//                         reset.
 // - Pending -> Tracking:  a MULTITOUCH_MOVE passes navigation-direction
 //                         checks. In this case, APZ drops the block's events
 //                         and the subsequent touch events are processed as
@@ -26,7 +43,10 @@ namespace mozilla {
 // - Idle -> Rejected:     multiple fingers touch at the same time, or the
 //                         first finger's touch is consumed by APZ.
 // - ANY -> Idle:          the last touch ends, or MULTITOUCH_CANCEL resets
-//                         any phase to the initial Idle state.
+//                         any phase to the initial Idle state. During
+//                         WaitingForAPZ, the phase does not go back to Idle
+//                         right after the last touch ends, but when the queued
+//                         inputs are replayed.
 // Adding a finger and the last touch ending change the phase even if APZ
 // consumes the event.
 struct TouchSwipeState {
@@ -43,7 +63,9 @@ struct TouchSwipeState {
     Tracking,
     // Do not reconsider swipe navigation until all touches end or CANCEL
     // resets the state.
-    Rejected
+    Rejected,
+    // Wait for APZ response to trigger or reject swipe.
+    WaitingForAPZ,
   };
   Phase phase = Phase::Idle;
   // Swipe-to-nav on touchscreen doesn't support a multi-finger gesture. This
@@ -51,10 +73,15 @@ struct TouchSwipeState {
   // events to APZ so that it also counts the events APZ consumes.
   mozilla::layers::TouchCounter touchCounter;
 
+  // Non-null only while phase is WaitingForAPZ.
+  UniquePtr<TouchSwipeInfoQueue> touchSwipeInfoQueue;
+
   void AssertCountConsistency() const;
 
   void Start(mozilla::SideBits aSwipableDirections,
              const ScreenIntPoint& aTouchPoint);
+
+  void Wait(uint64_t aInputBlockId, const ScreenIntPoint& aTouchPoint);
 
   void Reset();
 
@@ -67,6 +94,8 @@ struct TouchSwipeState {
   // MULTITOUCH_MOVE and returns values other than
   // nsEventStatus_eConsumeNoDefault. See InputQueue::ReceiveTouchInput.
   void ChangePhaseForConsumedTouchInput();
+
+  void QueueInfo(TouchSwipeInfo&& aInfo);
 };
 
 }  // namespace mozilla

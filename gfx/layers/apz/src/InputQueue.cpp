@@ -252,15 +252,16 @@ APZEventResult InputQueue::ReceiveTouchInput(
         // that decision does not send a response either. Waiting on touchstart
         // would therefore leave a tap or stationary press queued indefinitely.
         // APZ must also process touchstart to begin tap/long-press recognition.
-        // TODO: Handle the case in which the target is not confirmed or touch
-        // action is not confirmed.
-        if (block->IsTargetConfirmed() && block->HasAllowedTouchBehaviors() &&
-            block->TouchActionAllowsPanningX()) {
-          MOZ_ASSERT(target, "A confirmed target should be non-null here");
-          result.mSwipableDirectionsForTouch =
-              block->GetOverscrollHandoffChain()->GetSwipableDirections(
-                  *target);
+
+        if (!block->HasTouchSwipeInfo()) {
+          result.mSwipableDirectionsForTouch = Nothing();
+          block->SetTouchSwipableDirectionsCallback(
+              mTouchSwipableDirectionsCallback);
+          break;
         }
+
+        result.mSwipableDirectionsForTouch =
+            Some(block->GetSwipableDirections(target));
         break;
       case MultiTouchInput::MULTITOUCH_MOVE:
         // Wait before ProcessQueue() so that APZ cannot pan before widget

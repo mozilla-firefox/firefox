@@ -1296,6 +1296,14 @@ class nsIWidget : public nsSupportsWeakReference {
    */
   virtual void* GetNativeData(uint32_t aDataType) = 0;
 
+  /**
+   * Called when APZ tells the swipable directions of the touch block
+   * |aInputBlockId|, which it could not tell synchronously when it received
+   * an input of that block.
+   */
+  void ReceiveTouchSwipableDirections(uint64_t aInputBlockId,
+                                      mozilla::SideBits aSwipableDirections);
+
  protected:
   nsIWidget();
   virtual ~nsIWidget();
@@ -1362,6 +1370,7 @@ class nsIWidget : public nsSupportsWeakReference {
       const mozilla::MultiTouchInput& aInput,
       const mozilla::layers::APZEventResult& aResult);
   void HandleTouchInputAsSwipe(const mozilla::MultiTouchInput& aInput);
+  bool IsTouchSwipeEnabled() const;
   bool MayTriggerSwipe(const mozilla::MultiTouchInput& aInput);
   void HandleTouchInputForSwipe(const mozilla::MultiTouchInput& aInput,
                                 const mozilla::layers::APZEventResult& aResult);

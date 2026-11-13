@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Touchscreen swipe in nested scrollers with irregular areas</title>
+<script src="/tests/SimpleTest/paint_listener.js"></script>
+<script src="/browser/gfx/layers/apz/test/mochitest/apz_test_utils.js"></script>
+<style>
+  #outer { width: 400px; overflow: auto; }
+  #inner { width: 600px; overflow: auto; }
+  #target {
+    width: 1200px;
+    height: 300px;
+    background: green;
+    clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
+  }
+</style>
+<div id="outer">
+  <div id="inner">
+    <div id="target"></div>
+  </div>
+</div>
+<script>
+  const params = new URLSearchParams(location.search);
+  for (const id of ["inner", "outer"]) {
+    document.getElementById(id).scrollLeft = Number(params.get(id));
+  }
+</script>

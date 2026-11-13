@@ -4,6 +4,7 @@
 
 #include "TouchSwipeState.h"
 
+#include "TouchSwipeInfo.h"
 #include "Units.h"
 #include "mozilla/DebugOnly.h"
 #include "mozilla/Maybe.h"
@@ -15,22 +16,39 @@ void TouchSwipeState::AssertCountConsistency() const {
   const mozilla::DebugOnly<uint32_t> count = touchCounter.GetActiveTouchCount();
   MOZ_ASSERT((phase == TouchSwipeState::Phase::Idle && count == 0) ||
              (phase == TouchSwipeState::Phase::Pending && count == 1) ||
+             (phase == TouchSwipeState::Phase::WaitingForAPZ && count == 1) ||
              (phase == TouchSwipeState::Phase::Tracking && count == 1) ||
              (phase == TouchSwipeState::Phase::Rejected && count > 0));
 }
 
-void TouchSwipeState::Start(mozilla::SideBits aSwipableDirections,
+void TouchSwipeState::Start(SideBits aSwipableDirections,
                             const ScreenIntPoint& aTouchPoint) {
-  MOZ_ASSERT(phase == Phase::Idle &&
-                 swipableDirections == mozilla::SideBits::eLeftRight,
+  MOZ_ASSERT((phase == Phase::Idle || phase == Phase::WaitingForAPZ) &&
+                 swipableDirections == SideBits::eLeftRight,
              "This is the start point of touch swipe-to-nav. "
-             "TouchSwipeState should have an initial state");
+             "TouchSwipeState should have an initial state or waiting state");
   swipableDirections &= aSwipableDirections;
   phase = Phase::Pending;
-  previousTouchPoint = mozilla::Some(aTouchPoint);
+  previousTouchPoint = Some(aTouchPoint);
+}
+
+void TouchSwipeState::Wait(uint64_t aInputBlockId,
+                           const ScreenIntPoint& aTouchPoint) {
+  MOZ_ASSERT(phase == Phase::Idle && swipableDirections == SideBits::eLeftRight,
+             "This is the start point of touch swipe-to-nav. "
+             "TouchSwipeState should have an initial state");
+  phase = Phase::WaitingForAPZ;
+  touchSwipeInfoQueue = std::make_unique<TouchSwipeInfoQueue>(aInputBlockId);
+  previousTouchPoint = Some(aTouchPoint);
 }
 
 void TouchSwipeState::Reset() { *this = TouchSwipeState{}; }
+
+void TouchSwipeState::QueueInfo(TouchSwipeInfo&& aInfo) {
+  MOZ_ASSERT(touchSwipeInfoQueue);
+  MOZ_ASSERT(touchSwipeInfoQueue->inputBlockId == aInfo.result.mInputBlockId);
+  touchSwipeInfoQueue->queuedInfo.AppendElement(std::move(aInfo));
+}
 
 ScreenIntPoint TouchSwipeState::GetDelta(const ScreenIntPoint& point) {
   MOZ_ASSERT(previousTouchPoint.isSome());
@@ -65,6 +83,10 @@ void TouchSwipeState::ChangePhaseForConsumedTouchInput() {
       if (count == 0) {
         Reset();
       }
+      return;
+    case TouchSwipeState::Phase::WaitingForAPZ:
+      MOZ_ASSERT_UNREACHABLE(
+          "Inputs are queued while waiting for APZ and handled after Start()");
       return;
   }
 }

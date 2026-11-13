@@ -927,6 +927,45 @@ bool TouchBlockState::NeedsContentResponseAfterLongTap(
   return !HasContentResponded() || !IsDefaultPrevented();
 }
 
+SideBits TouchBlockState::GetSwipableDirections(
+    const AsyncPanZoomController* aTarget) const {
+  MOZ_ASSERT(aTarget, "A confirmed target should be non-null here");
+  // TODO: Handle the case in which touch action is not confirmed.
+  if (HasAllowedTouchBehaviors() && TouchActionAllowsPanningX()) {
+    return GetOverscrollHandoffChain()->GetSwipableDirections(*aTarget);
+  }
+  return SideBits::eNone;
+}
+
+bool TouchBlockState::HasTouchSwipeInfo() const { return IsTargetConfirmed(); }
+
+bool TouchBlockState::SetConfirmedTargetApzc(
+    const RefPtr<AsyncPanZoomController>& aTargetApzc,
+    TargetConfirmationState aState, InputQueueIterator aFirstInput,
+    bool aForScrollbarDrag) {
+  const bool confirmed = InputBlockState::SetConfirmedTargetApzc(
+      aTargetApzc, aState, aFirstInput, aForScrollbarDrag);
+  if (confirmed) {
+    MaybeNotifyTouchSwipableDirections();
+  }
+  return confirmed;
+}
+
+void TouchBlockState::MaybeNotifyTouchSwipableDirections() {
+  if (!mTouchSwipableDirectionsCallback || !HasTouchSwipeInfo()) {
+    return;
+  }
+
+  const RefPtr<AsyncPanZoomController>& target = GetTargetApzc();
+  const SideBits swipableDirections =
+      target ? GetSwipableDirections(target) : SideBits::eNone;
+
+  TouchSwipableDirectionsCallback callback =
+      std::move(mTouchSwipableDirectionsCallback);
+  mTouchSwipableDirectionsCallback = nullptr;
+  callback(GetBlockId(), swipableDirections);
+}
+
 KeyboardBlockState::KeyboardBlockState(
     const RefPtr<AsyncPanZoomController>& aTargetApzc)
     : InputBlockState(aTargetApzc, TargetConfirmationFlags{true}) {}

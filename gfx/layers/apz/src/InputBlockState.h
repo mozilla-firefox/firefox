@@ -630,7 +630,31 @@ class TouchBlockState : public BrowserGesturableBlockState {
   bool NeedsContentResponseAfterLongTap(const MultiTouchInput& aEvent,
                                         InSlop aWasInSlop) const;
 
+  bool SetConfirmedTargetApzc(const RefPtr<AsyncPanZoomController>& aTargetApzc,
+                              TargetConfirmationState aState,
+                              InputQueueIterator aFirstInput,
+                              bool aForScrollbarDrag) override;
+
+  SideBits GetSwipableDirections(const AsyncPanZoomController* aTarget) const;
+
+  /**
+   * Whether the information from the main thread needed to compute the
+   * swipable directions for touch swipe-to-navigate is available.
+   */
+  bool HasTouchSwipeInfo() const;
+
+  /**
+   * Called when the widget has to wait for the swipable directions of this
+   * block. |aCallback| is invoked once they become available.
+   */
+  void SetTouchSwipableDirectionsCallback(
+      const TouchSwipableDirectionsCallback& aCallback) {
+    mTouchSwipableDirectionsCallback = aCallback;
+  }
+
  private:
+  void MaybeNotifyTouchSwipableDirections();
+
   nsTArray<TouchBehaviorFlags> mAllowedTouchBehaviors;
   bool mAllowedTouchBehaviorSet;
   bool mDuringFastFling;
@@ -653,6 +677,9 @@ class TouchBlockState : public BrowserGesturableBlockState {
   // content response for a touch move event. It will be set just before
   // triggering a long-press event.
   bool mNeedsWaitTouchMove;
+  // Non-null while the widget is waiting for the swipable directions of this
+  // block.
+  TouchSwipableDirectionsCallback mTouchSwipableDirectionsCallback;
   apz::SingleTapState mSingleTapState;
   ScreenIntPoint mSlopOrigin;
   // A reference to the InputQueue's touch counter

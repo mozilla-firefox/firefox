@@ -377,7 +377,13 @@ void ChromeProcessController::NotifyTouchSwipableDirections(
   }
 
   if (mWidget) {
-    // TODO: Pass the swipable directions to the widget.
+    // Dispatch asynchronously, because this can be called from within
+    // InputQueue and the widget may call back into APZ (e.g.
+    // SetBrowserGestureResponse) while handling it.
+    mUIThread->Dispatch(NewRunnableMethod<uint64_t, SideBits>(
+        "nsIWidget::ReceiveTouchSwipableDirections", mWidget,
+        &nsIWidget::ReceiveTouchSwipableDirections, aInputBlockId,
+        aSwipableDirections));
   }
 }
 
