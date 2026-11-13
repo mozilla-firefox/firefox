@@ -2025,6 +2025,12 @@ skip-if = [
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 1808049
 ]
 
+["test_webtransport_https_rr_no_h3.js"]
+skip-if = [
+  "os == 'android'", # The node servers run on the host machine
+  "os == 'win' && msix", # Bug 1808049
+]
+
 ["test_webtransport_simple.js"]
 skip-if = [
   "os == 'android' && os_version == '14' && arch == 'x86_64'",

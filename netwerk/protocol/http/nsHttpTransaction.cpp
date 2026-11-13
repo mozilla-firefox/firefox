@@ -2655,10 +2655,14 @@ nsresult nsHttpTransaction::HandleContentStart() {
     if (mIsForWebTransport) {
       responseChecked = HandleWebTransportResponse(mResponseHead->Status());
       LOG(("HandleWebTransportResponse res=%d", responseChecked));
-      if (responseChecked) {
-        mNoContent = true;
-        mPreserveStream = true;
+      if (!responseChecked) {
+        // There is no WebTransport session to hand the response to, e.g. the
+        // request was sent over HTTP/1.1. Fail it rather than delivering the
+        // response body.
+        return NS_ERROR_FAILURE;
       }
+      mNoContent = true;
+      mPreserveStream = true;
     }
 
     if (!responseChecked) {
