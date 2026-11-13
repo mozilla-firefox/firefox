@@ -4807,15 +4807,6 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY void PresShell::ContentWillBeRemoved(
     }
   }
 
-  if (aInfo.mNewParent && aChild->IsElement()) {
-    if (aInfo.mNewParent->IsElement() &&
-        aInfo.mNewParent->AsElement()->HasServoData() &&
-        !Servo_Element_IsDisplayNone(aInfo.mNewParent->AsElement())) {
-      DestroyFramesForAndRestyle(aChild->AsElement());
-      return;
-    }
-  }
-
   mFrameConstructor->ContentWillBeRemoved(
       aChild, nsCSSFrameConstructor::RemovalKind::Dom);
 
@@ -4823,7 +4814,7 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY void PresShell::ContentWillBeRemoved(
   // stuff, otherwise the frame constructor can't see elements which are
   // display: contents / display: none, because we'd have cleared all the style
   // data from there.
-  mPresContext->RestyleManager()->ContentWillBeRemoved(aChild);
+  mPresContext->RestyleManager()->ContentWillBeRemoved(aChild, aInfo);
 }
 
 void PresShell::NotifyCounterStylesAreDirty() {
