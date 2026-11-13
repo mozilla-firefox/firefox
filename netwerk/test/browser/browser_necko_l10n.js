@@ -89,6 +89,15 @@ add_task(async function test_domain_change() {
   let statusPromise = waitForStatusChange(browser, expectedMessage);
   BrowserTestUtils.startLoadingURIString(browser, serverURL);
   let { message } = await statusPromise;
+  // The status panel only shows status messages once the content process has
+  // reported the start of the load, which can arrive after the parent's
+  // network status messages.
+  let statuspanel = document.getElementById("statuspanel");
+  await BrowserTestUtils.waitForMutationCondition(
+    statuspanel,
+    { attributeFilter: ["inactive"] },
+    () => !statuspanel.hasAttribute("inactive")
+  );
   // There's a delay in the status label being updated, so by the time the
   // progress listener sees waiting for, the statuspanel is still on
   // looking up. This may be racy.
