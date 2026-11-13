@@ -11,8 +11,13 @@ exclude = ["/android", "/ios"]
 [features]
 default = []
 signatures = ["dep:canonical_json", "dep:rc_crypto"]
-# submitting glean telemetry is tricky on desktop for now.
+
+# Telemetry recording.
+# Expose `RemoteSettingsService::set_telemetry()` to application.
 telemetry-submission = []
+# Record metrics directly from Rust with the Glean SDK of the host application.
+# (takes precedence on `telemetry-submission` if both enabled)
+glean-sym = ["dep:glean-sym"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -35,9 +40,11 @@ firefox-versioning = { path = "../support/firefox-versioning" }
 sha2 = "^0.10"
 canonical_json = { version = "0.5", optional = true }
 rc_crypto = { path = "../support/rc_crypto", optional = true }
+glean-sym = { version = "71", optional = true }
 
 [build-dependencies]
 uniffi = { version = "0.32", features = ["build"] }
+glean-build = { git = "https://github.com/mozilla/glean", tag = "v71.0.0" }
 
 [dev-dependencies]
 expect-test = "1.4"

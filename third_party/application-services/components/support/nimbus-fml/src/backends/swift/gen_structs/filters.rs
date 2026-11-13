@@ -1,10 +1,11 @@
-// /* This Source Code Form is subject to the terms of the Mozilla Public
-//  * License, v. 2.0. If a copy of the MPL was not distributed with this
-//  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-use super::{common, ConcreteCodeOracle};
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 use std::borrow::Borrow;
 use std::fmt::{self, Display};
 
+use crate::backends::swift::gen_structs::{ConcreteCodeOracle, common};
 use crate::backends::{CodeOracle, LiteralRenderer, TypeIdentifier};
 use crate::intermediate_representation::Literal;
 
@@ -108,7 +109,7 @@ pub fn comment<T>(txt: T, _: &dyn askama::Values, spaces: &str) -> Result<String
 where
     T: fmt::Display,
 {
-    use textwrap::{fill, Options};
+    use textwrap::{Options, fill};
 
     let indent1 = "/// ".to_string();
     let indent2 = format!("{} /// ", spaces);
@@ -339,8 +340,16 @@ mod json_tests {
 
         // Map<Enum, List<Image>>
         assert_eq!(
-            run_to_json(p, TypeRef::EnumMap(Box::new(TypeRef::Enum("Name".to_string())), Box::new(TypeRef::List(Box::new(TypeRef::BundleImage))))),
-            format!("prop.mapEntriesNotNull({{ $0.rawValue }}, {{ $0.map {{ $0.encodableImageName }} }})")
+            run_to_json(
+                p,
+                TypeRef::EnumMap(
+                    Box::new(TypeRef::Enum("Name".to_string())),
+                    Box::new(TypeRef::List(Box::new(TypeRef::BundleImage)))
+                )
+            ),
+            format!(
+                "prop.mapEntriesNotNull({{ $0.rawValue }}, {{ $0.map {{ $0.encodableImageName }} }})"
+            )
         );
         Ok(())
     }

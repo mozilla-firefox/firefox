@@ -16,7 +16,7 @@ async-trait = "0.1"
 autofill = { path = "../../components/autofill", features = ["keydb"] }
 db-crypto = { path = "../../components/support/db-crypto", features = ["keydb"] }
 init_rust_components = { path = "../../components/init_rust_components", features = ["keydb"] }
-clap = { version = "4.2", default-features = false, features = ["std", "derive"] }
+clap = { version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"] }
 cli-support = { path = "../cli-support" }
 fxa-client = { path = "../../components/fxa-client" }
 error-support = { path = "../../components/support/error" }

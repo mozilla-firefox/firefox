@@ -7,7 +7,8 @@ use std::path::Path;
 use anyhow::Result;
 use serde_json::Value;
 
-use crate::{sources::ExperimentListSource, value_utils};
+use crate::sources::ExperimentListSource;
+use crate::value_utils;
 
 impl ExperimentListSource {
     pub(crate) fn fetch_list<P>(&self, file: Option<P>) -> Result<bool>

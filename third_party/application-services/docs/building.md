@@ -115,7 +115,7 @@ The following instructions assume that you are building `application-services` f
    1. Download and install [Android Studio](https://developer.android.com/studio/#downloads).
    1. Configure Android Studio to use the bootstrapped SDK under `Settings > Languages & Frameworks > Android SDK`, set it to the SDK from mozbuild. Ex: `~/.mozbuild/android-sdk-linux` or `~/.mozbuild/android-sdk-macos`
    1. Download the required NDK and command-line tools under `Settings > Languages & Frameworks > Android SDK > SDK Tools`. Pick:
-      1. NDK (Side by side) version 29.0.14206865 [as configured](https://github.com/mozilla/application-services/blob/bb8cde8a5/taskcluster/docker/linux/Dockerfile#L25)
+      1. NDK (Side by side) version 30.0.16248370 [as configured](https://github.com/mozilla/application-services/blob/bb8cde8a5/taskcluster/docker/linux/Dockerfile#L25)
       1. Android SDK Command-line Tools (latest)
    1. Set environment variables based on the boostrapped code and the downloaded NDK. Add it to your rc file (either `.zshrc` or `.bashrc` depending on your shell) to make it permanent
       1. Set `JAVA_HOME` to point to the bootstraped JDK 25 installation directory. Ex: `export JAVA_HOME=~/.mozbuild/jdk/jdk-25.0.5+8/` (or `export JAVA_HOME=~/.mozbuild/jdk/jdk-25.0.5+8/Contents/Home` on Mac).
@@ -126,7 +126,7 @@ The following instructions assume that you are building `application-services` f
 
       1. Set `NSS_STATIC` to 1. Ex: `export NSS_STATIC=1`
       1. Set `NSS_DIR` to your local NSS folder. Ex: `export NSS_DIR=~/Mozilla/application-services/libs/desktop/linux-x86-64/nss`
-      1. Set `ANDROID_NDK_ROOT` to the NDK you downloaded via Android Studio, Ex: `export ANDROID_NDK_ROOT=~/.mozbuild/android-sdk-linux/ndk/29.0.14206865`
+      1. Set `ANDROID_NDK_ROOT` to the NDK you downloaded via Android Studio, Ex: `export ANDROID_NDK_ROOT=~/.mozbuild/android-sdk-linux/ndk/30.0.16248370`
 1. If you are on Windows using WSL - drop to the section below, [Windows setup
 for Android (WSL)](building.md#windows-setup-for-android-via-wsl) before proceeding.
 1. Check dependencies, environment variables

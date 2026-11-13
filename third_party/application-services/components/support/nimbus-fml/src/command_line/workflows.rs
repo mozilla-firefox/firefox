@@ -1,28 +1,28 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use std::collections::HashSet;
+use std::fs::OpenOptions;
+use std::io::{IsTerminal, Write};
+use std::path::Path;
 
 use glob::MatchOptions;
-use std::collections::HashSet;
+use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 
-use super::commands::{
+use crate::backends;
+use crate::backends::info::ManifestInfo;
+use crate::command_line::commands::{
     GenerateExperimenterManifestCmd, GenerateSingleFileManifestCmd, GenerateStructCmd, LintCmd,
     PrintChannelsCmd, PrintInfoCmd, ValidateCmd,
 };
-use crate::backends::info::ManifestInfo;
 use crate::error::FMLError::CliError;
+use crate::error::{FMLError, Result};
 use crate::frontend::ManifestFrontEnd;
-use crate::lints::{self, Finding, LintConfig, LintLevel, LintReport};
-use crate::{
-    backends,
-    error::{FMLError, Result},
-    intermediate_representation::{FeatureManifest, TargetLanguage},
-    parser::Parser,
-    util::loaders::{FileLoader, FilePath, LoaderConfig},
-};
-use std::io::{IsTerminal, Write};
-use std::path::Path;
-use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
+use crate::intermediate_representation::{FeatureManifest, TargetLanguage};
+use crate::lints::{self, Issue, LintReport};
+use crate::parser::Parser;
+use crate::util::loaders::{FileLoader, FilePath, LoaderConfig};
 
 /// Use this when recursively looking for files.
 const MATCHING_FML_EXTENSION: &str = ".fml.yaml";
@@ -70,11 +70,11 @@ fn generate_struct_from_dir(files: &FileLoader, cmd: &GenerateStructCmd, cwd: &P
         let pb = entry.path();
         if pb.is_dir() {
             generate_struct_from_dir(files, cmd, &pb)?;
-        } else if let Some(nm) = pb.file_name().map(|s| s.to_str().unwrap_or_default()) {
-            if nm.ends_with(MATCHING_FML_EXTENSION) {
-                let path = pb.as_path().into();
-                generate_struct_single(files, path, cmd)?;
-            }
+        } else if let Some(nm) = pb.file_name().map(|s| s.to_str().unwrap_or_default())
+            && nm.ends_with(MATCHING_FML_EXTENSION)
+        {
+            let path = pb.as_path().into();
+            generate_struct_single(files, path, cmd)?;
         }
     }
     Ok(())
@@ -216,31 +216,25 @@ fn wrapped(text: &str, initial_indent: &str, subsequent_indent: &str) -> String 
     textwrap::fill(text, options)
 }
 
-fn output_finding(stream: &mut impl WriteColor, finding: &Finding) -> Result<()> {
-    let (icon, color) = match finding.level {
-        LintLevel::Error => ("❎", Color::Red),
-        _ => ("⚠️", Color::Yellow),
-    };
-
-    write!(stream, "  {icon} ")?;
-    stream.set_color(ColorSpec::new().set_fg(Some(color)))?;
-    write!(stream, "{:<LINT_NAME_WIDTH$}", finding.lint)?;
+fn output_issue(stream: &mut impl WriteColor, report: &Issue) -> Result<()> {
+    write!(stream, "  ⚠️  ")?;
+    stream.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)))?;
+    write!(stream, "{:<LINT_NAME_WIDTH$}", report.lint)?;
     stream.reset()?;
-    writeln!(stream, "{}", finding.message)?;
+    writeln!(stream, "{}", report.message)?;
 
     Ok(())
 }
 
-/// Print the findings grouped under the feature, object or enum they're about,
-/// followed by the guidance for each lint that fired. The guidance is per lint, not
-/// per finding: eighty features missing a `meta-bug` need telling how once.
-fn output_findings(stream: &mut impl WriteColor, report: &LintReport) -> Result<()> {
-    // The findings arrive sorted by module and subject, so a change of either starts
-    // the next group.
+/// Print the issues grouped by location, followed by the guidance for each lint
+/// that fired.
+///
+/// Guidance is only shown once per issue, not once per lint.
+fn output_issues(stream: &mut impl WriteColor, report: &LintReport) -> Result<()> {
     let mut group: Option<(&Option<String>, &String)> = None;
 
-    for finding in &report.findings {
-        let this = (&finding.module, &finding.subject);
+    for issue in &report.issues {
+        let this = (&issue.module, &issue.subject);
         if group != Some(this) {
             if group.is_some() {
                 writeln!(stream)?;
@@ -248,14 +242,14 @@ fn output_findings(stream: &mut impl WriteColor, report: &LintReport) -> Result<
             group = Some(this);
 
             stream.set_color(ColorSpec::new().set_bold(true))?;
-            write!(stream, "{}", finding.subject)?;
+            write!(stream, "{}", issue.subject)?;
             stream.reset()?;
-            match &finding.module {
+            match &issue.module {
                 Some(module) => writeln!(stream, " (imported from {module})")?,
                 None => writeln!(stream)?,
             }
         }
-        output_finding(stream, finding)?;
+        output_issue(stream, issue)?;
     }
 
     let lints = report.triggered_lints();
@@ -305,12 +299,15 @@ pub(crate) fn validate(cmd: &ValidateCmd) -> Result<()> {
                 iter_includes.collect::<Vec<String>>().join("\n- ")
             ),
         )?;
-        output_ok(&mut stdout, &format!(
-            "{}\n{}\n{}",
-            "The manifest is valid for including in other files. To be imported, or used as an app manifest, it requires the following:",
-            "- A `channels` list",
-            "- An `about` block",
-        ))?;
+        output_ok(
+            &mut stdout,
+            &format!(
+                "{}\n{}\n{}",
+                "The manifest is valid for including in other files. To be imported, or used as an app manifest, it requires the following:",
+                "- A `channels` list",
+                "- An `about` block",
+            ),
+        )?;
         return Ok(());
     }
     let intermediate_representation =
@@ -384,19 +381,7 @@ fn lint_report(cmd: &LintCmd) -> Result<LintReport> {
     let files: FileLoader = TryFrom::try_from(&cmd.loader)?;
     let file_path = files.file_path(&cmd.manifest)?;
 
-    // One parser for both passes: `load_manifest` walks the whole include tree, and
-    // a second one would fetch and parse all of it again.
     let parser: Parser = Parser::new(files, file_path.clone())?;
-
-    // The top level `no-lint` block lives in the file, not the IR.
-    let mut loading = HashSet::new();
-    let manifest_front_end = parser.load_manifest(&file_path, &mut loading)?;
-
-    let config = LintConfig::new()
-        .including_imports(cmd.include_imports)
-        .with_file_suppressions(&manifest_front_end.no_lint)
-        .allowing(&cmd.allow)?
-        .denying(&cmd.deny)?;
 
     // Linting an invalid manifest would report nonsense.
     let ir = parser
@@ -411,7 +396,7 @@ fn lint_report(cmd: &LintCmd) -> Result<LintReport> {
             ))
         })?;
 
-    Ok(lints::lint_manifest(&ir, &config))
+    Ok(lints::lint_manifest(&ir))
 }
 
 pub(crate) fn lint(cmd: &LintCmd) -> Result<()> {
@@ -419,44 +404,55 @@ pub(crate) fn lint(cmd: &LintCmd) -> Result<()> {
 
     let report = lint_report(cmd)?;
 
-    if cmd.as_json {
-        println!("{}", serde_json::to_string_pretty(&json_report(&report))?);
-    } else {
-        output_findings(&mut stdout, &report)?;
-        output_lint_summary(&mut stdout, &report)?;
+    output_issues(&mut stdout, &report)?;
+    output_lint_summary(&mut stdout, &report)?;
+
+    if let Some(code_review_json_path) = &cmd.code_review_json {
+        write_code_review_json(&cmd.manifest, &report, code_review_json_path)?;
     }
 
-    let errors = report.error_count();
-    let warnings = report.warning_count();
+    writeln!(stdout)?;
 
-    if errors > 0 {
-        return Err(CliError(format!(
-            "Manifest has {} lint error{}",
-            errors,
-            if errors > 1 { "s" } else { "" }
-        )));
-    }
-
-    if cmd.error_on_warning && warnings > 0 {
-        return Err(CliError(format!(
-            "Manifest has {} lint warning{}",
-            warnings,
-            if warnings > 1 { "s" } else { "" }
-        )));
+    let error_count = report.issue_count();
+    if error_count > 0 {
+        return Err(CliError("Manifest has lint error(s)".into()));
     }
 
     Ok(())
 }
 
-/// The shape `--json` emits: the counts a CI job needs, plus the findings.
-fn json_report(report: &LintReport) -> serde_json::Value {
-    serde_json::json!({
-        "errors": report.error_count(),
-        "warnings": report.warning_count(),
-        "suppressed": report.suppressed,
-        "subjects": report.subject_count(),
-        "findings": report.findings,
-    })
+fn write_code_review_json(manifest_path: &str, report: &LintReport, path: &Path) -> Result<()> {
+    let payload = generate_code_review_json(manifest_path, report);
+
+    let mut f = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .create(true)
+        .open(path)?;
+    serde_json::to_writer(&mut f, &payload)?;
+    writeln!(f)?;
+
+    Ok(())
+}
+
+fn generate_code_review_json(manifest_path: &str, report: &LintReport) -> serde_json::Value {
+    let error_count = report.issue_count();
+
+    if error_count > 0 {
+        serde_json::json!({
+            manifest_path: [
+                {
+                    "path": manifest_path,
+                    "line": null,
+                    "column": null,
+                    "level": "error",
+                    "message": format!("There are {error_count} error(s) in this Feature Manifest. Check the task for the full list or run:\n\n./mach android nimbus-cli fml lint {manifest_path}"),
+                }
+            ],
+        })
+    } else {
+        serde_json::json!({})
+    }
 }
 
 fn output_suppressed(stream: &mut impl WriteColor, report: &LintReport) -> Result<()> {
@@ -465,49 +461,28 @@ fn output_suppressed(stream: &mut impl WriteColor, report: &LintReport) -> Resul
     }
     output_note(
         stream,
-        &format!(
-            "{} finding{} silenced by `no-lint`",
-            report.suppressed,
-            if report.suppressed > 1 { "s" } else { "" }
-        ),
+        &format!("{} issue(s) silenced by `no-lint`", report.suppressed,),
     )
 }
 
 fn output_lint_summary(stream: &mut impl WriteColor, report: &LintReport) -> Result<()> {
     if report.is_empty() {
-        output_ok(stream, "No lint findings")?;
+        output_ok(stream, "No issues.")?;
         return output_suppressed(stream, report);
     }
 
-    let errors = report.error_count();
-    let warnings = report.warning_count();
-    let mut counts = Vec::new();
-    if errors > 0 {
-        counts.push(format!(
-            "{errors} error{}",
-            if errors > 1 { "s" } else { "" }
-        ));
-    }
-    if warnings > 0 {
-        counts.push(format!(
-            "{warnings} warning{}",
-            if warnings > 1 { "s" } else { "" }
-        ));
-    }
-
-    let subjects = report.subject_count();
+    let error_count = report.issue_count();
+    let subject_count = report.subject_count();
     writeln!(
         stream,
-        "Found {} in {subjects} place{}.",
-        counts.join(" and "),
-        if subjects > 1 { "s" } else { "" }
+        "Found {error_count} error(s) in {subject_count} location(s).\n",
     )?;
     output_suppressed(stream, report)?;
     writeln!(
         stream,
         "{}",
         wrapped(
-            "A lint that doesn't apply can be switched off for a single feature with a `no-lint: [LINT_NAME]` list on that feature, for the whole file with a top level `no-lint:` list, or for this run with `--allow LINT_NAME`.",
+            "A lint that doesn't apply can be switched off for a single feature with a `no-lint: [LINT_NAME]` annotation on that feature.",
             "",
             "",
         )
@@ -522,20 +497,18 @@ pub(crate) fn list_lints() -> Result<()> {
 
 fn output_lint_list(stream: &mut impl WriteColor) -> Result<()> {
     const CATEGORY_WIDTH: usize = 15;
-    const LEVEL_WIDTH: usize = 10;
 
     writeln!(
         stream,
-        "{:<LINT_NAME_WIDTH$}{:<CATEGORY_WIDTH$}{:<LEVEL_WIDTH$}DESCRIPTION",
-        "LINT", "CATEGORY", "DEFAULT"
+        "{:<LINT_NAME_WIDTH$}{:<CATEGORY_WIDTH$}DESCRIPTION",
+        "LINT", "CATEGORY"
     )?;
     for lint in lints::ALL_LINTS.iter() {
         writeln!(
             stream,
-            "{:<LINT_NAME_WIDTH$}{:<CATEGORY_WIDTH$}{:<LEVEL_WIDTH$}{}",
+            "{:<LINT_NAME_WIDTH$}{:<CATEGORY_WIDTH$}{}",
             lint.name,
             lint.category.as_str(),
-            lint.default_level.as_str(),
             lint.description
         )?;
     }
@@ -848,19 +821,14 @@ mod test {
     fn lint_cmd(path: &str) -> LintCmd {
         LintCmd {
             manifest: join(pkg_dir(), path),
-            loader: Default::default(),
-            allow: Default::default(),
-            deny: Default::default(),
-            error_on_warning: false,
-            include_imports: false,
-            as_json: false,
+            ..Default::default()
         }
     }
 
     /// The lints a fixture trips, sorted and deduplicated.
     fn lints_for(path: &str) -> Result<Vec<&'static str>> {
         let report = lint_report(&lint_cmd(path))?;
-        let mut lints: Vec<_> = report.findings.iter().map(|f| f.lint).collect();
+        let mut lints: Vec<_> = report.issues.iter().map(|f| f.lint).collect();
         lints.sort_unstable();
         lints.dedup();
         Ok(lints)
@@ -883,34 +851,15 @@ mod test {
             vec![
                 "COMMON_PREFIX",
                 "DEEP_NESTING",
-                "ENUM_VARIANT_CASING",
-                "FEATURE_NAME_CASING",
                 "MISSING_CONTACTS",
-                "MISSING_DOCUMENTATION",
-                "MISSING_ENABLED_VARIABLE",
-                "MISSING_META_BUG",
                 "NEGATED_BOOLEAN",
-                "STRINGLY_TYPED",
                 "TERSE_DESCRIPTION",
                 "TODO_IN_DESCRIPTION",
                 "TRIVIAL_ENUM",
                 "TYPE_IN_NAME",
                 "TYPE_NAME_CASING",
                 "UNUSED_TYPE",
-                "VARIABLE_NAME_CASING",
             ]
-        );
-        Ok(())
-    }
-
-    #[test]
-    fn test_lint_command_honours_no_lint() -> Result<()> {
-        // The file excuses itself from MISSING_META_BUG, its feature from
-        // MISSING_ENABLED_VARIABLE.
-        assert_eq!(
-            lints_for("fixtures/fe/lints/suppressions.fml.yaml")?,
-            // ... but both lists also name a lint that doesn't exist.
-            vec!["UNKNOWN_LINT"]
         );
         Ok(())
     }
@@ -919,7 +868,7 @@ mod test {
     fn test_lint_command_reports_unknown_names_at_both_levels() -> Result<()> {
         let report = lint_report(&lint_cmd("fixtures/fe/lints/suppressions.fml.yaml"))?;
         let unknown: Vec<_> = report
-            .findings
+            .issues
             .iter()
             .filter(|f| f.lint == "UNKNOWN_LINT")
             .map(|f| (f.subject.as_str(), f.message.as_str()))
@@ -927,101 +876,41 @@ mod test {
 
         assert_eq!(
             unknown,
-            vec![
-                (
-                    "feature `legacy-feature`",
-                    "`no-lint` names `NOT_A_REAL_LINT`, which isn't a lint"
-                ),
-                (
-                    "this manifest",
-                    "`no-lint` names `NOT_A_REAL_FILE_LINT`, which isn't a lint"
-                ),
-            ]
+            vec![(
+                "feature `legacy-feature`",
+                "`no-lint` names `NOT_A_REAL_LINT`, which isn't a lint"
+            ),]
         );
-        Ok(())
-    }
-
-    #[test]
-    fn test_lint_says_when_no_lint_silenced_a_finding() -> Result<()> {
-        // The included file silences MISSING_META_BUG, so lint would otherwise call
-        // the manifest clean without saying why.
-        let report = lint_report(&lint_cmd("fixtures/fe/lints/including.fml.yaml"))?;
-        assert!(report.is_empty());
-        assert_eq!(report.suppressed, 1);
-
-        let mut buffer = termcolor::Buffer::no_color();
-        output_suppressed(&mut buffer, &report)?;
-        let output = String::from_utf8(buffer.into_inner()).expect("output is UTF-8");
-        assert!(
-            output.contains("1 finding silenced by `no-lint`"),
-            "{output}"
-        );
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_lint_command_honours_no_lint_in_an_included_file() -> Result<()> {
-        // The included file excuses what it defines from MISSING_META_BUG; the
-        // including file provides its own.
-        let path = "fixtures/fe/lints/including.fml.yaml";
-        assert_eq!(lints_for(path)?, Vec::<&str>::new());
-        assert_eq!(lint_report(&lint_cmd(path))?.suppressed, 1);
-        Ok(())
-    }
-
-    #[test]
-    fn test_lint_command_allow_and_deny() -> Result<()> {
-        let path = "fixtures/fe/lints/needs-work.fml.yaml";
-
-        let mut cmd = lint_cmd(path);
-        cmd.allow = vec!["TRIVIAL_ENUM".to_string()];
-        assert!(!lint_report(&cmd)?
-            .findings
-            .iter()
-            .any(|f| f.lint == "TRIVIAL_ENUM"));
-
-        // Warnings on their own don't fail the run.
-        let mut cmd = lint_cmd(path);
-        lint(&cmd)?;
-
-        cmd.deny = vec!["TRIVIAL_ENUM".to_string()];
-        assert!(lint(&cmd).is_err());
-
-        let mut cmd = lint_cmd(path);
-        cmd.error_on_warning = true;
-        assert!(lint(&cmd).is_err());
-
         Ok(())
     }
 
     /// Render a report the way `lint` does, minus the colour.
     fn rendered(report: &LintReport) -> Result<String> {
         let mut buffer = termcolor::Buffer::no_color();
-        output_findings(&mut buffer, report)?;
+        output_issues(&mut buffer, report)?;
         output_lint_summary(&mut buffer, report)?;
         Ok(String::from_utf8(buffer.into_inner()).expect("output is UTF-8"))
     }
 
     #[test]
-    fn test_every_finding_says_what_it_is_about() -> Result<()> {
-        // Findings are grouped by feature, so two of the same lint in one feature
+    fn test_every_issue_says_what_it_is_about() -> Result<()> {
+        // Issues are grouped by feature, so two of the same lint in one feature
         // are only distinguishable by their messages.
         let cmd = lint_cmd("fixtures/fe/lints/needs-work.fml.yaml");
         let report = lint_report(&cmd)?;
         let output = rendered(&report)?;
 
-        let findings: Vec<_> = output
+        let issues: Vec<_> = output
             .lines()
             .filter(|l| l.trim_start().starts_with(['⚠', '❎']))
             .collect();
-        assert_eq!(findings.len(), report.findings.len());
+        assert_eq!(issues.len(), report.issues.len());
 
-        let distinct: HashSet<_> = findings.iter().collect();
+        let distinct: HashSet<_> = issues.iter().collect();
         assert_eq!(
             distinct.len(),
-            findings.len(),
-            "two findings render identically:\n{output}"
+            issues.len(),
+            "two issues render identically:\n{output}"
         );
 
         Ok(())
@@ -1037,8 +926,7 @@ mod test {
             .collect::<Vec<_>>()
             .join(" ");
 
-        // The fixture trips MISSING_META_BUG once and TERSE_DESCRIPTION twice.
-        assert_eq!(output.matches("Add a `meta-bug` URL").count(), 1);
+        // The fixture trips TERSE_DESCRIPTION twice.
         assert_eq!(
             output
                 .matches("use the description to say what changes when the value changes")
@@ -1069,72 +957,59 @@ mod test {
 
     #[test]
     fn test_summary_counts_what_was_found() -> Result<()> {
-        let mut cmd = lint_cmd("fixtures/fe/lints/needs-work.fml.yaml");
-        cmd.deny = vec!["TRIVIAL_ENUM".to_string()];
+        let cmd = lint_cmd("fixtures/fe/lints/needs-work.fml.yaml");
         let report = lint_report(&cmd)?;
 
-        let expected = format!(
-            "Found 1 error and {} warnings in 3 places.",
-            report.warning_count()
-        );
-        assert!(rendered(&report)?.contains(&expected), "{expected}");
+        let expected = "Found 12 error(s) in 3 location(s).";
+
+        println!("{}", rendered(&report)?);
+        assert!(rendered(&report)?.contains(expected), "{expected}");
 
         let clean = lint_report(&lint_cmd("fixtures/fe/lints/well-formed.fml.yaml"))?;
-        assert!(rendered(&clean)?.contains("No lint findings"));
+        assert!(rendered(&clean)?.contains("No issues"));
 
         Ok(())
     }
 
     #[test]
-    fn test_lint_command_counts_suppressed_findings() -> Result<()> {
-        // The fixture silences one lint for the file and one for its feature.
-        let report = lint_report(&lint_cmd("fixtures/fe/lints/suppressions.fml.yaml"))?;
-        assert_eq!(report.suppressed, 2);
-        assert!(rendered(&report)?.contains("2 findings silenced by `no-lint`"));
+    fn test_lint_command_code_review_json() -> Result<()> {
+        const PATH: &str = "fixtures/fe/lints/needs-work.fml.yaml";
 
-        Ok(())
-    }
-
-    #[test]
-    fn test_lint_command_json_carries_the_counts() -> Result<()> {
-        let mut cmd = lint_cmd("fixtures/fe/lints/needs-work.fml.yaml");
-        cmd.deny = vec!["TRIVIAL_ENUM".to_string()];
+        let cmd = lint_cmd(PATH);
         let report = lint_report(&cmd)?;
 
-        let json = json_report(&report);
-        assert_eq!(json["errors"], 1);
-        assert_eq!(json["warnings"], report.warning_count());
-        assert_eq!(json["suppressed"], 0);
-        assert_eq!(json["subjects"], 3);
+        let json = generate_code_review_json(PATH, &report);
+
+        assert!(json.is_object());
+        assert!(json[PATH].is_array());
+
+        let entries = json[PATH].as_array().unwrap();
+
+        assert_eq!(entries.len(), 1);
+
+        let entry = &entries[0];
+
+        assert_eq!(entry["path"], PATH);
+        assert_eq!(entry["line"], serde_json::Value::Null);
+        assert_eq!(entry["column"], serde_json::Value::Null);
+        assert_eq!(entry["level"], "error");
         assert_eq!(
-            json["findings"].as_array().unwrap().len(),
-            report.findings.len()
+            entry["message"],
+            format!(
+                "There are 12 error(s) in this Feature Manifest. Check the task for the full list or run:\n\n./mach android nimbus-cli fml lint {PATH}"
+            )
         );
 
         Ok(())
     }
 
     #[test]
-    fn test_lint_command_rejects_unknown_lint_names() {
-        let mut cmd = lint_cmd("fixtures/fe/lints/well-formed.fml.yaml");
-        cmd.allow = vec!["NOT_A_LINT".to_string()];
-
-        let error = lint(&cmd).expect_err("An unknown lint name should be an error");
-        assert!(error.to_string().contains("NOT_A_LINT"));
-    }
-
-    #[test]
-    fn test_lint_command_ignores_imported_features_by_default() -> Result<()> {
+    fn test_lint_command_includes_imported_features_by_default() -> Result<()> {
         let path = "fixtures/fe/importing/simple/app.yaml";
 
         let cmd = lint_cmd(path);
         let report = lint_report(&cmd)?;
-        assert!(report.findings.iter().all(|f| f.module.is_none()));
-
-        let mut cmd = lint_cmd(path);
-        cmd.include_imports = true;
-        let report = lint_report(&cmd)?;
-        assert!(report.findings.iter().any(|f| f.module.is_some()));
+        assert!(report.issues.iter().any(|f| f.module.is_some()));
 
         Ok(())
     }
@@ -1154,7 +1029,6 @@ mod test {
                 .find(|l| l.starts_with(lint.name))
                 .unwrap_or_else(|| panic!("{} should be listed:\n{output}", lint.name));
             assert!(row.contains(lint.category.as_str()), "{row}");
-            assert!(row.contains(lint.default_level.as_str()), "{row}");
             assert!(row.contains(lint.description), "{row}");
         }
 
@@ -1174,9 +1048,8 @@ mod test {
                 continue;
             }
 
-            let mut cmd = lint_cmd(&format!("fixtures/fe/lints/{name}"));
-            cmd.include_imports = true;
-            fired.extend(lint_report(&cmd)?.findings.iter().map(|f| f.lint));
+            let cmd = lint_cmd(&format!("fixtures/fe/lints/{name}"));
+            fired.extend(lint_report(&cmd)?.issues.iter().map(|f| f.lint));
         }
 
         let missing: Vec<_> = lints::ALL_LINTS
@@ -1307,7 +1180,7 @@ mod test_jsonschema {
     use jsonschema::JSONSchema;
     use tempfile::NamedTempFile;
 
-    use super::test::{create_experimenter_manifest_cmd, MANIFEST_PATHS};
+    use super::test::{MANIFEST_PATHS, create_experimenter_manifest_cmd};
     use super::*;
     use crate::backends::experimenter_manifest::ExperimenterManifest;
     use crate::util::{join, pkg_dir};

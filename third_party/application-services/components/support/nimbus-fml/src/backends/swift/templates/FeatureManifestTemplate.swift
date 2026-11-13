@@ -118,8 +118,8 @@ public class {{ features_object }} {
     {%- let class_name = raw_name|class_name %}
     {{ f.doc()|comment("        ") }}
     public lazy var {{raw_name|var_name}}: FeatureHolder<{{class_name}}> = {
-        FeatureHolder({{ nimbus_object }}.shared.getSdk, featureId: {{ raw_name|quoted }}) { variables, prefs in
-            {{ class_name }}(variables, prefs)
+        FeatureHolder({{ nimbus_object }}.shared.getSdk, featureId: {{ raw_name|quoted }}) { variables in
+            {{ class_name }}(variables)
         }
     }()
     {%- endfor %}

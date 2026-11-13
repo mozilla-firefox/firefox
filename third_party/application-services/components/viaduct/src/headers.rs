@@ -410,9 +410,11 @@ pub mod consts {
     headers!(
         (ACCEPT_ENCODING, "accept-encoding"),
         (ACCEPT, "accept"),
+        (AGE, "age"),
         (AUTHORIZATION, "authorization"),
         (CACHE_CONTROL, "cache-control"),
         (CONTENT_TYPE, "content-type"),
+        (DATE, "date"),
         (ETAG, "etag"),
         (IF_NONE_MATCH, "if-none-match"),
         (USER_AGENT, "user-agent"),

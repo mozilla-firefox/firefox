@@ -13,10 +13,10 @@ use parking_lot::Mutex;
 use url::Url;
 use uuid::Uuid;
 
+use crate::DEFAULT_BASE_HOST;
+
 pub use error::{ApiResult, Error, MerinoSuggestApiError, Result};
 pub use schema::{SuggestConfig, SuggestOptions};
-
-const DEFAULT_BASE_HOST: &str = "https://merino.services.mozilla.com";
 
 /// A client for the merino suggest endpoint.
 ///

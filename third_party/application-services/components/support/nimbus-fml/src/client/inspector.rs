@@ -1,17 +1,17 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-pub use crate::editing::FmlEditorError;
-use crate::{
-    editing::{CursorPosition, ErrorConverter},
-    error::{ClientError, FMLError, Result},
-    intermediate_representation::{FeatureDef, FeatureExample, FeatureManifest},
-    FmlClient, JsonObject,
-};
 use serde_json::Value;
+
 use std::sync::Arc;
 use url::Url;
+
+pub use crate::editing::FmlEditorError;
+use crate::editing::{CursorPosition, ErrorConverter};
+use crate::error::{ClientError, FMLError, Result};
+use crate::intermediate_representation::{FeatureDef, FeatureExample, FeatureManifest};
+use crate::{FmlClient, JsonObject};
 
 impl FmlClient {
     pub fn get_feature_inspector(&self, id: String) -> Option<Arc<FmlFeatureInspector>> {

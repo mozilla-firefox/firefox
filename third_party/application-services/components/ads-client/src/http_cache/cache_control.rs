@@ -47,8 +47,11 @@ impl From<&Response> for CacheControl {
 }
 
 impl CacheControl {
-    pub(super) fn max_age_duration(&self) -> Option<Duration> {
-        self.max_age.map(Duration::from_secs)
+    /// How long `max-age` keeps a response of this `age` fresh: zero once it
+    /// is stale, `None` without `max-age`.
+    pub(super) fn time_to_live(&self, age: Duration) -> Option<Duration> {
+        self.max_age
+            .map(|max_age| Duration::from_secs(max_age).saturating_sub(age))
     }
 
     pub(super) fn should_cache(&self) -> bool {
@@ -73,6 +76,38 @@ mod tests {
             status: 200,
             url: "https://example.com".parse().unwrap(),
         })
+    }
+
+    #[test]
+    fn time_to_live_is_max_age_minus_age() {
+        let cache_control = from_header(Some("max-age=86400"));
+        assert_eq!(
+            cache_control.time_to_live(Duration::ZERO),
+            Some(Duration::from_secs(86400))
+        );
+        assert_eq!(
+            cache_control.time_to_live(Duration::from_secs(72000)),
+            Some(Duration::from_secs(14400))
+        );
+    }
+
+    #[test]
+    fn time_to_live_is_zero_once_stale() {
+        let cache_control = from_header(Some("max-age=3600"));
+        for age in [3600, 7200] {
+            assert_eq!(
+                cache_control.time_to_live(Duration::from_secs(age)),
+                Some(Duration::ZERO)
+            );
+        }
+    }
+
+    #[test]
+    fn time_to_live_needs_max_age() {
+        assert_eq!(
+            from_header(Some("no-cache")).time_to_live(Duration::ZERO),
+            None
+        );
     }
 
     #[test]

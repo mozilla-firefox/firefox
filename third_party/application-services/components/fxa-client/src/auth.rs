@@ -42,14 +42,6 @@ impl FirefoxAccount {
         self.internal.lock().process_event(event)
     }
 
-    /// Get the high-level authentication state of the client
-    ///
-    /// TODO: remove this and the FxaRustAuthState type from the public API
-    /// https://bugzilla.mozilla.org/show_bug.cgi?id=1868614
-    pub fn get_auth_state(&self) -> FxaRustAuthState {
-        self.internal.lock().get_auth_state()
-    }
-
     /// Stores the session token from a WebChannel login JSON payload without exposing it
     /// to the browser layer.
     ///
@@ -107,7 +99,7 @@ impl FirefoxAccount {
     /// **💾 This method alters the persisted account state.**
     ///
     /// Call this if you know there's an authentication / authorization issue that requires the
-    /// user to re-authenticated.  It transitions the user to the [FxaRustAuthState.AuthIssues] state.
+    /// user to re-authenticated.  It transitions the user to the [FxaState.AuthIssues] state.
     pub fn on_auth_issues(&self) {
         self.internal.lock().on_auth_issues()
     }
@@ -116,7 +108,7 @@ impl FirefoxAccount {
     ///
     /// **💾 This method alters the persisted account state.**
     ///
-    /// Call this if we have encountered the [FxaRustAuthState.AuthIssues] state as a result of a
+    /// Call this if we have encountered the [FxaState.AuthIssues] state as a result of a
     /// failure happening (i.e. not as a result of initialization simply loading that state from a
     /// previous failure).
     /// Most likely, this should not need to be called externally except in testing since the state
@@ -146,21 +138,6 @@ pub struct AuthorizationInfo {
     pub active: bool,
 }
 
-#[derive(uniffi::Enum, Clone, Copy, Debug, PartialEq, Eq)]
-/// High-level view of the authorization state
-///
-/// This is named `FxaRustAuthState` because it doesn't track all the states we want yet and needs
-/// help from the wrapper code.  The wrapper code defines the actual `FxaAuthState` type based on
-/// this, adding the extra data.
-///
-/// In the long-term, we should track that data in Rust, remove the wrapper, and rename this to
-/// `FxaAuthState`.
-pub enum FxaRustAuthState {
-    Disconnected,
-    Connected,
-    AuthIssues,
-}
-
 #[derive(uniffi::Enum, Clone, Debug, PartialEq, Eq)]
 /// Fxa state
 ///
@@ -170,27 +147,18 @@ pub enum FxaState {
     Uninitialized,
     /// User has not connected to FxA or has logged out
     Disconnected,
-    /// User is currently performing an OAuth flow - our existing initial state
-    /// when we transition to this state will influence what this means exactly.
+    /// User is currently performing an OAuth flow.
+    ///
+    /// Initial state is what we transition to if the flow is cancelled or fails.
     Authenticating {
         oauth_url: String,
-        initial_state: FxaRustAuthState,
+        initial_state: Box<FxaState>,
     },
     /// User is currently connected to FxA
     Connected,
     /// User was connected to FxA, but we observed issues with the auth tokens.
     /// The user needs to reauthenticate before the account can be used.
     AuthIssues,
-}
-
-impl From<FxaRustAuthState> for FxaState {
-    fn from(value: FxaRustAuthState) -> Self {
-        match value {
-            FxaRustAuthState::Connected => FxaState::Connected,
-            FxaRustAuthState::Disconnected => FxaState::Disconnected,
-            FxaRustAuthState::AuthIssues => FxaState::AuthIssues,
-        }
-    }
 }
 
 #[derive(uniffi::Enum, Clone, Debug, PartialEq, Eq)]

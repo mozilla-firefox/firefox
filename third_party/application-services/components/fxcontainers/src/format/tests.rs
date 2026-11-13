@@ -8,7 +8,9 @@
 use serde_json::{json, Value};
 
 use super::{parse, serialize};
-use crate::data::{ContainersData, Identity, LATEST_VERSION, MAX_USER_CONTEXT_ID};
+use crate::data::{
+    ContainersData, Identity, SiteAssociationData, LATEST_VERSION, MAX_USER_CONTEXT_ID,
+};
 use crate::defaults::{defaults, WEBEXT_STORAGE_LOCAL_IDENTITY_NAME};
 use crate::error::ParseError;
 
@@ -272,8 +274,10 @@ fn version_7_drops_the_stored_labels() {
     assert_eq!(named(&data, "Renamed default").user_context_id, 4);
 }
 
+/// Version 8 stored the bare userContextId of each association; version 9
+/// reads it as one that does not cover the subdomains.
 #[test]
-fn version_8_is_loaded_verbatim() {
+fn version_8_associations_match_their_host_only() {
     let mut identities = unlabelled_defaults();
     identities.push(thumbnail(false));
     identities.push(webext_storage_local(false));
@@ -285,14 +289,78 @@ fn version_8_is_loaded_verbatim() {
         "identities": identities,
         "siteAssociations": { "example.org": 1, "example.com": 6 },
     })))
+    .expect("version 8 should load");
+
+    assert!(migrated);
+    assert_eq!(data.version, LATEST_VERSION);
+    assert_eq!(
+        data.site_associations.get("example.org"),
+        Some(&SiteAssociationData::new(1, false))
+    );
+    assert_eq!(
+        data.site_associations.get("example.com"),
+        Some(&SiteAssociationData::new(6, false))
+    );
+
+    let round_tripped: Value = serde_json::from_slice(&serialize(&data)).unwrap();
+    assert_eq!(
+        round_tripped["siteAssociations"],
+        json!({
+            "example.com": { "userContextId": 6, "includeSubdomains": false },
+            "example.org": { "userContextId": 1, "includeSubdomains": false },
+        })
+    );
+}
+
+#[test]
+fn version_9_is_loaded_verbatim() {
+    let mut identities = unlabelled_defaults();
+    identities.push(thumbnail(false));
+    identities.push(webext_storage_local(false));
+    identities.push(custom_identity(6, "purple", "Custom user-created identity"));
+
+    let (data, migrated) = parse(&bytes(json!({
+        "version": 9,
+        "lastUserContextId": 6,
+        "identities": identities,
+        "siteAssociations": {
+            "example.org": { "userContextId": 1, "includeSubdomains": false },
+            "example.com": { "userContextId": 6, "includeSubdomains": true },
+        },
+    })))
     .expect("current version should load");
 
     assert!(!migrated);
     assert_eq!(data.public_identities().count(), 5);
     assert_eq!(named(&data, "Custom user-created identity").color, "purple");
-    assert_eq!(data.site_associations.get("example.org"), Some(&1));
-    assert_eq!(data.site_associations.get("example.com"), Some(&6));
+    assert_eq!(
+        data.site_associations.get("example.org"),
+        Some(&SiteAssociationData::new(1, false))
+    );
+    assert_eq!(
+        data.site_associations.get("example.com"),
+        Some(&SiteAssociationData::new(6, true))
+    );
     assert_eq!(data.site_associations.get("unassociated.example"), None);
+}
+
+#[test]
+fn unknown_association_fields_survive_a_round_trip() {
+    let data = load(json!({
+        "version": 9,
+        "lastUserContextId": 4,
+        "identities": unlabelled_defaults(),
+        "siteAssociations": {
+            "example.com": { "userContextId": 1, "includeSubdomains": true, "since": 42 },
+        },
+    }));
+
+    let round_tripped: Value = serde_json::from_slice(&serialize(&data)).unwrap();
+
+    assert_eq!(
+        round_tripped["siteAssociations"]["example.com"],
+        json!({ "userContextId": 1, "includeSubdomains": true, "since": 42 })
+    );
 }
 
 #[test]

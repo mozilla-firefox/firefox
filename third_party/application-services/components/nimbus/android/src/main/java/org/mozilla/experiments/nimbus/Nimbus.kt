@@ -7,7 +7,6 @@
 package org.mozilla.experiments.nimbus
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -67,7 +66,6 @@ const val NIMBUS_DATA_DIR: String = "nimbus_data"
 @Suppress("LargeClass", "LongParameterList")
 open class Nimbus(
     override val context: Context,
-    override val prefs: SharedPreferences? = null,
     appInfo: NimbusAppInfo,
     coenrollingFeatureIds: List<String>,
     server: NimbusServerSettings?,

@@ -1,7 +1,7 @@
 [package]
 name = "nimbus-fml"
-version = "0.1.0"
-edition = "2021"
+version = "0.6.0" # Keep in sync with nimbus-cli
+edition = "2024"
 authors = ["Nimbus SDK Engineering"]
 license = "MPL-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -33,7 +33,7 @@ tempfile = "3"
 # jsonschema = { version = "0.17", default-features = false }
 
 [dependencies]
-clap = {version = "4.2", default-features = false, features = ["std", "derive", "help"]}
+clap = {version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"]}
 anyhow = "1.0.44"
 serde_json = { version = "1", features = ["preserve_order"] }
 serde_yaml = "0.9"
@@ -49,7 +49,7 @@ uniffi = { version = "0.32", optional = true }
 cfg-if = "1.0.0"
 lazy_static = "1.4"
 sha2 = "^0.10"
-itertools = "0"
+itertools = "0.14"
 regex = "1.9"
 viaduct = { path = "../../viaduct/" }
 termcolor = "1.4.1"

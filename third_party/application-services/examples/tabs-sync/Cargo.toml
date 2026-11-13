@@ -17,7 +17,7 @@ serde_json = "1"
 log = "0.4"
 anyhow = "1.0"
 chrono = "0.4"
-clap = { version = "4.2", default-features = false, features = ["std", "derive"] }
+clap = { version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"] }
 cli-support = { path = "../cli-support" }
 url = "2.2"
 interrupt-support = { path = "../../components/support/interrupt" }

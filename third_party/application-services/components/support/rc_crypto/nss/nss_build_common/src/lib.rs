@@ -92,7 +92,7 @@ fn link_nss_libs(kind: LinkingKind) {
     let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     if target_arch == "x86_64" && target_os == "android" {
         let android_home = env::var("ANDROID_HOME").expect("ANDROID_HOME not set");
-        const ANDROID_NDK_VERSION: &str = "29.0.14206865";
+        const ANDROID_NDK_VERSION: &str = "30.0.16248370";
         // One of these will exist, depending on the host platform.
         const DARWIN_X86_64_LIB_DIR: &str =
             "/toolchains/llvm/prebuilt/darwin-x86_64/lib/clang/21/lib/linux/";
@@ -112,6 +112,8 @@ fn get_nss_libs(kind: LinkingKind) -> Vec<&'static str> {
                 "certhi",
                 "cryptohi",
                 "freebl_static",
+                "pqcwrap_static",
+                "crux",
                 "gcm",
                 "mozpkix",
                 "nspr4",
@@ -140,6 +142,8 @@ fn get_nss_libs(kind: LinkingKind) -> Vec<&'static str> {
             }
             if target_arch == "aarch64" {
                 static_libs.push("ghash-aes-aarch64_c_lib");
+                static_libs.push("aarch64-gcm-wrap_c_lib");
+                static_libs.push("hw-acc-crypto-avx");
             }
             if target_arch == "x86_64" {
                 static_libs.push("hw-acc-crypto-avx");

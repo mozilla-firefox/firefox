@@ -1,16 +1,18 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use super::{values_finder::ValuesFinder, ErrorKind, FeatureValidationError};
+use std::collections::{BTreeMap, BTreeSet};
+
+use serde_json::Value;
+
 #[cfg(feature = "client-lib")]
-use super::{CorrectionCandidate, FmlEditorError};
+use crate::editing::{CorrectionCandidate, FmlEditorError};
+use crate::editing::{ErrorKind, FeatureValidationError, values_finder::ValuesFinder};
 use crate::{
     error::FMLError,
     intermediate_representation::{EnumDef, FeatureDef, ObjectDef},
 };
-use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet};
 
 #[allow(dead_code)]
 pub(crate) struct ErrorConverter<'a> {

@@ -1,15 +1,15 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::fmt::Display;
 
-use super::{filters, object::object_literal};
-use crate::{
-    backends::{CodeDeclaration, CodeOracle, LiteralRenderer, TypeIdentifier},
-    intermediate_representation::{ImportedModule, Literal, TypeFinder},
-};
 use askama::Template;
+
+use crate::backends::kotlin::gen_structs::filters;
+use crate::backends::kotlin::gen_structs::object::object_literal;
+use crate::backends::{CodeDeclaration, CodeOracle, LiteralRenderer, TypeIdentifier};
+use crate::intermediate_representation::{ImportedModule, Literal, TypeFinder};
 
 #[derive(Template)]
 #[template(

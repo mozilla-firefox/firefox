@@ -5719,7 +5719,7 @@ checksum = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
 
 [[package]]
 name = "nimbus-fml"
-version = "0.1.0"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "askama",
@@ -5728,7 +5728,7 @@ dependencies = [
  "glob",
  "heck",
  "icu_segmenter",
- "itertools 0.15.0",
+ "itertools 0.14.999",
  "lazy_static",
  "mozilla-central-workspace-hack",
  "regex",
@@ -7083,6 +7083,8 @@ dependencies = [
  "error-support",
  "expect-test",
  "firefox-versioning",
+ "glean-build",
+ "glean-sym",
  "jexl-eval",
  "mockall",
  "mockito",

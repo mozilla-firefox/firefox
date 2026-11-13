@@ -5,11 +5,11 @@
 use std::fmt::Display;
 
 use anyhow::Result;
-use nimbus_fml::{
-    intermediate_representation::FeatureManifest, parser::Parser, util::loaders::FileLoader,
-};
+use nimbus_fml::intermediate_representation::FeatureManifest;
+use nimbus_fml::parser::Parser;
+use nimbus_fml::util::loaders::FileLoader;
 
-use crate::{cli::ManifestArgs, config, NimbusApp};
+use crate::{NimbusApp, cli::ManifestArgs, config};
 
 #[derive(Debug, PartialEq)]
 pub(crate) enum ManifestSource {

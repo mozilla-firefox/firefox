@@ -96,11 +96,6 @@ class FxaClient(inner: FirefoxAccount, persistCallback: PersistCallback?) : Auto
     fun processEvent(event: FxaEvent): FxaState = this.inner.processEvent(event)
 
     /**
-     * Get the high-level authentication state of the client
-     */
-    fun getAuthState() = this.inner.getAuthState()
-
-    /**
      * Stores anything necessary to login from a WebChannel login JSON payload. This includes the session
      * token, but that is abstracted because the consuming apps should not be aware of the
      * specific payload format returned, nor should they get access to the session token

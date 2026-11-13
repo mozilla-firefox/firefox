@@ -2,9 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::{cli::ExperimentListFilterArgs, output::info::ExperimentInfo};
 use anyhow::Result;
 use serde_json::Value;
+
+use crate::cli::ExperimentListFilterArgs;
+use crate::output::info::ExperimentInfo;
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) struct ExperimentListFilter {

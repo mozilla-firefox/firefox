@@ -4,22 +4,18 @@ about:
   description: Fixture for the lint tests.
 channels:
   - release
-no-lint:
-  - MISSING_META_BUG
-  - NOT_A_REAL_FILE_LINT
 features:
   legacy-feature:
     description: A feature that was designed before there were lints to nudge it.
     no-lint:
-      - MISSING_ENABLED_VARIABLE
+      - TYPE_IN_NAME
       - NOT_A_REAL_LINT
-    contacts:
-      - jdoe@example.com
     documentation:
       - name: User documentation
         url: https://example.com/legacy-feature
     variables:
-      max-rows:
+      max-rows-int:
         description: The largest number of rows the list is allowed to grow to.
         type: Int
         default: 3
+
