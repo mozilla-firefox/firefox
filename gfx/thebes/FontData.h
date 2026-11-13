@@ -18,7 +18,34 @@ class FontData final {
   FontData() = delete;
   FontData(const FontData& aOther) = delete;
 
+#ifdef XP_MACOSX
+  // This is NS_INLINE_DECL_THREADSAFE_REFCOUNTING without the leak checking,
+  // because Core Graphics may hold on to font instances past the point where
+  // we want to check for leaks.
+  MozExternalRefCountType AddRef(void) {
+    MOZ_ASSERT_TYPE_OK_FOR_REFCOUNTING(FontData);
+    MOZ_ASSERT(int32_t(mRefCnt) >= 0, "illegal refcnt");
+    nsrefcnt count = ++mRefCnt;
+    return (nsrefcnt)count;
+  }
+  MozExternalRefCountType Release(void) {
+    MOZ_ASSERT(int32_t(mRefCnt) > 0, "dup release");
+    nsrefcnt count = --mRefCnt;
+    if (count == 0) {
+      delete this;
+      return 0;
+    }
+    return count;
+  }
+  using HasThreadSafeRefCnt = std::true_type;
+
+ protected:
+  ::mozilla::ThreadSafeAutoRefCnt mRefCnt;
+
+ public:
+#else
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(FontData)
+#endif
 
   const uint8_t* Data() const { return mData; }
   uint32_t Length() const { return mLength; }
