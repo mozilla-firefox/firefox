@@ -93,7 +93,7 @@ version = "0.2"
 
 [dependencies.naga-types]
 version = "30.0.0"
-path = '..\naga-types'
+path = "../naga-types"
 features = []
 
 [dependencies.raw-window-handle]

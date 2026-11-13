@@ -39,8 +39,8 @@ object {{ nimbus_object }} : FeatureManifestInterface<{{ nimbus_object }}.Featur
         {%- let class_name = raw_name|class_name %}
         {{ f.doc()|comment("        ") }}
         val {{raw_name|var_name}}: FeatureHolder<{{class_name}}> by lazy {
-            FeatureHolder({{ nimbus_object }}.getSdk, {{ raw_name|quoted }}) { variables ->
-                {{ class_name }}(variables)
+            FeatureHolder({{ nimbus_object }}.getSdk, {{ raw_name|quoted }}) { variables, prefs ->
+                {{ class_name }}(variables, prefs)
             }
         }
         {%- endfor %}

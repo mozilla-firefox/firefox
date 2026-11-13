@@ -986,7 +986,7 @@ class NimbusMessagingStorageTest {
         val featureInterface: FeaturesInterface = mock()
         // "messaging" is a hard coded value generated from Nimbus.
         val messagingFeature =
-            FeatureHolder({ featureInterface }, "messaging") { _ ->
+            FeatureHolder({ featureInterface }, "messaging") { _, _ ->
                 messaging
             }
         messagingFeature.withCachedValue(messaging)

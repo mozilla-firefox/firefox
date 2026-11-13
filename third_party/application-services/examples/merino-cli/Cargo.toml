@@ -7,7 +7,7 @@ publish = false
 
 
 [dependencies]
-clap = {version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"]}
+clap = {version = "4.2", default-features = false, features = ["std", "derive"]}
 anyhow = "1.0"
 serde_json = "1.0"
 merino = { path = "../../components/merino" }

@@ -5,6 +5,7 @@
 package org.mozilla.experiments.nimbus
 
 import android.content.Context
+import android.content.SharedPreferences
 import org.mozilla.experiments.nimbus.internal.FeatureUpdateDispatcher
 
 /**
@@ -15,6 +16,9 @@ import org.mozilla.experiments.nimbus.internal.FeatureUpdateDispatcher
 interface FeaturesInterface {
 
     val context: Context
+
+    val prefs: SharedPreferences?
+        get() = null
 
     /**
      * Get the variables needed to configure the feature given by `featureId`.

@@ -16,7 +16,7 @@ import org.mozilla.appservices.remotesettings.GleanMetrics.RemoteSettings as RSM
 class GleanTelemetry : RemoteSettingsTelemetry {
     override fun reportUptake(extras: UptakeEventExtras) {
         Log.d(
-            GleanTelemetry::class.java.name,
+            GleanTelemetry::javaClass.name,
             "Remote Settings Telemetry Uptake called with: " +
                 "value=${extras.value}, " +
                 "source=${extras.source}, " +

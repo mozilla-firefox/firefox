@@ -1,11 +1,10 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
+// /* This Source Code Form is subject to the terms of the Mozilla Public
+//  * License, v. 2.0. If a copy of the MPL was not distributed with this
+//  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+use super::{common, ConcreteCodeOracle};
 use std::borrow::Borrow;
 use std::fmt::{self, Display};
 
-use crate::backends::kotlin::gen_structs::{ConcreteCodeOracle, common};
 use crate::backends::{CodeOracle, LiteralRenderer, TypeIdentifier};
 use crate::intermediate_representation::{Literal, PrefBranch};
 
@@ -67,6 +66,27 @@ where
 }
 
 #[askama::filter_fn]
+pub fn preference_getter<T, P, K>(
+    type_: T,
+    _: &dyn askama::Values,
+    prefs: P,
+    pref_key: K,
+) -> Result<String, askama::Error>
+where
+    T: Borrow<TypeIdentifier>,
+    P: fmt::Display,
+    K: fmt::Display,
+{
+    let oracle = &ConcreteCodeOracle;
+    let ct = oracle.find(type_.borrow());
+    if let Some(getter) = ct.preference_getter(oracle, &prefs, &pref_key) {
+        Ok(getter)
+    } else {
+        unreachable!("The preference for type {} isn't available. This is a bug in Nimbus FML Kotlin generator", type_.borrow());
+    }
+}
+
+#[askama::filter_fn]
 pub fn to_json<P, T>(prop: P, _: &dyn askama::Values, type_: T) -> Result<String, askama::Error>
 where
     P: fmt::Display,
@@ -109,7 +129,7 @@ pub fn comment<T>(txt: T, _: &dyn askama::Values, spaces: &str) -> Result<String
 where
     T: fmt::Display,
 {
-    use textwrap::{Options, fill};
+    use textwrap::{fill, Options};
 
     let indent_start = "/** ".to_string();
     let indent_mid = format!("{} * ", spaces);

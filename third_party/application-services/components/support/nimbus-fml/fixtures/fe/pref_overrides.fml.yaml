@@ -1,0 +1,35 @@
+---
+about:
+  description: A test for gating via preference
+  kotlin:
+    class: .AppConfig
+    package: com.example.nimbus
+  swift:
+    class: AppConfig
+    module: App
+channels:
+  - debug
+features:
+  my-feature:
+    description: A feature with preference overrides
+    variables:
+      my-boolean:
+        type: Boolean
+        description: A boolean
+        pref-key: my-boolean-pref-key
+        default: false
+      my-int:
+        type: Int
+        description: An Int
+        pref-key: my-int-pref-key
+        default: 0
+      my-string:
+        type: String
+        description: A String
+        pref-key: my-string-pref-key
+        default: from manifest
+      my-text:
+        type: Text
+        description: A Text
+        pref-key: my-text-pref-key
+        default: from manifest

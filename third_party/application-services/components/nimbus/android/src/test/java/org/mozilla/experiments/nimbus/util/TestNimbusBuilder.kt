@@ -21,6 +21,7 @@ class TestNimbusBuilder(context: Context) : AbstractNimbusBuilder<NimbusInterfac
     ): NimbusInterface =
         Nimbus(
             context = context,
+            prefs = sharedPreferences,
             appInfo = appInfo,
             coenrollingFeatureIds = listOf(),
             server = serverSettings,

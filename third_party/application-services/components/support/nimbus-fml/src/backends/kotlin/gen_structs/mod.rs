@@ -1,14 +1,15 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
-use std::collections::HashSet;
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 use askama::Template;
+use std::collections::HashSet;
 
-use crate::backends::{CodeDeclaration, CodeOracle, CodeType, TypeIdentifier};
 use crate::intermediate_representation::PropDef;
-use crate::intermediate_representation::{FeatureDef, FeatureManifest, GeckoPrefDef, TypeFinder};
+use crate::{
+    backends::{CodeDeclaration, CodeOracle, CodeType, TypeIdentifier},
+    intermediate_representation::{FeatureDef, FeatureManifest, GeckoPrefDef, TypeFinder},
+};
 
 mod bundled;
 mod common;
@@ -129,6 +130,7 @@ impl<'a> FeatureManifestDeclaration<'a> {
                 "org.mozilla.experiments.nimbus.internal.PrefBranch".to_string(),
                 "org.mozilla.experiments.nimbus.FeaturesInterface".to_string(),
                 "org.json.JSONObject".to_string(),
+                "android.content.SharedPreferences".to_string(),
             ])
             .filter(|i| i != &my_package)
             .collect::<HashSet<String>>()

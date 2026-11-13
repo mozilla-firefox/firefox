@@ -70,7 +70,7 @@ class NimbusMessagingSurveyTest {
             )
 
         // Remove some homescreen features not needed for testing
-        FxNimbus.features.homescreen.withInitializer { _ ->
+        FxNimbus.features.homescreen.withInitializer { _, _ ->
             // These are FML generated objects and enums
             Homescreen(
                 sectionsEnabled =

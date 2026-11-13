@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use percent_encoding::{AsciiSet, CONTROLS};
 
 use crate::protocol::StartAppProtocol;

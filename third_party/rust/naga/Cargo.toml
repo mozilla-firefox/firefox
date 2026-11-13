@@ -135,7 +135,7 @@ version = "0.4.29"
 
 [dependencies.naga-types]
 version = "30.0.0"
-path = '..\naga-types'
+path = "../naga-types"
 
 [dependencies.num-traits]
 version = "0.2.16"
@@ -214,7 +214,7 @@ path = "hlsl-snapshots"
 version = "0.15"
 
 [dev-dependencies.naga-test]
-path = '..\naga-test'
+path = "../naga-test"
 
 [dev-dependencies.ron]
 version = "0.12"

@@ -4,6 +4,7 @@
 
 package org.mozilla.experiments.nimbus.internal
 
+import android.content.SharedPreferences
 import org.json.JSONObject
 import org.mozilla.experiments.nimbus.FeaturesInterface
 import org.mozilla.experiments.nimbus.HardcodedNimbusFeatures
@@ -23,7 +24,7 @@ import kotlin.concurrent.withLock
 class FeatureHolder<T : FMLFeatureInterface>(
     private var getSdk: () -> FeaturesInterface?,
     private val featureId: String,
-    private var create: (Variables) -> T,
+    private var create: (Variables, SharedPreferences?) -> T,
 ) {
     private val lock = ReentrantLock()
 
@@ -50,7 +51,8 @@ class FeatureHolder<T : FMLFeatureInterface>(
                 val variables = getSdk()?.getVariables(featureId, false) ?: run {
                     NullVariables.instance
                 }
-                create(variables).also { value ->
+                val prefs = getSdk()?.prefs
+                create(variables, prefs).also { value ->
                     cachedValue = value
                 }
             }
@@ -61,7 +63,9 @@ class FeatureHolder<T : FMLFeatureInterface>(
      * their behavior because of it.
      */
     fun recordExposure() {
-        getSdk()?.recordExposureEvent(featureId)
+        if (!value().isModified()) {
+            getSdk()?.recordExposureEvent(featureId)
+        }
     }
 
     /**
@@ -74,7 +78,9 @@ class FeatureHolder<T : FMLFeatureInterface>(
      * [recordExposure] instead.
      */
     fun recordExperimentExposure(slug: String) {
-        getSdk()?.recordExposureEvent(featureId, slug)
+        if (!value().isModified()) {
+            getSdk()?.recordExposureEvent(featureId, slug)
+        }
     }
 
     /**
@@ -110,7 +116,7 @@ class FeatureHolder<T : FMLFeatureInterface>(
      *
      * This is most likely useful during testing and other generated code.
      */
-    fun withInitializer(create: (Variables) -> T) {
+    fun withInitializer(create: (Variables, SharedPreferences?) -> T) {
         lock.withLock {
             this.create = create
             this.cachedValue = null
@@ -176,10 +182,18 @@ interface FMLObjectInterface {
 }
 
 /**
- * A marker interface for FML generated feature classes.
+ * A bare-bones interface for the FML generated features.
  *
  * App developers should use the generated concrete classes, which
  * implement this interface.
  */
-@Suppress("EmptyClassBlock")
-interface FMLFeatureInterface : FMLObjectInterface
+interface FMLFeatureInterface : FMLObjectInterface {
+    /**
+     * A test if the feature configuration has been modified somehow, invalidating any experiment
+     * that uses it.
+     *
+     * This may be `true` if a `pref-key` has been set in the feature manifest and the user has
+     * set that preference.
+     */
+    fun isModified(): Boolean = false
+}

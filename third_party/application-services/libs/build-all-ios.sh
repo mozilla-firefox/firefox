@@ -47,8 +47,6 @@ for i in "${!TARGET_ARCHS[@]}"; do
 done
 universal_lib "nss" "libcertdb.a" "${TARGET_ARCHS[@]}"
 universal_lib "nss" "libfreebl_static.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libpqcwrap_static.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libcrux.a" "${TARGET_ARCHS[@]}"
 universal_lib "nss" "libgcm.a" "${TARGET_ARCHS[@]}"
 universal_lib "nss" "libnssb.a" "${TARGET_ARCHS[@]}"
 universal_lib "nss" "libnssutil.a" "${TARGET_ARCHS[@]}"
@@ -72,8 +70,6 @@ universal_lib "nss" "libghash-aes-x86_c_lib.a" "x86_64"
 universal_lib "nss" "libsha-x86_c_lib.a" "x86_64"
 universal_lib "nss" "libghash-aes-aarch64_c_lib.a" "arm64"
 universal_lib "nss" "libarmv8_c_lib.a" "arm64"
-universal_lib "nss" "libaarch64-gcm-wrap_c_lib.a" "arm64"
-universal_lib "nss" "libhw-acc-crypto-avx.a" "arm64"
 
 HEADER_DIST_DIR="ios/universal/nss/include/nss"
 if [[ ! -e "${HEADER_DIST_DIR}" ]]; then

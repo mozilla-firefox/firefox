@@ -1,14 +1,13 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
+/* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+use askama::Template;
 use std::collections::HashSet;
 
-use askama::Template;
-
-use crate::backends::{CodeDeclaration, CodeOracle, CodeType, TypeIdentifier};
-use crate::intermediate_representation::{FeatureDef, FeatureManifest, TypeFinder};
-
+use crate::{
+    backends::{CodeDeclaration, CodeOracle, CodeType, TypeIdentifier},
+    intermediate_representation::{FeatureDef, FeatureManifest, TypeFinder},
+};
 mod bundled;
 mod common;
 mod enum_;

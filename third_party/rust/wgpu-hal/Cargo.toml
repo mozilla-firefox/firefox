@@ -207,11 +207,11 @@ version = "0.4.29"
 
 [dependencies.naga]
 version = "30.0.0"
-path = '..\naga'
+path = "../naga"
 
 [dependencies.naga-types]
 version = "30.0.0"
-path = '..\naga-types'
+path = "../naga-types"
 
 [dependencies.ordered-float]
 version = ">=3, <6.0"
@@ -236,16 +236,16 @@ default-features = false
 
 [dependencies.wgpu-naga-bridge]
 version = "30.0.0"
-path = '..\wgpu-naga-bridge'
+path = "../wgpu-naga-bridge"
 
 [dependencies.wgpu-sync]
 version = "30.0.0"
-path = '..\wgpu-sync'
+path = "../wgpu-sync"
 default-features = false
 
 [dependencies.wgpu-types]
 version = "30.0.0"
-path = '..\wgpu-types'
+path = "../wgpu-types"
 default-features = false
 
 [dev-dependencies.env_logger]
@@ -258,7 +258,7 @@ version = "0.34.0"
 
 [dev-dependencies.naga]
 version = "30.0.0"
-path = '..\naga'
+path = "../naga"
 features = [
     "wgsl-in",
     "termcolor",

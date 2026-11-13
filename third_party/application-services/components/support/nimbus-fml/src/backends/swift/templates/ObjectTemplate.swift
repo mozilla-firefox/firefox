@@ -8,7 +8,7 @@ public extension {{class_name}} {
         guard let defaults = defaults else {
             return self
         }
-        return {{class_name}}(variables: self._variables, defaults: defaults._defaults)
+        return {{class_name}}(variables: self._variables, prefs: self._prefs, defaults: defaults._defaults)
     }
 
     static func create(_ variables: Variables?) -> {{class_name}} {

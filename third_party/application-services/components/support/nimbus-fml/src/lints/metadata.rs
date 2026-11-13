@@ -1,45 +1,67 @@
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+/* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-//! Lints about feature metadata and ownership.
+//! Lints about a feature's metadata: who owns it, where it's documented, and where
+//! to file bugs against it.
 
+use super::{feature_path, LintInfo, Linter, RawFinding};
 use crate::intermediate_representation::{FeatureDef, FeatureManifest};
-use crate::lints::{LintInfo, Linter, UnreportedIssue, define_lints, feature_path};
 
 define_lints! {
-    MISSING_CONTACTS: Metadata =
+    MISSING_META_BUG: Metadata, Warning =
+        "Features should say where bugs against them are filed.",
+        "Add a `meta-bug` URL, so that QA and experiment owners know where to file issues with the feature.";
+    MISSING_DOCUMENTATION: Metadata, Warning =
+        "Features should link to at least one document describing them.",
+        "Add a `documentation` list of named URLs, e.g. user docs, QA docs or the feature's design document.";
+    MISSING_CONTACTS: Metadata, Warning =
         "Features should name at least one person to ask about them.",
         "Add a `contacts` list of one or more email addresses (with Mozilla Jira accounts), so that questions about the feature reach someone who can answer them.";
-    INVALID_CONTACT: Metadata =
+    INVALID_CONTACT: Metadata, Warning =
         "Contacts should be email addresses.",
         "Contacts are used to route QA questions, so they need to be addresses that can be written to.";
 }
 
-/// Lints for feature metadata.
-pub(crate) struct MetadataLints;
+pub(crate) struct Metadata;
 
-impl Linter for MetadataLints {
+impl Linter for Metadata {
     fn lints(&self) -> &'static [&'static LintInfo] {
         LINTS
     }
 
-    fn lint_feature(
+    fn check_feature(
         &self,
         feature: &FeatureDef,
         _manifest: &FeatureManifest,
-        out: &mut Vec<UnreportedIssue>,
+        out: &mut Vec<RawFinding>,
     ) {
-        lint_feature(feature, out);
+        check_feature(feature, out);
     }
 }
 
-fn lint_feature(feature: &FeatureDef, out: &mut Vec<UnreportedIssue>) {
+fn check_feature(feature: &FeatureDef, out: &mut Vec<RawFinding>) {
     let metadata = &feature.metadata;
     let path = feature_path(feature);
 
+    if metadata.meta_bug.is_none() {
+        out.push(RawFinding::new(
+            &MISSING_META_BUG,
+            path.clone(),
+            "No `meta-bug`",
+        ));
+    }
+
+    if metadata.documentation.is_empty() {
+        out.push(RawFinding::new(
+            &MISSING_DOCUMENTATION,
+            path.clone(),
+            "No `documentation`",
+        ));
+    }
+
     if metadata.contacts.is_empty() {
-        out.push(UnreportedIssue::new(
+        out.push(RawFinding::new(
             &MISSING_CONTACTS,
             path.clone(),
             "No `contacts`",
@@ -48,7 +70,7 @@ fn lint_feature(feature: &FeatureDef, out: &mut Vec<UnreportedIssue>) {
 
     for contact in &metadata.contacts {
         if !is_email_address(contact) {
-            out.push(UnreportedIssue::new(
+            out.push(RawFinding::new(
                 &INVALID_CONTACT,
                 path.clone(),
                 format!("`{contact}` doesn't look like an email address"),
@@ -87,13 +109,20 @@ mod unit_tests {
 
     fn lints(feature: &FeatureDef) -> Vec<&'static str> {
         let mut out = Vec::new();
-        lint_feature(feature, &mut out);
+        check_feature(feature, &mut out);
         out.iter().map(|f| f.lint.name).collect()
     }
 
     #[test]
     fn test_empty_metadata() {
-        assert_eq!(lints(&feature()), vec!["MISSING_CONTACTS"]);
+        assert_eq!(
+            lints(&feature()),
+            vec![
+                "MISSING_META_BUG",
+                "MISSING_DOCUMENTATION",
+                "MISSING_CONTACTS"
+            ]
+        );
     }
 
     #[test]

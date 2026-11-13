@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import mozilla.appservices.fxaclient.DeviceConfig as ASDeviceConfig
 import mozilla.appservices.fxaclient.FxaEvent
 import mozilla.appservices.fxaclient.FxaException
+import mozilla.appservices.fxaclient.FxaRustAuthState
 import mozilla.appservices.fxaclient.FxaState
 import mozilla.appservices.syncmanager.DeviceSettings
 import mozilla.components.concept.base.crash.Breadcrumb
@@ -293,7 +294,7 @@ open class FxaAccountManager(
             FxaState.Connected,
             FxaState.AuthIssues -> account
             // Bug 2030890 - we may not leave the `FxaState.Authenticating` state.
-            is FxaState.Authenticating if it.initialState is FxaState.Connected -> account
+            is FxaState.Authenticating if it.initialState == FxaRustAuthState.CONNECTED -> account
             else -> null
         }
     }
@@ -303,7 +304,7 @@ open class FxaAccountManager(
         when (it) {
             FxaState.Connected -> account
             // While authenticating from a connected state we should return the account.
-            is FxaState.Authenticating if it.initialState is FxaState.Connected -> account
+            is FxaState.Authenticating if it.initialState == FxaRustAuthState.CONNECTED -> account
             else -> null
         }
     }

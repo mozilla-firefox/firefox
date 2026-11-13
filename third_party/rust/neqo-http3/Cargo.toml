@@ -22,7 +22,7 @@ autoexamples = false
 autotests = false
 autobenches = false
 description = "Neqo, the Mozilla implementation of QUIC in Rust."
-readme = '..\README.md'
+readme = "../README.md"
 keywords = [
     "quic",
     "http3",

@@ -693,6 +693,8 @@ internal object IntegrityCheckingUniffiLib {
     ): Int
     external fun uniffi_fxa_client_checksum_method_firefoxaccount_disconnect(
     ): Int
+    external fun uniffi_fxa_client_checksum_method_firefoxaccount_get_auth_state(
+    ): Int
     external fun uniffi_fxa_client_checksum_method_firefoxaccount_get_pairing_authority_url(
     ): Int
     external fun uniffi_fxa_client_checksum_method_firefoxaccount_get_state(
@@ -804,6 +806,8 @@ internal object UniffiLib {
     ): RustBuffer.ByValue
     external fun uniffi_fxa_client_fn_method_firefoxaccount_disconnect(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): Unit
+    external fun uniffi_fxa_client_fn_method_firefoxaccount_get_auth_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
+    ): RustBuffer.ByValue
     external fun uniffi_fxa_client_fn_method_firefoxaccount_get_pairing_authority_url(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun uniffi_fxa_client_fn_method_firefoxaccount_get_state(`ptr`: Long,uniffi_out_err: UniffiRustCallStatus, 
@@ -1437,6 +1441,14 @@ public interface FirefoxAccountInterface {
     fun `disconnect`()
     
     /**
+     * Get the high-level authentication state of the client
+     *
+     * TODO: remove this and the FxaRustAuthState type from the public API
+     * https://bugzilla.mozilla.org/show_bug.cgi?id=1868614
+     */
+    fun `getAuthState`(): FxaRustAuthState
+    
+    /**
      * Get the URL at which to begin a device-pairing signin flow.
      *
      * If the user wants to sign in using device pairing, call this method and then
@@ -1469,7 +1481,7 @@ public interface FirefoxAccountInterface {
      * **💾 This method alters the persisted account state.**
      *
      * Call this if you know there's an authentication / authorization issue that requires the
-     * user to re-authenticated.  It transitions the user to the [FxaState.AuthIssues] state.
+     * user to re-authenticated.  It transitions the user to the [FxaRustAuthState.AuthIssues] state.
      */
     fun `onAuthIssues`()
     
@@ -1486,7 +1498,7 @@ public interface FirefoxAccountInterface {
      *
      * **💾 This method alters the persisted account state.**
      *
-     * Call this if we have encountered the [FxaState.AuthIssues] state as a result of a
+     * Call this if we have encountered the [FxaRustAuthState.AuthIssues] state as a result of a
      * failure happening (i.e. not as a result of initialization simply loading that state from a
      * previous failure).
      * Most likely, this should not need to be called externally except in testing since the state
@@ -2211,6 +2223,25 @@ open class FirefoxAccount: Disposable, AutoCloseable, FirefoxAccountInterface
 
     
     /**
+     * Get the high-level authentication state of the client
+     *
+     * TODO: remove this and the FxaRustAuthState type from the public API
+     * https://bugzilla.mozilla.org/show_bug.cgi?id=1868614
+     */override fun `getAuthState`(): FxaRustAuthState {
+            return FfiConverterTypeFxaRustAuthState.lift(
+    callWithHandle {
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_fxa_client_fn_method_firefoxaccount_get_auth_state(
+        it,
+        _status)
+}
+    }
+    )
+    }
+    
+
+    
+    /**
      * Get the URL at which to begin a device-pairing signin flow.
      *
      * If the user wants to sign in using device pairing, call this method and then
@@ -2278,7 +2309,7 @@ open class FirefoxAccount: Disposable, AutoCloseable, FirefoxAccountInterface
      * **💾 This method alters the persisted account state.**
      *
      * Call this if you know there's an authentication / authorization issue that requires the
-     * user to re-authenticated.  It transitions the user to the [FxaState.AuthIssues] state.
+     * user to re-authenticated.  It transitions the user to the [FxaRustAuthState.AuthIssues] state.
      */override fun `onAuthIssues`()
         = 
     callWithHandle {
@@ -2318,7 +2349,7 @@ open class FirefoxAccount: Disposable, AutoCloseable, FirefoxAccountInterface
      *
      * **💾 This method alters the persisted account state.**
      *
-     * Call this if we have encountered the [FxaState.AuthIssues] state as a result of a
+     * Call this if we have encountered the [FxaRustAuthState.AuthIssues] state as a result of a
      * failure happening (i.e. not as a result of initialization simply loading that state from a
      * previous failure).
      * Most likely, this should not need to be called externally except in testing since the state
@@ -4822,6 +4853,51 @@ public object FfiConverterTypeFxaEvent : FfiConverterRustBuffer<FxaEvent>{
 
 
 
+/**
+ * High-level view of the authorization state
+ *
+ * This is named `FxaRustAuthState` because it doesn't track all the states we want yet and needs
+ * help from the wrapper code.  The wrapper code defines the actual `FxaAuthState` type based on
+ * this, adding the extra data.
+ *
+ * In the long-term, we should track that data in Rust, remove the wrapper, and rename this to
+ * `FxaAuthState`.
+ */
+
+enum class FxaRustAuthState {
+    
+    DISCONNECTED,
+    CONNECTED,
+    AUTH_ISSUES;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeFxaRustAuthState: FfiConverterRustBuffer<FxaRustAuthState> {
+    override fun read(buf: ByteBuffer) = try {
+        FxaRustAuthState.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: FxaRustAuthState) = 4UL
+
+    override fun write(value: FxaRustAuthState, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
+    }
+}
+
+
+
+
+
 sealed class FxaServer {
     
     object Release : FxaServer()
@@ -4971,13 +5047,12 @@ sealed class FxaState {
     
     
     /**
-     * User is currently performing an OAuth flow.
-     *
-     * Initial state is what we transition to if the flow is cancelled or fails.
+     * User is currently performing an OAuth flow - our existing initial state
+     * when we transition to this state will influence what this means exactly.
      */
     data class Authenticating(
         val `oauthUrl`: kotlin.String, 
-        val `initialState`: FxaState) : FxaState()
+        val `initialState`: mozilla.appservices.fxaclient.FxaRustAuthState) : FxaState()
         
     {
         
@@ -5018,7 +5093,7 @@ public object FfiConverterTypeFxaState : FfiConverterRustBuffer<FxaState>{
             2 -> FxaState.Disconnected
             3 -> FxaState.Authenticating(
                 FfiConverterString.read(buf),
-                FfiConverterTypeFxaState.read(buf),
+                FfiConverterTypeFxaRustAuthState.read(buf),
                 )
             4 -> FxaState.Connected
             5 -> FxaState.AuthIssues
@@ -5044,7 +5119,7 @@ public object FfiConverterTypeFxaState : FfiConverterRustBuffer<FxaState>{
             (
                 4UL
                 + FfiConverterString.allocationSize(value.`oauthUrl`)
-                + FfiConverterTypeFxaState.allocationSize(value.`initialState`)
+                + FfiConverterTypeFxaRustAuthState.allocationSize(value.`initialState`)
             )
         }
         is FxaState.Connected -> {
@@ -5074,7 +5149,7 @@ public object FfiConverterTypeFxaState : FfiConverterRustBuffer<FxaState>{
             is FxaState.Authenticating -> {
                 buf.putInt(3)
                 FfiConverterString.write(value.`oauthUrl`, buf)
-                FfiConverterTypeFxaState.write(value.`initialState`, buf)
+                FfiConverterTypeFxaRustAuthState.write(value.`initialState`, buf)
                 Unit
             }
             is FxaState.Connected -> {

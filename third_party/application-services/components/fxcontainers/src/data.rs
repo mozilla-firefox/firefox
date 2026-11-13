@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
-pub(crate) const LATEST_VERSION: u32 = 9;
+pub(crate) const LATEST_VERSION: u32 = 8;
 
 /// Reserved for the IndexedDB backend of the extension storage.local API. Never
 /// reassign it: extensions would lose access to data stored under it.
@@ -38,57 +38,6 @@ pub(crate) struct Identity {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", from = "StoredSiteAssociation")]
-pub(crate) struct SiteAssociationData {
-    pub user_context_id: u32,
-    pub include_subdomains: bool,
-    #[serde(flatten)]
-    pub extra: Map<String, Value>,
-}
-
-impl SiteAssociationData {
-    pub(crate) fn new(user_context_id: u32, include_subdomains: bool) -> Self {
-        Self {
-            user_context_id,
-            include_subdomains,
-            extra: Default::default(),
-        }
-    }
-}
-
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum StoredSiteAssociation {
-    Legacy(u32),
-    #[serde(rename_all = "camelCase")]
-    Current {
-        #[serde(default)]
-        user_context_id: u32,
-        #[serde(default)]
-        include_subdomains: bool,
-        #[serde(flatten)]
-        extra: Map<String, Value>,
-    },
-}
-
-impl From<StoredSiteAssociation> for SiteAssociationData {
-    fn from(stored: StoredSiteAssociation) -> Self {
-        match stored {
-            StoredSiteAssociation::Legacy(user_context_id) => Self::new(user_context_id, false),
-            StoredSiteAssociation::Current {
-                user_context_id,
-                include_subdomains,
-                extra,
-            } => Self {
-                user_context_id,
-                include_subdomains,
-                extra,
-            },
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct ContainersData {
     #[serde(default)]
@@ -98,7 +47,7 @@ pub(crate) struct ContainersData {
     #[serde(default)]
     pub identities: Vec<Identity>,
     #[serde(default)]
-    pub site_associations: BTreeMap<String, SiteAssociationData>,
+    pub site_associations: BTreeMap<String, u32>,
     #[serde(flatten)]
     pub extra: Map<String, Value>,
 }

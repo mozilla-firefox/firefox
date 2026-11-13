@@ -12,7 +12,7 @@ use crate::{
         state_persistence::state_to_json,
         CachedResponse, Config, OAuthFlow, PersistedState,
     },
-    DeviceCapability, FxaState, LocalDevice, Result, ScopedKey,
+    DeviceCapability, FxaRustAuthState, LocalDevice, Result, ScopedKey,
 };
 
 /// Stores and manages the current state of the FxA client
@@ -277,13 +277,13 @@ impl StateManager {
         self.persisted_state.logged_out_from_auth_issues = false;
     }
 
-    pub fn get_initial_state(&self) -> FxaState {
+    pub fn get_auth_state(&self) -> FxaRustAuthState {
         if self.persisted_state.logged_out_from_auth_issues {
-            FxaState::AuthIssues
+            FxaRustAuthState::AuthIssues
         } else if self.persisted_state.refresh_token.is_some() {
-            FxaState::Connected
+            FxaRustAuthState::Connected
         } else {
-            FxaState::Disconnected
+            FxaRustAuthState::Disconnected
         }
     }
 

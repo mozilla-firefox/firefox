@@ -161,11 +161,11 @@ optional = true
 
 [dependencies.naga]
 version = "30.0.0"
-path = '..\naga'
+path = "../naga"
 
 [dependencies.naga-types]
 version = "30.0.0"
-path = '..\naga-types'
+path = "../naga-types"
 
 [dependencies.num-traits]
 version = "0.2.16"
@@ -206,21 +206,21 @@ default-features = false
 
 [dependencies.wgpu-hal]
 version = "30.0.0"
-path = '..\wgpu-hal'
+path = "../wgpu-hal"
 default-features = true
 
 [dependencies.wgpu-naga-bridge]
 version = "30.0.0"
-path = '..\wgpu-naga-bridge'
+path = "../wgpu-naga-bridge"
 
 [dependencies.wgpu-sync]
 version = "30.0.0"
-path = '..\wgpu-sync'
+path = "../wgpu-sync"
 default-features = false
 
 [dependencies.wgpu-types]
 version = "30.0.0"
-path = '..\wgpu-types'
+path = "../wgpu-types"
 default-features = false
 
 [build-dependencies.cfg_aliases]
@@ -228,12 +228,12 @@ version = "0.2.2"
 
 [target.'cfg(all(target_family = "wasm", not(target_os = "emscripten")))'.dependencies.wgpu-core-deps-wasm]
 version = "30.0.0"
-path = 'platform-deps\wasm'
+path = "platform-deps/wasm"
 optional = true
 
 [target.'cfg(any(target_os = "linux", target_os = "android", target_os = "freebsd", target_os = "netbsd"))'.dependencies.wgpu-core-deps-linux-android-bsd]
 version = "30.0.0"
-path = 'platform-deps\linux-android-bsd'
+path = "platform-deps/linux-android-bsd"
 optional = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.proptest]
@@ -241,17 +241,17 @@ version = ">=1, <1.7"
 
 [target.'cfg(target_os = "emscripten")'.dependencies.wgpu-core-deps-emscripten]
 version = "30.0.0"
-path = 'platform-deps\emscripten'
+path = "platform-deps/emscripten"
 optional = true
 
 [target.'cfg(target_vendor = "apple")'.dependencies.wgpu-core-deps-apple]
 version = "30.0.0"
-path = 'platform-deps\apple'
+path = "platform-deps/apple"
 optional = true
 
 [target."cfg(windows)".dependencies.wgpu-core-deps-windows]
 version = "30.0.0"
-path = 'platform-deps\windows'
+path = "platform-deps/windows"
 optional = true
 
 [lints.rust]

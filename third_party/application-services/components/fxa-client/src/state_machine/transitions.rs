@@ -7,7 +7,7 @@
 //! Each `match` arm reads top-to-bottom as imperative Rust. Use
 //! `.to_state_machine_err(|| target)?` to attach the landing state on failure.
 
-use crate::{Error, FxaEvent, FxaState};
+use crate::{Error, FxaEvent, FxaRustAuthState, FxaState};
 
 use super::helpers::{ResultExt, RetryingAccount, StateMachineErr};
 
@@ -22,8 +22,9 @@ pub fn transition(
 
     match (from, event) {
         // ── From Uninitialized ──────────────────────────────────────────
-        (S::Uninitialized, E::Initialize { device_config }) => match account.get_initial_state() {
-            S::AuthIssues => {
+        (S::Uninitialized, E::Initialize { device_config }) => match account.get_auth_state() {
+            FxaRustAuthState::Disconnected => Ok(S::Disconnected),
+            FxaRustAuthState::AuthIssues => {
                 // This probably indicates that the user is not authorized but there are various
                 // corner cases where we might have gotten something wrong. For example, a bug in an
                 // older browser version that we've since fixed or an FxA server bug.
@@ -44,10 +45,7 @@ pub fn transition(
                     Ok(S::AuthIssues)
                 }
             }
-            S::Connected => {
-                // For connected accounts, rerun finish_initialize() since it's possible the
-                // capabilities have changed since the last run -- for example because the user
-                // upgraded Firefox.
+            FxaRustAuthState::Connected => {
                 match account.finish_initialize(&device_config.capabilities) {
                     Ok(()) => Ok(S::Connected),
                     Err(cause) => {
@@ -56,7 +54,6 @@ pub fn transition(
                     }
                 }
             }
-            state => Ok(state),
         },
 
         // ── From Disconnected ───────────────────────────────────────────
@@ -74,7 +71,7 @@ pub fn transition(
                 .to_state_machine_err(|| S::Disconnected)?;
             Ok(S::Authenticating {
                 oauth_url,
-                initial_state: Box::new(S::Disconnected),
+                initial_state: FxaRustAuthState::Disconnected,
             })
         }
         (
@@ -92,7 +89,7 @@ pub fn transition(
                 .to_state_machine_err(|| S::Disconnected)?;
             Ok(S::Authenticating {
                 oauth_url,
-                initial_state: Box::new(S::Disconnected),
+                initial_state: FxaRustAuthState::Disconnected,
             })
         }
 
@@ -100,10 +97,10 @@ pub fn transition(
         (S::Authenticating { initial_state, .. }, E::CompleteOAuthFlow { code, state }) => {
             account
                 .complete_oauth_flow(&code, &state)
-                .to_state_machine_err(|| (*initial_state).clone())?;
+                .to_state_machine_err(|| initial_state.into())?;
 
             // Initial state was Connected: device is already initialized, skip the call.
-            if !matches!(*initial_state, S::Connected) {
+            if !matches!(initial_state, FxaRustAuthState::Connected) {
                 let dc = account.device_config().clone();
                 account
                     .initialize_device(&dc.name, dc.device_type, &dc.capabilities)
@@ -112,7 +109,7 @@ pub fn transition(
 
             Ok(S::Connected)
         }
-        (S::Authenticating { initial_state, .. }, E::CancelOAuthFlow) => Ok(*initial_state),
+        (S::Authenticating { initial_state, .. }, E::CancelOAuthFlow) => Ok(initial_state.into()),
         (S::Authenticating { .. }, E::Disconnect) => {
             account.disconnect();
             Ok(S::Disconnected)
@@ -128,7 +125,7 @@ pub fn transition(
             let scope_refs: Vec<&str> = scopes.iter().map(String::as_str).collect();
             let oauth_url = account
                 .begin_oauth_flow(&service, &scope_refs, &entrypoint)
-                .to_state_machine_err(|| (*initial_state).clone())?;
+                .to_state_machine_err(|| initial_state.into())?;
             Ok(S::Authenticating {
                 oauth_url,
                 initial_state,
@@ -146,7 +143,7 @@ pub fn transition(
             let scope_refs: Vec<&str> = scopes.iter().map(String::as_str).collect();
             let oauth_url = account
                 .begin_pairing_flow(&pairing_url, &service, &scope_refs, &entrypoint)
-                .to_state_machine_err(|| (*initial_state).clone())?;
+                .to_state_machine_err(|| initial_state.into())?;
             Ok(S::Authenticating {
                 oauth_url,
                 initial_state,
@@ -221,7 +218,7 @@ pub fn transition(
                 .to_state_machine_err(|| S::Connected)?;
             Ok(S::Authenticating {
                 oauth_url,
-                initial_state: Box::new(S::Connected),
+                initial_state: FxaRustAuthState::Connected,
             })
         }
         (S::Connected, E::WebChannelPasswordChange { json_payload }) => {
@@ -254,7 +251,7 @@ pub fn transition(
                 })?;
             Ok(S::Authenticating {
                 oauth_url,
-                initial_state: Box::new(S::AuthIssues),
+                initial_state: FxaRustAuthState::AuthIssues,
             })
         }
         (S::AuthIssues, E::Disconnect) => {
@@ -325,29 +322,29 @@ mod tests {
         )
     }
 
-    fn authenticating_from(initial_state: FxaState) -> FxaState {
+    fn authenticating_from(initial_state: FxaRustAuthState) -> FxaState {
         FxaState::Authenticating {
             oauth_url: "https://example.com/oauth".to_owned(),
-            initial_state: Box::new(initial_state),
+            initial_state,
         }
     }
 
     #[test]
     fn cancel_oauth_returns_to_initial_state() {
         nss_as::ensure_initialized();
-        for state in [
-            FxaState::Disconnected,
-            FxaState::AuthIssues,
-            FxaState::Connected,
+        for (initial, expected) in [
+            (FxaRustAuthState::Disconnected, FxaState::Disconnected),
+            (FxaRustAuthState::AuthIssues, FxaState::AuthIssues),
+            (FxaRustAuthState::Connected, FxaState::Connected),
         ] {
             let mut account = mock_account();
             let mut wrapper = RetryingAccount::new(&mut account);
             let result = transition(
                 &mut wrapper,
-                authenticating_from(state.clone()),
+                authenticating_from(initial),
                 FxaEvent::CancelOAuthFlow,
             );
-            assert_eq!(result.unwrap(), state);
+            assert_eq!(result.unwrap(), expected);
         }
     }
 
@@ -413,7 +410,7 @@ mod tests {
                 &mut wrapper,
                 FxaState::Authenticating {
                     oauth_url: "test".into(),
-                    initial_state: Box::new(FxaState::Disconnected),
+                    initial_state: FxaRustAuthState::Disconnected
                 },
                 FxaEvent::Disconnect
             )
@@ -473,7 +470,7 @@ mod tests {
         nss_as::ensure_initialized();
         let mut account = mock_account();
         let mut wrapper = RetryingAccount::new(&mut account);
-        let from = authenticating_from(FxaState::Connected);
+        let from = authenticating_from(FxaRustAuthState::Connected);
         let result = transition(
             &mut wrapper,
             from.clone(),
