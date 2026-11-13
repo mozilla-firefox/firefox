@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <ctime>
+#include <limits>
 
 #include "BorderConsts.h"
 #include "ImageContainer.h"
@@ -3943,22 +3944,39 @@ static sk_sp<const SkTextBlob> CreateTextBlob(
 static void GetTextIntercepts(const sk_sp<const SkTextBlob>& aBlob,
                               const SkScalar aBounds[],
                               nsTArray<SkScalar>& aIntercepts) {
+  uint32_t numGlyphs = 0;
+  SkTextBlob::Iter::Run run;
+  for (SkTextBlob::Iter iter(*aBlob); iter.next(&run);) {
+    numGlyphs += run.fGlyphCount;
+    if (numGlyphs >= std::numeric_limits<uint32_t>::max() / 2) {
+      // Bail out if there are potentially too many intercepts; skia returns a
+      // maximum of two per glyph.
+      return;
+    }
+  }
+  if (!numGlyphs) {
+    return;
+  }
+
+  const auto oldLength = aIntercepts.Length();
+  auto* newElements = aIntercepts.AppendElements(numGlyphs * 2, fallible);
+  if (!newElements) {
+    return;
+  }
+
   // It's possible that we'll encounter a Windows exception deep inside
   // Skia's DirectWrite code while trying to get the intercepts. To avoid
   // crashing in this case, catch any such exception here and discard the
   // newly-added (and incompletely filled in) elements.
-  int count = 0;
   MOZ_SEH_TRY {
-    // https://skia.org/user/api/SkTextBlob_Reference#Text_Blob_Text_Intercepts
-    count = aBlob->getIntercepts(aBounds, nullptr);
-    if (count < 2) {
-      return;
-    }
-    aBlob->getIntercepts(aBounds, aIntercepts.AppendElements(count));
+    int count = aBlob->getIntercepts(aBounds, newElements);
+    MOZ_DIAGNOSTIC_ASSERT(uint32_t(count) <= numGlyphs * 2,
+                          "skia returned > 2 intercepts per glyph?");
+    aIntercepts.TruncateLength(oldLength + count);
   }
   MOZ_SEH_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
     gfxCriticalNote << "Exception occurred getting text intercepts";
-    aIntercepts.TruncateLength(aIntercepts.Length() - count);
+    aIntercepts.TruncateLength(oldLength);
   }
 }
 
