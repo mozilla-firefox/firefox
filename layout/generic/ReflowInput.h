@@ -571,9 +571,9 @@ struct ReflowInput : public SizeComputationInput {
     bool mShouldApplyTextBoxTrimAtFragmentEnd : 1;
 
     // Used to propagate to descendants of a line-clamp root frame whether
-    // line-clamp auto should be applied. True after the first reflow, when
+    // line-clamp should be applied. True after the first reflow, when
     // dimensions used for correctly tracking BSize are available.
-    bool mDimensionsReadyForLineClampAuto : 1;
+    bool mDimensionsReadyForLineClamp : 1;
 
     // Whether this frame's block-start or block-end margin is trimmed in its
     // cb's writing mode. They are set explicitly for each ReflowInput and not

@@ -2020,7 +2020,7 @@ void nsBlockFrame::Reflow(nsPresContext* aPresContext, ReflowOutput& aMetrics,
         !trialState.mLineClamping) {
       // `line-clamp: auto` containers need a second reflow, since that relies
       // on BStart and margins being valid. As a result, we are enabling the
-      // flag that allows `line-clamp: auto` to happen, and reflowing again.
+      // flag that allows `line-clamp` to happen, and reflowing again.
       trialState.mLineClamping = true;
       aReflowInput.mFloatManager->PopState(&floatManagerState);
       MarkAllDescendantLinesDirty(this);
@@ -2409,11 +2409,11 @@ nsReflowStatus nsBlockFrame::TrialReflow(nsPresContext* aPresContext,
       aTrialState.mShouldTrimInheritedBEndMargins;
 
   // mLineClamping is set for root, and mDimensionsReadyForLineClampAuto is used
-  // to pass the flag down to descendants. We should apply automatic line-clamp
+  // to pass the flag down to descendants. We should apply line-clamp
   // in either case.
-  state.mFlags.mShouldApplyLineClampAuto =
+  state.mFlags.mShouldApplyLineClamp =
       aTrialState.mLineClamping ||
-      aReflowInput.mFlags.mDimensionsReadyForLineClampAuto;
+      aReflowInput.mFlags.mDimensionsReadyForLineClamp;
 
   // Handle paginated overflow (see nsContainerFrame.h)
   nsReflowStatus ocStatus;
@@ -2885,7 +2885,7 @@ nscoord nsBlockFrame::ComputeFinalSize(const ReflowInput& aReflowInput,
     nsBlockFrame* lineClampRoot = GetLineClampRoot();
     if (lineClampRoot &&
         (!LineClampIsAuto(lineClampRoot->StyleDisplay()->mWebkitLineClamp) ||
-         aState.mFlags.mShouldApplyLineClampAuto)) {
+         aState.mFlags.mShouldApplyLineClamp)) {
       const auto numberedLineClampTarget =
           FindLineClampNumberedTarget(0, lineClampRoot);
 
@@ -2947,7 +2947,7 @@ nscoord nsBlockFrame::ComputeFinalSize(const ReflowInput& aReflowInput,
     nsBlockFrame* lineClampRoot = GetLineClampRoot();
     if (lineClampRoot &&
         (!LineClampIsAuto(lineClampRoot->StyleDisplay()->mWebkitLineClamp) ||
-         aState.mFlags.mShouldApplyLineClampAuto)) {
+         aState.mFlags.mShouldApplyLineClamp)) {
       const auto numberedLineClampTarget = FindLineClampNumberedTarget(
           aState.mPrevBEndMargin.Get(), lineClampRoot);
 
@@ -5267,8 +5267,8 @@ void nsBlockFrame::ReflowBlockFrame(BlockReflowState& aState,
       childReflowInput->mFlags.mMovedBlockFragments = true;
     }
 
-    childReflowInput->mFlags.mDimensionsReadyForLineClampAuto =
-        aState.mFlags.mShouldApplyLineClampAuto;
+    childReflowInput->mFlags.mDimensionsReadyForLineClamp =
+        aState.mFlags.mShouldApplyLineClamp;
 
     nsFloatManager::SavedState floatManagerState;
     nsReflowStatus frameReflowStatus;
