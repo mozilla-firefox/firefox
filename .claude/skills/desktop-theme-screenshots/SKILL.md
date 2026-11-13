@@ -260,8 +260,12 @@ covers the rect's origin, `--dpr`, `--offset`, `--lines` (what a caption for a
 change one or two device pixels wide quotes) and the exit codes; the host's
 platform file in `desktop-theme-probing`, section GRABS, gives a grab's scale.
 It needs Pillow, which the `wpt` site carries. On Linux the site's first run can
-print a `PyGObject` build failure, an optional package, and then succeed, so
-ignore the warning and read the exit code:
+print a `PyGObject` build failure, an optional package, and then succeed (bug
+2090261), so ignore the warning and read the exit code. A completed comparison
+exits 0 when no pixel inside `--rect` differs by more than `--threshold`, 1 when
+some do and 2 on an error. Mach itself exits 1 when it fails before the
+comparison runs (e.g. the `wpt` site fails to set up), so a 1 is a result only
+when the count and bounding box were printed:
 
 ```sh
 ./mach theme pixel-diff \
