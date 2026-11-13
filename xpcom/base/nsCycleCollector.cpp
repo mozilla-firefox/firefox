@@ -3110,6 +3110,33 @@ void nsCycleCollector::ScanRoots(bool aFullySynchGraphBuild) {
 // Bacon & Rajan's |CollectWhite| routine, somewhat modified.
 ////////////////////////////////////////////////////////////////////////
 
+class WhiteNode {
+ public:
+  explicit WhiteNode(PtrInfo* aPInfo) : mPInfo(aPInfo) {}
+
+  void Root() { mPInfo->mParticipant->Root(mPInfo->mPointer); }
+
+  void Unlink(CycleCollectedJSRuntime* aCCJSRuntime) {
+    MOZ_ASSERT(mPInfo->mParticipant,
+               "Unlink shouldn't see objects removed from graph.");
+    mPInfo->mParticipant->Unlink(mPInfo->mPointer);
+#ifdef DEBUG
+    if (aCCJSRuntime) {
+      aCCJSRuntime->AssertNoObjectsToTrace(mPInfo->mPointer);
+    }
+#endif
+  }
+
+  void Unroot() {
+    MOZ_ASSERT(mPInfo->mParticipant,
+               "Unroot shouldn't see objects removed from graph.");
+    mPInfo->mParticipant->Unroot(mPInfo->mPointer);
+  }
+
+ private:
+  PtrInfo* mPInfo;
+};
+
 bool nsCycleCollector::CollectWhite() {
   // Explanation of "somewhat modified": we have no way to collect the
   // set of whites "all at once", we have to ask each of them to drop
@@ -3129,7 +3156,7 @@ bool nsCycleCollector::CollectWhite() {
 
   // Segments are 4 KiB on 32-bit and 8 KiB on 64-bit.
   static const size_t kSegmentSize = sizeof(void*) * 1024;
-  SegmentedVector<PtrInfo*, kSegmentSize, InfallibleAllocPolicy> whiteNodes(
+  SegmentedVector<WhiteNode, kSegmentSize, InfallibleAllocPolicy> whiteNodes(
       kSegmentSize);
   TimeLog timeLog;
 
@@ -3163,8 +3190,9 @@ bool nsCycleCollector::CollectWhite() {
           }
           mCCJSRuntime->AddZoneWaitingForGC(zone);
         } else {
-          whiteNodes.InfallibleAppend(pinfo);
-          pinfo->mParticipant->Root(pinfo->mPointer);
+          WhiteNode wn(pinfo);
+          wn.Root();
+          whiteNodes.InfallibleAppend(std::move(wn));
           ++numWhiteNodes;
         }
       }
@@ -3186,24 +3214,13 @@ bool nsCycleCollector::CollectWhite() {
   // else not in whiteNodes after here.
 
   for (auto iter = whiteNodes.Iter(); !iter.Done(); iter.Next()) {
-    PtrInfo* pinfo = iter.Get();
-    MOZ_ASSERT(pinfo->mParticipant,
-               "Unlink shouldn't see objects removed from graph.");
-    pinfo->mParticipant->Unlink(pinfo->mPointer);
-#ifdef DEBUG
-    if (mCCJSRuntime) {
-      mCCJSRuntime->AssertNoObjectsToTrace(pinfo->mPointer);
-    }
-#endif
+    iter.Get().Unlink(mCCJSRuntime);
   }
   timeLog.Checkpoint("CollectWhite::Unlink");
 
   JS::AutoAssertNoGC nogc;
   for (auto iter = whiteNodes.Iter(); !iter.Done(); iter.Next()) {
-    PtrInfo* pinfo = iter.Get();
-    MOZ_ASSERT(pinfo->mParticipant,
-               "Unroot shouldn't see objects removed from graph.");
-    pinfo->mParticipant->Unroot(pinfo->mPointer);
+    iter.Get().Unroot();
   }
   timeLog.Checkpoint("CollectWhite::Unroot");
 
