@@ -268,7 +268,8 @@ int64_t FileBlobImpl::GetLastModified(ErrorResult& aRv) {
 
 const uint32_t sFileStreamFlags =
     nsIFileInputStream::CLOSE_ON_EOF | nsIFileInputStream::REOPEN_ON_REWIND |
-    nsIFileInputStream::DEFER_OPEN | nsIFileInputStream::SHARE_DELETE;
+    nsIFileInputStream::DEFER_OPEN | nsIFileInputStream::SHARE_DELETE |
+    nsIFileInputStream::NO_MAGIC_FILES;
 
 void FileBlobImpl::CreateInputStream(nsIInputStream** aStream,
                                      ErrorResult& aRv) const {
