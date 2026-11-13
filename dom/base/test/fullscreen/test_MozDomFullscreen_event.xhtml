@@ -25,7 +25,11 @@ SpecialPowers.pushPrefEnv({"set": [
   ['full-screen-api.enabled', true],
   ['full-screen-api.allow-trusted-requests-only', false],
   ['full-screen-api.transition-duration.enter', '0 0'],
-  ['full-screen-api.transition-duration.leave', '0 0']
+  ['full-screen-api.transition-duration.leave', '0 0'],
+  // The test closes its window as soon as it leaves fullscreen. On macOS,
+  // that would be in the middle of the native fullscreen animation, and the
+  // next window's native fullscreen request then fails.
+  ['full-screen-api.macos-native-full-screen', false]
 ]}).then(setup);
 
 function setup() {
