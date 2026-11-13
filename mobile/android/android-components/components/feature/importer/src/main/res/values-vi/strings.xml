@@ -9,6 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Đang nhập dấu trang</string>
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">Đang nhập mật khẩu</string>
   <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">Hãy giữ màn hình này mở. Quá trình này chỉ mất vài giây.</string>
   <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->

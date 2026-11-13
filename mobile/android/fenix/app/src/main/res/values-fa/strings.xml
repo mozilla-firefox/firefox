@@ -1282,6 +1282,8 @@
     Sign-in promo card: Title inviting the user to sign in
   -->
   <string name="sign_in_promo_title">ورود</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">همگام‌سازی زبانه‌ها، نشانک‌ها، گذرواژه‌ها و موارد دیگر را آغاز کنید.</string>
   <!--
     Pairing Feature strings
 
@@ -3913,6 +3915,8 @@
   <string name="protection_panel_permissions_title">مجوزها</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">اتصال امن</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">گواهی صادرشده برای:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">نشان اعتماد اتحادیهٔ اروپا</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">

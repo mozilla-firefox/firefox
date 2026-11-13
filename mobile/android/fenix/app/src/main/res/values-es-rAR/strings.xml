@@ -1283,7 +1283,7 @@
   -->
   <string name="sign_in_promo_title">Iniciar sesión</string>
   <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
-  <string name="sign_in_promo_description">Comience a sincronizar pestañas, marcadores, contraseñas y más.</string>
+  <string name="sign_in_promo_description">Empezá a sincronizar pestañas, marcadores, contraseñas y mucho más.</string>
   <!--
     Pairing Feature strings
 

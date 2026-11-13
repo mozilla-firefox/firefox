@@ -9,6 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Importerer bokmerke</string>
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">Importerer passord</string>
   <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">Hald denne skjermen open. Det skal berre ta nokre få sekund.</string>
   <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->

@@ -16,6 +16,8 @@
   <string name="feedback_erase2">පිරික්සුම් ඉතිහාසය මැකිණි</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">පටිත්තෙහි පිරික්සුම් ඉතිහාසය මකා දමා ඇත.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">වට්ටෝරුව</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">බෙදාගන්න…</string>
   <!--
@@ -115,6 +117,8 @@
     %2$s is the url for the learn-more link.
   -->
   <string name="about_content" tools:ignore="BrandUsage,IncorrectStraightDoubleQuote"><![CDATA[<p>%1$s ඔබව පාලනයේ තබයි.</p>\n<p>පෞද්. අතිරික්සුවක් ලෙස යොදාගන්න:\n<ul>\n<li>යෙදුමෙහි සොයන්න සහ පිරික්සන්න</li>\n<li>ලුහුබැඳීම් අවහිර කරන්න (හෝ සැකසුම් තුළින් ඉඩ දෙන්න)</li>\n<li>දත්තකඩ මෙන්ම සෙවුම් හා පිරික්සුම් ඉතිහාසය ඉවත් කිරීමට මකන්න</li>\n</ul> </p>\n<p>මොසිල්ලා හරහා %1$s නිෂ්පාදනය කෙරේ. හිතකර, විවෘත අන්තර්ජාලයකට පිහිටාධාර සැපයීම අපගේ මෙහෙවරයි.<br/>\n<a href=\"%2$s\">තව දැනගන්න</a></p>]]></string>
+  <!-- A link to SUMO at the bottom of About Focus screen. -->
+  <string name="about_screen_learn_more">තව දැනගන්න</string>
   <!-- Header for the Privacy and Security settings menu -->
   <string name="preference_privacy_and_security_header">පෞද්ගලිකත්‍වය හා ආරක්‍ෂාව</string>
   <!-- Preference summary for settings related to privacy and security -->
@@ -336,6 +340,28 @@
   <string name="onboarding_first_screen_title">%1$s වෙත පිළිගනිමු</string>
   <!-- New Onboarding flow first screen subtitle the one that appears under title -->
   <string name="onboarding_first_screen_subtitle">වේගවත්. පෞද්ගලික. බාධා රහිත.</string>
+  <!--
+    New Onboarding flow first screen 'terms of use' text
+
+    %1$s will be replaced by a link using onboarding_first_screen_terms_of_use_link as text
+  -->
+  <string name="onboarding_first_screen_terms_of_use_text_2" tools:ignore="UnusedResources">ඉදිරියට යාමෙන් ඔබ %1$s සඳහා එකඟ වේ.</string>
+  <!--
+    New Onboarding flow first screen 'terms of use link'
+
+    Text for the link used in onboarding_first_screen_terms_of_use_text
+  -->
+  <string name="onboarding_first_screen_terms_of_use_link_2" tools:ignore="BrandUsage">ෆයර්ෆොක්ස් භාවිත නියම</string>
+  <!--
+    New Onboarding flow first screen 'privacy notice' text
+
+    %1$s will be replaced by a link using onboarding_first_screen_privacy_notice_link as text
+  -->
+  <string name="onboarding_first_screen_privacy_notice_text_2" tools:ignore="BrandUsage">ෆයර්ෆොක්ස් ඔබගේ පෞද්ගලිකත්‍වය ගැන සැලකිලිමත් වේ. අපගේ %1$s ගැන තව දැනගන්න.</string>
+  <!-- Text for the link used in onboarding_first_screen_privacy_notice_text -->
+  <string name="onboarding_first_screen_privacy_notice_link_2">රහස්‍යතා දැන්වීම</string>
+  <!-- New Onboarding flow first screen button label -->
+  <string name="onboarding_first_screen_button_agree_and_continue_2">ඉදිරියට</string>
   <!-- In the first screen of new onboarding flow, additional accessibility description for content that contain urls. -->
   <string name="a11y_link_available">සබැඳිය තිබේ</string>
   <!--
@@ -383,11 +409,22 @@
   <string name="notification_browsing_session_channel_description">ඔබගේ %1$s වාරය තට්ටු කිරීමකින් මකා දැමීමට දැනුම්දීම් ඔබට ඉඩ සලසයි. යෙදුම විවෘත කිරීමට හෝ ඔබගේ අතිරික්සුවෙහි ධාවනය වන දෑ බැලීමට අවශ්‍ය නොවේ.</string>
   <!-- Label for the option in the Focus "tabs tray" to clos the other tabs except the current tab. -->
   <string name="tabs_tray_action_erase_other">අන් පටිති වසන්න</string>
+  <!-- Label for the option in the Focus "tabs tray" to add a new tab. -->
+  <string name="tabs_tray_action_add_new_tab">නව පටිත්තක්</string>
   <!--
     If the user decides to open the current page in another browser and if Firefox is not installed then we show this
     item in the list of browsers. Clicking it will open the app store installed on the device (usually that's Google Play).
   -->
   <string name="download_firefox" tools:ignore="BrandUsage">ෆයර්ෆොක්ස් බාගන්න</string>
+  <!--
+    Text shown in Security Information Popup
+
+    %1$s will be replaced with the organization for which the certificate
+    used by the site was issued. For example, the certificate in use by
+    the site https://eidas.ec.europa.eu/ was issued to "The European
+    Commission".
+  -->
+  <string name="qualified_identity">සහතිකය නිකුත් කළේ: %1$s</string>
   <string name="preference_autocomplete_duplicate_url_error">ඒ.ස.නි. දැනටමත් පවතී</string>
   <!-- Label for the Find in page button -->
   <string name="find_in_page">පිටුවේ සොයන්න</string>
