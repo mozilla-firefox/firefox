@@ -141,9 +141,6 @@ https_first_disabled = true
 ["browser_html_warning_messages.js"]
 
 ["browser_installssl.js"]
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_local_install.js"]
 

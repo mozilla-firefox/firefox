@@ -35,6 +35,9 @@ function test() {
     cos.clearValidityOverride("self-signed.example.com", -1, {});
     cos.clearValidityOverride("untrusted.example.com", -1, {});
     cos.clearValidityOverride("expired.example.com", -1, {});
+    // Downloads that succeeded thanks to the overrides are cached, and a cache
+    // hit doesn't validate the certificate again.
+    Services.cache2.clear();
 
     if (gPendingInstall) {
       gTests = [];
