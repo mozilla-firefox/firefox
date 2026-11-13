@@ -302,13 +302,30 @@ HRESULT WMFClearKeyDecryptor::DecryptSample(IMFSample* aEncryptedSample,
       subsamples.push_back(entry);
     }
 
+    // The pattern attributes are only set when both values are non-zero.
+    UINT32 protectionScheme = MF_SAMPLE_ENCRYPTION_PROTECTION_SCHEME_AES_CTR;
+    UINT32 cryptByteBlock = 0;
+    UINT32 skipByteBlock = 0;
+    (void)aEncryptedSample->GetUINT32(
+        MFSampleExtension_Encryption_ProtectionScheme, &protectionScheme);
+    (void)aEncryptedSample->GetUINT32(
+        MFSampleExtension_Encryption_CryptByteBlock, &cryptByteBlock);
+    (void)aEncryptedSample->GetUINT32(
+        MFSampleExtension_Encryption_SkipByteBlock, &skipByteBlock);
+    const bool isCbcs =
+        protectionScheme == MF_SAMPLE_ENCRYPTION_PROTECTION_SCHEME_AES_CBC;
+    LOG("scheme=%s, pattern=%u:%u", isCbcs ? "cbcs" : "cenc", cryptByteBlock,
+        skipByteBlock);
+
     LONGLONG sampleTime = 0;
     aEncryptedSample->GetSampleTime(&sampleTime);
 
     cdm::InputBuffer_2 inputBuffer = {};
     inputBuffer.data = sampleData.data();
     inputBuffer.data_size = static_cast<uint32_t>(sampleData.size());
-    inputBuffer.encryption_scheme = cdm::EncryptionScheme::kCenc;
+    inputBuffer.encryption_scheme =
+        isCbcs ? cdm::EncryptionScheme::kCbcs : cdm::EncryptionScheme::kCenc;
+    inputBuffer.pattern = {cryptByteBlock, skipByteBlock};
     inputBuffer.key_id = keyId;
     inputBuffer.key_id_size = 16;
     inputBuffer.iv = ivData;
