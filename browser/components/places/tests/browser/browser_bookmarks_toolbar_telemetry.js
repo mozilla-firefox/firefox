@@ -9,6 +9,7 @@ const { TelemetryTestUtils } = ChromeUtils.importESModule(
 );
 
 const SCALAR_NAME = "browser.ui.customized_widgets";
+let initialCounts;
 const bookmarksInfo = [
   {
     title: "firefox",
@@ -41,6 +42,13 @@ add_task(async function test_bookmarks_toolbar_telemetry() {
     `Waiting for "bookmarks-bar_pinned_newtab" to appear in Telemetry snapshot`
   );
   ok(true, `"bookmarks-bar_pinned_newtab"=true found in Telemetry`);
+
+  // Keyed scalars aren't cleared between tests, so count from the values
+  // already recorded, e.g. by a previous run of this test.
+  initialCounts =
+    Services.telemetry.getSnapshotForKeyedScalars("main", false).parent[
+      SCALAR_NAME
+    ] ?? {};
 
   await changeToolbarVisibilityViaContextMenu("never");
   await assertUIChange(
@@ -116,6 +124,10 @@ add_task(async function test_bookmarks_toolbar_telemetry() {
   for (let win of extraWindows) {
     await BrowserTestUtils.closeWindow(win);
   }
+
+  // Popping the pref env doesn't update the toolbar state that
+  // BrowserUsageTelemetry remembers, so restore it through the UI.
+  await changeToolbarVisibilityViaContextMenu("newtab");
 });
 
 async function changeToolbarVisibilityViaContextMenu(nextState) {
@@ -141,6 +153,7 @@ async function changeToolbarVisibilityViaContextMenu(nextState) {
 }
 
 async function assertUIChange(key, value) {
+  value += initialCounts[key] ?? 0;
   await TestUtils.waitForCondition(
     () => keyedScalarExists(SCALAR_NAME, key, value),
     `Waiting for ${key} to appear in Telemetry snapshot`
