@@ -6,6 +6,7 @@ support-files = [
   "head.js",
   "dataChannel.js",
   "mediaStreamPlayback.js",
+  "srcObjectCorsTaint.js",
   "network.js",
   "nonTrickleIce.js",
   "pc.js",
@@ -147,6 +148,8 @@ run-if = [
 ]
 
 ["test_getUserMedia_spinEventLoop.html"]
+
+["test_getUserMedia_srcObjectCorsTaint.html"]
 
 ["test_getUserMedia_trackCloneCleanup.html"]
 
