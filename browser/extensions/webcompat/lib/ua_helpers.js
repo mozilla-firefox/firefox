@@ -47,7 +47,7 @@ var UAHelpers = {
   getFxQuantumSegment() {
     return `FxQuantum/${UAHelpers.getRunningFirefoxVersion()} `;
   },
-  _defaultChromeVersion: "148.0.0.0",
+  _defaultChromeVersion: "157.0.0.0",
   getDeviceAppropriateChromeUA(config = {}) {
     // see https://www.chromium.org/updates/ua-reduction/#reduced-user-agent-string-reference
     let {

@@ -4,7 +4,7 @@
 
 const ORIG_UA = navigator.userAgent;
 const ORIG_UA_VER = ORIG_UA.match("Firefox/((\d|\.)+)")[1];
-const CURRENT_CHROME_VER = "Chrome/148.0.0.0";
+const CURRENT_CHROME_VER = "Chrome/157.0.0.0";
 
 let UA = ORIG_UA;
 

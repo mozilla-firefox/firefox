@@ -29,7 +29,7 @@ if (!navigator.userAgent.includes("Chrome/")) {
     } else if (wantedPlatform == "linux") {
       osSegment = "X11; Linux x86_64";
     }
-    const final_ua = `Mozilla/5.0 (${osSegment}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 ${mobile}Safari/537.36`;
+    const final_ua = `Mozilla/5.0 (${osSegment}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/157.0.0.0 ${mobile}Safari/537.36`;
 
     const nav = Object.getPrototypeOf(navigator);
 
