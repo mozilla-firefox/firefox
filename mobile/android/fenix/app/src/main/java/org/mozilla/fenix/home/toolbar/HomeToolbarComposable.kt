@@ -195,10 +195,6 @@ internal class HomeToolbarComposable(
     @Composable
     private fun ColumnScope.AddressBar(wallpaperTextColor: Color?) {
         val isAddressBarVisible = remember { addressBarVisibility }
-        val isSearchActive = appStore.observeAsComposableState { it.searchState.isSearchActive }.value
-        val hasBottomStrip =
-            settings.shouldUseBottomToolbar &&
-                ((settings.shouldShowTabStripAtBottom && !isSearchActive) || settings.shouldShowTabGroupsStrip)
 
         Box {
             if (settings.isHomepageMiddleSearchEnabled) {
@@ -227,7 +223,7 @@ internal class HomeToolbarComposable(
                 BrowserToolbar(
                     store = toolbarStore,
                     browserActionsColor = wallpaperTextColor,
-                    showDivider = !hasBottomStrip,
+                    showDivider = false,
                 )
             }
         }
