@@ -2397,7 +2397,14 @@ bool DCSurfaceVideo::CalculateSwapChainSize(gfx::Matrix& aTransform) {
                       !contentIsHDR && monitorIsHDR && driverSupportsAutoHDR &&
                       powerIsCharging && !mVpAutoHDRFailed;
 
-  bool useHDR = gfx::gfxVars::WebRenderOverlayHDR() && contentIsHDR;
+  const bool contentIsHLG =
+      mRenderTextureHost->AsRenderDXGITextureHost()->GetTransferFunction() ==
+      gfx::TransferFunction::HLG;
+  // HLG is designed to be displayable as SDR, so only use an HDR swap chain
+  // for it on HDR monitors. PQ looks dull gray without one, so it always uses
+  // it.
+  bool useHDR = gfx::gfxVars::WebRenderOverlayHDR() && contentIsHDR &&
+                (monitorIsHDR || !contentIsHLG);
   // We can rely on the Desktop Window Manager (DWM) to handle RGB10A2 format
   // swapchains with BT2100 PQ color space, even if hardware overlays are not
   // supported it will convert for us, it also guarantees support for scRGB in
