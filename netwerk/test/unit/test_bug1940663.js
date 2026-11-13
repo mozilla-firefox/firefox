@@ -4,7 +4,9 @@
 
 "use strict";
 
-let h2Port;
+const { NodeHTTP2Server } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
 
 function makeChan(url) {
   let chan = NetUtil.newChannel({
@@ -24,27 +26,28 @@ function channelOpenPromise(chan, flags) {
   });
 }
 
-add_setup(async function setup() {
-  h2Port = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(h2Port, null);
-  Assert.notEqual(h2Port, "");
-
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
-
-  Services.prefs.setCharPref("network.dns.localDomains", "foo.example.com");
-
-  registerCleanupFunction(async () => {
-    Services.prefs.clearUserPref("network.dns.localDomains");
-  });
-});
-
+// The whole response is received over HTTP/2 before the server resets the
+// stream with HTTP_1_1_REQUIRED, so the response must be used as is.
 add_task(async function test_http_1_1() {
-  let chan = makeChan(
-    `https://foo.example.com:${h2Port}/h11required_with_content`
-  );
+  let server = new NodeHTTP2Server();
+  await server.start();
+  registerCleanupFunction(async () => {
+    await server.stop();
+  });
+
+  await server.registerPathHandler("/h11required_with_content", (req, res) => {
+    res.setHeader("Content-Type", "text/plain");
+    res.setHeader("Content-Length", "ok".length);
+    res.writeHead(200);
+    // Only reset the stream once the data has been sent, otherwise the reset
+    // could reach the client first.
+    res.write("ok", () => {
+      const http2 = require("http2");
+      res.stream.close(http2.constants.NGHTTP2_HTTP_1_1_REQUIRED);
+    });
+  });
+
+  let chan = makeChan(`${server.origin()}/h11required_with_content`);
   let [req, resp] = await channelOpenPromise(chan);
   Assert.equal(req.protocolVersion, "h2");
   Assert.equal(resp, "ok");
