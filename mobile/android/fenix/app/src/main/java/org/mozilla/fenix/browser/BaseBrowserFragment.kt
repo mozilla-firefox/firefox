@@ -245,7 +245,9 @@ import org.mozilla.fenix.pbmlock.observePrivateModeLock
 import org.mozilla.fenix.pdf.PdfToolsIntegration
 import org.mozilla.fenix.perf.MarkersFragmentLifecycleCallbacks
 import org.mozilla.fenix.search.awesomebar.AwesomeBarComposable
+import org.mozilla.fenix.settings.biometric.AutomotiveSensitiveDataAuthenticator
 import org.mozilla.fenix.settings.biometric.BiometricPromptFeature
+import org.mozilla.fenix.settings.biometric.DefaultAutomotiveSensitiveDataAuthenticator
 import org.mozilla.fenix.settings.downloads.DownloadLocationManager
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
@@ -332,6 +334,10 @@ abstract class BaseBrowserFragment :
     private val promptsFeature = ViewBoundFeatureWrapper<PromptFeature>()
 
     @VisibleForTesting internal val findInPageIntegration = ViewBoundFeatureWrapper<FindInPageIntegration>()
+
+    @VisibleForTesting
+    internal var sensitiveDataAuthenticator: AutomotiveSensitiveDataAuthenticator =
+        DefaultAutomotiveSensitiveDataAuthenticator()
     private val toolbarsIntegration = ViewBoundFeatureWrapper<ToolbarsIntegration>()
     private val pdfToolsIntegration = ViewBoundFeatureWrapper<PdfToolsIntegration>()
     private val bottomToolbarContainerIntegration = ViewBoundFeatureWrapper<BottomToolbarContainerIntegration>()
@@ -1121,6 +1127,10 @@ abstract class BaseBrowserFragment :
                                 val directions = NavGraphDirections.actionGlobalSavedLoginsAuthFragment()
                                 findNavController().navigate(directions)
                             }
+
+                            override val onSelectLogin = { onConfirm: () -> Unit, onDismiss: () -> Unit ->
+                                authenticateBeforeFillingLogin(onConfirm, onDismiss)
+                            }
                         },
                     suggestStrongPasswordDelegate =
                         object : SuggestStrongPasswordDelegate {
@@ -1836,6 +1846,22 @@ abstract class BaseBrowserFragment :
     }
 
     /** Shows a biometric prompt and fallback to prompting for the password. */
+    /**
+     * Fills a login selected from the select login prompt, asking the user to authenticate first when required.
+     *
+     * @param onConfirm Fills the selected login.
+     * @param onDismiss Dismisses the select login prompt without filling the login.
+     */
+    @VisibleForTesting
+    internal fun authenticateBeforeFillingLogin(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+        sensitiveDataAuthenticator.authenticate(
+            activity = requireActivity(),
+            title = getString(R.string.logins_biometric_prompt_autofill_message),
+            onAuthenticated = onConfirm,
+            onBlocked = onDismiss,
+        )
+    }
+
     private fun showBiometricPrompt(context: Context) {
         if (BiometricPromptFeature.canUseFeature(BiometricManager.from(context))) {
             biometricPromptFeature

@@ -80,8 +80,10 @@ class SavedLoginsAuthFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
             onPreferenceChangeListener =
                 object : SharedPreferenceUpdater() {
                     override fun onPreferenceChange(preference: Preference, newValue: Any?): Boolean {
-                        context.components.core.engine.settings.loginAutofillEnabled = newValue as Boolean
-                        return super.onPreferenceChange(preference, newValue)
+                        val result = super.onPreferenceChange(preference, newValue)
+                        context.components.core.engine.settings.loginAutofillEnabled =
+                            context.components.settings.shouldAutofillLoginsWithoutPrompt
+                        return result
                     }
                 }
         }

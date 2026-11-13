@@ -5,6 +5,7 @@
 package mozilla.components.feature.prompts.login
 
 import mozilla.components.browser.state.action.ContentAction
+import mozilla.components.browser.state.selector.findTabOrCustomTabOrSelectedTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.prompt.PromptRequest
 import mozilla.components.concept.storage.Login
@@ -25,12 +26,16 @@ import mozilla.components.support.base.log.logger.Logger
  * @property loginSelectBar The [AutocompletePrompt] view into which the select login "prompt" will be inflated.
  * @property manageLoginsCallback A callback invoked when a user selects "manage logins" from the select login prompt.
  * @property sessionId This is the id of the session which requested the prompt.
+ * @property selectLoginCallback A callback invoked when a user selects a login, before it is filled. See
+ *   [LoginDelegate.onSelectLogin].
  */
 internal class LoginPicker(
     private val store: BrowserStore,
     private val loginSelectBar: AutocompletePrompt<Login>,
     private val manageLoginsCallback: () -> Unit = {},
     private var sessionId: String? = null,
+    private val selectLoginCallback: (onConfirm: () -> Unit, onDismiss: () -> Unit) -> Unit =
+        object : LoginDelegate {}.onSelectLogin,
 ) : SelectablePromptView.Listener<Login> {
 
     init {
@@ -44,11 +49,32 @@ internal class LoginPicker(
     }
 
     override fun onOptionSelect(option: Login) {
-        store.consumePromptFrom<PromptRequest.SelectLoginPrompt>(sessionId) {
-            it.onConfirm(option)
-        }
-        emitLoginAutofillPerformedFact()
         loginSelectBar.hidePrompt()
+
+        // The callback can complete later, e.g. after the user authenticated, so only the request the login was
+        // selected from is completed, even if the page replaced it in the meantime.
+        val requestUid =
+            store.state
+                .findTabOrCustomTabOrSelectedTab(sessionId)
+                ?.content
+                ?.promptRequests
+                ?.lastOrNull { it is PromptRequest.SelectLoginPrompt }
+                ?.uid ?: return
+
+        selectLoginCallback(
+            {
+                store.consumePromptFrom(sessionId, requestUid) {
+                    (it as PromptRequest.SelectLoginPrompt).onConfirm(option)
+                    emitLoginAutofillPerformedFact()
+                }
+            },
+            {
+                store.consumePromptFrom(sessionId, requestUid) {
+                    (it as PromptRequest.SelectLoginPrompt).onDismiss()
+                    emitLoginAutofillDismissedFact()
+                }
+            },
+        )
     }
 
     override fun onManageOptions() {

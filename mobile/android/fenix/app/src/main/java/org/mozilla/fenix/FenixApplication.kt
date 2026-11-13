@@ -740,14 +740,14 @@ open class FenixApplication : Application(), Provider, ThemeProvider {
 
     /**
      * Registers or unregisters [AutofillService] so the application is only offered as an Android autofill service on
-     * devices where autofill is supported. The component enabled state is persisted by the system across application
-     * updates, so it has to be restored when autofill becomes supported again. Third party autofill services are
-     * unaffected.
+     * devices where autofill is supported. It stays disabled on Android Automotive OS, which does not let users select
+     * an autofill service. The component enabled state is persisted by the system across application updates, so it has
+     * to be restored when autofill becomes supported again. Third party autofill services are unaffected.
      */
     private fun updateAutofillServiceState() {
         val service = ComponentName(this, AutofillService::class.java)
         val state =
-            if (components.settings.isAutofillSupported) {
+            if (components.settings.isAutofillSupported && !isAndroidAutomotiveAvailable()) {
                 PackageManager.COMPONENT_ENABLED_STATE_DEFAULT
             } else {
                 PackageManager.COMPONENT_ENABLED_STATE_DISABLED
