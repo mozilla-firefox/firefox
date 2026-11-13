@@ -843,6 +843,8 @@ class RefTest:
         valgrindPath=None,
         valgrindArgs=None,
         valgrindSuppFiles=None,
+        checkLeaks=False,
+        leakScope=None,
         **profileArgs,
     ):
         if cmdargs is None:
@@ -1001,6 +1003,18 @@ class RefTest:
             msg = "application terminated with exit code %s" % (status)
             self.log.shutdown_failure(group=self.lastTestSeen, message=msg)
 
+        # The leak logs live in the profile, so process them before removing it.
+        # Do not process them when we crash/assert.
+        if checkLeaks and status == 0:
+            mozleak.process_leak_log(
+                self.leakLogFile,
+                leak_thresholds=options.leakThresholds,
+                stack_fixer=get_stack_fixer_function(
+                    options.utilityPath, options.symbolsPath
+                ),
+                scope=leakScope or options.suite,
+            )
+
         runner.cleanup()
         self.cleanup(profile.profile)
 
@@ -1076,18 +1090,9 @@ class RefTest:
                 timeout=options.timeout + 70.0,
                 debuggerInfo=debuggerInfo,
                 symbolsPath=options.symbolsPath,
+                checkLeaks=True,
                 **kwargs,
             )
-
-            # do not process leak log when we crash/assert
-            if status == 0:
-                mozleak.process_leak_log(
-                    self.leakLogFile,
-                    leak_thresholds=options.leakThresholds,
-                    stack_fixer=get_stack_fixer_function(
-                        options.utilityPath, options.symbolsPath
-                    ),
-                )
             return status
 
         if not self.run_by_manifest:
@@ -1121,7 +1126,7 @@ class RefTest:
             self.currentManifest = manifest
             self.currentManifestID = manifest_id
             self.lastTestSeen = manifest
-            status = run(tests=tests)
+            status = run(tests=tests, leakScope=manifest_id)
             overall = overall or status
             self.log.group_end(name=manifest_id)
         if status == -1:

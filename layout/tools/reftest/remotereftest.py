@@ -411,6 +411,8 @@ class RemoteReftest(RefTest):
         valgrindPath=None,
         valgrindArgs=None,
         valgrindSuppFiles=None,
+        checkLeaks=False,
+        leakScope=None,
         **profileArgs,
     ):
         if cmdargs is None:

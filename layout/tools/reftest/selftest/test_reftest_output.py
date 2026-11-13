@@ -163,6 +163,7 @@ def test_output_leak(monkeypatch, runtests):
     assert len(leaks) == 1
     assert leaks[0]["process"] == "default"
     assert leaks[0]["bytes"] == 19915
+    assert leaks[0]["scope"]
 
 
 if __name__ == "__main__":
