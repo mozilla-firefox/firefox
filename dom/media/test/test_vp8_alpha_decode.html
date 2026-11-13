@@ -1,0 +1,150 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Alpha VP8 decodes to the expected pixels</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+// Decode a small alpha VP8 clip and confirm every decoded frame is the neutral
+// gray the test video encodes. The test video is built by generate_vp8_alpha_webm.py
+// in this directory.
+
+// The test video is 16x16: a single VP8 macroblock (see generate_vp8_alpha_webm.py,
+// PixelWidth/PixelHeight). The canvas matches so drawImage is 1:1 and never
+// scales the sampled pixels.
+const WIDTH = 16;
+const HEIGHT = 16;
+
+// Interior sample points. The in-loop deblocking filter can perturb the
+// outermost pixels of a block, so the checks stay a few pixels off the edges.
+const SAMPLE_POINTS = [[4, 4], [8, 8], [11, 11], [8, 4], [4, 11]];
+
+// Every frame in the test video decodes to a uniform neutral gray: Y=U=V=128. With
+// chroma at the midpoint the YUV->RGB matrix terms cancel, so BT.601/709/2020 all
+// yield R=G=B=luma; only the luma range moves the value (full=128, limited~=130).
+// That bounds the deviation at ~2, ~3 with decode/GPU rounding, so 8 is a safe cap
+// far below an incorrectly decoded plane (which lands >100 off in a channel).
+const GRAY = 128;
+const GRAY_TOL = 8;
+
+// Frames are also compared against each other. Both use the same stream and the
+// same conversion, so R=G=B is identical across frames up to rounding.
+const MATCH_TOL = 8;
+
+function isNeutralGray([r, g, b], tol = GRAY_TOL) {
+  return Math.abs(r - GRAY) <= tol &&
+         Math.abs(g - GRAY) <= tol &&
+         Math.abs(b - GRAY) <= tol;
+}
+
+function channelsClose(a, b, tol = MATCH_TOL) {
+  return Math.abs(a[0] - b[0]) <= tol &&
+         Math.abs(a[1] - b[1]) <= tol &&
+         Math.abs(a[2] - b[2]) <= tol;
+}
+
+function describe(rgb) {
+  return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+}
+
+add_task(async function vp8_alpha_decodes_to_expected_pixels() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      // Allow the muted video to start decoding without a user gesture.
+      ["media.autoplay.default", 0],
+      ["media.autoplay.blocking_policy", 0],
+    ],
+  });
+
+  const video = document.createElement("video");
+  video.muted = true;
+  video.playsInline = true;
+  video.src = "vp8_alpha_decode.webm";
+  document.body.appendChild(video);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+
+  // getImageData always returns non-premultiplied RGBA (a Uint8ClampedArray in
+  // R,G,B,A order) regardless of platform, so [0..2] are R,G,B; there is no
+  // BGRA/BGRX variant to guard against.
+  function samplePixel(x, y) {
+    return Array.from(context.getImageData(x, y, 1, 1).data).slice(0, 3);
+  }
+  function drawCurrentFrame() {
+    context.clearRect(0, 0, WIDTH, HEIGHT);
+    context.drawImage(video, 0, 0, WIDTH, HEIGHT);
+  }
+  function sampleFrame() {
+    drawCurrentFrame();
+    return SAMPLE_POINTS.map(([x, y]) => samplePixel(x, y));
+  }
+  function checkGray(label, samples) {
+    SAMPLE_POINTS.forEach(([x, y], i) => {
+      ok(isNeutralGray(samples[i]),
+         `${label} pixel (${x},${y}) is neutral gray, got ` +
+         `${describe(samples[i])}`);
+    });
+  }
+
+  // Capture every presented frame's samples, keyed by mediaTime, so each decoded
+  // frame is checked rather than only the final one.
+  const framesByTime = new Map();
+  // The requestVideoFrameCallback signature is (now, metadata); `now` is unused
+  // but must be named to reach the metadata argument.
+  function capture(_now, metadata) {
+    framesByTime.set(metadata.mediaTime, sampleFrame());
+    video.requestVideoFrameCallback(capture);
+  }
+  video.requestVideoFrameCallback(capture);
+
+  const ended = new Promise((resolve, reject) => {
+    video.addEventListener("ended", resolve, { once: true });
+    video.addEventListener("error", () => reject(video.error), { once: true });
+  });
+
+  await video.play();
+  await ended;
+
+  isnot(video.videoWidth, 0, "video decoded with a non-zero width");
+  is(video.videoWidth, WIDTH, "decoded width matches the test video");
+  is(video.videoHeight, HEIGHT, "decoded height matches the test video");
+
+  // The final displayed frame is always checkable, even if rVFC missed one.
+  checkGray("final frame", sampleFrame());
+
+  const times = [...framesByTime.keys()].sort((a, b) => a - b);
+  info(`Captured ${times.length} presented frame(s) at mediaTimes ` +
+       `[${times.join(", ")}]`);
+  ok(times.length >= 1, "at least one frame was presented");
+
+  // Every captured frame must be neutral gray and match the first (reference)
+  // frame at every sample point. Guarded so an environment that never fires
+  // requestVideoFrameCallback fails the check above rather than throwing here;
+  // the final-frame check above still validates the decode regardless.
+  if (times.length >= 1) {
+    const reference = framesByTime.get(times[0]);
+    checkGray("reference frame", reference);
+    for (const t of times) {
+      const frame = framesByTime.get(t);
+      checkGray(`frame @${t}`, frame);
+      SAMPLE_POINTS.forEach(([x, y], i) => {
+        ok(channelsClose(frame[i], reference[i]),
+           `frame @${t} pixel (${x},${y}) ${describe(frame[i])} matches ` +
+           `reference ${describe(reference[i])}`);
+      });
+    }
+  }
+});
+
+</script>
+</pre>
+</body>
+</html>

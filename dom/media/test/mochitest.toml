@@ -705,6 +705,7 @@ support-files = [
   "very-short.mp3",
   "video-overhang.ogg",
   "video-overhang.ogg^headers^",
+  "vp8_alpha_decode.webm",
   "vp9-superframes.webm",
   "vp9-superframes.webm^headers^",
   "vp9.webm",
@@ -1021,6 +1022,11 @@ skip-if = [
 ["test_video_to_canvas.html"]
 skip-if = [
   "os == 'android'", # android(bug 1232305), bugs 1320418,1347953,1347954,1348140,1348386
+]
+
+["test_vp8_alpha_decode.html"]
+skip-if = [
+  "os == 'android'", # drawImage(video) can yield black frames (see test_seamless_looping_video.html).
 ]
 
 ["test_vp9_buffer_overread.html"]
