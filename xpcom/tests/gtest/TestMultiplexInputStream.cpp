@@ -1007,6 +1007,59 @@ TEST(MultiplexInputStream, Seek_CUR_Backward_To_Start)
   ASSERT_EQ(0, strncmp(readBuf, "HelloWorld", 10));
 }
 
+// Reading exactly Available() bytes leaves the multiplex stream positioned in
+// its last stream rather than past it; seeking to 0 from there must still
+// reset the read state.
+TEST(MultiplexInputStream, Seek_SET_To_Start_After_Reading_Available)
+{
+  nsCOMPtr<nsIInputStream> inputStream1;
+  nsCOMPtr<nsIInputStream> inputStream2;
+  nsresult rv =
+      NS_NewCStringInputStream(getter_AddRefs(inputStream1), "Hello"_ns);
+  ASSERT_NS_SUCCEEDED(rv);
+  rv = NS_NewCStringInputStream(getter_AddRefs(inputStream2), "World"_ns);
+  ASSERT_NS_SUCCEEDED(rv);
+
+  nsCOMPtr<nsIMultiplexInputStream> multiplexStream =
+      do_CreateInstance("@mozilla.org/io/multiplex-input-stream;1");
+  ASSERT_TRUE(multiplexStream);
+  nsCOMPtr<nsIInputStream> stream(do_QueryInterface(multiplexStream));
+  ASSERT_TRUE(stream);
+
+  rv = multiplexStream->AppendStream(inputStream1);
+  ASSERT_NS_SUCCEEDED(rv);
+  rv = multiplexStream->AppendStream(inputStream2);
+  ASSERT_NS_SUCCEEDED(rv);
+
+  nsCOMPtr<nsISeekableStream> seekStream = do_QueryInterface(multiplexStream);
+  ASSERT_TRUE(seekStream);
+
+  uint64_t available;
+  rv = stream->Available(&available);
+  ASSERT_NS_SUCCEEDED(rv);
+  ASSERT_EQ(10u, available);
+
+  char readBuf[4096];
+  uint32_t count;
+  rv = stream->Read(readBuf, available, &count);
+  ASSERT_NS_SUCCEEDED(rv);
+  ASSERT_EQ(10u, count);
+  ASSERT_FALSE(NS_InputStreamIsCloneable(stream));
+
+  rv = seekStream->Seek(nsISeekableStream::NS_SEEK_SET, 0);
+  ASSERT_NS_SUCCEEDED(rv);
+  ASSERT_TRUE(NS_InputStreamIsCloneable(stream));
+
+  nsCOMPtr<nsIInputStream> clone;
+  rv = NS_CloneInputStream(stream, getter_AddRefs(clone));
+  ASSERT_NS_SUCCEEDED(rv);
+
+  rv = clone->Read(readBuf, sizeof(readBuf), &count);
+  ASSERT_NS_SUCCEEDED(rv);
+  ASSERT_EQ(10u, count);
+  ASSERT_EQ(0, strncmp(readBuf, "HelloWorld", 10));
+}
+
 TEST(MultiplexInputStream, ReadWhileWaiting_nsPipe)
 {
   nsCOMPtr<nsIAsyncInputStream> pipeIn;
