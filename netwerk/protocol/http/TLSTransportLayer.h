@@ -55,7 +55,9 @@ class TLSTransportLayer final : public nsISocketTransport,
                              nsIAsyncInputStream* aInputStream,
                              nsIAsyncOutputStream* aOutputStream,
                              nsIInputStreamCallback* aOwner);
-  bool Init(const char* aTLSHost, int32_t aTLSPort);
+  bool Init(const char* aTLSHost, int32_t aTLSPort,
+            const OriginAttributes& aOriginAttributes, uint32_t aFlags,
+            uint32_t aTlsFlags);
   already_AddRefed<nsIAsyncInputStream> GetInputStreamWrapper() {
     nsCOMPtr<nsIAsyncInputStream> stream = &mSocketInWrapper;
     return stream.forget();

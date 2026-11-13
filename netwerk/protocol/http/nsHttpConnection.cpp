@@ -27,6 +27,7 @@
 #include "nsHttpResponseHead.h"
 #include "nsIClassOfService.h"
 #include "nsIOService.h"
+#include "nsISocketProvider.h"
 #include "nsISocketTransport.h"
 #include "nsISupportsPriority.h"
 #include "nsITLSSocketControl.h"
@@ -2075,9 +2076,34 @@ void nsHttpConnection::SetupSecondaryTLS() {
   }
   MOZ_ASSERT(ci);
 
+  uint32_t controlFlags = 0;
+  if (mTransactionCaps & NS_HTTP_LOAD_ANONYMOUS) {
+    controlFlags |= nsISocketProvider::ANONYMOUS_CONNECT;
+  }
+  if ((mTransactionCaps & NS_HTTP_LOAD_ANONYMOUS_CONNECT_ALLOW_CLIENT_CERT) ||
+      ci->GetAnonymousAllowClientCert()) {
+    controlFlags |= nsISocketProvider::ANONYMOUS_CONNECT_ALLOW_CLIENT_CERT;
+  }
+  if (ci->GetPrivate()) {
+    controlFlags |= nsISocketProvider::NO_PERMANENT_STORAGE;
+  }
+  if (mTransactionCaps & NS_HTTP_DISALLOW_ECH) {
+    controlFlags |= nsISocketProvider::DONT_TRY_ECH;
+  }
+  if (mTransactionCaps & NS_HTTP_IS_RETRY) {
+    controlFlags |= nsISocketProvider::IS_RETRY;
+  }
+  if (((mTransactionCaps & NS_HTTP_BE_CONSERVATIVE) ||
+       ci->GetBeConservative()) &&
+      gHttpHandler->ConnMgr()->BeConservativeIfProxied(ci->ProxyInfo())) {
+    controlFlags |= nsISocketProvider::BE_CONSERVATIVE;
+  }
+
   RefPtr<TLSTransportLayer> transportLayer =
       new TLSTransportLayer(mSocketTransport, mSocketIn, mSocketOut, this);
-  if (transportLayer->Init(ci->Origin(), ci->OriginPort())) {
+  if (transportLayer->Init(ci->Origin(), ci->OriginPort(),
+                           ci->GetOriginAttributes(), controlFlags,
+                           ci->GetTlsFlags())) {
     mSocketIn = transportLayer->GetInputStreamWrapper();
     mSocketOut = transportLayer->GetOutputStreamWrapper();
     mSocketTransport = transportLayer;

@@ -399,7 +399,9 @@ TLSTransportLayer::~TLSTransportLayer() {
   mTLSSocketControl = nullptr;
 }
 
-bool TLSTransportLayer::Init(const char* aTLSHost, int32_t aTLSPort) {
+bool TLSTransportLayer::Init(const char* aTLSHost, int32_t aTLSPort,
+                             const OriginAttributes& aOriginAttributes,
+                             uint32_t aFlags, uint32_t aTlsFlags) {
   LOG(("TLSTransportLayer::Init this=[%p]", this));
   nsCOMPtr<nsISocketProvider> provider;
   nsCOMPtr<nsISocketProviderService> spserv =
@@ -441,8 +443,8 @@ bool TLSTransportLayer::Init(const char* aTLSHost, int32_t aTLSPort) {
   mFD->secret = reinterpret_cast<PRFilePrivate*>(this);
 
   return NS_SUCCEEDED(provider->AddToSocket(
-      PR_AF_INET, aTLSHost, aTLSPort, nullptr, OriginAttributes(), 0, 0, mFD,
-      getter_AddRefs(mTLSSocketControl)));
+      PR_AF_INET, aTLSHost, aTLSPort, nullptr, aOriginAttributes, aFlags,
+      aTlsFlags, mFD, getter_AddRefs(mTLSSocketControl)));
 }
 
 // PSM's poll method cannot report errors: once the handshake has failed it
