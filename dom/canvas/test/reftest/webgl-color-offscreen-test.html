@@ -83,7 +83,13 @@ function runFrame(gl, frameCount, maxFrameCount) {
 
   if (frameCount >= maxFrameCount) {
     console.log('Rendered ' + frameCount + ' frames.');
-    markComplete();
+    // OffscreenCanvas commits its frame asynchronously, so give the last frame
+    // time to reach the compositor before the snapshot is taken.
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        markComplete();
+      });
+    });
     return;
   }
 
