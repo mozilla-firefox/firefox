@@ -3831,6 +3831,7 @@ toolbar#nav-bar {
             "http3": options.useHttp3Server,
             "http2": options.useHttp2Server,
             "inc_origin_init": os.environ.get("MOZ_ENABLE_INC_ORIGIN_INIT") == "1",
+            "repeat": options.repeat > 0 and not options.verify,
             "sessionHistoryInParent": True,
             "standalone": options.restartBetweenTests,
             "swgl": self.extraPrefs.get("gfx.webrender.software", False),
