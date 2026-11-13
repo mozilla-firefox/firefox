@@ -1,0 +1,52 @@
+# Google Cloud Documentation: https://cloud.google.com/sdk/gcloud/reference/firebase/test/android/run
+# Flank Documentation: https://flank.github.io/flank/
+gcloud:
+  results-bucket: fenix_test_artifacts
+  record-video: true
+  timeout: 30m
+  async: false
+  num-flaky-test-attempts: 1
+
+  app: /app/path
+  test: /test/path
+
+  auto-google-login: false
+  use-orchestrator: true
+  environment-variables:
+    clearPackageData: true
+    detect-leaks: true # enables memory leak checks in DetectMemoryLeaksRule
+    # Shared storage, deliberately. clearPackageData above runs `pm clear` between
+    # tests, which deletes the app-scoped external directories --- a report written
+    # to Android/media/<pkg> is gone before the harness pulls it. Leak traces land
+    # in a memory_leaks subdirectory of this path; keep the directories-to-pull
+    # entry below and the MEMORY_LEAKS glob in copy-artifacts-from-ftl.py in step.
+    additionalTestOutputDir: /sdcard/Download
+  directories-to-pull:
+    - /sdcard/screenshots
+    - /sdcard/Download/memory_leaks
+  performance-metrics: true
+  other-files:
+    /data/local/tmp/org.mozilla.fenix.debug-geckoview-config.yaml: geckoview-configs/org.mozilla.fenix.debug-geckoview-config.yaml
+
+  test-targets:
+    - package org.mozilla.fenix.ui
+    - package org.mozilla.fenix.ui.efficiency.tests
+    - package org.mozilla.fenix.ui.efficiency.core
+    - notAnnotation org.mozilla.fenix.customannotations.Converted
+    - notPackage org.mozilla.fenix.ui.efficiency.devtools
+    - notPackage org.mozilla.fenix.ui.efficiency.examples
+    - notPackage org.mozilla.fenix.ui.efficiency.generation
+
+  device:
+    - model: MediumPhone.arm
+      version: 34
+      locale: en_US
+
+  parameterized-tests: default
+
+flank:
+  project: GOOGLE_PROJECT
+  max-test-shards: 100
+  num-test-runs: 1
+  output-style: compact
+  full-junit-result: true

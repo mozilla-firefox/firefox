@@ -276,7 +276,7 @@ tasks:
         shipping-product: firefox-android
         shipping-phase: promote
         run-on-projects: []
-        description: TAE UI test suite for Fenix beta release sign-off
+        description: Full test suite for Fenix beta release sign-off
         dependencies:
             signed-apk-debug-apk: signing-apk-fenix-beta-firebase
             signed-apk-android-test: signing-apk-fenix-android-test-beta
@@ -287,7 +287,7 @@ tasks:
             signed-apk-android-test:
                 - artifact: target.noarch.apk
                   extract: false
-        flank-config: fenix/arm-tae-tests.yml
+        flank-config: fenix/arm-signoff-tests.yml
         treeherder:
             symbol: fenix-beta(ui-test-signoff)
 
@@ -301,7 +301,7 @@ tasks:
         shipping-product: firefox-android
         shipping-phase: promote
         run-on-projects: []
-        description: TAE UI test suite for Fenix release sign-off
+        description: Full test suite for Fenix release sign-off
         dependencies:
             signed-apk-debug-apk: signing-apk-fenix-beta-firebase
             signed-apk-android-test: signing-apk-fenix-android-test-beta
@@ -312,7 +312,7 @@ tasks:
             signed-apk-android-test:
                 - artifact: target.noarch.apk
                   extract: false
-        flank-config: fenix/arm-tae-tests.yml
+        flank-config: fenix/arm-signoff-tests.yml
         treeherder:
             symbol: fenix-release(ui-test-signoff)
 
