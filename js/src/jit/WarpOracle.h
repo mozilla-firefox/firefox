@@ -12,6 +12,7 @@
 namespace js {
 
 class ObjectFuse;
+class Scope;
 
 namespace jit {
 
@@ -54,6 +55,15 @@ class MOZ_STACK_CLASS WarpOracle {
       HashMap<gc::Cell*, uint32_t, DefaultHasher<gc::Cell*>, SystemAllocPolicy>;
   NurseryValuesMap nurseryValuesMap_;
 
+  // The first environment object slot for a scope's immutable bindings. These
+  // bindings are stored last, so every slot >= FirstImmutableSlot::slot is
+  // immutable.
+  struct FirstImmutableSlot {
+    Scope* scope;
+    uint32_t slot;
+  };
+  Vector<FirstImmutableSlot, 4, SystemAllocPolicy> firstImmutableSlots_;
+
  public:
   WarpOracle(JSContext* cx, MIRGenerator& mirGen, HandleScript outerScript);
   ~WarpOracle() { scriptSnapshots_.clear(); }
@@ -66,6 +76,8 @@ class MOZ_STACK_CLASS WarpOracle {
   [[nodiscard]] bool registerNurseryValue(Value v, uint32_t* nurseryIndex);
 
   [[nodiscard]] bool snapshotJitZoneStub(JitZone::StubKind kind);
+
+  bool isImmutableEnvironmentSlot(Scope* scope, uint32_t slot);
 
   [[nodiscard]] bool addFuseDependency(RealmFuses::FuseIndex fuseIndex);
   [[nodiscard]] bool addFuseDependency(RuntimeFuses::FuseIndex fuseIndex);

@@ -38,6 +38,7 @@ class WarpScriptSnapshot;
   _(WarpBuiltinObject)                  \
   _(WarpGetIntrinsic)                   \
   _(WarpGetImport)                      \
+  _(WarpConstantBinding)                \
   _(WarpRest)                           \
   _(WarpBindUnqualifiedGName)           \
   _(WarpVarEnvironment)                 \
@@ -197,6 +198,30 @@ class WarpGetImport : public WarpOpSnapshot {
   uint32_t numFixedSlots() const { return numFixedSlots_; }
   uint32_t slot() const { return slot_; }
   bool needsLexicalCheck() const { return needsLexicalCheck_; }
+
+  void traceData(JSTracer* trc);
+
+#ifdef JS_JITSPEW
+  void dumpData(GenericPrinter& out) const;
+#endif
+};
+
+// The constant Value or nursery object index for JSOp::GetAliasedVar.
+class WarpConstantBinding : public WarpOpSnapshot {
+  mozilla::Variant<OffthreadGCPtr<Value>, uint32_t> value_;
+
+ public:
+  static constexpr Kind ThisKind = Kind::WarpConstantBinding;
+
+  WarpConstantBinding(uint32_t offset, const Value& value)
+      : WarpOpSnapshot(ThisKind, offset),
+        value_(OffthreadGCPtr<Value>(value)) {}
+  WarpConstantBinding(uint32_t offset, uint32_t nurseryIndex)
+      : WarpOpSnapshot(ThisKind, offset), value_(nurseryIndex) {}
+
+  bool isNurseryObject() const { return value_.is<uint32_t>(); }
+  uint32_t nurseryIndex() const { return value_.as<uint32_t>(); }
+  Value value() const { return value_.as<OffthreadGCPtr<Value>>(); }
 
   void traceData(JSTracer* trc);
 

@@ -2091,7 +2091,22 @@ MDefinition* WarpBuilder::walkEnvironmentChain(uint32_t numHops) {
   return env;
 }
 
+void WarpBuilder::pushConstantBinding(const WarpConstantBinding* snapshot) {
+  if (snapshot->isNurseryObject()) {
+    auto* obj = MNurseryObject::New(alloc(), snapshot->nurseryIndex());
+    current->add(obj);
+    current->push(obj);
+    return;
+  }
+  pushConstant(snapshot->value());
+}
+
 bool WarpBuilder::build_GetAliasedVar(BytecodeLocation loc) {
+  if (auto* snapshot = getOpSnapshot<WarpConstantBinding>(loc)) {
+    pushConstantBinding(snapshot);
+    return true;
+  }
+
   EnvironmentCoordinate ec = loc.getEnvironmentCoordinate();
   MDefinition* obj = walkEnvironmentChain(ec.hops());
   if (!obj) {

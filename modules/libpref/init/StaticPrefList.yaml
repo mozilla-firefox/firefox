@@ -9944,6 +9944,13 @@
   mirror: always
   set_spidermonkey_pref: startup
 
+# Whether Warp optimizes environment objects that are known at compile time.
+- name: javascript.options.ion.environment_specialization
+  type: bool
+  value: true
+  mirror: always
+  set_spidermonkey_pref: startup
+
 # No-op pref for testing the SpiderMonkey pref system.
 - name: javascript.options.tests.uint32-pref
   type: uint32_t

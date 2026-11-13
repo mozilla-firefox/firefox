@@ -128,6 +128,9 @@ SharedShape* js::CreateEnvironmentShape(JSContext* cx, BindingIter& bi,
                                         ObjectFlags objectFlags) {
   Rooted<SharedPropMap*> map(cx);
   uint32_t mapLength = 0;
+#ifdef DEBUG
+  bool sawNonWritable = false;
+#endif
 
   RootedId id(cx);
   for (; bi; bi++) {
@@ -140,6 +143,15 @@ SharedShape* js::CreateEnvironmentShape(JSContext* cx, BindingIter& bi,
                                &mapLength, &objectFlags)) {
         return nullptr;
       }
+#ifdef DEBUG
+      // Immutable bindings must be stored after all mutable bindings. We rely
+      // on this in WarpOracle::isImmutableEnvironmentSlot.
+      bool writable = map->getPropertyInfo(mapLength - 1).writable();
+      MOZ_ASSERT_IF(sawNonWritable, !writable);
+      if (!writable) {
+        sawNonWritable = true;
+      }
+#endif
     }
   }
 

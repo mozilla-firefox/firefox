@@ -2297,7 +2297,7 @@ bool IRGenerator::canOptimizeConstantDataProperty(NativeObject* holder,
   // Warp supports nursery objects and strings. Strings are atomized below,
   // and if that were not the case, WarpOracle would handle it. Warp does not
   // support nursery BigInts, a very uncommon case, so we currently don't
-  // optimize such properties.
+  // optimize such properties (bug 2092482).
   Value result = holder->getSlot(prop.slot());
   if (result.isGCThing() && !result.toGCThing()->isTenured() &&
       !result.isObject() && !result.isString()) {
