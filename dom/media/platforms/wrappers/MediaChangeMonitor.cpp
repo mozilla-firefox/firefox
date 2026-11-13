@@ -1120,8 +1120,8 @@ RefPtr<ShutdownPromise> MediaChangeMonitor::ShutdownDecoder() {
 
 bool MediaChangeMonitor::IsHardwareAccelerated(
     nsACString& aFailureReason) const {
-  if (mDecoder) {
-    return mDecoder->IsHardwareAccelerated(aFailureReason);
+  if (RefPtr<MediaDataDecoder> decoder = GetDecoderOnNonOwnerThread()) {
+    return decoder->IsHardwareAccelerated(aFailureReason);
   }
 #ifdef MOZ_APPLEMEDIA
   // On mac, we can assume H264 is hardware accelerated for now.
@@ -1431,7 +1431,8 @@ void MediaChangeMonitor::FlushThenShutdownDecoder(
       ->Track(mFlushRequest);
 }
 
-MediaDataDecoder* MediaChangeMonitor::GetDecoderOnNonOwnerThread() const {
+RefPtr<MediaDataDecoder> MediaChangeMonitor::GetDecoderOnNonOwnerThread()
+    const {
   MutexAutoLock lock(mMutex);
   return mDecoder;
 }
