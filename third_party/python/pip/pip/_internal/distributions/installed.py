@@ -6,7 +6,7 @@ from pip._internal.distributions.base import AbstractDistribution
 from pip._internal.metadata import BaseDistribution
 
 if TYPE_CHECKING:
-    from pip._internal.build_env import BuildEnvironmentInstaller
+    from pip._internal.build_env import BuildEnvironmentInstaller, BuildIsolationMode
 
 
 class InstalledDistribution(AbstractDistribution):
@@ -27,7 +27,8 @@ class InstalledDistribution(AbstractDistribution):
     def prepare_distribution_metadata(
         self,
         build_env_installer: BuildEnvironmentInstaller,
-        build_isolation: bool,
+        build_isolation: BuildIsolationMode,
         check_build_deps: bool,
+        allow_editables: bool,
     ) -> None:
         pass

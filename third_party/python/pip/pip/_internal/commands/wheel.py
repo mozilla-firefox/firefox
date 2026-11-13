@@ -11,7 +11,6 @@ from pip._internal.exceptions import CommandError
 from pip._internal.operations.build.build_tracker import get_build_tracker
 from pip._internal.req.req_install import (
     InstallRequirement,
-    check_legacy_setup_py_options,
 )
 from pip._internal.utils.misc import ensure_dir, normalize_path
 from pip._internal.utils.temp_dir import TempDirectory
@@ -52,19 +51,18 @@ class WheelCommand(RequirementCommand):
                 "current working directory."
             ),
         )
-        self.cmd_opts.add_option(cmdoptions.no_binary())
-        self.cmd_opts.add_option(cmdoptions.only_binary())
-        self.cmd_opts.add_option(cmdoptions.prefer_binary())
         self.cmd_opts.add_option(cmdoptions.no_build_isolation())
         self.cmd_opts.add_option(cmdoptions.use_pep517())
-        self.cmd_opts.add_option(cmdoptions.no_use_pep517())
         self.cmd_opts.add_option(cmdoptions.check_build_deps())
         self.cmd_opts.add_option(cmdoptions.constraints())
+        self.cmd_opts.add_option(cmdoptions.build_constraints())
         self.cmd_opts.add_option(cmdoptions.editable())
         self.cmd_opts.add_option(cmdoptions.requirements())
+        self.cmd_opts.add_option(cmdoptions.requirements_from_scripts())
         self.cmd_opts.add_option(cmdoptions.src())
         self.cmd_opts.add_option(cmdoptions.ignore_requires_python())
         self.cmd_opts.add_option(cmdoptions.no_deps())
+        self.cmd_opts.add_option(cmdoptions.only_deps())
         self.cmd_opts.add_option(cmdoptions.progress_bar())
 
         self.cmd_opts.add_option(
@@ -76,31 +74,30 @@ class WheelCommand(RequirementCommand):
         )
 
         self.cmd_opts.add_option(cmdoptions.config_settings())
-        self.cmd_opts.add_option(cmdoptions.build_options())
-        self.cmd_opts.add_option(cmdoptions.global_options())
-
-        self.cmd_opts.add_option(
-            "--pre",
-            action="store_true",
-            default=False,
-            help=(
-                "Include pre-release and development versions. By default, "
-                "pip only finds stable versions."
-            ),
-        )
 
         self.cmd_opts.add_option(cmdoptions.require_hashes())
+        self.cmd_opts.add_option(cmdoptions.no_require_hashes())
 
         index_opts = cmdoptions.make_option_group(
             cmdoptions.index_group,
             self.parser,
         )
 
+        selection_opts = cmdoptions.make_option_group(
+            cmdoptions.package_selection_group,
+            self.parser,
+        )
+
         self.parser.insert_option_group(0, index_opts)
+        self.parser.insert_option_group(0, selection_opts)
         self.parser.insert_option_group(0, self.cmd_opts)
 
     @with_cleanup
     def run(self, options: Values, args: list[str]) -> int:
+        self.check_build_constraints(options)
+        cmdoptions.check_release_control_exclusive(options)
+        cmdoptions.check_only_deps_option_does_not_conflict(options)
+
         session = self.get_default_session(options)
 
         finder = self._build_package_finder(options, session)
@@ -117,7 +114,6 @@ class WheelCommand(RequirementCommand):
         )
 
         reqs = self.get_requirements(args, options, finder, session)
-        check_legacy_setup_py_options(options, reqs)
 
         wheel_cache = WheelCache(options.cache_dir)
 
@@ -130,6 +126,7 @@ class WheelCommand(RequirementCommand):
             download_dir=options.wheel_dir,
             use_user_site=False,
             verbosity=self.verbosity,
+            allow_editables=False,
         )
 
         resolver = self.make_resolver(
@@ -138,12 +135,13 @@ class WheelCommand(RequirementCommand):
             options=options,
             wheel_cache=wheel_cache,
             ignore_requires_python=options.ignore_requires_python,
-            use_pep517=options.use_pep517,
         )
 
         self.trace_basic_info(finder)
 
         requirement_set = resolver.resolve(reqs, check_supported_wheels=True)
+
+        preparer.prepare_linked_requirements_more(requirement_set.requirements.values())
 
         reqs_to_build: list[InstallRequirement] = []
         for req in requirement_set.requirements.values():
@@ -152,15 +150,12 @@ class WheelCommand(RequirementCommand):
             else:
                 reqs_to_build.append(req)
 
-        preparer.prepare_linked_requirements_more(requirement_set.requirements.values())
-
         # build wheels
         build_successes, build_failures = build(
             reqs_to_build,
             wheel_cache=wheel_cache,
             verify=(not options.no_verify),
-            build_options=options.build_options or [],
-            global_options=options.global_options or [],
+            allow_editables=False,
         )
         for req in build_successes:
             assert req.link and req.link.is_wheel
@@ -170,8 +165,9 @@ class WheelCommand(RequirementCommand):
                 shutil.copy(req.local_file_path, options.wheel_dir)
             except OSError as e:
                 logger.warning(
-                    "Building wheel for %s failed: %s",
+                    "Failed to copy built wheel %s to %s: %s",
                     req.name,
+                    options.wheel_dir,
                     e,
                 )
                 build_failures.append(req)

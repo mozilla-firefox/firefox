@@ -3,13 +3,18 @@ from __future__ import annotations
 import contextlib
 import re
 from dataclasses import dataclass
-from typing import Iterator, NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 from .specifiers import Specifier
+
+if TYPE_CHECKING:
+    from collections.abc import Generator, Mapping
 
 
 @dataclass
 class Token:
+    __slots__ = ("name", "position", "text")
+
     name: str
     text: str
     position: int
@@ -33,16 +38,16 @@ class ParserSyntaxError(Exception):
 
     def __str__(self) -> str:
         marker = " " * self.span[0] + "~" * (self.span[1] - self.span[0]) + "^"
-        return "\n    ".join([self.message, self.source, marker])
+        return f"{self.message}\n    {self.source}\n    {marker}"
 
 
-DEFAULT_RULES: dict[str, str | re.Pattern[str]] = {
-    "LEFT_PARENTHESIS": r"\(",
-    "RIGHT_PARENTHESIS": r"\)",
-    "LEFT_BRACKET": r"\[",
-    "RIGHT_BRACKET": r"\]",
-    "SEMICOLON": r";",
-    "COMMA": r",",
+DEFAULT_RULES: dict[str, re.Pattern[str]] = {
+    "LEFT_PARENTHESIS": re.compile(r"\("),
+    "RIGHT_PARENTHESIS": re.compile(r"\)"),
+    "LEFT_BRACKET": re.compile(r"\["),
+    "RIGHT_BRACKET": re.compile(r"\]"),
+    "SEMICOLON": re.compile(r";"),
+    "COMMA": re.compile(r","),
     "QUOTED_STRING": re.compile(
         r"""
             (
@@ -53,10 +58,10 @@ DEFAULT_RULES: dict[str, str | re.Pattern[str]] = {
         """,
         re.VERBOSE,
     ),
-    "OP": r"(===|==|~=|!=|<=|>=|<|>)",
-    "BOOLOP": r"\b(or|and)\b",
-    "IN": r"\bin\b",
-    "NOT": r"\bnot\b",
+    "OP": re.compile(r"(===|==|~=|!=|<=|>=|<|>)"),
+    "BOOLOP": re.compile(r"\b(or|and)\b"),
+    "IN": re.compile(r"\bin\b"),
+    "NOT": re.compile(r"\bnot\b"),
     "VARIABLE": re.compile(
         r"""
             \b(
@@ -75,16 +80,16 @@ DEFAULT_RULES: dict[str, str | re.Pattern[str]] = {
         re.VERBOSE,
     ),
     "SPECIFIER": re.compile(
-        Specifier._operator_regex_str + Specifier._version_regex_str,
+        Specifier._specifier_regex_str,
         re.VERBOSE | re.IGNORECASE,
     ),
-    "AT": r"\@",
-    "URL": r"[^ \t]+",
-    "IDENTIFIER": r"\b[a-zA-Z0-9][a-zA-Z0-9._-]*\b",
-    "VERSION_PREFIX_TRAIL": r"\.\*",
-    "VERSION_LOCAL_LABEL_TRAIL": r"\+[a-z0-9]+(?:[-_\.][a-z0-9]+)*",
-    "WS": r"[ \t]+",
-    "END": r"$",
+    "AT": re.compile(r"\@"),
+    "URL": re.compile(r"[^ \t]+"),
+    "IDENTIFIER": re.compile(r"\b[a-zA-Z0-9][a-zA-Z0-9._-]*\b"),
+    "VERSION_PREFIX_TRAIL": re.compile(r"\.\*"),
+    "VERSION_LOCAL_LABEL_TRAIL": re.compile(r"\+[a-z0-9]+(?:[-_\.][a-z0-9]+)*"),
+    "WS": re.compile(r"[ \t]+"),
+    "END": re.compile(r"\Z"),
 }
 
 
@@ -95,16 +100,16 @@ class Tokenizer:
     matches.
     """
 
+    __slots__ = ("next_token", "position", "rules", "source")
+
     def __init__(
         self,
         source: str,
         *,
-        rules: dict[str, str | re.Pattern[str]],
+        rules: Mapping[str, re.Pattern[str]],
     ) -> None:
         self.source = source
-        self.rules: dict[str, re.Pattern[str]] = {
-            name: re.compile(pattern) for name, pattern in rules.items()
-        }
+        self.rules = rules
         self.next_token: Token | None = None
         self.position = 0
 
@@ -137,7 +142,7 @@ class Tokenizer:
     def expect(self, name: str, *, expected: str) -> Token:
         """Expect a certain token name next, failing with a syntax error otherwise.
 
-        The token is *not* read.
+        The token is read and returned.
         """
         if not self.check(name):
             raise self.raise_syntax_error(f"Expected {expected}")
@@ -174,7 +179,7 @@ class Tokenizer:
     @contextlib.contextmanager
     def enclosing_tokens(
         self, open_token: str, close_token: str, *, around: str
-    ) -> Iterator[None]:
+    ) -> Generator[None, None, None]:
         if self.check(open_token):
             open_position = self.position
             self.read()

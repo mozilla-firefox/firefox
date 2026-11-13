@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from functools import cache
 from typing import (
@@ -26,6 +27,8 @@ if TYPE_CHECKING:
     _ProviderBase = AbstractProvider[Requirement, Candidate, str]
 else:
     _ProviderBase = AbstractProvider
+
+_CONFLICT_PRIORITY_THRESHOLD = 5
 
 # Notes on the relationship between the provider, the factory, and the
 # candidate and requirement classes.
@@ -81,6 +84,7 @@ class PipProvider(_ProviderBase):
     :params constraints: A mapping of constraints specified by the user. Keys
         are canonicalized project names.
     :params ignore_dependencies: Whether the user specified ``--no-deps``.
+    :params only_dependencies: Whether the user specified ``--only-deps``.
     :params upgrade_strategy: The user-specified upgrade strategy.
     :params user_requested: A set of canonicalized package names that the user
         supplied for pip to install/upgrade.
@@ -91,14 +95,27 @@ class PipProvider(_ProviderBase):
         factory: Factory,
         constraints: dict[str, Constraint],
         ignore_dependencies: bool,
+        only_dependencies: bool,
         upgrade_strategy: str,
         user_requested: dict[str, int],
     ) -> None:
         self._factory = factory
         self._constraints = constraints
         self._ignore_dependencies = ignore_dependencies
+        self._only_dependencies = only_dependencies
         self._upgrade_strategy = upgrade_strategy
         self._user_requested = user_requested
+        self._conflict_counts: defaultdict[str, int] = defaultdict(int)
+        self._conflict_promoted: set[str] = set()
+
+    @property
+    def constraints(self) -> dict[str, Constraint]:
+        """Public view of user-specified constraints.
+
+        Exposes the provider's constraints mapping without encouraging
+        external callers to reach into private attributes.
+        """
+        return self._constraints
 
     def identify(self, requirement_or_candidate: Requirement | Candidate) -> str:
         return requirement_or_candidate.name
@@ -121,28 +138,41 @@ class PipProvider(_ProviderBase):
               Further, the current backtrack causes likely need to be resolved
               before other requirements as a resolution can't be found while
               there is a conflict.
+            * Identifiers that repeatedly appear as not-yet-pinned in conflicts
+              get promoted so they are resolved earlier. This lets their
+              constraints take effect before other packages pick a version.
         """
         backtrack_identifiers = set()
         for info in backtrack_causes:
-            backtrack_identifiers.add(info.requirement.name)
+            names = [info.requirement.name]
             if info.parent is not None:
-                backtrack_identifiers.add(info.parent.name)
+                names.append(info.parent.name)
+            for name in names:
+                backtrack_identifiers.add(name)
+                if name not in resolutions:
+                    self._conflict_counts[name] += 1
+                    if self._conflict_counts[name] >= _CONFLICT_PRIORITY_THRESHOLD:
+                        self._conflict_promoted.add(name)
 
         current_backtrack_causes = []
+        promoted = []
         for identifier in identifiers:
-            # Requires-Python has only one candidate and the check is basically
-            # free, so we always do it first to avoid needless work if it fails.
-            # This skips calling get_preference() for all other identifiers.
             if identifier == REQUIRES_PYTHON_IDENTIFIER:
                 return [identifier]
 
-            # Check if this identifier is a backtrack cause
             if identifier in backtrack_identifiers:
                 current_backtrack_causes.append(identifier)
                 continue
 
+            if identifier in self._conflict_promoted:
+                promoted.append(identifier)
+                continue
+
         if current_backtrack_causes:
             return current_backtrack_causes
+
+        if promoted:
+            return promoted
 
         return identifiers
 
@@ -214,7 +244,10 @@ class PipProvider(_ProviderBase):
         unfree = bool(operators)
         requested_order = self._user_requested.get(identifier, math.inf)
 
+        conflict_promoted = identifier in self._conflict_promoted
+
         return (
+            not conflict_promoted,
             not direct,
             not pinned,
             not upper_bounded,

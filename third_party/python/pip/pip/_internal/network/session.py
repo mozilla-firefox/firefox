@@ -22,8 +22,6 @@ from collections.abc import Generator, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
     Any,
-    Optional,
-    Union,
 )
 
 from pip._vendor import requests, urllib3
@@ -36,27 +34,33 @@ from pip._vendor.urllib3.connectionpool import ConnectionPool
 from pip._vendor.urllib3.exceptions import InsecureRequestWarning
 
 from pip import __version__
+from pip._internal.exceptions import SSLMissingError
 from pip._internal.metadata import get_default_environment
 from pip._internal.models.link import Link
 from pip._internal.network.auth import MultiDomainBasicAuth
 from pip._internal.network.cache import SafeFileCache
+from pip._internal.network.utils import raise_connection_error
 
 # Import ssl from compat so the initial import occurs in only one place.
 from pip._internal.utils.compat import has_tls
 from pip._internal.utils.glibc import libc_ver
-from pip._internal.utils.misc import build_url_from_netloc, parse_netloc
+from pip._internal.utils.misc import (
+    build_url_from_netloc,
+    looks_like_ci,
+    parse_netloc,
+    redact_auth_from_url,
+)
 from pip._internal.utils.urls import url_to_path
 
 if TYPE_CHECKING:
     from ssl import SSLContext
 
-    from pip._vendor.urllib3.poolmanager import PoolManager
-    from pip._vendor.urllib3.proxymanager import ProxyManager
+    from pip._vendor.urllib3 import ProxyManager
 
 
 logger = logging.getLogger(__name__)
 
-SecureOrigin = tuple[str, str, Optional[Union[int, str]]]
+SecureOrigin = tuple[str, str, int | str | None]
 
 
 # Ignore warning raised when using --trusted-host.
@@ -74,35 +78,6 @@ SECURE_ORIGINS: list[SecureOrigin] = [
     # ssh is always secure.
     ("ssh", "*", "*"),
 ]
-
-
-# These are environment variables present when running under various
-# CI systems.  For each variable, some CI systems that use the variable
-# are indicated.  The collection was chosen so that for each of a number
-# of popular systems, at least one of the environment variables is used.
-# This list is used to provide some indication of and lower bound for
-# CI traffic to PyPI.  Thus, it is okay if the list is not comprehensive.
-# For more background, see: https://github.com/pypa/pip/issues/5499
-CI_ENVIRONMENT_VARIABLES = (
-    # Azure Pipelines
-    "BUILD_BUILDID",
-    # Jenkins
-    "BUILD_ID",
-    # AppVeyor, CircleCI, Codeship, Gitlab CI, Shippable, Travis CI
-    "CI",
-    # Explicit environment variable.
-    "PIP_IS_CI",
-)
-
-
-def looks_like_ci() -> bool:
-    """
-    Return whether it looks like pip is running under CI.
-    """
-    # We don't use the method of checking for a tty (e.g. using isatty())
-    # because some CI systems mimic a tty (e.g. Travis CI).  Thus that
-    # method doesn't provide definitive information in either direction.
-    return any(name in os.environ for name in CI_ENVIRONMENT_VARIABLES)
 
 
 @functools.lru_cache(maxsize=1)
@@ -212,11 +187,12 @@ class LocalFSAdapter(BaseAdapter):
         self,
         request: PreparedRequest,
         stream: bool = False,
-        timeout: float | tuple[float, float] | None = None,
+        timeout: float | tuple[float | None, float | None] | None = None,
         verify: bool | str = True,
-        cert: str | tuple[str, str] | None = None,
+        cert: bytes | str | tuple[bytes | str, bytes | str] | None = None,
         proxies: Mapping[str, str] | None = None,
     ) -> Response:
+        assert request.url is not None
         pathname = url_to_path(request.url)
 
         resp = Response()
@@ -237,13 +213,13 @@ class LocalFSAdapter(BaseAdapter):
             resp.headers = CaseInsensitiveDict(
                 {
                     "Content-Type": content_type,
-                    "Content-Length": stats.st_size,
+                    "Content-Length": str(stats.st_size),
                     "Last-Modified": modified,
                 }
             )
 
             resp.raw = open(pathname, "rb")
-            resp.close = resp.raw.close
+            resp.close = resp.raw.close  # type: ignore[method-assign]
 
         return resp
 
@@ -263,9 +239,11 @@ class _SSLContextAdapterMixin:
         self,
         *,
         ssl_context: SSLContext | None = None,
+        use_ssl_context_for_proxy: bool = True,
         **kwargs: Any,
     ) -> None:
         self._ssl_context = ssl_context
+        self._use_ssl_context_for_proxy = use_ssl_context_for_proxy
         super().__init__(**kwargs)
 
     def init_poolmanager(
@@ -274,10 +252,10 @@ class _SSLContextAdapterMixin:
         maxsize: int,
         block: bool = DEFAULT_POOLBLOCK,
         **pool_kwargs: Any,
-    ) -> PoolManager:
+    ) -> None:
         if self._ssl_context is not None:
             pool_kwargs.setdefault("ssl_context", self._ssl_context)
-        return super().init_poolmanager(  # type: ignore[misc]
+        super().init_poolmanager(  # type: ignore[misc]
             connections=connections,
             maxsize=maxsize,
             block=block,
@@ -289,6 +267,9 @@ class _SSLContextAdapterMixin:
         # context here too. https://github.com/pypa/pip/issues/13288
         if self._ssl_context is not None:
             proxy_kwargs.setdefault("ssl_context", self._ssl_context)
+            if self._use_ssl_context_for_proxy:
+                # Leave this unset when urllib3 must apply a custom proxy CA bundle.
+                proxy_kwargs.setdefault("proxy_ssl_context", self._ssl_context)
         return super().proxy_manager_for(proxy, **proxy_kwargs)  # type: ignore[misc]
 
 
@@ -329,10 +310,13 @@ class PipSession(requests.Session):
         self,
         *args: Any,
         retries: int = 0,
+        resume_retries: int = 0,
         cache: str | None = None,
         trusted_hosts: Sequence[str] = (),
         index_urls: list[str] | None = None,
         ssl_context: SSLContext | None = None,
+        use_ssl_context_for_proxy: bool = True,
+        refresh_package: set[str] | None = None,
         **kwargs: Any,
     ) -> None:
         """
@@ -344,13 +328,21 @@ class PipSession(requests.Session):
         # Namespace the attribute with "pip_" just in case to prevent
         # possible conflicts with the base class.
         self.pip_trusted_origins: list[tuple[str, int | None]] = []
-        self.pip_proxy = None
+        # "" disables proxying; None means no --proxy was given.
+        self.pip_proxy: str | None = None
+        self.pip_no_proxy_env = False
+        self.refresh_package: set[str] = refresh_package or set()
 
         # Attach our User Agent to the request
         self.headers["User-Agent"] = user_agent()
 
+        # Pin Accept-Encoding so it doesn't vary with zstd availability (Python
+        # 3.14+ or backports.zstd); a varying value misses the cache for "Vary:
+        # Accept-Encoding" responses shared across interpreters (pypa/pip#13979).
+        self.headers["Accept-Encoding"] = "gzip, deflate"
+
         # Attach our Authentication handler to the session
-        self.auth = MultiDomainBasicAuth(index_urls=index_urls)
+        self.auth: MultiDomainBasicAuth = MultiDomainBasicAuth(index_urls=index_urls)
 
         # Create our urllib3.Retry instance which will allow us to customize
         # how we handle retries.
@@ -370,6 +362,7 @@ class PipSession(requests.Session):
             # order to prevent hammering the service.
             backoff_factor=0.25,
         )  # type: ignore
+        self.resume_retries = resume_retries
 
         # Our Insecure HTTPAdapter disables HTTPS validation. It does not
         # support caching so we'll use it for all http:// URLs.
@@ -383,18 +376,24 @@ class PipSession(requests.Session):
         # we can't validate the response of an insecurely/untrusted fetched
         # origin, and we don't want someone to be able to poison the cache and
         # require manual eviction from the cache to fix it.
+        self._trusted_host_adapter: InsecureCacheControlAdapter | InsecureHTTPAdapter
         if cache:
-            secure_adapter = CacheControlAdapter(
+            secure_adapter: _BaseHTTPAdapter = CacheControlAdapter(
                 cache=SafeFileCache(cache),
                 max_retries=retries,
                 ssl_context=ssl_context,
+                use_ssl_context_for_proxy=use_ssl_context_for_proxy,
             )
             self._trusted_host_adapter = InsecureCacheControlAdapter(
                 cache=SafeFileCache(cache),
                 max_retries=retries,
             )
         else:
-            secure_adapter = HTTPAdapter(max_retries=retries, ssl_context=ssl_context)
+            secure_adapter = HTTPAdapter(
+                max_retries=retries,
+                ssl_context=ssl_context,
+                use_ssl_context_for_proxy=use_ssl_context_for_proxy,
+            )
             self._trusted_host_adapter = insecure_adapter
 
         self.mount("https://", secure_adapter)
@@ -518,11 +517,39 @@ class PipSession(requests.Session):
 
         return False
 
-    def request(self, method: str, url: str, *args: Any, **kwargs: Any) -> Response:
+    def get_redirect_target(self, resp: Response) -> str | None:
+        target = super().get_redirect_target(resp)
+        if target is None:
+            return None
+        # Redirecting to a file:// URL doesn't make much sense and
+        # shouldn't be allowed.
+        scheme = urllib.parse.urlparse(target).scheme
+        if scheme and scheme.lower() not in ("http", "https"):
+            logger.warning(
+                "Not following redirect from %s to %s: a redirect to a non-http(s)"
+                " location is not allowed.",
+                redact_auth_from_url(resp.url),
+                redact_auth_from_url(target),
+            )
+            return None
+        return target
+
+    def request(self, method: str, url: str, *args: Any, **kwargs: Any) -> Response:  # type: ignore[override]
         # Allow setting a default timeout on a session
         kwargs.setdefault("timeout", self.timeout)
         # Allow setting a default proxies on a session
         kwargs.setdefault("proxies", self.proxies)
 
         # Dispatch the actual request
-        return super().request(method, url, *args, **kwargs)
+        try:
+            return super().request(method, url, *args, **kwargs)
+        except (requests.ConnectionError, requests.Timeout) as e:
+            request = getattr(e, "request", None)
+            failed_url = getattr(request, "url", None) or url
+            raise_connection_error(e, url=failed_url, timeout=kwargs["timeout"])
+        except ImportError as e:
+            if "ssl" in str(e).lower():
+                # Unfortunately, if this TLS error was the result of a redirect from
+                # a HTTP to a HTTPS url, we don't know what the final url was.
+                raise SSLMissingError(redact_auth_from_url(url))
+            raise

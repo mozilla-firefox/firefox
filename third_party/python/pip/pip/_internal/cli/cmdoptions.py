@@ -11,15 +11,17 @@ pass on state. To be consistent, all options will follow this design.
 # mypy: strict-optional=False
 from __future__ import annotations
 
-import importlib.util
 import logging
 import os
 import pathlib
+import re
 import textwrap
+from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 from functools import partial
 from optparse import SUPPRESS_HELP, Option, OptionGroup, OptionParser, Values
 from textwrap import dedent
-from typing import Any, Callable
+from typing import Any
 
 from pip._vendor.packaging.utils import canonicalize_name
 
@@ -28,9 +30,12 @@ from pip._internal.exceptions import CommandError
 from pip._internal.locations import USER_CACHE_DIR, get_src_prefix
 from pip._internal.models.format_control import FormatControl
 from pip._internal.models.index import PyPI
+from pip._internal.models.release_control import ReleaseControl
 from pip._internal.models.target_python import TargetPython
+from pip._internal.utils.datetime import parse_iso_datetime
 from pip._internal.utils.hashes import STRONG_HASHES
 from pip._internal.utils.misc import strtobool
+from pip._internal.utils.urls import strip_extras
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +64,37 @@ def make_option_group(group: dict[str, Any], parser: ConfigOptionParser) -> Opti
     for option in group["options"]:
         option_group.add_option(option())
     return option_group
+
+
+def check_only_deps_option_does_not_conflict(options: Values) -> None:
+    """Function for determining if --only-deps and other incompatible options are
+    specified.
+
+    :param options: The OptionParser options.
+    """
+    if not options.only_dependencies:
+        return
+    conflicts = []
+    if options.ignore_dependencies:
+        conflicts.append("'--no-deps'")
+    if "legacy-resolver" in options.deprecated_features_enabled:
+        conflicts.append("'--use-deprecated legacy-resolver'")
+    if options.requirements:
+        conflicts.append("'--requirement'")
+    if options.requirements_from_scripts:
+        conflicts.append("'--requirements-from-script'")
+    if options.dependency_groups:
+        conflicts.append("'--group'")
+    if conflicts:
+        if len(conflicts) > 1:
+            conflicts[-1] = "or " + conflicts[-1]
+        conflict_message = ", ".join(conflicts)
+        raise CommandError(
+            f"Cannot use '--only-dependencies' in combination with {conflict_message}. "
+            "If this is unexpected, please refer to the user guide:\n"
+            "\n"
+            "    https://pip.pypa.io/en/stable/user_guide/#installing-only-dependencies"
+        )
 
 
 def check_dist_restriction(options: Values, check_target: bool = False) -> None:
@@ -99,6 +135,22 @@ def check_dist_restriction(options: Values, check_target: bool = False) -> None:
                 "Can not use any platform or abi specific options unless "
                 "installing via '--target' or using '--dry-run'"
             )
+
+    if dist_restriction_set:
+        # Lazy import to keep CLI startup fast
+        from pip._internal.utils import pylock as pylock_utils
+
+        filenames = list(options.requirements)
+        filenames.extend(path for path, _ in options.dependency_groups)
+        for filename in filenames:
+            filename_without_extras, _ = strip_extras(filename)
+            if pylock_utils.is_valid_pylock_filename(filename_without_extras):
+                raise CommandError(
+                    "Platform and interpreter constraints using "
+                    "--python-version, --platform, --abi, or --implementation, "
+                    f"are not supported when selecting requirements "
+                    f"from {filename_without_extras!r}"
+                )
 
 
 def _path_option_check(option: Option, opt: str, value: str) -> str:
@@ -161,8 +213,7 @@ require_virtualenv: Callable[..., Option] = partial(
     action="store_true",
     default=False,
     help=(
-        "Allow pip to only run in a virtual environment; "
-        "exit with an error otherwise."
+        "Allow pip to only run in a virtual environment; exit with an error otherwise."
     ),
 )
 
@@ -276,8 +327,17 @@ proxy: Callable[..., Option] = partial(
     "--proxy",
     dest="proxy",
     type="str",
-    default="",
+    default=None,
     help="Specify a proxy in the form scheme://[user:passwd@]proxy.server:port.",
+)
+
+no_proxy_env: Callable[..., Option] = partial(
+    Option,
+    "--no-proxy-env",
+    dest="no_proxy_env",
+    action="store_true",
+    default=False,
+    help="Do not read proxy configuration from environment variables.",
 )
 
 retries: Callable[..., Option] = partial(
@@ -405,6 +465,71 @@ def find_links() -> Option:
     )
 
 
+def _handle_uploaded_prior_to(
+    option: Option, opt: str, value: str, parser: OptionParser
+) -> None:
+    """
+    This is an optparse.Option callback for the --uploaded-prior-to option.
+
+    Accepts either an ISO 8601 datetime string (e.g., '2023-01-01T00:00:00Z')
+    or a strict subset of ISO 8601 durations: PnD where n is a number of days
+    (e.g., 'P7D' for 7 days ago).
+
+    Note: This option only works with indexes that provide upload-time metadata
+    as specified in the simple repository API:
+    https://packaging.python.org/en/latest/specifications/simple-repository-api/
+    """
+    if value is None:
+        return None
+
+    # Try ISO 8601 duration in PnD format. The leading 'P' disambiguates
+    # from absolute datetimes. Only whole days are supported; the format may
+    # be extended to more of the ISO 8601 duration syntax in the future if
+    # a real need is presented.
+    match = re.match(r"^P(\d+)D$", value, re.ASCII)
+    if match:
+        days = int(match.group(1))
+        parser.values.uploaded_prior_to = datetime.now(timezone.utc) - timedelta(
+            days=days
+        )
+        return
+
+    try:
+        uploaded_prior_to = parse_iso_datetime(value)
+        # Use local timezone if no offset is given in the ISO string.
+        if uploaded_prior_to.tzinfo is None:
+            uploaded_prior_to = uploaded_prior_to.astimezone()
+        parser.values.uploaded_prior_to = uploaded_prior_to
+    except ValueError as exc:
+        msg = (
+            f"invalid value: {value!r}: {exc}. "
+            f"Expected an ISO 8601 datetime string "
+            f"(e.g., '2023-01-01' or '2023-01-01T00:00:00Z') "
+            f"or a duration in days (e.g., 'P3D')"
+        )
+        raise_option_error(parser, option=option, msg=msg)
+
+
+def uploaded_prior_to() -> Option:
+    return Option(
+        "--uploaded-prior-to",
+        dest="uploaded_prior_to",
+        metavar="datetime_or_duration",
+        action="callback",
+        callback=_handle_uploaded_prior_to,
+        type="str",
+        help=(
+            "Only consider packages uploaded prior to the given value. "
+            "Accepts an ISO 8601 datetime (e.g., '2023-01-01T00:00:00Z', "
+            "uses local timezone if none specified) "
+            "or duration in integer days with syntax `P<n>D` "
+            "(e.g., 'P3D' for packages uploaded at least 3 days ago). "
+            "Only effective when using indexes that provide "
+            "upload-time metadata."
+        ),
+    )
+
+
 def trusted_host() -> Option:
     return Option(
         "--trusted-host",
@@ -430,6 +555,21 @@ def constraints() -> Option:
     )
 
 
+def build_constraints() -> Option:
+    return Option(
+        "--build-constraint",
+        dest="build_constraints",
+        action="append",
+        type="str",
+        default=[],
+        metavar="file",
+        help=(
+            "Constrain build dependencies using the given constraints file. "
+            "This option can be used multiple times."
+        ),
+    )
+
+
 def requirements() -> Option:
     return Option(
         "-r",
@@ -438,8 +578,27 @@ def requirements() -> Option:
         action="append",
         default=[],
         metavar="file",
-        help="Install from the given requirements file. "
-        "This option can be used multiple times.",
+        help=(
+            "Install from the given requirements file. "
+            "The file or URL can be in pip's requirements.txt format, "
+            "or pylock.toml format. "
+            "Extras may be selected from a pylock.toml file by "
+            "appending [extras] to the file name. "
+            "pylock.toml support is experimental. "
+            "This option can be used multiple times."
+        ),
+    )
+
+
+def requirements_from_scripts() -> Option:
+    return Option(
+        "--requirements-from-script",
+        action="append",
+        default=[],
+        dest="requirements_from_scripts",
+        metavar="file",
+        help="Install dependencies of the given script file "
+        "as defined by PEP 723 inline metadata. ",
     )
 
 
@@ -517,12 +676,13 @@ def no_binary() -> Option:
         callback=_handle_no_binary,
         type="str",
         default=format_control,
-        help="Do not use binary packages. Can be supplied multiple times, and "
-        'each time adds to the existing value. Accepts either ":all:" to '
-        'disable all binary packages, ":none:" to empty the set (notice '
-        "the colons), or one or more package names with commas between "
-        "them (no colons). Note that some packages are tricky to compile "
-        "and may fail to install when this option is used on them.",
+        help="Do not download binary packages. Cached binary packages may still "
+        "be used. Can be supplied multiple times, and each time adds to "
+        "the existing value. Accepts either ':all:' to disable all binary "
+        "packages, ':none:' to empty the set (notice the colons), or one "
+        "or more package names with commas between them (no colons). "
+        "Note that some packages are tricky to compile and may fail to "
+        "install when this option is used on them.",
     )
 
 
@@ -542,6 +702,86 @@ def only_binary() -> Option:
         "without binary distributions will fail to install when this "
         "option is used on them.",
     )
+
+
+def _get_release_control(values: Values, option: Option) -> Any:
+    """Get a release_control object."""
+    return getattr(values, option.dest)
+
+
+def _handle_all_releases(
+    option: Option, opt_str: str, value: str, parser: OptionParser
+) -> None:
+    existing = _get_release_control(parser.values, option)
+    existing.handle_mutual_excludes(
+        value,
+        existing.all_releases,
+        existing.only_final,
+        "all_releases",
+    )
+
+
+def _handle_only_final(
+    option: Option, opt_str: str, value: str, parser: OptionParser
+) -> None:
+    existing = _get_release_control(parser.values, option)
+    existing.handle_mutual_excludes(
+        value,
+        existing.only_final,
+        existing.all_releases,
+        "only_final",
+    )
+
+
+def all_releases() -> Option:
+    release_control = ReleaseControl(set(), set())
+    return Option(
+        "--all-releases",
+        dest="release_control",
+        action="callback",
+        callback=_handle_all_releases,
+        type="str",
+        default=release_control,
+        help="Allow all release types (including pre-releases) for a package. "
+        "Can be supplied multiple times, and each time adds to the existing "
+        'value. Accepts either ":all:" to allow pre-releases for all '
+        'packages, ":none:" to empty the set (notice the colons), or one or '
+        "more package names with commas between them (no colons). Cannot be "
+        "used with --pre.",
+    )
+
+
+def only_final() -> Option:
+    release_control = ReleaseControl(set(), set())
+    return Option(
+        "--only-final",
+        dest="release_control",
+        action="callback",
+        callback=_handle_only_final,
+        type="str",
+        default=release_control,
+        help="Only allow final releases (no pre-releases) for a package. Can be "
+        "supplied multiple times, and each time adds to the existing value. "
+        'Accepts either ":all:" to disable pre-releases for all packages, '
+        '":none:" to empty the set, or one or more package names with commas '
+        "between them. Cannot be used with --pre.",
+    )
+
+
+def check_release_control_exclusive(options: Values) -> None:
+    """
+    Raise an error if --pre is used with --all-releases or --only-final,
+    and transform --pre into --all-releases :all: if used alone.
+    """
+    if not hasattr(options, "pre") or not options.pre:
+        return
+
+    release_control = options.release_control
+    if release_control.all_releases or release_control.only_final:
+        raise CommandError("--pre cannot be used with --all-releases or --only-final.")
+
+    # Transform --pre into --all-releases :all:
+    release_control.all_releases.add(":all:")
 
 
 platforms: Callable[..., Option] = partial(
@@ -612,15 +852,13 @@ python_version: Callable[..., Option] = partial(
     callback=_handle_python_version,
     type="str",
     default=None,
-    help=dedent(
-        """\
+    help=dedent("""\
     The Python interpreter version to use for wheel and "Requires-Python"
     compatibility checks. Defaults to a version derived from the running
     interpreter. The version can be specified using up to three dot-separated
     integers (e.g. "3" for 3.0.0, "3.7" for 3.7.0, or "3.7.3"). A major-minor
     version can also be given as a string without dots (e.g. "37" for 3.7.0).
-    """
-    ),
+    """),
 )
 
 
@@ -749,14 +987,67 @@ no_deps: Callable[..., Option] = partial(
 )
 
 
+def _handle_refresh_package(
+    option: Option, opt_str: str, value: str, parser: OptionParser
+) -> None:
+    if value.startswith("-"):
+        raise CommandError("--refresh-package option requires 1 argument.")
+
+    existing: set[str] = getattr(parser.values, option.dest)
+
+    new = value.split(",")
+    while ":all:" in new:
+        existing.clear()
+        existing.add(":all:")
+        del new[: new.index(":all:") + 1]
+        if ":none:" not in new:
+            return
+
+    for name in new:
+        if name == ":none:":
+            existing.clear()
+        else:
+            existing.add(canonicalize_name(name))
+
+
+def refresh_package() -> Option:
+    return Option(
+        "--refresh-package",
+        dest="refresh_package",
+        action="callback",
+        callback=_handle_refresh_package,
+        type="str",
+        default=set(),
+        help="Refresh package index information for the given packages instead "
+        "of using cached responses. Accepts ':all:' to apply "
+        "to all packages, or a comma-separated list of package names.",
+    )
+
+
+only_deps: Callable[..., Option] = partial(
+    Option,
+    "--only-deps",
+    "--only-dependencies",
+    dest="only_dependencies",
+    action="store_true",
+    default=False,
+    help=(
+        "Take only the dependencies of the provided requirements into account, "
+        "not the requirements themselves. Cannot be used in combination with "
+        "--no-deps, --group, --requirement, or --requirements-from-script. "
+        "No user-supplied requirements will be handled, even if they were "
+        "dependencies of other user-supplied requirements."
+    ),
+)
+
+
 def _handle_dependency_group(
     option: Option, opt: str, value: str, parser: OptionParser
 ) -> None:
     """
     Process a value provided for the --group option.
 
-    Splits on the rightmost ":", and validates that the path (if present) ends
-    in `pyproject.toml`. Defaults the path to `pyproject.toml` when one is not given.
+    Splits on the rightmost ":", and validates an explicit source filename.
 
     `:` cannot appear in dependency group names, so this is a safe and simple parse.
 
@@ -766,10 +1057,15 @@ def _handle_dependency_group(
     if not sep:
         path = "pyproject.toml"
     else:
-        # check for 'pyproject.toml' filenames using pathlib
+        # Local pyproject.toml paths may contain URL-like prefixes.
         if pathlib.PurePath(path).name != "pyproject.toml":
-            msg = "group paths use 'pyproject.toml' filenames"
-            raise_option_error(parser, option=option, msg=msg)
+            # Keep lock parsing imports confined to commands that request it.
+            from pip._internal.utils.pylock import is_valid_pylock_filename
+
+            filename, _ = strip_extras(path)
+            if not is_valid_pylock_filename(filename, allow_urls=False):
+                msg = "group paths use local 'pyproject.toml' or 'pylock.toml' files"
+                raise_option_error(parser, option=option, msg=msg)
 
     parser.values.dependency_groups.append((path, groupname))
 
@@ -783,8 +1079,8 @@ dependency_groups: Callable[..., Option] = partial(
     action="callback",
     callback=_handle_dependency_group,
     metavar="[path:]group",
-    help='Install a named dependency-group from a "pyproject.toml" file. '
-    'If a path is given, the name of the file must be "pyproject.toml". '
+    help='Install a named dependency-group from a "pyproject.toml" or '
+    '"pylock.toml" file. Named "pylock.<name>.toml" files are also supported. '
     'Defaults to using "pyproject.toml" in the current directory.',
 )
 
@@ -795,6 +1091,7 @@ ignore_requires_python: Callable[..., Option] = partial(
     action="store_true",
     help="Ignore the Requires-Python information.",
 )
+
 
 no_build_isolation: Callable[..., Option] = partial(
     Option,
@@ -813,43 +1110,8 @@ check_build_deps: Callable[..., Option] = partial(
     dest="check_build_deps",
     action="store_true",
     default=False,
-    help="Check the build dependencies when PEP517 is used.",
+    help="Check the build dependencies.",
 )
-
-
-def _handle_no_use_pep517(
-    option: Option, opt: str, value: str, parser: OptionParser
-) -> None:
-    """
-    Process a value provided for the --no-use-pep517 option.
-
-    This is an optparse.Option callback for the no_use_pep517 option.
-    """
-    # Since --no-use-pep517 doesn't accept arguments, the value argument
-    # will be None if --no-use-pep517 is passed via the command-line.
-    # However, the value can be non-None if the option is triggered e.g.
-    # by an environment variable, for example "PIP_NO_USE_PEP517=true".
-    if value is not None:
-        msg = """A value was passed for --no-use-pep517,
-        probably using either the PIP_NO_USE_PEP517 environment variable
-        or the "no-use-pep517" config file option. Use an appropriate value
-        of the PIP_USE_PEP517 environment variable or the "use-pep517"
-        config file option instead.
-        """
-        raise_option_error(parser, option=option, msg=msg)
-
-    # If user doesn't wish to use pep517, we check if setuptools is installed
-    # and raise error if it is not.
-    packages = ("setuptools",)
-    if not all(importlib.util.find_spec(package) for package in packages):
-        msg = (
-            f"It is not possible to use --no-use-pep517 "
-            f"without {' and '.join(packages)} installed."
-        )
-        raise_option_error(parser, option=option, msg=msg)
-
-    # Otherwise, --no-use-pep517 was passed via the command-line.
-    parser.values.use_pep517 = False
 
 
 use_pep517: Any = partial(
@@ -857,18 +1119,7 @@ use_pep517: Any = partial(
     "--use-pep517",
     dest="use_pep517",
     action="store_true",
-    default=None,
-    help="Use PEP 517 for building source distributions "
-    "(use --no-use-pep517 to force legacy behaviour).",
-)
-
-no_use_pep517: Any = partial(
-    Option,
-    "--no-use-pep517",
-    dest="use_pep517",
-    action="callback",
-    callback=_handle_no_use_pep517,
-    default=None,
+    default=True,
     help=SUPPRESS_HELP,
 )
 
@@ -901,28 +1152,9 @@ config_settings: Callable[..., Option] = partial(
     action="callback",
     callback=_handle_config_settings,
     metavar="settings",
-    help="Configuration settings to be passed to the PEP 517 build backend. "
+    help="Configuration settings to be passed to the build backend. "
     "Settings take the form KEY=VALUE. Use multiple --config-settings options "
     "to pass multiple keys to the backend.",
-)
-
-build_options: Callable[..., Option] = partial(
-    Option,
-    "--build-option",
-    dest="build_options",
-    metavar="options",
-    action="append",
-    help="Extra arguments to be supplied to 'setup.py bdist_wheel'.",
-)
-
-global_options: Callable[..., Option] = partial(
-    Option,
-    "--global-option",
-    dest="global_options",
-    action="append",
-    metavar="options",
-    help="Extra global options to be supplied to the setup.py "
-    "call before the install or bdist_wheel command.",
 )
 
 no_clean: Callable[..., Option] = partial(
@@ -1020,6 +1252,17 @@ require_hashes: Callable[..., Option] = partial(
 )
 
 
+no_require_hashes: Callable[..., Option] = partial(
+    Option,
+    "--no-require-hashes",
+    dest="no_require_hashes",
+    action="store_true",
+    default=False,
+    help="Do not automatically enable --require-hashes "
+    "when encountering a requirement with hashes.",
+)
+
+
 list_path: Callable[..., Option] = partial(
     PipOption,
     "--path",
@@ -1061,6 +1304,7 @@ no_python_version_warning: Callable[..., Option] = partial(
 ALWAYS_ENABLED_FEATURES = [
     "truststore",  # always on since 24.2
     "no-binary-enable-wheel-cache",  # always on since 23.1
+    "build-constraint",  # always on since 26.2
 ]
 
 use_new_feature: Callable[..., Option] = partial(
@@ -1072,6 +1316,8 @@ use_new_feature: Callable[..., Option] = partial(
     default=[],
     choices=[
         "fast-deps",
+        "inprocess-build-deps",
+        "venv-isolation",
     ]
     + ALWAYS_ENABLED_FEATURES,
     help="Enable new functionality, that may be backward incompatible.",
@@ -1104,12 +1350,12 @@ general_group: dict[str, Any] = {
         require_virtualenv,
         python,
         verbose,
-        version,
         quiet,
         log,
         no_input,
         keyring_provider,
         proxy,
+        no_proxy_env,
         retries,
         timeout,
         exists_action,
@@ -1133,6 +1379,20 @@ index_group: dict[str, Any] = {
         index_url,
         extra_index_url,
         no_index,
+        refresh_package,
         find_links,
+        uploaded_prior_to,
+    ],
+}
+
+package_selection_group: dict[str, Any] = {
+    "name": "Package Selection Options",
+    "options": [
+        pre,
+        all_releases,
+        only_final,
+        no_binary,
+        only_binary,
+        prefer_binary,
     ],
 }

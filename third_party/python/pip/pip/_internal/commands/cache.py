@@ -1,7 +1,7 @@
 import os
 import textwrap
+from collections.abc import Callable
 from optparse import Values
-from typing import Callable
 
 from pip._internal.cli.base_command import Command
 from pip._internal.cli.status_codes import ERROR, SUCCESS
@@ -107,8 +107,7 @@ class CacheCommand(Command):
         wheels_cache_size = filesystem.format_directory_size(wheels_cache_location)
 
         message = (
-            textwrap.dedent(
-                """
+            textwrap.dedent("""
                     Package index page cache location (pip v23.3+): {http_cache_location}
                     Package index page cache location (older pips): {old_http_cache_location}
                     Package index page cache size: {http_cache_size}
@@ -116,8 +115,7 @@ class CacheCommand(Command):
                     Locally built wheels location: {wheels_cache_location}
                     Locally built wheels size: {wheels_cache_size}
                     Number of locally built wheels: {package_count}
-                """  # noqa: E501
-            )
+                """)  # noqa: E501
             .format(
                 http_cache_location=http_cache_location,
                 old_http_cache_location=old_http_cache_location,
@@ -189,7 +187,34 @@ class CacheCommand(Command):
             bytes_removed += os.stat(filename).st_size
             os.unlink(filename)
             logger.verbose("Removed %s", filename)
+
+        http_dirs = filesystem.subdirs_without_files(self._cache_dir(options, "http"))
+        http_v2_dirs = filesystem.subdirs_without_files(
+            self._cache_dir(options, "http-v2")
+        )
+        wheel_dirs = filesystem.subdirs_without_wheels(
+            self._cache_dir(options, "wheels")
+        )
+        dirs = [*http_dirs, *http_v2_dirs, *wheel_dirs]
+
+        for subdir in dirs:
+            try:
+                for file in subdir.iterdir():
+                    file.unlink(missing_ok=True)
+                subdir.rmdir()
+            except FileNotFoundError:
+                # If the directory is already gone, that's fine.
+                pass
+            logger.verbose("Removed %s", subdir)
+
+        # selfcheck.json is no longer used by pip.
+        selfcheck_json = self._cache_dir(options, "selfcheck.json")
+        if os.path.isfile(selfcheck_json):
+            os.remove(selfcheck_json)
+            logger.verbose("Removed legacy selfcheck.json file")
+
         logger.info("Files removed: %s (%s)", len(files), format_size(bytes_removed))
+        logger.info("Directories removed: %s", len(dirs))
 
     def purge_cache(self, options: Values, args: list[str]) -> None:
         if args:

@@ -8,9 +8,10 @@ so commands which don't always hit the network (e.g. list w/o --outdated or
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
-import sys
+from collections.abc import Iterator
 from functools import lru_cache
 from optparse import Values
 from typing import TYPE_CHECKING
@@ -23,17 +24,16 @@ from pip._internal.cli.command_context import CommandContextMixIn
 if TYPE_CHECKING:
     from ssl import SSLContext
 
+    from pip._vendor.packaging.utils import NormalizedName
+
     from pip._internal.network.session import PipSession
+    from pip._internal.self_outdated_check import UpgradePrompt
 
 logger = logging.getLogger(__name__)
 
 
 @lru_cache
 def _create_truststore_ssl_context() -> SSLContext | None:
-    if sys.version_info < (3, 10):
-        logger.debug("Disabling truststore because Python version isn't 3.10+")
-        return None
-
     try:
         import ssl
     except ImportError:
@@ -100,12 +100,22 @@ class SessionCommandMixin(CommandContextMixIn):
         else:
             ssl_context = None
 
+        has_custom_ca = bool(options.cert)
+        if options.proxy is None and not options.no_proxy_env:
+            # Requests reads CA bundle environment variables only with trust_env.
+            has_custom_ca = has_custom_ca or bool(
+                os.environ.get("REQUESTS_CA_BUNDLE") or os.environ.get("CURL_CA_BUNDLE")
+            )
+
         session = PipSession(
             cache=os.path.join(cache_dir, "http-v2") if cache_dir else None,
             retries=retries if retries is not None else options.retries,
+            resume_retries=options.resume_retries,
             trusted_hosts=options.trusted_hosts,
             index_urls=self._get_index_urls(options),
             ssl_context=ssl_context,
+            use_ssl_context_for_proxy=not has_custom_ca,
+            refresh_package=getattr(options, "refresh_package", set()),
         )
 
         # Handle custom ca-bundles from the user
@@ -120,14 +130,18 @@ class SessionCommandMixin(CommandContextMixIn):
         if options.timeout or timeout:
             session.timeout = timeout if timeout is not None else options.timeout
 
-        # Handle configured proxies
-        if options.proxy:
-            session.proxies = {
-                "http": options.proxy,
-                "https": options.proxy,
-            }
+        # An explicit --proxy (including "" to disable proxying) or --no-proxy-env
+        # makes the session ignore environment proxies; unset --proxy is None.
+        if options.proxy is not None or options.no_proxy_env:
+            if options.proxy:
+                session.proxies = {
+                    "http": options.proxy,
+                    "https": options.proxy,
+                }
             session.trust_env = False
+            # Keep "" so an empty --proxy reaches build subprocesses.
             session.pip_proxy = options.proxy
+            session.pip_no_proxy_env = options.no_proxy_env
 
         # Determine if we can prompt the user for authentication or not
         session.auth.prompting = not options.no_input
@@ -136,10 +150,18 @@ class SessionCommandMixin(CommandContextMixIn):
         return session
 
 
-def _pip_self_version_check(session: PipSession, options: Values) -> None:
-    from pip._internal.self_outdated_check import pip_self_version_check as check
+def _pip_self_version_check_fetch(
+    session: PipSession, options: Values
+) -> UpgradePrompt | None:
+    from pip._internal.self_outdated_check import pip_self_version_check_fetch
 
-    check(session, options)
+    return pip_self_version_check_fetch(session, options)
+
+
+def _pip_self_version_check_emit(upgrade_prompt: UpgradePrompt | None) -> None:
+    from pip._internal.self_outdated_check import pip_self_version_check_emit
+
+    pip_self_version_check_emit(upgrade_prompt)
 
 
 class IndexGroupCommand(Command, SessionCommandMixin):
@@ -149,7 +171,25 @@ class IndexGroupCommand(Command, SessionCommandMixin):
     This also corresponds to the commands that permit the pip version check.
     """
 
-    def handle_pip_version_check(self, options: Values) -> None:
+    def should_exclude_prerelease(
+        self, options: Values, package_name: NormalizedName
+    ) -> bool:
+        """
+        Determine if pre-releases should be excluded for a package.
+        """
+        # Check per-package release control settings
+        if options.release_control:
+            allow_prereleases = options.release_control.allows_prereleases(package_name)
+            if allow_prereleases is True:
+                return False  # Include pre-releases
+            elif allow_prereleases is False:
+                return True  # Exclude pre-releases
+
+        # No specific setting: exclude prereleases by default
+        return True
+
+    @contextlib.contextmanager
+    def pip_version_check(self, options: Values, args: list[str]) -> Iterator[None]:
         """
         Do the pip version check if not disabled.
 
@@ -159,17 +199,27 @@ class IndexGroupCommand(Command, SessionCommandMixin):
         assert hasattr(options, "no_index")
 
         if options.disable_pip_version_check or options.no_index:
+            yield
             return
 
+        upgrade_prompt: UpgradePrompt | None = None
         try:
-            # Otherwise, check if we're using the latest version of pip available.
             session = self._build_session(
                 options,
                 retries=0,
                 timeout=min(5, options.timeout),
             )
             with session:
-                _pip_self_version_check(session, options)
+                upgrade_prompt = _pip_self_version_check_fetch(session, options)
         except Exception:
             logger.warning("There was an error checking the latest version of pip.")
             logger.debug("See below for error", exc_info=True)
+
+        try:
+            yield
+        finally:
+            try:
+                _pip_self_version_check_emit(upgrade_prompt)
+            except Exception:
+                logger.warning("There was an error checking the latest version of pip.")
+                logger.debug("See below for error", exc_info=True)

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import functools
 import hashlib
 import json
 import logging
@@ -9,7 +8,6 @@ import optparse
 import os.path
 import sys
 from dataclasses import dataclass
-from typing import Any, Callable
 
 from pip._vendor.packaging.version import Version
 from pip._vendor.packaging.version import parse as parse_version
@@ -17,21 +15,30 @@ from pip._vendor.rich.console import Group
 from pip._vendor.rich.markup import escape
 from pip._vendor.rich.text import Text
 
+from pip import __version__
 from pip._internal.index.collector import LinkCollector
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import get_default_environment
+from pip._internal.models.release_control import ReleaseControl
 from pip._internal.models.selection_prefs import SelectionPreferences
 from pip._internal.network.session import PipSession
 from pip._internal.utils.compat import WINDOWS
+from pip._internal.utils.datetime import parse_iso_datetime
 from pip._internal.utils.entrypoints import (
     get_best_invocation_for_this_pip,
     get_best_invocation_for_this_python,
 )
-from pip._internal.utils.filesystem import adjacent_tmp_file, check_path_owner, replace
+from pip._internal.utils.filesystem import (
+    adjacent_tmp_file,
+    check_path_owner,
+    copy_directory_permissions,
+    replace,
+)
 from pip._internal.utils.misc import (
     ExternallyManagedEnvironment,
     check_externally_managed,
     ensure_dir,
+    running_under_zipapp,
 )
 
 _WEEK = datetime.timedelta(days=7)
@@ -45,18 +52,9 @@ def _get_statefile_name(key: str) -> str:
     return name
 
 
-def _convert_date(isodate: str) -> datetime.datetime:
-    """Convert an ISO format string to a date.
-
-    Handles the format 2020-01-22T14:24:01Z (trailing Z)
-    which is not supported by older versions of fromisoformat.
-    """
-    return datetime.datetime.fromisoformat(isodate.replace("Z", "+00:00"))
-
-
 class SelfCheckState:
     def __init__(self, cache_dir: str) -> None:
-        self._state: dict[str, Any] = {}
+        self._state: dict[str, str] = {}
         self._statefile_path = None
 
         # Try to load the existing state
@@ -88,7 +86,7 @@ class SelfCheckState:
             return None
 
         # Determine if we need to refresh the state
-        last_check = _convert_date(self._state["last_check"])
+        last_check = parse_iso_datetime(self._state["last_check"])
         time_since_last_check = current_time - last_check
         if time_since_last_check > _WEEK:
             return None
@@ -100,13 +98,15 @@ class SelfCheckState:
         if not self._statefile_path:
             return
 
+        statefile_directory = os.path.dirname(self._statefile_path)
+
         # Check to make sure that we own the directory
-        if not check_path_owner(os.path.dirname(self._statefile_path)):
+        if not check_path_owner(statefile_directory):
             return
 
         # Now that we've ensured the directory is owned by this user, we'll go
         # ahead and make sure that all our directories are created.
-        ensure_dir(os.path.dirname(self._statefile_path))
+        ensure_dir(statefile_directory)
 
         state = {
             # Include the key so it's easy to tell which pip wrote the
@@ -120,6 +120,7 @@ class SelfCheckState:
 
         with adjacent_tmp_file(self._statefile_path) as f:
             f.write(text.encode())
+            copy_directory_permissions(statefile_directory, f)
 
         try:
             # Since we have a prefix-specific state file, we can just
@@ -134,35 +135,30 @@ class SelfCheckState:
 class UpgradePrompt:
     old: str
     new: str
+    show_upgrade_hint: bool = True
 
     def __rich__(self) -> Group:
-        if WINDOWS:
-            pip_cmd = f"{get_best_invocation_for_this_python()} -m pip"
-        else:
-            pip_cmd = get_best_invocation_for_this_pip()
-
         notice = "[bold][[reset][blue]notice[reset][bold]][reset]"
-        return Group(
+        lines = [
             Text(),
             Text.from_markup(
                 f"{notice} A new release of pip is available: "
                 f"[red]{self.old}[reset] -> [green]{self.new}[reset]"
             ),
-            Text.from_markup(
-                f"{notice} To update, run: "
-                f"[green]{escape(pip_cmd)} install --upgrade pip"
-            ),
-        )
+        ]
+        if self.show_upgrade_hint:
+            if WINDOWS:
+                pip_cmd = f"{get_best_invocation_for_this_python()} -m pip"
+            else:
+                pip_cmd = get_best_invocation_for_this_pip()
 
-
-def was_installed_by_pip(pkg: str) -> bool:
-    """Checks whether pkg was installed by pip
-
-    This is used not to display the upgrade message when pip is in fact
-    installed by system package manager, such as dnf on Fedora.
-    """
-    dist = get_default_environment().get_distribution(pkg)
-    return dist is not None and "pip" == dist.installer
+            lines.append(
+                Text.from_markup(
+                    f"{notice} To update, run: "
+                    f"[green]{escape(pip_cmd)} install --upgrade pip"
+                )
+            )
+        return Group(*lines)
 
 
 def _get_current_remote_pip_version(
@@ -179,7 +175,7 @@ def _get_current_remote_pip_version(
     # yanked version.
     selection_prefs = SelectionPreferences(
         allow_yanked=False,
-        allow_all_prereleases=False,  # Explicitly set to False
+        release_control=ReleaseControl(only_final={"pip"}),
     )
 
     finder = PackageFinder.create(
@@ -193,28 +189,18 @@ def _get_current_remote_pip_version(
     return str(best_candidate.version)
 
 
-def _self_version_check_logic(
-    *,
-    state: SelfCheckState,
-    current_time: datetime.datetime,
+def _compute_upgrade_prompt(
     local_version: Version,
-    get_remote_version: Callable[[], str | None],
+    remote_version_str: str,
+    installed_by_pip: bool,
+    show_upgrade_hint: bool = True,
 ) -> UpgradePrompt | None:
-    remote_version_str = state.get(current_time)
-    if remote_version_str is None:
-        remote_version_str = get_remote_version()
-        if remote_version_str is None:
-            logger.debug("No remote pip version found")
-            return None
-        state.set(remote_version_str, current_time)
-
     remote_version = parse_version(remote_version_str)
     logger.debug("Remote version of pip: %s", remote_version)
     logger.debug("Local version of pip:  %s", local_version)
+    logger.debug("Was pip installed by pip? %s", installed_by_pip)
 
-    pip_installed_by_pip = was_installed_by_pip("pip")
-    logger.debug("Was pip installed by pip? %s", pip_installed_by_pip)
-    if not pip_installed_by_pip:
+    if not installed_by_pip:
         return None  # Only suggest upgrade if pip is installed by pip.
 
     local_version_is_older = (
@@ -222,33 +208,63 @@ def _self_version_check_logic(
         and local_version.base_version != remote_version.base_version
     )
     if local_version_is_older:
-        return UpgradePrompt(old=str(local_version), new=remote_version_str)
+        return UpgradePrompt(
+            old=str(local_version),
+            new=remote_version_str,
+            show_upgrade_hint=show_upgrade_hint,
+        )
 
     return None
 
 
-def pip_self_version_check(session: PipSession, options: optparse.Values) -> None:
-    """Check for an update for pip.
+def pip_self_version_check_fetch(
+    session: PipSession, options: optparse.Values
+) -> UpgradePrompt | None:
+    """Compute the pip upgrade prompt, if any, before the command runs.
 
     Limit the frequency of checks to once per week. State is stored either in
     the active virtualenv or in the user's USER_CACHE_DIR keyed off the prefix
     of the pip script path.
-    """
-    installed_dist = get_default_environment().get_distribution("pip")
-    if not installed_dist:
-        return
-    try:
-        check_externally_managed()
-    except ExternallyManagedEnvironment:
-        return
 
-    upgrade_prompt = _self_version_check_logic(
-        state=SelfCheckState(cache_dir=options.cache_dir),
-        current_time=datetime.datetime.now(datetime.timezone.utc),
-        local_version=installed_dist.version,
-        get_remote_version=functools.partial(
-            _get_current_remote_pip_version, session, options
-        ),
+    Pair with :func:`pip_self_version_check_emit`, which displays the prompt
+    after the command body runs.
+    """
+    if running_under_zipapp():
+        # Use the running pip's version; environment scans target the installed
+        # pip, not the zipapp. Skip checks that don't apply to zipapps.
+        local_version = parse_version(__version__)
+        installed_by_pip = True
+    else:
+        installed_dist = get_default_environment().get_distribution("pip")
+        if not installed_dist:
+            return None
+        try:
+            check_externally_managed()
+        except ExternallyManagedEnvironment:
+            return None
+
+        local_version = installed_dist.version
+        installed_by_pip = installed_dist.installer == "pip"
+
+    state = SelfCheckState(cache_dir=options.cache_dir)
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    remote_version_str = state.get(current_time)
+    if remote_version_str is None:
+        remote_version_str = _get_current_remote_pip_version(session, options)
+        if remote_version_str is None:
+            logger.debug("No remote pip version found")
+            return None
+        state.set(remote_version_str, current_time)
+
+    return _compute_upgrade_prompt(
+        local_version=local_version,
+        remote_version_str=remote_version_str,
+        installed_by_pip=installed_by_pip,
+        show_upgrade_hint=not running_under_zipapp(),
     )
+
+
+def pip_self_version_check_emit(upgrade_prompt: UpgradePrompt | None) -> None:
+    """Emit the upgrade prompt captured by :func:`pip_self_version_check_fetch`."""
     if upgrade_prompt is not None:
         logger.warning("%s", upgrade_prompt, extra={"rich": True})

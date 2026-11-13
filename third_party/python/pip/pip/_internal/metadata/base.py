@@ -14,7 +14,6 @@ from typing import (
     Any,
     NamedTuple,
     Protocol,
-    Union,
 )
 
 from pip._vendor.packaging.requirements import Requirement
@@ -29,14 +28,21 @@ from pip._internal.models.direct_url import (
     DirectUrl,
     DirectUrlValidationError,
 )
-from pip._internal.utils.compat import stdlib_pkgs  # TODO: Move definition here.
 from pip._internal.utils.egg_link import egg_link_path_from_sys_path
 from pip._internal.utils.misc import is_local, normalize_path
 from pip._internal.utils.urls import url_to_path
 
 from ._json import msg_to_json
 
-InfoPath = Union[str, pathlib.PurePath]
+# packages in the stdlib that may have installation metadata, but should not be
+# considered 'installed'.  this theoretically could be determined based on
+# dist.location (py27:`sysconfig.get_paths()['stdlib']`,
+# py26:sysconfig.get_config_vars('LIBDEST')), but fear platform variation may
+# make this ineffective, so hard-coding
+stdlib_pkgs = {"python", "wsgiref", "argparse"}
+
+
+InfoPath = str | pathlib.PurePath
 
 logger = logging.getLogger(__name__)
 
@@ -152,14 +158,13 @@ class BaseDistribution(Protocol):
         """
         raise NotImplementedError()
 
-    @property
+    @functools.cached_property
     def editable_project_location(self) -> str | None:
         """The project location for editable distributions.
 
         This is the directory where pyproject.toml or setup.py is located.
         None if the distribution is not installed in editable mode.
         """
-        # TODO: this property is relatively costly to compute, memoize it ?
         direct_url = self.direct_url
         if direct_url:
             if direct_url.is_local_editable():
@@ -617,11 +622,29 @@ class BaseEnvironment:
                 flags=re.IGNORECASE,
             )
             if not project_name_valid:
-                logger.warning(
-                    "Ignoring invalid distribution %s (%s)",
-                    dist.canonical_name,
-                    dist.location,
+                # Check the directory name rather than the distribution name,
+                # since the pkg_resources (default below 3.11) backend normalizes
+                # the leading tilde to a dash.
+                # TODO: use dist.canonical_name for this check once
+                # pkg_resources support is dropped (#13317).
+                info_location = dist.info_location
+                leftover_name = (
+                    pathlib.Path(info_location).name if info_location else ""
                 )
+                if leftover_name.startswith("~"):
+                    logger.warning(
+                        "Ignoring incompletely removed distribution %s (%s); "
+                        "'~'-prefixed leftover directories are the result of a "
+                        "previous incomplete installation, and can be deleted",
+                        leftover_name,
+                        dist.location,
+                    )
+                else:
+                    logger.warning(
+                        "Ignoring invalid distribution %s (%s)",
+                        dist.canonical_name,
+                        dist.location,
+                    )
                 continue
             yield dist
 

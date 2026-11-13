@@ -16,7 +16,7 @@ from pip._internal.exceptions import InvalidWheelFilename
 from pip._internal.models.direct_url import DirectUrl
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
-from pip._internal.utils.temp_dir import TempDirectory, tempdir_kinds
+from pip._internal.utils.temp_dir import TempDirectory, TempDirectoryKind
 from pip._internal.utils.urls import path_to_url
 
 logger = logging.getLogger(__name__)
@@ -134,16 +134,19 @@ class SimpleWheelCache(Cache):
     ) -> Link:
         candidates = []
 
+        if link.is_existing_dir():
+            return link
         if not package_name:
             return link
 
         canonical_package_name = canonicalize_name(package_name)
+        supported_tags_set = set(supported_tags)
         for wheel_name, wheel_dir in self._get_candidates(link, canonical_package_name):
             try:
                 wheel = Wheel(wheel_name)
             except InvalidWheelFilename:
                 continue
-            if canonicalize_name(wheel.name) != canonical_package_name:
+            if wheel.name != canonical_package_name:
                 logger.debug(
                     "Ignoring cached wheel %s for %s as it "
                     "does not match the expected distribution name %s.",
@@ -152,7 +155,7 @@ class SimpleWheelCache(Cache):
                     package_name,
                 )
                 continue
-            if not wheel.supported(supported_tags):
+            if not wheel.supported(supported_tags_set):
                 # Built for a different python/arch/etc
                 continue
             candidates.append(
@@ -175,7 +178,7 @@ class EphemWheelCache(SimpleWheelCache):
 
     def __init__(self) -> None:
         self._temp_dir = TempDirectory(
-            kind=tempdir_kinds.EPHEM_WHEEL_CACHE,
+            kind=TempDirectoryKind.EPHEM_WHEEL_CACHE,
             globally_managed=True,
         )
 
@@ -279,13 +282,16 @@ class WheelCache(Cache):
             else:
                 # TODO: use DirectUrl.equivalent when
                 # https://github.com/pypa/pip/pull/10564 is merged.
-                if origin.url != download_info.url:
+                # origin.url is already stripped because it came from the
+                # serialized origin.json file.
+                download_url = download_info.to_dict_compat()["url"]
+                if origin.url != download_url:
                     logger.warning(
                         "Origin URL %s in cache entry %s does not match download URL "
                         "%s. This is likely a pip bug or a cache corruption issue. "
                         "Will overwrite it with the new value.",
                         origin.url,
                         cache_dir,
-                        download_info.url,
+                        download_url,
                     )
         origin_path.write_text(download_info.to_json(), encoding="utf-8")

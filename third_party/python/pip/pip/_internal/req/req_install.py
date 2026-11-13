@@ -7,7 +7,7 @@ import shutil
 import sys
 import uuid
 import zipfile
-from collections.abc import Collection, Iterable, Sequence
+from collections.abc import Collection, Iterable
 from optparse import Values
 from pathlib import Path
 from typing import Any
@@ -34,13 +34,6 @@ from pip._internal.models.direct_url import DirectUrl
 from pip._internal.models.link import Link
 from pip._internal.operations.build.metadata import generate_metadata
 from pip._internal.operations.build.metadata_editable import generate_editable_metadata
-from pip._internal.operations.build.metadata_legacy import (
-    generate_metadata as generate_metadata_legacy,
-)
-from pip._internal.operations.install.editable_legacy import (
-    install_editable as install_editable_legacy,
-)
-from pip._internal.operations.install.wheel import install_wheel
 from pip._internal.pyproject import load_pyproject_toml, make_pyproject_path
 from pip._internal.req.req_uninstall import UninstallPathSet
 from pip._internal.utils.deprecation import deprecated
@@ -55,9 +48,9 @@ from pip._internal.utils.misc import (
     redact_auth_from_requirement,
     redact_auth_from_url,
 )
-from pip._internal.utils.packaging import get_requirement
+from pip._internal.utils.packaging import get_requirement, requirement_without_marker
 from pip._internal.utils.subprocess import runner_with_spinner_message
-from pip._internal.utils.temp_dir import TempDirectory, tempdir_kinds
+from pip._internal.utils.temp_dir import TempDirectory, TempDirectoryKind
 from pip._internal.utils.unpacking import unpack_file
 from pip._internal.utils.virtualenv import running_under_virtualenv
 from pip._internal.vcs import vcs
@@ -79,23 +72,20 @@ class InstallRequirement:
         editable: bool = False,
         link: Link | None = None,
         markers: Marker | None = None,
-        use_pep517: bool | None = None,
         isolated: bool = False,
         *,
-        global_options: list[str] | None = None,
+        source_link: Link | None = None,
         hash_options: dict[str, list[str]] | None = None,
         config_settings: dict[str, str | list[str]] | None = None,
         constraint: bool = False,
         extras: Collection[str] = (),
         user_supplied: bool = False,
-        permit_editable_wheels: bool = False,
     ) -> None:
         assert req is None or isinstance(req, Requirement), req
         self.req = req
         self.comes_from = comes_from
         self.constraint = constraint
         self.editable = editable
-        self.permit_editable_wheels = permit_editable_wheels
 
         # source_dir is the local directory where the linked requirement is
         # located, or unpacked. In case unpacking is needed, creating and
@@ -114,6 +104,10 @@ class InstallRequirement:
             # PEP 508 URL requirement
             link = Link(req.url)
         self.link = self.original_link = link
+
+        # The link selected before wheel-cache substitution. Unlike ``link``, this
+        # does not change when pip substitutes a locally built cached wheel.
+        self._source_link = source_link if source_link is not None else link
 
         # When this InstallRequirement is a wheel obtained from the cache of locally
         # built wheels, this is the source link corresponding to the cache entry, which
@@ -149,7 +143,6 @@ class InstallRequirement:
         # Set to True after successful installation
         self.install_succeeded: bool | None = None
         # Supplied options
-        self.global_options = global_options if global_options else []
         self.hash_options = hash_options if hash_options else {}
         self.config_settings = config_settings
         # Set to True after successful preparation of this requirement
@@ -168,6 +161,10 @@ class InstallRequirement:
         # details).
         self.metadata_directory: str | None = None
 
+        # The cached metadata distribution that this requirement represents.
+        # See get_dist / set_dist.
+        self._distribution: BaseDistribution | None = None
+
         # The static build requirements (from pyproject.toml)
         self.pyproject_requires: list[str] | None = None
 
@@ -175,24 +172,9 @@ class InstallRequirement:
         self.requirements_to_check: list[str] = []
 
         # The PEP 517 backend we should use to build the project
+        self._pep517_backend_spec: str
+        self._pep517_backend_path: str | None
         self.pep517_backend: BuildBackendHookCaller | None = None
-
-        # Are we using PEP 517 for this requirement?
-        # After pyproject.toml has been loaded, the only valid values are True
-        # and False. Before loading, None is valid (meaning "use the default").
-        # Setting an explicit value before loading pyproject.toml is supported,
-        # but after loading this flag should be treated as read only.
-        self.use_pep517 = use_pep517
-
-        # If config settings are provided, enforce PEP 517.
-        if self.config_settings:
-            if self.use_pep517 is False:
-                logger.warning(
-                    "--no-use-pep517 ignored for %s "
-                    "because --config-settings are specified.",
-                    self,
-                )
-            self.use_pep517 = True
 
         # This requirement needs more preparation before it can be built
         self.needs_more_preparation = False
@@ -201,8 +183,20 @@ class InstallRequirement:
         self._archive_source: Path | None = None
 
     def __str__(self) -> str:
+        return self._format()
+
+    def format_without_marker(self) -> str:
+        """Like ``str(self)``, but without the requirement's environment marker.
+
+        For error messages, where markers such as ``extra == "foo"`` are noise.
+        ``self.req`` and ``self.markers`` are not modified.
+        """
+        return self._format(include_marker=False)
+
+    def _format(self, include_marker: bool = True) -> str:
         if self.req:
-            s = redact_auth_from_requirement(self.req)
+            req = self.req if include_marker else requirement_without_marker(self.req)
+            s = redact_auth_from_requirement(req)
             if self.link:
                 s += f" from {redact_auth_from_url(self.link.url)}"
         elif self.link:
@@ -250,15 +244,14 @@ class InstallRequirement:
 
     @functools.cached_property
     def supports_pyproject_editable(self) -> bool:
-        if not self.use_pep517:
-            return False
         assert self.pep517_backend
+        assert isinstance(self.pep517_backend, ConfiguredBuildBackendHookCaller)
         with self.build_env:
             runner = runner_with_spinner_message(
                 "Checking if build backend supports build_editable"
             )
             with self.pep517_backend.subprocess_runner(runner):
-                return "build_editable" in self.pep517_backend._supported_features()
+                return self.pep517_backend.supports_feature("build_editable")
 
     @property
     def specifier(self) -> SpecifierSet:
@@ -269,6 +262,19 @@ class InstallRequirement:
     def is_direct(self) -> bool:
         """Whether this requirement was specified as a direct URL."""
         return self.original_link is not None
+
+    @property
+    def source_link(self) -> Link | None:
+        """The link selected before wheel-cache substitution."""
+        return self._source_link
+
+    def set_source_link(self, link: Link) -> None:
+        """Record the selected source link, rejecting later changes."""
+        if self._source_link is None:
+            self._source_link = link
+            return
+        if self._source_link != link:
+            raise InstallationError(f"Cannot change the source link for {self}.")
 
     @property
     def is_pinned(self) -> bool:
@@ -356,7 +362,7 @@ class InstallRequirement:
             # builds (such as numpy). Thus, we ensure that the real path
             # is returned.
             self._temp_build_dir = TempDirectory(
-                kind=tempdir_kinds.REQ_BUILD, globally_managed=True
+                kind=TempDirectoryKind.REQ_BUILD, globally_managed=True
             )
 
             return self._temp_build_dir.path
@@ -383,7 +389,7 @@ class InstallRequirement:
         return TempDirectory(
             path=actual_build_dir,
             delete=delete_arg,
-            kind=tempdir_kinds.REQ_BUILD,
+            kind=TempDirectoryKind.REQ_BUILD,
             globally_managed=True,
         ).path
 
@@ -493,13 +499,6 @@ class InstallRequirement:
         return setup_py
 
     @property
-    def setup_cfg_path(self) -> str:
-        assert self.source_dir, f"No source dir for {self}"
-        setup_cfg = os.path.join(self.unpacked_source_directory, "setup.cfg")
-
-        return setup_cfg
-
-    @property
     def pyproject_toml_path(self) -> str:
         assert self.source_dir, f"No source dir for {self}"
         return make_pyproject_path(self.unpacked_source_directory)
@@ -508,52 +507,51 @@ class InstallRequirement:
         """Load the pyproject.toml file.
 
         After calling this routine, all of the attributes related to PEP 517
-        processing for this requirement have been set. In particular, the
-        use_pep517 attribute can be used to determine whether we should
-        follow the PEP 517 or legacy (setup.py) code path.
+        processing for this requirement have been set.
         """
         pyproject_toml_data = load_pyproject_toml(
-            self.use_pep517, self.pyproject_toml_path, self.setup_py_path, str(self)
+            self.pyproject_toml_path, self.setup_py_path, str(self)
         )
-
-        if pyproject_toml_data is None:
-            assert not self.config_settings
-            self.use_pep517 = False
-            return
-
-        self.use_pep517 = True
+        assert pyproject_toml_data
         requires, backend, check, backend_path = pyproject_toml_data
         self.requirements_to_check = check
         self.pyproject_requires = requires
+        self._pep517_backend_spec = backend
+        self._pep517_backend_path = backend_path
+
+    def configure_backend(self, python_executable: str) -> None:
+        """Set up the build backend hook caller.
+
+        This is done separately after pyproject.toml loading as the backend
+        need to be called with the build environment's Python executable,
+        which can vary."""
         self.pep517_backend = ConfiguredBuildBackendHookCaller(
             self,
             self.unpacked_source_directory,
-            backend,
-            backend_path=backend_path,
+            self._pep517_backend_spec,
+            backend_path=self._pep517_backend_path,
+            python_executable=python_executable,
+            backend_warning_level=(
+                logging.WARNING
+                if self.link and self.link.is_existing_dir()
+                else logging.DEBUG
+            ),
         )
 
-    def isolated_editable_sanity_check(self) -> None:
+    def editable_sanity_check(self) -> None:
         """Check that an editable requirement if valid for use with PEP 517/518.
 
-        This verifies that an editable that has a pyproject.toml either supports PEP 660
-        or as a setup.py or a setup.cfg
+        This verifies that an editable has a build backend that supports PEP 660.
         """
-        if (
-            self.editable
-            and self.use_pep517
-            and not self.supports_pyproject_editable
-            and not os.path.isfile(self.setup_py_path)
-            and not os.path.isfile(self.setup_cfg_path)
-        ):
+        if self.editable and not self.supports_pyproject_editable:
             raise InstallationError(
-                f"Project {self} has a 'pyproject.toml' and its build "
-                f"backend is missing the 'build_editable' hook. Since it does not "
-                f"have a 'setup.py' nor a 'setup.cfg', "
+                f"Project {self} uses a build backend "
+                f"that is missing the 'build_editable' hook, so "
                 f"it cannot be installed in editable mode. "
                 f"Consider using a build backend that supports PEP 660."
             )
 
-    def prepare_metadata(self) -> None:
+    def prepare_metadata(self, allow_editables: bool) -> None:
         """Ensure that project metadata is available.
 
         Under PEP 517 and PEP 660, call the backend hook to prepare the metadata.
@@ -562,30 +560,17 @@ class InstallRequirement:
         assert self.source_dir, f"No source dir for {self}"
         details = self.name or f"from {self.link}"
 
-        if self.use_pep517:
-            assert self.pep517_backend is not None
-            if (
-                self.editable
-                and self.permit_editable_wheels
-                and self.supports_pyproject_editable
-            ):
-                self.metadata_directory = generate_editable_metadata(
-                    build_env=self.build_env,
-                    backend=self.pep517_backend,
-                    details=details,
-                )
-            else:
-                self.metadata_directory = generate_metadata(
-                    build_env=self.build_env,
-                    backend=self.pep517_backend,
-                    details=details,
-                )
-        else:
-            self.metadata_directory = generate_metadata_legacy(
+        assert self.pep517_backend is not None
+        if self.editable and allow_editables and self.supports_pyproject_editable:
+            self.metadata_directory = generate_editable_metadata(
                 build_env=self.build_env,
-                setup_py_path=self.setup_py_path,
-                source_dir=self.unpacked_source_directory,
-                isolated=self.isolated,
+                backend=self.pep517_backend,
+                details=details,
+            )
+        else:
+            self.metadata_directory = generate_metadata(
+                build_env=self.build_env,
+                backend=self.pep517_backend,
                 details=details,
             )
 
@@ -604,8 +589,13 @@ class InstallRequirement:
 
         return self._metadata
 
+    def set_dist(self, distribution: BaseDistribution) -> None:
+        self._distribution = distribution
+
     def get_dist(self) -> BaseDistribution:
-        if self.metadata_directory:
+        if self._distribution is not None:
+            return self._distribution
+        elif self.metadata_directory:
             return get_directory_distribution(self.metadata_directory)
         elif self.local_file_path and self.is_wheel:
             assert self.req is not None
@@ -809,14 +799,23 @@ class InstallRequirement:
 
     def install(
         self,
-        global_options: Sequence[str] | None = None,
         root: str | None = None,
         home: str | None = None,
         prefix: str | None = None,
         warn_script_location: bool = True,
         use_user_site: bool = False,
         pycompile: bool = True,
+        script_executable: str | None = None,
+        *,
+        rollback_on_error: bool = False,
     ) -> None:
+        # Lazy import to avoid transitively importing `_vendor.distlib.compat`
+        # which in turn imports `urllib.request` which is slow.
+        # During an actual installation, `urllib.request` will end up imported anyway,
+        # but `req.req_install` (this module) is also imported from commands that
+        # don't actually install anything (e.g. `pip freeze` or `pip show`).
+        from pip._internal.operations.install.wheel import install_wheel
+
         assert self.req is not None
         scheme = get_scheme(
             self.req.name,
@@ -826,43 +825,6 @@ class InstallRequirement:
             isolated=self.isolated,
             prefix=prefix,
         )
-
-        if self.editable and not self.is_wheel:
-            deprecated(
-                reason=(
-                    f"Legacy editable install of {self} (setup.py develop) "
-                    "is deprecated."
-                ),
-                replacement=(
-                    "to add a pyproject.toml or enable --use-pep517, "
-                    "and use setuptools >= 64. "
-                    "If the resulting installation is not behaving as expected, "
-                    "try using --config-settings editable_mode=compat. "
-                    "Please consult the setuptools documentation for more information"
-                ),
-                gone_in="25.3",
-                issue=11457,
-            )
-            if self.config_settings:
-                logger.warning(
-                    "--config-settings ignored for legacy editable install of %s. "
-                    "Consider upgrading to a version of setuptools "
-                    "that supports PEP 660 (>= 64).",
-                    self,
-                )
-            install_editable_legacy(
-                global_options=global_options if global_options is not None else [],
-                prefix=prefix,
-                home=home,
-                use_user_site=use_user_site,
-                name=self.req.name,
-                setup_py_path=self.setup_py_path,
-                isolated=self.isolated,
-                build_env=self.build_env,
-                unpacked_source_directory=self.unpacked_source_directory,
-            )
-            self.install_succeeded = True
-            return
 
         assert self.is_wheel
         assert self.local_file_path
@@ -876,6 +838,8 @@ class InstallRequirement:
             warn_script_location=warn_script_location,
             direct_url=self.download_info if self.is_direct else None,
             requested=self.user_supplied,
+            script_executable=script_executable,
+            rollback_on_error=rollback_on_error,
         )
         self.install_succeeded = True
 
@@ -915,23 +879,3 @@ def _has_option(options: Values, reqs: list[InstallRequirement], option: str) ->
         if getattr(req, option, None):
             return True
     return False
-
-
-def check_legacy_setup_py_options(
-    options: Values,
-    reqs: list[InstallRequirement],
-) -> None:
-    has_build_options = _has_option(options, reqs, "build_options")
-    has_global_options = _has_option(options, reqs, "global_options")
-    if has_build_options or has_global_options:
-        deprecated(
-            reason="--build-option and --global-option are deprecated.",
-            issue=11859,
-            replacement="to use --config-settings",
-            gone_in="25.3",
-        )
-        logger.warning(
-            "Implying --no-binary=:all: due to the presence of "
-            "--build-option / --global-option. "
-        )
-        options.format_control.disallow_binaries()

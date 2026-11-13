@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import functools
 import logging
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from typing import (
     TYPE_CHECKING,
-    Callable,
     NamedTuple,
     Protocol,
     TypeVar,
@@ -18,6 +18,7 @@ from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import NormalizedName, canonicalize_name
 from pip._vendor.packaging.version import InvalidVersion, Version
 from pip._vendor.resolvelib import ResolutionImpossible
+from pip._vendor.rich.markup import escape
 
 from pip._internal.cache import CacheEntry, WheelCache
 from pip._internal.exceptions import (
@@ -45,7 +46,7 @@ from pip._internal.req.req_install import (
 from pip._internal.resolution.base import InstallRequirementProvider
 from pip._internal.utils.compatibility_tags import get_supported
 from pip._internal.utils.hashes import Hashes
-from pip._internal.utils.packaging import get_requirement
+from pip._internal.utils.packaging import get_requirement, requirement_without_marker
 from pip._internal.utils.virtualenv import running_under_virtualenv
 
 from .base import Candidate, Constraint, Requirement
@@ -212,8 +213,8 @@ class Factory:
                 except (MetadataInconsistent, MetadataInvalid) as e:
                     logger.info(
                         "Discarding [blue underline]%s[/]: [yellow]%s[reset]",
-                        link,
-                        e,
+                        escape(str(link)),
+                        escape(str(e)),
                         extra={"markup": True},
                     )
                     self._build_failures[link] = e
@@ -233,8 +234,8 @@ class Factory:
                 except MetadataInconsistent as e:
                     logger.info(
                         "Discarding [blue underline]%s[/]: [yellow]%s[reset]",
-                        link,
-                        e,
+                        escape(str(link)),
+                        escape(str(e)),
                         extra={"markup": True},
                     )
                     self._build_failures[link] = e
@@ -248,6 +249,7 @@ class Factory:
         hashes: Hashes,
         prefers_installed: bool,
         incompatible_ids: set[int],
+        constraint_hash_options: dict[str, list[str]] | None = None,
     ) -> Iterable[Candidate]:
         if not ireqs:
             return ()
@@ -258,6 +260,16 @@ class Factory:
         # Hopefully the Project model can correct this mismatch in the future.
         template = ireqs[0]
         assert template.req, "Candidates found on index must be PEP 508"
+        if (
+            constraint_hash_options
+            and not template.hash_options
+            and any(constraint_hash_options.values())
+        ):
+            template = copy.copy(template)
+            template.hash_options = {
+                k: list(v) for k, v in constraint_hash_options.items()
+            }
+        assert template.req  # to prevent mypy from being confused by the copy
         name = canonicalize_name(template.req.name)
 
         extras: frozenset[str] = frozenset()
@@ -376,16 +388,28 @@ class Factory:
         This creates "fake" InstallRequirement objects that are basically clones
         of what "should" be the template, but with original_link set to link.
         """
+        extras: frozenset[str] = frozenset()
+        base_identifier = identifier
+        with contextlib.suppress(InvalidRequirement):
+            parsed_requirement = get_requirement(identifier)
+            if parsed_requirement.name != identifier:
+                base_identifier = canonicalize_name(parsed_requirement.name)
+                extras = frozenset(parsed_requirement.extras)
+
         for link in constraint.links:
             self._fail_if_link_is_unsupported_wheel(link)
-            candidate = self._make_base_candidate_from_link(
+            base_candidate = self._make_base_candidate_from_link(
                 link,
                 template=install_req_from_link_and_ireq(link, template),
-                name=canonicalize_name(identifier),
+                name=canonicalize_name(base_identifier),
                 version=None,
             )
-            if candidate:
-                yield candidate
+            if base_candidate is None:
+                continue
+            if extras:
+                yield self._make_extras_candidate(base_candidate, extras)
+            else:
+                yield base_candidate
 
     def find_candidates(
         self,
@@ -453,6 +477,7 @@ class Factory:
                 constraint.hashes,
                 prefers_installed,
                 incompat_ids,
+                constraint.hash_options,
             )
 
         return (
@@ -662,11 +687,12 @@ class Factory:
     def _report_single_requirement_conflict(
         self, req: Requirement, parent: Candidate | None
     ) -> DistributionNotFound:
-        if parent is None:
-            req_disp = str(req)
+        _, ireq = req.get_candidate_lookup()
+        if ireq is not None and ireq.req is not None:
+            req_str = str(requirement_without_marker(ireq.req))
         else:
-            req_disp = f"{req} (from {parent.name})"
-
+            req_str = str(req)
+        req_disp = req_str if parent is None else f"{req_str} (from {parent.name})"
         cands = self._finder.find_all_candidates(req.project_name)
         skipped_by_requires_python = self._finder.requires_python_skipped_reasons()
 
@@ -695,12 +721,43 @@ class Factory:
                 "version: %s",
                 "; ".join(skipped_by_requires_python) or "none",
             )
-        logger.critical(
-            "Could not find a version that satisfies the requirement %s "
-            "(from versions: %s)",
-            req_disp,
-            ", ".join(versions) or "none",
-        )
+
+        # Check if only final releases are allowed for this package
+        version_type = "version"
+        allows_pre = None
+        if self._finder.release_control is not None:
+            allows_pre = self._finder.release_control.allows_prereleases(
+                canonicalize_name(req.project_name)
+            )
+            if allows_pre is False:
+                version_type = "final version"
+
+        if len(cands) == 1 and cands[0].locked:
+            # The package finder ensures that requirements from pylock files
+            # have exactly one candidate. So we can provide a specific error
+            # message in this case.
+            if cands[0].version.is_prerelease and allows_pre is False:
+                logger.critical(
+                    "A pre-release version %s is specified in a provided lock file "
+                    "for %s but only final versions are allowed",
+                    cands[0].version,
+                    cands[0].name,
+                )
+            else:
+                logger.critical(
+                    "The requirement %s is not compatible with "
+                    "version %s specified in a provided lock file",
+                    req_disp,
+                    ", ".join(versions),
+                )
+        else:
+            logger.critical(
+                "Could not find a %s that satisfies the requirement %s "
+                "(from versions: %s)",
+                version_type,
+                req_disp,
+                ", ".join(versions) or "none",
+            )
         if str(req) == "requirements.txt":
             logger.info(
                 "HINT: You are attempting to install a package literally "
@@ -708,8 +765,22 @@ class Factory:
                 "using the '-r' flag to install the packages listed in "
                 "requirements.txt"
             )
+        return DistributionNotFound(f"No matching distribution found for {req_disp}")
 
-        return DistributionNotFound(f"No matching distribution found for {req}")
+    def _has_any_candidates(self, project_name: str) -> bool:
+        """
+        Check if there are any candidates available for the project name.
+        """
+        return any(
+            self.find_candidates(
+                project_name,
+                requirements={project_name: []},
+                incompatibilities={},
+                constraint=Constraint.empty(),
+                prefers_installed=True,
+                is_satisfied_by=lambda r, c: True,
+            )
+        )
 
     def get_installation_error(
         self,
@@ -793,8 +864,24 @@ class Factory:
                 msg = msg + "The user requested "
             msg = msg + req.format_for_error()
         for key in relevant_constraints:
-            spec = constraints[key].specifier
-            msg += f"\n    The user requested (constraint) {key}{spec}"
+            constraint_text = f"{key}{constraints[key].format_for_error()}"
+            msg += f"\n    The user requested (constraint) {constraint_text}"
+
+        # Check for causes that had no candidates
+        causes = set()
+        for req, _ in e.causes:
+            causes.add(req.name)
+
+        no_candidates = {c for c in causes if not self._has_any_candidates(c)}
+        if no_candidates:
+            msg = (
+                msg
+                + "\n\n"
+                + "Additionally, some packages in these conflicts have no "
+                + "matching distributions available for your environment:"
+                + "\n    "
+                + "\n    ".join(sorted(no_candidates))
+            )
 
         msg = (
             msg

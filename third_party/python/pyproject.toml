@@ -40,9 +40,7 @@ dependencies = [
     "packaging~=25.0",
     "pathspec~=0.9",
     "pip-tools==7.4.1",
-    # 25.2 is the last version of pip that accepts `--no-use-pep517`, which
-    # Mozharness passes when `uv` is unavailable. See bug 1857470.
-    "pip==25.2",
+    "pip==26.3",
     "ply==3.10",
     "pyasn1-modules~=0.2",
     "pyasn1~=0.4",

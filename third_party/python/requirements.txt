@@ -696,9 +696,9 @@ pathspec==0.12.1 \
     # via
     #   mozilla-third-party-python-vendor-dir
     #   yamllint
-pip==25.2 \
-    --hash=sha256:578283f006390f85bb6282dffb876454593d637f5d1be494b5202ce4877e71f2 \
-    --hash=sha256:6d67a2b4e7f14d8b31b8b52648866fa717f45a1eb70e83002f4331d07e953717
+pip==26.3 \
+    --hash=sha256:6c36ae7da8695be67e3cd9f7d87919667ced53f57ce2ede75d89b5912ed2bc4c \
+    --hash=sha256:f3b60b20ffaadd4415ed7957212a38ac63fa4c5fa375bd0f4a797777940fad13
     # via
     #   mozilla-third-party-python-vendor-dir
     #   pip-tools

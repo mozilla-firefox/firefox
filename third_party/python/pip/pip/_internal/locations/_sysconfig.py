@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import sysconfig
+from collections.abc import Callable
 
 from pip._internal.exceptions import InvalidSchemeCombination, UserInstallationInvalid
 from pip._internal.models.scheme import SCHEME_KEYS, Scheme
@@ -24,7 +25,9 @@ logger = logging.getLogger(__name__)
 
 _AVAILABLE_SCHEMES = set(sysconfig.get_scheme_names())
 
-_PREFERRED_SCHEME_API = getattr(sysconfig, "get_preferred_scheme", None)
+_PREFERRED_SCHEME_API: Callable[[str], str] | None = getattr(
+    sysconfig, "get_preferred_scheme", None
+)
 
 
 def _should_use_osx_framework_prefix() -> bool:
@@ -154,6 +157,14 @@ def get_scheme(
         scheme_name = _infer_user()
     else:
         scheme_name = _infer_prefix()
+
+    # Special case: When installing into a custom prefix, use posix_prefix
+    # instead of posix_local because it should *only* be used to redirecting
+    # to /usr/local for system packager installs. Notably, posix_local is used
+    # on Debian and its derivatives.
+    # See also: https://discuss.python.org/t/18240
+    if prefix is not None and scheme_name == "posix_local":
+        scheme_name = "posix_prefix"
 
     # Special case: When installing into a custom prefix, use posix_prefix
     # instead of osx_framework_library. See _should_use_osx_framework_prefix()

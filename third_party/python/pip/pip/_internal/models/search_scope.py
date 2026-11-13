@@ -14,13 +14,11 @@ from pip._internal.utils.misc import normalize_path, redact_auth_from_url
 logger = logging.getLogger(__name__)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class SearchScope:
     """
     Encapsulates the locations that pip is configured to search.
     """
-
-    __slots__ = ["find_links", "index_urls", "no_index"]
 
     find_links: list[str]
     index_urls: list[str]

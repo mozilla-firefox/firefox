@@ -5,8 +5,9 @@ import os
 import os.path
 import random
 import sys
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextlib import contextmanager
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, BinaryIO, cast
 
@@ -150,3 +151,51 @@ def directory_size(path: str) -> int | float:
 
 def format_directory_size(path: str) -> str:
     return format_size(directory_size(path))
+
+
+def copy_directory_permissions(directory: str, target_file: BinaryIO) -> None:
+    mode = (
+        os.stat(directory).st_mode & 0o666  # select read/write permissions of directory
+        | 0o600  # set owner read/write permissions
+    )
+    # Change permissions only if there is no risk of following a symlink.
+    if os.chmod in os.supports_fd:
+        os.chmod(target_file.fileno(), mode)
+    elif os.chmod in os.supports_follow_symlinks:
+        os.chmod(target_file.name, mode, follow_symlinks=False)
+
+
+def _subdirs_without_generic(
+    path: str, predicate: Callable[[str, list[str]], bool]
+) -> Generator[Path]:
+    """Yields every subdirectory of +path+ that has no files matching the
+    predicate under it."""
+
+    directories = []
+    excluded: set[Path] = set()
+
+    for root_str, _, filenames in os.walk(Path(path).resolve()):
+        root = Path(root_str)
+        if predicate(root_str, filenames):
+            # This directory should be excluded, so exclude it and all of its
+            # parent directories.
+            # The last item in root.parents is ".", so we ignore it.
+            excluded.update(root.parents[:-1])
+            excluded.add(root)
+        directories.append(root)
+
+    for d in sorted(directories, reverse=True):
+        if d not in excluded:
+            yield d
+
+
+def subdirs_without_files(path: str) -> Generator[Path]:
+    """Yields every subdirectory of +path+ that has no files under it."""
+    return _subdirs_without_generic(path, lambda root, filenames: len(filenames) > 0)
+
+
+def subdirs_without_wheels(path: str) -> Generator[Path]:
+    """Yields every subdirectory of +path+ that has no .whl files under it."""
+    return _subdirs_without_generic(
+        path, lambda root, filenames: any(x.endswith(".whl") for x in filenames)
+    )
