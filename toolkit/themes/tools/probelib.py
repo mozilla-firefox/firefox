@@ -685,24 +685,83 @@ PRELUDE = r"""
 """
 
 
-STALE_BUILD_SIGNATURES = ("Missing chrome or resource URL",)
+STALE_BUILD_SIGNATURES = (
+    "Missing chrome or resource URL",
+    # The binary's Rust components and the checkout's generated JS bindings
+    # were built at different revisions.
+    "LowerRustArgs: Incorrect argument length",
+)
+
+# Seconds a new session may stay pending after the browser log shows a
+# stale-build signature before StaleBuildWatch stops the browser.
+STALE_BUILD_GRACE = 20
+
+STALE_BUILD_HINT = "(desktop-theme-probing references/build-freshness.md §1)"
+
+
+def find_stale_build(log_path):
+    """Return the first browser log line with a stale-build signature, or None."""
+    try:
+        with open(log_path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if any(s in line for s in STALE_BUILD_SIGNATURES):
+                    return line.strip()
+    except OSError:
+        pass
+    return None
 
 
 def report_stale_build(prog, log_path):
     """Print the first stale-build signature in the browser log, if any: a
     startup that dies on one surfaces only as a Marionette timeout."""
-    try:
-        with open(log_path, encoding="utf-8", errors="replace") as f:
-            for line in f:
-                if any(s in line for s in STALE_BUILD_SIGNATURES):
-                    print(
-                        f"{prog}: stale build? the browser log says: {line.strip()}"
-                        " (desktop-theme-probing references/build-freshness.md §1)",
-                        file=sys.stderr,
-                    )
-                    return
-    except OSError:
-        pass
+    line = find_stale_build(log_path)
+    if line:
+        print(
+            f"{prog}: stale build? the browser log says: {line} {STALE_BUILD_HINT}",
+            file=sys.stderr,
+        )
+
+
+class StaleBuildWatch(threading.Thread):
+    """Poll the browser log while `client.start_session()` is pending, and stop
+    the browser once a stale-build signature has stood for STALE_BUILD_GRACE
+    seconds without a session: a startup that wedges on one otherwise holds the
+    run for the whole socket timeout."""
+
+    def __init__(self, client):
+        super().__init__(daemon=True)
+        self.client = client
+        self.finished = threading.Event()
+        self.line = None
+        self.stopped_browser = False
+
+    def run(self):
+        seen = None
+        while not self.finished.wait(0.5):
+            if seen is None:
+                self.line = find_stale_build(self.client.instance.gecko_log)
+                if self.line:
+                    seen = time.monotonic()
+            elif time.monotonic() - seen >= STALE_BUILD_GRACE:
+                if (
+                    self.client.session is None
+                    and self.client.instance.runner.is_running()
+                ):
+                    self.stopped_browser = True
+                    self.client.instance.close()
+                return
+
+    def finish(self):
+        self.finished.set()
+        self.join(timeout=30)
+
+    def report(self, prog):
+        print(
+            f"{prog}: stale build: the browser log says {self.line}, and no "
+            f"session had started {STALE_BUILD_GRACE}s later, so the browser was "
+            f"stopped {STALE_BUILD_HINT}",
+            file=sys.stderr,
+        )
 
 
 class Stopped(SystemExit):
@@ -845,7 +904,18 @@ def run(args, prog, body):
             report_stale_build(prog, log_path)
             return 2
 
-        client.start_session()
+        watch = StaleBuildWatch(client)
+        watch.start()
+        try:
+            client.start_session()
+        except Exception:
+            if not watch.stopped_browser:
+                raise
+        finally:
+            watch.finish()
+        if watch.stopped_browser:
+            watch.report(prog)
+            return 2
         client.timeout.script = args.timeout_ms / 1000.0
         client.set_context("chrome")
 

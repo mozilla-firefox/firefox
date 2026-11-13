@@ -25,7 +25,9 @@ probe bug.
   another revision than the checkout, and `build faster` never replaces it. Run
   `./mach artifact install` at the checked-out revision, then `./mach build
   faster`. From JS, a service with a failed init looks like one the realm lacks,
-  so read the browser log before concluding either.
+  so read the browser log before concluding either. When the mismatch keeps
+  Marionette from starting a session, the runner stops the browser 20 s after
+  the signature appears and exits 2 with this section's hint.
 - **BiDi answers `unsupported operation` or "navigation not allowed"** to the
   devtools MCP: the binary is older than the MCP client expects, as after an
   `artifact install` of an older build. Use the test harness (`SKILL.md` §3) or
