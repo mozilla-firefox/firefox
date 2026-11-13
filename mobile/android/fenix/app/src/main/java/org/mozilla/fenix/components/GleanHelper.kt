@@ -10,6 +10,7 @@ import mozilla.components.service.glean.net.ConceptFetchHttpUploader
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.telemetry.glean.Glean
 import mozilla.telemetry.glean.config.Configuration
+import org.mozilla.experiments.nimbus.Nimbus.Pings as NimbusPings
 import org.mozilla.fenix.BuildConfig
 import org.mozilla.fenix.Config
 import org.mozilla.fenix.GleanMetrics.GleanBuildInfo
@@ -57,6 +58,7 @@ fun initializeGlean(applicationContext: Context, logger: Logger, isTelemetryUplo
     // in order to ensure they are enabled and able to collect data.
     // See https://bugzilla.mozilla.org/1934931 for more information.
     Glean.registerPings(Pings)
+    Glean.registerPings(NimbusPings.nimbusTargetingContext)
 
     // Set the metric configuration from Nimbus.
     Glean.applyServerKnobsConfig(FxNimbus.features.glean.value().gleanMetricConfiguration.toJSONObject().toString())

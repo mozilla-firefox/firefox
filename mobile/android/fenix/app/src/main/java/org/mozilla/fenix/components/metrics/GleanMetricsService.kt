@@ -8,6 +8,7 @@ import android.content.Context
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.utils.RunWhenReadyQueue
 import mozilla.telemetry.glean.Glean
+import org.mozilla.experiments.nimbus.Nimbus.Pings as NimbusPings
 import org.mozilla.fenix.GleanMetrics.Pings
 import org.mozilla.fenix.ext.components
 
@@ -83,6 +84,7 @@ class GleanMetricsService(
             // These two things actually happen in parallel, but that should be ok because Glean
             // can handle events being recorded before it's initialized.
             Glean.registerPings(Pings)
+            Glean.registerPings(NimbusPings.nimbusTargetingContext)
 
             activationPing.checkAndSend()
         }
