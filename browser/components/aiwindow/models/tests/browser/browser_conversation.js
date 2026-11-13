@@ -15,6 +15,102 @@ const { MODEL_FEATURES, renderPrompt } = ChromeUtils.importESModule(
 const { ConversationStore } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ConversationStore.sys.mjs"
 );
+const { EngineProcess } = ChromeUtils.importESModule(
+  "chrome://global/content/ml/EngineProcess.sys.mjs"
+);
+const { MLEngine } = ChromeUtils.importESModule(
+  "moz-src:///toolkit/components/ml/actors/MLEngineParent.sys.mjs"
+);
+
+/**
+ * Uses the real engine because MockEngineManager replaces the engine lifecycle
+ * that idle shutdown goes through.
+ */
+add_task(async function test_conversation_stays_ready_through_idle_shutdown() {
+  // Engines left by earlier runs keep the 2 minute default timeout and would
+  // keep the inference process alive.
+  await EngineProcess.destroyMLEngine();
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.ml.modelCacheTimeout", 1000]],
+  });
+  let requestCount = 0;
+
+  await withServer(
+    {
+      onRequest: () => requestCount++,
+    },
+    async () => {
+      const conversation = await buildConversation(
+        MODEL_FEATURES.TITLE_GENERATION
+      );
+      conversation.addUserMessage("hello");
+      const engine = conversation.engine.engineInstance;
+      await conversation.run();
+      Assert.equal(engine.engineStatus, "ready", "The engine starts ready");
+      Assert.ok(
+        conversation.isReady,
+        "A conversation with a ready engine is ready"
+      );
+
+      await TestUtils.waitForCondition(
+        () => EngineProcess.areAllEnginesTerminated(),
+        "The inference process shuts down the idle engine"
+      );
+      Assert.equal(
+        engine.engineStatus,
+        "suspended",
+        "The engine is suspended after the idle shutdown"
+      );
+      Assert.ok(
+        conversation.isReady,
+        "A conversation whose engine went idle is still ready"
+      );
+
+      const requestsBefore = requestCount;
+      await conversation.run();
+      Assert.equal(
+        requestCount,
+        requestsBefore + 1,
+        "A turn on the idle conversation reaches the model"
+      );
+      Assert.equal(
+        MLEngine.getInstance(engine.engineId)?.engineStatus,
+        "ready",
+        "The turn reopens a ready engine for the suspended one"
+      );
+
+      await TestUtils.waitForCondition(
+        () => EngineProcess.areAllEnginesTerminated(),
+        "The inference process shuts down the reopened engine once idle"
+      );
+      Assert.ok(
+        conversation.isReady,
+        "The conversation is still ready after going idle a second time"
+      );
+      let streamed = "";
+      for await (const chunk of conversation.runWithGenerator({
+        streamOptions: { enabled: true },
+      })) {
+        // The stream's closing chunk carries no text.
+        streamed += chunk.text ?? "";
+      }
+      Assert.equal(
+        streamed,
+        "Hello from mock.",
+        "A streamed turn on the idle conversation gets the model's reply"
+      );
+
+      await engine.terminate();
+      Assert.ok(
+        !conversation.isReady,
+        "A conversation whose engine was terminated is not ready"
+      );
+    }
+  );
+
+  await EngineProcess.destroyMLEngine();
+  await SpecialPowers.popPrefEnv();
+});
 
 add_task(function test_default_conversation_is_usable() {
   const conversation = new Conversation();
