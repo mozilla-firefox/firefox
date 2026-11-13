@@ -85,6 +85,7 @@ object TabGroupActionReducer {
             TabGroupAction.NavigateBackInvoked -> state
             is TabGroupAction.TabAddedToNewTabGroup -> state
             is TabGroupAction.TabGroupsUpdated -> state
+            is TabGroupAction.TabMovedToExistingTabGroup -> state
         }
     }
 

@@ -23,6 +23,9 @@ object TabGroupFlowReducer {
             is TabGroupAction.TabAddedToExistingTabGroup -> {
                 state.copy(backStack = state.popBackStack())
             }
+            is TabGroupAction.TabMovedToExistingTabGroup -> {
+                state.copy(backStack = state.popBackStack())
+            }
             is TabGroupAction.SaveClicked -> {
                 // Resets to root after a save
                 state.copy(backStack = listOf(TabGroupFlowDestination.Root))

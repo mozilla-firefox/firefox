@@ -58,7 +58,7 @@ class TabGroupFlowFragment : DialogFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View? {
+    ): View {
         store = setupStore()
         return content {
             val state by store.stateFlow.collectAsStateWithLifecycle()
@@ -119,23 +119,7 @@ class TabGroupFlowFragment : DialogFragment() {
                         showBetaLabel = true,
                     )
             ) {
-                val formState = state.formState
-                requireNotNull(formState) {
-                    "Form state must not be null when navigating to the edit sheet"
-                }
-
-                EditTabGroup(
-                    formState = formState,
-                    onTabGroupNameChange = { newName ->
-                        store.dispatch(TabGroupAction.NameChanged(newName))
-                    },
-                    onTabGroupThemeChange = { newTheme ->
-                        store.dispatch(TabGroupAction.ThemeChanged(newTheme))
-                    },
-                    onConfirmSave = {
-                        store.dispatch(TabGroupAction.SaveClicked)
-                    },
-                )
+                RenderEditTabGroup(dispatcher = store::dispatch, state = state)
             }
 
             entry<TabGroupFlowDestination.AddToTabGroup>(
@@ -145,16 +129,19 @@ class TabGroupFlowFragment : DialogFragment() {
                             stringResource(id = R.string.add_to_tab_group_bottom_sheet_grabber_content_description),
                         showBetaLabel = true,
                     )
+            ) { destination ->
+                RenderAddToTabGroup(state = state, dispatcher = store::dispatch, destination = destination)
+            }
+
+            entry<TabGroupFlowDestination.MoveToTabGroup>(
+                metadata =
+                    BottomSheetSceneStrategy.bottomSheet(
+                        handleContentDescription =
+                            stringResource(id = R.string.add_to_tab_group_bottom_sheet_grabber_content_description),
+                        showBetaLabel = true,
+                    )
             ) {
-                AddToTabGroup(
-                    tabGroups = state.groups,
-                    onAddToNewTabGroup = {
-                        store.dispatch(TabGroupAction.TabAddedToNewTabGroup(tabId = it.tabId))
-                    },
-                    onAddToExistingTabGroup = { group ->
-                        store.dispatch(TabGroupAction.TabAddedToExistingTabGroup(groupId = group.id, tabId = it.tabId))
-                    },
-                )
+                RenderMoveToTabGroup(state = state, dispatcher = store::dispatch, destination = it)
             }
 
             entry<TabGroupFlowDestination.ExpandedTabGroup>(
@@ -214,9 +201,83 @@ class TabGroupFlowFragment : DialogFragment() {
                                 homepageAsNewTabEnabled = settings.enableHomepageAsNewTab,
                             )
                     ) ?: createInitialState(settings = settings, args = args),
-                middlewares = listOf(TabGroupFlowTelemetryMiddleware()),
+                middlewares =
+                    listOf(
+                        TabGroupFlowTelemetryMiddleware(),
+                        TabGroupFlowSnackBarMiddleware(
+                            appStore = requireComponents.appStore,
+                            tabGroupStripEnabled = settings.shouldShowTabGroupsStrip,
+                        ),
+                    ),
             )
         }
+    }
+
+    @Composable
+    private fun RenderAddToTabGroup(
+        state: TabGroupFlowState,
+        dispatcher: (TabGroupAction) -> Unit,
+        destination: TabGroupFlowDestination.AddToTabGroup,
+    ) {
+        AddToTabGroup(
+            tabGroups = state.groups,
+            onAddToNewTabGroup = {
+                dispatcher(TabGroupAction.TabAddedToNewTabGroup(tabId = destination.tabId))
+            },
+            onAddToExistingTabGroup = { group ->
+                dispatcher(
+                    TabGroupAction.TabAddedToExistingTabGroup(
+                        groupId = group.id,
+                        tabId = destination.tabId,
+                        groupTitle = group.title,
+                    )
+                )
+            },
+        )
+    }
+
+    @Composable
+    private fun RenderMoveToTabGroup(
+        state: TabGroupFlowState,
+        dispatcher: (TabGroupAction) -> Unit,
+        destination: TabGroupFlowDestination.MoveToTabGroup,
+    ) {
+        AddToTabGroup(
+            tabGroups = state.moveTargetGroups(destination.tabId),
+            onAddToNewTabGroup = {
+                dispatcher(TabGroupAction.TabAddedToNewTabGroup(tabId = destination.tabId))
+            },
+            onAddToExistingTabGroup = { group ->
+                dispatcher(
+                    TabGroupAction.TabMovedToExistingTabGroup(
+                        groupId = group.id,
+                        tabId = destination.tabId,
+                        groupTitle = group.title,
+                    )
+                )
+            },
+        )
+    }
+
+    @Composable
+    private fun RenderEditTabGroup(dispatcher: (TabGroupAction) -> Unit, state: TabGroupFlowState) {
+        val formState = state.formState
+        requireNotNull(formState) {
+            "Form state must not be null when navigating to the edit sheet"
+        }
+
+        EditTabGroup(
+            formState = formState,
+            onTabGroupNameChange = { newName ->
+                dispatcher(TabGroupAction.NameChanged(newName))
+            },
+            onTabGroupThemeChange = { newTheme ->
+                dispatcher(TabGroupAction.ThemeChanged(newTheme))
+            },
+            onConfirmSave = {
+                dispatcher(TabGroupAction.SaveClicked)
+            },
+        )
     }
 
     @VisibleForTesting
@@ -231,6 +292,7 @@ class TabGroupFlowFragment : DialogFragment() {
                     homepageAsNewTabEnabled = settings.enableHomepageAsNewTab,
                     displayTabsInGrid = settings.gridTabView,
                 ),
+            entryPoint = args.entryPoint,
         )
     }
 
@@ -241,7 +303,7 @@ class TabGroupFlowFragment : DialogFragment() {
                     TabGroupFlowDestination.AddToTabGroup(tabId = tabGroupFlowEntryPoint.tabId)
                 }
                 is TabGroupFlowEntryPoint.MoveTabToGroup -> {
-                    TabGroupFlowDestination.AddToTabGroup(tabId = tabGroupFlowEntryPoint.tabId)
+                    TabGroupFlowDestination.MoveToTabGroup(tabId = tabGroupFlowEntryPoint.tabId)
                 }
                 is TabGroupFlowEntryPoint.EditGroup -> {
                     TabGroupFlowDestination.EditTabGroup

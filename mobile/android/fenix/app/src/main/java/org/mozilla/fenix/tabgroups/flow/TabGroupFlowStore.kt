@@ -17,7 +17,7 @@ import org.mozilla.fenix.tabstray.redux.state.TabGroupFormState
  * A [Store] that holds the [TabGroupFlowState] for the tabs tray and reduces [TabGroupAction]s dispatched to the store.
  */
 class TabGroupFlowStore(
-    initialState: TabGroupFlowState = TabGroupFlowState(),
+    initialState: TabGroupFlowState,
     middlewares: List<Middleware<TabGroupFlowState, TabGroupAction>>,
 ) :
     Store<TabGroupFlowState, TabGroupAction>(

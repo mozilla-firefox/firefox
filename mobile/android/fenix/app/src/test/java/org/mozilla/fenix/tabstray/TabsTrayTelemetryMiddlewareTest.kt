@@ -376,7 +376,9 @@ class TabsTrayTelemetryMiddlewareTest {
     fun `WHEN a single tab is added to a tab group THEN the metric is reported with count 1`() {
         assertNull(TabsTray.tabAddedToGroup.testGetValue())
 
-        store.dispatch(TabGroupAction.TabAddedToExistingTabGroup(tabId = "id", groupId = "id"))
+        store.dispatch(
+            TabGroupAction.TabAddedToExistingTabGroup(tabId = "id", groupId = "id", groupTitle = "Tab Group 1")
+        )
 
         assertNotNull(TabsTray.tabAddedToGroup.testGetValue())
         val snapshot = TabsTray.tabAddedToGroup.testGetValue()!!

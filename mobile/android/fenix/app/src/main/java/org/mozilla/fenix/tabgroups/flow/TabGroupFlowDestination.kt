@@ -13,8 +13,11 @@ sealed interface TabGroupFlowDestination {
     /** [TabGroupFlowDestination] representing the [EditTabGroup]. */
     data object EditTabGroup : TabGroupFlowDestination
 
-    /** [TabGroupFlowDestination] representing the [AddToTabGroup]. */
+    /** [TabGroupFlowDestination] for adding a tab to a group */
     data class AddToTabGroup(val tabId: String) : TabGroupFlowDestination
+
+    /** [TabGroupFlowDestination] for moving a tab to a group. */
+    data class MoveToTabGroup(val tabId: String) : TabGroupFlowDestination
 
     /**
      * [TabGroupFlowDestination] representing the [ExpandedTabGroup].

@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.navigation3.ui.NavDisplay
 import androidx.test.core.app.ApplicationProvider
 import kotlin.test.Test
@@ -16,6 +17,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import mozilla.components.compose.base.theme.layout.AcornWindowSize
+import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Before
 import org.junit.Rule
@@ -23,8 +25,11 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.compose.navigation.BottomSheetSceneStrategy
 import org.mozilla.fenix.helpers.FenixGleanTestRule
 import org.mozilla.fenix.helpers.MockkRetryTestRule
+import org.mozilla.fenix.tabstray.TabsTrayTestTag
 import org.mozilla.fenix.tabstray.TabsTrayTestTag.BOTTOM_SHEET_COLOR_LIST
 import org.mozilla.fenix.tabstray.data.TabGroupTheme
+import org.mozilla.fenix.tabstray.data.createTabGroup
+import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 import org.mozilla.fenix.tabstray.redux.state.TabGroupFormState
 import org.mozilla.fenix.utils.Settings
 import org.robolectric.RobolectricTestRunner
@@ -51,7 +56,12 @@ class TabGroupFlowFragmentTest {
                 TabGroupFlowDestination.Root,
                 TabGroupFlowDestination.AddToTabGroup(tabId = "123"),
             )
-        val state = TabGroupFlowState()
+        val state = TabGroupFlowState(entryPoint = TabGroupFlowEntryPoint.AddTabToGroup(tabId = "123"))
+        fragment.store =
+            TabGroupFlowStore(
+                initialState = state,
+                middlewares = emptyList(),
+            )
         composeTestRule.setContent {
             NavDisplay(
                 backStack = testBackStack,
@@ -80,7 +90,8 @@ class TabGroupFlowFragmentTest {
                     TabGroupFormState(
                         tabGroupId = "123",
                         name = "Tab Group",
-                    )
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.EditGroup(groupId = "123"),
             )
         fragment.store =
             TabGroupFlowStore(
@@ -139,6 +150,45 @@ class TabGroupFlowFragmentTest {
                 ),
             actual = state.backStack,
         )
+    }
+
+    @Test
+    fun `WHEN MoveToTabGroup is the top destination AND an existing group is picked, THEN the tab is moved to that group`() {
+        val group = createTabGroup(id = "group-1", title = "Work")
+        val state =
+            TabGroupFlowState(
+                entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = "123"),
+                groups = listOf(group),
+            )
+        val captureMiddleware = CaptureActionsMiddleware<TabGroupFlowState, TabGroupAction>()
+        fragment.store =
+            TabGroupFlowStore(
+                initialState = state,
+                middlewares = listOf(captureMiddleware),
+            )
+        composeTestRule.setContent {
+            NavDisplay(
+                backStack = listOf(TabGroupFlowDestination.Root, TabGroupFlowDestination.MoveToTabGroup(tabId = "123")),
+                onBack = {},
+                sceneStrategies = listOf(BottomSheetSceneStrategy()),
+                entryProvider =
+                    fragment.getEntryProvider(
+                        state = state,
+                        windowSize = AcornWindowSize.Small,
+                    ),
+            )
+        }
+
+        composeTestRule.onNodeWithText("Add to").assertExists()
+        composeTestRule.onNodeWithTag("${TabsTrayTestTag.TAB_GROUP_ROOT}.${group.id}").performClick()
+
+        captureMiddleware.assertLastAction(TabGroupAction.TabMovedToExistingTabGroup::class) {
+            assertEquals(
+                TabGroupAction.TabMovedToExistingTabGroup(tabId = "123", groupId = "group-1", groupTitle = "Work"),
+                it,
+            )
+        }
+        captureMiddleware.assertNotDispatched(TabGroupAction.TabAddedToExistingTabGroup::class)
     }
 
     @Test

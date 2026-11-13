@@ -175,4 +175,22 @@ sealed class SnackbarState {
      * @property title The title to display in the snackbar.
      */
     data class IPProtectionShowSnackbar(val title: String) : SnackbarState()
+
+    /**
+     * Display a SnackBar confirming that the user successfully added a tab to a group. Contains a VIEW action that
+     * allows the user to view the expanded group.
+     *
+     * @property groupTitle Title of the group, shown in the SnackBar text.
+     * @property groupId Identifier of the group, used for navigating to the group in the TabsTray.
+     */
+    data class TabAddedToGroup(val groupTitle: String, val groupId: String) : SnackbarState()
+
+    /**
+     * Display a SnackBar confirming that the user successfully moved a tab from one group to another. Contains a VIEW
+     * action that allows the user to view the expanded group.
+     *
+     * @property groupTitle Title of the group, shown in the SnackBar text.
+     * @property groupId Identifier of the group, used for navigating to the group in the TabsTray.
+     */
+    data class TabMovedToGroup(val groupTitle: String, val groupId: String) : SnackbarState()
 }

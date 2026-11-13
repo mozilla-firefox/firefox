@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 package org.mozilla.fenix.tabgroups.flow
 
+import androidx.compose.runtime.Immutable
 import mozilla.components.lib.state.State
 import org.mozilla.fenix.tabgroups.TabGroupTelemetry
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
@@ -11,12 +12,15 @@ import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
 import org.mozilla.fenix.tabstray.redux.state.newTabGroupForm
 
 /**
+ * @property entryPoint The entry point into this flow. Used for displaying context-aware messages to a user.
  * @property backStack The flow's backstack
- * @property groups The list of tab groups.
- * @property formState The state of the tab group edit form.
- * @property config The [Config] for the flow.
+ * @property groups The list of groups for display or selection.
+ * @property formState The state of the tab group edit form, for creating or updating a group.
+ * @property config Tracks user configuration options impacting the flow.
  */
+@Immutable
 data class TabGroupFlowState(
+    val entryPoint: TabGroupFlowEntryPoint,
     val backStack: List<TabGroupFlowDestination> = listOf(TabGroupFlowDestination.Root),
     override val groups: List<TabsTrayItem.TabGroup> = emptyList(),
     override val formState: TabGroupFormState? = null,
@@ -37,6 +41,7 @@ data class TabGroupFlowState(
      * @property homepageAsNewTabEnabled Whether the homepage as a new tab feature is enabled, which gates the ability
      *   to open new tabs within an expanded tab group.
      */
+    @Immutable
     data class Config(
         val displayTabsInGrid: Boolean = false,
         val homepageAsNewTabEnabled: Boolean = false,
@@ -46,3 +51,8 @@ data class TabGroupFlowState(
 /** Returns an initial [TabGroupFormState] derived from [TabGroupFlowState]. */
 fun TabGroupFlowState.initializeTabGroupForm(isStarterTabGroup: Boolean = false) =
     newTabGroupForm(existingGroups = groups, isStarterTabGroup = isStarterTabGroup)
+
+/** Returns the groups [tabId] can be moved to, excluding the group it's currently in. */
+fun TabGroupFlowState.moveTargetGroups(tabId: String): List<TabsTrayItem.TabGroup> = groups.filter { group ->
+    group.tabs.none { it.id == tabId }
+}

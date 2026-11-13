@@ -577,7 +577,12 @@ class TabGroupReducerTest {
         val resultState =
             TabGroupActionReducer.reduce(
                 state = TabsTrayState(),
-                action = TabGroupAction.TabAddedToExistingTabGroup(tabId = "54321", groupId = "12345"),
+                action =
+                    TabGroupAction.TabAddedToExistingTabGroup(
+                        tabId = "54321",
+                        groupId = "12345",
+                        groupTitle = "Tab Group 1",
+                    ),
             )
         assertEquals(TabsTrayState(), resultState)
     }

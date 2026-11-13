@@ -23,7 +23,11 @@ class TabGroupFlowStoreTest {
     fun `WHEN store is initialized with the telemetry middleware, THEN its telemetry side effects are active`() {
         val store =
             TabGroupFlowStore(
-                initialState = TabGroupFlowState(formState = TabGroupFormState(tabGroupId = null, name = "Test group")),
+                initialState =
+                    TabGroupFlowState(
+                        formState = TabGroupFormState(tabGroupId = null, name = "Test group"),
+                        entryPoint = TabGroupFlowEntryPoint.AddTabToGroup("123"),
+                    ),
                 middlewares = listOf(TabGroupFlowTelemetryMiddleware()),
             )
 

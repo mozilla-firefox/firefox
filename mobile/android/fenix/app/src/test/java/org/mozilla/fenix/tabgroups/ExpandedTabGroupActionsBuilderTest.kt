@@ -135,7 +135,11 @@ class ExpandedTabGroupActionsBuilderTest {
         assertEquals(
             expected =
                 listOf<TabGroupAction>(
-                    TabGroupAction.TabAddedToExistingTabGroup(tabId = "new-tab", groupId = group.id)
+                    TabGroupAction.TabAddedToExistingTabGroup(
+                        tabId = "new-tab",
+                        groupId = group.id,
+                        groupTitle = group.title,
+                    )
                 ),
             actual = dispatched,
         )

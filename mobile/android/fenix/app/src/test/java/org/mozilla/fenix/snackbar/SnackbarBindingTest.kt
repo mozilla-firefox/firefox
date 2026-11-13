@@ -65,6 +65,8 @@ import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.ShareToAppFa
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.SharedTabsSuccessfully
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.ShortcutAdded
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.ShowSnackbar
+import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.TabAddedToGroup
+import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.TabMovedToGroup
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.TranslationInProgress
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.UserAccountAuthenticated
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.WebCompatReportSent
@@ -73,6 +75,8 @@ import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.tabClosedUndoMessage
 import org.mozilla.fenix.home.topsites.AddShortcutEntryPoint
 import org.mozilla.fenix.home.topsites.AddShortcutSource
+import org.mozilla.fenix.tabstray.redux.state.Page
+import org.mozilla.fenix.tabstray.ui.AccessPoint
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.utils.getSnackbarTimeout
 
@@ -796,6 +800,72 @@ class SnackbarBindingTest {
             snackbarAction.captured.invoke(mockk())
             verify { snackbarDelegate.dismiss() }
         }
+
+    @Test
+    fun `WHEN a tab is added to a group THEN display a snackbar that opens the group in the tabs tray`() =
+        runTest(testDispatcher) {
+            val viewAction = slot<((v: View) -> Unit)>()
+            val binding = buildSnackbarBinding(scope = this)
+            binding.start()
+
+            appStore.dispatch(AppAction.TabAddedToGroup(groupTitle = "Work", groupId = "group-1"))
+            waitForStoreToSettle()
+
+            verify {
+                snackbarDelegate.show(
+                    text = eq(testContext.getString(R.string.snackbar_tab_added_to_group, "Work")),
+                    subText = isNull(),
+                    subTextOverflow = isNull(),
+                    duration = eq(testContext.components.settings.getSnackbarTimeout(hasAction = true).value.toInt()),
+                    isError = eq(false),
+                    action = eq(testContext.getString(R.string.snackbar_action_view)),
+                    withDismissAction = eq(false),
+                    listener = capture(viewAction),
+                )
+            }
+            assertEquals(None(TabAddedToGroup(groupTitle = "Work", groupId = "group-1")), appStore.state.snackbarState)
+
+            viewAction.captured.invoke(mockk())
+
+            verify { navController.navigate(tabsTrayWithGroupDirections(groupId = "group-1")) }
+        }
+
+    @Test
+    fun `WHEN a tab is moved to a group THEN display a snackbar that opens the group in the tabs tray`() =
+        runTest(testDispatcher) {
+            val viewAction = slot<((v: View) -> Unit)>()
+            val binding = buildSnackbarBinding(scope = this)
+            binding.start()
+
+            appStore.dispatch(AppAction.TabMovedToGroup(groupTitle = "Work", groupId = "group-1"))
+            waitForStoreToSettle()
+
+            verify {
+                snackbarDelegate.show(
+                    text = eq(testContext.getString(R.string.snackbar_tab_moved_to_group, "Work")),
+                    subText = isNull(),
+                    subTextOverflow = isNull(),
+                    duration = eq(testContext.components.settings.getSnackbarTimeout(hasAction = true).value.toInt()),
+                    isError = eq(false),
+                    action = eq(testContext.getString(R.string.snackbar_action_view)),
+                    withDismissAction = eq(false),
+                    listener = capture(viewAction),
+                )
+            }
+            assertEquals(None(TabMovedToGroup(groupTitle = "Work", groupId = "group-1")), appStore.state.snackbarState)
+
+            viewAction.captured.invoke(mockk())
+
+            verify { navController.navigate(tabsTrayWithGroupDirections(groupId = "group-1")) }
+        }
+
+    private fun tabsTrayWithGroupDirections(groupId: String) =
+        BrowserFragmentDirections.actionGlobalTabManagementFragment(
+            enterMultiselect = false,
+            accessPoint = AccessPoint.None,
+            page = Page.NormalTabs,
+            groupId = groupId,
+        )
 
     private fun buildSnackbarBinding(
         context: Context = testContext,

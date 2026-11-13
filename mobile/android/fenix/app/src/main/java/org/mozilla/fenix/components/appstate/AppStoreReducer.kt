@@ -181,6 +181,18 @@ internal object AppStoreReducer {
             is AppAction.CurrentTabClosed ->
                 state.copy(snackbarState = SnackbarState.CurrentTabClosed(action.isPrivate))
 
+            is AppAction.TabAddedToGroup ->
+                state.copy(
+                    snackbarState =
+                        SnackbarState.TabAddedToGroup(groupTitle = action.groupTitle, groupId = action.groupId)
+                )
+
+            is AppAction.TabMovedToGroup ->
+                state.copy(
+                    snackbarState =
+                        SnackbarState.TabMovedToGroup(groupTitle = action.groupTitle, groupId = action.groupId)
+                )
+
             is AppAction.URLCopiedToClipboard -> state.copy(snackbarState = SnackbarState.URLCopiedToClipboard)
 
             is AppAction.OpenInFirefoxStarted -> {

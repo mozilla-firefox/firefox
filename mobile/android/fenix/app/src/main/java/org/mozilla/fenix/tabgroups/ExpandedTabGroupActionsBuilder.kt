@@ -74,7 +74,13 @@ fun expandedTabGroupActions(
             if (homepageAsNewTabEnabled) {
                 {
                     val newTabId = addNewHomepageTab()
-                    dispatch(TabGroupAction.TabAddedToExistingTabGroup(tabId = newTabId, groupId = group.id))
+                    dispatch(
+                        TabGroupAction.TabAddedToExistingTabGroup(
+                            tabId = newTabId,
+                            groupId = group.id,
+                            groupTitle = group.title,
+                        )
+                    )
                     onAddNewTabCompleted()
                 }
             } else {

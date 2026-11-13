@@ -2340,6 +2340,12 @@
     <string name="snackbar_private_tab_closed">Private tab closed</string>
     <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
     <string name="snackbar_deleted_undo">UNDO</string>
+    <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+    <string name="snackbar_tab_added_to_group">Added to %1$s</string>
+    <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+    <string name="snackbar_tab_moved_to_group">Moved to %1$s</string>
+    <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+    <string name="snackbar_action_view">View</string>
     <!-- QR code scanner prompt which appears after scanning a code, but before navigating to it
         %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned-->
     <string name="qr_scanner_confirmation_dialog_message">Allow %1$s to open %2$s</string>

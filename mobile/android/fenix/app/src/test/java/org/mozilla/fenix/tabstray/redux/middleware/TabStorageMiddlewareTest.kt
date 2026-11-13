@@ -872,7 +872,13 @@ class TabStorageMiddlewareTest {
                     hasTabDataLoaded = true,
                 )
 
-            store.dispatch(TabGroupAction.TabAddedToExistingTabGroup(tabId = tab.id, groupId = existingGroup.id))
+            store.dispatch(
+                TabGroupAction.TabAddedToExistingTabGroup(
+                    tabId = tab.id,
+                    groupId = existingGroup.id,
+                    groupTitle = "Tab Group 1",
+                )
+            )
 
             runCurrent()
             advanceUntilIdle()
@@ -1537,7 +1543,13 @@ class TabStorageMiddlewareTest {
             runCurrent()
             advanceUntilIdle()
 
-            store.dispatch(TabGroupAction.TabAddedToExistingTabGroup(tabId = tabAdded.id, groupId = existingGroup.id))
+            store.dispatch(
+                TabGroupAction.TabAddedToExistingTabGroup(
+                    tabId = tabAdded.id,
+                    groupId = existingGroup.id,
+                    groupTitle = "Tab Group 1",
+                )
+            )
 
             runCurrent()
             advanceUntilIdle()

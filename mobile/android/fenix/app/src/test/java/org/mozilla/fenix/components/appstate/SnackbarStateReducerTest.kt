@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.components.appstate
 
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -12,6 +13,8 @@ import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.DeletingBrow
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.Dismiss
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.None
 import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.ShowSnackbar
+import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.TabAddedToGroup
+import org.mozilla.fenix.components.appstate.snackbar.SnackbarState.TabMovedToGroup
 
 class SnackbarStateReducerTest {
     private val initialState = AppState(snackbarState = DeletingBrowserDataInProgress)
@@ -47,5 +50,21 @@ class SnackbarStateReducerTest {
 
         assertIs<ShowSnackbar>(finalState.snackbarState)
         assertTrue(finalState.snackbarState.title == testTitle)
+    }
+
+    @Test
+    fun `WHEN tab added to group action is dispatched THEN state is updated with the group title and id`() {
+        val finalState =
+            AppStoreReducer.reduce(initialState, AppAction.TabAddedToGroup(groupTitle = "Work", groupId = "group-1"))
+
+        assertEquals(TabAddedToGroup(groupTitle = "Work", groupId = "group-1"), finalState.snackbarState)
+    }
+
+    @Test
+    fun `WHEN tab moved to group action is dispatched THEN state is updated with the group title and id`() {
+        val finalState =
+            AppStoreReducer.reduce(initialState, AppAction.TabMovedToGroup(groupTitle = "Work", groupId = "group-1"))
+
+        assertEquals(TabMovedToGroup(groupTitle = "Work", groupId = "group-1"), finalState.snackbarState)
     }
 }

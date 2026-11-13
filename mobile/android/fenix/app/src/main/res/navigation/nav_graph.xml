@@ -237,6 +237,11 @@
             android:name="accessPoint"
             android:defaultValue="None"
             app:argType="org.mozilla.fenix.tabstray.ui.AccessPoint" />
+        <argument
+            android:name="groupId"
+            android:defaultValue="@null"
+            app:argType="string"
+            app:nullable="true" />
         <action
             android:id="@+id/action_tabManagementFragment_to_global_protections_dashboard"
             app:destination="@id/global_protections_dashboard" />

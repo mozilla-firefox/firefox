@@ -43,6 +43,8 @@ import org.mozilla.fenix.ext.navigateWithBreadcrumb
 import org.mozilla.fenix.ext.tabClosedUndoMessage
 import org.mozilla.fenix.ipprotection.ui.IPProtectionSnackbarBinding
 import org.mozilla.fenix.settings.downloads.DownloadLocationManager
+import org.mozilla.fenix.tabstray.redux.state.Page
+import org.mozilla.fenix.tabstray.ui.AccessPoint
 import org.mozilla.fenix.utils.getSnackbarTimeout
 
 /**
@@ -363,6 +365,28 @@ class SnackbarBinding(
                         appStore.dispatch(SnackbarAction.SnackbarShown)
                     }
 
+                    is SnackbarState.TabAddedToGroup -> {
+                        snackbarDelegate.show(
+                            text = context.getString(R.string.snackbar_tab_added_to_group, state.groupTitle),
+                            duration = context.components.settings.getSnackbarTimeout(hasAction = true).value.toInt(),
+                            action = context.getString(R.string.snackbar_action_view),
+                        ) {
+                            navigateToTabsTrayWithGroup(state.groupId)
+                        }
+                        appStore.dispatch(SnackbarAction.SnackbarShown)
+                    }
+
+                    is SnackbarState.TabMovedToGroup -> {
+                        snackbarDelegate.show(
+                            text = context.getString(R.string.snackbar_tab_moved_to_group, state.groupTitle),
+                            duration = context.components.settings.getSnackbarTimeout(hasAction = true).value.toInt(),
+                            action = context.getString(R.string.snackbar_action_view),
+                        ) {
+                            navigateToTabsTrayWithGroup(state.groupId)
+                        }
+                        appStore.dispatch(SnackbarAction.SnackbarShown)
+                    }
+
                     is SnackbarState.URLCopiedToClipboard -> {
                         snackbarDelegate.show(
                             text = context.getString(R.string.browser_toolbar_url_copied_to_clipboard_snackbar)
@@ -377,6 +401,17 @@ class SnackbarBinding(
                     is SnackbarState.IPProtectionShowSnackbar -> showIPProtectionSnackBar(state.title)
                 }
             }
+    }
+
+    private fun navigateToTabsTrayWithGroup(groupId: String) {
+        navController.navigate(
+            BrowserFragmentDirections.actionGlobalTabManagementFragment(
+                enterMultiselect = false,
+                accessPoint = AccessPoint.None, // Not setting this for now, since this will be removed for strip
+                page = Page.NormalTabs,
+                groupId = groupId,
+            )
+        )
     }
 
     private fun showBookmarkAddedSnackbarFor(state: SnackbarState.BookmarkAdded) {

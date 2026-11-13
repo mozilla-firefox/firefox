@@ -12,6 +12,7 @@ import mozilla.components.feature.tabdata.coordinator.data.TabGroup
 import mozilla.components.feature.tabdata.coordinator.data.TabsSnapshot
 import mozilla.components.feature.tabdata.coordinator.fakes.FakeTabDataCoordinator
 import org.junit.Test
+import org.mozilla.fenix.tabgroups.flow.TabGroupFlowEntryPoint
 import org.mozilla.fenix.tabgroups.flow.TabGroupFlowState
 import org.mozilla.fenix.tabgroups.flow.TabGroupFlowStore
 import org.mozilla.fenix.tabstray.data.TabGroupTheme
@@ -24,7 +25,7 @@ class EnrichedTabGroupBindingTest {
     private val updates = mutableListOf<List<TabsTrayItem.TabGroup>>()
     private val store =
         TabGroupFlowStore(
-            initialState = TabGroupFlowState(),
+            initialState = TabGroupFlowState(entryPoint = TabGroupFlowEntryPoint.AddTabToGroup(tabId = "123")),
             middlewares =
                 listOf { _, next, action ->
                     if (action is TabGroupAction.TabGroupsUpdated) updates.add(action.tabGroups)

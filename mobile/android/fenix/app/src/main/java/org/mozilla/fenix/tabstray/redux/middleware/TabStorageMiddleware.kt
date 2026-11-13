@@ -140,8 +140,17 @@ class TabStorageMiddleware(
             }
 
             // todo-bug-2069535: Hook up to the coordinator storage layer when it is ready
-            is TabGroupAction.TabAddedToNewTabGroup -> {}
+            is TabGroupAction.TabAddedToNewTabGroup -> {
+                scope.launch {}
+            }
+
             is TabGroupAction.TabAddedToExistingTabGroup -> {
+                scope.launch {
+                    tabDataCoordinator.addTabsToTabGroup(tabGroupId = action.groupId, tabIds = listOf(action.tabId))
+                }
+            }
+
+            is TabGroupAction.TabMovedToExistingTabGroup -> {
                 scope.launch {
                     tabDataCoordinator.addTabsToTabGroup(tabGroupId = action.groupId, tabIds = listOf(action.tabId))
                 }
