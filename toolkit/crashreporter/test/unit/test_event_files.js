@@ -16,13 +16,16 @@ add_task(async function test_main_process_crash() {
   let count = await new Promise((resolve, reject) => {
     do_crash(
       async function () {
+        // TelemetryController.testSetup() will occasionally throw, so setup
+        // everything synchronously before we call it, just in case.
+        crashReporter.annotateCrashReport("ShutdownProgress", "event-test");
+        crashType = CrashTestUtils.CRASH_MOZ_CRASH;
+
         // TelemetrySession setup will trigger the session annotation
         let { TelemetryController } = ChromeUtils.importESModule(
           "resource://gre/modules/TelemetryController.sys.mjs"
         );
         await TelemetryController.testSetup();
-        crashType = CrashTestUtils.CRASH_MOZ_CRASH;
-        crashReporter.annotateCrashReport("ShutdownProgress", "event-test");
       },
       minidump => {
         basename = minidump.leafName;

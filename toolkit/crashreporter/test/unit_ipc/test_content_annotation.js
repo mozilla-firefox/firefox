@@ -13,7 +13,18 @@ add_task(async function run_test() {
   let { TelemetryController } = ChromeUtils.importESModule(
     "resource://gre/modules/TelemetryController.sys.mjs"
   );
-  TelemetryController.testSetup();
+  try {
+    await TelemetryController.testSetup();
+  } catch (ex) {
+    // This often throws while populating the nsISystemInfo.diskInfo data, but
+    // we don't care about it, we only care that it leaves the telemetry
+    // annotations around so swallow the error.
+    dump(
+      "INFO | test_content_annotation.js | TelemetryController.testSetup() threw an exception (" +
+        ex +
+        ").\n"
+    );
+  }
 
   // Try crashing with a runtime abort
   await do_content_crash(
