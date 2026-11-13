@@ -7,6 +7,7 @@ permalink: /changelog/
 # 162.0 (In Development)
 * **concept-engine**
   * Added an optional `title` to `HitResult.IMAGE_SRC`.
+  * 🆕 Added `EngineSession.requestPictureInPicture` and `EngineSession.exitPictureInPicture` to ask the engine for a picture-in-picture window for the video a session is playing, and to tell it the window has been closed so it can release the state it holds. [Bug 2075323](https://bugzilla.mozilla.org/show_bug.cgi?id=2075323)
 * **support-utils**
   * 🆕 Added `String.validateCreditCardNumber()`, which checks that a credit card number has only digits, matches a known card network and passes the Luhn check. It moved here from Fenix. [Bug 2090313](https://bugzilla.mozilla.org/show_bug.cgi?id=2090313)
 * **support-locale**

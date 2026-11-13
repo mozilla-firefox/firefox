@@ -90,6 +90,7 @@ import org.mozilla.geckoview.GeckoSession.NavigationDelegate
 import org.mozilla.geckoview.GeckoSession.PermissionDelegate.ContentPermission
 import org.mozilla.geckoview.GeckoSessionSettings
 import org.mozilla.geckoview.PageExtractionController
+import org.mozilla.geckoview.PictureInPictureController
 import org.mozilla.geckoview.TranslationsController.SessionTranslation as GeckoViewTranslateSession
 import org.mozilla.geckoview.WebRequestError
 import org.mozilla.geckoview.WebResponse
@@ -100,7 +101,7 @@ class GeckoEngineSession(
     private val runtime: GeckoRuntime,
     private val privateMode: Boolean = false,
     private val defaultSettings: Settings? = null,
-    contextId: String? = null,
+    private val contextId: String? = null,
     private val geckoSessionProvider: () -> GeckoSession = {
         val settings = GeckoSessionSettings.Builder().usePrivateMode(privateMode).contextId(contextId).build()
         GeckoSession(settings)
@@ -642,6 +643,51 @@ class GeckoEngineSession(
     /** See [EngineSession.onPipModeChanged]. */
     override fun onPipModeChanged(enabled: Boolean) {
         geckoSession.compositorController.onPipModeChanged(enabled)
+    }
+
+    /** See [EngineSession.requestPictureInPicture]. */
+    @OptIn(ExperimentalGeckoViewApi::class)
+    override fun requestPictureInPicture() {
+        geckoSession.sessionPictureInPicture
+            .request()
+            .accept(
+                { notifyObservers { onPictureInPictureRequestFinished() } },
+                { throwable ->
+                    logger.warn("Picture-in-picture request failed", throwable)
+                    notifyObservers { onPictureInPictureRequestFinished() }
+                },
+            )
+    }
+
+    /** Creates a new session which clones a video of this session into a picture-in-picture window. */
+    @OptIn(ExperimentalGeckoViewApi::class)
+    private fun createPictureInPictureSession(placementToken: String) =
+        GeckoEngineSession(
+                runtime = runtime,
+                privateMode = privateMode,
+                defaultSettings = defaultSettings,
+                contextId = contextId,
+                geckoSessionProvider = {
+                    val settings =
+                        GeckoSessionSettings.Builder()
+                            .usePrivateMode(privateMode)
+                            .contextId(contextId)
+                            .pictureInPictureToken(placementToken)
+                            .build()
+                    GeckoSession(settings)
+                },
+            )
+            .also { it.loadUrl(ABOUT_BLANK) }
+
+    /** See [EngineSession.exitPictureInPicture]. */
+    @OptIn(ExperimentalGeckoViewApi::class)
+    override fun exitPictureInPicture() {
+        geckoSession.sessionPictureInPicture
+            .exit()
+            .accept(
+                {},
+                { throwable -> logger.warn("Picture-in-picture exit failed", throwable) },
+            )
     }
 
     /** See [EngineSession.checkForFormData]. */
@@ -1779,6 +1825,23 @@ class GeckoEngineSession(
             }
         }
 
+    @OptIn(ExperimentalGeckoViewApi::class)
+    private fun createPictureInPictureDelegate() =
+        object : PictureInPictureController.SessionPictureInPicture.Delegate {
+            override fun onEnterPictureInPicture(session: GeckoSession, placementToken: String) {
+                if (placementToken.isEmpty()) {
+                    logger.warn("Ignoring picture-in-picture request without a placement token")
+                    return
+                }
+                val pictureInPictureSession = createPictureInPictureSession(placementToken)
+                notifyObservers { onEnterPictureInPicture(pictureInPictureSession) }
+            }
+
+            override fun onExitPictureInPicture(session: GeckoSession) {
+                notifyObservers { onExitPictureInPicture() }
+            }
+        }
+
     /**
      * Handles long click events.
      *
@@ -1837,6 +1900,7 @@ class GeckoEngineSession(
             })
     }
 
+    @OptIn(ExperimentalGeckoViewApi::class)
     private fun createGeckoSession(shouldOpen: Boolean = true) {
         this.geckoSession = geckoSessionProvider()
 
@@ -1869,6 +1933,7 @@ class GeckoEngineSession(
         geckoSession.mediaSessionDelegate = GeckoMediaSessionDelegate(this)
         geckoSession.scrollDelegate = createScrollDelegate()
         geckoSession.translationsSessionDelegate = GeckoTranslateSessionDelegate(this)
+        geckoSession.pictureInPictureDelegate = createPictureInPictureDelegate()
     }
 
     companion object {

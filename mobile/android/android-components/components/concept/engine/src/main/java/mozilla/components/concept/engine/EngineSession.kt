@@ -154,6 +154,26 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
         fun onWindowRequest(windowRequest: WindowRequest) = Unit
 
         /**
+         * The engine asks for a picture-in-picture window to be opened for the video this session is playing.
+         *
+         * Exactly one observer is expected to take ownership of [session]: the one adding it to the browser state.
+         * Other observers must not keep or close it.
+         *
+         * @param session the session cloning the video, ready to be rendered in the picture-in-picture window. The
+         *   observer taking ownership must close it if it is not shown.
+         */
+        fun onEnterPictureInPicture(session: EngineSession) = Unit
+
+        /**
+         * The engine is done with a [requestPictureInPicture] call, whether the window is showing the video by then or
+         * the request was ignored or failed.
+         */
+        fun onPictureInPictureRequestFinished() = Unit
+
+        /** The picture-in-picture window opened for this session should be closed. */
+        fun onExitPictureInPicture() = Unit
+
+        /**
          * Based on the webpage current state the toolbar should be expanded to it's full height previously specified in
          * [EngineView.setDynamicToolbarMaxHeight].
          */
@@ -1090,6 +1110,20 @@ abstract class EngineSession(private val delegate: Observable<Observer> = Observ
      * @param enabled True if the activity is in picture-in-picture mode.
      */
     open fun onPipModeChanged(enabled: Boolean) = Unit
+
+    /**
+     * Asks the engine for a picture-in-picture window for the video this session last started playing. Answered
+     * asynchronously through [Observer.onEnterPictureInPicture], and silently ignored if no video is playing. The
+     * engine reports that it is done with the request through [Observer.onPictureInPictureRequestFinished].
+     */
+    open fun requestPictureInPicture() = Unit
+
+    /**
+     * Tells the engine that the picture-in-picture window showing this session's video has been closed by the
+     * application, so that the state held for the video can be released. Must be called when the application tears the
+     * window down itself.
+     */
+    open fun exitPictureInPicture() = Unit
 
     /**
      * Gets the page text content of this session.
