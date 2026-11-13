@@ -16,12 +16,6 @@ prefs = [
 ["browser_chat_nimbus.js"]
 
 ["browser_chat_page.js"]
-skip-if = [
-  "os == 'win' && os_version == '11.26200' && arch == 'x86' && debug", # Bug 1975092
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && asan", # Bug 1975092
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && debug", # Bug 1975092
-  "verify-standalone",
-]
 
 ["browser_chat_page_menus.js"]
 
