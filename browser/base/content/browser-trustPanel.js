@@ -1001,13 +1001,13 @@ class TrustPanel {
     }
   }
 
+  get #isQWAC() {
+    return this.#isSecureConnection && !!this.#qwac;
+  }
+
   get #isEV() {
-    // If a <browser> is included within a chrome document, then this._state
-    // will refer to the security state for the <browser> and not the top level
-    // document. In this case, don't upgrade the security state in the UI
-    // with the EV state of the embedded <browser>.
     return (
-      !this.#isURILoadedFromFile &&
+      this.#isSecureConnection &&
       this.#state & Ci.nsIWebProgressListener.STATE_IDENTITY_EV_TOPLEVEL
     );
   }
@@ -1132,7 +1132,7 @@ class TrustPanel {
 
     // Fill in organization information if we have a valid EV certificate or
     // QWAC.
-    if (this.#isEV || this.#qwac) {
+    if (this.#isEV || this.#isQWAC) {
       let identityData = this.#getIdentityData(
         this.#qwac || this.#secInfo.serverCert
       );
@@ -1206,7 +1206,7 @@ class TrustPanel {
       connection = "extension";
     } else if (this.#isURILoadedFromFile) {
       connection = "file";
-    } else if (this.#qwac) {
+    } else if (this.#isQWAC) {
       connection = "secure-etsi";
     } else if (this.#isEV) {
       connection = "secure-ev";

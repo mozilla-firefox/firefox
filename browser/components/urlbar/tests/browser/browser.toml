@@ -4,6 +4,8 @@ support-files = [
   "dummy_page.html",
   "head.js",
   "head-common.js",
+  "load_mixed_content_after_load.html",
+  "silence.ogg",
 ]
 prefs = [
   "browser.bookmarks.testing.skipDefaultBookmarksImport=true",

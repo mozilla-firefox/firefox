@@ -424,3 +424,4 @@ https://accounts.example.com.ar:443    privileged
 
 https://1-qwac.example.com:443 privileged,cert=1-qwac
 https://bound-by-2-qwac.example.com:443 privileged,cert=bound-by-2-qwac
+https://ev.example.com:443 privileged,cert=ev
