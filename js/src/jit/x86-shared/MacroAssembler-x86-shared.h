@@ -1126,8 +1126,16 @@ class MacroAssemblerX86Shared : public Assembler {
     return offset;
   }
 
-  template <typename T>
-  void computeEffectiveAddress(const T& address, Register dest) {
+  void computeEffectiveAddress(const Address& address, Register dest) {
+    if (address.offset == 0) {
+      if (address.base != dest) {
+        mov(address.base, dest);
+      }
+      return;
+    }
+    lea(Operand(address), dest);
+  }
+  void computeEffectiveAddress(const BaseIndex& address, Register dest) {
     lea(Operand(address), dest);
   }
 

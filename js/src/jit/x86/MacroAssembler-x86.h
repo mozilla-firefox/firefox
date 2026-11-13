@@ -239,7 +239,7 @@ class MacroAssemblerX86 : public MacroAssemblerX86Shared {
     // the address and then load the Value from there.
     if ((baseReg == val.payloadReg() && indexReg == val.typeReg()) ||
         (baseReg == val.typeReg() && indexReg == val.payloadReg())) {
-      computeEffectiveAddress(src, val.scratchReg());
+      lea(src, val.scratchReg());
       loadValue(Address(val.scratchReg(), 0), val);
       return;
     }
