@@ -41,6 +41,13 @@ function handleRequest(request, response) {
         hinted ? "#1aff1a" : "#4b0092"
       }";
     }`;
+  } else if (asset === "module") {
+    response.setHeader("Content-Type", "application/javascript", false);
+    content = `export function draw() {
+      document.getElementById('square').style.background = "${
+        hinted ? "#1aff1a" : "#4b0092"
+      }";
+    }`;
   } else if (asset === "fetch") {
     response.setHeader("Content-Type", "text/plain", false);
     content = hinted ? "hinted" : "normal";

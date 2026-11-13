@@ -94,17 +94,17 @@ async function test_hint_asset(testName, asset, variant) {
     "https://example.com/browser/netwerk/test/browser/early_hint_pixel_count.sjs"
   ).then(response => response.json());
   if (
-    asset === "script" &&
+    (asset === "script" || asset === "module") &&
     variant === "cached" &&
     numConnectBackRemaining === 1
   ) {
     // If the navigation cache is enabled
     // (dom.script_loader.experimental.navigation_cache),
-    // the script can be cached in the per-process cache storage, and in that
-    // case the channel isn't opened, and the "earlyhints-connectback"
-    // notification isn't observed.
+    // the script or module can be cached in the per-process cache storage,
+    // and in that case the channel isn't opened, and the
+    // "earlyhints-connectback" notification isn't observed.
     info(
-      `${testName} (${asset}+${variant}) in-memory-cached script's notification is skipped`
+      `${testName} (${asset}+${variant}) in-memory-cached ${asset}'s notification is skipped`
     );
   } else {
     Assert.equal(
