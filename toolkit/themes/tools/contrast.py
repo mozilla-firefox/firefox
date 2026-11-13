@@ -47,7 +47,7 @@ box-shadow ring and an icon are not measured at all and need a pixel sample.
 Launches through probelib.py, headless, on a throwaway
 profile, in whatever regime the prefs give (none by default):
 
-  ./mach python --virtualenv wpt contrast.py --binary <objdir>/dist/bin/firefox \\
+  ./mach theme contrast --binary <objdir>/dist/bin/firefox \\
     --setup-file setup.js --element '<subject>' --surface '<sibling>' \\
     --state default --state :hover
 
@@ -63,7 +63,7 @@ firefox-probe.py.
 
 --element repeats (every match of each is walked) and takes `host >>> inner`
 to reach into a shadow root, one `>>>` per boundary. Slotted content stays in the host's light DOM, so name it (or the
-host) without `>>>`. --context content probes the page --url loads, in a
+host) without `>>>`. --realm content probes the page --url loads, in a
 system-principal sandbox, which brings InspectorUtils (and so the locks) to it.
 
 The surface is the nearest opaque ancestor. Where a sibling paints it instead,
@@ -396,9 +396,11 @@ def print_table(result):
         )
 
 
-def main():
+def get_parser(prog=None):
     ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        prog=prog,
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     probelib.add_launch_arguments(ap, binary_required=False)
     probelib.add_page_arguments(ap)
@@ -433,14 +435,17 @@ def main():
     ap.add_argument(
         "--setup-file", default=None, help="body of an async function run first"
     )
-    ap.add_argument("--context", choices=["chrome", "content"], default="chrome")
+    ap.add_argument("--realm", choices=["chrome", "content"], default="chrome")
     ap.add_argument("--quiet", action="store_true", help="no table on stderr")
     ap.add_argument(
         "--print-js",
         action="store_true",
         help="print an async function for the devtools MCP and exit",
     )
-    args = ap.parse_args()
+    return ap
+
+
+def run(ap, args):
     setup = Path(args.setup_file).read_text(encoding="utf-8") if args.setup_file else ""
     core = CORE % {
         "selector": json.dumps(args.element),
@@ -456,10 +461,10 @@ def main():
     if not args.binary:
         ap.error("--binary is required unless --print-js")
     probelib.check_page_arguments(ap, args)
-    sandbox = "system" if args.context == "content" else "default"
+    sandbox = "system" if args.realm == "content" else "default"
 
     def body(client):
-        probelib.open_page(client, args, args.context, sandbox)
+        probelib.open_page(client, args, args.realm, sandbox)
         steps_out = None
         if args.steps:
             steps_out = probelib.run_steps(
@@ -487,6 +492,11 @@ def main():
         return 1 if errors else 0
 
     return probelib.run(args, PROG, body)
+
+
+def main():
+    ap = get_parser()
+    return run(ap, ap.parse_args())
 
 
 if __name__ == "__main__":

@@ -4,10 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """Count the pixels that differ between two captures and print their bounding box.
 
-Run under `./mach python --virtualenv wpt`, the mach virtualenv with Pillow
-(plain `./mach python` does not):
-
-    ./mach python --virtualenv wpt pixel-diff.py after.png before.png [--rect X,Y,W,H]
+    ./mach theme pixel-diff after.png before.png [--rect X,Y,W,H]
 
 Like cmp, it exits 0 when no pixels differ, 1 when some do and 2 on an error.
 
@@ -37,8 +34,6 @@ import math
 import sys
 import traceback
 
-from PIL import Image, ImageChops
-
 EXIT_ERROR = 2
 
 
@@ -63,6 +58,10 @@ def fail(msg):
 
 
 def load(path):
+    # Pillow is imported where it is used, so that `./mach help theme pixel-diff`
+    # can build the parser outside the wpt virtualenv.
+    from PIL import Image
+
     try:
         im = Image.open(path)
         im.load()
@@ -113,7 +112,7 @@ def report_lines(d, origin, im, other, minimum):
         print(f"colors: rgba{p} -> rgba{q} x{n}")
 
 
-def main():
+def get_parser():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -150,7 +149,12 @@ def main():
         type=int,
         help="also print the rows and columns with at least N differing pixels, and the top color pairs",
     )
-    args = ap.parse_args()
+    return ap
+
+
+def compare(args):
+    from PIL import Image, ImageChops
+
     if args.dpr <= 0:
         fail("--dpr must be positive")
     if args.lines is not None and args.lines < 1:
@@ -224,11 +228,19 @@ def main():
     return 1 if bbox else 0
 
 
-if __name__ == "__main__":
+def run(args):
     try:
-        sys.exit(main())
+        return compare(args)
     except SystemExit:
         raise
     except BaseException:
         traceback.print_exc()
-        sys.exit(EXIT_ERROR)
+        return EXIT_ERROR
+
+
+def main():
+    return run(get_parser().parse_args())
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -30,7 +30,7 @@ image that ignores fill, such as a favicon, can show up as a false finding.
 Launches through probelib.py, headless, on a throwaway
 profile, in the high contrast regime unless you pass other prefs:
 
-  ./mach python --virtualenv wpt pair-walk.py --binary <objdir>/dist/bin/firefox \\
+  ./mach theme check-hcm-colors --binary <objdir>/dist/bin/firefox \\
     --setup-file open-urlbar.js --element '.urlbarView-row[type=history]' \\
     --state default --state :hover
 
@@ -59,7 +59,7 @@ streams apart (`2>/dev/null`, or `2>file`) before parsing. A throw in the setup
 or the walk exits 1 with its message and stack and prints no JSON. The exit
 status is also 1 when the result has an error: no subject, a --surface that
 matches nothing, or a state that cannot be locked (any pseudo-class where
-InspectorUtils is missing, as on an ordinary web page in --context content, or a
+InspectorUtils is missing, as on an ordinary web page in --realm content, or a
 name InspectorUtils does not know); and when an entry
 judged nothing (`checked: 0`, with a `warning`): no foreground sat on a surface
 that equals a system color, which in Linux or macOS chrome usually means the
@@ -303,9 +303,11 @@ BODY_TEMPLATE = r"""
 FUNCTION_TEMPLATE = "async () => {%s}"
 
 
-def main():
+def get_parser(prog=None):
     ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        prog=prog,
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     probelib.add_launch_arguments(ap, binary_required=False)
     probelib.add_page_arguments(ap)
@@ -330,7 +332,7 @@ def main():
     ap.add_argument(
         "--setup-file", default=None, help="body of an async function run first"
     )
-    ap.add_argument("--context", choices=["chrome", "content"], default="chrome")
+    ap.add_argument("--realm", choices=["chrome", "content"], default="chrome")
     ap.add_argument(
         "--no-hc-prefs",
         action="store_true",
@@ -342,7 +344,10 @@ def main():
         action="store_true",
         help="print an async function for the devtools MCP and exit",
     )
-    args = ap.parse_args()
+    return ap
+
+
+def run(ap, args):
     states = args.state or ["default", ":hover"]
     setup = Path(args.setup_file).read_text(encoding="utf-8") if args.setup_file else ""
     core = CORE % {
@@ -361,7 +366,7 @@ def main():
         args.setpref = HC_PREFS + args.setpref
 
     def body(client):
-        probelib.open_page(client, args, args.context)
+        probelib.open_page(client, args, args.realm)
         steps_out = None
         if args.steps:
             steps_out = probelib.run_steps(
@@ -391,6 +396,11 @@ def main():
         return 1 if errors else 0
 
     return probelib.run(args, PROG, body)
+
+
+def main():
+    ap = get_parser()
+    return run(ap, ap.parse_args())
 
 
 if __name__ == "__main__":

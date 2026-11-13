@@ -41,7 +41,7 @@ one, screen coordinates (mozInnerScreenX/Y included) are offset from PNG
 coordinates by that monitor's extent.
 
 The page's content origin on that screen is `mozInnerScreenX/Y` (read it from
-the page) in CSS pixels; desktop-theme-screenshots' pixel-diff.py takes it
+the page) in CSS pixels; `./mach theme pixel-diff` takes it
 unscaled as `--offset X,Y` together with `--dpr`, and scales both itself.
 """
 

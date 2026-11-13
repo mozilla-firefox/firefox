@@ -5,14 +5,14 @@
 
 """Resolve Firefox design tokens from a directory of generated sheets.
 
-  token-resolve.py DIR --name <token>...       per-layer declarations and values
-  token-resolve.py DIR --effective <token>...  the winning value in every environment
-  token-resolve.py DIR --name|--effective <token>... --at REV
-                                               the same, sheets committed at REV
-  token-resolve.py DIR --diff DIR2             resolved-value diff, per realm
-  token-resolve.py DIR --before REV            the same diff, sheets committed at REV vs DIR
-  token-resolve.py --history <token> [<range>] per-revision declarations, every sheet
-  token-resolve.py --declared <token> <file>.. which of these sheets declare it
+  ./mach theme resolve-token DIR --name <token>...       per-layer declarations and values
+  ./mach theme resolve-token DIR --effective <token>...  the winning value in every environment
+  ./mach theme resolve-token DIR --name|--effective <token>... --at REV
+                                                  the same, sheets committed at REV
+  ./mach theme resolve-token DIR --diff DIR2             resolved-value diff, per realm
+  ./mach theme resolve-token DIR --before REV            the same diff, sheets committed at REV vs DIR
+  ./mach theme resolve-token --history <token> [<range>] per-revision declarations, every sheet
+  ./mach theme resolve-token --declared <token> <file>.. which of these sheets declare it
 
 A realm is two sheets: chrome is tokens-shared.css + tokens-platform.css,
 in-content is tokens-shared.css + tokens-brand.css. --name and --diff pair them
@@ -726,7 +726,9 @@ def main(argv):
     if not os.path.isdir(directory):
         usage(f"not a directory: {directory}")
     if mode in ("--history", "--declared"):
-        usage(f"{mode} takes no directory; put it first: token-resolve.py {mode} ...")
+        usage(
+            f"{mode} takes no directory; put it first: ./mach theme resolve-token {mode} ..."
+        )
     if mode == "--diff":
         if len(rest) != 1:
             usage("--diff takes one directory")
