@@ -726,3 +726,74 @@ add_task(async function test_dwell_time_is_dropped_when_the_feature_is_off() {
   );
   Services.prefs.clearUserPref(DWELL_TIME_ENABLED_PREF);
 });
+
+add_task(async function test_stories_feed_result_rides_along_without_events() {
+  info(
+    "stories_feed_result is a counter, not an event, so it goes out with the " +
+      "next newtab-content ping even if no events were recorded"
+  );
+  let ping = new NewTabContentPing();
+  await ping.test_only_resetAllStats();
+
+  Glean.newtabContent.storiesFeedResult.success.add(3);
+  Glean.newtabContent.storiesFeedResult.timeout.add(1);
+  Glean.newtabContent.storiesFeedResult.http_5xx.add(2);
+  ping.scheduleSubmission({});
+
+  await GleanPings.newtabContent.testSubmission(
+    () => {
+      Assert.equal(
+        Glean.newtabContent.storiesFeedResult.success.testGetValue(
+          "newtab-content"
+        ),
+        3,
+        "The success count is in the ping"
+      );
+      Assert.equal(
+        Glean.newtabContent.storiesFeedResult.timeout.testGetValue(
+          "newtab-content"
+        ),
+        1,
+        "The timeout count is in the ping"
+      );
+      Assert.equal(
+        Glean.newtabContent.storiesFeedResult.http_5xx.testGetValue(
+          "newtab-content"
+        ),
+        2,
+        "The http_5xx count is in the ping"
+      );
+      Assert.equal(
+        Glean.newtabContent.click.testGetValue(),
+        null,
+        "The ping carries no click events"
+      );
+    },
+    () => ping.testOnlyForceFlush()
+  );
+});
+
+add_task(async function test_stories_feed_state_is_sent_with_every_ping() {
+  info(
+    "stories_feed_state has an application lifetime, so every newtab-content " +
+      "ping carries the latest value, not only the first ping after it is set"
+  );
+  let ping = new NewTabContentPing();
+  await ping.test_only_resetAllStats();
+
+  Glean.newtabContent.storiesFeedState.set("placeholder");
+
+  for (let i = 1; i <= 2; i++) {
+    ping.scheduleSubmission({});
+    await GleanPings.newtabContent.testSubmission(
+      () => {
+        Assert.equal(
+          Glean.newtabContent.storiesFeedState.testGetValue("newtab-content"),
+          "placeholder",
+          `Ping ${i} carries the stories feed state`
+        );
+      },
+      () => ping.testOnlyForceFlush()
+    );
+  }
+});

@@ -40,6 +40,8 @@ describe("DiscoveryStreamFeed", () => {
   let restoreGlobals;
   let surfaceIdSet;
   let surfaceIdRejectedRecord;
+  let storiesFeedResultAdd;
+  let storiesFeedStateSet;
 
   // The feed logs the failures these cases drive it into. Swap out the spy the
   // jest-setup console.error guard installed for the duration of the case, so
@@ -125,12 +127,23 @@ describe("DiscoveryStreamFeed", () => {
 
     surfaceIdSet = jest.fn();
     surfaceIdRejectedRecord = jest.fn();
+    storiesFeedResultAdd = jest.fn();
+    storiesFeedStateSet = jest.fn();
     restoreGlobals = stubGlobals({
       fetch: fetchStub,
       Glean: {
         newtabContent: {
           surfaceId: { set: surfaceIdSet },
           surfaceIdRejected: { record: surfaceIdRejectedRecord },
+          storiesFeedResult: new Proxy(
+            {},
+            {
+              get: (target, label) => ({
+                add: amount => storiesFeedResultAdd(label, amount),
+              }),
+            }
+          ),
+          storiesFeedState: { set: storiesFeedStateSet },
         },
       },
       Services: services,
@@ -400,6 +413,173 @@ describe("DiscoveryStreamFeed", () => {
           credentials: "omit",
         })
       );
+    });
+
+    describe("onError", () => {
+      let onError;
+      beforeEach(() => {
+        onError = jest.fn();
+      });
+
+      // The module captures the real setTimeout when it loads, so fake timers
+      // can't fire FETCH_TIMEOUT. Hand it a controller that is already aborted.
+      const mockAbortedController = () => {
+        const controller = new AbortController();
+        controller.abort();
+        jest
+          .spyOn(globalThis, "AbortController")
+          .mockImplementation(() => controller);
+      };
+
+      it("should not call onError on success", async () => {
+        const response = await feed.fetchFromEndpoint(
+          DUMMY_ENDPOINT,
+          {},
+          false,
+          onError
+        );
+
+        expect(response).toBe("hi");
+        expect(onError).not.toHaveBeenCalled();
+      });
+      it("should report endpoint_disallowed for a missing endpoint", async () => {
+        expectConsoleError();
+
+        const response = await feed.fetchFromEndpoint("", {}, false, onError);
+
+        expect(response).toBe(null);
+        expect(onError).toHaveBeenCalledWith("endpoint_disallowed");
+        expect(fetchStub).not.toHaveBeenCalled();
+      });
+      it("should report endpoint_disallowed for a disallowed endpoint", async () => {
+        expectConsoleError();
+        feed.store.getState = () => ({
+          Prefs: { values: { [ENDPOINTS_PREF_NAME]: "https://other.site" } },
+        });
+
+        const response = await feed.fetchFromEndpoint(
+          DUMMY_ENDPOINT,
+          {},
+          false,
+          onError
+        );
+
+        expect(response).toBe(null);
+        expect(onError).toHaveBeenCalledWith("endpoint_disallowed");
+        expect(fetchStub).not.toHaveBeenCalled();
+      });
+      it.each([
+        [404, "http_4xx"],
+        [503, "http_5xx"],
+        [200, "network"],
+      ])(
+        "should report a non-ok response with status %i as %s",
+        async (status, category) => {
+          expectConsoleError();
+          fetchStub.mockResolvedValue({ ok: false, status });
+
+          await feed.fetchFromEndpoint(DUMMY_ENDPOINT, {}, false, onError);
+
+          expect(onError).toHaveBeenCalledWith(category);
+        }
+      );
+      it("should report network when fetch rejects", async () => {
+        expectConsoleError();
+        fetchStub.mockRejectedValue(new TypeError("NetworkError"));
+
+        const response = await feed.fetchFromEndpoint(
+          DUMMY_ENDPOINT,
+          {},
+          false,
+          onError
+        );
+
+        expect(response).toBe(null);
+        expect(onError).toHaveBeenCalledWith("network");
+      });
+      it("should report timeout when the request is aborted", async () => {
+        expectConsoleError();
+        mockAbortedController();
+        fetchStub.mockRejectedValue(new DOMException("Aborted", "AbortError"));
+
+        const response = await feed.fetchFromEndpoint(
+          DUMMY_ENDPOINT,
+          {},
+          false,
+          onError
+        );
+
+        expect(response).toBe(null);
+        expect(onError).toHaveBeenCalledWith("timeout");
+      });
+      it("should report bad_response and resolve to null when the JSON is invalid", async () => {
+        expectConsoleError();
+        fetchStub.mockResolvedValue({
+          ok: true,
+          json: () => Promise.reject(new SyntaxError("JSON.parse")),
+        });
+
+        const response = await feed.fetchFromEndpoint(
+          DUMMY_ENDPOINT,
+          {},
+          false,
+          onError
+        );
+
+        expect(response).toBe(null);
+        expect(onError).toHaveBeenCalledWith("bad_response");
+      });
+
+      describe("over OHTTP", () => {
+        let ohttpRequestStub;
+        beforeEach(() => {
+          services.prefs.getStringPref.mockImplementation(name => {
+            switch (name) {
+              case "browser.newtabpage.activity-stream.discoverystream.ohttp.relayURL":
+                return "https://relay.url";
+              case "browser.newtabpage.activity-stream.discoverystream.ohttp.configURL":
+                return "https://config.url";
+              default:
+                return undefined;
+            }
+          });
+          jest
+            .spyOn(globalThis.ObliviousHTTP, "getOHTTPConfig")
+            .mockResolvedValue({ config: "config" });
+          ohttpRequestStub = jest.spyOn(
+            globalThis.ObliviousHTTP,
+            "ohttpRequest"
+          );
+          feed.store.getState = () => ({
+            Prefs: { values: { [ENDPOINTS_PREF_NAME]: DUMMY_ENDPOINT } },
+          });
+        });
+
+        it("should report ohttp_config when there is no valid config", async () => {
+          expectConsoleError();
+          globalThis.ObliviousHTTP.getOHTTPConfig.mockResolvedValue(null);
+
+          const response = await feed.fetchFromEndpoint(
+            DUMMY_ENDPOINT,
+            {},
+            true,
+            onError
+          );
+
+          expect(response).toBe(null);
+          expect(onError).toHaveBeenCalledWith("ohttp_config");
+          expect(ohttpRequestStub).not.toHaveBeenCalled();
+        });
+        it("should report timeout when an aborted request resolves as not ok", async () => {
+          expectConsoleError();
+          mockAbortedController();
+          ohttpRequestStub.mockResolvedValue({ ok: false, status: 200 });
+
+          await feed.fetchFromEndpoint(DUMMY_ENDPOINT, {}, true, onError);
+
+          expect(onError).toHaveBeenCalledWith("timeout");
+        });
+      });
     });
   });
 
@@ -849,6 +1029,268 @@ describe("DiscoveryStreamFeed", () => {
           action?.type === at.SET_PREF && action?.data?.name === name
       );
     }
+
+    describe("stories feed result telemetry", () => {
+      const failFetchWith = category =>
+        jest
+          .spyOn(feed, "fetchFromEndpoint")
+          .mockImplementation(async (url, options, useOhttp, onError) => {
+            onError(category);
+            return null;
+          });
+
+      beforeEach(() => {
+        setPref("telemetry.privatePing.enabled", true);
+      });
+
+      it("should count the error when there is no cached feed", async () => {
+        expectConsoleError();
+        jest.spyOn(feed.cache, "get").mockResolvedValue({});
+        failFetchWith("http_5xx");
+
+        const feedResp = await feed.getComponentFeed("foo.com");
+
+        expect(feedResp).toEqual({ data: { status: "failed" } });
+        expect(storiesFeedResultAdd).toHaveBeenCalledTimes(1);
+        expect(storiesFeedResultAdd).toHaveBeenCalledWith("http_5xx", 1);
+      });
+      it("should count the error when falling back to an expired cached feed", async () => {
+        expectConsoleError();
+        const cachedFeed = {
+          lastUpdated: Date.now(),
+          data: { status: "success", recommendations: [] },
+        };
+        jest
+          .spyOn(feed.cache, "get")
+          .mockResolvedValue({ feeds: { "foo.com": cachedFeed } });
+        failFetchWith("timeout");
+        jest.advanceTimersByTime(THIRTY_MINUTES + 1);
+
+        const feedResp = await feed.getComponentFeed("foo.com");
+
+        expect(feedResp).toBe(cachedFeed);
+        expect(storiesFeedResultAdd).toHaveBeenCalledWith("timeout", 1);
+      });
+      it("should count the error when the cached feed had failed", async () => {
+        expectConsoleError();
+        jest.spyOn(feed.cache, "get").mockResolvedValue({
+          feeds: {
+            "foo.com": { lastUpdated: Date.now(), data: { status: "failed" } },
+          },
+        });
+        failFetchWith("network");
+        jest.advanceTimersByTime(THIRTY_MINUTES + 1);
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(storiesFeedResultAdd).toHaveBeenCalledWith("network", 1);
+      });
+      it("should count bad_response when the response has no data array", async () => {
+        expectConsoleError();
+        jest.spyOn(feed.cache, "get").mockResolvedValue({});
+        jest.spyOn(feed, "fetchFromEndpoint").mockResolvedValue({ feeds: {} });
+
+        const feedResp = await feed.getComponentFeed("foo.com");
+
+        expect(feedResp).toEqual({ data: { status: "failed" } });
+        expect(storiesFeedResultAdd).toHaveBeenCalledWith("bad_response", 1);
+      });
+      it("should count bad_response when sections are enabled and the response has no feeds", async () => {
+        expectConsoleError();
+        setPref("discoverystream.sections.enabled", true);
+        jest.spyOn(feed.cache, "get").mockResolvedValue({});
+        jest.spyOn(feed, "fetchFromEndpoint").mockResolvedValue({ data: [] });
+
+        const feedResp = await feed.getComponentFeed("foo.com");
+
+        expect(feedResp).toEqual({ data: { status: "failed" } });
+        expect(storiesFeedResultAdd).toHaveBeenCalledWith("bad_response", 1);
+      });
+      it("should still count success when processing a valid response throws", async () => {
+        stubOutComponentFeedDeps();
+        feed.scoreItemsInferred.mockRejectedValue(new Error("scoring failed"));
+
+        await expect(feed.getComponentFeed("foo.com")).rejects.toThrow(
+          "scoring failed"
+        );
+
+        expect(storiesFeedResultAdd).toHaveBeenCalledTimes(1);
+        expect(storiesFeedResultAdd).toHaveBeenCalledWith("success", 1);
+      });
+      it("should not count anything when the private ping is disabled", async () => {
+        expectConsoleError();
+        setPref("telemetry.privatePing.enabled", false);
+        jest.spyOn(feed.cache, "get").mockResolvedValue({});
+        failFetchWith("http_5xx");
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(storiesFeedResultAdd).not.toHaveBeenCalled();
+      });
+      it("should count success when the fetch succeeds", async () => {
+        stubOutComponentFeedDeps();
+
+        const feedResp = await feed.getComponentFeed("foo.com");
+
+        expect(feedResp.data.status).toBe("success");
+        expect(storiesFeedResultAdd).toHaveBeenCalledTimes(1);
+        expect(storiesFeedResultAdd).toHaveBeenCalledWith("success", 1);
+      });
+      it("should still return the feed when the metric is not registered", async () => {
+        stubOutComponentFeedDeps();
+        delete globalThis.Glean.newtabContent.storiesFeedResult;
+
+        const feedResp = await feed.getComponentFeed("foo.com");
+
+        expect(feedResp.data.status).toBe("success");
+        expect(feedResp.data.recommendations.length).toBe(2);
+      });
+      it("should not count anything when the cached feed is still fresh", async () => {
+        jest.spyOn(feed.cache, "get").mockResolvedValue({
+          feeds: {
+            "foo.com": { lastUpdated: Date.now(), data: { status: "success" } },
+          },
+        });
+        jest.spyOn(feed, "fetchFromEndpoint");
+        jest.advanceTimersByTime(THIRTY_MINUTES - 1);
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(feed.fetchFromEndpoint).not.toHaveBeenCalled();
+        expect(storiesFeedResultAdd).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("stories feed state telemetry", () => {
+      const failFetch = () =>
+        jest
+          .spyOn(feed, "fetchFromEndpoint")
+          .mockImplementation(async (url, options, useOhttp, onError) => {
+            onError("network");
+            return null;
+          });
+
+      beforeEach(() => {
+        setPref("telemetry.privatePing.enabled", true);
+      });
+
+      it("should record stories when the fetch succeeds", async () => {
+        stubOutComponentFeedDeps();
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(storiesFeedStateSet).toHaveBeenLastCalledWith("stories");
+      });
+      it("should record placeholder when processing a valid response throws and there is no cached feed", async () => {
+        stubOutComponentFeedDeps();
+        feed.scoreItemsInferred.mockRejectedValue(new Error("scoring failed"));
+
+        await expect(feed.getComponentFeed("foo.com")).rejects.toThrow(
+          "scoring failed"
+        );
+
+        expect(storiesFeedStateSet).toHaveBeenCalledTimes(1);
+        expect(storiesFeedStateSet).toHaveBeenCalledWith("placeholder");
+      });
+      it("should record cache when processing a valid response throws and an expired cached feed exists", async () => {
+        stubOutComponentFeedDeps();
+        feed.cache.get.mockResolvedValue({
+          feeds: {
+            "foo.com": { lastUpdated: Date.now(), data: { status: "success" } },
+          },
+        });
+        feed.scoreItemsInferred.mockRejectedValue(new Error("scoring failed"));
+        jest.advanceTimersByTime(THIRTY_MINUTES + 1);
+
+        await expect(feed.getComponentFeed("foo.com")).rejects.toThrow(
+          "scoring failed"
+        );
+
+        expect(storiesFeedStateSet).toHaveBeenCalledTimes(1);
+        expect(storiesFeedStateSet).toHaveBeenCalledWith("cache");
+      });
+      it("should record stories when the cached feed is still fresh", async () => {
+        jest.spyOn(feed.cache, "get").mockResolvedValue({
+          feeds: {
+            "foo.com": { lastUpdated: Date.now(), data: { status: "success" } },
+          },
+        });
+        jest.spyOn(feed, "fetchFromEndpoint");
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(feed.fetchFromEndpoint).not.toHaveBeenCalled();
+        expect(storiesFeedStateSet).toHaveBeenCalledWith("stories");
+      });
+      it("should record cache when the fetch fails and an expired cached feed exists", async () => {
+        expectConsoleError();
+        jest.spyOn(feed.cache, "get").mockResolvedValue({
+          feeds: {
+            "foo.com": { lastUpdated: Date.now(), data: { status: "success" } },
+          },
+        });
+        failFetch();
+        jest.advanceTimersByTime(THIRTY_MINUTES + 1);
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(storiesFeedStateSet).toHaveBeenCalledTimes(1);
+        expect(storiesFeedStateSet).toHaveBeenCalledWith("cache");
+      });
+      it("should record placeholder when the fetch fails and there is no cached feed", async () => {
+        expectConsoleError();
+        jest.spyOn(feed.cache, "get").mockResolvedValue({});
+        failFetch();
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(storiesFeedStateSet).toHaveBeenCalledTimes(1);
+        expect(storiesFeedStateSet).toHaveBeenCalledWith("placeholder");
+      });
+      it("should record placeholder when the fetch fails and the cached feed had failed", async () => {
+        expectConsoleError();
+        jest.spyOn(feed.cache, "get").mockResolvedValue({
+          feeds: {
+            "foo.com": { lastUpdated: Date.now(), data: { status: "failed" } },
+          },
+        });
+        failFetch();
+        jest.advanceTimersByTime(THIRTY_MINUTES + 1);
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(storiesFeedStateSet).toHaveBeenCalledWith("placeholder");
+      });
+      it("should not record anything when the private ping is disabled", async () => {
+        setPref("telemetry.privatePing.enabled", false);
+        stubOutComponentFeedDeps();
+
+        await feed.getComponentFeed("foo.com");
+
+        expect(storiesFeedStateSet).not.toHaveBeenCalled();
+      });
+      it("should record off when refreshing with stories turned off", async () => {
+        jest.spyOn(feed, "loadLayout").mockResolvedValue();
+        jest.spyOn(feed, "loadComponentFeeds");
+        feed.store.dispatch({
+          type: at.PREF_CHANGED,
+          data: { name: "feeds.section.topstories", value: false },
+        });
+
+        await feed.refreshAll();
+
+        expect(feed.loadComponentFeeds).not.toHaveBeenCalled();
+        expect(storiesFeedStateSet).toHaveBeenCalledWith("off");
+      });
+      it("should record off when stories are turned off", async () => {
+        jest.spyOn(feed, "clearSpocs").mockResolvedValue();
+
+        setPref("feeds.section.topstories", false);
+        await Promise.resolve();
+
+        expect(storiesFeedStateSet).toHaveBeenCalledWith("off");
+      });
+    });
 
     it("should record surfaceId in Glean when the private ping is enabled", async () => {
       stubOutComponentFeedDeps();

@@ -64,6 +64,32 @@ const DEFAULT_RECS_IMPRESSION_EXPIRE_TIME = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MAX_LIFETIME_CAP = 500; // Guard against misconfiguration on the server
 const SPOCS_CAP_DURATION = 24 * 60 * 60; // 1 day in seconds.
 const FETCH_TIMEOUT = 45 * 1000;
+const FETCH_ERROR = Object.freeze({
+  TIMEOUT: "timeout",
+  HTTP_4XX: "http_4xx",
+  HTTP_5XX: "http_5xx",
+  NETWORK: "network",
+  OHTTP_CONFIG: "ohttp_config",
+  ENDPOINT_DISALLOWED: "endpoint_disallowed",
+  BAD_RESPONSE: "bad_response",
+});
+
+const STORIES_FEED_STATE = Object.freeze({
+  STORIES: "stories",
+  CACHE: "cache",
+  PLACEHOLDER: "placeholder",
+  OFF: "off",
+});
+
+function getHttpErrorCategory(status) {
+  if (status >= 400 && status < 500) {
+    return FETCH_ERROR.HTTP_4XX;
+  }
+  if (status >= 500 && status < 600) {
+    return FETCH_ERROR.HTTP_5XX;
+  }
+  return FETCH_ERROR.NETWORK;
+}
 const TOPIC_LOADING_TIMEOUT = 1 * 1000;
 const TOPIC_SELECTION_DISPLAY_COUNT =
   "discoverystream.topicSelection.onboarding.displayCount";
@@ -544,10 +570,26 @@ export class DiscoveryStreamFeed {
     this._prefCache = {};
   }
 
-  async fetchFromEndpoint(endpoint, options = {}, useOhttp = false) {
+  /**
+   * Fetches and parses JSON from an allowed endpoint. Resolves to null on any
+   * failure.
+   *
+   * @param {string} endpoint
+   * @param {object} [options] Options passed on to fetch or ohttpRequest.
+   * @param {boolean} [useOhttp] Send the request over OHTTP if configured.
+   * @param {Function} [onError] Called with a FETCH_ERROR category on failure.
+   * @returns {Promise<object|null>}
+   */
+  async fetchFromEndpoint(
+    endpoint,
+    options = {},
+    useOhttp = false,
+    onError = null
+  ) {
     let fetchPromise;
     if (!endpoint) {
       console.error("Tried to fetch endpoint but none was configured.");
+      onError?.(FETCH_ERROR.ENDPOINT_DISALLOWED);
       return null;
     }
 
@@ -560,6 +602,9 @@ export class DiscoveryStreamFeed {
       ""
     );
 
+    const controller = new AbortController();
+    let signal;
+    let errorCategory;
     try {
       // Make sure the requested endpoint is allowed
       const allowed =
@@ -569,11 +614,11 @@ export class DiscoveryStreamFeed {
           .map(item => item.trim())
           .filter(item => item) || [];
       if (!allowed.some(prefix => endpoint.startsWith(prefix))) {
+        errorCategory = FETCH_ERROR.ENDPOINT_DISALLOWED;
         throw new Error(`Not one of allowed prefixes (${allowed})`);
       }
 
-      const controller = new AbortController();
-      const { signal } = controller;
+      signal = controller.signal;
 
       if (useOhttp && ohttpConfigURL && ohttpRelayURL) {
         let config = await lazy.ObliviousHTTP.getOHTTPConfig(ohttpConfigURL);
@@ -584,6 +629,7 @@ export class DiscoveryStreamFeed {
               `OHTTP was configured for ${endpoint} but we couldn't fetch a valid config`
             )
           );
+          onError?.(FETCH_ERROR.OHTTP_CONFIG);
           return null;
         }
 
@@ -623,13 +669,25 @@ export class DiscoveryStreamFeed {
       const response = await fetchPromise;
 
       if (!response.ok) {
+        errorCategory = getHttpErrorCategory(response.status);
         throw new Error(`Unexpected status (${response.status})`);
       }
       clearTimeout(timeoutId);
 
-      return response.json();
+      try {
+        return await response.json();
+      } catch (error) {
+        errorCategory = FETCH_ERROR.BAD_RESPONSE;
+        throw error;
+      }
     } catch (error) {
       console.error(`Failed to fetch ${endpoint}:`, error.message);
+      // OHTTP requests don't reject with an AbortError when aborted, so check
+      // the signal instead of the error.
+      if (signal?.aborted) {
+        errorCategory = FETCH_ERROR.TIMEOUT;
+      }
+      onError?.(errorCategory ?? FETCH_ERROR.NETWORK);
     }
     return null;
   }
@@ -1909,6 +1967,31 @@ export class DiscoveryStreamFeed {
     };
   }
 
+  /**
+   * Counts one stories feed request in the private newtab-content ping.
+   *
+   * @param {string} label A stories_feed_result label.
+   */
+  recordStoriesFeedResult(label) {
+    if (this.store.getState().Prefs.values[PREF_PRIVATE_PING_ENABLED]) {
+      // @ts-expect-error tools/@types/generated/lib.gecko.glean.d.ts predates this metric.
+      Glean.newtabContent.storiesFeedResult?.[label]?.add(1);
+    }
+  }
+
+  /**
+   * Records what the stories section currently shows, in the private
+   * newtab-content ping.
+   *
+   * @param {string} state A STORIES_FEED_STATE value.
+   */
+  recordStoriesFeedState(state) {
+    if (this.store.getState().Prefs.values[PREF_PRIVATE_PING_ENABLED]) {
+      // @ts-expect-error tools/@types/generated/lib.gecko.glean.d.ts predates this metric.
+      Glean.newtabContent.storiesFeedState?.set(state);
+    }
+  }
+
   // eslint-disable-next-line max-statements
   async getComponentFeed(feedUrl, isStartup) {
     const cachedData = (await this.cache.get()) || {};
@@ -1920,6 +2003,7 @@ export class DiscoveryStreamFeed {
     const { feeds } = cachedData;
 
     let feed = feeds ? feeds[feedUrl] : null;
+    let showingExpiredCache = false;
     if (this.isExpired({ cachedData, key: "feed", url: feedUrl, isStartup })) {
       // Read before the awaits below, alongside the request body, so the
       // surfaceId is checked against what Merino was sent even if the region
@@ -1929,13 +2013,31 @@ export class DiscoveryStreamFeed {
         cachedData.sectionPersonalization
       );
 
-      const feedResponse = await this.fetchFromEndpoint(
+      let fetchError;
+      let feedResponse = await this.fetchFromEndpoint(
         feedUrl,
         options,
-        merinoOhttpEnabled
+        merinoOhttpEnabled,
+        category => {
+          fetchError = category;
+        }
       );
+      if (
+        feedResponse &&
+        (!Array.isArray(feedResponse.data) ||
+          (sectionsEnabled && !feedResponse.feeds))
+      ) {
+        console.error("Unexpected feed response shape");
+        feedResponse = null;
+      }
 
       if (feedResponse) {
+        this.recordStoriesFeedResult("success");
+        this.recordStoriesFeedState(
+          feed?.data?.status === "success"
+            ? STORIES_FEED_STATE.CACHE
+            : STORIES_FEED_STATE.PLACEHOLDER
+        );
         const { settings = {} } = feedResponse;
         let { recommendations } = feedResponse;
 
@@ -2078,7 +2180,17 @@ export class DiscoveryStreamFeed {
         };
       } else {
         console.error("No response for feed");
+        showingExpiredCache = feed?.data?.status === "success";
+        this.recordStoriesFeedResult(fetchError ?? FETCH_ERROR.BAD_RESPONSE);
       }
+    }
+
+    if (feed?.data?.status !== "success") {
+      this.recordStoriesFeedState(STORIES_FEED_STATE.PLACEHOLDER);
+    } else if (showingExpiredCache) {
+      this.recordStoriesFeedState(STORIES_FEED_STATE.CACHE);
+    } else {
+      this.recordStoriesFeedState(STORIES_FEED_STATE.STORIES);
     }
 
     // if surfaceID is availible either through the cache or the response set value in Glean
@@ -2298,6 +2410,8 @@ export class DiscoveryStreamFeed {
         // and we want this to update in the background sooner.
         await this._maybeUpdateCachedData();
       }
+    } else {
+      this.recordStoriesFeedState(STORIES_FEED_STATE.OFF);
     }
   }
 
@@ -2709,6 +2823,7 @@ export class DiscoveryStreamFeed {
         if (!this.showStories) {
           // Ensure we delete any remote data potentially related to spocs.
           this.clearSpocs();
+          this.recordStoriesFeedState(STORIES_FEED_STATE.OFF);
         }
         if (action.data.value) {
           this.enableStories();
