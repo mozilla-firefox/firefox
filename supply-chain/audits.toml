@@ -5170,7 +5170,7 @@ who = [
     "Erich Gubler <erichdongubler@gmail.com>",
 ]
 criteria = "safe-to-deploy"
-delta = "30.0.0 -> 30.0.0@git:49325ca0a13bdc0787b1601138096cce743dd29e"
+delta = "30.0.0 -> 30.0.0@git:4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 importable = false
 
 [[audits.naga-types]]
@@ -5189,7 +5189,7 @@ who = [
     "Erich Gubler <erichdongubler@gmail.com>",
 ]
 criteria = "safe-to-deploy"
-delta = "30.0.0 -> 30.0.0@git:49325ca0a13bdc0787b1601138096cce743dd29e"
+delta = "30.0.0 -> 30.0.0@git:4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 importable = false
 
 [[audits.net2]]
@@ -8248,7 +8248,7 @@ who = [
     "Erich Gubler <erichdongubler@gmail.com>",
 ]
 criteria = "safe-to-deploy"
-delta = "30.0.0 -> 30.0.0@git:49325ca0a13bdc0787b1601138096cce743dd29e"
+delta = "30.0.0 -> 30.0.0@git:4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 importable = false
 
 [[audits.wgpu-core-deps-apple]]
@@ -8308,7 +8308,7 @@ who = [
     "Erich Gubler <erichdongubler@gmail.com>",
 ]
 criteria = "safe-to-deploy"
-delta = "30.0.0 -> 30.0.0@git:49325ca0a13bdc0787b1601138096cce743dd29e"
+delta = "30.0.0 -> 30.0.0@git:4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 importable = false
 
 [[audits.wgpu-core-deps-windows-linux-android]]
@@ -8501,7 +8501,7 @@ who = [
     "Erich Gubler <erichdongubler@gmail.com>",
 ]
 criteria = "safe-to-deploy"
-delta = "30.0.0 -> 30.0.0@git:49325ca0a13bdc0787b1601138096cce743dd29e"
+delta = "30.0.0 -> 30.0.0@git:4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 importable = false
 
 [[audits.wgpu-naga-bridge]]
@@ -8531,7 +8531,7 @@ who = [
     "Erich Gubler <erichdongubler@gmail.com>",
 ]
 criteria = "safe-to-deploy"
-delta = "30.0.0 -> 30.0.0@git:49325ca0a13bdc0787b1601138096cce743dd29e"
+delta = "30.0.0 -> 30.0.0@git:4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 importable = false
 
 [[audits.wgpu-types]]
@@ -8664,7 +8664,7 @@ who = [
     "Erich Gubler <erichdongubler@gmail.com>",
 ]
 criteria = "safe-to-deploy"
-delta = "30.0.0 -> 30.0.0@git:49325ca0a13bdc0787b1601138096cce743dd29e"
+delta = "30.0.0 -> 30.0.0@git:4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 importable = false
 
 [[audits.whatsys]]

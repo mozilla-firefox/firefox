@@ -17,18 +17,18 @@ default = []
 [dependencies.wgpu-core-remote]
 package = "wgpu-core-remote"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "49325ca0a13bdc0787b1601138096cce743dd29e"
+rev = "4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 features = ["serde"]
 
 [dependencies.wgpu-core-remote-types]
 package = "wgpu-core-remote-types"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "49325ca0a13bdc0787b1601138096cce743dd29e"
+rev = "4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 
 [dependencies.wgc]
 package = "wgpu-core"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "49325ca0a13bdc0787b1601138096cce743dd29e"
+rev = "4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 features = ["serde", "trace", "strict_asserts", "wgsl", "api_log_info"]
 
 # We want the wgpu-core Metal backend on macOS and iOS.
@@ -36,32 +36,32 @@ features = ["serde", "trace", "strict_asserts", "wgsl", "api_log_info"]
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies.wgc]
 package = "wgpu-core"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "49325ca0a13bdc0787b1601138096cce743dd29e"
+rev = "4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 features = ["metal"]
 
 # We want the wgpu-core Direct3D backends on Windows.
 [target.'cfg(windows)'.dependencies.wgc]
 package = "wgpu-core"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "49325ca0a13bdc0787b1601138096cce743dd29e"
+rev = "4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 features = ["dx12"]
 
 # We want the wgpu-core Vulkan backend on Linux and Windows.
 [target.'cfg(any(windows, all(unix, not(any(target_os = "macos", target_os = "ios")))))'.dependencies.wgc]
 package = "wgpu-core"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "49325ca0a13bdc0787b1601138096cce743dd29e"
+rev = "4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 features = ["vulkan"]
 
 [dependencies.wgt]
 package = "wgpu-types"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "49325ca0a13bdc0787b1601138096cce743dd29e"
+rev = "4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 
 [dependencies.wgh]
 package = "wgpu-hal"
 git = "https://github.com/gfx-rs/wgpu"
-rev = "49325ca0a13bdc0787b1601138096cce743dd29e"
+rev = "4fe54b0207a2ec7e0d65af900b1218b3c1529699"
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.62", default-features = false, features = [
