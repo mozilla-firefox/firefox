@@ -324,7 +324,9 @@ class StyleSheet final : public nsICSSLoaderObserver, public nsWrapperCache {
   // WebIDL StyleSheet API
   void GetType(nsAString& aType);
   void GetHref(nsAString& aHref, ErrorResult& aRv);
-  // GetOwnerNode is defined above.
+  already_AddRefed<nsINode> GetOwnerNodeForBindings() const {
+    return do_AddRef(GetOwnerNode());
+  }
   already_AddRefed<StyleSheet> GetParentStyleSheet() const {
     return do_AddRef(GetParentSheet());
   }
