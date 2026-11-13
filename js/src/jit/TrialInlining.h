@@ -110,6 +110,11 @@ class InliningRoot {
 class InlinableOpData {
  public:
   JSScript* target = nullptr;
+
+  // The callee function, if the stub guards on the function itself and not
+  // just the script.
+  JSFunction* targetFunction = nullptr;
+
   ICScript* icScript = nullptr;
   const uint8_t* endOfSharedPrefix = nullptr;
 };
