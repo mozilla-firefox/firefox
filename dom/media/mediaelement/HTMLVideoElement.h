@@ -178,6 +178,7 @@ class HTMLVideoElement final : public HTMLMediaElement {
   bool ShouldCreateVideoWakeLock() const;
   void CreateVideoWakeLockIfNeeded();
   void ReleaseVideoWakeLockIfExists();
+  void UpdateAutoplayAfterVisibilityChange(bool aSync);
 
   gfx::IntSize GetVideoIntrinsicDimensions() const;
 
