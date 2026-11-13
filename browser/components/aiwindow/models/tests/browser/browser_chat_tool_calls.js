@@ -761,6 +761,18 @@ add_task(async function test_answers_search_preserves_other_calls_on_failure() {
                   Assert.deepEqual(message.content.body, SKIPPED_BODY);
                 }
               }
+              const searchBody = toolMessages.find(
+                m => m.content.tool_call_id === searchCall.id
+              ).content.body;
+              Assert.strictEqual(
+                searchBody.directAnswer,
+                true,
+                "The stored search result keeps the marker the action log reads"
+              );
+              Assert.ok(
+                !("directAnswerStream" in searchBody),
+                "The stream itself is not stored"
+              );
             } else {
               const followupTurn = await captureChatRequest();
               const { results } = getToolResults(

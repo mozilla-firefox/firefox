@@ -246,6 +246,9 @@ const GET_PAGE_CONTENT_TOOL = {
  *
  * @typedef {object} AnswersSearchWorkflowResult
  * @property {AsyncGenerator<object>} [directAnswerStream] - Reply to deliver.
+ * @property {boolean} [directAnswer] - True alongside `directAnswerStream`.
+ *   Unlike the stream it stays in the persisted tool body, so the action log
+ *   can say that Exa wrote the reply.
  * @property {string[]} read_urls - URLs /answers cited (code-tracked).
  * @property {boolean} requiresSearchHandoff - Whether to route to search handoff.
  * @property {string} [error] - Present when the flow could not run.
@@ -784,6 +787,7 @@ async function runAnswersSearch(toolParams, conversation, signal) {
 
   return {
     directAnswerStream: answerAsStream(answer, signal),
+    directAnswer: true,
     read_urls: readUrls,
     requiresSearchHandoff: false,
   };

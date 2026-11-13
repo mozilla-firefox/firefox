@@ -375,6 +375,45 @@ add_task(async function test_linked_pending_label_completes_and_expands() {
   });
 });
 
+add_task(async function test_exa_answered_row_renders_with_link() {
+  const HREF = "https://support.mozilla.org/kb/smart-window-exa";
+  const link = { l10nName: "exa-link", href: HREF };
+
+  await withTestPage(async browser => {
+    await setProps(browser, {
+      labelL10nId: "action-log-completed-steps",
+      labelL10nArgs: { count: 1 },
+      isExpanded: true,
+      rows: [
+        {
+          labelL10nId: "action-log-searched-and-answered-with-exa",
+          link,
+          items: [],
+        },
+      ],
+    });
+
+    await SpecialPowers.spawn(browser, [HREF], async href => {
+      const shadow =
+        content.document.getElementById("test-action-result").shadowRoot;
+      const rowLabel = shadow.querySelector(
+        ".action-result-expanded-row-label"
+      );
+      await ContentTaskUtils.waitForCondition(
+        () => rowLabel.textContent.trim() == "Searched and answered with Exa",
+        "The row says Exa wrote the reply"
+      );
+      const anchor = rowLabel.querySelector("a.action-result-label-link");
+      Assert.equal(anchor?.textContent, "Exa", "Exa is the linked word");
+      Assert.equal(
+        anchor?.getAttribute("href"),
+        href,
+        "Exa links to the support article"
+      );
+    });
+  });
+});
+
 add_task(async function test_toggle_dispatches_event() {
   await withTestPage(async browser => {
     await setProps(browser, { label: "Closed tabs", isExpanded: false });

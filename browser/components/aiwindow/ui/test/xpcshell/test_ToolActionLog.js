@@ -182,6 +182,48 @@ add_task(
   }
 );
 
+add_task(function test_search_the_web_direct_answer_label() {
+  const searchOnly = getActionLogConfigForTool(SEARCH_THE_WEB, {});
+  const answered = getActionLogConfigForTool(SEARCH_THE_WEB, {
+    directAnswer: true,
+    read_urls: ["https://example.com/"],
+    requiresSearchHandoff: false,
+  });
+
+  Assert.notEqual(
+    answered.label?.l10nId,
+    searchOnly.label?.l10nId,
+    "A reply written by Exa gets its own label"
+  );
+  Assert.deepEqual(
+    answered.link,
+    searchOnly.link,
+    "The answered label keeps the Exa support link"
+  );
+  Assert.deepEqual(
+    answered.pendingLabel,
+    searchOnly.pendingLabel,
+    "The in-progress label is unchanged"
+  );
+
+  Assert.withSoftAssertions(function (soft) {
+    for (const [description, body] of [
+      ["fast path results", { results: [], requiresSearchHandoff: false }],
+      [
+        "answers path failure",
+        { read_urls: [], error: "failed", requiresSearchHandoff: false },
+      ],
+      ["search handoff", { requiresSearchHandoff: true }],
+    ]) {
+      soft.equal(
+        getActionLogConfigForTool(SEARCH_THE_WEB, body).label?.l10nId,
+        searchOnly.label?.l10nId,
+        `${description} keeps the search-only label`
+      );
+    }
+  });
+});
+
 add_task(function test_getActionLogConfigForTool_no_link_by_default() {
   const cfg = getActionLogConfigForTool(GET_OPEN_TABS, []);
   Assert.strictEqual(cfg.link, null, "Tools without a link config return null");

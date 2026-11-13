@@ -118,7 +118,11 @@ const TOOL_ACTION_LOG_CONFIG = new Map([
   [
     SEARCH_THE_WEB,
     {
-      label: { l10nId: "action-log-searched-web-with-exa" },
+      label: body => ({
+        l10nId: body?.directAnswer
+          ? "action-log-searched-and-answered-with-exa"
+          : "action-log-searched-web-with-exa",
+      }),
       pendingLabel: { l10nId: "action-log-searching-web-with-exa" },
       link: {
         l10nName: "exa-link",

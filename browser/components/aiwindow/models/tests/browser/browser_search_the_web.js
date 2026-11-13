@@ -1686,6 +1686,11 @@ add_task(async function test_answers_search_returns_answer_and_citations() {
       false,
       "A successful answer is not a handoff"
     );
+    Assert.strictEqual(
+      result.directAnswer,
+      true,
+      "The result is marked as a reply Exa wrote, for the action log"
+    );
 
     let delivered = "";
     for await (const chunk of result.directAnswerStream) {
@@ -1756,6 +1761,10 @@ add_task(async function test_answers_pref_ignored_on_custom_endpoint() {
     Assert.ok(
       !("directAnswerStream" in result),
       "No reply is delivered on the user's behalf"
+    );
+    Assert.ok(
+      !("directAnswer" in result),
+      "The action log does not claim Exa wrote the reply"
     );
     Assert.ok(
       !openAIEngine._createEngine.called,
