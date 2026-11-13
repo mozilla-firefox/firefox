@@ -460,6 +460,13 @@ with only_when(depends(c_compiler)(lambda c: c.type == "clang-cl")):
         add_linker_flag("-LARGEADDRESSAWARE")
         add_linker_flag("-SAFESEH")
 
+    # The MSVC STL marks every function in <atomic> as target("cx16") when
+    # compiling with clang for x64, and clang 23 no longer inlines them into
+    # callers built without that feature. Without this, every std::atomic
+    # operation is an out-of-line call. All x64 CPUs supported by Windows 10+
+    # have cmpxchg16b.
+    add_flag("-mcx16", when=depends(target.cpu)(lambda cpu: cpu == "x86_64"))
+
 
 set_define("WIN32_LEAN_AND_MEAN", True)
 
