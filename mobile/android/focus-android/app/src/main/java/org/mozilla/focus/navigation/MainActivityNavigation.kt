@@ -44,7 +44,7 @@ class MainActivityNavigation(
     private val isInPictureInPictureMode: () -> Boolean,
     private val shouldAnimateHome: () -> Boolean,
     private val showStartBrowsingCfr: () -> Unit,
-    private val onEraseAction: () -> Any,
+    private val onEraseAction: () -> Unit,
 ) : AppNavigation {
 
     /** Home screen. */

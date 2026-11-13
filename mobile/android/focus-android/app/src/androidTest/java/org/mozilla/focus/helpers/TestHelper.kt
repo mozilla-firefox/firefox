@@ -193,7 +193,7 @@ object TestHelper {
 
     fun UiAutomation.executeShellCommandBlocking(command: String) {
         val output = executeShellCommand(command)
-        FileInputStream(output.fileDescriptor).use { it.readBytes() }
+        FileInputStream(output.fileDescriptor).use { it.readBytes().let {} }
     }
 
     @JvmStatic
