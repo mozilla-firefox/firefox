@@ -13300,20 +13300,6 @@ void Document::OnPageHide(bool aPersisted, EventTarget* aDispatchStartTarget,
     // reference to the root (in Document::mFullscreenRoot) since we can't
     // just traverse the doctree to get the root.
     Document::ExitFullscreenInDocTree(this);
-
-    // Since the document is removed from the doctree before OnPageHide() is
-    // called, ExitFullscreen() can't traverse from the root down to *this*
-    // document, so we must manually call CleanupFullscreenState() below too.
-    // Note that CleanupFullscreenState() clears Document::mFullscreenRoot,
-    // so we *must* call it after ExitFullscreen(), not before.
-    // OnPageHide() is called in every hidden (i.e. descendant) document,
-    // so calling CleanupFullscreenState() here will ensure all hidden
-    // documents have their fullscreen state reset.
-    CleanupFullscreenState();
-
-    // The fullscreenchange event is to be queued in the refresh driver,
-    // however a hidden page wouldn't trigger that again, so it makes no
-    // sense to dispatch such event here.
   }
 
   if (auto* element = HTMLVideoElement::FromNodeOrNull(
@@ -16345,12 +16331,19 @@ bool Document::IsFullscreenLeaf() {
   return GetFullscreenLeaf(*root);
 }
 
-static CallState ResetFullscreen(Document& aDocument) {
+enum class DispatchFullscreenChangeEvent : bool { No, Yes };
+
+static CallState ResetFullscreen(Document& aDocument,
+                                 DispatchFullscreenChangeEvent aDispatchEvent) {
   if (Element* fsElement = aDocument.GetUnretargetedFullscreenElement()) {
     aDocument.CleanupFullscreenState();
     NS_ASSERTION(!aDocument.Fullscreen(), "Should reset fullscreen");
-    DispatchFullscreenChange(aDocument, fsElement);
-    aDocument.EnumerateSubDocuments(ResetFullscreen);
+    if (aDispatchEvent == DispatchFullscreenChangeEvent::Yes) {
+      DispatchFullscreenChange(aDocument, fsElement);
+    }
+    aDocument.EnumerateSubDocuments([aDispatchEvent](Document& aSubDoc) {
+      return ResetFullscreen(aSubDoc, aDispatchEvent);
+    });
   }
   return CallState::Continue;
 }
@@ -16416,9 +16409,7 @@ void Document::ExitFullscreenInDocTree(Document* aMaybeNotARootDoc) {
     //
     // We still reset this document, otherwise it could keep a stale element
     // in its top layer with the fullscreen flag set.
-    if (aMaybeNotARootDoc->GetUnretargetedFullscreenElement()) {
-      aMaybeNotARootDoc->CleanupFullscreenState();
-    }
+    ResetFullscreen(*aMaybeNotARootDoc, DispatchFullscreenChangeEvent::No);
     return;
   }
 
@@ -16429,7 +16420,19 @@ void Document::ExitFullscreenInDocTree(Document* aMaybeNotARootDoc) {
   Document* fullscreenLeaf = GetFullscreenLeaf(root);
 
   // Walk the tree of fullscreen documents, and reset their fullscreen state.
-  ResetFullscreen(*root);
+  ResetFullscreen(*root, DispatchFullscreenChangeEvent::Yes);
+  // *aMaybeNotARootDoc* may have already been removed from the doctree, e.g.
+  // when ExitFullscreenInDocTree() is called from OnPageHide(). In that case
+  // we can't traverse from the root down to *aMaybeNotARootDoc*, so we must
+  // manually call ResetFullscreen() on it to ensure all hidden documents have
+  // their fullscreen state reset. If *aMaybeNotARootDoc* is reachable from
+  // the root, its fullscreen state has already been reset above and this call
+  // does nothing.
+  //
+  // The fullscreenchange event is to be queued in the refresh driver,
+  // however a hidden page wouldn't trigger that again, so it makes no
+  // sense to dispatch such event here.
+  ResetFullscreen(*aMaybeNotARootDoc, DispatchFullscreenChangeEvent::No);
 
   NS_ASSERTION(!root->Fullscreen(),
                "Fullscreen root should no longer be a fullscreen doc...");
@@ -16556,7 +16559,9 @@ void Document::RestorePreviousFullscreenState(UniquePtr<FullscreenExit> aExit) {
     if (!exitDoc->Fullscreen()) {
       // The document may have other fullscreen subdocuments which are not part
       // of the current fullscreen document chain, reset them as well.
-      exitDoc->EnumerateSubDocuments(ResetFullscreen);
+      exitDoc->EnumerateSubDocuments([](Document& aSubDoc) {
+        return ResetFullscreen(aSubDoc, DispatchFullscreenChangeEvent::Yes);
+      });
     }
   }
   aExit->MayResolvePromise();
