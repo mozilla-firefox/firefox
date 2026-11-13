@@ -379,7 +379,7 @@ pub fn recalc_style_at<E, D, F>(
         is_animation_restyle = result.animations_changed;
 
         // If we're restyling this element to display:none, throw away all style
-        // data in the subtree, notify the caller to early-return.
+        // data in the subtree.
         if data.styles.is_display_none() {
             debug!(
                 "{:?} style is display:none - clearing data from descendants.",
