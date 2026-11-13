@@ -9,6 +9,8 @@ const { NimbusTestUtils } = ChromeUtils.importESModule(
 
 const ENABLED_PREF = "browser.widgets.generated.enabled";
 
+add_setup(mockAuthentication);
+
 function getToolButton(win = window) {
   return [...win.document.querySelector("sidebar-main").toolButtons].find(
     button => button.getAttribute("view") == WIDGETS_VIEW
@@ -85,7 +87,33 @@ add_task(async function test_close_button_closes_panel() {
   );
 });
 
+add_task(async function test_composer_needs_authentication() {
+  setSignedIn(false);
+  let panel = await openWidgetsSidebar();
+  await panel.updateComplete;
+  ok(!panel.composer, "Composer hidden");
+
+  setSignedIn(true);
+  await panel.updateComplete;
+  ok(panel.composer, "Composer shown");
+
+  setSignedIn(false);
+  await panel.updateComplete;
+  ok(!panel.composer, "Composer hidden again");
+
+  panel.composing = false;
+  setSignedIn(true);
+  await panel.updateComplete;
+  ok(panel.composeButton, "Compose button shown");
+
+  setSignedIn(false);
+  await panel.updateComplete;
+  ok(!panel.composeButton, "Compose button hidden");
+  SidebarController.hide();
+});
+
 add_task(async function test_panel_composer() {
+  setSignedIn(true);
   let panel = await openWidgetsSidebar();
   await panel.updateComplete;
   let { composer } = panel;

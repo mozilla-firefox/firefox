@@ -15,9 +15,6 @@ const { PURPOSES } = ChromeUtils.importESModule(
 const { openAIEngine } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs"
 );
-const { sinon } = ChromeUtils.importESModule(
-  "resource://testing-common/Sinon.sys.mjs"
-);
 
 const LOCAL_PROMPT_PREF = "browser.widgets.generated.localPrompt";
 
