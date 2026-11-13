@@ -153,6 +153,27 @@ class TabGroupFlowFragmentTest {
     }
 
     @Test
+    fun `WHEN entry point arg is MoveTabToGroup, THEN backstack is instantiated correctly`() {
+        val tabId = "TestTabId"
+        val entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = tabId)
+        val state =
+            fragment.createInitialState(
+                settings = Settings(appContext = ApplicationProvider.getApplicationContext()),
+                args = TabGroupFlowFragmentArgs(entryPoint = entryPoint),
+            )
+
+        assertEquals(
+            expected =
+                listOf(
+                    TabGroupFlowDestination.Root,
+                    TabGroupFlowDestination.MoveToTabGroup(tabId = tabId),
+                ),
+            actual = state.backStack,
+        )
+        assertEquals(entryPoint, state.entryPoint)
+    }
+
+    @Test
     fun `WHEN MoveToTabGroup is the top destination AND an existing group is picked, THEN the tab is moved to that group`() {
         val group = createTabGroup(id = "group-1", title = "Work")
         val state =

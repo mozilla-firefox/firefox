@@ -208,6 +208,7 @@ class TabGroupFlowFragment : DialogFragment() {
                             appStore = requireComponents.appStore,
                             tabGroupStripEnabled = settings.shouldShowTabGroupsStrip,
                         ),
+                        TabGroupFlowStorageMiddleware(requireComponents.tabDataCoordinator),
                     ),
             )
         }

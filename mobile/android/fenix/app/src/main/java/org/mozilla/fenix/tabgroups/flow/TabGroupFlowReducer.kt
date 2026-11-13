@@ -8,7 +8,6 @@ import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 /** Reducer for the TabGroup flow. */
 object TabGroupFlowReducer {
     /** Updates the [TabGroupFlowState] object based on the received [TabGroupAction] */
-    // todo-bug-2069535: Hook up to the coordinator storage layer when it is ready
     fun reduce(
         state: TabGroupFlowState,
         action: TabGroupAction,
@@ -18,7 +17,7 @@ object TabGroupFlowReducer {
                 state.copy(backStack = state.popBackStack())
             }
             is TabGroupAction.TabAddedToNewTabGroup -> {
-                state.navigateToCreateTabGroup(isStarterTabGroup = false)
+                state.navigateToCreateTabGroup(action.tabId)
             }
             is TabGroupAction.TabAddedToExistingTabGroup -> {
                 state.copy(backStack = state.popBackStack())
@@ -28,10 +27,19 @@ object TabGroupFlowReducer {
             }
             is TabGroupAction.SaveClicked -> {
                 // Resets to root after a save
-                state.copy(backStack = listOf(TabGroupFlowDestination.Root))
+                state.copy(
+                    backStack = listOf(TabGroupFlowDestination.Root),
+                    tabPendingNewGroup = null,
+                )
             }
             is TabGroupAction.TabGroupsUpdated -> {
                 state.copy(groups = action.tabGroups)
+            }
+            is TabGroupAction.NameChanged -> {
+                state.copy(formState = state.formState?.copy(name = action.name, edited = true))
+            }
+            is TabGroupAction.ThemeChanged -> {
+                state.copy(formState = state.formState?.copy(theme = action.theme, edited = true))
             }
 
             // no op actions
@@ -43,7 +51,6 @@ object TabGroupFlowReducer {
             TabGroupAction.DragAndDropProcessed,
             is TabGroupAction.DragAndDropTwoTabs,
             is TabGroupAction.EditTabGroupClicked,
-            is TabGroupAction.NameChanged,
             TabGroupAction.NewGroupAnimationFinished,
             is TabGroupAction.NewGroupCreated,
             TabGroupAction.NewTabGroupFabClicked,
@@ -53,7 +60,6 @@ object TabGroupFlowReducer {
             is TabGroupAction.SelectedTabsAddedToGroup,
             is TabGroupAction.TabClosed,
             is TabGroupAction.TabGroupClicked,
-            is TabGroupAction.ThemeChanged,
             is TabGroupAction.AddToTabGroup,
             is TabGroupAction.AddToNewTabGroup,
             // Onboarding actions - not shown outside TabsTray
@@ -68,9 +74,10 @@ object TabGroupFlowReducer {
         }
     }
 
-    private fun TabGroupFlowState.navigateToCreateTabGroup(isStarterTabGroup: Boolean = false) =
+    private fun TabGroupFlowState.navigateToCreateTabGroup(tabId: String) =
         copy(
-            formState = initializeTabGroupForm(isStarterTabGroup = isStarterTabGroup),
+            formState = initializeTabGroupForm(isStarterTabGroup = false),
             backStack = backStack + TabGroupFlowDestination.EditTabGroup,
+            tabPendingNewGroup = tabId,
         )
 }

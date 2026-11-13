@@ -16,6 +16,7 @@ import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
+import org.mozilla.fenix.tabgroups.storage.TabGroupStorage
 import org.mozilla.fenix.tabstray.data.TabGroupTheme
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
 import org.mozilla.fenix.tabstray.data.toTabStorageUpdate
@@ -24,7 +25,6 @@ import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction
 import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction.InitAction
 import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction.TabDataUpdateReceived
 import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction.TabsStorageAction
-import org.mozilla.fenix.tabstray.redux.state.TabGroupFormState
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
 
 /** The kinds of item a drag and drop gesture can start from or land on. */
@@ -48,6 +48,7 @@ class TabStorageMiddleware(
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
     private val mainScope: CoroutineScope = CoroutineScope(Dispatchers.Main),
 ) : Middleware<TabsTrayState, TabsTrayAction> {
+    private val tabGroupStorage = TabGroupStorage(tabDataCoordinator = tabDataCoordinator)
 
     private val logger = Logger(tag = "TabStorageMiddleware")
 
@@ -139,9 +140,8 @@ class TabStorageMiddleware(
                 }
             }
 
-            // todo-bug-2069535: Hook up to the coordinator storage layer when it is ready
             is TabGroupAction.TabAddedToNewTabGroup -> {
-                scope.launch {}
+                // No storage action is taken until save
             }
 
             is TabGroupAction.TabAddedToExistingTabGroup -> {
@@ -150,11 +150,8 @@ class TabStorageMiddleware(
                 }
             }
 
-            is TabGroupAction.TabMovedToExistingTabGroup -> {
-                scope.launch {
-                    tabDataCoordinator.addTabsToTabGroup(tabGroupId = action.groupId, tabIds = listOf(action.tabId))
-                }
-            }
+            // Only dispatched by the tab group flow
+            is TabGroupAction.TabMovedToExistingTabGroup -> {}
         }
     }
 
@@ -256,12 +253,15 @@ class TabStorageMiddleware(
             val newGroupId =
                 when (mode) {
                     is TabsTrayState.Mode.DragAndDrop -> {
-                        handleSaveFromDragAndDrop(formState = formState, mode = mode)
+                        tabGroupStorage.handleSaveFromDragAndDrop(
+                            formState = formState,
+                            mode = mode,
+                        )
                     }
 
                     is TabsTrayState.Mode.Normal,
                     is TabsTrayState.Mode.Select -> {
-                        handleSaveFromMultiSelection(
+                        tabGroupStorage.handleSaveFromMultiSelection(
                             formState = formState,
                             selectedTabIds = selectedTabIds,
                         )
@@ -305,40 +305,5 @@ class TabStorageMiddleware(
                 )
             )
         }
-    }
-
-    private suspend fun handleSaveFromDragAndDrop(
-        formState: TabGroupFormState,
-        mode: TabsTrayState.Mode.DragAndDrop,
-    ): String? {
-        val destinationId = mode.destinationId ?: return null
-
-        // The dragged tab is sequenced from the tab it was dropped on.
-        return tabDataCoordinator.createTabGroup(
-            title = formState.name,
-            theme = formState.theme.toStorageValue(),
-            tabIds = listOf(mode.sourceId, destinationId),
-            anchorTabId = destinationId,
-        )
-    }
-
-    private suspend fun handleSaveFromMultiSelection(
-        formState: TabGroupFormState,
-        selectedTabIds: List<String>,
-    ): String? {
-        if (formState.tabGroupId != null) {
-            tabDataCoordinator.updateTabGroup(
-                tabGroupId = formState.tabGroupId,
-                title = formState.name,
-                theme = formState.theme.toStorageValue(),
-            )
-            return null
-        }
-
-        return tabDataCoordinator.createTabGroup(
-            title = formState.name,
-            theme = formState.theme.toStorageValue(),
-            tabIds = selectedTabIds,
-        )
     }
 }
