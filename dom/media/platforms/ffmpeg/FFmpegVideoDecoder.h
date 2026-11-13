@@ -161,6 +161,12 @@ class FFmpegVideoDecoder<LIBAV_VER>
 
  private:
   RefPtr<FlushPromise> ProcessFlush() override;
+#if LIBAVCODEC_VERSION_MAJOR >= 58
+  // Creates the image for mFrame with the current decoding backend.
+  MediaResult CreateImageForFrame(int64_t aOffset, int64_t aPts,
+                                  int64_t aDuration, int64_t aTimecode,
+                                  MediaDataDecoder::DecodedData& aResults);
+#endif
   void ProcessShutdown() override;
   MediaResult DoDecode(MediaRawData* aSample, uint8_t* aData, int aSize,
                        bool* aGotFrame, DecodedData& aResults) override;

@@ -1799,11 +1799,13 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::DoDecode(
           RESULT_DETAIL("avcodec_receive_frame error: %s", errStr));
     }
 
-    MediaResult rv;
+    int64_t pts = GetFramePts(mFrame);
+    int64_t duration = Duration(mFrame);
+    int64_t timecode = -1;
 #  ifdef MOZ_USE_HWDECODE
     if (IsHardwareAccelerated()) {
 #    ifdef MOZ_WIDGET_GTK
-      mDecodeStats.UpdateDecodeTimes(Duration(mFrame));
+      mDecodeStats.UpdateDecodeTimes(duration);
       if (mDecodeStats.IsDecodingSlow() &&
           !StaticPrefs::media_ffmpeg_disable_software_fallback()) {
         PROFILER_MARKER_TEXT("FFmpegVideoDecoder::DoDecode", MEDIA_PLAYBACK, {},
@@ -1813,51 +1815,24 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::DoDecode(
             NS_ERROR_DOM_MEDIA_DECODE_ERR,
             RESULT_DETAIL("HW decoding is slow, switching back to SW decode"));
       }
-      if (mUsingV4L2) {
-        rv = CreateImageV4L2(fpos, GetFramePts(mFrame), Duration(mFrame),
-                             aResults);
-      }
-#      ifdef MOZ_USE_HWDECODE_VULKAN
-      else if (mVulkanDeviceContext) {
-        rv = CreateImageVulkan(fpos, GetFramePts(mFrame), Duration(mFrame),
-                               aResults);
-      }
-#      endif
-      else {
-        rv = CreateImageVAAPI(fpos, GetFramePts(mFrame), Duration(mFrame),
-                              aResults);
-      }
-
-      // If VA-API/V4L2 playback failed, just quit. Decoder is going to be
-      // restarted without hardware acceleration
-      if (NS_FAILED(rv)) {
-        // Explicitly remove dmabuf surface pool as it's configured
-        // for VA-API/V4L2 support.
-        mVideoFramePool = nullptr;
-        return rv;
-      }
-#    elif defined(MOZ_ENABLE_D3D11VA)
-      mDecodeStats.UpdateDecodeTimes(Duration(mFrame));
-      rv = CreateImageD3D11(fpos, GetFramePts(mFrame), Duration(mFrame),
-                            aResults);
 #    elif defined(MOZ_WIDGET_ANDROID)
       InputInfo info(aSample);
       info.mTimecode = -1;
       TakeInputInfo(mFrame, info);
-      mDecodeStats.UpdateDecodeTimes(info.mDuration);
-      rv = CreateImageMediaCodec(fpos, GetFramePts(mFrame), info.mTimecode,
-                                 info.mDuration, aResults);
+      duration = info.mDuration;
+      timecode = info.mTimecode;
+      mDecodeStats.UpdateDecodeTimes(duration);
 #    else
-      mDecodeStats.UpdateDecodeTimes(Duration(mFrame));
-      return MediaResult(NS_ERROR_DOM_MEDIA_DECODE_ERR,
-                         RESULT_DETAIL("No HW decoding implementation!"));
+      mDecodeStats.UpdateDecodeTimes(duration);
 #    endif
     } else
 #  endif
     {
-      mDecodeStats.UpdateDecodeTimes(Duration(mFrame));
-      rv = CreateImage(fpos, GetFramePts(mFrame), Duration(mFrame), aResults);
+      mDecodeStats.UpdateDecodeTimes(duration);
     }
+
+    MediaResult rv =
+        CreateImageForFrame(fpos, pts, duration, timecode, aResults);
     if (NS_FAILED(rv)) {
       return rv;
     }
@@ -2590,6 +2565,47 @@ FFmpegVideoDecoder<LIBAV_VER>::ProcessFlush() {
   mPerformanceRecorder.Record(std::numeric_limits<int64_t>::max());
   return FFmpegDataDecoder::ProcessFlush();
 }
+
+#if LIBAVCODEC_VERSION_MAJOR >= 58
+MediaResult FFmpegVideoDecoder<LIBAV_VER>::CreateImageForFrame(
+    int64_t aOffset, int64_t aPts, int64_t aDuration, int64_t aTimecode,
+    MediaDataDecoder::DecodedData& aResults) {
+#  ifdef MOZ_USE_HWDECODE
+  if (IsHardwareAccelerated()) {
+#    ifdef MOZ_WIDGET_GTK
+    MediaResult rv;
+    if (mUsingV4L2) {
+      rv = CreateImageV4L2(aOffset, aPts, aDuration, aResults);
+    }
+#      ifdef MOZ_USE_HWDECODE_VULKAN
+    else if (mVulkanDeviceContext) {
+      rv = CreateImageVulkan(aOffset, aPts, aDuration, aResults);
+    }
+#      endif
+    else {
+      rv = CreateImageVAAPI(aOffset, aPts, aDuration, aResults);
+    }
+    // If VA-API/V4L2 playback failed, just quit. Decoder is going to be
+    // restarted without hardware acceleration
+    if (NS_FAILED(rv)) {
+      // Explicitly remove dmabuf surface pool as it's configured
+      // for VA-API/V4L2 support.
+      mVideoFramePool = nullptr;
+    }
+    return rv;
+#    elif defined(MOZ_ENABLE_D3D11VA)
+    return CreateImageD3D11(aOffset, aPts, aDuration, aResults);
+#    elif defined(MOZ_WIDGET_ANDROID)
+    return CreateImageMediaCodec(aOffset, aPts, aTimecode, aDuration, aResults);
+#    else
+    return MediaResult(NS_ERROR_DOM_MEDIA_DECODE_ERR,
+                       RESULT_DETAIL("No HW decoding implementation!"));
+#    endif
+  }
+#  endif
+  return CreateImage(aOffset, aPts, aDuration, aResults);
+}
+#endif
 
 #ifdef MOZ_WIDGET_ANDROID
 Maybe<MediaDataDecoder::PropertyValue> FFmpegVideoDecoder<
