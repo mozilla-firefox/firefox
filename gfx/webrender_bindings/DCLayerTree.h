@@ -201,6 +201,8 @@ class DCLayerTree {
   // Get or create an FBO with depth buffer suitable for specified dimensions
   GLuint GetOrCreateFbo(int aWidth, int aHeight);
 
+  bool SetVideoProcessorAutoHDR(bool aEnable);
+
   bool SupportsHardwareOverlays();
   bool SupportsHardwareOverlayRGB10A2();
   bool SupportsHardwareOverlayRGBA16F();
@@ -249,6 +251,7 @@ class DCLayerTree {
   RefPtr<ID3D11VideoContext> mVideoContext;
   RefPtr<ID3D11VideoProcessor> mVideoProcessor;
   RefPtr<ID3D11VideoProcessorEnumerator> mVideoProcessorEnumerator;
+  bool mVideoProcessorAutoHDREnabled = false;
   gfx::IntSize mVideoInputSize;
   gfx::IntSize mVideoOutputSize;
 
