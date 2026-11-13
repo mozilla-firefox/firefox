@@ -521,14 +521,10 @@ export const conditions = {
 
 /** @param {string} pref */
 function getToolForPref(pref) {
-  /** @type {IteratorObject<any>} */
-  // @ts-expect-error TypeScript doesn't declare Iterator.concat yet. Remove the
-  // cast above along with this once it does.
-  const tools = Iterator.concat(
+  const tool = Iterator.concat(
     gDevTools.getDefaultTools(),
     gDevTools.getAdditionalTools()
-  );
-  const tool = tools.find(
+  ).find(
     definition =>
       "visibilityswitch" in definition && definition.visibilityswitch === pref
   );
