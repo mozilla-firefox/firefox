@@ -1347,8 +1347,8 @@ bool WaylandSurface::IsBufferAttached(WaylandBuffer* aBuffer) {
          mBufferAttached;
 }
 
-bool WaylandSurface::AttachLocked(const WaylandSurfaceLock& aSurfaceLock,
-                                  RefPtr<WaylandBuffer> aBuffer) {
+BufferTransaction* WaylandSurface::AttachLocked(
+    const WaylandSurfaceLock& aSurfaceLock, RefPtr<WaylandBuffer> aBuffer) {
   MOZ_DIAGNOSTIC_ASSERT(&aSurfaceLock == mSurfaceLock);
 
   auto scale = GetScale();
@@ -1377,7 +1377,7 @@ bool WaylandSurface::AttachLocked(const WaylandSurfaceLock& aSurfaceLock,
 
   auto* transaction = GetNextTransactionLocked(aSurfaceLock, aBuffer);
   if (!transaction) {
-    return false;
+    return nullptr;
   }
 
   wl_surface_attach(mSurface.get(),
@@ -1385,7 +1385,7 @@ bool WaylandSurface::AttachLocked(const WaylandSurfaceLock& aSurfaceLock,
   mLatestAttachedBuffer = reinterpret_cast<uintptr_t>(aBuffer.get());
   mSurfaceNeedsCommit = true;
   mBufferAttached = true;
-  return true;
+  return transaction;
 }
 
 void WaylandSurface::RemoveAttachedBufferLocked(

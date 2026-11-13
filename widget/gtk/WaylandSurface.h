@@ -166,8 +166,8 @@ class WaylandSurface final {
 
   // Attach WaylandBuffer which shows WaylandBuffer content
   // on screen.
-  bool AttachLocked(const WaylandSurfaceLock& aSurfaceLock,
-                    RefPtr<WaylandBuffer> aBuffer);
+  BufferTransaction* AttachLocked(const WaylandSurfaceLock& aSurfaceLock,
+                                  RefPtr<WaylandBuffer> aBuffer);
   bool IsBufferAttached(WaylandBuffer* aBuffer);
 
   // If there's any WaylandBuffer recently attached, detach it.
