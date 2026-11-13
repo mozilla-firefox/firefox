@@ -1108,12 +1108,6 @@ void NativeLayerWayland::SetColorProperties(
 
   if (surface->IsHDRSurface()) {
     mSurface->SetHDRMetadata(params, surfaceTransferFunction,
-                             // TODO:
-                             // Can't get GtkWindow as we're on render thread.
-                             // Find better way how to update screen
-                             // when a window is moved,
-                             // based on screen change signal?
-                             /* aParentSurface->GetGdkWindow() */ nullptr,
                              surface->GetHDRMetadata());
   }
 

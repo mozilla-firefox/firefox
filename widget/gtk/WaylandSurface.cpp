@@ -1575,28 +1575,47 @@ void WaylandSurface::SetColorManagementLocked(
                                        &image_description_listener, this);
 }
 
-void WaylandSurface::SetLuminances(
-    wp_image_description_creator_params_v1* aParams, float minLum, float maxLum,
-    float refLum) {
-  uint32_t minLuminance = std::lround(std::max(0.0f, minLum) * 10000.0f);
-  uint32_t maxLuminance = std::lround(std::max(0.0f, maxLum));
-  uint32_t refLuminance = std::lround(std::max(0.0f, refLum));
-
-  wp_image_description_creator_params_v1_set_luminances(
-      aParams, minLuminance, maxLuminance, refLuminance);
-}
-
-void WaylandSurface::SetContentLightLevel(
+bool WaylandSurface::SetContentLightLevel(
     wp_image_description_creator_params_v1* aParams,
-    const mozilla::gfx::ContentLightLevel& aContentLightLevel) {
-  uint16_t maxCLL = aContentLightLevel.maxContentLightLevel;
-  uint16_t maxFALL = aContentLightLevel.maxFrameAverageLightLevel;
+    const mozilla::gfx::ContentLightLevel& aContentLightLevel,
+    float aMinLuminance, float aMaxLuminance) {
+  uint16_t minLuminance = static_cast<uint16_t>(
+      std::clamp<long>(std::lround(aMinLuminance), 0, 65535));
+  uint16_t maxLuminance = static_cast<uint16_t>(
+      std::clamp<long>(std::lround(aMaxLuminance), 0, 65535));
 
-  wp_image_description_creator_params_v1_set_max_cll(aParams, maxCLL);
-  wp_image_description_creator_params_v1_set_max_fall(aParams, maxFALL);
+  uint16_t maxCLL =
+      std::min(aContentLightLevel.maxContentLightLevel, maxLuminance);
+  uint16_t maxFALL =
+      std::min(aContentLightLevel.maxFrameAverageLightLevel, maxCLL);
+
+  bool isMaxCLLapplied = false;
+  if (maxCLL > minLuminance) {
+    // maxCLL can't be 0 from here
+    wp_image_description_creator_params_v1_set_max_cll(aParams, maxCLL);
+    isMaxCLLapplied = true;
+  } else {
+    LOGS(
+        "WaylandSurface::SetContentLightLevel - maxCLL parameter "
+        "[MaxCLL=%u, minLum=%f, maxLum=%f], skipping.",
+        aContentLightLevel.maxContentLightLevel, aMinLuminance, aMaxLuminance);
+  }
+
+  if (maxFALL > minLuminance) {
+    // maxFALL can't be 0 from here
+    wp_image_description_creator_params_v1_set_max_fall(aParams, maxFALL);
+  } else {
+    LOGS(
+        "WaylandSurface::SetContentLightLevel - maxFALL parameter "
+        "[MaxFALL=%u, minLum=%f, maxLum=%f], skipping.",
+        aContentLightLevel.maxFrameAverageLightLevel, aMinLuminance,
+        aMaxLuminance);
+  }
+
+  return isMaxCLLapplied;
 }
 
-void WaylandSurface::SetMasteringDisplayColorVolume(
+bool WaylandSurface::SetMasteringDisplayColorVolume(
     wp_image_description_creator_params_v1* aParams,
     const mozilla::gfx::Smpte2086Metadata& aSmpte2086) {
   // MDCV
@@ -1621,15 +1640,34 @@ void WaylandSurface::SetMasteringDisplayColorVolume(
       std::lround(std::clamp(aSmpte2086.whitePoint.y, 0.0f, 1.0f) * 1000000.0f);
 
   // Luminance
-  uint32_t minLuminance =
-      std::lround(std::max(0.0f, aSmpte2086.minLuminance) * 10000.0f);
-  uint32_t maxLuminance = std::lround(std::max(0.0f, aSmpte2086.maxLuminance));
+  float mdcvMinLumClamped =
+      std::min(std::max(0.0f, aSmpte2086.minLuminance), 10000.0f);
+  float mdcvMaxLumClamped =
+      std::min(std::max(0.0f, aSmpte2086.maxLuminance), 10000.0f);
 
-  wp_image_description_creator_params_v1_set_mastering_display_primaries(
-      aParams, r_x, r_y, g_x, g_y, b_x, b_y, w_x, w_y);
+  uint32_t minLuminance = std::lround(mdcvMinLumClamped * 10000.0f);
+  uint32_t maxLuminance = std::lround(mdcvMaxLumClamped);
 
-  wp_image_description_creator_params_v1_set_mastering_luminance(
-      aParams, minLuminance, maxLuminance);
+  const uint64_t maxScaled = static_cast<uint64_t>(maxLuminance) * 10000ULL;
+
+  if (minLuminance < maxScaled) {
+    wp_image_description_creator_params_v1_set_mastering_display_primaries(
+        aParams, r_x, r_y, g_x, g_y, b_x, b_y, w_x, w_y);
+
+    wp_image_description_creator_params_v1_set_mastering_luminance(
+        aParams, minLuminance, maxLuminance);
+    return true;
+  }
+
+  LOGS(
+      "WaylandSurface::SetMasteringDisplayColorVolume - Invalid mastering, "
+      "skipping. "
+      "Luminance parameters [raw min=%f cd/m^2, raw max=%f cd/m^2 | "
+      "scaled min=%u (10^-4 cd/m^2), max=%u cd/m^2].",
+      aSmpte2086.minLuminance, aSmpte2086.maxLuminance, minLuminance,
+      maxLuminance);
+
+  return false;
 }
 
 bool WaylandSurface::SetPrimaries(
@@ -1698,19 +1736,17 @@ bool WaylandSurface::SetTransferFunction(
 
 void WaylandSurface::SetHDRMetadata(
     wp_image_description_creator_params_v1* aParams,
-    gfx::TransferFunction aTransferFunction, GdkWindow* aGdkWindow,
+    gfx::TransferFunction aTransferFunction,
     const mozilla::gfx::HDRMetadata& aHDRMetadata) {
   if (aTransferFunction == gfx::TransferFunction::PQ) {
-    if (aHDRMetadata.mContentLightLevel.isSome()) {
-      LOGWAYLAND(
-          "aHDRMetadata.mContentLightLevel -> MaxCLL=%u cd/m^2, MaxFALL=%u "
-          "cd/m^2",
-          aHDRMetadata.mContentLightLevel->maxContentLightLevel,
-          aHDRMetadata.mContentLightLevel->maxFrameAverageLightLevel);
+    // default min and max luminance floor for color management protocol
+    float minLuminance = 0.005f;
+    float maxLuminance = 10000.0f;
 
-      SetContentLightLevel(aParams, aHDRMetadata.mContentLightLevel.value());
-    }
-    if (aHDRMetadata.mSmpte2086.isSome()) {
+    bool hasMDCV = aHDRMetadata.mSmpte2086.isSome();
+    bool hasCLL = aHDRMetadata.mContentLightLevel.isSome();
+
+    if (hasMDCV) {
       LOGWAYLAND(
           "aHDRMetadata.mSmpte2086 -> Primaries: R(%f, %f) G(%f, %f) "
           "B(%f, %f) W(%f, %f)",
@@ -1729,43 +1765,39 @@ void WaylandSurface::SetHDRMetadata(
           aHDRMetadata.mSmpte2086->maxLuminance);
 
       if (WaylandDisplayGet()->IsSetMDCVSupported()) {
-        SetMasteringDisplayColorVolume(aParams,
-                                       aHDRMetadata.mSmpte2086.value());
+        // hasMDCV is false if the MDCV data aren't applied
+        hasMDCV = SetMasteringDisplayColorVolume(
+            aParams, aHDRMetadata.mSmpte2086.value());
+
+        if (hasMDCV) {
+          minLuminance = std::min(
+              std::max(0.0f, aHDRMetadata.mSmpte2086->minLuminance), 10000.0f);
+          maxLuminance = std::min(
+              std::max(0.0f, aHDRMetadata.mSmpte2086->maxLuminance), 10000.0f);
+        }
       } else {
+        hasMDCV = false;
         LOGWAYLAND("SetMDCV feature not supported.");
       }
     }
-    if (!aHDRMetadata.mContentLightLevel.isSome() &&
-        !aHDRMetadata.mSmpte2086.isSome()) {
-      // w/o hdr metadata we default luminances in the range [0, 1000] nits
-      const float minLuminance = 0;
-      const float maxLuminance = 1000;
+    if (hasCLL) {
+      LOGWAYLAND(
+          "aHDRMetadata.mContentLightLevel -> MaxCLL=%u cd/m^2, MaxFALL=%u "
+          "cd/m^2",
+          aHDRMetadata.mContentLightLevel->maxContentLightLevel,
+          aHDRMetadata.mContentLightLevel->maxFrameAverageLightLevel);
 
-      RefPtr<widget::Screen> screen =
-          aGdkWindow ? ScreenHelperGTK::GetScreenForGdkWindow(aGdkWindow)
-                     : nullptr;
-
-      // if we don't have a screen we fallback at 80 nits for SDR white
-      float sdrContentBrightness =
-          screen ? screen->GetSDRContentBrightness() : 80.f;
-
-      uint16_t maxCLL = std::lround(std::max(0.0f, sdrContentBrightness));
-      uint16_t maxFALL = maxCLL;
-
-      LOGWAYLAND("HDR w/o metadata -> MaxCLL=%u cd/m^2, MaxFALL=%u cd/m^2",
-                 maxCLL, maxFALL);
-
+      // hasCLL is false if maxCLL isn't applied
+      hasCLL =
+          SetContentLightLevel(aParams, aHDRMetadata.mContentLightLevel.value(),
+                               minLuminance, maxLuminance);
+    }
+    if (!hasMDCV && !hasCLL) {
+      // setting maxCLL to 1000 for compositor that uses 10000 nits by defaut
+      // without metadatas
+      uint16_t maxCLL = 1000;
+      LOGWAYLAND("HDR w/o metadata -> MaxCLL=%u cd/m^2", maxCLL);
       wp_image_description_creator_params_v1_set_max_cll(aParams, maxCLL);
-      wp_image_description_creator_params_v1_set_max_fall(aParams, maxFALL);
-
-      if (WaylandDisplayGet()->IsSetLuminancesSupported()) {
-        LOGWAYLAND("HDR w/o metadata -> Luminances=(%f, %f, %f) cd/m^2",
-                   minLuminance, maxLuminance, sdrContentBrightness);
-        SetLuminances(aParams, minLuminance, maxLuminance,
-                      sdrContentBrightness);
-      } else {
-        LOGWAYLAND("SetLuminances feature not supported.");
-      }
     }
   }
 }

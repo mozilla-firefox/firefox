@@ -374,7 +374,6 @@ class WaylandSurface final {
 
   void SetHDRMetadata(wp_image_description_creator_params_v1* aParams,
                       gfx::TransferFunction aTransferFunction,
-                      GdkWindow* aGdkWindow,
                       const mozilla::gfx::HDRMetadata& aHDRMetadata);
 
   void SetColorManagementLocked(
@@ -575,14 +574,12 @@ class WaylandSurface final {
   WUniquePtr<wp_color_representation_surface_v1> mColorRepresentationSurface;
   WUniquePtr<wp_image_description_v1> mImageDescription;
 
-  static void SetLuminances(wp_image_description_creator_params_v1* aParams,
-                            float minLum, float maxLum, float refLum);
-
-  static void SetContentLightLevel(
+  static bool SetContentLightLevel(
       wp_image_description_creator_params_v1* aParams,
-      const mozilla::gfx::ContentLightLevel& aContentLightLevel);
+      const mozilla::gfx::ContentLightLevel& aContentLightLevel,
+      float aMinLuminance, float aMaxLuminance);
 
-  static void SetMasteringDisplayColorVolume(
+  static bool SetMasteringDisplayColorVolume(
       wp_image_description_creator_params_v1* aParams,
       const mozilla::gfx::Smpte2086Metadata& aSmpte2086);
 };
