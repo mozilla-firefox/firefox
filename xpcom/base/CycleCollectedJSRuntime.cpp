@@ -2146,9 +2146,6 @@ void CycleCollectedJSRuntime::AnnotateAndSetOutOfMemory(OOMState* aStatePtr,
 
 void CycleCollectedJSRuntime::OnGC(JSContext* aContext, JSGCStatus aStatus,
                                    JS::GCReason aReason) {
-  mozilla::AutoRestore<bool> inGCCallback(mInGCCallback);
-  mInGCCallback = true;
-
   switch (aStatus) {
     case JSGC_BEGIN:
       MOZ_RELEASE_ASSERT(mTraceState.is<Nothing>());

@@ -63,9 +63,9 @@ static void NotifyRequestStatusChanged(nsPIDOMWindowInner* aWindow) {
   }
   nsCOMPtr<nsIObserverService> obs = mozilla::services::GetObserverService();
   if (obs) {
-    obs->NotifyWhenScriptSafe(ToSupports(aWindow),
-                              kGVAutoplayRequestStatusChangedTopic,
-                              /* no extra string data */ nullptr);
+    obs->NotifyObservers(ToSupports(aWindow),
+                         kGVAutoplayRequestStatusChangedTopic,
+                         /* no extra string data */ nullptr);
   }
 }
 

@@ -575,7 +575,7 @@ void AudioNode::DestroyMediaTrack() {
     if (obs) {
       nsAutoString id;
       id.AppendPrintf("%u", mId);
-      obs->NotifyWhenScriptSafe(nullptr, "webaudio-node-demise", id.get());
+      obs->NotifyObservers(nullptr, "webaudio-node-demise", id.get());
     }
   }
 }

@@ -4666,7 +4666,7 @@ nsDocShell::Destroy() {
     const char* msg = mItemType == typeContent
                           ? NS_WEBNAVIGATION_DESTROY
                           : NS_CHROME_WEBNAVIGATION_DESTROY;
-    serv->NotifyWhenScriptSafe(GetAsSupports(this), msg, nullptr);
+    serv->NotifyObservers(GetAsSupports(this), msg, nullptr);
   }
 
   mIsBeingDestroyed = true;

@@ -552,10 +552,6 @@ class CycleCollectedJSRuntime {
   // isn't one.
   static CycleCollectedJSRuntime* Get();
 
-  // True while the GC callback is running. A GC can be triggered from a JS
-  // interrupt check, where JIT and C++ code assume that script does not run.
-  bool IsInGCCallback() const { return mInGCCallback; }
-
   void SetContext(CycleCollectedJSContext* aContext);
 
 #ifdef NIGHTLY_BUILD
@@ -597,8 +593,6 @@ class CycleCollectedJSRuntime {
 
   OOMState mOutOfMemoryState;
   OOMState mLargeAllocationFailureState;
-
-  bool mInGCCallback = false;
 
   // Keeps sizeof(Segment) within mozjemalloc's largest bin size class (3840);
   // past that each segment gets its own page run.

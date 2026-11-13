@@ -1093,8 +1093,8 @@ static void MaybeNotifyStats(const CycleCollectorResults& aResults,
   nsCOMPtr<nsIObserverService> observerService =
       mozilla::services::GetObserverService();
   if (observerService) {
-    observerService->NotifyWhenScriptSafe(
-        nullptr, "cycle-collection-statistics", json.get());
+    observerService->NotifyObservers(nullptr, "cycle-collection-statistics",
+                                     json.get());
   }
 }
 

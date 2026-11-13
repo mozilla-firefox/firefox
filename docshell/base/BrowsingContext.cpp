@@ -1227,8 +1227,7 @@ void BrowsingContext::Detach(bool aFromIPC) {
     if (XRE_IsParentProcess() && Canonical()->IsReplaced()) {
       why = u"replace";
     }
-    obs->NotifyWhenScriptSafe(ToSupports(this), "browsing-context-discarded",
-                              why);
+    obs->NotifyObservers(ToSupports(this), "browsing-context-discarded", why);
   }
 
   // NOTE: Doesn't use SetClosed, as it will be set in all processes

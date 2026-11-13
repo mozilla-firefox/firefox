@@ -1748,7 +1748,7 @@ nsresult nsWindowWatcher::RemoveWindow(nsWatcherWindowEntry* aInfo) {
     nsCOMPtr<mozIDOMWindowProxy> window = do_QueryReferent(aInfo->mWindow);
     if (window) {
       nsCOMPtr<nsISupports> domwin(do_QueryInterface(window));
-      os->NotifyWhenScriptSafe(domwin, "domwindowclosed", nullptr);
+      os->NotifyObservers(domwin, "domwindowclosed", nullptr);
     }
   }
 

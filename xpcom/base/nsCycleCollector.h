@@ -75,6 +75,4 @@ void nsCycleCollector_shutdown(bool aDoCollect = true);
 void nsCycleCollector_registerJSContext(mozilla::CycleCollectedJSContext* aCx);
 void nsCycleCollector_forgetJSContext();
 
-bool nsCycleCollector_isFreeingSnowWhite();
-
 #endif  // nsCycleCollector_h_
