@@ -21,11 +21,15 @@
  * spread across the full page width.
  */
 body.showBanner {
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 0 0 40px;
   min-height: 0;
 }
 
 .showBanner > .showPrivate {
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 40px 48px 0;
 }
 
@@ -44,6 +48,8 @@ a:link,
 }
 
 .container {
+  /* Page max width; no matching layout size token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   max-width: 768px;
 }
 
@@ -55,6 +61,8 @@ p {
   align-items: center;
   display: flex;
   justify-content: center;
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-bottom: 50px;
 }
 
@@ -71,22 +79,28 @@ p {
   display: inline-block;
   background: url("chrome://branding/content/firefox-wordmark.svg") no-repeat center center;
   background-size: 172px;
-  margin-inline-start: 15px;
+  margin-inline-start: var(--space-large);
   -moz-context-properties: fill;
   fill: currentColor;
-  height: 96px;
+  height: var(--size-image-xxlarge);
+  /* Wordmark asset width; no matching size token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   width: 172px;
 }
 
 .search-inner-wrapper {
   display: flex;
-  height: 52px;
+  height: var(--size-item-xlarge);
   padding: 0;
   min-width: 70vw;
 }
 
 .promo-image-large {
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-inline-end: 6px;
+  /* Promo image width; no matching size token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   min-width: 160px;
 }
 
@@ -95,30 +109,42 @@ p {
 }
 
 .promo.top {
+  /* Primitive alpha token; no matching background-color token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   background: var(--color-white-alpha-20);
   position: absolute;
   top: 0;
   inset-inline: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  /* Primitive alpha token; no matching border-color token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  border-bottom: var(--border-width) solid var(--color-white-alpha-30);
 }
 
 .promo.top .promo-image-large {
-  min-width: 100px;
+  min-width: var(--size-layout-xsmall);
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-inline: 6px;
 }
 
 .promo.top ~ .container {
+  /* Clears the absolute promo banner; no matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-top: 120px;
 }
 
 @media (min-width: 764px) {
   .search-inner-wrapper {
+    /* Wide search field; no matching size token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     min-width: 680px;
   }
 
   .promo-image-large {
+    /* No matching space token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-inline-end: 36px;
-    min-width: 200px;
+    min-width: var(--size-layout-small);
   }
 
   .promo-image-small {
@@ -126,14 +152,20 @@ p {
   }
 
   .promo.top {
+    /* No matching space token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     padding: 10px 22%;
   }
 
   .promo.top .promo-image-large {
+    /* Promo image width; no matching size token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     min-width: 120px;
   }
 
   .promo.top .vpn-promo {
+    /* No matching space token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin: 10px 0;
   }
 }
@@ -142,6 +174,8 @@ p {
   /* On screens with not enough height we need to push down the content
    * to make room for the banner */
   .promo.top ~ .container {
+    /* Clears the absolute promo banner; no matching space token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-top: 140px;
   }
 }
@@ -179,9 +213,13 @@ content-search-handoff-ui {
   background-image: url("chrome://global/skin/icons/settings.svg");
   background-position: left 0 top 50px;
   background-repeat: no-repeat;
-  background-size: 32px;
+  background-size: var(--icon-size-xlarge);
   letter-spacing: -0.2px;
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 50px 0;
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding-inline-start: 44px;
 }
 
@@ -190,21 +228,21 @@ content-search-handoff-ui {
 }
 
 .banner-body h1 {
-  font-size: 18px;
+  font-size: var(--font-size-heading-medium);
   font-weight: var(--font-weight-bold);
   line-height: 1em;
-  margin: 7px 0;
+  margin: var(--space-small) 0;
 }
 
 .banner-body p {
-  font-size: 15px;
+  font-size: var(--font-size-root);
   line-height: 1em;
-  margin: 4px 0;
+  margin: var(--space-xsmall) 0;
 }
 
 .info h1,
 .promo h1 {
-  font-size: 18px;
+  font-size: var(--font-size-heading-medium);
   font-weight: var(--font-weight-bold);
   line-height: 28px;
 }
@@ -216,29 +254,45 @@ content-search-handoff-ui {
 
 .info-border {
   border-radius: var(--border-radius-medium);
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-top: 64px;
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 17px;
 
   @media not (prefers-contrast) {
-    box-shadow: 0 2px 6px 0 rgba(58, 57, 68, 0.2);
+    box-shadow: var(--box-shadow-level-2);
+    /* Private browsing brand purple wash; no matching background-color token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     background: rgba(149, 43, 185, 0.5);
   }
 }
 
 .info {
+  /* Primitive alpha token; no matching background-color token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   background-color: var(--color-black-alpha-20);
   background-image: none;
-  border: 1px solid transparent;
+  border: var(--border-width) solid transparent;
   border-radius: var(--border-radius-small);
+  /* Relative to root font; no matching font-size token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   font-size: 0.93em;
   letter-spacing: -0.2px;
   margin: 0;
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 20px;
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding-block-end: 25px;
 
   @media not (prefers-contrast) {
+    /* Private browsing brand purple; no matching background-color token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     background-color: #321c64;
-    box-shadow: 0 2px 6px 0 rgba(58, 57, 68, 0.2);
+    box-shadow: var(--box-shadow-level-2);
   }
 }
 
@@ -254,13 +308,17 @@ content-search-handoff-ui {
 .search-banner-close-button {
   float: inline-end;
   /* min-width and min-height override values set on button elements. */
+  /* Close control hit target; no matching size token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   min-width: 28px;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   min-height: 28px;
   /* Forcing height and line-height ensure the button hover is displayed correctly
      as a square box (and focus box). No text gets displayed here so that's ok. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   height: 28px;
   line-height: 0;
-  margin: 16px;
+  margin: var(--space-large);
   padding: 0;
   background-color: inherit;
   border: 0;
@@ -269,6 +327,8 @@ content-search-handoff-ui {
 .search-banner-close-image {
   -moz-context-properties: fill;
   fill: currentColor;
+  /* Close icon asset size; no matching size token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   width: 22px;
 }
 
@@ -279,14 +339,21 @@ content-search-handoff-ui {
 
 .promo-visible {
   display: flex;
-  border: 1px solid transparent;
+  border: var(--border-width) solid transparent;
   border-radius: var(--border-radius-small);
+  /* Primitive alpha token; no matching background-color token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   background-color: var(--color-black-alpha-20);
 }
 
 .promo-dismiss {
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 10px;
+  /* Close control hit target; no matching size token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   min-width: 28px;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   min-height: 28px;
   display: inline flow-root;
   background: url("chrome://global/skin/icons/close.svg") center no-repeat;
@@ -295,12 +362,14 @@ content-search-handoff-ui {
   fill: currentColor;
   position: relative;
   align-self: start;
+  /* Optical offset for dismiss control; no matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   top: -11px;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   inset-inline-end: -11px;
+  opacity: var(--opacity-deemphasized-strong);
 
   @media not (prefers-contrast) {
-    opacity: 0.6;
-
     &:hover {
       background-color: color-mix(in srgb, currentColor 10%, transparent) !important;
     }
@@ -325,53 +394,11 @@ content-search-handoff-ui {
   align-items: center;
 }
 
-/* The colors for .promo-cta .primary must be kept in sync with the dark mode
-   primary button colors from common-shared.cs */
 .promo-cta .primary {
   padding: 0.54em 1.15em;
-  margin: 8px 0;
+  margin: var(--space-small) 0;
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  background-color: rgb(0, 221, 255);
-  color: rgb(43, 42, 51);
-}
-
-.promo-cta .primary:focus-visible {
-  outline-color: rgb(0, 221, 255);
-}
-
-.promo-cta .primary:hover {
-  background-color: rgb(128, 235, 255) !important;
-  color: rgb(43, 42, 51) !important;
-}
-
-.promo-cta .primary:hover:active {
-  background-color: rgb(170, 242, 255) !important;
-  color: rgb(43, 42, 51) !important;
-}
-
-@media (prefers-contrast) {
-  .promo-cta .primary {
-    background-color: ButtonText;
-    color: ButtonFace;
-    border-color: ButtonFace;
-  }
-
-  .promo-cta .primary:focus-visible {
-    outline-color: -moz-DialogText;
-  }
-
-  .promo-cta .primary:hover {
-    background-color: SelectedItem !important;
-    color: SelectedItemText !important;
-    border-color: SelectedItemText;
-  }
-
-  .promo-cta .primary:hover:active {
-    background-color: SelectedItemText !important;
-    color: SelectedItem !important;
-    border-color: SelectedItem;
-  }
 }
 
 .promo.bottom .promo-cta {
@@ -399,7 +426,9 @@ content-search-handoff-ui {
 }
 
 .promo.below-search {
-  padding: 22px;
+  padding: var(--space-xlarge);
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-top: 25px;
 
   #promo-header {
@@ -416,18 +445,22 @@ content-search-handoff-ui {
 }
 
 .promo.bottom {
-  margin-top: 30px;
+  margin-top: var(--space-xxlarge);
 }
 
 .promo.bottom .promo-image-small {
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-top: 40px;
 }
 
 .promo.bottom .promo-image-small img {
-  height: 40px;
+  height: var(--size-image-xsmall);
 }
 
 .promo.top > .promo-content {
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 10px 6px;
 }
 
@@ -436,9 +469,13 @@ content-search-handoff-ui {
 }
 
 .promo.below-search.promo-visible {
+  /* No matching space token. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-block: 0 25px;
 
   @media not (prefers-contrast) {
+    /* Private browsing brand purple; no matching background-color token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     background-color: #321c64;
   }
 }
@@ -461,7 +498,7 @@ content-search-handoff-ui {
          `--background-color-canvas: #25003e` set on `html.private` above. */
       --background-color-canvas: light-dark(var(--color-gray-0), var(--color-gray-90));
       background: var(--background-color-canvas);
-      color: var(--color-white);
+      color: white;
       /* Reset the legacy `--link-color: white` set on `html.private` above
          back to the Nova design-system link tokens (accent primary). */
       --link-color: var(--color-accent-primary);
@@ -496,7 +533,9 @@ content-search-handoff-ui {
   }
 
   .logo-and-wordmark {
-    margin-block: clamp(32px, 10vh, 120px) var(--space-medium);
+    /* 120px clamp max has no matching space token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    margin-block: clamp(var(--space-xxlarge), 10vh, 120px) var(--space-medium);
   }
 
   .logo-and-wordmark .wordmark {
@@ -542,6 +581,8 @@ content-search-handoff-ui {
   html.private .info-border {
     margin-block-start: auto;
     margin-block-end: 0;
+    /* 100px bottom padding clears page chrome; no matching space token. */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     padding-block: var(--space-xxlarge) 100px;
     padding-inline: 0;
 
@@ -632,6 +673,8 @@ content-search-handoff-ui {
     .nova-subheader {
       text-align: center;
       max-width: 42em;
+      /* No matching space token. */
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
       margin-block: 0 52px;
     }
 
