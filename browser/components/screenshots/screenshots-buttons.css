@@ -89,11 +89,8 @@
 }
 
 .mini-window-option-icon {
-  width: var(--size-item-large);
-  height: var(--size-item-large);
-  /* These SVGs paint a second shape with context-stroke; without it that
-     shape falls back to its own bright placeholder colour. */
-  -moz-context-properties: fill, stroke;
+  width: var(--icon-size-medium);
+  height: var(--icon-size-medium);
+  -moz-context-properties: fill;
   fill: currentColor;
-  stroke: var(--screenshots-icon-background-color);
 }

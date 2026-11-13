@@ -42,12 +42,12 @@
           <html:h1 class="mini-window-title" data-l10n-id="mini-window-panel-header"></html:h1>
           <html:div class="mini-window-options">
             <html:button id="move-selection" class="mini-window-option" data-default="">
-              <html:img class="mini-window-option-icon" src="chrome://browser/content/screenshots/menu-visible.svg" role="presentation"/>
-              <html:span data-l10n-id="mini-window-panel-move-selection"></html:span>
+              <html:img class="mini-window-option-icon" src="chrome://browser/content/miniwindow/assets/part-of-page-20.svg" role="presentation"/>
+              <html:span data-l10n-id="mini-window-panel-part-of-page"></html:span>
             </html:button>
             <html:button id="move-full-tab" class="mini-window-option">
-              <html:img class="mini-window-option-icon" src="chrome://browser/content/screenshots/menu-fullpage.svg" role="presentation"/>
-              <html:span data-l10n-id="mini-window-panel-move-full-tab"></html:span>
+              <html:img class="mini-window-option-icon" src="chrome://browser/content/miniwindow/assets/full-page-20.svg" role="presentation"/>
+              <html:span data-l10n-id="mini-window-panel-full-page"></html:span>
             </html:button>
           </html:div>
         </html:div>

@@ -645,7 +645,7 @@ toolbar .toolbarbutton-1 {
 }
 
 #mini-window-restore-button {
-  list-style-image: url("chrome://global/skin/icons/open-in-new.svg");
+  list-style-image: url("chrome://browser/content/miniwindow/assets/put-tab-back-16.svg");
 }
 
 #mini-window-close-button {

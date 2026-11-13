@@ -4,3 +4,6 @@
 
 browser.jar:
   content/browser/miniwindow/assets/mini-window.svg  (assets/mini-window.svg)
+  content/browser/miniwindow/assets/full-page-20.svg  (assets/full-page-20.svg)
+  content/browser/miniwindow/assets/part-of-page-20.svg  (assets/part-of-page-20.svg)
+  content/browser/miniwindow/assets/put-tab-back-16.svg  (assets/put-tab-back-16.svg)
