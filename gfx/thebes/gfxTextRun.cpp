@@ -1306,21 +1306,15 @@ gfxFloat gfxTextRun::GetAdvanceWidth(
 
   // Account for all remaining spacing here. This is more efficient than
   // processing it along with the glyphs.
-  if (aProvider && (mFlags & gfx::ShapedTextFlags::TEXT_ENABLE_SPACING)) {
-    uint32_t i;
-    AutoTArray<PropertyProvider::Spacing, 200> spacingBuffer;
-    if (spacingBuffer.AppendElements(aRange.Length(), fallible)) {
-      if (GetAdjustedSpacing(this, ligatureRange, *aProvider,
-                             spacingBuffer.Elements())) {
-        for (i = 0; i < ligatureRange.Length(); ++i) {
-          PropertyProvider::Spacing* space = &spacingBuffer[i];
-          result += space->mBefore + space->mAfter;
-        }
-        if (aSpacing) {
-          aSpacing->mBefore = spacingBuffer[0].mBefore;
-          aSpacing->mAfter = spacingBuffer.LastElement().mAfter;
-        }
-      }
+  AutoTArray<PropertyProvider::Spacing, 200> spacingBuffer;
+  if (GetAdjustedSpacingArray(aRange, aProvider, ligatureRange,
+                              &spacingBuffer)) {
+    for (const PropertyProvider::Spacing& space : spacingBuffer) {
+      result += space.mBefore + space.mAfter;
+    }
+    if (aSpacing) {
+      aSpacing->mBefore = spacingBuffer[0].mBefore;
+      aSpacing->mAfter = spacingBuffer.LastElement().mAfter;
     }
   }
 
