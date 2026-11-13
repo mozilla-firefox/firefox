@@ -1363,6 +1363,8 @@ class nsIWidget : public nsSupportsWeakReference {
       const mozilla::layers::APZEventResult& aResult);
   void HandleTouchInputAsSwipe(const mozilla::MultiTouchInput& aInput);
   bool MayTriggerSwipe(const mozilla::MultiTouchInput& aInput);
+  void HandleTouchInputForSwipe(const mozilla::MultiTouchInput& aInput,
+                                const mozilla::layers::APZEventResult& aResult);
 
   /**
    * Dispatch the given PanGestureInput through APZ to Gecko (if APZ is enabled)
