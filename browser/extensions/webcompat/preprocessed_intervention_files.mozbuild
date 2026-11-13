@@ -148,7 +148,6 @@ preprocessed_intervention_files = [
     "bug2009187-deadpixeltest.org-fix_popup_position.css",
     "bug2009358-stgguaiba.com.br-fix_table_layout.css",
     "bug2009389-anyto.imyfone.com-fix_table_of_contents_height.css",
-    "bug2010102-osmosis.org-center_pages.css",
     "bug2011819-ogcrush.com-fix_slick_slide_height.css",
     "bug2011862-copilot.zenwork.com.js",
     "bug2011898-vanguard.com-fix_obscured_inputs.css",
