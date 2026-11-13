@@ -48,19 +48,7 @@ static void AssertInnerizedEnvironmentChain(JSContext* cx, JSObject& env) {
 }
 
 static bool IsEvalCacheCandidate(JSScript* script) {
-  if (!script->isDirectEvalInFunction()) {
-    return false;
-  }
-
-  // Make sure there are no inner objects (which may be used directly by script
-  // and clobbered) or inner functions (which may have wrong scope).
-  for (JS::GCCellPtr gcThing : script->gcthings()) {
-    if (gcThing.is<JSObject>()) {
-      return false;
-    }
-  }
-
-  return true;
+  return script->isDirectEvalInFunction();
 }
 
 /* static */
@@ -87,6 +75,7 @@ void EvalCacheLookup::trace(JSTracer* trc) {
 class EvalScriptGuard {
   JSContext* cx_;
   Rooted<JSScript*> script_;
+  bool isReusable_ = false;
 
   /* These fields are only valid if lookup_.str is non-nullptr. */
   Rooted<EvalCacheLookup> lookup_;
@@ -99,8 +88,7 @@ class EvalScriptGuard {
       : cx_(cx), script_(cx), lookup_(cx), lookupStr_(cx) {}
 
   ~EvalScriptGuard() {
-    if (script_ && !cx_->isExceptionPending()) {
-      script_->cacheForEval();
+    if (script_ && isReusable_ && !cx_->isExceptionPending()) {
       EvalCacheLookup& lookup = lookup_.get();
       EvalCacheEntry cacheEntry = {lookupStr_, script_, lookup.callerScript,
                                    lookup.pc};
@@ -125,13 +113,15 @@ class EvalScriptGuard {
     if (*p_) {
       script_ = (*p_)->script;
       p_->remove(cx_, cx_->caches().evalCache, lookup);
+      isReusable_ = true;
     }
   }
 
-  void setNewScript(JSScript* script) {
+  void setNewScript(JSScript* script, bool isReusable) {
     // JSScript::fullyInitFromStencil has already called js_CallNewScriptHook.
     MOZ_ASSERT(!script_ && script);
     script_ = script;
+    isReusable_ = isReusable;
   }
 
   bool foundScript() { return !!script_; }
@@ -327,8 +317,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     }
 
     CompileOptions options(cx);
-    options.setIsRunOnce(true)
-        .setNoScriptRval(false)
+    options.setNoScriptRval(false)
         .setMutedErrors(mutedErrors)
         .setDeferDebugMetadata();
 
@@ -359,8 +348,10 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
       return false;
     }
 
+    bool isReusable = false;
     RootedScript script(
-        cx, frontend::CompileEvalScript(cx, options, srcBuf, enclosing, env));
+        cx, frontend::CompileEvalScript(cx, options, srcBuf, enclosing, env,
+                                        &isReusable));
     if (!script) {
       return false;
     }
@@ -371,8 +362,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
                                  nullptr, introScript, maybeScript)) {
       return false;
     }
-
-    esg.setNewScript(script);
+    esg.setNewScript(script, isReusable);
   }
 
   return ExecuteKernel(cx, esg.script(), env, NullFramePtr() /* evalInFrame */,
