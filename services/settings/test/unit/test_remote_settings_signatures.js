@@ -950,3 +950,79 @@ add_task(async function test_check_synchronization_with_signatures() {
   ok(!/extraId/.test(sigCalls[2]), "db was flushed before retry");
   ok(/extraId/.test(sigCalls[3]), "when checking local after retry");
 });
+
+async function assertCertFetchErrorReported(x5u) {
+  Services.prefs.setStringPref(
+    PREF_SETTINGS_SERVER,
+    `http://localhost:${server.identity.primaryPort}/v1`
+  );
+  server.registerPathHandler(
+    "/v1/buckets/main/collections/chain-fetch-failure/changeset",
+    (request, response) => {
+      response.write(
+        JSON.stringify({
+          timestamp: 42,
+          changes: [{ id: "a", last_modified: 42 }],
+          metadata: {
+            signatures: [{ x5u, signature: "aaaaaaaaaaaaaaaaaaaaaaaa" }],
+          },
+        })
+      );
+      response.setHeader("Content-Type", "application/json; charset=UTF-8");
+      response.setStatusLine(null, 200, "OK");
+    }
+  );
+  const chainClient = RemoteSettings("chain-fetch-failure", {
+    signerName: SIGNER_NAME,
+  });
+  Services.fog.testResetFOG();
+  enableUptakeMetric();
+
+  await Assert.rejects(
+    chainClient.maybeSync(42),
+    RemoteSettingsClient.CertFetchError,
+    "Sync fails with chain fetch error"
+  );
+
+  assertTelemetryEvents([
+    {
+      value: UptakeTelemetry.STATUS.SYNC_START,
+      source: chainClient.identifier,
+      trigger: "manual",
+    },
+    {
+      value: UptakeTelemetry.STATUS.CERTIFICATE_ERROR,
+      source: chainClient.identifier,
+      trigger: "manual",
+    },
+  ]);
+  equal(
+    await chainClient.db.getLastModified(),
+    null,
+    "Unverified records were not kept"
+  );
+}
+
+add_task(async function test_chain_fetch_http_error_is_reported() {
+  server.registerPathHandler("/chain-404.pem", (request, response) => {
+    response.setStatusLine(null, 404, "Not Found");
+  });
+  await assertCertFetchErrorReported(
+    `http://localhost:${server.identity.primaryPort}/chain-404.pem`
+  );
+});
+
+add_task(async function test_chain_fetch_network_error_is_reported() {
+  await assertCertFetchErrorReported("http://localhost:1/unreachable.pem");
+});
+
+add_task(async function test_chain_fetch_content_type_error_is_reported() {
+  server.registerPathHandler("/chain-html.pem", (request, response) => {
+    response.write("<html><body>Captive portal</body></html>");
+    response.setHeader("Content-Type", "text/html; charset=UTF-8");
+    response.setStatusLine(null, 200, "OK");
+  });
+  await assertCertFetchErrorReported(
+    `http://localhost:${server.identity.primaryPort}/chain-html.pem`
+  );
+});

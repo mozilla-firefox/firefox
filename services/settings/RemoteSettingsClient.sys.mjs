@@ -166,6 +166,15 @@ class CorruptedDataError extends InvalidSignatureError {
   }
 }
 
+class CertFetchError extends Error {
+  constructor(cid, x5u, reason) {
+    super(`Cannot fetch certificate chain (${cid}) from '${x5u}': ${reason}`, {
+      cause: reason,
+    });
+    this.name = "CertFetchError";
+  }
+}
+
 class UnknownCollectionError extends Error {
   constructor(cid) {
     super(`Unknown Collection "${cid}"`);
@@ -282,6 +291,11 @@ export class RemoteSettingsClient extends EventEmitter {
   static get InvalidSignatureError() {
     return InvalidSignatureError;
   }
+
+  static get CertFetchError() {
+    return CertFetchError;
+  }
+
   static get MissingSignatureError() {
     return MissingSignatureError;
   }
@@ -880,9 +894,14 @@ export class RemoteSettingsClient extends EventEmitter {
               { retry: true }
             ));
           } catch (ex) {
-            // If the signature fails again, or if an error occured during wiping out the
-            // local data, then we report it as a *signature retry* error.
-            reportStatus = lazy.UptakeTelemetry.STATUS.SIGNATURE_RETRY_ERROR;
+            // If the certificate chain could not be fetched, we report it as a
+            // *cert fetch* error. If the signature fails again, or if an error
+            // occurred while wiping out the local data, then we report it as a
+            // *signature retry* error.
+            reportStatus =
+              ex instanceof CertFetchError
+                ? lazy.UptakeTelemetry.STATUS.CERTIFICATE_ERROR
+                : lazy.UptakeTelemetry.STATUS.SIGNATURE_RETRY_ERROR;
             throw ex;
           }
         } else {
@@ -987,6 +1006,10 @@ export class RemoteSettingsClient extends EventEmitter {
    * @returns {Error}
    */
   _adjustedError(e) {
+    if (e instanceof CertFetchError) {
+      // CertFetchError could accidentally match case below.
+      return e;
+    }
     if (/unparseable/.test(e.message)) {
       return new RemoteSettingsClient.ServerContentParseError(e);
     }
@@ -1020,7 +1043,9 @@ export class RemoteSettingsClient extends EventEmitter {
   _telemetryFromError(e, options = { default: null }) {
     let reportStatus = options.default;
 
-    if (e instanceof RemoteSettingsClient.NetworkOfflineError) {
+    if (e instanceof CertFetchError) {
+      reportStatus = lazy.UptakeTelemetry.STATUS.CERTIFICATE_ERROR;
+    } else if (e instanceof RemoteSettingsClient.NetworkOfflineError) {
       reportStatus = lazy.UptakeTelemetry.STATUS.NETWORK_OFFLINE_ERROR;
     } else if (e instanceof lazy.IDBHelpers.ShutdownError) {
       reportStatus = lazy.UptakeTelemetry.STATUS.SHUTDOWN_ERROR;
@@ -1104,7 +1129,7 @@ export class RemoteSettingsClient extends EventEmitter {
         );
         continue;
       }
-      const certChain = await (await lazy.Utils.fetch(x5u)).text();
+      const certChain = await this._fetchCertChain(x5u);
       lazy.console.debug(`${this.identifier} verify signature using ${x5u}`);
 
       if (
@@ -1128,6 +1153,31 @@ export class RemoteSettingsClient extends EventEmitter {
     // We know that the list of signatures is not empty, so if we are here
     // it means that none was valid, or that none was usable at all.
     throw thrownErrors[0] ?? new MissingSignatureError(this.identifier);
+  }
+
+  async _fetchCertChain(x5u) {
+    let response;
+    try {
+      response = await lazy.Utils.fetch(x5u);
+    } catch (e) {
+      throw new CertFetchError(this.identifier, x5u, e);
+    }
+    if (!response.ok) {
+      throw new CertFetchError(this.identifier, x5u, `HTTP ${response.status}`);
+    }
+    const contentType = response.headers.get("Content-Type") ?? "";
+    if (!contentType.includes("text/plain")) {
+      throw new CertFetchError(
+        this.identifier,
+        x5u,
+        `Unexpected content-type '${contentType}'`
+      );
+    }
+    try {
+      return await response.text();
+    } catch (e) {
+      throw new CertFetchError(this.identifier, x5u, e);
+    }
   }
 
   /**

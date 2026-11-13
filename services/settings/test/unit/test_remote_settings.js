@@ -1481,7 +1481,7 @@ function getSampleResponse(req, port) {
       },
     },
     "GET:/fake-x5u": {
-      sampleHeaders: ["Content-Type: application/octet-stream"],
+      sampleHeaders: ["Content-Type: text/plain; charset=UTF-8"],
       status: { status: 200, statusText: "OK" },
       responseBody: `-----BEGIN CERTIFICATE-----
 MIIGYTCCBEmgAwIBAgIBATANBgkqhkiG9w0BAQwFADB9MQswCQYDVQQGEwJVU
