@@ -646,16 +646,6 @@ void TErrorResult<CleanupPolicy>::CloneTo(TErrorResult& aRv) const {
 }
 
 template <typename CleanupPolicy>
-void TErrorResult<CleanupPolicy>::SuppressException() {
-  AssertInOwningThread();
-  WouldReportJSException();
-  ClearUnionData();
-  // We don't use AssignErrorCode, because we want to override existing error
-  // states, which AssignErrorCode is not allowed to do.
-  mResult = NS_OK;
-}
-
-template <typename CleanupPolicy>
 void TErrorResult<CleanupPolicy>::SetPendingException(JSContext* cx,
                                                       const char* context) {
   AssertInOwningThread();
