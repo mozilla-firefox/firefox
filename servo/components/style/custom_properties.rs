@@ -763,6 +763,7 @@ pub fn substitute_references_if_needed_and_apply(
         stylist,
         context,
         attribute_tracker,
+        url_data,
     )
     .substitute_variable_value(value, None);
 

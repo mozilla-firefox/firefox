@@ -214,6 +214,9 @@ bitflags! {
         /// Media query conditions in the preludes for @media, @custom-media, and @import.
         /// <https://drafts.csswg.org/mediaqueries/>
         const MEDIA_QUERY_CONDITION = 1 << 4;
+        /// Parsing during early substitution of arbitrary substitution function arguments.
+        /// <https://drafts.csswg.org/css-values-5/#substitution>
+        const EARLY_SUBSTITUTION = 1 << 5;
     }
 }
 
@@ -240,6 +243,12 @@ impl ParsingMode {
     #[inline]
     pub fn allows_unitless_zero_lengths(&self) -> bool {
         !self.intersects(ParsingMode::DISALLOW_UNITLESS_ZERO_LENGTH)
+    }
+
+    /// Whether parsing is occurring during early substitution of arbitrary substitution functions.
+    #[inline]
+    pub fn is_early_substitution(&self) -> bool {
+        self.intersects(ParsingMode::EARLY_SUBSTITUTION)
     }
 }
 

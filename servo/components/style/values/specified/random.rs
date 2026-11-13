@@ -29,8 +29,8 @@ use style_traits::{CssWriter, ParseError, StyleParseErrorKind, ToCss};
 pub struct RandomUaIdent(CustomIdent);
 
 impl RandomUaIdent {
-    fn ua_prefixed(property_id: PropertyIdRef) -> String {
-        let mut ua_ident = "ua-".to_string();
+    fn ua_prefixed(property_id: PropertyIdRef, is_early: bool) -> String {
+        let mut ua_ident = (if is_early { "ua-early-" } else { "ua-" }).to_string();
         match property_id {
             PropertyIdRef::NonCustom(non_custom) => {
                 ua_ident += non_custom.name();
@@ -51,15 +51,16 @@ impl RandomUaIdent {
     }
 
     /// Builds the `ua-PROPERTY` ident used to replace `property-scoped`.
-    pub fn from_property(property_id: PropertyIdRef) -> Self {
-        Self(CustomIdent(Atom::from(Self::ua_prefixed(property_id))))
+    pub fn from_property(property_id: PropertyIdRef, is_early: bool) -> Self {
+        let ua_ident = Self::ua_prefixed(property_id, is_early);
+        Self(CustomIdent(Atom::from(ua_ident)))
     }
 
     /// Builds the `ua-PROPERTY-INDEX` ident used to replace `property-index-scoped`,
     /// where `index` is the 1-based index of this random function among all of the
     /// random functions in the declaration.
-    pub fn from_property_and_index(property_id: PropertyIdRef, index: i32) -> Self {
-        let mut ua_ident = Self::ua_prefixed(property_id);
+    pub fn from_property_and_index(property_id: PropertyIdRef, index: i32, is_early: bool) -> Self {
+        let mut ua_ident = Self::ua_prefixed(property_id, is_early);
         write!(ua_ident, "-{index}").unwrap();
         Self(CustomIdent(Atom::from(ua_ident)))
     }
@@ -83,15 +84,21 @@ impl Parse for RandomUaIdent {
             let Some(property_id) = context.property_declaration_context.property_id() else {
                 return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             };
-            return Ok(RandomUaIdent::from_property(property_id));
+            return Ok(RandomUaIdent::from_property(
+                property_id,
+                context.parsing_mode.is_early_substitution(),
+            ));
         }
 
         if ident.eq_ignore_ascii_case("property-index-scoped") {
             let Some(property_id) = context.property_declaration_context.property_id() else {
                 return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
             };
-            let index = context.property_declaration_context.current_random_index();
-            return Ok(RandomUaIdent::from_property_and_index(property_id, index));
+            return Ok(RandomUaIdent::from_property_and_index(
+                property_id,
+                context.property_declaration_context.current_random_index(),
+                context.parsing_mode.is_early_substitution(),
+            ));
         }
 
         if !ident.starts_with("ua-") {
@@ -214,7 +221,11 @@ impl RandomKey {
 
         Ok(Self::CacheKey(RandomCacheKey {
             name: DashedIdent::empty(),
-            ua_ident: RandomUaIdent::from_property_and_index(property_id, index),
+            ua_ident: RandomUaIdent::from_property_and_index(
+                property_id,
+                index,
+                context.parsing_mode.is_early_substitution(),
+            ),
             is_element_scoped: true,
         }))
     }

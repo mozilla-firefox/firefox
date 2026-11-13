@@ -32,6 +32,7 @@ use crate::selector_map::PrecomputedHashMap;
 use crate::selector_parser::PseudoElement;
 use crate::shared_lock::StylesheetGuards;
 use crate::style_adjuster::StyleAdjuster;
+use crate::stylesheets::UrlExtraData;
 use crate::stylesheets::container_rule::ContainerSizeQuery;
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::Stylist;
@@ -2240,6 +2241,7 @@ fn substitute_all(
         fn replacement_context<'s>(
             &'s mut self,
             property_id: PropertyIdRef<'s>,
+            url_data: &'s UrlExtraData,
         ) -> SubstitutionReplacementContext<'s, 's, 'b, 'e> {
             SubstitutionReplacementContext::new(
                 Some(property_id),
@@ -2247,6 +2249,7 @@ fn substitute_all(
                 self.stylist,
                 self.computed_context,
                 self.attribute_tracker,
+                url_data,
             )
         }
     }
@@ -2308,7 +2311,7 @@ fn substitute_all(
                                     continue;
                                 }
                                 let mut replacement_context =
-                                    context.replacement_context(property_id);
+                                    context.replacement_context(property_id, &source.url_data);
                                 env_fn
                                     .replace_name(source, &mut replacement_context)
                                     .value
@@ -2319,13 +2322,15 @@ fn substitute_all(
                         };
 
                         let device = context.stylist.device();
-                        let replacement_context = context.replacement_context(property_id);
+                        let mut replacement_context =
+                            context.replacement_context(property_id, &source.url_data);
                         let present = name
                             .and_then(|name| {
-                                device.environment().get(
-                                    &name.0,
-                                    device,
-                                    &replacement_context.parser_context(&source.url_data),
+                                replacement_context.parse_early(
+                                    &source.url_data,
+                                    |parser_context| {
+                                        device.environment().get(&name.0, device, parser_context)
+                                    },
                                 )
                             })
                             .is_some();
@@ -2343,7 +2348,8 @@ fn substitute_all(
                                 attr_fn
                                     .replace_arg(
                                         source,
-                                        &mut context.replacement_context(property_id),
+                                        &mut context
+                                            .replacement_context(property_id, &source.url_data),
                                     )
                                     .value
                                     .map(|arg| Cow::Owned(arg.into_owned()))
@@ -2365,7 +2371,7 @@ fn substitute_all(
                         }
                         if context.map().get_attr(&arg.name.name).is_none()
                             && let Ok(val) = arg.name.value_for_cycle_resolution(
-                                &mut context.replacement_context(property_id),
+                                &mut context.replacement_context(property_id, &source.url_data),
                                 &source.url_data,
                             )
                         {
@@ -2383,7 +2389,7 @@ fn substitute_all(
                                     continue;
                                 }
                                 let mut replacement_context =
-                                    context.replacement_context(property_id);
+                                    context.replacement_context(property_id, &source.url_data);
                                 var_fn
                                     .replace_name(source, &mut replacement_context)
                                     .value
