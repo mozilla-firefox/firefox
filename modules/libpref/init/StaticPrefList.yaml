@@ -11445,6 +11445,14 @@
   mirror: always
   rust: true
 
+# Is support for the inherit() arbitrary substitution function enabled?
+# https://drafts.csswg.org/css-values-5/#funcdef-inherit
+- name: layout.css.inherit-function.enabled
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+  rust: true
+
 # Is support for CSS initial-letter property enabled?
 - name: layout.css.initial-letter.enabled
   type: bool

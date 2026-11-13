@@ -37,7 +37,7 @@ use crate::stylesheets::container_rule::ContainerSizeQuery;
 use crate::stylesheets::layer_rule::LayerOrder;
 use crate::stylist::Stylist;
 use crate::substitution::{
-    ReferenceFlags, References, SubstitutionArgument, SubstitutionFunction,
+    InheritFunction, ReferenceFlags, References, SubstitutionArgument, SubstitutionFunction,
     SubstitutionFunctionKind, SubstitutionReplacementContext,
 };
 use crate::values::computed::ToComputedValue;
@@ -2409,6 +2409,39 @@ fn substitute_all(
                     SubstitutionFunction::Ident(ref ident_fn) => {
                         if let SubstitutionArgument::Unparsed(ref arg) = ident_fn.arg {
                             refs_stack.push(&arg.references);
+                        }
+                        continue;
+                    },
+                    SubstitutionFunction::Inherit(ref inherit_fn) => {
+                        let name = match &inherit_fn.name {
+                            SubstitutionArgument::Unparsed(arg) => {
+                                if check_declaration_value_cycle!(arg) {
+                                    continue;
+                                }
+                                let mut replacement_context =
+                                    context.replacement_context(property_id, &source.url_data);
+                                inherit_fn
+                                    .replace_name(source, &mut replacement_context)
+                                    .value
+                                    .map(|name| Cow::Owned(name.into_owned()))
+                            },
+                            SubstitutionArgument::Parsed(name) => Some(Cow::Borrowed(name)),
+                            SubstitutionArgument::Invalid => None,
+                        };
+                        let replacement_context =
+                            context.replacement_context(property_id, &source.url_data);
+                        let present = name
+                            .and_then(|name| {
+                                let (_, parent_value) =
+                                    InheritFunction::resolve_parent_custom_property(
+                                        &replacement_context,
+                                        &name,
+                                    );
+                                parent_value
+                            })
+                            .is_some();
+                        if !present && let Some(ref fallback) = inherit_fn.fallback {
+                            refs_stack.push(&fallback.references);
                         }
                         continue;
                     },
