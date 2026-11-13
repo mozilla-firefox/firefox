@@ -58,11 +58,16 @@ void AppendMemoryStorageTag(nsAutoCString& key) {
 
 CacheMemoryConsumer::CacheMemoryConsumer(uint32_t aFlags) {
   StoreFlags(aFlags);
+  if (!(aFlags & DONT_REPORT)) {
+    mService = CacheStorageService::Self();
+  }
 }
 
+CacheMemoryConsumer::~CacheMemoryConsumer() { DoMemoryReport(0); }
+
 void CacheMemoryConsumer::DoMemoryReport(uint32_t aCurrentSize) {
-  if (!(LoadFlags() & DONT_REPORT) && CacheStorageService::Self()) {
-    CacheStorageService::Self()->OnMemoryConsumptionChange(this, aCurrentSize);
+  if (mService) {
+    mService->OnMemoryConsumptionChange(this, aCurrentSize);
   }
 }
 

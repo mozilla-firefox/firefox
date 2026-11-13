@@ -71,8 +71,13 @@ class CacheMemoryConsumer {
   };
 
   explicit CacheMemoryConsumer(uint32_t aFlags);
-  ~CacheMemoryConsumer() { DoMemoryReport(0); }
+  ~CacheMemoryConsumer();
   void DoMemoryReport(uint32_t aCurrentSize);
+
+ private:
+  // The service this consumer reports to, kept alive until the consumer has
+  // reported its final size of 0.
+  RefPtr<CacheStorageService> mService;
 };
 
 using GlobalEntryTables = nsClassHashtable<nsCStringHashKey, CacheEntryTable>;

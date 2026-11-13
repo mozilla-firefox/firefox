@@ -521,6 +521,8 @@ prefs = ["browser.cache.disk.encryption.enabled=true"]
 
 ["test_cache2-45-clear-base-domain-context-evictor.js"]
 
+["test_cache2-46-output-stream-outlives-entry.js"]
+
 ["test_cache2_clear_with_principal.js"]
 
 ["test_cache2_clear_with_usercontext_oa.js"]
