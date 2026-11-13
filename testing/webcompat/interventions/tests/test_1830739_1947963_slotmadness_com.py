@@ -1,8 +1,8 @@
 import pytest
 
 URL = "https://www.slotmadness.com/webplay"
-PRACTICE_FIRST_GAME_CSS = "button.cta.practice"
-GAME_IFRAME_CSS = "#gameiframe"
+PRACTICE_FIRST_GAME_CSS = "a[href*=demo]"
+GAME_IFRAME_CSS = ".gameframe iframe"
 UNSUPPORTED_CSS = ".unsupported-device-box"
 SUPPORTED_CSS = "#game_main"
 

@@ -6,6 +6,8 @@ URL = "https://missingmail.usps.com/?_gl=1*veidlp*_gcl_aw*R0NMLjE1OTE3MjUyNTkuRU
 USERNAME_CSS = "input[autocomplete=username]"
 PASSWORD_CSS = "input[autocomplete=current-password]"
 PRIMARY_BUTTON_CSS = "button.btn-primary[type=submit]"
+BLOCKED_CSS = "#loginFailureAlert"
+NOT_NOW_INPUT_CSS = "__BVID__90_BV_option_1"
 TERMS_CHECKBOX_CSS = "#tc-checkbox"
 TERMS_FAUX_CHECKBOX_CSS = "#tc-checkbox + .mrc-custom-checkbox"
 
@@ -31,6 +33,18 @@ async def are_checkboxes_clickable(client, credentials):
     username.send_keys(credentials["username"])
     password.send_keys(credentials["password"])
     sign_in.click()
+
+    failed, not_now = client.await_first_element_of(
+        [client.css(BLOCKED_CSS), client.css(NOT_NOW_INPUT_CSS)],
+        is_displayed=True,
+    )
+
+    if failed:
+        pytest.skip("Cannot automatically test; the site is blocking automated logins")
+        return False
+
+    not_now.click()
+    client.await_css(PRIMARY_BUTTON_CSS, is_displayed=True).click()
 
     try:
         client.await_css(

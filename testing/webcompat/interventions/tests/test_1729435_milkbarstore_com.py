@@ -1,7 +1,7 @@
 import pytest
 
 URL = "https://milkbarstore.com/products/assorted-cookie-tin"
-ADD_TO_CART_CSS = "#ProductSubmitButton-pdp__main"
+ADD_TO_CART_CSS = "button[name=add]"
 VIEW_CART_CSS = ".show-cart[data-item-count='1']"
 INCREASE_QUANTITY_CSS = "quantity-input [name=plus]"
 QUANTITY_WRAPPER_CSS = "quantity-input"
@@ -10,8 +10,8 @@ QUANTITY_WRAPPER_CSS = "quantity-input"
 async def do_cart_quantities_appear(client):
     # A screenshot of the quantity lines will show the spinner
     # arrows of the number-inputs when the site bug manifests.
-    client.hide_elements("[id^=alia-root]")
     await client.navigate(URL, wait="none")
+    client.hide_elements("[id^=alia-root], #PopupModal-reviews")
     client.await_css(ADD_TO_CART_CSS, is_displayed=True).click()
     client.soft_click(client.await_css(VIEW_CART_CSS, is_displayed=True, timeout=3))
     client.await_css(INCREASE_QUANTITY_CSS, is_displayed=True)

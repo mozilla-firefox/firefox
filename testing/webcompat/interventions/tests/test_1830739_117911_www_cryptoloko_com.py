@@ -1,7 +1,7 @@
 import pytest
 
 URL = "https://www.cryptoloko.com/webplay/?play=sweet-16-blast"
-IFRAME_CSS = "#gameiframe"
+IFRAME_CSS = ".gameframe iframe"
 GOOD_MSG = "GameViewModel"
 BAD_MSG = "UnsupportedDevice"
 

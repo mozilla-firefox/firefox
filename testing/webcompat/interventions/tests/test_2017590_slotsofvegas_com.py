@@ -1,8 +1,8 @@
 import pytest
 
 URL = "https://www.slotsofvegas.com/lobby/"
-PRACTICE_CSS = "#lobbybox_featuredgames .gamebox .cta.practice"
-IFRAME_CSS = "#gameiframe"
+PRACTICE_CSS = "a[href*=demo]"
+IFRAME_CSS = ".gameframe iframe"
 UNSUPPORTED_CSS = ".unsupported-device-box"
 SUPPORTED_CSS = "#game_main"
 

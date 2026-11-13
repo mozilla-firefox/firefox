@@ -7,6 +7,7 @@ SEARCHBAR_CSS = "[class*=SearchBar]"
 
 
 async def can_draw(client):
+    await client.make_preload_script("delete navigator.__proto__.webdriver")
     await client.navigate(URL)
     client.hide_elements(COOKIES_CSS)
 

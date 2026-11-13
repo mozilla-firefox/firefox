@@ -6,7 +6,7 @@ USERNAME_CSS = "input[placeholder='Username or Email']"
 PASSWORD_CSS = "input[placeholder='Password']"
 LOGIN_BUTTON_CSS = "[type=submit]"
 SELECT_MEDIA_CSS = ".kosmi.mediabutton"
-HERO_CSS = "button i.linkify"
+HERO_CSS = "button i.linkify, input[data-uitag=discover-search-input]"
 LOCAL_FILE_CSS = "button i.file.video"
 
 

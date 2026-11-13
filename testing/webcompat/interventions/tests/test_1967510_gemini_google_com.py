@@ -1,4 +1,5 @@
 import pytest
+from webdriver.error import NoSuchElementException
 
 URL = "https://gemini.google.com/"
 
@@ -14,10 +15,13 @@ async def check_paste_works(client):
     await client.navigate(URL)
     prompt = client.await_css(ADD_PROMPT_CSS, is_displayed=True)
     await client.stall(1)
-    prompt.send_keys("hello")
+    client.await_css(ADD_PROMPT_CSS, is_displayed=True).send_keys("hello")
     client.send_key("Enter")
     for _ in range(20):
-        client.soft_click(client.await_css(EDIT_OLD_PROMPT_CSS))
+        try:
+            client.soft_click(client.await_css(EDIT_OLD_PROMPT_CSS))
+        except NoSuchElementException:
+            break
         if client.find_css(OLD_PROMPT_CSS, is_displayed=True):
             break
         await client.stall(0.5)

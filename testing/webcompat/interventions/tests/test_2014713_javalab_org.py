@@ -33,12 +33,21 @@ async def can_move_car(client):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_platforms("android")
 @pytest.mark.with_interventions
 async def test_enabled(client):
     assert await can_move_car(client)
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip_platforms("android")
 @pytest.mark.without_interventions
 async def test_disabled(client):
     assert not await can_move_car(client)
+
+
+@pytest.mark.asyncio
+@pytest.mark.only_platforms("android")
+@pytest.mark.without_interventions
+async def test_android_regression(client):
+    assert await can_move_car(client)

@@ -2,29 +2,19 @@ from uuid import uuid4
 
 import pytest
 
-URL = (
-    "https://www.jobs.abbott/us/en/apply?jobSeqNo=ABLAUS31148388ENUSEXTERNAL"
-    "&step=1&stepname=applicantAcknowledgment"
-)
+URL = "https://www.jobs.abbott/us/en/search-results"
 
-ACCEPT_COOKIES_BUTTON = "#truste-consent-button"
+FIRST_JOB_CSS = "a[ph-tevent=job_click]"
+APPLY_CSS = "a[ph-tevent=apply_click]"
 EMAIL_INPUT = "#email"
 GET_OTP_BUTTON = "button.otp-send-btn"
 OTP_DROP_DOWN = "input.otp-field-input"
-JOB_GONE_TEXT = (
-    "The job that you were looking for either does not exist or is no longer open."
-)
-DEAD_LINK_WARNING = (
-    "Cannot run test; job link is dead. Please find another valid job link."
-)
 
 
 async def otp_renders_as_dropdown(client):
     await client.navigate(URL, wait="none")
-    client.await_css(ACCEPT_COOKIES_BUTTON, is_displayed=True).click()
-    if client.find_text(JOB_GONE_TEXT, is_displayed=True):
-        pytest.skip(DEAD_LINK_WARNING)
-        return False
+    client.await_css(FIRST_JOB_CSS, is_displayed=True, timeout=30).click()
+    client.await_css(APPLY_CSS, is_displayed=True).click()
     # Unique email per run so the site treats each attempt as a fresh applicant:
     # a reused address can trip "already registered"/rate-limit paths and skip the
     # OTP step, which would make this test flaky or silently stop exercising the fix.
