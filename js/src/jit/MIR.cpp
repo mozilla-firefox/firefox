@@ -2426,6 +2426,17 @@ void MUnbox::printOpcode(GenericPrinter& out) const {
 }
 #endif
 
+MDefinition* MLexicalCheck::foldsTo(TempAllocator& alloc) {
+  if (input()->isBox()) {
+    MIRType type = input()->toBox()->input()->type();
+    MOZ_ASSERT(type != MIRType::Value);
+    if (!IsMagicType(type)) {
+      return input();
+    }
+  }
+  return this;
+}
+
 MDefinition* MUnbox::foldsTo(TempAllocator& alloc) {
   if (input()->isBox()) {
     MDefinition* unboxed = input()->toBox()->input();

@@ -6355,6 +6355,8 @@ class MLexicalCheck : public MUnaryInstruction, public BoxPolicy<0>::Data {
 
   AliasSet getAliasSet() const override { return AliasSet::None(); }
 
+  MDefinition* foldsTo(TempAllocator& alloc) override;
+
   bool congruentTo(const MDefinition* ins) const override {
     return congruentIfOperandsEqual(ins);
   }
