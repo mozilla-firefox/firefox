@@ -47,10 +47,6 @@ static void AssertInnerizedEnvironmentChain(JSContext* cx, JSObject& env) {
 #endif
 }
 
-static bool IsEvalCacheCandidate(JSScript* script) {
-  return script->isDirectEvalInFunction();
-}
-
 /* static */
 HashNumber EvalCacheHashPolicy::hash(const EvalCacheLookup& l) {
   HashNumber hash = HashStringChars(l.str);
@@ -60,77 +56,10 @@ HashNumber EvalCacheHashPolicy::hash(const EvalCacheLookup& l) {
 /* static */
 bool EvalCacheHashPolicy::match(const EvalCacheEntry& cacheEntry,
                                 const EvalCacheLookup& l) {
-  MOZ_ASSERT(IsEvalCacheCandidate(cacheEntry.script));
-
+  MOZ_ASSERT(cacheEntry.script->isDirectEvalInFunction());
   return EqualStrings(cacheEntry.str, l.str) &&
          cacheEntry.callerScript == l.callerScript && cacheEntry.pc == l.pc;
 }
-
-void EvalCacheLookup::trace(JSTracer* trc) {
-  TraceRoot(trc, &str, "EvalCacheLookup::str");
-  TraceRoot(trc, &callerScript, "EvalCacheLookup::callerScript");
-}
-
-// Add the script to the eval cache when EvalKernel is finished
-class EvalScriptGuard {
-  JSContext* cx_;
-  Rooted<JSScript*> script_;
-  bool isReusable_ = false;
-
-  /* These fields are only valid if lookup_.str is non-nullptr. */
-  Rooted<EvalCacheLookup> lookup_;
-  mozilla::Maybe<DependentAddPtr<EvalCache>> p_;
-
-  Rooted<JSLinearString*> lookupStr_;
-
- public:
-  explicit EvalScriptGuard(JSContext* cx)
-      : cx_(cx), script_(cx), lookup_(cx), lookupStr_(cx) {}
-
-  ~EvalScriptGuard() {
-    if (script_ && isReusable_ && !cx_->isExceptionPending()) {
-      EvalCacheLookup& lookup = lookup_.get();
-      EvalCacheEntry cacheEntry = {lookupStr_, script_, lookup.callerScript,
-                                   lookup.pc};
-      lookup.str = lookupStr_;
-      if (lookup.str && IsEvalCacheCandidate(script_)) {
-        // Ignore failure to add cache entry.
-        if (!p_->add(cx_, cx_->caches().evalCache, lookup, cacheEntry)) {
-          cx_->recoverFromOutOfMemory();
-        }
-      }
-    }
-  }
-
-  void lookupInEvalCache(JSLinearString* str, JSScript* callerScript,
-                         jsbytecode* pc) {
-    lookupStr_ = str;
-    EvalCacheLookup& lookup = lookup_.get();
-    lookup.str = str;
-    lookup.callerScript = callerScript;
-    lookup.pc = pc;
-    p_.emplace(cx_, cx_->caches().evalCache, lookup);
-    if (*p_) {
-      script_ = (*p_)->script;
-      p_->remove(cx_, cx_->caches().evalCache, lookup);
-      isReusable_ = true;
-    }
-  }
-
-  void setNewScript(JSScript* script, bool isReusable) {
-    // JSScript::fullyInitFromStencil has already called js_CallNewScriptHook.
-    MOZ_ASSERT(!script_ && script);
-    script_ = script;
-    isReusable_ = isReusable;
-  }
-
-  bool foundScript() { return !!script_; }
-
-  HandleScript script() {
-    MOZ_ASSERT(script_);
-    return script_;
-  }
-};
 
 enum class EvalJSONResult { Failure, Success, NotJSON };
 
@@ -283,13 +212,17 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     return ejr == EvalJSONResult::Success;
   }
 
-  EvalScriptGuard esg(cx);
-
-  if (evalType == DIRECT_EVAL && caller.isFunctionFrame()) {
-    esg.lookupInEvalCache(linearStr, callerScript, pc);
+  bool directEvalInFunctionFrame =
+      evalType == DIRECT_EVAL && caller.isFunctionFrame();
+  RootedScript evalScript(cx);
+  if (directEvalInFunctionFrame) {
+    EvalCacheLookup key(linearStr, callerScript, pc);
+    if (EvalCache::Ptr entry = cx->caches().evalCache.lookup(key)) {
+      evalScript = entry->script;
+    }
   }
 
-  if (!esg.foundScript()) {
+  if (!evalScript) {
     RootedScript maybeScript(cx);
     uint32_t lineno;
     const char* filename;
@@ -349,23 +282,33 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     }
 
     bool isReusable = false;
-    RootedScript script(
-        cx, frontend::CompileEvalScript(cx, options, srcBuf, enclosing, env,
-                                        &isReusable));
-    if (!script) {
+    evalScript = frontend::CompileEvalScript(cx, options, srcBuf, enclosing,
+                                             env, &isReusable);
+    if (!evalScript) {
       return false;
     }
 
     RootedValue undefValue(cx);
     JS::InstantiateOptions instantiateOptions(options);
-    if (!JS::UpdateDebugMetadata(cx, script, instantiateOptions, undefValue,
+    if (!JS::UpdateDebugMetadata(cx, evalScript, instantiateOptions, undefValue,
                                  nullptr, introScript, maybeScript)) {
       return false;
     }
-    esg.setNewScript(script, isReusable);
+
+    if (isReusable && directEvalInFunctionFrame) {
+      MOZ_ASSERT(!evalScript->treatAsRunOnce());
+      MOZ_ASSERT(!evalScript->hasCallSiteObj());
+      EvalCacheLookup key(linearStr, callerScript, pc);
+      EvalCacheEntry cacheEntry = {linearStr, evalScript, callerScript, pc};
+      EvalCache::AddPtr p = cx->caches().evalCache.lookupForAdd(key);
+      if (!p) {
+        // Ignore failure to add cache entry.
+        (void)cx->caches().evalCache.add(p, cacheEntry);
+      }
+    }
   }
 
-  return ExecuteKernel(cx, esg.script(), env, NullFramePtr() /* evalInFrame */,
+  return ExecuteKernel(cx, evalScript, env, NullFramePtr() /* evalInFrame */,
                        vp);
 }
 

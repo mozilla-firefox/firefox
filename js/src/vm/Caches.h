@@ -40,16 +40,13 @@ struct EvalCacheEntry {
   }
 };
 
-struct EvalCacheLookup {
+struct MOZ_STACK_CLASS EvalCacheLookup {
   JSLinearString* str = nullptr;
   JSScript* callerScript = nullptr;
   MOZ_INIT_OUTSIDE_CTOR jsbytecode* pc = nullptr;
 
-  EvalCacheLookup() = default;
   EvalCacheLookup(JSLinearString* str, JSScript* callerScript, jsbytecode* pc)
       : str(str), callerScript(callerScript), pc(pc) {}
-
-  void trace(JSTracer* trc);
 };
 
 struct EvalCacheHashPolicy {
