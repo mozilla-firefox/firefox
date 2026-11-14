@@ -17,6 +17,8 @@ const MODEL_PREF = "browser.smartwindow.firstrun.modelChoice";
 const AUTO_ADVANCE_PREF = "browser.smartwindow.firstrun.autoAdvanceMS";
 const FIRST_RUN_COMPLETE_PREF = "browser.smartwindow.firstrun.hasCompleted";
 const EXPLAINER_PAGE_PREF = "browser.smartwindow.firstrun.explainerURL";
+const EXPLAINER_PAGE_DEFAULT_URL =
+  "http://www.firefox.com/smart-window/?v=product";
 const MEMORIES_FROM_CONVERSATION_PREF =
   "browser.smartwindow.memories.generateFromConversation";
 const MEMORIES_FROM_HISTORY_PREF =
@@ -31,10 +33,14 @@ const NON_REMOVABLE_SCREEN_IDS = new Set([
   "AI_WINDOW_CHOOSE_MODEL",
   "AI_WINDOW_MEMORIES",
 ]);
-const { getAllModelsData, getModelDisplayOrder, isAutoModelEnabled } =
-  ChromeUtils.importESModule(
-    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
-  );
+const {
+  AUTO_MODEL_CHOICE_ID,
+  getAllModelsData,
+  getModelDisplayOrder,
+  isAutoModelEnabled,
+} = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
+);
 
 const autoAdvanceMS = Services.prefs.getIntPref(AUTO_ADVANCE_PREF);
 const PROMOTED_BRAND_NAME = "Mistral";
@@ -564,6 +570,58 @@ function createAIWindowConfig(modelData) {
   };
 }
 
+// [generateFromConversation, generateFromHistory] for each memories choice.
+const MEMORIES_PREF_VALUES = {
+  both: [true, true],
+  chats: [true, false],
+  browsing: [false, true],
+  none: [false, false],
+};
+
+function getMemoriesChoice() {
+  const fromConversation = Services.prefs.getBoolPref(
+    MEMORIES_FROM_CONVERSATION_PREF,
+    false
+  );
+  const fromHistory = Services.prefs.getBoolPref(
+    MEMORIES_FROM_HISTORY_PREF,
+    false
+  );
+  if (fromConversation && fromHistory) {
+    return "both";
+  }
+  if (fromConversation) {
+    return "chats";
+  }
+  return fromHistory ? "browsing" : "none";
+}
+
+function saveSinglePageOnboarding({ detail }) {
+  const [fromConversation, fromHistory] =
+    MEMORIES_PREF_VALUES[detail.memoriesChoice];
+  Services.prefs.setStringPref(MODEL_PREF, detail.modelChoiceId);
+  Services.prefs.setBoolPref(MEMORIES_FROM_CONVERSATION_PREF, fromConversation);
+  Services.prefs.setBoolPref(MEMORIES_FROM_HISTORY_PREF, fromHistory);
+  Services.prefs.setBoolPref(IS_DEFAULT_WINDOW_PREF, detail.isDefaultWindow);
+  Services.prefs.setBoolPref(FIRST_RUN_COMPLETE_PREF, true);
+  topChromeWindow.openLinkIn(
+    Services.urlFormatter.formatURL(
+      Services.prefs.getStringPref(
+        EXPLAINER_PAGE_PREF,
+        EXPLAINER_PAGE_DEFAULT_URL
+      )
+    ),
+    "tab",
+    {
+      private: false,
+      triggeringPrincipal: Services.scriptSecurityManager.createNullPrincipal(
+        {}
+      ),
+    }
+  );
+  window.location.href = lazy.AIWindow.newTabURL;
+}
+
 async function renderFirstRun() {
   const root = document.getElementById("onboarding-root");
   if (isAutoModelEnabled()) {
@@ -575,8 +633,17 @@ async function renderFirstRun() {
       console.error("Single-page onboarding failed to load", ex);
     }
     if (loaded) {
+      const modelData = await getAllModelsData();
       const onboarding = document.createElement("smartwindow-onboarding");
       onboarding.autoAdvanceMS = autoAdvanceMS;
+      onboarding.recommendedModelChoiceId =
+        getPromotedChoiceId(modelData) ?? AUTO_MODEL_CHOICE_ID;
+      onboarding.modelChoiceId = onboarding.recommendedModelChoiceId;
+      onboarding.memoriesChoice = getMemoriesChoice();
+      onboarding.addEventListener(
+        "smartwindow-onboarding:save",
+        saveSinglePageOnboarding
+      );
       root.appendChild(onboarding);
       return;
     }
@@ -678,7 +745,7 @@ async function renderFirstRun() {
       data: {
         args: Services.prefs.getStringPref(
           EXPLAINER_PAGE_PREF,
-          "http://www.firefox.com/smart-window/?v=product"
+          EXPLAINER_PAGE_DEFAULT_URL
         ),
         where: "tab",
       },
