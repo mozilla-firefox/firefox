@@ -17,6 +17,23 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=667388
   window.testObject = { myNumber: 42,
                         myDomain: window.location.domain };
 
+  // Collect the document.domain compartments so a later run gets fresh ones.
+  const { TestUtils } = ChromeUtils.importESModule(
+    "resource://testing-common/TestUtils.sys.mjs"
+  );
+  SimpleTest.registerCleanupFunction(async function() {
+    let destroyed = [1, 2, 3].map(i => {
+      let frame = document.getElementById("frame" + i);
+      let id = frame.contentWindow.docShell.outerWindowID;
+      let promise = TestUtils.topicObserved("outer-window-destroyed",
+        subject => subject.QueryInterface(Ci.nsISupportsPRUint64).data == id);
+      frame.remove();
+      return promise;
+    });
+    await Promise.all(destroyed);
+    await new Promise(resolve => SpecialPowers.exactGC(resolve));
+  });
+
 
   // Wait for both frames to load before proceeding.
   var framesLoaded = [null, false, false, false];
