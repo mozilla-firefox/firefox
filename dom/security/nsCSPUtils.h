@@ -236,6 +236,7 @@ class nsCSPBaseSrc {
   virtual bool isReportSample() const { return false; }
 
   virtual bool isHash() const { return false; }
+  virtual bool isUrlHash() const { return false; }
   virtual bool isNonce() const { return false; }
   virtual bool isKeyword(CSPKeyword aKeyword) const { return false; }
   virtual bool isTrustedTypesDirectivePolicyName() const { return false; }
@@ -382,6 +383,28 @@ class nsCSPHashSrc final : public nsCSPHashSrcBase {
   bool isHash() const final { return true; }
 };
 
+/* =============== nsCSPUrlHashSrc ============ */
+
+// A url-hash-source, e.g. 'url-sha256-...', which allows script requests by
+// the hash of their URL. See https://github.com/w3c/webappsec-csp/pull/784.
+//
+// It's a separate grammar from hash-source: it never matches inline content
+// and isn't a hash for the purposes of isHash(), so it doesn't disable
+// 'unsafe-inline' or count as integrity metadata.
+class nsCSPUrlHashSrc final : public nsCSPHashSrcBase {
+ public:
+  nsCSPUrlHashSrc(const nsAString& aAlgorithm, const nsAString& aHash)
+      : nsCSPHashSrcBase(aAlgorithm, aHash) {}
+
+  bool allows(enum CSPKeyword aKeyword,
+              const nsAString& aContentOrNonce) const override {
+    return false;
+  }
+  bool visit(nsCSPSrcVisitor* aVisitor) const override;
+
+  bool isUrlHash() const final { return true; }
+};
+
 /* =============== nsCSPReportURI ============ */
 
 class nsCSPReportURI : public nsCSPBaseSrc {
@@ -482,6 +505,8 @@ class nsCSPSrcVisitor {
   virtual bool visitNonceSrc(const nsCSPNonceSrc& src) = 0;
 
   virtual bool visitHashSrc(const nsCSPHashSrc& src) = 0;
+
+  virtual bool visitUrlHashSrc(const nsCSPUrlHashSrc& src) = 0;
 
  protected:
   explicit nsCSPSrcVisitor() = default;

@@ -46,6 +46,7 @@ nsCSPParser::nsCSPParser(policyTokens& aTokens, nsIURI* aSelfURI,
     : mCurChar(nullptr),
       mEndChar(nullptr),
       mHasHashOrNonce(false),
+      mHasUrlHash(false),
       mHasAnyUnsafeEval(false),
       mStrictDynamic(false),
       mUnsafeInlineKeywordSrc(nullptr),
@@ -635,8 +636,56 @@ nsCSPHashSrc* nsCSPParser::hashSource() {
   return new nsCSPHashSrc(algorithm, hash);
 }
 
+constexpr auto kUrlHashPrefix = u"url-"_ns;
+
+// url-hash-source = "'url-" hash-algorithm "-" base64-value "'"
+// https://github.com/w3c/webappsec-csp/pull/784
+//
+// Like the other quoted strings of the grammar, the "url-" prefix is matched
+// case-insensitively (RFC 5234, section 2.3).
+nsCSPUrlHashSrc* nsCSPParser::urlHashSource() {
+  CSPPARSERLOG(("nsCSPParser::urlHashSource, mCurToken: %s, mCurValue: %s",
+                NS_ConvertUTF16toUTF8(mCurToken).get(),
+                NS_ConvertUTF16toUTF8(mCurValue).get()));
+
+  if (!StaticPrefs::security_csp_url_hashes_enabled()) {
+    return nullptr;
+  }
+
+  // Check if mCurToken starts and ends with "'"
+  if (mCurToken.First() != SINGLEQUOTE || mCurToken.Last() != SINGLEQUOTE) {
+    return nullptr;
+  }
+
+  // Trim surrounding single quotes
+  const nsAString& expr = Substring(mCurToken, 1, mCurToken.Length() - 2);
+
+  // Check if expr starts with "url-"
+  if (!StringBeginsWith(expr, kUrlHashPrefix,
+                        nsASCIICaseInsensitiveStringComparator)) {
+    return nullptr;
+  }
+
+  // Trim the "url-" prefix
+  const nsAString& hashExpr = Substring(expr, kUrlHashPrefix.Length());
+
+  nsAutoString algorithm;
+  nsAutoString hash;
+  if (!ExtractAlgorithmAndHash(hashExpr, algorithm, hash)) {
+    return nullptr;
+  }
+
+  mHasUrlHash = true;
+
+  return new nsCSPUrlHashSrc(algorithm, hash);
+}
+
 // source-expression = scheme-source / host-source / keyword-source
-//                     / nonce-source / hash-source
+//                     / nonce-source / hash-source / url-hash-source
+//
+// Note that the source-expression production in
+// https://github.com/w3c/webappsec-csp/pull/784 doesn't list url-hash-source
+// yet, but the algorithms using it expect it to be a source expression.
 nsCSPBaseSrc* nsCSPParser::sourceExpression() {
   CSPPARSERLOG(("nsCSPParser::sourceExpression, mCurToken: %s, mCurValue: %s",
                 NS_ConvertUTF16toUTF8(mCurToken).get(),
@@ -655,6 +704,11 @@ nsCSPBaseSrc* nsCSPParser::sourceExpression() {
   // Check if it is a hash-source
   if (nsCSPHashSrc* cspHash = hashSource()) {
     return cspHash;
+  }
+
+  // Check if it is a url-hash-source
+  if (nsCSPUrlHashSrc* cspUrlHash = urlHashSource()) {
+    return cspUrlHash;
   }
 
   // We handle a single "*" as host here, to avoid any confusion when applying
@@ -1263,6 +1317,7 @@ void nsCSPParser::directive() {
   // make sure to reset cache variables when trying to invalidate unsafe-inline;
   // unsafe-inline might not only appear in script-src, but also in default-src
   mHasHashOrNonce = false;
+  mHasUrlHash = false;
   mHasAnyUnsafeEval = false;
   mStrictDynamic = false;
   mUnsafeInlineKeywordSrc = nullptr;
@@ -1300,15 +1355,15 @@ void nsCSPParser::MaybeWarnAboutIgnoredSources(
     for (uint32_t i = 0; i < aSrcs.Length(); i++) {
       nsAutoString srcStr;
       aSrcs[i]->toString(srcStr);
-      // Hashes and nonces continue to apply with 'strict-dynamic', as well as
-      // 'unsafe-eval', 'wasm-unsafe-eval', 'trusted-types-eval' and
-      // 'unsafe-hashes'.
+      // Hashes, url hashes and nonces continue to apply with 'strict-dynamic',
+      // as well as 'unsafe-eval', 'wasm-unsafe-eval', 'trusted-types-eval'
+      // and 'unsafe-hashes'.
       if (!aSrcs[i]->isKeyword(CSP_STRICT_DYNAMIC) &&
           !aSrcs[i]->isKeyword(CSP_TRUSTED_TYPES_EVAL) &&
           !aSrcs[i]->isKeyword(CSP_UNSAFE_EVAL) &&
           !aSrcs[i]->isKeyword(CSP_WASM_UNSAFE_EVAL) &&
           !aSrcs[i]->isKeyword(CSP_UNSAFE_HASHES) && !aSrcs[i]->isNonce() &&
-          !aSrcs[i]->isHash()) {
+          !aSrcs[i]->isHash() && !aSrcs[i]->isUrlHash()) {
         AutoTArray<nsString, 2> params = {std::move(srcStr), mCurDir[0]};
         logWarningErrorToConsole(nsIScriptError::warningFlag,
                                  "ignoringScriptSrcForStrictDynamic", params);
@@ -1316,8 +1371,8 @@ void nsCSPParser::MaybeWarnAboutIgnoredSources(
     }
 
     // Log a warning that all scripts might be blocked because the policy
-    // contains 'strict-dynamic' but no valid nonce or hash.
-    if (!mHasHashOrNonce) {
+    // contains 'strict-dynamic' but no valid nonce, hash or url hash.
+    if (!mHasHashOrNonce && !mHasUrlHash) {
       AutoTArray<nsString, 1> params = {mCurDir[0]};
       logWarningErrorToConsole(nsIScriptError::warningFlag,
                                "strictDynamicButNoHashOrNonce", params);

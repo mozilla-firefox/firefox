@@ -62,6 +62,8 @@ skip-if = [
 ["test_csp_custom_policies.js"]
 
 ["test_csp_validator.js"]
+# url-hash-source expressions are only parsed with this pref enabled.
+prefs = ["security.csp.url-hashes.enabled=true"]
 
 ["test_ext_clear_cached_resources.js"]
 

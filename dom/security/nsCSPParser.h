@@ -86,6 +86,7 @@ class nsCSPParser {
   nsCSPBaseSrc* keywordSource();
   nsCSPNonceSrc* nonceSource();
   nsCSPHashSrc* hashSource();
+  nsCSPUrlHashSrc* urlHashSource();
   nsCSPHostSrc* host();
   bool hostChar();
   bool schemeChar();
@@ -198,6 +199,7 @@ class nsCSPParser {
   // helpers to allow invalidation of srcs within script-src and style-src
   // if either 'strict-dynamic' or at least a hash or nonce is present.
   bool mHasHashOrNonce;    // false, if no hash or nonce is defined
+  bool mHasUrlHash;        // false, if no url-hash-source is defined
   bool mHasAnyUnsafeEval;  // false, if no (wasm-)unsafe-eval keyword is used.
   bool mStrictDynamic;     // false, if 'strict-dynamic' is not defined
   nsCSPKeywordSrc* mUnsafeInlineKeywordSrc;  // null, otherwise invlidate()

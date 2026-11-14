@@ -193,6 +193,11 @@ add_task(async function test_csp_validator() {
       `${directive} 'self' 'nonce-01234'; ${other} 'self';`,
       `\u2018${directive}\u2019 directive contains a forbidden 'nonce-*' keyword`
     );
+
+    checkPolicy(
+      `${directive} 'self' 'url-sha256-AAAA'; ${other} 'self';`,
+      `\u2018${directive}\u2019 directive contains a forbidden 'url-*' keyword`
+    );
   }
 });
 
@@ -327,6 +332,11 @@ add_task(async function test_csp_validator_extension_pages() {
       `${directive} 'self' 'nonce-01234'; ${other} 'self';`,
       `\u2018${directive}\u2019 directive contains a forbidden 'nonce-*' keyword`
     );
+
+    checkPolicy(
+      `${directive} 'self' 'url-sha256-AAAA'; ${other} 'self';`,
+      `\u2018${directive}\u2019 directive contains a forbidden 'url-*' keyword`
+    );
   }
 });
 
@@ -369,3 +379,18 @@ add_task(async function test_csp_validator_sandbox_pages() {
     null
   );
 });
+
+add_task(
+  { pref_set: [["security.csp.url-hashes.enabled", false]] },
+  async function test_csp_validator_url_hashes_disabled() {
+    // Without the pref, url hashes aren't parsed, and are ignored like any other
+    // unknown source expression.
+    equal(
+      cps.validateAddonCSP(
+        "script-src 'self' 'url-sha256-AAAA';",
+        Ci.nsIAddonContentPolicy.CSP_ALLOW_ANY
+      ),
+      null
+    );
+  }
+);

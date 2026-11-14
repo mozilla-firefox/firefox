@@ -1010,6 +1010,9 @@ nsCSPHashSrcBase::~nsCSPHashSrcBase() = default;
 
 void nsCSPHashSrcBase::toString(nsAString& outStr) const {
   outStr.AppendLiteral("'");
+  if (isUrlHash()) {
+    outStr.AppendLiteral("url-");
+  }
   outStr.Append(mAlgorithm);
   outStr.AppendLiteral("-");
   outStr.Append(mHash);
@@ -1050,6 +1053,12 @@ bool nsCSPHashSrc::allows(enum CSPKeyword aKeyword,
 
 bool nsCSPHashSrc::visit(nsCSPSrcVisitor* aVisitor) const {
   return aVisitor->visitHashSrc(*this);
+}
+
+/* ===== nsCSPUrlHashSrc ===================== */
+
+bool nsCSPUrlHashSrc::visit(nsCSPSrcVisitor* aVisitor) const {
+  return aVisitor->visitUrlHashSrc(*this);
 }
 
 /* ===== nsCSPReportURI ===================== */

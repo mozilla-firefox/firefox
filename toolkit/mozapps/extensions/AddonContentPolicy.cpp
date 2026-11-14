@@ -178,6 +178,11 @@ class CSPValidator final : public nsCSPSrcVisitor {
 
   bool visitHashSrc(const nsCSPHashSrc& src) override { return true; };
 
+  bool visitUrlHashSrc(const nsCSPUrlHashSrc& src) override {
+    FormatError("csp-error-illegal-keyword"_ns, "keyword"_ns, u"'url-*'"_ns);
+    return false;
+  };
+
   // Accessors
 
   inline nsAString& GetError() {

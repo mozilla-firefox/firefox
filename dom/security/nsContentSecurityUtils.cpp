@@ -1544,6 +1544,11 @@ class DisallowingVisitor : public nsCSPSrcVisitor {
     return false;
   };
 
+  bool visitUrlHashSrc(const nsCSPUrlHashSrc& src) override {
+    Assert(src);
+    return false;
+  };
+
  protected:
   bool CheckAllowList(Span<nsLiteralCString> aList) {
     for (const nsLiteralCString& entry : aList) {
