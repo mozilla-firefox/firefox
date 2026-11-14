@@ -3239,26 +3239,31 @@ void Http3Session::SendDatagram(Http3WebTransportSession* aSession,
        this, static_cast<uint32_t>(rv), belowHighWaterMark, aSendGroupId,
        aSendOrder));
 
-  // Per spec section 4.3 step 9: if queue is below high water mark,
-  // resolve promise immediately (send OnDatagramReady now).
-  // neqo will also emit a DatagramOutcome event for this datagram once it is
-  // actually sent/dropped, which results in a second, redundant
-  // OnDatagramReady/DatagramReady for the same tracking ID. This is
-  // intentional: the content-process side treats an unknown tracking ID as a
-  // harmless no-op (the promise was already resolved by the first
-  // notification), so we accept the extra IPC round-trip rather than track
-  // per-ID dedup state here.
-  if (aTrackingId && NS_SUCCEEDED(rv) && belowHighWaterMark) {
+  // Settle the write as soon as neqo has accepted or refused the datagram,
+  // whether or not the queue is above its high water mark.  neqo reports no
+  // later outcome for a queued datagram that expires or is evicted, and
+  // Http3Client doesn't forward the ones it does report, so a write left
+  // waiting for one would never settle, and content would stop writing once
+  // outgoingMaxBufferedDatagrams of them were outstanding.
+  //
+  // This knowingly departs from writeDatagrams
+  // (https://w3c.github.io/webtransport/#writedatagrams), which holds a write
+  // made while the send queue is full until queued datagrams are dequeued;
+  // bug 1818883 restores backpressure by pacing writes against neqo's queue
+  // capacity.
+  if (aTrackingId && NS_SUCCEEDED(rv)) {
     aSession->OnOutgoingDatagramOutCome(
         aTrackingId, WebTransportSessionEventListener::DatagramOutcome::SENT);
   }
 
-  // Only report immediate failures if queuing itself failed.
   if (aTrackingId && NS_FAILED(rv)) {
     WebTransportSessionEventListener::DatagramOutcome outcome;
     if (rv == NS_ERROR_NOT_AVAILABLE) {
       outcome = WebTransportSessionEventListener::DatagramOutcome::
           DROPPED_TOO_MUCH_DATA;
+    } else if (rv == NS_BASE_STREAM_WOULD_BLOCK) {
+      outcome =
+          WebTransportSessionEventListener::DatagramOutcome::DROPPED_QUEUE_FULL;
     } else {
       outcome = WebTransportSessionEventListener::DatagramOutcome::UNKNOWN;
     }
