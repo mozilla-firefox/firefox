@@ -109,6 +109,11 @@
                 class="show-only-for-keyboard"
                 key="key_findAgain"
                 command="cmd_findAgain" data-l10n-id="menu-edit-find-again"/>
+#ifdef XP_MACOSX
+      <menuitem id="menu_findSelection"
+                key="key_findSelection"
+                command="cmd_findSelection" data-l10n-id="menu-edit-find-selection"/>
+#endif
       <menuseparator hidden="true" id="textfieldDirection-separator"/>
       <menuitem id="textfieldDirection-swap"
                 command="cmd_switchTextDirection"

@@ -9,6 +9,9 @@ support-files = ["file_shareurl.html"]
 
 ["browser_aiwindow_options.js"]
 
+["browser_edit_find_selection_macosx.js"]
+run-if = ["os == 'mac'"]
+
 ["browser_file_close_tabs.js"]
 
 ["browser_file_menu_import_wizard.js"]
