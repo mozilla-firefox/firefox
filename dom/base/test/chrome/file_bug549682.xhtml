@@ -129,7 +129,8 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=549682
     global.addMessageListener("async", globalListener);
     global.addMessageListener("sync", globalListener);
     global.addMessageListener("global-sync", globalListener);
-    global.loadFrameScript("data:,sendSyncMessage('global-sync', { data: 1234 });", true);
+    var globalScript = "data:,sendSyncMessage('global-sync', { data: 1234 });";
+    global.loadFrameScript(globalScript, true);
     var toBeRemovedScript = "data:,sendAsyncMessage('toberemoved', { data: 2345 })";
     var c = 0;
     messageManager.addMessageListener("toberemoved", function() {
@@ -147,6 +148,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=549682
     document.documentElement.appendChild(b);
     is(globalListenerCallCount, oldValue + 1,
                               "Wrong message count");
+    global.removeDelayedFrameScript(globalScript);
 
     localmm.addMessageListener('done', finish);
 
