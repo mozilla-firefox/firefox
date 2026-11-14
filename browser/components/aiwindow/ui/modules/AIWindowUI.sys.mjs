@@ -32,7 +32,6 @@ export const AIWindowUI = {
   SPLITTER_ID: "ai-window-splitter",
   BROWSER_ID: "ai-window-browser",
   STACK_CLASS: "ai-window-browser-stack",
-  AI_WINDOW_ELEMENT_TIMEOUT: 1500,
   TAB_FADE_MS: 200,
   TAB_FADE_TIMEOUT_MS: 200 * 2 + 50,
   SIDEBAR_ANIMATION_MS: 200,
@@ -394,10 +393,7 @@ export const AIWindowUI = {
       aiBrowser.removeAttribute("data-conversation-id");
     }
 
-    const aiWindowElement = await this.getAiWindowElement(win, aiBrowser);
-    if (!aiWindowElement) {
-      return;
-    }
+    const aiWindowElement = await this.getAiWindowElement(aiBrowser);
 
     // Return early if the sidebar was closed while we were waiting for the
     // content element to load, prevents opening a conversation or creating
@@ -414,24 +410,30 @@ export const AIWindowUI = {
   },
 
   /**
-   * Gets the ai-window element from the sidebar browser. Polls until the
-   * custom element is defined or the timeout is reached.
+   * Gets the ai-window element from the sidebar browser, waiting for its
+   * document to load if needed.
    *
-   * @param {Window} win
    * @param {XULElement} aiBrowser
-   *
    * @returns {Promise<AIWindow>} The sidebar AIWindow component
    */
-  async getAiWindowElement(win, aiBrowser) {
-    const deadline = Date.now() + AIWindowUI.AI_WINDOW_ELEMENT_TIMEOUT;
-    while (Date.now() < deadline) {
-      const el = aiBrowser.contentDocument?.querySelector("ai-window:defined");
-      if (el) {
-        return el;
-      }
-      await new Promise(resolve => win.setTimeout(resolve, 50));
+  async getAiWindowElement(aiBrowser) {
+    const isLoaded = () => {
+      const doc = aiBrowser.contentDocument;
+      return doc?.documentURI === AIWINDOW_URL && doc.readyState === "complete";
+    };
+    if (!isLoaded()) {
+      await new Promise(resolve => {
+        const onLoad = () => {
+          if (isLoaded()) {
+            aiBrowser.removeEventListener("load", onLoad, true);
+            resolve();
+          }
+        };
+        aiBrowser.addEventListener("load", onLoad, true);
+      });
     }
-    return null;
+    await aiBrowser.contentWindow.customElements.whenDefined("ai-window");
+    return aiBrowser.contentDocument.querySelector("ai-window");
   },
 
   async focusSidebar(win, aiBrowser = null) {
@@ -442,8 +444,8 @@ export const AIWindowUI = {
 
     aiBrowser.focus();
 
-    const aiWindowElement = await this.getAiWindowElement(win, aiBrowser);
-    if (!aiWindowElement || !this.isSidebarOpen(win)) {
+    const aiWindowElement = await this.getAiWindowElement(aiBrowser);
+    if (!this.isSidebarOpen(win)) {
       return false;
     }
 

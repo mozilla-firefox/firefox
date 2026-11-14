@@ -32,7 +32,7 @@ This component grew quickly, and much of the existing code across this directory
 
 ## Process boundaries
 - Cross into content through a small actor whose parent validates and caps what the child sends. Example: `ui/actors/AgentMonitorItem{Parent,Child}.sys.mjs`. Add `.catch` to `sendQuery` chains.
-- Legacy: reaching into another component's `contentDocument` or `shadowRoot` from modules, and polling for elements (`AIWindowUI.getAiWindowElement`). Don't add more.
+- Legacy: reaching into another component's `contentDocument` or `shadowRoot` from modules. Don't add more, and don't poll for elements.
 - Don't trust values the content process sends. Derive them in the parent (for example from `browsingContext.currentURI`). Keep sensitive data out of content processes, and remember that prefs are copied into them.
 
 ## Models, prompts and security
