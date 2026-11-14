@@ -61,6 +61,7 @@ support-files = "empty.js"
 skip-if = [
   "verify",
   "standalone", # Bug 2026600
+  "repeat", # Needs the worker test_sanityRegisteredServiceWorker.html leaves registered
 ]
 
 ["test_sanitySimpletest.html"]
