@@ -961,11 +961,8 @@ bool GeckoChildProcessHost::AsyncLaunch(
                       TimeStamp::Now() - startTimeStamp);
 
                   MonitorAutoLock lock(mMonitor);
-                  // The OnChannel{Connected,Error} may have already advanced
-                  // the state.
-                  if (mProcessState < PROCESS_CREATED) {
-                    mProcessState = PROCESS_CREATED;
-                  }
+                  MOZ_ASSERT(mProcessState == CHANNEL_INITIALIZED);
+                  mProcessState = PROCESS_CREATED;
                   lock.Notify();
                 }
                 return ProcessHandlePromise::CreateAndResolve(
@@ -1935,14 +1932,9 @@ bool GeckoChildProcessHost::OpenPrivilegedHandle(base::ProcessId aPid) {
   return base::OpenPrivilegedProcessHandle(aPid, &mChildProcessHandle);
 }
 
-void GeckoChildProcessHost::OnChannelConnected(base::ProcessId peer_pid) {
-  {
-    mozilla::AutoWriteLock hLock(mHandleLock);
-    if (!OpenPrivilegedHandle(peer_pid)) {
-      MOZ_CRASH("can't open handle to child process");
-    }
-  }
+void GeckoChildProcessHost::OnChannelConnected() {
   MonitorAutoLock lock(mMonitor);
+  MOZ_ASSERT(mProcessState == PROCESS_CREATED);
   mProcessState = PROCESS_CONNECTED;
   lock.Notify();
 }

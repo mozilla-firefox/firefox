@@ -90,7 +90,7 @@ class UtilityProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
   }
 
   // Called on the IO thread.
-  void OnChannelConnected(base::ProcessId peer_pid) override;
+  void OnChannelConnected() override;
 
 #if defined(XP_MACOSX) && defined(MOZ_SANDBOX)
   // Return the sandbox type to be used with this process type.
