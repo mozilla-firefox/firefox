@@ -6482,9 +6482,6 @@ class _SessionStore {
    */
   #prepareConnectionToHost(tab, url) {
     if (url && !url.startsWith("about:")) {
-      let principal = Services.scriptSecurityManager.createNullPrincipal({
-        userContextId: tab.userContextId,
-      });
       let browsingContext = tab.linkedBrowser.browsingContext;
       let callbacks = /** @type {nsIInterfaceRequestor} */ ({
         QueryInterface: ChromeUtils.generateQI(["nsIInterfaceRequestor"]),
@@ -6498,7 +6495,20 @@ class _SessionStore {
       });
       try {
         let uri = Services.io.newURI(url);
-        Services.io.speculativeConnect(uri, principal, callbacks, false);
+        let isPrivate = PrivateBrowsingUtils.isBrowserPrivate(
+          tab.linkedBrowser
+        );
+        Services.io.speculativeConnectWithOriginAttributes(
+          uri,
+          {
+            userContextId: tab.userContextId,
+            privateBrowsingId: isPrivate ? 1 : 0,
+            // Necko doesn't add the partitionKey when given origin attributes.
+            partitionKey: ChromeUtils.getPartitionKeyFromURL(url, "", false),
+          },
+          callbacks,
+          false
+        );
         return true;
       } catch (error) {
         // Can't setup speculative connection for this url.

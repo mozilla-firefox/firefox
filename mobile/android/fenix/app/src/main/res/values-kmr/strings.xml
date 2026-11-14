@@ -542,7 +542,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Ne niha</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Derbas bike</string>
+  <string name="nova_onboarding_skip_button">Derbas bike</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Xwe ji azadiyê re amade bike</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

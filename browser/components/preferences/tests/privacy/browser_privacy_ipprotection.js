@@ -543,26 +543,6 @@ add_task(async function test_autostart_checkboxes() {
   );
 });
 
-// Test that additional links exist
-add_task(async function test_additional_links() {
-  await setupVpnPrefs({
-    feature: true,
-    entitlementCache: '{"subscribed": false}',
-  });
-
-  await BrowserTestUtils.withNewTab(
-    { gBrowser, url: "about:preferences#privacy" },
-    async function (browser) {
-      let settingGroup = testSettingsGroupVisible(browser);
-      let ipProtectionLinks = settingGroup?.querySelector("#ipProtectionLinks");
-      is_element_visible(
-        ipProtectionLinks,
-        "VPN upgrade link section is shown"
-      );
-    }
-  );
-});
-
 // Test that the "not opted in" section is shown when entitlementCache is empty
 add_task(async function test_not_opted_in_section_visible_when_empty() {
   await setupVpnPrefs({
@@ -862,13 +842,6 @@ add_task(async function test_vpn_sections_hidden_when_not_opted_in() {
         autoStartSettings,
         "Autostart settings group is hidden when entitlementCache is empty"
       );
-
-      let ipProtectionLinks = settingGroup?.querySelector("#ipProtectionLinks");
-      is_element_hidden(
-        ipProtectionLinks,
-        "VPN links section is hidden when entitlementCache is empty"
-      );
-
       let bandwidthSettings = settingGroup?.querySelector(
         "#ipProtectionBandwidth"
       );
@@ -908,12 +881,6 @@ add_task(async function test_vpn_sections_shown_when_opted_in() {
       is_element_visible(
         autoStartSettings,
         "Autostart settings group is shown when entitlementCache has a value"
-      );
-
-      let ipProtectionLinks = settingGroup?.querySelector("#ipProtectionLinks");
-      is_element_visible(
-        ipProtectionLinks,
-        "VPN links section is shown when entitlementCache has a value"
       );
 
       let bandwidthSettings = settingGroup?.querySelector(
@@ -1030,80 +997,6 @@ add_task(async function test_bandwidth_usage_sub_gb_precision_in_preferences() {
   await SpecialPowers.popPrefEnv();
 });
 
-// Test that the upsell link is not visible if a user is considered subscribed
-add_task(async function test_vpn_ipProtectionLinks_hidden_if_subscribed() {
-  await setupVpnPrefs({
-    feature: true,
-    siteExceptions: true,
-    entitlementCache: '{"subscribed": true}',
-  });
-
-  await BrowserTestUtils.withNewTab(
-    { gBrowser, url: "about:preferences#privacy" },
-    async function (browser) {
-      let settingGroup = testSettingsGroupVisible(browser);
-
-      let ipProtectionLinks = settingGroup?.querySelector("#ipProtectionLinks");
-      is_element_hidden(
-        ipProtectionLinks,
-        "VPN links section is hidden when entitlementCache.subscribed is true"
-      );
-    }
-  );
-});
-
-// Test that the upsell link is not visible when upgradeNotAvailable is true.
-add_task(
-  async function test_vpn_ipProtectionLinks_hidden_if_upgrade_not_available() {
-    await setupVpnPrefs({
-      feature: true,
-      siteExceptions: true,
-      entitlementCache: '{"subscribed": false}',
-      upgradeNotAvailable: true,
-    });
-
-    await BrowserTestUtils.withNewTab(
-      { gBrowser, url: "about:preferences#privacy" },
-      async function (browser) {
-        let settingGroup = testSettingsGroupVisible(browser);
-        let ipProtectionLinks =
-          settingGroup?.querySelector("#ipProtectionLinks");
-        is_element_hidden(
-          ipProtectionLinks,
-          "VPN upgrade link section is hidden when upgradeNotAvailable is true"
-        );
-      }
-    );
-
-    await SpecialPowers.popPrefEnv();
-  }
-);
-
-// Test that we default to showing the upsell link if entitlement cache pref fails to be parsed.
-add_task(
-  async function test_vpn_ipProtectionLinks_malformed_entitlement_cache() {
-    await setupVpnPrefs({
-      feature: true,
-      siteExceptions: true,
-      entitlementCache: "invalid-json",
-    });
-
-    await BrowserTestUtils.withNewTab(
-      { gBrowser, url: "about:preferences#privacy" },
-      async function (browser) {
-        let settingGroup = testSettingsGroupVisible(browser);
-
-        let ipProtectionLinks =
-          settingGroup?.querySelector("#ipProtectionLinks");
-        is_element_visible(
-          ipProtectionLinks,
-          "VPN links section is shown as a fallback when entitlementCache cannot be parsed"
-        );
-      }
-    );
-  }
-);
-
 // Test the site exclusions section shows when site inclusions is false
 add_task(async function test_site_rules_hidden_without_inclusions_feature() {
   await setupVpnPrefs({
@@ -1155,4 +1048,393 @@ add_task(async function test_site_rules_hidden_when_not_opted_in() {
   );
 
   await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Replaces the preferences window's shell service with a fake reporting
+ * isDefault, and refreshes the VPN default-browser setting so it is re-read.
+ *
+ * @param {MozBrowser} browser
+ * @param {object} sandbox
+ * @param {boolean} isDefault
+ * @returns {object} The fake shell service.
+ */
+function stubDefaultBrowser(browser, sandbox, isDefault) {
+  let win = browser.contentWindow;
+  let fakeShellService = {
+    isDefaultBrowser: () => isDefault,
+    setDefaultBrowser: sandbox.stub().callsFake(async () => {
+      isDefault = true;
+    }),
+  };
+  sandbox.stub(win, "getShellService").returns(fakeShellService);
+  win.Preferences.getSetting("ipProtectionIsDefaultBrowser").onChange();
+  return fakeShellService;
+}
+
+async function assertVpnPromosVisibility(
+  settingGroup,
+  { vpnPromo, setDefaultPromo }
+) {
+  let vpnPromoEl = settingGroup.querySelector("#ipProtectionMozVPNPromo");
+  let setDefaultPromoEl = settingGroup.querySelector(
+    "#ipProtectionSetToDefaultPromo"
+  );
+  await TestUtils.waitForCondition(
+    () =>
+      BrowserTestUtils.isVisible(vpnPromoEl) == vpnPromo &&
+      BrowserTestUtils.isVisible(setDefaultPromoEl) == setDefaultPromo,
+    "Waiting for VPN promos visibility to update"
+  );
+  Assert.equal(
+    BrowserTestUtils.isVisible(vpnPromoEl),
+    vpnPromo,
+    `Mozilla VPN promo is ${vpnPromo ? "shown" : "hidden"}`
+  );
+  Assert.equal(
+    BrowserTestUtils.isVisible(setDefaultPromoEl),
+    setDefaultPromo,
+    `Set to default promo is ${setDefaultPromo ? "shown" : "hidden"}`
+  );
+}
+
+// Test that only the set to default promo is shown when Firefox is not the
+// default browser.
+add_task(async function test_vpn_promos_not_default_browser() {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    entitlementCache: '{"subscribed": false}',
+  });
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: "about:preferences#privacy" },
+    async function (browser) {
+      let settingGroup = testSettingsGroupVisible(browser);
+      stubDefaultBrowser(browser, sandbox, false);
+      await assertVpnPromosVisibility(settingGroup, {
+        vpnPromo: false,
+        setDefaultPromo: true,
+      });
+    }
+  );
+
+  sandbox.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+// Test that only the Mozilla VPN promo is shown when Firefox is the default
+// browser.
+add_task(async function test_vpn_promos_default_browser() {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    entitlementCache: '{"subscribed": false}',
+  });
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: "about:preferences#privacy" },
+    async function (browser) {
+      let settingGroup = testSettingsGroupVisible(browser);
+      stubDefaultBrowser(browser, sandbox, true);
+      await assertVpnPromosVisibility(settingGroup, {
+        vpnPromo: true,
+        setDefaultPromo: false,
+      });
+    }
+  );
+
+  sandbox.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+// Test that the Mozilla VPN promo is hidden when upgradeNotAvailable is true.
+add_task(async function test_vpn_promo_hidden_if_upgrade_not_available() {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    siteExceptions: true,
+    entitlementCache: '{"subscribed": false}',
+    upgradeNotAvailable: true,
+  });
+
+  await BrowserTestUtils.withNewTab(
+    { gBrowser, url: "about:preferences#privacy" },
+    async function (browser) {
+      let settingGroup = testSettingsGroupVisible(browser);
+      stubDefaultBrowser(browser, sandbox, true);
+      await assertVpnPromosVisibility(settingGroup, {
+        vpnPromo: false,
+        setDefaultPromo: false,
+      });
+    }
+  );
+
+  sandbox.restore();
+  await SpecialPowers.popPrefEnv();
+});
+
+// Test that both promos are hidden when the user has upgraded.
+add_task(async function test_vpn_promos_hidden_if_subscribed() {
+  await setupVpnPrefs({
+    feature: true,
+    siteExceptions: true,
+    entitlementCache: '{"subscribed": true}',
+  });
+
+  for (let isDefault of [true, false]) {
+    let sandbox = sinon.createSandbox();
+    await BrowserTestUtils.withNewTab(
+      { gBrowser, url: "about:preferences#privacy" },
+      async function (browser) {
+        let settingGroup = testSettingsGroupVisible(browser);
+        stubDefaultBrowser(browser, sandbox, isDefault);
+        await assertVpnPromosVisibility(settingGroup, {
+          vpnPromo: false,
+          setDefaultPromo: false,
+        });
+      }
+    );
+    sandbox.restore();
+  }
+
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Holds back only the shared DefaultBrowserHelper poll so the test decides
+ * when each tick runs. The captured callbacks are the helper's own, so the
+ * hash and visibility guard, the shell read and the listener notification all
+ * run unmodified. All other window timers pass through.
+ *
+ * @param {Window} win
+ * @param {object} sandbox
+ * @returns {{ readonly armed: boolean, tick: () => void }}
+ */
+function interceptDefaultBrowserPoll(win, sandbox) {
+  let nativeSetTimeout = win.setTimeout;
+  let nativeClearTimeout = win.clearTimeout;
+  let nativeRequestIdleCallback = win.requestIdleCallback;
+  let timer = null;
+  let idle = null;
+  let lastTimerId = 1000000;
+
+  sandbox.stub(win, "setTimeout").callsFake((cb, delay, ...args) => {
+    if (!String(cb).includes("pollForDefaultBrowser")) {
+      return nativeSetTimeout.call(win, cb, delay, ...args);
+    }
+    timer = { id: ++lastTimerId, cb };
+    return timer.id;
+  });
+  sandbox.stub(win, "clearTimeout").callsFake(id => {
+    if (timer?.id === id) {
+      timer = null;
+      return;
+    }
+    nativeClearTimeout.call(win, id);
+  });
+  sandbox.stub(win, "requestIdleCallback").callsFake((cb, options) => {
+    if (cb.name !== "pollForDefaultBrowser") {
+      return nativeRequestIdleCallback.call(win, cb, options);
+    }
+    idle = cb;
+    return 0;
+  });
+
+  return {
+    get armed() {
+      return !!(timer || idle);
+    },
+    tick() {
+      if (timer) {
+        let { cb } = timer;
+        timer = null;
+        cb();
+      }
+      let poll = idle;
+      idle = null;
+      if (!poll) {
+        throw new Error("The shared default-browser poll has no idle callback");
+      }
+      poll();
+    },
+  };
+}
+
+function getPromoStates({ vpn, setDefault }) {
+  return {
+    vpn: BrowserTestUtils.isVisible(vpn),
+    setDefault: BrowserTestUtils.isVisible(setDefault),
+  };
+}
+
+async function settlePromos(win, settingGroup, promos, want) {
+  for (let i = 0; i < 60; i++) {
+    await settingGroup.updateComplete;
+    await new Promise(resolve => win.requestAnimationFrame(resolve));
+    let states = getPromoStates(promos);
+    if (states.vpn == want.vpn && states.setDefault == want.setDefault) {
+      break;
+    }
+  }
+  return getPromoStates(promos);
+}
+
+// Test that a default-browser change made outside Settings updates the VPN
+// promos while the Privacy pane stays selected.
+add_task(async function test_promos_follow_external_default_browser_change() {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    siteExceptions: true,
+    siteInclusions: true,
+    bandwidth: true,
+    entitlementCache: '{"subscribed": false}',
+  });
+
+  let tab;
+  try {
+    tab = await openPrefsTab("privacy");
+    let win = tab.linkedBrowser.contentWindow;
+    let settingGroup = testSettingsGroupVisible(tab.linkedBrowser);
+    let promos = {
+      vpn: settingGroup.querySelector("#ipProtectionMozVPNPromo"),
+      setDefault: settingGroup.querySelector("#ipProtectionSetToDefaultPromo"),
+    };
+    ok(promos.vpn, "Mozilla VPN promo is rendered in the DOM");
+    ok(promos.setDefault, "Set to Default promo is rendered in the DOM");
+    is(win.location.hash, "#privacy", "Privacy is the selected pane");
+    is(win.document.visibilityState, "visible", "Settings document is visible");
+
+    let isDefault = false;
+    sandbox.stub(win, "getShellService").returns({
+      isDefaultBrowser: () => isDefault,
+    });
+    let poll = interceptDefaultBrowserPoll(win, sandbox);
+    win.Preferences.getSetting("ipProtectionIsDefaultBrowser").onChange();
+
+    await TestUtils.waitForCondition(
+      () => poll.armed,
+      "The shared default-browser poll never fired within its 10 second maximum interval",
+      100,
+      200
+    );
+    poll.tick();
+    let before = await settlePromos(win, settingGroup, promos, {
+      vpn: false,
+      setDefault: true,
+    });
+    is(
+      before.setDefault,
+      true,
+      "Set to Default promo is shown while Firefox is not the default browser"
+    );
+    is(
+      before.vpn,
+      false,
+      "Mozilla VPN promo is hidden while Firefox is not the default browser"
+    );
+
+    isDefault = true;
+    poll.tick();
+
+    let after = await settlePromos(win, settingGroup, promos, {
+      vpn: true,
+      setDefault: false,
+    });
+    is(win.location.hash, "#privacy", "Privacy is still the selected pane");
+    is(
+      after.setDefault,
+      false,
+      "Set to Default promo is hidden once Firefox becomes the default browser on #privacy; a visible promo is stale"
+    );
+    is(
+      after.vpn,
+      true,
+      "Mozilla VPN promo is shown once Firefox becomes the default browser on #privacy; a hidden promo is stale"
+    );
+  } finally {
+    sandbox.restore();
+    if (tab) {
+      BrowserTestUtils.removeTab(tab);
+    }
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+async function withVpnPrivacyPane(fn) {
+  let sandbox = sinon.createSandbox();
+  await setupVpnPrefs({
+    feature: true,
+    siteExceptions: true,
+    siteInclusions: true,
+    bandwidth: true,
+    entitlementCache: '{"subscribed": false}',
+  });
+  try {
+    await BrowserTestUtils.withNewTab(
+      { gBrowser, url: "about:preferences#privacy" },
+      async function (browser) {
+        let settingGroup = testSettingsGroupVisible(browser);
+        stubDefaultBrowser(browser, sandbox, false);
+        await fn(browser.contentWindow, settingGroup);
+      }
+    );
+  } finally {
+    sandbox.restore();
+    await SpecialPowers.popPrefEnv();
+  }
+}
+
+async function assertSetDefaultPromo(win, settingGroup, expectVisible) {
+  let promo = settingGroup.querySelector("#ipProtectionSetToDefaultPromo");
+  ok(promo, "Set to default promo is rendered in the DOM");
+  await settingGroup.updateComplete;
+  await promo.updateComplete;
+  await new Promise(resolve => win.requestAnimationFrame(resolve));
+  await promo.updateComplete;
+  is(
+    BrowserTestUtils.isVisible(promo),
+    expectVisible,
+    `Set to default promo is ${expectVisible ? "shown" : "hidden"}`
+  );
+}
+
+// Test that the set to default promo is shown when no policy is set.
+add_task(async function test_set_default_promo_visible_without_policy() {
+  ok(
+    Services.policies.isAllowed("setDefaultBrowser"),
+    "setDefaultBrowser is allowed with no policy"
+  );
+  await withVpnPrivacyPane(async (win, settingGroup) => {
+    await assertSetDefaultPromo(win, settingGroup, true);
+  });
+});
+
+// Test that DefaultBrowserSettingEnabled:false hides the set to default promo.
+add_task(async function test_set_default_promo_hidden_by_policy() {
+  PoliciesPrefTracker.start();
+  try {
+    await EnterprisePolicyTesting.setupPolicyEngineWithJson({
+      policies: { DefaultBrowserSettingEnabled: false },
+    });
+    ok(
+      !Services.policies.isAllowed("setDefaultBrowser"),
+      "The policy disallows setDefaultBrowser"
+    );
+    ok(
+      Services.prefs.prefIsLocked("browser.shell.checkDefaultBrowser"),
+      "The policy locked browser.shell.checkDefaultBrowser"
+    );
+    await withVpnPrivacyPane(async (win, settingGroup) => {
+      await assertSetDefaultPromo(win, settingGroup, false);
+    });
+  } finally {
+    await EnterprisePolicyTesting.setupPolicyEngineWithJson("");
+    PoliciesPrefTracker.stop();
+  }
+  ok(
+    Services.policies.isAllowed("setDefaultBrowser"),
+    "setDefaultBrowser is allowed again after policy cleanup"
+  );
 });

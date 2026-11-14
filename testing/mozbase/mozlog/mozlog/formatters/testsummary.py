@@ -14,7 +14,7 @@ class TestSummaryFormatter(BaseFormatter):
         and `test_end` actions
       - `test_status` actions where the status differs from the expected
         status (i.e. the subtest result was unexpected)
-      - `crash`, `tsan_error` and `ubsan_error` actions
+      - `crash`, `asan_error`, `tsan_error` and `ubsan_error` actions
       - `log` actions of level ERROR or CRITICAL (failures not tied to a
         test, e.g. LeakSanitizer reports or harness errors)
       - `mozleak_total` actions that exceed their threshold or lack a total
@@ -29,8 +29,8 @@ class TestSummaryFormatter(BaseFormatter):
     In addition, the fields `thread`, `pid`, `source`, `extra`, `tests`,
     `js_source`, `crashing_thread_stack` and any field whose name starts with
     `stackwalk_` are stripped from every emitted record, except that
-    `tsan_error` keeps `pid`, which names the racing process rather than the
-    logging one
+    `asan_error` and `tsan_error` keep `pid`, which names the crashing or
+    racing process rather than the logging one
     """
 
     _ALLOWED_ACTIONS = frozenset({
@@ -42,6 +42,7 @@ class TestSummaryFormatter(BaseFormatter):
         "test_end",
         "test_status",
         "crash",
+        "asan_error",
         "tsan_error",
         "ubsan_error",
         "log",
@@ -77,7 +78,7 @@ class TestSummaryFormatter(BaseFormatter):
             return
 
         strip = self._ALWAYS_STRIP
-        if action == "tsan_error":
+        if action in ("asan_error", "tsan_error"):
             strip = strip - {"pid"}
         data = {
             k: v

@@ -28,10 +28,10 @@ fission.bfcacheInParent=false
 browser.sessionhistory.max_total_viewers=0
 network.http.http3.enable=false
 network.http.altsvc.enabled=false
+gfx.font_loader.delay=0
 """
 
 # Composite test: one browser launch loads all sites in sequence.
-#   wait 30s        -> initial idle / browser warmup
 #   per site:
 #     measure "<site>-load"    -> initial navigation
 #     measure "<site>-subnav"  -> sub-navigation, where the site has one
@@ -46,8 +46,6 @@ playback_manifests_dir = "nav-bench"
 playback_pageset_manifest = "mitm12-android-gve-amazon-nav.manifest,mitm12-android-gve-wikipedia-nav.manifest,mitm12-android-gve-duckduckgo-nav.manifest,mitm12-android-gve-bbc-nav.manifest"
 test_url = "about:blank"
 test_cmds = [
-    ["wait.byTime", "30000"],
-
     ["measure.start", "amazon-nav-load"],
     ["navigate", "https://www.amazon.ca/s?k=laptop"],
     ["wait.byTime", "2000"],

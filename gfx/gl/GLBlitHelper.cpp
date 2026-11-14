@@ -972,7 +972,7 @@ bool GLBlitHelper::BlitSdToFramebuffer(const layers::SurfaceDescriptor& asd,
             fencesHolderMap->GetWriteFence(sd.fencesHolderId().ref());
         RefPtr<layers::GpuFence> gpuFence =
             fence ? fence->AsGpuFence() : nullptr;
-        if (gpuFence && gpuFence->ServerWait(mGL, TimeDuration::Forever())) {
+        if (gpuFence && !gpuFence->ServerWait(mGL, TimeDuration::Forever())) {
           return false;
         }
       }

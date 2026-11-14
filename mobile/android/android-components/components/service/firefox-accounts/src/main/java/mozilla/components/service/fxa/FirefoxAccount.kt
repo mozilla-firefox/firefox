@@ -91,8 +91,6 @@ internal constructor(
         persistCallback.setCallback(callback)
     }
 
-    internal fun getAuthState() = inner.getAuthState()
-
     internal fun processEvent(event: FxaEvent): FxaState = inner.processEvent(event)
 
     internal fun simulateNetworkError() = inner.simulateNetworkError()

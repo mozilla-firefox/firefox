@@ -546,7 +546,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">後で</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">スキップ</string>
+  <string name="nova_onboarding_skip_button">スキップ</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">ブラウジングの自由を手に入れよう</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

@@ -46,7 +46,6 @@ class _MLSuggest {
   INTENT_OPTIONS = {
     taskName: /** @type {const} */ ("text-classification"),
     featureId: /** @type {const} */ ("suggest-intent-classification"),
-    timeoutMS: -1,
     numThreads: 2,
     backend: "best-onnx",
   };
@@ -54,7 +53,6 @@ class _MLSuggest {
   NER_OPTIONS = {
     taskName: /** @type {const} */ ("token-classification"),
     featureId: /** @type {const} */ ("suggest-NER"),
-    timeoutMS: -1,
     numThreads: 2,
     backend: "best-onnx",
   };

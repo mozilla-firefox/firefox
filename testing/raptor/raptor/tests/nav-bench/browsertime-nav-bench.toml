@@ -35,11 +35,11 @@ fission.bfcacheInParent=false
 browser.sessionhistory.max_total_viewers=0
 network.http.http3.enable=false
 network.http.altsvc.enabled=false
+gfx.font_loader.delay=0
 """
 
 # Composite test: one browser launch loads all sites in sequence.
 #
-#   wait 30s        -> initial idle / browser warmup
 #   per site:
 #     measure "<site>-load"     -> initial navigation (every site)
 #   bbc, ddg only:
@@ -62,8 +62,6 @@ playback_manifests_dir = "nav-bench"
 playback_pageset_manifest = "mitm12-darwin-firefox-amazon-nav.manifest,mitm12-darwin-firefox-bbc-nav.manifest,mitm12-darwin-firefox-duckduckgo-nav.manifest,mitm12-darwin-firefox-facebook-nav.manifest,mitm12-darwin-firefox-google-docs-nav.manifest,mitm12-darwin-firefox-google-nav.manifest,mitm12-darwin-firefox-reddit-nav.manifest,mitm12-darwin-firefox-wikipedia-nav.manifest,mitm12-darwin-firefox-yahoo-nav.manifest"
 test_url = "about:blank"
 test_cmds = [
-    ["wait.byTime", "30000"],
-
     ["measure.start", "google-nav-load"],
     ["navigate", "https://www.google.com/"],
     ["wait.byTime", "2000"],

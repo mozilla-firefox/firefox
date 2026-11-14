@@ -550,7 +550,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Agora não</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Pular</string>
+  <string name="nova_onboarding_skip_button">Pular</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Prepare-se para se libertar</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

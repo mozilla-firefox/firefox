@@ -6,6 +6,7 @@
 
 package org.mozilla.fenix.components.toolbar
 
+import android.app.Application
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDirections
@@ -42,6 +43,8 @@ import mozilla.components.browser.state.search.RegionState
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.ContentState
+import mozilla.components.browser.state.state.PictureInPictureSession
+import mozilla.components.browser.state.state.PictureInPictureWindowState
 import mozilla.components.browser.state.state.SearchState
 import mozilla.components.browser.state.state.SecurityInfo
 import mozilla.components.browser.state.state.TabSessionState
@@ -93,6 +96,7 @@ import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
 import mozilla.components.feature.listentopage.settings.ListenEnabledState
 import mozilla.components.feature.listentopage.settings.ListenSettings
+import mozilla.components.feature.pictureinpicture.PictureInPictureUseCases
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.session.TrackingProtectionUseCases
 import mozilla.components.feature.summarize.R as summariesR
@@ -174,6 +178,7 @@ import org.mozilla.fenix.components.toolbar.DisplayActions.ShortcutLongClicked
 import org.mozilla.fenix.components.toolbar.DisplayActions.StopRefreshClicked
 import org.mozilla.fenix.components.toolbar.DisplayActions.SummarizeClicked
 import org.mozilla.fenix.components.toolbar.DisplayActions.TranslateClicked
+import org.mozilla.fenix.components.toolbar.PageEndActionsInteractions.PictureInPictureClicked
 import org.mozilla.fenix.components.toolbar.PageEndActionsInteractions.ReaderModeClicked
 import org.mozilla.fenix.components.toolbar.PageOriginInteractions.OriginClicked
 import org.mozilla.fenix.components.toolbar.TabCounterInteractions.AddNewPrivateTab
@@ -194,6 +199,7 @@ import org.mozilla.fenix.translations.TranslationsEnabledSettings
 import org.mozilla.fenix.utils.Settings
 import org.mozilla.fenix.utils.Stories.markAsOpenedFromHomeScreen
 import org.mozilla.fenix.utils.Stories.markAsOpenedFromStoriesScreen
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -3195,6 +3201,43 @@ class BrowserToolbarMiddlewareTest {
     }
 
     @Test
+    fun `WHEN clicking the picture-in-picture button THEN the video of the selected tab is requested`() =
+        runTest(testDispatcher) {
+            val currentTab = createTab("test.com")
+            val browserStore = BrowserStore(BrowserState(tabs = listOf(currentTab), selectedTabId = currentTab.id))
+            val toolbarStore = buildStore(buildMiddleware(browserStore = browserStore))
+
+            toolbarStore.dispatch(PictureInPictureClicked(isActive = false))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(currentTab.id, browserStore.state.pictureInPictureWindow.requestedTabId)
+            assertNull(shadowOf(testContext as Application).nextStartedActivity)
+        }
+
+    @Test
+    fun `GIVEN the video of the selected tab is in picture-in-picture WHEN clicking the picture-in-picture button THEN the window is closed`() =
+        runTest(testDispatcher) {
+            val currentTab = createTab("test.com")
+            val browserStore =
+                BrowserStore(
+                    BrowserState(
+                        tabs = listOf(currentTab),
+                        selectedTabId = currentTab.id,
+                        pictureInPictureWindow =
+                            PictureInPictureWindowState(
+                                session = PictureInPictureSession(currentTab.id, mockk<EngineSession>(relaxed = true))
+                            ),
+                    )
+                )
+            val toolbarStore = buildStore(buildMiddleware(browserStore = browserStore))
+
+            toolbarStore.dispatch(PictureInPictureClicked(isActive = true))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertNull(browserStore.state.pictureInPictureWindow.session)
+        }
+
+    @Test
     fun `GIVEN translation not done WHEN building Translate action THEN returns DEFAULT Translate ActionButton`() {
         val pageTranslationStatus: PageTranslationStatus =
             mockk(relaxed = true) {
@@ -4571,6 +4614,7 @@ class BrowserToolbarMiddlewareTest {
         bookmarksStorage: BookmarksStorage = this.bookmarksStorage,
         useCases: UseCases = this.useCases,
         sessionUseCases: SessionUseCases = SessionUseCases(browserStore),
+        pictureInPictureUseCases: PictureInPictureUseCases = PictureInPictureUseCases(browserStore),
         shareUseCases: ShareUseCases = this.shareUseCases,
         nimbusComponents: NimbusComponents = this.nimbusComponents,
         clipboard: ClipboardHandler = this.clipboard,
@@ -4599,6 +4643,7 @@ class BrowserToolbarMiddlewareTest {
             trackingProtectionUseCases = trackingProtectionUseCases,
             useCases = useCases,
             sessionUseCases = sessionUseCases,
+            pictureInPictureUseCases = pictureInPictureUseCases,
             shareUseCases = shareUseCases,
             nimbusComponents = nimbusComponents,
             clipboard = clipboard,

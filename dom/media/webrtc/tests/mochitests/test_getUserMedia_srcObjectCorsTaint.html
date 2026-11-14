@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <script type="application/javascript" src="mediaStreamPlayback.js"></script>
+  <script type="application/javascript" src="srcObjectCorsTaint.js"></script>
+</head>
+<body>
+<pre id="test">
+<script type="application/javascript">
+// A peerIdentity-isolated stream must not be readable by content JS. Loading it
+// through a <video> that previously completed a CORS-enabled URL load must not
+// make its frames readable.
+createHTML({
+  title: "A media element switched to a peerIdentity stream must not expose its frames",
+  bug: "2054640",
+});
+
+runTest(async () => {
+  await pushPrefs(["dom.media.webcodecs.enabled", true]);
+
+  // Create a peerIdentity-isolated fake-camera stream.
+  const isolated = await getUserMedia({ video: true, peerIdentity: "user@example.com" });
+
+  // Verify that reads from the isolated stream are blocked.
+  const control = document.createElement("video");
+  control.muted = true;  // allow play() without a user gesture (autoplay policy)
+  control.srcObject = isolated;
+  await control.play();
+  await assertBlocked(control, "control");
+
+  // Complete a CORS-enabled same-origin URL load on a second element.
+  const primed = document.createElement("video");
+  primed.muted = true;  // allow play() without a user gesture (autoplay policy)
+  primed.crossOrigin = "anonymous";
+  primed.preload = "metadata";
+  primed.src = "/tests/dom/media/test/gizmo.mp4";
+  await new Promise((resolve, reject) => {
+    primed.onloadeddata = resolve;
+    primed.onerror = () => reject(new Error("priming src load must succeed but failed"));
+  });
+
+  // Replace the URL source with the isolated stream.
+  primed.srcObject = isolated;
+  await primed.play();
+
+  // The earlier CORS-enabled load must not make the isolated stream readable.
+  await assertBlocked(primed, "primed");
+
+  isolated.getTracks().forEach(track => track.stop());
+});
+</script>
+</pre>
+</body>
+</html>

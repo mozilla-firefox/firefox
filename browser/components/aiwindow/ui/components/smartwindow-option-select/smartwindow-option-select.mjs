@@ -17,7 +17,11 @@ import "chrome://global/content/elements/panel-list.mjs";
 /**
  * @typedef {object} OptionItem
  * @property {string} value - Value reported when the option is selected
- * @property {string} l10nId - Fluent ID for the option label
+ * @property {string} [l10nId] - Fluent ID for the option label
+ * @property {string} [label] - Plain-text label for non-localizable names.
+ *   Use it instead of l10nId; an option shouldn't switch between the two
+ *   across renders.
+ * @property {string} [buttonLabel] - Plain-text closed-button label
  * @property {object} [l10nArgs] - Fluent args for the option label
  * @property {string} [descriptionL10nId] - Fluent ID for a secondary line
  * @property {object} [descriptionL10nArgs] - Fluent args for the secondary line
@@ -138,6 +142,9 @@ export class SmartwindowOptionSelect extends MozLitElement {
         type="default"
         class="option-select-button"
         .menuId=${this._menuId}
+        .label=${this.#selectedOption?.buttonLabel ??
+        this.#selectedOption?.label ??
+        ""}
         data-l10n-id=${ifDefined(buttonL10n?.id)}
         data-l10n-args=${this.#l10nArgs(buttonL10n?.args)}
         .iconSrc=${this.#caretIcon}
@@ -175,9 +182,10 @@ export class SmartwindowOptionSelect extends MozLitElement {
                   <span
                     id=${this.#itemId(index, "label")}
                     class="option-item-label"
-                    data-l10n-id=${option.l10nId}
+                    data-l10n-id=${ifDefined(option.l10nId)}
                     data-l10n-args=${this.#l10nArgs(option.l10nArgs)}
-                  ></span>
+                    >${option.label ?? nothing}</span
+                  >
                   ${option.secondaryLabelL10nId
                     ? html`<span
                         id=${this.#itemId(index, "secondary")}

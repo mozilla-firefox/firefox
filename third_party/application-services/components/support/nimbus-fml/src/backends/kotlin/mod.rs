@@ -1,12 +1,13 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use askama::Template;
 
 use crate::command_line::commands::GenerateStructCmd;
 use crate::error::{FMLError, Result};
 use crate::frontend::AboutBlock;
 use crate::intermediate_representation::FeatureManifest;
-use askama::Template;
 
 mod gen_structs;
 
@@ -50,7 +51,7 @@ pub(crate) fn generate_struct(manifest: &FeatureManifest, cmd: &GenerateStructCm
             "about".to_string(),
             format!(
                 "The `about` block is missing a valid `android` or `kotlin` entry: {}",
-                &cmd.manifest
+                cmd.manifest
             ),
         ));
     }
@@ -78,7 +79,7 @@ pub(crate) fn generate_struct(manifest: &FeatureManifest, cmd: &GenerateStructCm
 ))]
 pub mod test {
     use crate::util::{join, pkg_dir, sdk_dir};
-    use anyhow::{bail, Result};
+    use anyhow::{Result, bail};
     use std::path::Path;
     use std::process::Command;
 

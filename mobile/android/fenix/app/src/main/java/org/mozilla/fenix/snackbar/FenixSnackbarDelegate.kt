@@ -231,7 +231,9 @@ class FenixSnackbarDelegate(
                 Action(
                     label = actionText,
                     onClick = {
-                        listener.invoke(snackBarParentView)
+                        if (snackbarHostState != null || snackBarParentView.isAttachedToWindow) {
+                            listener.invoke(snackBarParentView)
+                        }
                     },
                 )
             } else {

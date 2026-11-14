@@ -3703,7 +3703,11 @@ html {
         @include checkbox-end-grid;
         @include multi-select-card-surface;
 
-        padding: var(--space-xxlarge);
+        // Using fixed padding here instead of --space-xxlarge, since
+        // the token is dependent on the font size of the root. Preonboarding
+        // and onboarding are rendered into different roots (preonboarding is
+        // a modal) and this was computing differently across the surfaces.
+        padding: 22px;
         font-size: 16px;
       }
     }
@@ -3952,10 +3956,10 @@ html {
 
   // The tiles container is inset from the content column, but the action
   // buttons are not, so a full-width primary button overhangs the tiles it
-  // sits under. Put the buttons on the same inset when the screen has tiles.
-  // Buttons that size to their label are centred either way, so this only
-  // moves one that was already stretching the full column.
-  .main-content-inner:has(#content-tiles-container) .action-buttons {
+  // sits under. Put the buttons on the same inset when a center-large screen
+  // has tiles. Buttons that size to their label are centred either way, so
+  // this only moves one that was already stretching the full column.
+  .screen[pos='center-large'] .main-content-inner:has(#content-tiles-container) .action-buttons {
     margin-inline: 48px;
 
     // The gutter that separates side-by-side buttons would push a lone

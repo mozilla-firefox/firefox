@@ -26,6 +26,7 @@ import mozilla.components.feature.media.ext.getArtistOrUrl
 import mozilla.components.feature.media.ext.getTitleOrUrl
 import mozilla.components.feature.media.service.AbstractMediaSessionService
 import mozilla.components.support.base.ids.SharedIdsHelper
+import mozilla.components.support.utils.SwitchTabIntent
 
 /** Helper to display a notification for web content playing media. */
 @OptIn(UnstableApi::class)
@@ -79,7 +80,7 @@ private fun SessionState.toNotificationData(
 ): NotificationData {
     val intent =
         context.packageManager.getLaunchIntentForPackage(context.packageName)?.also {
-            it.action = AbstractMediaSessionService.ACTION_SWITCH_TAB
+            it.action = SwitchTabIntent.ACTION_SWITCH_TAB
         }
 
     val mediaState = mediaSessionState ?: return NotificationData()
@@ -118,7 +119,7 @@ private fun SessionState.toNotificationData(
             PendingIntent.getActivity(
                 context,
                 SharedIdsHelper.getIdForTag(context, AbstractMediaSessionService.PENDING_INTENT_TAG),
-                intent?.apply { putExtra(AbstractMediaSessionService.EXTRA_TAB_ID, id) },
+                intent?.apply { putExtra(SwitchTabIntent.EXTRA_TAB_ID, id) },
                 getUpdateNotificationFlag(),
             ),
     )

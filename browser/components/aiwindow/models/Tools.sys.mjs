@@ -36,7 +36,7 @@ import {
   CountVectorizer,
   cosSim,
 } from "chrome://global/content/ml/NLPUtils.sys.mjs";
-import { EmbeddingsGenerator } from "chrome://global/content/ml/EmbeddingsGenerator.sys.mjs";
+import { embeddingsGeneratorFactory } from "chrome://global/content/ml/EmbeddingsGenerator.sys.mjs";
 import { SmartTabGroupingManager } from "moz-src:///browser/components/tabbrowser/SmartTabGrouping.sys.mjs";
 import { UI_TYPES } from "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs";
 
@@ -94,7 +94,7 @@ const tokenizer = new CountVectorizer();
 let _embeddingsGenerator = null;
 function getEmbeddingsGenerator() {
   if (!_embeddingsGenerator) {
-    _embeddingsGenerator = EmbeddingsGenerator.forGeneral();
+    _embeddingsGenerator = embeddingsGeneratorFactory.forGeneral();
   }
   return _embeddingsGenerator;
 }

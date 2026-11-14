@@ -12,7 +12,6 @@
     <ID>UndocumentedPublicClass:ArgumentProcessor.kt$CliArgs</ID>
     <ID>UndocumentedPublicClass:Context.kt$Context</ID>
     <ID>UndocumentedPublicClass:Context.kt$Resources</ID>
-    <ID>UndocumentedPublicClass:Context.kt$SharedPreferences</ID>
     <ID>UndocumentedPublicClass:DatabaseLoginsStorage.kt$KeyRegenerationEventReason</ID>
     <ID>UndocumentedPublicClass:Drawable.kt$Drawable</ID>
     <ID>UndocumentedPublicClass:FeatureHolder.kt$NimbusFeatureException : Exception</ID>
@@ -82,15 +81,6 @@
     <ID>UndocumentedPublicFunction:Context.kt$Resources$fun getDrawable(resId: Int, theme: String)</ID>
     <ID>UndocumentedPublicFunction:Context.kt$Resources$fun getIdentifier(resName: String, defType: String, packageName: String): Int?</ID>
     <ID>UndocumentedPublicFunction:Context.kt$Resources$fun getResourceName(resId: Int)</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun clear()</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun contains(key: String): Boolean</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun getBoolean(key: String, def: Boolean): Boolean</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun getInt(key: String, def: Int): Int</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun getString(key: String, def: String): String</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun put(key: String, value: Boolean)</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun put(key: String, value: Int)</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun put(key: String, value: String)</ID>
-    <ID>UndocumentedPublicFunction:Context.kt$SharedPreferences$fun remove(key: String)</ID>
     <ID>UndocumentedPublicFunction:CreateKey.kt$fun createKey()</ID>
     <ID>UndocumentedPublicFunction:DatabaseLoginsStorage.kt$DatabaseLoginsStorage$@Throws(LoginsApiException::class) fun add(entry: LoginEntry): Login</ID>
     <ID>UndocumentedPublicFunction:DatabaseLoginsStorage.kt$DatabaseLoginsStorage$@Throws(LoginsApiException::class) fun addOrUpdate(entry: LoginEntry): Login</ID>

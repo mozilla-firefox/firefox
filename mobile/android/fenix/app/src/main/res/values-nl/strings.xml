@@ -550,7 +550,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Niet nu</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Overslaan</string>
+  <string name="nova_onboarding_skip_button">Overslaan</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Maak u klaar om vrij te surfen</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -690,7 +690,7 @@
   <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for private search and for voice search -->
   <string name="search_bar_widget_description">Zoekbalk met privé en gesproken zoekopdrachten</string>
   <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for image search, private search and voice search -->
-  <string name="search_bar_with_lens_widget_description">Zoekbalk met afbeelding, privé en gesproken zoekopdrachten</string>
+  <string name="search_bar_with_lens_widget_description">Zoekbalk met afbeeldings-, privé- en gesproken zoekopdrachten</string>
   <!-- Widget description in the widget picker screen for the compact search bar widget -->
   <string name="compact_search_bar_widget_description">Compacte zoekbalk</string>
   <!--
@@ -2071,7 +2071,7 @@
   <!-- Unsubmitted crash dialog title, %s is the name of the app (for example "Firefox"). -->
   <string name="unsubmitted_crash_dialog_title_2">%s is gecrasht. Een rapport verzenden?</string>
   <!-- Single unsubmitted crash matching remote settings. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="unsubmitted_crash_requested_by_devs_dialog_title">U hebt een niet-verzonden crashrapport in relatie tot crashes die worden onderzocht. Door dit te verzenden, helpt het ons %1$s te verbeteren. Als u deze melding sluit, wordt dit rapport genegeerd.</string>
+  <string name="unsubmitted_crash_requested_by_devs_dialog_title">U hebt een niet-verzonden crashrapport in relatie tot crashes die worden onderzocht. Als u dit verzendt, helpt u ons %1$s te verbeteren. Als u deze melding sluit, wordt dit rapport genegeerd.</string>
   <!-- Multiple unsubmitted crashes matching remote settings. %1$d is the number of unsent crash reports, %2$s is the name of the app (for example "Firefox"). -->
   <string name="unsubmitted_crashes_requested_by_devs_dialog_title">U hebt niet-verzonden crashrapporten (%1$d) in relatie tot crashes die worden onderzocht. Als u deze verzendt, helpt u ons %2$s te verbeteren. Als u deze melding sluit, worden deze rapporten genegeerd.</string>
   <!-- Unsubmitted crash dialog checkbox label for automatically sending reports in the future -->
@@ -2505,7 +2505,7 @@
   <!-- Preference for not taking the short survey. -->
   <string name="preferences_not_take_survey">Nee bedankt</string>
   <!-- Error message shown in a Toast when the system fails to trigger the device uninstallation prompt. -->
-  <string name="uninstall_survey_error_failed">Het openen van de prompt voor het de-installeren van het systeem is mislukt; gebruik rechtstreeks de actie voor de-installatie van het systeem.</string>
+  <string name="uninstall_survey_error_failed">Het openen van de de-installatieprompt van het systeem is mislukt; gebruik rechtstreeks de actie voor de-installatie van het systeem.</string>
   <!--
     Snackbar
 
@@ -4111,7 +4111,7 @@
   <!-- Text shown in the survey title for printing microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_survey_printing_title" tools:ignore="BrandUsage,UnusedResources">Hoe tevreden bent u met afdrukken in Firefox?</string>
   <!-- Text shown in the survey title for homepage microsurvey. Note: The word "Firefox" should NOT be translated. -->
-  <string name="microsurvey_homepage_title" tools:ignore="BrandUsage,UnusedResources">Hoe tevreden bent u met uw Firefox Startpagina-ervaring?</string>
+  <string name="microsurvey_homepage_title" tools:ignore="BrandUsage,UnusedResources">Hoe tevreden bent u met uw Firefox-startpagina?</string>
   <!-- Text shown in the survey title for search experience microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_search_title" tools:ignore="BrandUsage,UnusedResources">Hoe tevreden bent u met de zoekervaring in Firefox?</string>
   <!-- Text shown in the survey title for sync experience microsurvey. Note: The word "Firefox" should NOT be translated. -->
@@ -4125,7 +4125,7 @@
   -->
   <string name="microsurvey_uninstall_survey_title">Uw feedback is belangrijk. Waarom de-installeert u?</string>
   <!-- Uninstall survey answer option -->
-  <string name="uninstall_survey_option_1_v2">De browser is traag en onbetrouwbaar</string>
+  <string name="uninstall_survey_option_1_v2">De browser is traag of onbetrouwbaar</string>
   <!-- Uninstall survey answer option -->
   <string name="uninstall_survey_option_2_v2">Websites werkten niet goed</string>
   <!-- Uninstall survey answer option -->

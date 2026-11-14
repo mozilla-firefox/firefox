@@ -1793,9 +1793,8 @@ public interface RemoteSettingsServiceInterface {
     fun `makeClient`(`collectionName`: kotlin.String): RemoteSettingsClient
     
     /**
-     * Set the telemetry implementation used to record Glean metrics.
-     * This should be set to a real implementation (eg. Kotlin, Swift).
-     * If not set, all metric recording is a no-op.
+     * Set the telemetry implementation used to record Glean metrics (eg. Kotlin, Swift).
+     * If `glean-sym` is enabled, this is not necessary and will be ignored.
      */
     fun `setTelemetry`(`telemetry`: RemoteSettingsTelemetry)
     
@@ -1984,9 +1983,8 @@ open class RemoteSettingsService: Disposable, AutoCloseable, RemoteSettingsServi
 
     
     /**
-     * Set the telemetry implementation used to record Glean metrics.
-     * This should be set to a real implementation (eg. Kotlin, Swift).
-     * If not set, all metric recording is a no-op.
+     * Set the telemetry implementation used to record Glean metrics (eg. Kotlin, Swift).
+     * If `glean-sym` is enabled, this is not necessary and will be ignored.
      */override fun `setTelemetry`(`telemetry`: RemoteSettingsTelemetry)
         = 
     callWithHandle {

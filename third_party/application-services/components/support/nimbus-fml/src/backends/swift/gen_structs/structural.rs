@@ -1,15 +1,13 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::fmt::Display;
 
-use super::common::{self, code_type};
+use crate::backends::swift::gen_structs::common::{self, code_type};
+use crate::backends::{CodeOracle, CodeType, TypeIdentifier};
 use crate::backends::{LiteralRenderer, VariablesType};
-use crate::{
-    backends::{CodeOracle, CodeType, TypeIdentifier},
-    intermediate_representation::Literal,
-};
+use crate::intermediate_representation::Literal;
 
 pub(crate) struct OptionalCodeType {
     inner: TypeIdentifier,
@@ -401,7 +399,9 @@ impl CodeType for ListCodeType {
     fn variables_type(&self, _oracle: &dyn CodeOracle) -> VariablesType {
         // Our current implementation of Variables doesn't have a getListList() or getListMap().
         // We do allow getVariablesList and getVariablesMap, but not an vars.asList().
-        unimplemented!("Lists and maps of lists aren't supported. The workaround is to use a list of map of list holder objects")
+        unimplemented!(
+            "Lists and maps of lists aren't supported. The workaround is to use a list of map of list holder objects"
+        )
     }
 
     fn defaults_type(&self, oracle: &dyn CodeOracle) -> String {
@@ -463,10 +463,10 @@ mod unit_tests {
 
     use serde_json::json;
 
+    use crate::backends::TypeIdentifier;
     use crate::backends::swift::gen_structs::{
         enum_::EnumCodeType, object::ObjectCodeType, primitives::StringCodeType,
     };
-    use crate::backends::TypeIdentifier;
 
     use super::*;
 

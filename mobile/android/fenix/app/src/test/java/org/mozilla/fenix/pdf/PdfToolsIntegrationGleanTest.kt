@@ -12,6 +12,7 @@ import io.mockk.slot
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import mozilla.components.browser.state.engine.EngineMiddleware
@@ -63,8 +64,11 @@ class PdfToolsIntegrationGleanTest {
         integration(store = storeOf(tab.copy(engineState = EngineState(engineSession = engineSession))))
 
     private fun PdfToolsIntegration.addSignature() {
+        start()
         handleSignClick()
         handleSignAddClick()
+        testDispatcher.scheduler.advanceTimeBy(ADDING_SIGNATURE_WAIT_STATE_MS.milliseconds)
+        testDispatcher.scheduler.runCurrent()
     }
 
     @Test

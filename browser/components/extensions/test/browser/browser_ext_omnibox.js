@@ -420,11 +420,37 @@ add_task(async function () {
         keyword: keyword,
       },
     },
+    background() {
+      browser.test.onMessage.addListener(async () => {
+        await browser.test.assertRejects(
+          browser.omnibox.setDefaultSuggestion({ description: "hello" }),
+          "An unexpected error occurred",
+          "setDefaultSuggestion rejects with a sanitized Error when the keyword failed to register"
+        );
+        browser.test.sendMessage("default-suggestion-rejected");
+      });
+    },
   });
 
   await extension2.startup();
 
   // Stop monitoring the console and confirm the correct errors are logged.
+  SimpleTest.endMonitorConsole();
+  await waitForConsole;
+
+  // The keyword is owned by the first extension, so the second extension never
+  // registered one and setDefaultSuggestion cannot succeed.
+  // we don't remember the keyword when startup fails, hence "undefined"
+  // @see https://searchfox.org/firefox-main/rev/a9a644f66adb0cbb132f042bb7df24032f56346a/browser/components/extensions/parent/ext-omnibox.js#98-99
+  waitForConsole = new Promise(resolve => {
+    SimpleTest.monitorConsole(resolve, [
+      {
+        message: /The keyword provided is not registered: "undefined"/,
+      },
+    ]);
+  });
+  extension2.sendMessage("set-default-suggestion");
+  await extension2.awaitMessage("default-suggestion-rejected");
   SimpleTest.endMonitorConsole();
   await waitForConsole;
 

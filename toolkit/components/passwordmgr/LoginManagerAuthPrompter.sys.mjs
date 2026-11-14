@@ -150,8 +150,7 @@ LoginManagerAuthPromptFactory.prototype = {
     this._pendingSavePrompts.set(browser, prompt);
   },
 
-  _setPendingPrompt(prompt, hashKey) {
-    let browser = prompt.prompter.browser || this._noBrowser;
+  _setPendingPrompt(browser, prompt, hashKey) {
     let hashToPrompt = this._pendingPrompts.get(browser);
     if (!hashToPrompt) {
       hashToPrompt = new Map();
@@ -160,8 +159,7 @@ LoginManagerAuthPromptFactory.prototype = {
     hashToPrompt.set(hashKey, prompt);
   },
 
-  _removePendingPrompt(prompt, hashKey) {
-    let browser = prompt.prompter.browser || this._noBrowser;
+  _removePendingPrompt(browser, hashKey) {
     let hashToPrompt = this._pendingPrompts.get(browser);
     if (!hashToPrompt) {
       return;
@@ -211,7 +209,10 @@ LoginManagerAuthPromptFactory.prototype = {
   },
 
   async _doAsyncPrompt(prompt, hashKey) {
-    this._setPendingPrompt(prompt, hashKey);
+    // The prompter's browser can change while the prompt is pending, so the
+    // entry has to be removed from the bucket it was added to.
+    let browser = prompt.prompter.browser || this._noBrowser;
+    this._setPendingPrompt(browser, prompt, hashKey);
 
     // UI might be busy due to the primary password dialog. Wait for it to close.
     await this._waitForLoginsUI(prompt);
@@ -238,7 +239,7 @@ LoginManagerAuthPromptFactory.prototype = {
       }
     }
 
-    this._removePendingPrompt(prompt, hashKey);
+    this._removePendingPrompt(browser, hashKey);
 
     // Handle callbacks
     for (var consumer of prompt.consumers) {

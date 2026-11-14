@@ -30,6 +30,20 @@ support-files = [
 
 ["browser_chat_shortcuts.js"]
 
+["browser_chat_shortcuts_callout.js"]
+
+["browser_chat_shortcuts_copy.js"]
+
+["browser_chat_shortcuts_dropdown.js"]
+
+["browser_chat_shortcuts_more_actions.js"]
+
+["browser_chat_shortcuts_search.js"]
+
+["browser_chat_shortcuts_suppression.js"]
+
+["browser_chat_shortcuts_telemetry.js"]
+
 ["browser_chat_sidebar.js"]
 
 ["browser_chat_sidebar_permissions.js"]

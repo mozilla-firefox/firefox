@@ -712,6 +712,226 @@ add_task(async function test_ml_engine_run_outlasts_timeout() {
 });
 
 /**
+ * An engine keeps serving runs after the inference process shuts it down for
+ * being idle.
+ */
+add_task(async function test_ml_engine_reopens_after_idle_shutdown() {
+  const { cleanup, remoteClients } = await setup();
+
+  const engineInstance = await createEngine({
+    taskName: "moz-echo",
+    timeoutMS: 100,
+  });
+  const firstRun = engineInstance.run({ data: "Before going idle" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await firstRun;
+
+  await TestUtils.waitForCondition(
+    () => EngineProcess.areAllEnginesTerminated(),
+    "The idle engine shut down the inference process"
+  );
+  Assert.equal(
+    engineInstance.engineStatus,
+    "suspended",
+    "The engine reports it will reopen on the next run"
+  );
+  const runAfterIdle = engineInstance.run({ data: "After going idle" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  Assert.equal(
+    (await runAfterIdle).output.echo,
+    "After going idle",
+    "run() reopens the engine after an idle shutdown"
+  );
+
+  await TestUtils.waitForCondition(
+    () => EngineProcess.areAllEnginesTerminated(),
+    "The reopened engine also shuts down when idle"
+  );
+  const generator = engineInstance.runWithGenerator({
+    data: "After going idle twice",
+  });
+  const generatorDone = (async () => {
+    let step;
+    do {
+      step = await generator.next();
+    } while (!step.done);
+    return step.value;
+  })();
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  Assert.equal(
+    (await generatorDone).output.echo,
+    "After going idle twice",
+    "runWithGenerator() reopens the engine after a second idle shutdown"
+  );
+
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+});
+
+/**
+ * An engine closed by terminate() stays closed.
+ */
+add_task(async function test_ml_engine_terminated_does_not_reopen() {
+  const { cleanup, remoteClients } = await setup();
+
+  const engineInstance = await createEngine({
+    taskName: "moz-echo",
+    timeoutMS: 100,
+  });
+  const firstRun = engineInstance.run({ data: "Before terminating" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await firstRun;
+
+  await engineInstance.terminate();
+  await Assert.rejects(
+    engineInstance.run({ data: "After terminating" }),
+    /Port does not exist/,
+    "A terminated engine does not reopen"
+  );
+
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+});
+
+/**
+ * An idle engine runs on the live engine with the same options instead of
+ * replacing it.
+ */
+add_task(async function test_ml_engine_reopen_reuses_live_engine() {
+  const { cleanup, remoteClients } = await setup();
+
+  const idleEngine = await createEngine({
+    taskName: "moz-echo",
+    timeoutMS: 100,
+  });
+  const firstRun = idleEngine.run({ data: "Before going idle" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await firstRun;
+  await TestUtils.waitForCondition(
+    () => EngineProcess.areAllEnginesTerminated(),
+    "The idle engine shut down the inference process"
+  );
+
+  const liveEngine = await createEngine({
+    taskName: "moz-echo",
+    timeoutMS: -1,
+  });
+  Assert.notEqual(
+    liveEngine,
+    idleEngine,
+    "createEngine returns a second engine"
+  );
+  const liveRun = liveEngine.run({ data: "Live engine" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await liveRun;
+
+  Assert.equal(
+    (await idleEngine.run({ data: "Reusing the live engine" })).output.echo,
+    "Reusing the live engine",
+    "The idle engine serves the run"
+  );
+  Assert.equal(liveEngine.engineStatus, "ready", "The live engine stays ready");
+  Assert.equal(
+    (await liveEngine.run({ data: "Still live" })).output.echo,
+    "Still live",
+    "The live engine still runs"
+  );
+
+  await idleEngine.terminate();
+  Assert.equal(
+    liveEngine.engineStatus,
+    "ready",
+    "Terminating the old handle leaves the engine it reused ready"
+  );
+  Assert.equal(
+    (await liveEngine.run({ data: "Live after the old handle terminated" }))
+      .output.echo,
+    "Live after the old handle terminated",
+    "The engine the old handle reused still runs"
+  );
+
+  await EngineProcess.destroyMLEngine();
+  await cleanup();
+});
+
+add_task(async function test_ml_engine_terminate_leaves_replacement_running() {
+  const { cleanup, remoteClients } = await setup();
+  try {
+    const idleEngine = await createEngine({
+      taskName: "moz-echo",
+      timeoutMS: 100,
+      numThreads: 1,
+    });
+    const firstRun = idleEngine.run({ data: "Before going idle" });
+    await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+    await firstRun;
+    await TestUtils.waitForCondition(
+      () => EngineProcess.areAllEnginesTerminated(),
+      "The idle engine shut down the inference process"
+    );
+
+    const replacement = await createEngine({
+      taskName: "moz-echo",
+      timeoutMS: -1,
+      numThreads: 2,
+    });
+    const replacementRun = replacement.run({ data: "Replacement engine" });
+    await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+    await replacementRun;
+
+    await idleEngine.terminate();
+    Assert.equal(
+      (await replacement.run({ data: "Still live" })).output.echo,
+      "Still live",
+      "Terminating the old handle leaves the distinct replacement usable"
+    );
+  } finally {
+    await EngineProcess.destroyMLEngine();
+    await cleanup();
+  }
+});
+
+add_task(async function test_ml_engine_terminate_during_reopen() {
+  for (const useGenerator of [false, true]) {
+    const { cleanup, remoteClients } = await setup();
+    try {
+      const engine = await createEngine({
+        taskName: "moz-echo",
+        timeoutMS: 100,
+      });
+      const firstRun = engine.run({ data: "Before going idle" });
+      await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+      await firstRun;
+      await TestUtils.waitForCondition(
+        () => EngineProcess.areAllEnginesTerminated(),
+        "The idle engine shut down the inference process"
+      );
+
+      const request = { data: "Terminated during recovery" };
+      const run = useGenerator
+        ? engine.runWithGenerator(request).next()
+        : engine.run(request);
+      run.catch(() => {});
+      const termination = engine.terminate(true);
+      await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+      await termination;
+      await Assert.rejects(
+        run,
+        /terminated/,
+        `${useGenerator ? "runWithGenerator()" : "run()"} rejects when terminated during recovery`
+      );
+      await TestUtils.waitForCondition(
+        () => EngineProcess.areAllEnginesTerminated(),
+        "Termination also shuts down the reopened engine"
+      );
+    } finally {
+      await EngineProcess.destroyMLEngine();
+      await cleanup();
+    }
+  }
+});
+
+/**
  * Tests that overlapping runs both complete when they outlast the keep alive timeout.
  */
 add_task(async function test_ml_engine_overlapping_runs_outlast_timeout() {

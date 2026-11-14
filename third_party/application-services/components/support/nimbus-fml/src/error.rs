@@ -1,7 +1,6 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- * */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use crate::intermediate_representation::ModuleId;
 
@@ -40,7 +39,9 @@ pub enum FMLError {
     ValidationError(String, String),
     #[error("Type Parsing Error: {0}")]
     TypeParsingError(String),
-    #[error("Invalid Channel error: The channel `{0}` is specified, but only {1:?} are supported for the file")]
+    #[error(
+        "Invalid Channel error: The channel `{0}` is specified, but only {1:?} are supported for the file"
+    )]
     InvalidChannelError(String, Vec<String>),
 
     #[error("Problem with {0}: {1}")]

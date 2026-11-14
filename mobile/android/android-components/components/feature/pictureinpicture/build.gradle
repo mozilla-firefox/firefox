@@ -1,0 +1,38 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+plugins {
+    id 'com.android.library'
+    alias(libs.plugins.dependency.analysis)
+}
+
+android {
+    namespace = 'mozilla.components.feature.pictureinpicture'
+}
+
+dependencies {
+    implementation project(':components:browser-state')
+    implementation project(':components:concept-engine')
+    implementation project(':components:lib-state')
+    implementation project(':components:support-base')
+    implementation project(':components:support-utils')
+
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.lifecycle.common
+    implementation libs.kotlinx.coroutines
+
+    testImplementation project(':components:support-test')
+    testImplementation project(':components:support-test-libstate')
+
+    testImplementation libs.androidx.test.core
+    testImplementation libs.androidx.test.junit
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit4
+    testImplementation libs.kotlinx.coroutines.test
+    testImplementation libs.robolectric
+}
+
+apply from: '../../../common-config.gradle'
+apply from: '../../../publish.gradle'
+ext.configurePublish(config.componentsGroupId, project.name, project.ext.description)

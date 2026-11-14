@@ -97,6 +97,14 @@ export class A2UI {
 
     component.groups = this.#resolveArray(component.groups, [], dataModel);
 
+    // A single list sits beside its title rather than below it.
+    // Creation telemetry still reports the model's layout.
+    // Bug 2088273 decides how Glean reports these conversions.
+    const groups = component.groups.filter(group => group?.items?.length);
+    if (groups.length == 1 && !component.description) {
+      component.layout = "row";
+    }
+
     return component;
   }
 
@@ -262,10 +270,16 @@ export class A2UI {
   }
 
   /**
-   * Drops a Highlights block with no statements and turns one with a single
-   * statement into a TextBlock. The stored surface is not changed, so the
-   * block keeps its id.
+   * Drops a Highlights block with no statements. A titled block where any
+   * statement lacks a title or a body becomes a List, and a block with a
+   * single statement, or without a title, becomes a TextBlock. The stored
+   * surface is not changed, so the block keeps its id.
    *
+   * The List sits beside its title. Each statement with a title and a body
+   * becomes a group headed by its title, and the rest follow as one group
+   * without a heading. A List renders only plain text, so the statements'
+   * eyebrows and sources are dropped, and a block left with no text is
+   * dropped.
    * Link-click telemetry reports the converted block as a TextBlock.
    * Bug 2088273 decides how Glean reports these conversions.
    *
@@ -280,18 +294,63 @@ export class A2UI {
     if (!items.length) {
       return null;
     }
-    if (items.length > 1) {
+    if (component.title && !items.every(item => item.title && item.body)) {
+      return this.#highlightsToList(component, items);
+    }
+    if (items.length > 1 && component.title) {
       return component;
+    }
+    const references = items
+      .flatMap(item => item.sources?.items ?? [])
+      .filter(
+        (source, index, all) =>
+          httpUrl(source?.href) &&
+          all.findIndex(other => other?.href == source.href) == index
+      );
+    if (items.length > 1) {
+      // A TextBlock has one lead, so every statement becomes plain text.
+      return {
+        id: component.id,
+        component: "TextBlock",
+        lead: "",
+        paragraphs: items
+          .flatMap(item => [item.title, item.body])
+          .filter(Boolean),
+        references,
+      };
     }
     const [item] = items;
     return {
       id: component.id,
       component: "TextBlock",
-      lead: item.title || component.title || item.eyebrow || "",
+      lead: item.title || item.eyebrow || "",
       paragraphs: item.body ? [item.body] : [],
-      references: (item.sources?.items ?? []).filter(source =>
-        httpUrl(source?.href)
-      ),
+      references,
+    };
+  }
+
+  #highlightsToList(component, items) {
+    const groups = [];
+    const rest = [];
+    for (const item of items) {
+      if (item.title && item.body) {
+        groups.push({ heading: item.title, items: [{ text: item.body }] });
+      } else if (item.title || item.body) {
+        rest.push({ text: item.title || item.body });
+      }
+    }
+    if (rest.length) {
+      groups.push({ items: rest });
+    }
+    if (!groups.length) {
+      return null;
+    }
+    return {
+      id: component.id,
+      component: "List",
+      title: component.title,
+      groups,
+      layout: "row",
     };
   }
 

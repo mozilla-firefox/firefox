@@ -11,7 +11,6 @@
 {% macro render_constructor() -%}
 private constructor(
    private val _variables: Variables,
-   private val _prefs: SharedPreferences? = null,
    private val _defaults: Defaults)
 {% endmacro %}
 
@@ -28,13 +27,12 @@ private constructor(
 
    {#- A constructor for application tests to use.  #}
 
-   constructor(_variables: Variables = NullVariables.instance, _prefs: SharedPreferences? = null, {% for p in inner.props() %}
+   constructor(_variables: Variables = NullVariables.instance, {% for p in inner.props() %}
    {%- let t = p.typ() %}
       {{p.name()|var_name}}: {{ t|defaults_type_label }} = {{ t|literal(self, p.default(), "_variables.context") }}{% if !loop.last %},{% endif %}
    {%- endfor %}
    ) : this(
       _variables = _variables,
-      _prefs = _prefs,
       _defaults = Defaults({% for p in inner.props() %}
       {%- let nm = p.name()|var_name %}{{ nm }} = {{ nm }}{% if !loop.last %}, {% endif %}
       {%- endfor %})
@@ -47,29 +45,9 @@ private constructor(
    {%- let defaults = format!("_defaults.{}", prop_kt) %}
    {%- let getter = p.typ()|property(p.name(), "_variables", defaults) %}
   {{ p.doc()|comment("  ") }}
-   {%- if !p.has_prefs() %}
    val {{ prop_kt }}: {{ type_kt }} by lazy {
       {{ getter }}
    }
-   {%- else %}
-   val {{ prop_kt }}: {{ type_kt }}
-      get() =
-         {%- let prefs = "it" %}
-         {%- let key = p.pref_key().unwrap() %}
-         {{ prefs() }}?.let {
-            if ({{ prefs }}.contains({{ key|quoted }})) {
-               try {
-                  {{ p.typ()|preference_getter(prefs, key) }}
-               } catch (e:  ClassCastException) {
-                  // This only gets to here if the app has written the
-                  // wrong type to this preference.
-                  null
-               }
-            } else {
-               null
-            }
-         } ?: {{ getter }}
-   {%- endif %}
 {% endfor %}
 
    {#- toJSON #}
@@ -82,5 +60,3 @@ private constructor(
          )
       )
 {% endmacro %}
-
-{% macro prefs() %}this._prefs{% endmacro %}

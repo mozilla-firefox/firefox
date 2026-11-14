@@ -4,6 +4,8 @@
 
 #include "mozilla/net/CookieServiceChild.h"
 
+#include <memory>
+
 #include "Cookie.h"
 #include "CookieCommons.h"
 #include "CookieLogging.h"
@@ -15,15 +17,18 @@
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/ConsoleReportCollector.h"
+#include "mozilla/HashTable.h"
 #include "mozilla/LoadInfo.h"
 #include "mozilla/StaticPrefs_network.h"
 #include "mozilla/StoragePrincipalHelper.h"
 #include "mozilla/TimeStamp.h"
+#include "mozilla/UniquePtr.h"
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/dom/Document.h"
 #include "mozilla/dom/WindowGlobalChild.h"
 #include "mozilla/glean/NetwerkMetrics.h"
 #include "mozilla/ipc/URIUtils.h"
+#include "mozilla/mozalloc.h"
 #include "mozilla/net/HttpChannelChild.h"
 #include "mozilla/net/NeckoChannelParams.h"
 #include "mozilla/net/NeckoChild.h"
@@ -48,6 +53,197 @@ namespace mozilla {
 namespace net {
 
 static StaticRefPtr<CookieServiceChild> gCookieChildService;
+
+namespace cookie_list_detail {
+
+struct CookieLookupKey {
+  uint32_t mHash;
+  const nsACString& mName;
+  const nsACString& mHost;
+  const nsACString& mPath;
+};
+
+struct CookieHasher {
+  using Lookup = CookieLookupKey;
+  using Key = RefPtr<Cookie>;
+
+  static HashNumber hash(const Lookup& aLookup) { return aLookup.mHash; }
+
+  static bool match(const Key& aCookie, const Lookup& aLookup) {
+    return MatchesCookie(aCookie.get(), aLookup);
+  }
+
+  static bool MatchesArrayEntry(const Cookie* aCookie, const Lookup& aLookup) {
+    return aCookie->KeyHash() == aLookup.mHash &&
+           MatchesCookie(aCookie, aLookup);
+  }
+
+ private:
+  static bool MatchesCookie(const Cookie* aCookie, const Lookup& aLookup) {
+    return aCookie->Name().Equals(aLookup.mName) &&
+           aCookie->Host().Equals(aLookup.mHost) &&
+           aCookie->Path().Equals(aLookup.mPath);
+  }
+};
+
+}  // namespace cookie_list_detail
+
+using cookie_list_detail::CookieHasher;
+using cookie_list_detail::CookieLookupKey;
+
+namespace {
+
+CookieLookupKey MakeCookieLookup(const Cookie& aCookie) {
+  return {aCookie.KeyHash(), aCookie.Name(), aCookie.Host(), aCookie.Path()};
+}
+
+CookieLookupKey MakeCookieLookup(const CookieStruct& aCookie) {
+  return {
+      Cookie::ComputeKeyHash(aCookie.name(), aCookie.host(), aCookie.path()),
+      aCookie.name(), aCookie.host(), aCookie.path()};
+}
+
+}  // namespace
+
+class CookieServiceChild::CookiesList {
+  // Name, host, and path form the hash key and remain stable while a cookie is
+  // stored in the child list.
+  using CookieSet =
+      HashSet<RefPtr<Cookie>, CookieHasher, InfallibleAllocPolicy>;
+
+ public:
+  // Results borrow the cookie and must not be used after the list is mutated.
+  class LookupResult {
+    friend class CookiesList;
+
+   public:
+    explicit operator bool() const { return mCookie; }
+    Cookie* get() const { return mCookie; }
+
+   private:
+    LookupResult() = default;
+    LookupResult(Cookie* aCookie, uint32_t aArrayIndex)
+        : mCookie(aCookie), mArrayIndex(aArrayIndex) {}
+    explicit LookupResult(Cookie* aCookie) : mCookie(aCookie) {}
+
+    Cookie* mCookie = nullptr;
+    uint32_t mArrayIndex = 0;
+  };
+
+  LookupResult Lookup(const Cookie& aCookie) const {
+    return Lookup(MakeCookieLookup(aCookie));
+  }
+
+  LookupResult Lookup(const CookieStruct& aCookie) const {
+    return Lookup(MakeCookieLookup(aCookie));
+  }
+
+  void Remove(const LookupResult& aResult) {
+    MOZ_ASSERT(aResult);
+    if (mSet) {
+      auto ptr = mSet->lookup(MakeCookieLookup(*aResult.mCookie));
+      MOZ_ASSERT(ptr);
+      mSet->remove(ptr);
+      return;
+    }
+
+    MOZ_ASSERT(aResult.mArrayIndex < mArray.Length());
+    MOZ_ASSERT(mArray[aResult.mArrayIndex] == aResult.mCookie);
+    mArray.RemoveElementAt(aResult.mArrayIndex);
+  }
+
+  void Append(Cookie* aCookie) {
+    MOZ_ASSERT(aCookie);
+    if (!mSet && mArray.Length() < kHashSetPromotionThreshold) {
+      mArray.AppendElement(aCookie);
+      return;
+    }
+
+    if (!mSet) {
+      Promote();
+    }
+
+    MOZ_ALWAYS_TRUE(
+        mSet->putNew(MakeCookieLookup(*aCookie), RefPtr<Cookie>(aCookie)));
+  }
+
+  bool HasNonExpiredCookies(int64_t aCurrentTimeInMSec) const {
+    if (mSet) {
+      for (auto iter = mSet->iter(); !iter.done(); iter.next()) {
+        if (!iter.get()->IsExpired(aCurrentTimeInMSec)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    for (Cookie* cookie : mArray) {
+      if (!cookie->IsExpired(aCurrentTimeInMSec)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void AppendNonExpiredTo(nsTArray<RefPtr<Cookie>>& aCookies,
+                          int64_t aCurrentTimeInMSec) const {
+    if (mSet) {
+      for (auto iter = mSet->iter(); !iter.done(); iter.next()) {
+        Cookie* cookie = iter.get();
+        if (!cookie->IsExpired(aCurrentTimeInMSec)) {
+          aCookies.AppendElement(cookie);
+        }
+      }
+      return;
+    }
+
+    for (Cookie* cookie : mArray) {
+      if (!cookie->IsExpired(aCurrentTimeInMSec)) {
+        aCookies.AppendElement(cookie);
+      }
+    }
+  }
+
+ private:
+  LookupResult Lookup(const CookieLookupKey& aLookup) const {
+    if (mSet) {
+      CookieSet::Ptr ptr = mSet->lookup(aLookup);
+      return ptr ? LookupResult((*ptr).get()) : LookupResult();
+    }
+
+    for (uint32_t i = 0; i < mArray.Length(); ++i) {
+      Cookie* cookie = mArray[i];
+      if (CookieHasher::MatchesArrayEntry(cookie, aLookup)) {
+        return LookupResult(cookie, i);
+      }
+    }
+    return LookupResult();
+  }
+
+  void Promote() {
+    MOZ_ASSERT(!mSet);
+    MOZ_ASSERT(mArray.Length() >= kHashSetPromotionThreshold);
+
+    mSet = std::make_unique<CookieSet>();
+    MOZ_ALWAYS_TRUE(mSet->reserve(mArray.Length() + 1));
+    for (RefPtr<Cookie>& cookie : mArray) {
+      auto lookup = MakeCookieLookup(*cookie);
+      MOZ_ASSERT(!mSet->has(lookup));
+      mSet->putNewInfallible(lookup, std::move(cookie));
+    }
+
+    mArray.Clear();
+    mArray.Compact();
+  }
+
+  // This exceeds the default parent per-host limit (180). Larger lists can
+  // result from a higher user-set limit or asynchronous updates in flight.
+  static constexpr uint32_t kHashSetPromotionThreshold = 256;
+  static_assert(kHashSetPromotionThreshold > kMaxCookiesPerHost);
+
+  nsTArray<RefPtr<Cookie>> mArray;
+  UniquePtr<CookieSet> mSet;
+};
 
 already_AddRefed<CookieServiceChild> CookieServiceChild::GetSingleton() {
   if (!gCookieChildService) {
@@ -215,26 +411,22 @@ void CookieServiceChild::RemoveSingleCookie(const CookieStruct& aCookie,
     return;
   }
 
-  uint32_t targetHash =
-      Cookie::ComputeKeyHash(aCookie.name(), aCookie.host(), aCookie.path());
-  for (uint32_t i = 0; i < cookiesList->Length(); i++) {
-    RefPtr<Cookie> cookie = cookiesList->ElementAt(i);
-    // bug 1858366: In the case that we are updating a stale cookie
-    // from the content process: the parent process will signal
-    // a batch deletion for the old cookie.
-    // When received by the content process we should not remove
-    // the new cookie since we have already updated the content
-    // process cookies. So we also check the expiry here.
-    if (cookie->KeyHash() == targetHash &&
-        cookie->Name().Equals(aCookie.name()) &&
-        cookie->Host().Equals(aCookie.host()) &&
-        cookie->Path().Equals(aCookie.path()) &&
-        cookie->ExpiryInMSec() <= aCookie.expiryInMSec()) {
-      cookiesList->RemoveElementAt(i);
-      NotifyObservers(cookie, aAttrs, CookieNotificationAction::CookieDeleted,
-                      aOperationID);
-      break;
-    }
+  auto result = cookiesList->Lookup(aCookie);
+  if (!result) {
+    return;
+  }
+
+  RefPtr<Cookie> cookie = result.get();
+  // bug 1858366: In the case that we are updating a stale cookie
+  // from the content process: the parent process will signal
+  // a batch deletion for the old cookie.
+  // When received by the content process we should not remove
+  // the new cookie since we have already updated the content
+  // process cookies. So we also check the expiry here.
+  if (cookie->ExpiryInMSec() <= aCookie.expiryInMSec()) {
+    cookiesList->Remove(result);
+    NotifyObservers(cookie, aAttrs, CookieNotificationAction::CookieDeleted,
+                    aOperationID);
   }
 }
 
@@ -340,27 +532,20 @@ CookieServiceChild::RecordDocumentCookie(Cookie* aCookie,
     cookiesList = mCookiesMap.GetOrInsertNew(key);
   }
 
-  bool cookieFound = false;
-
-  for (uint32_t i = 0; i < cookiesList->Length(); i++) {
-    Cookie* cookie = cookiesList->ElementAt(i);
-    if (cookie->KeyHash() == aCookie->KeyHash() &&
-        cookie->Name().Equals(aCookie->Name()) &&
-        cookie->Host().Equals(aCookie->Host()) &&
-        cookie->Path().Equals(aCookie->Path())) {
-      if (cookie->Value().Equals(aCookie->Value()) &&
-          cookie->ExpiryInMSec() == aCookie->ExpiryInMSec() &&
-          cookie->IsSecure() == aCookie->IsSecure() &&
-          cookie->SameSite() == aCookie->SameSite() &&
-          cookie->IsSession() == aCookie->IsSession() &&
-          cookie->IsHttpOnly() == aCookie->IsHttpOnly()) {
-        cookie->SetLastAccessedInUSec(aCookie->LastAccessedInUSec());
-        return CookieNotificationAction::NoActionNeeded;
-      }
-      cookiesList->RemoveElementAt(i);
-      cookieFound = true;
-      break;
+  auto result = cookiesList->Lookup(*aCookie);
+  bool cookieFound = bool(result);
+  if (result) {
+    Cookie* cookie = result.get();
+    if (cookie->Value().Equals(aCookie->Value()) &&
+        cookie->ExpiryInMSec() == aCookie->ExpiryInMSec() &&
+        cookie->IsSecure() == aCookie->IsSecure() &&
+        cookie->SameSite() == aCookie->SameSite() &&
+        cookie->IsSession() == aCookie->IsSession() &&
+        cookie->IsHttpOnly() == aCookie->IsHttpOnly()) {
+      cookie->SetLastAccessedInUSec(aCookie->LastAccessedInUSec());
+      return CookieNotificationAction::NoActionNeeded;
     }
+    cookiesList->Remove(result);
   }
 
   if (aCookie->IsExpired()) {
@@ -368,7 +553,7 @@ CookieServiceChild::RecordDocumentCookie(Cookie* aCookie,
                        : CookieNotificationAction::NoActionNeeded;
   }
 
-  cookiesList->AppendElement(aCookie);
+  cookiesList->Append(aCookie);
   return cookieFound ? CookieNotificationAction::CookieChanged
                      : CookieNotificationAction::CookieAdded;
 }
@@ -402,11 +587,7 @@ void CookieServiceChild::GetCookiesFromHost(
   }
 
   int64_t currentTimeInMSec = PR_Now() / PR_USEC_PER_MSEC;
-  for (Cookie* cookie : *cookiesList) {
-    if (!cookie->IsExpired(currentTimeInMSec)) {
-      aCookies.AppendElement(cookie);
-    }
-  }
+  cookiesList->AppendNonExpiredTo(aCookies, currentTimeInMSec);
 }
 
 void CookieServiceChild::StaleCookies(const nsTArray<RefPtr<Cookie>>& aCookies,
@@ -426,13 +607,7 @@ bool CookieServiceChild::HasExistingCookies(
   }
 
   int64_t currentTimeInMSec = PR_Now() / PR_USEC_PER_MSEC;
-  for (Cookie* cookie : *cookiesList) {
-    if (!cookie->IsExpired(currentTimeInMSec)) {
-      return true;
-    }
-  }
-
-  return false;
+  return cookiesList->HasNonExpiredCookies(currentTimeInMSec);
 }
 
 void CookieServiceChild::AddCookieFromDocument(
@@ -462,22 +637,18 @@ void CookieServiceChild::AddCookieFromDocument(
     bool isPotentiallyTrustworthy =
         principal->GetIsOriginPotentiallyTrustworthy();
 
-    for (uint32_t i = 0; i < cookies->Length(); ++i) {
-      Cookie* existingCookie = cookies->ElementAt(i);
-      if (existingCookie->KeyHash() == aCookie.KeyHash() &&
-          existingCookie->Name().Equals(aCookie.Name()) &&
-          existingCookie->Host().Equals(aCookie.Host()) &&
-          existingCookie->Path().Equals(aCookie.Path())) {
-        // Can't overwrite an httponly cookie from a script context.
-        if (existingCookie->IsHttpOnly()) {
-          return;
-        }
+    auto result = cookies->Lookup(aCookie);
+    if (result) {
+      Cookie* existingCookie = result.get();
+      // Can't overwrite an httponly cookie from a script context.
+      if (existingCookie->IsHttpOnly()) {
+        return;
+      }
 
-        // prevent insecure cookie from overwriting a secure one in insecure
-        // context.
-        if (existingCookie->IsSecure() && !isPotentiallyTrustworthy) {
-          return;
-        }
+      // prevent insecure cookie from overwriting a secure one in insecure
+      // context.
+      if (existingCookie->IsSecure() && !isPotentiallyTrustworthy) {
+        return;
       }
     }
   }

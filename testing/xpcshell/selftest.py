@@ -865,6 +865,62 @@ prefs = [
         self.assertEqual(error["stack"][1]["line"], 100)
         self.assertNotIn("column", error["stack"][1])
 
+    def testASanErrorAction(self):
+        """
+        An AddressSanitizer report printed by the test process is reported
+        as a single asan_error structured log action, and as a crash of the
+        test in the error summary, which fails the group.
+
+        The report lines are synthetic, so this runs on every build type.
+        """
+        records = []
+        self.x.log.add_handler(records.append)
+        self.writeFile(
+            "test_asan.js",
+            """
+          function run_test() {
+            dump("==1234==ERROR: AddressSanitizer: SEGV on unknown address 0x00000000030b (pc 0x7b03e9dd40af bp 0x7fff627fb7f0 sp 0x7fff627fb7e0 T0)\\n");
+            dump("==1234==The signal is caused by a READ memory access.\\n");
+            dump("==1234==Hint: address points to the zero page.\\n");
+            dump("    #0 0x7b03e9dd40af in GetInnerWindow /src/Document.h:1942:12\\n");
+            dump("    #1 0x7f42401b0a33 in clone misc/../sysdeps/unix/sysv/linux/x86_64/clone.S:100\\n");
+            dump("SUMMARY: AddressSanitizer: SEGV /src/Document.h:1942:12 in GetInnerWindow\\n");
+            dump("==1234==ABORTING\\n");
+            Assert.ok(true);
+          }
+        """,
+        )
+
+        self.writeManifest(["test_asan.js"])
+        # Not retried, so the report is not logged quietly.
+        self.assertTestResult(True, verbose=True, retry=False)
+
+        errors = [r for r in records if r["action"] == "asan_error"]
+        self.assertEqual(len(errors), 1, pprint.pformat(records))
+        error = errors[0]
+        self.assertEqual(error["kind"], "SEGV")
+        self.assertTrue(
+            error["message"].startswith("SEGV on unknown address 0x00000000030b")
+        )
+        self.assertEqual(error["pid"], 1234)
+        self.assertEqual(error["file"], "/src/Document.h")
+        self.assertEqual(error["lineno"], 1942)
+        self.assertEqual(error["column"], 12)
+        self.assertEqual(error["function"], "GetInnerWindow")
+        self.assertTrue(error["test"].endswith("test_asan.js"))
+        self.assertNotIn("quiet", error)
+        self.assertEqual(
+            [f["function"] for f in error["stack"]], ["GetInnerWindow", "clone"]
+        )
+
+        crashes = self.errorSummaryLines("crash")
+        self.assertEqual(len(crashes), 1, self.errorsummary.getvalue())
+        self.assertEqual(
+            crashes[0]["signature"], "AddressSanitizer: SEGV [@ GetInnerWindow]"
+        )
+        self.assertTrue(crashes[0]["test"].endswith("test_asan.js"))
+        self.assertGroupStatus("ERROR")
+
     def testChildPass(self):
         """
         Check that a simple test running in a child process passes.

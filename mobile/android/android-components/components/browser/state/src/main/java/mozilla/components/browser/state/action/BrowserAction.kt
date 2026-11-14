@@ -1524,3 +1524,33 @@ sealed class ListenToPageAction : BrowserAction() {
     /** Indicates that the tab with the given [tabId] is being read out loud. */
     data class ListenToPageActivated(override val tabId: String) : ListenToPageAction()
 }
+
+/** [BrowserAction] implementations related to showing the video of a tab in a picture-in-picture window. */
+sealed class PictureInPictureAction : BrowserAction() {
+    /**
+     * Asks the engine for the video the tab with the given [tabId] is playing, to be shown in the picture-in-picture
+     * window.
+     */
+    data class RequestAction(override val tabId: String) : PictureInPictureAction(), ActionWithTab
+
+    /**
+     * The engine is done with the [RequestAction] for the tab with the given [tabId], whether a video is showing
+     * because of it or not.
+     */
+    data class ConsumeRequestAction(override val tabId: String) : PictureInPictureAction(), ActionWithTab
+
+    /**
+     * The engine asks for a picture-in-picture window for a video of the tab with the given [tabId], and the window
+     * renders [engineSession] in place of the session it had.
+     *
+     * @property engineSession The session cloning the video.
+     */
+    data class EnterAction(override val tabId: String, val engineSession: EngineSession) :
+        PictureInPictureAction(), ActionWithTab
+
+    /** The engine takes the video of the tab with the given [tabId] out of picture-in-picture. */
+    data class ExitAction(override val tabId: String) : PictureInPictureAction(), ActionWithTab
+
+    /** The picture-in-picture window is going down, and its session is closed. */
+    data object CloseWindowAction : PictureInPictureAction()
+}

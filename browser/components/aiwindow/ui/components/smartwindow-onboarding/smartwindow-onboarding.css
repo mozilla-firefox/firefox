@@ -1,0 +1,238 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  --onboarding-heading-color: var(--text-color);
+  --onboarding-heading-background: none;
+  --onboarding-border-color: var(--border-color);
+  --onboarding-icon-color: var(--icon-color);
+  font-family: system-ui;
+  display: block;
+  color: var(--text-color);
+}
+
+@media not ((prefers-contrast) or (forced-colors)) {
+  :host {
+    --onboarding-heading-background: light-dark(
+      linear-gradient(270deg, #a57ce4 11.55%, #5c3bef 90.5%),
+      linear-gradient(270deg, var(--color-violet-30) 11.55%, var(--color-violet-50) 90.5%)
+    );
+    --onboarding-heading-color: transparent;
+    --onboarding-icon-color: light-dark(var(--color-violet-60), var(--color-violet-30));
+    --onboarding-border-color: light-dark(var(--color-violet-10), var(--color-violet-50));
+  }
+}
+
+main {
+  box-sizing: border-box;
+  min-block-size: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-xxlarge);
+}
+
+section {
+  inline-size: 100%;
+  /* The setup cards share the design’s 680px content column. */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  max-inline-size: 680px;
+  text-align: center;
+}
+
+p {
+  margin: 0;
+}
+
+.onboarding-title {
+  font-size: var(--font-size-xxxlarge);
+  font-weight: var(--font-weight);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  color: var(--onboarding-heading-color);
+  background-image: var(--onboarding-heading-background);
+  background-clip: text;
+  margin: 0 0 var(--space-large);
+}
+
+.onboarding-title:focus {
+  outline: none;
+}
+
+.welcome-logo {
+  inline-size: var(--size-item-large);
+  block-size: var(--size-item-large);
+  margin-block-end: var(--space-large);
+}
+
+.welcome-title {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  font-size: 39px;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  font-weight: 350;
+  line-height: 56px;
+  letter-spacing: 0;
+}
+
+.welcome-subtitle {
+  color: var(--text-color);
+  font-size: var(--font-size-heading-large);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  font-weight: 350;
+  line-height: normal;
+  opacity: var(--opacity-deemphasized);
+  white-space: pre-line;
+}
+
+.setup-subtitle {
+  color: var(--text-color);
+  text-align: center;
+  font-size: var(--font-size-root);
+  font-style: normal;
+  font-weight: var(--font-weight);
+  line-height: normal;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+  margin-block: calc(2 * var(--space-xlarge));
+}
+
+.choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-medium);
+  padding: var(--space-large);
+  min-block-size: var(--size-item-xlarge);
+  border: var(--border-width) solid var(--onboarding-border-color);
+  border-radius: var(--border-radius-large);
+  background-color: var(--background-color-box);
+  text-align: start;
+}
+
+.choice-icon-container {
+  display: flex;
+  padding: var(--space-small);
+  border-radius: var(--border-radius-circle);
+  background-color: var(--background-color-canvas);
+}
+
+.choice-icon {
+  color: var(--onboarding-icon-color);
+  inline-size: var(--icon-size);
+  block-size: var(--icon-size);
+  -moz-context-properties: fill, stroke;
+  fill: currentColor;
+  stroke: currentColor;
+}
+
+.choice-label {
+  font-size: inherit;
+  font-weight: var(--font-weight-semibold);
+  margin: 0 0 var(--space-xsmall);
+}
+
+.choice-description {
+  font-size: var(--font-size-small);
+}
+
+.default-window-toggle {
+  --text-color-deemphasized: var(--text-color);
+  grid-column: 2 / -1;
+}
+
+.default-window-toggle::part(label) {
+  font-weight: var(--font-weight-semibold);
+}
+
+.save-button {
+  --button-border-radius: var(--border-radius-circle);
+  --button-min-height: var(--size-item-large);
+  padding-inline: var(--space-xlarge);
+}
+
+@media (width < 600px) {
+  main {
+    padding: var(--space-large);
+  }
+
+  .choice {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .choice-select {
+    grid-column: 2;
+    justify-self: start;
+    max-inline-size: 100%;
+  }
+}
+
+@keyframes springUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes springUpDeemphasized {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: var(--opacity-deemphasized);
+    transform: translateY(0);
+  }
+}
+
+@keyframes screenEnter {
+  from {
+    opacity: 0;
+    translate: 0 -30px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .welcome-title {
+    animation: springUp 0.3s ease-in 0.3s both;
+  }
+
+  .welcome-subtitle {
+    animation: springUpDeemphasized 0.3s ease-in 0.5s both;
+  }
+
+  .welcome {
+    transition:
+      opacity 0.6s ease 0.1s,
+      translate 0.6s ease 0.1s;
+  }
+
+  .welcome.leaving {
+    opacity: 0;
+    translate: 0 30px;
+  }
+
+  .setup-header,
+  .choices,
+  .save-button {
+    animation: screenEnter 0.6s ease backwards;
+  }
+
+  .choices {
+    animation-delay: 0.2s;
+  }
+
+  .save-button {
+    animation-delay: 0.4s;
+  }
+}

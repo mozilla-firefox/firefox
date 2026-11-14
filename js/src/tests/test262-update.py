@@ -40,7 +40,6 @@ FEATURE_CHECK_NEEDED = {
 RELEASE_OR_BETA = set([
     "legacy-regexp",
     "import-bytes",
-    "regexp-buffer-boundaries",
 ])
 SHELL_OPTIONS = {
     "symbols-as-weakmap-keys": "--enable-symbols-as-weakmap-keys",

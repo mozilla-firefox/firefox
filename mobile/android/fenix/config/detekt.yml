@@ -845,3 +845,6 @@ acorn-detekt-rules:
   MaterialTypographyUsage:
     active: true
     appTypographyName: 'org.mozilla.fenix.theme.FirefoxTheme.typography'
+  DisplayedTextCasing:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']

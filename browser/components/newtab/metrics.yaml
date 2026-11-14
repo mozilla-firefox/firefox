@@ -3006,6 +3006,61 @@ newtab_content:
     send_in_pings:
       - newtab
 
+  stories_feed_result:
+    type: labeled_counter
+    description: >
+      Merino stories feed requests, by result. Requests skipped because the
+      cached feed is still fresh are not counted. Labels are `success` or
+      the error type. `network` covers any failure without an error status,
+      and over OHTTP, `http_4xx` and `http_5xx` include errors from the
+      relay. For what New Tab showed instead, see `stories_feed_state`.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2010048
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2010048
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - jbrown@mozilla.com
+    expires: never
+    labels:
+      - success
+      - timeout
+      - http_4xx
+      - http_5xx
+      - network
+      - ohttp_config
+      - endpoint_disallowed
+      - bad_response
+    send_in_pings:
+      - newtab-content
+
+  stories_feed_state:
+    type: string
+    lifetime: application
+    description: >
+      What the New Tab stories section shows, as of the latest stories feed
+      load: `stories` (a fresh feed), `cache` (an expired cached feed,
+      because the latest Merino request failed), `placeholder`
+      (placeholders or the empty state, because there was no usable feed),
+      or `off` (stories are turned off). Sent with every newtab-content
+      ping, so the share of pings with `placeholder` estimates the share of
+      New Tab sessions that showed no stories. Unlike
+      `stories_feed_result`, retries do not inflate it. Missing from pings
+      sent before the first feed load in a session. Only recorded when the
+      private ping is enabled.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2010048
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2010048
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - jbrown@mozilla.com
+    expires: never
+    send_in_pings:
+      - newtab-content
+
   followed_sections:
     type: string_list
     description: >

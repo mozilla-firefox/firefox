@@ -19,6 +19,10 @@
   display: flex;
   justify-content: space-between;
   margin-block-end: var(--space-xsmall);
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .solitaire-badge-title-wrapper {
@@ -62,12 +66,53 @@
   }
 }
 
-.solitaire-body {
+.solitaire-dialog {
+  position: relative;
+  inset: auto;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  inline-size: 100%;
+  max-inline-size: none;
+  max-block-size: none;
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: var(--space-small);
-  min-height: 0;
+  min-block-size: 0;
+  overflow: hidden;
+
+  &:modal {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    flex: none;
+    inline-size: fit-content;
+    block-size: fit-content;
+    padding: var(--space-large);
+    background: var(--newtab-background-color-secondary);
+    border: var(--border-width) solid var(--dialog-border-color);
+    border-radius: var(--border-radius-large);
+    box-shadow: var(--box-shadow-level-4);
+
+    .solitaire-frame {
+      flex: none;
+      /* stylelint-disable stylelint-plugin-mozilla/use-design-tokens */
+      inline-size: min(950px, 90vw);
+      block-size: min(600px, calc(90vh - 5rem));
+      /* stylelint-enable stylelint-plugin-mozilla/use-design-tokens */
+    }
+  }
+
+  &::backdrop {
+    background: var(--newtab-overlay-color);
+  }
+}
+
+.solitaire-dialog-close {
+  align-self: flex-end;
 }
 
 .solitaire-frame {

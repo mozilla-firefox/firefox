@@ -24,6 +24,9 @@ Installing the npm dependencies and running the `storybook` npm script should be
 enough to get Storybook running. This can be done via `./mach storybook`
 commands, or with your personal npm/node that happens to be compatible.
 
+Production exports hash stylesheet module identifiers to avoid oversized generated
+filenames in Windows checkouts.
+
 ### Running with mach commands
 
 This is the recommended approach for installing dependencies and running
@@ -106,6 +109,8 @@ This can be done using the version of `npm` packaged with `mach`:
 cd browser/components/storybook && ../../../mach npm i -D your-package
 ```
 
+Use `./mach storybook upgrade` to update dependencies within the ranges in `package.json`.
+
 ## Adding new stories
 
 Storybook is currently configured to search for story files (any file with a
@@ -122,8 +127,7 @@ You can also use `./mach addstory new-component "Your Project" --path browser/co
 [See the Credential Management/Timeline widget for an example.](https://searchfox.org/mozilla-central/rev/2c11f18f89056a806c299a9d06bfa808718c2e84/browser/components/storybook/stories/login-timeline.stories.mjs#11)
 
 If you want to colocate your story with the code it is documenting you will need
-to add to the `stories` array in the `.storybook/main.js` [configuration
-file](https://searchfox.org/firefox-main/source/browser/components/storybook/.storybook/main.js)
+to add to the `stories` array in `.storybook/main.mjs`
 so that Storybook knows where to look for your files.
 
 The Storybook docs site has a [good

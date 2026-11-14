@@ -1,14 +1,13 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::fmt::Display;
 
 use askama::Template;
 
-use super::common;
-use super::common::code_type;
-use super::filters;
+use crate::backends::kotlin::gen_structs::common::{self, code_type};
+use crate::backends::kotlin::gen_structs::filters;
 use crate::backends::{CodeDeclaration, CodeOracle, CodeType, LiteralRenderer, VariablesType};
 use crate::intermediate_representation::{EnumDef, FeatureManifest, Literal};
 

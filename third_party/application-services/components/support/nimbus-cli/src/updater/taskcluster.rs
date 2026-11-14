@@ -2,12 +2,11 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use serde::de::DeserializeOwned;
 use std::time::Duration;
-use update_informer::{
-    http_client::{GenericHttpClient, HeaderMap, HttpClient},
-    Check, Package, Registry, Result,
-};
+
+use serde::de::DeserializeOwned;
+use update_informer::http_client::{GenericHttpClient, HeaderMap, HttpClient};
+use update_informer::{Check, Package, Registry, Result};
 
 #[derive(serde::Deserialize)]
 struct Response {
@@ -24,7 +23,9 @@ impl Registry for TaskClusterRegistry {
         pkg: &Package,
     ) -> Result<Option<String>> {
         let name = pkg.to_string();
-        let url = format!("https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/project.application-services.v2.{name}.latest/artifacts/public%2Fbuild%2F{name}.json");
+        let url = format!(
+            "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/project.application-services.v2.{name}.latest/artifacts/public%2Fbuild%2F{name}.json"
+        );
         let resp = http_client.get::<Response>(&url)?;
         Ok(Some(resp.version))
     }

@@ -1,20 +1,19 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-use crate::{
-    error::{FMLError, Result},
-    SUPPORT_URL_LOADING,
-};
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use std::collections::BTreeMap;
+use std::collections::hash_map::DefaultHasher;
+use std::env;
+use std::fmt::Display;
+use std::hash::{Hash, Hasher};
+use std::path::{Path, PathBuf};
 
 use anyhow::anyhow;
-use std::{
-    collections::{hash_map::DefaultHasher, BTreeMap},
-    env,
-    fmt::Display,
-    hash::{Hash, Hasher},
-    path::{Path, PathBuf},
-};
 use url::Url;
+
+use crate::SUPPORT_URL_LOADING;
+use crate::error::{FMLError, Result};
 
 pub(crate) const GITHUB_USER_CONTENT_DOTCOM: &str = "https://raw.githubusercontent.com";
 pub(crate) const API_GITHUB_DOTCOM: &str = "https://api.github.com";

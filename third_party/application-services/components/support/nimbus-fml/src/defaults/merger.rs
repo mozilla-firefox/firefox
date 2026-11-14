@@ -1,16 +1,14 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::collections::{BTreeMap, HashMap};
 
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
-use crate::{
-    error::{FMLError, Result},
-    frontend::DefaultBlock,
-    intermediate_representation::{FeatureDef, ObjectDef, PropDef, TypeRef},
-};
+use crate::error::{FMLError, Result};
+use crate::frontend::DefaultBlock;
+use crate::intermediate_representation::{FeatureDef, ObjectDef, PropDef, TypeRef};
 
 pub struct DefaultsMerger<'object> {
     objects: &'object BTreeMap<String, ObjectDef>,
@@ -183,13 +181,13 @@ impl<'object> DefaultsMerger<'object> {
     fn channel_specific_defaults(&self, defaults: &Option<Vec<DefaultBlock>>) -> Result<Value> {
         let supported_channels = self.supported_channels.as_slice();
         let channel = &self.channel;
-        if let Some(channel) = channel {
-            if !supported_channels.iter().any(|c| c == channel) {
-                return Err(FMLError::InvalidChannelError(
-                    channel.into(),
-                    supported_channels.into(),
-                ));
-            }
+        if let Some(channel) = channel
+            && !supported_channels.iter().any(|c| c == channel)
+        {
+            return Err(FMLError::InvalidChannelError(
+                channel.into(),
+                supported_channels.into(),
+            ));
         }
         let empty_object = json!({});
         if let Some(defaults) = defaults {
@@ -1075,8 +1073,8 @@ mod unit_tests {
     }
 
     #[test]
-    fn test_merge_feature_default_field_default_not_overwritten_if_no_feature_default_for_channel(
-    ) -> Result<()> {
+    fn test_merge_feature_default_field_default_not_overwritten_if_no_feature_default_for_channel()
+    -> Result<()> {
         let mut feature_def = FeatureDef {
             props: vec![PropDef::new(
                 "button-color",
@@ -1196,8 +1194,8 @@ mod unit_tests {
     }
 
     #[test]
-    fn test_merge_feature_default_overwrite_field_default_based_on_channel_using_only_no_channel_default(
-    ) -> Result<()> {
+    fn test_merge_feature_default_overwrite_field_default_based_on_channel_using_only_no_channel_default()
+    -> Result<()> {
         let mut feature_def = FeatureDef {
             props: vec![PropDef::new(
                 "button-color",

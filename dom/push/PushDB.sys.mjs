@@ -77,11 +77,6 @@ PushDB.prototype = {
       // index to fetch active and expired registrations.
       objectStore.createIndex("quota", "quota", { unique: false });
     }
-
-    if (aOldVersion < 6) {
-      let objectStore = aTransaction.objectStore(this._dbStoreName);
-      objectStore.createIndex("scope", "scope", { unique: false });
-    }
   },
 
   /**
@@ -246,16 +241,14 @@ PushDB.prototype = {
         (aTxn, aStore) => {
           aTxn.result = undefined;
 
-          let index = aStore.index("scope");
-          // For the scope to belong to origin, it must start with origin/
-          let range = IDBKeyRange.bound(origin + "/", origin + "/\x7f");
+          let index = aStore.index("identifiers");
+          let range = IDBKeyRange.bound(
+            [origin, originAttributes],
+            [origin + "\x7f", originAttributes]
+          );
           index.openCursor(range).onsuccess = event => {
             let cursor = event.target.result;
             if (!cursor) {
-              return;
-            }
-            if (cursor.value.originAttributes !== originAttributes) {
-              cursor.continue();
               return;
             }
             try {

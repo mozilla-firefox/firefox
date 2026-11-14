@@ -92,3 +92,10 @@ pub(crate) fn migrate_7_to_8(data: &mut ContainersData) {
 
     data.version = 8;
 }
+
+/// An association may also cover the subdomains of its host. The bare
+/// userContextId stored until now is read as one that does not, so there is
+/// nothing to rewrite.
+pub(crate) fn migrate_8_to_9(data: &mut ContainersData) {
+    data.version = 9;
+}

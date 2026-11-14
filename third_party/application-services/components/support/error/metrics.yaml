@@ -57,3 +57,35 @@ rust_component_errors:
     expires: never
     send_in_pings:
       - rust-component-errors
+  # expected_failures:
+  #   type: dual_labeled_counter
+  #   description: >
+  #     Counts expected failures for Rust components
+  #   bugs:
+  #     - https://bugzilla.mozilla.org/show_bug.cgi?id=2005227
+  #   data_reviews:
+  #     - https://bugzilla.mozilla.org/show_bug.cgi?id=2091562
+  #   data_sensitivity:
+  #     - technical
+  #   notification_emails:
+  #     - synced-client-integrations@mozilla.com
+  #     - bdk@mozilla.com
+  #   expires: never
+  #   dual_labels:
+  #     key:
+  #       description: Component where the failure 
+  #       labels:
+  #         - autofill
+  #         - fxa-client
+  #         - logins
+  #         - places
+  #         - remote-settings
+  #         - suggest
+  #         - tabs
+  #         - webext-storage
+  #     category:
+  #       description: The category of failure
+  #       labels:
+  #         - network-timeout
+  #         - network-failure
+  #         - sqlite-corruption

@@ -11,22 +11,19 @@
   "author": "",
   "license": "MPL-2.0",
   "devDependencies": {
-    "@babel/core": "^7.16.0",
-    "@babel/preset-env": "^7.23.6",
-    "@babel/preset-react": "^7.23.3",
     "@custom-elements-manifest/analyzer": "^0.6.6",
     "@fluent/bundle": "^0.17.1",
     "@fluent/dom": "^0.8.1",
-    "@storybook/addon-a11y": "^7.6.4",
-    "@storybook/addon-actions": "^7.6.4",
-    "@storybook/addon-essentials": "^7.6.4",
-    "@storybook/addon-links": "^7.6.4",
-    "@storybook/addon-themes": "^7.5.1",
-    "@storybook/web-components": "^7.6.4",
-    "@storybook/web-components-webpack5": "^7.6.4",
-    "babel-loader": "^8.2.3",
+    "@storybook/addon-a11y": "^10.6.3",
+    "@storybook/addon-docs": "^10.6.3",
+    "@storybook/addon-links": "^10.6.3",
+    "@storybook/addon-themes": "^10.6.3",
+    "@storybook/icons": "^2.0.2",
+    "@storybook/web-components": "^10.6.3",
+    "@storybook/web-components-vite": "^10.6.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "storybook": "^7.6.4"
+    "storybook": "^10.6.3",
+    "vite": "^8.3.5"
   }
 }

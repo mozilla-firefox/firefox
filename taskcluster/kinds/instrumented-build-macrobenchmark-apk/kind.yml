@@ -15,7 +15,6 @@ kind-dependencies:
     - generate-baseline-profile-firebase
 
 task-defaults:
-    run-on-repo-type: [hg]
     use-gradle-cache: true
     fetches:
         toolchain:
@@ -26,7 +25,6 @@ task-defaults:
             - linux64-node
     run-on-projects: []
     run:
-        clone-with: hg
         using: gradlew
     treeherder:
         kind: test

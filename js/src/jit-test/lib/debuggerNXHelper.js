@@ -1,3 +1,5 @@
+let newScriptCount = 0;
+
 function testDebuggerHooksNX(dbg, g, testHook) {
   function testDebuggerHook(hookName, trigger) {
     var hit = false;
@@ -23,8 +25,9 @@ function testDebuggerHooksNX(dbg, g, testHook) {
                      }
                    });
 
+  // Use a distinct source each time to avoid the eval cache.
   testDebuggerHook("onNewScript",
-                   () => { g.eval("42"); });
+                   () => { g.eval("42+" + newScriptCount++); });
 
   testDebuggerHook("onEnterFrame",
                    () => { g.eval("(() => {})()"); });

@@ -12,7 +12,9 @@ use crate::matching::MatchMethods;
 use crate::properties::ComputedValues;
 use crate::selector_parser::PseudoElement;
 use crate::sharing::StyleSharingTarget;
-use crate::style_resolver::{PseudoElementResolution, StyleResolverForElement};
+use crate::style_resolver::{
+    PseudoElementResolution, ResolvedElementStyles, StyleResolverForElement,
+};
 use crate::stylist::RuleInclusion;
 use crate::traversal_flags::TraversalFlags;
 use hashbrown::HashMap;
@@ -81,7 +83,7 @@ pub trait DomTraversal<E: TElement>: Sync {
     ///
     /// The only communication between siblings is that they both
     /// fetch-and-subtract the parent's children count. This makes it safe to
-    /// call durign the parallel traversal.
+    /// call during the parallel traversal.
     fn handle_postorder_traversal(
         &self,
         context: &mut StyleContext<E>,
@@ -156,10 +158,10 @@ pub trait DomTraversal<E: TElement>: Sync {
         let should_traverse =
             Self::element_needs_traversal(root, traversal_flags, data.as_mut().map(|d| &**d));
 
-        // If we're not going to traverse at all, we may need to clear some state
-        // off the root (which would normally be done at the end of recalc_style_at).
-        if !should_traverse && data.is_some() {
-            clear_state_after_traversing(root, data.unwrap(), traversal_flags);
+        // If we're not going to traverse at all, we may need to clear some state off the root
+        // (which would normally be done at the end of recalc_style_at).
+        if !should_traverse && let Some(ref mut data) = data {
+            clear_state_after_traversing(root, data, traversal_flags);
         }
 
         PreTraverseToken(if should_traverse { Some(root) } else { None })
@@ -368,16 +370,16 @@ pub fn recalc_style_at<E, D, F>(
     );
 
     let mut child_restyle_hint = RestyleHint::empty();
-    let mut child_flags = ElementDataFlags::empty();
+    let mut is_animation_restyle = false;
 
     // Compute style for this element if necessary.
     if let Some(restyle_kind) = restyle_kind {
         let result = compute_style(context, element, data, restyle_kind);
         child_restyle_hint = result.child_hint;
-        child_flags = result.child_flags;
+        is_animation_restyle = result.animations_changed;
 
         // If we're restyling this element to display:none, throw away all style
-        // data in the subtree, notify the caller to early-return.
+        // data in the subtree.
         if data.styles.is_display_none() {
             debug!(
                 "{:?} style is display:none - clearing data from descendants.",
@@ -430,11 +432,12 @@ pub fn recalc_style_at<E, D, F>(
             context,
             element,
             child_restyle_hint,
-            child_flags,
+            is_animation_restyle,
             is_initial_style,
             note_child,
         );
     } else {
+        // Our children are not going to use this, we can drop this now.
         data.before_change_style = None;
     }
 
@@ -450,10 +453,8 @@ fn clear_state_after_traversing<E>(element: E, data: &mut ElementData, flags: Tr
 where
     E: TElement,
 {
-    data.flags.remove(
-        ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED
-            | ElementDataFlags::RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS,
-    );
+    data.flags
+        .remove(ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED);
     if flags.intersects(TraversalFlags::Forgetful) {
         data.clear_restyle_flags_and_damage();
         unsafe {
@@ -462,25 +463,55 @@ where
     }
 }
 
-/// Computes the old style with animations updated to the current time, inheriting from the
-/// before-change style of the parent.
+/// Computes the before-change style of the element for transitions, which is the old style, with
+/// animations updated to the current time, inheriting from the before-change style of the parent.
+/// Returns None if the element had no style, or if the before-change style is just the old style.
 fn compute_before_change_style<E>(
     context: &mut StyleContext<E>,
     element: E,
     data: &ElementData,
     hint: RestyleHint,
+    kind: &RestyleKind,
+    new_styles: &ResolvedElementStyles,
 ) -> Option<Arc<ComputedValues>>
 where
     E: TElement,
 {
+    if !data.has_styles() {
+        return None;
+    }
     if !hint.has_animation_hint()
         && !data
             .flags
             .contains(ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED)
     {
-        // We don't need a before-change style if we or an ancestor are not animating.
+        // We don't need to compute a before-change style if neither the element nor any of its
+        // ancestors is animating.
         return None;
     }
+
+    // NOTE(emilio): This is tricky. If our rules only changed because of our own animations then
+    // cascading the old rules with the animations updated would give us the new style.
+    //
+    // We can save some work, but also rely on this pointer identity to avoid updating existing
+    // transitions on inheritance.
+    //
+    // We consider the style only changed for animations in the case that:
+    //  * We didn't need to selector-match.
+    //  * Non-animation replacements didn't change.
+    //  * The parent has no before-change-style.
+    let rules_changed_only_for_animations = !matches!(*kind, RestyleKind::MatchAndCascade)
+        && !hint.intersects(RestyleHint::replacements() - RestyleHint::for_animations());
+    if rules_changed_only_for_animations {
+        let parent_has_before_change_style = element.inheritance_parent().is_some_and(|p| {
+            p.borrow_data()
+                .is_some_and(|d| d.before_change_style.is_some())
+        });
+        if !parent_has_before_change_style {
+            return Some(new_styles.primary_style().clone());
+        }
+    }
+
     let mut inputs = ElementCascadeInputs::new_from_element_data(data);
     let replacements = hint & RestyleHint::for_animations();
     if !replacements.is_empty() {
@@ -501,8 +532,7 @@ where
 struct ComputeStyleResult {
     /// The restyle hint for the children of the element.
     child_hint: RestyleHint,
-    /// The flags to set on the children of the element that get a recascade hint.
-    child_flags: ElementDataFlags,
+    animations_changed: bool,
 }
 
 /// Computes the style of the element.
@@ -521,7 +551,6 @@ where
     debug!("compute_style: {:?} (kind={:?})", element, kind);
 
     let hint = data.hint;
-    let animation_only = data.is_animation_only_restyle();
 
     if data.has_styles() {
         data.set_restyled();
@@ -639,20 +668,16 @@ where
         },
     };
 
-    let before_change_style = if data.has_styles() && !animation_only {
-        compute_before_change_style(context, element, data, hint)
-    } else {
-        None
-    };
-    let before_change_style_changed = before_change_style.is_some();
-
+    let before_change_style =
+        compute_before_change_style(context, element, data, hint, &kind, &new_styles);
+    let animations_changed = before_change_style.is_some();
+    let before_change_style = before_change_style.or_else(|| data.styles.primary.clone());
     let mut child_hint = element.finish_restyle(
         context,
         data,
         new_styles,
         important_rules_changed,
         before_change_style,
-        animation_only,
     );
 
     if !element.matches_user_and_content_rules() {
@@ -662,17 +687,9 @@ where
         child_hint |= RestyleHint::RECASCADE_SELF;
     }
 
-    let mut child_flags = ElementDataFlags::empty();
-    if animation_only {
-        child_flags |= ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED
-            | ElementDataFlags::RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS;
-    } else if before_change_style_changed {
-        child_flags |= ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED;
-    }
-
     ComputeStyleResult {
         child_hint,
-        child_flags,
+        animations_changed,
     }
 }
 
@@ -726,7 +743,7 @@ fn note_children<E, D, F>(
     context: &mut StyleContext<E>,
     element: E,
     child_restyle_hint: RestyleHint,
-    child_flags: ElementDataFlags,
+    is_animation_restyle: bool,
     is_initial_style: bool,
     mut note_child: F,
 ) where
@@ -754,15 +771,10 @@ fn note_children<E, D, F>(
         );
 
         if let Some(ref mut child_data) = child_data {
-            // FIXME(emilio, bug 2091537): This child_flags business is rather hacky. We need it to
-            // be able to tell an animation-only recascade from a real child recascade, in order to
-            // not incorrectly process transitions. Find a better solution for this!
-            if child_restyle_hint.intersects(RestyleHint::recascade_self()) {
-                let mut flags = child_flags;
-                if child_data.hint.intersects(RestyleHint::RECASCADE_SELF) {
-                    flags.remove(ElementDataFlags::RECASCADE_ONLY_FOR_ANCESTOR_ANIMATIONS);
-                }
-                child_data.flags.insert(flags);
+            if is_animation_restyle {
+                child_data
+                    .flags
+                    .insert(ElementDataFlags::ANCESTOR_ANIMATIONS_CHANGED);
             }
             child_data.hint.insert(child_restyle_hint);
 

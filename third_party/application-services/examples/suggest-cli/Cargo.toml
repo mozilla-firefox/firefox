@@ -11,7 +11,7 @@ remote_settings = { path = "../../components/remote_settings" }
 viaduct = { path = "../../components/viaduct"}
 viaduct-backend-rust = { path = "../../components/support/viaduct-backend-rust" }
 log = "0.4"
-clap = {version = "4.2", default-features = false, features = ["std", "derive"]}
+clap = {version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"]}
 suggest = { path = "../../components/suggest" }
 anyhow = "1.0"
 nss-as = { version = "0.1.0", path = "../../components/support/rc_crypto/nss" }

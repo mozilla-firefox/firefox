@@ -17,6 +17,7 @@ import mozilla.components.feature.accounts.push.CloseTabsUseCases
 import mozilla.components.feature.app.links.AppLinksUseCases
 import mozilla.components.feature.contextmenu.ContextMenuUseCases
 import mozilla.components.feature.downloads.DownloadsUseCases
+import mozilla.components.feature.pictureinpicture.PictureInPictureUseCases
 import mozilla.components.feature.pwa.WebAppShortcutManager
 import mozilla.components.feature.pwa.WebAppUseCases
 import mozilla.components.feature.search.SearchUseCases
@@ -185,6 +186,8 @@ class UseCases(
             settings = context.components.settings,
         )
     }
+
+    val pictureInPictureUseCases by lazy { PictureInPictureUseCases(store.value) }
 
     val privateBrowsingLockUseCases by lazy {
         PrivateBrowsingLockUseCases(appStore.value)

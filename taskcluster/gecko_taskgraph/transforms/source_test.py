@@ -8,7 +8,6 @@ treeherder configuration and attributes for that platform.
 """
 
 import copy
-import functools
 import os
 from typing import Optional, Union
 
@@ -20,7 +19,6 @@ from taskgraph.util.yaml import load_yaml
 
 from gecko_taskgraph import GECKO
 from gecko_taskgraph.transforms.job import JobDescriptionSchema
-from gecko_taskgraph.util.hash import get_file_finder
 
 
 class SourceTestDescriptionSchema(Schema, forbid_unknown_fields=False, kw_only=True):
@@ -349,28 +347,4 @@ def remove_optimization_on_central(config, jobs):
             del job["when"]
         if "optimization" in job and "skip-unless-mozlint" in job["optimization"]:
             del job["optimization"]
-        yield job
-
-
-@functools.cache
-def root_json_files():
-    """Tracked JSON files at the root of the tree, minus try_task_config.json."""
-    finder = get_file_finder(GECKO)
-    return sorted(
-        path for path, _ in finder.find("*.json") if path != "try_task_config.json"
-    )
-
-
-@transforms.add
-def ignore_try_task_config(config, jobs):
-    """
-    ``**/*.json`` also matches the try_task_config.json that ``mach try`` commits
-    on top of every try push. Globs don't support negation, so narrow it to
-    JSON files in subdirectories plus the ones tracked at the root.
-    """
-    for job in jobs:
-        patterns = (job.get("when") or {}).get("files-changed") or []
-        if "**/*.json" in patterns:
-            i = patterns.index("**/*.json")
-            patterns[i : i + 1] = ["*/**/*.json", *root_json_files()]
         yield job

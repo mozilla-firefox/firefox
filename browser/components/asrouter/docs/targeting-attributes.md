@@ -213,14 +213,15 @@ window, or `null` if it doesn't match any category. With multiple windows
 open, this isn't necessarily the window the message is evaluated for, or the
 tab that fired the trigger.
 
-* `"product-detail"`: a product page on Amazon, Walmart, Best Buy or Sephora,
-  US (`.com`) only.
-* `"shopping-home"`: the home page of a US or Canadian retailer.
-* `"news-home"`: the home page of a US or Canadian news site.
+* `"product-detail"`: a product page on a supported retailer, which differs by
+  market: Amazon, Walmart, Best Buy and Sephora in the US, and Amazon, Argos,
+  Currys and Boots in the UK.
+* `"shopping-home"`: the home page of a US, Canadian or UK retailer.
+* `"news-home"`: the home page of a US, Canadian or UK news site.
 
 Matching is done on the URL only, against a list of hosts and paths. Page
-content isn't read. US and Canadian sites share one list, so use `region` if
-you only want users in one market.
+content isn't read. Every market shares one list, so use `region` if you only
+want users in one of them.
 
 ```{note}
   Only the category is exposed, never the URL, and it must not be recorded in
@@ -248,6 +249,12 @@ currentTabPageCategory == "shopping-home"
 * Is the selected tab on a news home page, in Canada?
 ```java
 currentTabPageCategory == "news-home" && region == "CA"
+```
+* A site serving several markets is matched in all of them, so a UK retailer
+  page can match for a user elsewhere. Pair the category with `region` when the
+  message is meant for one market.
+```java
+currentTabPageCategory == "shopping-home" && region == "GB"
 ```
 
 #### Definition

@@ -1,4 +1,4 @@
-// |reftest| shell-option(--enable-regexp-buffer-boundaries) skip-if(release_or_beta||!xulRuntime.shell) -- regexp-buffer-boundaries is not released yet, requires shell-options
+// |reftest| shell-option(--enable-regexp-buffer-boundaries) skip-if(!xulRuntime.shell) -- requires shell-options
 // Copyright 2026 Ron Buckton. All rights reserved.
 // This code is governed by the BSD license found in the LICENSE file.
 

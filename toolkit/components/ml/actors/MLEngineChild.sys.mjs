@@ -305,8 +305,9 @@ export class MLEngineChild extends JSProcessActorChild {
    * @param {string} engineId - The ID of the engine to remove.
    * @param {boolean} shutDownIfEmpty - If true, shuts down the engine process if no engines remain.
    * @param {boolean} replacement - Flag indicating whether the engine is being replaced.
+   * @param {boolean} [idle] - Whether the engine is shutting down because it was idle for timeoutMS.
    */
-  async removeEngine(engineId, shutDownIfEmpty, replacement) {
+  async removeEngine(engineId, shutDownIfEmpty, replacement, idle = false) {
     this.#engineDispatchers.delete(engineId);
     this.#enginesPresent.delete(engineId);
 
@@ -315,6 +316,7 @@ export class MLEngineChild extends JSProcessActorChild {
         engineId,
         shutdown: shutDownIfEmpty,
         replacement,
+        idle,
       });
     } catch (error) {
       lazy.console.error("Failed to send MLEngine:Removed", error);
@@ -617,7 +619,8 @@ class EngineDispatcher {
         this.terminate.bind(
           this,
           /* shutDownIfEmpty */ true,
-          /* replacement */ false
+          /* replacement */ false,
+          /* idle */ true
         ),
         this.timeoutMS
       );
@@ -749,11 +752,12 @@ class EngineDispatcher {
    *
    * @param {boolean} shutDownIfEmpty - If true, shuts down the engine process if no engines remain.
    * @param {boolean} replacement - Flag indicating whether the engine is being replaced.
+   * @param {boolean} [idle] - Whether the engine is shutting down because it was idle for timeoutMS.
    */
-  async terminate(shutDownIfEmpty, replacement) {
+  async terminate(shutDownIfEmpty, replacement, idle = false) {
     if (this.#port) {
       // This call will trigger back an EnginePort:Discard that will close the port
-      this.#port.postMessage({ type: "EnginePort:EngineTerminated" });
+      this.#port.postMessage({ type: "EnginePort:EngineTerminated", idle });
     }
 
     this.#setStatus("TERMINATING");
@@ -768,7 +772,8 @@ class EngineDispatcher {
     await this.mlEngineChild.removeEngine(
       this.#engineId,
       shutDownIfEmpty,
-      replacement
+      replacement,
+      idle
     );
   }
 }

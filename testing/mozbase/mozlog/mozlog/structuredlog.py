@@ -150,6 +150,29 @@ Allowed actions, and subfields:
       test - ID of the test that was running (optional)
       subsuite - Name of the subsuite for the tests that ran (optional)
 
+  asan_error
+      kind - AddressSanitizer error kind from the SUMMARY line (e.g. "SEGV",
+             "heap-use-after-free"), derived from the header when the
+             process died before printing one
+      message - The header text after "ERROR: AddressSanitizer: " (e.g.
+                "SEGV on unknown address 0x0000000000b (pc ... T0)")
+      pid - PID of the process the report is about (optional)
+      file - Source file of the SUMMARY location (optional)
+      lineno - Source line of the SUMMARY location (optional)
+      column - Source column of the SUMMARY location (optional)
+      function - Function of the SUMMARY location (optional)
+      stack - Stack of the faulting access (list of profiler-format frame
+              dicts with function/file/line/column or module/module_offset)
+              (optional)
+      stacks - The report's other labeled stacks, each a dict with a "label"
+               (e.g. "freed by thread T0 here") and a "stack" (optional)
+      scope - An identifier for the set of tests run during the browser session
+              (e.g. a directory name) (optional)
+      test - ID of the test that was running (optional)
+      quiet - Boolean indicating that the report belongs to a test run that
+              will be retried, so it should not fail the test group
+      subsuite - Name of the subsuite for the tests that ran (optional)
+
   mozleak_object
      process - Process that leaked
      count - Number of instances that leaked
@@ -769,6 +792,24 @@ class StructuredLogger:
     )
     def ubsan_error(self, data):
         self._log_data("ubsan_error", data)
+
+    @log_action(
+        Unicode("kind"),
+        Unicode("message"),
+        Int("pid", optional=True, default=None),
+        Unicode("file", optional=True, default=None),
+        Int("lineno", optional=True, default=None),
+        Int("column", optional=True, default=None),
+        Unicode("function", optional=True, default=None),
+        List(Dict(Any), "stack", optional=True, default=None),
+        List(Dict(Any), "stacks", optional=True, default=None),
+        Unicode("scope", optional=True, default=None),
+        TestId("test", default=None, optional=True),
+        Boolean("quiet", optional=True, default=False),
+        Unicode("subsuite", default=None, optional=True),
+    )
+    def asan_error(self, data):
+        self._log_data("asan_error", data)
 
     @log_action(
         Unicode("process"),

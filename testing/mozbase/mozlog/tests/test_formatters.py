@@ -695,6 +695,31 @@ Unexpected results: 3
             "WARNING UndefinedBehaviorSanitizer: division by zero", self.loglines[0]
         )
 
+    def test_asan_error(self):
+        self.logger.asan_error(
+            "SEGV",
+            "SEGV on unknown address 0x00000000030b (pc 0x7b03e9dd40af T0)",
+            pid=28130,
+            file="Document.h",
+            lineno=1942,
+            column=12,
+            function="GetInnerWindow",
+        )
+        self.assertIn(
+            "ERROR AddressSanitizer: SEGV on unknown address 0x00000000030b "
+            "(pc 0x7b03e9dd40af T0) [Document.h:1942:12]",
+            self.loglines[0],
+        )
+
+    def test_asan_error_without_location(self):
+        self.logger.asan_error(
+            "double-free", "attempting double-free on 0x1 in thread T0:"
+        )
+        self.assertIn(
+            "ERROR AddressSanitizer: attempting double-free on 0x1 in thread T0:",
+            self.loglines[0],
+        )
+
     def test_expected_fail_log_conversion(self):
         """Test that ERROR TEST-EXPECTED-FAIL messages are converted to TODO"""
         self.set_position()

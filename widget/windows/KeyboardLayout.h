@@ -454,6 +454,10 @@ class MOZ_STACK_CLASS NativeKey final {
   bool IsShift() const { return mModKeyState.IsShift(); }
   bool IsControl() const { return mModKeyState.IsControl(); }
   bool IsAlt() const { return mModKeyState.IsAlt(); }
+  bool IsMouseButton() const {
+    return GET_DEVICE_LPARAM(mMsg.lParam) == FAPPCOMMAND_MOUSE;
+  }
+
   bool MaybeEmulatingAltGraph() const;
   Modifiers GetModifiers() const { return mModKeyState.GetModifiers(); }
   const ModifierKeyState& ModifierKeyStateRef() const { return mModKeyState; }

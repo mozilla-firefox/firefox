@@ -27,8 +27,20 @@
   <string name="mozac_feature_listentopage_error_could_not_finish_playing_audio">S’u përfundua luajtja e audios. Riprovoni.</string>
   <!-- Error text shown on the Listen to Page media player when no voice options are available to play the audio. -->
   <string name="mozac_feature_listentopage_error_voice_options_not_available">S’ka mundësi zëri</string>
+  <!-- Title of the Listen to page lock-screen notification: displayed instead of the page title, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_title">Skedë private</string>
+  <!-- Message of the Listen to page lock-screen notification: displayed instead of the page URL, when the page being read is in a Private tab (to protect the user's privacy) -->
+  <string name="mozac_feature_listentopage_private_tab_site">Sajt i fshehur</string>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">Mbylle</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
+  <string name="mozac_feature_listentopage_voice_options">Mundësi Zanore</string>
+  <!-- Listen to Page media player: content description for the button that opens the list of playback speeds. -->
+  <string name="mozac_feature_listentopage_playback_speed">Shpejtësi Loje</string>
+  <!-- Listen to Page media player: screen reader state of the voice while its menu is closed. -->
+  <string name="mozac_feature_listentopage_dropdown_voice_collapsed">I tkurrur</string>
+  <!-- Listen to Page media player: screen reader state of the voice and playback speed buttons while their menu is open. -->
+  <string name="mozac_feature_listentopage_dropdown_expanded">I zgjeruar</string>
   <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
   <string name="mozac_feature_listentopage_audio">Audio</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->

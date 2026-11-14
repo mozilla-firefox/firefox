@@ -19,6 +19,219 @@ async function openFirstrunPage() {
   return tab;
 }
 
+add_task(async function test_single_page_onboarding_pref() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", true],
+      ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
+      ["browser.smartwindow.firstrun.modelChoice", ""],
+      ["browser.smartwindow.firstrun.hasCompleted", false],
+    ],
+  });
+  const tab = await openFirstrunPage();
+  try {
+    await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+      await ContentTaskUtils.waitForCondition(
+        () =>
+          content.document
+            .querySelector("smartwindow-onboarding")
+            ?.shadowRoot?.getElementById("save"),
+        "The pref selects the single-page onboarding"
+      );
+      Assert.ok(
+        !content.document.getElementById("multi-stage-message-root"),
+        "The old onboarding root is not created"
+      );
+      Assert.equal(
+        content.document.querySelector("smartwindow-onboarding").parentElement
+          .id,
+        "onboarding-root",
+        "The new flow mounts inside the shared container"
+      );
+      Assert.ok(
+        !Array.from(content.document.scripts).some(script =>
+          script.src.endsWith("aboutwelcome.bundle.js")
+        ),
+        "The about:welcome bundle is not loaded"
+      );
+    });
+    Assert.equal(
+      Services.prefs.getStringPref("browser.smartwindow.firstrun.modelChoice"),
+      "",
+      "Showing the UI does not save a model choice"
+    );
+    Assert.ok(
+      !Services.prefs.getBoolPref("browser.smartwindow.firstrun.hasCompleted"),
+      "Showing the UI does not complete onboarding"
+    );
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+async function getSinglePageOnboardingDefaults() {
+  const tab = await openFirstrunPage();
+  try {
+    return await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+      await ContentTaskUtils.waitForCondition(
+        () =>
+          content.document
+            .querySelector("smartwindow-onboarding")
+            ?.shadowRoot?.getElementById("save"),
+        "Setup is rendered"
+      );
+      const onboarding = content.document.querySelector(
+        "smartwindow-onboarding"
+      );
+      return {
+        recommendedModelChoiceId: onboarding.shadowRoot
+          .getElementById("model")
+          .options.find(option => option.secondaryLabelL10nId)?.value,
+        modelChoiceId: onboarding.modelChoiceId,
+        memoriesChoice: onboarding.memoriesChoice,
+        isDefaultWindow: onboarding.isDefaultWindow,
+      };
+    });
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+  }
+}
+
+add_task(async function test_single_page_onboarding_defaults() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", true],
+      ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
+      ["browser.smartwindow.firstrun.hasCompleted", false],
+      ["browser.smartwindow.memories.generateFromConversation", true],
+      ["browser.smartwindow.memories.generateFromHistory", false],
+    ],
+  });
+
+  withHomeRegion("US");
+  Assert.deepEqual(
+    await getSinglePageOnboardingDefaults(),
+    {
+      modelChoiceId: "4",
+      recommendedModelChoiceId: "4",
+      memoriesChoice: "chats",
+      isDefaultWindow: true,
+    },
+    "Outside the EEA defaults to Auto, current memories prefs and default window"
+  );
+
+  withHomeRegion("DE");
+  Assert.deepEqual(
+    await getSinglePageOnboardingDefaults(),
+    {
+      modelChoiceId: "3",
+      recommendedModelChoiceId: "3",
+      memoriesChoice: "chats",
+      isDefaultWindow: true,
+    },
+    "In the EEA the promoted Mistral model is the default"
+  );
+
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_single_page_onboarding_save() {
+  const explainerURL = "https://example.com/";
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", true],
+      ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
+      ["browser.smartwindow.firstrun.explainerURL", explainerURL],
+      ["browser.smartwindow.firstrun.modelChoice", ""],
+      ["browser.smartwindow.firstrun.hasCompleted", false],
+      ["browser.smartwindow.isDefaultWindow", true],
+      ["browser.smartwindow.memories.generateFromConversation", true],
+      ["browser.smartwindow.memories.generateFromHistory", true],
+    ],
+  });
+  withHomeRegion("US");
+
+  const calls = [];
+  const originalOpenLinkIn = window.openLinkIn;
+  window.openLinkIn = (url, where) => {
+    calls.push({ url, where });
+    return null;
+  };
+
+  const restoreSignIn = skipSignIn();
+  const tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "about:blank"
+  );
+  try {
+    await AIWindow.launchWindow(tab.linkedBrowser);
+    await TestUtils.waitForCondition(
+      () => tab.linkedBrowser.currentURI.spec === FIRSTRUN_URL,
+      "Navigated to firstrun.html"
+    );
+    await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+      await ContentTaskUtils.waitForCondition(
+        () =>
+          content.document
+            .querySelector("smartwindow-onboarding")
+            ?.shadowRoot?.getElementById("save"),
+        "Setup is rendered"
+      );
+      const onboarding = content.document.querySelector(
+        "smartwindow-onboarding"
+      );
+      onboarding.modelChoiceId = "2";
+      onboarding.memoriesChoice = "browsing";
+      onboarding.isDefaultWindow = false;
+      await onboarding.updateComplete;
+      onboarding.shadowRoot.getElementById("save").click();
+    });
+
+    await TestUtils.waitForCondition(() => calls.length, "Explainer opened");
+    Assert.deepEqual(
+      calls,
+      [{ url: explainerURL, where: "tab" }],
+      "The explainer page opens in a tab"
+    );
+    Assert.equal(
+      Services.prefs.getStringPref("browser.smartwindow.firstrun.modelChoice"),
+      "2",
+      "Model choice is saved"
+    );
+    Assert.ok(
+      !Services.prefs.getBoolPref(
+        "browser.smartwindow.memories.generateFromConversation"
+      ),
+      "Chats memories are off for browsing only"
+    );
+    Assert.ok(
+      Services.prefs.getBoolPref(
+        "browser.smartwindow.memories.generateFromHistory"
+      ),
+      "Browsing memories are on for browsing only"
+    );
+    Assert.ok(
+      !Services.prefs.getBoolPref("browser.smartwindow.isDefaultWindow"),
+      "Default window choice is saved"
+    );
+    Assert.ok(
+      Services.prefs.getBoolPref("browser.smartwindow.firstrun.hasCompleted"),
+      "Onboarding is marked completed"
+    );
+    await TestUtils.waitForCondition(
+      () => tab.linkedBrowser.currentURI.spec === AIWindow.newTabURL,
+      "Navigates to the Smart Window new tab page"
+    );
+  } finally {
+    window.openLinkIn = originalOpenLinkIn;
+    AIWindow.toggleAIWindow(window, false);
+    restoreSignIn();
+    BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
 function withHomeRegion(region) {
   const originalRegion = Region.home;
   Region._setHomeRegion(region, false);

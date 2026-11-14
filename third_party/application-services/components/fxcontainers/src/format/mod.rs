@@ -60,6 +60,11 @@ pub(crate) fn parse(bytes: &[u8]) -> Result<(ContainersData, bool), ParseError> 
         migrated = true;
     }
 
+    if data.version == 8 {
+        migrations::migrate_8_to_9(&mut data);
+        migrated = true;
+    }
+
     if data.version != LATEST_VERSION {
         return Err(ParseError::UnsupportedVersion(data.version));
     }

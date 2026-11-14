@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<head>
+<style>
+@keyframes k { from { opacity: 1 } to { opacity: 0.5 } }
+#a { width: 10px; height: 10px; }
+video { display: block; }
+</style>
+</head>
+<body>
+<div id="a"></div>
+<div><video id="vA" width="320" height="240"></video></div>
+<video id="vB" controls width="300" height="200"></video>
+<script>
+const WEBM = "data:video/webm;base64,GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQJChYECGFOAZwEAAAAAAAX1EU2bdLpNu4tTq4QVSalmU6yBoU27i1OrhBZUrmtTrIHYTbuMU6uEElTDZ1OsggEkTbuMU6uEHFO7a1OsggXf7AEAAAAAAABZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAVSalmsirXsYMPQkBNgI1MYXZmNTkuMTcuMTAzV0GNTGF2ZjU5LjE3LjEwM0SJiECPQAAAAAAAFlSua8euAQAAAAAAAD7XgQFzxYiKlfLca4X11ZyBAFNuhVZpZGVvIrWcg2VuZ4aFVl9WUDiDgQEj44OEAfygVeCKsIIBQLqB8JqBAhJUw2fnc3MBAAAAAAAAIGPAgGfImkWjh0VOQ09ERVJEh41MYXZmNTkuMTcuMTAzc3MBAAAAAAAAM2PAi2PFiIqV8txrhfXVZ8iiRaOIRFVSQVRJT05Eh5QwMDowMDowMS4wMDAwMDAwMDAAAB9DtnVESeeBAKNAo4EAAIAwEgCdASpAAfAABAcIhYWIhYSIFYIABhYE9waBZJ9r25snOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHsnOHr0AP7194CjnoEAIQDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQBDANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BAGQA0QIAEBCsABgAGFgv9AAIgAQzX61yT5xzAACjnoEAhQDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQCnANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BAMgA0QIAEBCsABgAGFgv9AAIgAQzX61yT5xzAACjnoEA6QDRAgAQEKwUYABhYL/QACIAEM1+tck+ccwAAKOegQELANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BASwA0QIAEBCsABgAGFgv9AAIgAQzX61yT5xzAACjnoEBTQDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQFvANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BAZAA0QIAEBCsABgAGFgv9AAIgAQzX61yT5xzAACjnoEBsQDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQHTANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BAfQA0QIAEBCsABgAGFgv9AAIgAQzX61yT5xzAACjnoECFQDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQI3ANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BAlgA0QIAEBCsFGAAYWC/0AAiABDNfrXJPnHMAACjnoECeQDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQKbANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BArwA0QIAEBCsABgAGFgv9AAIgAQzX61yT5xzAACjnoEC3QDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQL/ANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BAyAA0QIAEBCsABgAGFgv9AAIgAQzX61yT5xzAACjnoEDQQDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQNjANECABAQrAAYABhYL/QACIAEM1+tck+ccwAAo56BA4QA0QIAEBCsABgAGFgv9AAIgAQzX61yT5xzAACjnoEDpQDRAgAQEKwAGAAYWC/0AAiABDNfrXJPnHMAAKOegQPHANECABAQrBRgAGFgv9AAIgAQzX61yT5xzAAAHFO7a5G7j7OBALeK94EB8YIBkPCBAw==";
+const S = { armed: false, playing: false, done: false, w: 300 };
+S.A = document.getElementById("vA");
+S.B = document.getElementById("vB");
+S.a = document.getElementById("a");
+S.C = document.createElement("video");
+
+function waitWithSyncXHR(ms) {
+  const end = performance.now() + ms;
+  while (performance.now() < end) {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", location.href, false);
+    xhr.send();
+  }
+}
+
+function collect(n) {
+  for (let i = 0; i < n; i++) {
+    SpecialPowers.forceGC();
+    SpecialPowers.forceCC();
+  }
+}
+
+function finish() {
+  S.done = true;
+  clearTimeout(S.fallback);
+  setTimeout(() => document.documentElement.removeAttribute("class"), 0);
+}
+
+function arm() {
+  S.armed = true;
+  S.a.style.animation = "k 100s";
+  S.a.getAnimations()[0].finished.catch(onMicro);
+  S.a.style.animation = "none";
+  S.w = S.w == 300 ? 310 : 300;
+  S.B.style.width = S.w + "px";
+}
+
+function teardown() {
+  S.C.appendChild(S.tr);
+  S.A.remove();
+  S.A = null;
+  S.tr = null;
+  waitWithSyncXHR(300);
+  collect(4);
+  waitWithSyncXHR(50);
+  collect(3);
+  finish();
+}
+
+function onMicro() {
+  S.armed = false;
+  if (S.done || !S.A) {
+    return;
+  }
+  if (S.playing && S.A.paused) {
+    S.done = true;
+    teardown();
+  }
+}
+
+const mc = new MessageChannel();
+mc.port1.onmessage = () => {
+  if (S.done) {
+    return;
+  }
+  if (!S.armed) {
+    arm();
+  }
+  mc.port2.postMessage(0);
+};
+
+function start() {
+  S.tr = document.createElement("track");
+  S.tr.kind = "subtitles";
+  S.A.appendChild(S.tr);
+  const t = S.tr.track;
+  t.mode = "showing";
+  const c1 = new VTTCue(0, 0.3, "one");
+  c1.pauseOnExit = true;
+  t.addCue(c1);
+  t.addCue(new VTTCue(0.3, 100, "two"));
+  S.A.addEventListener("playing", () => {
+    S.playing = true;
+  });
+  S.A.addEventListener("pause", () => {
+    S.playing = false;
+    if (!S.done && S.A) {
+      S.A.currentTime = 0;
+      S.A.play().catch(() => {});
+    }
+  });
+  S.A.muted = true;
+  S.A.src = WEBM;
+  S.A.play().catch(() => {});
+  mc.port2.postMessage(0);
+  S.fallback = setTimeout(() => {
+    dump("fallback timeout\n");
+    finish();
+  }, 10000);
+}
+
+window.addEventListener("load", start);
+</script>
+</body>
+</html>

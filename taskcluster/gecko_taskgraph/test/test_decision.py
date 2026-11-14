@@ -279,6 +279,60 @@ def test_decision_parameters_git_files_changed_base(mock_get_repository, options
     assert params["files_changed"] == ["python/mozboot/mozboot/debian.py"]
 
 
+@patch("gecko_taskgraph.decision.get_hg_revision_metadata")
+@patch("gecko_taskgraph.decision.get_repository")
+@patch("gecko_taskgraph.decision.get_changed_files")
+def test_decision_parameters_hg_files_changed_ignores_try_task_config(
+    mock_get_changed_files,
+    mock_get_repository,
+    mock_get_hg_revision_metadata,
+    options,
+):
+    mock_get_changed_files.return_value = [
+        "try_task_config.json",
+        "mobile/android/fenix/app/build.gradle",
+        "taskcluster/try_task_config.json",
+    ]
+    _note_mock_repo(mock_get_repository, mock_get_hg_revision_metadata, note=None)
+    opts = {**options, "project": "try"}
+    ttc = {"version": 2, "parameters": {"optimize_target_tasks": True}}
+    with MockedOpen({TTC_FILE: json.dumps(ttc)}):
+        params = decision.get_decision_parameters(FAKE_GRAPH_CONFIG, opts)
+
+    assert params["files_changed"] == [
+        "mobile/android/fenix/app/build.gradle",
+        "taskcluster/try_task_config.json",
+    ]
+
+
+@patch("gecko_taskgraph.decision.get_repository")
+def test_decision_parameters_git_files_changed_ignores_try_task_config(
+    mock_get_repository, options
+):
+    mock_repo = MagicMock()
+    mock_repo.NULL_REVISION = "0" * 40
+    mock_repo.get_commit_message.return_value = "commit message"
+    mock_repo.get_note.return_value = None
+    mock_repo.get_changed_files.return_value = [
+        "mobile/android/fenix/app/build.gradle",
+        "try_task_config.json",
+    ]
+    mock_get_repository.return_value = mock_repo
+
+    opts = {
+        **options,
+        "base_repository": "https://github.com/mozilla-firefox/firefox",
+        "head_repository": "https://github.com/mozilla-firefox/firefox",
+        "project": "try",
+        "repository_type": "git",
+        "tasks_for": "github-push",
+    }
+    with MockedOpen({TTC_FILE: None}):
+        params = decision.get_decision_parameters(FAKE_GRAPH_CONFIG, opts)
+
+    assert params["files_changed"] == ["mobile/android/fenix/app/build.gradle"]
+
+
 @pytest.fixture
 def bundle_env(monkeypatch, tmp_path):
     artifacts = tmp_path / "artifacts"

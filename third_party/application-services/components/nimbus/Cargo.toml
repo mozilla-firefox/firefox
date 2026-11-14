@@ -44,6 +44,6 @@ uniffi = { version = "0.32", features = ["build"] }
 
 [dev-dependencies]
 error-support = { path = "../support/error", features = ["testing"] }
-clap = { version = "4.2", default-features = false, features = ["std", "derive"] }
+clap = { version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"] }
 tempfile = "3"
 ctor = "1"

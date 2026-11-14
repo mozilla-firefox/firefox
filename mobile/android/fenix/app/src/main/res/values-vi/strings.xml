@@ -550,7 +550,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Không phải bây giờ</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Bỏ qua</string>
+  <string name="nova_onboarding_skip_button">Bỏ qua</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Sẵn sàng để tự do bứt phá</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

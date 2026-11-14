@@ -88,10 +88,33 @@ pub trait RemoteSettingsTelemetry: Send + Sync {
     fn report_uptake(&self, extras: UptakeEventExtras);
 }
 
+#[cfg(not(feature = "glean-sym"))]
 struct NoopRemoteSettingsTelemetry;
 
+#[cfg(not(feature = "glean-sym"))]
 impl RemoteSettingsTelemetry for NoopRemoteSettingsTelemetry {
     fn report_uptake(&self, _extras: UptakeEventExtras) {}
+}
+
+#[cfg(feature = "glean-sym")]
+struct GleanSymTelemetry;
+
+#[cfg(feature = "glean-sym")]
+impl RemoteSettingsTelemetry for GleanSymTelemetry {
+    fn report_uptake(&self, extras: UptakeEventExtras) {
+        use crate::glean_metrics::remote_settings::{
+            uptake_remotesettings, UptakeRemotesettingsExtra,
+        };
+        uptake_remotesettings.record(UptakeRemotesettingsExtra {
+            value: extras.value,
+            source: extras.source,
+            age: extras.age,
+            trigger: extras.trigger,
+            timestamp: extras.timestamp,
+            duration: extras.duration,
+            errorname: extras.error_name,
+        });
+    }
 }
 
 /// Wrapper around [RemoteSettingsTelemetry] used internally.
@@ -100,15 +123,23 @@ pub struct RemoteSettingsTelemetryWrapper {
     inner: Arc<dyn RemoteSettingsTelemetry>,
 }
 
+impl Default for RemoteSettingsTelemetryWrapper {
+    fn default() -> Self {
+        // Record telemetry directly from Rust.
+        // [crate::RemoteSettingsService::set_telemetry] will be ignored.
+        #[cfg(feature = "glean-sym")]
+        let inner = Arc::new(GleanSymTelemetry);
+        // Otherwise, set to no-op untils the application calls
+        // [crate::RemoteSettingsService::set_telemetry].
+        #[cfg(not(feature = "glean-sym"))]
+        let inner = Arc::new(NoopRemoteSettingsTelemetry);
+        Self::new(inner)
+    }
+}
+
 impl RemoteSettingsTelemetryWrapper {
     pub fn new(inner: Arc<dyn RemoteSettingsTelemetry>) -> Self {
         Self { inner }
-    }
-
-    pub fn noop() -> Self {
-        Self {
-            inner: Arc::new(NoopRemoteSettingsTelemetry),
-        }
     }
 
     pub fn report_uptake_success(&self, source: &str, duration: Option<u64>) {
@@ -146,6 +177,7 @@ impl RemoteSettingsTelemetryWrapper {
             .unwrap_or("")
             .trim()
             .to_string();
+
         self.inner.report_uptake(UptakeEventExtras {
             value: Some(error_to_status(error).to_string()),
             source: Some(source.to_string()),

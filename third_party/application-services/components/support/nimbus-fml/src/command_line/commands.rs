@@ -1,12 +1,13 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use std::path::{Path, PathBuf};
+
+use anyhow::{Error, Result, bail};
 
 use crate::intermediate_representation::TargetLanguage;
 use crate::util::loaders::LoaderConfig;
-use anyhow::{bail, Error, Result};
-use std::path::Path;
-use std::path::PathBuf;
 
 pub(crate) enum CliCmd {
     Generate(GenerateStructCmd),
@@ -50,14 +51,11 @@ pub(crate) struct ValidateCmd {
     pub(crate) loader: LoaderConfig,
 }
 
+#[derive(Default)]
 pub(crate) struct LintCmd {
     pub(crate) manifest: String,
     pub(crate) loader: LoaderConfig,
-    pub(crate) allow: Vec<String>,
-    pub(crate) deny: Vec<String>,
-    pub(crate) error_on_warning: bool,
-    pub(crate) include_imports: bool,
-    pub(crate) as_json: bool,
+    pub(crate) code_review_json: Option<PathBuf>,
 }
 
 pub(crate) struct PrintChannelsCmd {

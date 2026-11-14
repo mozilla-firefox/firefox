@@ -186,6 +186,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">메뉴 사용자 지정</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">이 섹션을 숨길 수 없음</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">기본 메뉴로 재설정하시겠습니까?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">사용자 지정이 제거되며 되돌릴 수 없습니다.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">재설정</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">취소</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">뒤로</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -303,6 +313,8 @@
   <string name="browser_menu_webcompat_reporter_2">깨진 사이트 신고</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">그룹에 추가</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">그룹으로 이동</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">번역됨</string>
   <!-- Browser menu label for the print feature -->
@@ -550,7 +562,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">나중에</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">건너뛰기</string>
+  <string name="nova_onboarding_skip_button">건너뛰기</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">자유롭게 달릴 준비를 하세요</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -590,6 +602,14 @@
   <string name="nova_onboarding_sync_subtitle">모든 기기에서 북마크, 비밀번호 등을 한 번에 가져오세요. 개인 데이터는 암호화되어 안전하게 유지됩니다.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">동기화 시작</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">스캔하여 내 컴퓨터와 연결 완료</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[QR 코드가 없나요? 컴퓨터에서 <b>firefox.com/pair</b>로 이동하세요.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">연결 코드 스캔</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">이메일로 로그인</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">더 나은 인터넷을 만들 수 있도록 도와주세요</string>
   <!--
@@ -2518,6 +2538,12 @@
   <string name="snackbar_private_tab_closed">사생활 보호 탭 닫음</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">실행취소</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">%1$s에 추가됨</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">%1$s에 이동됨</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">보기</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned

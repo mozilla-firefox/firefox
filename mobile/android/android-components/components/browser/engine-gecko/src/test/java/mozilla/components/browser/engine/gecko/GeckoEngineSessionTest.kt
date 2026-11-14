@@ -10,6 +10,7 @@ import android.os.Handler
 import android.os.Looper.getMainLooper
 import android.os.Message
 import android.view.WindowManager
+import androidx.annotation.OptIn
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.security.Principal
 import java.security.cert.X509Certificate
@@ -82,6 +83,7 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mozilla.geckoview.AllowOrDeny
 import org.mozilla.geckoview.ContentBlocking
+import org.mozilla.geckoview.ExperimentalGeckoViewApi
 import org.mozilla.geckoview.GeckoResult
 import org.mozilla.geckoview.GeckoRuntime
 import org.mozilla.geckoview.GeckoSession
@@ -98,6 +100,7 @@ import org.mozilla.geckoview.GeckoSession.PermissionDelegate.PERMISSION_TRACKING
 import org.mozilla.geckoview.GeckoSession.ProgressDelegate.SecurityInformation
 import org.mozilla.geckoview.GeckoSessionSettings
 import org.mozilla.geckoview.PdfViewerController
+import org.mozilla.geckoview.PictureInPictureController
 import org.mozilla.geckoview.SessionFinder
 import org.mozilla.geckoview.SessionPdfFileSaver
 import org.mozilla.geckoview.TranslationsController
@@ -5300,6 +5303,201 @@ class GeckoEngineSessionTest {
         shadowOf(getMainLooper()).idle()
 
         assertTrue(onResultCalled)
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `source session is kept active while its picture-in-picture window is open`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+        val delegate = capturePictureInPictureDelegate()
+
+        delegate.onEnterPictureInPicture(geckoSession, "token")
+
+        verify(sessionPictureInPicture).setKeepActive(true)
+        verify(geckoSession, never()).setActive(anyBoolean())
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `source session the view stopped showing is deactivated once Gecko closes its picture-in-picture window`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        whenever(sessionPictureInPicture.setKeepActive(false)).thenReturn(true)
+        GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+        val delegate = capturePictureInPictureDelegate()
+
+        delegate.onEnterPictureInPicture(geckoSession, "token")
+        delegate.onExitPictureInPicture(geckoSession)
+
+        verify(sessionPictureInPicture).setKeepActive(false)
+        verify(geckoSession).setActive(false)
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `source session the view still shows stays active once Gecko closes its picture-in-picture window`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        whenever(sessionPictureInPicture.setKeepActive(false)).thenReturn(false)
+        GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+        val delegate = capturePictureInPictureDelegate()
+
+        delegate.onEnterPictureInPicture(geckoSession, "token")
+        delegate.onExitPictureInPicture(geckoSession)
+
+        verify(sessionPictureInPicture).setKeepActive(false)
+        verify(geckoSession, never()).setActive(anyBoolean())
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `source session the view stopped showing is deactivated once the application closes its picture-in-picture window`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        whenever(sessionPictureInPicture.setKeepActive(false)).thenReturn(true)
+        val engineSession = GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+        val delegate = capturePictureInPictureDelegate()
+
+        delegate.onEnterPictureInPicture(geckoSession, "token")
+        engineSession.exitPictureInPicture()
+
+        verify(sessionPictureInPicture).exit()
+        verify(sessionPictureInPicture).setKeepActive(false)
+        verify(geckoSession).setActive(false)
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `source session the view still shows stays active once the application closes its picture-in-picture window`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        whenever(sessionPictureInPicture.setKeepActive(false)).thenReturn(false)
+        val engineSession = GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+        val delegate = capturePictureInPictureDelegate()
+
+        delegate.onEnterPictureInPicture(geckoSession, "token")
+        engineSession.exitPictureInPicture()
+
+        verify(sessionPictureInPicture).exit()
+        verify(sessionPictureInPicture).setKeepActive(false)
+        verify(geckoSession, never()).setActive(anyBoolean())
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `picture-in-picture request is reported finished once Gecko completes it`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        val result = GeckoResult<Void>()
+        whenever(sessionPictureInPicture.request()).thenReturn(result)
+        val engineSession = GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+        var isFinished = false
+        engineSession.register(
+            object : EngineSession.Observer {
+                override fun onPictureInPictureRequestFinished() {
+                    isFinished = true
+                }
+            }
+        )
+
+        engineSession.requestPictureInPicture()
+        shadowOf(getMainLooper()).idle()
+        assertFalse(isFinished)
+
+        result.complete(null)
+        shadowOf(getMainLooper()).idle()
+        assertTrue(isFinished)
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `picture-in-picture request is reported finished once Gecko fails it`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        val result = GeckoResult<Void>()
+        whenever(sessionPictureInPicture.request()).thenReturn(result)
+        val engineSession = GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+        var isFinished = false
+        engineSession.register(
+            object : EngineSession.Observer {
+                override fun onPictureInPictureRequestFinished() {
+                    isFinished = true
+                }
+            }
+        )
+
+        engineSession.requestPictureInPicture()
+        result.completeExceptionally(IllegalStateException())
+        shadowOf(getMainLooper()).idle()
+
+        assertTrue(isFinished)
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `picture-in-picture session from Gecko is passed on to observers loading a blank page`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        val engineSession = GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+
+        val enteredSession = enterPictureInPicture(engineSession, "token")
+
+        assertEquals(GeckoEngineSession.ABOUT_BLANK, (enteredSession as GeckoEngineSession).initialLoadRequest?.url)
+        verify(sessionPictureInPicture).setKeepActive(true)
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `picture-in-picture request from Gecko without a placement token is ignored`() {
+        val sessionPictureInPicture = mockSessionPictureInPicture()
+        val engineSession = GeckoEngineSession(runtime, geckoSessionProvider = geckoSessionProvider)
+
+        val enteredSession = enterPictureInPicture(engineSession, "")
+
+        assertNull(enteredSession)
+        verify(sessionPictureInPicture, never()).setKeepActive(anyBoolean())
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    @Test
+    fun `picture-in-picture session inherits the private mode and contextual identity of its source`() {
+        mockSessionPictureInPicture()
+        val engineSession =
+            GeckoEngineSession(
+                runtime,
+                privateMode = true,
+                contextId = "1",
+                geckoSessionProvider = geckoSessionProvider,
+            )
+
+        val settings = (enterPictureInPicture(engineSession, "token") as GeckoEngineSession).geckoSession.settings
+
+        assertTrue(settings.usePrivateMode)
+        assertEquals("1", settings.contextId)
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    private fun enterPictureInPicture(engineSession: GeckoEngineSession, placementToken: String): EngineSession? {
+        val delegate = capturePictureInPictureDelegate()
+        var enteredSession: EngineSession? = null
+        engineSession.register(
+            object : EngineSession.Observer {
+                override fun onEnterPictureInPicture(session: EngineSession) {
+                    enteredSession = session
+                }
+            }
+        )
+        delegate.onEnterPictureInPicture(geckoSession, placementToken)
+        return enteredSession
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    private fun mockSessionPictureInPicture(): PictureInPictureController.SessionPictureInPicture {
+        val sessionPictureInPicture = mock<PictureInPictureController.SessionPictureInPicture>()
+        whenever(geckoSession.sessionPictureInPicture).thenReturn(sessionPictureInPicture)
+        whenever(sessionPictureInPicture.exit()).thenReturn(GeckoResult())
+        return sessionPictureInPicture
+    }
+
+    @OptIn(ExperimentalGeckoViewApi::class)
+    private fun capturePictureInPictureDelegate(): PictureInPictureController.SessionPictureInPicture.Delegate {
+        val captor = argumentCaptor<PictureInPictureController.SessionPictureInPicture.Delegate>()
+        verify(geckoSession).pictureInPictureDelegate = captor.capture()
+        return captor.value
     }
 
     private fun mockGeckoSession(): GeckoSession {

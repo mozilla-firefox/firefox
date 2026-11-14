@@ -1,13 +1,11 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::{
-    editing::{CursorPosition, CursorSpan},
-    error::Result,
-    intermediate_representation::FeatureManifest,
-    FmlClient,
-};
+use crate::FmlClient;
+use crate::editing::{CursorPosition, CursorSpan};
+use crate::error::Result;
+use crate::intermediate_representation::FeatureManifest;
 
 pub(crate) fn client(path: &str, channel: &str) -> Result<FmlClient> {
     let root = env!("CARGO_MANIFEST_DIR");

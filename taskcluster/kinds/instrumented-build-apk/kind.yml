@@ -14,7 +14,6 @@ kind-dependencies:
     - build-fat-aar
 
 task-defaults:
-    run-on-repo-type: [hg]
     use-gradle-cache: true
     fetches:
         toolchain:
@@ -24,7 +23,6 @@ task-defaults:
             - linux64-jdk-repack
             - linux64-node
     run:
-        clone-with: hg
         using: gradlew
     treeherder:
         kind: test

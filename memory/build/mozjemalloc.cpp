@@ -1365,6 +1365,17 @@ arena_chunk_t* arena_t::PurgeGetSpareChunk(PurgeStats& aStats)
   return chunk;
 }
 
+arena_chunk_t* arena_t::GetExcessSpareChunk() MOZ_REQUIRES(mLock) {
+  if (!mSpares.isEmpty() && !mSpares.isSingle()) {
+    arena_chunk_t* chunk = mSpares.popBack();
+    MOZ_ASSERT(!chunk->mIsPurging);
+    RemoveChunk(chunk);
+    return chunk;
+  }
+
+  return nullptr;
+}
+
 arena_chunk_t* arena_t::PurgeGetDirtyChunk(PurgeCondition aCond,
                                            PurgeStats& aStats)
     MOZ_REQUIRES(mLock) {
@@ -2722,6 +2733,7 @@ static inline void arena_dalloc(void* aPtr, size_t aOffset, arena_t* aArena) {
   }
 
   purge_action_t purge_action;
+  arena_chunk_t* chunk_to_dealloc;
   {
     MOZ_DIAGNOSTIC_ASSERT(arena->mLock.SafeOnThisThread());
     MaybeMutexAutoLock lock(arena->mLock);
@@ -2740,9 +2752,16 @@ static inline void arena_dalloc(void* aPtr, size_t aOffset, arena_t* aArena) {
       arena->DallocLarge(chunk, aPtr);
     }
 
+    // If there is more than one spare chunk then return an excess chunk.
+    chunk_to_dealloc = arena->GetExcessSpareChunk();
     purge_action = arena->ShouldStartPurge();
-  }
 
+  }  // unlock the arena
+
+  if (chunk_to_dealloc) {
+    arena_chunk_dealloc(arena->mChunkAllocator, (void*)chunk_to_dealloc,
+                        kChunkSize);
+  }
   arena->MayDoOrQueuePurge(purge_action, "arena_dalloc");
 }
 

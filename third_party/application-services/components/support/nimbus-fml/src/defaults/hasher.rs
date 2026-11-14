@@ -1,17 +1,15 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::schema::TypeQuery;
-use crate::{
-    intermediate_representation::{FeatureDef, ObjectDef, PropDef, TypeRef},
-    schema::Sha256Hasher,
-};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::hash::{Hash, Hasher};
+
 use serde_json::Value;
-use std::{
-    collections::{BTreeMap, BTreeSet, HashSet},
-    hash::{Hash, Hasher},
-};
+
+use crate::intermediate_representation::{FeatureDef, ObjectDef, PropDef, TypeRef};
+use crate::schema::Sha256Hasher;
+use crate::schema::TypeQuery;
 
 pub(crate) struct DefaultsHasher<'a> {
     object_defs: &'a BTreeMap<String, ObjectDef>,

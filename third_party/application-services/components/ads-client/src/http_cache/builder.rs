@@ -5,6 +5,9 @@
 use super::connection_initializer::HttpCacheConnectionInitializer;
 use super::store::HttpCacheStore;
 use crate::bytesize::ByteSize;
+use crate::clock::Clock;
+#[cfg(test)]
+use crate::clock::MockClock;
 use crate::http_cache::HttpCache;
 use crate::telemetry;
 use crate::IN_MEMORY_DB_PATH;
@@ -47,6 +50,7 @@ pub enum HttpCacheBuilderError {
 }
 
 pub struct HttpCacheBuilder {
+    clock: Clock,
     db_path: Option<PathBuf>,
     default_ttl: Option<Duration>,
     max_size: Option<ByteSize>,
@@ -56,6 +60,7 @@ impl HttpCacheBuilder {
     // `db_path`: location of sqlite file for file-based db. If `None`, the db will be created in-memory.
     pub fn new(db_path: Option<impl Into<PathBuf>>) -> Self {
         Self {
+            clock: Clock::default(),
             db_path: db_path.map(Into::into),
             default_ttl: None,
             max_size: None,
@@ -67,32 +72,19 @@ impl HttpCacheBuilder {
     pub fn build(&self) -> Result<HttpCache, HttpCacheBuilderError> {
         self.validate()?;
 
-        let db = self.open_db()?;
-        let max_size = self.max_size.unwrap_or(DEFAULT_MAX_SIZE);
-        let store = HttpCacheStore::new(db);
-        let default_ttl = self.default_ttl.unwrap_or(DEFAULT_TTL);
-
         Ok(HttpCache {
-            default_ttl,
-            max_size,
-            store,
+            clock: self.clock.clone(),
+            default_ttl: self.default_ttl.unwrap_or(DEFAULT_TTL),
+            max_size: self.max_size.unwrap_or(DEFAULT_MAX_SIZE),
+            store: HttpCacheStore::new(self.open_db()?),
         })
     }
 
+    /// Replaces the system clock with `clock`, for tests that move time.
     #[cfg(test)]
-    pub fn build_for_time_dependent_tests(&self) -> Result<HttpCache, HttpCacheBuilderError> {
-        self.validate()?;
-
-        let db = self.open_db()?;
-        let max_size = self.max_size.unwrap_or(DEFAULT_MAX_SIZE);
-        let store = HttpCacheStore::new_with_test_clock(db);
-        let default_ttl = self.default_ttl.unwrap_or(DEFAULT_TTL);
-
-        Ok(HttpCache {
-            default_ttl,
-            max_size,
-            store,
-        })
+    pub(crate) fn mock_clock(mut self, clock: MockClock) -> Self {
+        self.clock = clock.into();
+        self
     }
 
     pub fn default_ttl(mut self, ttl: Duration) -> Self {

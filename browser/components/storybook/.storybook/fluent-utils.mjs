@@ -4,7 +4,7 @@
 
 import { DOMLocalization } from "@fluent/dom";
 import { FluentBundle, FluentResource } from "@fluent/bundle";
-import { addons } from "@storybook/addons";
+import { addons } from "storybook/preview-api";
 import { PSEUDO_STRATEGY_TRANSFORMS } from "./l10n-pseudo.mjs";
 import {
   FLUENT_SET_STRINGS,
@@ -12,6 +12,27 @@ import {
   STRATEGY_DEFAULT,
   PSEUDO_STRATEGIES,
 } from "./addon-fluent/constants.mjs";
+
+const toolkitResources = import.meta.glob(
+  "../../../../toolkit/locales/en-US/**/*.ftl",
+  { query: "?raw", import: "default" }
+);
+const browserResources = import.meta.glob("../../../locales/en-US/**/*.ftl", {
+  query: "?raw",
+  import: "default",
+});
+const localesPreviewResources = import.meta.glob(
+  "../../../../toolkit/locales-preview/**/*.ftl",
+  { query: "?raw", import: "default" }
+);
+const brandingResources = import.meta.glob(
+  "../../../branding/nightly/locales/en-US/**/*.ftl",
+  { query: "?raw", import: "default" }
+);
+const megalistResources = import.meta.glob(
+  "../../../../toolkit/components/satchel/megalist/content/**/*.ftl",
+  { query: "?raw", import: "default" }
+);
 
 let loadedResources = new Map();
 let currentStrategy;
@@ -66,48 +87,27 @@ export async function insertFTLIfNeeded(fileName) {
     return;
   }
 
-  // This should be browser, locales-preview or toolkit.
   let [root, ...rest] = fileName.split("/");
-  let ftlContents;
-
-  // TODO(mstriemer): These seem like they could be combined but I don't want
-  // to fight with webpack anymore.
+  let path = rest.join("/");
+  let loadResource;
   if (root == "toolkit") {
-    // eslint-disable-next-line no-unsanitized/method
-    let imported = await import(
-      /* webpackInclude: /.*[\/\\].*\.ftl$/ */
-      `toolkit/locales/en-US/${fileName}`
-    );
-    ftlContents = imported.default;
+    loadResource =
+      toolkitResources[`../../../../toolkit/locales/en-US/${fileName}`];
   } else if (root == "browser") {
-    // eslint-disable-next-line no-unsanitized/method
-    let imported = await import(
-      /* webpackInclude: /.*[\/\\].*\.ftl$/ */
-      `browser/locales/en-US/${fileName}`
-    );
-    ftlContents = imported.default;
+    loadResource = browserResources[`../../../locales/en-US/${fileName}`];
   } else if (root == "locales-preview") {
-    // eslint-disable-next-line no-unsanitized/method
-    let imported = await import(
-      /* webpackInclude: /\.ftl$/ */
-      `toolkit/locales-preview/${rest}`
-    );
-    ftlContents = imported.default;
+    loadResource =
+      localesPreviewResources[`../../../../toolkit/locales-preview/${path}`];
   } else if (root == "branding") {
-    // eslint-disable-next-line no-unsanitized/method
-    let imported = await import(
-      /* webpackInclude: /\.ftl$/ */
-      `browser/branding/nightly/locales/en-US/${rest}`
-    );
-    ftlContents = imported.default;
+    loadResource =
+      brandingResources[`../../../branding/nightly/locales/en-US/${path}`];
   } else if (root == "preview") {
-    // eslint-disable-next-line no-unsanitized/method
-    let imported = await import(
-      /* webpackInclude: /\.ftl$/ */
-      `toolkit/components/satchel/megalist/content/${rest}`
-    );
-    ftlContents = imported.default;
+    loadResource =
+      megalistResources[
+        `../../../../toolkit/components/satchel/megalist/content/${path}`
+      ];
   }
+  let ftlContents = await loadResource();
 
   if (loadedResources.has(fileName)) {
     // Seems possible we've attempted to load this twice before the first call

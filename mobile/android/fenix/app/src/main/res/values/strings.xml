@@ -299,6 +299,10 @@
     <!-- Browser Toolbar -->
     <!-- Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred. -->
     <string name="browser_toolbar_translate">Translate page</string>
+    <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+    <string name="browser_toolbar_picture_in_picture">Picture-in-picture</string>
+    <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+    <string name="browser_toolbar_picture_in_picture_close">Close picture-in-picture</string>
     <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
     <string name="browser_toolbar_summarize_cfr_description">Shake your device to summarize this page in seconds. ⚡️</string>
 

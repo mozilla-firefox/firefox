@@ -5,6 +5,7 @@
 package org.mozilla.fenix.snackbar
 
 import android.view.View
+import androidx.compose.material3.SnackbarHostState
 import com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE
 import com.google.android.material.snackbar.Snackbar.LENGTH_LONG
 import com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
@@ -12,7 +13,11 @@ import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.impl.annotations.RelaxedMockK
+import io.mockk.mockk
 import io.mockk.verify
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlinx.coroutines.CoroutineScope
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -200,5 +205,54 @@ class FenixSnackbarDelegateTest {
         )
 
         verify { snackbar.dismiss() }
+    }
+
+    @Test
+    fun `GIVEN a clickable snackbarState WHEN clicked THEN do not invoke a view is not attached`() {
+        var invoked = false
+        val snackbarState =
+            delegate.makeSnackbarState(
+                snackBarParentView = view,
+                text = APP_NAME,
+                duration = LENGTH_LONG,
+                isError = false,
+                actionText = "Click me!",
+                withDismissAction = false,
+                listener = { invoked = true },
+            )
+        every { view.isAttachedToWindow } returns false
+
+        snackbarState.action?.onClick()
+        assertFalse(invoked)
+
+        every { view.isAttachedToWindow } returns true
+
+        snackbarState.action?.onClick()
+        assertTrue(invoked)
+    }
+
+    @Test
+    fun `GIVEN a clickable snackbarState with a snackbarHostState WHEN clicked THEN invoke even if a view is not attached`() {
+        var invoked = false
+        val composeDelegate =
+            FenixSnackbarDelegate(
+                snackbarHostState = SnackbarHostState(),
+                scope = CoroutineScope(EmptyCoroutineContext),
+                context = mockk(relaxed = true),
+            )
+        val composeSnackbarState =
+            composeDelegate.makeSnackbarState(
+                snackBarParentView = view,
+                text = APP_NAME,
+                duration = LENGTH_LONG,
+                isError = false,
+                actionText = "Click me!",
+                withDismissAction = false,
+                listener = { invoked = true },
+            )
+        every { view.isAttachedToWindow } returns false
+
+        composeSnackbarState.action?.onClick()
+        assertTrue(invoked)
     }
 }

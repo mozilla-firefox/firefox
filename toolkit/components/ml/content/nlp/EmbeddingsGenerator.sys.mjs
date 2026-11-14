@@ -120,7 +120,6 @@ const ENGINE_OPTIONS = new Map([
     {
       taskName: "feature-extraction",
       featureId: "simple-text-embedder",
-      timeoutMS: -1,
       numThreads: 2,
       backend: "best-onnx",
       preferredDimension: 384,
@@ -130,6 +129,7 @@ const ENGINE_OPTIONS = new Map([
     "static-embeddings",
     {
       featureId: "simple-text-embedder",
+      engineId: "simple-text-embedder-static-engine",
       modelId: "mozilla/static-embeddings",
       modelRevision: "v1.0.0",
       taskName: "static-embeddings",

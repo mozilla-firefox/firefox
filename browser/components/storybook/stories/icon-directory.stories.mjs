@@ -8,7 +8,7 @@ import {
   classMap,
   css,
 } from "chrome://global/content/vendor/lit.all.mjs";
-import chromeMap from "../.storybook/chrome-map.js";
+import { chromeMap } from "../.storybook/chrome-map.js";
 
 /**
  * @import { MozMessageBar } from "chrome://global/content/elements/moz-message-bar.mjs"

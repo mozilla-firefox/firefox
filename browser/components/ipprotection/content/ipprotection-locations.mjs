@@ -4,7 +4,10 @@
 
 import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 import { html } from "chrome://global/content/vendor/lit.all.mjs";
-import { LINKS } from "chrome://browser/content/ipprotection/ipprotection-constants.mjs";
+import {
+  ADDITIONAL_LOCATIONS_AVAILABLE,
+  LINKS,
+} from "chrome://browser/content/ipprotection/ipprotection-constants.mjs";
 
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-promo.mjs";
@@ -39,16 +42,55 @@ export default class IPProtectionLocationsElement extends MozLitElement {
     event.target.documentGlobal.openWebLinkIn(LINKS.LOCATION_PROMO_URL, "tab");
   }
 
+  handleSetDefaultPromoButtonClick() {
+    this.dispatchEvent(
+      new CustomEvent("IPProtection:SetDefaultBrowser", { bubbles: true })
+    );
+  }
+
+  setDefaultPromoTemplate() {
+    return html`
+      <moz-promo
+        id="locations-subview-set-default-promo"
+        data-l10n-id="ipprotection-locations-subview-set-default-promo"
+        data-l10n-args=${JSON.stringify({
+          count: ADDITIONAL_LOCATIONS_AVAILABLE,
+        })}
+        imagealignment="end"
+        imagesrc="chrome://browser/content/ipprotection/assets/location-pin.svg"
+        type="vibrant"
+      >
+        <moz-button
+          slot="actions"
+          type="primary"
+          data-l10n-id="ipprotection-locations-subview-set-default-promo-button"
+          @click=${this.handleSetDefaultPromoButtonClick}
+        ></moz-button>
+      </moz-promo>
+    `;
+  }
+
   promoTemplate() {
-    if (this.state?.hasUpgraded || this.state?.upgradeNotAvailable) {
+    // If the user has a Mozilla VPN subscription, show nothing
+    if (this.state?.hasUpgraded) {
       return null;
     }
+    // If the user does not have Firefox as default and is allowed to set it, show default promo
+    if (!this.state?.isDefaultBrowser && this.state?.canSetDefaultBrowser) {
+      return this.setDefaultPromoTemplate();
+    }
+    // If the user is not eligible for Mozilla VPN, show nothing
+    if (this.state?.upgradeNotAvailable) {
+      return null;
+    }
+
     return html`
       <moz-promo
         id="locations-subview-promo"
         data-l10n-id="ipprotection-locations-subview-promo"
         imagealignment="end"
         imagesrc="chrome://browser/content/ipprotection/assets/mozilla-vpn-promo.svg"
+        type="vibrant"
       >
         <moz-button
           slot="actions"

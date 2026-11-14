@@ -12,7 +12,7 @@ from pathlib import Path
 # Use distro package to retrieve linux platform information
 import distro
 from mach.site import MachSiteManager
-from mach.telemetry import initialize_telemetry_setting
+from mach.telemetry import initialize_telemetry_setting, resolve_is_employee
 from mach.util import (
     UserError,
     get_state_dir,
@@ -63,6 +63,11 @@ APPLICATIONS = {
 
 FINISHED = """
 Your system should be ready to build %s!
+"""
+
+CONTRIBUTING_CODE = """
+New to Firefox? Please ensure you’ve read the contributor guidelines before submitting a patch:
+https://firefox-source-docs.mozilla.org/setup/contributing_code.html
 """
 
 MOZCONFIG_SUGGESTION_TEMPLATE = """
@@ -302,6 +307,20 @@ class Bootstrapper:
         self.instance.ensure_npm_tools()
         self.instance.ensure_mozbuild_bin_in_path()
 
+    def maybe_show_contributing_code(
+        self, checkout_root: Path, state_dir: Path, settings
+    ):
+        if os.environ.get("MOZ_AUTOMATION"):
+            return
+
+        flag_file = state_dir / ".CONTRIBUTING_CODE_SHOWN"
+        if flag_file.exists():
+            return
+
+        if resolve_is_employee(checkout_root, settings) is not True:
+            print(CONTRIBUTING_CODE)
+            flag_file.touch()
+
     def check_code_submission(self, checkout_root: Path):
         if self.instance.no_interactive or which("moz-phab"):
             return
@@ -431,6 +450,8 @@ class Bootstrapper:
                 "To build %s, please restart the shell (Start a new terminal window)"
                 % name
             )
+
+        self.maybe_show_contributing_code(checkout_root, state_dir, settings)
 
     def _check_for_dev_drive(self, topsrcdir):
         if os.environ.get("MACH_HIDE_DEV_DRIVE_SUGGESTION"):

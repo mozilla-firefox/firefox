@@ -8,7 +8,7 @@
  * additional user configuration.
  */
 
-function config(entry = []) {
+function previewAnnotations(entry = []) {
   return [...entry, require.resolve("./preset/preview.mjs")];
 }
 
@@ -18,5 +18,5 @@ function managerEntries(entry = []) {
 
 module.exports = {
   managerEntries,
-  config,
+  previewAnnotations,
 };

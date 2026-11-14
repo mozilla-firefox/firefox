@@ -35,20 +35,3 @@ object Resources {
 
     fun getResourceName(resId: Int) = "res:$resId"
 }
-
-@Suppress("PACKAGE_OR_CLASSIFIER_REDECLARATION")
-class SharedPreferences {
-    // Minimal interface used by generated code.
-    fun contains(key: String): Boolean = map.containsKey(key)
-    fun getBoolean(key: String, def: Boolean): Boolean = (map[key] as? Boolean) ?: def
-    fun getString(key: String, def: String): String = (map[key] as? String) ?: def
-    fun getInt(key: String, def: Int): Int = (map[key] as? Int) ?: def
-
-    // For testing
-    val map = mutableMapOf<String, Any>()
-    fun put(key: String, value: Boolean) = map.put(key, value)
-    fun put(key: String, value: String) = map.put(key, value)
-    fun put(key: String, value: Int) = map.put(key, value)
-    fun clear() = map.clear()
-    fun remove(key: String) = map.remove(key)
-}

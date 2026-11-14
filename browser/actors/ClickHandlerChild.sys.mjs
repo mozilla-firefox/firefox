@@ -53,7 +53,7 @@ export class ClickHandlerChild extends JSWindowActorChild {
   }
 
   handleClickEvent(event, isFromMiddleMousePasteHandler = false) {
-    if (event.defaultPrevented || event.button == 2) {
+    if (event.defaultPrevented || event.button >= 2) {
       return;
     }
     // Don't do anything on editable things, we shouldn't open links in

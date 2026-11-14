@@ -46,6 +46,9 @@ extern const TimeDuration kIdleICCSliceBudget;
 // Maximum total duration for an ICC
 extern const TimeDuration kMaxICCDuration;
 
+// Minimum GC or CC slice budget, used when an idle deadline has already passed.
+extern const TimeDuration kMinSliceBudget;
+
 // Force a CC after this long if there's more than NS_CC_FORCED_PURPLE_LIMIT
 // objects in the purple buffer.
 extern const TimeDuration kCCForced;

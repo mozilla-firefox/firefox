@@ -10,6 +10,9 @@
 
 /**
  * Command ids, as they are typed without the leading "/"
+ *
+ * "watch" is the user-facing name for this agent command and in code it's
+ * called Monitor.
  */
 export const AGENT_COMMANDS = Object.freeze({
   WATCH: "watch",

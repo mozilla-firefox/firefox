@@ -13819,6 +13819,9 @@ bool SetGlobalOptionsPreJSInit(const OptionParser& op) {
   if (op.getBoolOption("enable-iterator-chunking")) {
     JS::Prefs::setAtStartup_experimental_iterator_chunking(true);
   }
+  if (op.getBoolOption("enable-regexp-buffer-boundaries")) {
+    JS::Prefs::setAtStartup_experimental_regexp_buffer_boundaries(true);
+  }
 #ifdef NIGHTLY_BUILD
   if (op.getBoolOption("enable-async-iterator-helpers")) {
     JS::Prefs::setAtStartup_experimental_async_iterator_helpers(true);
@@ -13846,9 +13849,6 @@ bool SetGlobalOptionsPreJSInit(const OptionParser& op) {
   }
   if (op.getBoolOption("enable-wasm-esm-integration")) {
     JS::Prefs::set_experimental_wasm_esm_integration(true);
-  }
-  if (op.getBoolOption("enable-regexp-buffer-boundaries")) {
-    JS::Prefs::setAtStartup_experimental_regexp_buffer_boundaries(true);
   }
   if (op.getBoolOption("enable-defer-import-eval")) {
     JS::Prefs::setAtStartup_experimental_defer_import_eval(true);

@@ -13,7 +13,7 @@ anyhow = "1"
 camino = "1"
 glob = "0.3"
 toml = ">=0.9, <2"
-clap = {version = "4.2", default-features = false, features = ["std", "derive"]}
+clap = {version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"]}
 serde = { version = "1", features = ["derive"] }
 uniffi_bindgen = { version = "0.32" }
 uniffi_pipeline = { version = "0.32" }

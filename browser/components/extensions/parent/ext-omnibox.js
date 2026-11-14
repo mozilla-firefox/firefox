@@ -111,15 +111,9 @@ this.omnibox = class extends ExtensionAPIPersistent {
     return {
       omnibox: {
         setDefaultSuggestion: suggestion => {
-          try {
-            // This will throw if the keyword failed to register.
-            ExtensionSearchHandler.setDefaultSuggestion(
-              this.keyword,
-              suggestion
-            );
-          } catch (e) {
-            return Promise.reject(e.message);
-          }
+          // This throws if the keyword failed to register, which the extension
+          // framework turns into a sanitized error for the caller.
+          ExtensionSearchHandler.setDefaultSuggestion(this.keyword, suggestion);
         },
 
         onInputStarted: new EventManager({

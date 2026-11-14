@@ -24,7 +24,6 @@
   flex-direction: column;
   z-index: 1;
   gap: var(--space-xlarge);
-  padding-inline: var(--space-xlarge);
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding-block-end: var(--aitab-sheet-padding-block-end);
   border-block-end: var(--border-width) solid var(--border-color-transparent);
@@ -45,7 +44,8 @@
   max-width: 1170px;
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin: var(--aitab-section-vertical-gap) auto 0 auto;
-  width: 100%;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  width: calc(100% - 2 * var(--space-xlarge));
 
   > .aitab-block:last-child {
     --aitab-section-margin-block-end: 0;

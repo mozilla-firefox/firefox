@@ -10,14 +10,6 @@ about:
 channels:
   - debug
 features:
-  onboarding:
-    description: A feature containing a field with pref-key
-    variables:
-      enabled:
-        description: If true, enable new style onboarding.
-        type: Boolean
-        pref-key: enrollment_enabled
-        default: false
   messaging:
     description: A feature allowing coenrollment
     allow-coenrollment: true

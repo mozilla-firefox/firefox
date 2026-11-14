@@ -525,6 +525,7 @@ dependencies {
     implementation project(':components:feature-ipprotection')
     implementation project(':components:feature-logins')
     implementation project(':components:feature-media')
+    implementation project(':components:feature-pictureinpicture')
     implementation project(':components:feature-privatemode')
     implementation project(':components:feature-prompts')
     implementation project(':components:feature-protection-dashboard')

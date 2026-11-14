@@ -1,23 +1,24 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 mod cli;
 pub(crate) mod commands;
 mod workflows;
 
-use crate::intermediate_representation::TargetLanguage;
-use crate::util::loaders::LoaderConfig;
+use std::collections::BTreeMap;
+use std::ffi::OsString;
+use std::path::Path;
+
 use anyhow::Result;
 use clap::Parser;
-use commands::{
+
+use crate::command_line::commands::{
     CliCmd, GenerateExperimenterManifestCmd, GenerateSingleFileManifestCmd, GenerateStructCmd,
-    LintCmd, PrintChannelsCmd, ValidateCmd,
+    LintCmd, PrintChannelsCmd, PrintInfoCmd, ValidateCmd,
 };
-
-use std::{collections::BTreeMap, ffi::OsString, path::Path};
-
-use self::commands::PrintInfoCmd;
+use crate::intermediate_representation::TargetLanguage;
+use crate::util::loaders::LoaderConfig;
 
 const RELEASE_CHANNEL: &str = "release";
 
@@ -191,11 +192,7 @@ fn create_lint_command_from_cli(cmd: &cli::Lint, cwd: &Path) -> Result<CliCmd> {
     Ok(CliCmd::Lint(LintCmd {
         manifest,
         loader,
-        allow: cmd.allow.clone(),
-        deny: cmd.deny.clone(),
-        error_on_warning: cmd.error_on_warning,
-        include_imports: cmd.include_imports,
-        as_json: cmd.json,
+        code_review_json: cmd.code_review_json.clone(),
     }))
 }
 

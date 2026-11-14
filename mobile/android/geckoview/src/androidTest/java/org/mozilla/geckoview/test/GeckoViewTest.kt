@@ -419,6 +419,111 @@ class GeckoViewTest : BaseSessionTest() {
 
     @Test
     @NullDelegate(Autofill.Delegate::class)
+    @OptIn(ExperimentalGeckoViewApi::class)
+    fun clearingKeepActiveReportsDeactivationSkippedWhileShowingAnotherSession() {
+        activityRule.scenario.onActivity {
+            mainSession.loadTestPath(HELLO_HTML_PATH)
+            mainSession.waitForPageStop()
+
+            mainSession.sessionPictureInPicture.setKeepActive(true)
+            it.view.setSession(sessionRule.createOpenSession())
+
+            assertThat(
+                "Clearing must report the skipped deactivation",
+                mainSession.sessionPictureInPicture.setKeepActive(false),
+                equalTo(true),
+            )
+            assertThat(
+                "Clearing again must not report it twice",
+                mainSession.sessionPictureInPicture.setKeepActive(false),
+                equalTo(false),
+            )
+        }
+    }
+
+    @Test
+    @NullDelegate(Autofill.Delegate::class)
+    @OptIn(ExperimentalGeckoViewApi::class)
+    fun clearingKeepActiveReportsDeactivationSkippedWhileReleased() {
+        activityRule.scenario.onActivity {
+            mainSession.loadTestPath(HELLO_HTML_PATH)
+            mainSession.waitForPageStop()
+
+            mainSession.sessionPictureInPicture.setKeepActive(true)
+            it.view.releaseSession()
+
+            assertThat(
+                "Clearing must report the skipped deactivation",
+                mainSession.sessionPictureInPicture.setKeepActive(false),
+                equalTo(true),
+            )
+        }
+    }
+
+    @Test
+    @NullDelegate(Autofill.Delegate::class)
+    @OptIn(ExperimentalGeckoViewApi::class)
+    fun clearingKeepActiveReportsNothingWhileViewStillShowsSession() {
+        activityRule.scenario.onActivity {
+            mainSession.loadTestPath(HELLO_HTML_PATH)
+            mainSession.waitForPageStop()
+
+            mainSession.sessionPictureInPicture.setKeepActive(true)
+
+            assertThat(
+                "Clearing must not report a deactivation that never happened",
+                mainSession.sessionPictureInPicture.setKeepActive(false),
+                equalTo(false),
+            )
+            assertThat(
+                "docShell should stay active while the view shows it",
+                mainSession.active,
+                equalTo(true),
+            )
+        }
+    }
+
+    @Test
+    @NullDelegate(Autofill.Delegate::class)
+    @OptIn(ExperimentalGeckoViewApi::class)
+    fun clearingKeepActiveReportsNothingOnceViewShowsSessionAgain() {
+        activityRule.scenario.onActivity {
+            mainSession.loadTestPath(HELLO_HTML_PATH)
+            mainSession.waitForPageStop()
+
+            mainSession.sessionPictureInPicture.setKeepActive(true)
+            it.view.setSession(sessionRule.createOpenSession())
+            it.view.setSession(mainSession)
+
+            assertThat(
+                "Showing the session again must cancel the skipped deactivation",
+                mainSession.sessionPictureInPicture.setKeepActive(false),
+                equalTo(false),
+            )
+        }
+    }
+
+    @Test
+    @NullDelegate(Autofill.Delegate::class)
+    @OptIn(ExperimentalGeckoViewApi::class)
+    fun clearingKeepActiveReportsNothingWhenSessionHiddenBeforeKeptActive() {
+        activityRule.scenario.onActivity {
+            mainSession.loadTestPath(HELLO_HTML_PATH)
+            mainSession.waitForPageStop()
+
+            it.view.setSession(sessionRule.createOpenSession())
+            mainSession.sessionPictureInPicture.setKeepActive(true)
+
+            assertThat(
+                "A deactivation before keeping active must not be reported",
+                mainSession.sessionPictureInPicture.setKeepActive(false),
+                equalTo(false),
+            )
+        }
+    }
+
+    @Test
+    @NullDelegate(Autofill.Delegate::class)
     fun setPriorityHint() {
         val otherSession = setupPriorityTest()
 

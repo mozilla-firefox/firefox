@@ -2,16 +2,14 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::{
-    path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
-};
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::Result;
 use heck::ToKebabCase;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
-use crate::{value_utils, NimbusApp};
+use crate::{NimbusApp, value_utils};
 
 pub(crate) fn create_experiment(
     app: &NimbusApp,

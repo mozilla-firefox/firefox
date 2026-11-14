@@ -61,12 +61,8 @@ moz-button.input-cta {
       background-position: left var(--space-small) center;
       background-repeat: no-repeat;
       background-size: var(--size-item-small);
-
-      @media not (forced-colors) {
-        /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-        fill: var(--color-white);
-        -moz-context-properties: fill;
-      }
+      fill: var(--button-icon-fill);
+      -moz-context-properties: fill;
     }
 
     /* Visually hide the label (matches .sr-only) but keep it for a11y */
@@ -243,15 +239,6 @@ panel-item {
         --button-background-color-ghost-disabled: transparent;
         --button-background-color-ghost-hover: color-mix(in srgb, var(--color-violet-desaturated-60) 16%, transparent);
         --button-background-color-ghost-selected: var(--button-background-color-ghost-active);
-      }
-
-      &.input-cta::part(button) {
-        @media not (forced-colors) {
-          @container smartbar-controls (max-width: 380px) {
-            /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-            fill: var(--button-text-color-primary);
-          }
-        }
       }
     }
   }

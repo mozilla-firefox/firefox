@@ -16,7 +16,6 @@ kind-dependencies:
     - instrumented-build-macrobenchmark-apk
 
 task-defaults:
-    run-on-repo-type: [hg]
     run-on-projects: []
     attributes:
         build_platform: android
@@ -48,7 +47,6 @@ task-defaults:
         kind: test
         tier: 1
     run:
-        clone-with: hg
         using: run-commands
         dummy-secrets:
             - content: "faketoken"

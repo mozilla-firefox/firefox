@@ -89,7 +89,6 @@ fun createNimbus(
             errorReporter = context::reportError
             initialExperiments = R.raw.initial_experiments
             timeoutLoadingExperiment = TIME_OUT_LOADING_EXPERIMENT_FROM_DISK_MS
-            sharedPreferences = settings.preferences
             isFirstRun = isAppFirstRun
             featureManifest = FxNimbus
             onFetchCallback = {

@@ -37,6 +37,25 @@ const PRODUCT_URLS = [
     "sephora",
     "P123456",
   ],
+  [
+    "https://www.amazon.co.uk/Apple-AirPods-Max/dp/B08PZHYWJS",
+    "amazon",
+    "B08PZHYWJS",
+  ],
+  // Argos - /product/<catalogue number>.
+  ["https://www.argos.co.uk/product/7202643", "argos", "7202643"],
+  // Currys - /products/<slug>-<id>.html
+  [
+    "https://www.currys.co.uk/products/samsung-galaxy-s26-fe-256-gb-blueberry-10309754.html",
+    "currys",
+    "10309754",
+  ],
+  // Boots - /<slug>-<id>
+  [
+    "https://www.boots.com/no7-future-renew-damage-reversal-serum-50ml-10322082",
+    "boots",
+    "10322082",
+  ],
 ];
 
 // URLs that must not be treated as a supported product page.
@@ -52,10 +71,16 @@ const NON_PRODUCT_URLS = [
   "https://www.bestbuy.com/product/slug/abc.def",
   // Supported retailers, unsupported markets.
   "https://www.amazon.ca/dp/B086Z6XSW4",
-  "https://www.amazon.co.uk/dp/B08PZHYWJS",
   "https://www.walmart.ca/en/ip/apple-airpods-max/611698847",
   "https://www.bestbuy.ca/en-ca/product/apple-airpods-max/12345678",
   "https://www.sephora.ca/ca/en/product/some-serum-P123456",
+  // UK retailers, but not product pages.
+  "https://www.argos.co.uk/search/kettle/",
+  "https://www.argos.co.uk/product/",
+  "https://www.currys.co.uk/computing/laptops/laptops",
+  "https://www.boots.com/beauty/skincare",
+  "https://www.boots.com/no7",
+  "https://www.boots.com/no7-inspiration-and-advice/discover-no7-serum-10322082",
   // Unsupported retailers.
   "https://www.target.com/p/-/A-12345678",
   "https://example.com/dp/B08PZHYWJS",
@@ -100,6 +125,16 @@ const SHOPPING_HOME_URLS = [
   ["https://www.homedepot.ca/en/home.html", "homedepot.ca"],
   ["https://www.ebay.ca/", "ebay.ca"],
   ["https://www.ikea.com/ca/en/", "ikea.com"],
+  // UK.
+  ["https://www.amazon.co.uk/", "amazon.co.uk"],
+  ["https://www.ebay.co.uk/", "ebay.co.uk"],
+  ["https://www.argos.co.uk/", "argos.co.uk"],
+  ["https://www.tesco.com/groceries", "tesco.com"],
+  ["https://www.tesco.com/groceries/en-GB/", "tesco.com"],
+  ["https://www.currys.co.uk/", "currys.co.uk"],
+  ["https://www.johnlewis.com/", "johnlewis.com"],
+  ["https://www.diy.com/", "diy.com"],
+  ["https://www.ikea.com/gb/en/", "ikea.com"],
 ];
 
 const NEWS_HOME_URLS = [
@@ -115,6 +150,18 @@ const NEWS_HOME_URLS = [
   ["https://people.com/", "people.com"],
   ["https://www.bbc.com/news", "bbc.com"],
   ["https://www.newsweek.com/", "newsweek.com"],
+  // UK.
+  ["https://www.bbc.co.uk/", "bbc.co.uk"],
+  ["https://www.bbc.co.uk/news", "bbc.co.uk"],
+  ["https://www.theguardian.com/uk", "theguardian.com"],
+  ["https://www.dailymail.co.uk/home/index.html", "dailymail.co.uk"],
+  ["https://www.thesun.co.uk/", "thesun.co.uk"],
+  ["https://www.independent.co.uk/", "independent.co.uk"],
+  ["https://news.sky.com/", "news.sky.com"],
+  ["https://www.telegraph.co.uk/", "telegraph.co.uk"],
+  ["https://www.mirror.co.uk/", "mirror.co.uk"],
+  ["https://www.express.co.uk/", "express.co.uk"],
+  ["https://metro.co.uk/", "metro.co.uk"],
   // Canada.
   ["https://www.yahoo.com/", "yahoo.com"],
   ["https://www.yahoo.com/news/", "yahoo.com"],
@@ -138,6 +185,7 @@ const NON_HOME_URLS = [
   "https://www.ikea.com/ca/en/cat/beds-bm003/",
   "https://www.samsung.com/",
   "https://www.samsung.com/uk/",
+  "https://www.tesco.com/",
   "https://us.shein.com/women-clothing-c-2030.html",
   "https://www.canadiantire.ca/en/categories/automotive.html",
   "https://www.homedepot.ca/en/home/categories/appliances.html",

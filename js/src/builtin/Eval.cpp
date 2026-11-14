@@ -47,100 +47,53 @@ static void AssertInnerizedEnvironmentChain(JSContext* cx, JSObject& env) {
 #endif
 }
 
-static bool IsEvalCacheCandidate(JSScript* script) {
-  if (!script->isDirectEvalInFunction()) {
-    return false;
+// To reduce the cost of hashing very long eval strings, we put a cap
+// on the total number of characters hashed. Lookups still compare the
+// entire string.
+static HashNumber HashEvalString(JSLinearString* str) {
+  constexpr uint32_t NumSamples = 16 + 1;
+  constexpr uint32_t SampleLength = 256;
+  uint32_t length = str->length();
+  if (length <= NumSamples * SampleLength) {
+    return HashStringChars(str);
   }
 
-  // Make sure there are no inner objects (which may be used directly by script
-  // and clobbered) or inner functions (which may have wrong scope).
-  for (JS::GCCellPtr gcThing : script->gcthings()) {
-    if (gcThing.is<JSObject>()) {
-      return false;
+  // We want to ensure we cover the beginning and end of the string
+  // (because that's most likely to contain differences). We always
+  // sample the end, and take 16 evenly spaced samples of everything
+  // else.
+  auto hashSamples = [&](const auto* chars) {
+    HashNumber hash = mozilla::HashGeneric(length);
+    uint32_t stride = (length - SampleLength) / (NumSamples - 1);
+    for (uint32_t i = 0; i < NumSamples - 1; i++) {
+      hash = AddToHash(hash,
+                       mozilla::HashString(chars + i * stride, SampleLength));
     }
-  }
+    return AddToHash(
+        hash, mozilla::HashString(chars + length - SampleLength, SampleLength));
+  };
 
-  return true;
+  JS::AutoCheckCannotGC nogc;
+  return str->hasLatin1Chars() ? hashSamples(str->latin1Chars(nogc))
+                               : hashSamples(str->twoByteChars(nogc));
 }
 
 /* static */
 HashNumber EvalCacheHashPolicy::hash(const EvalCacheLookup& l) {
-  HashNumber hash = HashStringChars(l.str);
-  return AddToHash(hash, l.callerScript, l.pc);
+  HashNumber hash = HashEvalString(l.str);
+  return AddToHash(hash, l.global, l.introducerScript, l.introducerPcOffset,
+                   l.evalType);
 }
 
 /* static */
 bool EvalCacheHashPolicy::match(const EvalCacheEntry& cacheEntry,
                                 const EvalCacheLookup& l) {
-  MOZ_ASSERT(IsEvalCacheCandidate(cacheEntry.script));
-
-  return EqualStrings(cacheEntry.str, l.str) &&
-         cacheEntry.callerScript == l.callerScript && cacheEntry.pc == l.pc;
+  return &cacheEntry.script->global() == l.global &&
+         cacheEntry.introducerScript == l.introducerScript &&
+         cacheEntry.introducerPcOffset == l.introducerPcOffset &&
+         cacheEntry.evalType == l.evalType &&
+         EqualStrings(cacheEntry.str, l.str);
 }
-
-void EvalCacheLookup::trace(JSTracer* trc) {
-  TraceRoot(trc, &str, "EvalCacheLookup::str");
-  TraceRoot(trc, &callerScript, "EvalCacheLookup::callerScript");
-}
-
-// Add the script to the eval cache when EvalKernel is finished
-class EvalScriptGuard {
-  JSContext* cx_;
-  Rooted<JSScript*> script_;
-
-  /* These fields are only valid if lookup_.str is non-nullptr. */
-  Rooted<EvalCacheLookup> lookup_;
-  mozilla::Maybe<DependentAddPtr<EvalCache>> p_;
-
-  Rooted<JSLinearString*> lookupStr_;
-
- public:
-  explicit EvalScriptGuard(JSContext* cx)
-      : cx_(cx), script_(cx), lookup_(cx), lookupStr_(cx) {}
-
-  ~EvalScriptGuard() {
-    if (script_ && !cx_->isExceptionPending()) {
-      script_->cacheForEval();
-      EvalCacheLookup& lookup = lookup_.get();
-      EvalCacheEntry cacheEntry = {lookupStr_, script_, lookup.callerScript,
-                                   lookup.pc};
-      lookup.str = lookupStr_;
-      if (lookup.str && IsEvalCacheCandidate(script_)) {
-        // Ignore failure to add cache entry.
-        if (!p_->add(cx_, cx_->caches().evalCache, lookup, cacheEntry)) {
-          cx_->recoverFromOutOfMemory();
-        }
-      }
-    }
-  }
-
-  void lookupInEvalCache(JSLinearString* str, JSScript* callerScript,
-                         jsbytecode* pc) {
-    lookupStr_ = str;
-    EvalCacheLookup& lookup = lookup_.get();
-    lookup.str = str;
-    lookup.callerScript = callerScript;
-    lookup.pc = pc;
-    p_.emplace(cx_, cx_->caches().evalCache, lookup);
-    if (*p_) {
-      script_ = (*p_)->script;
-      p_->remove(cx_, cx_->caches().evalCache, lookup);
-    }
-  }
-
-  void setNewScript(JSScript* script) {
-    // JSScript::fullyInitFromStencil has already called js_CallNewScriptHook.
-    MOZ_ASSERT(!script_ && script);
-    script_ = script;
-  }
-
-  bool foundScript() { return !!script_; }
-
-  HandleScript script() {
-    MOZ_ASSERT(script_);
-    return script_;
-  }
-};
 
 enum class EvalJSONResult { Failure, Success, NotJSON };
 
@@ -216,8 +169,6 @@ static EvalJSONResult TryEvalJSON(JSContext* cx, JSLinearString* str,
              : ParseEvalStringAsJSON(cx, linearChars.twoByteRange(), rval);
 }
 
-enum EvalType { DIRECT_EVAL, INDIRECT_EVAL };
-
 // 18.2.1.1 PerformEval
 //
 // Common code implementing direct and indirect eval.
@@ -231,9 +182,9 @@ enum EvalType { DIRECT_EVAL, INDIRECT_EVAL };
 static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
                        AbstractFramePtr caller, HandleObject env,
                        jsbytecode* pc, MutableHandleValue vp) {
-  MOZ_ASSERT((evalType == INDIRECT_EVAL) == !caller);
-  MOZ_ASSERT((evalType == INDIRECT_EVAL) == !pc);
-  MOZ_ASSERT_IF(evalType == INDIRECT_EVAL,
+  MOZ_ASSERT((evalType == EvalType::Indirect) == !caller);
+  MOZ_ASSERT((evalType == EvalType::Indirect) == !pc);
+  MOZ_ASSERT_IF(evalType == EvalType::Indirect,
                 env->is<GlobalLexicalEnvironmentObject>());
   AssertInnerizedEnvironmentChain(cx, *env);
 
@@ -262,8 +213,8 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
   if (!canCompileStrings &&
       !cx->isRuntimeCodeGenEnabled(
           JS::RuntimeCode::JS, str,
-          evalType == DIRECT_EVAL ? JS::CompilationType::DirectEval
-                                  : JS::CompilationType::IndirectEval,
+          evalType == EvalType::Direct ? JS::CompilationType::DirectEval
+                                       : JS::CompilationType::IndirectEval,
           parameterStrings, str, parameterArgs, v, &canCompileStrings)) {
     return false;
   }
@@ -279,7 +230,7 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
   // way so that the compiler can make assumptions about what bindings may or
   // may not exist in the current frame if it doesn't see 'eval'.)
   MOZ_ASSERT_IF(
-      evalType != DIRECT_EVAL,
+      evalType != EvalType::Direct,
       cx->global() == &env->as<GlobalLexicalEnvironmentObject>().global());
 
   Rooted<JSLinearString*> linearStr(cx, str->ensureLinear(cx));
@@ -293,19 +244,54 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     return ejr == EvalJSONResult::Success;
   }
 
-  EvalScriptGuard esg(cx);
-
-  if (evalType == DIRECT_EVAL && caller.isFunctionFrame()) {
-    esg.lookupInEvalCache(linearStr, callerScript, pc);
+  bool isIntroducerSupported = true;
+  RootedScript evalScript(cx);
+  RootedScript introducerScript(cx);
+  uint32_t introducerPcOffset = 0;
+  if (evalType == EvalType::Direct) {
+    // ScopeContext::determineEffectiveScope does some trickery using
+    // the environment chain to find the right scope for compilation.
+    // It is probably all safe for caching, but to be safe we simply
+    // don't cache evals in non-syntactic scopes. It's not a hot path.
+    if (callerScript->hasNonSyntacticScope()) {
+      isIntroducerSupported = false;
+    }
+    introducerScript = callerScript;
+    introducerPcOffset = callerScript->pcToOffset(pc);
+  } else {
+    // Find the frame that DescribeScriptedCallerForCompilation will describe
+    // as the introducer of an indirect eval.
+    NonBuiltinFrameIter iter(cx, cx->realm()->principals());
+    if (iter.done()) {
+      // No script on the stack: promise jobs, timers, etc...
+      introducerScript = nullptr;
+      introducerPcOffset = 0;
+    } else if (iter.hasScript()) {
+      introducerScript = iter.script();
+      introducerPcOffset = introducerScript->pcToOffset(iter.pc());
+    } else {
+      // `eval` is being called directly from wasm. To cache this,
+      // EvalCacheLookup/Entry would need to support WasmInstanceObject
+      // introducers in addition to JSScripts. This isn't common enough
+      // to be worth it.
+      isIntroducerSupported = false;
+    }
+  }
+  if (isIntroducerSupported) {
+    EvalCacheLookup key(linearStr, cx->global(), introducerScript,
+                        introducerPcOffset, evalType);
+    if (EvalCache::Ptr entry = cx->caches().evalCache.lookup(key)) {
+      evalScript = entry->script;
+    }
   }
 
-  if (!esg.foundScript()) {
+  if (!evalScript) {
     RootedScript maybeScript(cx);
     uint32_t lineno;
     const char* filename;
     bool mutedErrors;
     uint32_t pcOffset;
-    if (evalType == DIRECT_EVAL) {
+    if (evalType == EvalType::Direct) {
       DescribeScriptedCallerForDirectEval(cx, callerScript, pc, &filename,
                                           &lineno, &pcOffset, &mutedErrors);
       maybeScript = callerScript;
@@ -320,21 +306,20 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
     }
 
     Rooted<Scope*> enclosing(cx);
-    if (evalType == DIRECT_EVAL) {
+    if (evalType == EvalType::Direct) {
       enclosing = callerScript->innermostScope(pc);
     } else {
       enclosing = &cx->global()->emptyGlobalScope();
     }
 
     CompileOptions options(cx);
-    options.setIsRunOnce(true)
-        .setNoScriptRval(false)
+    options.setNoScriptRval(false)
         .setMutedErrors(mutedErrors)
         .setDeferDebugMetadata();
 
     RootedScript introScript(cx);
 
-    if (evalType == DIRECT_EVAL && IsStrictEvalPC(pc)) {
+    if (evalType == EvalType::Direct && IsStrictEvalPC(pc)) {
       options.setForceStrictMode();
     }
 
@@ -359,23 +344,36 @@ static bool EvalKernel(JSContext* cx, HandleValue v, EvalType evalType,
       return false;
     }
 
-    RootedScript script(
-        cx, frontend::CompileEvalScript(cx, options, srcBuf, enclosing, env));
-    if (!script) {
+    bool isReusable = false;
+    evalScript = frontend::CompileEvalScript(cx, options, srcBuf, enclosing,
+                                             env, &isReusable);
+    if (!evalScript) {
       return false;
     }
 
     RootedValue undefValue(cx);
     JS::InstantiateOptions instantiateOptions(options);
-    if (!JS::UpdateDebugMetadata(cx, script, instantiateOptions, undefValue,
+    if (!JS::UpdateDebugMetadata(cx, evalScript, instantiateOptions, undefValue,
                                  nullptr, introScript, maybeScript)) {
       return false;
     }
 
-    esg.setNewScript(script);
+    if (isReusable && isIntroducerSupported) {
+      MOZ_ASSERT(!evalScript->treatAsRunOnce());
+      MOZ_ASSERT(!evalScript->hasCallSiteObj());
+      EvalCacheLookup key(linearStr, cx->global(), introducerScript,
+                          introducerPcOffset, evalType);
+      EvalCacheEntry cacheEntry(linearStr, evalScript, introducerScript,
+                                introducerPcOffset, evalType);
+      EvalCache::AddPtr p = cx->caches().evalCache.lookupForAdd(key);
+      if (!p) {
+        // Ignore failure to add cache entry.
+        (void)cx->caches().evalCache.add(p, cacheEntry);
+      }
+    }
   }
 
-  return ExecuteKernel(cx, esg.script(), env, NullFramePtr() /* evalInFrame */,
+  return ExecuteKernel(cx, evalScript, env, NullFramePtr() /* evalInFrame */,
                        vp);
 }
 
@@ -386,7 +384,7 @@ bool js::IndirectEval(JSContext* cx, unsigned argc, Value* vp) {
 
   // Note we'll just pass |undefined| here, then return it directly (or throw
   // if runtime codegen is disabled), if no argument is provided.
-  return EvalKernel(cx, args.get(0), INDIRECT_EVAL, NullFramePtr(),
+  return EvalKernel(cx, args.get(0), EvalType::Indirect, NullFramePtr(),
                     globalLexical, nullptr, args.rval());
 }
 
@@ -402,7 +400,7 @@ bool js::DirectEval(JSContext* cx, HandleValue v, MutableHandleValue vp) {
   MOZ_ASSERT(caller.realm() == caller.script()->realm());
 
   RootedObject envChain(cx, caller.environmentChain());
-  return EvalKernel(cx, v, DIRECT_EVAL, caller, envChain, iter.pc(), vp);
+  return EvalKernel(cx, v, EvalType::Direct, caller, envChain, iter.pc(), vp);
 }
 
 bool js::IsAnyBuiltinEval(JSFunction* fun) {
@@ -561,8 +559,10 @@ void RuntimeCaches::checkEvalCacheAfterMinorGC() {
   gc::CheckTableAfterMovingGC(evalCache, [](const auto& entry) {
     CheckGCThingAfterMovingGC(entry.str);
     CheckGCThingAfterMovingGC(entry.script);
-    CheckGCThingAfterMovingGC(entry.callerScript);
-    return EvalCacheLookup(entry.str, entry.callerScript, entry.pc);
+    CheckGCThingAfterMovingGC(entry.introducerScript);
+    return EvalCacheLookup(entry.str, &entry.script->global(),
+                           entry.introducerScript, entry.introducerPcOffset,
+                           entry.evalType);
   });
 }
 #endif

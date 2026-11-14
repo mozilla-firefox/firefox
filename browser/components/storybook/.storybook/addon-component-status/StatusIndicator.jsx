@@ -4,7 +4,7 @@
 
 // eslint-disable-next-line no-unused-vars
 import React from "react";
-import { useParameter } from "@storybook/manager-api";
+import { useParameter } from "storybook/manager-api";
 import {
   // eslint-disable-next-line no-unused-vars
   Badge,
@@ -14,7 +14,7 @@ import {
   TooltipMessage,
   // eslint-disable-next-line no-unused-vars
   IconButton,
-} from "@storybook/components";
+} from "storybook/internal/components";
 import { TOOL_ID, STATUS_PARAM_KEY } from "./constants.mjs";
 
 const VALID_STATUS_MAP = {

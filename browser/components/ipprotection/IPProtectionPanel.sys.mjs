@@ -157,6 +157,12 @@ export class IPProtectionPanel {
    * @property {boolean} isPremium
    * True if the current device has Firefox set as the default browser or the user has a Mozilla VPN subscription
    * Initially false; recomputed asynchronously before the panel is shown.
+   * @property {boolean} isDefaultBrowser
+   * True if Firefox is set as the default browser.
+   * Initially false; recomputed when the panel is shown.
+   * @property {boolean} canSetDefaultBrowser
+   * True if the user is allowed to set Firefox as the default browser.
+   * Initially false; recomputed when the panel is shown.
    * @property {boolean} showSiteInclusionPrompt
    * True if the prompt offering to always turn on VPN for the current site
    * should be shown, else false.
@@ -386,21 +392,53 @@ export class IPProtectionPanel {
     );
   }
 
+  static async isDefaultBrowser() {
+    return lazy.ShellService.isDefaultBrowserAsync();
+  }
+
+  async isDefaultBrowser() {
+    return IPProtectionPanel.isDefaultBrowser();
+  }
+
+  canSetDefaultBrowser() {
+    return (
+      Services.policies.isAllowed("setDefaultBrowser") &&
+      !Services.prefs.prefIsLocked(
+        "pref.general.disable_button.default_browser"
+      )
+    );
+  }
+
   /**
    * Whether the user may use locked egress locations. Doesn't depend on any
    * window, so it is shared with IPPAutoActivation.
    *
+   * @param {boolean|null} [isDefaultBrowser]
+   *   Whether Firefox is the default browser, if already known.
    * @returns {Promise<boolean>}
    */
-  static async isPremium() {
+  static async isPremium(isDefaultBrowser = null) {
     let isPremium =
       lazy.IPProtectionService.authProvider.hasUpgraded ||
-      (await lazy.ShellService.isDefaultBrowserAsync());
+      (isDefaultBrowser ?? (await IPProtectionPanel.isDefaultBrowser()));
     return isPremium;
   }
 
-  async isPremium() {
-    return IPProtectionPanel.isPremium();
+  /**
+   * @param {boolean|null} [isDefaultBrowser]
+   *   Whether Firefox is the default browser, if already known.
+   */
+  async isPremium(isDefaultBrowser = null) {
+    return IPProtectionPanel.isPremium(isDefaultBrowser);
+  }
+
+  async #setDefaultBrowser(win) {
+    await lazy.SpecialMessageActions.setDefaultBrowser(win);
+    const isDefaultBrowser = await this.isDefaultBrowser();
+    this.setState({
+      isDefaultBrowser,
+      isPremium: await this.isPremium(isDefaultBrowser),
+    });
   }
 
   /**
@@ -439,6 +477,8 @@ export class IPProtectionPanel {
       isActive: lazy.IPPProxyManager.state === lazy.IPPProxyStates.ACTIVE,
       isEnrolling: lazy.IPProtectionService.authProvider.isEnrolling,
       isPremium: false,
+      isDefaultBrowser: false,
+      canSetDefaultBrowser: false,
       showSiteInclusionPrompt: false,
     };
 
@@ -626,7 +666,8 @@ export class IPProtectionPanel {
   async showing(panelView) {
     const token = (this.#showToken = {});
 
-    const isPremium = await this.isPremium();
+    const isDefaultBrowser = await this.isDefaultBrowser();
+    const isPremium = await this.isPremium(isDefaultBrowser);
 
     if (this.#showToken !== token) {
       return;
@@ -647,6 +688,8 @@ export class IPProtectionPanel {
 
     this.setState({
       isPremium,
+      isDefaultBrowser,
+      canSetDefaultBrowser: this.canSetDefaultBrowser(),
       isSiteExceptionsEnabled: this.isExceptionsFeatureEnabled,
       isSiteInclusionsEnabled: this.isInclusionsFeatureEnabled,
       bandwidthWarning: this.#shouldShowBandwidthWarning(),
@@ -968,6 +1011,7 @@ export class IPProtectionPanel {
     );
     doc.addEventListener("IPProtection:UserShowLocations", this.handleEvent);
     doc.addEventListener("IPProtection:UserSelectLocation", this.handleEvent);
+    doc.addEventListener("IPProtection:SetDefaultBrowser", this.handleEvent);
     doc.addEventListener(
       "IPProtection:DismissSiteInclusionPrompt",
       this.handleEvent
@@ -998,6 +1042,7 @@ export class IPProtectionPanel {
       "IPProtection:UserSelectLocation",
       this.handleEvent
     );
+    doc.removeEventListener("IPProtection:SetDefaultBrowser", this.handleEvent);
     doc.removeEventListener(
       "IPProtection:DismissSiteInclusionPrompt",
       this.handleEvent
@@ -1271,6 +1316,85 @@ export class IPProtectionPanel {
     }
   }
 
+  #countUserEnableEvents() {
+    let userEnableCount = Services.prefs.getIntPref(
+      "browser.ipProtection.userEnableCount",
+      0
+    );
+    if (userEnableCount < 3) {
+      Services.prefs.setIntPref(
+        "browser.ipProtection.userEnableCount",
+        userEnableCount + 1
+      );
+    }
+  }
+
+  #handleDismissBandwidthWarnings() {
+    const state = lazy.IPPUsageHelper.state;
+    let threshold = 0;
+    if (state === "warning-75-percent") {
+      threshold = 75;
+    } else if (state === "warning-90-percent") {
+      threshold = 90;
+    }
+    if (threshold > 0) {
+      const current = lazy.IPPUsageHelper.getDismissedThresholds();
+      if (threshold > current.panel) {
+        lazy.IPPUsageHelper.setDismissedThresholds({
+          ...current,
+          panel: threshold,
+        });
+      }
+    }
+  }
+
+  #handleBandwidthThreshold(usage) {
+    const remainingPercent = Number(usage.remaining) / Number(usage.max);
+    const upsellThreshold = (1 - BANDWIDTH.FIRST_THRESHOLD) * 100;
+    const firstWarning = (1 - BANDWIDTH.SECOND_THRESHOLD) * 100;
+    const secondWarning = (1 - BANDWIDTH.THIRD_THRESHOLD) * 100;
+    let threshold = 0;
+    if (
+      remainingPercent <= BANDWIDTH.FIRST_THRESHOLD &&
+      remainingPercent > BANDWIDTH.SECOND_THRESHOLD
+    ) {
+      threshold = upsellThreshold;
+    } else if (
+      remainingPercent <= BANDWIDTH.SECOND_THRESHOLD &&
+      remainingPercent > BANDWIDTH.THIRD_THRESHOLD
+    ) {
+      threshold = firstWarning;
+    } else if (
+      remainingPercent > 0 &&
+      remainingPercent <= BANDWIDTH.THIRD_THRESHOLD
+    ) {
+      threshold = secondWarning;
+    } else if (remainingPercent === 0) {
+      threshold = 100;
+    }
+
+    const lastRecordedThreshold = Services.prefs.getIntPref(
+      BANDWIDTH_THRESHOLD_PREF,
+      threshold
+    );
+    Services.prefs.setIntPref(BANDWIDTH_THRESHOLD_PREF, threshold);
+
+    if (lastRecordedThreshold !== threshold) {
+      this.#measureBandwidthThreshold(threshold, lastRecordedThreshold);
+    }
+
+    const resetDate = usage.reset.toString();
+    const lastResetDate = Services.prefs.getStringPref(
+      BANDWIDTH_RESET_DATE_PREF,
+      ""
+    );
+    Services.prefs.setStringPref(BANDWIDTH_RESET_DATE_PREF, resetDate);
+
+    if (threshold === 0 && lastResetDate && resetDate !== lastResetDate) {
+      this.#sendBandwidthResetTrigger();
+    }
+  }
+
   #handleEvent(event) {
     if (event.type == "IPProtection:Init") {
       this.updateComponentState(event.target);
@@ -1279,16 +1403,7 @@ export class IPProtectionPanel {
     } else if (event.type == "IPProtection:UserEnable") {
       this.#startProxy();
       Services.prefs.setBoolPref("browser.ipProtection.userEnabled", true);
-      let userEnableCount = Services.prefs.getIntPref(
-        "browser.ipProtection.userEnableCount",
-        0
-      );
-      if (userEnableCount < 3) {
-        Services.prefs.setIntPref(
-          "browser.ipProtection.userEnableCount",
-          userEnableCount + 1
-        );
-      }
+      this.#countUserEnableEvents();
       if (this.#shouldShowSiteInclusionPrompt()) {
         Services.prefs.setBoolPref(SITE_INCLUSION_PROMPT_SHOWN_PREF, true);
         this.setState({ showSiteInclusionPrompt: true });
@@ -1363,22 +1478,7 @@ export class IPProtectionPanel {
       );
       Glean.ipprotection.exclusionToggled.record({ excluded: true });
     } else if (event.type == "IPProtection:DismissBandwidthWarning") {
-      const state = lazy.IPPUsageHelper.state;
-      let threshold = 0;
-      if (state === "warning-75-percent") {
-        threshold = 75;
-      } else if (state === "warning-90-percent") {
-        threshold = 90;
-      }
-      if (threshold > 0) {
-        const current = lazy.IPPUsageHelper.getDismissedThresholds();
-        if (threshold > current.panel) {
-          lazy.IPPUsageHelper.setDismissedThresholds({
-            ...current,
-            panel: threshold,
-          });
-        }
-      }
+      this.#handleDismissBandwidthWarnings();
       this.setState({ bandwidthWarning: false });
     } else if (event.type == "IPPProxyManager:UsageChanged") {
       const usage = event.detail.usage;
@@ -1397,51 +1497,7 @@ export class IPProtectionPanel {
         return;
       }
 
-      const remainingPercent = Number(usage.remaining) / Number(usage.max);
-      const upsellThreshold = (1 - BANDWIDTH.FIRST_THRESHOLD) * 100;
-      const firstWarning = (1 - BANDWIDTH.SECOND_THRESHOLD) * 100;
-      const secondWarning = (1 - BANDWIDTH.THIRD_THRESHOLD) * 100;
-
-      let threshold = 0;
-      if (
-        remainingPercent <= BANDWIDTH.FIRST_THRESHOLD &&
-        remainingPercent > BANDWIDTH.SECOND_THRESHOLD
-      ) {
-        threshold = upsellThreshold;
-      } else if (
-        remainingPercent <= BANDWIDTH.SECOND_THRESHOLD &&
-        remainingPercent > BANDWIDTH.THIRD_THRESHOLD
-      ) {
-        threshold = firstWarning;
-      } else if (
-        remainingPercent > 0 &&
-        remainingPercent <= BANDWIDTH.THIRD_THRESHOLD
-      ) {
-        threshold = secondWarning;
-      } else if (remainingPercent === 0) {
-        threshold = 100;
-      }
-
-      const lastRecordedThreshold = Services.prefs.getIntPref(
-        BANDWIDTH_THRESHOLD_PREF,
-        threshold
-      );
-      Services.prefs.setIntPref(BANDWIDTH_THRESHOLD_PREF, threshold);
-
-      if (lastRecordedThreshold !== threshold) {
-        this.#measureBandwidthThreshold(threshold, lastRecordedThreshold);
-      }
-
-      const resetDate = usage.reset.toString();
-      const lastResetDate = Services.prefs.getStringPref(
-        BANDWIDTH_RESET_DATE_PREF,
-        ""
-      );
-      Services.prefs.setStringPref(BANDWIDTH_RESET_DATE_PREF, resetDate);
-
-      if (threshold === 0 && lastResetDate && resetDate !== lastResetDate) {
-        this.#sendBandwidthResetTrigger();
-      }
+      this.#handleBandwidthThreshold(usage);
 
       this.setState({
         bandwidthUsage: {
@@ -1466,6 +1522,8 @@ export class IPProtectionPanel {
         lazy.IPPProxyManager.switch(code === "REC" ? undefined : code);
       }
       this.panelMultiView?.goBack();
+    } else if (event.type == "IPProtection:SetDefaultBrowser") {
+      this.#setDefaultBrowser(event.target.documentGlobal);
     }
   }
 

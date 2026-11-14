@@ -351,6 +351,28 @@ class WidgetMouseEventBase : public WidgetInputEvent {
  * mozilla::WidgetMouseEvent
  ******************************************************************************/
 
+// Represents the default action of the X1/X2 mouse button, which might be
+// a WidgetCommandEvent or WidgetContentCommandEvent.
+class WidgetMouseEventCommand {
+ public:
+  WidgetMouseEventCommand() = default;
+  MOZ_IMPLICIT
+  WidgetMouseEventCommand(EventMessage aContentCommand)
+      : mContentCommand(aContentCommand) {
+    MOZ_ASSERT(mContentCommand >= eContentCommandEventFirst &&
+               mContentCommand <= eContentCommandEventLast);
+  }
+  MOZ_IMPLICIT
+  WidgetMouseEventCommand(nsStaticAtom* aBrowserCommand)
+      : mBrowserCommand(aBrowserCommand) {}
+  explicit operator bool() const { return mBrowserCommand || mContentCommand; }
+  MOZ_CAN_RUN_SCRIPT void Run(nsIWidget* aRootWidget);
+
+ private:
+  EventMessage mContentCommand = eVoidEvent;
+  nsStaticAtom* mBrowserCommand = nullptr;
+};
+
 class WidgetMouseEvent : public WidgetMouseEventBase,
                          public WidgetPointerHelper {
  private:
@@ -486,6 +508,9 @@ class WidgetMouseEvent : public WidgetMouseEventBase,
   // dispatched, this is setup to be the target of the click event.
   nsCOMPtr<dom::EventTarget> mClickTarget;
 
+  // Command to execute if the event is not default prevented.
+  WidgetMouseEventCommand mCommand;
+
   // mReason indicates the reason why the event is fired:
   // - Representing mouse operation.
   // - Synthesized for emulating mousemove event when the content under the
@@ -564,6 +589,7 @@ class WidgetMouseEvent : public WidgetMouseEventBase,
     // NOTE: Intentionally not copying mCallbackId, it should only be tracked by
     //       the original event or propagated to the cross-process event.
     mMovement = aEvent.mMovement;
+    mCommand = aEvent.mCommand;
   }
 
   /**

@@ -65,15 +65,15 @@ impl ContainerColor {
 
         match self {
             Self::Gray => def!("gray", "#7c7c7d", "#949297", "user-context-color-gray"),
-            Self::Yellow => def!("yellow", "#ffcb00", "#db820e", "user-context-color-yellow"),
+            Self::Yellow => def!("yellow", "#ffcb00", "#f3a81e", "user-context-color-yellow"),
             Self::Orange => def!("orange", "#ff9f00", "#f4682c", "user-context-color-orange"),
             Self::Red => def!("red", "#ff613d", "#ed566e", "user-context-color-red"),
             Self::Pink => def!("pink", "#ff4bda", "#db54bf", "user-context-color-pink"),
             Self::Purple => def!("purple", "#af51f5", "#b864ee", "user-context-color-purple"),
-            Self::Violet => def!("violet", "#764edd", "#9871ff", "user-context-color-violet"),
-            Self::Blue => def!("blue", "#37adff", "#5a87fd", "user-context-color-blue"),
+            Self::Violet => def!("violet", "#764edd", "#764edd", "user-context-color-violet"),
+            Self::Blue => def!("blue", "#37adff", "#455fe7", "user-context-color-blue"),
             Self::Cyan => def!("cyan", "#00c79a", "#10a4ca", "user-context-color-cyan"),
-            Self::Green => def!("green", "#51cd00", "#11ae84", "user-context-color-green"),
+            Self::Green => def!("green", "#51cd00", "#008865", "user-context-color-green"),
         }
     }
 
@@ -318,14 +318,13 @@ mod tests {
         let all = ContainerColor::ALL;
         let names: HashSet<_> = all.iter().map(|color| color.name()).collect();
         let l10n_ids: HashSet<_> = all.iter().map(|color| color.gecko_l10n_id()).collect();
-        let codes: HashSet<_> = all
-            .iter()
-            .flat_map(|color| [color.code(false), color.code(true)])
-            .collect();
+        let legacy_codes: HashSet<_> = all.iter().map(|color| color.code(false)).collect();
+        let nova_codes: HashSet<_> = all.iter().map(|color| color.code(true)).collect();
 
         assert_eq!(names.len(), all.len());
         assert_eq!(l10n_ids.len(), all.len());
-        assert_eq!(codes.len(), all.len() * 2, "legacy and refreshed differ");
+        assert_eq!(legacy_codes.len(), all.len());
+        assert_eq!(nova_codes.len(), all.len());
         assert!(all
             .iter()
             .all(|color| ContainerColor::from_name(color.name()) == Some(*color)));

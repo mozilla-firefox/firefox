@@ -6,7 +6,7 @@ use error_support::handle_error;
 use parking_lot::{Mutex, MutexGuard, RwLock, RwLockReadGuard};
 
 use crate::container::Container;
-use crate::data::{ContainersData, Identity, MAX_USER_CONTEXT_ID};
+use crate::data::{ContainersData, Identity, SiteAssociationData, MAX_USER_CONTEXT_ID};
 use crate::defaults::{self, DefaultIdentity};
 use crate::definitions::{ContainerColor, ContainerIcon};
 use crate::error::{InitError, StoreError};
@@ -31,6 +31,8 @@ impl ContainersCallback for NoopCallback {
 pub struct SiteAssociation {
     pub site: String,
     pub user_context_id: u32,
+    /// Whether the association also covers every subdomain of `site`.
+    pub include_subdomains: bool,
 }
 
 #[derive(uniffi::Object)]
@@ -213,7 +215,7 @@ impl ContainersStore {
             // A site can only be bound to a public container, so there should be
             // nothing to drop here. Cheap enough to not depend on that.
             data.site_associations
-                .retain(|_, id| *id != user_context_id);
+                .retain(|_, association| association.user_context_id != user_context_id);
 
             data.identities.remove(index)
         };
@@ -266,7 +268,7 @@ impl ContainersStore {
             })?;
 
             data.site_associations
-                .retain(|_, id| *id != user_context_id);
+                .retain(|_, association| association.user_context_id != user_context_id);
 
             data.identities.remove(index)
         };
@@ -327,8 +329,20 @@ impl ContainersStore {
         true
     }
 
+    /// Binds `site` to a public container. When `include_subdomains` is `None`,
+    /// an existing association keeps its value and a new one matches its own
+    /// host only.
+    ///
+    /// Whether a host may cover its subdomains (a public suffix or an IP
+    /// address must not) is the embedder's call: the crate has no public suffix
+    /// list.
     #[handle_error(StoreError)]
-    pub fn set_site_association(&self, site: &str, user_context_id: u32) -> Result<(), StoreError> {
+    pub fn set_site_association(
+        &self,
+        site: &str,
+        user_context_id: u32,
+        include_subdomains: Option<bool>,
+    ) -> Result<(), StoreError> {
         {
             let mut data = self.data();
 
@@ -342,11 +356,22 @@ impl ContainersStore {
 
             let host = normalize_site(site).ok_or(StoreError::InvalidSite)?;
 
-            if data.site_associations.get(&host) == Some(&user_context_id) {
+            let existing = data.site_associations.get(&host);
+            let include_subdomains = include_subdomains
+                .or(existing.map(|association| association.include_subdomains))
+                .unwrap_or(false);
+
+            if existing.is_some_and(|association| {
+                association.user_context_id == user_context_id
+                    && association.include_subdomains == include_subdomains
+            }) {
                 return Ok(());
             }
 
-            data.site_associations.insert(host, user_context_id);
+            data.site_associations.insert(
+                host,
+                SiteAssociationData::new(user_context_id, include_subdomains),
+            );
         }
 
         self.persist();
@@ -366,21 +391,54 @@ impl ContainersStore {
         self.persist();
     }
 
-    /// The container bound to `site`, or 0 when there is none.
+    /// The container `site` itself is bound to, or 0 when there is none. An
+    /// association of a parent domain is not consulted, see
+    /// [`Self::lookup_site_association`].
     pub fn get_site_association(&self, site: &str) -> u32 {
         normalize_site(site)
-            .and_then(|host| self.data().site_associations.get(&host).copied())
+            .and_then(|host| {
+                self.data()
+                    .site_associations
+                    .get(&host)
+                    .map(|association| association.user_context_id)
+            })
             .unwrap_or(0)
+    }
+
+    /// The container `site` loads in, or 0 when there is none: its own
+    /// association, else the one of the closest parent domain that includes its
+    /// subdomains.
+    pub fn lookup_site_association(&self, site: &str) -> u32 {
+        let Some(host) = normalize_site(site) else {
+            return 0;
+        };
+
+        let data = self.data();
+        if let Some(association) = data.site_associations.get(&host) {
+            return association.user_context_id;
+        }
+
+        host.match_indices('.')
+            .map(|(dot, _)| &host[dot + 1..])
+            .find_map(|parent| {
+                data.site_associations
+                    .get(parent)
+                    .filter(|association| association.include_subdomains)
+            })
+            .map_or(0, |association| association.user_context_id)
     }
 
     pub fn get_site_associations(&self, user_context_id: Option<u32>) -> Vec<SiteAssociation> {
         self.data()
             .site_associations
             .iter()
-            .filter(|(_, id)| user_context_id.is_none_or(|wanted| **id == wanted))
-            .map(|(site, id)| SiteAssociation {
+            .filter(|(_, association)| {
+                user_context_id.is_none_or(|wanted| association.user_context_id == wanted)
+            })
+            .map(|(site, association)| SiteAssociation {
                 site: site.clone(),
-                user_context_id: *id,
+                user_context_id: association.user_context_id,
+                include_subdomains: association.include_subdomains,
             })
             .collect()
     }

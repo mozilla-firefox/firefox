@@ -33,6 +33,9 @@
 // fullscreen window-state update handler in Windows 10+. (See bug 1835851.)
 #define MOZ_WM_FULLSCREEN_STATE_UPDATE (WM_APP + 0x0318)
 
+// Internal message used for handling X1/X2 mouse button presses.
+#define MOZ_WM_AFTER_XBUTTONUP (WM_APP + 0x0319)
+
 // XXX Should rename them to MOZ_WM_* and use safer values!
 // Messages for fullscreen transition window
 #define WM_FULLSCREEN_TRANSITION_BEFORE (WM_USER + 0)

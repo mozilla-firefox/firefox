@@ -99,7 +99,8 @@ export const DefaultBrowserHelper = {
           (location.hash == "" ||
             location.hash == "#general" ||
             location.hash == "#sync" ||
-            location.hash == "#browserIcon") &&
+            location.hash == "#browserIcon" ||
+            location.hash == "#privacy") &&
           document.visibilityState == "visible"
         ) {
           const { isBrowserDefault } = this;

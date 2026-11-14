@@ -16,7 +16,7 @@ nss-as = { path = "../../components/support/rc_crypto/nss" }
 viaduct = { path = "../../components/viaduct"}
 viaduct-backend-rust = { path = "../../components/support/viaduct-backend-rust" }
 log = "0.4"
-clap = {version = "4.2", default-features = false, features = ["std", "derive", "help"]}
+clap = {version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"]}
 cli-support = { path = "../cli-support" }
 fxa-client = { path = "../../components/fxa-client" }
 anyhow = "1.0"

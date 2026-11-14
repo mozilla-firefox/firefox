@@ -23,11 +23,23 @@
 
 namespace js {
 
+enum class EvalType : uint8_t { Direct, Indirect };
+
 struct EvalCacheEntry {
   JSLinearString* str;
   JSScript* script;
-  JSScript* callerScript;
-  jsbytecode* pc;
+  JSScript* introducerScript;
+  uint32_t introducerPcOffset;
+  EvalType evalType;
+
+  EvalCacheEntry(JSLinearString* str, JSScript* script,
+                 JSScript* introducerScript, uint32_t introducerPcOffset,
+                 EvalType evalType)
+      : str(str),
+        script(script),
+        introducerScript(introducerScript),
+        introducerPcOffset(introducerPcOffset),
+        evalType(evalType) {}
 
   // We sweep this cache after a nursery collection to update entries with
   // string keys that have been tenured.
@@ -40,16 +52,21 @@ struct EvalCacheEntry {
   }
 };
 
-struct EvalCacheLookup {
+struct MOZ_STACK_CLASS EvalCacheLookup {
   JSLinearString* str = nullptr;
-  JSScript* callerScript = nullptr;
-  MOZ_INIT_OUTSIDE_CTOR jsbytecode* pc = nullptr;
+  JSObject* global = nullptr;
+  JSScript* introducerScript = nullptr;
+  uint32_t introducerPcOffset = 0;
+  EvalType evalType;
 
-  EvalCacheLookup() = default;
-  EvalCacheLookup(JSLinearString* str, JSScript* callerScript, jsbytecode* pc)
-      : str(str), callerScript(callerScript), pc(pc) {}
-
-  void trace(JSTracer* trc);
+  EvalCacheLookup(JSLinearString* str, JSObject* global,
+                  JSScript* introducerScript, uint32_t introducerPcOffset,
+                  EvalType evalType)
+      : str(str),
+        global(global),
+        introducerScript(introducerScript),
+        introducerPcOffset(introducerPcOffset),
+        evalType(evalType) {}
 };
 
 struct EvalCacheHashPolicy {

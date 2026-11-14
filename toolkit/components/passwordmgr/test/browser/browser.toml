@@ -239,10 +239,7 @@ support-files = [
 ]
 
 ["browser_proxyAuth_prompt.js"]
-skip-if = [
-  "os == 'android'",
-  "os == 'win' && os_version == '11.26200' && verify-standalone",
-]
+skip-if = ["os == 'android'"]
 
 ["browser_relay_signup_flow.js"]
 support-files = ["browser_relay_utils.js"]

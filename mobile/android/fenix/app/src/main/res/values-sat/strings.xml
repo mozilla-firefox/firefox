@@ -532,7 +532,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">ᱱᱤᱛᱚᱜ ᱫᱚ ᱵᱟᱝᱟ</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">ᱟᱲᱟᱜ</string>
+  <string name="nova_onboarding_skip_button">ᱟᱲᱟᱜ</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">ᱯᱷᱨᱤ ᱫᱟᱹᱲ ᱞᱟᱹᱜᱤᱫ ᱥᱟᱯᱲᱟᱣ ᱛᱟᱦᱮᱱ ᱢᱮ</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

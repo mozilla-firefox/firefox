@@ -1,4 +1,7 @@
 [DEFAULT]
+prefs = [
+  "dom.event.mouse.xbuttons.enabled=true",
+]
 
 ["browser_alt_keyup_in_content.js"]
 skip-if = [
@@ -56,13 +59,13 @@ support-files = [
   "browser_dragdrop_outer.html",
 ]
 
-["browser_dragsession_end_without_dragend.js"]
-
 ["browser_dragimage.js"]
 support-files = [
   "dragimage.html",
   "green.png",
 ]
+
+["browser_dragsession_end_without_dragend.js"]
 
 ["browser_mouse_click_screenXY.js"]
 support-files = ["../../../browser/base/content/test/browser-general/dummy_page.html"]
@@ -72,6 +75,10 @@ support-files = ["../../../browser/base/content/test/browser-general/dummy_page.
 fail-if = [
   "a11y_checks", # Bug 1854502 clicked tabbrowser-tabpanels may not be accessible
 ]
+
+["browser_mouse_x_buttons.js"]
+
+support-files = ["file_mouse_x_buttons.html"]
 
 ["browser_mouseout_notification_panel.js"]
 

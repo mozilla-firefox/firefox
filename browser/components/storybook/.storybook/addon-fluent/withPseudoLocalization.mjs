@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { useEffect, useGlobals, useChannel } from "@storybook/preview-api";
+import { useEffect, useGlobals, useChannel } from "storybook/preview-api";
 import {
   DIRECTIONS,
   DIRECTION_BY_STRATEGY,

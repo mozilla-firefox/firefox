@@ -219,7 +219,7 @@ mod driver_tests {
             .unwrap();
         account.auth_state = FxaState::Authenticating {
             oauth_url: "https://example.com/oauth".to_owned(),
-            initial_state: crate::FxaRustAuthState::AuthIssues,
+            initial_state: Box::new(FxaState::AuthIssues),
         };
 
         let result = account.process_event(FxaEvent::CancelOAuthFlow);

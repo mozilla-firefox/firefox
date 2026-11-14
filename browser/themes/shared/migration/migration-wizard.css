@@ -13,19 +13,21 @@
 }
 
 h1 {
+  /* Closest font-size design token would reduce size */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   font-size: var(--embedded-wizard-header-font-size, 1.3em);
   font-weight: var(--embedded-wizard-header-font-weight, normal);
-  margin-block: var(--embedded-wizard-header-margin-block, 0 16px);
+  margin-block: var(--embedded-wizard-header-margin-block, 0 var(--space-large));
   min-height: 1em;
 }
 
 ol {
-  padding-inline-start: 24px;
-  margin-block: 16px 0;
+  padding-inline-start: var(--space-xlarge);
+  margin-block: var(--space-large) 0;
 }
 
 li:not(:last-child) {
-  margin-block-end: 16px;
+  margin-block-end: var(--space-large);
 }
 
 input[type="checkbox"] {
@@ -33,6 +35,8 @@ input[type="checkbox"] {
 }
 
 div[name="page-loading"] > .buttons > button {
+  /* This hides the button labels in when loading; not a color choice */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   color: transparent;
 }
 
@@ -40,20 +44,23 @@ div[name="page-loading"] > .buttons > button {
   background-color: var(--button-background-color);
   color: var(--button-text-color);
   border-radius: var(--border-radius-small);
+  /* Opacity for loading skeleton */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   opacity: 0.4;
-  margin-block-start: 16px;
+  margin-block-start: var(--space-large);
 }
 
 .loading-block.large {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   height: 36px;
 }
 
 .loading-block.small {
-  height: 16px;
+  height: var(--size-item-small);
 }
 
 .buttons {
-  margin-block-start: 16px;
+  margin-block-start: var(--space-large);
 }
 
 fieldset {
@@ -74,15 +81,15 @@ label:not([hidden]) {
 #browser-profile-selector {
   display: flex;
   align-items: center;
-  padding: 8px;
+  padding: var(--space-small);
   margin: 0;
   font-weight: unset;
 }
 
 .migrator-icon {
   content: url(chrome://global/skin/icons/defaultFavicon.svg);
-  height: 32px;
-  width: 32px;
+  height: var(--icon-size-xlarge);
+  width: var(--icon-size-xlarge);
   -moz-context-properties: fill;
   fill: currentColor;
 }
@@ -97,8 +104,8 @@ label:not([hidden]) {
   content: url("chrome://global/skin/icons/arrow-down.svg");
   -moz-context-properties: fill;
   fill: currentColor;
-  height: 16px;
-  width: 16px;
+  height: var(--icon-size-small);
+  width: var(--icon-size-small);
   margin-inline-end: var(--space-small);
 }
 
@@ -108,7 +115,7 @@ label:not([hidden]) {
   flex-direction: column;
   justify-content: center;
   align-items: start;
-  margin-inline-start: 11px;
+  margin-inline-start: var(--space-medium);
 }
 
 #profile-name:empty {
@@ -116,6 +123,8 @@ label:not([hidden]) {
 }
 
 #profile-name {
+  /* Smallest font-size design token would change visual hierarchy */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   font-size: 0.73em;
   text-transform: uppercase;
 }
@@ -133,18 +142,22 @@ panel-item::part(button) {
 }
 
 panel-item[type="file"]::part(button) {
-  background-size: 20px;
+  background-size: var(--icon-size-medium);
   background-position: 6px center;
 }
 
 @media (forced-colors) {
+  /* System colors should be used in forced-colors mode */
   panel-item:not(.selected)::part(button):hover {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     fill: SelectedItemText;
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     color: SelectedItem;
   }
 
   panel-item.selected::part(button) {
-    border-block: 1px solid ButtonText;
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    border-block: var(--border-width) solid ButtonText;
   }
 }
 
@@ -165,7 +178,8 @@ div[name="page-selection"]:not([show-import-all]) summary {
 }
 
 div[name="page-selection"][show-import-all]:not([single-item]) label:not(#select-all) {
-  margin-inline: var(--resource-type-label-margin-inline, 24px 0);
+  /* Assures nested checkboxes align with the parent checkbox */
+  margin-inline: var(--resource-type-label-margin-inline, calc(var(--checkbox-size) + var(--checkbox-margin-inline)) 0);
 }
 
 div[name="page-selection"][show-import-all] #select-all {
@@ -193,11 +207,12 @@ div[name="page-selection"][show-import-all] .resource-selection-preamble {
  * size to more closely match the surrounding text.
  */
 .migration-no-permissions-instructions-step2 > code {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   font-size: 0.94em;
 }
 
 .resource-selection-preamble {
-  margin-block-start: 16px;
+  margin-block-start: var(--space-large);
 }
 
 details[open] .expand-collapse-icon {
@@ -206,18 +221,18 @@ details[open] .expand-collapse-icon {
 
 .expand-collapse-icon {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
   content: url("chrome://global/skin/icons/plus.svg");
   grid-area: b;
   -moz-context-properties: fill;
   fill: currentColor;
   justify-self: end;
-  margin-inline-end: calc(var(--space-small) + 8px);
+  margin-inline-end: var(--space-large);
 }
 
 details:not([open]) summary {
-  margin-block-end: 16px;
+  margin-block-end: var(--space-large);
 }
 
 summary {
@@ -229,7 +244,7 @@ summary {
 }
 
 #resource-type-list > label {
-  margin-block: var(--resource-type-label-margin-block, 16px 0);
+  margin-block: var(--resource-type-label-margin-block, var(--space-large) 0);
   margin-inline: var(--resource-type-label-margin-inline, 0);
 }
 
@@ -241,7 +256,7 @@ summary {
 
 .resource-progress {
   display: grid;
-  gap: 16px;
+  gap: var(--space-large);
 }
 
 .resource-progress-group {
@@ -274,6 +289,7 @@ summary {
  */
 .progress-icon-parent {
   /* Non-standard border-radius needed to support workaround for Bug 1671784 */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   border-radius: 0.01px;
   overflow: hidden;
   display: flex;
@@ -282,10 +298,10 @@ summary {
 
 .progress-icon {
   display: inline-block;
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
   -moz-context-properties: fill;
-  margin-inline-end: 8px;
+  margin-inline-end: var(--space-small);
 }
 
 /**
@@ -304,8 +320,10 @@ summary {
 
 @media (prefers-reduced-motion: reduce) {
   .progress-icon[state="loading"] {
+    --progress-icon-fill-loading: var(--text-color-deemphasized);
+
     content: url("chrome://global/skin/icons/loading.svg");
-    fill: var(--text-color-deemphasized);
+    fill: var(--progress-icon-fill-loading);
   }
 }
 
@@ -338,14 +356,14 @@ summary {
   -moz-context-properties: fill;
   fill: var(--icon-color-critical);
   margin-block: 0;
-  margin-inline: 0 8px;
-  width: 16px;
-  height: 16px;
+  margin-inline: 0 var(--space-small);
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
 }
 
 .page-portrait-icon {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
   content: url("chrome://global/skin/icons/page-portrait.svg");
   -moz-context-properties: fill;
   fill: currentColor;
@@ -354,8 +372,8 @@ summary {
 
 .safari-icon-3dots,
 .chrome-icon-3dots {
-  width: 16px;
-  height: 16px;
+  width: var(--icon-size-small);
+  height: var(--icon-size-small);
   -moz-context-properties: fill, stroke;
   vertical-align: middle;
 }
@@ -372,7 +390,9 @@ summary {
    * Stroke and fill colours were sampled from built-in dark and light theme
    * from Chrome on Windows
    */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   fill: light-dark(#474747, #c7c7c7);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   stroke: light-dark(#474747, #c7c7c7);
 }
 
@@ -387,12 +407,12 @@ summary {
 
 .file-import-error,
 .no-resources-found {
-  font-size: 0.84em;
-  margin-block-start: 16px;
+  font-size: var(--font-size-small);
+  margin-block-start: var(--space-large);
 }
 
 .file-import-error {
-  margin-inline-start: 8px;
+  margin-inline-start: var(--space-small);
 }
 
 div[name="page-selection"]:not([no-resources]) .no-resources-found,
@@ -403,7 +423,7 @@ div[name="page-selection"]:not([file-import-error]) .file-import-error {
 }
 
 div[name="page-selection"][show-import-all] .resource-selection-details {
-  padding-inline-start: 8px;
+  padding-inline-start: var(--space-small);
 }
 
 .resource-selection-details > summary {
@@ -412,7 +432,7 @@ div[name="page-selection"][show-import-all] .resource-selection-details {
   grid-template-areas:
     "a b"
     "c b";
-  margin-block: 16px 0;
+  margin-block: var(--space-large) 0;
 }
 
 .resource-selection-details > summary:focus-visible {
@@ -433,7 +453,7 @@ div[name="page-selection"][show-import-all] .resource-selection-details {
 }
 
 p.migration-wizard-subheader {
-  font-size: var(--embedded-wizard-subheader-font-size, 0.85em);
+  font-size: var(--embedded-wizard-subheader-font-size, var(--font-size-small));
   font-weight: var(--embedded-wizard-subheader-font-weight, normal);
   margin-block: var(--embedded-wizard-subheader-margin-block, 0 28px);
   line-height: 1.2em;

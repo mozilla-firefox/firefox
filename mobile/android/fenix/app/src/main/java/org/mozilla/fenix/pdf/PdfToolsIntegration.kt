@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.widget.FrameLayout
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.runtime.Composable
@@ -44,6 +45,10 @@ import org.mozilla.fenix.pdf.ui.PdfToolsContent
 import org.mozilla.fenix.pdf.ui.SignatureDialogContent
 import org.mozilla.fenix.theme.FirefoxTheme
 
+// The timeout length for how long to show the processing state when sending the signature.
+@VisibleForTesting internal const val ADDING_SIGNATURE_WAIT_STATE_MS = 250L
+
+// The timeout length for how long to wait for the PDF viewer to accept the signature.
 private const val ADDING_SIGNATURE_TIMEOUT_MS = 5000L
 
 /**
@@ -69,7 +74,8 @@ class PdfToolsIntegration(
     private var pdfTabId by mutableStateOf(browserStore.state.findPdfTabId(customTabSessionId))
     private var isSigning by mutableStateOf(false)
     private var isAddingSignature by mutableStateOf(false)
-    private var isAddingSignatureTimeout: Job? = null
+    private var addingSignatureTimeout: Job? = null
+    private var addingSignatureWaitState: Job? = null
     private val signature = TextFieldState()
 
     private val currentSession
@@ -106,6 +112,10 @@ class PdfToolsIntegration(
         // Keep track of the PDF's tab ID.
         handlePdfTabChanged(browserStore.state.findPdfTabId(customTabSessionId))
         scope = CoroutineScope(mainDispatcher)
+        // A signature sent to the engine before the last stop still needs its timeout.
+        if (isAddingSignature) {
+            startAddingSignatureTimeout()
+        }
         scope?.launch {
             browserStore.stateFlow
                 .map { it.findPdfTabId(customTabSessionId) }
@@ -148,6 +158,10 @@ class PdfToolsIntegration(
     }
 
     override fun stop() {
+        // Ensures any pending adding signature operations reset state.
+        if (addingSignatureWaitState?.isActive == true) {
+            isAddingSignature = false
+        }
         scope?.cancel()
         scope = null
 
@@ -267,42 +281,39 @@ class PdfToolsIntegration(
 
         isAddingSignature = true
 
-        // Timeout to ensure [engineSession.addSignatureToPdf] completes in a timely way.
-        // If it doesn't complete within [ADDING_SIGNATURE_TIMEOUT_MS], it is likely something on the backend failed
-        // without reporting.
-        isAddingSignatureTimeout = scope?.launch {
-            delay(ADDING_SIGNATURE_TIMEOUT_MS)
+        startAddingSignatureTimeout()
 
-            PdfViewer.signDialogAddFailure.record(
-                PdfViewer.SignDialogAddFailureExtra(
-                    reason = SignatureFailure.Timeout.telemetryName,
-                    signatureType = SignatureType.Typed.telemetryName,
-                )
-            )
-            dismissSignatureDialog()
-        }
-        engineSession.addSignatureToPdf(
-            text = signature.text.toString(),
-            onResult = {
-                PdfViewer.signDialogAddCompleted.record(
-                    PdfViewer.SignDialogAddCompletedExtra(signatureType = SignatureType.Typed.telemetryName)
-                )
-                if (isAddingSignature) {
-                    dismissSignatureDialog()
-                }
-            },
-            onException = {
-                PdfViewer.signDialogAddFailure.record(
-                    PdfViewer.SignDialogAddFailureExtra(
-                        reason = SignatureFailure.EngineError.telemetryName,
-                        signatureType = SignatureType.Typed.telemetryName,
+        // Waits [ADDING_SIGNATURE_WAIT_STATE_MS] so screen readers announce the wait state before focus moves to the
+        // new signature.
+        val text = signature.text.toString()
+        addingSignatureWaitState = scope?.launch {
+            delay(ADDING_SIGNATURE_WAIT_STATE_MS)
+
+            // Ensures that focus moves correctly to the browser
+            container.pageContent?.requestFocus()
+            engineSession.addSignatureToPdf(
+                text = text,
+                onResult = {
+                    PdfViewer.signDialogAddCompleted.record(
+                        PdfViewer.SignDialogAddCompletedExtra(signatureType = SignatureType.Typed.telemetryName)
                     )
-                )
-                if (isAddingSignature) {
-                    dismissSignatureDialog()
-                }
-            },
-        )
+                    if (isAddingSignature) {
+                        dismissSignatureDialog()
+                    }
+                },
+                onException = {
+                    PdfViewer.signDialogAddFailure.record(
+                        PdfViewer.SignDialogAddFailureExtra(
+                            reason = SignatureFailure.EngineError.telemetryName,
+                            signatureType = SignatureType.Typed.telemetryName,
+                        )
+                    )
+                    if (isAddingSignature) {
+                        dismissSignatureDialog()
+                    }
+                },
+            )
+        }
     }
 
     /** Closes the dialog. If the signature is processing, it will keep the signature state. */
@@ -325,9 +336,29 @@ class PdfToolsIntegration(
         pdfTabId = tabId
     }
 
+    /**
+     * Timeout to ensure `addSignatureToPdf` completes in a timely way. If it doesn't complete within
+     * [ADDING_SIGNATURE_TIMEOUT_MS], it is likely something on the backend failed without reporting.
+     */
+    private fun startAddingSignatureTimeout() {
+        addingSignatureTimeout = scope?.launch {
+            delay(ADDING_SIGNATURE_TIMEOUT_MS)
+
+            PdfViewer.signDialogAddFailure.record(
+                PdfViewer.SignDialogAddFailureExtra(
+                    reason = SignatureFailure.Timeout.telemetryName,
+                    signatureType = SignatureType.Typed.telemetryName,
+                )
+            )
+            dismissSignatureDialog()
+        }
+    }
+
     private fun dismissSignatureDialog() {
-        isAddingSignatureTimeout?.cancel()
-        isAddingSignatureTimeout = null
+        addingSignatureTimeout?.cancel()
+        addingSignatureTimeout = null
+        addingSignatureWaitState?.cancel()
+        addingSignatureWaitState = null
         isSigning = false
         isAddingSignature = false
         signature.clearText()

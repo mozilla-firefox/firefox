@@ -2101,10 +2101,76 @@ add_task(async function test_restore_session_startup_infobar_renders() {
 });
 
 add_task(async function test_PN_infobar_keeps_first_accepted_date() {
-  const message = (await OnboardingMessageProvider.getMessages()).find(
-    m => m.id === "updated-privacy-notice-notification-infobar"
-  );
-  Assert.ok(message, "Found PN infobar");
+  const message = {
+    id: "updated-privacy-notice-notification-infobar",
+    groups: ["cfr"],
+    template: "infobar",
+    content: {
+      impression_action: {
+        type: "MULTI_ACTION",
+        orderedExecution: true,
+        data: {
+          actions: [
+            {
+              type: "SET_PREF",
+              data: {
+                pref: {
+                  name: "termsofuse.firstAcceptedDate",
+                  value: {
+                    copyFromPref: "termsofuse.acceptedDate",
+                  },
+                },
+              },
+            },
+            {
+              type: "SET_PREF",
+              data: {
+                pref: {
+                  name: "termsofuse.acceptedDate",
+                  value: {
+                    timestamp: true,
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+      text: {
+        string_id: "existing-user-privacy-notice-update-message",
+        args: { where: "tabshifted" },
+      },
+      linkUrls: {
+        "privacy-notice-link": "https://www.mozilla.org/privacy/firefox/next/",
+      },
+      type: "tab",
+      buttons: [
+        {
+          label: {
+            string_id: "existing-user-tou-learn-more",
+          },
+          action: {
+            type: "OPEN_URL",
+            data: {
+              where: "tabshifted",
+              args: "https://www.mozilla.org/privacy/firefox/update/",
+            },
+            dismiss: false,
+          },
+          accessKey: "L",
+        },
+      ],
+    },
+    trigger: {
+      id: "defaultBrowserCheck",
+    },
+    frequency: {
+      lifetime: 1,
+    },
+    priority: 2,
+    targeting:
+      "('termsofuse.acceptedDate'|preferenceValue != '0') && (('termsofuse.acceptedDate'|preferenceValue * 1) < 1765972800000)",
+  };
 
   const FIRST_ACCEPTED_PREF = "termsofuse.firstAcceptedDate";
   const firstAcceptedDate = "1748736000000";

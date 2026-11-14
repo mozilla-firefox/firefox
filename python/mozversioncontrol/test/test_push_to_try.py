@@ -188,7 +188,7 @@ def test_push_to_try(repo, monkeypatch):
                 "new",
                 "--message",
                 "commit message",
-                'coalesce(@ ~ (empty() & description(exact:"")) ~ bookmarks(), @-)',
+                'coalesce(@ ~ (empty() & description(exact:"") ~ bookmarks()), @-)',
             ),
             (str(tool), "--quiet", "file", "track", "extra-file"),
             (str(tool), "--quiet", "file", "track", "other/extra-file"),

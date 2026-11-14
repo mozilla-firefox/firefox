@@ -7,7 +7,7 @@ package org.mozilla.fenix.home.intent
 import android.content.Intent
 import androidx.navigation.NavController
 import mozilla.components.browser.state.selector.findTab
-import mozilla.components.feature.media.service.AbstractMediaSessionService
+import mozilla.components.support.utils.SwitchTabIntent
 import org.mozilla.fenix.BrowserDirection
 import org.mozilla.fenix.HomeActivity
 import org.mozilla.fenix.ext.components
@@ -15,8 +15,8 @@ import org.mozilla.fenix.utils.Settings
 
 /**
  * When the media notification is clicked we need to switch to the tab where the audio/video is playing. This intent has
- * the following informations: action - [AbstractMediaSessionService.Companion.ACTION_SWITCH_TAB] extra string for the
- * tab id - [AbstractMediaSessionService.Companion.EXTRA_TAB_ID]
+ * the following informations: action - [SwitchTabIntent.ACTION_SWITCH_TAB] extra string for the tab
+ * id - [SwitchTabIntent.EXTRA_TAB_ID]
  */
 class OpenSpecificTabIntentProcessor(private val activity: HomeActivity) : HomeIntentProcessor {
 
@@ -40,9 +40,9 @@ class OpenSpecificTabIntentProcessor(private val activity: HomeActivity) : HomeI
 }
 
 private fun getAction(): String {
-    return AbstractMediaSessionService.Companion.ACTION_SWITCH_TAB
+    return SwitchTabIntent.ACTION_SWITCH_TAB
 }
 
 private fun getTabId(): String {
-    return AbstractMediaSessionService.Companion.EXTRA_TAB_ID
+    return SwitchTabIntent.EXTRA_TAB_ID
 }

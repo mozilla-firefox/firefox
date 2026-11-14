@@ -429,6 +429,18 @@ class MachFormatter(base.BaseFormatter):
             location = f" [{location}]"
         return f"{prefix} UndefinedBehaviorSanitizer: {data['message']}{location}"
 
+    def asan_error(self, data):
+        prefix = self.color_formatter.error("ERROR")
+        location = ""
+        if data.get("file"):
+            location = data["file"]
+            if data.get("lineno") is not None:
+                location += f":{data['lineno']}"
+                if data.get("column") is not None:
+                    location += f":{data['column']}"
+            location = f" [{location}]"
+        return f"{prefix} AddressSanitizer: {data['message']}{location}"
+
     def lsan_summary(self, data):
         allowed = data.get("allowed", False)
         if allowed:

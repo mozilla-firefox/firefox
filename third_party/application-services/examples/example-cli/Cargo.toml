@@ -10,5 +10,5 @@ cli-support = { path = "../cli-support" }
 example-component = { path = "../../components/example" }
 viaduct = { path = "../../components/viaduct"}
 viaduct-backend-rust = { path = "../../components/support/viaduct-backend-rust" }
-clap = {version = "4.2", default-features = false, features = ["std", "derive"]}
+clap = {version = "4.2", default-features = false, features = ["std", "derive", "help", "usage", "error-context"]}
 anyhow = "1.0"

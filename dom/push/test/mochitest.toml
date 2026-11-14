@@ -9,6 +9,7 @@ support-files = [
   "error_worker.js",
 ]
 
+
 ["test_data.html"]
 skip-if = [
   "os == 'android'",
@@ -50,13 +51,6 @@ skip-if = [
 ]
 
 ["test_permissions.html"]
-skip-if = [
-  "os == 'android'",
-]
-
-["test_pushsubscriptionchange_origin_prefix.html"]
-support-files = ["file_pushsubscriptionchange_origin_prefix.html"]
-scheme = "https"
 skip-if = [
   "os == 'android'",
 ]

@@ -9,6 +9,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   AboutWelcomeParent: "resource:///actors/AboutWelcomeParent.sys.mjs",
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
+  getModelIconSrc: "chrome://browser/content/aiwindow/modules/ModelIcons.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   Region: "resource://gre/modules/Region.sys.mjs",
 });
@@ -16,6 +17,8 @@ const MODEL_PREF = "browser.smartwindow.firstrun.modelChoice";
 const AUTO_ADVANCE_PREF = "browser.smartwindow.firstrun.autoAdvanceMS";
 const FIRST_RUN_COMPLETE_PREF = "browser.smartwindow.firstrun.hasCompleted";
 const EXPLAINER_PAGE_PREF = "browser.smartwindow.firstrun.explainerURL";
+const EXPLAINER_PAGE_DEFAULT_URL =
+  "http://www.firefox.com/smart-window/?v=product";
 const MEMORIES_FROM_CONVERSATION_PREF =
   "browser.smartwindow.memories.generateFromConversation";
 const MEMORIES_FROM_HISTORY_PREF =
@@ -30,7 +33,12 @@ const NON_REMOVABLE_SCREEN_IDS = new Set([
   "AI_WINDOW_CHOOSE_MODEL",
   "AI_WINDOW_MEMORIES",
 ]);
-const { getAllModelsData, getModelDisplayOrder } = ChromeUtils.importESModule(
+const {
+  AUTO_MODEL_CHOICE_ID,
+  getAllModelsData,
+  getModelDisplayOrder,
+  isAutoModelEnabled,
+} = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
 );
 
@@ -39,24 +47,21 @@ const PROMOTED_BRAND_NAME = "Mistral";
 
 /**
  * Model card content is keyed by the model's labelId.
- * Full l10n IDs and icon URLs are inlined so they stay greppable in the codebase.
+ * Full l10n IDs are inlined so they stay greppable in the codebase.
  * Card display order comes from getModelDisplayOrder().
  */
 const MODEL_CARDS = {
   1: {
     label: "aiwindow-firstrun-model-fast-label-v2",
     body: "aiwindow-firstrun-model-fast-body-v2",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-gemini.svg",
   },
   2: {
     label: "aiwindow-firstrun-model-flexible-label",
     body: "aiwindow-firstrun-model-flexible-body",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-qwen.svg",
   },
   3: {
     label: "aiwindow-firstrun-model-personal-label-v2",
     body: "aiwindow-firstrun-model-personal-body-v2",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-mistral.svg",
   },
 };
 
@@ -136,7 +141,7 @@ function buildModelCards(modelData, promotedChoiceId) {
         fontWeight: 590,
       },
       icon: {
-        background: `var(--card-icon-bg) center / calc(100% - var(--space-medium)) calc(100% - var(--space-medium)) no-repeat url("${cardContent.icon}")`,
+        background: `var(--card-icon-bg) center / calc(100% - var(--space-medium)) calc(100% - var(--space-medium)) no-repeat url("${lazy.getModelIconSrc(choiceId)}")`,
       },
       body: { string_id: cardContent.body },
       action: {
@@ -565,7 +570,91 @@ function createAIWindowConfig(modelData) {
   };
 }
 
+// [generateFromConversation, generateFromHistory] for each memories choice.
+const MEMORIES_PREF_VALUES = {
+  both: [true, true],
+  chats: [true, false],
+  browsing: [false, true],
+  none: [false, false],
+};
+
+function getMemoriesChoice() {
+  const fromConversation = Services.prefs.getBoolPref(
+    MEMORIES_FROM_CONVERSATION_PREF,
+    false
+  );
+  const fromHistory = Services.prefs.getBoolPref(
+    MEMORIES_FROM_HISTORY_PREF,
+    false
+  );
+  if (fromConversation && fromHistory) {
+    return "both";
+  }
+  if (fromConversation) {
+    return "chats";
+  }
+  return fromHistory ? "browsing" : "none";
+}
+
+function saveSinglePageOnboarding({ detail }) {
+  const [fromConversation, fromHistory] =
+    MEMORIES_PREF_VALUES[detail.memoriesChoice];
+  Services.prefs.setStringPref(MODEL_PREF, detail.modelChoiceId);
+  Services.prefs.setBoolPref(MEMORIES_FROM_CONVERSATION_PREF, fromConversation);
+  Services.prefs.setBoolPref(MEMORIES_FROM_HISTORY_PREF, fromHistory);
+  Services.prefs.setBoolPref(IS_DEFAULT_WINDOW_PREF, detail.isDefaultWindow);
+  Services.prefs.setBoolPref(FIRST_RUN_COMPLETE_PREF, true);
+  topChromeWindow.openLinkIn(
+    Services.urlFormatter.formatURL(
+      Services.prefs.getStringPref(
+        EXPLAINER_PAGE_PREF,
+        EXPLAINER_PAGE_DEFAULT_URL
+      )
+    ),
+    "tab",
+    {
+      private: false,
+      triggeringPrincipal: Services.scriptSecurityManager.createNullPrincipal(
+        {}
+      ),
+    }
+  );
+  window.location.href = lazy.AIWindow.newTabURL;
+}
+
 async function renderFirstRun() {
+  const root = document.getElementById("onboarding-root");
+  if (isAutoModelEnabled()) {
+    let loaded = false;
+    try {
+      await import("chrome://browser/content/aiwindow/components/smartwindow-onboarding.mjs");
+      loaded = true;
+    } catch (ex) {
+      console.error("Single-page onboarding failed to load", ex);
+    }
+    if (loaded) {
+      const modelData = await getAllModelsData();
+      const onboarding = document.createElement("smartwindow-onboarding");
+      onboarding.autoAdvanceMS = autoAdvanceMS;
+      onboarding.recommendedModelChoiceId =
+        getPromotedChoiceId(modelData) ?? AUTO_MODEL_CHOICE_ID;
+      onboarding.modelChoiceId = onboarding.recommendedModelChoiceId;
+      onboarding.memoriesChoice = getMemoriesChoice();
+      onboarding.addEventListener(
+        "smartwindow-onboarding:save",
+        saveSinglePageOnboarding
+      );
+      root.appendChild(onboarding);
+      return;
+    }
+  }
+
+  const multiStageRoot = document.createElement("div");
+  multiStageRoot.id = "multi-stage-message-root";
+  multiStageRoot.className = "welcome-container";
+  multiStageRoot.setAttribute("role", "presentation");
+  root.appendChild(multiStageRoot);
+
   // Create config after model data is loaded
   const modelData = await getAllModelsData();
   const AI_WINDOW_CONFIG = createAIWindowConfig(modelData);
@@ -656,7 +745,7 @@ async function renderFirstRun() {
       data: {
         args: Services.prefs.getStringPref(
           EXPLAINER_PAGE_PREF,
-          "http://www.firefox.com/smart-window/?v=product"
+          EXPLAINER_PAGE_DEFAULT_URL
         ),
         where: "tab",
       },

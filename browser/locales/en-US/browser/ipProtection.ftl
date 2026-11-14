@@ -241,6 +241,13 @@ ipprotection-locations-subview-promo =
   .message = Choose from 300+ locations and protect all your apps on up to 5 devices.
 ipprotection-locations-subview-promo-button = Get { -mozilla-vpn-brand-name }
 
+# Variables:
+#   $count (number) - The number of additional VPN locations available after setting Firefox as the default browser
+ipprotection-locations-subview-set-default-promo =
+  .heading = More locations. More protection.
+  .message = Make { -brand-short-name } your default and get { $count } more locations. Your links open here, where VPN is built in.
+ipprotection-locations-subview-set-default-promo-button = Open links with { -brand-short-name }
+
 ## VPN paused state
 
 ipprotection-connection-status-paused-title-2 = VPN is paused

@@ -798,20 +798,30 @@ NS_INTERFACE_MAP_END
 NS_IMPL_CYCLE_COLLECTING_ADDREF(EventStateManager)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(EventStateManager)
 
-NS_IMPL_CYCLE_COLLECTION_WEAK(
-    EventStateManager, mCurrentTargetContent, mGestureDownContent,
-    mGestureDownFrameOwner, mLastPrimaryButtonPressInfo.mConnectedDownContent,
-    mLastPrimaryButtonPressInfo.mDownContent,
-    mLastPrimaryButtonPressInfo.mUpContent,
-    mLastMiddleButtonPressInfo.mConnectedDownContent,
-    mLastMiddleButtonPressInfo.mDownContent,
-    mLastMiddleButtonPressInfo.mUpContent,
-    mLastSecondaryButtonPressInfo.mConnectedDownContent,
-    mLastSecondaryButtonPressInfo.mDownContent,
-    mLastSecondaryButtonPressInfo.mUpContent, mActiveContent, mHoverContent,
-    mURLTargetContent, mPopoverPointerDownTarget, mMouseEnterLeaveHelper,
-    mPointersEnterLeaveHelper, mDocument, mIMEContentObserver, mAccessKeys,
-    mPendingLeaveLinkElement)
+NS_IMPL_CYCLE_COLLECTION_WEAK(EventStateManager, mCurrentTargetContent,
+                              mGestureDownContent, mGestureDownFrameOwner,
+                              mLastButtonPressInfo, mActiveContent,
+                              mHoverContent, mURLTargetContent,
+                              mPopoverPointerDownTarget, mMouseEnterLeaveHelper,
+                              mPointersEnterLeaveHelper, mDocument,
+                              mIMEContentObserver, mAccessKeys,
+                              mPendingLeaveLinkElement)
+
+void ImplCycleCollectionUnlink(
+    EventStateManager::LastMouseButtonPressInfo& aInfo) {
+  auto* tmp = &aInfo;
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mDownContent, mConnectedDownContent,
+                                  mUpContent);
+}
+
+void ImplCycleCollectionTraverse(
+    nsCycleCollectionTraversalCallback& cb,
+    EventStateManager::LastMouseButtonPressInfo& aInfo, const char* aName,
+    uint32_t aFlags) {
+  auto* tmp = &aInfo;
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mDownContent, mConnectedDownContent,
+                                    mUpContent);
+}
 
 void EventStateManager::ReleaseCurrentIMEContentObserver() {
   if (mIMEContentObserver) {
@@ -1141,21 +1151,24 @@ nsresult EventStateManager::PreHandleEvent(nsPresContext* aPresContext,
       switch (mouseEvent->mButton) {
         case MouseButton::ePrimary:
           BeginTrackingDragGesture(aPresContext, *mouseEvent, aTargetFrame);
-          mLastPrimaryButtonPressInfo.mClickCount = mouseEvent->mClickCount;
+          GetLastMouseButtonPressInfo(MouseButton::ePrimary).mClickCount =
+              mouseEvent->mClickCount;
           PrepareForFollowingClickEvent(*mouseEvent);
           sNormalLMouseEventInProcess = true;
           break;
         case MouseButton::eMiddle:
-          mLastMiddleButtonPressInfo.mClickCount = mouseEvent->mClickCount;
-          PrepareForFollowingClickEvent(*mouseEvent);
-          break;
         case MouseButton::eSecondary:
-          mLastSecondaryButtonPressInfo.mClickCount = mouseEvent->mClickCount;
+          GetLastMouseButtonPressInfo(mouseEvent->mButton).mClickCount =
+              mouseEvent->mClickCount;
           PrepareForFollowingClickEvent(*mouseEvent);
           break;
         case MouseButton::eX1:
         case MouseButton::eX2:
-          // XXX FIXME: We won't dispatch `auxclick` for 4th nor 5th button.
+          if (StaticPrefs::dom_event_mouse_xbuttons_enabled()) {
+            GetLastMouseButtonPressInfo(mouseEvent->mButton).mClickCount =
+                mouseEvent->mClickCount;
+            PrepareForFollowingClickEvent(*mouseEvent);
+          }
           break;
         default:
           break;
@@ -1182,7 +1195,12 @@ nsresult EventStateManager::PreHandleEvent(nsPresContext* aPresContext,
         }
         case MouseButton::eX1:
         case MouseButton::eX2:
-          // XXX FIXME: We won't dispatch `auxclick` for 4th nor 5th button.
+          if (StaticPrefs::dom_event_mouse_xbuttons_enabled()) {
+            RefPtr<EventStateManager> esm =
+                ESMFromContentOrThis(aOverrideClickTarget);
+            esm->PrepareForFollowingClickEvent(*mouseEvent,
+                                               aOverrideClickTarget);
+          }
           break;
         default:
           break;
@@ -1755,17 +1773,12 @@ already_AddRefed<EventStateManager> EventStateManager::ESMFromContentOrThis(
 
 auto EventStateManager::GetLastMouseButtonPressInfo(int16_t aButton) const
     -> const LastMouseButtonPressInfo& {
-  switch (aButton) {
-    case MouseButton::ePrimary:
-      return mLastPrimaryButtonPressInfo;
-    case MouseButton::eMiddle:
-      return mLastMiddleButtonPressInfo;
-    case MouseButton::eSecondary:
-      return mLastSecondaryButtonPressInfo;
-    default:
-      MOZ_ASSERT_UNREACHABLE("This button shouldn't use this method");
-      return mLastPrimaryButtonPressInfo;
+  size_t index = static_cast<size_t>(aButton);
+  if (index >= mLastButtonPressInfo.Length()) {
+    MOZ_ASSERT_UNREACHABLE("This button shouldn't use this method");
+    index = 0;
   }
+  return mLastButtonPressInfo[index];
 }
 
 void EventStateManager::HandleQueryContentEvent(
@@ -4153,7 +4166,9 @@ nsresult EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
         switch (mouseEvent->mButton) {
           case MouseButton::ePrimary:
           case MouseButton::eSecondary:
-          case MouseButton::eMiddle: {
+          case MouseButton::eMiddle:
+          case MouseButton::eX1:
+          case MouseButton::eX2: {
             GetLastMouseButtonPressInfo(mouseEvent->mButton).Clear();
             break;
           }
@@ -4361,6 +4376,8 @@ nsresult EventStateManager::PostHandleEvent(nsPresContext* aPresContext,
           case MouseButton::ePrimary:
           case MouseButton::eSecondary:
           case MouseButton::eMiddle:
+          case MouseButton::eX1:
+          case MouseButton::eX2:
             GetLastMouseButtonPressInfo(mouseUpEvent->mButton).Clear();
             break;
           default:
@@ -6520,6 +6537,20 @@ nsresult EventStateManager::PostHandleMouseUp(
     return NS_OK;
   }
 
+  // If the mouse up event goes to the content process, we will do the default
+  // X1/X2 mouse button action in BrowserParent::RecvReplyMouseEvent. However,
+  // if the event stays in the parent process, we need to do it now.
+  if (aMouseUpEvent->mCommand && XRE_IsParentProcess() &&
+      !aMouseUpEvent->HasBeenPostedToRemoteProcess() &&
+      !aMouseUpEvent->DefaultPrevented()) {
+    if (!mPresContext || NS_WARN_IF(!mPresContext->GetRootWidget())) {
+      return NS_OK;
+    }
+    nsCOMPtr widget = mPresContext->GetRootWidget();
+    aMouseUpEvent->mCommand.Run(widget);
+    return NS_OK;
+  }
+
   // Handle middle click paste if it's enabled and the mouse button is middle.
   if (aMouseUpEvent->mButton != MouseButton::eMiddle ||
       !WidgetMouseEvent::IsMiddleClickPasteEnabled()) {
@@ -6555,7 +6586,9 @@ nsresult EventStateManager::DispatchClickEvents(
 
   bool notDispatchToContents =
       (aMouseUpEvent->mButton == MouseButton::eMiddle ||
-       aMouseUpEvent->mButton == MouseButton::eSecondary);
+       aMouseUpEvent->mButton == MouseButton::eSecondary ||
+       aMouseUpEvent->mButton == MouseButton::eX1 ||
+       aMouseUpEvent->mButton == MouseButton::eX2);
 
   bool fireAuxClick = notDispatchToContents;
 
@@ -7042,29 +7075,13 @@ void EventStateManager::NativeAnonymousContentRemoved(nsIContent* aContent) {
   MOZ_ASSERT(aContent->IsRootOfNativeAnonymousSubtree());
   RemoveNodeFromChainIfNeeded(ElementState::HOVER, aContent, false);
   RemoveNodeFromChainIfNeeded(ElementState::ACTIVE, aContent, false);
-
-  nsCOMPtr<nsIContent>& lastLeftMouseDownContent =
-      mLastPrimaryButtonPressInfo.mConnectedDownContent;
-  if (lastLeftMouseDownContent &&
-      nsContentUtils::ContentIsFlattenedTreeDescendantOf(
-          lastLeftMouseDownContent, aContent)) {
-    lastLeftMouseDownContent = aContent->GetFlattenedTreeParent();
-  }
-
-  nsCOMPtr<nsIContent>& lastMiddleMouseDownContent =
-      mLastMiddleButtonPressInfo.mConnectedDownContent;
-  if (lastMiddleMouseDownContent &&
-      nsContentUtils::ContentIsFlattenedTreeDescendantOf(
-          lastMiddleMouseDownContent, aContent)) {
-    lastMiddleMouseDownContent = aContent->GetFlattenedTreeParent();
-  }
-
-  nsCOMPtr<nsIContent>& lastRightMouseDownContent =
-      mLastSecondaryButtonPressInfo.mConnectedDownContent;
-  if (lastRightMouseDownContent &&
-      nsContentUtils::ContentIsFlattenedTreeDescendantOf(
-          lastRightMouseDownContent, aContent)) {
-    lastRightMouseDownContent = aContent->GetFlattenedTreeParent();
+  for (LastMouseButtonPressInfo& info : mLastButtonPressInfo) {
+    nsCOMPtr<nsIContent>& lastMouseDownContent = info.mConnectedDownContent;
+    if (lastMouseDownContent &&
+        nsContentUtils::ContentIsFlattenedTreeDescendantOf(lastMouseDownContent,
+                                                           aContent)) {
+      lastMouseDownContent = aContent->GetFlattenedTreeParent();
+    }
   }
 }
 

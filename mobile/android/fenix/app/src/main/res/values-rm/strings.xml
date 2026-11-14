@@ -520,7 +520,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Betg ussa</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Sursiglir</string>
+  <string name="nova_onboarding_skip_button">Sursiglir</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Ta prepara per navigar en tutta libertad</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

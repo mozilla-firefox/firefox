@@ -162,7 +162,10 @@ export class AgentUI {
    * @private
    */
   static #UPDATE_TYPE_HANDLERS = {
-    /* TODO: Bug 2060609 - match naming monitor -> watch */
+    /*
+     * "watch" is the user-facing name for the task command, and the code
+     * calls it Monitor, so searching for one misses the other.
+     */
     [AGENT_UPDATE_TYPES.CREATE_WATCH]: this.handleCreateMonitor.bind(this),
     [AGENT_UPDATE_TYPES.CANCEL_WATCH]: this.#handleCancelMonitor.bind(this),
     [AGENT_UPDATE_TYPES.UPDATE_WATCH]: this.#handleUpdateMonitor.bind(this),

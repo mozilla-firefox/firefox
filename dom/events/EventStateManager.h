@@ -1412,6 +1412,10 @@ class EventStateManager : public nsSupportsWeakReference, public nsIObserver {
     Maybe<FormControlType> mDownInputControlType;
     uint32_t mClickCount = 0;
   };
+  friend void ImplCycleCollectionUnlink(LastMouseButtonPressInfo& aInfo);
+  friend void ImplCycleCollectionTraverse(
+      nsCycleCollectionTraversalCallback& cb, LastMouseButtonPressInfo& aInfo,
+      const char* aName, uint32_t aFlags);
 
   const LastMouseButtonPressInfo& GetLastMouseButtonPressInfo(
       int16_t aButton) const;
@@ -1470,9 +1474,8 @@ class EventStateManager : public nsSupportsWeakReference, public nsIObserver {
   uint16_t mGestureDownButtons;
   int16_t mGestureDownButton;
 
-  LastMouseButtonPressInfo mLastPrimaryButtonPressInfo;
-  LastMouseButtonPressInfo mLastMiddleButtonPressInfo;
-  LastMouseButtonPressInfo mLastSecondaryButtonPressInfo;
+  AutoTArray<LastMouseButtonPressInfo, 5> mLastButtonPressInfo = {
+      {}, {}, {}, {}, {}};
 
   nsCOMPtr<nsIContent> mActiveContent;
   nsCOMPtr<nsIContent> mHoverContent;

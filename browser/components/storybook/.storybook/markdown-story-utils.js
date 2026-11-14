@@ -55,19 +55,36 @@ function separateWords(str) {
 
 /**
  * Enables rendering code in our markdown docs by parsing the source for
- * annotated code blocks and replacing them with Storybook's Canvas component.
+ * annotated code blocks and replacing them with live example containers.
  *
  * @param {string} source - Stringified markdown source code.
- * @returns {string} Source with code blocks replaced by Canvas components.
+ * @returns {string} Source with code blocks replaced by example containers.
  */
 function parseStoriesFromMarkdown(source) {
   let storiesRegex = /```(?:js|html) story\n(?<code>[\s\S]*?)```/g;
-  // $code comes from the <code> capture group in the regex above. It consists
-  // of any code in between backticks and gets run when used in a Canvas component.
-  return source.replace(
-    storiesRegex,
-    "<Canvas withSource='none'><with-common-styles>\n$<code></with-common-styles></Canvas>"
-  );
+  let exampleStyle = {
+    border: "1px solid var(--border-color)",
+    borderRadius: "var(--border-radius-small)",
+    background: "var(--background-color-canvas)",
+    boxShadow: "var(--box-shadow-level-1)",
+    overflow: "auto",
+  };
+  let blockMargin = {
+    marginBlock:
+      "var(--space-xlarge) calc(var(--space-xlarge) + var(--space-large))",
+  };
+  let tableCellMargin = { margin: 0 };
+  let contentStyle = JSON.stringify({ padding: "var(--space-xxlarge)" });
+  // Keep annotated fences as JSX so examples use the same component markup.
+  return source.replace(storiesRegex, (match, code, offset, string) => {
+    let before = string.slice(0, offset);
+    let inTableCell = before.lastIndexOf("<td") > before.lastIndexOf("</td>");
+    let style = JSON.stringify({
+      ...exampleStyle,
+      ...(inTableCell ? tableCellMargin : blockMargin),
+    });
+    return `<Unstyled style={${style}}><div className="docs-story" style={${contentStyle}}><with-common-styles>\n${code}</with-common-styles></div></Unstyled>`;
+  });
 }
 
 /**
@@ -169,19 +186,13 @@ function getMDXSource(source, title, resourcePath = "") {
   let componentName = getComponentName(resourcePath);
 
   // Unfortunately the indentation/spacing here seems to be important for the
-  // MDX parser to know what to do in the next step of the Webpack process.
+  // MDX parser to recognize the generated blocks.
   let mdxSource = `
-import { Meta, Canvas, ArgTypes } from "@storybook/addon-docs";
+import { Meta, ArgTypes, Unstyled } from "@storybook/addon-docs/blocks";
 ${importPath ? `import ${importPath};` : ""}
 
 <Meta
   title="${title}"
-  parameters={{
-    previewTabs: {
-      canvas: { hidden: true },
-    },
-    viewMode: "docs",
-  }}
 />
 
 ${parseStoriesFromMarkdown(source)}

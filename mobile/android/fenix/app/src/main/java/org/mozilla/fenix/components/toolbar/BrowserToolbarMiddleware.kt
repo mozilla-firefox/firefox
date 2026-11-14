@@ -23,6 +23,7 @@ import mozilla.components.browser.state.action.EngineAction
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.selector.getNormalOrPrivateTabs
 import mozilla.components.browser.state.selector.selectedTab
+import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.SecurityInfo
 import mozilla.components.browser.state.state.selectedOrDefaultSearchEngine
 import mozilla.components.browser.state.store.BrowserStore
@@ -73,6 +74,7 @@ import mozilla.components.feature.ipprotection.store.state.Authorized
 import mozilla.components.feature.ipprotection.store.state.ProxyActivation
 import mozilla.components.feature.listentopage.settings.ListenSettings
 import mozilla.components.feature.listentopage.settings.shouldShow
+import mozilla.components.feature.pictureinpicture.PictureInPictureUseCases
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.session.TrackingProtectionUseCases
 import mozilla.components.feature.summarize.R as summariesR
@@ -141,6 +143,7 @@ import org.mozilla.fenix.components.toolbar.DisplayActions.ShortcutLongClicked
 import org.mozilla.fenix.components.toolbar.DisplayActions.StopRefreshClicked
 import org.mozilla.fenix.components.toolbar.DisplayActions.SummarizeClicked
 import org.mozilla.fenix.components.toolbar.DisplayActions.TranslateClicked
+import org.mozilla.fenix.components.toolbar.PageEndActionsInteractions.PictureInPictureClicked
 import org.mozilla.fenix.components.toolbar.PageEndActionsInteractions.ReaderModeClicked
 import org.mozilla.fenix.components.toolbar.PageOriginInteractions.OriginClicked
 import org.mozilla.fenix.components.toolbar.TabCounterInteractions.AddNewPrivateTab
@@ -224,6 +227,8 @@ internal sealed class PageOriginInteractions : BrowserToolbarEvent {
 @VisibleForTesting
 internal sealed class PageEndActionsInteractions(override val source: Source) : BrowserToolbarEvent {
     data class ReaderModeClicked(val isActive: Boolean) : PageEndActionsInteractions(Source.AddressBar.PageEnd)
+
+    data class PictureInPictureClicked(val isActive: Boolean) : PageEndActionsInteractions(Source.AddressBar.PageEnd)
 }
 
 internal object BrowserToolbarTestTags {
@@ -248,6 +253,7 @@ internal object BrowserToolbarTestTags {
  *   current tab.
  * @param useCases [UseCases] helping this integrate with other features of the applications.
  * @param sessionUseCases [SessionUseCases] for interacting with the current session.
+ * @param pictureInPictureUseCases [PictureInPictureUseCases] for opening and closing the picture-in-picture window.
  * @param shareUseCases [ShareUseCases] for sharing content via the system share sheet or the in-app [ShareFragment].
  * @param nimbusComponents [NimbusComponents] used for accessing Nimbus events to use in telemetry.
  * @param clipboard [ClipboardHandler] to use for reading from device's clipboard.
@@ -278,6 +284,7 @@ class BrowserToolbarMiddleware(
     private val trackingProtectionUseCases: TrackingProtectionUseCases,
     private val useCases: UseCases,
     private val sessionUseCases: SessionUseCases = SessionUseCases(browserStore),
+    private val pictureInPictureUseCases: PictureInPictureUseCases,
     private val shareUseCases: ShareUseCases,
     private val nimbusComponents: NimbusComponents,
     private val clipboard: ClipboardHandler,
@@ -327,6 +334,7 @@ class BrowserToolbarMiddleware(
                 observePageOriginUpdates(store)
                 observeSelectedTabBookmarkedUpdates(store)
                 observeReaderModeUpdates(store)
+                observeMediaSessionUpdates(store)
                 observePageTranslationsUpdates(store)
                 observeTranslationsFeatureAvailabilityUpdates(store)
                 observePageRefreshUpdates(store)
@@ -569,6 +577,15 @@ class BrowserToolbarMiddleware(
                     }
                 }
 
+                next(action)
+            }
+
+            is PictureInPictureClicked -> {
+                if (action.isActive) {
+                    pictureInPictureUseCases.closeWindow()
+                } else {
+                    pictureInPictureUseCases.request()
+                }
                 next(action)
             }
 
@@ -818,6 +835,11 @@ class BrowserToolbarMiddleware(
         return listOf(
                 ToolbarActionConfig(ToolbarAction.ReaderMode) {
                     browserScreenStore.state.readerModeStatus.isAvailable
+                },
+                ToolbarActionConfig(ToolbarAction.PictureInPicture) {
+                    settings.isPictureInPictureWindowAvailable &&
+                        !browserScreenStore.state.readerModeStatus.isAvailable &&
+                        browserStore.state.selectedTab?.mediaSessionState != null
                 },
                 ToolbarActionConfig(ToolbarAction.Translate) {
                     browserScreenStore.state.pageTranslationStatus.isTranslationPossible &&
@@ -1118,6 +1140,20 @@ class BrowserToolbarMiddleware(
         }
     }
 
+    private fun observeMediaSessionUpdates(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
+        browserStore.observeWhileActive {
+            distinctUntilChangedBy {
+                (it.selectedTab?.mediaSessionState != null) to it.isSelectedTabInPictureInPicture()
+            }
+                .collect {
+                    updateEndPageActions(store)
+                }
+        }
+    }
+
+    private fun BrowserState.isSelectedTabInPictureInPicture() =
+        selectedTabId != null && pictureInPictureWindow.session?.tabId == selectedTabId
+
     private fun observeTabReloadCoverUpdates(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
         browserScreenStore.observeWhileActive {
             distinctUntilChangedBy { it.isShowingTabReloadCover }
@@ -1213,6 +1249,7 @@ class BrowserToolbarMiddleware(
         RefreshOrStop,
         Menu,
         ReaderMode,
+        PictureInPicture,
         Translate,
         TabCounter,
         SiteInfo,
@@ -1345,6 +1382,25 @@ class BrowserToolbarMiddleware(
                         },
                     onClick = ReaderModeClicked(browserScreenStore.state.readerModeStatus.isActive),
                 )
+
+            ToolbarAction.PictureInPicture -> {
+                val isActive = browserStore.state.isSelectedTabInPictureInPicture()
+                ActionButtonRes(
+                    drawableResId =
+                        if (isActive) {
+                            iconsR.drawable.mozac_ic_picture_in_picture_close_24
+                        } else {
+                            iconsR.drawable.mozac_ic_picture_in_picture_24
+                        },
+                    contentDescription =
+                        if (isActive) {
+                            R.string.browser_toolbar_picture_in_picture_close
+                        } else {
+                            R.string.browser_toolbar_picture_in_picture
+                        },
+                    onClick = PictureInPictureClicked(isActive),
+                )
+            }
 
             ToolbarAction.Translate ->
                 ActionButtonRes(

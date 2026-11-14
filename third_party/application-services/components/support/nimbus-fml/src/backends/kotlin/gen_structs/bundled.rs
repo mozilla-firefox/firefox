@@ -1,14 +1,15 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use std::fmt::Display;
 
-use super::common::{code_type, quoted};
-use crate::backends::{CodeOracle, CodeType, LiteralRenderer, TypeIdentifier, VariablesType};
-use crate::intermediate_representation::{Literal, TypeRef};
 use heck::ToSnakeCase;
 use icu_segmenter::GraphemeClusterSegmenter;
+
+use crate::backends::kotlin::gen_structs::common::{code_type, quoted};
+use crate::backends::{CodeOracle, CodeType, LiteralRenderer, TypeIdentifier, VariablesType};
+use crate::intermediate_representation::Literal;
 
 pub(crate) struct TextCodeType;
 
@@ -84,16 +85,6 @@ impl CodeType for TextCodeType {
             }
             _ => unreachable!("Expecting a string"),
         }
-    }
-
-    fn preference_getter(
-        &self,
-        oracle: &dyn CodeOracle,
-        prefs: &dyn Display,
-        pref_key: &dyn Display,
-    ) -> Option<String> {
-        let ct = oracle.find(&TypeRef::String);
-        ct.preference_getter(oracle, prefs, pref_key)
     }
 
     fn is_resource_id(&self, literal: &Literal) -> bool {

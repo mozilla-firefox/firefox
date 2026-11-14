@@ -1,8 +1,10 @@
-// /* This Source Code Form is subject to the terms of the Mozilla Public
-//  * License, v. 2.0. If a copy of the MPL was not distributed with this
-//  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-use heck::{ToLowerCamelCase, ToShoutySnakeCase, ToUpperCamelCase};
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 use std::fmt::Display;
+
+use heck::{ToLowerCamelCase, ToShoutySnakeCase, ToUpperCamelCase};
 
 /// Get the idiomatic Kotlin rendering of a class name (for enums, records, errors, etc).
 pub fn class_name(nm: &dyn Display) -> String {

@@ -3,7 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // eslint-disable-next-line no-unused-vars
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
@@ -19,6 +19,7 @@ import { WidgetMenuFooter } from "../WidgetMenuFooter";
 import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 import { SizeSubmenu } from "../SizeSubmenu";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
+import { useFramedWidgetMessages } from "../useFramedWidgetMessages";
 
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
@@ -71,6 +72,59 @@ function Solitaire({
     [handleUserInteraction]
   );
 
+  const iframeRef = useRef(null);
+  const dialogRef = useRef(null);
+  const [playing, setPlaying] = useState(false);
+  // Bumped to remount the iframe so the widget reloads into "Resume game".
+  const [frameKey, setFrameKey] = useState(0);
+
+  useFramedWidgetMessages({
+    widget: SOLITAIRE_ENTRY,
+    src,
+    iframeRef,
+    onMessage(type, message) {
+      if (type !== "action") {
+        return;
+      }
+      if (message === "start_game") {
+        setPlaying(true);
+        handleInteraction();
+      } else if (message === "close_game" || message === "reset_game") {
+        setPlaying(false);
+      }
+    },
+  });
+
+  const playingRef = useRef(playing);
+  playingRef.current = playing;
+
+  useEffect(() => setPlaying(false), [src]);
+
+  // In the card the dialog stays closed and CSS shows it, since show() would
+  // move focus into the game and dismiss open popovers. It stays mounted, so
+  // the same iframe document keeps running in the modal.
+  useEffect(() => {
+    if (playing) {
+      dialogRef.current?.showModal();
+    } else if (dialogRef.current?.open) {
+      dialogRef.current.close();
+    }
+  }, [playing]);
+
+  const handleCloseModal = useCallback(() => {
+    setPlaying(false);
+    setFrameKey(key => key + 1);
+  }, []);
+
+  // Closes from the effect above happen after playing is already false, so
+  // only a close by the user (Esc or a backdrop click) gets here while
+  // playing.
+  const handleClose = useCallback(() => {
+    if (playingRef.current) {
+      handleCloseModal();
+    }
+  }, [handleCloseModal]);
+
   const handleChangeSize = useCallback(
     size => {
       dispatch(
@@ -109,7 +163,8 @@ function Solitaire({
       ref={impressionRef}
       aria-labelledby="solitaire-widget-label"
     >
-      <div className="solitaire-title-wrapper">
+      {/* Hidden rather than unmounted, since its title names the dialog. */}
+      <div className="solitaire-title-wrapper" hidden={playing}>
         <div className="solitaire-badge-title-wrapper">
           {!hasInteracted && (
             <moz-badge
@@ -165,14 +220,33 @@ function Solitaire({
         </div>
       </div>
 
-      <div className="solitaire-body">
+      <dialog
+        ref={dialogRef}
+        className="solitaire-dialog"
+        role={playing ? undefined : "none"}
+        aria-labelledby={playing ? "solitaire-widget-label" : undefined}
+        // eslint-disable-next-line react/no-unknown-property
+        closedby="any"
+        onClose={handleClose}
+      >
+        {playing && (
+          <moz-button
+            className="solitaire-dialog-close"
+            type="icon ghost"
+            iconSrc="chrome://global/skin/icons/close.svg"
+            data-l10n-id="newtab-solitaire-widget-close-button"
+            onClick={handleCloseModal}
+          />
+        )}
         <iframe
+          key={frameKey}
+          ref={iframeRef}
           className="solitaire-frame"
           aria-labelledby="solitaire-widget-label"
           src={src}
           sandbox={FRAMED_WIDGET_SANDBOX}
         />
-      </div>
+      </dialog>
     </article>
   );
 }

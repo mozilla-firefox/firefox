@@ -175,7 +175,9 @@ export class Conversation {
 
   /** True when the underlying engineInstance is initialized and ready to serve requests. */
   get isReady() {
-    return this.engine?.engineInstance?.engineStatus === "ready";
+    return ["ready", "suspended"].includes(
+      this.engine?.engineInstance?.engineStatus
+    );
   }
 
   /**

@@ -1143,6 +1143,25 @@ void WidgetMouseEvent::AssertContextMenuEventButtonConsistency() const {
 }
 #endif
 
+void WidgetMouseEventCommand::Run(nsIWidget* aRootWidget) {
+  MOZ_ASSERT(*this, "Should only be called on non-void command.");
+  if (mContentCommand) {
+    MOZ_ASSERT(!mBrowserCommand,
+               "Only one of mContentCommand/mBrowserCommand should be set.");
+    WidgetContentCommandEvent contentCommandEvent(true, mContentCommand,
+                                                  aRootWidget);
+    widget::TextEventDispatcher* dispatcher =
+        aRootWidget->GetTextEventDispatcher();
+    if (NS_WARN_IF(!dispatcher)) {
+      return;
+    }
+    dispatcher->DispatchContentCommandEvent(contentCommandEvent);
+    return;
+  }
+  WidgetCommandEvent commandEvent(true, mBrowserCommand, aRootWidget);
+  aRootWidget->DispatchEvent(&commandEvent);
+}
+
 /******************************************************************************
  * mozilla::WidgetDragEvent (MouseEvents.h)
  ******************************************************************************/

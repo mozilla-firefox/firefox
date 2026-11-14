@@ -2748,7 +2748,8 @@ static bool ShouldDispatchBackForwardCommandForMouseButton(int16_t aButton) {
   }
 
   int16_t button = nsCocoaUtils::ButtonForEvent(theEvent);
-  if (ShouldDispatchBackForwardCommandForMouseButton(button)) {
+  if (ShouldDispatchBackForwardCommandForMouseButton(button) &&
+      !StaticPrefs::dom_event_mouse_xbuttons_enabled()) {
     WidgetCommandEvent appCommandEvent(
         true,
         (button == MouseButton::eX2) ? nsGkAtoms::Forward : nsGkAtoms::Back,
@@ -2777,7 +2778,10 @@ static bool ShouldDispatchBackForwardCommandForMouseButton(int16_t aButton) {
   }
 
   int16_t button = nsCocoaUtils::ButtonForEvent(theEvent);
-  if (ShouldDispatchBackForwardCommandForMouseButton(button)) {
+  const bool shouldDispatchBackForward =
+      ShouldDispatchBackForwardCommandForMouseButton(button);
+  if (!StaticPrefs::dom_event_mouse_xbuttons_enabled() &&
+      shouldDispatchBackForward) {
     return;
   }
 
@@ -2785,6 +2789,10 @@ static bool ShouldDispatchBackForwardCommandForMouseButton(int16_t aButton) {
                               WidgetMouseEvent::eReal);
   [self convertCocoaMouseEvent:theEvent toGeckoEvent:&geckoEvent];
   geckoEvent.mButton = button;
+  if (shouldDispatchBackForward) {
+    geckoEvent.mCommand =
+        button == MouseButton::eX2 ? nsGkAtoms::Forward : nsGkAtoms::Back;
+  }
 
   nsAutoRetainCocoaObject kungFuDeathGrip(self);
   mGeckoChild->DispatchInputEvent(&geckoEvent);

@@ -14,3 +14,9 @@ newtab-widget-placeholder = Watch this space
 
 # Context menu item linking to the Yahoo website, the provider of the solitaire game.
 newtab-solitaire-menu-powered-by-yahoo = Powered by Yahoo
+
+# Tooltip and screen reader label for the icon-only button that closes the
+# expanded Solitaire game and returns the widget to its card.
+newtab-solitaire-widget-close-button =
+    .title = Close
+    .aria-label = Close Solitaire

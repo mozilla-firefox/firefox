@@ -1,15 +1,15 @@
-/* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+use std::collections::{BTreeMap, HashSet};
+
+use regex::Regex;
 
 use crate::error::FMLError;
+use crate::error::Result;
+use crate::intermediate_representation::{EnumDef, ObjectDef};
 use crate::intermediate_representation::{FeatureDef, FeatureManifest, TypeFinder, TypeRef};
-use crate::{
-    error::Result,
-    intermediate_representation::{EnumDef, ObjectDef},
-};
-use regex::Regex;
-use std::collections::{BTreeMap, HashSet};
 
 const DISALLOWED_PREFS: &[(&str, &str)] = &[
     (
@@ -196,20 +196,22 @@ impl<'a> SchemaValidator<'a> {
             let t = unaccounted.first().unwrap();
             return Err(FMLError::ValidationError(
                 path.to_string(),
-                format!("A string-alias {t} is used by– but has not been defined in– the {feature} feature"),
+                format!(
+                    "A string-alias {t} is used by– but has not been defined in– the {feature} feature"
+                ),
             ));
         }
         for t in types {
-            if let TypeRef::Object(nm) = t {
-                if let Some(obj) = self.get_object(nm) {
-                    let types = obj.all_types();
-                    self.validate_string_alias_declarations(
-                        &format!("objects/{nm}"),
-                        feature,
-                        &types,
-                        string_aliases,
-                    )?;
-                }
+            if let TypeRef::Object(nm) = t
+                && let Some(obj) = self.get_object(nm)
+            {
+                let types = obj.all_types();
+                self.validate_string_alias_declarations(
+                    &format!("objects/{nm}"),
+                    feature,
+                    &types,
+                    string_aliases,
+                )?;
             }
         }
         Ok(())
@@ -244,7 +246,7 @@ impl<'a> SchemaValidator<'a> {
                         format!(
                             "Map key must be a String, string-alias or enum, found: {key_type:?}",
                         ),
-                    ))
+                    ));
                 }
             },
             TypeRef::List(list_type) => self.validate_type_ref(path, list_type)?,

@@ -37,6 +37,21 @@ UBSAN_LINES = [
     f"SUMMARY: UndefinedBehaviorSanitizer: undefined-behavior {UBSAN_FILE}:7106:33",
 ]
 
+ASAN_FILE = "/builds/worker/checkouts/gecko/dom/base/SpeculationRules.cpp"
+ASAN_FUNCTION = "mozilla::dom::SpeculationRules::RemoveLink(mozilla::dom::Element*)"
+ASAN_MESSAGE = (
+    "SEGV on unknown address 0x00000000030b "
+    "(pc 0x7b03e9dd40af bp 0x7fff627fb7f0 sp 0x7fff627fb7e0 T0)"
+)
+ASAN_LINES = [
+    f"==28130==ERROR: AddressSanitizer: {ASAN_MESSAGE}",
+    "==28130==The signal is caused by a READ memory access.",
+    f"    #0 0x7b03e9dd40af in {ASAN_FUNCTION} {ASAN_FILE}:385:7",
+    "    #1 0x561bbfeecf08 in _start (/builds/worker/workspace/build/application/firefox/firefox+0xc1f08)",
+    f"SUMMARY: AddressSanitizer: SEGV {ASAN_FILE}:385:7 in {ASAN_FUNCTION}",
+    "==28130==ABORTING",
+]
+
 
 # Monitors created by the tests shouldn't forward to the one running the tests
 # in automation.
@@ -518,6 +533,230 @@ class TestResourceMonitor(unittest.TestCase):
 
         self.assertEqual(len(self._events(monitor, "UBSan Error")), 0)
         self.assertEqual(len(self._events(monitor, "output")), 4)
+
+    def _asan_action(self, message=ASAN_MESSAGE, stack=None, **extra):
+        data = {
+            "time": int(time.time() * 1000),
+            "kind": "SEGV",
+            "message": message,
+            "pid": 28130,
+            "file": ASAN_FILE,
+            "lineno": 385,
+            "column": 7,
+            "function": ASAN_FUNCTION,
+        }
+        if stack is not None:
+            data["stack"] = stack
+        data.update(extra)
+        SystemResourceMonitor.asan_error(data)
+
+    def test_asan_error(self):
+        rev = "56b3cc68b5e7557a3e13fca984f0f8aebc60dd22"
+        monitor = SystemResourceMonitor(
+            poll_interval=0.25,
+            metadata={"sourceURL": f"https://hg.mozilla.org/try/rev/{rev}"},
+        )
+        monitor.start()
+        self._asan_action(
+            scope="/css/selectors",
+            test="/css/selectors/a.html",
+            stack=[
+                {
+                    "function": ASAN_FUNCTION,
+                    "file": ASAN_FILE,
+                    "line": 385,
+                    "column": 7,
+                },
+                {"function": "_start", "module": "firefox", "module_offset": 0xC1F08},
+            ],
+            stacks=[
+                {
+                    "label": "freed by thread T0 here",
+                    "stack": [{"function": "free", "file": ASAN_FILE, "line": 12}],
+                }
+            ],
+        )
+        # A report of a run that will be retried is a warning; one without
+        # location or stack still produces a marker.
+        SystemResourceMonitor.asan_error({
+            "time": int(time.time() * 1000),
+            "kind": "double-free",
+            "message": "attempting double-free on 0x1 in thread T0:",
+            "quiet": True,
+        })
+        monitor.stop()
+
+        events = self._events(monitor, "ASan Error")
+        self.assertEqual(len(events), 2)
+        first, second = events[0][2], events[1][2]
+        self.assertEqual(first["type"], "ASanError")
+        self.assertEqual(first["color"], "red")
+        self.assertEqual(first["kind"], "SEGV")
+        self.assertEqual(first["message"], ASAN_MESSAGE)
+        self.assertEqual(first["pid"], 28130)
+        self.assertEqual(first["file"], "dom/base/SpeculationRules.cpp")
+        self.assertEqual(first["line"], 385)
+        self.assertEqual(first["column"], 7)
+        self.assertEqual(first["function"], ASAN_FUNCTION)
+        self.assertEqual(first["location"], "dom/base/SpeculationRules.cpp:385")
+        self.assertEqual(first["scope"], "/css/selectors")
+        self.assertEqual(first["test"], "/css/selectors/a.html")
+        self.assertEqual(
+            first["stack"][0]["file"],
+            f"hg:hg.mozilla.org/try:dom/base/SpeculationRules.cpp:{rev}",
+        )
+        self.assertNotIn("file", first["stack"][1])
+        self.assertEqual(first["stacks"][0]["label"], "freed by thread T0 here")
+        self.assertEqual(
+            first["stacks"][0]["stack"],
+            [
+                {
+                    "function": "free",
+                    "file": f"hg:hg.mozilla.org/try:dom/base/SpeculationRules.cpp:{rev}",
+                    "line": 12,
+                }
+            ],
+        )
+        self.assertEqual(second["color"], "orange")
+        self.assertEqual(second["kind"], "double-free")
+        self.assertEqual(
+            second["location"], "attempting double-free on 0x1 in thread T0:"
+        )
+        self.assertNotIn("pid", second)
+        self.assertNotIn("file", second)
+        self.assertNotIn("stack", second)
+        self.assertNotIn("stacks", second)
+
+        markers = monitor.as_profile()["threads"][0]["markers"]["data"]
+        self.assertEqual(len([m for m in markers if m.get("type") == "ASanError"]), 2)
+
+    def test_asan_error_without_stack_points_at_the_location(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        self._asan_action()
+        monitor.stop()
+
+        events = self._events(monitor, "ASan Error")
+        self.assertEqual(len(events), 1)
+        self.assertEqual(
+            events[0][2]["stack"],
+            [{"file": "dom/base/SpeculationRules.cpp", "line": 385}],
+        )
+
+    def test_process_output_asan_report(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        self._process_output(
+            monitor, "AddressSanitizer:DEADLYSIGNAL", process="GECKO(19529)"
+        )
+        for line in ASAN_LINES[:2]:
+            self._process_output(monitor, line, process="GECKO(19529)")
+        # Another process's output interleaves while the stack is symbolized.
+        self._process_output(
+            monitor,
+            "TEST-OK | /css/selectors/a.html | took 1ms",
+            process="GECKO(19529)",
+        )
+        for line in ASAN_LINES[2:]:
+            self._process_output(monitor, line, process="GECKO(19529)")
+        monitor.stop()
+
+        events = self._events(monitor, "ASan Error")
+        self.assertEqual(len(events), 1)
+        data = events[0][2]
+        self.assertEqual(data["type"], "ASanError")
+        self.assertEqual(data["color"], "red")
+        self.assertEqual(data["kind"], "SEGV")
+        self.assertEqual(data["message"], ASAN_MESSAGE)
+        self.assertEqual(data["pid"], 28130)
+        self.assertEqual(data["file"], "dom/base/SpeculationRules.cpp")
+        self.assertEqual(data["line"], 385)
+        self.assertEqual(data["column"], 7)
+        self.assertEqual(data["function"], ASAN_FUNCTION)
+        self.assertEqual(
+            [f["function"] for f in data["stack"]], [ASAN_FUNCTION, "_start"]
+        )
+        self.assertEqual(data["stack"][0]["file"], "dom/base/SpeculationRules.cpp")
+        # The report lines are folded into the marker; only the interleaved
+        # line becomes a generic output marker.
+        self.assertEqual(len(self._events(monitor, "output")), 1)
+
+    def test_asan_error_action_supersedes_line_report(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        # Harnesses feed their parser before logging each line, so the
+        # action arrives after the header and frames but before SUMMARY.
+        for line in ASAN_LINES[:4]:
+            self._process_output(monitor, line, process="GECKO(19529)")
+        action_stack = [
+            {"function": "GetInnerWindow", "file": ASAN_FILE, "line": 1942},
+            {"function": ASAN_FUNCTION, "file": ASAN_FILE, "line": 385},
+            {"function": "_start"},
+        ]
+        self._asan_action(stack=action_stack)
+        for line in ASAN_LINES[4:]:
+            self._process_output(monitor, line, process="GECKO(19529)")
+        self._process_output(monitor, "unrelated output", process="GECKO(19529)")
+        monitor.stop()
+
+        events = self._events(monitor, "ASan Error")
+        self.assertEqual(len(events), 1)
+        self.assertEqual(len(events[0][2]["stack"]), 3)
+        self.assertEqual(len(self._events(monitor, "output")), 1)
+
+    def test_asan_line_report_completing_after_action_is_dropped(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        self._asan_action()
+        for line in ASAN_LINES:
+            self._process_output(monitor, line, process="GECKO(19529)")
+        self.assertEqual(len(self._events(monitor, "ASan Error")), 1)
+
+        # A second identical report is a new one.
+        for line in ASAN_LINES:
+            self._process_output(monitor, line, process="GECKO(19529)")
+        monitor.stop()
+
+        self.assertEqual(len(self._events(monitor, "ASan Error")), 2)
+        self.assertEqual(len(self._events(monitor, "output")), 0)
+
+    def test_process_output_asan_flushed_on_stop(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        for line in ASAN_LINES[:3]:
+            self._process_output(monitor, line, process="GECKO(19529)")
+        self.assertEqual(len(self._events(monitor, "ASan Error")), 0)
+        monitor.stop()
+
+        events = self._events(monitor, "ASan Error")
+        self.assertEqual(len(events), 1)
+        self.assertEqual(len(events[0][2]["stack"]), 1)
+        self.assertNotIn("file", events[0][2])
+        self.assertEqual(events[0][2]["location"], ASAN_FUNCTION)
+
+    def test_process_output_asan_without_mozleak(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor._asan_parser = None
+        monitor.start()
+        for line in ASAN_LINES:
+            self._process_output(monitor, line, process="GECKO(19529)")
+        monitor.stop()
+
+        self.assertEqual(len(self._events(monitor, "ASan Error")), 0)
+        self.assertEqual(len(self._events(monitor, "output")), len(ASAN_LINES))
+
+    def test_process_output_lsan_summary_is_not_an_asan_error(self):
+        monitor = SystemResourceMonitor(poll_interval=0.25)
+        monitor.start()
+        for line in (
+            "==1689==ERROR: LeakSanitizer: detected memory leaks",
+            "SUMMARY: AddressSanitizer: 488 byte(s) leaked in 3 allocation(s).",
+        ):
+            self._process_output(monitor, line, process="GECKO(1689)")
+        monitor.stop()
+
+        self.assertEqual(len(self._events(monitor, "ASan Error")), 0)
+        self.assertEqual(len(self._events(monitor, "output")), 2)
 
     def test_as_profile(self):
         monitor = SystemResourceMonitor(poll_interval=0.25)
