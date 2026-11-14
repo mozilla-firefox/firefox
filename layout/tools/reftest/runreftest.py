@@ -372,15 +372,17 @@ class RefTest:
         locations.add_host(server, scheme="http", port=port)
         locations.add_host(server, scheme="https", port=port)
 
-        sandbox_allowlist_paths = options.sandboxReadWhitelist
+        sandbox_allowlist_paths = [
+            os.path.normpath(p) for p in options.sandboxReadWhitelist
+        ]
         if platform.system() == "Linux" or platform.system() in (
             "Windows",
             "Microsoft",
         ):
             # Trailing slashes are needed to indicate directories on Linux and Windows
-            sandbox_allowlist_paths = map(
-                lambda p: os.path.join(p, ""), sandbox_allowlist_paths
-            )
+            sandbox_allowlist_paths = [
+                os.path.join(p, "") for p in sandbox_allowlist_paths
+            ]
 
         addons = []
         if not self.use_marionette:
