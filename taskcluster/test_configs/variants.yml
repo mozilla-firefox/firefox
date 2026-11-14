@@ -768,3 +768,20 @@ urlbar-ipc:
         mozharness:
             extra-options:
                 - "--setpref=browser.urlbar.ipc.chromeMessagePassing=true"
+
+csp-next:
+    description: "{description} with upcoming CSP features enabled"
+    component: "Core::DOM: Security"
+    expiration: "2027-06-01"
+    suffix: "csp-next"
+    replace:
+        tier: 2
+    merge:
+        worker:
+            env:
+                MOZHARNESS_TEST_TAG:
+                    - "csp_next"
+        mozharness:
+            extra-options:
+                - "--setpref=security.csp.url-hashes.enabled=true"
+                - "--setpref=security.csp.strict-dynamic-url.enabled=true"

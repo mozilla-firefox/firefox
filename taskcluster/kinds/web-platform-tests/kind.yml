@@ -153,6 +153,7 @@ tasks:
             - privatebrowsing
             - inc-origin-init
             - privatebrowsing-inc-origin-init
+            - csp-next
         run-on-projects:
             by-variant:
                 no-fission:
@@ -173,6 +174,12 @@ tasks:
                         default: built-projects
                 inc-origin-init: []
                 privatebrowsing-inc-origin-init: []
+                csp-next:
+                    by-test-platform:
+                        linux2404-64/debug: built-projects
+                        linux2404-64(-shippable)?/opt: built-projects
+                        linux2404-64-asan/opt: built-projects
+                        default: []
                 default:
                     by-test-platform:
                         android.*: []

@@ -302,6 +302,8 @@ def run_info_extras(logger, default_prefs=None, **kwargs):
           "isolated_process": kwargs.get("isolated_process"),
           "vmpSigned": has_vmp_signature(kwargs.get("binary")),
           "playready": bool_pref("media.eme.playready.enabled"),
+          "csp_url_hashes": bool_pref("security.csp.url-hashes.enabled"),
+          "csp_strict_dynamic_url": bool_pref("security.csp.strict-dynamic-url.enabled"),
           }
     rv.update(run_info_browser_version(**kwargs))
 
@@ -341,6 +343,8 @@ def update_properties():
             "openh264",
             "playready",
             "subsuite",
+            "csp_url_hashes",
+            "csp_strict_dynamic_url",
         ],
         {"os": ["display", "version", "os_version"], "processor": ["bits"]},
     )
