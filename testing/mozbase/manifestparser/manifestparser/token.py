@@ -212,6 +212,7 @@ class ManifestTokens:
             Token(t_type=t_variant, value="privateBrowsing")
         )
         _remote_async: Token = self.add(Token(t_type=t_variant, value="remote_async"))
+        _repeat: Token = self.add(Token(t_type=t_variant, value="repeat"))
         _snapshot: Token = self.add(Token(t_type=t_variant, value="snapshot"))
         _standalone: Token = self.add(Token(t_type=t_variant, value="standalone"))
         _swgl: Token = self.add(Token(t_type=t_variant, value="swgl"))
