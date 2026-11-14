@@ -522,7 +522,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Wakami mani</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Tik\'o\'</string>
+  <string name="nova_onboarding_skip_button">Tik\'o\'</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Tatijoj awi\' richin kikotem yixanin</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

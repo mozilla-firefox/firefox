@@ -546,7 +546,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Ikke nu</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Spring over</string>
+  <string name="nova_onboarding_skip_button">Spring over</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Gør dig klar til frihed</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

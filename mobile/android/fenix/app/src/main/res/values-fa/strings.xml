@@ -186,6 +186,10 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">سفارشی‌سازی منو</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">بازنشانی</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">انصراف</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">بازگشت</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -550,7 +554,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">اکنون نه</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">رد شدن</string>
+  <string name="nova_onboarding_skip_button">رد شدن</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">برای وب‌گردی آزادانه آماده شوید</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

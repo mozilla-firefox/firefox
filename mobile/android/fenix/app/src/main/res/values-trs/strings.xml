@@ -516,7 +516,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Sī ga\'hue akuan\' nïn</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Sī gi\'hiaj guendât</string>
+  <string name="nova_onboarding_skip_button">Sī gi\'hiaj guendât</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Gī’hiaj yūgui da’ gūnānj chrêt</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

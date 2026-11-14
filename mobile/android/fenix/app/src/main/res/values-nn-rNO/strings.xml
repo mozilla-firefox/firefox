@@ -186,6 +186,12 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Tilpass meny</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Stille tilbake til standardmeny?</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Tilbakestill</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Avbryt</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Tilbake</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -303,6 +309,8 @@
   <string name="browser_menu_webcompat_reporter_2">Rapporter problem med ein nettstad</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Legg til i gruppe</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Flytt til gruppe</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Omsett</string>
   <!-- Browser menu label for the print feature -->
@@ -389,6 +397,8 @@
   <string name="ai_controls_voice_search_description">Lyd blir konvertert til tekst av Google Speech Services.</string>
   <!-- Title for the listen to page AI feature toggle -->
   <string name="ai_controls_listen_to_page_title">Lytt til sida</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Eininga di kan bruke KI til å lese høgt. Teksten og lyden held fram med å vere private.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Blokkere KI-forbetringar?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -548,7 +558,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Ikkje no</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Hopp over</string>
+  <string name="nova_onboarding_skip_button">Hopp over</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Gjer deg klar for fridom</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -588,6 +598,8 @@
   <string name="nova_onboarding_sync_subtitle">Hent bokmerke, passord, og meir, på kva eining som helst på eit blunk. Personopplysningane dine held fram med å vere trygge og sikre med kryptering.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Start synkronisering</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Logg inn med e/post</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Hjelp oss med å byggje eit betre internett</string>
   <!--
@@ -1149,6 +1161,10 @@
   <string name="preferences_category_sync">Synkroniserte data</string>
   <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
   <string name="preferences_enable_sync_title">Synkroniser denne eininga</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Dataa dine er sikringskopierte og tilgjengelege på synkroniserte einingar.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Brukar lagra data frå %1$s-kontoen din.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Handsam kva som skal synkroniserast på dei tilkopla einingane dine</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -2518,6 +2534,12 @@
   <string name="snackbar_private_tab_closed">Privat fane attlaten</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">ANGRE</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Lagt til i %1$s</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Flytta til %1$s</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Vis</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3911,6 +3933,8 @@
   <string name="certificate_details_panel_secure_connection_title">Trygg tilkopling</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Sertifikat skrive ut til:</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">EUs tillitsmerke</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4543,6 +4567,8 @@
   <string name="wrex_widget_error_connection_offline_description">Kontroller internett-tilkoplinga di og prøv på nytt.</string>
   <!-- Sports widget error card title shown when match data fails to load. -->
   <string name="wrex_widget_error_load_failed_title">Kan ikkje vise kampinformasjon akkurat no</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Prøv å oppdatere, eller kom tilbake seinare.</string>
   <!-- Sports widget error card title shown when the latest match results fail to load. -->
   <string name="wrex_widget_error_results_load_failed_title">Resultata kan ikkje visast akkurat no</string>
   <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->

@@ -11,6 +11,14 @@
   <string name="mozac_menu_item_new_indicator_label">Nou</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Descarta la promoció</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">Arrossegueu les seccions per a reordenar-les</string>
   <!-- Button text to preview the changes made to the menu -->
   <string name="mozac_menu_customize_preview">Previsualitza</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">Seccions ocultes</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">Arrossegueu les seccions aquí per a ocultar-les</string>
+  <!-- Button text to reset the menu to default configuration -->
+  <string name="mozac_menu_customize_reset_to_default">Reinicia als valors per defecte</string>
 </resources>

@@ -542,7 +542,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Ekki núna</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Sleppa</string>
+  <string name="nova_onboarding_skip_button">Sleppa</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Vertu tilbúin/n að hlaupa frjáls</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

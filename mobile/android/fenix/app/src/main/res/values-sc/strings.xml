@@ -504,7 +504,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Immoe nono</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Brinca</string>
+  <string name="nova_onboarding_skip_button">Brinca</string>
   <!--
     Terms of use (ToU) onboarding body line one.
     %1$s is replaced by an active link, using nova_onboarding_tou_body_line_1_link_text as text (“Firefox Terms of Use”).
