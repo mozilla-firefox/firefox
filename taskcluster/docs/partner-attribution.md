@@ -103,7 +103,7 @@ Attribution only works with these type of tasks:
 
 There is one task per OS.
 
-On Windows, [python/mozrelease/mozrelease/attribute_builds.py](https://hg.mozilla.org/releases/mozilla-release/file/default/python/mozrelease/mozrelease/attribute_builds.py)
+On Windows, [python/mozrelease/mozrelease/attribute_builds.py](https://searchfox.org/firefox-main/source/python/mozrelease/mozrelease/attribute_builds.py)
 handles the attribution. Since [bug 1943640](https://bugzilla.mozilla.org/show_bug.cgi?id=1943640),
 only the stub installer is attributed: it carries the attribution code and passes it to the
 installed Firefox. No attributed full installer is generated. The stub installer is a 32-bit
