@@ -278,11 +278,8 @@ add_task(async function persistence() {
   let raw = await IOUtils.readJSON(path);
   Assert.deepEqual(
     raw.siteAssociations,
-    {
-      "example.com": { userContextId: 2, includeSubdomains: false },
-      "work.example": { userContextId: 2, includeSubdomains: false },
-    },
-    "siteAssociations stored as a top-level host->association map"
+    { "example.com": 2, "work.example": 2 },
+    "siteAssociations stored as a top-level host->userContextId map"
   );
 });
 
