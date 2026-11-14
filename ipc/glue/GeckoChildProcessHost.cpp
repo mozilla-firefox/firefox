@@ -851,6 +851,14 @@ void GeckoChildProcessHost::InitWindowsGroupID() {
 }
 #endif
 
+bool GeckoChildProcessHost::SyncLaunch(geckoargs::ChildProcessArgs aExtraOpts,
+                                       int aTimeoutMs) {
+  if (!AsyncLaunch(std::move(aExtraOpts))) {
+    return false;
+  }
+  return WaitUntilConnected(aTimeoutMs);
+}
+
 // Note: for most process types, we currently call AsyncLaunch, and therefore
 // the *ProcessLauncher constructor, on the main thread, while the
 // ProcessLauncher methods to actually execute the launch are called on the IO
@@ -953,15 +961,18 @@ bool GeckoChildProcessHost::AsyncLaunch(
                       TimeStamp::Now() - startTimeStamp);
 
                   MonitorAutoLock lock(mMonitor);
-                  MOZ_ASSERT(mProcessState == CHANNEL_INITIALIZED);
-                  mProcessState = PROCESS_CREATED;
+                  // The OnChannel{Connected,Error} may have already advanced
+                  // the state.
+                  if (mProcessState < PROCESS_CREATED) {
+                    mProcessState = PROCESS_CREATED;
+                  }
                   lock.Notify();
                 }
                 return ProcessHandlePromise::CreateAndResolve(
                     GetChildProcessHandle(), __func__);
               },
               [self = RefPtr{this}, this](const LaunchError aError) {
-                // WaitForProcessHandle might be waiting for us to signal.
+                // WaitUntilConnected might be waiting for us to signal.
                 // If something failed let's set the error state and notify.
                 CHROMIUM_LOG(ERROR)
                     << "Failed to launch "
@@ -1003,8 +1014,8 @@ void GeckoChildProcessHost::OnProcessLaunchError(const LaunchError /*aError*/) {
   lock.Notify();
 }
 
-bool GeckoChildProcessHost::WaitForProcessHandle(int32_t aTimeoutMs) {
-  AUTO_PROFILER_LABEL("GeckoChildProcessHost::WaitForProcessHandle", OTHER);
+bool GeckoChildProcessHost::WaitUntilConnected(int32_t aTimeoutMs) {
+  AUTO_PROFILER_LABEL("GeckoChildProcessHost::WaitUntilConnected", OTHER);
 
   // NB: this uses a different mechanism than the chromium parent
   // class.
@@ -1018,7 +1029,12 @@ bool GeckoChildProcessHost::WaitForProcessHandle(int32_t aTimeoutMs) {
 
   // We'll receive several notifications, we need to exit when we
   // have either successfully launched or have timed out.
-  while (mProcessState < PROCESS_CREATED) {
+  while (mProcessState != PROCESS_CONNECTED) {
+    // If there was an error then return it, don't wait out the timeout.
+    if (mProcessState == PROCESS_ERROR) {
+      break;
+    }
+
     CVStatus status = lock.Wait(timeout);
     if (status == CVStatus::Timeout) {
       break;
@@ -1030,23 +1046,32 @@ bool GeckoChildProcessHost::WaitForProcessHandle(int32_t aTimeoutMs) {
       waitStart = current;
     }
   }
-  MOZ_ASSERT(mProcessState != PROCESS_CREATED || GetChildProcessHandle());
 
-  return mProcessState == PROCESS_CREATED;
+  return mProcessState == PROCESS_CONNECTED;
+}
+
+bool GeckoChildProcessHost::WaitForProcessHandle() {
+  MonitorAutoLock lock(mMonitor);
+  while (mProcessState < PROCESS_CREATED) {
+    lock.Wait();
+  }
+  MOZ_ASSERT(mProcessState == PROCESS_ERROR || GetChildProcessHandle());
+
+  return mProcessState < PROCESS_ERROR;
 }
 
 bool GeckoChildProcessHost::LaunchAndWaitForProcessHandle(
-    geckoargs::ChildProcessArgs aExtraOpts, int32_t aTimeoutMs) {
+    geckoargs::ChildProcessArgs aExtraOpts) {
   if (!AsyncLaunch(std::move(aExtraOpts))) {
     return false;
   }
-  return WaitForProcessHandle(aTimeoutMs);
+  return WaitForProcessHandle();
 }
 
 bool GeckoChildProcessHost::InitializeChannel(
     IPC::Channel::ChannelHandle* aClientHandle) {
   mNodeController = NodeController::GetSingleton();
-  if (!mNodeController->InviteChildProcess(aClientHandle, &mInitialPort,
+  if (!mNodeController->InviteChildProcess(this, aClientHandle, &mInitialPort,
                                            getter_AddRefs(mNodeChannel))) {
     return false;
   }
@@ -1908,6 +1933,18 @@ bool GeckoChildProcessHost::OpenPrivilegedHandle(base::ProcessId aPid) {
   }
 
   return base::OpenPrivilegedProcessHandle(aPid, &mChildProcessHandle);
+}
+
+void GeckoChildProcessHost::OnChannelConnected(base::ProcessId peer_pid) {
+  {
+    mozilla::AutoWriteLock hLock(mHandleLock);
+    if (!OpenPrivilegedHandle(peer_pid)) {
+      MOZ_CRASH("can't open handle to child process");
+    }
+  }
+  MonitorAutoLock lock(mMonitor);
+  mProcessState = PROCESS_CONNECTED;
+  lock.Notify();
 }
 
 RefPtr<ProcessHandlePromise> GeckoChildProcessHost::WhenProcessHandleReady() {

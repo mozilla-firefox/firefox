@@ -53,8 +53,7 @@ already_AddRefed<IPDLUnitTestParent> IPDLUnitTestParent::CreateCrossProcess() {
   }
   prefSerializer->AddSharedPrefCmdLineArgs(*parent->mSubprocess, extraArgs);
 
-  if (!parent->mSubprocess->LaunchAndWaitForProcessHandle(
-          std::move(extraArgs))) {
+  if (!parent->mSubprocess->SyncLaunch(std::move(extraArgs))) {
     ADD_FAILURE() << "Subprocess launch failed";
     return nullptr;
   }

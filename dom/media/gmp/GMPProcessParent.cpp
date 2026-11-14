@@ -236,7 +236,10 @@ bool GMPProcessParent::Launch(int32_t aTimeoutMs) {
       StaticPrefs::media_gmp_android_isolated_process());
 #endif
 
-  bool launched = LaunchAndWaitForProcessHandle(std::move(args), aTimeoutMs);
+  // We need to wait until OnChannelConnected to clear the pref serializer, but
+  // SyncLaunch will block until that is called, so we don't actually need to do
+  // any overriding, and it only lives on the stack.
+  bool launched = SyncLaunch(std::move(args), aTimeoutMs);
   if (launched) {
     nsFmtString name{u"GMPProcessParent {}", static_cast<void*>(this)};
     mShutdownBlocker = media::ShutdownBlockingTicket::Create(

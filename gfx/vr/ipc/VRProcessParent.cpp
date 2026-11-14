@@ -61,16 +61,6 @@ bool VRProcessParent::Launch() {
     mPrefSerializer = nullptr;
     return false;
   }
-
-  WhenProcessHandleReady()->Then(
-      GetMainThreadSerialEventTarget(), __func__,
-      [self = RefPtr{this}](
-          const ProcessHandlePromise::ResolveOrRejectValue& aResult) {
-        if (!self->mShutdownRequested &&
-            self->mLaunchPhase == LaunchPhase::Waiting) {
-          self->InitAfterConnect(aResult.IsResolve());
-        }
-      });
   return true;
 }
 
@@ -93,7 +83,7 @@ bool VRProcessParent::WaitForLaunch() {
   // Our caller expects the connection to be finished after we return, so we
   // immediately set up the IPDL actor and fire callbacks. The IO thread will
   // still dispatch a notification to the main thread - we'll just ignore it.
-  bool result = GeckoChildProcessHost::WaitForProcessHandle(timeoutMs);
+  bool result = GeckoChildProcessHost::WaitUntilConnected(timeoutMs);
   result &= InitAfterConnect(result);
   return result;
 }
@@ -170,6 +160,28 @@ void VRProcessParent::KillHard(const char* aReason) {
   }
 
   SetAlreadyDead();
+}
+
+void VRProcessParent::OnChannelConnected(base::ProcessId peer_pid) {
+  MOZ_RELEASE_ASSERT(!NS_IsMainThread());
+
+  GeckoChildProcessHost::OnChannelConnected(peer_pid);
+
+  NS_DispatchToMainThread(
+      NewRunnableMethod("VRProcessParent::OnChannelConnectedTask", this,
+                        &VRProcessParent::OnChannelConnectedTask));
+}
+
+void VRProcessParent::OnChannelConnectedTask() {
+  if (!mShutdownRequested && mLaunchPhase == LaunchPhase::Waiting) {
+    InitAfterConnect(true);
+  }
+}
+
+void VRProcessParent::OnChannelErrorTask() {
+  if (!mShutdownRequested && mLaunchPhase == LaunchPhase::Waiting) {
+    InitAfterConnect(false);
+  }
 }
 
 void VRProcessParent::OnChannelClosed() {

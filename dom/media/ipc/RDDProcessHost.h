@@ -51,10 +51,7 @@ class RDDProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
   // Return a promise that will be resolved once the process has completed its
   // launch. The promise will be immediately resolved if the launch has already
   // succeeded.
-  RefPtr<GenericNonExclusivePromise> LaunchPromise() {
-    MOZ_ASSERT(NS_IsMainThread());
-    return mLaunchPromise;
-  }
+  RefPtr<GenericNonExclusivePromise> LaunchPromise();
 
   // Inform the process that it should clean up its resources and shut
   // down. This initiates an asynchronous shutdown sequence. After this
@@ -85,6 +82,9 @@ class RDDProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
   // long RDD processes take to spin up. Note this doesn't denote a
   // successful launch, just when we attempted launch.
   TimeStamp GetLaunchTime() const { return mLaunchTime; }
+
+  // Called on the IO thread.
+  void OnChannelConnected(base::ProcessId peer_pid) override;
 
   void SetListener(Listener* aListener);
 

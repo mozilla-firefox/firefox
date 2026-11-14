@@ -23,10 +23,7 @@ bool RDDProcessHost::sLaunchWithMacSandbox = false;
 #endif
 
 RDDProcessHost::RDDProcessHost(Listener* aListener)
-    : GeckoChildProcessHost(GeckoProcessType_RDD),
-      mListener(aListener),
-      mLaunchPromise(
-          MakeRefPtr<GenericNonExclusivePromise::Private>(__func__)) {
+    : GeckoChildProcessHost(GeckoProcessType_RDD), mListener(aListener) {
   MOZ_COUNT_CTOR(RDDProcessHost);
 
 #if defined(XP_MACOSX) && defined(MOZ_SANDBOX)
@@ -89,17 +86,51 @@ bool RDDProcessHost::Launch(geckoargs::ChildProcessArgs aExtraOpts) {
     mPrefSerializer = nullptr;
     return false;
   }
+  return true;
+}
 
+RefPtr<GenericNonExclusivePromise> RDDProcessHost::LaunchPromise() {
+  MOZ_ASSERT(NS_IsMainThread());
+
+  if (mLaunchPromise) {
+    return mLaunchPromise;
+  }
+  mLaunchPromise = MakeRefPtr<GenericNonExclusivePromise::Private>(__func__);
   WhenProcessHandleReady()->Then(
       GetCurrentSerialEventTarget(), __func__,
-      [self = RefPtr{this}](
+      [this, self = RefPtr{this}](
           const ipc::ProcessHandlePromise::ResolveOrRejectValue& aResult) {
-        if (!self->mShutdownRequested &&
-            self->mLaunchPhase == LaunchPhase::Waiting) {
-          self->InitAfterConnect(aResult.IsResolve());
+        if (mShutdownRequested) {
+          // The RDDProcessHost is shutting down. Abort. The promise would have
+          // already been rejected.
+          return;
         }
+        if (mTimerChecked) {
+          // We hit the timeout earlier, abort.
+          return;
+        }
+        mTimerChecked = true;
+        if (aResult.IsReject()) {
+          RejectPromise();
+        }
+        // If aResult.IsResolve() then we have succeeded in launching the
+        // RDD process. The promise will be resolved once the channel has
+        // connected (or failed to) later.
       });
-  return true;
+  return mLaunchPromise;
+}
+
+void RDDProcessHost::OnChannelConnected(base::ProcessId peer_pid) {
+  MOZ_ASSERT(!NS_IsMainThread());
+
+  GeckoChildProcessHost::OnChannelConnected(peer_pid);
+
+  NS_DispatchToMainThread(NS_NewRunnableFunction(
+      "RDDProcessHost::OnChannelConnected", [this, self = RefPtr{this}]() {
+        if (!mShutdownRequested && mLaunchPhase == LaunchPhase::Waiting) {
+          InitAfterConnect(true);
+        }
+      }));
 }
 
 static uint64_t sRDDProcessTokenCounter = 0;
