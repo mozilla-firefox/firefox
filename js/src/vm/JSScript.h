@@ -2122,6 +2122,14 @@ class JSScript : public js::BaseScript {
 
   size_t funLength() const { return immutableScriptData()->funLength; }
 
+  void cacheForEval() {
+    MOZ_ASSERT(isForEval());
+    // IsEvalCacheCandidate will make sure that there's nothing in this
+    // script that would prevent reexecution even if isRunOnce is
+    // true.  So just pretend like we never ran this script.
+    clearFlag(MutableFlags::HasRunOnce);
+  }
+
   /*
    * Arguments access (via JSOp::*Arg* opcodes) must access the canonical
    * location for the argument. If an arguments object exists AND it's mapped

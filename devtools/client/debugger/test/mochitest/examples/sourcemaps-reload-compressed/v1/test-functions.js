@@ -1,7 +1,7 @@
 /**
  * This file contains various test functions called by the test script via `await invokeInTab("functionName");`.
  */
-function breakInEval(suffix = "") {
+function breakInEval() {
   eval(`
     debugger;
 
@@ -10,5 +10,5 @@ function breakInEval(suffix = "") {
       var bar = 2;
       return foo + bar;
     };
-  ${suffix && `// ${suffix}`}`);
+  `);
 }
