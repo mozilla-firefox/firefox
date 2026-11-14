@@ -46,7 +46,7 @@ const COMBO_CONTENT = {
   id: "MULTI_SELECT_COMBO_TEST",
   targeting: "true",
   content: {
-    position: "center",
+    position: "center-large",
     logo: {},
     title: { raw: "Firefox has your back, starting now" },
     tiles: {
@@ -96,7 +96,7 @@ const DISCLOSURE_CONTENT = {
   id: "MULTI_SELECT_DISCLOSURE_TEST",
   targeting: "true",
   content: {
-    position: "center",
+    position: "center-large",
     logo: {},
     title: { raw: "Firefox has your back, starting now" },
     tiles: [

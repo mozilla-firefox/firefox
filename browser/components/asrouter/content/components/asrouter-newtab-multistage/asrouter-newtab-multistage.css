@@ -4790,7 +4790,7 @@ html {
   border-radius: var(--border-radius-medium);
   background-color: var(--multi-select-card-background-color);
   border: 1px solid var(--multi-select-card-border-color);
-  padding: var(--space-xxlarge);
+  padding: 22px;
   font-size: 16px;
 }
 .onboardingContainer .multi-select-container.select-card .checkbox-container.multi-select-item input {
@@ -5076,10 +5076,10 @@ html {
 .onboardingContainer button.content-tiles-header .arrow-icon {
   margin-inline: 1em;
 }
-.onboardingContainer .main-content-inner:has(#content-tiles-container) .action-buttons {
+.onboardingContainer .screen[pos=center-large] .main-content-inner:has(#content-tiles-container) .action-buttons {
   margin-inline: 48px;
 }
-.onboardingContainer .main-content-inner:has(#content-tiles-container) .action-buttons .primary:only-child {
+.onboardingContainer .screen[pos=center-large] .main-content-inner:has(#content-tiles-container) .action-buttons .primary:only-child {
   margin-inline: 0;
 }
 .onboardingContainer #content-tiles-container {
