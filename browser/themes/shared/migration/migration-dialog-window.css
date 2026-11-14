@@ -5,7 +5,7 @@
 @import url("chrome://global/skin/in-content/common.css");
 
 body {
-  padding: 24px;
+  padding: var(--space-xlarge);
 }
 
 /* Override the wizard's fixed width when used as a subdialog */
