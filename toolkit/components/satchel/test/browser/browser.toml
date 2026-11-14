@@ -12,9 +12,6 @@ support-files = [
 
 
 ["browser_popup_mouseover.js"]
-skip-if = [
-  "verify-standalone",
-]
 
 ["browser_popup_secondary_action.js"]
 skip-if = [
