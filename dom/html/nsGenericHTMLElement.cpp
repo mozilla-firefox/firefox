@@ -3751,9 +3751,7 @@ void nsGenericHTMLElement::ShowPopoverInternal(Element* aSource,
       GetPopoverData()->SetOpenedInMode(PopoverAttributeState::Hint);
     }
     // 19.6. Set element's popover close watcher.
-    if (StaticPrefs::dom_closewatcher_enabled()) {
-      GetPopoverData()->EnsureCloseWatcher(this);
-    }
+    GetPopoverData()->EnsureCloseWatcher(this);
   }
 
   // 20. Set element's previously focused element to null.

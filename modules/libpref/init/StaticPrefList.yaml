@@ -2783,12 +2783,6 @@
   value: false
   mirror: always
 
-# https://whatpr.org/html/10168/interaction.html#closewatcher
-- name: dom.closewatcher.enabled
-  type: bool
-  value: true
-  mirror: always
-
 # Allow control characters appear in composition string.
 # When this is false, control characters except
 # CHARACTER TABULATION (horizontal tab) are removed from

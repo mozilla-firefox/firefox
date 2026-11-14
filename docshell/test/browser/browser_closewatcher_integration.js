@@ -17,10 +17,6 @@ const CLOSEWATCHER_PAGE =
 const runTest =
   (bool, baseURL = TEST_PAGE) =>
   async () => {
-    await SpecialPowers.pushPrefEnv({
-      set: [["dom.closewatcher.enabled", true]],
-    });
-
     let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, baseURL);
 
     await new Promise(resolve =>
@@ -63,10 +59,6 @@ add_task(runTest(false, TEST_PAGE));
 add_task(runTest(true, CLOSEWATCHER_PAGE));
 
 add_task(async function test_processCloseRequest_unfocused_tab() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["dom.closewatcher.enabled", true]],
-  });
-
   let cwTab = await BrowserTestUtils.openNewForegroundTab(
     gBrowser,
     CLOSEWATCHER_PAGE

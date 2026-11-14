@@ -5,7 +5,7 @@
  * The origin of this IDL file is
  * https://whatpr.org/html/10168/interaction.html#closewatcher
  */
-[Exposed=Window, Pref="dom.closewatcher.enabled"]
+[Exposed=Window]
 interface CloseWatcher : EventTarget {
   [Throws] constructor(optional CloseWatcherOptions options = {});
 

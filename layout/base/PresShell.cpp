@@ -9559,11 +9559,7 @@ void PresShell::EventHandler::FinalizeHandlingEvent(
           if (aEvent->mMessage == eKeyDown &&
               !aEvent->mFlags.mDefaultPrevented) {
             if (RefPtr<Document> doc = GetDocument()) {
-              if (StaticPrefs::dom_closewatcher_enabled()) {
-                doc->ProcessCloseRequest();
-              } else {
-                doc->HandleEscKey();
-              }
+              doc->ProcessCloseRequest();
             }
           }
         }

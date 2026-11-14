@@ -16141,49 +16141,6 @@ size_t Document::CountFullscreenElements() const {
   return count;
 }
 
-// https://github.com/whatwg/html/issues/9143
-// We need to consider the precedence between active modal dialog, topmost auto
-// popover and fullscreen element once it's specified.
-// TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1859702 This can be
-// removed after CloseWatcher has shipped.
-void Document::HandleEscKey() {
-  for (const nsWeakPtr& weakPtr : Reversed(mTopLayer)) {
-    nsCOMPtr<Element> element(do_QueryReferent(weakPtr));
-    if (RefPtr popoverHTMLEl = nsGenericHTMLElement::FromNodeOrNull(element)) {
-      if (element->IsPopoverOpenedInMode(PopoverAttributeState::Hint)) {
-        popoverHTMLEl->HidePopover(IgnoreErrors());
-        return;
-      }
-      if (element->IsPopoverOpenedInMode(PopoverAttributeState::Auto)) {
-        popoverHTMLEl->HidePopover(IgnoreErrors());
-        return;
-      }
-    }
-    if (RefPtr dialogElement = HTMLDialogElement::FromNodeOrNull(element)) {
-      if (dialogElement->GetClosedBy() != HTMLDialogElement::ClosedBy::None) {
-        const mozilla::dom::Optional<nsAString> returnValue;
-        dialogElement->RequestClose(returnValue);
-      }
-      // If the dialog element's `closedby` attribute is "none", then this
-      // means the dialog is effectively blocking the Esc key from
-      // functioning. Returning without closing is the correct behaviour - as
-      // this is the topmost element "handling" the esc key press.
-      return;
-    }
-  }
-  // Not all dialogs exist in the top layer, so despite already iterating
-  // through all top layer elements we also need to check open dialogs that are
-  // _not_ open via the top-layer (showModal).
-  // The top-most dialog in mOpenDialogs may need to be closed.
-  if (RefPtr<HTMLDialogElement> dialog =
-          mOpenDialogs.SafeLastElement(nullptr)) {
-    if (dialog->GetClosedBy() != HTMLDialogElement::ClosedBy::None) {
-      const mozilla::dom::Optional<nsAString> returnValue;
-      dialog->RequestClose(returnValue);
-    }
-  }
-}
-
 MOZ_CAN_RUN_SCRIPT void Document::ProcessCloseRequest() {
   if (RefPtr win = GetInnerWindow()) {
     if (win->IsFullyActive()) {

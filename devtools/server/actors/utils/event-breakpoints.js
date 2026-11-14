@@ -143,12 +143,8 @@ const AVAILABLE_BREAKPOINTS = [
   {
     name: "CloseWatcher",
     items: [
-      closeWatcherEvent("closewatcher", "cancel", () =>
-        Services.prefs.getBoolPref("dom.closewatcher.enabled")
-      ),
-      closeWatcherEvent("closewatcher", "close", () =>
-        Services.prefs.getBoolPref("dom.closewatcher.enabled")
-      ),
+      closeWatcherEvent("closewatcher", "cancel"),
+      closeWatcherEvent("closewatcher", "close"),
     ],
   },
   {

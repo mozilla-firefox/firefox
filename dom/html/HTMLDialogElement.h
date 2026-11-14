@@ -108,7 +108,6 @@ class HTMLDialogElement final : public nsGenericHTMLElement {
   void AsyncEventRunning(AsyncEventDispatcher* aEvent) override;
 
   bool IsInTopLayer() const;
-  MOZ_CAN_RUN_SCRIPT void RunCancelDialogSteps();
 
   MOZ_CAN_RUN_SCRIPT_BOUNDARY void FocusDialog();
 

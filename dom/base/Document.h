@@ -2160,12 +2160,6 @@ class Document : public nsINode,
   MOZ_CAN_RUN_SCRIPT void RunFullscreenSteps();
 
   /**
-   * When Esc key is pressed, cancel the dialog element if the document is
-   * blocked by the dialog or hide popover if popover is shown.
-   */
-  MOZ_CAN_RUN_SCRIPT void HandleEscKey();
-
-  /**
    * Process any active CloseWatchers in the document, such
    * as fullscreen elements, popovers, dialogs.
    */

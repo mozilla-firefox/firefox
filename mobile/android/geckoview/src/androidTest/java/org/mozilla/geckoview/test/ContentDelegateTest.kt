@@ -915,8 +915,6 @@ class ContentDelegateTest : BaseSessionTest() {
 
     @Test
     fun closeWatcherForDialog() {
-        sessionRule.setPrefsUntilTestEnd(mapOf("dom.closewatcher.enabled" to true))
-
         mainSession.loadTestPath(DIALOG_HTML_PATH)
         mainSession.waitForPageStop()
 
@@ -964,8 +962,6 @@ class ContentDelegateTest : BaseSessionTest() {
     @WithDisplay(width = 100, height = 100)
     @Test
     fun closeWatcherForPopover() {
-        sessionRule.setPrefsUntilTestEnd(mapOf("dom.closewatcher.enabled" to true))
-
         mainSession.loadTestPath(POPOVER_HTML_PATH)
         mainSession.waitForPageStop()
 

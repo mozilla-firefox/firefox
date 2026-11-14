@@ -6,7 +6,6 @@
 
 add_task(async function () {
   await pushPref("dom.events.textevent.enabled", true);
-  await pushPref("dom.closewatcher.enabled", true);
 
   const dbg = await initDebugger(
     "doc-event-breakpoints.html",

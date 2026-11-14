@@ -246,17 +246,13 @@ void HTMLDialogElement::RequestClose(Element* aSource,
   }
 
   // 3. Assert: subject's close watcher is not null.
-  if (StaticPrefs::dom_closewatcher_enabled()) {
-    MOZ_ASSERT(closeWatcher, "RequestClose needs mCloseWatcher");
-  }
+  MOZ_ASSERT(closeWatcher, "RequestClose needs mCloseWatcher");
 
   // 4. Set subject's enable close watcher for request close to true.
-  if (StaticPrefs::dom_closewatcher_enabled()) {
-    // XXX: Rather than store a "enable close watcher for request close" state,
-    // we set the CloseWatcher Enabled state to true manually here, and revert
-    // it lower down...
-    closeWatcher->SetEnabled(true);
-  }
+  // XXX: Rather than store a "enable close watcher for request close" state,
+  // we set the CloseWatcher Enabled state to true manually here, and revert
+  // it lower down...
+  closeWatcher->SetEnabled(true);
 
   // 5. Set subject's request close return value to returnValue.
   if (aReturnValue.isSome()) {
@@ -267,11 +263,7 @@ void HTMLDialogElement::RequestClose(Element* aSource,
   mRequestCloseSourceElement = do_GetWeakReference(aSource);
 
   // 7. Request to close subject's close watcher with false.
-  if (StaticPrefs::dom_closewatcher_enabled()) {
-    closeWatcher->RequestToClose(false);
-  } else {
-    RunCancelDialogSteps();
-  }
+  closeWatcher->RequestToClose(false);
 
   // 8. Set subject's enable close watcher for request close to false.
   if (closeWatcher) {
@@ -480,9 +472,7 @@ void HTMLDialogElement::ShowModal(Element* aSource, ErrorResult& aError) {
   SetOpen(true, aError);
 
   // 12. Assert: subject's close watcher is not null.
-  if (StaticPrefs::dom_closewatcher_enabled()) {
-    MOZ_ASSERT(mCloseWatcher, "ShowModal needs mCloseWatcher");
-  }
+  MOZ_ASSERT(mCloseWatcher, "ShowModal needs mCloseWatcher");
 
   // 13. Set is modal of subject to true.
   // 14. Set subject's node document to be blocked by the modal dialog subject.
@@ -596,27 +586,6 @@ void HTMLDialogElement::FocusDialog() {
 
 int32_t HTMLDialogElement::TabIndexDefault() { return 0; }
 
-void HTMLDialogElement::RunCancelDialogSteps() {
-  // 1) Let close be the result of firing an event named cancel at dialog,
-  // with the cancelable attribute initialized to true.
-  bool defaultAction = true;
-  nsContentUtils::DispatchTrustedEvent(this, u"cancel"_ns, CanBubble::eNo,
-                                       Cancelable::eYes, &defaultAction);
-
-  // 2) If close is true and dialog has an open attribute, then close the
-  // dialog with ~~no return value.~~
-  // XXX(keithamus): RequestClose's steps expect the return value to be
-  // RequestCloseReturnValue. RunCancelDialogSteps has been refactored out of
-  // the spec, over CloseWatcher though, so one day this code will need to be
-  // refactored when the CloseWatcher specifications settle.
-  if (defaultAction) {
-    Maybe<nsAutoString> retValue;
-    GetRequestCloseReturnValue(retValue);
-    RefPtr<Element> source = GetRequestCloseSourceElement();
-    Close(source, retValue);
-  }
-}
-
 bool HTMLDialogElement::IsValidCommandAction(Command aCommand) const {
   return nsGenericHTMLElement::IsValidCommandAction(aCommand) ||
          aCommand == Command::ShowModal || aCommand == Command::Close ||
@@ -677,7 +646,6 @@ void HTMLDialogElement::QueueToggleEventTask(Element* aSource) {
 
 // https://html.spec.whatwg.org/#set-the-dialog-close-watcher
 void HTMLDialogElement::SetDialogCloseWatcherIfNeeded() {
-  MOZ_ASSERT(StaticPrefs::dom_closewatcher_enabled(), "CloseWatcher enabled");
   // 1. Assert: dialog's close watcher is null.
   MOZ_ASSERT(!mCloseWatcher);
 
@@ -736,13 +704,11 @@ void HTMLDialogElement::SetupSteps() {
   OwnerDoc()->AddOpenDialog(*this);
 
   // 5. Set the dialog close watcher with subject.
-  if (StaticPrefs::dom_closewatcher_enabled()) {
-    SetDialogCloseWatcherIfNeeded();
-  }
+  SetDialogCloseWatcherIfNeeded();
 }
 
 void HTMLDialogElement::SetCloseWatcherEnabledState() {
-  if (StaticPrefs::dom_closewatcher_enabled() && mCloseWatcher) {
+  if (mCloseWatcher) {
     mCloseWatcher->SetEnabled(GetClosedBy() != ClosedBy::None);
   }
 }
