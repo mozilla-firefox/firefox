@@ -5,6 +5,10 @@ permalink: /changelog/
 ---
 
 # 162.0 (In Development)
+* **feature-prompts**
+  * Added `LoginDelegate.onSelectLogin`, invoked when a login is selected from the select login prompt before it is filled, e.g. to ask the user to authenticate first. [Bug 2081840](https://bugzilla.mozilla.org/show_bug.cgi?id=2081840)
+* **feature-autofill**
+  * Added `AbstractAutofillUnlockActivity.authenticate` to allow replacing the default authentication prompt. [Bug 2081840](https://bugzilla.mozilla.org/show_bug.cgi?id=2081840)
 * **concept-engine**
   * Added an optional `title` to `HitResult.IMAGE_SRC`.
   * 🆕 Added `EngineSession.requestPictureInPicture` and `EngineSession.exitPictureInPicture` to ask the engine for a picture-in-picture window for the video a session is playing, and to tell it the window has been closed so it can release the state it holds. [Bug 2075323](https://bugzilla.mozilla.org/show_bug.cgi?id=2075323)

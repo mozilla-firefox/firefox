@@ -246,6 +246,7 @@ import org.mozilla.fenix.pdf.PdfToolsIntegration
 import org.mozilla.fenix.perf.MarkersFragmentLifecycleCallbacks
 import org.mozilla.fenix.search.awesomebar.AwesomeBarComposable
 import org.mozilla.fenix.settings.biometric.BiometricPromptFeature
+import org.mozilla.fenix.settings.biometric.DefaultAutomotiveSensitiveDataAuthenticator
 import org.mozilla.fenix.settings.downloads.DownloadLocationManager
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.snackbar.SnackbarBinding
@@ -1120,6 +1121,16 @@ abstract class BaseBrowserFragment :
                             override val onManageLogins = {
                                 val directions = NavGraphDirections.actionGlobalSavedLoginsAuthFragment()
                                 findNavController().navigate(directions)
+                            }
+
+                            override val onSelectLogin = { onConfirm: () -> Unit, onDismiss: () -> Unit ->
+                                DefaultAutomotiveSensitiveDataAuthenticator()
+                                    .authenticate(
+                                        activity = requireActivity(),
+                                        title = getString(R.string.logins_biometric_prompt_autofill_message),
+                                        onAuthenticated = onConfirm,
+                                        onBlocked = onDismiss,
+                                    )
                             }
                         },
                     suggestStrongPasswordDelegate =

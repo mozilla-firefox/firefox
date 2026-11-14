@@ -403,7 +403,7 @@ private constructor(
     internal var loginPicker =
         with(loginDelegate) {
             loginPickerView?.let {
-                LoginPicker(store, it, onManageLogins, customTabId)
+                LoginPicker(store, it, onManageLogins, customTabId, onSelectLogin)
             }
         }
 

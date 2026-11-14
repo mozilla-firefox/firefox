@@ -2825,6 +2825,8 @@
     <string name="saved_login_hide_password">Hide password</string>
     <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their passwords -->
     <string name="logins_biometric_prompt_message_2">Unlock to view your saved passwords</string>
+    <!-- Message displayed in the authentication prompt shown before filling a saved password into a web page -->
+    <string name="logins_biometric_prompt_autofill_message">Unlock to use saved passwords</string>
     <!-- Button for unlocking logins on the biometric lock screen -->
     <string name="logins_biometric_unlock_button">Unlock</string>
     <!-- Button for leaving logins on the biometric lock screen -->
