@@ -912,6 +912,19 @@ void ExtensionProtocolHandler::NewSimpleChannel(
       [](nsIStreamListener* listener, nsIChannel* simpleChannel,
          ExtensionStreamGetter* getter) -> RequestOrReason {
         return getter->GetAsync(listener, simpleChannel);
+      },
+      [](bool async, nsIChannel* simpleChannel,
+         ExtensionStreamGetter* getter) -> InputStreamOrReason {
+        // nsBaseChannel::Open() may call us with async=false. When we return
+        // NS_ERROR_NOT_IMPLEMENTED, it falls back to NS_ImplementChannelOpen
+        // which spins the event loop, which has side effects (bug 2092510), so
+        // log the action for visibility if needed.
+
+        if (!async) {
+          LOG("Synchronous open may fall back to spinning event loop.");
+        }
+
+        return Err(NS_ERROR_NOT_IMPLEMENTED);
       });
 
   SetContentType(aURI, channel);
@@ -925,6 +938,10 @@ void ExtensionProtocolHandler::NewSimpleChannel(nsIURI* aURI,
                                                 nsILoadInfo* aLoadinfo,
                                                 nsIChannel* aChannel,
                                                 nsIChannel** aRetVal) {
+  // NOTE: Despite the generic method name and input, this private method has
+  // only one caller: ExtensionProtocolHandler::SubstituteRemoteJarChannel
+  // calls this when we encounter a JAR channel whose FD is already cached.
+
   nsCOMPtr<nsIChannel> channel = NS_NewSimpleChannel(
       aURI, aLoadinfo, aChannel,
       [](nsIStreamListener* listener, nsIChannel* simpleChannel,
@@ -936,6 +953,24 @@ void ExtensionProtocolHandler::NewSimpleChannel(nsIURI* aURI,
         }
         nsCOMPtr<nsIRequest> request(origChannel);
         return RequestOrCancelable(WrapNotNull(request));
+      },
+      [](bool async, nsIChannel* simpleChannel,
+         nsIChannel* origChannel) -> InputStreamOrReason {
+        if (async) {
+          return Err(NS_ERROR_NOT_IMPLEMENTED);
+        }
+
+        // nsBaseChannel::Open() may call us with async=false. If we returned
+        // NS_ERROR_NOT_IMPLEMENTED, it falls back to NS_ImplementChannelOpen
+        // which spins the event loop. Nested event loops cause undesired side
+        // effects (bug 2092510), so try reading directly where possible.
+
+        // Note: origChannel is the JAR channel (per comment above).
+        LOG("[JARChannel %p] Synchronous open of cached JAR.", origChannel);
+
+        nsCOMPtr<nsIInputStream> stream;
+        MOZ_TRY(origChannel->Open(getter_AddRefs(stream)));
+        return stream;
       });
 
   SetContentType(aURI, channel);
@@ -946,6 +981,8 @@ void ExtensionProtocolHandler::SubstituteRemoteFileChannel(
     nsIURI* aURI, nsILoadInfo* aLoadinfo, nsACString& aResolvedFileSpec,
     nsIChannel** aRetVal) {
   MOZ_ASSERT(IsNeckoChild());
+
+  LOG("Will read via parent: %s", PromiseFlatCString(aResolvedFileSpec).get());
 
   RefPtr<ExtensionStreamGetter> streamGetter =
       new ExtensionStreamGetter(aURI, aLoadinfo);
@@ -1005,6 +1042,7 @@ Result<Ok, nsresult> ExtensionProtocolHandler::SubstituteRemoteJarChannel(
     // wrapping the JARChannel in a SimpleChannel allows HTTP forwarding to
     // moz-extension URI's to work because HTTP forwarding requires the
     // target channel implement nsIChildChannel.
+    // This also enables a direct read from the cached FD if needed.
     NewSimpleChannel(aURI, aLoadinfo, jarChannel.get(), aRetVal);
     return Ok();
   }
