@@ -469,6 +469,10 @@
   <string name="nova_onboarding_tou_body_line_3_link_text">Gerir los paramètres</string>
   <!-- Marketing onboarding primary button text. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_marketing_primary_button_text" tools:ignore="BrandUsage,UnusedResources">Ajudar Firefox</string>
+  <!-- Notifications onboarding title. 'Firefox' is intentionally hardcoded. -->
+  <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">Las notificacions vos ajudan a demorar en seguretat amb Firefox</string>
+  <!-- Notifications onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
+  <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Descobrissètz las darrièras foncionalitats de confidencialitat de Firefox per èsser totjorn al fial de las mesuras per vos protegir.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Activar las notificacions</string>
   <!-- App icon onboarding title. -->

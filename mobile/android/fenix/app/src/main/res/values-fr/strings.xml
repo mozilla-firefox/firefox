@@ -2041,7 +2041,7 @@
   -->
   <string name="webcompat_reporter_reason_load">Le site ne se charge pas</string>
   <!-- Broken site reason text for can’t pay, check out or shop -->
-  <string name="webcompat_reporter_reason_checkout">Je ne peux pas payer ou faire des achats</string>
+  <string name="webcompat_reporter_reason_checkout">Je ne peux pas payer, finaliser la commande ou faire des achats</string>
   <!-- Broken site reason text for site is slow -->
   <string name="webcompat_reporter_reason_slow2">Le site est lent</string>
   <!-- Broken site reason text for video isn’t playing or loading -->
@@ -2792,7 +2792,7 @@
   <!-- Preference for fingerprinting protection for the custom protection settings -->
   <string name="etp_suspected_fingerprinters_title">Détecteurs d’empreinte numérique suspectés</string>
   <!-- Description of fingerprinters that can be blocked by fingerprinting protection -->
-  <string name="etp_suspected_fingerprinters_description">Activer la protection contre les empreintes numériques pour bloquer les détecteurs d’empreintes numériques suspectés.</string>
+  <string name="etp_suspected_fingerprinters_description">Active la protection contre les empreintes numériques pour bloquer les détecteurs d’empreintes numériques suspectés.</string>
   <!-- Category of trackers (fingerprinters) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_known_fingerprinters_title">Détecteurs d’empreinte numérique connus</string>
   <!--
@@ -3657,7 +3657,7 @@
   <!-- Button text on the translations dialog when a translation error appears. -->
   <string name="translations_bottom_sheet_positive_button_error">Réessayer</string>
   <!-- Inactive button text on the translations dialog that indicates a translation is currently in progress. This button will be accompanied by a loading icon. -->
-  <string name="translations_bottom_sheet_translating_in_progress">Traduction</string>
+  <string name="translations_bottom_sheet_translating_in_progress">Traduction en cours</string>
   <!-- Button content description (not visible, for screen readers etc.) for the translations dialog translate button that indicates a translation is currently in progress. -->
   <string name="translations_bottom_sheet_translating_in_progress_content_description">Traduction en cours</string>
   <!-- Default dropdown option when initially selecting a language from the translations dialog language selection dropdown. -->
@@ -3748,7 +3748,7 @@
   <!-- Preference option for always translate. Radio button title text. -->
   <string name="automatic_translation_option_always_translate_title_preference">Toujours traduire</string>
   <!-- Preference option for always translate. Radio button summary text. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="automatic_translation_option_always_translate_summary_preference">%1$s traduira automatiquement la page dans cette langue à son chargement.</string>
+  <string name="automatic_translation_option_always_translate_summary_preference">%1$s traduira automatiquement cette langue au chargement de la page.</string>
   <!-- Preference option for never translate. Radio button title text. -->
   <string name="automatic_translation_option_never_translate_title_preference">Ne jamais traduire</string>
   <!-- Preference option for never translate. Radio button summary text. %1$s is the name of the app (for example "Firefox"). -->
@@ -3834,7 +3834,7 @@
   -->
   <string name="delete_language_file_dialog_title">Supprimer %1$s (%2$s) ?</string>
   <!-- Additional information for the dialog used by the translations feature to confirm deleting a language. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="delete_language_file_dialog_message">Si vous supprimez cette langue, %1$s la téléchargera partiellement dans votre cache au fur et à mesure de vos demandes de traduction.</string>
+  <string name="delete_language_file_dialog_message">Si vous supprimez cette langue, %1$s téléchargera des langues partielles dans votre cache au fur et à mesure de vos demandes de traduction.</string>
   <!--
     Title for the dialog used by the translations feature to confirm deleting all languages file.
     The dialog will be presented when the user requests deletion of all languages file.
@@ -4608,7 +4608,7 @@
   <!-- Description for the Google Lens Search Settings page feature toggle -->
   <string name="search_settings_google_lens_description">Envoie des images et des photos à Google pour effectuer une recherche visuelle.</string>
   <!-- Caption shown under the Google Lens toggle clarifying when the feature is available -->
-  <string name="preferences_google_lens_availability_caption">Disponible uniquement si Google est activé ci-dessus et défini comme moteur de recherche principal lors de la navigation.</string>
+  <string name="preferences_google_lens_availability_caption">Disponible uniquement si Google est activé ci-dessus et qu’il est le moteur de recherche actif lors de la navigation.</string>
   <!-- Content description for the Google Lens half of the camera mode toggle -->
   <string name="lens_camera_mode_lens">Google Lens</string>
   <!-- Content description for the QR scanner half of the camera mode toggle -->

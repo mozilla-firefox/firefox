@@ -1271,6 +1271,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Fjern kontoen</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Logg inn</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Begynn å synkronisere faner, bokmerke, passord og meir.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -3901,6 +3909,8 @@
   <string name="protection_panel_permissions_title">Løyve</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Trygg tilkopling</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Sertifikat skrive ut til:</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4559,6 +4569,8 @@
   <string name="collections_migration_homepage_card_message">Det finst ein enklare måte å halde fanene dine organiserte på</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Vis fanegruppene mine</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Lat att</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Aktiver Google Lens-integrasjon</string>
   <!-- Lens image search button content description -->

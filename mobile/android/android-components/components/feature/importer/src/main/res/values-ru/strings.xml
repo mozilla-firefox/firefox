@@ -9,6 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Импорт закладок</string>
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">Импорт паролей</string>
   <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">Не закрывайте этот экран. Это должно занять всего несколько секунд.</string>
   <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->

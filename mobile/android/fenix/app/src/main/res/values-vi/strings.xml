@@ -1276,6 +1276,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Gỡ bỏ tài khoản</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Đăng nhập</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Bắt đầu đồng bộ hóa các thẻ, dấu trang, mật khẩu và nhiều hơn nữa.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -3899,6 +3907,8 @@
   <string name="protection_panel_permissions_title">Quyền hạn</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Kết nối an toàn</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Chứng chỉ được cấp cho:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Dấu chứng nhận tin cậy của EU</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4554,6 +4564,8 @@
   <string name="collections_migration_homepage_card_message">Cách đơn giản hơn để sắp xếp các thẻ của bạn</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Xem nhóm thẻ của tôi</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Đóng</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Kích hoạt tính năng Google Ống kính được tích hợp</string>
   <!-- Lens image search button content description -->
