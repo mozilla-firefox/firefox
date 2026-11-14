@@ -19,6 +19,57 @@ async function openFirstrunPage() {
   return tab;
 }
 
+add_task(async function test_single_page_onboarding_pref() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.smartwindow.firstrun.singlePageWithAutoModel", true],
+      ["browser.smartwindow.firstrun.autoAdvanceMS", 0],
+      ["browser.smartwindow.firstrun.modelChoice", ""],
+      ["browser.smartwindow.firstrun.hasCompleted", false],
+    ],
+  });
+  const tab = await openFirstrunPage();
+  try {
+    await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+      await ContentTaskUtils.waitForCondition(
+        () =>
+          content.document
+            .querySelector("smartwindow-onboarding")
+            ?.shadowRoot?.getElementById("save"),
+        "The pref selects the single-page onboarding"
+      );
+      Assert.ok(
+        !content.document.getElementById("multi-stage-message-root"),
+        "The old onboarding root is not created"
+      );
+      Assert.equal(
+        content.document.querySelector("smartwindow-onboarding").parentElement
+          .id,
+        "onboarding-root",
+        "The new flow mounts inside the shared container"
+      );
+      Assert.ok(
+        !Array.from(content.document.scripts).some(script =>
+          script.src.endsWith("aboutwelcome.bundle.js")
+        ),
+        "The about:welcome bundle is not loaded"
+      );
+    });
+    Assert.equal(
+      Services.prefs.getStringPref("browser.smartwindow.firstrun.modelChoice"),
+      "",
+      "Showing the UI does not save a model choice"
+    );
+    Assert.ok(
+      !Services.prefs.getBoolPref("browser.smartwindow.firstrun.hasCompleted"),
+      "Showing the UI does not complete onboarding"
+    );
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
 function withHomeRegion(region) {
   const originalRegion = Region.home;
   Region._setHomeRegion(region, false);

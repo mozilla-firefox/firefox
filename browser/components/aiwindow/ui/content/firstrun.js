@@ -9,6 +9,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   AboutWelcomeParent: "resource:///actors/AboutWelcomeParent.sys.mjs",
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
+  getModelIconSrc: "chrome://browser/content/aiwindow/modules/ModelIcons.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",
   Region: "resource://gre/modules/Region.sys.mjs",
 });
@@ -30,33 +31,31 @@ const NON_REMOVABLE_SCREEN_IDS = new Set([
   "AI_WINDOW_CHOOSE_MODEL",
   "AI_WINDOW_MEMORIES",
 ]);
-const { getAllModelsData, getModelDisplayOrder } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
-);
+const { getAllModelsData, getModelDisplayOrder, isAutoModelEnabled } =
+  ChromeUtils.importESModule(
+    "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
+  );
 
 const autoAdvanceMS = Services.prefs.getIntPref(AUTO_ADVANCE_PREF);
 const PROMOTED_BRAND_NAME = "Mistral";
 
 /**
  * Model card content is keyed by the model's labelId.
- * Full l10n IDs and icon URLs are inlined so they stay greppable in the codebase.
+ * Full l10n IDs are inlined so they stay greppable in the codebase.
  * Card display order comes from getModelDisplayOrder().
  */
 const MODEL_CARDS = {
   1: {
     label: "aiwindow-firstrun-model-fast-label-v2",
     body: "aiwindow-firstrun-model-fast-body-v2",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-gemini.svg",
   },
   2: {
     label: "aiwindow-firstrun-model-flexible-label",
     body: "aiwindow-firstrun-model-flexible-body",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-qwen.svg",
   },
   3: {
     label: "aiwindow-firstrun-model-personal-label-v2",
     body: "aiwindow-firstrun-model-personal-body-v2",
-    icon: "chrome://browser/content/aiwindow/assets/model-choice-mistral.svg",
   },
 };
 
@@ -136,7 +135,7 @@ function buildModelCards(modelData, promotedChoiceId) {
         fontWeight: 590,
       },
       icon: {
-        background: `var(--card-icon-bg) center / calc(100% - var(--space-medium)) calc(100% - var(--space-medium)) no-repeat url("${cardContent.icon}")`,
+        background: `var(--card-icon-bg) center / calc(100% - var(--space-medium)) calc(100% - var(--space-medium)) no-repeat url("${lazy.getModelIconSrc(choiceId)}")`,
       },
       body: { string_id: cardContent.body },
       action: {
@@ -566,6 +565,29 @@ function createAIWindowConfig(modelData) {
 }
 
 async function renderFirstRun() {
+  const root = document.getElementById("onboarding-root");
+  if (isAutoModelEnabled()) {
+    let loaded = false;
+    try {
+      await import("chrome://browser/content/aiwindow/components/smartwindow-onboarding.mjs");
+      loaded = true;
+    } catch (ex) {
+      console.error("Single-page onboarding failed to load", ex);
+    }
+    if (loaded) {
+      const onboarding = document.createElement("smartwindow-onboarding");
+      onboarding.autoAdvanceMS = autoAdvanceMS;
+      root.appendChild(onboarding);
+      return;
+    }
+  }
+
+  const multiStageRoot = document.createElement("div");
+  multiStageRoot.id = "multi-stage-message-root";
+  multiStageRoot.className = "welcome-container";
+  multiStageRoot.setAttribute("role", "presentation");
+  root.appendChild(multiStageRoot);
+
   // Create config after model data is loaded
   const modelData = await getAllModelsData();
   const AI_WINDOW_CONFIG = createAIWindowConfig(modelData);

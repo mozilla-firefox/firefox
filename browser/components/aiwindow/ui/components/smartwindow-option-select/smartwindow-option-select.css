@@ -45,7 +45,7 @@ panel-list {
   display: flex;
   font: inherit;
   gap: var(--space-small);
-  padding: var(--space-small);
+  padding: var(--space-small) var(--space-medium);
   text-align: start;
   width: 100%;
 
@@ -100,7 +100,7 @@ panel-list {
 
 .option-item-badge {
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens, stylelint-plugin-mozilla/no-base-design-tokens */
-  background-color: light-dark(var(--color-violet-desaturated-10, #e7e1f8), var(--color-violet-desaturated-50, var(--color-violet-50)));
+  background-color: light-dark(var(--color-violet-desaturated-0, var(--color-violet-0)), var(--color-violet-desaturated-50, var(--color-violet-50)));
   border-radius: var(--border-radius-circle);
   color: var(--text-color);
   flex-shrink: 0;

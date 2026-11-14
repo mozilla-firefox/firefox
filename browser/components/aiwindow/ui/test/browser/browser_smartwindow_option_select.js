@@ -163,4 +163,37 @@ describe("smartwindow-option-select", () => {
       );
     });
   });
+
+  it("renders plain-text labels for options without a Fluent ID", async () => {
+    await SpecialPowers.spawn(browser, [], async () => {
+      const select = content.document.createElement(
+        "smartwindow-option-select"
+      );
+      content.document.body.append(select);
+      select.options = [
+        { value: "a", label: "Model A", buttonLabel: "A" },
+        { value: "b", label: "Model B" },
+      ];
+      select.value = "a";
+      await select.updateComplete;
+      Assert.deepEqual(
+        Array.from(
+          select.shadowRoot.querySelectorAll(".option-item-label"),
+          label => label.textContent
+        ),
+        ["Model A", "Model B"],
+        "Menu items show their plain-text labels"
+      );
+      await ContentTaskUtils.waitForCondition(
+        () => select.button.label === "A",
+        "Closed button shows the buttonLabel"
+      );
+      select.value = "b";
+      await select.updateComplete;
+      await ContentTaskUtils.waitForCondition(
+        () => select.button.label === "Model B",
+        "Closed button falls back to the label"
+      );
+    });
+  });
 });

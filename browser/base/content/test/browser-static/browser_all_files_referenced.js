@@ -340,16 +340,6 @@ var allowlist = [
 
   // Bug 2078933: The widget dashboard will generate widgets with this module.
   { file: "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs" },
-
-  // Bug 2083829: The single page onboarding screen will consume these. They
-  // can be removed from this list once it lands.
-  {
-    file: "chrome://browser/content/aiwindow/components/smartwindow-option-select.mjs",
-  },
-  {
-    file: "chrome://browser/content/aiwindow/components/smartwindow-option-select.css",
-  },
-  { file: "chrome://browser/content/aiwindow/assets/model-choice-auto.svg" },
 ];
 
 if (AppConstants.NIGHTLY_BUILD) {
