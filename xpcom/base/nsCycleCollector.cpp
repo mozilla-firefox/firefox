@@ -2960,24 +2960,32 @@ MOZ_NEVER_INLINE static void FloodBlackNode(uint32_t& aWhiteNodeCount,
                                             PtrInfo* aPi) {
   nsDeque<PtrInfo> queue;
   MOZ_RELEASE_ASSERT(aPi);
-  queue.Push(aPi);
+
+  // Nodes are marked black when they are pushed, so each node is pushed at
+  // most once.
+  auto markBlack = [&](PtrInfo* aNode) {
+    if (!aNode->WasTraversed() || aNode->mColor == black) {
+      return;
+    }
+    if (aNode->mColor == white) {
+      --aWhiteNodeCount;
+    }
+    aNode->mColor = black;
+    queue.Push(aNode);
+  };
+
+  markBlack(aPi);
 
   // Use a queue to match the breadth-first traversal used when we
   // built the graph, for hopefully-better locality.
   while (queue.GetSize() > 0) {
     PtrInfo* pi = queue.PopFront();
-
-    if (pi->WasTraversed() && pi->mColor != black) {
-      if (pi->mColor == white) {
-        --aWhiteNodeCount;
-      }
-      pi->mColor = black;
-      for (EdgePool::Iterator child = pi->FirstChild(),
-                              child_end = pi->LastChild();
-           child != child_end; ++child) {
-        MOZ_RELEASE_ASSERT(*child);
-        queue.Push(*child);
-      }
+    for (EdgePool::Iterator child = pi->FirstChild(),
+                            child_end = pi->LastChild();
+         child != child_end; ++child) {
+      PtrInfo* childPi = *child;
+      MOZ_RELEASE_ASSERT(childPi);
+      markBlack(childPi);
     }
   }
 
@@ -3203,7 +3211,7 @@ void nsCycleCollector::ScanBlackNodes() {
   NodePool::Enumerator nodeEnum(mGraph.mNodes);
   while (!nodeEnum.IsDone()) {
     PtrInfo* pi = nodeEnum.GetNext();
-    if (pi->mColor == grey && pi->WasTraversed()) {
+    if (pi->mColor == grey) {
       FloodBlackNode(mWhiteNodeCount, pi);
     }
   }
