@@ -2762,9 +2762,10 @@ fn read_font_descriptor(bytes: &mut WrVecU8, index: u32) -> NativeFontHandle {
     // portion of the descriptor (= starting offset of the path).
     // Here, we split the descriptor into its two components for further use.
     let chars = bytes.flush_into_vec();
+    let offset = chars.len().min(index as usize);
     NativeFontHandle {
-        name: String::from_utf8(chars[..index as usize].to_vec()).unwrap_or("".to_string()),
-        path: String::from_utf8(chars[index as usize..].to_vec()).unwrap_or("".to_string()),
+        name: String::from_utf8(chars[..offset].to_vec()).unwrap_or("".to_string()),
+        path: String::from_utf8(chars[offset..].to_vec()).unwrap_or("".to_string()),
     }
 }
 
