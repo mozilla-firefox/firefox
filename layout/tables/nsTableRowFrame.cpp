@@ -906,26 +906,38 @@ void nsTableRowFrame::ReflowChildren(nsPresContext* aPresContext,
   if (hasOrthogonalCell) {
     for (nsTableCellFrame* kidFrame = GetFirstCell(); kidFrame;
          kidFrame = kidFrame->GetNextCell()) {
-      if (kidFrame->Inner()->GetWritingMode().IsOrthogonalTo(wm)) {
+      // Cells spanning several rows are handled by the row group, once the
+      // block-size of all the rows they span is known.
+      if (kidFrame->Inner()->GetWritingMode().IsOrthogonalTo(wm) &&
+          aTableFrame.GetEffectiveRowSpan(*kidFrame) == 1) {
         LogicalSize kidAvailSize(wm, kidFrame->GetRectRelativeToSelf().Size());
         kidAvailSize.BSize(wm) = aDesiredSize.BSize(wm);
-
-        // Reflow the child
-        TableCellReflowInput kidReflowInput(
-            aPresContext, aReflowInput, kidFrame, kidAvailSize,
-            ReflowInput::InitFlag::CallerWillInit);
-        kidReflowInput.mFlags.mOrthogonalCellFinalReflow = true;
-        InitChildReflowInput(*aPresContext, kidAvailSize, borderCollapse,
-                             kidReflowInput);
-
-        nsReflowStatus status;
-        ReflowOutput reflowOutput(wm);
-        ReflowChild(kidFrame, aPresContext, reflowOutput, kidReflowInput, wm,
-                    kidFrame->GetLogicalPosition(containerSize), containerSize,
-                    ReflowChildFlags::Default, status);
+        ReflowOrthogonalCellContent(aPresContext, aReflowInput, kidFrame,
+                                    kidAvailSize, containerSize);
       }
     }
   }
+}
+
+void nsTableRowFrame::ReflowOrthogonalCellContent(
+    nsPresContext* aPresContext, const ReflowInput& aReflowInput,
+    nsTableCellFrame* aCellFrame, const LogicalSize& aAvailSize,
+    const nsSize& aContainerSize) {
+  const WritingMode wm = aReflowInput.GetWritingMode();
+  const bool borderCollapse = GetTableFrame()->IsBorderCollapse();
+
+  TableCellReflowInput cellReflowInput(aPresContext, aReflowInput, aCellFrame,
+                                       aAvailSize,
+                                       ReflowInput::InitFlag::CallerWillInit);
+  cellReflowInput.mFlags.mOrthogonalCellFinalReflow = true;
+  InitChildReflowInput(*aPresContext, aAvailSize, borderCollapse,
+                       cellReflowInput);
+
+  nsReflowStatus status;
+  ReflowOutput reflowOutput(wm);
+  ReflowChild(aCellFrame, aPresContext, reflowOutput, cellReflowInput, wm,
+              aCellFrame->GetLogicalPosition(aContainerSize), aContainerSize,
+              ReflowChildFlags::Default, status);
 }
 
 /** Layout the entire row.

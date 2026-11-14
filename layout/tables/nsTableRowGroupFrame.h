@@ -304,6 +304,14 @@ class nsTableRowGroupFrame final : public nsContainerFrame,
   void DidResizeRows(ReflowOutput& aDesiredSize);
 
   /**
+   * Reflow the content of row-spanning cells whose content is orthogonal to
+   * the table, now that the block-size of all the rows they span is known.
+   * @return whether any cell was reflowed
+   */
+  bool ReflowOrthogonalSpanningCells(nsPresContext* aPresContext,
+                                     const ReflowInput& aReflowInput);
+
+  /**
    * Reflow the frames we've already created
    *
    * @param   aPresContext presentation context to use

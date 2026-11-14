@@ -157,6 +157,19 @@ class nsTableRowFrame : public nsContainerFrame {
                           const ReflowInput& aReflowInput, bool aIsTopOfPage,
                           nsTableCellFrame* aCellFrame, nscoord aAvailableBSize,
                           nsReflowStatus& aStatus);
+
+  /**
+   * Reflow the content of a cell whose content is orthogonal to the table,
+   * once the cell's final size is known, so that the content fills it.
+   * @param aReflowInput this row's reflow input
+   * @param aAvailSize   the cell's final size, in the table's writing mode
+   */
+  void ReflowOrthogonalCellContent(nsPresContext* aPresContext,
+                                   const ReflowInput& aReflowInput,
+                                   nsTableCellFrame* aCellFrame,
+                                   const mozilla::LogicalSize& aAvailSize,
+                                   const nsSize& aContainerSize);
+
   /**
    * Collapse the row if required, apply col and colgroup visibility: collapse
    * info to the cells in the row.

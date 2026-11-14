@@ -457,15 +457,70 @@ void nsTableRowGroupFrame::ReflowChildren(
 
   if (aReflowInput.mReflowInput.mFlags.mSpecialBSizeReflow) {
     DidResizeRows(aDesiredSize);
+    if (ReflowOrthogonalSpanningCells(aPresContext,
+                                      aReflowInput.mReflowInput)) {
+      DidResizeRows(aDesiredSize);
+    }
     if (isPaginated) {
       CacheRowBSizesForPrinting(GetFirstRow(), wm);
     }
   } else if (needToCalcRowBSizes) {
     CalculateRowBSizes(aPresContext, aDesiredSize, aReflowInput.mReflowInput);
+    if (ReflowOrthogonalSpanningCells(aPresContext,
+                                      aReflowInput.mReflowInput)) {
+      DidResizeRows(aDesiredSize);
+    }
     if (!reflowAllKids) {
       InvalidateFrame();
     }
   }
+}
+
+bool nsTableRowGroupFrame::ReflowOrthogonalSpanningCells(
+    nsPresContext* aPresContext, const ReflowInput& aReflowInput) {
+  nsTableFrame* tableFrame = GetTableFrame();
+  const WritingMode wm = aReflowInput.GetWritingMode();
+  const bool borderCollapse = tableFrame->IsBorderCollapse();
+  bool didReflow = false;
+
+  for (nsTableRowFrame* row = GetFirstRow(); row; row = row->GetNextRow()) {
+    Maybe<ReflowInput> rowReflowInput;
+    for (nsTableCellFrame* cell = row->GetFirstCell(); cell;
+         cell = cell->GetNextCell()) {
+      nsIFrame* inner = cell->Inner();
+      if (!inner->GetWritingMode().IsOrthogonalTo(wm) ||
+          tableFrame->GetEffectiveRowSpan(*cell) == 1) {
+        continue;
+      }
+      // After its final reflow the content fills the cell's block-size, so if
+      // it still does, it is already laid out for the cell's current size.
+      if (inner->BSize(wm) ==
+          cell->BSize(wm) - cell->GetBorderWidth(wm).BStartEnd(wm)) {
+        continue;
+      }
+      if (!rowReflowInput) {
+        const LogicalSize rowAvailSize(wm, aReflowInput.AvailableISize(),
+                                       NS_UNCONSTRAINEDSIZE);
+        rowReflowInput.emplace(aPresContext, aReflowInput, row, rowAvailSize,
+                               Nothing(),
+                               ReflowInput::InitFlag::CallerWillInit);
+        InitChildReflowInput(aPresContext, borderCollapse, *rowReflowInput);
+      }
+
+      // The cell's desired size is what CalculateRowBSizes uses to size the
+      // rows it spans, so it must keep reflecting the size its content needs
+      // rather than the size we give it here.
+      ReflowOutput desiredSize(wm);
+      desiredSize.SetSize(wm, cell->GetDesiredSize());
+
+      row->ReflowOrthogonalCellContent(aPresContext, *rowReflowInput, cell,
+                                       cell->GetLogicalSize(wm),
+                                       row->GetSize());
+      cell->SetDesiredSize(desiredSize);
+      didReflow = true;
+    }
+  }
+  return didReflow;
 }
 
 nsTableRowFrame* nsTableRowGroupFrame::GetFirstRow() const {
