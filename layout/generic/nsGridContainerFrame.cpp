@@ -1639,9 +1639,9 @@ struct nsGridContainerFrame::TrackSizingFunctions {
       // "Otherwise, the specified track list repeats only once."
       return 1;
     }
-    nscoord repeatTrackSum = 0;
+    AuCoord64 repeatTrackSum = 0;
     // Note that one repeat() track size is included in |sum| in this loop.
-    nscoord sum = 0;
+    AuCoord64 sum = 0;
     const nscoord percentBasis = aSize;
     for (uint32_t i = 0; i < numTracks; ++i) {
       // "treating each track as its max track sizing function if that is
@@ -1685,11 +1685,11 @@ struct nsGridContainerFrame::TrackSizingFunctions {
     nscoord gridGap = nsLayoutUtils::ResolveGapToLength(aGridGap, aSize);
     if (numTracks > 1) {
       // Add grid-gaps for all the tracks including the repeat() track.
-      sum += gridGap * (numTracks - 1);
+      sum += AuCoord64(gridGap) * int64_t(numTracks - 1);
     }
     // Calculate the max number of tracks that fits without overflow.
     nscoord available = maxFill != NS_UNCONSTRAINEDSIZE ? maxFill : aMinSize;
-    nscoord spaceToFill = available - sum;
+    const AuCoord64 spaceToFill = AuCoord64(available) - sum;
     if (spaceToFill <= 0) {
       // "if any number of repetitions would overflow, then 1 repetition"
       return 1;
@@ -1697,7 +1697,9 @@ struct nsGridContainerFrame::TrackSizingFunctions {
     // Calculate the max number of tracks that fits without overflow.
     // Since we already have one repetition in sum, we can simply add one grid
     // gap for each element in the repeat.
-    div_t q = div(spaceToFill, repeatTrackSum + gridGap * NumRepeatTracks());
+    const lldiv_t q =
+        lldiv(spaceToFill,
+              repeatTrackSum + AuCoord64(gridGap) * int64_t(NumRepeatTracks()));
     // The +1 here is for the one repeat track we already accounted for above.
     uint32_t numRepeatTracks = q.quot + 1;
     if (q.rem != 0 && maxFill == NS_UNCONSTRAINEDSIZE) {
