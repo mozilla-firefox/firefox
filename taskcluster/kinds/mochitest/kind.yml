@@ -168,6 +168,7 @@ tasks:
             - xorigin
             - no-fission
             - standalone
+            - repeat
             - headless
             - http3
             - http2
@@ -209,6 +210,7 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
+                repeat: []
                 headless:
                     by-test-platform:
                         .*-wayland.*: []
@@ -281,6 +283,7 @@ tasks:
         max-run-time:
             by-variant:
                 standalone: 5400
+                repeat: 7200
                 default: 3600
         allow-software-gl-layers: false
         mozharness:
@@ -369,6 +372,7 @@ tasks:
             - webrender-sw+a11y-checks
             - msix
             - standalone
+            - repeat
             - vertical-tabs
             - inc-origin-init
             - trainhop-beta
@@ -421,6 +425,7 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
+                repeat: []
                 vertical-tabs:
                     by-test-platform:
                         .*-artifact.*: []
@@ -494,6 +499,12 @@ tasks:
             by-variant:
                 msix: 5400
                 standalone: 5400
+                repeat:
+                    by-test-platform:
+                        linux.*/opt: 10800
+                        macosx.*-vms.*/opt: 10800
+                        .*/debug: 10800
+                        default: 7200
                 default:
                     by-test-platform:
                         linux.*64-ccov/opt: 9000
@@ -715,6 +726,7 @@ tasks:
             - 1proc
             - webrender-sw+1proc
             - standalone
+            - repeat+1proc
             - inc-origin-init
         run-on-projects:
             by-variant:
@@ -740,6 +752,7 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
+                repeat+1proc: []
                 inc-origin-init: []
         chunks: dynamic
         default-chunks:
@@ -753,6 +766,7 @@ tasks:
         max-run-time:
             by-variant:
                 standalone: 5400
+                repeat+1proc: 7200
                 default: 3600
         mozharness:
             mochitest-flavor: chrome
@@ -772,6 +786,7 @@ tasks:
         variants:
             - a11y-checks
             - standalone
+            - repeat
             - http3
         run-on-projects:
             by-variant:
@@ -788,6 +803,7 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
+                repeat: []
                 http3:
                     by-test-platform:
                         linux2404-64/debug: built-projects
@@ -800,11 +816,14 @@ tasks:
                         default: built-projects
         tier: default
         max-run-time:
-            by-test-platform:
-                windows.*-ccov.*/.*: 10800
-                linux.*64-ccov.*/.*: 7200
-                linux.*64-tsan/opt: 7200
-                default: 5400
+            by-variant:
+                repeat: 10800
+                default:
+                    by-test-platform:
+                        windows.*-ccov.*/.*: 10800
+                        linux.*64-ccov.*/.*: 7200
+                        linux.*64-tsan/opt: 7200
+                        default: 5400
         chunks: dynamic
         default-chunks:
             by-variant:

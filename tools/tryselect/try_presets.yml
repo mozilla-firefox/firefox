@@ -30,7 +30,7 @@ ai:
         - toolkit/components/pdfjs/
     test_paths: *ai-paths
     query:
-        - "'mochitest-browser-chrome 'linux !spi !asan !tsan !msix !a11y !swr !standalone !trainhop"
+        - "'mochitest-browser-chrome 'linux !spi !asan !tsan !msix !a11y !swr !standalone !repeat !trainhop"
         - "'xpcshell 'linux !nofis !asan !tsan !condprof !ioi"
         - "'em-14 'geckoview-junit !shippable !iso"
         - "'test-components 'engine-gecko"
@@ -161,8 +161,8 @@ android-fullstack:
         # Miscellaneous Tests
         - "^test-android !shippable '64 'em-14 !zygote 'gtest | 'cpp | 'geckoview-junit"
         # Mochitests
-        - "^test-android !shippable !cf !gli !iso      'em-14 'media | 'plain"
-        - "^test-android !shippable !cf !gli !iso !swr 'hw 'media 'debug"
+        - "^test-android !shippable !cf !gli !iso      'em-14 'media | 'plain !repeat"
+        - "^test-android !shippable !cf !gli !iso !swr 'hw 'media 'debug !repeat"
         - "^test-android !shippable !cf !gli !iso !swr 'hw 'mochitest-webgl 'nofis"
         # Reftests
         - "^test-android !shippable !iso 'em-14 'geckoview-crashtest | 'geckoview-reftest 'nofis"
@@ -187,8 +187,8 @@ android-geckoview:
         # Miscellaneous Tests
         - "^test-android !shippable '64 'em-14 !zygote 'gtest | 'cpp | 'geckoview-junit"
         # Mochitests
-        - "^test-android !shippable !cf !gli !iso      'em-14 'media | 'plain"
-        - "^test-android !shippable !cf !gli !iso !swr 'hw 'media 'debug"
+        - "^test-android !shippable !cf !gli !iso      'em-14 'media | 'plain !repeat"
+        - "^test-android !shippable !cf !gli !iso !swr 'hw 'media 'debug !repeat"
         - "^test-android !shippable !cf !gli !iso !swr 'hw 'mochitest-webgl 'nofis"
         # Reftests
         - "^test-android !shippable !iso 'em-14 'geckoview-crashtest | 'geckoview-reftest 'nofis"
@@ -261,8 +261,8 @@ desktop-frontend:
         # results for frontend-only changes.
         # This won't run 32-bit debug tests, which seems an acceptable
         # trade-off for query complexity + runtime on infrastructure.
-        - "'browser-chrome     !standalone !spi !asan !tsan !msix !a11y !swr | 'linux"
-        - "'mochitest-chrome   !standalone !spi !asan !tsan             !swr !gpu"
+        - "'browser-chrome     !standalone !repeat !spi !asan !tsan !msix !a11y !swr | 'linux"
+        - "'mochitest-chrome   !standalone !repeat !spi !asan !tsan             !swr !gpu"
         - "'xpcshell                       !spi !asan !tsan !msix !nofis !condprof !android"
         - "'browser-a11y | 'mochitest-a11y !spi !asan !tsan !no-cache   !swr"
         - "'marionette                          !asan       !source !headless !swr"
@@ -294,11 +294,11 @@ devtools:
         - "'node-debugger | 'node-devtools"
         - "'mozlint-eslint"
         # Windows: skip jobs on win10, asan and 32 bits platforms
-        - "'mochitest-devtools-chrome | 'mochitest-chrome-1proc 'windows !windows10 !asan !-32"
+        - "'mochitest-devtools-chrome | 'mochitest-chrome-1proc 'windows !windows10 !asan !-32 !repeat"
         # macos: no extra platform to filter out
-        - "'mochitest-devtools-chrome | 'mochitest-chrome-1proc 'macosx"
+        - "'mochitest-devtools-chrome | 'mochitest-chrome-1proc 'macosx !repeat"
         # Linux: skip asan and tsan
-        - "'mochitest-devtools-chrome | 'mochitest-chrome-1proc 'linux !spi !asan !tsan"
+        - "'mochitest-devtools-chrome | 'mochitest-chrome-1proc 'linux !spi !asan !tsan !repeat"
         - "'xpcshell 'linux !nofis !asan !tsan !condprof !ioi"
 
 devtools-linux:
@@ -310,7 +310,7 @@ devtools-linux:
     query:
         - "'node-debugger | 'node-devtools"
         - "'mozlint-eslint"
-        - "'mochitest-devtools-chrome | 'mochitest-chrome-1proc 'linux !spi !asan !tsan"
+        - "'mochitest-devtools-chrome | 'mochitest-chrome-1proc 'linux !spi !asan !tsan !repeat"
         - "'xpcshell 'linux !nofis !asan !tsan !condprof !ioi"
 
 fpush-linux-android:
@@ -366,7 +366,7 @@ layout-all-platforms:
         |mach try --preset layout-all-platforms -xq "windows 'opt"|
     query: &layout-all-platforms-query
         # Most mochitest + reftest + crashtest + wpt
-        - "!asan !tsan !jsreftest !shippable !webgl !condprof !media !standalone !webgpu !a11y-checks 'mochitest | 'web-platform | 'crashtest | 'reftest"
+        - "!asan !tsan !jsreftest !shippable !webgl !condprof !media !standalone !repeat !webgpu !a11y-checks 'mochitest | 'web-platform | 'crashtest | 'reftest"
         # Style system unit tests
         - "'rusttests"
 
@@ -479,7 +479,7 @@ mochitest-bc:
         tsan, msix, etc.) and some non-default configurations. For frontend
         only changes, use this with --artifact to speed up your trypushes.
     query:
-        - "'browser-chrome !standalone !tsan !asan !msix !spi !a11y !swr | 'linux"
+        - "'browser-chrome !standalone !repeat !tsan !asan !msix !spi !a11y !swr | 'linux"
     selector: fuzzy
 
 os-integration:
@@ -527,7 +527,7 @@ remote-protocol:
         - "'awsy-base"
         - "'firefox-ui"
         - "'marionette !swr | harness"
-        - "'mochitest-browser !spi !swr !nofis '-1$"
+        - "'mochitest-browser !spi !swr !nofis !repeat '-1$"
         - "'mochitest-remote !spi !swr"
         - "'platform 'reftest !swr !nofis | 'android !-lite -1$"
         - "'platform 'wdspec !swr"

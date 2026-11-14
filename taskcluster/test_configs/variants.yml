@@ -184,6 +184,35 @@ standalone:
             extra-options:
                 - "--restart-between-tests"
 
+repeat:
+    description: "{description} with each test repeated to identify tests that don't clean up properly"
+    component: "Testing::General"
+    expiration: "never"
+    suffix: "repeat"
+    treeherder-suffix: "rp"
+    mozinfo: "repeat"
+    when:
+        $eval: 'task["test-platform"] in [
+                    "linux2404-64/debug",
+                    "linux2404-64/opt",
+                    "linux2404-64-shippable/opt",
+                    "windows11-64-25h2/debug",
+                    "windows11-64-25h2/opt",
+                    "windows11-64-25h2-shippable/opt",
+                    "macosx1500-aarch64/debug",
+                    "macosx1500-aarch64/opt",
+                    "macosx1500-aarch64-shippable/opt",
+                    "macosx1500-aarch64-vms/opt",
+                    "macosx1500-aarch64-vms-shippable/opt"
+                ]'
+    replace:
+        optimization:
+            skip-unless-backstop: null
+    merge:
+        mozharness:
+            extra-options:
+                - "--repeat=1"
+
 geckoview-fission-isolate-high-value:
     description: "{description} with fission enabled and isolation strategy isolateHighValue"
     component: "GeckoView::General"
