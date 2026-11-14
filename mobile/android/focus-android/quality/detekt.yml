@@ -827,3 +827,6 @@ acorn-detekt-rules:
     active: false
   MaterialTypographyUsage:
     active: false
+  DisplayedTextCasing:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']

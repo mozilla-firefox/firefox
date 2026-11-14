@@ -18,6 +18,7 @@ class AcornRuleSetProvider : RuleSetProvider {
             id = ruleSetId,
             rules =
                 listOf(
+                    AcornDisplayedTextCasingRule(config),
                     AcornPaddingRule(config),
                     AcornThemeUsageRule(config),
                     MaterialButtonUsageRule(config),

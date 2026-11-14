@@ -35,6 +35,8 @@
     <ID>ClassAcronymCasing:URLRenderer.kt$URLRenderer</ID>
     <ID>ClassAcronymCasing:URLStringUtils.kt$URLStringUtils</ID>
     <ID>ClassAcronymCasing:WebURLFinder.kt$WebURLFinder</ID>
+    <ID>DisplayedTextCasing:IconsScreen.kt$uppercase()</ID>
+    <ID>DisplayedTextCasing:StatusBadge.kt$uppercase()</ID>
     <ID>ForbiddenSuppress:AMOAddonsProvider.kt$AMOAddonsProvider$@Suppress("CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:AMOAddonsProvider.kt$AMOAddonsProvider$@Suppress("NestedBlockDepth", "CognitiveComplexMethod")</ID>
     <ID>ForbiddenSuppress:AbstractFetchDownloadService.kt$AbstractFetchDownloadService.&lt;no name provided&gt;$@Suppress("LongMethod")</ID>

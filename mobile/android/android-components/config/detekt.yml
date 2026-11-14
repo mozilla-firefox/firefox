@@ -828,3 +828,6 @@ acorn-detekt-rules:
   MaterialTypographyUsage:
     active: true
     appTypographyName: 'mozilla.components.compose.base.theme.AcornTheme.typography'
+  DisplayedTextCasing:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']
