@@ -26,6 +26,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.showToolbar
+import org.mozilla.fenix.onboarding.OnboardingSyncFlowResult
 
 /** Settings screen allowing users log into their Firefox Account. */
 class PairFragment : Fragment(R.layout.fragment_pair), UserInteractionHandler, SystemInsetsPaddedFragment {
@@ -132,6 +133,9 @@ class PairFragment : Fragment(R.layout.fragment_pair), UserInteractionHandler, S
                     entrypoint = args.entrypoint.entryName,
                 )
             )
+            if (reason == ScannerCloseReason.SCANNED) {
+                OnboardingSyncFlowResult.setCompleted(findNavController())
+            }
             findNavController().popBackStack(R.id.pairFragment, true)
         }
     }

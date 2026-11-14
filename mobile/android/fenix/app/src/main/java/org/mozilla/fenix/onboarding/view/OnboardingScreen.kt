@@ -65,6 +65,9 @@ private val logger = Logger("OnboardingScreen")
  *
  * @param pagesToDisplay List of pages to be displayed in onboarding pager ui.
  * @param initialPageIndex The initial page index of the pager.
+ * @param isSyncFlowCompleted Whether a sync flow started from a sync page completed. When true, the onboarding moves to
+ *   the next page or finishes.
+ * @param onSyncFlowCompletedHandled Invoked when [isSyncFlowCompleted] has been handled.
  * @param onMakeFirefoxDefaultClick Invoked when positive button on default browser page is clicked.
  * @param onSkipDefaultClick Invoked when negative button on default browser page is clicked.
  * @param onSignInButtonClick Invoked when the positive button on the sign in page is clicked.
@@ -89,6 +92,8 @@ private val logger = Logger("OnboardingScreen")
 fun OnboardingScreen(
     pagesToDisplay: MutableList<OnboardingPageUiData>,
     initialPageIndex: Int,
+    isSyncFlowCompleted: Boolean,
+    onSyncFlowCompletedHandled: () -> Unit,
     onMakeFirefoxDefaultClick: () -> Unit,
     onSkipDefaultClick: () -> Unit,
     onSignInButtonClick: () -> Unit,
@@ -169,6 +174,14 @@ fun OnboardingScreen(
         }
     }
 
+    SyncFlowCompletedEffect(
+        isSyncFlowCompleted = isSyncFlowCompleted,
+        pagerState = pagerState,
+        pagesToDisplay = pagesToDisplay,
+        scrollToNextPageOrDismiss = scrollToNextPageOrDismiss,
+        onSyncFlowCompletedHandled = onSyncFlowCompletedHandled,
+    )
+
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }
             .collect { page ->
@@ -218,10 +231,7 @@ fun OnboardingScreen(
             onMarketingDataSkipClick()
             scrollToNextPageOrDismiss()
         },
-        onSyncPairingScanClick = {
-            onSyncPairingScanClick()
-            scrollToNextPageOrDismiss()
-        },
+        onSyncPairingScanClick = onSyncPairingScanClick,
         onSyncPairingEmailClick = {
             onSyncPairingEmailClick()
             scrollToNextPageOrDismiss()
@@ -288,6 +298,35 @@ private fun OnboardingPagerHaptics(pagerState: PagerState) {
     }
 }
 
+@VisibleForTesting
+@Composable
+internal fun SyncFlowCompletedEffect(
+    isSyncFlowCompleted: Boolean,
+    pagerState: PagerState,
+    pagesToDisplay: List<OnboardingPageUiData>,
+    scrollToNextPageOrDismiss: () -> Unit,
+    onSyncFlowCompletedHandled: () -> Unit,
+) {
+    LaunchedEffect(isSyncFlowCompleted) {
+        if (!isSyncFlowCompleted) return@LaunchedEffect
+        if (isSyncPage(pagesToDisplay, pagerState.currentPage)) {
+            scrollToNextPageOrDismiss()
+        }
+        onSyncFlowCompletedHandled()
+    }
+}
+
+@VisibleForTesting
+internal fun isSyncPage(
+    pagesToDisplay: List<OnboardingPageUiData>,
+    currentPageIndex: Int,
+): Boolean =
+    when (pagesToDisplay.getOrNull(currentPageIndex)?.type) {
+        OnboardingPageUiData.Type.SYNC_PAIRING,
+        OnboardingPageUiData.Type.SYNC_SIGN_IN -> true
+        else -> false
+    }
+
 private fun setToDefaultClick(
     isSetToDefault: Boolean,
     scrollToNextPageOrDismiss: () -> Unit,
@@ -332,13 +371,7 @@ internal fun scrollToNextCardFromSignIn(
     pagesToDisplay: List<OnboardingPageUiData>,
     currentPageIndex: Int,
     isSignedIn: Boolean,
-): Boolean {
-    val currentPageType = pagesToDisplay.getOrNull(currentPageIndex)?.type
-    val isSyncPage =
-        currentPageType == OnboardingPageUiData.Type.SYNC_SIGN_IN ||
-            currentPageType == OnboardingPageUiData.Type.SYNC_PAIRING
-    return isSignedIn && isSyncPage
-}
+): Boolean = isSignedIn && isSyncPage(pagesToDisplay, currentPageIndex)
 
 private fun scrollToNextCardFromSetToDefault(
     pagesToDisplay: List<OnboardingPageUiData>,
