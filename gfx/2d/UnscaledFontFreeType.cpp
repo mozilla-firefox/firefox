@@ -20,6 +20,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef MOZ_WIDGET_ANDROID
+#  include <linux/magic.h>
+#  include <sys/vfs.h>
+#endif
+
 namespace mozilla::gfx {
 
 bool UnscaledFontFreeType::GetFontFileData(FontFileDataOutput aDataCallback,
@@ -186,6 +191,50 @@ void UnscaledFontFreeType::ApplyVariationsToFace(
 
 #ifdef MOZ_WIDGET_ANDROID
 
+#  ifndef TMPFS_MAGIC
+#    define TMPFS_MAGIC 0x01021994
+#  endif
+
+#  ifndef PROC_SUPER_MAGIC
+#    define PROC_SUPER_MAGIC 0x9fa0
+#  endif
+
+#  ifndef SYSFS_MAGIC
+#    define SYSFS_MAGIC 0x62656572
+#  endif
+
+bool UnscaledFontFreeType::ValidateFontDescriptor(const uint8_t* aName,
+                                                  size_t aNameLength,
+                                                  std::string& aResultName,
+                                                  uint32_t& aIndex) {
+  if (aNameLength == 0) {
+    gfxWarning() << "FreeType font descriptor is truncated.";
+    return false;
+  }
+  std::string path((const char*)aName, aNameLength);
+
+  struct stat st{};
+  if (stat(path.c_str(), &st) == 0 && S_ISREG(st.st_mode) && st.st_nlink > 0) {
+    struct statfs sfs{};
+    if (statfs(path.c_str(), &sfs) == 0) {
+      switch ((unsigned long)sfs.f_type) {
+        case TMPFS_MAGIC:
+        case PROC_SUPER_MAGIC:
+        case SYSFS_MAGIC:
+          // Disallow
+          break;
+        default:
+          // Allow other types
+          aResultName = std::move(path);
+          return true;
+      }
+    }
+  }
+
+  gfxWarning() << "Failed identifying font descriptor.";
+  return false;
+}
+
 already_AddRefed<ScaledFont> UnscaledFontFreeType::CreateScaledFont(
     Float aGlyphSize, const uint8_t* aInstanceData,
     uint32_t aInstanceDataLength, const wr::FontVariation* aVariations,
@@ -231,14 +280,11 @@ already_AddRefed<ScaledFont> UnscaledFontFreeType::CreateScaledFontFromWRFont(
 
 already_AddRefed<UnscaledFont> UnscaledFontFreeType::CreateFromFontDescriptor(
     const uint8_t* aData, uint32_t aDataLength, uint32_t aIndex) {
-  if (aDataLength == 0) {
-    gfxWarning() << "FreeType font descriptor is truncated.";
+  std::string path;
+  if (!ValidateFontDescriptor(aData, aDataLength, path, aIndex)) {
     return nullptr;
   }
-  const char* path = reinterpret_cast<const char*>(aData);
-  RefPtr unscaledFont =
-      MakeRefPtr<UnscaledFontFreeType>(std::string(path, aDataLength), aIndex);
-  return unscaledFont.forget();
+  return MakeAndAddRef<UnscaledFontFreeType>(std::move(path), aIndex);
 }
 
 #endif  // MOZ_WIDGET_ANDROID
