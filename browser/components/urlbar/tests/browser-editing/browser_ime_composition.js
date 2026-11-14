@@ -67,6 +67,7 @@ add_task(async function () {
     await test_composition(val);
     await test_composition_searchMode_preview(val);
     await test_composition_tabToSearch(val);
+    await test_composition_searchMode_autofill(val);
     await test_composition_autofill(val);
     await test_composition_cancel_autofill(val);
     await test_spurious_empty_composition(val);
@@ -306,6 +307,58 @@ async function test_composition_tabToSearch(keepPanelOpenDuringImeComposition) {
     entry: "tabtosearch",
   });
   await UrlbarTestUtils.exitSearchMode(window);
+}
+
+async function test_composition_searchMode_autofill(
+  keepPanelOpenDuringImeComposition
+) {
+  // Enable autofilling for bookmarks.
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.autoFill.adaptiveHistory.enabled", false]],
+  });
+
+  for (let { typed, autofilled, entry } of [
+    { typed: "exa", autofilled: "example.com/", entry: "tabtosearch" },
+    { typed: "@te", autofilled: "@test ", entry: "keywordoffer" },
+  ]) {
+    info(`Check committed composition is not truncated after "${typed}"`);
+    await UrlbarTestUtils.promisePopupClose(window);
+    gURLBar.value = "";
+
+    await UrlbarTestUtils.promiseAutocompleteResultPopup({
+      window,
+      value: typed,
+      fireInputEvent: true,
+    });
+    Assert.equal(gURLBar.value, autofilled);
+
+    while (gURLBar.searchMode?.engineName != "Test") {
+      EventUtils.synthesizeKey("KEY_Tab", {}, window);
+    }
+    composeAndCheckPanel("日本語入力", keepPanelOpenDuringImeComposition);
+
+    let commit = () =>
+      EventUtils.synthesizeComposition({
+        type: "compositioncommitasis",
+        key: { key: "KEY_Enter" },
+      });
+    if (keepPanelOpenDuringImeComposition) {
+      commit();
+    } else {
+      await UrlbarTestUtils.promisePopupOpen(window, commit);
+    }
+    await UrlbarTestUtils.promiseSearchComplete(window);
+
+    Assert.equal(gURLBar.value, "日本語入力");
+    await UrlbarTestUtils.assertSearchMode(window, {
+      engineName: "Test",
+      entry,
+    });
+    await UrlbarTestUtils.exitSearchMode(window);
+    gURLBar.value = "";
+  }
+
+  await SpecialPowers.popPrefEnv();
 }
 
 async function test_composition_autofill(keepPanelOpenDuringImeComposition) {

@@ -3697,6 +3697,7 @@ ${
         // when switching back to the current tab and across sessions.
         this.userTypedValue = this.untrimmedValue;
         this.valueIsTyped = true;
+        this._autofillPlaceholder = null;
         if (!newSearchMode.isPreview && !areSearchModesSame) {
           this.parentController.recordSearchMode(newSearchMode);
         }
