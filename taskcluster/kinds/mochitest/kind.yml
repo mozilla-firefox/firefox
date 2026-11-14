@@ -168,7 +168,6 @@ tasks:
             - xorigin
             - no-fission
             - standalone
-            - repeat
             - headless
             - http3
             - http2
@@ -210,7 +209,6 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
-                repeat: []
                 headless:
                     by-test-platform:
                         .*-wayland.*: []
@@ -259,13 +257,12 @@ tasks:
                         default: 20
                 default:
                     by-test-platform:
-                        android.*/debug: 11
-                        linux.*/debug: 12
-                        linux.*64-tsan/opt: 18
+                        android.*/debug: 10
+                        linux.*/debug: 16
+                        linux.*64-tsan/opt: 20
                         .*-ccov.*: 10
-                        .*-asan.*: 15
-                        android.*/opt: 8
-                        linux.*/opt: 6
+                        .*-asan.*: 10
+                        linux.*/opt: 8
                         windows.*/debug: 8
                         default: 5
         tier:
@@ -283,7 +280,6 @@ tasks:
         max-run-time:
             by-variant:
                 standalone: 5400
-                repeat: 7200
                 default: 3600
         allow-software-gl-layers: false
         mozharness:
@@ -372,7 +368,6 @@ tasks:
             - webrender-sw+a11y-checks
             - msix
             - standalone
-            - repeat
             - vertical-tabs
             - inc-origin-init
             - trainhop-beta
@@ -425,7 +420,6 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
-                repeat: []
                 vertical-tabs:
                     by-test-platform:
                         .*-artifact.*: []
@@ -485,26 +479,19 @@ tasks:
                         default: 40
                 default:
                     by-test-platform:
-                        linux.*/debug: 40
-                        linux.*64-asan/opt: 45
-                        linux.*64-tsan/opt: 70
-                        windows.*-asan.*/opt: 50
-                        windows.*-ccov.*/.*: 25
-                        macosx.*64.*/opt: 15
-                        windows11.*/opt: 15
-                        macosx.*/debug: 20
-                        .*/debug: 28
-                        default: 18
+                        linux.*/debug: 16
+                        linux.*64-asan/opt: 20
+                        linux.*64-tsan/opt: 32
+                        windows.*-asan.*/opt: 20
+                        windows.*-ccov.*/.*: 14
+                        macosx.*64.*/opt: 10
+                        windows11.*/opt: 10
+                        .*/debug: 12
+                        default: 8
         max-run-time:
             by-variant:
                 msix: 5400
                 standalone: 5400
-                repeat:
-                    by-test-platform:
-                        linux.*/opt: 10800
-                        macosx.*-vms.*/opt: 10800
-                        .*/debug: 10800
-                        default: 7200
                 default:
                     by-test-platform:
                         linux.*64-ccov/opt: 9000
@@ -726,7 +713,6 @@ tasks:
             - 1proc
             - webrender-sw+1proc
             - standalone
-            - repeat+1proc
             - inc-origin-init
         run-on-projects:
             by-variant:
@@ -752,7 +738,6 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
-                repeat+1proc: []
                 inc-origin-init: []
         chunks: dynamic
         default-chunks:
@@ -761,12 +746,10 @@ tasks:
                 default:
                     by-test-platform:
                         .*-tsan.*/opt: 6
-                        windows.*-asan/opt: 5
                         default: 3
         max-run-time:
             by-variant:
                 standalone: 5400
-                repeat+1proc: 7200
                 default: 3600
         mozharness:
             mochitest-flavor: chrome
@@ -786,7 +769,6 @@ tasks:
         variants:
             - a11y-checks
             - standalone
-            - repeat
             - http3
         run-on-projects:
             by-variant:
@@ -803,7 +785,6 @@ tasks:
                         windows.*-64-[^-/]+/debug: ['autoland', 'mozilla-central']
                         windows.*-64-[^-/]+/opt: ['autoland']
                         default: []
-                repeat: []
                 http3:
                     by-test-platform:
                         linux2404-64/debug: built-projects
@@ -816,14 +797,11 @@ tasks:
                         default: built-projects
         tier: default
         max-run-time:
-            by-variant:
-                repeat: 10800
-                default:
-                    by-test-platform:
-                        windows.*-ccov.*/.*: 10800
-                        linux.*64-ccov.*/.*: 7200
-                        linux.*64-tsan/opt: 7200
-                        default: 5400
+            by-test-platform:
+                windows.*-ccov.*/.*: 10800
+                linux.*64-ccov.*/.*: 7200
+                linux.*64-tsan/opt: 7200
+                default: 5400
         chunks: dynamic
         default-chunks:
             by-variant:
@@ -834,14 +812,13 @@ tasks:
                         default: 16
                 default:
                     by-test-platform:
-                        .*-ccov.*: 10
+                        .*-ccov.*: 12
                         linux.*-wayland.*/debug: 14
-                        linux.*/debug: 15
+                        linux.*64/debug: 14
                         macosx.*64(-qr)?/debug: 8
-                        win.*/debug: 10
-                        .*-asan/opt: 17
-                        .*-tsan/opt: 26
-                        linux.*/opt: 7
+                        win.*/debug: 8
+                        .*-asan/opt: 8
+                        .*-tsan/opt: 16
                         default: 5
         mozharness:
             mochitest-flavor: chrome
@@ -1158,7 +1135,7 @@ tasks:
                     by-test-platform:
                         android.*/opt: 1
                         macosx.*/opt: 1
-                        windows11-64-25h2-asan/opt: 2
+                        windows11-64-24h2-asan/opt: 2
                         windows11-.*/opt: 1
                         linux.*/debug: 3
                         linux.*64-tsan/opt: 5
