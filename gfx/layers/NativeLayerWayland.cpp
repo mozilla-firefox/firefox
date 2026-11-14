@@ -1282,7 +1282,7 @@ NativeLayerWaylandRender::~NativeLayerWaylandRender() {
 }
 
 RefPtr<BufferSurface> NativeLayerWaylandExternal::GetSurface() {
-  return mFrontBuffer->GetSurface();
+  return mFrontBufferSurface;
 }
 
 NativeLayerWaylandExternal::NativeLayerWaylandExternal(
