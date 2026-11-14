@@ -797,7 +797,6 @@ static mojo::core::ports::NodeName RandomNodeName() {
 }
 
 bool NodeController::InviteChildProcess(
-    GeckoChildProcessHost* aChildProcessHost,
     IPC::Channel::ChannelHandle* aClientHandle, ScopedPort* aInitialPort,
     NodeChannel** aNodeChannel) {
   MOZ_ASSERT(IsBroker());
@@ -818,8 +817,8 @@ bool NodeController::InviteChildProcess(
   // sends us its' real name in an `AcceptInvite` message.
   auto ports = CreatePortPair();
   auto inviteName = RandomNodeName();
-  auto nodeChannel = MakeRefPtr<NodeChannel>(
-      inviteName, channel, this, base::kInvalidProcessId, aChildProcessHost);
+  auto nodeChannel = MakeRefPtr<NodeChannel>(inviteName, channel, this,
+                                             base::kInvalidProcessId);
   {
     auto state = mState.Lock();
     MOZ_DIAGNOSTIC_ASSERT(!state->mPeers.Contains(inviteName),

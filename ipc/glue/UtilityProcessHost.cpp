@@ -113,50 +113,25 @@ bool UtilityProcessHost::Launch(geckoargs::ChildProcessArgs aExtraOpts) {
     mPrefSerializer = nullptr;
     return false;
   }
-  LOGD("[%p] UtilityProcessHost::Launch launching async", this);
-  return true;
-}
-
-RefPtr<UtilityProcessHost::LaunchPromiseType>
-UtilityProcessHost::LaunchPromise() {
-  MOZ_ASSERT(NS_IsMainThread());
-
-  if (mLaunchPromiseLaunched) {
-    return mLaunchPromise;
-  }
 
   WhenProcessHandleReady()->Then(
-      GetCurrentSerialEventTarget(), __func__,
-      [this, self = RefPtr{this}](
+      GetMainThreadSerialEventTarget(), __func__,
+      [self = RefPtr{this}](
           const ipc::ProcessHandlePromise::ResolveOrRejectValue& aResult) {
-        if (mLaunchCompleted) {
-          return;
+        if (!self->mShutdownRequested &&
+            self->mLaunchPhase == LaunchPhase::Waiting) {
+          // FIXME: It would be better if we could pass the reject through
+          // InitAfterConnect.
+          if (aResult.IsResolve()) {
+            self->InitAfterConnect(true);
+          } else {
+            self->RejectPromise(aResult.RejectValue());
+          }
         }
-        mLaunchCompleted = true;
-        if (aResult.IsReject()) {
-          RejectPromise(aResult.RejectValue());
-        }
-        // If aResult.IsResolve() then we have succeeded in launching the
-        // Utility process. The promise will be resolved once the channel has
-        // connected (or failed to) later.
       });
 
-  mLaunchPromiseLaunched = true;
-  return mLaunchPromise;
-}
-
-void UtilityProcessHost::OnChannelConnected() {
-  MOZ_ASSERT(!NS_IsMainThread());
-  LOGD("[%p] UtilityProcessHost::OnChannelConnected", this);
-
-  GeckoChildProcessHost::OnChannelConnected();
-
-  NS_DispatchToMainThread(NS_NewRunnableFunction(
-      "UtilityProcessHost::OnChannelConnected", [this, self = RefPtr{this}]() {
-        if (!mShutdownRequested && mLaunchPhase == LaunchPhase::Waiting) {
-          InitAfterConnect(true);
-        }
-      }));
+  LOGD("[%p] UtilityProcessHost::Launch launching async", this);
+  return true;
 }
 
 void UtilityProcessHost::InitAfterConnect(bool aSucceeded) {

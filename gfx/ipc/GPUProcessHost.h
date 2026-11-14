@@ -106,9 +106,6 @@ class GPUProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
   // just when we attempted launch.
   TimeStamp GetLaunchTime() const { return mLaunchTime; }
 
-  // Called on the IO thread.
-  void OnChannelConnected() override;
-
   void SetListener(Listener* aListener);
 
   // Kills the GPU process. Used in normal operation to recover from an error,

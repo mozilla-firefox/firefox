@@ -7,7 +7,6 @@
 #include "chrome/common/ipc_message_utils.h"
 #include "mojo/core/ports/name.h"
 #include "mozilla/ipc/IOThread.h"
-#include "mozilla/ipc/GeckoChildProcessHost.h"
 #include "mozilla/ipc/ProtocolMessageUtils.h"
 #include "mozilla/ipc/ProtocolUtils.h"
 #include "nsThreadUtils.h"
@@ -37,13 +36,11 @@ struct IPC::ParamTraits<mozilla::ipc::NodeChannel::Introduction> {
 namespace mozilla::ipc {
 
 NodeChannel::NodeChannel(const NodeName& aName, IPC::Channel* aChannel,
-                         Listener* aListener, base::ProcessId aPid,
-                         GeckoChildProcessHost* aChildProcessHost)
+                         Listener* aListener, base::ProcessId aPid)
     : mListener(aListener),
       mName(aName),
       mOtherPid(aPid),
-      mChannel(std::move(aChannel)),
-      mChildProcessHost(aChildProcessHost) {}
+      mChannel(std::move(aChannel)) {}
 
 NodeChannel::~NodeChannel() { Close(); }
 
@@ -283,19 +280,6 @@ void NodeChannel::OnChannelConnected(base::ProcessId aPeerPid) {
   AssertIOThread();
 
   SetOtherPid(aPeerPid);
-
-  // We may need to tell the GeckoChildProcessHost which we were created by that
-  // the channel has been connected to unblock completing the process launch.
-  RefPtr<GeckoChildProcessHost> host(mChildProcessHost);
-  if (host) {
-    host->WhenProcessHandleReady()->Then(
-        XRE_GetAsyncIOEventTarget(), __func__,
-        [host](const ProcessHandlePromise::ResolveOrRejectValue& aResult) {
-          if (aResult.IsResolve()) {
-            host->OnChannelConnected();
-          }
-        });
-  }
 }
 
 void NodeChannel::OnChannelError() {

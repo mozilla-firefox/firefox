@@ -61,7 +61,10 @@ class UtilityProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
   // Return a promise that will be resolved once the process has completed its
   // launch. The promise will be immediately resolved if the launch has already
   // succeeded.
-  RefPtr<LaunchPromiseType> LaunchPromise();
+  RefPtr<LaunchPromiseType> LaunchPromise() {
+    MOZ_ASSERT(NS_IsMainThread());
+    return mLaunchPromise;
+  }
 
   // Resolved once the process' channel has been closed and this host is about
   // to go away. Never rejected.
@@ -88,9 +91,6 @@ class UtilityProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
     MOZ_ASSERT(NS_IsMainThread());
     return bool(mUtilityProcessParent);
   }
-
-  // Called on the IO thread.
-  void OnChannelConnected() override;
 
 #if defined(XP_MACOSX) && defined(MOZ_SANDBOX)
   // Return the sandbox type to be used with this process type.
@@ -154,7 +154,6 @@ class UtilityProcessHost final : public mozilla::ipc::GeckoChildProcessHost {
 
   RefPtr<LaunchPromiseType::Private> mLaunchPromise{};
   bool mLaunchPromiseSettled = false;
-  bool mLaunchPromiseLaunched = false;
   // Will be set to true if the Utility process as successfully started.
   bool mLaunchCompleted = false;
 

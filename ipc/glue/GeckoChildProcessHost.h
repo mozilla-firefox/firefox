@@ -122,7 +122,7 @@ class GeckoChildProcessHost
   bool AsyncLaunch(
       geckoargs::ChildProcessArgs aExtraOpts = geckoargs::ChildProcessArgs{});
 
-  virtual bool WaitUntilConnected(int32_t aTimeoutMs = 0);
+  bool WaitForProcessHandle(int32_t aTimeoutMs = 0);
 
   // Block until the IPC channel for our subprocess is initialized and
   // the OS process is created.  The subprocess may or may not have
@@ -136,18 +136,12 @@ class GeckoChildProcessHost
   // executable image can be loaded.  On win32, we do know that when
   // we return.  But we don't know if dynamic linking succeeded on
   // either platform.
+  //
+  // If aTimeoutMs is positive, gives up and returns false if the process
+  // hasn't been created within that many milliseconds.
   bool LaunchAndWaitForProcessHandle(
-      geckoargs::ChildProcessArgs aExtraOpts = geckoargs::ChildProcessArgs());
-  bool WaitForProcessHandle();
-
-  // Block until the child process has been created and it connects to
-  // the IPC channel, meaning it's fully initialized.  (Or until an
-  // error occurs.)
-  bool SyncLaunch(
       geckoargs::ChildProcessArgs aExtraOpts = geckoargs::ChildProcessArgs(),
-      int32_t timeoutMs = 0);
-
-  virtual void OnChannelConnected();
+      int32_t aTimeoutMs = 0);
 
   // Resolves to the process handle when it's available (see
   // LaunchAndWaitForProcessHandle); use with AsyncLaunch.
@@ -259,12 +253,8 @@ class GeckoChildProcessHost
     // The IPC channel for our subprocess has been created, but the OS
     // process has still not been created.
     CHANNEL_INITIALIZED,
-    // The OS process has been created, but it hasn't yet connected to
-    // our IPC channel.
+    // The OS process has been created, and we have the PID.
     PROCESS_CREATED,
-    // The process is launched and connected to our IPC channel.  All
-    // is well.
-    PROCESS_CONNECTED,
     PROCESS_ERROR
   } mProcessState MOZ_GUARDED_BY(mMonitor);
 
