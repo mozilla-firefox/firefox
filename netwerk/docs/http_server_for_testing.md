@@ -128,7 +128,7 @@ Content-Type: text/plain
 The status line is optional; all other lines specify HTTP headers in the
 standard HTTP format. Any line ending style is accepted, and the file
 may optionally end with a single newline character, to play nice with
-Unix text tools like `diff` and `hg`.
+Unix text tools like `diff` and `git`.
 
 ### Hidden Files
 
