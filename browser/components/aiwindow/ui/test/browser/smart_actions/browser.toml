@@ -1,0 +1,9 @@
+[DEFAULT]
+support-files = [
+  "head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+]
+
+["browser_smart_actions_toolbar.js"]
+
+["browser_smart_actions_toolbar_hiding.js"]
