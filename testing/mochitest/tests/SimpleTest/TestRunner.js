@@ -105,9 +105,7 @@ var TestRunner = {};
 TestRunner.logEnabled = false;
 TestRunner._currentTest = 0;
 TestRunner._lastTestFinished = -1;
-TestRunner._loopIsRestarting = false;
 TestRunner.currentTestURL = "";
-TestRunner.originalTestURL = "";
 TestRunner._urls = [];
 TestRunner._lastAssertionCount = 0;
 TestRunner._expectedMinAsserts = 0;
@@ -258,10 +256,10 @@ TestRunner.requestLongerTimeout = function (factor) {
 };
 
 /**
- * This is used to loop tests
+ * Number of extra times each test runs, right after its first run.
  */
 TestRunner.repeat = 0;
-TestRunner._currentLoop = 1;
+TestRunner._currentTestRepeats = 0;
 
 TestRunner.expectAssertions = function (min, max) {
   if (typeof max == "undefined") {
@@ -504,7 +502,6 @@ TestRunner.dumpPrefContext = function () {
 TestRunner.runTests = function (/*url...*/) {
   TestRunner.structuredLogger.info("SimpleTest START");
   TestRunner.dumpPrefContext();
-  TestRunner.originalTestURL = $("current-test").innerHTML;
 
   SpecialPowers.registerProcessCrashObservers();
 
@@ -524,26 +521,6 @@ TestRunner.runTests = function (/*url...*/) {
     TestRunner._checkForHangs();
     TestRunner.runNextTest();
   });
-};
-
-/**
- * Used for running a set of tests in a loop for debugging purposes
- * Takes an array of URLs
- */
-TestRunner.resetTests = function (listURLs) {
-  TestRunner._currentTest = 0;
-  // Reset our "Current-test" line - functionality depends on it
-  $("current-test").innerHTML = TestRunner.originalTestURL;
-  if (TestRunner.logEnabled) {
-    TestRunner.structuredLogger.info(
-      "SimpleTest START Loop " + TestRunner._currentLoop
-    );
-  }
-
-  TestRunner._urls = listURLs;
-  $("testframe").src = "";
-  TestRunner._checkForHangs();
-  TestRunner.runNextTest();
 };
 
 TestRunner.getNextUrl = function () {
@@ -637,36 +614,11 @@ async function _runNextTest() {
         TestRunner.slowestTestURL
     );
 
-    // If we are looping, don't send this cause it closes the log file,
-    // also don't unregister the crash observers until we're done.
-    if (TestRunner.repeat === 0) {
-      SpecialPowers.unregisterProcessCrashObservers();
-      TestRunner.structuredLogger.info("SimpleTest FINISHED");
-    }
+    SpecialPowers.unregisterProcessCrashObservers();
+    TestRunner.structuredLogger.info("SimpleTest FINISHED");
 
-    if (TestRunner.repeat === 0 && TestRunner.onComplete) {
+    if (TestRunner.onComplete) {
       TestRunner.onComplete();
-    }
-
-    if (
-      TestRunner._currentLoop <= TestRunner.repeat &&
-      !TestRunner._haltTests
-    ) {
-      TestRunner._currentLoop++;
-      TestRunner.resetTests(TestRunner._urls);
-      TestRunner._loopIsRestarting = true;
-    } else {
-      // Loops are finished
-      if (TestRunner.logEnabled) {
-        TestRunner.structuredLogger.info(
-          "TEST-INFO | Ran " + TestRunner._currentLoop + " Loops"
-        );
-        TestRunner.structuredLogger.info("SimpleTest FINISHED");
-      }
-
-      if (TestRunner.onComplete) {
-        TestRunner.onComplete();
-      }
     }
     TestRunner.generateFailureList();
   }
@@ -688,10 +640,7 @@ TestRunner.testFinished = function (tests) {
 
   // Prevent a test from calling finish() multiple times before we
   // have a chance to unload it.
-  if (
-    TestRunner._currentTest == TestRunner._lastTestFinished &&
-    !TestRunner._loopIsRestarting
-  ) {
+  if (TestRunner._currentTest == TestRunner._lastTestFinished) {
     record(false, false, "called finish() multiple times");
     TestRunner.structuredLogger.testEnd(
       TestRunner.currentTestURL,
@@ -705,7 +654,6 @@ TestRunner.testFinished = function (tests) {
 
   SpecialPowers.requestDumpCoverageCounters().then(() => {
     TestRunner._lastTestFinished = TestRunner._currentTest;
-    TestRunner._loopIsRestarting = false;
 
     // TODO : replace this by a function that returns the mem data as an object
     // that's dumped later with the test_end message
@@ -1041,7 +989,16 @@ TestRunner.testUnloaded = function (result, runtime) {
 };
 
 TestRunner.doNextTest = function () {
-  TestRunner._currentTest++;
+  if (
+    TestRunner._currentTestRepeats < TestRunner.repeat &&
+    !TestRunner._haltTests
+  ) {
+    TestRunner._currentTestRepeats++;
+    TestRunner._lastTestFinished = -1;
+  } else {
+    TestRunner._currentTestRepeats = 0;
+    TestRunner._currentTest++;
+  }
   if (TestRunner.runSlower) {
     setTimeout(TestRunner.runNextTest, 1000);
   } else {

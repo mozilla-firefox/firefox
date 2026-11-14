@@ -579,10 +579,6 @@ Tester.prototype = {
       this.a11y_checks = gConfig.a11y_checks;
     }
 
-    if (gConfig.repeat) {
-      this.repeat = gConfig.repeat;
-    }
-
     if (gConfig.debugger || gConfig.debuggerInteractive || gConfig.jsdebugger) {
       gTimeoutSeconds = 24 * 60 * 60 * 1000; // 24 hours
     }
@@ -1749,9 +1745,6 @@ Tester.prototype = {
 
       if (this.repeat > 0) {
         --this.repeat;
-        if (this.currentTestIndex < 0) {
-          this.currentTestIndex = 0;
-        }
         this.execTest();
       } else {
         this.currentTestIndex++;
