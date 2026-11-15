@@ -536,7 +536,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">अभी नहीं</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">छोड़ें</string>
+  <string name="nova_onboarding_skip_button">छोड़ें</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">आज़ादी से ब्राउज़िंग के लिए तैयार हो जाएं</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

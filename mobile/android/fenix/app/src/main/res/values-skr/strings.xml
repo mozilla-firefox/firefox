@@ -542,7 +542,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">ہݨ کائناں</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">چھوڑو</string>
+  <string name="nova_onboarding_skip_button">چھوڑو</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">آزادی نال دوڑݨ کیتے تیار تھیو</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

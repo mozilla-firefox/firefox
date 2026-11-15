@@ -464,7 +464,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Pas ara</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Passar</string>
+  <string name="nova_onboarding_skip_button">Passar</string>
   <!-- Terms of use (ToU) onboarding body line three link text for nova_onboarding_tou_body_line_3. -->
   <string name="nova_onboarding_tou_body_line_3_link_text">Gerir los paramètres</string>
   <!-- Marketing onboarding primary button text. 'Firefox' is intentionally hardcoded. -->

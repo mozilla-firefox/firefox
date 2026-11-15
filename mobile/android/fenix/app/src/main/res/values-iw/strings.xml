@@ -550,7 +550,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">לא כעת</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">דילוג</string>
+  <string name="nova_onboarding_skip_button">דילוג</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">התכוננו לרוץ חופשי</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->

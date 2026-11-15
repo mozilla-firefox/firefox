@@ -9,6 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Uvoz zabilješki</string>
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">Uvoz lozinki</string>
   <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">Ostavi ovaj ekran otvorenim. Trebalo bi potrajati samo nekoliko sekundi.</string>
   <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->

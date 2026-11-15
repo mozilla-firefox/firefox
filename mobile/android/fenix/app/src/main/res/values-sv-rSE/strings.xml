@@ -186,6 +186,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Anpassa meny</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Det här sektionen kan inte döljas</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Återställa till standardmenyn?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Alla anpassningar tas bort och det går inte att ångra.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Återställ</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Avbryt</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Tillbaka</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -303,6 +313,8 @@
   <string name="browser_menu_webcompat_reporter_2">Rapportera trasig webbplats</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Lägg till i grupp</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Flytta till grupp</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Översatt</string>
   <!-- Browser menu label for the print feature -->
@@ -550,7 +562,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Inte nu</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Hoppa över</string>
+  <string name="nova_onboarding_skip_button">Hoppa över</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Gör dig redo för friheten</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -590,6 +602,14 @@
   <string name="nova_onboarding_sync_subtitle">Få bokmärken, lösenord och mer på vilken enhet som helst på ett ögonblick. Dina personuppgifter förblir säkra med kryptering.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Starta synkronisering</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Skanna för att slutföra parkopplingen med datorn</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[Visas ingen QR-kod? Öppna <b>firefox.com/pair</b> på datorn.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Skanna parningskod</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Logga in med e-postadress</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Hjälp oss att bygga ett bättre internet</string>
   <!--
@@ -1498,7 +1518,7 @@
   <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
   <string name="preferences_inactive_tabs_toggle_title">Inaktiva flikar</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
-  <string name="preferences_inactive_tabs_title">Flikar som du inte har besökt på två veckor flyttas till inaktiva.</string>
+  <string name="preferences_inactive_tabs_title">Flikar som du inte har besökt på två veckor flyttas till den inaktiva sektionen.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Flikgrupper</string>
   <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
@@ -2524,6 +2544,12 @@
   <string name="snackbar_private_tab_closed">Privat flik stängd</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">ÅNGRA</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Tillagd i %1$s</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Flyttad till %1$s</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Visa</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned

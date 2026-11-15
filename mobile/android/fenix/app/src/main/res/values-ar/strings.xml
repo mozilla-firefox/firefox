@@ -528,7 +528,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">ليس الآن</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">تخطَّ</string>
+  <string name="nova_onboarding_skip_button">تخطَّ</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">استعد للانطلاق بحرية</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -1197,6 +1197,14 @@
   <string name="preferences_sync_sign_in_to_reconnect">لِج لإعادة الاتصال</string>
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">أزِل الحساب</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">لِج</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">ابدء مزامنة التبويبات والعلامات وكلمات السر والمزيد.</string>
   <!--
     Pairing Feature strings
 
@@ -3674,6 +3682,8 @@
   <string name="protection_panel_privacy_and_security_settings_2">إعدادات الخصوصية</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">الأذونات</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">أُصدرت الشّهادة إلى:</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -4199,6 +4209,8 @@
   <string name="collections_migration_homepage_card_message">هناك طريقة أبسط للحفاظ على تنظيم علامات التبويب الخاصة بك</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">عرض مجموعات علامات التبويب الخاصة بي</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">أغلق</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">فعِّل تكامل Google Lens</string>
   <!-- Lens image search button content description -->

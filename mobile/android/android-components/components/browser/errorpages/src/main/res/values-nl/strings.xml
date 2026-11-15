@@ -15,7 +15,7 @@
     The text shown underneath the archive button, explaining what the button does. The %1$s will be replaced by
     the app name and %2$s will be replaced by the name of the archive service as a link
   -->
-  <string name="mozac_browser_errorpages_archive_description">%1$s kan een eerdere versie van deze pagina zoeken vanuit %2$s van the Internet Archive.</string>
+  <string name="mozac_browser_errorpages_archive_description">%1$s kan een eerdere versie van deze pagina zoeken vanuit %2$s van het Internet Archive.</string>
   <!--
     The name of the Internet Archive service, shown as a link at the end of
     mozac_browser_errorpages_archive_description.

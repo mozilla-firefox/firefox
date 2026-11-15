@@ -522,7 +522,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Ara no</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Omet</string>
+  <string name="nova_onboarding_skip_button">Omet</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Prepareu-vos per a navegar lliurement</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
