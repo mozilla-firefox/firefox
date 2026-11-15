@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-11_17-18-20_UTC
-// COMMIT: 529030148729033bc6c30dbb05753b805a7d2155
+// VERSION: 2026-11-14_18-45-38_UTC
+// COMMIT: dfe55f3548d0fe51c04b8d2903507a01fdec57ad
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -11315,6 +11315,10 @@ africa.com
 // Submitted by Simon Farshid <security@assistant-ui.com>
 *.auiusercontent.com
 
+// Agile Developer : https://agiledeveloper.de
+// Submitted by Görkem Sinirlioglu <info@agiledeveloper.de>
+agilevibes.app
+
 // Agnat sp. z o.o. : https://domena.pl
 // Submitted by Przemyslaw Plewa <it-admin@domena.pl>
 beep.pl
@@ -12383,6 +12387,13 @@ eero-stage.online
 
 // concludes Amazon
 
+// Amba : https://amba.dev
+// Submitted by Amba Abuse Desk <abuse@amba.dev>
+app.amba.host
+cdn.amba.host
+fn.amba.host
+go.amba.host
+
 // Anomaly : https://opencode.ai
 // Submitted by Dax Raad <security@anoma.ly>
 opentunnel.xyz
@@ -12482,6 +12493,11 @@ myasustor.com
 *.atlassian-isolated-3p.com
 cdn.prod.atlassian-dev.net
 
+// Automattic Inc. : https://automattic.com
+// Submitted by Stefano Sala <support@spacefast.com>
+space.fast
+view.fast
+
 // AVM : https://avm.de
 // Submitted by Andreas Weise <a.weise@avm.de>
 myfritz.link
@@ -12524,6 +12540,10 @@ beagleboard.io
 // Bear Blog : https://bearblog.dev
 // Submitted by Herman Martinus <admin@bearblog.dev>
 bearblog.dev
+
+// Bearly : https://bearly.ai
+// Submitted by Bearly Support <support@bearly.ai>
+bearly.sh
 
 // Beget LLC : https://beget.com
 // Submitted by Lev Nekrasov & Nikita Radchenko <admin@beget.com>
@@ -12895,6 +12915,10 @@ craft.me
 // Submitted by Ales Krajnik <ales.krajnik@craynic.com>
 realm.cz
 
+// Curia : https://curiabots.com
+// Submitted by Curia <psl@crbts.app>
+crbts.app
+
 // cyber_Folks S.A. : https://cyberfolks.pl
 // Submitted by Bartlomiej Kida <security@cyberfolks.pl>
 cfolks.pl
@@ -12945,6 +12969,10 @@ dattoweb.com
 mydatto.com
 dattolocal.net
 mydatto.net
+
+// ddns.ge : https://nic.ddns.ge
+// Submitted by John Snow <support@mail.ddns.ge>
+ddns.ge
 
 // ddnss.de : https://www.ddnss.de/
 // Submitted by Robert Niedziela <webmaster@ddnss.de>
@@ -13420,8 +13448,13 @@ webredirect.org
 myddns.rocks
 
 // dynv6 : https://dynv6.com
-// Submitted by Dominik Menke <dom@digineo.de>
+// Submitted by Dominik Menke <dynv6@digineo.de>
+dns.army
+v6.army
+dns.navy
+v6.navy
 dynv6.net
+v6.rocks
 
 // E4YOU spol. s.r.o. : https://e4you.cz/
 // Submitted by Vladimir Dudr <info@e4you.cz>
@@ -13780,6 +13813,10 @@ freemyip.com
 // FunkFeuer - Verein zur Förderung freier Netze : https://www.funkfeuer.at
 // Submitted by Daniel A. Maierhofer <vorstand@funkfeuer.at>
 wien.funkfeuer.at
+
+// FurryBox : https://www.furry.box
+// Submitted by Aether <furry@org.digital>
+xwx.me
 
 // Future Versatile Group. : https://www.fvg-on.net/
 // T.Kabu <webmaster@fvg-on.net>
@@ -14207,11 +14244,6 @@ iki.fi
 // Submitted by Marios Makassikis <mmakassikis@freebox.fr>
 ibxos.it
 iliadboxos.it
-
-// Imagine : https://imagine.dev
-// Submitted by Steven Nguyen <security@imagine.dev>
-imagine.diy
-imagine-proxy.work
 
 // Incsub, LLC : https://incsub.com/
 // Submitted by Aaron Edwards <sysadmins@incsub.com>
@@ -14690,6 +14722,10 @@ luyani.net
 // Submitted by Damien Tournoud <dtournoud@magento.cloud>
 *.magentosite.cloud
 
+// Magic Pages : https://www.magicpages.co
+// Submitted by Jannis Fedoruk-Betschki <help@magicpages.co>
+mymagic.page
+
 // Magic Patterns : https://www.magicpatterns.com
 // Submitted by Teddy Ni <security@magicpatterns.com>
 magicpatterns.app
@@ -14729,6 +14765,7 @@ hra.health
 // MedusaJS, Inc : https://medusajs.com/
 // Submitted by Stevche Radevski <engineering@medusajs.com>
 medusajs.app
+medusajs.site
 
 // Memset hosting : https://www.memset.com
 // Submitted by Tom Whitwell <domains@memset.com>
@@ -15058,6 +15095,10 @@ torun.pl
 nh-serv.co.uk
 nimsite.uk
 
+// Ninjaneer Media : https://ninjaneer.au
+// Submitted by the Ninjaneer Media team <admin@ninjaneer.au>
+ninjaneer-sites.com
+
 // No-IP.com : https://noip.com/
 // Submitted by Deven Reza <publicsuffixlist@noip.com>
 mmafan.biz
@@ -15233,6 +15274,10 @@ prvcy.page
 observablehq.cloud
 static.observableusercontent.com
 
+// omg.dev : https://omg.dev
+// Submitted by omg.dev Security <security@omg.dev>
+omgs.page
+
 // OMG.LOL : https://omg.lol
 // Submitted by Adam Newbold <adam@omg.lol>
 omg.lol
@@ -15353,6 +15398,10 @@ own.pm
 // OX : http://www.ox.rs
 // Submitted by Adam Grand <webmaster@mail.ox.rs>
 ox.rs
+
+// OxyPages : https://oxypages.com
+// Submitted by Oxy Pages <hello@oxypages.com>
+myoxypages.com
 
 // oy.lc
 // Submitted by Charly Coste <changaco@changaco.oy.lc>
@@ -15599,6 +15648,12 @@ instances.spawn.cc
 *.clusters.rdpa.co
 *.srvrless.rdpa.co
 
+// Reliant Labs : https://reliantlabs.io
+// Submitted by Reliant Labs Security <security@reliantlabs.io>
+reliantlabs.dev
+sites.reliantlabs.dev
+reliantpreview.dev
+
 // Render : https://render.com
 // Submitted by Anurag Goel <dev@render.com>
 onrender.com
@@ -15678,6 +15733,10 @@ io.noc.ruhr-uni-bochum.de
 // Russian Academy of Sciences
 // Submitted by Tech Support <support@rasnet.ru>
 ras.ru
+
+// Sail Research Co. : https://sailresearch.com/
+// Submitted by Sail Support <support@sailresearch.com>
+sail.box
 
 // Sakura Frp : https://www.natfrp.com
 // Submitted by Bobo Liu <support@natfrp.cloud>
@@ -15921,6 +15980,13 @@ shopitsite.com
 // Submitted by Jens Küper <cloud@shopware.com>
 shopware.shop
 shopware.store
+
+// Show Corporation : https://doma.in
+// Submitted by Xiufeng Guo <support@cctld.com>
+co.fo
+com.fo
+wz.io
+wz.org
 
 // Siemens Mobility GmbH
 // Submitted by Oliver Graebner <security@mo-siemens.io>
@@ -16231,6 +16297,10 @@ telebit.io
 // Submitted by Rob Picard <security@goteleport.com>
 teleport.sh
 
+// Terramind.com, Inc. : https://terramind.com
+// Submitted by Terramind Sites <sites@terramind.com>
+terramind.io
+
 // Thingdust AG : https://thingdust.com/
 // Submitted by Adrian Imboden <adi@thingdust.com>
 *.firenet.ch
@@ -16421,6 +16491,10 @@ deus-canvas.com
 vivenushop.com
 vivenushop.dev
 
+// Voati : https://voati.org
+// Submitted by Voati Support <support@voati.org>
+voati.host
+
 // Voorloper.com : https://voorloper.com
 // Submitted by Nathan van Bakel <info@voorloper.com>
 voorloper.cloud
@@ -16440,6 +16514,7 @@ wal.app
 // Wasmer: https://wasmer.io
 // Submitted by Lorentz Kinde <security@wasmer.io>
 wasmer.app
+sm.run
 
 // Webflow, Inc. : https://www.webflow.com
 // Submitted by Webflow Security Team <security@webflow.com>
