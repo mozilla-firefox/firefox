@@ -75,8 +75,6 @@
   <string name="home_bookmarks_menu_item_remove">Eliminar</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
   <string name="about_content" tools:ignore="BrandUsage">%1$s es producido por Mozilla.</string>
-  <!-- Private Browsing -->
-  <string name="private_browsing_common_myths">Mitos comunes sobre la navegación privada</string>
   <!--
     Private Browsing
 
@@ -263,8 +261,6 @@
   <string name="browser_menu_syncing_paused_caption">Sincronización pausada</string>
   <!-- Browser menu caption label for an authenticated user -->
   <string name="browser_menu_signed_in_caption">Administrar tus copias de seguridad y sincronizaciones</string>
-  <!-- Browser menu label that creates a private tab -->
-  <string name="browser_menu_new_private_tab">Nueva pestaña privada</string>
   <!-- Browser menu label that navigates to the Password screen -->
   <string name="browser_menu_passwords">Contraseñas</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
@@ -464,18 +460,6 @@
   <string name="onboarding_preferences_dialog_positive_button">Hecho</string>
   <!-- Terms of service onboarding title card label. 'Firefox' intentionally hardcoded here -->
   <string name="onboarding_welcome_to_firefox" tools:ignore="BrandUsage">Te damos la bienvenida a Firefox</string>
-  <!-- Line one of the terms of service onboarding page. %1$s is replaced by an active link, using onboarding_term_of_service_line_one_link_text_2 as text (“Firefox Terms of Use”). -->
-  <string name="onboarding_term_of_service_line_one_2">Al continuar, aceptas los %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_one_2. -->
-  <string name="onboarding_term_of_service_line_one_link_text_2" tools:ignore="BrandUsage">Términos de uso de Firefox</string>
-  <!-- Line two of the terms of service onboarding page. 'Firefox' is intentionally hardcoded. %1$s is replaced by an active link, using onboarding_term_of_service_line_two_link_text as text (“Privacy Notice”). -->
-  <string name="onboarding_term_of_service_line_two_2" tools:ignore="BrandUsage">Firefox se preocupa de tu privacidad. Conoce más en nuestra %1$s.</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_two. -->
-  <string name="onboarding_term_of_service_line_two_link_text">Aviso de privacidad</string>
-  <!-- Line three of the terms of service onboarding page. 'Firefox' and 'Mozilla' are intentionally hardcoded. %1$s is replaced by an active link using onboarding_term_of_service_line_three_link_text as text (“Manage”). -->
-  <string name="onboarding_term_of_service_line_three" tools:ignore="BrandUsage">Para ayudar a mejorar el navegador, Firefox envía datos de diagnóstico e interacción a Mozilla. %1$s</string>
-  <!-- Used as text for the link in onboarding_term_of_service_line_three. -->
-  <string name="onboarding_term_of_service_line_three_link_text">Administrar</string>
   <!-- Terms of use (ToU) onboarding redesign title. -->
   <string name="onboarding_redesign_tou_title" tools:ignore="UnusedResources">Lanza el navegador Android definitivo</string>
   <!-- Terms of use (ToU) first subheader. -->
@@ -578,20 +562,6 @@
   <string name="nova_onboarding_set_to_default_subtitle">Protegemos tus datos y bloqueamos automáticamente a las empresas que espían tus clics.</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">Establecer como navegador predeterminado</string>
-  <!-- Toolbar selection onboarding title. -->
-  <string name="nova_onboarding_toolbar_selection_title">Elige tu barra de direcciones</string>
-  <!-- Toolbar selection onboarding "top" option label. -->
-  <string name="nova_onboarding_toolbar_selection_top_label">Parte superior</string>
-  <!-- Toolbar selection onboarding "bottom" option label. -->
-  <string name="nova_onboarding_toolbar_selection_bottom_label">Parte inferior</string>
-  <!-- Theme selection onboarding title. -->
-  <string name="nova_onboarding_theme_selection_title" tools:ignore="UnusedResources">Elige tu tema</string>
-  <!-- Theme selection onboarding "automatic" option label. -->
-  <string name="nova_onboarding_theme_selection_automatic_label" tools:ignore="UnusedResources">Automático</string>
-  <!-- Theme selection onboarding "light" option label. -->
-  <string name="nova_onboarding_theme_selection_light_label" tools:ignore="UnusedResources">Claro</string>
-  <!-- Theme selection onboarding "dark" option label. -->
-  <string name="nova_onboarding_theme_selection_dark_label" tools:ignore="UnusedResources">Oscuro</string>
   <!-- Sync onboarding title. -->
   <string name="nova_onboarding_sync_title">Continúa al instante desde donde lo dejaste</string>
   <!-- Sync onboarding subtitle. -->
@@ -656,12 +626,6 @@
   <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Descubre las últimas funcionalidades de privacidad en Firefox para estar siempre al día sobre cómo mantenerte protegido.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Activar notificaciones</string>
-  <!-- "Add search widget" onboarding title. -->
-  <string name="nova_onboarding_add_search_widget_title">Haz que cada búsqueda sea más privada</string>
-  <!-- "Add search widget" onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_subtitle" tools:ignore="BrandUsage">Comienza cada búsqueda desde la pantalla de inicio de tu teléfono sabiendo que las protecciones automáticas de Firefox te respaldan.</string>
-  <!-- "Add search widget" onboarding button. 'Firefox' is intentionally hardcoded. -->
-  <string name="nova_onboarding_add_search_widget_button" tools:ignore="BrandUsage">Añadir widget de Firefox</string>
   <!-- Customize prompt onboarding title. -->
   <string name="nova_onboarding_customize_prompt_title" tools:ignore="UnusedResources">Fácil de personalizar y más privado con cada toque</string>
   <plurals name="nova_onboarding_customize_prompt_body" tools:ignore="UnusedResources">
@@ -699,12 +663,6 @@
   <string name="search_widget_text_long">Buscar en la web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Búsqueda por voz</string>
-  <!--
-    Preferences
-
-    Title for the settings page
-  -->
-  <string name="settings">Ajustes</string>
   <!--
     Preferences
 
@@ -1552,8 +1510,6 @@
   <string name="open_tabs_menu">Abrir menú de pestañas</string>
   <!-- Content description (not visible, for screen readers etc.): Return to tab manager -->
   <string name="tab_manager_search_bar_back_content_description">Volver al administrador de pestañas</string>
-  <!-- Open tabs menu item to save tabs to collection -->
-  <string name="tabs_menu_save_to_collection1">Guardar pestañas en la colección</string>
   <!-- Text for the menu button to delete a collection -->
   <string name="collection_delete">Eliminar colección</string>
   <!-- Text for the menu button to rename a collection -->
@@ -1945,8 +1901,6 @@
   <string name="webcompat_reporter_label_mandatory_description">Describe el problema en detalle para ayudarnos a investigarlo</string>
   <!-- The label/title of a optional field in the Web Compat Reporter feature for adding additional information. -->
   <string name="webcompat_reporter_label_optional_description">Describe el problema en detalle para ayudarnos a investigarlo (opcional)</string>
-  <!-- The button text for the cancel button to leave the Web Compat Reporter feature. -->
-  <string name="webcompat_reporter_cancel">Cancelar</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Enviar informe</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -2460,8 +2414,6 @@
   <string name="qr_scanner_dialog_invalid">La dirección web no es válida.</string>
   <!-- QR code scanner prompt dialog positive option when there is an error -->
   <string name="qr_scanner_dialog_invalid_ok">Aceptar</string>
-  <!-- Tab collection deletion prompt dialog message. %1$s is the collection name. -->
-  <string name="tab_collection_dialog_message">¿Seguro que quieres eliminar %1$s?</string>
   <!-- Sample text for accessibility font size -->
   <string name="accessibility_text_size_sample_text_1">Este es un texto de ejemplo. Está aquí para mostrar cómo va a aparecer el texto cuando aumentes o disminuyas el tamaño con esta configuración.</string>
   <!-- Summary for Accessibility Text Size Scaling Preference -->
@@ -3333,10 +3285,6 @@
   <string name="browser_menu_remove_from_shortcuts">Eliminar de los accesos directos</string>
   <!-- Message in delete confirmation dialog for password -->
   <string name="login_deletion_confirmation_2">¿Estás seguro de que quieres eliminar esta contraseña?</string>
-  <!-- Positive action of a dialog asking to delete -->
-  <string name="dialog_delete_positive">Eliminar</string>
-  <!-- Negative action of a dialog asking to delete login -->
-  <string name="dialog_delete_negative">Cancelar</string>
   <!-- The page title for editing a saved password. -->
   <string name="edit_2">Editar contraseña</string>
   <!-- The page title for adding new password. -->
@@ -3822,11 +3770,6 @@
   <string name="protection_panel_etp_toggle_enabled_description_2">Si algo parece que no funciona en este sitio, intenta desactivarla.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Se recomienda activar la protección contra el rastreo.</string>
-  <!--
-    Text for displaying the total number of trackers blocked in the protection panel.
-    %d is a placeholder for the number of trackers blocked.
-  -->
-  <string name="protection_panel_num_trackers_blocked">Rastreadores bloqueados: %d</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
   <string name="protection_panel_etp_disabled_no_trackers_blocked">Los rastreadores no están bloqueados</string>
   <!-- Link text to navigate to privacy and security settings from the protection panel. -->
@@ -4508,12 +4451,6 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Aislamiento de sitios web</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Una barrera adicional entre sitios web que ayuda a proteger tus datos en diferentes pestañas. Puede afectar el rendimiento, la estabilidad, la compatibilidad con otros sitios web y la forma en que se guarda el historial de navegación.</string>
-  <!--
-    PDF viewer toolbar and buttons
-
-    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
-  -->
-  <string name="pdf_tools_sign_content_description">Firmar PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Descargar PDF</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->

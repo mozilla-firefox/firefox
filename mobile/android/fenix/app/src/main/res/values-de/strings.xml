@@ -186,6 +186,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Menü anpassen</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Dieser Bereich lässt sich nicht ausblenden</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Standardmenü wiederherstellen?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Dies entfernt Anpassungen und kann nicht rückgängig gemacht werden.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Zurücksetzen</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Abbrechen</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Zurück</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -303,6 +313,8 @@
   <string name="browser_menu_webcompat_reporter_2">Problem mit Website melden</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Zu Gruppe hinzufügen</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">In Gruppe verschieben</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Übersetzt</string>
   <!-- Browser menu label for the print feature -->
@@ -550,7 +562,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Nicht jetzt</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Überspringen</string>
+  <string name="nova_onboarding_skip_button">Überspringen</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Machen Sie sich bereit für die Freiheit</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -590,6 +602,14 @@
   <string name="nova_onboarding_sync_subtitle">Holen Sie sich Lesezeichen, Passwörter und mehr im Handumdrehen auf jedes Gerät. Ihre persönlichen Daten bleiben durch Verschlüsselung sicher und geschützt.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Mit Synchronisierung beginnen</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Scannen, um die Kopplung mit Ihrem Computer abzuschließen</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[Kein QR-Code zu sehen? Öffnen Sie <b>firefox.com/pair</b> auf Ihrem Computer.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Kopplungscode scannen</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Mit E-Mail-Adresse anmelden</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Helfen Sie uns, ein besseres Internet zu schaffen</string>
   <!--
@@ -629,7 +649,7 @@
     Marketing onboarding additional body text. 'Firefox' is intentionally hardcoded.
     “Allowing” refers to the main button “Allow and Continue”; the ask for the user is to allow communicating back to the platform.
   -->
-  <string name="nova_onboarding_marketing_body_line_three" tools:ignore="BrandUsage">Bitte überlegen Sie, ob Sie mit dieser Erlaubnis zum Erfolg verhelfen dürfen.</string>
+  <string name="nova_onboarding_marketing_body_line_three" tools:ignore="BrandUsage">Bitte überlegen Sie, ob Sie Firefox mit dieser Erlaubnis zum Erfolg verhelfen möchten.</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text">Wie wir die Daten nutzen</string>
   <!-- Marketing onboarding body link text. -->
@@ -1276,6 +1296,14 @@
   <string name="preferences_sync_sign_in_to_reconnect">Melden Sie sich an, um die Verbindung wiederherzustellen</string>
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Konto entfernen</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Anmelden</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Synchronisieren Sie jetzt Tabs, Lesezeichen, Passwörter und mehr.</string>
   <!--
     Pairing Feature strings
 
@@ -2516,6 +2544,12 @@
   <string name="snackbar_private_tab_closed">Privater Tab geschlossen</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">RÜCKGÄNGIG</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Zu %1$s hinzugefügt</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Nach %1$s verschoben</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Ansehen</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -2929,7 +2963,7 @@
   <!-- Preference for autofilling saved logins in Firefox (in web content), %1$s will be replaced with the app name -->
   <string name="preferences_passwords_autofill2">Automatisches Ausfüllen in %1$s</string>
   <!-- Description for the preference for autofilling saved logins in Firefox (in web content), %1$s will be replaced with the app name -->
-  <string name="preferences_passwords_autofill_description">Benutzernamen und Passwörter auf Webseiten bei Nutzung von %1$s automatisch ausfüllen.</string>
+  <string name="preferences_passwords_autofill_description">Benutzernamen und Passwörter auf Webseiten bei Nutzung von %1$s ausfüllen und speichern.</string>
   <!-- Preference for autofilling logins from Fenix in other apps (e.g. autofilling the Twitter app) -->
   <string name="preferences_android_autofill">Automatisches Ausfüllen in anderen Apps</string>
   <!-- Description for the preference for autofilling logins from Fenix in other apps (e.g. autofilling the Twitter app) -->
@@ -3896,7 +3930,7 @@
   <!-- Toggle if Enhanced Tracking Protection is turned off -->
   <string name="protection_panel_etp_toggle_off">Aus</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is enabled. -->
-  <string name="protection_panel_etp_toggle_enabled_description_2">Wenn etwas auf dieser Website beschädigt aussieht, deaktivieren Sie ihn.</string>
+  <string name="protection_panel_etp_toggle_enabled_description_2">Wenn etwas auf dieser Website fehlerhaft aussieht, versuchen Sie, ihn zu deaktivieren.</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is disabled. -->
   <string name="protection_panel_etp_toggle_disabled_description_2">Es wird empfohlen, den Schutz vor Aktivitätenverfolgung zu aktivieren.</string>
   <!-- Text for when tracking protection is disabled and no trackers are blocked. -->
@@ -3907,6 +3941,10 @@
   <string name="protection_panel_permissions_title">Berechtigungen</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Sichere Verbindung</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Zertifikat ausgestellt für:</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">EU-Vertrauenssiegel</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4257,7 +4295,7 @@
   <!-- Homepage card title about old Firefox version. "Update" is a verb. -->
   <string name="certificate_warning_homepage_card_hcr1_title" tools:ignore="UnusedResources">Aktualisieren Sie vor dem 14. März</string>
   <!-- Homepage card message about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
-  <string name="certificate_warning_homepage_card_hcr1_message" tools:ignore="BrandUsage,UnusedResources">Ein Stammzertifikat läuft ab, und Ihre Firefox-Version funktioniert nicht mehr richtig.</string>
+  <string name="certificate_warning_homepage_card_hcr1_message" tools:ignore="BrandUsage,UnusedResources">Ein Stammzertifikat läuft ab, weshalb Ihre Firefox-Version nicht mehr richtig funktioniert.</string>
   <!-- Homepage card title about old Firefox version -->
   <string name="certificate_warning_homepage_card_hcw2_title" tools:ignore="UnusedResources">Es verbleiben weniger als 7 Tage für die Aktualisierung</string>
   <!-- Homepage card message about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
@@ -4501,7 +4539,7 @@
   <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
   <string name="wrex_widget_match_extra_time_short">Verlängerung</string>
   <!-- Sports widget match status label shown during penalties of a match. -->
-  <string name="wrex_widget_match_penalties">Elfmeterschließen</string>
+  <string name="wrex_widget_match_penalties">Elfmeterschießen</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Weitere Optionen</string>
   <!--
@@ -4567,6 +4605,8 @@
   <string name="collections_migration_homepage_card_message">Es gibt eine einfachere Möglichkeit, Ihre Tabs zu organisieren</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Meine Tab-Gruppen anzeigen</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Schließen</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Google-Lens-Integration aktivieren</string>
   <!-- Lens image search button content description -->
@@ -4616,7 +4656,7 @@
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Finden Sie es mit Google Lens</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
-  <string name="lens_opt_out_description">Wählen Sie eine Grafik aus oder verwenden Sie Ihre Kamera, um mit Google Lens Ergebnisse zu erhalten.</string>
+  <string name="lens_opt_out_description">Wählen Sie ein Bild aus oder verwenden Sie Ihre Kamera, um mit Google Lens Ergebnisse zu erhalten.</string>
   <!-- Text of the link in the first-run Google Lens bottom sheet that opens the Search settings page -->
   <string name="lens_opt_out_settings_link">Google-Lens-Einstellungen</string>
   <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->

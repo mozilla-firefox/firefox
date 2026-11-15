@@ -233,7 +233,7 @@
   <!-- The version on of add-on. -->
   <string name="mozac_feature_addons_version">Versie</string>
   <!-- The author of an add-on. -->
-  <string name="mozac_feature_addons_author">Schrijver</string>
+  <string name="mozac_feature_addons_author">Auteur</string>
   <!-- The last date that the add-on was updated. -->
   <string name="mozac_feature_addons_last_updated">Laatst bijgewerkt</string>
   <!-- The developer website (Homepage) of the add-on. -->
@@ -277,7 +277,7 @@
   <!-- This is the title of a dialog that asks the users if they to install or not an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_permissions_dialog_title_2">%1$s toevoegen</string>
   <!-- This is the title of a dialog that asks the users to grant optional permissions. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_optional_permissions_with_data_collection_dialog_title">%1$s vraagt aanvullende instellingen</string>
+  <string name="mozac_feature_addons_optional_permissions_with_data_collection_dialog_title">%1$s vraagt om aanvullende instellingen</string>
   <!-- This is the title of a dialog that asks the users to grant optional data collection permissions only. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_optional_permissions_with_data_collection_only_dialog_title">%1$s vraagt om aanvullende gegevensverzameling</string>
   <!-- Heading for the permissions section in the add-on install dialog. -->
@@ -395,7 +395,7 @@
   <!-- Text shown after failed to enable an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_enable">Inschakelen van %1$s mislukt</string>
   <!-- Text shown after failed to disable an add-on. %1$s is the add-on name. -->
-  <string name="mozac_feature_addons_failed_to_disable">Uitschakelen %1$s mislukt</string>
+  <string name="mozac_feature_addons_failed_to_disable">Uitschakelen van %1$s mislukt</string>
   <!-- Text shown after failed to uninstall an add-on. %1$s is the add-on name. -->
   <string name="mozac_feature_addons_failed_to_uninstall">Deïnstalleren van %1$s mislukt</string>
   <!-- Text shown after successfully removed an add-on. %1$s is the add-on name. -->

@@ -9,8 +9,10 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">Prebieha import záložiek</string>
-  <!-- Description for the bookmarks import loading dialog. -->
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">Import hesiel</string>
+  <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">Nechajte túto obrazovku otvorenú. Malo by to trvať len niekoľko sekúnd.</string>
-  <!-- Label for the cancel action on the bookmarks import loading dialog. -->
+  <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">Zrušiť</string>
 </resources>

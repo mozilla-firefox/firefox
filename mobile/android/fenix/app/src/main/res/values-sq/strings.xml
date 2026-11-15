@@ -289,6 +289,8 @@
   <string name="browser_menu_webcompat_reporter_2">Njoftoni për sajt të dëmtuar</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Shtoje në grup</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Shpjere në grup</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">E përkthyer</string>
   <!-- Browser menu label for the print feature -->
@@ -351,6 +353,8 @@
   <string name="ai_controls_learn_more">Mësoni më tepër</string>
   <!-- Link text to see what AI enhancements are and aren’t included -->
   <string name="ai_controls_see_whats_included">Shihni ç’përfshihet dhe s’përfshihet</string>
+  <!-- Section header for the AI-powered features list -->
+  <string name="ai_controls_ai_powered_features">Veçori të bazuara në IA</string>
   <!-- Title for the translations AI feature toggle -->
   <string name="ai_controls_translations_title">Përkthime</string>
   <!-- Description for the translations AI feature toggle -->
@@ -518,7 +522,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Jo tani</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Anashkaloje</string>
+  <string name="nova_onboarding_skip_button">Anashkaloje</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Bëhuni gati të rendi të lirë</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -622,6 +626,8 @@
   <string name="search_widget_voice">Kërkim zanor</string>
   <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
   <string name="search_widget_private_search">Kërkim privat</string>
+  <!-- Widget description in the widget picker screen for the compact search bar widget -->
+  <string name="compact_search_bar_widget_description">Shtyllë kompakte kërkimesh</string>
   <!--
     Preferences
 
@@ -733,6 +739,8 @@
   <string name="preferences_toolbar_select_shortcut">Përzgjidhni një shkurtore</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">Përpunoni shkurtore</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Menu</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Gjeste</string>
   <!-- Preference for settings related to visual options -->
@@ -809,6 +817,8 @@
   <string name="preferences_open_links_in_apps_ask">Pyet para hapjes</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">Kurrë</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">Media</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Depozitim kartelash</string>
   <!-- Preference title for downloads default location. -->
@@ -889,6 +899,16 @@
   <string name="customize_addon_collection_user_hint">I zoti i koleksionit (ID Përdoruesi)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Koleksioni i zgjerimeve u ndryshua. Po dilet nga aplikacioni, për të zbatuar ndryshimet…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Të hiqet %1$s?</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Hiqe</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Anuloje</string>
   <!--
     Customize Home
 
@@ -1050,6 +1070,8 @@
   <string name="preferences_sync_now">Njëkohësoje tani</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">Zgjidhni çfarë të njëkohësohet</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Njëkohësoje këtë pajisje</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Historik</string>
   <!-- Preference for syncing bookmarks -->
@@ -1168,6 +1190,12 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Hiqe llogarinë</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Hyni</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -1251,6 +1279,8 @@
   <string name="library_desktop_bookmarks_unfiled">Faqerojtës të Tjerë</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">Historik</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">E përzgjedhur</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Rregullime</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1516,6 +1546,8 @@
   <string name="create_tab_group_name_label">Emër</string>
   <!-- Title for adding more tabs to a tab group. -->
   <string name="add_to_tab_group_title">Shtoje te</string>
+  <!-- Content Description for "New tab group" panel. -->
+  <string name="add_to_new_tab_group_content_description">Shtoni te grup i ri skedash</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Grup i ri skedash</string>
   <plurals name="tab_group_tabs_count_subtitle">
@@ -1779,6 +1811,8 @@
   <string name="download_search_no_results_found">S’u gjetën përfundime</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Përzgjidhe krejt</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(të dhëna)</string>
   <!--
     Downloads Content Type Filters
 
@@ -1817,6 +1851,8 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">Ju lutemi, jepni një URL të vlefshme</string>
+  <!-- The error message of the description when the user selects "Something else" as the reason, but left the description empty or too short. -->
+  <string name="webcompat_reporter_description_error">Ju lutemi, jepni të paktën 10 shenja</string>
   <!-- The button text for the send button to submit the provided form data. -->
   <string name="webcompat_reporter_send_report">Dërgoje njoftimin</string>
   <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
@@ -1825,6 +1861,8 @@
   <string name="webcompat_reporter_preview_report">Bëni Paraparje të Raportimit</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
   <string name="webcompat_reporter_preview_bottom_sheet_header">Paraparje Raportimi</string>
+  <!-- Title for the Edit URL confirmation dialog in the WebCompatReporter -->
+  <string name="webcompat_reporter_edit_url_dialog_title">Përpunoni URL sajti</string>
   <!-- Text shown on the save button for the Edit URL confirmation dialog in the WebCompatReporter. -->
   <string name="webcompat_reporter_edit_url_dialog_save">Ruaje</string>
   <!-- Text shown on the dismiss button for the Edit URL confirmation dialog in the WebCompatReporter. -->
@@ -1847,6 +1885,8 @@
   <string name="webcompat_reporter_reason_account2">S’bëj dot hyrjen, ose regjistrimin</string>
   <!-- Broken site reason text for site asked to turn off ad blocker -->
   <string name="webcompat_reporter_reason_turn_off_adblocker">Sajti kërkoi të aktivizohet bllokuesi i reklamave</string>
+  <!-- Broken site reason text for browser isn’t supported or blocked -->
+  <string name="webcompat_reporter_reason_notsupported_2">Shfletuesi s’mbulohet, ose bllokohet</string>
   <!-- Broken site reason text for the site being deceptive -->
   <string name="webcompat_reporter_reason_site_is_deceptive">Ky sajt është i rrejshëm</string>
   <!-- Broken site reason text for something else -->
@@ -2293,6 +2333,8 @@
   <string name="snackbar_private_tab_closed">Skeda private u mbyll</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">ZHBËJE</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Shiheni</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -2411,6 +2453,8 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[Pa llogari? <u>Krijoni një të tillë</u> që të njëkohësoni Firefox-in mes pajisjesh.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s-i do të reshtë së njëkohësuari me llogarinë tuaj, por nuk do të fshihet ndonjë nga të dhënat e shfletimeve tuaja në këtë pajisje.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">Të dilet nga llogaria juaj?</string>
   <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
   <string name="sign_out_dialog_confirm_button">Dilni</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
@@ -2876,6 +2920,8 @@
   <string name="ip_protection_recommended_location" tools:ignore="UnusedResources">E rekomanduar</string>
   <!-- Label for the button that takes the user to get the standalone Mozilla VPN product. -->
   <string name="ip_protection_mozilla_vpn_upsell_button" tools:ignore="UnusedResources,BrandUsage">Merrni Mozilla VPN</string>
+  <!-- Title for the browser VPN location picker screen. -->
+  <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Zgjidhni vendndodhje VPN-je</string>
   <!-- Title for the browser VPN location selection screen (displayed in the app bar) -->
   <string name="ip_protection_locations_title">Zgjidhni vendndodhje VPN-je</string>
   <!-- Content description for the browser VPN location selection screen top bar back button -->
@@ -2960,6 +3006,10 @@
   <string name="credit_cards_warning_dialog_set_up_now">Ujdiseni tani</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Më vonë</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Ujdiseni tani</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Anuloje</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Shkyçni pajisjen tuaj</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3169,6 +3219,8 @@
   <string name="homepage_shortcuts_show_less">Shfaq më pak</string>
   <!-- Label for the "Add shortcut" button displayed as a tile. -->
   <string name="homepage_shortcuts_add_shortcut">Shtoni shkurtore</string>
+  <!-- Title for the "Add to homepage" bottom sheet. -->
+  <string name="homepage_shortcuts_add_to_homepage">Shtoje te faqe hyrëse</string>
   <!-- Label for the "Add website" button in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_add_website">Shtoni sajt</string>
   <!-- Title text for the "Enter a Website URL" dialog for adding a shortcut. -->
@@ -3399,6 +3451,8 @@
   <string name="translation_settings_download_language">Shkarko gjuhë</string>
   <!-- Toggle switch title and description for the translation settings control. -->
   <string name="translation_settings_control_title">Përkthime</string>
+  <!-- Description for the translation settings toggle switch. -->
+  <string name="translation_settings_control_description">Krejt përkthimet mbeten private në pajisjen tuaj.</string>
   <!-- Clickable text for the translations settings item that links to a website. -->
   <string name="translation_settings_control_learn_more">Mësoni më tepër</string>
   <!--
@@ -3579,6 +3633,10 @@
   <string name="protection_panel_privacy_and_security_settings_2">Rregullime Privatësie</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Leje</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Lidhje e siguruar</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Dëshmi lëshuar për:</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -3722,6 +3780,14 @@
   <string name="microsurvey_sync_title" tools:ignore="BrandUsage,UnusedResources">Sa të kënaqur jeni nga funksionimi i njëkohësimit në Firefox?</string>
   <!-- Text shown in the survey title for 'describe your experience so far' microsurvey. Note: The word "Firefox" should NOT be translated. -->
   <string name="microsurvey_describe_your_experience_title" tools:ignore="BrandUsage,UnusedResources">Ndihmonani të përmirësojmë Firefox-in. CiIa e përshkruan më mirë rastin tuaj deri tani?</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_2_v2">Sajtet s’funksionojnë si duhet</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_3_v2">Mungojnë veçori që më duhen</string>
+  <!-- Uninstall survey answer option -->
+  <string name="uninstall_survey_option_6_v2">Shqetësime privatësie, ose sigurie</string>
+  <!-- Button label shown at the bottom of the uninstall survey -->
+  <string name="uninstall_survey_button_label">Parashtro përshtypjet dhe çinstaloje</string>
   <!--
     Accessibility
 
@@ -4064,6 +4130,20 @@
   <string name="terms_of_use_prompt_body_line_two_alternative" tools:ignore="UnusedResources">Mund të mësoni më tepër %1$s.</string>
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">këtu</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">E pezulluar</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">E shtyrë</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Rifreskoje</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Përfundime</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Klasifikime</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Sfonde</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Hiqe Widget-in</string>
   <!--
     Privacy notice homepage banner
 
@@ -4084,6 +4164,12 @@
   <string name="collections_migration_homepage_banner_title">Koleksionet tanimë janë grupe</string>
   <!-- Message shown on the collections to tab groups migration card on the homepage. -->
   <string name="collections_migration_homepage_card_message">Ka një rrugë më të thjeshtë për t’i mbajtur të sistemuara skedat tuaja</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Mbylle</string>
+  <!-- Image context menu entry that sends the long-pressed image to Google Lens -->
+  <string name="context_menu_open_image_with_google_lens">Kërkoni me Google Lens</string>
+  <!-- Toast shown when the user denies the camera permission requested by the Lens camera screen -->
+  <string name="lens_camera_permission_denied">Leje e mohuar</string>
   <!--
     Title shown at the top of the camera screen, next to the close button, telling the
     user that the camera is being used to scan a QR code.
@@ -4091,8 +4177,14 @@
   <string name="lens_camera_title_qr">Kod QR</string>
   <!-- Content description for the QR scanner half of the camera mode toggle -->
   <string name="lens_camera_mode_qr">Skanues QR-esh</string>
+  <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
+  <string name="lens_camera_qr_no_code_found">Te figura s’u gjet kod QR</string>
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Anuloje</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">S’u ngarkua dot kjo figurë.</string>
+  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed">S’u ngarkua dot kjo figurë. Provoni një tjetër.</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Riprovoni</string>
   <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->
@@ -4126,6 +4218,12 @@
   <string name="firefox_labs_feature_disable_dialog_message">Që të çaktivizohet kjo veçori, rinisni %s.</string>
   <!-- Title of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Izolim sajti</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description_2">Shtoni një nënshkrim</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">Shkarkojeni si PDF</string>
   <!--

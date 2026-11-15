@@ -56,7 +56,7 @@
   <!-- Button label in a notification permission request dialog to dismiss the dialog. -->
   <string name="mozac_feature_sitepermissions_notification_permission_rationale_dialog_dismiss_label">Annulearje</string>
   <!-- Button label in a notification permission request dialog. It will let the user go to Android Settings to grant the permission. -->
-  <string name="mozac_feature_sitepermissions_notification_permission_rationale_dialog_settings_label">Nei Ynstellingen</string>
+  <string name="mozac_feature_sitepermissions_notification_permission_rationale_dialog_settings_label">Nei ynstellingen</string>
   <!-- Text for a checkbox in a permission request dialog, this will allow to not show again the prompt -->
   <string name="mozac_feature_sitepermissions_do_not_ask_again_on_this_site2">Beslissing ûnthâlde foar dizze website</string>
   <!-- Text for a checkbox in a permission request dialog, this will allow to not show again the prompt -->

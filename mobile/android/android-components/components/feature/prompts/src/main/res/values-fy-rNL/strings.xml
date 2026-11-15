@@ -106,7 +106,7 @@
   <!-- Option in expanded select password prompt that links to password settings -->
   <string name="mozac_feature_prompts_manage_logins_2">Wachtwurden beheare</string>
   <!-- Content description for expanding the saved passwords options in the select password prompt -->
-  <string name="mozac_feature_prompts_expand_logins_content_description_2">Bewarre wachtwurden te útklappe</string>
+  <string name="mozac_feature_prompts_expand_logins_content_description_2">Bewarre wachtwurden útklappe</string>
   <!-- Content description for collapsing the saved passwords options in the select password prompt -->
   <string name="mozac_feature_prompts_collapse_logins_content_description_2">Bewarre wachtwurden ynklappe</string>
   <!-- Header for the select password prompt to allow users to fill a form with a saved password -->
@@ -149,7 +149,7 @@
   -->
   <string name="mozac_feature_prompts_select_credit_card_2">Bewarre kaart brûke</string>
   <!-- Content description for expanding the saved card options in the select card prompt. -->
-  <string name="mozac_feature_prompts_expand_credit_cards_content_description_2">Bewarre kaarten te útklappe</string>
+  <string name="mozac_feature_prompts_expand_credit_cards_content_description_2">Bewarre kaarten útklappe</string>
   <!-- Content description for collapsing the saved card options in the select prompt. -->
   <string name="mozac_feature_prompts_collapse_credit_cards_content_description_2">Bewarre kaarten ynklappe</string>
   <!-- Option in the expanded select card prompt that links to cards settings. -->

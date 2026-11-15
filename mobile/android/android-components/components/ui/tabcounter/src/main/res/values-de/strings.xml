@@ -31,5 +31,5 @@
   <!-- Menu option to duplicate the current tab -->
   <string name="mozac_ui_tabcounter_duplicate_tab">Tab klonen</string>
   <!-- Content description of the tab counter toolbar button -->
-  <string name="mozac_tab_counter_content_description">Die Schaltfläche der Tab-Zähler-Symbolleiste.</string>
+  <string name="mozac_tab_counter_content_description">Die Tab-Zähler-Schaltfläche in der Symbolleiste.</string>
 </resources>

@@ -186,6 +186,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Personnaliser le menu</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Impossible de masquer cette section</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Réinitialiser le menu par défaut\u00a0?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Toutes les personnalisations seront supprimées de façon irréversible.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Réinitialiser</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Annuler</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Page précédente</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -303,6 +313,8 @@
   <string name="browser_menu_webcompat_reporter_2">Signaler des problèmes avec ce site</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Ajouter au groupe</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Déplacer vers un groupe</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Traduit</string>
   <!-- Browser menu label for the print feature -->
@@ -550,7 +562,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Plus tard</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Ignorer</string>
+  <string name="nova_onboarding_skip_button">Ignorer</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Préparez-vous à naviguer en toute liberté</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -590,6 +602,14 @@
   <string name="nova_onboarding_sync_subtitle">Accédez à vos marque-pages, mots de passe et plus encore sur n’importe quel appareil en un clin d’œil. Vos données personnelles sont protégées grâce au chiffrement.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Démarrer la synchronisation</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Scannez le code pour finaliser l’association avec votre ordinateur</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[Le code QR ne s’affiche pas\u00a0? Ouvrez <b>firefox.com/pair</b> sur votre ordinateur.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Scanner le code d’association</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Se connecter avec une adresse e-mail</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Aidez-nous à améliorer Internet</string>
   <!--
@@ -720,7 +740,7 @@
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Moteurs de recherche</string>
   <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
-  <string name="preferences_search_widget_in_home_screen">Ajouter le widget de recherche à l’écran d’accueil</string>
+  <string name="preferences_search_widget_in_home_screen">Ajouter le widget de recherche sur l’écran d’accueil</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Widget sur l’écran d’accueil</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -1276,6 +1296,14 @@
   <string name="preferences_sync_sign_in_to_reconnect">S’identifier pour se reconnecter</string>
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Supprimer le compte</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Connectez-vous</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Commencez à synchroniser vos onglets, marque-pages, mots de passe et bien plus encore.</string>
   <!--
     Pairing Feature strings
 
@@ -2033,7 +2061,7 @@
   -->
   <string name="webcompat_reporter_reason_load">Le site ne se charge pas</string>
   <!-- Broken site reason text for can’t pay, check out or shop -->
-  <string name="webcompat_reporter_reason_checkout">Je ne peux pas payer ou faire des achats</string>
+  <string name="webcompat_reporter_reason_checkout">Je ne peux pas payer, finaliser la commande ou faire des achats</string>
   <!-- Broken site reason text for site is slow -->
   <string name="webcompat_reporter_reason_slow2">Le site est lent</string>
   <!-- Broken site reason text for video isn’t playing or loading -->
@@ -2142,7 +2170,7 @@
   <!-- Label for button to import bookmarks from file. -->
   <string name="bookmark_import_menu_button">Importer depuis un fichier</string>
   <!-- Snackbar message shown when a bookmark import attempt fails. -->
-  <string name="bookmark_import_failure_snackbar">Impossible d’importer les marque-pages. Veuillez réessayez.</string>
+  <string name="bookmark_import_failure_snackbar">Impossible d’importer les marque-pages. Veuillez réessayer.</string>
   <!-- Default name for the folder created when importing bookmarks from a file. -->
   <string name="bookmark_import_destination_default_name">Marque-pages importés</string>
   <!--
@@ -2516,6 +2544,12 @@
   <string name="snackbar_private_tab_closed">Onglet privé fermé</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">ANNULER</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Page ajoutée à %1$s</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Page déplacée dans %1$s</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Afficher</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -2784,7 +2818,7 @@
   <!-- Preference for fingerprinting protection for the custom protection settings -->
   <string name="etp_suspected_fingerprinters_title">Détecteurs d’empreinte numérique suspectés</string>
   <!-- Description of fingerprinters that can be blocked by fingerprinting protection -->
-  <string name="etp_suspected_fingerprinters_description">Activer la protection contre les empreintes numériques pour bloquer les détecteurs d’empreintes numériques suspectés.</string>
+  <string name="etp_suspected_fingerprinters_description">Active la protection contre les empreintes numériques pour bloquer les détecteurs d’empreintes numériques suspectés.</string>
   <!-- Category of trackers (fingerprinters) that can be blocked by Enhanced Tracking Protection -->
   <string name="etp_known_fingerprinters_title">Détecteurs d’empreinte numérique connus</string>
   <!--
@@ -3649,7 +3683,7 @@
   <!-- Button text on the translations dialog when a translation error appears. -->
   <string name="translations_bottom_sheet_positive_button_error">Réessayer</string>
   <!-- Inactive button text on the translations dialog that indicates a translation is currently in progress. This button will be accompanied by a loading icon. -->
-  <string name="translations_bottom_sheet_translating_in_progress">Traduction</string>
+  <string name="translations_bottom_sheet_translating_in_progress">Traduction en cours</string>
   <!-- Button content description (not visible, for screen readers etc.) for the translations dialog translate button that indicates a translation is currently in progress. -->
   <string name="translations_bottom_sheet_translating_in_progress_content_description">Traduction en cours</string>
   <!-- Default dropdown option when initially selecting a language from the translations dialog language selection dropdown. -->
@@ -3740,7 +3774,7 @@
   <!-- Preference option for always translate. Radio button title text. -->
   <string name="automatic_translation_option_always_translate_title_preference">Toujours traduire</string>
   <!-- Preference option for always translate. Radio button summary text. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="automatic_translation_option_always_translate_summary_preference">%1$s traduira automatiquement la page dans cette langue à son chargement.</string>
+  <string name="automatic_translation_option_always_translate_summary_preference">%1$s traduira automatiquement cette langue au chargement de la page.</string>
   <!-- Preference option for never translate. Radio button title text. -->
   <string name="automatic_translation_option_never_translate_title_preference">Ne jamais traduire</string>
   <!-- Preference option for never translate. Radio button summary text. %1$s is the name of the app (for example "Firefox"). -->
@@ -3826,7 +3860,7 @@
   -->
   <string name="delete_language_file_dialog_title">Supprimer %1$s (%2$s) ?</string>
   <!-- Additional information for the dialog used by the translations feature to confirm deleting a language. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="delete_language_file_dialog_message">Si vous supprimez cette langue, %1$s la téléchargera partiellement dans votre cache au fur et à mesure de vos demandes de traduction.</string>
+  <string name="delete_language_file_dialog_message">Si vous supprimez cette langue, %1$s téléchargera des langues partielles dans votre cache au fur et à mesure de vos demandes de traduction.</string>
   <!--
     Title for the dialog used by the translations feature to confirm deleting all languages file.
     The dialog will be presented when the user requests deletion of all languages file.
@@ -3907,6 +3941,10 @@
   <string name="protection_panel_permissions_title">Autorisations</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Connexion sécurisée</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Certificat émis pour\u00a0:</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">Marque de confiance de l’Union européenne</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4161,7 +4199,7 @@
   -->
   <string name="debug_drawer_addresses_title">Adresses</string>
   <!-- The title of the section header for the list of debug locales that can be enabled and disabled. -->
-  <string name="debug_drawer_addresses_debug_locales_header">Déboguer les locales à activer</string>
+  <string name="debug_drawer_addresses_debug_locales_header">Locales de débogage à activer</string>
   <!-- The title of the header for the section for managing addresses. -->
   <string name="debug_drawer_addresses_management_header">Gérer les adresses</string>
   <!-- The title of the button in the debug drawer for adding a new address. -->
@@ -4567,6 +4605,8 @@
   <string name="collections_migration_homepage_card_message">Il existe un moyen plus simple d’organiser vos onglets</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Afficher mes groupes d’onglets</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Fermer</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Activer l’intégration de Google Lens</string>
   <!-- Lens image search button content description -->
@@ -4594,7 +4634,7 @@
   <!-- Description for the Google Lens Search Settings page feature toggle -->
   <string name="search_settings_google_lens_description">Envoie des images et des photos à Google pour effectuer une recherche visuelle.</string>
   <!-- Caption shown under the Google Lens toggle clarifying when the feature is available -->
-  <string name="preferences_google_lens_availability_caption">Disponible uniquement si Google est activé ci-dessus et défini comme moteur de recherche principal lors de la navigation.</string>
+  <string name="preferences_google_lens_availability_caption">Disponible uniquement si Google est activé ci-dessus et qu’il est le moteur de recherche actif lors de la navigation.</string>
   <!-- Content description for the Google Lens half of the camera mode toggle -->
   <string name="lens_camera_mode_lens">Google Lens</string>
   <!-- Content description for the QR scanner half of the camera mode toggle -->

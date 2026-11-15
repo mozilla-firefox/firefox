@@ -9,8 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">बुकमार्क इंपोर्ट किए जा रहे हैं</string>
-  <!-- Description for the bookmarks import loading dialog. -->
+  <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">इस स्क्रीन को खुला रखें। इसमें बस कुछ सेकंड लगेंगे।</string>
-  <!-- Label for the cancel action on the bookmarks import loading dialog. -->
+  <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_cancel">कैंसिल करें</string>
 </resources>

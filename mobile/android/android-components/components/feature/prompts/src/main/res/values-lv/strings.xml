@@ -7,12 +7,16 @@
 -->
 
 <resources>
+  <!-- Text for the title of an authentication dialog. -->
+  <string name="mozac_feature_prompt_sign_in">Pieteikties</string>
   <!-- Text of a confirm button in dialog requesting to open a new window. -->
   <string name="mozac_feature_prompts_allow">Atļaut</string>
   <!-- Title of the dialog shown when a user is leaving a website and there is still data not saved yet. -->
   <string name="mozac_feature_prompt_before_unload_dialog_title">Vai tiešām?</string>
   <!-- Continue button label for WebAuthn related origin prompt. -->
   <string name="webauthn_continue">Turpināt</string>
+  <!-- Title of an account picker dialog for identity credentials. The %1$s will be replaced with the name of the provider -->
+  <string name="mozac_feature_prompts_identity_credentials_choose_account_for_provider">Pieteikties ar %1$s kontu</string>
   <!-- Text for the positive button of the Identity Credential dialogs. -->
   <string name="mozac_feature_prompts_identity_credentials_continue">Turpināt</string>
 </resources>

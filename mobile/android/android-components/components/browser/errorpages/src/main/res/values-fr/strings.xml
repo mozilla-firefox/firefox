@@ -80,7 +80,7 @@
   <!-- The document title and heading of the error page shown when the browser gets stuck in an infinite loop when loading a website. -->
   <string name="mozac_browser_errorpages_redirect_loop_title">La page n’est pas redirigée correctement</string>
   <!-- The error message shown when the browser gets stuck in an infinite loop when loading a website. -->
-  <string name="mozac_browser_errorpages_redirect_loop_message"><![CDATA[<p>Le navigateur a arrêté d’attendre une réponse du site. Le site crée une redirection de telle sorte que la requête ne peut jamais aboutir.</p>\n<ul>\n<li>Avez-vous désactivé ou bloqué les cookies nécessaires pour ce site\u00a0?</li>\n<li> Si le problème n’est pas résolu en acceptant les cookies de ce site, il s’agit probablement d’un problème de configuration du serveur et non de votre appareil.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_redirect_loop_message"><![CDATA[<p>Le navigateur a cessé d’essayer de récupérer l’élément demandé. Le site crée une redirection de telle sorte que la requête ne peut jamais aboutir.</p>\n<ul>\n<li>Avez-vous désactivé ou bloqué les cookies nécessaires pour ce site\u00a0?</li>\n<li> Si le problème n’est pas résolu en acceptant les cookies de ce site, il s’agit probablement d’un problème de configuration du serveur et non de votre appareil.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when a website cannot be loaded because the browser is in offline mode. -->
   <string name="mozac_browser_errorpages_offline_title">Mode hors connexion</string>
   <!-- The error message shown when a website cannot be loaded because the browser is in offline mode. -->

@@ -464,11 +464,15 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Pas ara</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Passar</string>
+  <string name="nova_onboarding_skip_button">Passar</string>
   <!-- Terms of use (ToU) onboarding body line three link text for nova_onboarding_tou_body_line_3. -->
   <string name="nova_onboarding_tou_body_line_3_link_text">Gerir los paramètres</string>
   <!-- Marketing onboarding primary button text. 'Firefox' is intentionally hardcoded. -->
   <string name="nova_onboarding_marketing_primary_button_text" tools:ignore="BrandUsage,UnusedResources">Ajudar Firefox</string>
+  <!-- Notifications onboarding title. 'Firefox' is intentionally hardcoded. -->
+  <string name="nova_onboarding_notifications_title" tools:ignore="BrandUsage,UnusedResources">Las notificacions vos ajudan a demorar en seguretat amb Firefox</string>
+  <!-- Notifications onboarding subtitle. 'Firefox' is intentionally hardcoded. -->
+  <string name="nova_onboarding_notifications_subtitle" tools:ignore="BrandUsage,UnusedResources">Descobrissètz las darrièras foncionalitats de confidencialitat de Firefox per èsser totjorn al fial de las mesuras per vos protegir.</string>
   <!-- Notifications onboarding button. -->
   <string name="nova_onboarding_notifications_button">Activar las notificacions</string>
   <!-- App icon onboarding title. -->
@@ -499,8 +503,12 @@
   <string name="preferences_category_general">General</string>
   <!-- Preference category for all links about Fenix -->
   <string name="preferences_category_about">A prepaus</string>
+  <!-- Preference category for settings related to changing the default search engine -->
+  <string name="preferences_category_select_default_search_engine_2">Motor de recèrca per defaut per la navegacion normala</string>
   <!-- Preference category for settings related to changing the private browsing search engine -->
   <string name="preferences_category_select_private_search_engine">Motor de recèrca per defaut per la navegacion privada</string>
+  <!-- Option to set the private browsing mode to use the normal default search engine -->
+  <string name="search_engine_use_default">Utilizar lo meteis motor de recèrca que la navegacion normala</string>
   <!-- Preference for settings related to managing search shortcuts for the quick search menu -->
   <string name="preferences_manage_search_shortcuts_2">Gerir los motors de recèrcas alternatius</string>
   <!-- Summary for preference for settings related to managing search shortcuts for the quick search menu -->
@@ -1269,6 +1277,8 @@
   <string name="pwa_site_controls_title_private">%1$s (mòde privat)</string>
   <!-- Title for introducing tab groups via an onboarding card shown in the tab manager. -->
   <string name="tab_group_onboarding_item_title">Crear un grop d’onglets</string>
+  <!-- Description for tab groups onboarding shown in the tab manager when in grid view. -->
+  <string name="tab_group_onboarding_grid_item_description">Fasètz lisar un onglet sus un autre per crear un grop.</string>
   <!-- Description for tab groups onboarding shown in the tab manager when in list view. -->
   <string name="tab_group_onboarding_list_item_description">Seleccionatz mantun onglet per crear un grop.</string>
   <!-- The description displayed on the tab groups page when no tab groups are open -->
@@ -1896,6 +1906,8 @@
     Name of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app.
   -->
   <string name="notification_privacy_report_channel_name">Rapòrt de confidencialitat</string>
+  <!-- Headline text of the weekly privacy report notification for when no trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
+  <string name="notification_privacy_report_headline_no_trackers">%1$s bloca los elements de seguiments mentre que navegatz. Los veiretz aicí.</string>
   <!--
     Survey
 

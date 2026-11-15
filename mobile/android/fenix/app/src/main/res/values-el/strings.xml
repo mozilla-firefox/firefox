@@ -186,6 +186,10 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Προσαρμογή μενού</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Επαναφορά</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Ακύρωση</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Πίσω</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -303,6 +307,8 @@
   <string name="browser_menu_webcompat_reporter_2">Αναφορά προβληματικού ιστοτόπου</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Προσθήκη σε ομάδα</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Μετακίνηση σε ομάδα</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Μεταφράστηκε</string>
   <!-- Browser menu label for the print feature -->
@@ -387,6 +393,10 @@
   <string name="ai_controls_voice_search_title">Φωνητική αναζήτηση</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Ο ήχος μετατρέπεται σε κείμενο από τις υπηρεσίες ομιλίας της Google.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Ακρόαση σελίδας</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Η συσκευή σας ενδέχεται να χρησιμοποιήσει τεχνητή νοημοσύνη για την εκφώνηση. Το κείμενο και ο ήχος παραμένουν ιδιωτικά.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Αποκλεισμός βελτιώσεων ΤΝ;</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -546,7 +556,7 @@
   <!-- "Not now" onboarding button. -->
   <string name="nova_onboarding_negative_button">Όχι τώρα</string>
   <!-- "Skip" onboarding button. -->
-  <string name="nova_onboarding_skip_button" tools:ignore="UnusedResources">Παράλειψη</string>
+  <string name="nova_onboarding_skip_button">Παράλειψη</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">Ετοιμαστείτε για ελεύθερη περιήγηση</string>
   <!-- Terms of use (ToU) onboarding subtitle. -->
@@ -586,6 +596,10 @@
   <string name="nova_onboarding_sync_subtitle">Λάβετε αστραπιαία σελιδοδείκτες, κωδικούς πρόσβασης και πολλά άλλα σε οποιαδήποτε συσκευή. Τα προσωπικά σας δεδομένα παραμένουν ασφαλή με την κρυπτογράφηση.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Έναρξη συγχρονισμού</string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Σάρωση κωδικού σύζευξης</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Σύνδεση με email</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Βοηθήστε μας να δημιουργήσουμε ένα καλύτερο διαδίκτυο</string>
   <!--
@@ -715,6 +729,8 @@
   <string name="preferences_search">Αναζήτηση</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Μηχανές αναζήτησης</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Προσθήκη αναζήτησης στην αρχική οθόνη</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Γραφικό στοιχείο αρχικής οθόνης</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -967,6 +983,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Η συλλογή επεκτάσεων τροποποιήθηκε. Τερματισμός εφαρμογής για εφαρμογή των αλλαγών…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Αφαίρεση του «%1$s»;</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Η επέκταση και οι ρυθμίσεις της θα αφαιρεθούν από αυτήν τη συσκευή.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Αφαίρεση</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Ακύρωση</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1131,6 +1159,12 @@
   <string name="preferences_sync_category">Επιλέξτε τι θα συγχρονίζεται</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Συγχρονισμένα δεδομένα</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Συγχρονισμός συσκευής</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Έχει δημιουργηθεί αντίγραφο ασφαλείας των δεδομένων σας και είναι διαθέσιμα στις συγχρονισμένες συσκευές.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Χρησιμοποιούνται αποθηκευμένα δεδομένα του λογαριασμού %1$s σας.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Διαχείριση δεδομένων προς συγχρονισμό με όλες τις συνδεδεμένες συσκευές</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1252,6 +1286,12 @@
   <string name="preferences_sync_sign_in_to_reconnect">Συνδεθείτε για επανασύνδεση</string>
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Αφαίρεση λογαριασμού</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Σύνδεση</string>
   <!--
     Pairing Feature strings
 
@@ -2492,6 +2532,8 @@
   <string name="snackbar_private_tab_closed">Η ιδιωτική καρτέλα έκλεισε</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">ΑΝΑΙΡΕΣΗ</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Προβολή</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3881,6 +3923,8 @@
   <string name="protection_panel_privacy_and_security_settings_2">Ρυθμίσεις απορρήτου</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Δικαιώματα</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Ασφαλής σύνδεση</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -4458,6 +4502,8 @@
   <string name="wrex_widget_match_suspended">Διακόπηκε</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Αναβλήθηκε</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Ανανέωση</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Αποτελέσματα</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4466,19 +4512,57 @@
   <string name="wrex_widget_wallpapers">Ταπετσαρίες</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Αφαίρεση γραφικού στοιχείου</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">Τελικό</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Ημίχρονο</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">Παράταση</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Πέναλτι</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">Περισσότερες επιλογές</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s εναντίον %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, ζωντανός αγώνας</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, ζωντανά</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Παρελθών χρόνος σε λεπτά: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, σελίδα %2$d από %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Φαίνεται ότι είστε εκτός σύνδεσης</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Ελέγξτε τη σύνδεσή σας στο διαδίκτυο και δοκιμάστε ξανά.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Δεν είναι δυνατή η εμφάνιση πληροφοριών αγώνα αυτήν τη στιγμή</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Δοκιμάστε να κάνετε ανανέωση ή επιστρέψτε αργότερα.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Δεν είναι δυνατή η εμφάνιση αποτελεσμάτων αυτήν τη στιγμή</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Η ομάδα δεν έχει καθοριστεί ακόμη</string>
   <!--
     Privacy notice homepage banner
 
@@ -4501,6 +4585,8 @@
   <string name="collections_migration_homepage_card_message">Υπάρχει ένας πιο απλός τρόπος οργάνωσης των καρτελών σας</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Προβολή ομάδων καρτελών</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Κλείσιμο</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Ενεργοποίηση της ενσωμάτωσης του Google Lens</string>
   <!-- Lens image search button content description -->

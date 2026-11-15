@@ -25,7 +25,7 @@
     When an add-on requires access to more than 4 domains, for example the add-on requires access for 5 domains. We will show the first 4 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description,
     then we will show another collapsed entry saying "Access your data on another domain.
   -->
-  <string name="mozac_feature_addons_permissions_one_extra_domain_description_2">Accéder aux données d’un autre domaine</string>
+  <string name="mozac_feature_addons_permissions_one_extra_domain_description_2">Accéder à vos données sur d’autres domaines</string>
   <!--
     When an add-on requires access to more than 4 domains, for example the add-on requires access for 6 domains. We will show the first 4 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description,
     then we will show another collapsed entry saying "Access your data on other domains".
@@ -145,7 +145,7 @@
   <!-- Description for the "userScripts" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
   <string name="mozac_feature_addons_permissions_user_scripts_description_for_update">Autoriser les scripts tiers non vérifiés à accéder à vos données.</string>
   <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Permettre aux outils de développement d’accéder à vos données dans les onglets ouverts</string>
+  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Permettre aux outils de développement d’accéder à vos données dans les onglets ouverts.</string>
   <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
   <string name="mozac_feature_addons_permissions_one_site_description_for_update">Accéder à vos données pour %1$s.</string>
   <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
@@ -154,12 +154,12 @@
     When an add-on requires access to more than 2 domains, for example the add-on requires access for 3 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
     then we will show another collapsed entry saying "Access your data on another domain.".
   -->
-  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">Accéder aux données d’un autre domaine.</string>
+  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">Accéder à vos données sur d’autres domaines.</string>
   <!--
     When an add-on requires access to more than 2 domains, for example the add-on requires access for 4 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
     then we will show another collapsed entry saying "Access your data on other domains.".
   -->
-  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">Accéder aux données d’autres domaines.</string>
+  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">Accéder à vos données sur d’autres domaines.</string>
   <!--
     When an add-on requires access to more than 2 sites, for example the add-on requires access for 3 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
     then we will show another collapsed entry saying "Access your data on another site.".
@@ -315,7 +315,7 @@
   <!-- Title of confirmation dialog for updating an extension that needs new permissions. %1$s is the name of the extension. -->
   <string name="mozac_feature_addons_updater_permissions_dialog_title">%1$s demande de nouveaux paramètres pour être mis à jour</string>
   <!-- Message below the title of the confirmation dialog for updating an extension that needs new permissions. The words "Cancel" and "update" should match the translations used in mozac_feature_addons_updater_permissions_dialog_cancel_button and mozac_feature_addons_updater_permissions_dialog_update_button. -->
-  <string name="mozac_feature_addons_updater_permissions_dialog_description">Annulez pour conserver la version et les paramètres actuels, mettez à jour pour obtenir la nouvelle version et approuver les changements.</string>
+  <string name="mozac_feature_addons_updater_permissions_dialog_description">Annulez pour conserver la version et les paramètres actuels ou mettez à jour pour obtenir la nouvelle version et approuver les changements.</string>
   <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
   <string name="mozac_feature_addons_updater_permissions_dialog_update_button">Mettre à jour</string>
   <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->

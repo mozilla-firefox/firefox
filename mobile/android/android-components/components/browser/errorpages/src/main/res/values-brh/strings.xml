@@ -8,7 +8,11 @@
 
 <resources>
   <!-- The button that appears at the bottom of an error page. -->
-  <string name="mozac_browser_errorpages_page_refresh">پدا واراس خل</string>
+  <string name="mozac_browser_errorpages_page_refresh">پدا واراس خلبو</string>
+  <!-- A link, shown after no archived copy was found, that searches the web for the page instead. -->
+  <string name="mozac_browser_errorpages_archive_search_web">ویب اے پٹبو.</string>
+  <!-- A link, shown after the archive service could not be reached, that retries the lookup. -->
+  <string name="mozac_browser_errorpages_archive_retry">پدا واراس.</string>
   <!-- The document title and heading of an error page shown when a website cannot be loaded for an unknown reason. -->
   <string name="mozac_browser_errorpages_generic_title">درخواست پورہ مننگ کپک</string>
   <!-- The error message shown when a website cannot be loaded for an unknown reason. -->
@@ -19,8 +23,16 @@
   <string name="mozac_browser_errorpages_security_bad_cert_accept_temporary">خطرہ ارف و مونی ان</string>
   <!-- The text shown inside the advanced options button used to go back. It's only shown if the user has expanded the advanced options. -->
   <string name="mozac_browser_errorpages_security_bad_hsts_cert_back">پدی ان</string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_unknown_host_title">ویب ڈس ملےتو</string>
+  <!-- In the example, the two URLs in markup do not need to be translated. -->
+  <string name="mozac_browser_errorpages_unknown_host_message"><![CDATA[<p>ویبگشٹ کروک ایتوکا ویبڈس نا ہوسٹ سرور اے پٹنگ کتو۔</p>\n<ul>\n<li>ویبڈس اے ٹائپنگ نا ردی تے کن ہربو، دنکہ <strong>www</strong>.example.com نا جاگہ غا <strong>ww</strong>.example.com۔</li>\n<li>اگہ ہچو پنہ ئس لوڈ مفک، تینا ڈیوائس نا ڈیٹا یا Wi-Fi کنیکژن اے ہربو۔</li>\n</ul>]]></string>
   <!-- Text that will show up on the button at the bottom of the error page -->
   <string name="mozac_browser_errorpages_no_internet_refresh_button">وا لوڈ کہ</string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_file_not_found_title">فائل ملےتو</string>
+  <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
+  <string name="mozac_browser_errorpages_httpsonly_button">HTTP سائٹ اے برجا کبو</string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->
   <string name="mozac_browser_errorpages_httpsonly_back">پدی انبو (Recommended)</string>
 </resources>
