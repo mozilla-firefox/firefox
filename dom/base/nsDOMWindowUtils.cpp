@@ -48,6 +48,7 @@
 #include "mozilla/dom/UserActivation.h"
 #include "mozilla/layers/APZCCallbackHelper.h"
 #include "mozilla/layers/CompositorBridgeChild.h"
+#include "mozilla/layers/ImageBridgeChild.h"
 #include "mozilla/layers/PCompositorBridgeTypes.h"
 #include "mozilla/layers/TouchActionHelper.h"
 #include "mozilla/media/MediaUtils.h"
@@ -426,6 +427,13 @@ nsDOMWindowUtils::GetDocumentMetadata(const nsAString& aName,
 NS_IMETHODIMP
 nsDOMWindowUtils::UpdateLayerTree() {
   FlushLayoutWithoutThrottledAnimations();
+  // Some frames, e.g. those of an OffscreenCanvas or a video, are sent over
+  // ImageBridge rather than in the layer transaction. Make sure they have been
+  // sent before the transaction below, which the compositor waits on.
+  if (RefPtr<layers::ImageBridgeChild> imageBridge =
+          layers::ImageBridgeChild::GetSingleton()) {
+    imageBridge->WaitFlushTasks();
+  }
   if (RefPtr<PresShell> ps = GetPresShell()) {
     nsAutoScriptBlocker scriptBlocker;
     RefPtr renderer = ps->GetWindowRenderer();
