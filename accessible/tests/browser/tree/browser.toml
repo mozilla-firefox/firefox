@@ -51,6 +51,8 @@ skip-if = [
 
 ["browser_shadowdom.js"]
 
+["browser_table.js"]
+
 ["browser_test_aria_hidden.js"]
 
 ["browser_test_aria_hidden_iframe.js"]
