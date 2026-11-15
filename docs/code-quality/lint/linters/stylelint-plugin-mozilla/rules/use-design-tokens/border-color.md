@@ -82,73 +82,8 @@ consistency.
 }
 ```
 
-The rule also allows these non-token values:
-
-```css
-.transparent-border-color {
-  border-color: transparent;
-}
-```
-
-```css
-.current-border-color {
-  border-color: currentColor;
-}
-```
-
-```css
-.white-border-color {
-  border-color: white;
-}
-```
-
-```css
-.black-border-color {
-  border-color: black;
-}
-```
-
-```css
-.inherited-border-color {
-  border-color: inherit;
-}
-```
-
-```css
-.initial-border-color {
-  border-color: initial;
-}
-```
-
-```css
-.revert-border-color {
-  border-color: revert;
-}
-```
-
-```css
-.revert-layer-border-color {
-  border-color: revert-layer;
-}
-```
-
-```css
-.unset-border-color {
-  border-color: unset;
-}
-```
-
-```css
-.border-none {
-  border: none;
-}
-```
-
-```css
-.border-zero {
-  border: 0;
-}
-```
+The rule also allows the non-token values listed for
+{ref}`use-design-tokens-border-color` in the checked properties.
 
 This rule also allows base color tokens, as long as they are defined in a local custom property.
 
@@ -198,8 +133,9 @@ Functions that use or modify base color tokens are also allowed
 
 ## Autofix functionality
 
-This rule can automatically fix some violations by replacing hex color values with
-appropriate color names. Examples of autofixable violations:
+This rule can automatically fix some violations by replacing hex color values
+with appropriate color names. {ref}`use-design-tokens-border-color` in the
+checked properties lists every value it fixes. For example:
 
 ```css
 /* Before */

@@ -226,6 +226,8 @@ stylelint-plugin-mozilla:
         files-changed:
             - 'tools/lint/stylelint/stylelint-plugin-mozilla/**'
             - toolkit/themes/shared/design-system/dist/tokens-table.mjs
+            - toolkit/themes/shared/design-system/dist/semantic-categories.mjs
+            - docs/code-quality/lint/linters/stylelint-plugin-mozilla/rules/use-design-tokens/checked-properties.md
     fetches:
         toolchain:
             - linux64-node

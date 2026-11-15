@@ -81,37 +81,8 @@ button:hover {
 }
 ```
 
-The rule also allows these non-token values:
-
-```css
-.transparent-background-color {
-  background-color: transparent;
-}
-```
-
-```css
-.inherited-background-color {
-  background-color: inherit;
-}
-```
-
-```css
-.unset-background-color {
-  background-color: unset;
-}
-```
-
-```css
-.initial-background-color {
-  background-color: initial;
-}
-```
-
-```css
-.current-background-color {
-  background-color: currentColor;
-}
-```
+The rule also allows the non-token values listed for
+{ref}`use-design-tokens-background-color` in the checked properties.
 
 This rule also allows base color tokens, as long as they are defined in a local custom property.
 
@@ -161,8 +132,9 @@ Functions that use or modify base color tokens are also allowed
 
 ## Autofix functionality
 
-This rule can automatically fix some violations by replacing hex color values with
-appropriate color names. Examples of autofixable violations:
+This rule can automatically fix some violations by replacing hex color values
+with appropriate color names. {ref}`use-design-tokens-background-color` in the
+checked properties lists every value it fixes. For example:
 
 ```css
 /* Before */

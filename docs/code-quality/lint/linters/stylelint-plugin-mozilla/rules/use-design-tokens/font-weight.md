@@ -118,60 +118,14 @@ with appropriate design tokens where possible.
 }
 ```
 
-The rule also allows these non-token values:
-
-```css
-.normal-text {
-  font-weight: normal;
-}
-```
-
-```css
-.inherited-text {
-  font-weight: inherit;
-}
-```
-
-```css
-.initial-text {
-  font-weight: initial;
-}
-```
-
-```css
-.revert-text {
-  font-weight: revert;
-}
-```
-
-```css
-.revert-layer-text {
-  font-weight: revert-layer;
-}
-```
-
-```css
-.unset-text {
-  font-weight: unset;
-}
-```
+The rule also allows the non-token values listed for
+{ref}`use-design-tokens-font-weight` in the checked properties.
 
 ## Autofix functionality
 
 This rule can automatically fix some violations by replacing values with
-appropriate design tokens:
-
-- `200` → `normal`
-- `300` → `normal`
-- `400` → `normal`
-- `lighter` → `normal`
-- `500` → `var(--font-weight-semibold)`
-- `510` → `var(--font-weight-semibold)`
-- `600` → `var(--font-weight-semibold)`
-- `700` → `var(--font-weight-bold)`
-- `800` → `var(--font-weight-bold)`
-- `bold` → `var(--font-weight-bold)`
-- `bolder` → `var(--font-weight-bold)`
+appropriate design tokens. {ref}`use-design-tokens-font-weight` in the checked
+properties lists every value it fixes.
 
 Examples of autofixable violations:
 
