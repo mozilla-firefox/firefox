@@ -100,9 +100,10 @@ void ChannelMediaDecoder::ResourceCallback::NotifyDataArrived() {
     return;
   }
 
-  mDecoder->DownloadProgressed();
+  RefPtr<ChannelMediaDecoder> decoder = mDecoder;
+  decoder->DownloadProgressed();
 
-  if (mTimerArmed) {
+  if (!mDecoder || mTimerArmed) {
     return;
   }
   // In situations where these notifications come from stochastic network
@@ -391,6 +392,9 @@ void ChannelMediaDecoder::DownloadProgressed() {
   MOZ_DIAGNOSTIC_ASSERT(!IsShutdown());
 
   GetOwner()->DownloadProgressed();
+  if (IsShutdown()) {
+    return;
+  }
 
   using StatsPromise = MozPromise<MediaStatistics, bool, true>;
   InvokeAsync(GetStateMachine()->OwnerThread(), __func__,
