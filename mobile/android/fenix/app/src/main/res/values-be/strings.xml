@@ -1568,6 +1568,8 @@
   <string name="webcompat_reporter_reason_account2">Не магу ўвайсці або зарэгістравацца</string>
   <!-- Broken site reason text for site asked to turn off ad blocker -->
   <string name="webcompat_reporter_reason_turn_off_adblocker">Сайт запытаў адключыць блакаванне рэкламы</string>
+  <!-- Broken site reason text for the site being deceptive -->
+  <string name="webcompat_reporter_reason_site_is_deceptive">Гэты сайт падманлівы</string>
   <!-- Broken site reason text for something else -->
   <string name="webcompat_reporter_reason_other">Нешта іншае</string>
   <!--
@@ -1641,6 +1643,8 @@
   <string name="bookmark_sort_menu_a_to_z">Сартаваць ад А да Я</string>
   <!-- Label for button to sort bookmarks in reverse alphabetical order in the bookmark sorting overflow menu. -->
   <string name="bookmark_sort_menu_z_to_a">Сартаваць ад Я да А</string>
+  <!-- Label for button to import bookmarks from file. -->
+  <string name="bookmark_import_menu_button">Імпартаваць з файла</string>
   <!-- Default name for the folder created when importing bookmarks from a file. -->
   <string name="bookmark_import_destination_default_name">Імпартаваныя закладкі</string>
   <!--
@@ -1673,6 +1677,8 @@
     Content description for the bookmark navigation bar back button
   -->
   <string name="bookmark_navigate_back_button_content_description">Перайсці назад</string>
+  <!-- Content description for the bookmark list new folder navigation bar button -->
+  <string name="bookmark_add_new_folder_button_content_description">Дадаць новую папку</string>
   <!-- Content description for the bookmark screen delete bookmark navigation bar button -->
   <string name="bookmark_delete_bookmark_content_description">Выдаліць закладку</string>
   <!-- Content description for the bookmark screen delete bookmark folder navigation bar button -->
@@ -2408,10 +2414,16 @@
   <string name="ip_protection_data_limit_value">Засталося %1$.1f ГБ з %2$.1f ГБ</string>
   <!-- Header for the browser VPN `location` section -->
   <string name="ip_protection_location_section">Месцазнаходжанне</string>
+  <!-- Label for the recommended automatic location option on the browser VPN settings screen -->
+  <string name="ip_protection_location_recommended_label">Рэкамендаваныя</string>
   <!-- Badge label shown in the menu item when the browser VPN is active -->
   <string name="preferences_ip_protection_on">Укл.</string>
   <!-- Badge label shown in the menu item when the browser VPN is off -->
   <string name="preferences_ip_protection_off">Выкл.</string>
+  <!-- Badge label shown in the menu item while the browser VPN is connecting -->
+  <string name="ip_protection_menu_connecting">Злучэнне…</string>
+  <!-- Badge label shown in the menu item when the browser VPN is paused -->
+  <string name="ip_protection_menu_paused">Прыпынена</string>
   <!-- Badge label shown in the menu item when the browser VPN has an error -->
   <string name="ip_protection_menu_error">Памылка</string>
   <!--
@@ -2421,6 +2433,10 @@
   <string name="ip_protection_menu_limit_reached">Дасягнуты ліміт %1$d ГБ</string>
   <!-- Label shown next to the browser protection icon in the address bar when the browser VPN is active -->
   <string name="ip_protection_toolbar_pill_label">VPN уключаны</string>
+  <!-- Accessibility description for the browser VPN pill in the address bar when the VPN has been activated -->
+  <string name="ip_protection_toolbar_pill_description">VPN актыўны.</string>
+  <!-- Label shown next to the browser protection icon in the address bar when the browser VPN turns off -->
+  <string name="ip_protection_toolbar_pill_label_off">VPN выключаны</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
   <string name="ip_protection_onboarding_not_now_button">Не зараз</string>
   <!--

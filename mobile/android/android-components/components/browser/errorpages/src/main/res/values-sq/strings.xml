@@ -9,6 +9,13 @@
 <resources>
   <!-- The button that appears at the bottom of an error page. -->
   <string name="mozac_browser_errorpages_page_refresh">Riprovoni</string>
+  <!--
+    The name of the Internet Archive service, shown as a link at the end of
+    mozac_browser_errorpages_archive_description.
+  -->
+  <string name="mozac_browser_errorpages_archive_wayback_machine">Wayback Machine</string>
+  <!-- The label shown on the archive button while the archived copy is being looked up. -->
+  <string name="mozac_browser_errorpages_archive_checking">Po kontrollohet Arkivi</string>
   <!-- The message shown when no archived copy of the unreachable page could be found. -->
   <string name="mozac_browser_errorpages_archive_not_found">S’u gjet version i arkivuar.</string>
   <!-- A link, shown after no archived copy was found, that searches the web for the page instead. -->

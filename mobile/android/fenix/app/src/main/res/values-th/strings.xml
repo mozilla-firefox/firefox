@@ -178,6 +178,10 @@
   <string name="recently_visited_menu_item_remove">ลบ</string>
   <!-- Content description for the button which navigates the user to show all of their history. -->
   <string name="past_explorations_show_all_content_description_2">แสดงการสำรวจที่ผ่านมาทั้งหมด</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">กลับค่าเดิม</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">ยกเลิก</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">ย้อนกลับ</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -781,6 +785,8 @@
   <string name="preferences_toolbar_select_shortcut">เลือกทางลัด</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">แก้ไขทางลัด</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">เมนู</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">ท่าทาง</string>
   <!-- Preference for settings related to visual options -->
@@ -857,6 +863,8 @@
   <string name="preferences_open_links_in_apps_ask">ถามก่อนเปิด</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">ไม่เลย</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">สื่อ</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">การจัดเก็บไฟล์</string>
   <!-- Preference title for downloads default location. -->
@@ -933,6 +941,10 @@
   <string name="customize_addon_collection_user_hint">เจ้าของชุดสะสม (ไอดีผู้ใช้)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">ชุดสะสมส่วนขยายได้ถูกแก้ไขแล้ว ออกจากแอปพลิเคชันเพื่อใช้การเปลี่ยนแปลง…</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">เอาออก</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">ยกเลิก</string>
   <!--
     Customize Home
 
@@ -1850,6 +1862,8 @@
   <string name="download_search_no_results_found">ไม่พบผลลัพธ์</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">เลือกทั้งหมด</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(ข้อมูล)</string>
   <!--
     Downloads Content Type Filters
 
@@ -2386,6 +2400,8 @@
   <string name="snackbar_private_tab_closed">ปิดแท็บส่วนตัวแล้ว</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">เลิกทำ</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">มุมมอง</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3103,6 +3119,10 @@
   <string name="credit_cards_warning_dialog_set_up_now">ตั้งค่าตอนนี้</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">ภายหลัง</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">ตั้งค่าตอนนี้</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">ยกเลิก</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">ปลดล็อกอุปกรณ์ของคุณ</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3735,6 +3755,10 @@
   <string name="protection_panel_privacy_and_security_settings_2">การตั้งค่าความเป็นส่วนตัว</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">การกำหนดสิทธิ์</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">การเชื่อมต่อปลอดภัย</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">ออกใบรับรองให้กับ:</string>
   <!--
     Description text for a dialog confirming whether the user wants to delete all data for current site.
     %s is a placeholder for the base domain of website.
@@ -4223,6 +4247,22 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">ที่นี่</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">สด</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">ล่าช้า</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">ถูกระงับ</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">เลื่อนออกไป</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">เรียกใหม่</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">ผลลัพธ์</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4234,6 +4274,8 @@
   <string name="privacy_notice_updated_homepage_message_privacy_notice" tools:ignore="UnusedResources">ประกาศความเป็นส่วนตัว</string>
   <!-- The second active link used in privacy_notice_updated_homepage_message -->
   <string name="privacy_notice_updated_homepage_message_learn_more" tools:ignore="UnusedResources">เรียนรู้เพิ่มเติม</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">ปิด</string>
   <!-- Lens image search button content description -->
   <string name="lens_search_content_description">ค้นหาด้วยรูปภาพ</string>
   <!-- Image context menu entry that sends the long-pressed image to Google Lens -->
@@ -4256,6 +4298,10 @@
   <string name="lens_camera_mode_qr">ตัวสแกน QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">ไม่พบคิวอาร์โค้ดในภาพ</string>
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">ยกเลิก</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">ลองอีกครั้ง</string>
   <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->
   <string name="lens_opt_out_try_it_now_button">ลองเลย</string>
   <!-- Button in the first-run Google Lens bottom sheet that leaves Google Lens without using it -->

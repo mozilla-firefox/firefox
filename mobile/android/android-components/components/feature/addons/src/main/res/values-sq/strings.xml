@@ -305,8 +305,16 @@
   <string name="mozac_feature_addons_install_addon_content_description_2">Instaloni %1$s</string>
   <!-- This is the label of a button to cancel an ongoing add-on installation. -->
   <string name="mozac_feature_addons_install_addon_dialog_cancel">Anuloje</string>
+  <!-- In list of installed extensions: displayed when the update for an extension requires changes to its permission settings. %1$s is the extension name. -->
+  <string name="mozac_feature_addons_update_requires_new_settings">%1$s lyp rregullime të reja për përditësim.</string>
+  <!-- In extension details screen: Banner message displayed when the update for the extension requires changes to its permission settings. -->
+  <string name="mozac_feature_addons_update_requires_new_settings_this_extension">Ky zgjerim lyp rregullime të reja që të përditësohet.</string>
   <!-- In list of installed extensions and extension details screens: Banner button displayed when the update for the extension requires changes to its permission settings. Clicking it opens an update confirmation dialog listing the required changes. -->
   <string name="mozac_feature_addons_update_review_changes_button">Shqyrtoni ndryshime</string>
+  <!-- Title of confirmation dialog for updating an extension that needs new permissions. %1$s is the name of the extension. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_title">%1$s lyp rregullime të reja që të përditësohet</string>
+  <!-- Message below the title of the confirmation dialog for updating an extension that needs new permissions. The words "Cancel" and "update" should match the translations used in mozac_feature_addons_updater_permissions_dialog_cancel_button and mozac_feature_addons_updater_permissions_dialog_update_button. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_description">Anulojeni, që të mbahet versioni juaj i tanishëm dhe rregullimet e tanishme, ose përditësojeni, për të marrë versionin dhe ri dhe miratuar ndryshimet.</string>
   <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
   <string name="mozac_feature_addons_updater_permissions_dialog_update_button">Përditësoje</string>
   <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->

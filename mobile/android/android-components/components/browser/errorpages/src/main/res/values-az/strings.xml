@@ -9,6 +9,8 @@
 <resources>
   <!-- The button that appears at the bottom of an error page. -->
   <string name="mozac_browser_errorpages_page_refresh">Təkrar Yoxla</string>
+  <!-- A link, shown after no archived copy was found, that searches the web for the page instead. -->
+  <string name="mozac_browser_errorpages_archive_search_web">İnternetdə axtar.</string>
   <!-- The document title and heading of an error page shown when a website cannot be loaded for an unknown reason. -->
   <string name="mozac_browser_errorpages_generic_title">İstək yerinə yetirilə bilmir</string>
   <!-- The error message shown when a website cannot be loaded for an unknown reason. -->
