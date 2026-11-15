@@ -71,7 +71,6 @@ def _ensure_android_package(
     package_relative_path,
     sdk_root,
     os_name,
-    os_arch,
     want_bootstrap,
     package_prefix,
     package_list_enum,
@@ -90,9 +89,7 @@ def _ensure_android_package(
     to_install = {pkg for pkg in packages if pkg.startswith(package_prefix)}
     ensure_android_packages(
         os_name,
-        os_arch,
         packages=to_install,
-        no_interactive=True,
         avd_manifest=avd_manifest,
     )
     return [full_path]
@@ -106,7 +103,7 @@ def _ensure_android_package(
 @imports(_from="mozboot.android", _import="CMDLINE_TOOLS_VERSION_STRING")
 @imports(_from="mozboot.android", _import="ensure_android_sdk")
 @imports(_from="mozboot.android", _import="get_sdk_path")
-@imports(_from="mozboot.android", _import="get_sdkmanager_tool_path")
+@imports(_from="mozboot.android", _import="get_android_cli_path")
 def android_sdk_root(value, android_os_info, toolchains_base_dir, want_bootstrap):
     if value:
         sdk_path = value[0]
@@ -115,7 +112,7 @@ def android_sdk_root(value, android_os_info, toolchains_base_dir, want_bootstrap
                 "The path you specified with --with-android-sdk (%s) is not "
                 "a directory" % sdk_path
             )
-        if not get_sdkmanager_tool_path(Path(sdk_path)).is_file():
+        if not get_android_cli_path(Path(sdk_path)).is_file():
             default_candidates = (
                 os.path.join(
                     toolchains_base_dir, f"android-sdk-{android_os_info.os_name}"
@@ -134,7 +131,7 @@ def android_sdk_root(value, android_os_info, toolchains_base_dir, want_bootstrap
                 )
             ensure_android_sdk(android_os_info.os_name, android_os_info.os_tag)
             sdk_path = str(get_sdk_path(android_os_info.os_name))
-            assert get_sdkmanager_tool_path(Path(sdk_path)).is_file()
+            assert get_android_cli_path(Path(sdk_path)).is_file()
         return sdk_path
 
     if not want_bootstrap("android-sdk"):
@@ -197,7 +194,6 @@ def android_build_tools(sdk_root, sdk_version, android_os_info, want_bootstrap):
         package_relative_path=os.path.join(prefix, sdk_version.build_tools_version),
         sdk_root=sdk_root,
         os_name=android_os_info.os_name,
-        os_arch=android_os_info.os_arch,
         want_bootstrap=want_bootstrap,
         package_prefix=prefix,
         package_list_enum=AndroidPackageList.ALL,
@@ -213,7 +209,6 @@ def android_platform_tools(sdk_root, android_os_info, want_bootstrap):
         package_relative_path=prefix,
         sdk_root=sdk_root,
         os_name=android_os_info.os_name,
-        os_arch=android_os_info.os_arch,
         want_bootstrap=want_bootstrap,
         package_prefix=prefix,
         package_list_enum=AndroidPackageList.ALL,
@@ -230,7 +225,6 @@ def android_platforms(sdk_root, sdk_version, android_os_info, want_bootstrap):
         package_relative_path=os.path.join(prefix, f"android-{version}"),
         sdk_root=sdk_root,
         os_name=android_os_info.os_name,
-        os_arch=android_os_info.os_arch,
         want_bootstrap=want_bootstrap,
         package_prefix=prefix,
         package_list_enum=AndroidPackageList.ALL,
@@ -248,7 +242,6 @@ def android_emulator(sdk_root, android_os_info, want_bootstrap, avd_manifest):
         package_relative_path=prefix,
         sdk_root=sdk_root,
         os_name=android_os_info.os_name,
-        os_arch=android_os_info.os_arch,
         want_bootstrap=want_bootstrap,
         package_prefix=prefix,
         package_list_enum=AndroidPackageList.EMULATOR,

@@ -5,9 +5,14 @@
 import pytest
 from mozunit import main
 
-from mozboot.android import ensure_gradle_jdk_installations
+from mozboot.android import (
+    AndroidPackageInstallError,
+    ensure_android_packages,
+    ensure_gradle_jdk_installations,
+)
 
 KEY = "org.gradle.java.installations.paths"
+PACKAGES = {"platform-tools", "build-tools;37.0.0"}
 
 
 @pytest.fixture
@@ -130,6 +135,65 @@ def test_handles_spaces_around_equals(run, gradle_props, jdk17, jdk17_posix):
     paths = read_paths(gradle_props)
     assert "/usr/lib/jvm/java-17" in paths
     assert jdk17_posix in paths
+
+
+@pytest.fixture
+def android_cli(tmp_path, monkeypatch):
+    calls = []
+
+    def check_call(args):
+        calls.append(args)
+        if "install" in args:
+            for package in args[args.index("install") + 1 :]:
+                if not package.startswith("--"):
+                    (tmp_path / package.replace(";", "/")).mkdir(parents=True)
+
+    monkeypatch.setattr("mozboot.android.get_sdk_path", lambda os_name: tmp_path)
+    monkeypatch.setattr("mozboot.android.subprocess.check_call", check_call)
+    monkeypatch.delenv("REPO_OS_OVERRIDE", raising=False)
+    return calls
+
+
+def test_install_without_platform_override(android_cli, tmp_path):
+    ensure_android_packages("linux", set(PACKAGES), list_packages=True)
+    install, listing = android_cli
+    assert f"--sdk={tmp_path}" in install
+    assert "--no-metrics" in install
+    assert "--force" in install
+    assert set(install[install.index("--force") + 1 :]) == PACKAGES
+    assert listing[-3:] == ["sdk", "list", "--all"]
+    assert not any(arg.startswith("--platform") for arg in install + listing)
+
+
+def test_install_with_platform_override(android_cli, monkeypatch):
+    monkeypatch.setenv("REPO_OS_OVERRIDE", "macosx_arm64")
+    ensure_android_packages("linux", set(PACKAGES), list_packages=True)
+    install, listing = android_cli
+    assert "--platform=macosx_arm64" in install
+    assert listing[-1] == "--platform=macosx_arm64"
+
+
+def test_install_adds_avd_system_image(android_cli):
+    image = "system-images;android-34;google_apis;x86_64"
+    ensure_android_packages(
+        "linux", set(PACKAGES), avd_manifest={"emulator_package": image}
+    )
+    assert image in android_cli[0]
+
+
+def test_install_fails_when_a_package_is_not_installed(
+    android_cli, monkeypatch, tmp_path
+):
+    def check_call(args):
+        android_cli.append(args)
+        (tmp_path / "platform-tools").mkdir(exist_ok=True)
+
+    monkeypatch.setattr("mozboot.android.subprocess.check_call", check_call)
+    with pytest.raises(
+        AndroidPackageInstallError, match=r"did not install: build-tools;37\.0\.0$"
+    ):
+        ensure_android_packages("linux", set(PACKAGES), list_packages=True)
+    assert android_cli[-1][-2:] == ["list", "--all"]
 
 
 if __name__ == "__main__":

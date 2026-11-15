@@ -69,7 +69,7 @@ We will install all required Android packages.
 ANDROID_SDK_TOO_OLD_UPDATE_IN_PLACE = """
 Looks like you have an outdated Android SDK installed at:
 %s
-I can update outdated Android SDKs to have the required 'sdkmanager' tool. If
+I can update outdated Android SDKs to have the required 'android' tool. If
 this fails, move it out of the way (or remove it entirely) and then run
 bootstrap again.
 """
@@ -77,8 +77,7 @@ bootstrap again.
 INSTALLING_ANDROID_PACKAGES = """
 We are now installing the following Android packages:
 %s
-You may be prompted to agree to the Android license. You may see some of
-output as packages are downloaded and installed.
+You may see some output as packages are downloaded and installed.
 """
 
 MOBILE_ANDROID_MOZCONFIG_TEMPLATE = """
@@ -115,6 +114,10 @@ Then restart your shell.
 
 
 class GetNdkVersionError(Exception):
+    pass
+
+
+class AndroidPackageInstallError(Exception):
     pass
 
 
@@ -284,15 +287,10 @@ def get_sdk_path(os_name: str) -> Path:
     )
 
 
-def get_sdkmanager_tool_path(sdk_path: Path) -> Path:
+def get_android_cli_path(sdk_path: Path) -> Path:
     # sys.platform is win32 even if Python/Win64.
-    sdkmanager = "sdkmanager.bat" if sys.platform.startswith("win") else "sdkmanager"
-
-    # We expect the |sdkmanager| tool to be at
-    # ~/.mozbuild/android-sdk-$OS_NAME/tools/cmdline-tools/$CMDLINE_TOOLS_VERSION_STRING/bin/sdkmanager # NOQA: E501
-    return (
-        sdk_path / "cmdline-tools" / CMDLINE_TOOLS_VERSION_STRING / "bin" / sdkmanager
-    )
+    android = "android.exe" if sys.platform.startswith("win") else "android"
+    return sdk_path / "cmdline-tools" / CMDLINE_TOOLS_VERSION_STRING / "bin" / android
 
 
 def get_avdmanager_tool_path(sdk_path: Path) -> Path:
@@ -380,10 +378,8 @@ def ensure_android(
 
     ensure_android_packages(
         os_name,
-        os_arch,
         packages=packages,
         avd_manifest=avd_manifest,
-        no_interactive=no_interactive,
         list_packages=list_packages,
     )
 
@@ -431,10 +427,10 @@ def ensure_android_sdk(os_name: str, os_tag: str):
     sdk_url = f"https://dl.google.com/android/repository/commandlinetools-{os_tag}-{CMDLINE_TOOLS_VERSION}_latest.zip"
 
     # We don't want to blindly overwrite, since we use the
-    # |sdkmanager| tool to install additional parts of the Android
+    # |android| tool to install additional parts of the Android
     # toolchain.  If we overwrite, we lose whatever Android packages
     # the user may have already installed.
-    if get_sdkmanager_tool_path(sdk_path).is_file():
+    if get_android_cli_path(sdk_path).is_file():
         print(ANDROID_SDK_EXISTS % sdk_path)
     else:
         if sdk_path.is_dir():
@@ -630,67 +626,42 @@ def get_android_packages(
 
 def ensure_android_packages(
     os_name: str,
-    os_arch: str,
     packages: Optional[set[str]],
     avd_manifest=None,
-    no_interactive=False,
     list_packages=False,
 ):
     """
-    Use the given sdkmanager tool (like 'sdkmanager') to install required
-    Android packages.
+    Use the Android CLI to install required Android packages.
     """
     if not packages:
         packages = get_android_packages(AndroidPackageList.ALL)
 
     sdk_path = get_sdk_path(os_name)
-    sdkmanager_tool = get_sdkmanager_tool_path(sdk_path=sdk_path)
+    android_cli = [
+        str(get_android_cli_path(sdk_path)),
+        "--no-metrics",
+        f"--sdk={sdk_path}",
+        "sdk",
+    ]
 
     if avd_manifest is not None:
         packages.add(avd_manifest["emulator_package"])
 
     print(INSTALLING_ANDROID_PACKAGES % "\n".join(packages))
-
-    # This tries to install all the required Android packages.  The user
-    # may be prompted to agree to the Android license.
-    args = [str(sdkmanager_tool)]
-    if os_name == "macosx" and os_arch == "arm64":
-        # Support for Apple Silicon is still in nightly
-        args.append("--channel=3")
-    if sys.platform.startswith("win"):
-        # sdkmanager.bat is a batch wrapper around the Android CLI, and cmd.exe
-        # splits unquoted arguments on ';'. The wrapper accepts '/' instead.
-        args.extend(package.replace(";", "/") for package in packages)
-    else:
-        args.extend(packages)
-
-    # sdkmanager needs JAVA_HOME
-    ensure_java(os_name, os_arch)
-    java_bin_path = get_java_bin_path(os_name, MOZBUILD_PATH)
-    env = os.environ.copy()
-    env["JAVA_HOME"] = str(java_bin_path.parent)
-
-    if not no_interactive:
-        subprocess.check_call(args, env=env)
-        suggest_platform_tools_path(packages, sdk_path)
-        return
-
-    # Flush outputs before running sdkmanager.
     sys.stdout.flush()
     sys.stderr.flush()
-    # Emulate yes.  For a discussion of passing input to check_output,
-    # see https://stackoverflow.com/q/10103551.
-    yes = "\n".join(["y"] * 100).encode("UTF-8")
-    proc = subprocess.Popen(args, stdin=subprocess.PIPE, env=env)
-    proc.communicate(yes)
-
-    retcode = proc.poll()
-    if retcode:
-        cmd = args[0]
-        e = subprocess.CalledProcessError(retcode, cmd)
-        raise e
+    repo_os = os.environ.get("REPO_OS_OVERRIDE")
+    platform = [f"--platform={repo_os}"] if repo_os else []
+    subprocess.check_call(
+        android_cli + ["install", "--force"] + platform + list(packages)
+    )
     if list_packages:
-        subprocess.check_call([str(sdkmanager_tool), "--list"], env=env)
+        subprocess.check_call(android_cli + ["list", "--all"] + platform)
+    missing = [p for p in packages if not (sdk_path / p.replace(";", "/")).exists()]
+    if missing:
+        raise AndroidPackageInstallError(
+            f"'android sdk install' did not install: {', '.join(sorted(missing))}"
+        )
 
     suggest_platform_tools_path(packages, sdk_path)
 
@@ -854,10 +825,8 @@ def main():
 
         ensure_android_packages(
             os_name,
-            os_arch,
             packages=packages,
             avd_manifest=get_avd_manifest(avd_manifest_path),
-            no_interactive=options.no_interactive,
             list_packages=options.list_packages,
         )
         return 0
