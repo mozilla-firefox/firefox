@@ -528,13 +528,16 @@ bool ScaledFontFontconfig::HasVariationSettings() {
                       ->GetFace();
 }
 
-already_AddRefed<UnscaledFont> UnscaledFontFontconfig::CreateFromFontDescriptor(
-    const uint8_t* aData, uint32_t aDataLength, uint32_t aIndex) {
-  if (aDataLength == 0) {
+bool UnscaledFontFontconfig::ValidateFontDescriptor(const uint8_t* aName,
+                                                    size_t aNameLength,
+                                                    nsCString& aResultName,
+                                                    uint32_t& aIndex) {
+  if (aNameLength == 0) {
     gfxWarning() << "Fontconfig font descriptor is truncated.";
-    return nullptr;
+    return false;
   }
-  nsCString path((const char*)aData, aDataLength);
+
+  nsCString path((const char*)aName, aNameLength);
 
   // Use the given pathname/index in a fontconfig lookup to confirm this is a
   // known font; if not, we'll use whatever fallback it provides instead.
@@ -547,8 +550,9 @@ already_AddRefed<UnscaledFont> UnscaledFontFontconfig::CreateFromFontDescriptor(
   FcPattern* match = FcFontMatch(nullptr, pattern, &result);
   FcPatternDestroy(pattern);
   if (!match || result != FcResultMatch) {
+    FcPatternDestroy(match);
     gfxWarning() << "FcFontMatch failed.";
-    return nullptr;
+    return false;
   }
 
   // Get the file and index that fontconfig returned, logging a warning if they
@@ -567,6 +571,19 @@ already_AddRefed<UnscaledFont> UnscaledFontFontconfig::CreateFromFontDescriptor(
   if (result == FcResultMatch && (uint32_t)index != (aIndex & 0xffff)) {
     gfxWarning() << "Font index " << aIndex << " invalid, using " << index;
     aIndex = index;
+  }
+
+  FcPatternDestroy(match);
+
+  aResultName = std::move(path);
+  return true;
+}
+
+already_AddRefed<UnscaledFont> UnscaledFontFontconfig::CreateFromFontDescriptor(
+    const uint8_t* aData, uint32_t aDataLength, uint32_t aIndex) {
+  nsCString path;
+  if (!ValidateFontDescriptor(aData, aDataLength, path, aIndex)) {
+    return nullptr;
   }
 
   return MakeAndAddRef<UnscaledFontFontconfig>(path.BeginReading(), aIndex);
