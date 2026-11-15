@@ -524,7 +524,6 @@ export const LinkPreviewModel = {
           modelRevision: "main",
           numContext,
           taskName: "llama-text-generation",
-          timeoutMS: -1,
           useMlock: false,
           useMmap: false,
           ...JSON.parse(lazy.config),
