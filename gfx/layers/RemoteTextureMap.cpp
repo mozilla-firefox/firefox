@@ -636,6 +636,11 @@ void RemoteTextureMap::RegisterTextureOwner(
   }
 
   mTextureOwners.emplace(key, std::move(owner));
+
+  auto itConsumers = mTextureOwnerConsumers.find(key);
+  if (itConsumers != mTextureOwnerConsumers.end()) {
+    itConsumers->second.mWasRegistered = true;
+  }
 }
 
 void RemoteTextureMap::KeepTextureDataAliveForTextureHostIfNecessary(
@@ -790,6 +795,29 @@ void RemoteTextureMap::UnregisterTextureOwners(
       RemoteTextureInfo(RemoteTextureId{0}, RemoteTextureOwnerId{0}, 0);
   for (auto& callback : renderingReadyCallbacks) {
     callback(info);
+  }
+}
+
+void RemoteTextureMap::ClearDestroyedProcess(const base::ProcessId aForPid) {
+  std::vector<UniquePtr<WaitingTextureOwner>>
+      releasingWaitingOwners;  // Release outside the monitor
+  {
+    MonitorAutoLock lock(mMonitor);
+
+    for (auto it = mWaitingTextureOwners.lower_bound(
+             std::pair(aForPid, RemoteTextureOwnerId{0}));
+         it != mWaitingTextureOwners.end() && it->first.first == aForPid;) {
+      releasingWaitingOwners.push_back(std::move(it->second));
+      it = mWaitingTextureOwners.erase(it);
+    }
+
+    // The pid may be reused by a new process, whose owners must not be
+    // mistaken for these.
+    for (auto it = mTextureOwnerConsumers.lower_bound(
+             std::pair(aForPid, RemoteTextureOwnerId{0}));
+         it != mTextureOwnerConsumers.end() && it->first.first == aForPid;) {
+      it = mTextureOwnerConsumers.erase(it);
+    }
   }
 }
 
@@ -1063,6 +1091,10 @@ bool RemoteTextureMap::WaitForRemoteTextureOwner(
         // If the context was lost, no further updates are expected.
         return false;
       }
+      if (IsTextureOwnerGone(lock, ownerId, forPid)) {
+        // The owner has already gone away, so it will never be pushed to.
+        return false;
+      }
       CVStatus status = mMonitor.Wait(timeout);
       if (status == CVStatus::Timeout) {
         return false;
@@ -1229,6 +1261,12 @@ RefPtr<TextureHost> RemoteTextureMap::GetOrCreateRemoteTextureHostWrapper(
 
   mRemoteTextureHostWrapperHolders.emplace(key, std::move(wrapperHolder));
 
+  auto& consumers = mTextureOwnerConsumers[std::pair(aForPid, aOwnerId)];
+  ++consumers.mWrapperCount;
+  if (GetTextureOwner(lock, aOwnerId, aForPid)) {
+    consumers.mWasRegistered = true;
+  }
+
   return wrapper;
 }
 
@@ -1254,6 +1292,14 @@ void RemoteTextureMap::UnregisterRemoteTextureHostWrapper(
     }
 
     mRemoteTextureHostWrapperHolders.erase(it);
+
+    auto itConsumers =
+        mTextureOwnerConsumers.find(std::pair(aForPid, aOwnerId));
+    if (itConsumers != mTextureOwnerConsumers.end() &&
+        --itConsumers->second.mWrapperCount == 0) {
+      mTextureOwnerConsumers.erase(itConsumers);
+    }
+
     mMonitor.Notify();
   }
 }
@@ -1265,8 +1311,15 @@ bool RemoteTextureMap::CheckRemoteTextureReady(
 
   MonitorAutoLock lock(mMonitor);
 
+  if (!mRemoteTextureHostWrapperHolders.count(
+          std::pair(aInfo.mForPid, aInfo.mTextureId))) {
+    // Nothing can use the remote texture any more.
+    return true;
+  }
+
   auto* owner = GetTextureOwner(lock, aInfo.mOwnerId, aInfo.mForPid);
-  if (aInfo.mWaitForRemoteTextureOwner && !owner) {
+  if (aInfo.mWaitForRemoteTextureOwner && !owner &&
+      !IsTextureOwnerGone(lock, aInfo.mOwnerId, aInfo.mForPid)) {
     // Remote texture owner is not registered yet. Waiting for remote texture
     // owner
 
@@ -1290,15 +1343,6 @@ bool RemoteTextureMap::CheckRemoteTextureReady(
 
   if (!owner || owner->mIsContextLost) {
     // Owner is already removed or context lost. No need to wait texture ready.
-    return true;
-  }
-
-  const auto key = std::pair(aInfo.mForPid, aInfo.mTextureId);
-  auto it = mRemoteTextureHostWrapperHolders.find(key);
-  if (it == mRemoteTextureHostWrapperHolders.end()) {
-    MOZ_ASSERT_UNREACHABLE("unexpected to be called");
-    gfxCriticalNoteOnce << "Remote texture does not exist id:"
-                        << uint64_t(aInfo.mTextureId);
     return true;
   }
 
@@ -1327,6 +1371,13 @@ bool RemoteTextureMap::WaitRemoteTextureReady(const RemoteTextureInfo& aInfo) {
                       owner->mWaitingTextureDataHolders.empty())) {
       if (owner && (owner->mIsContextLost || owner->mDeferUnregister)) {
         // If the context was lost, no further updates are expected.
+        return false;
+      }
+      if (IsTextureOwnerGone(lock, aInfo.mOwnerId, aInfo.mForPid) ||
+          !mRemoteTextureHostWrapperHolders.count(
+              std::pair(aInfo.mForPid, aInfo.mTextureId))) {
+        // The owner has already gone away, so it will never be pushed to, or
+        // nothing can use the remote texture any more.
         return false;
       }
       CVStatus status = mMonitor.Wait(timeout);
@@ -1477,6 +1528,16 @@ RemoteTextureMap::TextureOwner* RemoteTextureMap::GetTextureOwner(
     return nullptr;
   }
   return it->second.get();
+}
+
+bool RemoteTextureMap::IsTextureOwnerGone(const MonitorAutoLock& aProofOfLock,
+                                          const RemoteTextureOwnerId aOwnerId,
+                                          const base::ProcessId aForPid) {
+  if (GetTextureOwner(aProofOfLock, aOwnerId, aForPid)) {
+    return false;
+  }
+  auto it = mTextureOwnerConsumers.find(std::pair(aForPid, aOwnerId));
+  return it != mTextureOwnerConsumers.end() && it->second.mWasRegistered;
 }
 
 RemoteTextureMap::TextureDataHolder::TextureDataHolder(
