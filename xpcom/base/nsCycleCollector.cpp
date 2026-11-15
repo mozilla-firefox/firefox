@@ -2782,12 +2782,10 @@ MOZ_NEVER_INLINE void nsCycleCollector::MarkRoots(SliceBudget& aBudget) {
 ////////////////////////////////////////////////////////////////////////
 
 MOZ_NEVER_INLINE static void FloodBlackNode(uint32_t& aWhiteNodeCount,
-                                            bool& aFailed, PtrInfo* aPi) {
+                                            PtrInfo* aPi) {
   nsDeque<PtrInfo> queue;
   MOZ_RELEASE_ASSERT(aPi);
-  if (!queue.Push(aPi, fallible)) {
-    aFailed = true;
-  }
+  queue.Push(aPi);
 
   // Use a queue to match the breadth-first traversal used when we
   // built the graph, for hopefully-better locality.
@@ -2803,9 +2801,7 @@ MOZ_NEVER_INLINE static void FloodBlackNode(uint32_t& aWhiteNodeCount,
                               child_end = pi->LastChild();
            child != child_end; ++child) {
         MOZ_RELEASE_ASSERT(*child);
-        if (!queue.Push(*child, fallible)) {
-          aFailed = true;
-        }
+        queue.Push(*child);
       }
     }
   }
@@ -2818,7 +2814,6 @@ MOZ_NEVER_INLINE static void FloodBlackNode(uint32_t& aWhiteNodeCount,
 // over the WeakMaps, we must iterate over all of the WeakMaps again.
 void nsCycleCollector::ScanWeakMaps() {
   bool anyChanged;
-  bool failed = false;
   do {
     anyChanged = false;
     for (uint32_t i = 0; i < mGraph.mWeakMaps.Length(); i++) {
@@ -2836,29 +2831,24 @@ void nsCycleCollector::ScanWeakMaps() {
       MOZ_ASSERT(vColor != grey, "Uncolored weak map value");
 
       if (mColor == black && kColor != black && kdColor == black) {
-        FloodBlackNode(mWhiteNodeCount, failed, wm->mKey);
+        FloodBlackNode(mWhiteNodeCount, wm->mKey);
         anyChanged = true;
       }
 
       if (mColor == black && kColor == black && vColor != black) {
-        FloodBlackNode(mWhiteNodeCount, failed, wm->mVal);
+        FloodBlackNode(mWhiteNodeCount, wm->mVal);
         anyChanged = true;
       }
     }
   } while (anyChanged);
-
-  if (failed) {
-    MOZ_ASSERT(false, "Ran out of memory in ScanWeakMaps");
-    CC_TELEMETRY(_OOM, true);
-  }
 }
 
 // Flood black from any objects in the purple buffer that are in the CC graph.
 class PurpleScanBlackVisitor {
  public:
   PurpleScanBlackVisitor(CCGraph& aGraph, nsCycleCollectorLogger* aLogger,
-                         uint32_t& aCount, bool& aFailed)
-      : mGraph(aGraph), mLogger(aLogger), mCount(aCount), mFailed(aFailed) {}
+                         uint32_t& aCount)
+      : mGraph(aGraph), mLogger(aLogger), mCount(aCount) {}
 
   void Visit(const nsPurpleBufferEntry* aEntry) {
     MOZ_ASSERT(aEntry->mObject,
@@ -2889,14 +2879,13 @@ class PurpleScanBlackVisitor {
     if (pi->mColor == black) {
       return;
     }
-    FloodBlackNode(mCount, mFailed, pi);
+    FloodBlackNode(mCount, pi);
   }
 
  private:
   CCGraph& mGraph;
   RefPtr<nsCycleCollectorLogger> mLogger;
   uint32_t& mCount;
-  bool& mFailed;
 };
 
 // Objects that have been stored somewhere since the start of incremental graph
@@ -2914,9 +2903,8 @@ void nsCycleCollector::ScanIncrementalRoots() {
   // live during the current CC. We don't remove anything from the purple
   // buffer here, so these objects will be suspected and freed in the next CC
   // if they are garbage.
-  bool failed = false;
   PurpleScanBlackVisitor purpleScanBlackVisitor(mGraph, mLogger,
-                                                mWhiteNodeCount, failed);
+                                                mWhiteNodeCount);
   mPurpleBuf.VisitEntriesReentrant(purpleScanBlackVisitor);
   timeLog.Checkpoint("ScanIncrementalRoots::fix purple");
 
@@ -2987,15 +2975,10 @@ void nsCycleCollector::ScanIncrementalRoots() {
       mLogger->NoteIncrementalRoot((uint64_t)pi->mPointer);
     }
 
-    FloodBlackNode(mWhiteNodeCount, failed, pi);
+    FloodBlackNode(mWhiteNodeCount, pi);
   }
 
   timeLog.Checkpoint("ScanIncrementalRoots::fix nodes");
-
-  if (failed) {
-    NS_ASSERTION(false, "Ran out of memory in ScanIncrementalRoots");
-    CC_TELEMETRY(_OOM, true);
-  }
 }
 
 // Mark nodes white and make sure their refcounts are ok.
@@ -3042,18 +3025,12 @@ void nsCycleCollector::ScanWhiteNodes(bool aFullySynchGraphBuild) {
 // already had their children marked black, so there's no need to look at them
 // again. This pass may turn some white nodes to black.
 void nsCycleCollector::ScanBlackNodes() {
-  bool failed = false;
   NodePool::Enumerator nodeEnum(mGraph.mNodes);
   while (!nodeEnum.IsDone()) {
     PtrInfo* pi = nodeEnum.GetNext();
     if (pi->mColor == grey && pi->WasTraversed()) {
-      FloodBlackNode(mWhiteNodeCount, failed, pi);
+      FloodBlackNode(mWhiteNodeCount, pi);
     }
-  }
-
-  if (failed) {
-    NS_ASSERTION(false, "Ran out of memory in ScanBlackNodes");
-    CC_TELEMETRY(_OOM, true);
   }
 }
 
