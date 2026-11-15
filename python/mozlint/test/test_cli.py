@@ -151,24 +151,24 @@ def test_cli_run_with_wrong_linters(run, capfd):
     assert "Invalid linters given, run again using valid linters or no linters" in out
 
 
-def test_cli_run_with_stdin_filename(run, filedir, capfd, monkeypatch, tmp_path):
+def test_cli_run_with_stdin_filename(run, capfd, monkeypatch, tmp_path):
     for arg in ("bar.txt", "--workdir", "--outgoing", "--rev=abc"):
         with pytest.raises(SystemExit):
             run(["--stdin-filename=foo.txt", arg])
 
     capfd.readouterr()
     monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"foobar\n")))
-    run(["-l", "string", f"--stdin-filename={filedir}/foobar.py"])
+    run(["-l", "string", f"--stdin-filename={tmp_path}/foobar.py"])
     out, err = capfd.readouterr()
     assert out == "✖ 0 problems (0 errors, 0 warnings, 0 fixed)\n"
 
     monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"foobar\n")))
-    run(["-l", "string", f"--stdin-filename={filedir}/foobar.py", "--dump-stdin-file"])
+    run(["-l", "string", f"--stdin-filename={tmp_path}/foobar.py", "--dump-stdin-file"])
     out, err = capfd.readouterr()
     assert out == "foobar\n"
 
     monkeypatch.setattr("sys.stdin", io.TextIOWrapper(io.BytesIO(b"foobar\n")))
-    run(["-l", "string", f"--stdin-filename={filedir}/foobar.py", "--fix"])
+    run(["-l", "string", f"--stdin-filename={tmp_path}/foobar.py", "--fix"])
     out, err = capfd.readouterr()
     assert out == "foobar\n"
 
@@ -177,7 +177,7 @@ def test_cli_run_with_stdin_filename(run, filedir, capfd, monkeypatch, tmp_path)
     run([
         "-l",
         "string",
-        f"--stdin-filename={filedir}/foobar.py",
+        f"--stdin-filename={tmp_path}/foobar.py",
         "--dump-stdin-file",
         str(tmpfile),
     ])
