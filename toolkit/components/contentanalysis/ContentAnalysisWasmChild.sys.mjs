@@ -8,7 +8,7 @@
  */
 
 const SANDBOX_SCRIPT =
-  "resource://gre/modules/content-analysis-wasm-sandbox.js";
+  "moz-src:///toolkit/components/contentanalysis/content-analysis-wasm-sandbox.js";
 
 /**
  * Compiles and runs the DLP module in a null-principal sandbox.

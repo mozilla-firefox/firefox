@@ -17,7 +17,8 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
-  ContentAnalysisUtils: "resource://gre/modules/ContentAnalysisUtils.sys.mjs",
+  ContentAnalysisUtils:
+    "moz-src:///toolkit/components/contentanalysis/ContentAnalysisUtils.sys.mjs",
   DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
   DownloadSpamProtection:
     "moz-src:///browser/components/downloads/DownloadSpamProtection.sys.mjs",

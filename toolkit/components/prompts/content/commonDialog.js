@@ -14,7 +14,8 @@ const { AppConstants } = ChromeUtils.importESModule(
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  ContentAnalysisUtils: "resource://gre/modules/ContentAnalysisUtils.sys.mjs",
+  ContentAnalysisUtils:
+    "moz-src:///toolkit/components/contentanalysis/ContentAnalysisUtils.sys.mjs",
 });
 
 // imported by adjustableTitle.js loaded in the same context:

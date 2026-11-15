@@ -22,7 +22,8 @@ let lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
-  ContentAnalysisUtils: "resource://gre/modules/ContentAnalysisUtils.sys.mjs",
+  ContentAnalysisUtils:
+    "moz-src:///toolkit/components/contentanalysis/ContentAnalysisUtils.sys.mjs",
   Finder: "resource://gre/modules/Finder.sys.mjs",
   FinderParent: "resource://gre/modules/FinderParent.sys.mjs",
   PopupAndRedirectBlocker:

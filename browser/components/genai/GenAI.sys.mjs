@@ -17,7 +17,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   ASRouterTargeting: "resource:///modules/asrouter/ASRouterTargeting.sys.mjs",
   BrowserSearchTelemetry:
     "moz-src:///browser/components/search/BrowserSearchTelemetry.sys.mjs",
-  ContentAnalysisUtils: "resource://gre/modules/ContentAnalysisUtils.sys.mjs",
+  ContentAnalysisUtils:
+    "moz-src:///toolkit/components/contentanalysis/ContentAnalysisUtils.sys.mjs",
   E10SUtils: "resource://gre/modules/E10SUtils.sys.mjs",
   EveryWindow: "resource:///modules/EveryWindow.sys.mjs",
   NimbusFeatures: "resource://nimbus/ExperimentAPI.sys.mjs",

@@ -237,11 +237,6 @@ toolkit/components/backgroundtasks/BackgroundTasksManager.sys.mjs
 toolkit/components/backgroundtasks/BackgroundTasksUtils.sys.mjs
 toolkit/components/backgroundtasks/dbg-actors.js
 toolkit/components/content-classifier/ContentClassifierRemoteSettingsClient.sys.mjs
-toolkit/components/contentanalysis/ContentAnalysisUtils.sys.mjs
-toolkit/components/contentanalysis/ContentAnalysisWasmChild.sys.mjs
-toolkit/components/contentanalysis/ContentAnalysisWasmParent.sys.mjs
-toolkit/components/contentanalysis/ContentAnalysisWasmRunner.sys.mjs
-toolkit/components/contentanalysis/content-analysis-wasm-sandbox.js
 toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs
 toolkit/components/contentrelevancy/private/InputUtils.sys.mjs
 toolkit/components/crashes/CrashService.sys.mjs

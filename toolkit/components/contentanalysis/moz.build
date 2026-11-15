@@ -15,7 +15,7 @@ UNIFIED_SOURCES += [
     "WasmModuleBackend.cpp",
 ]
 
-EXTRA_JS_MODULES += [
+MOZ_SRC_FILES += [
     "content-analysis-wasm-sandbox.js",
     "ContentAnalysisUtils.sys.mjs",
     "ContentAnalysisWasmChild.sys.mjs",

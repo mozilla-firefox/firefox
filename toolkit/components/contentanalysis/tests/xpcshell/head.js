@@ -24,10 +24,12 @@ const WASM_PATH = "content_analysis_wasm.wasm";
 try {
   ChromeUtils.registerProcessActor("ContentAnalysisWasm", {
     parent: {
-      esModuleURI: "resource://gre/modules/ContentAnalysisWasmParent.sys.mjs",
+      esModuleURI:
+        "moz-src:///toolkit/components/contentanalysis/ContentAnalysisWasmParent.sys.mjs",
     },
     child: {
-      esModuleURI: "resource://gre/modules/ContentAnalysisWasmChild.sys.mjs",
+      esModuleURI:
+        "moz-src:///toolkit/components/contentanalysis/ContentAnalysisWasmChild.sys.mjs",
     },
     remoteTypes: ["privilegedabout"],
   });

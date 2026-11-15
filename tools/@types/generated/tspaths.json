@@ -148,6 +148,9 @@
       "chrome://browser/content/aiwindow/components/smartwindow-history-menu.mjs": [
         "../../../browser/components/aiwindow/ui/components/smartwindow-history-menu/smartwindow-history-menu.mjs"
       ],
+      "chrome://browser/content/aiwindow/components/smartwindow-onboarding.mjs": [
+        "../../../browser/components/aiwindow/ui/components/smartwindow-onboarding/smartwindow-onboarding.mjs"
+      ],
       "chrome://browser/content/aiwindow/components/smartwindow-option-select.mjs": [
         "../../../browser/components/aiwindow/ui/components/smartwindow-option-select/smartwindow-option-select.mjs"
       ],
@@ -189,6 +192,9 @@
       ],
       "chrome://browser/content/aiwindow/modules/ClientErrorTelemetry.mjs": [
         "../../../browser/components/aiwindow/ui/modules/ClientErrorTelemetry.mjs"
+      ],
+      "chrome://browser/content/aiwindow/modules/ModelIcons.mjs": [
+        "../../../browser/components/aiwindow/ui/modules/ModelIcons.mjs"
       ],
       "chrome://browser/content/aiwindow/modules/SmartFormFillConstants.mjs": [
         "../../../browser/components/aiwindow/ui/modules/SmartFormFillConstants.mjs"
@@ -355,9 +361,6 @@
       "chrome://browser/content/preferences/config/default-browser.mjs": [
         "../../../browser/components/preferences/config/default-browser.mjs"
       ],
-      "chrome://browser/content/preferences/config/downloads.mjs": [
-        "../../../browser/components/preferences/config/downloads.mjs"
-      ],
       "chrome://browser/content/preferences/config/notification-permissions.mjs": [
         "../../../browser/components/preferences/config/notification-permissions.mjs"
       ],
@@ -442,11 +445,11 @@
       "chrome://browser/content/sidebar/sidebar-tab-list.mjs": [
         "../../../browser/components/sidebar/sidebar-tab-list.mjs"
       ],
-      "chrome://browser/content/tabbrowser/drag-and-drop.mjs": [
-        "../../../browser/components/tabbrowser/content/drag-and-drop.mjs"
-      ],
       "chrome://browser/content/tabbrowser/address-footer.mjs": [
         "../../../browser/components/tabbrowser/content/address-footer.mjs"
+      ],
+      "chrome://browser/content/tabbrowser/drag-and-drop.mjs": [
+        "../../../browser/components/tabbrowser/content/drag-and-drop.mjs"
       ],
       "chrome://browser/content/tabbrowser/tab-groups-list.mjs": [
         "../../../browser/components/tabbrowser/content/tab-groups-list.mjs"
@@ -552,6 +555,9 @@
       ],
       "chrome://browser/content/widgets/moz-widget-header.mjs": [
         "../../../browser/components/widgets/content/moz-widget-header.mjs"
+      ],
+      "chrome://browser/content/widgets/widget-composer.mjs": [
+        "../../../browser/components/widgets/content/widget-composer.mjs"
       ],
       "chrome://devtools-startup/content/DevToolsShim.sys.mjs": [
         "../../../devtools/startup/DevToolsShim.sys.mjs"
@@ -5772,9 +5778,6 @@
       ],
       "resource://gre/modules/Console.sys.mjs": [
         "../../../toolkit/modules/Console.sys.mjs"
-      ],
-      "resource://gre/modules/ContentAnalysisUtils.sys.mjs": [
-        "../../../toolkit/components/contentanalysis/ContentAnalysisUtils.sys.mjs"
       ],
       "resource://gre/modules/ContentClassifierRemoteSettingsClient.sys.mjs": [
         "../../../toolkit/components/content-classifier/ContentClassifierRemoteSettingsClient.sys.mjs"
