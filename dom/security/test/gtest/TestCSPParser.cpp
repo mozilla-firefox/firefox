@@ -7,12 +7,11 @@
 
 #include "gtest/gtest.h"
 #include "mozilla/BasePrincipal.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/dom/nsCSPContext.h"
 #include "mozilla/gtest/MozAssertions.h"
 #include "nsComponentManagerUtils.h"
 #include "nsIContentSecurityPolicy.h"
-#include "nsIPrefBranch.h"
-#include "nsIPrefService.h"
 #include "nsNetUtil.h"
 #include "nsStringFwd.h"
 
@@ -64,6 +63,21 @@ static const uint32_t kMaxPolicyLength = 96;
 struct PolicyTest {
   char policy[kMaxPolicyLength];
   char expectedResult[kMaxPolicyLength];
+};
+
+// Sets a bool pref for its lifetime, and restores its value afterwards.
+class MOZ_RAII AutoBoolPref {
+ public:
+  AutoBoolPref(const char* aName, bool aValue)
+      : mName(aName), mOldValue(mozilla::Preferences::GetBool(aName)) {
+    mozilla::Preferences::SetBool(aName, aValue);
+  }
+
+  ~AutoBoolPref() { mozilla::Preferences::SetBool(mName, mOldValue); }
+
+ private:
+  const char* mName;
+  bool mOldValue;
 };
 
 nsresult runTest(
@@ -145,29 +159,11 @@ nsresult runTest(
 nsresult runTestSuite(const PolicyTest* aPolicies, uint32_t aPolicyCount,
                       uint32_t aExpectedPolicyCount) {
   nsresult rv;
-  nsCOMPtr<nsIPrefBranch> prefs = do_GetService(NS_PREFSERVICE_CONTRACTID);
-
-  // Add prefs you need to set to parse CSP here, see comments for example
-  // bool examplePref = false;
-  bool trustedTypesEnabled = false;
-  constexpr auto kTrustedTypesEnabledPrefName =
-      "dom.security.trusted_types.enabled";
-  if (prefs) {
-    // prefs->GetBoolPref("security.csp.examplePref", &examplePref);
-    // prefs->SetBoolPref("security.csp.examplePref", true);
-    prefs->GetBoolPref(kTrustedTypesEnabledPrefName, &trustedTypesEnabled);
-    prefs->SetBoolPref(kTrustedTypesEnabledPrefName, true);
-  }
 
   for (uint32_t i = 0; i < aPolicyCount; i++) {
     rv = runTest(aExpectedPolicyCount, aPolicies[i].policy,
                  aPolicies[i].expectedResult);
     NS_ENSURE_SUCCESS(rv, rv);
-  }
-
-  if (prefs) {
-    // prefs->SetBoolPref("security.csp.examplePref", examplePref);
-    prefs->SetBoolPref(kTrustedTypesEnabledPrefName, trustedTypesEnabled);
   }
 
   return NS_OK;
