@@ -85,6 +85,15 @@ pub fn calc_sign(value: CSSFloat) -> CSSFloat {
     }
 }
 
+/// Clamps a <number> into the range of a random base value, using the highest
+/// f32 strictly less than one. The random base value has a half-open range of
+/// [0, 1), but the `fixed <number>` format of <random-key> accepts the closed
+/// range of [0, 1]. So if an author specifies `fixed 1`, this value is used
+/// instead as the random base value.
+pub fn calc_clamp_random_base_value(base: f32) -> f32 {
+    normalize(base.max(0.).min((1.0f32).next_down()))
+}
+
 /// Generates a random integer given a base value and limit.
 /// https://drafts.csswg.org/css-values-5/#generate-a-random-integer
 pub fn calc_random_integer(base: f32, limit: f32) -> f32 {
@@ -97,13 +106,7 @@ pub fn calc_random(base: f32, min: f32, max: f32, step: Option<f32>) -> f32 {
     if base.is_nan() || min.is_nan() || max.is_nan() || step.is_some_and(f32::is_nan) {
         return f32::NAN;
     }
-
-    // Clamps a <number> into the range of a random base value, using the highest
-    // f32 strictly less than one. The random base value has a half-open range of
-    // [0, 1), but the `fixed <number>` format of <random-key> accepts the closed
-    // range of [0, 1]. So if an author specifies `fixed 1`, this value is used
-    // instead as the random base value.
-    let base = normalize(base.max(0.).min((1.0f32).next_down()));
+    let base = calc_clamp_random_base_value(base);
 
     // "In random(A, B), if A is infinite, the result is infinite."
     if min.is_infinite() {

@@ -10,6 +10,7 @@ use crate::properties::{PropertyId, PropertyIdRef};
 use crate::stylesheets::{CssRuleType, CssRuleTypes, Namespaces, Origin, UrlExtraData};
 use crate::substitution::{AttrTaint, AttrTaintedRange};
 use crate::use_counters::UseCounters;
+use crate::values::specified::random::RandomFunctionKind;
 use cssparser::{Parser, SourceLocation, UnicodeRange};
 use selectors::parser::ParseRelative;
 use std::borrow::Cow;
@@ -79,6 +80,8 @@ pub struct PropertyDeclarationContext {
     /// in the current property declaration. Used when a random() function
     /// has a `property-index-scoped` key.
     random_count: Cell<i32>,
+    /// Similar to `random_count`, but for random-item() functions.
+    random_item_count: Cell<i32>,
 }
 
 impl PropertyDeclarationContext {
@@ -87,17 +90,16 @@ impl PropertyDeclarationContext {
         self.property_id.as_ref().map(PropertyIdRef::from)
     }
 
-    /// The index of the current random() function in this declaration.
-    pub fn current_random_index(&self) -> i32 {
-        self.random_count.get()
-    }
-
-    /// Claims the next index for a random() function in this declaration. The
+    /// Claims the next index for a random function in this declaration. The
     /// index is 1-based and follows the order the functions appear in the
     /// parsed value.
-    pub fn increment_random_count(&self) -> i32 {
-        let index = self.random_count.get() + 1;
-        self.random_count.set(index);
+    pub fn increment_random_function_count(&self, function_kind: RandomFunctionKind) -> i32 {
+        let counter = match function_kind {
+            RandomFunctionKind::Random => &self.random_count,
+            RandomFunctionKind::RandomItem => &self.random_item_count,
+        };
+        let index = counter.get() + 1;
+        counter.set(index);
         index
     }
 }

@@ -101,7 +101,6 @@ pub use self::position::{
     PositionAnchorKeyword, PositionArea, PositionAreaKeyword, PositionComponent, PositionOrAuto,
     PositionTryFallbacks, PositionTryOrder, PositionVisibility, ScopedName, ZIndex,
 };
-pub use self::random::{RandomCacheKey, RandomUaIdent};
 pub use self::ratio::Ratio;
 pub use self::rect::NonNegativeLengthOrNumberRect;
 pub use self::resolution::{NoCalcResolution, Resolution};

@@ -2445,6 +2445,24 @@ fn substitute_all(
                         }
                         continue;
                     },
+                    SubstitutionFunction::RandomItem(ref random_item_fn) => {
+                        if let SubstitutionArgument::Unparsed(ref arg) = random_item_fn.random_key {
+                            if check_declaration_value_cycle!(arg) {
+                                continue;
+                            }
+                        }
+                        let mut replacement_context =
+                            context.replacement_context(property_id, &source.url_data);
+                        let random_key =
+                            random_item_fn.replace_random_key(source, &mut replacement_context);
+                        let selected_option = random_key.value.and_then(|random_key| {
+                            random_item_fn.resolve_option(&*random_key, &replacement_context)
+                        });
+                        if let Some(selected_option) = selected_option {
+                            refs_stack.push(&selected_option.references);
+                        }
+                        continue;
+                    },
                 };
 
                 visit_link(

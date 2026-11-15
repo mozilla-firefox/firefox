@@ -23,7 +23,7 @@ use crate::values::generics::position::{
     AnchorSideKeyword, GenericAnchorFunction, GenericAnchorSide, TreeScoped,
 };
 use crate::values::specified::length::NoCalcLength;
-use crate::values::specified::random::RandomKey;
+use crate::values::specified::random::{RandomFunctionKind, RandomKey};
 use crate::values::specified::{
     NoCalcAngle, NoCalcNumber, NoCalcPercentage, NoCalcResolution, NoCalcTime, TreeCountingFunction,
 };
@@ -1252,20 +1252,10 @@ impl CalcNode {
                         return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
                     }
 
-                    // Increment the random() function count so that any `property-index-scoped`
-                    // random keys construct the correct random cache name when parsed.
-                    context
+                    let index = context
                         .property_declaration_context
-                        .increment_random_count();
-
-                    let key = match input.try_parse(|input| RandomKey::parse(context, input)) {
-                        Ok(key) => {
-                            input.expect_comma()?;
-                            key
-                        },
-                        // The <random-key> is optional, and behaves as `auto`.
-                        Err(_) => RandomKey::auto(context)?,
-                    };
+                        .increment_random_function_count(RandomFunctionKind::Random);
+                    let key = RandomKey::parse_optional(context, input, index)?;
                     let min = Self::parse_argument(context, input, flags)?;
                     input.expect_comma()?;
                     let max = Self::parse_argument(context, input, flags)?;

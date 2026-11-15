@@ -11590,6 +11590,14 @@
   mirror: always
   rust: true
 
+# Is support for the random-item() function enabled?
+# https://drafts.csswg.org/css-values-5/#random-item
+- name: layout.css.random-item.enabled
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+  rust: true
+
 # Enable revert-rule: https://drafts.csswg.org/css-cascade-5/#revert-rule-keyword
 - name: layout.css.revert-rule.enabled
   type: RelaxedAtomicBool

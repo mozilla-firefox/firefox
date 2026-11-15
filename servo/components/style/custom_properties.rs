@@ -862,7 +862,8 @@ pub fn substitute_references_if_needed_and_apply(
         },
         SubstitutionFunctionKind::Env
         | SubstitutionFunctionKind::Ident
-        | SubstitutionFunctionKind::Inherit => {
+        | SubstitutionFunctionKind::Inherit
+        | SubstitutionFunctionKind::RandomItem => {
             unreachable!("Kind must be `var` or `attr`.")
         },
     }

@@ -9,6 +9,7 @@ pub mod attr;
 pub mod env;
 pub mod ident;
 pub mod inherit;
+pub mod random_item;
 pub mod var;
 
 use crate::Atom;
@@ -40,6 +41,7 @@ pub use self::attr::AttrFunction;
 pub use self::env::EnvFunction;
 pub use self::ident::IdentFunction;
 pub use self::inherit::InheritFunction;
+pub use self::random_item::RandomItemFunction;
 pub use self::var::VarFunction;
 
 /// Substitution function name.
@@ -56,6 +58,8 @@ pub enum SubstitutionFunctionKind {
     Ident,
     /// The inherit() substitution function
     Inherit,
+    /// random-item()
+    RandomItem,
 }
 
 impl SubstitutionFunctionKind {
@@ -72,6 +76,9 @@ impl SubstitutionFunctionKind {
             },
             "inherit" if static_prefs::pref!("layout.css.inherit-function.enabled") => {
                 Self::Inherit
+            },
+            "random-item" if static_prefs::pref!("layout.css.random-item.enabled") => {
+                Self::RandomItem
             },
             _ => return Err(()),
         })
@@ -389,15 +396,19 @@ pub enum SubstitutionArgument<T> {
     Invalid,
 }
 
-impl<T: Parse> SubstitutionArgument<T> {
+impl<T> SubstitutionArgument<T> {
     /// Parses the argument as a `<declaration-value>`. If it has no nested substitution
-    /// functions, it is also parsed right away, giving `Parsed` or `Invalid`; otherwise
-    /// it is kept as `Unparsed`, to be parsed at substitution time.
-    pub fn try_parse(
+    /// functions, it is also parsed right away via `parse`, giving `Parsed` or `Invalid`;
+    /// otherwise it is kept as `Unparsed`, to be parsed at substitution time.
+    pub fn try_parse_with<F>(
         input: &mut Parser,
         context: &mut SubstitutionParserContext,
         delimiters: Delimiters,
-    ) -> Result<Self, ParseError> {
+        parse: F,
+    ) -> Result<Self, ParseError>
+    where
+        F: Fn(&ParserContext, &mut Parser) -> Result<T, ParseError>,
+    {
         let (value, css) = ArbitraryDeclarationValue::parse_free_form(
             input, context, delimiters, /* is_non_strict */ false,
         )?;
@@ -407,7 +418,7 @@ impl<T: Parse> SubstitutionArgument<T> {
         if !value.references.has_references() {
             let parser_context = &context.early_parser_context;
             if let Ok(result) =
-                Parser::new(css).parse_entirely(|input| T::parse(parser_context, input))
+                Parser::new(css).parse_entirely(|input| parse(parser_context, input))
             {
                 return Ok(Self::Parsed(result));
             }
@@ -415,16 +426,19 @@ impl<T: Parse> SubstitutionArgument<T> {
         }
         Ok(Self::Unparsed(value))
     }
-}
 
-impl<T: Clone + Parse> SubstitutionArgument<T> {
     /// Returns the argument, first substituting its nested references and
     /// parsing it into `T` via `parse` if it is `Unparsed`.
-    pub fn substitute_and_parse<'a>(
+    pub fn substitute_and_parse_with<'a, F>(
         &'a self,
         source: &'a VariableValue,
         context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
-    ) -> ParsedArgument<'a, T> {
+        parse: F,
+    ) -> ParsedArgument<'a, T>
+    where
+        T: Clone,
+        F: Fn(&ParserContext, &mut Parser) -> Result<T, ParseError>,
+    {
         let arg = match self {
             Self::Unparsed(arg) => arg,
             Self::Parsed(value) => {
@@ -450,12 +464,34 @@ impl<T: Clone + Parse> SubstitutionArgument<T> {
             value: context
                 .parse_early(&source.url_data, |parser_context| {
                     Parser::new(&substitution.css)
-                        .parse_entirely(|input| T::parse(parser_context, input))
+                        .parse_entirely(|input| parse(parser_context, input))
                         .ok()
                 })
                 .map(Cow::Owned),
             attr_tainted: substitution.attr_tainted,
         }
+    }
+}
+
+impl<T: Parse> SubstitutionArgument<T> {
+    /// Like `try_parse_with` using `T::parse`.
+    pub fn try_parse(
+        input: &mut Parser,
+        context: &mut SubstitutionParserContext,
+        delimiters: Delimiters,
+    ) -> Result<Self, ParseError> {
+        Self::try_parse_with(input, context, delimiters, T::parse)
+    }
+}
+
+impl<T: Clone + Parse> SubstitutionArgument<T> {
+    /// Like `substitute_and_parse_with` using `T::parse`.
+    pub fn substitute_and_parse<'a>(
+        &'a self,
+        source: &'a VariableValue,
+        context: &mut SubstitutionReplacementContext<'a, '_, '_, '_>,
+    ) -> ParsedArgument<'a, T> {
+        self.substitute_and_parse_with(source, context, T::parse)
     }
 }
 
@@ -480,6 +516,8 @@ pub enum SubstitutionFunction {
     Ident(IdentFunction),
     /// An `inherit()` reference.
     Inherit(InheritFunction),
+    /// A `random-item()` reference.
+    RandomItem(RandomItemFunction),
 }
 
 impl SubstitutionFunction {
@@ -498,6 +536,9 @@ impl SubstitutionFunction {
             SubstitutionFunctionKind::Inherit => {
                 Self::Inherit(InheritFunction::parse(input, context)?)
             },
+            SubstitutionFunctionKind::RandomItem => {
+                Self::RandomItem(RandomItemFunction::parse(input, context)?)
+            },
         })
     }
 
@@ -508,7 +549,7 @@ impl SubstitutionFunction {
             Self::Var(..) => ReferenceFlags::VAR,
             Self::Env(..) => ReferenceFlags::ENV,
             Self::Attr(..) => ReferenceFlags::ATTR,
-            Self::Ident(..) | Self::Inherit(..) => ReferenceFlags::empty(),
+            Self::Ident(..) | Self::Inherit(..) | Self::RandomItem(..) => ReferenceFlags::empty(),
         }
     }
 
@@ -523,6 +564,7 @@ impl SubstitutionFunction {
             Self::Attr(function) => function.replace(source, context),
             Self::Ident(function) => function.replace(source, context),
             Self::Inherit(function) => function.replace(source, context),
+            Self::RandomItem(function) => function.replace(source, context),
         }
     }
 
@@ -538,6 +580,7 @@ impl SubstitutionFunction {
             Self::Attr(function) => function.for_each_unparsed_value(f),
             Self::Ident(function) => function.for_each_unparsed_value(f),
             Self::Inherit(function) => function.for_each_unparsed_value(f),
+            Self::RandomItem(function) => function.for_each_unparsed_value(f),
         }
     }
 }
