@@ -14,7 +14,7 @@
 
 #include <stddef.h>
 
-static const PRTime kCTExpirationTime = INT64_C(1800561904000000);
+static const PRTime kCTExpirationTime = INT64_C(1800821031000000);
 
 namespace mozilla::ct {
 
@@ -48,7 +48,7 @@ struct CTLogOperatorInfo {
 
 const CTLogInfo kCTLogList[] = {
     {"Google Argon2026h2", CTLogState::Admissible, CTLogFormat::RFC6962,
-     1727734767000,  // 2024-09-30T22:19:27Z
+     1794591000000,  // 2026-11-13T17:30:00Z
      0,              // operated by Google
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x2a\x3a\x67\x8b\xfe\xba\x0c\x86\x2b"
@@ -58,7 +58,7 @@ const CTLogInfo kCTLogList[] = {
      "\x22",
      91},
     {"Google Argon2027h1", CTLogState::Admissible, CTLogFormat::RFC6962,
-     1766881800000,  // 2025-12-28T00:30:00Z
+     1794591000000,  // 2026-11-13T17:30:00Z
      0,              // operated by Google
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\x28\x74\x66\xd0\x7f\xf3\x51\xa1\x40"
@@ -68,7 +68,7 @@ const CTLogInfo kCTLogList[] = {
      "\xb0",
      91},
     {"Google Xenon2026h2", CTLogState::Admissible, CTLogFormat::RFC6962,
-     1727734767000,  // 2024-09-30T22:19:27Z
+     1794591000000,  // 2026-11-13T17:30:00Z
      0,              // operated by Google
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\xe5\x77\x78\x95\x71\x28\xb3\x95\xc9"
@@ -78,7 +78,7 @@ const CTLogInfo kCTLogList[] = {
      "\xbf",
      91},
     {"Google Xenon2027h1", CTLogState::Admissible, CTLogFormat::RFC6962,
-     1766881800000,  // 2025-12-28T00:30:00Z
+     1794591000000,  // 2026-11-13T17:30:00Z
      0,              // operated by Google
      "\x30\x59\x30\x13\x06\x07\x2a\x86\x48\xce\x3d\x02\x01\x06\x08\x2a\x86\x48"
      "\xce\x3d\x03\x01\x07\x03\x42\x00\x04\xff\xa5\x9c\x03\x85\x51\x4a\x58\xc8"
