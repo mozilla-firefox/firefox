@@ -5,8 +5,15 @@ use design token variables instead of hardcoded values. This ensures consistent
 sizing across the application and makes it easier to maintain design system
 consistency.
 
-{ref}`use-design-tokens-size` in the checked properties lists the properties it
-applies to.
+This rule applies to the following properties:
+
+- `width`, `min-width`, `max-width`
+- `height`, `min-height`, `max-height`
+- `inline-size`, `min-inline-size`, `max-inline-size`
+- `block-size`, `min-block-size`, `max-block-size`
+- `background-size`
+- `inset` and all of its longhand properties
+- Positioning attributes: `left`, `right`, `top`, and `bottom`
 
 Note that the following properties accept both space and size tokens:
 
@@ -113,14 +120,72 @@ represent spacing/positioning offsets.
 }
 ```
 
-The rule also allows the non-token values listed for
-{ref}`use-design-tokens-size` in the checked properties.
+## The rule also allows these non-token values
+
+```css
+.button {
+  width: 100%;
+}
+```
+
+```css
+.button {
+  width: auto;
+}
+```
+
+```css
+.icon {
+  max-height: 2em;
+}
+```
+
+```css
+.container {
+  height: 100vh;
+}
+```
+
+```css
+.sidebar {
+  width: 50vw;
+}
+```
+
+```css
+.element {
+  width: fit-content;
+}
+```
+
+```css
+.element {
+  width: min-content;
+}
+```
+
+```css
+.element {
+  width: max-content;
+}
+```
+
+```css
+.element {
+  width: 0;
+}
+```
+
+```css
+.element {
+  width: none;
+}
+```
 
 ## Autofix functionality
 
-This rule can automatically fix some violations by replacing raw size values
-with appropriate size tokens. {ref}`use-design-tokens-size` in the checked
-properties lists every value it fixes. For example:
+This rule can automatically fix some violations by replacing raw size values with
+appropriate size tokens. Examples of autofixable violations:
 
 ```css
 /* Before */

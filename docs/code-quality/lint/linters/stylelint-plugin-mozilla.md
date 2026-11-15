@@ -28,10 +28,5 @@ npm ci
 npm run test
 ```
 
-The tests include a check that the `use-design-tokens` rule's
-[checked properties](stylelint-plugin-mozilla/rules/use-design-tokens/checked-properties.md)
-page matches `config.mjs`. After changing `config.mjs`, regenerate the page with
-`npm run update-docs`.
-
 [stylelint docs]: https://stylelint.io/developer-guide/plugins#testing
 [stylelint-test-rule-node]: https://www.npmjs.com/package/stylelint-test-rule-node

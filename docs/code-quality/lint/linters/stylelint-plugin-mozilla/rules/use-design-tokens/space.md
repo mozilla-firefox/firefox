@@ -5,8 +5,13 @@ padding, gaps, inset, etc.) use design token variables instead of hardcoded valu
 This ensures consistent spacing across the application and makes it easier to
 maintain design system consistency.
 
-{ref}`use-design-tokens-space` in the checked properties lists the properties it
-applies to.
+This rule applies to the following properties:
+
+- `padding` and all of its longhand properties
+- `margin` and all of its longhand properties
+- `inset` and all of its longhand properties
+- `gap`, `column-gap`, `row-gap`
+- Positioning attributes: `left`, `right`, `top`, and `bottom`.
 
 Note that the following properties accept both space and size tokens:
 
@@ -110,14 +115,42 @@ are all literal px.
 }
 ```
 
-The rule also allows the non-token values listed for
-{ref}`use-design-tokens-space` in the checked properties.
+The rule also allows these values to be non-token values:
+
+```css
+.inherited-inset {
+  inset: inherit;
+}
+```
+
+```css
+.unset-padding {
+  padding: unset;
+}
+```
+
+```css
+.initial-row-gap {
+  row-gap: initial;
+}
+```
+
+```css
+.auto-margin {
+  margin-inline: auto;
+}
+```
+
+```css
+.zero-padding {
+  padding: 0;
+}
+```
 
 ## Autofix functionality
 
-This rule can automatically fix some violations by replacing common pixel values
-with appropriate space tokens. {ref}`use-design-tokens-space` in the checked
-properties lists every value it fixes. For example:
+This rule can automatically fix some violations by replacing common pixel values with
+appropriate space tokens. Examples of autofixable violations:
 
 ```css
 /* Before */

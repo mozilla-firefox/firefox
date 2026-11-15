@@ -69,5 +69,40 @@ system consistency.
 }
 ```
 
-The rule also allows the non-token values listed for
-{ref}`use-design-tokens-box-shadow` in the checked properties.
+The rule also allows these non-token values:
+
+```css
+.inherited-shadow {
+  box-shadow: inherit;
+}
+```
+
+```css
+.initial-shadow {
+  box-shadow: initial;
+}
+```
+
+```css
+.revert-shadow {
+  box-shadow: revert;
+}
+```
+
+```css
+.revert-layer-shadow {
+  box-shadow: revert-layer;
+}
+```
+
+```css
+.unset-shadow {
+  box-shadow: unset;
+}
+```
+
+```css
+.no-shadow {
+  box-shadow: none;
+}
+```
