@@ -467,6 +467,36 @@ const Stroke = {
 };
 
 /**
+ * Every property type, keyed by the name the generated docs page uses for it.
+ *
+ * @type {Record<string, PropertyTypeConfig>}
+ */
+export const propertyTypes = {
+  BackgroundColor,
+  BackgroundAttachment,
+  BackgroundImage,
+  BackgroundPosition,
+  BackgroundSize,
+  BackgroundRepeat,
+  BackgroundClip,
+  BoxShadow,
+  Fill,
+  FontSize,
+  FontWeight,
+  BorderColor,
+  BorderStyle,
+  BorderWidth,
+  BorderRadius,
+  FlexBasis,
+  FlexShorthand,
+  Opacity,
+  TextColor,
+  Space,
+  Size,
+  Stroke,
+};
+
+/**
  * @typedef {object} PropertyConfig
  * @property {PropertyTypeConfig[]} validTypes Valid type configurations for this property, ordered by precedence (first item is highest precedence)
  * @property {boolean} [shorthand] Whether this property accepts multiple space-separated values

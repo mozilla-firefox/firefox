@@ -70,10 +70,6 @@ through a custom property declared in the same stylesheet.
 Where a property should paint the value of a token from another category, a
 token of an accepted category can reference it in its `*.tokens.json`.
 
-Some checked properties have no page below (e.g. `fill`, `stroke`, `opacity`,
-`border-width`, `background-position`, `flex-basis`). The categories they
-accept are in {searchfox}`config.mjs <tools/lint/stylelint/stylelint-plugin-mozilla/config.mjs>`.
-
 ## Autofix
 
 With `--fix`, the rule replaces a raw value with the token that the property
@@ -81,14 +77,20 @@ type's `customFixes` in `config.mjs` maps it to, and reports a value with no
 entry without fixing it. A mapping can cross units: `Size` maps both `0.75rem`
 and `12px` to `--size-item-xsmall`, which is `12px`.
 
-## Supported Properties
+## Checked properties
 
-The following CSS properties are supported by this rule. Click on a property
-name to see examples of correct and incorrect usage:
+[Checked properties](use-design-tokens/checked-properties.md) lists every
+property the rule checks, grouped by property type, with the token categories
+and other values each type accepts and the values it fixes. It is generated
+from `config.mjs`.
+
+The other pages below give examples of correct and incorrect usage for some of
+the properties:
 
 ```{toctree}
 :glob: true
 :maxdepth: 1
 
+use-design-tokens/checked-properties
 use-design-tokens/*
 ```

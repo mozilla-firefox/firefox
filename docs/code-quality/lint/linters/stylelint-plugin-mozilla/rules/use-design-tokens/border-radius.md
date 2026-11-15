@@ -68,36 +68,14 @@ system consistency.
 }
 ```
 
-The rule also allows these values non-token values:
-
-```css
-.no-radius {
-  border-radius: 0;
-}
-```
-
-```css
-.inherited-radius {
-  border-radius: inherit;
-}
-```
-
-```css
-.unset-radius {
-  border-radius: unset;
-}
-```
-
-```css
-.initial-radius {
-  border-radius: initial;
-}
-```
+The rule also allows the non-token values listed for
+{ref}`use-design-tokens-border-radius` in the checked properties.
 
 ## Autofix functionality
 
 This rule can automatically fix some violations by replacing raw values with
-appropriate design tokens. Examples of autofixable violations:
+appropriate design tokens. {ref}`use-design-tokens-border-radius` in the checked
+properties lists every value it fixes. For example:
 
 ```css
 /* Before */
