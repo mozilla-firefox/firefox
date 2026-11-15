@@ -260,12 +260,31 @@
 // to paint above its neighbours. No fade either: what the user is dragging is
 // the live widget, not a native drag source.
 .nova-enabled .widget-draggable {
+  cursor: grab;
+  // Grows the wrapper into the grid gap without moving the card, so the gap
+  // edge is also a place to grab the widget.
+  margin: calc(-1 * var(--space-xxsmall));
+  padding: var(--space-xxsmall);
+
   &[data-dragging] {
     position: relative;
     z-index: 1;
     cursor: grabbing;
+    scale: 1.02;
     will-change: transform;
   }
+}
+
+:where(.nova-enabled .widget-draggable:not([data-dragging])) > * > * {
+  cursor: auto;
+}
+
+:where(.nova-enabled .widget-draggable:not([data-dragging])) > * > :is(:has(.newtab-widget-title, [class*='context-menu-button'], .lists-panel-button), moz-widget-header) {
+  cursor: grab;
+}
+
+:where(.nova-enabled .widget-draggable:not([data-dragging])) :where(button, moz-button, moz-checkbox, moz-toggle, moz-radio, moz-select, panel-list, dialog, [role='button'], [role='checkbox'], [role='switch']) {
+  cursor: default;
 }
 
 // Backs up pointer capture: `pointer-events: none` keeps a widget's iframe from

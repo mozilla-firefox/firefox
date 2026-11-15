@@ -62,6 +62,7 @@ function pointer(type, opts = {}) {
     pointerId: 1,
     pointerType: "mouse",
     button: 0,
+    buttons: type === "pointermove" ? 1 : 0,
     clientX: 0,
     clientY: 0,
     ...opts,
@@ -170,6 +171,7 @@ describe("useWidgetDnD", () => {
     });
     move(150, 50);
     expect(latest.draggedId).toBe("lists");
+    expect(latest.previewOrder).toEqual(["focusTimer", "lists", "weather"]);
   });
 
   it("does not request a preference update when Escape cancels the drag", () => {

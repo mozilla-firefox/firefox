@@ -83,12 +83,12 @@ function reorder(order, id, slot) {
   return next;
 }
 
-// Re-reads everything the transform maths depends on: where the item's cell now
+// Re-reads everything the offset maths depends on: where the item's cell now
 // is, how wide the item is, and the viewport bounds, which a reorder may follow
 // a resize into. Leaves the item snapped to its cell, so callers must reapply
-// the transform before anything is painted.
+// the offset before anything is painted.
 function measureCell(d) {
-  d.el.style.transform = "";
+  d.el.style.translate = "";
   const rect = d.el.getBoundingClientRect();
   d.cellOriginX = rect.left;
   d.cellOriginY = rect.top;
@@ -113,6 +113,23 @@ function releasePointer(el, pointerId) {
   } catch {
     // The pointer may already have been released.
   }
+}
+
+// The release that ends a drag is followed by a click on whatever is under the
+// cursor, which would activate a link or button the drag merely passed over.
+// Swallows that one click, and stops listening on the next tick in case none
+// arrives.
+function suppressNextClick() {
+  const ac = new AbortController();
+  window.addEventListener(
+    "click",
+    e => {
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    { capture: true, once: true, signal: ac.signal }
+  );
+  window.setTimeout(() => ac.abort(), 0);
 }
 
 /**
@@ -190,7 +207,11 @@ export function usePointerReorder({
       dx = Math.min(Math.max(dx, minDx), maxDx);
     }
 
-    d.el.style.transform = `translate(${dx}px, ${dy}px)`;
+    // The `translate` property, not `transform`: the `scale` on [data-dragging]
+    // also scales whatever is in `transform`, so an offset there would drift
+    // from the cursor. `translate` is not scaled, and the FLIP engine only writes
+    // `transform`, so the two never overwrite each other.
+    d.el.style.translate = `${dx}px ${dy}px`;
   }, []);
 
   const previewOrder =
@@ -258,7 +279,7 @@ export function usePointerReorder({
       const settle = () => {
         d.endGlide?.();
         d.el.style.transition = "";
-        d.el.style.transform = "";
+        d.el.style.translate = "";
         dragRef.current = null;
         setDraggedId(null);
         setTargetSlot(null);
@@ -266,7 +287,7 @@ export function usePointerReorder({
 
       // Animates the item from where the cursor left it into the cell it now
       // owns. Callers must already have measured that cell and reapplied the
-      // transform. An interrupted animation reports transitioncancel rather
+      // offset. An interrupted animation reports transitioncancel rather
       // than transitionend, and only one of the two ever arrives, so either
       // ends the drag.
       d.glideHome = () => {
@@ -288,8 +309,8 @@ export function usePointerReorder({
         // Nothing fires when the item is already at its target, so a timer ends
         // the drag in that case.
         timer = window.setTimeout(done, DROP_GLIDE_MS * 2);
-        d.el.style.transition = `transform ${DROP_GLIDE_MS}ms ease`;
-        d.el.style.transform = "";
+        d.el.style.transition = `translate ${DROP_GLIDE_MS}ms ease`;
+        d.el.style.translate = "";
       };
 
       const listeners = [];
@@ -310,6 +331,7 @@ export function usePointerReorder({
       // Safe to call twice.
       d.retire = () => {
         detach();
+        releasePointer(d.el, d.pointerId);
         if (d.phase !== "pressed") {
           settle();
         } else {
@@ -359,6 +381,13 @@ export function usePointerReorder({
         if (evt.pointerId !== d.pointerId) {
           return;
         }
+        // A release outside the window or inside a child iframe is never seen
+        // here, so a move with the primary button up means the release has
+        // already happened.
+        if ((evt.buttons & 1) === 0) {
+          finish({ commit: false });
+          return;
+        }
         d.lastX = evt.clientX;
         d.lastY = evt.clientY;
 
@@ -401,7 +430,11 @@ export function usePointerReorder({
         if (evt.pointerId !== d.pointerId || evt.button !== 0) {
           return;
         }
+        const wasDragging = d.phase === "dragging";
         finish({ commit: true });
+        if (wasDragging) {
+          suppressNextClick();
+        }
       };
 
       const onPointerCancel = evt => {
@@ -451,7 +484,7 @@ export function usePointerReorder({
     }
 
     if (d.phase === "awaitingGlide") {
-      // The item is now in the cell it will keep. Reapply the transform so it
+      // The item is now in the cell it will keep. Reapply the offset so it
       // stays where the cursor left it, then read offsetWidth so the browser
       // takes that as the animation's starting point. Move out of this phase
       // first, or a later run of this effect starts the animation twice.
@@ -464,8 +497,8 @@ export function usePointerReorder({
     }
 
     if (d.phase === "dragging") {
-      // The engine cannot see the dragged item, so clear its transform to
-      // measure the cell it now sits in, then put the transform back before
+      // The engine cannot see the dragged item, so clear its offset to
+      // measure the cell it now sits in, then put the offset back before
       // anything is painted.
       measureCell(d);
       applyTransform(d);
@@ -484,6 +517,12 @@ export function usePointerReorder({
     },
     []
   );
+
+  useEffect(() => {
+    if (!enabled) {
+      dragRef.current?.retire();
+    }
+  }, [enabled]);
 
   const previewOrderMap = previewOrder
     ? Object.fromEntries(previewOrder.map((id, i) => [id, i]))

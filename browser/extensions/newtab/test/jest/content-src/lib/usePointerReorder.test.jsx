@@ -64,6 +64,7 @@ function pointer(type, opts = {}) {
     pointerId: 1,
     pointerType: "mouse",
     button: 0,
+    buttons: type === "pointermove" ? 1 : 0,
     clientX: 0,
     clientY: 0,
     ...opts,
@@ -83,7 +84,7 @@ function press(tile, x = 50) {
 }
 
 function translateX(el) {
-  return Number(/translate\((-?[\d.]+)px/.exec(el.style.transform)?.[1]);
+  return Number(/^(-?[\d.]+)px/.exec(el.style.translate)?.[1]);
 }
 
 // jsdom has no layout, so the viewport is stubbed. The default is wide enough
@@ -103,6 +104,10 @@ function setViewport(width, left = 0) {
 beforeEach(() => {
   window.matchMedia = jest.fn(() => ({ matches: false }));
   setViewport(1000);
+});
+
+afterEach(() => {
+  jest.useRealTimers();
 });
 
 describe("cursorToSlot", () => {
@@ -153,29 +158,6 @@ describe("captureSlotRects", () => {
 });
 
 describe("usePointerReorder activation", () => {
-  it("does not start a drag before the movement threshold", () => {
-    const { tiles } = mount();
-    act(() => {
-      tiles[0].dispatchEvent(
-        pointer("pointerdown", { clientX: 10, clientY: 10 })
-      );
-    });
-    move(12, 11);
-    expect(latest.draggedId).toBe(null);
-    expect(latest.previewOrder).toBe(null);
-  });
-
-  it("starts a drag once movement passes the threshold", () => {
-    const { tiles } = mount();
-    act(() => {
-      tiles[0].dispatchEvent(
-        pointer("pointerdown", { clientX: 10, clientY: 10 })
-      );
-    });
-    move(20, 10);
-    expect(latest.draggedId).toBe("a");
-  });
-
   it("ignores touch pointers", () => {
     const { tiles } = mount();
     act(() => {
@@ -214,17 +196,14 @@ describe("usePointerReorder activation", () => {
     expect(latest.draggedId).toBe(null);
   });
 
-  it("clears any text selection started before the threshold", () => {
+  it("clears the text selection when the drag starts", () => {
     const removeAllRanges = jest.fn();
     jest.spyOn(document, "getSelection").mockReturnValue({ removeAllRanges });
     const { tiles } = mount();
-    act(() => {
-      tiles[0].dispatchEvent(
-        pointer("pointerdown", { clientX: 10, clientY: 10 })
-      );
-    });
-    move(60, 10);
-    expect(removeAllRanges).toHaveBeenCalled();
+    press(tiles[0], 10);
+    expect(removeAllRanges).not.toHaveBeenCalled();
+    move(14, 50);
+    expect(removeAllRanges).toHaveBeenCalledTimes(1);
     document.getSelection.mockRestore();
   });
 
@@ -240,13 +219,185 @@ describe("usePointerReorder activation", () => {
   });
 });
 
-describe("usePointerReorder preview", () => {
-  function startDragOnFirstTile(tiles) {
+describe("usePointerReorder threshold", () => {
+  function click(el) {
+    const evt = new MouseEvent("click", { bubbles: true, cancelable: true });
     act(() => {
-      tiles[0].dispatchEvent(
-        pointer("pointerdown", { clientX: 50, clientY: 50 })
+      el.dispatchEvent(evt);
+    });
+    return evt;
+  }
+
+  it("does not mark the tile before the threshold, however long the press", () => {
+    jest.useFakeTimers();
+    const { tiles } = mount();
+    press(tiles[0]);
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    move(53, 50);
+    expect(latest.draggedId).toBe(null);
+    expect(tiles[0].hasAttribute("data-dragging")).toBe(false);
+  });
+
+  it.each([
+    ["pointerup", () => pointer("pointerup", { button: 0 })],
+    ["Escape", () => new KeyboardEvent("keydown", { key: "Escape" })],
+    ["blur", () => new Event("blur")],
+    ["contextmenu", () => new Event("contextmenu")],
+    ["pointercancel", () => pointer("pointercancel", { button: 0 })],
+  ])("does not drag after %s ends the press", (type, createEvent) => {
+    const { container, tiles } = mount();
+    press(tiles[0]);
+    act(() => {
+      window.dispatchEvent(createEvent());
+    });
+    move(54, 50);
+    expect(container.querySelector("[data-dragging]")).toBe(null);
+  });
+
+  it("ends a press when a move reports no buttons pressed", () => {
+    const { container, tiles } = mount();
+    press(tiles[0]);
+    act(() => {
+      window.dispatchEvent(
+        pointer("pointermove", { clientX: 54, clientY: 50, buttons: 0 })
       );
     });
+    expect(container.querySelector("[data-dragging]")).toBe(null);
+    expect(latest.draggedId).toBe(null);
+  });
+
+  it("starts the drag once a move reaches the threshold", () => {
+    const { tiles } = mount();
+    press(tiles[0]);
+    move(53, 50);
+    expect(latest.draggedId).toBe(null);
+    expect(tiles[0].hasAttribute("data-dragging")).toBe(false);
+    move(54, 50);
+    expect(tiles[0].hasAttribute("data-dragging")).toBe(true);
+    expect(tiles[0].style.translate).not.toBe("");
+    expect(latest.previewOrder).toEqual(ORDER);
+  });
+
+  it("starts the drag when the threshold is reached on the vertical axis", () => {
+    const { tiles } = mount();
+    press(tiles[0]);
+    move(50, 54);
+    expect(latest.draggedId).toBe("a");
+    expect(tiles[0].style.translate).not.toBe("");
+  });
+
+  it("suppresses the click that follows a drag", () => {
+    jest.useFakeTimers();
+    const { tiles } = mount();
+    const button = tiles[0].querySelector("button");
+    const onClick = jest.fn();
+    button.addEventListener("click", onClick);
+    press(tiles[0]);
+    move(150, 50);
+    act(() => {
+      window.dispatchEvent(pointer("pointerup", { clientX: 150, clientY: 50 }));
+    });
+    const evt = click(button);
+    expect(onClick).not.toHaveBeenCalled();
+    expect(evt.defaultPrevented).toBe(true);
+
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops suppressing clicks on the next tick if none arrived", () => {
+    jest.useFakeTimers();
+    const { tiles } = mount();
+    const button = tiles[0].querySelector("button");
+    const onClick = jest.fn();
+    button.addEventListener("click", onClick);
+    press(tiles[0]);
+    move(150, 50);
+    act(() => {
+      window.dispatchEvent(pointer("pointerup", { clientX: 150, clientY: 50 }));
+    });
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets the click through after a press that never reached the threshold", () => {
+    const { tiles } = mount();
+    const button = tiles[0].querySelector("button");
+    const onClick = jest.fn();
+    button.addEventListener("click", onClick);
+    press(tiles[0]);
+    move(53, 50);
+    act(() => {
+      window.dispatchEvent(pointer("pointerup", { clientX: 53, clientY: 50 }));
+    });
+    const evt = click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(evt.defaultPrevented).toBe(false);
+  });
+
+  it("ends the gesture without committing when a move reports no buttons pressed", () => {
+    const onCommit = jest.fn();
+    const { tiles } = mount({ onCommit });
+    press(tiles[0]);
+    move(150, 50);
+    act(() => {
+      window.dispatchEvent(
+        pointer("pointermove", { clientX: 250, clientY: 50, buttons: 0 })
+      );
+    });
+    expect(onCommit).not.toHaveBeenCalled();
+    expect(tiles[0].style.transition).toContain("translate");
+
+    act(() => {
+      tiles[0].dispatchEvent(new Event("transitionend", { bubbles: true }));
+    });
+    expect(latest.draggedId).toBe(null);
+    press(tiles[1], 150);
+    move(154, 50);
+    expect(latest.draggedId).toBe("b");
+  });
+
+  it("cancels a gesture that is held when dragging is disabled", () => {
+    const onCommit = jest.fn();
+    const { tiles, rerender } = mount({ onCommit });
+    press(tiles[0]);
+    rerender(<Grid onCommit={onCommit} enabled={false} />);
+    move(54, 50);
+    expect(tiles[0].hasAttribute("data-dragging")).toBe(false);
+    expect(latest.draggedId).toBe(null);
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it("cancels an active drag when dragging is disabled", () => {
+    const onCommit = jest.fn();
+    const { tiles, rerender } = mount({ onCommit });
+    const release = jest.spyOn(tiles[0], "releasePointerCapture");
+    press(tiles[0]);
+    move(54, 50);
+    expect(tiles[0].hasAttribute("data-dragging")).toBe(true);
+    rerender(<Grid onCommit={onCommit} enabled={false} />);
+    expect(tiles[0].hasAttribute("data-dragging")).toBe(false);
+    expect(release).toHaveBeenCalled();
+    move(150, 50);
+    act(() => {
+      window.dispatchEvent(pointer("pointerup", { clientX: 150, clientY: 50 }));
+    });
+    expect(latest.draggedId).toBe(null);
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+});
+
+describe("usePointerReorder preview", () => {
+  function startDragOnFirstTile(tiles) {
+    press(tiles[0]);
     move(60, 50);
   }
 
@@ -290,11 +441,7 @@ describe("usePointerReorder commit and cancel", () => {
   }
 
   function dragFirstTileTo(tiles, x) {
-    act(() => {
-      tiles[0].dispatchEvent(
-        pointer("pointerdown", { clientX: 50, clientY: 50 })
-      );
-    });
+    press(tiles[0]);
     move(60, 50);
     move(x, 50);
   }
@@ -339,8 +486,8 @@ describe("usePointerReorder commit and cancel", () => {
         pointer("pointerdown", { clientX: 50, clientY: 50 })
       );
     });
-    move(51, 50);
-    up(51, 50);
+    move(53, 50);
+    up(53, 50);
     expect(onCommit).not.toHaveBeenCalled();
     expect(latest.draggedId).toBe(null);
   });
@@ -393,11 +540,7 @@ describe("usePointerReorder commit and cancel", () => {
 
 describe("usePointerReorder visuals", () => {
   function dragFirstTileTo(tiles, x) {
-    act(() => {
-      tiles[0].dispatchEvent(
-        pointer("pointerdown", { clientX: 50, clientY: 50 })
-      );
-    });
+    press(tiles[0]);
     move(60, 50);
     move(x, 50);
   }
@@ -406,23 +549,25 @@ describe("usePointerReorder visuals", () => {
     const { tiles } = mount();
     dragFirstTileTo(tiles, 130);
     // Grabbed at x 50 inside a tile whose cell starts at 0, so the offset is 50.
-    expect(tiles[0].style.transform).toBe("translate(80px, 0px)");
+    expect(tiles[0].style.translate).toBe("80px 0px");
+    // `transform` would be scaled by the `scale` on [data-dragging].
+    expect(tiles[0].style.transform).toBe("");
   });
 
-  it("keeps the transform when a preview reorder moves the tile's cell", () => {
+  it("keeps the offset when a preview reorder moves the tile's cell", () => {
     const { tiles } = mount();
     dragFirstTileTo(tiles, 150);
     expect(latest.previewOrder).toEqual(["b", "a", "c"]);
-    expect(tiles[0].style.transform).not.toBe("");
+    expect(tiles[0].style.translate).not.toBe("");
   });
 
-  it("does not let the FLIP engine clear the dragged tile's transform", () => {
+  it("does not let the FLIP engine clear the dragged tile's offset", () => {
     const { tiles } = mount();
     dragFirstTileTo(tiles, 150);
-    const dragged = tiles[0].style.transform;
+    const dragged = tiles[0].style.translate;
     move(250, 50);
-    expect(tiles[0].style.transform).not.toBe("");
-    expect(tiles[0].style.transform).not.toBe(dragged);
+    expect(tiles[0].style.translate).not.toBe("");
+    expect(tiles[0].style.translate).not.toBe(dragged);
   });
 
   it("glides home on release and holds data-dragging until it ends", () => {
@@ -431,14 +576,14 @@ describe("usePointerReorder visuals", () => {
     act(() => {
       window.dispatchEvent(pointer("pointerup", { clientX: 150, clientY: 50 }));
     });
-    expect(tiles[0].style.transition).toContain("transform");
+    expect(tiles[0].style.transition).toContain("translate");
     expect(tiles[0].hasAttribute("data-dragging")).toBe(true);
 
     act(() => {
       tiles[0].dispatchEvent(new Event("transitionend", { bubbles: true }));
     });
     expect(tiles[0].hasAttribute("data-dragging")).toBe(false);
-    expect(tiles[0].style.transform).toBe("");
+    expect(tiles[0].style.translate).toBe("");
   });
 
   it("glides back to the original cell on Escape, then clears the drag", () => {
@@ -458,15 +603,16 @@ describe("usePointerReorder visuals", () => {
   });
 
   // Cancelling reverts the preview, and the animation is set up on that render.
-  // Any later render must not restore the drag transform and cancel it.
+  // A later render must not restore the drag offset and cut the return
+  // animation short.
   it("keeps the return animation running after a cancel re-renders the row", () => {
     const { tiles } = mount();
     dragFirstTileTo(tiles, 150);
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     });
-    expect(tiles[0].style.transition).toContain("transform");
-    expect(tiles[0].style.transform).toBe("");
+    expect(tiles[0].style.transition).toContain("translate");
+    expect(tiles[0].style.translate).toBe("");
   });
 
   it("keeps the drop animation running when the committed order re-renders", () => {
@@ -478,8 +624,8 @@ describe("usePointerReorder visuals", () => {
     act(() => {
       rerender(<Grid order={["b", "a", "c"]} />);
     });
-    expect(tiles[0].style.transition).toContain("transform");
-    expect(tiles[0].style.transform).toBe("");
+    expect(tiles[0].style.transition).toContain("translate");
+    expect(tiles[0].style.translate).toBe("");
   });
 
   it("ends the drag on transitioncancel as well as transitionend", () => {
@@ -505,7 +651,8 @@ describe("usePointerReorder session lifecycle", () => {
         pointer("pointermove", { clientX: 150, clientY: 50, pointerId: 2 })
       );
     });
-    expect(latest.draggedId).toBe(null);
+    expect(latest.previewOrder).toBe(null);
+    expect(tiles[0].style.translate).toBeFalsy();
   });
 
   it("ignores a pointercancel belonging to a different pointer", () => {
@@ -539,8 +686,10 @@ describe("usePointerReorder session lifecycle", () => {
     const { tiles } = mount();
     press(tiles[0]);
     press(tiles[1]);
-    move(160, 50);
+    expect(tiles[0].hasAttribute("data-dragging")).toBe(false);
+    move(54, 50);
     expect(latest.draggedId).toBe("b");
+    expect(tiles[0].style.translate).toBeFalsy();
   });
 
   it("allows a new drag once the previous one has settled", () => {
@@ -556,7 +705,7 @@ describe("usePointerReorder session lifecycle", () => {
       tiles[0].dispatchEvent(new Event("transitionend", { bubbles: true }));
     });
     press(tiles[1]);
-    move(160, 50);
+    move(54, 50);
     expect(latest.draggedId).toBe("b");
   });
 
@@ -579,7 +728,6 @@ describe("usePointerReorder session lifecycle", () => {
     });
     unmount();
     expect(() => jest.runAllTimers()).not.toThrow();
-    jest.useRealTimers();
   });
 
   it("skips the return animation under prefers-reduced-motion", () => {
@@ -592,7 +740,7 @@ describe("usePointerReorder session lifecycle", () => {
       window.dispatchEvent(pointer("pointerup", { clientX: 150, clientY: 50 }));
     });
     expect(tiles[0].hasAttribute("data-dragging")).toBe(false);
-    expect(tiles[0].style.transform).toBe("");
+    expect(tiles[0].style.translate).toBe("");
   });
 });
 
@@ -683,7 +831,7 @@ describe("usePointerReorder settle geometry", () => {
     const [el] = tiles;
     Object.defineProperty(el, "offsetWidth", {
       get() {
-        writes.push(`flush:${el.style.transform}|${el.style.transition}`);
+        writes.push(`flush:${el.style.translate}|${el.style.transition}`);
         return 100;
       },
       configurable: true,
@@ -702,9 +850,9 @@ describe("usePointerReorder settle geometry", () => {
     // the cursor left it, and with transitions off, so the animation runs from
     // there.
     const flush = writes.find(w => w.startsWith("flush:"));
-    expect(flush).toBe("flush:translate(100px, 0px)|none");
-    expect(el.style.transition).toContain("transform");
-    expect(el.style.transform).toBe("");
+    expect(flush).toBe("flush:100px 0px|none");
+    expect(el.style.transition).toContain("translate");
+    expect(el.style.translate).toBe("");
   });
 
   it("flushes the dragged tile exactly once per gesture", () => {
@@ -738,7 +886,7 @@ describe("usePointerReorder settle geometry", () => {
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     });
     press(tiles[1], 150);
-    move(160, 50);
+    move(154, 50);
     expect(latest.draggedId).toBe("b");
   });
 
@@ -768,8 +916,8 @@ describe("usePointerReorder settle geometry", () => {
     });
 
     expect(flushes).toBe(0);
-    expect(tiles[0].style.transform).toBe("");
-    move(160, 50);
+    expect(tiles[0].style.translate).toBe("");
+    move(154, 50);
     expect(latest.draggedId).toBe("b");
   });
 });
@@ -778,11 +926,7 @@ describe("usePointerReorder neighbour animation", () => {
   it("leaves the displaced tiles animating when the drop is committed", () => {
     const { tiles } = mount();
     setOrderAwareRects(tiles);
-    act(() => {
-      tiles[0].dispatchEvent(
-        pointer("pointerdown", { clientX: 50, clientY: 50 })
-      );
-    });
+    press(tiles[0]);
     move(60, 50);
     move(150, 50);
     // The tile that got displaced is mid-slide at this point.

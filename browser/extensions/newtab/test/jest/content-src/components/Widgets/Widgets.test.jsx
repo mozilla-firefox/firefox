@@ -2405,6 +2405,7 @@ describe("<Widgets> row ad slot", () => {
       pointerId: 1,
       pointerType: "mouse",
       button: 0,
+      buttons: 1,
       clientX: 50,
       clientY,
     });
