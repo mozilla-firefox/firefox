@@ -31,7 +31,7 @@ tasks:
             symbol: V-swr
             kind: build
             tier: 1
-        worker-type: t-linux-kvm
+        worker-type: b-linux-docker-amd
         worker:
             docker-image: {in-tree: valgrind-build}
             max-run-time: 72000
