@@ -5779,9 +5779,6 @@
       "resource://gre/modules/Console.sys.mjs": [
         "../../../toolkit/modules/Console.sys.mjs"
       ],
-      "resource://gre/modules/ContentClassifierRemoteSettingsClient.sys.mjs": [
-        "../../../toolkit/components/content-classifier/ContentClassifierRemoteSettingsClient.sys.mjs"
-      ],
       "resource://gre/modules/ContentDOMReference.sys.mjs": [
         "../../../toolkit/modules/ContentDOMReference.sys.mjs"
       ],

@@ -4,7 +4,7 @@
 "use strict";
 
 const { ContentClassifierRemoteSettingsClient } = ChromeUtils.importESModule(
-  "resource://gre/modules/ContentClassifierRemoteSettingsClient.sys.mjs"
+  "moz-src:///toolkit/components/content-classifier/ContentClassifierRemoteSettingsClient.sys.mjs"
 );
 const { RemoteSettings } = ChromeUtils.importESModule(
   "resource://services-settings/remote-settings.sys.mjs"
