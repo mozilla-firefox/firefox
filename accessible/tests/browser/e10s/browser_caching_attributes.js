@@ -578,26 +578,6 @@ addAccessibleTask(
   { chrome: true, topLevel: true, iframe: true, remoteIframe: true }
 );
 
-/**
- * Test the valuetext attribute.
- */
-addAccessibleTask(
-  `
-<div id="valuenow" role="slider" aria-valuenow="1"></div>
-<div id="valuetext" role="slider" aria-valuetext="text"></div>
-<div id="noValue" role="button"></div>
-  `,
-  async function (browser, docAcc) {
-    const valuenow = findAccessibleChildByID(docAcc, "valuenow");
-    testAttrs(valuenow, { valuetext: "1" }, true);
-    const valuetext = findAccessibleChildByID(docAcc, "valuetext");
-    testAttrs(valuetext, { valuetext: "text" }, true);
-    const noValue = findAccessibleChildByID(docAcc, "noValue");
-    testAbsentAttrs(noValue, { valuetext: "valuetext" });
-  },
-  { chrome: true, topLevel: true, iframe: true, remoteIframe: true }
-);
-
 function untilCacheAttrIs(acc, attr, val, msg) {
   return untilCacheOk(() => {
     try {

@@ -2142,18 +2142,6 @@ already_AddRefed<AccAttributes> RemoteAccessible::Attributes() {
     attributes->SetAttribute(nsGkAtoms::explicit_name, true);
   }
 
-  // Expose the string value via the valuetext attribute. We test for the value
-  // interface because we don't want to expose traditional Value() information
-  // such as URLs on links and documents, or text in an input.
-  // XXX This is only needed for ATK, since other APIs have native ways to
-  // retrieve value text. We should probably move this into ATK specific code.
-  // For now, we do this because LocalAccessible does it.
-  if (HasNumericValue()) {
-    nsString valuetext;
-    Value(valuetext);
-    attributes->SetAttribute(nsGkAtoms::aria_valuetext, std::move(valuetext));
-  }
-
   return attributes.forget();
 }
 

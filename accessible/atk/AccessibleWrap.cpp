@@ -691,6 +691,17 @@ AtkAttributeSet* getAttributesCB(AtkObject* aAtkObj) {
   }
   RefPtr<AccAttributes> attributes = acc->Attributes();
   nsAccUtils::SetAccGroupAttrs(attributes, acc);
+  // ATK has no way to retrieve a textual value, so expose it via the valuetext
+  // object attribute. We only do this for accessibles with numeric values
+  // because we don't want to expose traditional Value() information such as
+  // URLs on links and documents, or text in an input.
+  if (acc->HasNumericValue()) {
+    nsString value;
+    acc->Value(value);
+    // This is exposed as "valuetext" because AccAttributes::NameAsString
+    // strips the "aria-" prefix.
+    attributes->SetAttribute(nsGkAtoms::aria_valuetext, std::move(value));
+  }
   return ConvertToAtkAttributeSet(attributes);
 }
 
