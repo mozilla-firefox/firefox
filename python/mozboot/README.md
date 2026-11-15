@@ -12,8 +12,7 @@ python bin/bootstrap.py
 
 If you don't have a copy of the source tree, you can run:
 
-curl -L <https://hg.mozilla.org/mozilla-central/raw-file/default/python/mozboot/bin/bootstrap.py> -o bootstrap.py
+curl -L <https://raw.githubusercontent.com/mozilla-firefox/firefox/refs/heads/main/python/mozboot/bin/bootstrap.py> -o bootstrap.py
 python bootstrap.py
 
-The bootstrap script will download everything it needs from hg.mozilla.org
-automatically!
+The bootstrap script will download everything it needs automatically!

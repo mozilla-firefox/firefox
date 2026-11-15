@@ -206,7 +206,7 @@ The expressions can reference a well-defined set of variables, such as
 the {ref}`mozinfo documentation <mozinfo-attributes>`.
 
 See
-[the source](https://hg.mozilla.org/mozilla-central/file/default/testing/mozbase/manifestparser/manifestparser/manifestparser.py) for the full documentation of the
+[the source](https://searchfox.org/firefox-main/source/testing/mozbase/manifestparser/manifestparser/manifestparser.py) for the full documentation of the
 expression syntax until it is documented here.
 
 

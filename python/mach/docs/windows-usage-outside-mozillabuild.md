@@ -52,8 +52,7 @@ version is 3.14.0, so a safe version to install would be the most recent 3.13 re
 :::
 
 You'll want to download the "Windows installer (64-bit)" associated with the release you've chosen.
-During installation, ensure that you check the "Add Python 3.x to PATH" option, otherwise you might
-[encounter issues running Mercurial](https://bz.mercurial-scm.org/show_bug.cgi?id=6635).
+During installation, ensure that you check the "Add Python 3.x to PATH" option.
 
 :::{note}
 Due to issues with Python DLL import failures with pip-installed binaries, it's not
@@ -63,7 +62,7 @@ recommended to use the Windows Store release of Python.
 ## 2. Modify your PATH
 
 The Python "user site-packages directory" needs to be added to your `PATH` so that packages
-installed via `pip install --user` (such as `hg`) can be invoked from the command-line.
+installed via `pip install --user` can be invoked from the command-line.
 
 1. From the Start menu, go to the Control Panel entry for "Edit environment variables
    for your account".
@@ -77,13 +76,7 @@ installed via `pip install --user` (such as `hg`) can be invoked from the comman
 
 ## 3. Install Version Control System
 
-If you're using Mercurial, you'll need to install it to your Windows-native Python:
-
-```shell
-pip3 install --user mercurial windows-curses
-```
-
-If you're using Git with Cinnabar, follow its [setup instructions](https://github.com/glandium/git-cinnabar#setup).
+Install [Git for Windows](https://git-scm.com/download/win).
 
 ## 4. Set Powershell Execution Policy
 
