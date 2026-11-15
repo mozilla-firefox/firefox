@@ -84,18 +84,6 @@ playback_pageset_manifest = "mitm11-windows-firefox-imdb.manifest"
 test_url = "https://www.imdb.com/title/tt0084967/?ref_=nv_sr_2"
 secondary_url = "https://www.imdb.com/title/tt0084967/episodes/?ref_=tt_ov_epl"
 
-[imgur]
-benchmark_page = false
-playback_pageset_manifest = "mitm11-windows-firefox-imgur.manifest"
-preferences = ['media.autoplay.default=5',
-               'media.autoplay.ask-permission=true',
-               'media.autoplay.blocking_policy=1',
-               'media.allowed-to-play.enabled=false',
-               'media.block-autoplay-until-in-foreground=true',
-]
-secondary_url = "https://imgur.com/gallery/firefox-logo-w8fgXyY"
-test_url = "https://imgur.com/gallery/mozilla-performance-testing-logo-sNUtC19"
-
 [microsoft]
 playback_pageset_manifest = "mitm8-linux-firefox-microsoft.manifest"
 secondary_url = "https://support.microsoft.com/en-us"

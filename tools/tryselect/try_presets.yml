@@ -547,7 +547,7 @@ sample-suites:
         - ^test- -1$ !browsertime !raptor !talos
         - ^test- !1$ !2$ !3$ !4$ !5$ !6$ !7$ !8$ !9$ !0$ !raptor !talos !components !apk !browsertime
         # Only run a single talos / raptor / browsertime suite per platform
-        - ^test- speedometer3$ | talos-g1$ | browsertime-tp6-firefox-imgur$
+        - ^test- speedometer3$ | talos-g1$ | browsertime-tp6-firefox-microsoft$
 
 sm-shell-all:
     selector: fuzzy

@@ -141,7 +141,6 @@ browsertime-tp6m:
             - bing
             - [bing-search-restaurants, bing-s-r]
             - booking
-            - cnn
             - [cnn-ampstories, cnn-amp]
             - dailymail
             - [ebay-kleinanzeigen, ebay-k]
@@ -178,9 +177,6 @@ browsertime-tp6m-essential:
             - allrecipes
             - [amazon-search, amazon-s]
             - espn
-            - google
-            - [microsoft-support, micros-sup]
-            - [youtube-watch, youtube-w]
     run-on-projects:
         by-app:
             geckoview: []
@@ -334,7 +330,6 @@ browsertime-tp6m-live:
             - [bing-search-restaurants, bing-s-r]
             - booking
             - booking-sf
-            - cnn
             - [cnn-ampstories, cnn-amp]
             - dailymail
             - discord
@@ -343,14 +338,12 @@ browsertime-tp6m-live:
             - espn
             - expedia
             - [fashionbeans, fashbea]
-            - google
             - [google-accounts, gacc]
             - [google-maps, gmaps]
             - [google-search-restaurants, gsearch-r]
             - imdb
             - [imdb-firefox, imdb-f]
             - [medium-article, medium]
-            - [microsoft-support, micros-sup]
             - nytimes
             - [people-article, people]
             - reddit
@@ -363,7 +356,6 @@ browsertime-tp6m-live:
             - [wikia-marvel, wikia-m]
             - wikipedia
             - youtube
-            - [youtube-watch, youtube-w]
     mozharness:
         extra-options:
             - --live-sites

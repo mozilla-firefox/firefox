@@ -44,9 +44,6 @@ test_url = "https://www.bing.com/search?q=restaurants+in+exton+pa+19341"
 [booking]
 test_url = "https://www.booking.com/"
 
-[cnn]
-test_url = "https://cnn.com"
-
 [cnn-ampstories]
 test_url = "https://cnn.com/ampstories/us/why-hurricane-michael-is-a-monster-unlike-any-other"
 
@@ -62,11 +59,6 @@ test_url = "https://m.ebay-kleinanzeigen.de/s-anzeigen/auf-zeit-wg-berlin/zimmer
 [espn]
 test_url = "http://www.espn.com/nba/story/_/page/allstarweekend25788027/the-comparison-lebron-james-michael-jordan-their-own-words"
 
-[google]
-login = true
-playback_pageset_manifest = "mitm6-g5-fenix-{subtest}.manifest"
-test_url = "https://www.google.com"
-
 [google-maps]
 test_url = "https://www.google.com/maps?force=pwa"
 
@@ -77,9 +69,6 @@ test_url = "https://www.google.com/search?q=restaurants+near+me"
 
 [imdb]
 test_url = "https://m.imdb.com/"
-
-[microsoft-support]
-test_url = "https://support.microsoft.com/en-us"
 
 [reddit]
 test_url = "https://www.reddit.com"
@@ -92,6 +81,3 @@ test_url = "https://en.m.wikipedia.org/wiki/Main_Page"
 
 [youtube]
 test_url = "https://m.youtube.com"
-
-[youtube-watch]
-test_url = "https://www.youtube.com/watch?v=COU5T-Wafa4"

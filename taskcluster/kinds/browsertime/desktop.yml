@@ -115,10 +115,7 @@ browsertime-tp6:
                     - linux.*shippable.*
                     - windows.*-64.*shippable.*
                 default: []
-        max-run-time:
-            by-subtest:
-                imgur: 4800
-                default: 4000
+        max-run-time: 4000
         mozharness:
             extra-options:
                 by-test-platform:
@@ -151,7 +148,6 @@ browsertime-tp6:
             - [google-docs, gdocs]
             - [google-search, gsearch]
             - imdb
-            - imgur
             - microsoft
             - reddit
             - wikia
@@ -292,10 +288,7 @@ browsertime-tp7:
                     - linux.*shippable.*
                     - windows.*-64.*shippable.*
                 default: []
-        max-run-time:
-            by-subtest:
-                imgur: 4800
-                default: 4000
+        max-run-time: 4000
         mozharness:
             extra-options:
                 by-test-platform:
@@ -744,7 +737,6 @@ browsertime-tp6-live:
             - [google-search, gsearch]
             - [google-slides, gslides]
             - imdb
-            - imgur
             - microsoft
             - reddit
             - twitter

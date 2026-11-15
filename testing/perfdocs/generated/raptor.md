@@ -37429,286 +37429,6 @@ Tests for page-load performance. The links direct to the actual websites that ar
 
 ::::
 
-(imgur-d)=
-
-::::{dropdown} imgur
-:class-container: anchor-id-imgur-d
-
-* **Command to Run Locally**
-
-  ```
-  ./mach raptor -t imgur
-  ```
-
-**Owner**: PerfTest Team
-
-* **alert on**: [fcp](raptor-metrics.md#first-paint), [loadtime](raptor-metrics.md#load-time), [ContentfulSpeedIndex](raptor-metrics.md#contentful-speed-index), [PerceptualSpeedIndex](raptor-metrics.md#perceptual-speed-index), [SpeedIndex](raptor-metrics.md#speed-index), [FirstVisualChange](raptor-metrics.md#first-visual-change), [LastVisualChange](raptor-metrics.md#last-visual-change), [largestContentfulPaint](raptor-metrics.md#largest-contentful-paint)
-* **alert threshold**: 2.0
-* **apps**: firefox
-* **benchmark page**: false
-* **browser cycles**: 25
-* **expected**: pass
-* **gecko profile interval**: 1
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#87`
-* **lower is better**: true
-* **page cycles**: 25
-* **page timeout**: 60000
-* **playback**: mitmproxy
-* **playback pageset manifest**: mitm11-windows-firefox-imgur.manifest
-* **playback version**: 12.2.1
-* **preferences**: media.autoplay.default=5 media.autoplay.ask-permission=true media.autoplay.blocking_policy=1 media.allowed-to-play.enabled=false media.block-autoplay-until-in-foreground=true
-* **secondary url**: <https://imgur.com/gallery/firefox-logo-w8fgXyY>
-* **support class**: browsertime_pageload.py
-* **test url**: <https://imgur.com/gallery/mozilla-performance-testing-logo-sNUtC19>
-* **type**: pageload
-* **unit**: ms
-* **use live sites**: false
-* **Test Task**:
-
-:::{list-table} **{ref}`test-linux2404-64-clang-trunk/opt <hardware-hpe-moonshot>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-linux2404-64-nightlyasrelease/opt <hardware-hpe-moonshot>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-linux2404-64-shippable/opt <hardware-hpe-moonshot>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ✅
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-linux2404-64/opt <hardware-hpe-moonshot>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-macosx1470-64-shippable/opt <hardware-mac-mini-r8>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ✅
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-macosx1470-64/opt <hardware-mac-mini-r8>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-macosx1500-aarch64-nightlyasrelease/opt <hardware-mac-mini-m4>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-macosx1500-aarch64-shippable/opt <hardware-mac-mini-m4>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ✅
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-windows11-64-24h2-nightlyasrelease/opt <hardware-nuc13-windows11>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-windows11-64-24h2-shippable/opt <hardware-nuc13-windows11>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ✅
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-windows11-64-24h2/opt <hardware-nuc13-windows11>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6-live-firefox-imgur**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-::::
-
 (microsoft-d)=
 
 ::::{dropdown} microsoft
@@ -37729,7 +37449,7 @@ Tests for page-load performance. The links direct to the actual websites that ar
 * **browser cycles**: 25
 * **expected**: pass
 * **gecko profile interval**: 1
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#99`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#87`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -38225,7 +37945,7 @@ Tests for page-load performance. The links direct to the actual websites that ar
 * **browser cycles**: 25
 * **expected**: pass
 * **gecko profile interval**: 1
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#104`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#92`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -38938,7 +38658,7 @@ Tests for page-load performance. The links direct to the actual websites that ar
 * **browser cycles**: 25
 * **expected**: pass
 * **gecko profile interval**: 1
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#110`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#98`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -39488,7 +39208,7 @@ Tests for page-load performance. The links direct to the actual websites that ar
 * **browser cycles**: 25
 * **expected**: pass
 * **gecko profile interval**: 1
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#115`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#103`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -39712,7 +39432,7 @@ Tests for page-load performance. The links direct to the actual websites that ar
 * **browser cycles**: 25
 * **expected**: pass
 * **gecko profile interval**: 1
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#122`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#110`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -40046,7 +39766,7 @@ Tests for page-load performance. The links direct to the actual websites that ar
 * **browser cycles**: 25
 * **expected**: pass
 * **gecko profile interval**: 1
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#127`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/desktop/browsertime-tp6.toml#115`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -42975,115 +42695,6 @@ Page-load performance test suite on Android. The links direct to the actual webs
 
 ::::
 
-(cnn-m)=
-
-::::{dropdown} cnn
-:class-container: anchor-id-cnn-m
-
-* **Command to Run Locally**
-
-  ```
-  ./mach raptor -t cnn
-  ```
-
-**Owner**: PerfTest Team
-
-* **alert on**: [fcp](raptor-metrics.md#first-paint), [loadtime](raptor-metrics.md#load-time), [ContentfulSpeedIndex](raptor-metrics.md#contentful-speed-index), [PerceptualSpeedIndex](raptor-metrics.md#perceptual-speed-index), [SpeedIndex](raptor-metrics.md#speed-index), [FirstVisualChange](raptor-metrics.md#first-visual-change), [LastVisualChange](raptor-metrics.md#last-visual-change), [largestContentfulPaint](raptor-metrics.md#largest-contentful-paint)
-* **alert threshold**: 2.0
-* **apps**: geckoview, fenix, refbrow
-* **benchmark page**: true
-* **browser cycles**: 15
-* **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#47`
-* **lower is better**: true
-* **page cycles**: 25
-* **page timeout**: 60000
-* **playback**: mitmproxy-android
-* **playback pageset manifest**: mitm6-android-fenix-cnn.manifest
-* **playback version**: 8.1.1
-* **support class**: browsertime_pageload.py
-* **test url**: <https://cnn.com>
-* **type**: pageload
-* **unit**: ms
-* **use live sites**: false
-* **Test Task**:
-
-:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-fenix-cnn**
-  - ❌
-  - ✅
-  - ❌
-  - ❌
-* - **browsertime-tp6m-geckoview-cnn**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-fenix-cnn**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-geckoview-cnn**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-refbrow-cnn**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64/opt <hardware-samsung-a55>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-fenix-cnn**
-  - ✅
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-geckoview-cnn**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-fenix-cnn**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-geckoview-cnn**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-refbrow-cnn**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-::::
-
 (cnn-ampstories-m)=
 
 ::::{dropdown} cnn-ampstories
@@ -43103,7 +42714,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#50`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#47`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -43212,7 +42823,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#53`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#50`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -43321,7 +42932,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#56`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#53`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -43430,7 +43041,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#59`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#56`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -43539,7 +43150,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#62`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#59`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -43646,133 +43257,6 @@ Page-load performance test suite on Android. The links direct to the actual webs
 
 ::::
 
-(google-m)=
-
-::::{dropdown} google
-:class-container: anchor-id-google-m
-
-* **Command to Run Locally**
-
-  ```
-  ./mach raptor -t google
-  ```
-
-**Owner**: PerfTest Team
-
-* **alert on**: [fcp](raptor-metrics.md#first-paint), [loadtime](raptor-metrics.md#load-time), [ContentfulSpeedIndex](raptor-metrics.md#contentful-speed-index), [PerceptualSpeedIndex](raptor-metrics.md#perceptual-speed-index), [SpeedIndex](raptor-metrics.md#speed-index), [FirstVisualChange](raptor-metrics.md#first-visual-change), [LastVisualChange](raptor-metrics.md#last-visual-change), [largestContentfulPaint](raptor-metrics.md#largest-contentful-paint)
-* **alert threshold**: 2.0
-* **apps**: geckoview, fenix, refbrow
-* **benchmark page**: true
-* **browser cycles**: 15
-* **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#65`
-* **login**: true
-* **lower is better**: true
-* **page cycles**: 25
-* **page timeout**: 60000
-* **playback**: mitmproxy-android
-* **playback pageset manifest**: mitm6-g5-fenix-google.manifest
-* **playback version**: 8.1.1
-* **support class**: browsertime_pageload.py
-* **test url**: <https://www.google.com>
-* **type**: pageload
-* **unit**: ms
-* **use live sites**: false
-* **Test Task**:
-
-:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-google**
-  - ❌
-  - ✅
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-geckoview-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-refbrow-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-fenix-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-geckoview-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64/opt <hardware-samsung-a55>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-geckoview-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-refbrow-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-fenix-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-geckoview-google**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-::::
-
 (google-maps-m)=
 
 ::::{dropdown} google-maps
@@ -43792,7 +43276,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#70`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#62`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -43901,7 +43385,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#73`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#65`
 * **login**: true
 * **lower is better**: true
 * **page cycles**: 25
@@ -44011,7 +43495,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#78`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#70`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -44101,132 +43585,6 @@ Page-load performance test suite on Android. The links direct to the actual webs
 
 ::::
 
-(microsoft-support-m)=
-
-::::{dropdown} microsoft-support
-:class-container: anchor-id-microsoft-support-m
-
-* **Command to Run Locally**
-
-  ```
-  ./mach raptor -t microsoft-support
-  ```
-
-**Owner**: PerfTest Team
-
-* **alert on**: [fcp](raptor-metrics.md#first-paint), [loadtime](raptor-metrics.md#load-time), [ContentfulSpeedIndex](raptor-metrics.md#contentful-speed-index), [PerceptualSpeedIndex](raptor-metrics.md#perceptual-speed-index), [SpeedIndex](raptor-metrics.md#speed-index), [FirstVisualChange](raptor-metrics.md#first-visual-change), [LastVisualChange](raptor-metrics.md#last-visual-change), [largestContentfulPaint](raptor-metrics.md#largest-contentful-paint)
-* **alert threshold**: 2.0
-* **apps**: geckoview, fenix, refbrow
-* **benchmark page**: true
-* **browser cycles**: 15
-* **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#81`
-* **lower is better**: true
-* **page cycles**: 25
-* **page timeout**: 60000
-* **playback**: mitmproxy-android
-* **playback pageset manifest**: mitm6-android-fenix-microsoft-support.manifest
-* **playback version**: 8.1.1
-* **support class**: browsertime_pageload.py
-* **test url**: <https://support.microsoft.com/en-us>
-* **type**: pageload
-* **unit**: ms
-* **use live sites**: false
-* **Test Task**:
-
-:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-microsoft-support**
-  - ❌
-  - ✅
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-geckoview-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-refbrow-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-fenix-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-geckoview-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64/opt <hardware-samsung-a55>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-geckoview-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-refbrow-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-fenix-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-geckoview-microsoft-support**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-::::
-
 (reddit-m)=
 
 ::::{dropdown} reddit
@@ -44246,7 +43604,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#84`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#73`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -44355,7 +43713,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#87`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#76`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -44464,7 +43822,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#90`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#79`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -44573,7 +43931,7 @@ Page-load performance test suite on Android. The links direct to the actual webs
 * **benchmark page**: true
 * **browser cycles**: 15
 * **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#93`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#82`
 * **lower is better**: true
 * **page cycles**: 25
 * **page timeout**: 60000
@@ -44654,132 +44012,6 @@ Page-load performance test suite on Android. The links direct to the actual webs
   - ❌
   - ❌
 * - **browsertime-tp6m-refbrow-youtube**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-::::
-
-(youtube-watch-m)=
-
-::::{dropdown} youtube-watch
-:class-container: anchor-id-youtube-watch-m
-
-* **Command to Run Locally**
-
-  ```
-  ./mach raptor -t youtube-watch
-  ```
-
-**Owner**: PerfTest Team
-
-* **alert on**: [fcp](raptor-metrics.md#first-paint), [loadtime](raptor-metrics.md#load-time), [ContentfulSpeedIndex](raptor-metrics.md#contentful-speed-index), [PerceptualSpeedIndex](raptor-metrics.md#perceptual-speed-index), [SpeedIndex](raptor-metrics.md#speed-index), [FirstVisualChange](raptor-metrics.md#first-visual-change), [LastVisualChange](raptor-metrics.md#last-visual-change), [largestContentfulPaint](raptor-metrics.md#largest-contentful-paint)
-* **alert threshold**: 2.0
-* **apps**: geckoview, fenix, refbrow
-* **benchmark page**: true
-* **browser cycles**: 15
-* **expected**: pass
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/tp6/mobile/browsertime-tp6m.toml#96`
-* **lower is better**: true
-* **page cycles**: 25
-* **page timeout**: 60000
-* **playback**: mitmproxy-android
-* **playback pageset manifest**: mitm6-android-fenix-youtube-watch.manifest
-* **playback version**: 8.1.1
-* **support class**: browsertime_pageload.py
-* **test url**: <https://www.youtube.com/watch?v=COU5T-Wafa4>
-* **type**: pageload
-* **unit**: ms
-* **use live sites**: false
-* **Test Task**:
-
-:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-youtube-watch**
-  - ❌
-  - ✅
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-geckoview-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-refbrow-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-fenix-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-geckoview-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-:::
-
-
-:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64/opt <hardware-samsung-a55>`**
-:widths: 30 15 15 15 15
-:header-rows: 1
-
-* - **Test Name**
-  - mozilla-central
-  - autoland
-  - mozilla-release
-  - mozilla-beta
-* - **browsertime-tp6m-essential-fenix-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-geckoview-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-essential-refbrow-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-fenix-youtube-watch**
-  - ❌
-  - ❌
-  - ❌
-  - ❌
-* - **browsertime-tp6m-live-geckoview-youtube-watch**
   - ❌
   - ❌
   - ❌

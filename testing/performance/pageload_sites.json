@@ -53,19 +53,6 @@
     },
     {
       "login": false,
-      "name": "cnn",
-      "test_url": "https://cnn.com",
-      "secondary_url": "https://www.cnn.com/weather",
-      "dismiss_cookie_prompt": [
-        ["click.byXpathAndWait", "//*[@id='onetrust-pc-btn-handler']"],
-        [
-          "click.byXpathAndWait",
-          "/html/body/div[14]/div[3]/div[3]/div[1]/button[2]"
-        ]
-      ]
-    },
-    {
-      "login": false,
       "name": "cnn-ampstories",
       "test_url": "https://cnn.com/ampstories/us/why-hurricane-michael-is-a-monster-unlike-any-other",
       "dismiss_cookie_prompt": [
@@ -97,11 +84,6 @@
       "test_url": "http://www.espn.com/nba/story/_/page/allstarweekend25788027/the-comparison-lebron-james-michael-jordan-their-own-words"
     },
     {
-      "login": true,
-      "name": "google",
-      "test_url": "https://www.google.com"
-    },
-    {
       "login": false,
       "name": "google-maps",
       "test_url": "https://www.google.com/maps?force=pwa"
@@ -115,11 +97,6 @@
       "login": false,
       "name": "imdb",
       "test_url": "https://m.imdb.com/"
-    },
-    {
-      "login": false,
-      "name": "microsoft-support",
-      "test_url": "https://support.microsoft.com/en-us"
     },
     {
       "login": false,
@@ -140,17 +117,6 @@
       "login": false,
       "name": "youtube",
       "test_url": "https://m.youtube.com",
-      "dismiss_cookie_prompt": [
-        [
-          "click.byXpathAndWait",
-          "/html/body/div[2]/ytm-consent-bump-v2-renderer/div/div[2]/div[3]/c3-material-button[2]/button/div/div"
-        ]
-      ]
-    },
-    {
-      "login": false,
-      "name": "youtube-watch",
-      "test_url": "https://www.youtube.com/watch?v=COU5T-Wafa4",
       "dismiss_cookie_prompt": [
         [
           "click.byXpathAndWait",
@@ -287,26 +253,6 @@
       "name": "imdb",
       "test_url": "https://www.imdb.com/title/tt0084967/?ref_=nv_sr_2",
       "secondary_url": "https://www.imdb.com/title/tt0084967/episodes/?ref_=tt_ov_epl"
-    },
-    {
-      "login": false,
-      "name": "imgur",
-      "test_url": "https://imgur.com/gallery/mozilla-performance-testing-logo-sNUtC19",
-      "inject_deterministic": false,
-      "dismiss_cookie_prompt": [
-        [
-          "click.byXpathAndWait",
-          "/html/body/div[1]/div/div/div/div[2]/div/button[2]"
-        ]
-      ],
-      "secondary_url": "https://imgur.com/gallery/firefox-logo-w8fgXyY",
-      "preferences": {
-        "media.autoplay.default": 5,
-        "media.autoplay.ask-permission": true,
-        "media.autoplay.blocking_policy": 1,
-        "media.allowed-to-play.enabled": false,
-        "media.block-autoplay-until-in-foreground": true
-      }
     },
     {
       "login": false,
