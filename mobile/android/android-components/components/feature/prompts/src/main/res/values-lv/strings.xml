@@ -15,6 +15,8 @@
   <string name="mozac_feature_prompt_before_unload_dialog_title">Vai tiešām?</string>
   <!-- Continue button label for WebAuthn related origin prompt. -->
   <string name="webauthn_continue">Turpināt</string>
+  <!-- Option in expanded select password prompt that links to password settings -->
+  <string name="mozac_feature_prompts_manage_logins_2">Pārvaldīt paroles</string>
   <!-- Title of an account picker dialog for identity credentials. The %1$s will be replaced with the name of the provider -->
   <string name="mozac_feature_prompts_identity_credentials_choose_account_for_provider">Pieteikties ar %1$s kontu</string>
   <!-- Text for the positive button of the Identity Credential dialogs. -->

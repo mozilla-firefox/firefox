@@ -1171,6 +1171,8 @@
   <string name="preferences_inactive_tabs_title">Los onglets qu’avètz pas consultats fa doas setmanas aniràn a la seccion dels inactius.</string>
   <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
   <string name="preferences_tab_groups_title">Grops d’onglets</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Organizatz vòstres onglets en grops que podètz nomenar e salvar.</string>
   <!--
     Privacy report
 
@@ -1313,8 +1315,16 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Suprimir lo grop</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Anullar</string>
+  <!-- Text shown on the edit button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_edit">Modificar</string>
   <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_ungroup">Dissociar</string>
+  <!-- Text shown on the delete button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_delete">Suprimir</string>
+  <!-- Text shown on the share button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_share">Partejar</string>
+  <!-- Text shown on the close button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_close">Tampar</string>
   <!-- Title for the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_title">Dissociar lo grop d’onglets ?</string>
   <!-- Text shown on the confirm button in the Ungroup tab group confirmation dialog. -->
@@ -1531,6 +1541,8 @@
   <string name="webcompat_reporter_preview_report">Visualizar lo rapòrt</string>
   <!-- The title shown at the top of the WebCompat Report preview panel. This appears after the user taps the “Preview” button before sending a report. -->
   <string name="webcompat_reporter_preview_bottom_sheet_header">Apercebut del raport</string>
+  <!-- Title for the Edit URL confirmation dialog in the WebCompatReporter -->
+  <string name="webcompat_reporter_edit_url_dialog_title">Modificar l’URL del site Web</string>
   <!--
     These reason strings are dropdown options on a WebCompat reporter form, indicating what is broken on the site.
 
@@ -1843,6 +1855,8 @@
   <string name="menu_print">Imprimir</string>
   <!-- Sub-header in the dialog to share a link to another sync device -->
   <string name="share_device_subheader">Enviar al periferic</string>
+  <!-- Content description for the close button in the QR code display screen -->
+  <string name="qr_code_display_close">Tampar</string>
   <!-- Sub-header in the dialog to share a link to an app from the full list -->
   <string name="share_link_all_apps_subheader">Totas las accions</string>
   <!-- Sub-header in the dialog to share a link to an app from the most-recent sorted list -->
@@ -3573,8 +3587,12 @@
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">aicí</string>
   <!-- The second active link used in privacy_notice_updated_homepage_message -->
   <string name="privacy_notice_updated_homepage_message_learn_more" tools:ignore="UnusedResources">Ne saber mai</string>
+  <!-- Message shown on the collections to tab groups migration card on the homepage. -->
+  <string name="collections_migration_homepage_card_message">Existís un biais mai simple d’organizar vòstres onglets</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Mostrar mos grops d’onglets</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Tampar</string>
   <!-- Banner title text on the Firefox Labs screen. -->
   <string name="firefox_labs_banner_title_2">Ensajatz nòstras foncions experimentalas\u00a0!</string>
   <!-- The link text shown when a feedback URL for a Firefox Labs feature is available. The feedback URL page will allow users to provide opinions and suggestions. -->
@@ -3589,4 +3607,6 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Isolacion de site</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Una barrièra suplementària entre los sites web que contribuís a protegir vòstras donadas entre los onglets. Pòt afectar las performanças, l\'estabilitat, la compatibilitat dels sites web e la salvagarda de l\'istoric de navegacion.</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the sharing options for the PDF being displayed on the screen. -->
+  <string name="pdf_tools_share_content_description">Partejar lo PDF</string>
 </resources>

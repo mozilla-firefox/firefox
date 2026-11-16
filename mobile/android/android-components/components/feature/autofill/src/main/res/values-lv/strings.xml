@@ -8,6 +8,14 @@
 
 <resources>
   <!--
+    Autofill: Text shown in dialog asking the user to confirm before autofilling credentials into a
+    third-party app where we could not verify the authenticity (e.g. we determined that this app is
+    a twitter client and we could autofill twitter credentials, but according to the "Digital Asset
+    Links" this application is not the official Twitter application for twitter.com credentials.
+    %1$s will be replaced with the name of the browser application (e.g. Firefox).
+  -->
+  <string name="mozac_feature_autofill_confirmation_authenticity">%1$s nevarēja apliecināt lietotnes patiesumu. Vai turpināt ar atlasīto piekļuves datu automātisku aizpildi?</string>
+  <!--
     Autofill: When showing a list of logins to autofill in a third-party app, then this is the
     last item in the list. When clicking it a new screen opens which allows the user to search for
     a specific login. %1$s will be replaced with the name of the application (e.g. "Firefox")

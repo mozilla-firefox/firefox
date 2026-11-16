@@ -587,7 +587,7 @@
   <!-- Preference for using dark theme -->
   <string name="preference_dark_theme">Temna</string>
   <!-- Preference for using using dark or light theme automatically set by battery -->
-  <string name="preference_auto_battery_theme">Nastavi ohranjevalnik baterije</string>
+  <string name="preference_auto_battery_theme">Glede na ohranjevalnik baterije</string>
   <!-- Preference for using following device theme -->
   <string name="preference_follow_device_theme">Sledi temi naprave</string>
   <!-- The title of the error page for websites that do not support HTTPS when HTTPS-Only is turned on -->

@@ -186,8 +186,12 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Tilpass meny</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Kan ikkje skjule denne seksjonen</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">Stille tilbake til standardmeny?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Dette fjernar tilpassingar og kan ikkje angrast.</string>
   <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
   <string name="menu_customize_reset_dialog_reset">Tilbakestill</string>
   <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
@@ -598,6 +602,12 @@
   <string name="nova_onboarding_sync_subtitle">Hent bokmerke, passord, og meir, på kva eining som helst på eit blunk. Personopplysningane dine held fram med å vere trygge og sikre med kryptering.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Start synkronisering</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Skann for å fullføre paringa med datamaskina di</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[Ingen QR-kode? Gå til <b>firefox.com/pair</b> på datamaskina di.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Skann paringskoden</string>
   <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
   <string name="nova_onboarding_sync_pairing_email_button">Logg inn med e/post</string>
   <!-- Marketing onboarding title. -->
