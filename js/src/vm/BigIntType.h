@@ -490,34 +490,6 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
 
   void inplaceMultiplyAdd(Digit multiplier, Digit part);
 
-  // The result of an SymmetricTrim bitwise op has as many digits as the
-  // smaller operand.  A SymmetricFill bitwise op result has as many digits as
-  // the larger operand, with high digits (if any) copied from the larger
-  // operand.  AsymmetricFill is like SymmetricFill, except the result has as
-  // many digits as the first operand; this kind is used for the and-not
-  // operation.
-  enum class BitwiseOpKind { SymmetricTrim, SymmetricFill, AsymmetricFill };
-
-  template <BitwiseOpKind kind, typename BitwiseOp>
-  static BigInt* absoluteBitwiseOp(JSContext* cx, Handle<BigInt*> x,
-                                   Handle<BigInt*> y, BitwiseOp&& op);
-
-  // Return `|x| & |y|`.
-  static BigInt* absoluteAnd(JSContext* cx, Handle<BigInt*> x,
-                             Handle<BigInt*> y);
-
-  // Return `|x| | |y|`.
-  static BigInt* absoluteOr(JSContext* cx, Handle<BigInt*> x,
-                            Handle<BigInt*> y);
-
-  // Return `|x| & ~|y|`.
-  static BigInt* absoluteAndNot(JSContext* cx, Handle<BigInt*> x,
-                                Handle<BigInt*> y);
-
-  // Return `|x| ^ |y|`.
-  static BigInt* absoluteXor(JSContext* cx, Handle<BigInt*> x,
-                             Handle<BigInt*> y);
-
   // Return `(|x| + 1) * (resultNegative ? -1 : +1)`.
   static BigInt* absoluteAddOne(JSContext* cx, Handle<BigInt*> x,
                                 bool resultNegative);
