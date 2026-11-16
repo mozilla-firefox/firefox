@@ -6,6 +6,7 @@ with Files("**"):
     BUG_COMPONENT = ("Core", "Machine Learning: General")
 
 DIRS += [
+    "digests",
     "journeys",
 ]
 
